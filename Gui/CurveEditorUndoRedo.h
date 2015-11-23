@@ -46,6 +46,7 @@ namespace Transform
 }
 class CurveGui;
 class KnobGui;
+class Bezier;
 class Curve;
 class CurveWidget;
 class NodeCurveEditorElement;
@@ -341,9 +342,25 @@ private:
 private:
     bool _firstRedoCalled;
     bool _updateOnFirstRedo;
-    SelectedKeys _keys;
+    SelectedKeys _keys,_altKeys;
     CurveWidget* _widget;
-    std::list<std::pair<boost::shared_ptr<Curve>,boost::shared_ptr<Curve> > > _curves;
+    
+    struct CurveCopy
+    {
+        CurveGui* guiCurve;
+        boost::shared_ptr<Curve> original;
+        boost::shared_ptr<Curve> oldCpy,newCpy;
+    };
+    
+    struct BezierCopy
+    {
+        CurveGui* guiCurve;
+        boost::shared_ptr<Bezier> original;
+        boost::shared_ptr<Bezier> oldCpy,newCpy;
+    };
+    
+    std::list<CurveCopy> _curves;
+    std::list<BezierCopy> _beziers;
     boost::shared_ptr<Transform::Matrix3x3> _matrix;
 };
 

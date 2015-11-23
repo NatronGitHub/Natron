@@ -311,13 +311,13 @@ static PyObject* Sbk_StringParamBaseFunc_set(PyObject* self, PyObject* args)
 
     // Overloaded function decisor
     // 0: set(std::string)
-    // 1: set(std::string,int)
+    // 1: set(std::string,double)
     if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))) {
         if (numArgs == 1) {
             overloadId = 0; // set(std::string)
         } else if (numArgs == 2
-            && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 1; // set(std::string,int)
+            && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
+            overloadId = 1; // set(std::string,double)
         }
     }
 
@@ -337,15 +337,15 @@ static PyObject* Sbk_StringParamBaseFunc_set(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // set(const std::string & x, int frame)
+        case 1: // set(const std::string & x, double frame)
         {
             ::std::string cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
-            int cppArg1;
+            double cppArg1;
             pythonToCpp[1](pyArgs[1], &cppArg1);
 
             if (!PyErr_Occurred()) {
-                // set(std::string,int)
+                // set(std::string,double)
                 cppSelf->set(cppArg0, cppArg1);
             }
             break;
@@ -358,7 +358,7 @@ static PyObject* Sbk_StringParamBaseFunc_set(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_StringParamBaseFunc_set_TypeError:
-        const char* overloads[] = {"std::string", "std::string, int", 0};
+        const char* overloads[] = {"std::string", "std::string, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.StringParamBase.set", overloads);
         return 0;
 }
@@ -468,11 +468,11 @@ static PyObject* Sbk_StringParamBaseFunc_setValueAtTime(PyObject* self, PyObject
 
 
     // Overloaded function decisor
-    // 0: setValueAtTime(std::string,int)
+    // 0: setValueAtTime(std::string,double)
     if (numArgs == 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-        overloadId = 0; // setValueAtTime(std::string,int)
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
+        overloadId = 0; // setValueAtTime(std::string,double)
     }
 
     // Function signature not found.
@@ -482,11 +482,11 @@ static PyObject* Sbk_StringParamBaseFunc_setValueAtTime(PyObject* self, PyObject
     {
         ::std::string cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
+        double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setValueAtTime(std::string,int)
+            // setValueAtTime(std::string,double)
             cppSelf->setValueAtTime(cppArg0, cppArg1);
         }
     }
@@ -497,7 +497,7 @@ static PyObject* Sbk_StringParamBaseFunc_setValueAtTime(PyObject* self, PyObject
     Py_RETURN_NONE;
 
     Sbk_StringParamBaseFunc_setValueAtTime_TypeError:
-        const char* overloads[] = {"std::string, int", 0};
+        const char* overloads[] = {"std::string, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.StringParamBase.setValueAtTime", overloads);
         return 0;
 }

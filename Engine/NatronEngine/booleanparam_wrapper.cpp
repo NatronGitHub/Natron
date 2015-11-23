@@ -311,13 +311,13 @@ static PyObject* Sbk_BooleanParamFunc_set(PyObject* self, PyObject* args)
 
     // Overloaded function decisor
     // 0: set(bool)
-    // 1: set(bool,int)
+    // 1: set(bool,double)
     if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[0])))) {
         if (numArgs == 1) {
             overloadId = 0; // set(bool)
         } else if (numArgs == 2
-            && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-            overloadId = 1; // set(bool,int)
+            && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
+            overloadId = 1; // set(bool,double)
         }
     }
 
@@ -337,15 +337,15 @@ static PyObject* Sbk_BooleanParamFunc_set(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // set(bool x, int frame)
+        case 1: // set(bool x, double frame)
         {
             bool cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
-            int cppArg1;
+            double cppArg1;
             pythonToCpp[1](pyArgs[1], &cppArg1);
 
             if (!PyErr_Occurred()) {
-                // set(bool,int)
+                // set(bool,double)
                 cppSelf->set(cppArg0, cppArg1);
             }
             break;
@@ -358,7 +358,7 @@ static PyObject* Sbk_BooleanParamFunc_set(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_BooleanParamFunc_set_TypeError:
-        const char* overloads[] = {"bool", "bool, int", 0};
+        const char* overloads[] = {"bool", "bool, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BooleanParam.set", overloads);
         return 0;
 }
@@ -468,11 +468,11 @@ static PyObject* Sbk_BooleanParamFunc_setValueAtTime(PyObject* self, PyObject* a
 
 
     // Overloaded function decisor
-    // 0: setValueAtTime(bool,int)
+    // 0: setValueAtTime(bool,double)
     if (numArgs == 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-        overloadId = 0; // setValueAtTime(bool,int)
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
+        overloadId = 0; // setValueAtTime(bool,double)
     }
 
     // Function signature not found.
@@ -482,11 +482,11 @@ static PyObject* Sbk_BooleanParamFunc_setValueAtTime(PyObject* self, PyObject* a
     {
         bool cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
+        double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setValueAtTime(bool,int)
+            // setValueAtTime(bool,double)
             cppSelf->setValueAtTime(cppArg0, cppArg1);
         }
     }
@@ -497,7 +497,7 @@ static PyObject* Sbk_BooleanParamFunc_setValueAtTime(PyObject* self, PyObject* a
     Py_RETURN_NONE;
 
     Sbk_BooleanParamFunc_setValueAtTime_TypeError:
-        const char* overloads[] = {"bool, int", 0};
+        const char* overloads[] = {"bool, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BooleanParam.setValueAtTime", overloads);
         return 0;
 }

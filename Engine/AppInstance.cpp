@@ -28,13 +28,12 @@
 #include <list>
 #include <stdexcept>
 
-#include <QDir>
-#include <QtConcurrentMap>
-#include <QThreadPool>
-#include <QUrl>
-#include <QFileInfo>
-#include <QEventLoop>
-#include <QSettings>
+#include <QtCore/QDir>
+#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtCore/QUrl>
+#include <QtCore/QFileInfo>
+#include <QtCore/QEventLoop>
+#include <QtCore/QSettings>
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -97,8 +96,15 @@ struct AppInstancePrivate
     bool _projectCreatedWithLowerCaseIDs;
     
     mutable QMutex creatingGroupMutex;
+    
+    //When a pyplug is created
     bool _creatingGroup;
+    
+    //When a node is created
     bool _creatingNode;
+    
+    //When a node tree is created
+    bool _creatingTree;
     
     AppInstancePrivate(int appID,
                        AppInstance* app)
@@ -108,6 +114,7 @@ struct AppInstancePrivate
     , creatingGroupMutex()
     , _creatingGroup(false)
     , _creatingNode(false)
+    , _creatingTree(false)
     {
     }
     
@@ -146,6 +153,20 @@ AppInstance::isCreatingNode() const
 {
     QMutexLocker k(&_imp->creatingGroupMutex);
     return _imp->_creatingNode;
+}
+
+bool
+AppInstance::isCreatingNodeTree() const
+{
+    QMutexLocker k(&_imp->creatingGroupMutex);
+    return _imp->_creatingTree;
+}
+
+void
+AppInstance::setIsCreatingNodeTree(bool b)
+{
+    QMutexLocker k(&_imp->creatingGroupMutex);
+    _imp->_creatingTree = b;
 }
 
 void
@@ -570,6 +591,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         
         std::string output;
         FlagSetter flag(true, &_imp->_creatingGroup, &_imp->creatingGroupMutex);
+        CreatingNodeTreeFlag_RAII createNodeTree(this);
         if (!Natron::interpretPythonScript(ss.str(), &err, &output)) {
             if (!err.empty()) {
                 Natron::errorDialog(tr("Python").toStdString(), err);
@@ -584,6 +606,8 @@ AppInstance::loadPythonScript(const QFileInfo& file)
                 }
             }
         }
+        
+        getProject()->forceComputeInputDependentDataOnAllTrees();
     } else {
         QFile f(file.absoluteFilePath());
         PyRun_SimpleString(content.toStdString().c_str());
@@ -627,6 +651,7 @@ boost::shared_ptr<Natron::Node>
 AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
                                         const boost::shared_ptr<NodeCollection>& group,
                                         bool requestedByLoad,
+                                        bool userEdited,
                                         const NodeSerialization & serialization)
 
 {
@@ -643,6 +668,7 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
     
     {
         FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
+        CreatingNodeTreeFlag_RAII createNodeTree(this);
         
         NodePtr containerNode;
         if (!requestedByLoad) {
@@ -708,7 +734,7 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
     
     ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-    onGroupCreationFinished(node, requestedByLoad);
+    onGroupCreationFinished(node, requestedByLoad, userEdited);
     
     return node;
 }
@@ -830,7 +856,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
     const QString& pythonModule = plugin->getPythonModule();
     if (!pythonModule.isEmpty()) {
         try {
-            return createNodeFromPythonModule(plugin, group, requestedByLoad, serialization);
+            return createNodeFromPythonModule(plugin, group, requestedByLoad, userEdited, serialization);
         } catch (const std::exception& e) {
             Natron::errorDialog(tr("Plugin error").toStdString(),
                                 tr("Cannot create PyPlug:").toStdString()+ e.what(), false );
@@ -944,6 +970,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                       multiInstanceParent,
                       requestedByLoad,
                       autoConnect,
+                      userEdited,
                       xPosHint,
                       yPosHint,
                       pushUndoRedoCommand);
@@ -981,7 +1008,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                     INT_MIN,
                                     false, //<< don't push an undo command
                                     true,
-                                    false,
+                                    true,
                                     QString(),
                                     CreateNodeArgs::DefaultValuesList(),
                                     isGrp);
@@ -999,7 +1026,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                     INT_MIN,
                                     false, //<< don't push an undo command
                                     true,
-                                    false,
+                                    true,
                                     QString(),
                                     CreateNodeArgs::DefaultValuesList(),
                                     isGrp);
@@ -1008,7 +1035,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
             }
             
             ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-            onGroupCreationFinished(node, false);
+            onGroupCreationFinished(node, false, userEdited);
         }
     }
     
@@ -1454,7 +1481,9 @@ AppInstance::getAppIDString() const
 }
 
 void
-AppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad)
+AppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node,
+                                     bool requestedByLoad,
+                                     bool /*userEdited*/)
 {
     assert(node);
     if (!_imp->_currentProject->isLoadingProject() && !requestedByLoad) {

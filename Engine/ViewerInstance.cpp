@@ -36,11 +36,12 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QtGlobal>
-#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt<<(
+#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QFutureWatcher>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QThreadPool>
 CLANG_DIAG_ON(deprecated)
 
 #include "Global/MemoryInfo.h"
@@ -372,7 +373,7 @@ class ViewerParallelRenderArgsSetter : public ParallelRenderArgsSetter
 public:
     
     ViewerParallelRenderArgsSetter(NodeCollection* n,
-                                   int time,
+                                   double time,
                                    int view,
                                    bool isRenderUserInteraction,
                                    bool isSequential,
@@ -2999,7 +3000,6 @@ ViewerInstance::refreshActiveInputs(int inputNbChanged)
                 Natron::ViewerCompositingOperatorEnum op = _imp->uiContext->getCompositingOperator();
                 if (op == Natron::eViewerCompositingOperatorNone) {
                     _imp->uiContext->setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
-                    op = Natron::eViewerCompositingOperatorWipe;
                 }
                 _imp->activeInputs[1] = inputNbChanged;
                 

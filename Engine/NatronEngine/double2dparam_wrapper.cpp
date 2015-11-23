@@ -128,15 +128,15 @@ static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
 
     // Overloaded function decisor
     // 0: set(double,double)
-    // 1: set(double,double,int)
+    // 1: set(double,double,double)
     if (numArgs >= 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
         if (numArgs == 2) {
             overloadId = 0; // set(double,double)
         } else if (numArgs == 3
-            && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
-            overloadId = 1; // set(double,double,int)
+            && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))) {
+            overloadId = 1; // set(double,double,double)
         }
     }
 
@@ -158,17 +158,17 @@ static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // set(double x, double y, int frame)
+        case 1: // set(double x, double y, double frame)
         {
             double cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
             double cppArg1;
             pythonToCpp[1](pyArgs[1], &cppArg1);
-            int cppArg2;
+            double cppArg2;
             pythonToCpp[2](pyArgs[2], &cppArg2);
 
             if (!PyErr_Occurred()) {
-                // set(double,double,int)
+                // set(double,double,double)
                 cppSelf->set(cppArg0, cppArg1, cppArg2);
             }
             break;
@@ -181,7 +181,7 @@ static PyObject* Sbk_Double2DParamFunc_set(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_Double2DParamFunc_set_TypeError:
-        const char* overloads[] = {"float, float", "float, float, int", 0};
+        const char* overloads[] = {"float, float", "float, float, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Double2DParam.set", overloads);
         return 0;
 }

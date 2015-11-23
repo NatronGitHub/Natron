@@ -46,7 +46,7 @@ TabGroup::TabGroup(QWidget* parent)
 }
 
 QGridLayout*
-TabGroup::addTab(const boost::shared_ptr<KnobGroup>& group,const QString& name)
+TabGroup::addTab(const boost::shared_ptr<KnobGroup>& group, const QString& label)
 {
     
     QWidget* tab = 0;
@@ -66,7 +66,7 @@ TabGroup::addTab(const boost::shared_ptr<KnobGroup>& group,const QString& name)
         tabLayout->setColumnStretch(1, 1);
         //tabLayout->setContentsMargins(0, 0, 0, 0);
         tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING); // unfortunately, this leaves extra space when parameters are hidden
-        _tabWidget->addTab(tab,name);
+        _tabWidget->addTab(tab, label);
         _tabs.push_back(group);
     }
     assert(tabLayout);

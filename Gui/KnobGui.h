@@ -158,7 +158,7 @@ public:
 
     void enableRightClickMenu(QWidget* widget,int dimension);
 
-    virtual bool showDescriptionLabel() const;
+    virtual bool isLabelVisible() const;
 
     QWidget* getFieldContainer() const;
 
@@ -215,7 +215,7 @@ public:
     template<typename T>
     void setValueAtTime(int dimension,
                         const T & v,
-                        int time,
+                        double time,
                         KeyFrame* newKey,
                         bool refreshGui,
                         Natron::ValueChangedReasonEnum reason)
@@ -379,7 +379,7 @@ public Q_SLOTS:
     
     void onHasModificationsChanged();
     
-    void onDescriptionChanged();
+    void onLabelChanged();
     
     void onCreateMasterOnGroupActionTriggered();
     
@@ -441,7 +441,7 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) = 0;
     virtual void setDirty(bool dirty) = 0;
     
-    virtual void onLabelChanged() {}
+    virtual void onLabelChangedInternal() {}
 
     /**
      * @brief Must fill the horizontal layout with all the widgets composing the knob.

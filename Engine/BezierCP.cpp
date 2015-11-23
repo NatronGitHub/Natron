@@ -362,7 +362,7 @@ BezierCP::setRightBezierPointAtTime(bool useGuiCurves,
 
 
 void
-BezierCP::removeAnimation(bool useGuiCurves,int currentTime)
+BezierCP::removeAnimation(bool useGuiCurves,double currentTime)
 {
     {
         QMutexLocker k(&_imp->staticPositionMutex);
@@ -464,7 +464,7 @@ BezierCP::hasKeyFrameAtTime(bool useGuiCurves,double time) const
 }
 
 void
-BezierCP::getKeyframeTimes(bool useGuiCurves,std::set<int>* times) const
+BezierCP::getKeyframeTimes(bool useGuiCurves,std::set<double>* times) const
 {
     KeyFrameSet set;
     if (!useGuiCurves) {
@@ -474,12 +474,12 @@ BezierCP::getKeyframeTimes(bool useGuiCurves,std::set<int>* times) const
     }
 
     for (KeyFrameSet::iterator it = set.begin(); it != set.end(); ++it) {
-        times->insert( (int)it->getTime() );
+        times->insert(it->getTime());
     }
 }
 
 void
-BezierCP::getKeyFrames(bool useGuiCurves,std::list<std::pair<int,Natron::KeyframeTypeEnum> >* keys) const
+BezierCP::getKeyFrames(bool useGuiCurves,std::list<std::pair<double,Natron::KeyframeTypeEnum> >* keys) const
 {
     KeyFrameSet set;
     if (!useGuiCurves) {
@@ -522,7 +522,7 @@ BezierCP::setKeyFrameInterpolation(bool useGuiCurves,Natron::KeyframeTypeEnum in
     }
 }
 
-int
+double
 BezierCP::getKeyframeTime(bool useGuiCurves,int index) const
 {
     KeyFrame k;
@@ -772,9 +772,9 @@ BezierCP::cuspPoint(bool useGuiCurves,
     }
 
     if (rippleEdit) {
-        std::set<int> times;
+        std::set<double> times;
         getKeyframeTimes(useGuiCurves,&times);
-        for (std::set<int>::iterator it = times.begin(); it != times.end(); ++it) {
+        for (std::set<double>::iterator it = times.begin(); it != times.end(); ++it) {
             setLeftBezierPointAtTime(useGuiCurves,*it, newLeftX, newLeftY);
             setRightBezierPointAtTime(useGuiCurves,*it, newRightX, newRightY);
         }
@@ -830,9 +830,9 @@ BezierCP::smoothPoint(bool useGuiCurves,
     }
 
     if (rippleEdit) {
-        std::set<int> times;
+        std::set<double> times;
         getKeyframeTimes(useGuiCurves, &times);
-        for (std::set<int>::iterator it = times.begin(); it != times.end(); ++it) {
+        for (std::set<double>::iterator it = times.begin(); it != times.end(); ++it) {
             setLeftBezierPointAtTime(useGuiCurves, *it, left.x, left.y);
             setRightBezierPointAtTime(useGuiCurves, *it, right.x, right.y);
         }

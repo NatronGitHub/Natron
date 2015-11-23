@@ -131,7 +131,7 @@ Same as :func:`get()<NatronEngine.ChoiceParam.get>`
 
 
     :param time: :class:`float<PySide.QtCore.float>`
-    :rtype: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`float<PySide.QtCore.float>`
 
 Same as :func:`get(frame)<NatronEngine.ChoiceParam.get>`
 
@@ -163,7 +163,7 @@ then this function will automatically add a keyframe at the timeline's current t
 
 
     :param x: :class:`int<PySide.QtCore.int>`
-    :param frame: :class:`int<PySide.QtCore.int>`
+    :param frame: :class:`float<PySide.QtCore.float>`
 
 Set a new keyframe on the parameter with the value *x* at the given *frame*.
 

@@ -234,10 +234,8 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
 {
     boost::shared_ptr<NodeCollection> collection = getGroup();
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(collection.get());
-    bool isGroupEditable = true;
     bool groupEdited = true;
     if (isGroup) {
-        isGroupEditable = isGroup->isSubGraphEditable();
         groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
     }
     

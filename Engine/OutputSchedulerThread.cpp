@@ -29,18 +29,18 @@
 #include <list>
 #include <algorithm> // min, max
 
-#include <QMetaType>
-#include <QMutex>
-#include <QWaitCondition>
-#include <QCoreApplication>
-#include <QString>
-#include <QThreadPool>
-#include <QDebug>
-#include <QtConcurrentRun>
-#include <QFuture>
-#include <QFutureWatcher>
-#include <QRunnable>
-#include <QTextStream>
+#include <QtCore/QMetaType>
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QString>
+#include <QtCore/QThreadPool>
+#include <QtCore/QDebug>
+#include <QtCore/QtConcurrentRun>
+#include <QtCore/QFuture>
+#include <QtCore/QFutureWatcher>
+#include <QtCore/QRunnable>
+#include <QtCore/QTextStream>
 
 #include "Global/MemoryInfo.h"
 
@@ -1103,7 +1103,6 @@ OutputSchedulerThread::run()
                 {
                     QMutexLocker abortRequestedLock (&_imp->abortedRequestedMutex);
                     isAbortRequested = _imp->abortRequested > 0;
-                    blocking = _imp->isAbortRequestBlocking;
                 }
                 if (isAbortRequested) {
                     break;

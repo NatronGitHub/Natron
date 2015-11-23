@@ -367,12 +367,12 @@ public:
     /**
      * @brief To be called by a CacheEntry on allocation.
      **/
-    virtual void notifyEntryAllocated(int time, size_t size, Natron::StorageModeEnum storage) const = 0;
+    virtual void notifyEntryAllocated(double time, size_t size, Natron::StorageModeEnum storage) const = 0;
 
     /**
      * @brief To be called by a CacheEntry on destruction.
      **/
-    virtual void notifyEntryDestroyed(int time, size_t size, Natron::StorageModeEnum storage) const = 0;
+    virtual void notifyEntryDestroyed(double time, size_t size, Natron::StorageModeEnum storage) const = 0;
     
     /**
      * @brief Called by the Cache deleter thread to wake up sleeping threads that were attempting to create a new iamge
@@ -389,7 +389,7 @@ public:
      * it is reallocated in the RAM.
      **/
     virtual void notifyEntryStorageChanged(Natron::StorageModeEnum oldStorage,Natron::StorageModeEnum newStorage,
-                                           int time,size_t size) const = 0;
+                                           double time,size_t size) const = 0;
     
     /**
      * @brief Remove from the cache all entries that matches the holderID and have a different nodeHash than the given one.
@@ -692,7 +692,7 @@ public:
     {
         std::size_t sz = size();
         bool dataAllocated = _data.isAllocated();
-        int time = getTime();
+        double time = getTime();
         {
             QWriteLocker k(&_entryLock);
             

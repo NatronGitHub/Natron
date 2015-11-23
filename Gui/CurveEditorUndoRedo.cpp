@@ -383,11 +383,15 @@ moveKey(KeyPtr &k,
             double newY = k->key.getValue() + dv;
             boost::shared_ptr<Curve> curve = k->curve->getInternalCurve();
             
-            if ( curve->areKeyFramesValuesClampedToIntegers() ) {
-                newY = std::floor(newY + 0.5);
-            } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
-                newY = newY < 0.5 ? 0 : 1;
-            }        
+            if (curve->isYComponentMovable()) {
+                if ( curve->areKeyFramesValuesClampedToIntegers() ) {
+                    newY = std::floor(newY + 0.5);
+                } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
+                    newY = newY < 0.5 ? 0 : 1;
+                }
+            } else {
+                newY = k->key.getValue();
+            }
             double oldTime = k->key.getTime();
             int keyframeIndex = curve->keyFrameIndex(oldTime);
             int newIndex;
@@ -398,9 +402,8 @@ moveKey(KeyPtr &k,
             knob->moveValueAtTime(Natron::eCurveChangeReasonCurveEditor, k->key.getTime(), isKnobCurve->getDimension(), dt, dv,&k->key);
         }
     } else if (isBezierCurve) {
-        int oldTime = k->key.getTime();
-        k->key.setTime(k->key.getTime() + dt);
-        k->key.setValue(k->key.getValue() + dv);
+        double oldTime = k->key.getTime();
+        k->key.setTime(oldTime + dt);
         isBezierCurve->getBezier()->moveKeyframe(oldTime, k->key.getTime());
 
     }
@@ -863,19 +866,22 @@ TransformKeysCommand::undo()
         }
         
     }
-
-    assert(_curves.size() == processedCurves.size());
-    std::list<std::pair<boost::shared_ptr<Curve>,boost::shared_ptr<Curve> > >::iterator itCurve = _curves.begin();
-    for (std::list<CurveGui*>::iterator it = processedCurves.begin(); it != processedCurves.end(); ++it, ++itCurve) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(*it);
+    
+    for (std::list<CurveCopy>::iterator it = _curves.begin();
+         it != _curves.end(); ++it) {
+        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->guiCurve);
         if (isKnobCurve && !dynamic_cast<KnobParametric*>(isKnobCurve->getInternalKnob().get())) {
-            isKnobCurve->getInternalKnob()->cloneCurve(isKnobCurve->getDimension(),*itCurve->first);
+            isKnobCurve->getInternalKnob()->cloneCurve(isKnobCurve->getDimension(),*it->oldCpy);
         } else {
-            (*it)->getInternalCurve()->clone(*(itCurve->first));
+            it->original->clone(*it->oldCpy);
         }
-        
+    }
+    for (std::list<BezierCopy>::iterator it = _beziers.begin();
+         it != _beziers.end(); ++it) {
+        it->original->clone(it->oldCpy.get());
     }
     
+        
     for (std::list<KnobHolder*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
         (*it)->endChanges();
     }
@@ -884,7 +890,7 @@ TransformKeysCommand::undo()
         (*it)->evaluateChange();
     }
     
-    _widget->refreshSelectedKeys();
+    _widget->setSelectedKeys(_altKeys);
 }
 
 void
@@ -924,34 +930,43 @@ TransformKeysCommand::redo()
     
     if (!_firstRedoCalled) {
         for (std::list<CurveGui*>::iterator it = processedCurves.begin(); it != processedCurves.end(); ++it) {
-            boost::shared_ptr<Curve> oldCurve(new Curve(*(*it)->getInternalCurve()));
-            _curves.push_back(std::make_pair(oldCurve, boost::shared_ptr<Curve>()));
-        }
-        for (SelectedKeys::reverse_iterator it = _keys.rbegin(); it != _keys.rend(); ++it) {
-            transform(*it);
-        }
-        assert(_curves.size() == processedCurves.size());
-        std::list<std::pair<boost::shared_ptr<Curve>,boost::shared_ptr<Curve> > >::iterator itCurve = _curves.begin();
-        for (std::list<CurveGui*>::iterator it = processedCurves.begin(); it != processedCurves.end(); ++it, ++itCurve) {
-            boost::shared_ptr<Curve> newCurve(new Curve(*(*it)->getInternalCurve()));
-            itCurve->second = newCurve;
-        }
-    } else {
-        assert(_curves.size() == processedCurves.size());
-        std::list<std::pair<boost::shared_ptr<Curve>,boost::shared_ptr<Curve> > >::iterator itCurve = _curves.begin();
-        for (std::list<CurveGui*>::iterator it = processedCurves.begin(); it != processedCurves.end(); ++it, ++itCurve) {
-            KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(*it);
-            if (isKnobCurve && !dynamic_cast<KnobParametric*>(isKnobCurve->getInternalKnob().get())) {
-                isKnobCurve->getInternalKnob()->cloneCurve(isKnobCurve->getDimension(),*itCurve->second);
+            boost::shared_ptr<Curve> internalCurve = (*it)->getInternalCurve();
+            if (internalCurve) {
+                CurveCopy c;
+                c.guiCurve = *it;
+                c.oldCpy.reset(new Curve(*internalCurve));
+                c.original = internalCurve;
+                _curves.push_back(c);
             } else {
-                (*it)->getInternalCurve()->clone(*(itCurve->second));
+                BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>(*it);
+                assert(isBezier);
+                BezierCopy b;
+                b.guiCurve = *it;
+                b.original = isBezier->getBezier();
+                b.oldCpy.reset(new Bezier(b.original->getContext(),b.original->getScriptName(),b.original->getParentLayer(),b.original->isOpenBezier()));
+                b.oldCpy->clone(b.original.get());
+                _beziers.push_back(b);
             }
-            
         }
+       
+ 
+        
+    } else {
+        _keys = _altKeys;
     }
     
-
-
+    _altKeys.clear();
+    for (SelectedKeys::reverse_iterator it = _keys.rbegin(); it != _keys.rend(); ++it) {
+        boost::shared_ptr<SelectedKey> oldKey(new SelectedKey);
+        oldKey->curve = (*it)->curve;
+        oldKey->key =  (*it)->key;
+        oldKey->leftTan = (*it)->leftTan;
+        oldKey->rightTan = (*it)->rightTan;
+        transform(*it);
+        _altKeys.push_back(oldKey);
+    }
+    
+    
     
     if (_firstRedoCalled || _updateOnFirstRedo) {
         for (std::list<KnobHolder*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
@@ -962,8 +977,8 @@ TransformKeysCommand::redo()
     for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
         (*it)->evaluateChange();
     }
-    
-    _widget->refreshSelectedKeys();
+
+    _widget->setSelectedKeys(_keys);
     _firstRedoCalled = true;
     
 }
@@ -1017,11 +1032,14 @@ TransformKeysCommand::transform(const KeyPtr& k)
             p = Transform::matApply(*_matrix, p);
             
             boost::shared_ptr<Curve> curve = k->curve->getInternalCurve();
-            
-            if ( curve->areKeyFramesValuesClampedToIntegers() ) {
-                p.y = std::floor(p.y + 0.5);
-            } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
-                p.y = p.y < 0.5 ? 0 : 1;
+            if (curve && curve->isYComponentMovable()) {
+                if ( curve->areKeyFramesValuesClampedToIntegers() ) {
+                    p.y = std::floor(p.y + 0.5);
+                } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
+                    p.y = p.y < 0.5 ? 0 : 1;
+                }
+            } else {
+                p.y = k->key.getValue();
             }
             double oldTime = k->key.getTime();
             int keyframeIndex = curve->keyFrameIndex(oldTime);
@@ -1033,23 +1051,15 @@ TransformKeysCommand::transform(const KeyPtr& k)
             knob->transformValueAtTime(Natron::eCurveChangeReasonCurveEditor, k->key.getTime(), isKnobCurve->getDimension(), *_matrix,&k->key);
         }
     } else if (isBezierCurve) {
-        int oldTime = k->key.getTime();
+        double oldTime = k->key.getTime();
         Transform::Point3D p;
-        p.x = k->key.getTime();
+        p.x = oldTime;
         p.y = k->key.getValue();
         p.z = 1;
     
         p = Transform::matApply(*_matrix, p);
-        
-        //clamp time to integers
-        p.x = std::floor(p.x + 0.5);
-        
-        if ( k->curve->areKeyFramesValuesClampedToIntegers() ) {
-            p.y = std::floor(p.y + 0.5);
-        } else if ( k->curve->areKeyFramesValuesClampedToBooleans() ) {
-            p.y = p.y < 0.5 ? 0 : 1;
-        }
-        
+        k->key.setTime(p.x);
+   
         isBezierCurve->getBezier()->moveKeyframe(oldTime, p.x);
         
     }

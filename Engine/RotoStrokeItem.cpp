@@ -568,7 +568,7 @@ RotoStrokeItem::getWholeStrokeRoDWhilePainting() const
 }
 
 bool
-RotoStrokeItem::getMostRecentStrokeChangesSinceAge(int time,int lastAge,
+RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,int lastAge,
                                                    std::list<std::pair<Natron::Point,double> >* points,
                                                    RectD* pointsBbox,
                                                    RectD* wholeStrokeBbox,

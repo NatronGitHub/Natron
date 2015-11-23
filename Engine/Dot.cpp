@@ -25,7 +25,7 @@
 #include "Dot.h"
 
 std::string
-Dot::getDescription() const
+Dot::getPluginDescription() const
 {
     return "Doesn't do anything to the input image, this is used in the node graph to make bends in the links.";
 }

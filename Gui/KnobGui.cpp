@@ -67,7 +67,7 @@ KnobGui::KnobGui(const boost::shared_ptr<KnobI>& knob,
         QObject::connect( handler,SIGNAL( helpChanged() ),this,SLOT( onHelpChanged() ) );
         QObject::connect( handler,SIGNAL( expressionChanged(int) ),this,SLOT( onExprChanged(int) ) );
         QObject::connect( handler,SIGNAL( hasModificationsChanged() ),this,SLOT( onHasModificationsChanged() ) );
-        QObject::connect(handler,SIGNAL(descriptionChanged()), this, SLOT(onDescriptionChanged()));
+        QObject::connect(handler,SIGNAL(labelChanged()), this, SLOT(onLabelChanged()));
     }
     _imp->guiCurves.resize(knob->getDimension());
     if (knob->canAnimate()) {
@@ -251,10 +251,10 @@ KnobGui::enableRightClickMenu(QWidget* widget,
 }
 
 bool
-KnobGui::showDescriptionLabel() const
+KnobGui::isLabelVisible() const
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-    return !knob->getDescription().empty() && knob->isDescriptionVisible();
+    return !knob->getLabel().empty() && knob->isLabelVisible();
 }
 
 void
@@ -664,29 +664,29 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
     
     boost::shared_ptr<KnobI> output;
     if (isBool) {
-        boost::shared_ptr<KnobBool> newKnob = effect->createBoolKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobBool> newKnob = effect->createBoolKnob(newKnobName, knob->getLabel());
         output = newKnob;
     } else if (isInt) {
-        boost::shared_ptr<KnobInt> newKnob = effect->createIntKnob(newKnobName, knob->getDescription(),knob->getDimension());
+        boost::shared_ptr<KnobInt> newKnob = effect->createIntKnob(newKnobName, knob->getLabel(),knob->getDimension());
         newKnob->setMinimumsAndMaximums(isInt->getMinimums(), isInt->getMaximums());
         newKnob->setDisplayMinimumsAndMaximums(isInt->getDisplayMinimums(),isInt->getDisplayMaximums());
         output = newKnob;
     } else if (isDbl) {
-        boost::shared_ptr<KnobDouble> newKnob = effect->createDoubleKnob(newKnobName, knob->getDescription(),knob->getDimension());
+        boost::shared_ptr<KnobDouble> newKnob = effect->createDoubleKnob(newKnobName, knob->getLabel(),knob->getDimension());
         newKnob->setMinimumsAndMaximums(isDbl->getMinimums(), isDbl->getMaximums());
         newKnob->setDisplayMinimumsAndMaximums(isDbl->getDisplayMinimums(),isDbl->getDisplayMaximums());
         output = newKnob;
     } else if (isChoice) {
-        boost::shared_ptr<KnobChoice> newKnob = effect->createChoiceKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobChoice> newKnob = effect->createChoiceKnob(newKnobName, knob->getLabel());
         newKnob->populateChoices(isChoice->getEntries_mt_safe(),isChoice->getEntriesHelp_mt_safe());
         output = newKnob;
     } else if (isColor) {
-        boost::shared_ptr<KnobColor> newKnob = effect->createColorKnob(newKnobName, knob->getDescription(),knob->getDimension());
+        boost::shared_ptr<KnobColor> newKnob = effect->createColorKnob(newKnobName, knob->getLabel(),knob->getDimension());
         newKnob->setMinimumsAndMaximums(isColor->getMinimums(), isColor->getMaximums());
         newKnob->setDisplayMinimumsAndMaximums(isColor->getDisplayMinimums(),isColor->getDisplayMaximums());
         output = newKnob;
     } else if (isString) {
-        boost::shared_ptr<KnobString> newKnob = effect->createStringKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobString> newKnob = effect->createStringKnob(newKnobName, knob->getLabel());
         if (isString->isLabel()) {
             newKnob->setAsLabel();
         }
@@ -701,41 +701,41 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
         }
         output = newKnob;
     } else if (isFile) {
-        boost::shared_ptr<KnobFile> newKnob = effect->createFileKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobFile> newKnob = effect->createFileKnob(newKnobName, knob->getLabel());
         if (isFile->isInputImageFile()) {
             newKnob->setAsInputImage();
         }
         output = newKnob;
     } else if (isOutputFile) {
-        boost::shared_ptr<KnobOutputFile> newKnob = effect->createOuptutFileKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobOutputFile> newKnob = effect->createOuptutFileKnob(newKnobName, knob->getLabel());
         if (isOutputFile->isOutputImageFile()) {
             newKnob->setAsOutputImageFile();
         }
         output = newKnob;
     } else if (isPath) {
-        boost::shared_ptr<KnobPath> newKnob = effect->createPathKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobPath> newKnob = effect->createPathKnob(newKnobName, knob->getLabel());
         if (isPath->isMultiPath()) {
             newKnob->setMultiPath(true);
         }
         output = newKnob;
         
     } else if (isGrp) {
-        boost::shared_ptr<KnobGroup> newKnob = effect->createGroupKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobGroup> newKnob = effect->createGroupKnob(newKnobName, knob->getLabel());
         if (isGrp->isTab()) {
             newKnob->setAsTab();
         }
         output = newKnob;
         
     } else if (isPage) {
-        boost::shared_ptr<KnobPage> newKnob = effect->createPageKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobPage> newKnob = effect->createPageKnob(newKnobName, knob->getLabel());
         output = newKnob;
         
     } else if (isBtn) {
-        boost::shared_ptr<KnobButton> newKnob = effect->createButtonKnob(newKnobName, knob->getDescription());
+        boost::shared_ptr<KnobButton> newKnob = effect->createButtonKnob(newKnobName, knob->getLabel());
         output = newKnob;
         
     } else if (isParametric) {
-        boost::shared_ptr<KnobParametric> newKnob = effect->createParametricKnob(newKnobName, knob->getDescription(), isParametric->getDimension());
+        boost::shared_ptr<KnobParametric> newKnob = effect->createParametricKnob(newKnobName, knob->getLabel(), isParametric->getDimension());
         output = newKnob;
     }
     if (!output) {

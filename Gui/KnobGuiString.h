@@ -261,7 +261,6 @@ private:
     bool _italicActivated;
     QString _fontFamily;
     QColor _fontColor;
-    Natron::Label *_label; //< if label
     boost::weak_ptr<KnobString> _knob;
 };
 

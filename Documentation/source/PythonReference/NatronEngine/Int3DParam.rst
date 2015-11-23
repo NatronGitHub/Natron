@@ -58,7 +58,7 @@ Same as :func:`set(x)<NatronEngine.IntParam.set>` but for 3-dimensional integers
     :param x: :class:`int<PySide.QtCore.int>`
     :param y: :class:`int<PySide.QtCore.int>`
     :param z: :class:`int<PySide.QtCore.int>`
-    :param frame: :class:`int<PySide.QtCore.int>`
+    :param frame: :class:`float<PySide.QtCore.float>`
 
 
 Same as :func:`set(x,frame)<NatronEngine.DoubleParam.set>` but for 3-dimensional integers.

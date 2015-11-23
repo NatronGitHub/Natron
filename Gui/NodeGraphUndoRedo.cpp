@@ -1502,11 +1502,11 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
     CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
                              "",
                              -1,-1,
-                             true, //< autoconnect
+                             false, //< autoconnect
                              INT_MIN,INT_MIN,
                              false, //< push undo/redo command
                              true, // add to project
-                             true,
+                             false,
                              QString(),
                              CreateNodeArgs::DefaultValuesList(),
                              _graph->getGroup());

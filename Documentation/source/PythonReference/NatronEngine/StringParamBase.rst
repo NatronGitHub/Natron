@@ -126,7 +126,7 @@ then this function will automatically add a keyframe at the timeline's current t
 
 
     :param x: :class:`str<NatronEngine.std::string>`
-    :param frame: :class:`int<PySide.QtCore.int>`
+    :param frame: :class:`float<PySide.QtCore.float>`
 
 
 Set a new keyframe on the parameter with the value *x* at the given *frame*.
@@ -159,7 +159,7 @@ Same as :func:`set<NatronEngine.StringParamBase.setValue>`
 
 
     :param value: :class:`str<NatronEngine.std::string>`
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param time: :class:`float<PySide.QtCore.float>`
 
 
 

@@ -193,7 +193,7 @@ Returns the value of this parameter at the given *dimension* at the given *time*
 
 
     :param x: :class:`float<PySide.QtCore.double>`
-    :param frame: :class:`int<PySide.QtCore.int>`
+    :param frame: :class:`float<PySide.QtCore.float>`
 
 
 Set a new keyframe on the parameter with the value *x* at the given *frame*.
@@ -288,7 +288,7 @@ Same as :func:`set(value,dimension)<NatronEngine.DoubleParam.set>`
 
 
     :param value: :class:`float<PySide.QtCore.double>`
-    :param time: :class:`int<PySide.QtCore.int>`
+    :param time: :class:`float<PySide.QtCore.float>`
     :param dimension: :class:`int<PySide.QtCore.int>`
 
 Same as :func:`set(value,time,dimension)<NatronEngine.DoubleParam.set>`

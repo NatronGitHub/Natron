@@ -62,7 +62,7 @@ public:
 
     virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN = 0;
     virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN = 0;
-    virtual std::string getDescription() const OVERRIDE WARN_UNUSED_RETURN = 0;
+    virtual std::string getPluginDescription() const OVERRIDE WARN_UNUSED_RETURN = 0;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
     {
         grouping->push_back(PLUGIN_GROUP_OTHER);

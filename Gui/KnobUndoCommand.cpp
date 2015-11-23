@@ -156,10 +156,10 @@ PasteUndoCommand::undo()
 
     if (!_copyAnimation) {
         setText( QObject::tr("Paste value of %1")
-                 .arg( _knob->getKnob()->getDescription().c_str() ) );
+                 .arg( _knob->getKnob()->getLabel().c_str() ) );
     } else {
         setText( QObject::tr("Paste animation of %1")
-                 .arg( _knob->getKnob()->getDescription().c_str() ) );
+                 .arg( _knob->getKnob()->getLabel().c_str() ) );
     }
 } // undo
 
@@ -229,10 +229,10 @@ PasteUndoCommand::redo()
 
     if (!_copyAnimation) {
         setText( QObject::tr("Paste value of %1")
-                 .arg( _knob->getKnob()->getDescription().c_str() ) );
+                 .arg( _knob->getKnob()->getLabel().c_str() ) );
     } else {
         setText( QObject::tr("Paste animation of %1")
-                 .arg( _knob->getKnob()->getDescription().c_str() ) );
+                 .arg( _knob->getKnob()->getLabel().c_str() ) );
     }
 } // redo
 

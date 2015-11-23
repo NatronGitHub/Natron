@@ -704,7 +704,6 @@ RotoDrawableItem::refreshNodesConnections()
     
     boost::shared_ptr<Node> upstreamNode = previous ? previous->getMergeNode() : rotoPaintInput;
     
-    bool connectionChanged = false;
     
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
     RotoStrokeType type;
@@ -740,7 +739,6 @@ RotoDrawableItem::refreshNodesConnections()
             if (_imp->effectNode->getInput(0) != effectInput) {
                 _imp->effectNode->disconnectInput(0);
                 _imp->effectNode->connectInputBase(effectInput, 0);
-                connectionChanged = true;
             }
         }
         /*
@@ -749,7 +747,6 @@ RotoDrawableItem::refreshNodesConnections()
         if (_imp->mergeNode->getInput(1) != _imp->effectNode) {
             _imp->mergeNode->disconnectInput(1);
             _imp->mergeNode->connectInputBase(_imp->effectNode, 1); // A
-            connectionChanged = true;
         }
         
         if (_imp->mergeNode->getInput(0) != upstreamNode) {
@@ -757,7 +754,6 @@ RotoDrawableItem::refreshNodesConnections()
             if (upstreamNode) {
                 _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
             }
-            connectionChanged = true;
         }
         
         
@@ -780,12 +776,10 @@ RotoDrawableItem::refreshNodesConnections()
             if (effectInput->getInput(0) != revealInput) {
                 effectInput->disconnectInput(0);
                 effectInput->connectInputBase(revealInput, 0);
-                connectionChanged = true;
             }
         } else {
             if (effectInput->getInput(0)) {
                 effectInput->disconnectInput(0);
-                connectionChanged = true;
             }
             
         }
@@ -813,7 +807,6 @@ RotoDrawableItem::refreshNodesConnections()
                 if (eraserInput) {
                     _imp->mergeNode->connectInputBase(eraserInput, 1); // A
                 }
-                connectionChanged = true;
             }
             
             
@@ -822,7 +815,6 @@ RotoDrawableItem::refreshNodesConnections()
                 if (upstreamNode) {
                     _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
                 }
-                connectionChanged = true;
             }
             
         }  else if (type == eRotoStrokeTypeDodge || type == eRotoStrokeTypeBurn) {
@@ -842,7 +834,6 @@ RotoDrawableItem::refreshNodesConnections()
                 if (upstreamNode) {
                     _imp->mergeNode->connectInputBase(upstreamNode, 1); // A
                 }
-                connectionChanged = true;
             }
             
             
@@ -851,7 +842,6 @@ RotoDrawableItem::refreshNodesConnections()
                 if (upstreamNode) {
                     _imp->mergeNode->connectInputBase(upstreamNode, 0); // B
                 }
-                connectionChanged = true;
             }
             
         } else {

@@ -1970,18 +1970,18 @@ RotoContext::emitRefreshViewerOverlays()
 }
 
 void
-RotoContext::getBeziersKeyframeTimes(std::list<int> *times) const
+RotoContext::getBeziersKeyframeTimes(std::list<double> *times) const
 {
     std::list< boost::shared_ptr<RotoDrawableItem> > splines = getCurvesByRenderOrder();
 
     for (std::list< boost::shared_ptr<RotoDrawableItem> > ::iterator it = splines.begin(); it != splines.end(); ++it) {
-        std::set<int> splineKeys;
+        std::set<double> splineKeys;
         Bezier* isBezier = dynamic_cast<Bezier*>(it->get());
         if (!isBezier) {
             continue;
         }
         isBezier->getKeyframeTimes(&splineKeys);
-        for (std::set<int>::iterator it2 = splineKeys.begin(); it2 != splineKeys.end(); ++it2) {
+        for (std::set<double>::iterator it2 = splineKeys.begin(); it2 != splineKeys.end(); ++it2) {
             times->push_back(*it2);
         }
     }
@@ -2354,9 +2354,9 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
             } else if (dstNComps == 4) {
                 if (srcNComps == 4) {
                     //We are in the !buildUp case, do exactly the opposite that is done in convertNatronImageToCairoImageForComponents
-                    dstPix[x * dstNComps + 0] = (float)(srcPix[x * srcNComps + 2] / maxValue) / shapeColor[2] * 255.f;
-                    dstPix[x * dstNComps + 1] = (float)(srcPix[x * srcNComps + 1] / maxValue) / shapeColor[1] * 255.f;
-                    dstPix[x * dstNComps + 2] = (float)(srcPix[x * srcNComps + 0] / maxValue) / shapeColor[0] * 255.f;
+                    dstPix[x * dstNComps + 0] = shapeColor[2] == 0 ? 0 : (float)(srcPix[x * srcNComps + 2] / maxValue) / shapeColor[2] * 255.f;
+                    dstPix[x * dstNComps + 1] = shapeColor[1] == 0 ? 0 : (float)(srcPix[x * srcNComps + 1] / maxValue) / shapeColor[1] * 255.f;
+                    dstPix[x * dstNComps + 2] = shapeColor[0] == 0 ? 0 : (float)(srcPix[x * srcNComps + 0] / maxValue) / shapeColor[0] * 255.f;
                     dstPix[x * dstNComps + 3] = 255;//(float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
                 } else {
                     assert(srcNComps == 1);

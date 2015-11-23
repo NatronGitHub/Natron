@@ -815,7 +815,7 @@ Bezier::addControlPoint(double x,
         _imp->setMustCopyGuiBezier(true);
     }
 
-    int keyframeTime;
+    double keyframeTime;
     ///if the curve is empty make a new keyframe at the current timeline's time
     ///otherwise re-use the time at which the keyframe was set on the first control point
     
@@ -901,7 +901,7 @@ Bezier::addControlPointAfterIndex(int index,
         
         
         ///we set the new control point position to be in the exact position the curve would have at each keyframe
-        std::set<int> existingKeyframes;
+        std::set<double> existingKeyframes;
         _imp->getKeyframeTimes(useGuiCurve,&existingKeyframes);
         
         BezierCPs::const_iterator prev,next,prevF,nextF;
@@ -944,7 +944,7 @@ Bezier::addControlPointAfterIndex(int index,
         }
         
         
-        for (std::set<int>::iterator it = existingKeyframes.begin(); it != existingKeyframes.end(); ++it) {
+        for (std::set<double>::iterator it = existingKeyframes.begin(); it != existingKeyframes.end(); ++it) {
             Point p0,p1,p2,p3;
             (*prev)->getPositionAtTime(useGuiCurve,*it, &p0.x, &p0.y);
             (*prev)->getRightBezierPointAtTime(useGuiCurve,*it, &p1.x, &p1.y);
@@ -1325,9 +1325,9 @@ Bezier::movePointByIndexInternal(bool useGuiCurve,
         }
         
         if (rippleEdit) {
-            std::set<int> keyframes;
+            std::set<double> keyframes;
             _imp->getKeyframeTimes(useGuiCurve,&keyframes);
-            for (std::set<int>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
+            for (std::set<double>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
                 if (*it2 == time) {
                     continue;
                 }
@@ -1524,16 +1524,15 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
             assert( cpIt != _imp->points.end() );
             cp = cpIt->get();
             assert(cp);
-            
-            if (useFeatherPoints()) {
-                BezierCPs::iterator fpIt = _imp->featherPoints.begin();
-                std::advance(fpIt, index);
-                assert(fpIt != _imp->featherPoints.end());
-                fp = fpIt->get();
-                assert(fp);
-            }
         } else {
             cp = cpParam;
+        }
+        if (useFeatherPoints()) {
+            BezierCPs::iterator fpIt = _imp->featherPoints.begin();
+            std::advance(fpIt, index);
+            assert(fpIt != _imp->featherPoints.end());
+            fp = fpIt->get();
+            assert(fp);
         }
         
         bool isOnKeyframe = false;
@@ -1630,9 +1629,9 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
         }
         
         if (rippleEdit) {
-            std::set<int> keyframes;
+            std::set<double> keyframes;
             _imp->getKeyframeTimes(useGuiCurve,&keyframes);
-            for (std::set<int>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
+            for (std::set<double>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
                 if (*it2 == time) {
                     continue;
                 }
@@ -1772,9 +1771,9 @@ Bezier::setPointAtIndexInternal(bool setLeft,bool setRight,bool setPoint,bool fe
         }
         
         if (rippleEdit) {
-            std::set<int> keyframes;
+            std::set<double> keyframes;
             _imp->getKeyframeTimes(useGuiCurve,&keyframes);
-            for (std::set<int>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
+            for (std::set<double>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
                 if (setPoint) {
                     (*fp)->setPositionAtTime(useGuiCurve,*it2, x, y);
                     if (featherAndCp) {
@@ -2082,7 +2081,7 @@ Bezier::removeKeyframe(double time)
             }
         }
         
-        std::map<int,bool>::iterator found = _imp->isClockwiseOriented.find(time);
+        std::map<double,bool>::iterator found = _imp->isClockwiseOriented.find(time);
         if (found != _imp->isClockwiseOriented.end()) {
             _imp->isClockwiseOriented.erase(found);
         }
@@ -2127,10 +2126,12 @@ Bezier::removeAnimation()
 }
 
 void
-Bezier::moveKeyframe(int oldTime,int newTime)
+Bezier::moveKeyframe(double oldTime,double newTime)
 {
     assert(QThread::currentThread() == qApp->thread());
-    
+    if (oldTime == newTime) {
+        return;
+    }
     bool useFeather = useFeatherPoints();
     BezierCPs::iterator fp = _imp->featherPoints.begin();
     for (BezierCPs::iterator it = _imp->points.begin(); it != _imp->points.end(); ++it) {
@@ -2163,7 +2164,7 @@ Bezier::moveKeyframe(int oldTime,int newTime)
         QMutexLocker k(&itemMutex);
         bool foundOld;
         bool oldValue;
-        std::map<int,bool>::iterator foundOldIt = _imp->isClockwiseOriented.find(oldTime);
+        std::map<double,bool>::iterator foundOldIt = _imp->isClockwiseOriented.find(oldTime);
         foundOld = foundOldIt != _imp->isClockwiseOriented.end();
         if (foundOld) {
             oldValue = foundOldIt->first;
@@ -2840,7 +2841,7 @@ Bezier::load(const RotoItemSerialization & obj)
 }
 
 void
-Bezier::getKeyframeTimes(std::set<int> *times) const
+Bezier::getKeyframeTimes(std::set<double> *times) const
 {
     QMutexLocker l(&itemMutex);
 
@@ -2848,7 +2849,7 @@ Bezier::getKeyframeTimes(std::set<int> *times) const
 }
 
 void
-Bezier::getKeyframeTimesAndInterpolation(std::list<std::pair<int,Natron::KeyframeTypeEnum> > *keys) const
+Bezier::getKeyframeTimesAndInterpolation(std::list<std::pair<double,Natron::KeyframeTypeEnum> > *keys) const
 {
     QMutexLocker l(&itemMutex);
     if ( _imp->points.empty() ) {
@@ -2860,11 +2861,11 @@ Bezier::getKeyframeTimesAndInterpolation(std::list<std::pair<int,Natron::Keyfram
 int
 Bezier::getPreviousKeyframeTime(double time) const
 {
-    std::set<int> times;
+    std::set<double> times;
     QMutexLocker l(&itemMutex);
 
     _imp->getKeyframeTimes(true,&times);
-    for (std::set<int>::reverse_iterator it = times.rbegin(); it != times.rend(); ++it) {
+    for (std::set<double>::reverse_iterator it = times.rbegin(); it != times.rend(); ++it) {
         if (*it < time) {
             return *it;
         }
@@ -2876,11 +2877,11 @@ Bezier::getPreviousKeyframeTime(double time) const
 int
 Bezier::getNextKeyframeTime(double time) const
 {
-    std::set<int> times;
+    std::set<double> times;
     QMutexLocker l(&itemMutex);
 
     _imp->getKeyframeTimes(true,&times);
-    for (std::set<int>::iterator it = times.begin(); it != times.end(); ++it) {
+    for (std::set<double>::iterator it = times.begin(); it != times.end(); ++it) {
         if (*it > time) {
             return *it;
         }
@@ -2951,7 +2952,7 @@ Bezier::point_line_intersection(const Point &p1,
 bool
 Bezier::isFeatherPolygonClockwiseOrientedInternal(bool useGuiCurve,double time) const
 {
-    std::map<int,bool>::iterator it = _imp->isClockwiseOriented.find(time);
+    std::map<double,bool>::iterator it = _imp->isClockwiseOriented.find(time);
     if (it != _imp->isClockwiseOriented.end()) {
         return it->second;
     } else {
@@ -3013,14 +3014,14 @@ Bezier::refreshPolygonOrientation(bool useGuiCurve)
             return;
         }
     }
-    std::set<int> kfs;
+    std::set<double> kfs;
     getKeyframeTimes(&kfs);
     
     QMutexLocker k(&itemMutex);
     if (kfs.empty()) {
         computePolygonOrientation(useGuiCurve,0,true);
     } else {
-        for (std::set<int>::iterator it = kfs.begin(); it != kfs.end(); ++it) {
+        for (std::set<double>::iterator it = kfs.begin(); it != kfs.end(); ++it) {
             computePolygonOrientation(useGuiCurve,*it,false);
         }
     }

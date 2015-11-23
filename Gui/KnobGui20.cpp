@@ -316,9 +316,9 @@ KnobGui::linkTo(int dimension)
                 std::pair<int,boost::shared_ptr<KnobI> > existingLink = thisKnob->getMaster(i);
                 if (existingLink.second) {
                     std::string err( tr("Cannot link ").toStdString() );
-                    err.append( thisKnob->getDescription() );
+                    err.append( thisKnob->getLabel() );
                     err.append( " \n " + tr("because the knob is already linked to ").toStdString() );
-                    err.append( existingLink.second->getDescription() );
+                    err.append( existingLink.second->getLabel() );
                     errorDialog(tr("Param Link").toStdString(), err);
 
                     return;
@@ -765,10 +765,19 @@ KnobGui::onHasModificationsChanged()
 }
 
 void
-KnobGui::onDescriptionChanged()
+KnobGui::onLabelChanged()
 {
     if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->setText(getKnob()->getDescription().c_str());
-        onLabelChanged();
+        boost::shared_ptr<KnobI> knob = getKnob();
+        std::string descriptionLabel;
+        KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
+        bool isLabelKnob = isStringKnob && isStringKnob->isLabel();
+        if (isLabelKnob) {
+            descriptionLabel = isStringKnob->getValue();
+        } else {
+            descriptionLabel = knob->getLabel();
+        }
+        _imp->descriptionLabel->setText_overload(QString(QString(descriptionLabel.c_str()) + ":"));
+        onLabelChangedInternal();
     }
 }

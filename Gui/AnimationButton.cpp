@@ -104,7 +104,7 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
 
         QFontMetrics fmetrics = fontMetrics();
         QString textFirstLine( tr("Linking value from:") );
-        QString textSecondLine( _knob->getKnob()->getDescription().c_str() );
+        QString textSecondLine( _knob->getKnob()->getLabel().c_str() );
         QString textThirdLine( tr("Drag it to another animation button.") );
         int textWidth = std::max( std::max( fmetrics.width(textFirstLine), fmetrics.width(textSecondLine) ),fmetrics.width(textThirdLine) );
         QImage dragImg(textWidth,(fmetrics.height() + 5) * 3,QImage::Format_ARGB32);

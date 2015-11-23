@@ -58,10 +58,10 @@ using std::pair;
 
 /******************************KnobInt**************************************/
 KnobInt::KnobInt(KnobHolder* holder,
-                   const std::string &description,
+                   const std::string &label,
                    int dimension,
                    bool declaredByPlugin)
-: Knob<int>(holder, description, dimension,declaredByPlugin)
+: Knob<int>(holder, label, dimension, declaredByPlugin)
 , _increments(dimension)
 , _disableSlider(false)
 {
@@ -142,10 +142,10 @@ KnobInt::typeName() const
 /******************************KnobBool**************************************/
 
 KnobBool::KnobBool(KnobHolder* holder,
-                     const std::string &description,
+                     const std::string &label,
                      int dimension,
                      bool declaredByPlugin)
-: Knob<bool>(holder, description, dimension,declaredByPlugin)
+: Knob<bool>(holder, label, dimension, declaredByPlugin)
 {
 }
 
@@ -172,10 +172,10 @@ KnobBool::typeName() const
 
 
 KnobDouble::KnobDouble(KnobHolder* holder,
-                         const std::string &description,
+                         const std::string &label,
                          int dimension,
                          bool declaredByPlugin)
-: Knob<double>(holder, description, dimension,declaredByPlugin)
+: Knob<double>(holder, label, dimension, declaredByPlugin)
 , _spatial(false)
 , _increments(dimension)
 , _decimals(dimension)
@@ -506,10 +506,10 @@ KnobDouble::normalize(int dimension,
 /******************************KnobButton**************************************/
 
 KnobButton::KnobButton(KnobHolder*  holder,
-                         const std::string &description,
+                         const std::string &label,
                          int dimension,
                          bool declaredByPlugin)
-: Knob<bool>(holder, description, dimension,declaredByPlugin)
+: Knob<bool>(holder, label, dimension, declaredByPlugin)
 , _renderButton(false)
 {
     setIsPersistant(false);
@@ -545,10 +545,10 @@ KnobButton::trigger()
 #define KNOBCHOICE_MAX_ENTRIES_HELP 40 // don't show help in the tootlip if there are more entries that this
 
 KnobChoice::KnobChoice(KnobHolder* holder,
-                         const std::string &description,
+                         const std::string &label,
                          int dimension,
                          bool declaredByPlugin)
-: Knob<int>(holder, description, dimension,declaredByPlugin)
+: Knob<int>(holder, label, dimension, declaredByPlugin)
 , _entriesMutex()
 , _addNewChoice(false)
 , _isCascading(false)
@@ -847,10 +847,10 @@ KnobChoice::choiceRestoration(KnobChoice* knob,const ChoiceExtraData* data)
 /******************************KnobSeparator**************************************/
 
 KnobSeparator::KnobSeparator(KnobHolder* holder,
-                               const std::string &description,
+                               const std::string &label,
                                int dimension,
                                bool declaredByPlugin)
-: Knob<bool>(holder, description, dimension,declaredByPlugin)
+: Knob<bool>(holder, label, dimension, declaredByPlugin)
 {
 }
 
@@ -883,10 +883,10 @@ KnobSeparator::typeName() const
  **/
 
 KnobColor::KnobColor(KnobHolder* holder,
-                       const std::string &description,
+                       const std::string &label,
                        int dimension,
                        bool declaredByPlugin)
-: Knob<double>(holder, description, dimension,declaredByPlugin)
+: Knob<double>(holder, label, dimension, declaredByPlugin)
 , _allDimensionsEnabled(true)
 , _simplifiedMode(false)
 {
@@ -945,12 +945,13 @@ KnobColor::isSimplified() const
 
 
 KnobString::KnobString(KnobHolder* holder,
-                         const std::string &description,
+                         const std::string &label,
                          int dimension,
                          bool declaredByPlugin)
-: AnimatingKnobStringHelper(holder, description, dimension,declaredByPlugin)
+: AnimatingKnobStringHelper(holder, label, dimension, declaredByPlugin)
 , _multiLine(false)
 , _richText(false)
+, _customHtmlText(false)
 , _isLabel(false)
 , _isCustom(false)
 {
@@ -1010,13 +1011,21 @@ KnobString::hasContentWithoutHtmlTags() const
     return true;
 }
 
+void
+KnobString::setAsLabel()
+{
+    setAnimationEnabled(false); //< labels cannot animate
+    // hideLabel(); // labels do not have a label
+    _isLabel = true;
+}
+
 /******************************KnobGroup**************************************/
 
 KnobGroup::KnobGroup(KnobHolder* holder,
-                       const std::string &description,
+                       const std::string &label,
                        int dimension,
                        bool declaredByPlugin)
-: Knob<bool>(holder, description, dimension,declaredByPlugin)
+: Knob<bool>(holder, label, dimension, declaredByPlugin)
 , _isTab(false)
 {
 }
@@ -1170,10 +1179,10 @@ KnobGroup::getChildren() const
 /******************************PAGE_KNOB**************************************/
 
 KnobPage::KnobPage(KnobHolder* holder,
-                     const std::string &description,
+                     const std::string &label,
                      int dimension,
                      bool declaredByPlugin)
-: Knob<bool>(holder, description, dimension,declaredByPlugin)
+: Knob<bool>(holder, label, dimension, declaredByPlugin)
 {
 }
 
@@ -1317,10 +1326,10 @@ KnobPage::moveOneStepDown(KnobI* k)
 
 
 KnobParametric::KnobParametric(KnobHolder* holder,
-                                 const std::string &description,
+                                 const std::string &label,
                                  int dimension,
                                  bool declaredByPlugin)
-: Knob<double>(holder,description,dimension,declaredByPlugin)
+: Knob<double>(holder,label,dimension, declaredByPlugin)
 , _curvesMutex()
 , _curves(dimension)
 , _defaultCurves(dimension)

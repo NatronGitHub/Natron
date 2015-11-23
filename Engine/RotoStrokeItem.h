@@ -149,7 +149,7 @@ public:
 
     
     
-    bool getMostRecentStrokeChangesSinceAge(int time,int lastAge, std::list<std::pair<Natron::Point,double> >* points,
+    bool getMostRecentStrokeChangesSinceAge(double time,int lastAge, std::list<std::pair<Natron::Point,double> >* points,
                                             RectD* pointsBbox,
                                             RectD* wholeStrokeBbox,
                                             int* newAge,

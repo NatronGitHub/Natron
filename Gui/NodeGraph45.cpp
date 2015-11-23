@@ -646,21 +646,26 @@ void
 NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> >& nodes,
                                      const boost::shared_ptr<NodeCollection>& group)
 {
-    NodeClipBoard clipboard;
-    _imp->copyNodesInternal(nodes,clipboard);
-    
-    std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
-    std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
-    for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
-         it != clipboard.nodesUI.end(); ++it, ++itOther) {
-        boost::shared_ptr<NodeGui> node = _imp->pasteNode( **itOther,**it,QPointF(0,0),group,std::string(), false);
-        newNodes.push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
+    {
+        CreatingNodeTreeFlag_RAII createNodeTree(getGui()->getApp());
+        
+        NodeClipBoard clipboard;
+        _imp->copyNodesInternal(nodes,clipboard);
+        
+        std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
+        std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
+        for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
+             it != clipboard.nodesUI.end(); ++it, ++itOther) {
+            boost::shared_ptr<NodeGui> node = _imp->pasteNode( **itOther,**it,QPointF(0,0),group,std::string(), false);
+            newNodes.push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
+        }
+        assert( clipboard.nodes.size() == newNodes.size() );
+        
+        ///Now that all nodes have been duplicated, try to restore nodes connections
+        _imp->restoreConnections(clipboard.nodes, newNodes);
     }
-    assert( clipboard.nodes.size() == newNodes.size() );
+    getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
     
-    ///Now that all nodes have been duplicated, try to restore nodes connections
-    _imp->restoreConnections(clipboard.nodes, newNodes);
-
 }
 
 QPointF

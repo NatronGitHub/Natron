@@ -188,9 +188,9 @@ static PyObject* Sbk_BezierCurveFunc_getColor(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getColor(int)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // getColor(int)
+    // 0: getColor(double)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArg)))) {
+        overloadId = 0; // getColor(double)
     }
 
     // Function signature not found.
@@ -198,11 +198,11 @@ static PyObject* Sbk_BezierCurveFunc_getColor(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        int cppArg0;
+        double cppArg0;
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getColor(int)
+            // getColor(double)
             ColorTuple* cppResult = new ColorTuple(cppSelf->getColor(cppArg0));
             pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_COLORTUPLE_IDX], cppResult, true, true);
         }
@@ -215,7 +215,7 @@ static PyObject* Sbk_BezierCurveFunc_getColor(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_BezierCurveFunc_getColor_TypeError:
-        const char* overloads[] = {"int", 0};
+        const char* overloads[] = {"float", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.getColor", overloads);
         return 0;
 }
@@ -317,9 +317,9 @@ static PyObject* Sbk_BezierCurveFunc_getFeatherDistance(PyObject* self, PyObject
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getFeatherDistance(int)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // getFeatherDistance(int)const
+    // 0: getFeatherDistance(double)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArg)))) {
+        overloadId = 0; // getFeatherDistance(double)const
     }
 
     // Function signature not found.
@@ -327,11 +327,11 @@ static PyObject* Sbk_BezierCurveFunc_getFeatherDistance(PyObject* self, PyObject
 
     // Call function/method
     {
-        int cppArg0;
+        double cppArg0;
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getFeatherDistance(int)const
+            // getFeatherDistance(double)const
             double cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getFeatherDistance(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -344,7 +344,7 @@ static PyObject* Sbk_BezierCurveFunc_getFeatherDistance(PyObject* self, PyObject
     return pyResult;
 
     Sbk_BezierCurveFunc_getFeatherDistance_TypeError:
-        const char* overloads[] = {"int", 0};
+        const char* overloads[] = {"float", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.getFeatherDistance", overloads);
         return 0;
 }
@@ -391,9 +391,9 @@ static PyObject* Sbk_BezierCurveFunc_getFeatherFallOff(PyObject* self, PyObject*
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getFeatherFallOff(int)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // getFeatherFallOff(int)const
+    // 0: getFeatherFallOff(double)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArg)))) {
+        overloadId = 0; // getFeatherFallOff(double)const
     }
 
     // Function signature not found.
@@ -401,11 +401,11 @@ static PyObject* Sbk_BezierCurveFunc_getFeatherFallOff(PyObject* self, PyObject*
 
     // Call function/method
     {
-        int cppArg0;
+        double cppArg0;
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getFeatherFallOff(int)const
+            // getFeatherFallOff(double)const
             double cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getFeatherFallOff(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -418,7 +418,7 @@ static PyObject* Sbk_BezierCurveFunc_getFeatherFallOff(PyObject* self, PyObject*
     return pyResult;
 
     Sbk_BezierCurveFunc_getFeatherFallOff_TypeError:
-        const char* overloads[] = {"int", 0};
+        const char* overloads[] = {"float", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.getFeatherFallOff", overloads);
         return 0;
 }
@@ -465,9 +465,9 @@ static PyObject* Sbk_BezierCurveFunc_getIsActivated(PyObject* self, PyObject* py
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getIsActivated(int)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // getIsActivated(int)
+    // 0: getIsActivated(double)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArg)))) {
+        overloadId = 0; // getIsActivated(double)
     }
 
     // Function signature not found.
@@ -475,11 +475,11 @@ static PyObject* Sbk_BezierCurveFunc_getIsActivated(PyObject* self, PyObject* py
 
     // Call function/method
     {
-        int cppArg0;
+        double cppArg0;
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getIsActivated(int)
+            // getIsActivated(double)
             bool cppResult = cppSelf->getIsActivated(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
@@ -492,7 +492,7 @@ static PyObject* Sbk_BezierCurveFunc_getIsActivated(PyObject* self, PyObject* py
     return pyResult;
 
     Sbk_BezierCurveFunc_getIsActivated_TypeError:
-        const char* overloads[] = {"int", 0};
+        const char* overloads[] = {"float", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.getIsActivated", overloads);
         return 0;
 }
@@ -536,9 +536,9 @@ static PyObject* Sbk_BezierCurveFunc_getOpacity(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getOpacity(int)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // getOpacity(int)const
+    // 0: getOpacity(double)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArg)))) {
+        overloadId = 0; // getOpacity(double)const
     }
 
     // Function signature not found.
@@ -546,11 +546,11 @@ static PyObject* Sbk_BezierCurveFunc_getOpacity(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        int cppArg0;
+        double cppArg0;
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getOpacity(int)const
+            // getOpacity(double)const
             double cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getOpacity(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
@@ -563,7 +563,7 @@ static PyObject* Sbk_BezierCurveFunc_getOpacity(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_BezierCurveFunc_getOpacity_TypeError:
-        const char* overloads[] = {"int", 0};
+        const char* overloads[] = {"float", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.getOpacity", overloads);
         return 0;
 }
@@ -718,13 +718,13 @@ static PyObject* Sbk_BezierCurveFunc_moveFeatherByIndex(PyObject* self, PyObject
 
 
     // Overloaded function decisor
-    // 0: moveFeatherByIndex(int,int,double,double)
+    // 0: moveFeatherByIndex(int,double,double,double)
     if (numArgs == 4
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
         && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
-        overloadId = 0; // moveFeatherByIndex(int,int,double,double)
+        overloadId = 0; // moveFeatherByIndex(int,double,double,double)
     }
 
     // Function signature not found.
@@ -734,7 +734,7 @@ static PyObject* Sbk_BezierCurveFunc_moveFeatherByIndex(PyObject* self, PyObject
     {
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
+        double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2;
         pythonToCpp[2](pyArgs[2], &cppArg2);
@@ -742,7 +742,7 @@ static PyObject* Sbk_BezierCurveFunc_moveFeatherByIndex(PyObject* self, PyObject
         pythonToCpp[3](pyArgs[3], &cppArg3);
 
         if (!PyErr_Occurred()) {
-            // moveFeatherByIndex(int,int,double,double)
+            // moveFeatherByIndex(int,double,double,double)
             cppSelf->moveFeatherByIndex(cppArg0, cppArg1, cppArg2, cppArg3);
         }
     }
@@ -753,7 +753,7 @@ static PyObject* Sbk_BezierCurveFunc_moveFeatherByIndex(PyObject* self, PyObject
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_moveFeatherByIndex_TypeError:
-        const char* overloads[] = {"int, int, float, float", 0};
+        const char* overloads[] = {"int, float, float, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.moveFeatherByIndex", overloads);
         return 0;
 }
@@ -779,13 +779,13 @@ static PyObject* Sbk_BezierCurveFunc_moveLeftBezierPoint(PyObject* self, PyObjec
 
 
     // Overloaded function decisor
-    // 0: moveLeftBezierPoint(int,int,double,double)
+    // 0: moveLeftBezierPoint(int,double,double,double)
     if (numArgs == 4
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
         && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
-        overloadId = 0; // moveLeftBezierPoint(int,int,double,double)
+        overloadId = 0; // moveLeftBezierPoint(int,double,double,double)
     }
 
     // Function signature not found.
@@ -795,7 +795,7 @@ static PyObject* Sbk_BezierCurveFunc_moveLeftBezierPoint(PyObject* self, PyObjec
     {
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
+        double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2;
         pythonToCpp[2](pyArgs[2], &cppArg2);
@@ -803,7 +803,7 @@ static PyObject* Sbk_BezierCurveFunc_moveLeftBezierPoint(PyObject* self, PyObjec
         pythonToCpp[3](pyArgs[3], &cppArg3);
 
         if (!PyErr_Occurred()) {
-            // moveLeftBezierPoint(int,int,double,double)
+            // moveLeftBezierPoint(int,double,double,double)
             cppSelf->moveLeftBezierPoint(cppArg0, cppArg1, cppArg2, cppArg3);
         }
     }
@@ -814,7 +814,7 @@ static PyObject* Sbk_BezierCurveFunc_moveLeftBezierPoint(PyObject* self, PyObjec
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_moveLeftBezierPoint_TypeError:
-        const char* overloads[] = {"int, int, float, float", 0};
+        const char* overloads[] = {"int, float, float, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.moveLeftBezierPoint", overloads);
         return 0;
 }
@@ -840,13 +840,13 @@ static PyObject* Sbk_BezierCurveFunc_movePointByIndex(PyObject* self, PyObject* 
 
 
     // Overloaded function decisor
-    // 0: movePointByIndex(int,int,double,double)
+    // 0: movePointByIndex(int,double,double,double)
     if (numArgs == 4
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
         && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
-        overloadId = 0; // movePointByIndex(int,int,double,double)
+        overloadId = 0; // movePointByIndex(int,double,double,double)
     }
 
     // Function signature not found.
@@ -856,7 +856,7 @@ static PyObject* Sbk_BezierCurveFunc_movePointByIndex(PyObject* self, PyObject* 
     {
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
+        double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2;
         pythonToCpp[2](pyArgs[2], &cppArg2);
@@ -864,7 +864,7 @@ static PyObject* Sbk_BezierCurveFunc_movePointByIndex(PyObject* self, PyObject* 
         pythonToCpp[3](pyArgs[3], &cppArg3);
 
         if (!PyErr_Occurred()) {
-            // movePointByIndex(int,int,double,double)
+            // movePointByIndex(int,double,double,double)
             cppSelf->movePointByIndex(cppArg0, cppArg1, cppArg2, cppArg3);
         }
     }
@@ -875,7 +875,7 @@ static PyObject* Sbk_BezierCurveFunc_movePointByIndex(PyObject* self, PyObject* 
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_movePointByIndex_TypeError:
-        const char* overloads[] = {"int, int, float, float", 0};
+        const char* overloads[] = {"int, float, float, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.movePointByIndex", overloads);
         return 0;
 }
@@ -901,13 +901,13 @@ static PyObject* Sbk_BezierCurveFunc_moveRightBezierPoint(PyObject* self, PyObje
 
 
     // Overloaded function decisor
-    // 0: moveRightBezierPoint(int,int,double,double)
+    // 0: moveRightBezierPoint(int,double,double,double)
     if (numArgs == 4
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
         && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
-        overloadId = 0; // moveRightBezierPoint(int,int,double,double)
+        overloadId = 0; // moveRightBezierPoint(int,double,double,double)
     }
 
     // Function signature not found.
@@ -917,7 +917,7 @@ static PyObject* Sbk_BezierCurveFunc_moveRightBezierPoint(PyObject* self, PyObje
     {
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
+        double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2;
         pythonToCpp[2](pyArgs[2], &cppArg2);
@@ -925,7 +925,7 @@ static PyObject* Sbk_BezierCurveFunc_moveRightBezierPoint(PyObject* self, PyObje
         pythonToCpp[3](pyArgs[3], &cppArg3);
 
         if (!PyErr_Occurred()) {
-            // moveRightBezierPoint(int,int,double,double)
+            // moveRightBezierPoint(int,double,double,double)
             cppSelf->moveRightBezierPoint(cppArg0, cppArg1, cppArg2, cppArg3);
         }
     }
@@ -936,7 +936,7 @@ static PyObject* Sbk_BezierCurveFunc_moveRightBezierPoint(PyObject* self, PyObje
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_moveRightBezierPoint_TypeError:
-        const char* overloads[] = {"int, int, float, float", 0};
+        const char* overloads[] = {"int, float, float, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.moveRightBezierPoint", overloads);
         return 0;
 }
@@ -1004,11 +1004,11 @@ static PyObject* Sbk_BezierCurveFunc_setActivated(PyObject* self, PyObject* args
 
 
     // Overloaded function decisor
-    // 0: setActivated(int,bool)
+    // 0: setActivated(double,bool)
     if (numArgs == 2
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), (pyArgs[1])))) {
-        overloadId = 0; // setActivated(int,bool)
+        overloadId = 0; // setActivated(double,bool)
     }
 
     // Function signature not found.
@@ -1016,13 +1016,13 @@ static PyObject* Sbk_BezierCurveFunc_setActivated(PyObject* self, PyObject* args
 
     // Call function/method
     {
-        int cppArg0;
+        double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         bool cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setActivated(int,bool)
+            // setActivated(double,bool)
             cppSelf->setActivated(cppArg0, cppArg1);
         }
     }
@@ -1033,7 +1033,7 @@ static PyObject* Sbk_BezierCurveFunc_setActivated(PyObject* self, PyObject* args
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_setActivated_TypeError:
-        const char* overloads[] = {"int, bool", 0};
+        const char* overloads[] = {"float, bool", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setActivated", overloads);
         return 0;
 }
@@ -1059,13 +1059,13 @@ static PyObject* Sbk_BezierCurveFunc_setColor(PyObject* self, PyObject* args)
 
 
     // Overloaded function decisor
-    // 0: setColor(int,double,double,double)
+    // 0: setColor(double,double,double,double)
     if (numArgs == 4
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
         && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
-        overloadId = 0; // setColor(int,double,double,double)
+        overloadId = 0; // setColor(double,double,double,double)
     }
 
     // Function signature not found.
@@ -1073,7 +1073,7 @@ static PyObject* Sbk_BezierCurveFunc_setColor(PyObject* self, PyObject* args)
 
     // Call function/method
     {
-        int cppArg0;
+        double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
         double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
@@ -1083,7 +1083,7 @@ static PyObject* Sbk_BezierCurveFunc_setColor(PyObject* self, PyObject* args)
         pythonToCpp[3](pyArgs[3], &cppArg3);
 
         if (!PyErr_Occurred()) {
-            // setColor(int,double,double,double)
+            // setColor(double,double,double,double)
             cppSelf->setColor(cppArg0, cppArg1, cppArg2, cppArg3);
         }
     }
@@ -1094,7 +1094,7 @@ static PyObject* Sbk_BezierCurveFunc_setColor(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_setColor_TypeError:
-        const char* overloads[] = {"int, float, float, float", 0};
+        const char* overloads[] = {"float, float, float, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setColor", overloads);
         return 0;
 }
@@ -1204,11 +1204,11 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherDistance(PyObject* self, PyObject
 
 
     // Overloaded function decisor
-    // 0: setFeatherDistance(double,int)
+    // 0: setFeatherDistance(double,double)
     if (numArgs == 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-        overloadId = 0; // setFeatherDistance(double,int)
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
+        overloadId = 0; // setFeatherDistance(double,double)
     }
 
     // Function signature not found.
@@ -1218,11 +1218,11 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherDistance(PyObject* self, PyObject
     {
         double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
+        double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setFeatherDistance(double,int)
+            // setFeatherDistance(double,double)
             cppSelf->setFeatherDistance(cppArg0, cppArg1);
         }
     }
@@ -1233,7 +1233,7 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherDistance(PyObject* self, PyObject
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_setFeatherDistance_TypeError:
-        const char* overloads[] = {"float, int", 0};
+        const char* overloads[] = {"float, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setFeatherDistance", overloads);
         return 0;
 }
@@ -1259,11 +1259,11 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherFallOff(PyObject* self, PyObject*
 
 
     // Overloaded function decisor
-    // 0: setFeatherFallOff(double,int)
+    // 0: setFeatherFallOff(double,double)
     if (numArgs == 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-        overloadId = 0; // setFeatherFallOff(double,int)
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
+        overloadId = 0; // setFeatherFallOff(double,double)
     }
 
     // Function signature not found.
@@ -1273,11 +1273,11 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherFallOff(PyObject* self, PyObject*
     {
         double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
+        double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setFeatherFallOff(double,int)
+            // setFeatherFallOff(double,double)
             cppSelf->setFeatherFallOff(cppArg0, cppArg1);
         }
     }
@@ -1288,7 +1288,7 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherFallOff(PyObject* self, PyObject*
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_setFeatherFallOff_TypeError:
-        const char* overloads[] = {"float, int", 0};
+        const char* overloads[] = {"float, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setFeatherFallOff", overloads);
         return 0;
 }
@@ -1314,17 +1314,17 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherPointAtIndex(PyObject* self, PyOb
 
 
     // Overloaded function decisor
-    // 0: setFeatherPointAtIndex(int,int,double,double,double,double,double,double)
+    // 0: setFeatherPointAtIndex(int,double,double,double,double,double,double,double)
     if (numArgs == 8
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
         && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))
         && (pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[4])))
         && (pythonToCpp[5] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[5])))
         && (pythonToCpp[6] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[6])))
         && (pythonToCpp[7] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[7])))) {
-        overloadId = 0; // setFeatherPointAtIndex(int,int,double,double,double,double,double,double)
+        overloadId = 0; // setFeatherPointAtIndex(int,double,double,double,double,double,double,double)
     }
 
     // Function signature not found.
@@ -1334,7 +1334,7 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherPointAtIndex(PyObject* self, PyOb
     {
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
+        double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2;
         pythonToCpp[2](pyArgs[2], &cppArg2);
@@ -1350,7 +1350,7 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherPointAtIndex(PyObject* self, PyOb
         pythonToCpp[7](pyArgs[7], &cppArg7);
 
         if (!PyErr_Occurred()) {
-            // setFeatherPointAtIndex(int,int,double,double,double,double,double,double)
+            // setFeatherPointAtIndex(int,double,double,double,double,double,double,double)
             cppSelf->setFeatherPointAtIndex(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5, cppArg6, cppArg7);
         }
     }
@@ -1361,7 +1361,7 @@ static PyObject* Sbk_BezierCurveFunc_setFeatherPointAtIndex(PyObject* self, PyOb
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_setFeatherPointAtIndex_TypeError:
-        const char* overloads[] = {"int, int, float, float, float, float, float, float", 0};
+        const char* overloads[] = {"int, float, float, float, float, float, float, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setFeatherPointAtIndex", overloads);
         return 0;
 }
@@ -1387,11 +1387,11 @@ static PyObject* Sbk_BezierCurveFunc_setOpacity(PyObject* self, PyObject* args)
 
 
     // Overloaded function decisor
-    // 0: setOpacity(double,int)
+    // 0: setOpacity(double,double)
     if (numArgs == 2
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
-        overloadId = 0; // setOpacity(double,int)
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))) {
+        overloadId = 0; // setOpacity(double,double)
     }
 
     // Function signature not found.
@@ -1401,11 +1401,11 @@ static PyObject* Sbk_BezierCurveFunc_setOpacity(PyObject* self, PyObject* args)
     {
         double cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
+        double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
 
         if (!PyErr_Occurred()) {
-            // setOpacity(double,int)
+            // setOpacity(double,double)
             cppSelf->setOpacity(cppArg0, cppArg1);
         }
     }
@@ -1416,7 +1416,7 @@ static PyObject* Sbk_BezierCurveFunc_setOpacity(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_setOpacity_TypeError:
-        const char* overloads[] = {"float, int", 0};
+        const char* overloads[] = {"float, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setOpacity", overloads);
         return 0;
 }
@@ -1500,17 +1500,17 @@ static PyObject* Sbk_BezierCurveFunc_setPointAtIndex(PyObject* self, PyObject* a
 
 
     // Overloaded function decisor
-    // 0: setPointAtIndex(int,int,double,double,double,double,double,double)
+    // 0: setPointAtIndex(int,double,double,double,double,double,double,double)
     if (numArgs == 8
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[2])))
         && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))
         && (pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[4])))
         && (pythonToCpp[5] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[5])))
         && (pythonToCpp[6] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[6])))
         && (pythonToCpp[7] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[7])))) {
-        overloadId = 0; // setPointAtIndex(int,int,double,double,double,double,double,double)
+        overloadId = 0; // setPointAtIndex(int,double,double,double,double,double,double,double)
     }
 
     // Function signature not found.
@@ -1520,7 +1520,7 @@ static PyObject* Sbk_BezierCurveFunc_setPointAtIndex(PyObject* self, PyObject* a
     {
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
+        double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
         double cppArg2;
         pythonToCpp[2](pyArgs[2], &cppArg2);
@@ -1536,7 +1536,7 @@ static PyObject* Sbk_BezierCurveFunc_setPointAtIndex(PyObject* self, PyObject* a
         pythonToCpp[7](pyArgs[7], &cppArg7);
 
         if (!PyErr_Occurred()) {
-            // setPointAtIndex(int,int,double,double,double,double,double,double)
+            // setPointAtIndex(int,double,double,double,double,double,double,double)
             cppSelf->setPointAtIndex(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5, cppArg6, cppArg7);
         }
     }
@@ -1547,7 +1547,7 @@ static PyObject* Sbk_BezierCurveFunc_setPointAtIndex(PyObject* self, PyObject* a
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_setPointAtIndex_TypeError:
-        const char* overloads[] = {"int, int, float, float, float, float, float, float", 0};
+        const char* overloads[] = {"int, float, float, float, float, float, float, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.setPointAtIndex", overloads);
         return 0;
 }
@@ -1573,12 +1573,12 @@ static PyObject* Sbk_BezierCurveFunc_slavePointToTrack(PyObject* self, PyObject*
 
 
     // Overloaded function decisor
-    // 0: slavePointToTrack(int,int,DoubleParam*)
+    // 0: slavePointToTrack(int,double,DoubleParam*)
     if (numArgs == 3
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
         && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (pyArgs[2])))) {
-        overloadId = 0; // slavePointToTrack(int,int,DoubleParam*)
+        overloadId = 0; // slavePointToTrack(int,double,DoubleParam*)
     }
 
     // Function signature not found.
@@ -1588,7 +1588,7 @@ static PyObject* Sbk_BezierCurveFunc_slavePointToTrack(PyObject* self, PyObject*
     {
         int cppArg0;
         pythonToCpp[0](pyArgs[0], &cppArg0);
-        int cppArg1;
+        double cppArg1;
         pythonToCpp[1](pyArgs[1], &cppArg1);
         if (!Shiboken::Object::isValid(pyArgs[2]))
             return 0;
@@ -1596,7 +1596,7 @@ static PyObject* Sbk_BezierCurveFunc_slavePointToTrack(PyObject* self, PyObject*
         pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // slavePointToTrack(int,int,DoubleParam*)
+            // slavePointToTrack(int,double,DoubleParam*)
             cppSelf->slavePointToTrack(cppArg0, cppArg1, cppArg2);
         }
     }
@@ -1607,7 +1607,7 @@ static PyObject* Sbk_BezierCurveFunc_slavePointToTrack(PyObject* self, PyObject*
     Py_RETURN_NONE;
 
     Sbk_BezierCurveFunc_slavePointToTrack_TypeError:
-        const char* overloads[] = {"int, int, NatronEngine.DoubleParam", 0};
+        const char* overloads[] = {"int, float, NatronEngine.DoubleParam", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.slavePointToTrack", overloads);
         return 0;
 }

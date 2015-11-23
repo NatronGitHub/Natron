@@ -104,6 +104,7 @@ public:
 
 
     typedef std::map<Natron::ImageComponents, boost::weak_ptr<Natron::Node> > ComponentsAvailableMap;
+    typedef std::list<std::pair<Natron::ImageComponents, boost::weak_ptr<Natron::Node> > > ComponentsAvailableList;
     typedef std::map<int, std::vector<Natron::ImageComponents> > ComponentsNeededMap;
     typedef std::map<int, std::list< boost::shared_ptr<Natron::Image> > > InputImagesMap;
 
@@ -463,7 +464,7 @@ public:
      * @brief Must be implemented to give a desription of the effect that this node does. This is typically
      * what you'll see displayed when the user clicks the '?' button on the node's panel in the user interface.
      **/
-    virtual std::string getDescription() const WARN_UNUSED_RETURN = 0;
+    virtual std::string getPluginDescription() const WARN_UNUSED_RETURN = 0;
 
 
     /**
@@ -548,7 +549,7 @@ public:
      * @brief Sets render preferences for the rendering of a frame for the current thread.
      * This is thread local storage. This is NOT local to a call to renderRoI
      **/
-    void setParallelRenderArgsTLS(int time,
+    void setParallelRenderArgsTLS(double time,
                                   int view,
                                   bool isRenderUserInteraction,
                                   bool isSequential,

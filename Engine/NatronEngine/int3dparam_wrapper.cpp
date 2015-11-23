@@ -128,7 +128,7 @@ static PyObject* Sbk_Int3DParamFunc_set(PyObject* self, PyObject* args)
 
     // Overloaded function decisor
     // 0: set(int,int,int)
-    // 1: set(int,int,int,int)
+    // 1: set(int,int,int,double)
     if (numArgs >= 3
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
         && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
@@ -136,8 +136,8 @@ static PyObject* Sbk_Int3DParamFunc_set(PyObject* self, PyObject* args)
         if (numArgs == 3) {
             overloadId = 0; // set(int,int,int)
         } else if (numArgs == 4
-            && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[3])))) {
-            overloadId = 1; // set(int,int,int,int)
+            && (pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[3])))) {
+            overloadId = 1; // set(int,int,int,double)
         }
     }
 
@@ -167,7 +167,7 @@ static PyObject* Sbk_Int3DParamFunc_set(PyObject* self, PyObject* args)
             }
             break;
         }
-        case 1: // set(int x, int y, int z, int frame)
+        case 1: // set(int x, int y, int z, double frame)
         {
             int cppArg0;
             pythonToCpp[0](pyArgs[0], &cppArg0);
@@ -175,11 +175,11 @@ static PyObject* Sbk_Int3DParamFunc_set(PyObject* self, PyObject* args)
             pythonToCpp[1](pyArgs[1], &cppArg1);
             int cppArg2;
             pythonToCpp[2](pyArgs[2], &cppArg2);
-            int cppArg3;
+            double cppArg3;
             pythonToCpp[3](pyArgs[3], &cppArg3);
 
             if (!PyErr_Occurred()) {
-                // set(int,int,int,int)
+                // set(int,int,int,double)
                 // Begin code injection
 
                 cppSelf->set(cppArg0,cppArg1,cppArg2,cppArg3);
@@ -198,7 +198,7 @@ static PyObject* Sbk_Int3DParamFunc_set(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_Int3DParamFunc_set_TypeError:
-        const char* overloads[] = {"int, int, int", "int, int, int, int", 0};
+        const char* overloads[] = {"int, int, int", "int, int, int, float", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Int3DParam.set", overloads);
         return 0;
 }

@@ -442,7 +442,7 @@ OfxEffectInstance::initializeContextDependentParams()
 }
 
 std::string
-OfxEffectInstance::getDescription() const
+OfxEffectInstance::getPluginDescription() const
 {
     assert(_context != eContextNone);
     if ( effectInstance() ) {
@@ -1253,7 +1253,7 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
     ////////////////////////////////////////////////////////////////
     ////////////////////////////////
     //////////////// STEP 4: If our proxy remapping changed some clips preferences, notifying the plug-in of the clips which changed
-    if (!getApp()->getProject()->isLoadingProject() && !getApp()->isCreatingPythonGroup()) {
+    if (!getApp()->isCreatingNodeTree()) {
         RECURSIVE_ACTION();
         SET_CAN_SET_VALUE(true);
         if (!modifiedClips.empty()) {

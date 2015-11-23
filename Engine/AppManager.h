@@ -572,11 +572,11 @@ Natron::StandardButtonEnum questionDialog(const std::string & title,const std::s
 
 template <class K>
 boost::shared_ptr<K> createKnob(KnobHolder*  holder,
-                                const std::string &description,
+                                const std::string &label,
                                 int dimension = 1,
                                 bool declaredByPlugin = true)
 {
-    return appPTR->getKnobFactory().createKnob<K>(holder,description,dimension,declaredByPlugin);
+    return appPTR->getKnobFactory().createKnob<K>(holder, label, dimension, declaredByPlugin);
 }
 
 inline bool

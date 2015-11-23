@@ -114,7 +114,7 @@ public:
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
     
-    virtual bool showDescriptionLabel() const OVERRIDE
+    virtual bool isLabelVisible() const OVERRIDE
     {
         return false;
     }

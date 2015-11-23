@@ -37,7 +37,7 @@
 namespace Natron {
 
     void regularize(const std::list<boost::shared_ptr<BezierCP> >& coonsPatch,
-                    int time,
+                    double time,
                     std::list<std::list<boost::shared_ptr<BezierCP> > >* fixedPatch);
     
 }

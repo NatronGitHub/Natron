@@ -76,29 +76,35 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,const QPoin
             }
         }
 
-
+        
         QPointF offset(scenePos.x() - ((xmin + xmax) / 2.), scenePos.y() - ((ymin + ymax) / 2.));
-
+        
         assert( clipboard.nodes.size() == clipboard.nodesUI.size() );
-
+        
         std::list<NodeGuiPtr> newNodeList;
-        std::list<boost::shared_ptr<NodeSerialization> > internalNodesClipBoard = clipboard.nodes;
-        std::list<boost::shared_ptr<NodeSerialization> >::iterator itOther = internalNodesClipBoard.begin();
-        for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
-             it != clipboard.nodesUI.end(); ++it, ++itOther) {
-            boost::shared_ptr<NodeGui> node = pasteNode( **itOther,**it,offset,group.lock(),std::string(), false);
-            newNodes->push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
-            newNodeList.push_back(node);
-            ///The script-name of the copy node is different than the one of the original one, update all input connections in the serialization
-            for (std::list<boost::shared_ptr<NodeSerialization> >::iterator it2 = internalNodesClipBoard.begin(); it2!=internalNodesClipBoard.end(); ++it2) {
-                (*it2)->switchInput((*itOther)->getNodeScriptName(), node->getNode()->getScriptName());
+
+        {
+            CreatingNodeTreeFlag_RAII createNodeTree(_publicInterface->getGui()->getApp());
+            
+            std::list<boost::shared_ptr<NodeSerialization> > internalNodesClipBoard = clipboard.nodes;
+            std::list<boost::shared_ptr<NodeSerialization> >::iterator itOther = internalNodesClipBoard.begin();
+            for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
+                 it != clipboard.nodesUI.end(); ++it, ++itOther) {
+                boost::shared_ptr<NodeGui> node = pasteNode( **itOther,**it,offset,group.lock(),std::string(), false);
+                newNodes->push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
+                newNodeList.push_back(node);
+                ///The script-name of the copy node is different than the one of the original one, update all input connections in the serialization
+                for (std::list<boost::shared_ptr<NodeSerialization> >::iterator it2 = internalNodesClipBoard.begin(); it2!=internalNodesClipBoard.end(); ++it2) {
+                    (*it2)->switchInput((*itOther)->getNodeScriptName(), node->getNode()->getScriptName());
+                }
             }
+            assert( clipboard.nodes.size() == newNodes->size() );
+            
+            ///Now that all nodes have been duplicated, try to restore nodes connections
+            restoreConnections(clipboard.nodes, *newNodes);
         }
-        assert( clipboard.nodes.size() == newNodes->size() );
-
-        ///Now that all nodes have been duplicated, try to restore nodes connections
-        restoreConnections(clipboard.nodes, *newNodes);
-
+        _publicInterface->getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
+        
         if (useUndoCommand) {
             _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface,newNodeList) );
         }
@@ -236,7 +242,6 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
     for (std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >::const_iterator it = newNodes.begin();
          it != newNodes.end(); ++it, ++itSer) {
         const std::map<std::string,std::string> & inputNames = (*itSer)->getInputs();
-
         ///Restore each input
         for (std::map<std::string,std::string>::const_iterator it2 = inputNames.begin(); it2 != inputNames.end(); ++it2) {
             if ( it2->second.empty() ) {

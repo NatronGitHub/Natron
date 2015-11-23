@@ -109,7 +109,7 @@ void
 KnobGuiBool::createWidget(QHBoxLayout* layout)
 {
     _checkBox = new Bool_CheckBox( layout->parentWidget() );
-    onLabelChanged();
+    onLabelChangedInternal();
     //_checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _checkBox, SIGNAL( clicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
     QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onLabelClicked(bool) ) );
@@ -164,9 +164,9 @@ KnobGuiBool::reflectAnimationLevel(int /*dimension*/,
 }
 
 void
-KnobGuiBool::onLabelChanged()
+KnobGuiBool::onLabelChangedInternal()
 {
-    const std::string& label = _knob.lock()->getDescription();
+    const std::string& label = _knob.lock()->getLabel();
     if (label == "R" || label == "r" || label == "red") {
         QColor color;
         color.setRgbF(0.851643,0.196936,0.196936);

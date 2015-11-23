@@ -209,7 +209,7 @@ LinkToKnobDialog::onNodeComboEditingFinished()
             KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[j].get() );
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[j].get() );
             if (from->isTypeCompatible(knobs[j]) && !isButton && !isPage && !isGroup) {
-                QString name( knobs[j]->getDescription().c_str() );
+                QString name( knobs[j]->getLabel().c_str() );
 
                 bool canInsertKnob = true;
                 for (int k = 0; k < knobs[j]->getDimension(); ++k) {

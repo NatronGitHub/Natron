@@ -330,7 +330,7 @@ private:
     }
 
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
-    virtual std::string getDescription() const OVERRIDE FINAL
+    virtual std::string getPluginDescription() const OVERRIDE FINAL
     {
         return "The Viewer node can display the output of a node graph.";
     }

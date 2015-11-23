@@ -72,7 +72,7 @@ public:
     /**
      * @brief Same as getNodes() except that this function recurse in sub-groups.
      **/
-    void getNodes_recursive(NodeList& nodes) const;
+    void getNodes_recursive(NodeList& nodes, bool onlyActive) const;
     
     /**
      * @brief Adds a node to the collection. MT-safe.
@@ -242,7 +242,7 @@ public:
      * @brief Recursively sets render preferences for the rendering of a frame for the current thread.
      * This is thread local storage
      **/
-    void setParallelRenderArgs(int time,
+    void setParallelRenderArgs(double time,
                                int view,
                                bool isRenderUserInteraction,
                                bool isSequential,
@@ -323,7 +323,7 @@ public:
      * expressions.
      **/
     ParallelRenderArgsSetter(NodeCollection* n,
-                             int time,
+                             double time,
                              int view,
                              bool isRenderUserInteraction,
                              bool isSequential,
@@ -406,7 +406,7 @@ public:
     
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual std::string getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     

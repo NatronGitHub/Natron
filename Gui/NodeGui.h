@@ -470,10 +470,10 @@ public Q_SLOTS:
     void refreshSize();
 
     /*Updates the preview image, only if the project is in auto-preview mode*/
-    void updatePreviewImage(int time);
+    void updatePreviewImage(double time);
 
     /*Updates the preview image no matter what*/
-    void forceComputePreview(int time);
+    void forceComputePreview(double time);
 
     void setName(const QString & _nameItem);
 
@@ -570,7 +570,7 @@ private:
     
     void setAboveItem(QGraphicsItem* item);
 
-    void computePreviewImage(int time);
+    void computePreviewImage(double time);
 
     void populateMenu();
 
@@ -659,6 +659,7 @@ private:
     QPointF _distanceSinceLastMagnec; //for x and for y
     QPointF _magnecStartingPos; //for x and for y
     QString _nodeLabel;
+    QString _channelsExtraLabel;
     boost::weak_ptr<NodeGui> _parentMultiInstance;
     
     int _renderingStartedCount;

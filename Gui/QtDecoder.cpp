@@ -87,7 +87,7 @@ QtReader::getPluginGrouping(std::list<std::string>* grouping) const
 }
 
 std::string
-QtReader::getDescription() const
+QtReader::getPluginDescription() const
 {
     return QObject::tr("A QImage (Qt) based image reader.").toStdString();
 }

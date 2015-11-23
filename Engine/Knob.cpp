@@ -232,8 +232,8 @@ struct KnobHelperPrivate
 {
     KnobHelper* publicInterface;
     KnobHolder* holder;
-    std::string description; //< the text label that will be displayed  on the GUI
-    bool descriptionVisible;
+    std::string label; //< the text label that will be displayed  on the GUI
+    bool labelVisible;
     std::string name; //< the knob can have a name different than the label displayed on GUI.
     std::string originalName; //< the original name passed to setName() by the user
     //By default this is the same as _description but can be set by calling setName().
@@ -314,14 +314,14 @@ struct KnobHelperPrivate
     KnobHelperPrivate(KnobHelper* publicInterface_,
                       KnobHolder*  holder_,
                       int dimension_,
-                      const std::string & description_,
+                      const std::string & label_,
                       bool declaredByPlugin_)
     : publicInterface(publicInterface_)
     , holder(holder_)
-    , description(description_)
-    , descriptionVisible(true)
-    , name( description_.c_str() )
-    , originalName(description.c_str())
+    , label(label_)
+    , labelVisible(true)
+    , name( label_.c_str() )
+    , originalName(label_.c_str())
     , newLine(true)
     , addSeparator(false)
     , itemSpacing(0)
@@ -388,11 +388,11 @@ struct KnobHelperPrivate
 
 
 KnobHelper::KnobHelper(KnobHolder* holder,
-                       const std::string & description,
+                       const std::string &label,
                        int dimension,
                        bool declaredByPlugin)
 : _signalSlotHandler()
-, _imp( new KnobHelperPrivate(this,holder,dimension,description,declaredByPlugin) )
+, _imp( new KnobHelperPrivate(this, holder, dimension, label, declaredByPlugin) )
 {
 }
 
@@ -1488,30 +1488,30 @@ KnobHelper::determineHierarchySize() const
 }
 
 const std::string &
-KnobHelper::getDescription() const
+KnobHelper::getLabel() const
 {
-    return _imp->description;
+    return _imp->label;
 }
 
 void
-KnobHelper::setDescription(const std::string& description)
+KnobHelper::setLabel(const std::string& label)
 {
-    _imp->description = description;
+    _imp->label = label;
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_descriptionChanged();
+        _signalSlotHandler->s_labelChanged();
     }
 }
 
 void
-KnobHelper::hideDescription()
+KnobHelper::hideLabel()
 {
-    _imp->descriptionVisible = false;
+    _imp->labelVisible = false;
 }
 
 bool
-KnobHelper::isDescriptionVisible() const
+KnobHelper::isLabelVisible() const
 {
-    return _imp->descriptionVisible;
+    return _imp->labelVisible;
 }
 
 bool

@@ -85,7 +85,10 @@ public:
     boost::shared_ptr<NodeCollection> getGroup() const;
 
     const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
-    boost::shared_ptr<NodeGui> createNodeGUI(const boost::shared_ptr<Natron::Node> & node,bool requestedByLoad,bool pushUndoRedoCommand);
+    boost::shared_ptr<NodeGui> createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
+                                             bool requestedByLoad,
+                                             bool userEdited,
+                                             bool pushUndoRedoCommand);
 
     void selectNode(const boost::shared_ptr<NodeGui> & n,bool addToSelection);
     

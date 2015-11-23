@@ -1056,7 +1056,7 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
 {
     KnobPage* isPage = dynamic_cast<KnobPage*>(knob.get());
     if (isPage && _imp->_pagesEnabled) {
-        PageMap::iterator found = _imp->_pages.find(isPage->getDescription().c_str());
+        PageMap::iterator found = _imp->_pages.find(isPage->getLabel().c_str());
         if (found != _imp->_pages.end()) {
             if (_imp->_tabWidget) {
                 int index = _imp->_tabWidget->indexOf(found->second.tab);
@@ -1092,7 +1092,7 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
             
             assert(isParentPage || isParentGroup);
             if (isParentPage) {
-                PageMap::iterator page = _imp->_pages.find(isParentPage->getDescription().c_str());
+                PageMap::iterator page = _imp->_pages.find(isParentPage->getLabel().c_str());
                 assert(page != _imp->_pages.end());
                 TabGroup* groupAsTab = page->second.groupAsTab;
                 if (groupAsTab) {
@@ -1435,7 +1435,7 @@ DockablePanel::onManageUserParametersActionTriggered()
 void
 DockablePanel::setKeyOnAllParameters()
 {
-    int time = getGui()->getApp()->getTimeLine()->currentFrame();
+    double time = getGui()->getApp()->getTimeLine()->currentFrame();
 
     AddKeysCommand::KeysToAddList keys;
     for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
@@ -1608,7 +1608,7 @@ DockablePanel::scanForNewKnobs()
         boost::shared_ptr<KnobPage> page = getUserPageKnob();
         userPages.push_back(page.get());
         for (std::list<KnobPage*>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
-            PageMap::iterator foundPage = _imp->_pages.find((*it)->getDescription().c_str());
+            PageMap::iterator foundPage = _imp->_pages.find((*it)->getLabel().c_str());
             if (foundPage != _imp->_pages.end()) {
                 foundPage->second.currentRow = 0;
                 std::vector<boost::shared_ptr<KnobI> > children = (*it)->getChildren();

@@ -772,8 +772,6 @@ dragTangent(double time,
         rtan.y += dy;
     }
     double alpha = left ? std::atan2(pos.y - ltan.y,pos.x - ltan.x) : std::atan2(pos.y - rtan.y,pos.x - rtan.x);
-    std::set<int> times;
-    p.getKeyframeTimes(true,&times);
 
     if (left) {
         double rightDiffX = breakTangents ? 0 : pos.x + std::cos(alpha) * dist - rtan.x;

@@ -404,6 +404,7 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
                               const boost::shared_ptr<Natron::Node>& parentMultiInstance,
                               bool loadRequest,
                               bool autoConnect,
+                              bool userEdited,
                               double xPosHint,
                               double yPosHint,
                               bool pushUndoRedoCommand)
@@ -427,7 +428,7 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
 
     std::list<boost::shared_ptr<NodeGui> >  selectedNodes = graph->getSelectedNodes();
 
-    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,pushUndoRedoCommand);
+    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,userEdited,pushUndoRedoCommand);
 
     assert(nodegui);
     if ( parentMultiInstance && nodegui) {
@@ -484,7 +485,7 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Natron::Node> &node,
             BackDropGui* isBd = dynamic_cast<BackDropGui*>(nodegui.get());
             if (!isBd && !isGroup) {
                 boost::shared_ptr<NodeGui> selectedNode;
-                if (selectedNodes.size() == 1) {
+                if (userEdited && selectedNodes.size() == 1) {
                     selectedNode = selectedNodes.front();
                     BackDropGui* isBackdropGui = dynamic_cast<BackDropGui*>(selectedNode.get());
                     if (isBackdropGui) {
@@ -1092,9 +1093,9 @@ GuiAppInstance::clearOverlayRedrawRequests()
 }
 
 void
-GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad)
+GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad,bool userEdited)
 {
-    if (!requestedByLoad) {
+    if (!requestedByLoad && userEdited) {
         NodeGraph* graph = 0;
         boost::shared_ptr<NodeCollection> collection = node->getGroup();
         assert(collection);
@@ -1123,12 +1124,14 @@ GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& n
         boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
         graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
     }
+   
+    AppInstance::onGroupCreationFinished(node,requestedByLoad,userEdited);
+    
     std::list<ViewerInstance* > viewers;
     node->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
         (*it2)->renderCurrentFrame(false);
     }
-    AppInstance::onGroupCreationFinished(node,requestedByLoad);
 }
 
 bool

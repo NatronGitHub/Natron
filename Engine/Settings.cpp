@@ -1432,7 +1432,7 @@ Settings::setDefaultValues()
     _defaultDeepGroupColor->setDefaultValue(0.,1);
     _defaultDeepGroupColor->setDefaultValue(0.38,2);
     
-    _echoVariableDeclarationToPython->setDefaultValue(true);
+    _echoVariableDeclarationToPython->setDefaultValue(false);
 
     
     _sunkenColor->setDefaultValue(0.12,0);
@@ -2129,7 +2129,7 @@ std::string
 Settings::getReaderPluginIDForFileType(const std::string & extension)
 {
     for (U32 i = 0; i < _readersMapping.size(); ++i) {
-        if (_readersMapping[i]->getDescription() == extension) {
+        if (_readersMapping[i]->getLabel() == extension) {
             const std::vector<std::string> entries =  _readersMapping[i]->getEntries_mt_safe();
             int index = _readersMapping[i]->getValue();
             assert( index < (int)entries.size() );
@@ -2144,7 +2144,7 @@ std::string
 Settings::getWriterPluginIDForFileType(const std::string & extension)
 {
     for (U32 i = 0; i < _writersMapping.size(); ++i) {
-        if (_writersMapping[i]->getDescription() == extension) {
+        if (_writersMapping[i]->getLabel() == extension) {
             const std::vector<std::string>  entries =  _writersMapping[i]->getEntries_mt_safe();
             int index = _writersMapping[i]->getValue();
             assert( index < (int)entries.size() );
@@ -2379,7 +2379,6 @@ Settings::populatePluginsTab()
             pluginLabel->setAnimationEnabled(false);
             pluginLabel->setDefaultValue(pluginName);
             pluginLabel->setAddNewLine(false);
-            pluginLabel->hideDescription();
             pluginLabel->setIsPersistant(false);
             if (group) {
                 group->addKnob(pluginLabel);

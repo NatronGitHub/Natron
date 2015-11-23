@@ -370,6 +370,7 @@ NodeGraph::visibleWidgetRect() const
 boost::shared_ptr<NodeGui>
 NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
                          bool requestedByLoad,
+                         bool userEdited,
                          bool pushUndoRedoCommand)
 {
     boost::shared_ptr<NodeGui> node_ui;
@@ -436,7 +437,7 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
     if (pushUndoRedoCommand) {
         pushUndoCommand( new AddMultipleNodesCommand(this,node_ui) );
     } else if (!requestedByLoad) {
-        if (!isGrp) {
+        if (!isGrp && userEdited) {
             selectNode(node_ui, false);
         }
     }
