@@ -242,12 +242,6 @@ NodeGraphPrivate::restoreConnections(const std::list<boost::shared_ptr<NodeSeria
     for (std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >::const_iterator it = newNodes.begin();
          it != newNodes.end(); ++it, ++itSer) {
         const std::map<std::string,std::string> & inputNames = (*itSer)->getInputs();
-        if ((*itSer)->getNodeScriptName() == "Premult1") {
-            assert(true);
-            for (std::map<std::string,std::string>::const_iterator itd = inputNames.begin(); itd != inputNames.end(); ++itd) {
-                qDebug() << itd->first.c_str() << itd->second.c_str();
-            }
-        }
         ///Restore each input
         for (std::map<std::string,std::string>::const_iterator it2 = inputNames.begin(); it2 != inputNames.end(); ++it2) {
             if ( it2->second.empty() ) {
