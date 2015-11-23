@@ -1186,6 +1186,12 @@ RotoItemEditorContext::onKeyframeRemoved()
     _imp->widget->getCurveWidget()->onCurveChanged();
 }
 
+void
+RotoItemEditorContext::onShapeCloned()
+{
+    _imp->widget->getCurveWidget()->onCurveChanged();
+}
+
 static void recursiveSelectElement(const std::list<NodeCurveEditorElement*>& elements,
                                    QTreeWidgetItem* cur,
                                    bool mustSelect,
@@ -1295,6 +1301,7 @@ BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
     
     QObject::connect(curve.get(), SIGNAL(keyframeSet(double)), this, SLOT(onKeyframeAdded()));
     QObject::connect(curve.get(), SIGNAL(keyframeRemoved(double)), this, SLOT(onKeyframeRemoved()));
+    QObject::connect(curve.get(), SIGNAL(cloned()), this, SLOT(onShapeCloned()));
     
     boost::shared_ptr<RotoContext> roto = context->getNode()->getNode()->getRotoContext();
     _imp->animCurve.reset(new BezierCPCurveGui(cw, curve, roto, getName(), QColor(255,255,255), 1.));

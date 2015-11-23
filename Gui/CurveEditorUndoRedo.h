@@ -342,7 +342,7 @@ private:
 private:
     bool _firstRedoCalled;
     bool _updateOnFirstRedo;
-    SelectedKeys _keys;
+    SelectedKeys _keys,_altKeys;
     CurveWidget* _widget;
     
     struct CurveCopy

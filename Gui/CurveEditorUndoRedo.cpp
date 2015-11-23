@@ -890,7 +890,7 @@ TransformKeysCommand::undo()
         (*it)->evaluateChange();
     }
     
-    _widget->refreshSelectedKeys();
+    _widget->setSelectedKeys(_altKeys);
 }
 
 void
@@ -948,36 +948,23 @@ TransformKeysCommand::redo()
                 _beziers.push_back(b);
             }
         }
-        for (SelectedKeys::reverse_iterator it = _keys.rbegin(); it != _keys.rend(); ++it) {
-            transform(*it);
-        }
-        for (std::list<CurveCopy>::iterator it = _curves.begin();
-             it != _curves.end(); ++it) {
-            it->newCpy.reset(new Curve(*it->original));
-        }
-        for (std::list<BezierCopy>::iterator it = _beziers.begin();
-             it != _beziers.end(); ++it) {
-            it->newCpy.reset(new Bezier(it->original->getContext(),it->original->getScriptName(),it->original->getParentLayer(),it->original->isOpenBezier()));
-            it->newCpy->clone(it->original.get());
-        }
+       
+ 
         
     } else {
-        for (std::list<CurveCopy>::iterator it = _curves.begin();
-             it != _curves.end(); ++it) {
-            KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->guiCurve);
-            if (isKnobCurve && !dynamic_cast<KnobParametric*>(isKnobCurve->getInternalKnob().get())) {
-                isKnobCurve->getInternalKnob()->cloneCurve(isKnobCurve->getDimension(),*it->newCpy);
-            } else {
-                it->original->clone(*it->newCpy);
-            }
-        }
-        for (std::list<BezierCopy>::iterator it = _beziers.begin();
-             it != _beziers.end(); ++it) {
-            it->original->clone(it->newCpy.get());
-        }
-        
+        _keys = _altKeys;
     }
     
+    _altKeys.clear();
+    for (SelectedKeys::reverse_iterator it = _keys.rbegin(); it != _keys.rend(); ++it) {
+        boost::shared_ptr<SelectedKey> oldKey(new SelectedKey);
+        oldKey->curve = (*it)->curve;
+        oldKey->key =  (*it)->key;
+        oldKey->leftTan = (*it)->leftTan;
+        oldKey->rightTan = (*it)->rightTan;
+        transform(*it);
+        _altKeys.push_back(oldKey);
+    }
     
     
     
@@ -990,8 +977,8 @@ TransformKeysCommand::redo()
     for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
         (*it)->evaluateChange();
     }
-    
-    _widget->refreshSelectedKeys();
+
+    _widget->setSelectedKeys(_keys);
     _firstRedoCalled = true;
     
 }

@@ -259,6 +259,8 @@ public Q_SLOTS:
     
     void onKeyframeRemoved();
     
+    void onShapeCloned();
+    
     
 protected:
     
