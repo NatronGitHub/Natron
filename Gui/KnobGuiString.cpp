@@ -173,7 +173,6 @@ KnobGuiString::KnobGuiString(boost::shared_ptr<KnobI> knob,
       , _fontSize(0)
       , _boldActivated(false)
       , _italicActivated(false)
-      , _label(0)
 {
     _knob = boost::dynamic_pointer_cast<KnobString>(knob);
 }
@@ -201,6 +200,10 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
 
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(_textEdit,0);
+        
+        if (knob->isCustomHTMLText()) {
+            _textEdit->setReadOnlyNatron(true);
+        }
 
         if (useRichText) {
             _richTextOptions = new QWidget(_container);
@@ -271,13 +274,13 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
 
         layout->addWidget(_container);
     } else if ( knob->isLabel() ) {
-        _label = new Natron::Label( layout->parentWidget() );
+        /*_label = new Natron::Label( layout->parentWidget() );
 
         if ( hasToolTip() ) {
             _label->setToolTip( toolTip() );
         }
         //_label->setFont(QFont(appFont,appFontSize));
-        layout->addWidget(_label);
+        layout->addWidget(_label);*/
     } else {
         _lineEdit = new LineEdit( layout->parentWidget() );
 
@@ -305,7 +308,6 @@ KnobGuiString::~KnobGuiString()
 void KnobGuiString::removeSpecificGui()
 {
     delete _lineEdit;
-    delete _label;
     delete _container;
 }
 
@@ -908,7 +910,11 @@ KnobGuiString::updateGUI(int /*dimension*/)
             txt = removeAutoAddedHtmlTags(txt);
         }
 
-        _textEdit->setPlainText(txt);
+        if (knob->isCustomHTMLText()) {
+            _textEdit->setHtml(txt);
+        } else {
+            _textEdit->setPlainText(txt);
+        }
 
         if ( pos < txt.size() ) {
             cursor.setPosition(pos);
@@ -923,10 +929,11 @@ KnobGuiString::updateGUI(int /*dimension*/)
         _textEdit->setTextCursor(cursor);
         _textEdit->blockSignals(false);
     } else if ( knob->isLabel() ) {
-        assert(_label);
+        onLabelChanged();
+        /*assert(_label);
         QString txt = value.c_str();
         txt.replace("\n", "<br>");
-        _label->setText(txt);
+        _label->setText(txt);*/
     } else {
         assert(_lineEdit);
         _lineEdit->setText( value.c_str() );
@@ -941,8 +948,8 @@ KnobGuiString::_hide()
         assert(_textEdit);
         _textEdit->hide();
     } else if ( knob->isLabel() ) {
-        assert(_label);
-        _label->hide();
+        /*assert(_label);
+        _label->hide();*/
     } else {
         assert(_lineEdit);
         _lineEdit->hide();
@@ -957,8 +964,8 @@ KnobGuiString::_show()
         assert(_textEdit);
         _textEdit->show();
     } else if ( knob->isLabel() ) {
-        assert(_label);
-        _label->show();
+       /* assert(_label);
+        _label->show();*/
     } else {
         assert(_lineEdit);
         _lineEdit->show();
@@ -975,10 +982,12 @@ KnobGuiString::setEnabled()
         assert(_textEdit);
         //_textEdit->setEnabled(b);
         //_textEdit->setReadOnly(!b);
-        _textEdit->setReadOnlyNatron(!b);
+        if (!knob->isCustomHTMLText()) {
+            _textEdit->setReadOnlyNatron(!b);
+        }
     } else if ( knob->isLabel() ) {
-        assert(_label);
-        _label->setEnabled(b);
+       /* assert(_label);
+        _label->setEnabled(b);*/
     } else {
         assert(_lineEdit);
         //_lineEdit->setEnabled(b);
@@ -1014,7 +1023,7 @@ KnobGuiString::reflectAnimationLevel(int /*dimension*/,
         assert(_textEdit);
         _textEdit->setAnimation(value);
     } else if ( knob->isLabel() ) {
-        assert(_label);
+        //assert(_label);
     } else {
         assert(_lineEdit);
         _lineEdit->setAnimation(value);
@@ -1026,7 +1035,9 @@ KnobGuiString::setReadOnly(bool readOnly,
                             int /*dimension*/)
 {
     if (_textEdit) {
-        _textEdit->setReadOnlyNatron(readOnly);
+        if (!_knob.lock()->isCustomHTMLText()) {
+            _textEdit->setReadOnlyNatron(readOnly);
+        }
     } else if (_lineEdit) {
         if ( !_knob.lock()->isCustomKnob() ) {
             _lineEdit->setReadOnly(readOnly);
@@ -1059,7 +1070,9 @@ KnobGuiString::reflectExpressionState(int /*dimension*/,
     bool isEnabled = _knob.lock()->isEnabled(0);
     if (_textEdit) {
         _textEdit->setAnimation(3);
-        _textEdit->setReadOnlyNatron(hasExpr || !isEnabled);
+        if (!_knob.lock()->isCustomHTMLText()) {
+            _textEdit->setReadOnlyNatron(hasExpr || !isEnabled);
+        }
     } else if (_lineEdit) {
         _lineEdit->setAnimation(3);
         _lineEdit->setReadOnly(hasExpr || !isEnabled);
@@ -1082,9 +1095,10 @@ KnobGuiString::updateToolTip()
             _textEdit->setToolTip(tt);
         } else if (_lineEdit) {
             _lineEdit->setToolTip(tt);
-        } else if (_label) {
-            _label->setToolTip(tt);
         }
+        //else if (_label) {
+           // _label->setToolTip(tt);
+        //}
     }
 }
 

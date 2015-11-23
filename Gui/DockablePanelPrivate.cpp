@@ -487,9 +487,19 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             ///Create the label if needed
             ClickableLabel* label = 0;
             
-            if (ret->isLabelVisible() && !knob->getLabel().empty()) {
+            std::string descriptionLabel;
+            KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
+            bool isLabelKnob = isStringKnob && isStringKnob->isLabel();
+            if (isLabelKnob) {
+                descriptionLabel = isStringKnob->getValue();
+            } else {
+                descriptionLabel = knob->getLabel();
+            }
+            if (ret->isLabelVisible() && (isLabelKnob || !descriptionLabel.empty())) {
                 label = new ClickableLabel("",page->second.tab);
-                label->setText_overload( QString(QString( ret->getKnob()->getLabel().c_str() ) + ":") );
+                QString labelStr(descriptionLabel.c_str());
+                labelStr += ":";
+                label->setText_overload(labelStr );
                 QObject::connect( label, SIGNAL( clicked(bool) ), ret, SIGNAL( labelClicked(bool) ) );
             }
 

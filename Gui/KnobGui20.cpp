@@ -768,7 +768,16 @@ void
 KnobGui::onLabelChanged()
 {
     if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->setText(getKnob()->getLabel().c_str());
+        boost::shared_ptr<KnobI> knob = getKnob();
+        std::string descriptionLabel;
+        KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
+        bool isLabelKnob = isStringKnob && isStringKnob->isLabel();
+        if (isLabelKnob) {
+            descriptionLabel = isStringKnob->getValue();
+        } else {
+            descriptionLabel = knob->getLabel();
+        }
+        _imp->descriptionLabel->setText_overload(QString(QString(descriptionLabel.c_str()) + ":"));
         onLabelChangedInternal();
     }
 }

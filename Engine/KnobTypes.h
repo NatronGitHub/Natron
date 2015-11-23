@@ -646,14 +646,18 @@ public:
     {
         return _richText;
     }
-
-    void setAsLabel()
+    
+    void setAsCustomHTMLText(bool custom) {
+        _customHtmlText = custom;
+    }
+    
+    bool isCustomHTMLText() const
     {
-        setAnimationEnabled(false); //< labels cannot animate
-        hideLabel(); // labels do not have a label
-        _isLabel = true;
+        return _customHtmlText;
     }
 
+    void setAsLabel();
+    
     bool isLabel() const
     {
         return _isLabel;
@@ -684,6 +688,7 @@ private:
     static const std::string _typeNameStr;
     bool _multiLine;
     bool _richText;
+    bool _customHtmlText;
     bool _isLabel;
     bool _isCustom;
 };

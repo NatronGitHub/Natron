@@ -951,6 +951,7 @@ KnobString::KnobString(KnobHolder* holder,
 : AnimatingKnobStringHelper(holder, label, dimension, declaredByPlugin)
 , _multiLine(false)
 , _richText(false)
+, _customHtmlText(false)
 , _isLabel(false)
 , _isCustom(false)
 {
@@ -1008,6 +1009,14 @@ KnobString::hasContentWithoutHtmlTags() const
         }
     }
     return true;
+}
+
+void
+KnobString::setAsLabel()
+{
+    setAnimationEnabled(false); //< labels cannot animate
+    // hideLabel(); // labels do not have a label
+    _isLabel = true;
 }
 
 /******************************KnobGroup**************************************/
