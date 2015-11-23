@@ -980,7 +980,9 @@ DockablePanel::minimizeOrMaximize(bool toggled)
         Q_EMIT maximized();
     }
     _imp->_tabWidget->setVisible(!_imp->_minimized);
-    _imp->_verticalColorBar->setVisible(!_imp->_minimized);
+    if (_imp->_verticalColorBar) {
+        _imp->_verticalColorBar->setVisible(!_imp->_minimized);
+    }
     std::vector<QWidget*> _panels;
     for (int i = 0; i < _imp->_container->count(); ++i) {
         if ( QWidget * myItem = dynamic_cast <QWidget*>( _imp->_container->itemAt(i) ) ) {
