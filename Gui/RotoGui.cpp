@@ -4841,7 +4841,7 @@ RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost
                 if (dk && nameKnob) {
                     std::string trackName = nameKnob->getValue();
                     trackName += "/";
-                    trackName += dk->getDescription();
+                    trackName += dk->getLabel();
                     knobs.push_back( std::make_pair(trackName, dk) );
                 }
             }

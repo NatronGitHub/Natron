@@ -197,9 +197,9 @@ public:
         Q_EMIT hasModificationsChanged();
     }
     
-    void s_descriptionChanged()
+    void s_labelChanged()
     {
-        Q_EMIT descriptionChanged();
+        Q_EMIT labelChanged();
     }
     
     void s_evaluateOnChangeChanged(bool value)
@@ -308,7 +308,7 @@ Q_SIGNALS:
     
     void hasModificationsChanged();
     
-    void descriptionChanged();
+    void labelChanged();
 };
 
 struct KnobChange
@@ -710,18 +710,18 @@ public:
     virtual bool isAnimationEnabled() const = 0;
 
     /**
-     * @brief Get the knob description, that is the label next to the knob on the user interface.
-     * This function is MT-safe as it the description can only be changed by the main thread.
+     * @brief Get the knob label, that is the label next to the knob on the user interface.
+     * This function is MT-safe as it the label can only be changed by the main thread.
      **/
-    virtual const std::string & getDescription() const = 0;
-    virtual void setDescription(const std::string& description) = 0;
+    virtual const std::string & getLabel() const = 0;
+    virtual void setLabel(const std::string& label) = 0;
     
     /**
-     * @brief Hide the description label on the GUI on the left of the knob. This is not dynamic
+     * @brief Hide the label label on the GUI on the left of the knob. This is not dynamic
      * and must be called upon the knob creation.
      **/
-    virtual void hideDescription() = 0;
-    virtual bool isDescriptionVisible() const = 0;
+    virtual void hideLabel() = 0;
+    virtual bool isLabelVisible() const = 0;
 
     /**
      * @brief Returns a pointer to the holder owning the knob.
@@ -804,13 +804,13 @@ public:
     /**
      * @brief Call this to change the knob name. The name is not the text label displayed on
      * the GUI but what Natron uses internally to identify knobs from each other. By default the
-     * name is the same as the getDescription(i.e: the text label).
+     * name is the same as the getLabel(i.e: the text label).
      */
     virtual void setName(const std::string & name) = 0;
 
     /**
      * @brief Returns the knob name. By default the
-     * name is the same as the getDescription(i.e: the text label).
+     * name is the same as the getLabel(i.e: the text label).
      */
     virtual const std::string & getName() const = 0;
     
@@ -1065,13 +1065,13 @@ public:
     };
 
     /**
-     * @brief Creates a new Knob that belongs to the given holder, with the given description.
-     * The name of the knob will be equal to the description, you can change it by calling setName()
+     * @brief Creates a new Knob that belongs to the given holder, with the given label.
+     * The name of the knob will be equal to the label, you can change it by calling setName()
      * The dimension parameter indicates how many dimension the knob should have.
      * If declaredByPlugin is false then Natron will never call onKnobValueChanged on the holder.
      **/
     KnobHelper(KnobHolder*  holder,
-               const std::string & description,
+               const std::string &label,
                int dimension = 1,
                bool declaredByPlugin = true);
 
@@ -1174,10 +1174,10 @@ public:
     virtual const std::vector< boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual const std::string & getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    void setDescription(const std::string& description) OVERRIDE FINAL;
-    virtual void hideDescription()  OVERRIDE FINAL;
-    virtual bool isDescriptionVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual const std::string & getLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    void setLabel(const std::string& label) OVERRIDE FINAL;
+    virtual void hideLabel()  OVERRIDE FINAL;
+    virtual bool isLabelVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getDimension() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAddNewLine(bool newLine) OVERRIDE FINAL;
@@ -1397,12 +1397,12 @@ public:
 
     
     /**
-     * @brief Make a knob for the given KnobHolder with the given description (the label displayed on
+     * @brief Make a knob for the given KnobHolder with the given label (the label displayed on
      * its interface) and with the given dimension. The dimension parameter is used for example for the
      * KnobColor which has 4 doubles (r,g,b,a), hence 4 dimensions.
      **/
     Knob(KnobHolder*  holder,
-         const std::string & description,
+         const std::string & label,
          int dimension = 1,
          bool declaredByPlugin = true);
 
@@ -1770,7 +1770,7 @@ class AnimatingKnobStringHelper
 public:
 
     AnimatingKnobStringHelper(KnobHolder* holder,
-                               const std::string &description,
+                               const std::string &label,
                                int dimension,
                                bool declaredByPlugin = true);
 
@@ -1863,7 +1863,7 @@ public:
     void moveKnobOneStepDown(KnobI* knob);
 
     template<typename K>
-    boost::shared_ptr<K> createKnob(const std::string &description, int dimension = 1) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<K> createKnob(const std::string &label, int dimension = 1) const WARN_UNUSED_RETURN;
     AppInstance* getApp() const WARN_UNUSED_RETURN;
     boost::shared_ptr<KnobI> getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
     boost::shared_ptr<KnobI> getOtherKnobByName(const std::string & name,const KnobI* caller) const WARN_UNUSED_RETURN;
@@ -2263,10 +2263,10 @@ public:
 
 
 template<typename K>
-boost::shared_ptr<K> KnobHolder::createKnob(const std::string &description,
+boost::shared_ptr<K> KnobHolder::createKnob(const std::string &label,
                                             int dimension) const
 {
-    return Natron::createKnob<K>(this, description,dimension);
+    return Natron::createKnob<K>(this, label, dimension);
 }
 
 #endif // NATRON_ENGINE_KNOB_H

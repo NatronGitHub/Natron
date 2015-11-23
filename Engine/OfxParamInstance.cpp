@@ -259,7 +259,7 @@ OfxParamToKnob::connectDynamicProperties()
     if (!handler) {
         return;
     }
-    QObject::connect(handler, SIGNAL(descriptionChanged()), this, SLOT(onDescriptionChanged()));
+    QObject::connect(handler, SIGNAL(labelChanged()), this, SLOT(onLabelChanged()));
     QObject::connect(handler, SIGNAL(evaluateOnChangeChanged(bool)), this, SLOT(onEvaluateOnChangeChanged(bool)));
     QObject::connect(handler, SIGNAL(secretChanged()), this, SLOT(onSecretChanged()));
     QObject::connect(handler, SIGNAL(enabledChanged()), this, SLOT(onEnabledChanged()));
@@ -312,7 +312,7 @@ OfxParamToKnob::onEnabledChanged()
 }
 
 void
-OfxParamToKnob::onDescriptionChanged()
+OfxParamToKnob::onLabelChanged()
 {
     if (isDynamicPropertyBeingModified()) {
         return;
@@ -324,7 +324,7 @@ OfxParamToKnob::onDescriptionChanged()
     if (!knob) {
         return;
     }
-    param->getProperties().setStringProperty(kOfxPropLabel, knob->getDescription());
+    param->getProperties().setStringProperty(kOfxPropLabel, knob->getLabel());
 }
 
 void
@@ -397,7 +397,7 @@ void
 OfxPushButtonInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _knob.lock()->setDescription(getParamLabel(this));
+    _knob.lock()->setLabel(getParamLabel(this));
 }
 
 void
@@ -496,7 +496,7 @@ void
 OfxIntegerInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _knob.lock()->setDescription(getParamLabel(this));
+    _knob.lock()->setLabel(getParamLabel(this));
 }
 
 void
@@ -719,7 +719,7 @@ void
 OfxDoubleInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _knob.lock()->setDescription(getParamLabel(this));
+    _knob.lock()->setLabel(getParamLabel(this));
 }
 
 void
@@ -889,7 +889,7 @@ void
 OfxBooleanInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _knob.lock()->setDescription(getParamLabel(this));
+    _knob.lock()->setLabel(getParamLabel(this));
 }
 
 void
@@ -1078,7 +1078,7 @@ void
 OfxChoiceInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _knob.lock()->setDescription(getParamLabel(this));
+    _knob.lock()->setLabel(getParamLabel(this));
 }
 
 void
@@ -1320,7 +1320,7 @@ void
 OfxRGBAInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _knob.lock()->setDescription(getParamLabel(this));
+    _knob.lock()->setLabel(getParamLabel(this));
 }
 
 
@@ -1537,7 +1537,7 @@ void
 OfxRGBInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _knob.lock()->setDescription(getParamLabel(this));
+    _knob.lock()->setLabel(getParamLabel(this));
 }
 
 void
@@ -1784,7 +1784,7 @@ void
 OfxDouble2DInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _knob.lock()->setDescription(getParamLabel(this));
+    _knob.lock()->setLabel(getParamLabel(this));
 }
 
 
@@ -1998,7 +1998,7 @@ void
 OfxInteger2DInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _knob.lock()->setDescription(getParamLabel(this));
+    _knob.lock()->setLabel(getParamLabel(this));
 }
 
 
@@ -2244,7 +2244,7 @@ void
 OfxDouble3DInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _knob.lock()->setDescription(getParamLabel(this));
+    _knob.lock()->setLabel(getParamLabel(this));
 }
 
 
@@ -2472,7 +2472,7 @@ void
 OfxInteger3DInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _knob.lock()->setDescription(getParamLabel(this));
+    _knob.lock()->setLabel(getParamLabel(this));
 }
 
 
@@ -2628,7 +2628,7 @@ void
 OfxGroupInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _groupKnob.lock()->setDescription(getParamLabel(this));
+    _groupKnob.lock()->setLabel(getParamLabel(this));
 }
 
 ////////////////////////// OfxPageInstance /////////////////////////////////////////////////
@@ -2662,7 +2662,7 @@ void
 OfxPageInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _pageKnob.lock()->setDescription(getParamLabel(this));
+    _pageKnob.lock()->setLabel(getParamLabel(this));
 }
 
 boost::shared_ptr<KnobI> OfxPageInstance::getKnob() const
@@ -2940,16 +2940,16 @@ OfxStringInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
     if (_fileKnob.lock()) {
-        _fileKnob.lock()->setDescription(getParamLabel(this));
+        _fileKnob.lock()->setLabel(getParamLabel(this));
     }
     if (_outputFileKnob.lock()) {
-        _outputFileKnob.lock()->setDescription(getParamLabel(this));
+        _outputFileKnob.lock()->setLabel(getParamLabel(this));
     }
     if (_stringKnob.lock()) {
-        _stringKnob.lock()->setDescription(getParamLabel(this));
+        _stringKnob.lock()->setLabel(getParamLabel(this));
     }
     if (_pathKnob.lock()) {
-        _pathKnob.lock()->setDescription(getParamLabel(this));
+        _pathKnob.lock()->setLabel(getParamLabel(this));
     }
 }
 
@@ -3226,7 +3226,7 @@ void
 OfxCustomInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _knob.lock()->setDescription(getParamLabel(this));
+    _knob.lock()->setLabel(getParamLabel(this));
 }
 
 void
@@ -3375,7 +3375,7 @@ void
 OfxParametricInstance::setLabel()
 {
     SET_DYNAMIC_PROPERTY_EDITED();
-    _knob.lock()->setDescription( getParamLabel(this) );
+    _knob.lock()->setLabel( getParamLabel(this) );
     for (int i = 0; i < _knob.lock()->getDimension(); ++i) {
         const std::string & curveName = getProperties().getStringProperty(kOfxParamPropDimensionLabel,i);
         _knob.lock()->setDimensionName(i, curveName);

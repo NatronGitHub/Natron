@@ -24,6 +24,8 @@
 
 #include "NodeGraphTextItem.h"
 
+#include <cmath>
+
 #include <QDebug>
 #include <QStyleOption>
 
@@ -56,12 +58,11 @@ NodeGraphTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opti
         if (_graph->isDoingNavigatorRender()) {
             isTooSmall = true;
         } else {
-            
             QFontMetrics fm(font());
             QPoint topLeft = _graph->mapFromScene(mapToScene(QPointF(0,0)));
             QPoint btmLeft = _graph->mapFromScene(mapToScene(QPointF(0, fm.height())));
 
-            int height = std::abs(int(btmLeft.y() - topLeft.y()));
+            int height = std::abs(btmLeft.y() - topLeft.y());
             isTooSmall = height < NODEGRAPH_TEXT_ITEM_MIN_HEIGHT_PX;
         }
     }
@@ -84,7 +85,6 @@ NodeGraphSimpleTextItem::NodeGraphSimpleTextItem(NodeGraph* graph,QGraphicsItem*
 
 NodeGraphSimpleTextItem::~NodeGraphSimpleTextItem()
 {
-    
 }
 
 void
@@ -97,12 +97,10 @@ NodeGraphSimpleTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem
         } else {
             QFontMetrics fm(font());
             QPoint topLeft = _graph->mapFromScene(mapToScene(QPointF(0,0)));
-            QPointF btmLeft = _graph->mapFromScene(mapToScene(QPointF(0, fm.height())));
+            QPoint btmLeft = _graph->mapFromScene(mapToScene(QPointF(0, fm.height())));
             
-            int height = (int)std::abs((double)(btmLeft.y() - topLeft.y()));
-
+            int height = std::abs(btmLeft.y() - topLeft.y());
             isTooSmall = height < NODEGRAPH_SIMPLE_TEXT_ITEM_MIN_HEIGHT_PX;
-
         }
     }
     if (isTooSmall) {
@@ -116,12 +114,10 @@ NodeGraphPixmapItem::NodeGraphPixmapItem(NodeGraph* graph,QGraphicsItem* parent)
 : QGraphicsPixmapItem(parent)
 , _graph(graph)
 {
- 
 }
 
 NodeGraphPixmapItem::~NodeGraphPixmapItem()
 {
-    
 }
 
 void

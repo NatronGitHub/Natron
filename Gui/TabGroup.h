@@ -75,7 +75,7 @@ public:
     
     TabGroup(QWidget* parent);
     
-    QGridLayout* addTab(const boost::shared_ptr<KnobGroup>& group,const QString& name);
+    QGridLayout* addTab(const boost::shared_ptr<KnobGroup>& group, const QString &label);
     
     void removeTab(KnobGroup* group);
     

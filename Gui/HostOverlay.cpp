@@ -553,7 +553,7 @@ HostOverlayPrivate::drawPosition(const PositionInteract& p,
         c.setRgbF(pR * l, pG * l, pB * l);
         
         textRenderer.renderText(pos.x(), pos.y() - (fm.height() + p.pointSize()) * pscale.y,
-                                      pscale.x, pscale.y, QString(knob->getDescription().c_str()), c, font);
+                                      pscale.x, pscale.y, QString(knob->getLabel().c_str()), c, font);
     }
 }
 

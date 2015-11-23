@@ -429,7 +429,7 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
     
     QTreeWidgetItem* knobItem = new QTreeWidgetItem(parent);
     knobItem->setExpanded(true);
-    knobItem->setText( 0,k->getDescription().c_str() );
+    knobItem->setText( 0, k->getLabel().c_str() );
     
     boost::shared_ptr<CurveGui> knobCurve;
     bool hideKnob = true;
@@ -437,10 +437,10 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
     if (k->getDimension() == 1) {
                 
         if (kgui) {
-            knobCurve.reset(new KnobCurveGui(curveWidget,kgui->getCurve(0),kgui,0,k->getDescription().c_str(),QColor(255,255,255),1.));
+            knobCurve.reset(new KnobCurveGui(curveWidget, kgui->getCurve(0), kgui, 0, k->getLabel().c_str(), QColor(255,255,255),1.));
         } else {
             
-            knobCurve.reset(new KnobCurveGui(curveWidget,k->getCurve(0,true),k,rotoctx,0,k->getDescription().c_str(),QColor(255,255,255),1.));
+            knobCurve.reset(new KnobCurveGui(curveWidget, k->getCurve(0,true), k, rotoctx, 0, k->getLabel().c_str(), QColor(255,255,255),1.));
         }
         curveWidget->addCurveAndSetColor(knobCurve);
         
@@ -456,7 +456,7 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,boost::s
             QTreeWidgetItem* dimItem = new QTreeWidgetItem(knobItem);
             dimItem->setExpanded(true);
             dimItem->setText( 0,k->getDimensionName(j).c_str() );
-            QString curveName = QString( k->getDescription().c_str() ) + "." + QString( k->getDimensionName(j).c_str() );
+            QString curveName = QString( k->getLabel().c_str() ) + "." + QString( k->getDimensionName(j).c_str() );
             
             NodeCurveEditorElement* elem;
             boost::shared_ptr<KnobCurveGui> dimCurve;

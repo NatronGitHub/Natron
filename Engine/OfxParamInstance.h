@@ -116,7 +116,7 @@ public Q_SLOTS:
     void onEvaluateOnChangeChanged(bool evaluate);
     void onSecretChanged();
     void onEnabledChanged();
-    void onDescriptionChanged();
+    void onLabelChanged();
     void onDisplayMinMaxChanged(double min,double max, int index);
     void onMinMaxChanged(double min,double max, int index);
     

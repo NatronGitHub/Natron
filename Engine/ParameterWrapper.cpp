@@ -63,7 +63,7 @@ Param::getScriptName() const
 std::string
 Param::getLabel() const
 {
-    return getInternalKnob()->getDescription();
+    return getInternalKnob()->getLabel();
 }
 
 

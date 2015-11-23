@@ -442,7 +442,7 @@ OfxEffectInstance::initializeContextDependentParams()
 }
 
 std::string
-OfxEffectInstance::getDescription() const
+OfxEffectInstance::getPluginDescription() const
 {
     assert(_context != eContextNone);
     if ( effectInstance() ) {

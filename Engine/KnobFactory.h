@@ -48,16 +48,20 @@ public:
 
     template <typename K>
     boost::shared_ptr<K> createKnob(KnobHolder*  holder,
-                                    const std::string &description,
+                                    const std::string &label,
                                     int dimension = 1,
                                     bool declaredByPlugin = true) const
     {
-        return boost::dynamic_pointer_cast<K>( createKnob(K::typeNameStatic(),holder,description,dimension,declaredByPlugin) );
+        return boost::dynamic_pointer_cast<K>( createKnob(K::typeNameStatic(), holder, label, dimension, declaredByPlugin) );
     }
 
 private:
-    boost::shared_ptr<KnobHelper> createKnob(const std::string &id,KnobHolder* holder,
-                                             const std::string &description, int dimension = 1,bool declaredByPlugin = true) const WARN_UNUSED_RETURN;
+    boost::shared_ptr<KnobHelper> createKnob(const std::string &id,
+                                             KnobHolder* holder,
+                                             const std::string &label,
+                                             int dimension = 1,
+                                             bool declaredByPlugin = true) const WARN_UNUSED_RETURN;
+
     const std::map<std::string, Natron::LibraryBinary *> &getLoadedKnobs() const
     {
         return _loadedKnobs;

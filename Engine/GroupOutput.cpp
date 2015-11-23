@@ -25,7 +25,7 @@
 #include "GroupOutput.h"
 
 std::string
-GroupOutput::getDescription() const
+GroupOutput::getPluginDescription() const
 {
     return "This node can only be used within a Group. There can only be 1 Output node in the group. It defines the output of the group.";
 }

@@ -157,7 +157,7 @@ private:
     virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
-    virtual void onLabelChanged() OVERRIDE FINAL;
+    virtual void onLabelChangedInternal() OVERRIDE FINAL;
 private:
 
     Bool_CheckBox *_checkBox;

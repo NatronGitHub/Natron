@@ -68,7 +68,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
                     false,
                     NodeUi->getUndoStack(),
                     NodeUi->getNode()->getLabel().c_str(),
-                    NodeUi->getNode()->getDescription().c_str(),
+                    NodeUi->getNode()->getPluginDescription().c_str(),
                     false,
                     "Settings",
                     parent)

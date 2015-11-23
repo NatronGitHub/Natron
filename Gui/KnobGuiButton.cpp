@@ -95,7 +95,7 @@ void
 KnobGuiButton::createWidget(QHBoxLayout* layout)
 {
     boost::shared_ptr<KnobButton> knob = _knob.lock();
-    QString label( knob->getDescription().c_str() );
+    QString label( knob->getLabel().c_str() );
     const std::string & iconFilePath = knob->getIconFilePath();
     
     QString filePath(iconFilePath.c_str());

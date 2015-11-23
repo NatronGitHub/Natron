@@ -237,6 +237,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     bool isGroupEditable = true;
     bool groupEdited = true;
     if (isGroup) {
+#pragma message WARN("Value stored to 'isGroupEditable' is never read'")
         isGroupEditable = isGroup->isSubGraphEditable();
         groupEdited = isGroup->getNode()->hasPyPlugBeenEdited();
     }

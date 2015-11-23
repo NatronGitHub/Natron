@@ -62,7 +62,7 @@ public:
         return "Smear";
     }
     
-    virtual std::string getDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN { return std::string(); }
+    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN { return std::string(); }
 
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL
     {

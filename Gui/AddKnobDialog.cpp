@@ -353,7 +353,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->labelLineEdit = new LineEdit(secondRowContainer);
         _imp->labelLineEdit->setToolTip(Natron::convertFromPlainText(tr("The label of the parameter as displayed on the graphical user interface"), Qt::WhiteSpaceNormal));
         if (knob) {
-            _imp->labelLineEdit->setText(knob->getDescription().c_str());
+            _imp->labelLineEdit->setText(knob->getLabel().c_str());
         }
         secondRowLayout->addWidget(_imp->labelLineEdit);
         _imp->hideLabel = new Natron::Label(tr("Hide:"),secondRowContainer);

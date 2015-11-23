@@ -1259,7 +1259,7 @@ NodeGroup::~NodeGroup()
 }
 
 std::string
-NodeGroup::getDescription() const
+NodeGroup::getPluginDescription() const
 {
     return "Use this to nest multiple nodes into a single node. The original nodes will be replaced by the Group node and its "
     "content is available in a separate NodeGraph tab. You can add user parameters to the Group node which can drive "
@@ -1880,7 +1880,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
                 break;
         }
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + ESC(isInt->getName()) +
-                                      ", " + ESC(isInt->getDescription()) + ")");
+                                      ", " + ESC(isInt->getLabel()) + ")");
         
         std::vector<int> defaultValues = isInt->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isInt->getDimension());
@@ -1927,7 +1927,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
                 break;
         }
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + ESC(isDouble->getName()) +
-                                      ", " + ESC(isDouble->getDescription()) + ")");
+                                      ", " + ESC(isDouble->getLabel()) + ")");
         
         std::vector<double> defaultValues = isDouble->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isDouble->getDimension());
@@ -1960,7 +1960,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     } else if (isBool) {
         
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createBooleanParam(" + ESC(isBool->getName()) +
-                                      ", " + ESC(isBool->getDescription()) + ")");
+                                      ", " + ESC(isBool->getLabel()) + ")");
         
         std::vector<bool> defaultValues = isBool->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isBool->getDimension());
@@ -1973,7 +1973,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     } else if (isChoice) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createChoiceParam(" +
                                       ESC(isChoice->getName()) +
-                                      ", " + ESC(isChoice->getDescription()) + ")");
+                                      ", " + ESC(isChoice->getLabel()) + ")");
         std::vector<std::string> entries = isChoice->getEntries_mt_safe();
         std::vector<std::string> helps = isChoice->getEntriesHelp_mt_safe();
         if (entries.size() > 0) {
@@ -2000,7 +2000,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     } else if (isColor) {
         QString hasAlphaStr = (isColor->getDimension() == 4) ? "True" : "False";
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createColorParam(" + ESC(isColor->getName()) +
-                                      ", " + ESC(isColor->getDescription()) + ", " + hasAlphaStr +  ")");
+                                      ", " + ESC(isColor->getLabel()) + ", " + hasAlphaStr +  ")");
         
         std::vector<double> defaultValues = isColor->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isColor->getDimension());
@@ -2034,11 +2034,11 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     } else if (isButton) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createButtonParam(" +
                                       ESC(isButton->getName()) +
-                                      ", " + ESC(isButton->getDescription()) + ")");
+                                      ", " + ESC(isButton->getLabel()) + ")");
     } else if (isStr) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createStringParam(" +
                                       ESC(isStr->getName()) +
-                                      ", " + ESC(isStr->getDescription()) + ")");
+                                      ", " + ESC(isStr->getLabel()) + ")");
         QString typeStr;
         if (isStr->isLabel()) {
             typeStr = "eStringTypeLabel";
@@ -2064,7 +2064,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         
     } else if (isFile) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createFileParam(" + ESC(isFile->getName()) +
-                                      ", " + ESC(isFile->getDescription()) + ")");
+                                      ", " + ESC(isFile->getLabel()) + ")");
         QString seqStr = isFile->isInputImageFile() ? "True" : "False";
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
         
@@ -2078,7 +2078,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     } else if (isOutFile) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createOutputFileParam(" +
                                       ESC(isOutFile->getName()) +
-                                      ", " + ESC(isOutFile->getDescription()) + ")");
+                                      ", " + ESC(isOutFile->getLabel()) + ")");
         assert(isOutFile); 
         QString seqStr = isOutFile->isOutputImageFile() ? "True" : "False";
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
@@ -2093,7 +2093,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     } else if (isPath) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createPathParam(" +
                                       ESC(isPath->getName()) +
-                                      ", " + ESC(isPath->getDescription()) + ")");
+                                      ", " + ESC(isPath->getLabel()) + ")");
         if (isPath->isMultiPath()) {
             WRITE_INDENT(indentLevel); WRITE_STRING("param.setAsMultiPathTable()");
         }
@@ -2108,7 +2108,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     } else if (isGrp) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createGroupParam(" +
                                       ESC(isGrp->getName()) +
-                                      ", " + ESC(isGrp->getDescription()) + ")");
+                                      ", " + ESC(isGrp->getLabel()) + ")");
         if (isGrp->isTab()) {
             WRITE_INDENT(indentLevel); WRITE_STRING("param.setAsTab()");
         }
@@ -2116,7 +2116,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     } else if (isParametric) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createParametricParam(" +
                                       ESC(isParametric->getName()) +
-                                      ", " + ESC(isParametric->getDescription()) +  ", " +
+                                      ", " + ESC(isParametric->getLabel()) +  ", " +
                                       NUM(isParametric->getDimension()) + ")");
     }
     
@@ -2342,7 +2342,7 @@ static void exportAllNodeKnobs(int indentLevel,const boost::shared_ptr<Natron::N
     for (std::list<KnobPage*>::iterator it2 = userPages.begin(); it2!= userPages.end(); ++it2) {
         WRITE_INDENT(indentLevel); WRITE_STRING("lastNode." + QString((*it2)->getName().c_str()) +
                                       " = lastNode.createPageParam(" + ESC((*it2)->getName()) + ", " +
-                                      ESC((*it2)->getDescription()) + ")");
+                                      ESC((*it2)->getLabel()) + ")");
         std::vector<boost::shared_ptr<KnobI> > children =  (*it2)->getChildren();
         for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it3 = children.begin(); it3 != children.end(); ++it3) {
             exportUserKnob(indentLevel,*it3, "lastNode", 0, *it2, ts);
@@ -2626,7 +2626,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     WRITE_STATIC_LINE("");
     
     if (!pluginDescription.isEmpty()) {
-        WRITE_STATIC_LINE("def getDescription():");
+        WRITE_STATIC_LINE("def getPluginDescription():");
         WRITE_INDENT(1);WRITE_STRING("return \"" + pluginDescription + "\"");
         WRITE_STATIC_LINE("");
     }
