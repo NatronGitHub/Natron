@@ -1524,17 +1524,15 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
             assert( cpIt != _imp->points.end() );
             cp = cpIt->get();
             assert(cp);
-            
-            if (useFeatherPoints()) {
-                BezierCPs::iterator fpIt = _imp->featherPoints.begin();
-                std::advance(fpIt, index);
-                assert(fpIt != _imp->featherPoints.end());
-                fp = fpIt->get();
-                assert(fp);
-            }
         } else {
             cp = cpParam;
-#pragma message WARN("if !cpParam, fp is not set, even if useFeatherPoints()!")
+        }
+        if (useFeatherPoints()) {
+            BezierCPs::iterator fpIt = _imp->featherPoints.begin();
+            std::advance(fpIt, index);
+            assert(fpIt != _imp->featherPoints.end());
+            fp = fpIt->get();
+            assert(fp);
         }
         
         bool isOnKeyframe = false;
@@ -1553,16 +1551,13 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
         Transform::Point3D leftF, rightF;
         leftF.z = rightF.z = 1;
         if (!cpParam && useFeatherPoints()) {
-#pragma message WARN("if !cpParam, fp is not set, even if useFeatherPoints()!")
             moveFeather = true;
             if (isLeft || moveBoth) {
-#pragma message WARN("BUG: dereferencing NULL pointer!")
                 (fp)->getLeftBezierPointAtTime(useGuiCurve,time, &leftF.x, &leftF.y,true);
                 leftF = Transform::matApply(trans, leftF);
                 moveFeather = moveFeather && left.x == leftF.x && left.y == leftF.y;
             }
             if (!isLeft || moveBoth) {
-#pragma message WARN("BUG: dereferencing NULL pointer!")
                 (fp)->getRightBezierPointAtTime(useGuiCurve,time, &rightF.x, &rightF.y,true);
                 rightF = Transform::matApply(trans, rightF);
                 moveFeather = moveFeather && right.x == rightF.x && right.y == rightF.y;

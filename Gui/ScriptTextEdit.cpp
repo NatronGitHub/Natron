@@ -137,8 +137,7 @@ PySyntaxHighlighter::highlightBlock(const QString &text)
     // Do multi-line strings
     bool isInMultiline = matchMultiline(text, _imp->triSingleQuote, 1, _imp->basicStyles.value("string2"));
     if (!isInMultiline) {
-#pragma message WARN("Value stored to 'isInMultilne' is never read'")
-        isInMultiline = matchMultiline(text, _imp->triDoubleQuote, 2, _imp->basicStyles.value("string2"));
+        (void)matchMultiline(text, _imp->triDoubleQuote, 2, _imp->basicStyles.value("string2"));
     }
 }
 

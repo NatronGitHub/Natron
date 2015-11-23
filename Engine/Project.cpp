@@ -1296,7 +1296,7 @@ Project::onKnobValueChanged(KnobI* knob,
             if (reason == Natron::eValueChangedReasonUserEdited) {
                 ///Increase all nodes age in the project so all cache is invalidated: some effects images might rely on the project format
                 NodeList nodes;
-                getNodes_recursive(nodes);
+                getNodes_recursive(nodes,true);
                 for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
                     (*it)->incrementKnobsAge();
                 }
@@ -2228,7 +2228,6 @@ void Project::extractTreesFromNodes(const std::list<boost::shared_ptr<Natron::No
         if (isOutput) {
             NodesTree tree;
             tree.output.node = *it;
-
             const std::list<Natron::Node* >& outputs = (*it)->getGuiOutputs();
             for (std::list<Natron::Node*>::const_iterator it2 = outputs.begin(); it2!=outputs.end(); ++it2) {
                 int idx = (*it2)->inputIndex(it->get());

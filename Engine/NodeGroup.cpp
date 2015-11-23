@@ -123,13 +123,16 @@ NodeCollection::getNodes() const
 }
 
 void
-NodeCollection::getNodes_recursive(NodeList& nodes) const
+NodeCollection::getNodes_recursive(NodeList& nodes,bool onlyActive) const
 {
     std::list<NodeGroup*> groupToRecurse;
     
     {
         QMutexLocker k(&_imp->nodesMutex);
         for (NodeList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+            if (onlyActive && !(*it)->isActivated()) {
+                continue;
+            }
             nodes.push_back(*it);
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
             if (isGrp) {
@@ -140,7 +143,7 @@ NodeCollection::getNodes_recursive(NodeList& nodes) const
     }
     
     for (std::list<NodeGroup*>::const_iterator it = groupToRecurse.begin(); it != groupToRecurse.end(); ++it) {
-        (*it)->getNodes_recursive(nodes);
+        (*it)->getNodes_recursive(nodes,onlyActive);
     }
 }
 
@@ -922,7 +925,7 @@ void
 NodeCollection::forceComputeInputDependentDataOnAllTrees()
 {
     NodeList nodes;
-    getNodes_recursive(nodes);
+    getNodes_recursive(nodes,true);
     std::list<Project::NodesTree> trees;
     Project::extractTreesFromNodes(nodes, trees);
     

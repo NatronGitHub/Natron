@@ -491,8 +491,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         if ( (supportsRS == eSupportsMaybe) && (mipMapLevel != 0) ) {
             // supportsRenderScaleMaybe may have changed, update it
-#pragma message WARN("Value stored to 'supportsRS' is never read'")
-            supportsRS = supportsRenderScaleMaybe();
             renderFullScaleThenDownscale = true;
             renderMappedScale.x = renderMappedScale.y = 1.;
             renderMappedMipMapLevel = 0;

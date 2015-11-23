@@ -2318,6 +2318,9 @@ Node::setLabel(const std::string& label)
     
     {
         QMutexLocker k(&_imp->nameMutex);
+        if (label == _imp->label) {
+            return;
+        }
         _imp->label = label;
     }
     boost::shared_ptr<NodeCollection> collection = getGroup();
@@ -7284,7 +7287,7 @@ Node::refreshAllInputRelatedData(bool canChangeValues,const std::vector<boost::s
 {
     bool hasChanged = false;
     hasChanged |= refreshDraftFlagInternal(inputs);
-    
+
     ///if all non optional clips are connected, call getClipPrefs
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     if (!hasMandatoryInputDisconnected()) {
@@ -7452,6 +7455,9 @@ Node::markInputRelatedDataDirtyRecursive()
 void
 Node::refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedNodes)
 {
+    if (getApp()->isCreatingNodeTree()) {
+        return;
+    }
     refreshInputRelatedDataInternal(markedNodes);
     
     /*

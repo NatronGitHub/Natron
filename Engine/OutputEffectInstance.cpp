@@ -173,8 +173,6 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
     bool canOnlyHandleOneView = sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential;
     
     if (canOnlyHandleOneView) {
-#pragma message WARN("Value stored to 'viewsCount' is never read'")
-        viewsCount = 1;
         viewsToRender.clear();
         viewsToRender.push_back(mainView);
     }

@@ -788,6 +788,7 @@ NodeGui::resize(int width,
         QMutexLocker k(&_mtSafeSizeMutex);
         _mtSafeWidth = width;
         _mtSafeHeight = height;
+        
     }
 
     int iconWidth = hasPluginIcon ? NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2 : 0;
@@ -811,8 +812,10 @@ NodeGui::resize(int width,
 
     QFont f(appFont,appFontSize);
     QFontMetrics metrics(f);
+    
     int nameWidth = labelBbox.width();
-    _nameItem->setX( topLeft.x() + iconWidth +  ((width - iconWidth) / 2) - (nameWidth / 2) );
+    double textX = topLeft.x() + iconWidth +  ((width - iconWidth) / 2) - (nameWidth / 2);
+    _nameItem->setX(textX);
 
     double mh = labelBbox.height();
     _nameItem->setY(topLeft.y() + mh * 0.1);
@@ -2603,23 +2606,8 @@ NodeGui::setNameItemHtml(const QString & name,
     QString textLabel;
     textLabel.append("<div align=\"center\">");
     bool hasFontData = true;
-    QString extraLayerStr;
     
-    std::string selectedLayer;
-    bool foundLayer = getNode()->getSelectedLayerChoiceRaw(-1,selectedLayer);
-    if (foundLayer) {
-        if (selectedLayer != ImageComponents::getRGBAComponents().getComponentsGlobalName() &&
-            selectedLayer != ImageComponents::getRGBComponents().getComponentsGlobalName() &&
-            selectedLayer != ImageComponents::getAlphaComponents().getComponentsGlobalName() &&
-            selectedLayer != "None" &&
-            selectedLayer != "All") {
-            extraLayerStr.append("<br>");
-            extraLayerStr.push_back('(');
-            extraLayerStr.append(selectedLayer.c_str());
-            extraLayerStr.push_back(')');
-        }
-    }
-    
+
     if ( !label.isEmpty() ) {
         QString labelCopy = label;
 
@@ -2643,9 +2631,9 @@ NodeGui::setNameItemHtml(const QString & name,
             QString toFind("\">");
             int endFontTag = labelCopy.indexOf(toFind,startFontTag);
             int i = endFontTag += toFind.size();
-            labelCopy.insert(i == -1 ? 0 : i, name + extraLayerStr + "<br>");
+            labelCopy.insert(i == -1 ? 0 : i, name + _channelsExtraLabel + "<br>");
         } else {
-            labelCopy.prepend(name + extraLayerStr + "<br>");
+            labelCopy.prepend(name + _channelsExtraLabel + "<br>");
         }
         textLabel.append(labelCopy);
 
@@ -2657,10 +2645,14 @@ NodeGui::setNameItemHtml(const QString & name,
                            .arg(QApplication::font().family()));
         textLabel.append(fontTag);
         textLabel.append(name);
-        textLabel.append(extraLayerStr);
+        textLabel.append(_channelsExtraLabel);
         textLabel.append("</font>");
     }
     textLabel.append("</div>");
+    QString oldText = _nameItem->toHtml();
+    if (textLabel == oldText) {
+        return;
+    }
     _nameItem->setHtml(textLabel);
     _nameItem->adjustSize();
 
@@ -2683,6 +2675,27 @@ NodeGui::setNameItemHtml(const QString & name,
 void
 NodeGui::onOutputLayerChanged()
 {
+    QString extraLayerStr;
+    
+    std::string selectedLayer;
+    bool foundLayer = getNode()->getSelectedLayerChoiceRaw(-1,selectedLayer);
+    if (!foundLayer) {
+        return;
+    }
+    if (selectedLayer != ImageComponents::getRGBAComponents().getComponentsGlobalName() &&
+        selectedLayer != ImageComponents::getRGBComponents().getComponentsGlobalName() &&
+        selectedLayer != ImageComponents::getAlphaComponents().getComponentsGlobalName() &&
+        selectedLayer != "None" &&
+        selectedLayer != "All") {
+        extraLayerStr.append("<br>");
+        extraLayerStr.push_back('(');
+        extraLayerStr.append(selectedLayer.c_str());
+        extraLayerStr.push_back(')');
+    }
+    if (extraLayerStr == _channelsExtraLabel) {
+        return;
+    }
+    _channelsExtraLabel = extraLayerStr;
     setNameItemHtml(getNode()->getLabel().c_str(),_nodeLabel);
 }
 

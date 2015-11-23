@@ -659,6 +659,7 @@ private:
     QPointF _distanceSinceLastMagnec; //for x and for y
     QPointF _magnecStartingPos; //for x and for y
     QString _nodeLabel;
+    QString _channelsExtraLabel;
     boost::weak_ptr<NodeGui> _parentMultiInstance;
     
     int _renderingStartedCount;
