@@ -267,8 +267,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ///through all the rendering of this frame.
     U64 nodeHash = frameRenderArgs.nodeHash;
     const double par = getPreferredAspectRatio();
-    RectD rod; //!< rod is in canonical coordinates
-    bool isProjectFormat = false;
     const unsigned int mipMapLevel = args.mipMapLevel;
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
     ///This flag is relevant only when the mipMapLevel is different than 0. We use it to determine
@@ -285,16 +283,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     renderMappedScale.x = renderMappedScale.y = Image::getScaleFromMipMapLevel(renderMappedMipMapLevel);
     assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
 
-    ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
-    bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
-    if (renderFullScaleThenDownscale) {
-        renderScaleOneUpstreamIfRenderScaleSupportDisabled = getNode()->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
-
-        ///For multi-resolution we want input images with exactly the same size as the output image
-        if ( !renderScaleOneUpstreamIfRenderScaleSupportDisabled && !supportsMultiResolution() ) {
-            renderScaleOneUpstreamIfRenderScaleSupportDisabled = true;
-        }
-    }
 
     const FrameViewRequest* requestPassData = 0;
     if (frameRenderArgs.request) {
@@ -303,6 +291,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Get the RoD ///////////////////////////////////////////////////////////////
+    RectD rod; //!< rod is in canonical coordinates
+    bool isProjectFormat = false;
     {
         ///if the rod is already passed as parameter, just use it and don't call getRegionOfDefinition
         if ( !args.preComputedRoD.isNull() ) {
@@ -715,6 +705,16 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     const bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
     const bool createInCache = shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view);
+    ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
+    bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
+    if (renderFullScaleThenDownscale) {
+        renderScaleOneUpstreamIfRenderScaleSupportDisabled = getNode()->useScaleOneImagesWhenRenderScaleSupportIsDisabled();
+
+        ///For multi-resolution we want input images with exactly the same size as the output image
+        if ( !renderScaleOneUpstreamIfRenderScaleSupportDisabled && !supportsMultiResolution() ) {
+            renderScaleOneUpstreamIfRenderScaleSupportDisabled = true;
+        }
+    }
     Natron::ImageKey key(getNode().get(),
                          nodeHash,
                          isFrameVaryingOrAnimated,
