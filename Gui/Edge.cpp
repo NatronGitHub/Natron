@@ -876,6 +876,7 @@ LinkArrow::paint(QPainter *painter,
                  const QStyleOptionGraphicsItem* /*options*/,
                  QWidget* /*parent*/)
 {
+    painter->setRenderHint(QPainter::Antialiasing, false);
     QPen myPen = pen();
 
     myPen.setColor(_renderColor);
