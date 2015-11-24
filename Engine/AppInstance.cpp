@@ -994,7 +994,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                 Natron::removeFileExtension(moduleName);
                 setGroupLabelIDAndVersion(node, modulePath, moduleName);
             }
-        } else if (!requestedByLoad && !_imp->_creatingGroup) {
+        } else if (!requestedByLoad && !_imp->_creatingGroup && userEdited) {
             //if the node is a group and we're not loading the project, create one input and one output
             NodePtr input,output;
             

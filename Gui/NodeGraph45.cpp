@@ -644,7 +644,8 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
 
 void
 NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> >& nodes,
-                                     const boost::shared_ptr<NodeCollection>& group)
+                                     const boost::shared_ptr<NodeCollection>& group,
+                                     std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >& createdNodes)
 {
     {
         CreatingNodeTreeFlag_RAII createNodeTree(getGui()->getApp());
@@ -652,18 +653,18 @@ NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> 
         NodeClipBoard clipboard;
         _imp->copyNodesInternal(nodes,clipboard);
         
-        std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
         std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it, ++itOther) {
             boost::shared_ptr<NodeGui> node = _imp->pasteNode( **itOther,**it,QPointF(0,0),group,std::string(), false);
-            newNodes.push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
+            createdNodes.push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
         }
-        assert( clipboard.nodes.size() == newNodes.size() );
+        assert( clipboard.nodes.size() == createdNodes.size() );
         
         ///Now that all nodes have been duplicated, try to restore nodes connections
-        _imp->restoreConnections(clipboard.nodes, newNodes);
+        _imp->restoreConnections(clipboard.nodes, createdNodes);
     }
+    
     getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
     
 }
