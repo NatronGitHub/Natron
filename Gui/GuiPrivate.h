@@ -281,9 +281,7 @@ struct GuiPrivate
     
     bool wasLaskUserSeekDuringPlayback;
     
-#ifdef __NATRON_WIN32__
     bool applicationConsoleVisible;
-#endif
     
     GuiPrivate(GuiAppInstance* app,
                Gui* gui);

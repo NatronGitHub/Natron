@@ -360,26 +360,32 @@ Gui::updateLastPluginDirectory(const QString & str)
     _imp->_lastPluginDir = str;
 }
 
-#ifdef __NATRON_WIN32__
 
 void
 Gui::onShowApplicationConsoleActionTriggered()
 {
+
     setApplicationConsoleActionVisible(!_imp->applicationConsoleVisible);
 }
 
 void
 Gui::setApplicationConsoleActionVisible(bool visible)
 {
+#ifdef __NATRON_WIN32__
+
     if (visible == _imp->applicationConsoleVisible) {
         return;
     }
     _imp->applicationConsoleVisible = visible;
     HWND hWnd = GetConsoleWindow();
     if (hWnd) {
-        ShowWindow(hWnd, _imp->applicationConsoleVisible ? SW_SHOW : SW_HIDE );
+		if (_imp->applicationConsoleVisible) {
+			ShowWindow(hWnd, SW_HIDE);
+		} else {
+			ShowWindow(hWnd, SW_SHOWNORMAL);
+		}
+        
     }
-
-}
 #endif
+}
 
