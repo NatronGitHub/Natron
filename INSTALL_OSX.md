@@ -75,7 +75,37 @@ also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
 	
     export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig
-	
+
+### Installing a patched Qt to avoid stack overflows
+
+    curl -O https://download.qt.io/official_releases/qt/4.8/4.8.7/qt-everywhere-opensource-src-4.8.7.tar.gz
+    tar zxvf qt-everywhere-opensource-src-4.8.7.tar.gz
+    cd qt-everywhere-opensource-src-4.8.7
+    curl -O https://raw.githubusercontent.com/Homebrew/patches/480b7142c4e2ae07de6028f672695eb927a34875/qt/el-capitan.patch
+    patch -p1 < el-capitan.patch
+    patch -p0 < /path/to/source/Natron/tools/MacOSX/ports/aqua/qt4-mac/files/patch-qthread-stacksize.diff
+
+Then, configure using:
+
+    ./configure -prefix /opt/qt4 -system-zlib -qt-libtiff -qt-libpng -qt-libjpeg -confirm-license -opensource -nomake demos -nomake examples -nomake docs -cocoa -fast -release
+
+On OS X >= 10.9 add `-platform unsupported/macx-clang-libc++`
+
+Os OS X < 10.9, to compile with clang add `-platform unsupported/macx-clang`
+
+To use another openssl than the system (mainly for security reasons), add `-openssl-linked -I /usr/local/Cellar/openssl/1.0.2d_1/include -L /usr/local/Cellar/openssl/1.0.2d_1/lib` (where the path is changed to your openssl installation).
+
+To compile universal binaries, add `-arch x86_64 -arch x86`
+
+Then, compile using:
+
+    make
+
+And install (after making sure `/opt/qt4` is user-writable) using:
+
+    make install
+
+
 ###Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
