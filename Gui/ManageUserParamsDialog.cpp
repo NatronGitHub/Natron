@@ -102,6 +102,8 @@ struct ManageUserParamsDialogPrivate
     void initializeKnobs(const std::vector<boost::shared_ptr<KnobI> >& knobs,QTreeWidgetItem* parent,std::list<KnobI*>& markedKnobs);
     
     void rebuildUserPages();
+    
+    void onKnobAddedInternal(const boost::shared_ptr<KnobI>& knob);
 };
 
 ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* parent)
@@ -266,7 +268,8 @@ ManageUserParamsDialog::onPickClicked()
         assert(nodeGui);
         NodePtr node = nodeGui->getNode();
         assert(node);
-        selectedKnob->createDuplicateOnNode(node->getLiveInstance(), useExpr);
+        boost::shared_ptr<KnobI> duplicate = selectedKnob->createDuplicateOnNode(node->getLiveInstance(), useExpr);
+        _imp->onKnobAddedInternal(duplicate);
     }
 }
 
@@ -277,46 +280,53 @@ ManageUserParamsDialog::onAddClicked()
     if (dialog.exec()) {
         //Ensure the user page knob exists
         boost::shared_ptr<KnobPage> userPageKnob = _imp->panel->getUserPageKnob();
-        
+        (void)userPageKnob;
         boost::shared_ptr<KnobI> knob = dialog.getKnob();
-        QTreeWidgetItem* parent = 0;
-        
-        boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
-        if (parentKnob) {
-            for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
-                if (it->knob.get() == parentKnob.get()) {
+        _imp->onKnobAddedInternal(knob);
+    }
+}
+
+void
+ManageUserParamsDialogPrivate::onKnobAddedInternal(const boost::shared_ptr<KnobI>& knob)
+{
+    QTreeWidgetItem* parent = 0;
+    
+    boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
+    if (parentKnob) {
+        for (std::list<TreeItem>::iterator it = items.begin(); it != items.end(); ++it) {
+            if (it->knob.get() == parentKnob.get()) {
+                parent = it->item;
+                break;
+            }
+        }
+    }
+    if (!parent) {
+        KnobPage* isPage = dynamic_cast<KnobPage*>(knob.get());
+        if (!isPage) {
+            //Default to user page
+            for (std::list<TreeItem>::iterator it = items.begin(); it != items.end(); ++it) {
+                if (it->item->text(0) == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
                     parent = it->item;
                     break;
                 }
             }
         }
-        if (!parent) {
-            KnobPage* isPage = dynamic_cast<KnobPage*>(knob.get());
-            if (!isPage) {
-                //Default to user page
-                for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
-                    if (it->item->text(0) == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
-                        parent = it->item;
-                        break;
-                    }
-                }
-            }
-
-        }
-        TreeItem i;
-        i.knob = knob;
-        i.item = new QTreeWidgetItem;
-        if (parent) {
-            parent->addChild(i.item);
-            parent->setExpanded(true);
-        } else {
-            _imp->tree->addTopLevelItem(i.item);
-        }
-        i.item->setText(0, knob->getName().c_str());
-        _imp->items.push_back(i);
+        
     }
-    _imp->rebuildUserPages();
-    _imp->panel->getGui()->getApp()->triggerAutoSave();
+    TreeItem i;
+    i.knob = knob;
+    i.item = new QTreeWidgetItem;
+    if (parent) {
+        parent->addChild(i.item);
+        parent->setExpanded(true);
+    } else {
+        tree->addTopLevelItem(i.item);
+    }
+    i.item->setText(0, knob->getName().c_str());
+    items.push_back(i);
+
+    rebuildUserPages();
+    panel->getGui()->getApp()->triggerAutoSave();
 }
 
 void
@@ -350,24 +360,11 @@ ManageUserParamsDialog::onEditClickedInternal(const QList<QTreeWidgetItem*> &sel
         for (int i = 0; i < selection.size(); ++i) {
             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
-                    
-                    std::list<boost::shared_ptr<KnobI> > listeners;
-                    it->knob->getListeners(listeners);
-                    if (!listeners.empty()) {
-                        Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Edit parameter").toStdString(),
-                                                                                tr("This parameter has one or several "
-                                                                                   "parameters from which other parameters "
-                                                                                   "of the project rely on through expressions "
-                                                                                   "or links. Editing this parameter may "
-                                                                                   "remove these expressions if the script-name is changed.\n"
-                                                                                   "Do you want to continue?").toStdString(), false);
-                        if (rep == Natron::eStandardButtonNo) {
-                            return;
-                        }
-                    }
-                    
+
                     AddKnobDialog dialog(_imp->panel,it->knob,this);
                     if (dialog.exec()) {
+                        
+                        
                         it->knob = dialog.getKnob();
                         it->item->setText(0, it->knob->getName().c_str());
                         _imp->rebuildUserPages();
