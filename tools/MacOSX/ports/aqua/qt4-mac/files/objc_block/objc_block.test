@@ -1,0 +1,21 @@
+#!/bin/sh
+
+OBJC_BLOCK_SUPPORT=no
+COMPILER=$1
+VERBOSE=$2
+WORKDIR=$3
+
+cd $3
+
+if "$COMPILER" -c objc_block_test.m 2>/dev/null 1>&2; then
+    OBJC_BLOCK_SUPPORT=yes
+fi
+rm -f objc_block_test.o
+
+if [ "$OBJC_BLOCK_SUPPORT" != "yes" ]; then
+    [ "$VERBOSE" = "yes" ] && echo "Objective-C block (^) support not detected"
+    exit 0
+else
+    [ "$VERBOSE" = "yes" ] && echo "Objective-C block (^) support detected"
+    exit 1
+fi

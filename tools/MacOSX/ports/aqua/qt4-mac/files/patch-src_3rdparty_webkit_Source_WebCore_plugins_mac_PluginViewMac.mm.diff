@@ -1,0 +1,13 @@
+--- src/3rdparty/webkit/Source/WebCore/plugins/mac/PluginViewMac.mm.orig	2012-04-23 14:49:04.000000000 -0400
++++ src/3rdparty/webkit/Source/WebCore/plugins/mac/PluginViewMac.mm	2012-04-23 14:51:28.000000000 -0400
+@@ -233,8 +233,10 @@
+         setNPWindowIfNeeded();
+ 
+     // TODO: Implement null timer throttling depending on plugin activation
++#ifndef NP_NO_CARBON
+     m_nullEventTimer = adoptPtr(new Timer<PluginView>(this, &PluginView::nullEventTimerFired));
+     m_nullEventTimer->startRepeating(0.02);
++#endif
+ 
+     m_lastMousePos.h = m_lastMousePos.v = 0;
+ 

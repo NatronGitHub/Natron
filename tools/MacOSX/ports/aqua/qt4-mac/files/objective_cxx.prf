@@ -1,0 +1,18 @@
+# Add compiler directives for Objective C++ (.mm) only
+#
+# OBJECTIVE_CXX_SOURCES has already been set in "split_sources"
+
+isEmpty(QMAKE_OBJECTIVE_CXX):QMAKE_OBJECTIVE_CXX = $$QMAKE_CXX
+
+OBJECTIVE_CXX_OBJECTS_DIR = $$OBJECTS_DIR
+isEmpty(OBJECTIVE_CXX_OBJECTS_DIR):OBJECTIVE_CXX_OBJECTS_DIR = .
+isEmpty(QMAKE_EXT_OBJECTIVE_CXX):QMAKE_EXT_OBJECTIVE_CXX = .mm
+
+objective_cxx.dependency_type = TYPE_C
+objective_cxx.variables = QMAKE_OBJECTIVE_CXXFLAGS
+objective_cxx.commands = $$QMAKE_OBJECTIVE_CXX -c $(QMAKE_COMP_QMAKE_OBJECTIVE_CXXFLAGS) $(DEFINES) $(INCPATH) -o ${QMAKE_FILE_OUT} ${QMAKE_FILE_IN}
+objective_cxx.output = $$OBJECTIVE_CXX_OBJECTS_DIR/${QMAKE_FILE_BASE}$${first(QMAKE_EXT_OBJ)}
+objective_cxx.input = OBJECTIVE_CXX_SOURCES
+objective_cxx.name = Compile ${QMAKE_FILE_IN}
+silent:objective_cxx.commands = @echo objective-cxx ${QMAKE_FILE_IN} && $$objective_cxx.commands
+QMAKE_EXTRA_COMPILERS += objective_cxx

@@ -1,0 +1,1090 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 141286 2015-10-14 17:53:19Z michaelld@macports.org $
+
+PortSystem          1.0
+
+# use the qt4 group; set 'building_qt4' so that the portgroup
+# does not include certain parts
+set building_qt4    1
+PortGroup           qt4 1.0
+PortGroup           xcodeversion 1.0
+PortGroup           compiler_blacklist_versions 1.0
+
+name                qt4-mac
+# qt4-mac-devel is "replaced_by" this port,
+# so this port cannot conflict with it.
+#conflicts           qt3 qt3-mac qt4-mac-devel
+conflicts           qt3 qt3-mac qt5-mac
+version             4.8.7
+revision            2
+set branch          [join [lrange [split ${version} .] 0 1] .]
+
+categories          aqua
+platforms           macosx
+maintainers         michaelld openmaintainer
+license             {LGPL-2.1 GPL-3}
+
+homepage            http://www.qt.io/
+description         Qt Tool Kit
+long_description    Qt Tool Kit: A cross-platform framework \
+                    (headers, data, and libraries) for writing \
+                    cross-platform GUI-based applications.
+
+distname            qt-everywhere-opensource-src-${version}
+
+master_sites        http://download.qt.io/official_releases/qt/${branch}/${version}/
+
+checksums           rmd160 afb5e5a99388e6429faca59cb5000054feffd166 \
+                    sha256 e2882295097e47fe089f8ac741a95fef47e0a73a3f3cdf21b56990638f626ea0
+
+minimum_xcodeversions   {8 2.5}
+
+depends_lib-append  port:zlib \
+                    path:bin/dbus-daemon:dbus \
+                    path:lib/libssl.dylib:openssl \
+                    port:tiff \
+                    port:libpng \
+                    port:libmng \
+                    port:jpeg
+
+# find a way to specify the OS MINOR version.  For OSX 10.X, this
+# value will be X.  The type is this variable is integer, so we can
+# use "==" and so forth for comparison.
+
+global MINOR
+set MINOR ""
+
+# hopefully the MACOSX_DEPLOYMENT_TARGET exists and is set by now.  if
+# not, last resort (which is not desirable) is to use the os.version.
+
+if {${macosx_deployment_target} ne ""} {
+    set MINOR [lindex [split ${macosx_deployment_target} "."] 1]
+} else {
+    set MINOR [expr [lindex [split ${os.version} "."] 0] - 4]
+}
+
+###############################################
+# Patches are used to both fix compiling on various OS versions, and
+# to enhance the functionality of QMake and its build files.  Some of
+# these patches are 2-stage: use a file here, and the replace an
+# @VARIABLE@ in post-patch.  There are LOTS of patches, because Qt is
+# a large, complicated system.
+
+# (0) Fix the testing script to properly handle both +universal as
+# well as the native arch for both CXX and CC compiling; also make
+# sure it does not create a Mac app bundle.
+
+patchfiles-append   patch-config.tests_unix_compile.test.diff
+
+# (1) Test for Precompiled-headers support (a) requires a C++
+# compiler, but configure calls it, by default, with a C compiler;
+# thus, enable testing using the C compiler. (b) to work with ccache,
+# if used.
+
+patchfiles-append   patch-config.tests_unix_precomp.test.diff
+
+# (2) fix 'configure' script: (a) to allow easy replacement of arch
+# type(s). (b) to find the correct QMAKE CXX compiler by removing
+# possibilities that include the character "$". (c) to declare, use,
+# and set QT_INSTALL_FRAMEWORKS and QMAKE_FRAMEWORKDIR_QT, both here
+# and in the resulting .qmake.cache files. (d) to allow easy
+# replacement of MACOSX_DEPLOYMENT_TARGET: build for just the user's
+# current OS. (e) add hooks for C++11 testing.
+
+patchfiles-append   patch-configure.diff
+
+# (3) (a) Tweak various scripts to allow easy replacement of
+# MACOSX_DEPLOYMENT_TARGET: build for just the user's current OS.
+# (b) Assign initial OBJECTIVE_CXXFLAGS.
+
+patchfiles-append   patch-mkspecs_common_g++-macx.conf.diff
+
+# (4) (a) Allow easy replacement of MACOSX_DEPLOYMENT_TARGET: build
+# for just the user's current OS; (b) allow QMake to use 'ccache' via,
+# e.g., "qmake && make CCACHE=ccache".
+
+patchfiles-append   patch-mkspecs_common_mac.conf.diff
+
+# (5) Place the -I path for local moc-created headers -before-
+# all other -I paths.
+
+patchfiles-append   patch-mkspecs_features_moc.prf.diff
+
+# (6) Remove Qt's LIBDIR and INCDIR from various QMake internal
+# variables, since they are already included in the user-supplied
+# LIBS and INCLUDEPATH.
+
+patchfiles-append   patch-mkspecs_features_qt.prf.diff
+
+# (7) (a) Change placement of Qt's LIBDIR and INCDIR, to always be
+# after those supplied by the user's QMake (.pro) files.  By the time
+# QMake gets to the patched function, it is creating the Makefile
+# parts to find Qt's headers and libraries, so moving these paths to
+# this location should always work. (b) If the library is QtWebKit,
+# and the build is library (no-framework), universal, and debug, then
+# the linkage is just -lQtWebKit, not -lQtWebKit_debug because the
+# debug library for 32-bit system cannot be created (too large).
+
+patchfiles-append   patch-mkspecs_features_qt_functions.prf.diff
+
+# (8) (a) Change "gcc" and "g++" to @'s for replacement in
+# post-patch; (b) add hooks for C++11.
+
+patchfiles-append   patch-mkspecs_common_g++-base.conf.diff
+
+# (9) Add default QMake variables for Objective C++.
+
+patchfiles-append   patch-mkspecs_objective_cxx.diff
+
+# (10) Add "absolute_library_soname" to the default CONFIG variables,
+# so that when a DYLIB is created, if "target.path" is set for it then
+# that path is prepended to its "install_name".
+
+patchfiles-append   patch-mkspecs_macx-g++_qmake.conf.diff
+
+# (11) Add QT_INSTALL_FRAMEWORKS and related variables to QMake, to
+# provide a default variable for the location of QMake installed
+# frameworks.
+
+patchfiles-append   \
+    patch-qmake_option.h.diff \
+    patch-qmake_property.cpp.diff \
+    patch-src_corelib_global_qlibraryinfo.cpp.diff \
+    patch-src_corelib_global_qlibraryinfo.h.diff
+
+# (12) In QMake, disable default MKSPECS and FEATURES path
+# concatinations if the shell environment variable QMAKE_NO_DEFAULTS
+# is set (to anything); we use this variable in this portfile to make
+# sure only internal paths (to the build) are searched by QMake.
+
+patchfiles-append   patch-qmake_project.cpp.diff
+
+# (13) In QMake: (a) enable correct "-framework foo,bar" parsing as
+# specified by Apple's LD; (b) disable "/Library/Frameworks" as a
+# default search path; use "PREFIX/Library/Frameworks" and replace
+# PREFIX in post-patch.  Also set "PREFIX/lib" as a default library
+# search path.
+
+patchfiles-append   patch-qmake_generators_unix_unixmakke.cpp.diff
+
+# (14) Allow easy replacement of MACOSX_DEPLOYMENT_TARGET: build for
+# just the user's current OS.
+
+patchfiles-append   \
+    patch-qmake_qmake.pri.diff \
+    patch-src_tools_bootstrap_bootstrap.pro.diff
+
+# (15) fix use of CARBON, found on PPC64; does not hurt others
+
+patchfiles-append   \
+    patch-src_3rdparty_webkit_Source_WebCore_plugins_PluginView.h.diff \
+    patch-src_3rdparty_webkit_Source_WebCore_plugins_mac_PluginViewMac.mm.diff
+
+# (16) Use the "target.path" for libdir for core libraries instead of
+# the standard QT_INSTALL_LIBS; allows us to set for library or
+# framework elsewhere and have the install still work here.
+
+patchfiles-append   patch-src_qbase.pri.diff
+
+# (17) (a) Disable explicit disabling of framework or static install;
+# i.e., install as a framework if that mode is selected, and as
+# library otherwise. (b) If installing as framework, use the new
+# QT_INSTALL_FRAMEWORKS directory; otherwise, use the old
+# QT_INSTALL_LIBS; (c) Get PKGCONFIG dependencies correct, hopefully;
+# (d) create and install .pc, .la, and .prl library description files,
+# including basic path replacement into DESTDIR; we couple this with a
+# post-patch to get the correct install location.
+
+patchfiles-append   \
+    patch-src_qt_install.pri.diff \
+    patch-tools_assistant_lib_fulltextsearch_fulltextsearch.pro.diff \
+    patch-tools_assistant_lib_lib.pro.diff \
+    patch-tools_designer_src_components_lib_lib.pro.diff \
+    patch-tools_designer_src_lib_lib.pro.diff \
+    patch-tools_designer_src_uitools_uitools.pro.diff \
+    patch-mkspecs_features_uitools.prf.diff
+
+# (18) fix 'macdeployqt' to look for the correct plugins location by
+# default.  This is paired with a "reinplace" in post-patch
+
+patchfiles-append   \
+    patch-tools_macdeployqt_macdeployqt_main.cpp.diff
+
+# (19) Under 10.4 only: patch QMake build files using just "-lQtHelp"
+# to do "-lQtHelp -lQtCLucene -lQtNetwork -lQtWebKit" instead.  For
+# some reason 10.5+ "knows" that how to do this correctly.
+
+platform darwin {
+    if {${MINOR} == 4} {
+        patchfiles-append patch-QtHelp_10.4_only.diff
+    }
+}
+
+# (20) fix the Mac timer's use of "mach_timebase_info"
+
+patchfiles-append   \
+    patch-src_corelib_tools_qelapsedtimer-mac.cpp.diff
+
+# (21) Under 10.8 and 10.9: Patch to fix corelib linking
+
+platform darwin {
+    if {${MINOR} >= 8} {
+        patchfiles-append patch-src_corelib_corelib.pro.diff
+    }
+}
+
+# (22) fix Framework directory in MacDeployQt tool
+
+patchfiles-append   \
+    patch-tools_macdeployqt_shared_shared.cpp.diff
+
+# (23) remove ColorSync usage from qpaintengine.
+
+# This patch allows for building using the 10.11 SDK, and is also
+# backward compatible with prior OS versions since it just removes API
+# usage but does not otherwise add any. This patch does roughly the
+# same thing as that from Qt5 commit b06304e16:
+# http://code.qt.io/cgit/qt/qtbase.git/commit/?id=b06304e164ba47351fa292662c1e6383c081b5ca
+
+patchfiles-append   \
+    patch-src_gui_painting_qpaintengine_mac.diff
+
+# (24) fix qcursor_mac; already committed upstream; see also:
+# https://trac.macports.org/ticket/48516
+# http://code.qt.io/cgit/qt/qtbase.git/commit/src/plugins/platforms/cocoa/qcocoacursor.mm?id=02ea0235216beef390e9868ff770c7a54d70db83
+# https://developer.apple.com/library/prerelease/mac/documentation/Carbon/Reference/QuartzEventServicesRef/#//apple_ref/c/func/CGEventCreateMouseEvent
+
+patchfiles-append   \
+    patch-src_gui_kernel_qcursor_mac.mm.diff
+
+# (25) avoid zombie processes; see also:
+# https://trac.macports.org/ticket/46608
+# https://codereview.qt-project.org/#/c/61294/
+# approved but abandoned.
+
+patchfiles-append   \
+    patch-src_corelib_io_qprocess_unix.cpp.diff
+
+# (26) fix build on Leopard; see also:
+# https://trac.macports.org/ticket/43746
+
+patchfiles-append   \
+    patch-src_gui_dialogs_qfiledialog_mac.mm.diff
+
+# error out if trying to build on a new OSX version (> 10.11).
+
+platform darwin {
+    if {${MINOR} > 11} {
+        # This project needs to be updated to build with clang++ against libc++
+        depends_lib
+        depends_run
+        pre-fetch {
+            ui_error "$name does not currently build on OSX later than 10.11 'El Capitan'."
+            error "unsupported platform"
+        }
+    }
+}
+
+###############################################
+
+# disable CCACHE for now (ticket #34856)
+
+configure.ccache no
+
+# find a way to specify the SDK to use; Qt will use the 10.4u by
+# default which won't work on 10.6 since it is not supported.  Allow
+# the user to specify the SDK if desired.
+
+global SDK
+set SDK ${configure.sdkroot}
+if {${SDK} eq ""} {
+    # set SDK version depending on OS version
+    set sdk_version ""
+    if {${MINOR} == 4} {
+        # OSX 10.4 requires an additional 'u'
+        set sdk_version "10.4u"
+    } else {
+        set sdk_version "10.${MINOR}"
+    }
+    if {[vercmp ${xcodeversion} 4.3] < 0} {
+        set SDK ${developer_dir}/SDKs/MacOSX${sdk_version}.sdk
+    } else {
+        set SDK ${developer_dir}/Platforms/MacOSX.platform/Developer/SDKs/MacOSX${sdk_version}.sdk
+    }
+}
+
+post-patch {
+    # set ARCHES in configure (per the third patchfile above), for
+    # building QMake.  join any 2 or more arch entries with the GCC
+    # arch flag (join does not effect a single entry).  first "-arch"
+    # is already in place in the 'configure' script (since there has
+    # to be at least 1 arch).
+
+    set ARCHES ""
+    if {[variant_exists universal] && [variant_isset universal]} {
+        set ARCHES [join ${universal_archs} " -arch "]
+    } else {
+        set ARCHES ${build_arch}
+    }
+    reinplace "s|@ARCHES@|${ARCHES}|g" ${worksrcpath}/configure
+
+    # set MACOSX_DEPLOYMENT_TARGET version in various places.  These
+    # were all patched in (2) above, and can be easily changed or
+    # overridden by the user in a project-local qmake .pro script.
+
+    set TARGET "10.${MINOR}"
+    foreach fixfile {configure mkspecs/common/g++-macx.conf \
+                     mkspecs/common/mac.conf qmake/qmake.pri \
+                     src/tools/bootstrap/bootstrap.pro } {
+        reinplace "s|@MACOSX_DEPLOYMENT_TARGET@|${TARGET}|g" \
+            ${worksrcpath}/${fixfile}
+    }
+
+    # Ensure that correct C/C++ compilers are used.
+
+    reinplace "s|@CXX@|${configure.cxx}|" \
+        ${worksrcpath}/mkspecs/common/g++-base.conf
+    reinplace "s|@CC@|${configure.cc}|"  \
+        ${worksrcpath}/mkspecs/common/g++-base.conf
+
+    # fix 'macdeployqt' to look for the correct
+    # plugins location by default.
+
+    reinplace "s,@QT_PLUGINS_DIR@,${qt_plugins_dir},g" \
+        ${worksrcpath}/tools/macdeployqt/macdeployqt/main.cpp
+
+    # fix PREFIX in QMake makefile generator
+
+    reinplace "s,@PREFIX@,${qt_dir},g" \
+        ${worksrcpath}/qmake/generators/unix/unixmake.cpp
+
+    # if no debug, then do not even build debug code
+
+    if {![variant_isset debug]} {
+        foreach fixfile { src/qbase.pri \
+                          src/3rdparty/webkit/Source/WebKit.pri \
+                          src/imports/qimportbase.pri \
+                          src/plugins/qpluginbase.pri \
+                          tools/designer/src/components/lib/lib.pro \
+                          tools/designer/src/lib/lib.pro \
+                          tools/designer/src/plugins/activeqt/activeqt.pro \
+                          tools/designer/src/plugins/plugins.pri \
+                          tools/designer/src/uitools/uitools.pro \
+                          src/3rdparty/webkit/Source/WebKit/qt/declarative/declarative.pro } {
+            reinplace "/+=/s@debug_and_release@@g" \
+                ${worksrcpath}/${fixfile}
+        }
+    }
+
+    # copy C++11 files into place, if that variant is set
+
+    if {[variant_isset cxx11]} {
+        copy ${filespath}/c++11.prf ${worksrcpath}/mkspecs/features
+        copy ${filespath}/c++11 ${worksrcpath}/config.tests/mac
+    }
+
+    # copy Objective C / CXX files into place
+
+    copy ${filespath}/objective_cxx.prf \
+        ${worksrcpath}/mkspecs/features/mac
+    copy ${filespath}/split_sources.prf \
+        ${worksrcpath}/mkspecs/features/mac
+
+    # copy extra compiler tests into place; these are patched into the
+    # configure script to the area before qmake is built.  If any
+    # fail, configure will fail quickly.
+
+    copy ${filespath}/fconstant_cfstrings.test \
+        ${worksrcpath}/config.tests/mac
+    copy ${filespath}/objc_block \
+        ${worksrcpath}/config.tests/mac
+    copy ${filespath}/cpath \
+        ${worksrcpath}/config.tests/mac
+    copy ${filespath}/library_path \
+        ${worksrcpath}/config.tests/mac
+}
+
+# Block various compilers:
+#
+# * The build process requires -Xarch, -fconstant-cfstring, and
+# Objective-C(++) blocks (^), which are not supported with vanilla GCC
+# as installed by MacPorts but are supported by all versions of CLANG
+# (both MacPorts' and Apple's).
+#
+# * Some older versions of CLANG do not honor the CPATH
+# environment variables, which is required for compiling
+# this port when using MacPorts.  The versions seem to be: MacPorts
+# CLANG 2.9 or earlier, and Apple CLANG 318.0.58 or older.
+#
+# * Some older versions of CLANG do not honor the LIBRARY_PATH
+# environment variables, which is required for compiling
+# this port when using MacPorts.  The versions seem to be: MacPorts
+# CLANG 3.0 or earlier, and Apple CLANG 318.0.61 or older.
+#
+# * qt4-creator-mac fails to build with GCC <= 4.0.
+#
+# See also:
+# < http://llvm.org/bugs/show_bug.cgi?id=8971 >,
+# < https://trac.macports.org/ticket/30271 >,
+# < https://trac.macports.org/ticket/31076 >,
+# < https://trac.macports.org/ticket/31638 >,
+# < https://trac.macports.org/ticket/37868 >, and
+# < https://trac.macports.org/ticket/40422 >.
+#
+# NOTE: qt4-mac augments the standard Qt4 configure script with
+# pre-qmake-build tests for CPATH, LIBRARY_PATH, -Xarch,
+# -fconstant-cfstring, Objective-C(++) blocks, and, if requested,
+# C++11.  The script will error out quickly if the compiler does not
+# seem to provide support for any one of these properties, no matter
+# this blacklist.
+#
+
+compiler.blacklist-append { clang <= 318.0.61 } \
+    gcc-3.3 *gcc-4.0 macports-gcc*
+
+# --prefix is not recognized
+
+configure.pre_args-delete       --prefix=${prefix}
+
+# --disable-dependency-tracking is not recognized
+
+configure.universal_args-delete --disable-dependency-tracking
+
+# clear all arch-oriented flags since somehow they impact how qmake is
+# created, which in turn messes up LDFLAGS in most created Makefiles.
+
+configure.ld_archflags
+configure.cc_archflags
+configure.cxx_archflags
+configure.universal_ldflags
+configure.universal_cflags
+configure.universal_cxxflags
+configure.universal_cppflags
+configure.march
+configure.mtune
+
+# Use compiler.cpath and compiler.library_path for all -I and -L
+# entries, so-as to avoid conflicts with already-installed headers and
+# libraries (giving preference to internal-to-this-port first).  CPATH
+# is used instead of -I to avoid conflicts with other ports.
+#
+# See also:
+# < https://trac.macports.org/ticket/15219 >,
+# < https://trac.macports.org/ticket/18723 >, and
+# < https://trac.macports.org/ticket/25321 >.
+
+# set the default paths to include those for SQLITE3 and DBUS-1
+
+set header_path [ list ${prefix}/include/dbus-1.0 \
+                       ${prefix}/lib/dbus-1.0/include \
+                       ${prefix}/include ]
+
+set library_path [ list ${prefix}/lib ]
+
+# -dbus-linked prevends qt4 from trying to dynamically load libdbus-1,
+#     which it is not able to find in ${prefix}.
+#
+# -openssl-linked ensures that the MacPorts openssl is used.
+#
+# -framework ensures that this port is installed as frameworks
+#     (collections of {library, headers, resources}); in
+#     post-destroot, link headers and libraries from the frameworks
+#     into non-framework locations as if "-no-framework" were
+#     specified.  Some dependent projects will not work properly if Qt
+#     is installed as libraries by default, thus make it so #1.
+#
+# -no-phonon ensures that Qt does not install the 3rd-parth Phonon
+#     port or its backend to QuickTime 7; Phonon is now installed via
+#     the 'phonon' port, which is more up to date than that provided
+#     by Qt.
+
+configure.args                                            \
+    -v                                                    \
+    -confirm-license                                      \
+    -opensource                                           \
+    -prefix          ${qt_dir}                            \
+    -bindir          ${qt_bins_dir}                       \
+    -libdir          ${qt_libs_dir}                       \
+    -docdir          ${qt_docs_dir}                       \
+    -headerdir       ${qt_includes_dir}                   \
+    -plugindir       ${qt_plugins_dir}                    \
+    -importdir       ${qt_imports_dir}                    \
+    -datadir         ${qt_data_dir}                       \
+    -translationdir  ${qt_translations_dir}               \
+    -sysconfdir      ${qt_sysconf_dir}                    \
+    -examplesdir     ${qt_examples_dir}                   \
+    -demosdir        ${qt_demos_dir}                      \
+    -openssl-linked                                       \
+    -dbus-linked                                          \
+    -fast                                                 \
+    -optimized-qmake                                      \
+    -no-pch                                               \
+    -framework                                            \
+    -no-phonon                                            \
+    -no-phonon-backend
+
+# Stop configure script from searching for SQL Drivers
+#    not available from MacPorts.
+
+foreach driver {db2 ibase oci tds} {
+    configure.args-append -no-sql-${driver}
+}
+
+# Disable all remaining SQL Drivers.  These are available via the
+# ports qt4-mac-*-plugin.
+
+foreach driver {mysql odbc psql sqlite sqlite2} {
+    configure.args-append -no-sql-${driver}
+}
+
+pre-configure {
+
+    # use the corrected CPATH and LIBRARY_PATH for build
+
+    compiler.cpath [join ${header_path} :]
+    compiler.library_path [join ${library_path} :]
+
+    # for 10.4 or 10.5 32-bit PPC, build as Carbon only, not Cocoa
+
+    if {${MINOR} == 4} {
+
+        configure.args-append -carbon
+
+        # required linking flags?
+
+        configure.ldflags-append -lcrypto -ldbus-1 -ljpeg -llcms \
+            -lssl -lz
+
+    } elseif {${MINOR} == 5 &&
+              [llength ${qt_arch_types}] == 1 &&
+              [lsearch -exact ${qt_arch_types} ppc] == 0} {
+
+        configure.args-append -carbon
+
+    }
+
+    # set the arch type(s) to use, in Qt-speak
+
+    configure.args-append -arch \"${qt_arch_types}\"
+
+    # check to see if not compiling for the native machine hardware
+    # (e.g., compiling for just i386 but CPU is x86_64); optimization
+    # of QMake does not work in this circumstance.
+
+    if {[lsearch -exact ${qt_arch_types} ${os.arch}] == -1} {
+
+        # not building for native arch: disable optimizing qmake
+        configure.args-delete -optimized-qmake
+
+    } elseif {${MINOR} == 6 &&
+              [llength ${qt_arch_types}] == 1 &&
+              [lsearch -exact ${qt_arch_types} x86] == 0} {
+
+        # disable qmake optimization on 10.6 32-bit
+        configure.args-delete -optimized-qmake
+
+    }
+
+    # set the SDK, if it was found and exists
+
+    if {[file exists ${SDK}]} {
+        configure.args-append -sdk ${SDK}
+    }
+
+    # set which pkg-config to use
+
+    configure.env-append PKG_CONFIG=${prefix}/bin/pkg-config
+
+    # set which stdlib to use; clang only
+    if {[string match *clang* ${configure.compiler}]} {
+        configure.env-append QMAKE_STDLIB="-stdlib=${configure.cxx_stdlib}"
+        configure.ldflags-append -stdlib=${configure.cxx_stdlib}
+    }
+}
+
+post-configure {
+
+    # Remove any '-I' and '-L' string from the *FLAGS for SQLITE,
+    # DBUS, ODBC, and OPENSSL, so that what remains are just non-I/L
+    # flags; these paths are in compiler.cpath and
+    # compiler.library_path.  The header and library paths for all the
+    # other variants are not used by 'configure', and are already
+    # included in the compiler.cpath and compiler.library_path
+    # . during the 'build' stage, 'make' will rebuild the Makefiles
+    # that depend on any of these changed files.  These patches are
+    # sufficient to make sure local (to this build) paths are searched
+    # first, and then system paths last (via the compiler.X settings).
+    # Ideally, 'qmake' -- either via its mkspecs files or the
+    # project's build files -- would distinguish between "local" and
+    # "system" includes & libraries.
+
+    # SQLITE
+    reinplace "/SQLITE/s@-I${prefix}/\[^ \]*include\[^ \]*@@g" \
+        ${worksrcpath}/.qmake.cache
+    reinplace "/SQLITE/s@-L${prefix}/\[^ \]*lib\[^ \]*@@g" \
+        ${worksrcpath}/.qmake.cache
+
+    # DBUS
+    reinplace "/DBUS/s@-I${prefix}/\[^ \]*include\[^ \]*@@g" \
+        ${worksrcpath}/.qmake.cache
+    reinplace "/DBUS/s@-L${prefix}/\[^ \]*lib\[^ \]*@@g" \
+        ${worksrcpath}/.qmake.cache
+
+    # OPENSSL
+    reinplace "/OPENSSL/s@-I${prefix}/\[^ \]*include\[^ \]*@@g" \
+        ${worksrcpath}/.qmake.cache
+    reinplace "/OPENSSL/s@-L${prefix}/\[^ \]*lib\[^ \]*@@g" \
+        ${worksrcpath}/.qmake.cache
+
+    # ODBC
+    reinplace "/ODBC/s@-I${prefix}/\[^ \]*include\[^ \]*@@g" \
+        ${worksrcpath}/.qmake.cache
+    reinplace "/ODBC/s@-L${prefix}/\[^ \]*lib\[^ \]*@@g" \
+        ${worksrcpath}/.qmake.cache
+}
+
+pre-build {
+    # use the corrected CPATH and LIBRARY_PATH for build
+    compiler.cpath [join ${header_path} :]
+    compiler.library_path [join ${library_path} :]
+}
+
+# do not use DESTDIR directly in the destroot command; Qt uses DISTDIR
+# internally for other purposes, and instead uses INSTALL_ROOT for the
+# additional install root prefix.
+
+destroot.post_args
+
+post-destroot {
+
+    # shortcuts to destroot directories
+
+    set dr_qt ${destroot}${qt_dir}
+    set dr_qt_libs_dir ${destroot}${qt_libs_dir}
+    set dr_qt_includes_dir ${destroot}${qt_includes_dir}
+    set dr_qt_data_dir ${destroot}${qt_data_dir}
+    set dr_qt_docs_dir ${destroot}${qt_docs_dir}
+    set dr_qt_apps_dir ${destroot}${qt_apps_dir}
+    set dr_qt_bins_dir ${destroot}${qt_bins_dir}
+    set dr_qt_frameworks_dir ${destroot}${qt_frameworks_dir}
+
+    # create all needed destroot directories that don't already exist
+
+    xinstall -m 755 -d ${dr_qt_libs_dir}
+    xinstall -m 755 -d ${dr_qt_includes_dir}
+    xinstall -m 755 -d ${dr_qt_data_dir}
+    xinstall -m 755 -d ${dr_qt_docs_dir}
+    xinstall -m 755 -d ${dr_qt_apps_dir}
+
+    # Fix .pc and .prl files by changing ${worksrcpath}\${prefix} to
+    # ${qt_dir}\${prefix} ("\" means 'take away').  Cannot use
+    # "find -E" since it is not necessarily portable.
+
+    regsub ${prefix} ${worksrcpath} "" from_dir
+    regsub ${prefix} ${qt_dir} "" to_dir
+    foreach fixfile [exec find ${dr_qt} -name "*.pc"] {
+        reinplace "s|${from_dir}|${to_dir}|g" ${fixfile}
+    }
+    foreach fixfile [exec find ${dr_qt} -name "*.prl"] {
+        reinplace "s|${from_dir}|${to_dir}|g" ${fixfile}
+    }
+
+    # fix .pc files
+
+    foreach fixfile [exec find ${dr_qt} -name "*.pc"] {
+
+        # remove Libs.private; they can mess up linking
+
+        reinplace "/Libs\.private/d" ${fixfile}
+
+        # use ${qt_dir} correctly;
+        # in the .pc file, this will be ${prefix}
+
+        reinplace "s|${qt_dir}/|\${prefix}/|g" ${fixfile}
+
+        # fix libdir
+
+        reinplace "/libdir=/s|Library/Frameworks|lib|" ${fixfile}
+
+        # fix Libs: to use -L instead of -F
+
+        reinplace "/Libs:/s|-F|-L|" ${fixfile}
+
+        # fix Libs: to use -lQt* instead of "-framework Qt*"
+        # depends on whether for release or debug
+
+        set fn [lindex [split ${fixfile} /] end]
+
+        if {[lsearch -regexp ${fn} debug] == 0} {
+
+            # debug; need to add that string to all Qt dependency libraries
+            reinplace "/Libs:/s|-framework Qt\\(\[^ \]*\\)|-lQt\\1_debug|" \
+                ${fixfile}
+
+        } else {
+
+            # no debug; just replace
+            reinplace "/Libs:/s|-framework Qt|-lQt|" ${fixfile}
+
+        }
+    }
+
+    # move .pc files from ${qt_frameworks_dir}/pkgconfig to
+    # ${qt_pkg_config_dir}
+
+    file delete -force ${destroot}${qt_pkg_config_dir}
+    move ${dr_qt_frameworks_dir}/pkgconfig ${dr_qt_libs_dir}
+
+    # move .la files from ${qt_frameworks_dir} to ${qt_libs_dir}
+
+    foreach laf [glob ${dr_qt_frameworks_dir}/*.la] {
+        move ${laf} ${dr_qt_libs_dir}
+    }
+
+    # remove -L entries from .prl and .la files
+
+    foreach fixfile [exec find ${dr_qt} -name "*.prl"] {
+        reinplace "/QMAKE_PRL_LIBS/s|-L\[^ \]*||g" ${fixfile}
+    }
+    foreach fixfile [exec find ${dr_qt} -name "*.la"] {
+        reinplace "/dependency_libs/s|-L\[^ \]*||g" ${fixfile}
+    }
+
+    # remove redundant -F entries from .prl and .la files
+
+    foreach fixfile [exec find ${dr_qt} -name "*.prl"] {
+        reinplace "/QMAKE_PRL_LIBS/s|-F\[^ \]*|FREPLACEME|1" \
+            ${fixfile}
+        reinplace "/QMAKE_PRL_LIBS/s|-F\[^ \]*||g" ${fixfile}
+        reinplace "s|FREPLACEME|-F${prefix}/Library/Frameworks|1" \
+            ${fixfile}
+    }
+    foreach fixfile [exec find ${dr_qt} -name "*.la"] {
+        reinplace "/dependency_libs/s|-F\[^ \]*|FREPLACEME|1" \
+            ${fixfile}
+        reinplace "/dependency_libs/s|-F\[^ \]*||g" ${fixfile}
+        reinplace "s|FREPLACEME|-F${prefix}/Library/Frameworks|1" \
+            ${fixfile}
+    }
+
+    # get Qt's version numbers
+
+    set qt_vers [split ${version} "."]
+    set qt_major [lindex ${qt_vers} 0]
+    set qt_minor [lindex ${qt_vers} 1]
+    set qt_patch [lindex ${qt_vers} 2]
+
+    # link includes and libraries for each actual installed framework
+
+    foreach fixfile [exec find ${dr_qt_frameworks_dir} \
+                         -name "*.framework" | \
+                         sed -e "s@${destroot}@@g"] {
+
+        set tf_full [strsed ${fixfile} {s@\\.framework@@}]
+        set tf [strsed ${tf_full} {g@.*\/@@}]
+
+        # special for QtWebKit entries
+
+        set t_minor ${qt_minor}
+        set is_QtWebKit 0
+        if {[string compare ${tf} QtWebKit] == 0} {
+            set t_minor 9
+            set is_QtWebKit 1
+        }
+
+        # link headers into ${qt_includes_dir}, removing directories
+        # if they are already there first
+
+        set inc_file ${dr_qt_includes_dir}/${tf}
+        if {[file exists ${inc_file}]} {
+            file delete -force ${inc_file}
+        }
+        ln -s ${tf_full}.framework/Headers ${inc_file}
+
+        # link libraries into ${qt_libs_dir}, all 4 number variants
+
+        ln -s ${tf_full}.framework/${tf} ${dr_qt_libs_dir}/lib${tf}.dylib
+        ln -s ${tf_full}.framework/${tf} ${dr_qt_libs_dir}/lib${tf}.${qt_major}.dylib
+        ln -s ${tf_full}.framework/${tf} ${dr_qt_libs_dir}/lib${tf}.${qt_major}.${t_minor}.dylib
+        ln -s ${tf_full}.framework/${tf} ${dr_qt_libs_dir}/lib${tf}.${qt_major}.${t_minor}.${qt_patch}.dylib
+
+        # copy .prl file, then correct it for library usage
+
+        copy ${destroot}${tf_full}.framework/${tf}.prl ${dr_qt_libs_dir}/lib${tf}.prl
+
+        # fix TARGET in .prl file
+
+        reinplace "/QMAKE_PRL_TARGET/s|Qt\\(\[^ \]*\\)|libQt\\1.${qt_major}.${t_minor}.${qt_patch}.dylib|" ${dr_qt_libs_dir}/lib${tf}.prl
+
+        # fix PRL_LIBS -F -> -L in .prl file
+
+        reinplace "/QMAKE_PRL_LIBS/s|-F${qt_frameworks_dir}|-L${qt_libs_dir}|" ${dr_qt_libs_dir}/lib${tf}.prl
+
+        # fix "-framework Qt*" -> "-lQt*" in .prl file
+
+        reinplace "/QMAKE_PRL_LIBS/s|-framework Qt|-lQt|g" \
+            ${dr_qt_libs_dir}/lib${tf}.prl
+
+        # fix up .la files to work with ${prefix}/lib entries
+
+        # rename .la file
+
+        move ${dr_qt_libs_dir}/${tf}.la ${dr_qt_libs_dir}/lib${tf}.la
+
+        # fix "name that we can dlopen" in .la file
+
+        reinplace "s|dlname=''|dlname='lib${tf}.${qt_major}.${t_minor}.${qt_patch}.dylib'|" ${dr_qt_libs_dir}/lib${tf}.la
+
+        # fix "names of this library" in .la file
+
+        reinplace "s|library_names='\[^'\]*'|library_names='lib${tf}.${qt_major}.${t_minor}.${qt_patch}.dylib lib${tf}.${qt_major}.${t_minor}.dylib lib${tf}.${qt_major}.dylib lib${tf}.dylib'|" \
+            ${dr_qt_libs_dir}/lib${tf}.la
+
+        # fix "name of the static archive"; there is none in .la file
+
+        reinplace "s|old_library='\[^'\]*'|old_library=''|" \
+            ${dr_qt_libs_dir}/lib${tf}.la
+
+        # fix "libraries that this one depends upon" in .la file
+
+        reinplace "/dependency_libs/s|-F${qt_frameworks_dir}|-L${qt_libs_dir}|"  ${dr_qt_libs_dir}/lib${tf}.la
+        reinplace "/dependency_libs/s|-framework Qt|-lQt|g" \
+            ${dr_qt_libs_dir}/lib${tf}.la
+        reinplace "/dependency_libs/s| ${worksrcpath}\[^ \]*||g" \
+            ${dr_qt_libs_dir}/lib${tf}.la
+        reinplace "/dependency_libs/s| -lwebcore||" \
+            ${dr_qt_libs_dir}/lib${tf}.la
+        reinplace "/dependency_libs/s| -ljscore||" \
+            ${dr_qt_libs_dir}/lib${tf}.la
+
+        # fix "directory that this library needs to be installed in" in .la file
+
+        reinplace "/libdir/s|${qt_frameworks_dir}|${qt_libs_dir}|" \
+            ${dr_qt_libs_dir}/lib${tf}.la
+
+        # deal with debug files
+
+        if {[variant_isset debug]} {
+
+            # but not if QtWebKit and +universal, since that one does
+            # not exist (the 32-bit version of the debug library is
+            # larger than fits into the 32-bit filespace).
+
+            if {[variant_isset debug] && ${is_QtWebKit}} {
+                continue
+            }
+
+            # link libraries into ${qt_libs_dir}, all 4 number variants
+
+            ln -s ${tf_full}.framework/${tf}_debug ${dr_qt_libs_dir}/lib${tf}_debug.dylib
+            ln -s ${tf_full}.framework/${tf}_debug ${dr_qt_libs_dir}/lib${tf}_debug.${qt_major}.dylib
+            ln -s ${tf_full}.framework/${tf}_debug ${dr_qt_libs_dir}/lib${tf}_debug.${qt_major}.${t_minor}.dylib
+            ln -s ${tf_full}.framework/${tf}_debug ${dr_qt_libs_dir}/lib${tf}_debug.${qt_major}.${t_minor}.${qt_patch}.dylib
+
+            # copy .prl file, then correct it for library usage
+
+            copy ${destroot}${tf_full}.framework/${tf}_debug.prl ${dr_qt_libs_dir}/lib${tf}_debug.prl
+
+            # fix TARGET in .prl file
+
+            reinplace "/QMAKE_PRL_TARGET/s|Qt\\(\[^ \]*\\)|libQt\\1.${qt_major}.${t_minor}.${qt_patch}.dylib|" ${dr_qt_libs_dir}/lib${tf}_debug.prl
+
+            # fix PRL_LIBS -F -> -L in .prl file
+
+            reinplace "/QMAKE_PRL_LIBS/s|-F${qt_frameworks_dir}|-L${qt_libs_dir}|" ${dr_qt_libs_dir}/lib${tf}_debug.prl
+
+            # fix "-framework Qt*" -> "-lQt*_debug" in .prl file
+
+            reinplace "/QMAKE_PRL_LIBS/s|-framework Qt\\(\[^ \]*\\)|-lQt\\1_debug|g" ${dr_qt_libs_dir}/lib${tf}_debug.prl
+
+            # fix up .la files to work with ${prefix}/lib entries
+
+            # rename .la file
+
+            move ${dr_qt_libs_dir}/${tf}_debug.la \
+                ${dr_qt_libs_dir}/lib${tf}_debug.la
+
+            # fix "name that we can dlopen" in .la file
+
+            reinplace "s|dlname=''|dlname='lib${tf}_debug.${qt_major}.${t_minor}.${qt_patch}.dylib'|" ${dr_qt_libs_dir}/lib${tf}_debug.la
+
+            # fix "names of this library" in .la file
+
+            reinplace "s|library_names='\[^'\]*'|library_names='lib${tf}_debug.${qt_major}.${t_minor}.${qt_patch}.dylib lib${tf}_debug.${qt_major}.${t_minor}.dylib lib${tf}_debug.${qt_major}.dylib lib${tf}_debug.dylib'|" \
+                ${dr_qt_libs_dir}/lib${tf}_debug.la
+
+            # fix "name of the static archive"; there is none in .la file
+
+            reinplace "s|old_library='\[^'\]*'|old_library=''|" \
+                ${dr_qt_libs_dir}/lib${tf}_debug.la
+
+            # fix "libraries that this one depends upon" in .la file
+
+            reinplace "/dependency_libs/s|-F${qt_frameworks_dir}|-L${qt_libs_dir}|" ${dr_qt_libs_dir}/lib${tf}_debug.la
+            reinplace "/dependency_libs/s|-framework Qt\\(\[^ \]*\\)|-lQt\\1_debug|g" ${dr_qt_libs_dir}/lib${tf}_debug.la
+            reinplace "/dependency_libs/s| ${worksrcpath}\[^ \]*||g" \
+                ${dr_qt_libs_dir}/lib${tf}_debug.la
+            reinplace "/dependency_libs/s| -lwebcored||" \
+                ${dr_qt_libs_dir}/lib${tf}_debug.la
+            reinplace "/dependency_libs/s| -ljscored||" \
+                ${dr_qt_libs_dir}/lib${tf}_debug.la
+
+            # fix "directory that this library needs to be installed in" in .la file
+
+            reinplace "/libdir/s|${qt_frameworks_dir}|${qt_libs_dir}|" \
+                ${dr_qt_libs_dir}/lib${tf}_debug.la
+
+        }
+    }
+
+    # Install documentation.
+
+    xinstall -m 644 -W ${worksrcpath} \
+        INSTALL LGPL_EXCEPTION.txt LICENSE.FDL \
+        LICENSE.GPL3 LICENSE.LGPL README \
+        ${dr_qt_docs_dir}
+
+    # Install private headers needed by QtCreator
+
+    foreach {src_dir include_dir} \
+    {corelib QtCore gui QtGui script QtScript declarative QtDeclarative} {
+        set dest_dir ${dr_qt_frameworks_dir}/${include_dir}.framework/Headers/private
+        xinstall -m 755 -d ${dest_dir}
+        set files [exec find ${worksrcpath}/src/${src_dir} -type f -name "*_p.h"]
+        eval xinstall -m 644 [split ${files}] ${dest_dir}
+    }
+
+    # Move .apps into the applications_dir, and link each .apps'
+    # executable back into ${qt_bins_dir}
+
+    foreach app [glob ${dr_qt_bins_dir}/*.app] {
+
+        # remove the leading stuff
+
+        set app [lindex [split ${app} /] end]
+
+        # move the .app
+
+        move ${dr_qt_bins_dir}/${app} ${dr_qt_apps_dir}
+
+        # link the app's executable back
+
+        set texe [strsed ${app} {g@\.app@@}]
+        ln -s ${qt_apps_dir}/${app}/Contents/MacOS/${texe} \
+            ${dr_qt_bins_dir}
+
+    }
+
+    # move tests to ${qt_data_dir}
+
+    move ${dr_qt}/tests/qt4 ${dr_qt_data_dir}/tests
+
+    # install ${qt_includes_dir}/Qt if not already and it exists in
+    # the build, for support of legacy projects
+
+    if {![file exists ${dr_qt_includes_dir}/Qt] &&
+        [file exists ${worksrcpath}/include/Qt]} {
+
+        # copy the Qt headers directory
+
+        copy ${worksrcpath}/include/Qt ${dr_qt_includes_dir}
+
+    }
+
+    # link in Resource to ${qt_libs_dir}
+
+    ln -s ${qt_frameworks_dir}/QtGui.framework/Resources \
+        ${dr_qt_libs_dir}
+
+}
+
+variant odbc description {Enable iODBC SQL Driver} {
+    depends_lib-append port:libiodbc
+    configure.args-delete -no-sql-odbc
+    configure.args-append -plugin-sql-odbc
+}
+
+variant raster description {Use raster graphics system by default} {
+    configure.args-append -graphicssystem raster
+}
+
+variant demos description {Build demos} {}
+
+if {![variant_isset demos]} {
+   configure.args-append -nomake demos
+}
+
+variant examples description {Build examples} {}
+
+if {![variant_isset examples]} {
+   configure.args-append -nomake examples
+}
+
+variant debug description {Build both release and debug library} {}
+
+if {[variant_isset debug]} {
+    configure.args-append -debug-and-release -declarative-debug
+} else {
+    configure.args-append -release -no-declarative-debug
+}
+
+variant openvg description {Build with support for OpenVG} {
+
+    depends_lib-append port:mesa
+
+    pre-configure {
+
+        # set OpenVG arg, for both testing and building
+
+        configure.env-append QMAKE_OPENVG_ARG=-lOpenVG
+
+    }
+}
+
+variant cxx11 description {Add library support for C++11 (EXPERIMENTAL; does not work with libc++)} {
+
+    # Block compilers that do not support C++11. This variant seems to
+    # work with MacPorts' clang 3.0 or newer and Apple clang newer
+    # than 318.0.58 (but, not that version, which is already blocked).
+
+    compiler.blacklist-append \
+        apple-gcc-4.2 gcc-4.2 llvm-gcc-4.2
+
+    pre-fetch {
+
+        # This variant does not work with Clang libc++
+
+        if {[info exists configure.cxx_stdlib] &&
+            ${configure.cxx_stdlib} eq "libc++" &&
+            [string match *clang* ${configure.cxx}]} {
+
+            ui_msg "\nERROR: C++11 support for Qt4 is not available when using Clang and libc++.\n"
+            error "unsupported platform for C++11 support"
+
+        }
+    }
+
+    pre-extract {
+
+        ui_msg "\nWARNING: You have enabled C++11 support for Qt4, which is EXPERIMENTAL.  Qt's libraries and applications (not including QMake) will be compiled using C++11.  That said, C++11 will NOT be enabled by default when using QMake.  You can enable C++11 by specifying, e.g. \'CONFIG += c++11\', in any QMake build file.\n"
+
+    }
+
+    # patches for C++11 only
+
+    patchfiles-append patch-cxx11.diff
+
+    # have configure test for C++11; our hooks
+    # will error out if C++11 is not found.
+
+    configure.args-append -c++11
+
+}
+
+post-activate {
+    ui_msg "NOTE: Qt database plugins for mysql55, postgresql91, and sqlite2 are NOT installed by this port\; they are installed by qt4-mac-*-plugin instead."
+}
+
+livecheck.type      regex
+livecheck.url       http://download.qt.io/official_releases/qt/${branch}/
+livecheck.regex     >(\[0-9.\]+)/<
