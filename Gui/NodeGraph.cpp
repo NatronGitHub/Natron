@@ -131,6 +131,7 @@ NodeGraph::NodeGraph(Gui* gui,
     scene->addItem(_imp->_cacheSizeText);
     _imp->_cacheSizeText->setFlag(QGraphicsItem::ItemIgnoresTransformations);
     _imp->_cacheSizeText->setBrush( QColor(200,200,200) );
+    _imp->_cacheSizeText->setVisible(false);
 
     QObject::connect( &_imp->_refreshCacheTextTimer,SIGNAL( timeout() ),this,SLOT( updateCacheSizeText() ) );
     _imp->_refreshCacheTextTimer.start(NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
