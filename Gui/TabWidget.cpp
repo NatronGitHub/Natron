@@ -1114,7 +1114,7 @@ TabWidget::removeTab(int index,bool userAction)
         } else {
             _imp->currentWidget = 0;
             _imp->mainLayout->addStretch();
-            if ( !_imp->gui->isDraggingPanel() ) {
+            if ( _imp->gui && !_imp->gui->isDraggingPanel() ) {
                 if (dynamic_cast<FloatingWidget*>(parentWidget())) {
                     l.unlock();
                     tryCloseFloatingPane();
