@@ -562,7 +562,10 @@ NodeGui::createGui()
     _persistentMessage->setZValue(depth + 3);
     QFont f = _persistentMessage->font();
     f.setPixelSize(25);
-    f.setStyleStrategy(QFont::NoAntialias);
+    bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
+    if (!antialias) {
+        f.setStyleStrategy(QFont::NoAntialias);
+    }
     _persistentMessage->setFont(f);
     _persistentMessage->hide();
 
@@ -2662,7 +2665,10 @@ NodeGui::setNameItemHtml(const QString & name,
     if (hasFontData) {
         KnobGuiString::parseFont(textLabel, &f, &color);
     }
-    f.setStyleStrategy(QFont::NoAntialias);
+    bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
+    if (!antialias) {
+        f.setStyleStrategy(QFont::NoAntialias);
+    }
     _nameItem->setFont(f);
 
     QRectF bbox = boundingRect();

@@ -29,7 +29,10 @@
 #include <QDebug>
 #include <QStyleOption>
 
+#include "Engine/Settings.h"
+
 #include "Gui/NodeGraph.h"
+#include "Gui/GuiApplicationManager.h"
 
 #define NODEGRAPH_TEXT_ITEM_MIN_HEIGHT_PX 4
 #define NODEGRAPH_SIMPLE_TEXT_ITEM_MIN_HEIGHT_PX 6
@@ -41,7 +44,10 @@ NodeGraphTextItem::NodeGraphTextItem(NodeGraph* graph,QGraphicsItem* parent,bool
 , _alwaysDrawText(alwaysDrawText)
 {
     QFont f = font();
-    f.setStyleStrategy(QFont::NoAntialias);
+    bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
+    if (!antialias) {
+        f.setStyleStrategy(QFont::NoAntialias);
+    }
     setFont(f);
 }
 
@@ -79,7 +85,10 @@ NodeGraphSimpleTextItem::NodeGraphSimpleTextItem(NodeGraph* graph,QGraphicsItem*
 , _alwaysDrawText(alwaysDrawText)
 {
     QFont f = font();
-    f.setStyleStrategy(QFont::NoAntialias);
+    bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
+    if (!antialias) {
+        f.setStyleStrategy(QFont::NoAntialias);
+    }
     setFont(f);
 }
 

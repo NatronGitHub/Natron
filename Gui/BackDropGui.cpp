@@ -37,7 +37,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/BackDrop.h"
+#include "Engine/Settings.h"
 
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobGuiString.h"
 #include "Gui/NodeGraphTextItem.h"
 
@@ -166,7 +168,11 @@ BackDropGuiPrivate::refreshLabelText(int nameHeight,const QString &text)
     QColor color;
     if (!text.isEmpty()) {
         KnobGuiString::parseFont(textLabel, &f, &color);
-        f.setStyleStrategy(QFont::NoAntialias);
+        
+        bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
+        if (!antialias) {
+            f.setStyleStrategy(QFont::NoAntialias);
+        }
         label->setFont(f);
     }
     
