@@ -514,7 +514,8 @@ std::vector<boost::shared_ptr<DSNode> > DopeSheet::getImportantNodes(DSNode *dsN
         for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             NodePtr childNode = (*it);
 
-            if (boost::shared_ptr<DSNode>isInDopeSheet = findDSNode(childNode.get())) {
+            boost::shared_ptr<DSNode>isInDopeSheet = findDSNode(childNode.get());
+            if (isInDopeSheet) {
                 ret.push_back(isInDopeSheet);
             }
         }
@@ -931,13 +932,15 @@ void DopeSheet::onNodeNameChanged(const QString &name)
 {
     Natron::Node *node = qobject_cast<Natron::Node *>(sender());
     boost::shared_ptr<DSNode>dsNode = findDSNode(node);
-
-    dsNode->getTreeItem()->setText(0, name);
+    if (dsNode) {
+        dsNode->getTreeItem()->setText(0, name);
+    }
 }
 
 void DopeSheet::onKeyframeSetOrRemoved()
 {
-    if (boost::shared_ptr<DSKnob> dsKnob = findDSKnob(qobject_cast<KnobGui *>(sender()))) {
+    boost::shared_ptr<DSKnob> dsKnob = findDSKnob(qobject_cast<KnobGui *>(sender()));
+    if (dsKnob) {
         Q_EMIT keyframeSetOrRemoved(dsKnob.get());
     }
 
@@ -1339,8 +1342,7 @@ void DopeSheetSelectionModel::onNodeAboutToBeRemoved(const boost::shared_ptr<DSN
 
         if (_imp->dopeSheet->findDSNode(knobContext->getInternalKnob()) == removed) {
             it = _imp->selectedKeyframes.erase(it);
-        }
-        else {
+        } else {
             ++it;
         }
     }
