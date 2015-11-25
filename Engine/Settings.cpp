@@ -901,7 +901,8 @@ Settings::initializeKnobsNodeGraph()
     _nodegraphTab->addKnob(_usePluginIconsInNodeGraph);
     
     _useAntiAliasing = Natron::createKnob<KnobBool>(this, "Anti-Aliasing");
-    _useAntiAliasing->setHintToolTip("When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances.");
+    _useAntiAliasing->setHintToolTip("When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances."
+                                     " Changing this requires a restart of Natron");
     _useAntiAliasing->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_useAntiAliasing);
     
