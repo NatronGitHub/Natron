@@ -1,0 +1,88 @@
+--- tools/designer/src/uitools/uitools.pro.orig	2012-03-14 10:01:12.000000000 -0400
++++ tools/designer/src/uitools/uitools.pro	2012-04-25 14:57:29.000000000 -0400
+@@ -1,7 +1,7 @@
+ TEMPLATE = lib
+ TARGET = QtUiTools
+ QT += xml
+-CONFIG += qt staticlib
++CONFIG += qt qt_install_headers
+ DESTDIR = ../../../../lib
+ DLLDESTDIR = ../../../../bin
+ 
+@@ -28,20 +28,68 @@
+ SOURCES += quiloader.cpp
+ 
+ include($$QT_BUILD_TREE/include/QtUiTools/headers.pri, "", true)
+-quitools_headers.files = $$SYNCQT.HEADER_FILES $$SYNCQT.HEADER_CLASSES
+-quitools_headers.path = $$[QT_INSTALL_HEADERS]/QtUiTools
+-INSTALLS        += quitools_headers
+ 
+-target.path=$$[QT_INSTALL_LIBS]
++#mac frameworks
++mac:!static:contains(QT_CONFIG, qt_framework) {
++   #QMAKE_FRAMEWORK_VERSION = 4.0
++   CONFIG += lib_bundle qt_no_framework_direct_includes qt_framework
++   CONFIG(debug, debug|release) {
++      !build_pass:CONFIG += debug_and_release build_all
++   } else { #release
++      !debug_and_release|build_pass {
++	  CONFIG -= qt_install_headers #no need to install these as well
++	  FRAMEWORK_HEADERS.version = Versions
++	  FRAMEWORK_HEADERS.files = $$SYNCQT.HEADER_FILES $$SYNCQT.HEADER_CLASSES
++      	  FRAMEWORK_HEADERS.path = Headers
++      }
++      QMAKE_BUNDLE_DATA += FRAMEWORK_HEADERS
++   }
++}
++
++mac {
++   CONFIG += explicitlib
++   macx-g++ {
++       QMAKE_CFLAGS += -fconstant-cfstrings
++       QMAKE_CXXFLAGS += -fconstant-cfstrings
++   }
++}
++
++# install mac frameworks differently than libraries
++mac:!static:contains(QT_CONFIG, qt_framework) {
++    target.path=$$[QT_INSTALL_FRAMEWORKS]
++} else {
++    target.path=$$[QT_INSTALL_LIBS]
++}
+ INSTALLS        += target
+ 
+-unix|win32-g++* {
+-   CONFIG     += create_pc
+-   QMAKE_PKGCONFIG_LIBDIR = $$[QT_INSTALL_LIBS]
++unix|win32-g++*:!symbian {
++   CONFIG += create_pc
++   QMAKE_PKGCONFIG_LIBDIR = $$target.path
+    QMAKE_PKGCONFIG_INCDIR = $$[QT_INSTALL_HEADERS]/$$TARGET
+    QMAKE_PKGCONFIG_CFLAGS = -I$$[QT_INSTALL_HEADERS]
+    QMAKE_PKGCONFIG_DESTDIR = pkgconfig
+-   QMAKE_PKGCONFIG_REQUIRES += QtXml
++   QMAKE_PKGCONFIG_REQUIRES += QtXml QtCore QtGui
++   include_replace.match = $$QMAKE_INCDIR_QT
++   include_replace.replace = $$[QT_INSTALL_HEADERS]
++   lib_replace.match = $$QMAKE_LIBDIR_QT
++   lib_replace.replace = $$target.path
++   prefix_replace.match = $$QT_BUILD_TREE
++   prefix_replace.replace = $$[QT_INSTALL_PREFIX]
++   QMAKE_PKGCONFIG_INSTALL_REPLACE += include_replace lib_replace prefix_replace
++}
++
++unix:!symbian {
++   CONFIG += create_libtool explicitlib
++   QMAKE_LIBTOOL_LIBDIR = $$target.path
++   QMAKE_PRL_LIBDIR = $$target.path
++   QMAKE_PRL_INSTALL_REPLACE += include_replace lib_replace
++   QMAKE_LIBTOOL_INSTALL_REPLACE += include_replace lib_replace
++}
++
++qt_install_headers {
++    quitools_headers.files = $$SYNCQT.HEADER_FILES $$SYNCQT.HEADER_CLASSES
++    quitools_headers.path = $$[QT_INSTALL_HEADERS]/QtUiTools
++    INSTALLS        += quitools_headers
+ }
+ 
+ TARGET = $$qtLibraryTarget($$TARGET$$QT_LIBINFIX) #do this towards the end

@@ -1,0 +1,353 @@
+--- configure.orig	2015-05-07 10:14:56.000000000 -0400
++++ configure	2015-05-30 14:45:11.000000000 -0400
+@@ -925,12 +925,14 @@
+ CFG_ICU=auto
+ CFG_SYSTEM_PROXIES=no
+ CFG_SLOG2=auto
++CFG_CXX11=no
+ 
+ # initalize variables used for installation
+ QT_INSTALL_PREFIX=
+ QT_INSTALL_DOCS=
+ QT_INSTALL_HEADERS=
+ QT_INSTALL_LIBS=
++QT_INSTALL_FRAMEWORKS=
+ QT_INSTALL_BINS=
+ QT_INSTALL_PLUGINS=
+ QT_INSTALL_IMPORTS=
+@@ -1144,7 +1146,7 @@
+         VAL=no
+         ;;
+     #Qt style yes options
+-    -incremental|-qvfb|-profile|-shared|-static|-sm|-xinerama|-xshape|-xsync|-xinput|-egl|-reduce-exports|-pch|-separate-debug-info|-stl|-freetype|-xcursor|-xfixes|-xrandr|-xrender|-mitshm|-fontconfig|-xkb|-nis|-qdbus|-dbus|-dbus-linked|-glib|-gstreamer|-gtkstyle|-cups|-iconv|-largefile|-h|-help|-v|-verbose|-debug|-release|-fast|-accessibility|-confirm-license|-gnumake|-framework|-qt3support|-debug-and-release|-exceptions|-cocoa|-carbon|-universal|-harfbuzz|-prefix-install|-silent|-armfpa|-optimized-qmake|-dwarf2|-reduce-relocations|-sse|-openssl|-openssl-linked|-ptmalloc|-xmlpatterns|-phonon|-phonon-backend|-multimedia|-audio-backend|-svg|-declarative|-declarative-debug|-javascript-jit|-script|-scripttools|-rpath|-force-pkg-config|-s60|-usedeffiles|-icu)
++    -incremental|-qvfb|-profile|-shared|-static|-sm|-xinerama|-xshape|-xsync|-xinput|-egl|-reduce-exports|-pch|-separate-debug-info|-stl|-freetype|-xcursor|-xfixes|-xrandr|-xrender|-mitshm|-fontconfig|-xkb|-nis|-qdbus|-dbus|-dbus-linked|-glib|-gstreamer|-gtkstyle|-cups|-iconv|-largefile|-h|-help|-v|-verbose|-debug|-release|-fast|-accessibility|-confirm-license|-gnumake|-framework|-qt3support|-debug-and-release|-exceptions|-cocoa|-carbon|-universal|-harfbuzz|-prefix-install|-silent|-armfpa|-optimized-qmake|-dwarf2|-reduce-relocations|-sse|-openssl|-openssl-linked|-ptmalloc|-xmlpatterns|-phonon|-phonon-backend|-multimedia|-audio-backend|-svg|-declarative|-declarative-debug|-javascript-jit|-script|-scripttools|-rpath|-force-pkg-config|-s60|-usedeffiles|-icu|-c++11)
+         VAR=`echo $1 | sed "s,^-\(.*\),\1,"`
+         VAL=yes
+         ;;
+@@ -1402,6 +1404,9 @@
+     libdir)
+         QT_INSTALL_LIBS="$VAL"
+         ;;
++    frameworkdir)
++        QT_INSTALL_FRAMEWORKS="$VAL"
++        ;;
+     qtnamespace)
+         QT_NAMESPACE="$VAL"
+         ;;
+@@ -2519,6 +2524,13 @@
+             UNKNOWN_OPT=yes
+         fi
+         ;;
++    c++11)
++        if [ "$VAL" = "yes" ] || [ "$VAL" = "no" ]; then
++            CFG_CXX11="$VAL"
++        else
++            UNKNOWN_OPT=yes
++        fi
++        ;;
+     system-proxies)
+         if [ "$VAL" = "yes" ] || [ "$VAL" = "no" ]; then
+             CFG_SYSTEM_PROXIES="$VAL"
+@@ -3460,6 +3472,53 @@
+     CFG_MAC_XARCH=no
+ fi
+ 
++# detect required support for CPATH
++if "$mactests/cpath/cpath.test" "$TEST_COMPILER" "$OPT_VERBOSE" "$mactests/cpath" ; then
++    echo >&2 "error: The compiler ($TEST_COMPILER) does not seem to support the CPATH environment variable, which is required to compile qt4-mac using MacPorts when compiling on Mac OS X."
++    exit 1
++fi
++
++# detect required support for LIBRARY_PATH
++if "$mactests/library_path/library_path.test" "$TEST_COMPILER" "$OPT_VERBOSE" "$mactests/library_path" ; then
++    echo >&2 "error: The compiler ($TEST_COMPILER) does not seem to support the LIBRARY_PATH environment variable, which is required to compile qt4-mac using MacPorts when compiling on Mac OS X."
++    exit 1
++fi
++
++# detect required support for -fconstant-cfstrings
++if "$mactests/fconstant_cfstrings.test" "$TEST_COMPILER" "$OPT_VERBOSE" "$mactests" ; then
++    echo >&2 "error: The compiler ($TEST_COMPILER) does not seem to support the -fconstant-cfstrings flag, which is used extensively by the Qt build system when compiling on Mac OS X."
++    exit 1
++fi
++
++# detect required support for Objective-C blocks (^) on the mac,
++# but only on 10.6 ("uname -r" == 10.X) and newer
++case "$UNAME_SYSTEM:$UNAME_RELEASE" in
++    Darwin:[0-9].*)
++	;;
++    Darwin*)
++	if "$mactests/objc_block/objc_block.test" "$TEST_COMPILER" "$OPT_VERBOSE" "$mactests/objc_block" ; then
++	    echo >&2 "error: The compiler ($TEST_COMPILER) does not seem to support the Objective-C blocks (^), which are used by Qt when compiling on Mac OS X 10.6 and newer."
++	    exit 1
++	fi
++	;;
++    *)
++	;;
++esac
++
++# Detect C++11 support, only if requested
++if [ "$CFG_CXX11" = "yes" ]; then
++    if "$mactests/c++11/c++11.test" "$TEST_COMPILER" "$OPT_VERBOSE" "$mactests/c++11" ; then
++	echo >&2 "error: C++11 support was requested, but the compiler ($TEST_COMPILER) does not seem to support C++11."
++        exit 1
++    fi
++fi
++
++# detect required support for -Xarch
++if "$mactests/xarch.test" "$TEST_COMPILER" "$OPT_VERBOSE" "$mactests" ; then
++    echo >&2 "error: The compiler ($TEST_COMPILER) does not seem to support the -Xarch flag, which is used extensively by the Qt build system when compiling on Mac OS X."
++    exit 1
++fi
++
+ #auto-detect DWARF2 on the mac
+ if [ "$PLATFORM_MAC" = "yes" ] && [ "$CFG_MAC_DWARF2" = "auto" ]; then
+     if "$mactests/dwarf2.test" "$TEST_COMPILER" "$OPT_VERBOSE" "$mactests" $MAC_CONFIG_TEST_COMMANDLINE; then
+@@ -3469,15 +3528,6 @@
+     fi
+ fi
+ 
+-# auto-detect support for -Xarch on the mac
+-if [ "$PLATFORM_MAC" = "yes" ] && [ "$CFG_MAC_XARCH" = "auto" ]; then
+-    if "$mactests/xarch.test" "$TEST_COMPILER" "$OPT_VERBOSE" "$mactests" ; then
+-        CFG_MAC_XARCH=no
+-    else
+-        CFG_MAC_XARCH=yes
+-    fi
+-fi
+-
+ # don't autodetect support for separate debug info on objcopy when
+ # cross-compiling as lots of toolchains seems to have problems with this
+ if [ "$QT_CROSS_COMPILE" = "yes" ] && [ "$CFG_SEPARATE_DEBUG_INFO" = "auto" ]; then
+@@ -3704,6 +3754,19 @@
+     fi
+     QT_INSTALL_LIBS=`"$relpath/config.tests/unix/makeabs" "$QT_INSTALL_LIBS"`
+ 
++    #frameworks
++    if [ -z "$QT_INSTALL_FRAMEWORKS" ]; then #default
++        if [ "$CFG_PREFIX_INSTALL" = "no" ]; then
++	    if [ "$PLATFORM_MAC" = "yes" ]; then
++	        if [ "$CFG_FRAMEWORK" = "yes" ]; then
++		    QT_INSTALL_FRAMEWORKS="/Libraries/Frameworks"
++                fi
++            fi
++        fi
++        [ -z "$QT_INSTALL_FRAMEWORKS" ] && QT_INSTALL_FRAMEWORKS="$QT_INSTALL_PREFIX/Library/Frameworks" #fallback
++    fi
++    QT_INSTALL_FRAMEWORKS=`"$relpath/config.tests/unix/makeabs" "$QT_INSTALL_FRAMEWORKS"`
++
+     #bins
+     if [ -z "$QT_INSTALL_BINS" ]; then #default
+         if [ "$CFG_PREFIX_INSTALL" = "no" ]; then
+@@ -4772,6 +4835,7 @@
+ DOCUMENTATION_PATH_STR=`"$relpath/config.tests/unix/padstring" 268 "qt_docspath=$QT_INSTALL_DOCS"`
+ HEADERS_PATH_STR=`"$relpath/config.tests/unix/padstring" 268 "qt_hdrspath=$QT_INSTALL_HEADERS"`
+ LIBRARIES_PATH_STR=`"$relpath/config.tests/unix/padstring" 268 "qt_libspath=$QT_INSTALL_LIBS"`
++FRAMEWORKS_PATH_STR=`"$relpath/config.tests/unix/padstring" 268 "qt_frameworkspath=$QT_INSTALL_FRAMEWORKS"`
+ BINARIES_PATH_STR=`"$relpath/config.tests/unix/padstring" 268 "qt_binspath=$QT_INSTALL_BINS"`
+ PLUGINS_PATH_STR=`"$relpath/config.tests/unix/padstring" 268 "qt_plugpath=$QT_INSTALL_PLUGINS"`
+ IMPORTS_PATH_STR=`"$relpath/config.tests/unix/padstring" 268 "qt_impspath=$QT_INSTALL_IMPORTS"`
+@@ -4797,6 +4861,7 @@
+     HOSTDOCUMENTATION_PATH_STR=`"$relpath/config.tests/unix/padstring" 268 "qt_docspath=$QT_HOST_PREFIX/doc"`
+     HOSTHEADERS_PATH_STR=`"$relpath/config.tests/unix/padstring" 268 "qt_hdrspath=$QT_HOST_PREFIX/include"`
+     HOSTLIBRARIES_PATH_STR=`"$relpath/config.tests/unix/padstring" 268 "qt_libspath=$QT_HOST_PREFIX/lib"`
++    HOSTFRAMEWORKS_PATH_STR=`"$relpath/config.tests/unix/padstring" 268 "qt_frameworkspath=$QT_HOST_PREFIX/Library/Frameworks"`
+     HOSTBINARIES_PATH_STR=`"$relpath/config.tests/unix/padstring" 268 "qt_binspath=$QT_HOST_PREFIX/bin"`
+     HOSTPLUGINS_PATH_STR=`"$relpath/config.tests/unix/padstring" 268 "qt_plugpath=$QT_HOST_PREFIX/plugins"`
+     HOSTIMPORTS_PATH_STR=`"$relpath/config.tests/unix/padstring" 268 "qt_impspath=$QT_HOST_PREFIX/IMPORTS"`
+@@ -4814,6 +4879,7 @@
+ static const char qt_configure_documentation_path_str[256 + 12] = "$HOSTDOCUMENTATION_PATH_STR";
+ static const char qt_configure_headers_path_str      [256 + 12] = "$HOSTHEADERS_PATH_STR";
+ static const char qt_configure_libraries_path_str    [256 + 12] = "$HOSTLIBRARIES_PATH_STR";
++static const char qt_configure_frameworks_path_str   [256 + 12] = "$HOSTFRAMEWORKS_PATH_STR";
+ static const char qt_configure_binaries_path_str     [256 + 12] = "$HOSTBINARIES_PATH_STR";
+ static const char qt_configure_plugins_path_str      [256 + 12] = "$HOSTPLUGINS_PATH_STR";
+ static const char qt_configure_imports_path_str      [256 + 12] = "$HOSTIMPORTS_PATH_STR";
+@@ -4832,6 +4898,7 @@
+ static const char qt_configure_documentation_path_str[256 + 12] = "$DOCUMENTATION_PATH_STR";
+ static const char qt_configure_headers_path_str      [256 + 12] = "$HEADERS_PATH_STR";
+ static const char qt_configure_libraries_path_str    [256 + 12] = "$LIBRARIES_PATH_STR";
++static const char qt_configure_frameworks_path_str   [256 + 18] = "$FRAMEWORKS_PATH_STR";
+ static const char qt_configure_binaries_path_str     [256 + 12] = "$BINARIES_PATH_STR";
+ static const char qt_configure_plugins_path_str      [256 + 12] = "$PLUGINS_PATH_STR";
+ static const char qt_configure_imports_path_str      [256 + 12] = "$IMPORTS_PATH_STR";
+@@ -4857,6 +4924,7 @@
+ #define QT_CONFIGURE_DOCUMENTATION_PATH qt_configure_documentation_path_str + 12;
+ #define QT_CONFIGURE_HEADERS_PATH qt_configure_headers_path_str + 12;
+ #define QT_CONFIGURE_LIBRARIES_PATH qt_configure_libraries_path_str + 12;
++#define QT_CONFIGURE_FRAMEWORKS_PATH qt_configure_frameworks_path_str + 18;
+ #define QT_CONFIGURE_BINARIES_PATH qt_configure_binaries_path_str + 12;
+ #define QT_CONFIGURE_PLUGINS_PATH qt_configure_plugins_path_str + 12;
+ #define QT_CONFIGURE_IMPORTS_PATH qt_configure_imports_path_str + 12;
+@@ -4969,7 +5037,7 @@
+         EXTRA_OBJS=
+         EXTRA_SRCS=
+         EXTRA_CFLAGS="\$(QMAKE_CFLAGS)"
+-        EXTRA_CXXFLAGS="\$(QMAKE_CXXFLAGS)"
++        EXTRA_CXXFLAGS="$QMAKE_STDLIB \$(QMAKE_CXXFLAGS)"
+         EXTRA_LFLAGS="\$(QMAKE_LFLAGS)"
+ 
+         if [ "$PLATFORM" = "irix-cc" ] || [ "$PLATFORM" = "irix-cc-64" ]; then
+@@ -5013,8 +5081,8 @@
+                 # Avoid overriding the default configuration settings when building with clang/libc++
+                 ;;
+             *)
+-                # For all other configurations require a minimum of 10.5
+-                echo "export MACOSX_DEPLOYMENT_TARGET = 10.5" >> "$mkfile"
++                # For all other configurations require a minimum of @MACOSX_DEPLOYMENT_TARGET@
++                echo "export MACOSX_DEPLOYMENT_TARGET = @MACOSX_DEPLOYMENT_TARGET@" >> "$mkfile"
+                 ;;
+             esac
+ 
+@@ -5025,20 +5093,11 @@
+             EXTRA_CXXFLAGS="$EXTRA_CXXFLAGS \$(CARBON_CFLAGS)"
+             EXTRA_OBJS="qsettings_mac.o qcore_mac.o"
+             EXTRA_SRCS="\"$relpath/src/corelib/io/qsettings_mac.cpp\" \"$relpath/src/corelib/kernel/qcore_mac.cpp\""
+-	    if echo "$CFG_MAC_ARCHS" | grep x86 > /dev/null 2>&1; then # matches both x86 and x86_64
+-		X86_CFLAGS="-arch i386"
+-		X86_LFLAGS="-arch i386"
+-		EXTRA_CFLAGS="$X86_CFLAGS $EXTRA_CFLAGS"
+-		EXTRA_CXXFLAGS="$X86_CFLAGS $EXTRA_CXXFLAGS"
+-                EXTRA_LFLAGS="$EXTRA_LFLAGS $X86_LFLAGS"
+-            fi
+-	    if echo "$CFG_MAC_ARCHS" | grep ppc > /dev/null 2>&1; then # matches both ppc and ppc64
+-		PPC_CFLAGS="-arch ppc"
+-		PPC_LFLAGS="-arch ppc"
+-		EXTRA_CFLAGS="$PPC_CFLAGS $EXTRA_CFLAGS"
+-		EXTRA_CXXFLAGS="$PPC_CFLAGS $EXTRA_CXXFLAGS"
+-                EXTRA_LFLAGS="$EXTRA_LFLAGS $PPC_LFLAGS"
+-            fi
++            ARCH_CFLAGS="-arch @ARCHES@"
++            ARCH_LFLAGS="-arch @ARCHES@"
++            EXTRA_CFLAGS="$ARCH_CFLAGS $EXTRA_CFLAGS"
++            EXTRA_CXXFLAGS="$ARCH_CFLAGS $EXTRA_CXXFLAGS"
++            EXTRA_LFLAGS="$EXTRA_LFLAGS $ARCH_LFLAGS"
+ 	    if [ '!' -z "$CFG_SDK" ]; then
+ 		echo "SDK_LFLAGS =-Wl,-syslibroot,$CFG_SDK" >>"$mkfile"
+ 		echo "SDK_CFLAGS =-isysroot $CFG_SDK" >>"$mkfile"
+@@ -7002,7 +7061,7 @@
+ 
+ # detect OpenVG support
+ if [ "$CFG_OPENVG" != "no" ] && [ "$XPLATFORM_SYMBIAN_SBSV2" = "no" ]; then
+-    if compileTest "unix/openvg" "OpenVG"; then
++    if compileTest "unix/openvg" "OpenVG" $QMAKE_OPENVG_ARG; then
+         if [ "$CFG_OPENVG" = "auto" ]; then
+             CFG_OPENVG=yes
+         fi
+@@ -7033,7 +7092,7 @@
+             CFG_OPENVG=no
+         fi
+     fi
+-    if [ "$CFG_OPENVG" = "yes" ] && compileTest "unix/shivavg" "ShivaVG" $CONFIG_ARG; then
++    if [ "$CFG_OPENVG" = "yes" ] && compileTest "unix/shivavg" "ShivaVG" $QMAKE_OPENVG_ARG; then
+         CFG_OPENVG_SHIVA=yes
+     fi
+ fi
+@@ -7224,19 +7283,7 @@
+ 
+ # set the global Mac deployment target. This is overridden on an arch-by-arch basis
+ # in some cases, see code further down
+-case "$PLATFORM,$CFG_MAC_COCOA" in
+-*macx-clang-libc++,yes)
+-    # Avoid overriding the default configuration setting when building with clang/libc++
+-    ;;
+-macx*,yes)
+-    # Cocoa
+-    QMakeVar set QMAKE_MACOSX_DEPLOYMENT_TARGET 10.5
+-    ;;
+-macx*,no)
+-    # gcc, Carbon
+-    QMakeVar set QMAKE_MACOSX_DEPLOYMENT_TARGET 10.4
+-    ;;
+-esac
++QMakeVar set QMAKE_MACOSX_DEPLOYMENT_TARGET @MACOSX_DEPLOYMENT_TARGET@
+ 
+ # disable Qt 3 support on VxWorks, Symbian and INTEGRITY
+ case "$XPLATFORM" in
+@@ -7515,6 +7562,10 @@
+     QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_GUI"
+ fi
+ 
++if [ "$CFG_CXX11" = "yes" ]; then
++    QT_CONFIG="$QT_CONFIG c++11"
++    QMAKE_CONFIG="$QMAKE_CONFIG c++11"
++fi
+ 
+ if [ "x$PLATFORM_MAC" = "xyes" ] && [ "$XPLATFORM_MINGW" != "yes" ] && [ "$XPLATFORM_SYMBIAN" != "yes" ]; then
+     #On Mac we implicitly link against libz, so we
+@@ -7986,28 +8037,32 @@
+         ;;
+     *)
+         if echo "$CFG_MAC_ARCHS" | grep '\<x86\>' > /dev/null 2>&1; then
+-            QMakeVar add QMAKE_CFLAGS "-Xarch_i386 -mmacosx-version-min=10.4"
+-            QMakeVar add QMAKE_CXXFLAGS "-Xarch_i386 -mmacosx-version-min=10.4"
+-            QMakeVar add QMAKE_LFLAGS "-Xarch_i386 -mmacosx-version-min=10.4"
+-            QMakeVar add QMAKE_OBJECTIVE_CFLAGS_X86 "-arch i386 -Xarch_i386 -mmacosx-version-min=10.4"
++            QMakeVar add QMAKE_CFLAGS "-Xarch_i386 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_CXXFLAGS "-Xarch_i386 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_LFLAGS "-Xarch_i386 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_OBJECTIVE_CFLAGS_X86 "-arch i386 -Xarch_i386 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_OBJECTIVE_CXXFLAGS_X86 "-arch i386 -Xarch_i386 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
+         fi
+         if echo "$CFG_MAC_ARCHS" | grep '\<ppc\>' > /dev/null 2>&1; then
+-            QMakeVar add QMAKE_CFLAGS "-Xarch_ppc -mmacosx-version-min=10.4"
+-            QMakeVar add QMAKE_CXXFLAGS "-Xarch_ppc -mmacosx-version-min=10.4"
+-            QMakeVar add QMAKE_LFLAGS "-Xarch_ppc -mmacosx-version-min=10.4"
+-            QMakeVar add QMAKE_OBJECTIVE_CFLAGS_PPC "-arch ppc -Xarch_ppc -mmacosx-version-min=10.4"
++            QMakeVar add QMAKE_CFLAGS "-Xarch_ppc -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_CXXFLAGS "-Xarch_ppc -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_LFLAGS "-Xarch_ppc -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_OBJECTIVE_CFLAGS_PPC "-arch ppc -Xarch_ppc -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_OBJECTIVE_CXXFLAGS_PPC "-arch ppc -Xarch_ppc -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
+         fi
+         if echo "$CFG_MAC_ARCHS" | grep '\<x86_64\>' > /dev/null 2>&1; then
+-            QMakeVar add QMAKE_CFLAGS "-Xarch_x86_64 -mmacosx-version-min=10.5"
+-            QMakeVar add QMAKE_CXXFLAGS "-Xarch_x86_64 -mmacosx-version-min=10.5"
+-            QMakeVar add QMAKE_LFLAGS "-Xarch_x86_64 -mmacosx-version-min=10.5"
+-            QMakeVar add QMAKE_OBJECTIVE_CFLAGS_X86_64 "-arch x86_64 -Xarch_x86_64 -mmacosx-version-min=10.5"
++            QMakeVar add QMAKE_CFLAGS "-Xarch_x86_64 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_CXXFLAGS "-Xarch_x86_64 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_LFLAGS "-Xarch_x86_64 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_OBJECTIVE_CFLAGS_X86_64 "-arch x86_64 -Xarch_x86_64 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_OBJECTIVE_CXXFLAGS_X86_64 "-arch x86_64 -Xarch_x86_64 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
+         fi
+         if echo "$CFG_MAC_ARCHS" | grep '\<ppc64\>' > /dev/null 2>&1; then
+-            QMakeVar add QMAKE_CFLAGS "-Xarch_ppc64 -mmacosx-version-min=10.5"
+-            QMakeVar add QMAKE_CXXFLAGS "-Xarch_ppc64 -mmacosx-version-min=10.5"
+-            QMakeVar add QMAKE_LFLAGS "-Xarch_ppc64 -mmacosx-version-min=10.5"
+-            QMakeVar add QMAKE_OBJECTIVE_CFLAGS_PPC_64 "-arch ppc64 -Xarch_ppc64 -mmacosx-version-min=10.5"
++            QMakeVar add QMAKE_CFLAGS "-Xarch_ppc64 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_CXXFLAGS "-Xarch_ppc64 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_LFLAGS "-Xarch_ppc64 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_OBJECTIVE_CFLAGS_PPC_64 "-arch ppc64 -Xarch_ppc64 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
++            QMakeVar add QMAKE_OBJECTIVE_CXXFLAGS_PPC_64 "-arch ppc64 -Xarch_ppc64 -mmacosx-version-min=@MACOSX_DEPLOYMENT_TARGET@"
+         fi
+         ;;
+     esac
+@@ -8772,6 +8827,7 @@
+ QMAKE_RCC        = \$\$QT_BUILD_TREE/bin/rcc
+ QMAKE_QDBUSXML2CPP = \$\$QT_BUILD_TREE/bin/qdbusxml2cpp
+ QMAKE_INCDIR_QT  = \$\$QT_BUILD_TREE/include
++QMAKE_FRAMEWORKDIR_QT = \$\$QT_BUILD_TREE/Library/Frameworks
+ QMAKE_LIBDIR_QT  = \$\$QT_BUILD_TREE/lib
+ 
+ EOF
+@@ -8810,6 +8866,11 @@
+     echo "DEFINES *= QT_EDITION=QT_EDITION_DESKTOP" >> "$CACHEFILE.tmp"
+ fi
+ 
++#dump in the OPENVG_LIBS info
++if [ "$CFG_OPENVG" = "yes" ]; then
++   echo "QMAKE_LIBS_OPENVG = $QMAKE_OPENVG_ARG" >> "$CACHEFILE.tmp"
++fi
++
+ #dump in the OPENSSL_LIBS info
+ if [ '!' -z "$OPENSSL_LIBS" ]; then
+     echo "OPENSSL_LIBS = $OPENSSL_LIBS" >> "$CACHEFILE.tmp"
+@@ -8969,6 +9030,7 @@
+ else
+    echo "Debug .................. $CFG_DEBUG"
+ fi
++echo "C++11 support .......... $CFG_CXX11"
+ echo "Qt 3 compatibility ..... $CFG_QT3SUPPORT"
+ [ "$CFG_DBUS" = "no" ]     && echo "QtDBus module .......... no"
+ [ "$CFG_DBUS" = "yes" ]    && echo "QtDBus module .......... yes (run-time)"

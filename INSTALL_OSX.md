@@ -31,6 +31,21 @@ You need an up to date macports version. Just download it and install it from <h
 
 	sudo port selfupdate
 	sudo port upgrade outdated
+
+Then, you should add the "ports" provided by Natron. Edit as root the file `/opt/local/etc/macports/sources.conf` (as in `sudo nano /opt/local/etc/macports/sources.conf`) and add the following line at the beginning, with the path to the Natron sources (yes, there are three slashes after `file:`):
+
+    file:///Users/your_username/path_to_sources/Natron/tools/MacOSX/ports
+
+Then, create the index file:
+
+    (cd /Users/your_username/path_to_sources/Natron/tools/MacOSX/ports; portindex)
+
+It is also recommended to add the  following line to `/opt/local/etc/macports/variants.conf`:
+
+    -x11 +no_x11 +bash_completion +no_gnome +quartz
+
+And finally install the required packages:
+
 	sudo port install qt4-mac boost glew cairo expat
 	sudo port install py27-pyside
 	sudo ln -s python2.7-config /opt/local/bin/python2-config
@@ -56,15 +71,36 @@ Name: glu
 EOF
 ```
 
+If you intend to build the [openfx-io](https://github.com/MrKepzie/openfx-io) plugins too, you will need these additional packages:
+
+    sudo port -v install openexr ffmpeg opencolorio openimageio
+
+and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
+
+    sudo port -v install ImageMagick +natron
+
 ### Homebrew
 
 Install homebrew from <http://brew.sh/>
+
+Patch the qt recipe to fix the stack overflow issue (see the [homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md) if you wonder what that means):
+
+    brew edit qt4
+
+and before the line that starts with `head`, add the following code:
+
+      patch :p0 do
+        url "https://bugreports.qt.io/secure/attachment/52520/patch-qthread-stacksize.diff"
+        sha256 "477630235eb5ee34ed04e33f156625d1724da290e7a66b745611fb49d17f1347"
+      end
+
 
 Install libraries:
 
     brew tap homebrew/python
     brew tap homebrew/science
-    brew install qt expat cairo glew
+    brew install --build-from-source qt
+    brew install expat cairo glew
     brew install pyside
 
 To install the openfx-io and openfx-misc sets of plugin, you also need the following:
@@ -75,7 +111,36 @@ also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
 	
     export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig
-	
+
+### Installing a patched Qt to avoid stack overflows
+
+
+    wget https://download.qt.io/official_releases/qt/4.8/4.8.7/qt-everywhere-opensource-src-4.8.7.tar.gz
+    tar zxvf qt-everywhere-opensource-src-4.8.7.tar.gz
+    cd qt-everywhere-opensource-src-4.8.7
+    wget https://raw.githubusercontent.com/Homebrew/patches/480b7142c4e2ae07de6028f672695eb927a34875/qt/el-capitan.patch
+    patch -p1 < el-capitan.patch
+    wget https://bugreports.qt.io/secure/attachment/52520/patch-qthread-stacksize.diff
+    patch -p0 < patch-qthread-stacksize.diff
+
+Then, configure using:
+
+    ./configure -prefix /opt/qt4 -pch -system-zlib -qt-libtiff -qt-libpng -qt-libjpeg -confirm-license -opensource -nomake demos -nomake examples -nomake docs -cocoa -fast -release
+
+* On OS X >= 10.9 add `-platform unsupported/macx-clang-libc++`
+* On OS X < 10.9, to compile with clang add `-platform unsupported/macx-clang`
+* If compiling with gcc/g++, make sure that `g++ --version`refers to Apple's gcc >= 4.2 or clang >= 318.0.61
+* To use another openssl than the system (mainly for security reasons), add `-openssl-linked -I /usr/local/Cellar/openssl/1.0.2d_1/include -L /usr/local/Cellar/openssl/1.0.2d_1/lib` (where the path is changed to your openssl installation).
+
+Then, compile using:
+
+    make
+
+And install (after making sure `/opt/qt4` is user-writable) using:
+
+    make install
+
+
 ###Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead

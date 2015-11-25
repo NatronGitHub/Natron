@@ -255,9 +255,7 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , currentPanelFocusEventRecursion(0)
 , keyPressEventHasVisitedFocusWidget(false)
 , wasLaskUserSeekDuringPlayback(false)
-#ifdef __NATRON_WIN32__
 , applicationConsoleVisible(true)
-#endif
 {
 }
 

@@ -1495,7 +1495,6 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
 , _isRedone(false)
 {
     
-    NodeGuiList selection = nodes;
     for (NodeGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _originalNodes.push_back(*it);
     }
@@ -1517,7 +1516,134 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
     assert(container_i);
     _group = boost::dynamic_pointer_cast<NodeGui>(container_i);
     assert(_group.lock());
-    _graph->copyNodesAndCreateInGroup(selection,isGrp);
+    
+    std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
+    _graph->copyNodesAndCreateInGroup(nodes,isGrp,newNodes);
+    
+    NodeList internalNewNodes;
+    for (std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >::iterator it = newNodes.begin(); it!=newNodes.end(); ++it) {
+        internalNewNodes.push_back(it->second->getNode());
+    }
+    
+    std::list<Natron::Project::NodesTree> trees;
+    Natron::Project::extractTreesFromNodes(internalNewNodes, trees);
+    
+    bool hasCreatedOutput = false;
+    
+    int inputNb = 0;
+    for (std::list<Natron::Project::NodesTree>::iterator it = trees.begin(); it!= trees.end(); ++it) {
+        for (std::list<Natron::Project::TreeInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {
+            
+            ///Find the equivalent node in the original nodes and see which inputs we need to create
+
+            NodeGuiPtr foundOriginalNode;
+            for (NodeGuiList::const_iterator it3 = nodes.begin(); it3 != nodes.end(); ++it3) {
+                if ((*it3)->getNode()->getScriptName_mt_safe() == it2->node->getScriptName_mt_safe()) {
+                    foundOriginalNode = *it3;
+                    break;
+                }
+            }
+            assert(foundOriginalNode);
+        
+            NodePtr originalNodeInternal = foundOriginalNode->getNode();
+            const std::vector<NodePtr>& originalNodeInputs = originalNodeInternal->getInputs();
+            for (std::size_t i = 0; i < originalNodeInputs.size(); ++i) {
+                if (originalNodeInputs[i]) {
+                    
+                    //Create an input node corresponding to this input
+                    CreateNodeArgs args(PLUGINID_NATRON_INPUT,
+                                        std::string(),
+                                        -1,
+                                        -1,
+                                        true, // autoconnect
+                                        INT_MIN,
+                                        INT_MIN,
+                                        false, //<< don't push an undo command
+                                        true,
+                                        true,
+                                        QString(),
+                                        CreateNodeArgs::DefaultValuesList(),
+                                        isGrp);
+                    NodePtr input = _graph->getGui()->getApp()->createNode(args);
+                    assert(input);
+                    std::string inputLabel = originalNodeInternal->getLabel() + '_' + originalNodeInternal->getInputLabel(i);
+                    input->setLabel(inputLabel);
+                    
+                    double offsetX,offsetY;
+                    {
+                        double inputX,inputY;
+                        originalNodeInputs[i]->getPosition(&inputX, &inputY);
+                        double originalX,originalY;
+                        foundOriginalNode->getPosition(&originalX, &originalY);
+                        offsetX = inputX - originalX;
+                        offsetY = inputY - originalY;
+                    }
+                    
+                    double thisInputX,thisInputY;
+                    it2->node->getPosition(&thisInputX, &thisInputY);
+                    
+                    thisInputX += offsetX;
+                    thisInputY += offsetY;
+                    
+                    input->setPosition(thisInputX, thisInputY);
+                    
+                    it2->node->connectInput(input, i);
+                    
+                    containerNode->connectInput(originalNodeInputs[i], inputNb);
+                    
+                    ++inputNb;
+                    
+                }
+            } // for all node's inputs
+        } // for all inputs in the tree
+        
+        //Create only a single output
+        if (!hasCreatedOutput) {
+            NodeGuiPtr foundOriginalNode;
+            for (NodeGuiList::const_iterator it3 = nodes.begin(); it3 != nodes.end(); ++it3) {
+                if ((*it3)->getNode()->getScriptName_mt_safe() == it->output.node->getScriptName_mt_safe()) {
+                    foundOriginalNode = *it3;
+                    break;
+                }
+            }
+            assert(foundOriginalNode);
+            
+            CreateNodeArgs args(PLUGINID_NATRON_OUTPUT,
+                                std::string(),
+                                -1,
+                                -1,
+                                false, //< don't autoconnect
+                                INT_MIN,
+                                INT_MIN,
+                                false, //<< don't push an undo command
+                                true,
+                                true,
+                                QString(),
+                                CreateNodeArgs::DefaultValuesList(),
+                                isGrp);
+            NodePtr output = graph->getGui()->getApp()->createNode(args);
+            output->setScriptName("Output");
+            assert(output);
+            
+            double thisNodeX,thisNodeY;
+            it->output.node->getPosition(&thisNodeX, &thisNodeY);
+            double thisNodeW,thisNodeH;
+            it->output.node->getSize(&thisNodeW, &thisNodeH);
+            
+            thisNodeY += thisNodeH * 2;
+            
+            output->setPosition(thisNodeX, thisNodeY);
+            
+            output->connectInput(it->output.node, 0);
+            
+            ///Todo: Connect all outputs of the original node to the new Group
+            
+            
+            hasCreatedOutput = true;
+
+        }
+    } // for all trees
+    
     
 }
 

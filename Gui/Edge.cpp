@@ -142,7 +142,10 @@ EdgePrivate::initLabel()
         txt.setRgbF(Natron::clamp(r,0.,1.),Natron::clamp(g,0.,1.), Natron::clamp(b,0.,1.));
         label->setBrush(txt);
         QFont f = qApp->font();
-        f.setStyleStrategy(QFont::NoAntialias);
+        bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
+        if (!antialias) {
+            f.setStyleStrategy(QFont::NoAntialias);
+        }
         label->setFont(f);
         //_imp->label->setDefaultTextColor( QColor(200,200,200) );
     }
@@ -702,6 +705,11 @@ Edge::paint(QPainter *painter,
             const QStyleOptionGraphicsItem * /*options*/,
             QWidget * /*parent*/)
 {
+    bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
+    if (!antialias) {
+        painter->setRenderHint(QPainter::Antialiasing, false);
+    }
+    
     QPen myPen = pen();
     
     boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
@@ -875,6 +883,10 @@ LinkArrow::paint(QPainter *painter,
                  const QStyleOptionGraphicsItem* /*options*/,
                  QWidget* /*parent*/)
 {
+    bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
+    if (!antialias) {
+        painter->setRenderHint(QPainter::Antialiasing, false);
+    }
     QPen myPen = pen();
 
     myPen.setColor(_renderColor);

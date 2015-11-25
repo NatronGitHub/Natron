@@ -900,6 +900,12 @@ Settings::initializeKnobsNodeGraph()
     _usePluginIconsInNodeGraph->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_usePluginIconsInNodeGraph);
     
+    _useAntiAliasing = Natron::createKnob<KnobBool>(this, "Anti-Aliasing");
+    _useAntiAliasing->setHintToolTip("When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances."
+                                     " Changing this requires a restart of Natron");
+    _useAntiAliasing->setAnimationEnabled(false);
+    _nodegraphTab->addKnob(_useAntiAliasing);
+    
    
     _defaultNodeColor = Natron::createKnob<KnobColor>(this, "Default node color",3);
     _defaultNodeColor->setName("defaultNodeColor");
@@ -1370,6 +1376,7 @@ Settings::setDefaultValues()
     setCachingLabels();
     _autoTurbo->setDefaultValue(false);
     _usePluginIconsInNodeGraph->setDefaultValue(true);
+    _useAntiAliasing->setDefaultValue(false);
     _defaultNodeColor->setDefaultValue(0.7,0);
     _defaultNodeColor->setDefaultValue(0.7,1);
     _defaultNodeColor->setDefaultValue(0.7,2);
@@ -3074,6 +3081,12 @@ Settings::isPluginIconActivatedOnNodeGraph() const
 {
     return _usePluginIconsInNodeGraph->getValue();
 
+}
+
+bool
+Settings::isNodeGraphAntiAliasingEnabled() const
+{
+    return _useAntiAliasing->getValue();
 }
 
 void

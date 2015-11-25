@@ -38,6 +38,7 @@
 #include "Global/MemoryInfo.h"
 GCC_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
+#include <QtCore/QThread>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QObject>

@@ -300,6 +300,8 @@ public:
     
     bool isPluginIconActivatedOnNodeGraph() const;
     
+    bool isNodeGraphAntiAliasingEnabled() const;
+    
     void getSunkenColor(double* r,double* g,double* b) const;
     void getBaseColor(double* r,double* g,double* b) const;
     void getRaisedColor(double* r,double* g,double* b) const;
@@ -456,6 +458,7 @@ private:
     boost::shared_ptr<KnobBool> _hideOptionalInputsAutomatically;
     boost::shared_ptr<KnobBool> _useInputAForMergeAutoConnect;
     boost::shared_ptr<KnobBool> _usePluginIconsInNodeGraph;
+    boost::shared_ptr<KnobBool> _useAntiAliasing;
     boost::shared_ptr<KnobColor> _defaultNodeColor;
     boost::shared_ptr<KnobColor> _defaultBackdropColor;
     boost::shared_ptr<KnobColor> _defaultGeneratorColor;

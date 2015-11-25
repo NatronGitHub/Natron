@@ -155,7 +155,8 @@ public:
     bool areOptionalInputsAutoHidden() const;
     
     void copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> >& nodes,
-                                   const boost::shared_ptr<NodeCollection>& group);
+                                   const boost::shared_ptr<NodeCollection>& group,
+                                   std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >& createdNodes);
 
     virtual void onNodesCleared() OVERRIDE FINAL;
     
