@@ -63,7 +63,7 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
 , _root(NULL)
 , _nodeRoot(NULL)
 , _cacheSizeText(NULL)
-, cacheSizeHidden(false)
+, cacheSizeHidden(true)
 , _refreshCacheTextTimer()
 , _navigator(NULL)
 , _undoStack(NULL)

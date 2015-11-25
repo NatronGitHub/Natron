@@ -607,7 +607,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
     } // if (isAppKnob)
 } // createAnimationMenu
 
-void
+boost::shared_ptr<KnobI>
 KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpression)
 {
     ///find-out to which node that master knob belongs to
@@ -624,7 +624,7 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
                                                                                                            "Continue anyway ?").toStdString(),false,
                                                                         Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel));
                 if (rep != Natron::eStandardButtonYes) {
-                    return;
+                    return boost::shared_ptr<KnobI>();
                 }
             }
         }
@@ -633,7 +633,7 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
     assert(isEffect);
     if (!isEffect) {
-        return;
+        return boost::shared_ptr<KnobI>();
     }
 
     KnobBool* isBool = dynamic_cast<KnobBool*>(knob.get());
@@ -739,7 +739,7 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
         output = newKnob;
     }
     if (!output) {
-        return;
+        return boost::shared_ptr<KnobI>();
     }
     
     output->cloneDefaultValues(knob.get());
@@ -784,4 +784,5 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpressio
     }
     effect->refreshKnobs();
     holder->getApp()->triggerAutoSave();
+    return output;
 }

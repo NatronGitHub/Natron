@@ -264,7 +264,7 @@ public:
      **/
     bool isSecretRecursive() const;
     
-    void createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpression);
+    boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpression);
 
 
     static bool shouldSliderBeVisible(int sliderMin, int sliderMax)

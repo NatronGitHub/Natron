@@ -1428,10 +1428,12 @@ AddKnobDialog::onOkClicked()
         ///If the knob was in a group, we need to place it at the same index
         int oldIndexInGroup = -1;
         
+        std::string oldKnobScriptName;
         std::vector<std::pair<std::string,bool> > expressions;
         std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > > listenersExpressions;
         
         if (_imp->knob) {
+            oldKnobScriptName = _imp->knob->getName();
             
             oldParentPage = _imp->knob->getTopLevelPage();
             index = getChoiceIndexFromKnobType(_imp->knob.get());
@@ -1525,33 +1527,36 @@ AddKnobDialog::onOkClicked()
             _imp->knob->clone(_imp->originalKnobSerialization->getKnob().get());
         }
         //Recover expressions
-        if (!expressions.empty()) {
-            try {
-                for (std::size_t i = 0 ; i < expressions.size(); ++i) {
-                    if (!expressions[i].first.empty()) {
-                        _imp->knob->setExpression(i, expressions[i].first, expressions[i].second);
-                    }
+        try {
+            for (std::size_t i = 0 ; i < expressions.size(); ++i) {
+                if (!expressions[i].first.empty()) {
+                    _imp->knob->setExpression(i, expressions[i].first, expressions[i].second);
                 }
-            } catch (...) {
-                
             }
+        } catch (...) {
+            
         }
         
+        
         //Recover listeners expressions
-        if (!listenersExpressions.empty()) {
-            
-            for (std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > >::iterator it = listenersExpressions.begin();
-                 it != listenersExpressions.end(); ++it) {
-                assert(it->first->getDimension() == (int)it->second.size());
-                for (int i = 0; i < it->first->getDimension(); ++i) {
-                    try {
-                        it->first->setExpression(i, it->second[i].first, it->second[i].second);
-                    } catch (...) {
-                        
+        for (std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > >::iterator it = listenersExpressions.begin();it != listenersExpressions.end(); ++it) {
+            assert(it->first->getDimension() == (int)it->second.size());
+            for (int i = 0; i < it->first->getDimension(); ++i) {
+                try {
+                    std::string expr;
+                    if (oldKnobScriptName != _imp->knob->getName()) {
+                        //Change in expressions the script-name
+                        QString estr(it->second[i].first.c_str());
+                        estr.replace(oldKnobScriptName.c_str(), _imp->knob->getName().c_str());
+                        expr = estr.toStdString();
+                    } else {
+                        expr = it->second[i].first;
                     }
+                    it->first->setExpression(i, expr, it->second[i].second);
+                } catch (...) {
+                    
                 }
             }
-            
         }
     }
     

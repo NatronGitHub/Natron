@@ -372,7 +372,6 @@ void
 Gui::setApplicationConsoleActionVisible(bool visible)
 {
 #ifdef __NATRON_WIN32__
-
     if (visible == _imp->applicationConsoleVisible) {
         return;
     }
@@ -386,6 +385,8 @@ Gui::setApplicationConsoleActionVisible(bool visible)
 		}
         
     }
+#else
+    Q_UNUSED(visible)
 #endif
 }
 
