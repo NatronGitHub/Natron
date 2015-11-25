@@ -685,7 +685,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         _imp->renderScaleCombo->setCurrentIndex(4);
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomLevel100, modifiers, key) ) {
         _imp->viewer->zoomSlot(100);
-        _imp->zoomCombobox->setCurrentIndex_no_emit(4);
+        _imp->zoomCombobox->setCurrentIndex_no_emit(7);
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomIn, modifiers, key) ) {
         zoomIn();
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDActionZoomOut, modifiers, key) ) {

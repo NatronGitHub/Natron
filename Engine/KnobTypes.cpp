@@ -848,12 +848,8 @@ KnobChoice::choiceRestoration(KnobChoice* knob,const ChoiceExtraData* data)
 void
 KnobChoice::onOriginalKnobPopulated()
 {
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
-    if (!handler) {
-        return;
-    }
-    boost::shared_ptr<KnobI> originalKnob = handler->getKnob();
-    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(originalKnob.get());
+    
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(sender());
     if (!isChoice) {
         return;
     }
@@ -876,16 +872,19 @@ void
 KnobChoice::handleSignalSlotsForAliasLink(const boost::shared_ptr<KnobI>& alias,bool connect)
 {
     assert(alias);
-    boost::shared_ptr<KnobSignalSlotHandler> handler = alias->getSignalSlotHandler();
+    KnobChoice* aliasIsChoice = dynamic_cast<KnobChoice*>(alias.get());
+    if (!aliasIsChoice) {
+        return;
+    }
     if (connect) {
-        QObject::connect(_signalSlotHandler.get(), SIGNAL(populated()), handler.get(), SLOT(onOriginalKnobPopulated()));
-        QObject::connect(_signalSlotHandler.get(), SIGNAL(entriesReset()), handler.get(), SLOT(onOriginalKnobEntriesReset()));
-        QObject::connect(_signalSlotHandler.get(), SIGNAL(entryAppended(QString,QString)), handler.get(),
+        QObject::connect(this, SIGNAL(populated()), aliasIsChoice, SLOT(onOriginalKnobPopulated()));
+        QObject::connect(this, SIGNAL(entriesReset()), aliasIsChoice, SLOT(onOriginalKnobEntriesReset()));
+        QObject::connect(this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice,
                          SLOT(onOriginalKnobEntryAppend(QString,QString)));
     } else {
-        QObject::disconnect(_signalSlotHandler.get(), SIGNAL(populated()), handler.get(), SLOT(onOriginalKnobPopulated()));
-        QObject::disconnect(_signalSlotHandler.get(), SIGNAL(entriesReset()), handler.get(), SLOT(onOriginalKnobEntriesReset()));
-        QObject::disconnect(_signalSlotHandler.get(), SIGNAL(entryAppended(QString,QString)), handler.get(),
+        QObject::disconnect(this, SIGNAL(populated()), aliasIsChoice, SLOT(onOriginalKnobPopulated()));
+        QObject::disconnect(this, SIGNAL(entriesReset()), aliasIsChoice, SLOT(onOriginalKnobEntriesReset()));
+        QObject::disconnect(this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice,
                          SLOT(onOriginalKnobEntryAppend(QString,QString)));
     }
 }

@@ -979,7 +979,12 @@ public:
     bool slaveTo(int dimension,const boost::shared_ptr<KnobI> & other,int otherDimension,bool ignoreMasterPersistence = false);
     virtual bool isMastersPersistenceIgnored() const = 0;
     
-    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,bool makeAlias) = 0;
+    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,
+                                                           bool makeAlias,
+                                                           const std::string& newScriptName,
+                                                           const std::string& newLabel,
+                                                           const std::string& newToolTip,
+                                                           bool newStartLine) = 0;
     
     /**
      * @brief If a knob was created using createDuplicateOnNode(effect,true), this function will return true
@@ -1243,7 +1248,12 @@ public:
     virtual bool hasModifications(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasModificationsForSerialization() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,bool makeAlias) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,
+                                                           bool makeAlias,
+                                                           const std::string& newScriptName,
+                                                           const std::string& newLabel,
+                                                           const std::string& newToolTip,
+                                                           bool newStartLine) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual boost::shared_ptr<KnobI> getAliasMaster() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool setKnobAsAliasOfThis(const boost::shared_ptr<KnobI>& master, bool doAlias) OVERRIDE FINAL;
     

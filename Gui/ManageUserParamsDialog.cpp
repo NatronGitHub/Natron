@@ -32,6 +32,7 @@
 #include <QVBoxLayout>
 #include <QTreeWidget>
 #include <QHeaderView>
+#include <QKeyEvent>
 
 #include "Engine/Knob.h" // KnobI
 #include "Engine/KnobTypes.h" // KnobPage
@@ -137,9 +138,6 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         if ((*it)->isUserKnob()) {
 
-            if ((*it)->getParentKnob()) {
-                qDebug() << (*it)->getParentKnob()->getName().c_str();
-            }
             KnobPage* page = dynamic_cast<KnobPage*>(it->get());
             if (page) {
                 
@@ -391,6 +389,20 @@ ManageUserParamsDialog::onEditClickedInternal(const QList<QTreeWidgetItem*> &sel
             }
         }
     }
+}
+
+void
+ManageUserParamsDialog::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Delete || e->key() == Qt::Key_Backspace) {
+        if (_imp->removeButton->isEnabled()) {
+            onDeleteClicked();
+            e->accept();
+            return;
+        }
+    }
+    QDialog::keyPressEvent(e);
+    
 }
 
 void

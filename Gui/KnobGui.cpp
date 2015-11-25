@@ -645,7 +645,17 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool makeAlias)
         }
     }
     
-    boost::shared_ptr<KnobI> ret = knob->createDuplicateOnNode(effect,makeAlias);
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(knob->getHolder());
+    if (!isEffect) {
+        return boost::shared_ptr<KnobI>();
+    }
+    const std::string& nodeScriptName = isEffect->getNode()->getScriptName();
+    std::string newKnobName = nodeScriptName +  knob->getName();
+    
+    boost::shared_ptr<KnobI> ret = knob->createDuplicateOnNode(effect,makeAlias,newKnobName,
+                                                               knob->getLabel(),
+                                                               knob->getHintToolTip(),
+                                                               knob->isNewLineActivated());
     if (ret) {
         boost::shared_ptr<NodeGuiI> groupNodeGuiI = effect->getNode()->getNodeGui();
         NodeGui* groupNodeGui = dynamic_cast<NodeGui*>(groupNodeGuiI.get());

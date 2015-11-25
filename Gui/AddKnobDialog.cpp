@@ -57,7 +57,7 @@ struct AddKnobDialogPrivate
 {
     boost::shared_ptr<KnobI> knob;
     boost::shared_ptr<KnobSerialization> originalKnobSerialization;
-    bool isKnobAlias;
+    boost::shared_ptr<KnobI> isKnobAlias;
     
     DockablePanel* panel;
     
@@ -149,7 +149,7 @@ struct AddKnobDialogPrivate
     AddKnobDialogPrivate(DockablePanel* panel)
     : knob()
     , originalKnobSerialization()
-    , isKnobAlias(false)
+    , isKnobAlias()
     , panel(panel)
     , vLayout(0)
     , mainContainer(0)
@@ -330,17 +330,19 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
     
     {
         boost::shared_ptr<KnobI> isAlias;
+        boost::shared_ptr<KnobI> listener;
         if (knob) {
             std::list<boost::shared_ptr<KnobI> > listeners;
             knob->getListeners(listeners);
             if (!listeners.empty()) {
-                isAlias = listeners.front()->getAliasMaster();
+                listener = listeners.front();
+                isAlias = listener->getAliasMaster();
                 if (isAlias != knob) {
-                    isAlias.reset();
+                    listener.reset();
                 }
             }
         }
-        _imp->isKnobAlias = isAlias.get() != 0;
+        _imp->isKnobAlias = listener;
     }
     
     
@@ -933,7 +935,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleHide(false);
         _imp->setVisibleMenuItems(false);
         _imp->setVisibleMinMax(false);
-        _imp->setVisibleStartNewLine(false);
+        _imp->setVisibleStartNewLine(true);
         _imp->setVisibleMultiLine(false);
         _imp->setVisibleMultiPath(false);
         _imp->setVisibleRichText(false);
@@ -1469,12 +1471,15 @@ AddKnobDialog::onOkClicked()
     std::vector<std::pair<std::string,bool> > expressions;
     std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > > listenersExpressions;
     
+    Natron::EffectInstance* effect = 0;
+
+    
     if (!_imp->knob) {
         assert(_imp->typeChoice);
         index = _imp->typeChoice->activeIndex();
     } else {
         oldKnobScriptName = _imp->knob->getName();
-        
+        effect = dynamic_cast<Natron::EffectInstance*>(_imp->knob->getHolder());
         oldParentPage = _imp->knob->getTopLevelPage();
         index = getChoiceIndexFromKnobType(_imp->knob.get());
         boost::shared_ptr<KnobI> parent = _imp->knob->getParentKnob();
@@ -1521,9 +1526,10 @@ AddKnobDialog::onOkClicked()
             listenersExpressions[*it] = exprs;
         }
         
+        _imp->panel->getHolder()->removeDynamicKnob(_imp->knob.get());
+
         if (!_imp->isKnobAlias) {
             
-            _imp->panel->getHolder()->removeDynamicKnob(_imp->knob.get());
             _imp->knob.reset();
         }
     } //if (!_imp->knob) {
@@ -1582,13 +1588,8 @@ AddKnobDialog::onOkClicked()
     } // if (!_imp->isKnobAlias) {
     else {
         //Alias knobs can only have these properties changed
-        _imp->knob->setName(_imp->nameLineEdit->text().toStdString());
-        _imp->knob->setLabel(_imp->labelLineEdit->text().toStdString());
-        _imp->knob->setHintToolTip(_imp->tooltipArea->toPlainText().toStdString());
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_imp->knob->getHolder());
-        if (effect) {
-            effect->getNode()->declarePythonFields();
-        }
+        assert(effect);
+        _imp->knob = _imp->isKnobAlias->createDuplicateOnNode(effect, true, _imp->nameLineEdit->text().toStdString(), _imp->labelLineEdit->text().toStdString(), _imp->tooltipArea->toPlainText().toStdString(), _imp->startNewLineBox->isChecked());
     }
     
     //Recover listeners expressions
