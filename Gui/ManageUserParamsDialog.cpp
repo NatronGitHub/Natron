@@ -166,17 +166,17 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
     _imp->buttonsContainer = new QWidget(this);
     _imp->buttonsLayout = new QVBoxLayout(_imp->buttonsContainer);
     
-    _imp->addButton = new Button(tr("Add"),_imp->buttonsContainer);
+    _imp->addButton = new Button(tr("Add..."),_imp->buttonsContainer);
     _imp->addButton->setToolTip(Natron::convertFromPlainText(tr("Add a new parameter, group or page"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->addButton,SIGNAL(clicked(bool)),this,SLOT(onAddClicked()));
     _imp->buttonsLayout->addWidget(_imp->addButton);
     
-    _imp->pickButton = new Button(tr("Pick"),_imp->buttonsContainer);
+    _imp->pickButton = new Button(tr("Pick..."),_imp->buttonsContainer);
     _imp->pickButton->setToolTip(Natron::convertFromPlainText(tr("Add a new parameter that is directly copied from/linked to another parameter"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->pickButton,SIGNAL(clicked(bool)),this,SLOT(onPickClicked()));
     _imp->buttonsLayout->addWidget(_imp->pickButton);
     
-    _imp->editButton = new Button(tr("Edit"),_imp->buttonsContainer);
+    _imp->editButton = new Button(tr("Edit..."),_imp->buttonsContainer);
     _imp->editButton->setToolTip(Natron::convertFromPlainText(tr("Edit the selected parameter"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->editButton,SIGNAL(clicked(bool)),this,SLOT(onEditClicked()));
     _imp->buttonsLayout->addWidget(_imp->editButton);
