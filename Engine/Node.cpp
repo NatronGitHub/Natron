@@ -2400,31 +2400,6 @@ Node::setNameInternal(const std::string& name)
                 } catch (const std::exception& e) {
                     qDebug() << e.what();
                 }
-                
-                const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
-                
-                for (U32 i = 0; i < knobs.size(); ++i) {
-                    std::list<boost::shared_ptr<KnobI> > listeners;
-                    knobs[i]->getListeners(listeners);
-                    ///For all listeners make sure they belong to a node
-                    bool foundEffect = false;
-                    for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
-                        EffectInstance* isEffect = dynamic_cast<EffectInstance*>( (*it2)->getHolder() );
-                        if ( isEffect && ( isEffect != _imp->liveInstance.get() ) && isEffect->getNode()->isActivated() ) {
-                            foundEffect = true;
-                            break;
-                        }
-                    }
-                    if (foundEffect) {
-                        Natron::warningDialog( tr("Rename").toStdString(), tr("This node has one or several "
-                                                                              "parameters from which other parameters "
-                                                                              "of the project rely on through expressions "
-                                                                              "or links. Changing the name of this node will probably "
-                                                                              "break these expressions. You should carefully update them. ")
-                                              .toStdString() );
-                        break;
-                    }
-                }
             }
         } else { //if (!oldName.empty()) {
             declareNodeVariableToPython(fullySpecifiedName);

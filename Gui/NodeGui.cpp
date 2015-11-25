@@ -3029,9 +3029,35 @@ void
 NodeGui::setName(const QString & newName)
 {
     _settingNameFromGui = true;
-    getNode()->setLabel(newName.toStdString());
+    std::string stdName = newName.toStdString();
+    getNode()->setLabel(stdName);
     _settingNameFromGui = false;
-
+    stdName = Natron::makeNameScriptFriendly(stdName);
+    std::string oldScriptName = getNode()->getScriptName();
+    if (getNode()->setScriptName(stdName)) {
+        ///Update expressions on all knobs
+        const std::vector<boost::shared_ptr<KnobI> >& knobs = getNode()->getKnobs();
+        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            std::list<boost::shared_ptr<KnobI> > listeners;
+            (*it)->getListeners(listeners);
+            for (std::list<boost::shared_ptr<KnobI> > ::iterator it2 = listeners.begin() ; it2 != listeners.end(); ++it2) {
+                for (int i = 0; i < (*it2)->getDimension() ;++i) {
+                    
+                    std::string expr = (*it2)->getExpression(i);
+                    bool hasRet = (*it2)->isExpressionUsingRetVariable(i);
+                    if (!expr.empty()) {
+                        QString qexpr(expr.c_str());
+                        qexpr.replace(oldScriptName.c_str(), stdName.c_str());
+                        try {
+                            (*it2)->setExpression(i, qexpr.toStdString(), hasRet);
+                        } catch (...) {
+                            
+                        }
+                    }
+                }
+            }
+        }
+    }
     onInternalNameChanged(newName);
 }
 
