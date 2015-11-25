@@ -290,7 +290,6 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     
     group->getApplication()->updateProjectLoadStatus(QObject::tr("Restoring graph links in group: ") + groupName);
 
-    NodeList nodes = group->getNodes();
     
     /// Connect the nodes together
     for (std::map<NodePtr, boost::shared_ptr<NodeSerialization> >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
@@ -359,6 +358,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     } // for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
     
     ///Now that the graph is setup, restore expressions
+    NodeList nodes = group->getNodes();
+    if (isNodeGroup) {
+        nodes.push_back(isNodeGroup->getNode());
+    }
     for (std::map<NodePtr, boost::shared_ptr<NodeSerialization> >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
         if ( appPTR->isBackground() && (dynamic_cast<ViewerInstance*>((it->first)->getLiveInstance()))) {
             //ignore viewers on background mode

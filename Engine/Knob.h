@@ -978,6 +978,15 @@ public:
      **/
     bool slaveTo(int dimension,const boost::shared_ptr<KnobI> & other,int otherDimension,bool ignoreMasterPersistence = false);
     virtual bool isMastersPersistenceIgnored() const = 0;
+    
+    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,bool makeAlias) = 0;
+    
+    /**
+     * @brief If a knob was created using createDuplicateOnNode(effect,true), this function will return true
+     **/
+    virtual boost::shared_ptr<KnobI> getAliasMaster() const = 0;
+    
+    virtual bool setKnobAsAliasOfThis(const boost::shared_ptr<KnobI>& master, bool doAlias) = 0;
 
     /**
      * @brief Calls slaveTo with a value changed reason of Natron::eValueChangedReasonUserEdited.
@@ -1233,6 +1242,11 @@ public:
     virtual bool hasModifications() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasModifications(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasModificationsForSerialization() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,bool makeAlias) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual boost::shared_ptr<KnobI> getAliasMaster() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool setKnobAsAliasOfThis(const boost::shared_ptr<KnobI>& master, bool doAlias) OVERRIDE FINAL;
+    
 private:
     
 
@@ -1299,6 +1313,10 @@ public:
     
 protected:
 
+    virtual void handleSignalSlotsForAliasLink(const boost::shared_ptr<KnobI>& /*alias*/, bool /*connect*/) {
+        
+    }
+    
 
     /**
      * @brief Called when you must copy any extra data you maintain from the other knob.

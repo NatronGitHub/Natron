@@ -49,7 +49,7 @@ public:
     
     virtual ~PickKnobDialog();
     
-    KnobGui* getSelectedKnob(bool* useExpressionLink) const;
+    KnobGui* getSelectedKnob(bool* makeAlias) const;
     
 public Q_SLOTS:
     

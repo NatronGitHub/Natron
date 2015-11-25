@@ -62,7 +62,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define KNOB_SERIALIZATION_INTRODUCES_CHOICE_HELP_STRINGS 8
 #define KNOB_SERIALIZATION_INTRODUCES_DEFAULT_VALUES 9
 #define KNOB_SERIALIZATION_INTRODUCES_DISPLAY_MIN_MAX 10
-#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_DISPLAY_MIN_MAX
+#define KNOB_SERIALIZATION_INTRODUCES_ALIAS 11
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_ALIAS
 
 #define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
@@ -395,6 +396,7 @@ class KnobSerialization : public KnobSerializationBase
     std::string _typeName;
     int _dimension;
     std::list<MasterSerialization> _masters; //< used when deserializating, we can't restore it before all knobs have been restored.
+    bool _masterIsAlias;
     std::vector<std::pair<std::string,bool> > _expressions; //< used when deserializing, we can't restore it before all knobs have been restored.
     std::list< Curve > parametricCurves;
     std::list<KnobDouble::SerializedTrack> slavedTracks; //< same as for master, can't be used right away when deserializing
@@ -431,6 +433,8 @@ class KnobSerialization : public KnobSerializationBase
         bool secret = _knob->getIsSecret();
         ar & boost::serialization::make_nvp("Secret",secret);
 
+        ar & boost::serialization::make_nvp("MasterIsAlias",_masterIsAlias);
+        
         for (int i = 0; i < _knob->getDimension(); ++i) {
             ValueSerialization vs(_knob,i,_expressions[i].second,_expressions[i].first);
             ar & boost::serialization::make_nvp("item",vs);
@@ -545,6 +549,12 @@ class KnobSerialization : public KnobSerializationBase
         bool secret;
         ar & boost::serialization::make_nvp("Secret",secret);
         _knob->setSecret(secret);
+        
+        if (version >= KNOB_SERIALIZATION_INTRODUCES_ALIAS) {
+            ar & boost::serialization::make_nvp("MasterIsAlias",_masterIsAlias);
+        } else {
+            _masterIsAlias = false;
+        }
 
         AnimatingKnobStringHelper* isStringAnimated = dynamic_cast<AnimatingKnobStringHelper*>( _knob.get() );
         KnobFile* isFile = dynamic_cast<KnobFile*>( _knob.get() );
@@ -711,6 +721,7 @@ public:
     explicit KnobSerialization(const boost::shared_ptr<KnobI> & knob)
         : _knob()
         , _dimension(0)
+        , _masterIsAlias(false)
         , _extraData(NULL)
         , _isUserKnob(false)
         , _label()
@@ -737,6 +748,8 @@ public:
         for (int i = 0; i < _dimension ; ++i) {
             _expressions.push_back(std::make_pair(knob->getExpression(i),knob->isExpressionUsingRetVariable(i)));
         }
+        
+        _masterIsAlias = knob->getAliasMaster().get() != 0;
         
         _isUserKnob = knob->isUserKnob();
         _label = knob->getLabel();

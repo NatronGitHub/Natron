@@ -264,7 +264,7 @@ public:
      **/
     bool isSecretRecursive() const;
     
-    boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,bool linkExpression);
+    boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,bool makeAlias);
 
 
     static bool shouldSliderBeVisible(int sliderMin, int sliderMax)
@@ -278,6 +278,8 @@ public:
     }
 
 public Q_SLOTS:
+    
+    void onRemoveAliasLinkActionTriggered();
     
     void onUnlinkActionTriggered();
 
@@ -381,7 +383,7 @@ public Q_SLOTS:
     
     void onLabelChanged();
     
-    void onCreateMasterOnGroupActionTriggered();
+    void onCreateAliasOnGroupActionTriggered();
     
 Q_SIGNALS:
 

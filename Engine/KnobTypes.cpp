@@ -844,6 +844,52 @@ KnobChoice::choiceRestoration(KnobChoice* knob,const ChoiceExtraData* data)
     }
     
 }
+
+void
+KnobChoice::onOriginalKnobPopulated()
+{
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
+    if (!handler) {
+        return;
+    }
+    boost::shared_ptr<KnobI> originalKnob = handler->getKnob();
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(originalKnob.get());
+    if (!isChoice) {
+        return;
+    }
+    populateChoices(isChoice->_entries,isChoice->_entriesHelp);
+}
+
+void
+KnobChoice::onOriginalKnobEntriesReset()
+{
+    resetChoices();
+}
+
+void
+KnobChoice::onOriginalKnobEntryAppend(const QString& text,const QString& help)
+{
+    appendChoice(text.toStdString(), help.toStdString());
+}
+
+void
+KnobChoice::handleSignalSlotsForAliasLink(const boost::shared_ptr<KnobI>& alias,bool connect)
+{
+    assert(alias);
+    boost::shared_ptr<KnobSignalSlotHandler> handler = alias->getSignalSlotHandler();
+    if (connect) {
+        QObject::connect(_signalSlotHandler.get(), SIGNAL(populated()), handler.get(), SLOT(onOriginalKnobPopulated()));
+        QObject::connect(_signalSlotHandler.get(), SIGNAL(entriesReset()), handler.get(), SLOT(onOriginalKnobEntriesReset()));
+        QObject::connect(_signalSlotHandler.get(), SIGNAL(entryAppended(QString,QString)), handler.get(),
+                         SLOT(onOriginalKnobEntryAppend(QString,QString)));
+    } else {
+        QObject::disconnect(_signalSlotHandler.get(), SIGNAL(populated()), handler.get(), SLOT(onOriginalKnobPopulated()));
+        QObject::disconnect(_signalSlotHandler.get(), SIGNAL(entriesReset()), handler.get(), SLOT(onOriginalKnobEntriesReset()));
+        QObject::disconnect(_signalSlotHandler.get(), SIGNAL(entryAppended(QString,QString)), handler.get(),
+                         SLOT(onOriginalKnobEntryAppend(QString,QString)));
+    }
+}
+
 /******************************KnobSeparator**************************************/
 
 KnobSeparator::KnobSeparator(KnobHolder* holder,

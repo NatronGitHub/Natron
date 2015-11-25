@@ -136,7 +136,10 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
     const std::vector<boost::shared_ptr<KnobI> >& knobs = panel->getHolder()->getKnobs();
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         if ((*it)->isUserKnob()) {
-            
+
+            if ((*it)->getParentKnob()) {
+                qDebug() << (*it)->getParentKnob()->getName().c_str();
+            }
             KnobPage* page = dynamic_cast<KnobPage*>(it->get());
             if (page) {
                 
@@ -256,8 +259,8 @@ ManageUserParamsDialog::onPickClicked()
 {
     PickKnobDialog dialog(_imp->panel,this);
     if (dialog.exec()) {
-        bool useExpr;
-        KnobGui* selectedKnob = dialog.getSelectedKnob(&useExpr);
+        bool useAlias;
+        KnobGui* selectedKnob = dialog.getSelectedKnob(&useAlias);
         if (!selectedKnob) {
             return;
         }
@@ -268,7 +271,7 @@ ManageUserParamsDialog::onPickClicked()
         assert(nodeGui);
         NodePtr node = nodeGui->getNode();
         assert(node);
-        boost::shared_ptr<KnobI> duplicate = selectedKnob->createDuplicateOnNode(node->getLiveInstance(), useExpr);
+        boost::shared_ptr<KnobI> duplicate = selectedKnob->createDuplicateOnNode(node->getLiveInstance(), useAlias);
         _imp->onKnobAddedInternal(duplicate);
     }
 }
@@ -337,6 +340,18 @@ ManageUserParamsDialog::onDeleteClicked()
         for (int i = 0; i < selection.size(); ++i) {
             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
+                    
+                    QString question;
+                    question.append(tr("Removing"));
+                    question += ' ';
+                    question += it->knob->getName().c_str();
+                    question += ' ';
+                    question += tr("cannot be undone. Are you sure you want to continue?");
+                    Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Remove parameter").toStdString(), question.toStdString(), false,
+                                                                             Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo), Natron::eStandardButtonYes);
+                    if (rep != Natron::eStandardButtonYes) {
+                        return;
+                    }
                     it->knob->getHolder()->removeDynamicKnob(it->knob.get());
                     delete it->item;
                     _imp->items.erase(it);

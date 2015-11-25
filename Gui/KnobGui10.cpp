@@ -22,6 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Engine/Knob.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiPrivate.h"
 
@@ -34,7 +35,7 @@ using namespace Natron;
 
 
 void
-KnobGui::onCreateMasterOnGroupActionTriggered()
+KnobGui::onCreateAliasOnGroupActionTriggered()
 {
     KnobHolder* holder = getKnob()->getHolder();
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
@@ -51,6 +52,26 @@ KnobGui::onCreateMasterOnGroupActionTriggered()
 }
 
 void
+KnobGui::onRemoveAliasLinkActionTriggered()
+{
+    boost::shared_ptr<KnobI> thisKnob = getKnob();
+    std::list<boost::shared_ptr<KnobI> > listeners;
+    thisKnob->getListeners(listeners);
+    boost::shared_ptr<KnobI> aliasMaster;
+    boost::shared_ptr<KnobI> listener;
+    if (!listeners.empty()) {
+        listener = listeners.front();
+        aliasMaster = listener->getAliasMaster();
+        if (aliasMaster != thisKnob) {
+            aliasMaster.reset();
+        }
+    }
+    if (aliasMaster && listener) {
+        listener->setKnobAsAliasOfThis(aliasMaster, false);
+    }
+}
+
+void
 KnobGui::onUnlinkActionTriggered()
 {
     QAction* action = qobject_cast<QAction*>(sender());
@@ -61,15 +82,20 @@ KnobGui::onUnlinkActionTriggered()
     boost::shared_ptr<KnobI> thisKnob = getKnob();
     int dims = thisKnob->getDimension();
     
-    thisKnob->beginChanges();
-    for (int i = 0; i < dims; ++i) {
-        if (dim == -1 || i == dim) {
-            std::pair<int,boost::shared_ptr<KnobI> > other = thisKnob->getMaster(i);
-            thisKnob->onKnobUnSlaved(i);
-            onKnobSlavedChanged(i, false);
+    boost::shared_ptr<KnobI> aliasMaster = thisKnob->getAliasMaster();
+    if (aliasMaster) {
+        thisKnob->setKnobAsAliasOfThis(aliasMaster, false);
+    } else {
+        thisKnob->beginChanges();
+        for (int i = 0; i < dims; ++i) {
+            if (dim == -1 || i == dim) {
+                std::pair<int,boost::shared_ptr<KnobI> > other = thisKnob->getMaster(i);
+                thisKnob->onKnobUnSlaved(i);
+                onKnobSlavedChanged(i, false);
+            }
         }
+        thisKnob->endChanges();
     }
-    thisKnob->endChanges();
     getKnob()->getHolder()->getApp()->triggerAutoSave();
 }
 

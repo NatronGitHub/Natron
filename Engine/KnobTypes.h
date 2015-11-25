@@ -462,6 +462,12 @@ public:
     /// set the KnobChoice default value from the label
     void setDefaultValueFromLabel(const std::string & value,int dimension = 0);
 
+public Q_SLOTS:
+    
+    void onOriginalKnobPopulated();
+    void onOriginalKnobEntriesReset();
+    void onOriginalKnobEntryAppend(const QString& text,const QString& help);
+    
 Q_SIGNALS:
 
     void populated();
@@ -473,6 +479,9 @@ private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
+    virtual void handleSignalSlotsForAliasLink(const boost::shared_ptr<KnobI>& alias,bool connect) OVERRIDE FINAL;
+    
+    
 private:
     
     mutable QMutex _entriesMutex;

@@ -116,43 +116,68 @@ boost::shared_ptr<KnobI> KnobSerialization::createKnob(const std::string & typeN
     return ret;
 }
 
+static boost::shared_ptr<KnobI> findMaster(const boost::shared_ptr<KnobI> & knob,
+                                           const std::list<boost::shared_ptr<Natron::Node> > & allNodes,
+                                           const std::string& masterKnobName,
+                                           const std::string& masterNodeName)
+{
+    ///we need to cycle through all the nodes of the project to find the real master
+    boost::shared_ptr<Natron::Node> masterNode;
+    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
+        if ((*it2)->getScriptName() == masterNodeName) {
+            masterNode = *it2;
+            break;
+        }
+    }
+    if (!masterNode) {
+        qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeName.c_str();
+        return boost::shared_ptr<KnobI>();
+    }
+    
+    ///now that we have the master node, find the corresponding knob
+    const std::vector< boost::shared_ptr<KnobI> > & otherKnobs = masterNode->getKnobs();
+    int found = -1;
+    for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
+        if ( (otherKnobs[j]->getName() == masterKnobName) && otherKnobs[j]->getIsPersistant() ) {
+            found = (int)j;
+            break;
+        }
+    }
+    if (found == -1) {
+        qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeName.c_str();
+    } else {
+        return otherKnobs[found];
+    }
+    return boost::shared_ptr<KnobI>();
+}
+
 void
 KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
                                     const std::list<boost::shared_ptr<Natron::Node> > & allNodes)
 {
     int i = 0;
-
-    for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it) {
-        if (it->masterDimension != -1) {
-            ///we need to cycle through all the nodes of the project to find the real master
-            boost::shared_ptr<Natron::Node> masterNode;
-            for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
-                if ((*it2)->getScriptName() == it->masterNodeName) {
-                    masterNode = *it2;
-                    break;
-                }
-            }
-            if (!masterNode) {
-                qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << it->masterNodeName.c_str();
-                ++i;
-                continue;
-            }
-
-            ///now that we have the master node, find the corresponding knob
-            const std::vector< boost::shared_ptr<KnobI> > & otherKnobs = masterNode->getKnobs();
-            bool found = false;
-            for (U32 j = 0; j < otherKnobs.size(); ++j) {
-                if ( (otherKnobs[j]->getName() == it->masterKnobName) && otherKnobs[j]->getIsPersistant() ) {
-                    knob->slaveTo(i, otherKnobs[j], it->masterDimension);
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << it->masterNodeName.c_str();
+    
+    if (_masterIsAlias) {
+        assert(!_masters.empty());
+        if (!_masters.empty()) {
+            const std::string& aliasKnobName = _masters.front().masterKnobName;
+            const std::string& aliasNodeName = _masters.front().masterNodeName;
+            boost::shared_ptr<KnobI> alias = findMaster(knob, allNodes, aliasKnobName, aliasNodeName);
+            if (alias) {
+                knob->setKnobAsAliasOfThis(alias, true);
             }
         }
-        ++i;
+    } else {
+        
+        for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it) {
+            if (it->masterDimension != -1) {
+                boost::shared_ptr<KnobI> master = findMaster(knob, allNodes, it->masterKnobName, it->masterNodeName);
+                if (master) {
+                    knob->slaveTo(i, master, it->masterDimension);
+                }
+            }
+            ++i;
+        }
     }
 }
 

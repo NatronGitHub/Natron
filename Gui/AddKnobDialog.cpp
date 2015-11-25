@@ -57,6 +57,7 @@ struct AddKnobDialogPrivate
 {
     boost::shared_ptr<KnobI> knob;
     boost::shared_ptr<KnobSerialization> originalKnobSerialization;
+    bool isKnobAlias;
     
     DockablePanel* panel;
     
@@ -148,6 +149,7 @@ struct AddKnobDialogPrivate
     AddKnobDialogPrivate(DockablePanel* panel)
     : knob()
     , originalKnobSerialization()
+    , isKnobAlias(false)
     , panel(panel)
     , vLayout(0)
     , mainContainer(0)
@@ -327,6 +329,22 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
     _imp->vLayout->addWidget(_imp->mainContainer);
     
     {
+        boost::shared_ptr<KnobI> isAlias;
+        if (knob) {
+            std::list<boost::shared_ptr<KnobI> > listeners;
+            knob->getListeners(listeners);
+            if (!listeners.empty()) {
+                isAlias = listeners.front()->getAliasMaster();
+                if (isAlias != knob) {
+                    isAlias.reset();
+                }
+            }
+        }
+        _imp->isKnobAlias = isAlias.get() != 0;
+    }
+    
+    
+    {
         QWidget* firstRowContainer = new QWidget(this);
         QHBoxLayout* firstRowLayout = new QHBoxLayout(firstRowContainer);
         firstRowLayout->setContentsMargins(0, 0, 0, 0);
@@ -363,6 +381,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         if (knob) {
             _imp->hideBox->setChecked(knob->getIsSecret());
         }
+
         secondRowLayout->addWidget(_imp->hideBox);
         _imp->startNewLineLabel = new Natron::Label(tr("Start new line:"),secondRowContainer);
         secondRowLayout->addWidget(_imp->startNewLineLabel);
@@ -443,6 +462,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         if (knob) {
             _imp->animatesCheckbox->setChecked(knob->isAnimationEnabled());
         }
+
         thirdRowLayout->addWidget(_imp->animatesCheckbox);
         _imp->evaluatesLabel = new Natron::Label(Natron::convertFromPlainText(tr("Render on change:"), Qt::WhiteSpaceNormal),thirdRowContainer);
         thirdRowLayout->addWidget(_imp->evaluatesLabel);
@@ -907,6 +927,22 @@ AddKnobDialog::onPageCurrentIndexChanged(int index)
 void
 AddKnobDialog::onTypeCurrentIndexChanged(int index)
 {
+    if (_imp->isKnobAlias) {
+        _imp->setVisibleAnimates(false);
+        _imp->setVisibleEvaluate(false);
+        _imp->setVisibleHide(false);
+        _imp->setVisibleMenuItems(false);
+        _imp->setVisibleMinMax(false);
+        _imp->setVisibleStartNewLine(false);
+        _imp->setVisibleMultiLine(false);
+        _imp->setVisibleMultiPath(false);
+        _imp->setVisibleRichText(false);
+        _imp->setVisibleSequence(false);
+        _imp->setVisibleGrpAsTab(false);
+        _imp->setVisibleParent(false);
+        _imp->setVisibleDefaultValues(false,AddKnobDialogPrivate::eDefaultValueTypeInt, 1);
+        return;
+    }
     _imp->setVisiblePage(index != 16);
     switch (index) {
         case 0: // int
@@ -1416,78 +1452,84 @@ AddKnobDialog::onOkClicked()
                             .toStdString());
         return;
         
+    }
+    
+    ///Remove the previous knob, and recreate it.
+    
+    ///Index of the type in the combo
+    int index;
+    
+    ///Remember the old page in which to insert the knob
+    KnobPage* oldParentPage = 0;
+    
+    ///If the knob was in a group, we need to place it at the same index
+    int oldIndexInGroup = -1;
+    
+    std::string oldKnobScriptName;
+    std::vector<std::pair<std::string,bool> > expressions;
+    std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > > listenersExpressions;
+    
+    if (!_imp->knob) {
+        assert(_imp->typeChoice);
+        index = _imp->typeChoice->activeIndex();
     } else {
-        ///Remove the previous knob, and recreate it.
+        oldKnobScriptName = _imp->knob->getName();
         
-        ///Index of the type in the combo
-        int index;
-        
-        ///Remember the old page in which to insert the knob
-        KnobPage* oldParentPage = 0;
-        
-        ///If the knob was in a group, we need to place it at the same index
-        int oldIndexInGroup = -1;
-        
-        std::string oldKnobScriptName;
-        std::vector<std::pair<std::string,bool> > expressions;
-        std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > > listenersExpressions;
-        
-        if (_imp->knob) {
-            oldKnobScriptName = _imp->knob->getName();
-            
-            oldParentPage = _imp->knob->getTopLevelPage();
-            index = getChoiceIndexFromKnobType(_imp->knob.get());
-            boost::shared_ptr<KnobI> parent = _imp->knob->getParentKnob();
-            KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
-            if (isParentGrp && isParentGrp == _imp->getSelectedGroup()) {
-                std::vector<boost::shared_ptr<KnobI> > children = isParentGrp->getChildren();
-                for (U32 i = 0; i < children.size(); ++i) {
-                    if (children[i] == _imp->knob) {
-                        oldIndexInGroup = i;
-                        break;
-                    }
-                }
-            } else {
-                std::vector<boost::shared_ptr<KnobI> > children;
-                if (oldParentPage) {
-                    children = oldParentPage->getChildren();
-                }
-                for (U32 i = 0; i < children.size(); ++i) {
-                    if (children[i] == _imp->knob) {
-                        oldIndexInGroup = i;
-                        break;
-                    }
+        oldParentPage = _imp->knob->getTopLevelPage();
+        index = getChoiceIndexFromKnobType(_imp->knob.get());
+        boost::shared_ptr<KnobI> parent = _imp->knob->getParentKnob();
+        KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
+        if (isParentGrp && isParentGrp == _imp->getSelectedGroup()) {
+            std::vector<boost::shared_ptr<KnobI> > children = isParentGrp->getChildren();
+            for (U32 i = 0; i < children.size(); ++i) {
+                if (children[i] == _imp->knob) {
+                    oldIndexInGroup = i;
+                    break;
                 }
             }
-            expressions.resize(_imp->knob->getDimension());
-            for (std::size_t i = 0 ; i < expressions.size(); ++i) {
-                std::string expr = _imp->knob->getExpression(i);
-                bool useRetVar = _imp->knob->isExpressionUsingRetVariable(i);
-                expressions[i] = std::make_pair(expr,useRetVar);
+        } else {
+            std::vector<boost::shared_ptr<KnobI> > children;
+            if (oldParentPage) {
+                children = oldParentPage->getChildren();
             }
-            
-            //Since removing this knob will also remove all expressions from listeners, conserve them and try
-            //to recover them afterwards
-            std::list<boost::shared_ptr<KnobI> > listeners;
-            _imp->knob->getListeners(listeners);
-            for (std::list<boost::shared_ptr<KnobI> >::iterator it = listeners.begin(); it != listeners.end(); ++it) {
-                std::vector<std::pair<std::string,bool> > exprs;
-                for (int i = 0; i < (*it)->getDimension(); ++i) {
-                    std::pair<std::string,bool> e;
-                    e.first = (*it)->getExpression(i);
-                    e.second = (*it)->isExpressionUsingRetVariable(i);
-                    exprs.push_back(e);
+            for (U32 i = 0; i < children.size(); ++i) {
+                if (children[i] == _imp->knob) {
+                    oldIndexInGroup = i;
+                    break;
                 }
-                listenersExpressions[*it] = exprs;
             }
+        }
+        expressions.resize(_imp->knob->getDimension());
+        for (std::size_t i = 0 ; i < expressions.size(); ++i) {
+            std::string expr = _imp->knob->getExpression(i);
+            bool useRetVar = _imp->knob->isExpressionUsingRetVariable(i);
+            expressions[i] = std::make_pair(expr,useRetVar);
+        }
+        
+        //Since removing this knob will also remove all expressions from listeners, conserve them and try
+        //to recover them afterwards
+        std::list<boost::shared_ptr<KnobI> > listeners;
+        _imp->knob->getListeners(listeners);
+        for (std::list<boost::shared_ptr<KnobI> >::iterator it = listeners.begin(); it != listeners.end(); ++it) {
+            std::vector<std::pair<std::string,bool> > exprs;
+            for (int i = 0; i < (*it)->getDimension(); ++i) {
+                std::pair<std::string,bool> e;
+                e.first = (*it)->getExpression(i);
+                e.second = (*it)->isExpressionUsingRetVariable(i);
+                exprs.push_back(e);
+            }
+            listenersExpressions[*it] = exprs;
+        }
+        
+        if (!_imp->isKnobAlias) {
             
             _imp->panel->getHolder()->removeDynamicKnob(_imp->knob.get());
-            
             _imp->knob.reset();
-        } else {
-            assert(_imp->typeChoice);
-            index = _imp->typeChoice->activeIndex();
         }
+    } //if (!_imp->knob) {
+    
+    
+    if (!_imp->isKnobAlias) {
         _imp->createKnobFromSelection(index, oldIndexInGroup);
         assert(_imp->knob);
         
@@ -1526,6 +1568,7 @@ AddKnobDialog::onOkClicked()
         if (_imp->originalKnobSerialization) {
             _imp->knob->clone(_imp->originalKnobSerialization->getKnob().get());
         }
+        
         //Recover expressions
         try {
             for (std::size_t i = 0 ; i < expressions.size(); ++i) {
@@ -1536,29 +1579,39 @@ AddKnobDialog::onOkClicked()
         } catch (...) {
             
         }
-        
-        
-        //Recover listeners expressions
-        for (std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > >::iterator it = listenersExpressions.begin();it != listenersExpressions.end(); ++it) {
-            assert(it->first->getDimension() == (int)it->second.size());
-            for (int i = 0; i < it->first->getDimension(); ++i) {
-                try {
-                    std::string expr;
-                    if (oldKnobScriptName != _imp->knob->getName()) {
-                        //Change in expressions the script-name
-                        QString estr(it->second[i].first.c_str());
-                        estr.replace(oldKnobScriptName.c_str(), _imp->knob->getName().c_str());
-                        expr = estr.toStdString();
-                    } else {
-                        expr = it->second[i].first;
-                    }
-                    it->first->setExpression(i, expr, it->second[i].second);
-                } catch (...) {
-                    
+    } // if (!_imp->isKnobAlias) {
+    else {
+        //Alias knobs can only have these properties changed
+        _imp->knob->setName(_imp->nameLineEdit->text().toStdString());
+        _imp->knob->setLabel(_imp->labelLineEdit->text().toStdString());
+        _imp->knob->setHintToolTip(_imp->tooltipArea->toPlainText().toStdString());
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_imp->knob->getHolder());
+        if (effect) {
+            effect->getNode()->declarePythonFields();
+        }
+    }
+    
+    //Recover listeners expressions
+    for (std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > >::iterator it = listenersExpressions.begin();it != listenersExpressions.end(); ++it) {
+        assert(it->first->getDimension() == (int)it->second.size());
+        for (int i = 0; i < it->first->getDimension(); ++i) {
+            try {
+                std::string expr;
+                if (oldKnobScriptName != _imp->knob->getName()) {
+                    //Change in expressions the script-name
+                    QString estr(it->second[i].first.c_str());
+                    estr.replace(oldKnobScriptName.c_str(), _imp->knob->getName().c_str());
+                    expr = estr.toStdString();
+                } else {
+                    expr = it->second[i].first;
                 }
+                it->first->setExpression(i, expr, it->second[i].second);
+            } catch (...) {
+                
             }
         }
     }
+    
     
     accept();
 }

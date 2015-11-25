@@ -56,8 +56,8 @@ struct PickKnobDialogPrivate
     Natron::Label* selectNodeLabel;
     CompleterLineEdit* nodeSelectionCombo;
     ComboBox* knobSelectionCombo;
-    Natron::Label* useExpressionLabel;
-    QCheckBox* useExpressionCheckBox;
+    Natron::Label* useAliasLabel;
+    QCheckBox* useAliasCheckBox;
     QDialogButtonBox* buttons;
     NodeList allNodes;
     std::map<QString,boost::shared_ptr<KnobI > > allKnobs;
@@ -67,8 +67,8 @@ struct PickKnobDialogPrivate
     , selectNodeLabel(0)
     , nodeSelectionCombo(0)
     , knobSelectionCombo(0)
-    , useExpressionLabel(0)
-    , useExpressionCheckBox(0)
+    , useAliasLabel(0)
+    , useAliasCheckBox(0)
     , buttons(0)
     , allNodes()
     , allKnobs()
@@ -120,9 +120,14 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     
     _imp->knobSelectionCombo = new ComboBox(this);
     
-    _imp->useExpressionLabel = new Natron::Label(tr("Also create an expression to control the parameter:"),this);
-    _imp->useExpressionCheckBox = new QCheckBox(this);
-    _imp->useExpressionCheckBox->setChecked(true);
+    QString useAliasTt = QObject::tr("If checked, an alias of the selected parameter will be created, coyping entirely its state. "
+                                     "Only the script-name, label and tooltip will be editable. For choice parameters this will also "
+                                     "dynamically refresh the menu entries when the original parameter's menu is changed.\n"
+                                     "When unchecked a simple expression will be set linking the 2 parameters but things such as  dynamic menus "
+                                     "will not be enabled.");
+    _imp->useAliasLabel = new Natron::Label(tr("Make Alias:"),this);
+    _imp->useAliasCheckBox = new QCheckBox(this);
+    _imp->useAliasCheckBox->setChecked(true);
     
     QObject::connect( _imp->nodeSelectionCombo,SIGNAL( itemCompletionChosen() ),this,SLOT( onNodeComboEditingFinished() ) );
     
@@ -134,8 +139,8 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     _imp->mainLayout->addWidget(_imp->selectNodeLabel, 0, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->nodeSelectionCombo, 0, 1, 1, 1);
     _imp->mainLayout->addWidget(_imp->knobSelectionCombo, 0, 2, 1, 1);
-    _imp->mainLayout->addWidget(_imp->useExpressionLabel, 1, 0, 1, 1);
-    _imp->mainLayout->addWidget(_imp->useExpressionCheckBox, 1, 1, 1, 1);
+    _imp->mainLayout->addWidget(_imp->useAliasLabel, 1, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->useAliasCheckBox, 1, 1, 1, 1);
     _imp->mainLayout->addWidget(_imp->buttons, 2, 0, 1, 3);
     
     QTimer::singleShot( 25, _imp->nodeSelectionCombo, SLOT( showCompleter() ) );
@@ -190,7 +195,7 @@ PickKnobDialog::onNodeComboEditingFinished()
 }
 
 KnobGui*
-PickKnobDialog::getSelectedKnob(bool* useExpressionLink) const
+PickKnobDialog::getSelectedKnob(bool* makeAlias) const
 {
     QString index = _imp->nodeSelectionCombo->text();
     boost::shared_ptr<Natron::Node> selectedNode;
@@ -233,7 +238,7 @@ PickKnobDialog::getSelectedKnob(bool* useExpressionLink) const
     const std::map<boost::weak_ptr<KnobI>,KnobGui*>& knobsMap = selectedPanel->getKnobs();
     std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator found = knobsMap.find(selectedKnob);
     if (found != knobsMap.end()) {
-        *useExpressionLink = _imp->useExpressionCheckBox->isChecked();
+        *makeAlias = _imp->useAliasCheckBox->isChecked();
         return found->second;
     }
     return 0;

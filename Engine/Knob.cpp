@@ -262,6 +262,9 @@ struct KnobHelperPrivate
     MastersMap masters; //from what knob is slaved each curve if any
     bool ignoreMasterPersistence; //< when true masters will not be serialized
     
+    //Used when this knob is an alias of another knob. The other knob is set in "slaveForAlias"
+    boost::shared_ptr<KnobI> slaveForAlias;
+    
     ///This is a list of all the knobs that have expressions/links to this knob. It could be named "slaves" but
     ///in the future we will also add expressions.
     std::list<boost::weak_ptr<KnobI> > listeners;
@@ -342,6 +345,7 @@ struct KnobHelperPrivate
     , mastersMutex()
     , masters(dimension_)
     , ignoreMasterPersistence(false)
+    , slaveForAlias()
     , listeners()
     , animationLevelMutex()
     , animationLevel(dimension_)
@@ -3120,6 +3124,207 @@ KnobHelper::setHasModifications(int dimension,bool value,bool lock)
         _imp->hasModifications[dimension] = value;
     }
     return ret;
+}
+
+boost::shared_ptr<KnobI>
+KnobHelper::createDuplicateOnNode(Natron::EffectInstance* effect,bool makeAlias)
+{
+    ///find-out to which node that master knob belongs to
+    if (!getHolder()->getApp()) {
+        return boost::shared_ptr<KnobI>();
+    }
+    
+    KnobHolder* holder = getHolder();
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+    assert(isEffect);
+    if (!isEffect) {
+        return boost::shared_ptr<KnobI>();
+    }
+    
+    KnobBool* isBool = dynamic_cast<KnobBool*>(this);
+    KnobInt* isInt = dynamic_cast<KnobInt*>(this);
+    KnobDouble* isDbl = dynamic_cast<KnobDouble*>(this);
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(this);
+    KnobColor* isColor = dynamic_cast<KnobColor*>(this);
+    KnobString* isString = dynamic_cast<KnobString*>(this);
+    KnobFile* isFile = dynamic_cast<KnobFile*>(this);
+    KnobOutputFile* isOutputFile = dynamic_cast<KnobOutputFile*>(this);
+    KnobPath* isPath = dynamic_cast<KnobPath*>(this);
+    KnobGroup* isGrp = dynamic_cast<KnobGroup*>(this);
+    KnobPage* isPage = dynamic_cast<KnobPage*>(this);
+    KnobButton* isBtn = dynamic_cast<KnobButton*>(this);
+    KnobParametric* isParametric = dynamic_cast<KnobParametric*>(this);
+    
+    const std::string& nodeScriptName = isEffect->getNode()->getScriptName();
+    std::string newKnobName = nodeScriptName +  getName();
+    
+    //Ensure the group user page is created
+
+    boost::shared_ptr<KnobPage> groupUserPageNode = effect->getOrCreateUserPageKnob();
+    
+    boost::shared_ptr<KnobI> output;
+    if (isBool) {
+        boost::shared_ptr<KnobBool> newKnob = effect->createBoolKnob(newKnobName, getLabel());
+        output = newKnob;
+    } else if (isInt) {
+        boost::shared_ptr<KnobInt> newKnob = effect->createIntKnob(newKnobName, getLabel(),getDimension());
+        newKnob->setMinimumsAndMaximums(isInt->getMinimums(), isInt->getMaximums());
+        newKnob->setDisplayMinimumsAndMaximums(isInt->getDisplayMinimums(),isInt->getDisplayMaximums());
+        output = newKnob;
+    } else if (isDbl) {
+        boost::shared_ptr<KnobDouble> newKnob = effect->createDoubleKnob(newKnobName, getLabel(),getDimension());
+        newKnob->setMinimumsAndMaximums(isDbl->getMinimums(), isDbl->getMaximums());
+        newKnob->setDisplayMinimumsAndMaximums(isDbl->getDisplayMinimums(),isDbl->getDisplayMaximums());
+        output = newKnob;
+    } else if (isChoice) {
+        boost::shared_ptr<KnobChoice> newKnob = effect->createChoiceKnob(newKnobName, getLabel());
+        newKnob->populateChoices(isChoice->getEntries_mt_safe(),isChoice->getEntriesHelp_mt_safe());
+        output = newKnob;
+    } else if (isColor) {
+        boost::shared_ptr<KnobColor> newKnob = effect->createColorKnob(newKnobName, getLabel(),getDimension());
+        newKnob->setMinimumsAndMaximums(isColor->getMinimums(), isColor->getMaximums());
+        newKnob->setDisplayMinimumsAndMaximums(isColor->getDisplayMinimums(),isColor->getDisplayMaximums());
+        output = newKnob;
+    } else if (isString) {
+        boost::shared_ptr<KnobString> newKnob = effect->createStringKnob(newKnobName, getLabel());
+        if (isString->isLabel()) {
+            newKnob->setAsLabel();
+        }
+        if (isString->isCustomKnob()) {
+            newKnob->setAsCustom();
+        }
+        if (isString->isMultiLine()) {
+            newKnob->setAsMultiLine();
+        }
+        if (isString->usesRichText()) {
+            newKnob->setUsesRichText(true);
+        }
+        output = newKnob;
+    } else if (isFile) {
+        boost::shared_ptr<KnobFile> newKnob = effect->createFileKnob(newKnobName, getLabel());
+        if (isFile->isInputImageFile()) {
+            newKnob->setAsInputImage();
+        }
+        output = newKnob;
+    } else if (isOutputFile) {
+        boost::shared_ptr<KnobOutputFile> newKnob = effect->createOuptutFileKnob(newKnobName, getLabel());
+        if (isOutputFile->isOutputImageFile()) {
+            newKnob->setAsOutputImageFile();
+        }
+        output = newKnob;
+    } else if (isPath) {
+        boost::shared_ptr<KnobPath> newKnob = effect->createPathKnob(newKnobName, getLabel());
+        if (isPath->isMultiPath()) {
+            newKnob->setMultiPath(true);
+        }
+        output = newKnob;
+        
+    } else if (isGrp) {
+        boost::shared_ptr<KnobGroup> newKnob = effect->createGroupKnob(newKnobName, getLabel());
+        if (isGrp->isTab()) {
+            newKnob->setAsTab();
+        }
+        output = newKnob;
+        
+    } else if (isPage) {
+        boost::shared_ptr<KnobPage> newKnob = effect->createPageKnob(newKnobName, getLabel());
+        output = newKnob;
+        
+    } else if (isBtn) {
+        boost::shared_ptr<KnobButton> newKnob = effect->createButtonKnob(newKnobName, getLabel());
+        output = newKnob;
+        
+    } else if (isParametric) {
+        boost::shared_ptr<KnobParametric> newKnob = effect->createParametricKnob(newKnobName, getLabel(), isParametric->getDimension());
+        output = newKnob;
+    }
+    if (!output) {
+        return boost::shared_ptr<KnobI>();
+    }
+    
+    output->setAsUserKnob();
+    output->cloneDefaultValues(this);
+    output->clone(this);
+    if (canAnimate()) {
+        output->setAnimationEnabled(isAnimationEnabled());
+    }
+    output->setEvaluateOnChange(getEvaluateOnChange());
+    output->setHintToolTip(getHintToolTip());
+    output->setAddNewLine(isNewLineActivated());
+    groupUserPageNode->addKnob(output);
+    effect->getNode()->declarePythonFields();
+    if (!makeAlias) {
+        
+        boost::shared_ptr<NodeCollection> collec;
+        collec = isEffect->getNode()->getGroup();
+        
+        NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
+        
+        std::stringstream ss;
+        if (isCollecGroup) {
+            ss << "thisGroup." << newKnobName;
+        } else {
+            ss << "app." << effect->getNode()->getFullyQualifiedName() << "." << newKnobName;
+        }
+        if (output->getDimension() > 1) {
+            ss << ".get()[dimension]";
+        } else {
+            ss << ".get()";
+        }
+        
+        try {
+            std::string script = ss.str();
+            for (int i = 0; i < getDimension(); ++i) {
+                clearExpression(i, true);
+                setExpression(i, script, false);
+            }
+        } catch (...) {
+            
+        }
+    } else {
+        setKnobAsAliasOfThis(output, true);
+    }
+    effect->refreshKnobs();
+    return output;
+}
+
+bool
+KnobHelper::setKnobAsAliasOfThis(const boost::shared_ptr<KnobI>& master, bool doAlias)
+{
+    //Sanity check
+    if (!master || master->getDimension() != getDimension() ||
+        master->typeName() != typeName()) {
+        return false;
+    }
+    
+    beginChanges();
+    for (int i = 0; i < getDimension(); ++i) {
+        
+        if (isSlave(i)) {
+            unSlave(i, false);
+        }
+        if (doAlias) {
+            bool ok = slaveTo(i, master, i, Natron::eValueChangedReasonNatronInternalEdited, false);
+            assert(ok);
+        }
+        handleSignalSlotsForAliasLink(master,doAlias);
+    }
+    endChanges();
+        
+    QWriteLocker k(&_imp->mastersMutex);
+    if (doAlias) {
+        _imp->slaveForAlias = master;
+    } else {
+        _imp->slaveForAlias.reset();
+    }
+    return true;
+}
+
+boost::shared_ptr<KnobI>
+KnobHelper::getAliasMaster()  const
+{
+    QReadLocker k(&_imp->mastersMutex);
+    return _imp->slaveForAlias;
 }
 
 /***************************KNOB HOLDER******************************************/
