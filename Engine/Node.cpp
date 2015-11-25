@@ -6792,6 +6792,8 @@ Node::canOthersConnectToThisNode() const
         return false;
     } else if (dynamic_cast<GroupOutput*>(_imp->liveInstance.get())) {
         return false;
+    } else if (_imp->liveInstance->isWriter() && _imp->liveInstance->getSequentialPreference() == Natron::eSequentialPreferenceOnlySequential) {
+        return false;
     }
     ///In debug mode only allow connections to Writer nodes
 # ifdef DEBUG
