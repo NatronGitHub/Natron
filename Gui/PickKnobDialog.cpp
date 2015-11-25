@@ -120,13 +120,15 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     
     _imp->knobSelectionCombo = new ComboBox(this);
     
-    QString useAliasTt = QObject::tr("If checked, an alias of the selected parameter will be created, coyping entirely its state. "
+    QString useAliasTt = Natron::convertFromPlainText(QObject::tr("If checked, an alias of the selected parameter will be created, coyping entirely its state. "
                                      "Only the script-name, label and tooltip will be editable. For choice parameters this will also "
                                      "dynamically refresh the menu entries when the original parameter's menu is changed.\n"
                                      "When unchecked a simple expression will be set linking the 2 parameters but things such as  dynamic menus "
-                                     "will not be enabled.");
+                                                                  "will not be enabled."),Qt::WhiteSpaceNormal);
     _imp->useAliasLabel = new Natron::Label(tr("Make Alias:"),this);
+    _imp->useAliasLabel->setToolTip(useAliasTt);
     _imp->useAliasCheckBox = new QCheckBox(this);
+    _imp->useAliasCheckBox->setToolTip(useAliasTt);
     _imp->useAliasCheckBox->setChecked(true);
     
     QObject::connect( _imp->nodeSelectionCombo,SIGNAL( itemCompletionChosen() ),this,SLOT( onNodeComboEditingFinished() ) );
