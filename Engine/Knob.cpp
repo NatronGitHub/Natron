@@ -445,10 +445,15 @@ KnobHelper::deleteKnob()
         if (!knob) {
             continue;
         }
+        boost::shared_ptr<KnobI> aliasKnob = knob->getAliasMaster();
+        if (aliasKnob.get() == this) {
+            knob->setKnobAsAliasOfThis(aliasKnob, false);
+        }
         for (int i = 0; i < knob->getDimension(); ++i) {
             knob->clearExpression(i,true);
             knob->unSlave(i, false);
         }
+        
     }
     
     for (int i = 0; i < getDimension(); ++i) {
