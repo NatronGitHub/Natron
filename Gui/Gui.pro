@@ -110,6 +110,7 @@ SOURCES += \
     GuiApplicationManagerPrivate.cpp \
     GuiAppInstance.cpp \
     GuiAppWrapper.cpp \
+    GuiEvent.cpp \
     GuiPrivate.cpp \
     Histogram.cpp \
     HostOverlay.cpp \

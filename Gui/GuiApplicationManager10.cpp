@@ -251,6 +251,7 @@ bool
 Application::event(QEvent* e)
 {
     switch ( e->type() ) {
+#if defined(Q_OS_MAC) || defined(Q_OS_SYMBIAN)
     case QEvent::FileOpen: {
         // This class is currently supported for Mac OS X and Symbian only
         // http://doc.qt.io/qt-4.8/qfileopenevent.html
@@ -276,11 +277,11 @@ Application::event(QEvent* e)
 #endif
             _app->setFileToOpen(file);
         }
-    }
-
         return true;
-    default:
+    }
+#endif
 
+    default:
         return QApplication::event(e);
     }
 }

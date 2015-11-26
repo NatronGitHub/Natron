@@ -155,8 +155,6 @@ public:
 
     const std::list<boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
 
-    bool eventFilter(QObject *target, QEvent* e) OVERRIDE;
-
     void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
 
     void createGroupGui(const boost::shared_ptr<Natron::Node>& group, bool requestedByLoad);
@@ -607,7 +605,14 @@ public:
     void setLastKeyPressVisitedClickFocus(bool visited);
 
     void setApplicationConsoleActionVisible(bool visible);
+
+protected:
+    // Reimplemented Protected Functions
+
+    bool event(QEvent* event) OVERRIDE;
     
+    bool eventFilter(QObject *target, QEvent* e) OVERRIDE;
+
 Q_SIGNALS:
 
 
@@ -738,10 +743,11 @@ public Q_SLOTS:
     
     void onShowApplicationConsoleActionTriggered();
 
-    
+private Q_SLOTS:
+    void openAt(QAction *where);
+
 private:
 
-    
     void setCurrentPanelFocus(PanelWidget* widget);
     
     AppInstance* openProjectInternal(const std::string & absoluteFileName) WARN_UNUSED_RETURN;
