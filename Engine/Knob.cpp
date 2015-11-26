@@ -3506,6 +3506,18 @@ KnobHolder::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
 }
 
 void
+KnobHolder::removeKnobFromList(const KnobI* knob)
+{
+    QMutexLocker kk(&_imp->knobsMutex);
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
+        if (it->get() == knob) {
+            _imp->knobs.erase(it);
+            return;
+        }
+    }
+}
+
+void
 KnobHolder::setPanelPointer(DockablePanelI* gui)
 {
     assert(QThread::currentThread() == qApp->thread());
@@ -3630,6 +3642,8 @@ KnobHolder::moveKnobOneStepUp(KnobI* knob)
     }
     return moveOk;
 }
+
+
 
 bool
 KnobHolder::moveKnobOneStepDown(KnobI* knob)

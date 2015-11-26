@@ -67,9 +67,11 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
             KnobButton* isButton = dynamic_cast<KnobButton*>( knobs[i].get() );
             //KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knobs[i].get() );
             
-            if (isPage && knobs[i]->isUserKnob()) {
-                userPages.push_back(knobs[i]);
-                continue;
+            if (isPage) {
+                _pagesIndexes.push_back(knobs[i]->getName());
+                if (knobs[i]->isUserKnob()) {
+                    userPages.push_back(knobs[i]);
+                }
             }
             
             if (!knobs[i]->isUserKnob() &&

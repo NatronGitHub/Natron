@@ -1561,8 +1561,8 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
     }
     
     const std::list<boost::shared_ptr<GroupKnobSerialization> >& userKnobs = serialization.getUserPages();
-    for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
-        _imp->restoreKnobLinksRecursive(it->get(), allNodes);
+    for (std::list<boost::shared_ptr<GroupKnobSerialization > >::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
+        _imp->restoreKnobLinksRecursive((*it).get(), allNodes);
     }
     
 }
@@ -1571,6 +1571,7 @@ void
 Node::restoreUserKnobs(const NodeSerialization& serialization)
 {
     const std::list<boost::shared_ptr<GroupKnobSerialization> >& userPages = serialization.getUserPages();
+    
     for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = userPages.begin() ; it != userPages.end(); ++it) {
         boost::shared_ptr<KnobI> found = getKnobByName((*it)->getName());
         boost::shared_ptr<KnobPage> page;
@@ -1578,13 +1579,31 @@ Node::restoreUserKnobs(const NodeSerialization& serialization)
             page = Natron::createKnob<KnobPage>(_imp->liveInstance.get(), (*it)->getLabel() , 1, false);
             page->setAsUserKnob();
             page->setName((*it)->getName());
+            
         } else {
             page = boost::dynamic_pointer_cast<KnobPage>(found);
         }
         if (page) {
             _imp->restoreUserKnobsRecursive((*it)->getChildren(), boost::shared_ptr<KnobGroup>(), page);
         }
-        
+    }
+    //re-order the pages
+    std::list<boost::shared_ptr<KnobI> > pagesOrdered;
+    const std::list<std::string>& pageIndexes = serialization.getPagesOrdered();
+    
+    for (std::list<std::string>::const_iterator it = pageIndexes.begin(); it!=pageIndexes.end();++it) {
+        const std::vector<boost::shared_ptr<KnobI> > &knobs = getKnobs();
+        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+            if ((*it2)->getName() == *it) {
+                pagesOrdered.push_back(*it2);
+                _imp->liveInstance->removeKnobFromList(it2->get());
+                break;
+            }
+        }
+    }
+    int index = 0;
+    for (std::list<boost::shared_ptr<KnobI> >::iterator it=  pagesOrdered.begin() ;it!=pagesOrdered.end(); ++it,++index) {
+        _imp->liveInstance->insertKnob(index, *it);
     }
 }
 
