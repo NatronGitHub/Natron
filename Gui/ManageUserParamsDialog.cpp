@@ -148,7 +148,8 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* par
                     pageItem.item = userPageItem.item;
                 } else {
                     pageItem.item = new QTreeWidgetItem(_imp->tree);
-                    pageItem.item->setText(0, page->getName().c_str());
+                    pageItem.scriptName = page->getName().c_str();
+                    pageItem.item->setText(0, pageItem.scriptName);
                     pageItem.knob = *it;
                     pageItem.item->setExpanded(true);
                 }
@@ -214,6 +215,27 @@ ManageUserParamsDialog::~ManageUserParamsDialog()
 //    }
 }
 
+static QString createTextForKnob(const boost::shared_ptr<KnobI>& knob)
+{
+    QString text = knob->getName().c_str();
+    std::list<boost::shared_ptr<KnobI> > listeners;
+    knob->getListeners(listeners);
+    if (!listeners.empty()) {
+        boost::shared_ptr<KnobI> listener = listeners.front();
+        if (listener->getAliasMaster() == knob) {
+            text += " (alias of ";
+            Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(listener->getHolder());
+            if (effect) {
+                text += effect->getScriptName_mt_safe().c_str();
+                text += '.';
+            }
+            text += listener->getName().c_str();
+            text += ')';
+        }
+    }
+    return text;
+}
+
 void
 ManageUserParamsDialogPrivate::initializeKnobs(const std::vector<boost::shared_ptr<KnobI> >& knobs,QTreeWidgetItem* parent,std::list<KnobI*>& markedKnobs)
 {
@@ -228,7 +250,8 @@ ManageUserParamsDialogPrivate::initializeKnobs(const std::vector<boost::shared_p
         TreeItem i;
         i.knob = *it2;
         i.item = new QTreeWidgetItem(parent);
-        i.item->setText(0, (*it2)->getName().c_str());
+        i.scriptName = (*it2)->getName().c_str();
+        i.item->setText(0, createTextForKnob(i.knob));
         i.item->setExpanded(true);
         items.push_back(i);
         
@@ -312,7 +335,7 @@ ManageUserParamsDialogPrivate::onKnobAddedInternal(const boost::shared_ptr<KnobI
         if (!isPage) {
             //Default to user page
             for (std::list<TreeItem>::iterator it = items.begin(); it != items.end(); ++it) {
-                if (it->item->text(0) == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+                if (it->scriptName == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
                     parent = it->item;
                     break;
                 }
@@ -331,25 +354,7 @@ ManageUserParamsDialogPrivate::onKnobAddedInternal(const boost::shared_ptr<KnobI
     }
     i.scriptName = knob->getName().c_str();
     
-    QString text = i.scriptName;
-    
-    std::list<boost::shared_ptr<KnobI> > listeners;
-    knob->getListeners(listeners);
-    if (!listeners.empty()) {
-        boost::shared_ptr<KnobI> listener = listeners.front();
-        if (listener->getAliasMaster() == knob) {
-            text += " (alias of ";
-            Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(listener->getHolder());
-            if (effect) {
-                text += effect->getScriptName_mt_safe().c_str();
-                text += '.';
-            }
-            text += listener->getName().c_str();
-            text += ')';
-        }
-    }
-    
-    i.item->setText(0, text);
+    i.item->setText(0, createTextForKnob(i.knob));
     items.push_back(i);
 
     rebuildUserPages();
@@ -456,7 +461,7 @@ ManageUserParamsDialog::onUpClicked()
                     if (parentKnob) {
                         if (parentKnob->getName() == NATRON_USER_MANAGED_KNOBS_PAGE) {
                             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
-                                if (it->item->text(0) == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+                                if (it->scriptName == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
                                     parent = it->item;
                                     break;
                                 }
@@ -521,7 +526,7 @@ ManageUserParamsDialog::onDownClicked()
                     if (parentKnob) {
                         if (parentKnob->getName() == NATRON_USER_MANAGED_KNOBS_PAGE) {
                             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
-                                if (it->item->text(0) == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+                                if (it->scriptName == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
                                     parent = it->item;
                                     break;
                                 }
