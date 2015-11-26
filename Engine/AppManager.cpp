@@ -2616,7 +2616,7 @@ AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
         boost::shared_ptr<Natron::Project> proj = it->second.app->getProject();
                 if (proj) {
                         QString path = proj->getProjectPath();
-                        QString name = proj->getProjectName();
+                        QString name = proj->getProjectFilename();
                         std::string existingProject = path.toStdString() + name.toStdString();
                         if (existingProject == projectFilePath) {
                                 return it->first;

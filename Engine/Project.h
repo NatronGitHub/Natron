@@ -116,7 +116,7 @@ public:
     
     bool isLoadingProjectInternal() const;
 
-    QString getProjectName() const WARN_UNUSED_RETURN;
+    QString getProjectFilename() const WARN_UNUSED_RETURN;
 
     QString getLastAutoSaveFilePath() const;
 
@@ -330,7 +330,7 @@ Q_SIGNALS:
 
     void autoPreviewChanged(bool);
 
-    void projectNameChanged(QString);
+    void projectNameChanged(QString name, bool modified);
 
     void knobsInitialized();
     

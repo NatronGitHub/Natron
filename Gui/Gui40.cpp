@@ -189,12 +189,13 @@ Gui::screenShot(QWidget* w)
 }
 
 void
-Gui::onProjectNameChanged(const QString & name)
+Gui::onProjectNameChanged(const QString & filePath, bool modified)
 {
-    QString text(QCoreApplication::applicationName() + " - ");
-
-    text.append(name);
-    setWindowTitle(text);
+    // handles window title and appearance formatting
+    // http://doc.qt.io/qt-4.8/qwidget.html#windowModified-prop
+    setWindowModified(modified);
+    // http://doc.qt.io/qt-4.8/qwidget.html#windowFilePath-prop
+    setWindowFilePath(filePath.isEmpty() ? NATRON_PROJECT_UNTITLED : filePath);
 }
 
 void

@@ -1510,9 +1510,9 @@ AppInstance::save(const std::string& filename)
 {
     boost::shared_ptr<Natron::Project> project= getProject();
     if (project->hasProjectBeenSavedByUser()) {
-        QString projectName = project->getProjectName();
+        QString projectFilename = project->getProjectFilename();
         QString projectPath = project->getProjectPath();
-        return project->saveProject(projectPath, projectName, 0);
+        return project->saveProject(projectPath, projectFilename, 0);
     } else {
         return saveAs(filename);
     }

@@ -609,7 +609,7 @@ public:
 protected:
     // Reimplemented Protected Functions
 
-    bool event(QEvent* event) OVERRIDE;
+    //bool event(QEvent* event) OVERRIDE;
     
     bool eventFilter(QObject *target, QEvent* e) OVERRIDE;
 
@@ -694,7 +694,7 @@ public Q_SLOTS:
 
     void openRecentFile();
 
-    void onProjectNameChanged(const QString & name);
+    void onProjectNameChanged(const QString & filePath, bool modified);
 
     void onNodeNameChanged(const QString & name);
 
@@ -742,9 +742,6 @@ public Q_SLOTS:
     void onFocusChanged(QWidget* old, QWidget*);
     
     void onShowApplicationConsoleActionTriggered();
-
-private Q_SLOTS:
-    void openAt(QAction *where);
 
 private:
 

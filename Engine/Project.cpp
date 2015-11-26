@@ -246,7 +246,10 @@ Project::loadProject(const QString & path,
 
 bool
 Project::loadProjectInternal(const QString & path,
-                             const QString & name,bool isAutoSave,bool isUntitledAutosave, bool* mustSave)
+                             const QString & name,
+                             bool isAutoSave,
+                             bool isUntitledAutosave,
+                             bool* mustSave)
 {
     
     Natron::FlagSetter loadingProjectRAII(true,&_imp->isLoadingProject,&_imp->isLoadingProjectMutex);
@@ -333,10 +336,10 @@ Project::loadProjectInternal(const QString & path,
     if (isAutoSave) {
         _imp->autoSetProjectFormat = false;
         if (!isUntitledAutosave) {
-            QString projectName(_imp->getProjectFilename().c_str());
-            int found = projectName.lastIndexOf(".autosave");
+            QString projectFilename(_imp->getProjectFilename().c_str());
+            int found = projectFilename.lastIndexOf(".autosave");
             if (found != -1) {
-                _imp->setProjectFilename(projectName.left(found).toStdString());
+                _imp->setProjectFilename(projectFilename.left(found).toStdString());
             }
             _imp->hasProjectBeenSavedByUser = true;
         } else {
@@ -348,11 +351,12 @@ Project::loadProjectInternal(const QString & path,
         _imp->ageSinceLastSave = QDateTime();
         _imp->lastAutoSaveFilePath = filePath;
         
-        QString projectName(_imp->getProjectFilename().c_str());
-        Q_EMIT projectNameChanged(projectName + " (*)");
+        QString projectPath(_imp->getProjectPath().c_str());
+        QString projectFilename(_imp->getProjectFilename().c_str());
+        Q_EMIT projectNameChanged(projectPath + projectFilename, true);
 
     } else {
-        Q_EMIT projectNameChanged(name);
+        Q_EMIT projectNameChanged(path + name, false);
     }
     
     ///Try to take the project lock by creating a lock file
@@ -592,14 +596,15 @@ Project::saveProjectInternal(const QString & path,
             _imp->hasProjectBeenSavedByUser = true;
             _imp->ageSinceLastSave = time;
         }
-        Q_EMIT projectNameChanged(name); //< notify the gui so it can update the title
+        Q_EMIT projectNameChanged(path + name, false); //< notify the gui so it can update the title
 
         //Create the lock file corresponding to the project
         createLockFile();
     } else if (updateProjectProperties) {
         if (!isRenderSave) {
-            QString projectName(_imp->getProjectFilename().c_str());
-            Q_EMIT projectNameChanged(projectName + " (*)");
+            QString projectPath(_imp->getProjectPath().c_str());
+            QString projectFilename(_imp->getProjectFilename().c_str());
+           Q_EMIT projectNameChanged(projectPath + projectFilename, true);
         }
     }
     if (updateProjectProperties) {
@@ -1188,7 +1193,7 @@ Project::createProjectViews(const std::vector<std::string>& views)
 }
 
 QString
-Project::getProjectName() const
+Project::getProjectFilename() const
 {
     return _imp->getProjectFilename().c_str();
 }
@@ -1364,7 +1369,7 @@ QString
 Project::getLockAbsoluteFilePath() const
 {
     QString projectPath(_imp->getProjectPath().c_str());
-    QString projectName(_imp->getProjectFilename().c_str());
+    QString projectFilename(_imp->getProjectFilename().c_str());
   
     if (projectPath.isEmpty()) {
         return QString();
@@ -1372,7 +1377,7 @@ Project::getLockAbsoluteFilePath() const
     if (!projectPath.endsWith('/')) {
         projectPath.append('/');
     }
-    QString lockFilePath = projectPath + projectName + ".lock";
+    QString lockFilePath = projectPath + projectFilename + ".lock";
     return lockFilePath;
 }
     
@@ -1454,13 +1459,13 @@ Project::removeLastAutosave()
      * a oldProject.ntp.autosave file next to it that belonged to the old project, make sure it gets removed too
      */
     QString projectPath(_imp->getProjectPath().c_str());
-    QString projectName(_imp->getProjectFilename().c_str());
+    QString projectFilename(_imp->getProjectFilename().c_str());
     
     if (!projectPath.endsWith('/')) {
         projectPath.append('/');
     }
     
-    QString autoSaveFilePath = projectPath + projectName + ".autosave";
+    QString autoSaveFilePath = projectPath + projectFilename + ".autosave";
     if (QFile::exists(autoSaveFilePath)) {
         QFile::remove(autoSaveFilePath);
     }
@@ -1520,12 +1525,12 @@ Project::reset(bool aboutToQuit)
     
     QString lockFilePath = getLockAbsoluteFilePath();
     QString projectPath(_imp->getProjectPath().c_str());
-    QString projectName(_imp->getProjectFilename().c_str());
+    QString projectFilename(_imp->getProjectFilename().c_str());
     ///Remove the lock file if we own it
     if (QFile::exists(lockFilePath)) {
         QString author,lastsave;
         qint64 pid;
-        if (getLockFileInfos(projectPath, projectName, &author, &lastsave, &pid)) {
+        if (getLockFileInfos(projectPath, projectFilename, &author, &lastsave, &pid)) {
             if (pid == QCoreApplication::applicationPid()) {
                 QFile::remove(lockFilePath);
             }
@@ -1547,7 +1552,7 @@ Project::reset(bool aboutToQuit)
         }
         _imp->timeline->removeAllKeyframesIndicators();
         
-        Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED);
+        Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED, false);
         
         const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
         

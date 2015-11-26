@@ -126,7 +126,7 @@ public:
 
 public Q_SLOTS:
 
-    void onProjectNameChanged(const QString& name);
+    void onProjectNameChanged(const QString& filePath, bool modified);
     
 Q_SIGNALS:
 
