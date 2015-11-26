@@ -2695,8 +2695,13 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 
                 if (useSelectors) {
                     
-                    boost::shared_ptr<KnobSeparator> sep = Natron::createKnob<KnobSeparator>(_imp->liveInstance.get(), "Advanced", 1, false);
-                    mainPage->addKnob(sep);
+                    std::vector<boost::shared_ptr<KnobI> > mainPageChildren = mainPage->getChildren();
+                    bool skipSeparator = !mainPageChildren.empty() && dynamic_cast<KnobSeparator*>(mainPageChildren.back().get());
+
+                    if (skipSeparator) {
+                        boost::shared_ptr<KnobSeparator> sep = Natron::createKnob<KnobSeparator>(_imp->liveInstance.get(), "Advanced", 1, false);
+                        mainPage->addKnob(sep);
+                    }
                     
                     ///Create input layer selectors
                     for (int i = 0; i < inputsCount; ++i) {
