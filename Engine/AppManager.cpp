@@ -3000,6 +3000,7 @@ bool interpretPythonScript(const std::string& script,std::string* error,std::str
         }
 
         if (error && !error->empty()) {
+            *error = "While executing script:\n" + script + "Python error:\n" + *error;
             return false;
         }
         return true;
