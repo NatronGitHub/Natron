@@ -1622,7 +1622,11 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
                                 CreateNodeArgs::DefaultValuesList(),
                                 isGrp);
             NodePtr output = graph->getGui()->getApp()->createNode(args);
-            output->setScriptName("Output");
+            try {
+                output->setScriptName("Output");
+            } catch (...) {
+                
+            }
             assert(output);
             
             double thisNodeX,thisNodeY;

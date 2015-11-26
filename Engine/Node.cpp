@@ -729,11 +729,19 @@ Node::load(const std::string & parentMultiInstanceName,
             } else {
                 pluginLabel = _imp->plugin->getPluginLabel();
             }
-            getGroup()->initNodeName(isMultiInstanceChild ? parentMultiInstanceName + '_' : pluginLabel.toStdString(),&name);
+            try {
+                getGroup()->initNodeName(isMultiInstanceChild ? parentMultiInstanceName + '_' : pluginLabel.toStdString(),&name);
+            } catch (...) {
+                
+            }
             setNameInternal(name.c_str());
             nameSet = true;
         } else {
-            setScriptName(fixedName.toStdString());
+            try {
+                setScriptName(fixedName.toStdString());
+            } catch (...) {
+                appPTR->writeToOfxLog_mt_safe("Could not set node name to " + fixedName);
+            }
         }
         if (!isMultiInstanceChild && _imp->isMultiInstance) {
             updateEffectLabelKnob( getScriptName().c_str() );
@@ -2412,25 +2420,23 @@ Node::setNameInternal(const std::string& name)
     Q_EMIT labelChanged(qnewName);
 }
 
-bool
+void
 Node::setScriptName(const std::string& name)
 {
     std::string newName;
     if (getGroup()) {
-        if (!getGroup()->setNodeName(name,false, true, &newName)) {
-            return false;
-        }
+        getGroup()->setNodeName(name,false, true, &newName);
     } else {
         newName = name;
     }
     //We do not allow setting the script-name of output nodes because we rely on it with NatronRenderer
     if (dynamic_cast<GroupOutput*>(_imp->liveInstance.get())) {
-        return false;
+        throw std::runtime_error(QObject::tr("Changing the script-name of an Output node is not a valid operation").toStdString());
+        return;
     }
     
     
     setNameInternal(newName);
-    return true;
 }
 
 

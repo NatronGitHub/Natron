@@ -435,18 +435,36 @@ NodeCollection::clearNodes(bool emitSignal)
 }
 
 
-bool
+void
 NodeCollection::setNodeName(const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName)
 {
     if (baseName.empty()) {
-        return false;
+        throw std::runtime_error(QObject::tr("Invalid script-name").toStdString());
+        return;
     }
     ///Remove any non alpha-numeric characters from the baseName
     std::string cpy = Natron::makeNameScriptFriendly(baseName);
     if (cpy.empty()) {
-        return false;
+        throw std::runtime_error(QObject::tr("Invalid script-name").toStdString());
+        return;
     }
     
+    ///If this is a group and one of its parameter has the same script-name as the script-name of one of the node inside
+    ///the python attribute will be overwritten. Try to prevent this situation.
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
+    if (isGroup) {
+        const std::vector<boost::shared_ptr<KnobI> >&  knobs = isGroup->getKnobs();
+        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            if ((*it)->getName() == cpy) {
+                std::stringstream ss;
+                ss << QObject::tr("A node within a group cannot have the same script-name (").toStdString();
+                ss << cpy;
+                ss << QObject::tr(") as a parameter on the group for scripting purposes.").toStdString();
+                throw std::runtime_error(ss.str());
+                return;
+            }
+        }
+    }
     bool foundNodeWithName = false;
     int no = 1;
 
@@ -469,7 +487,12 @@ NodeCollection::setNodeName(const std::string& baseName,bool appendDigit,bool er
         }
         if (foundNodeWithName) {
             if (errorIfExists || !appendDigit) {
-                return false;
+                std::stringstream ss;
+                ss << QObject::tr("A node with the script-name ").toStdString();
+                ss << *nodeName;
+                ss << QObject::tr(" already exists").toStdString();
+                throw std::runtime_error(ss.str());
+                return;
             }
             ++no;
             {
@@ -479,7 +502,6 @@ NodeCollection::setNodeName(const std::string& baseName,bool appendDigit,bool er
             }
         }
     } while (foundNodeWithName);
-    return true;
 }
 
 void
@@ -493,9 +515,8 @@ NodeCollection::initNodeName(const std::string& pluginLabel,std::string* nodeNam
         baseName = baseName.substr(0,baseName.size() - 3);
     }
 
-    if (!setNodeName(baseName,true, false, nodeName)) {
-        throw std::invalid_argument(QObject::tr("Invalid plugin label: ").toStdString() + pluginLabel);
-    }
+    setNodeName(baseName,true, false, nodeName);
+    
 }
 
 bool

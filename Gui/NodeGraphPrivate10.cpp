@@ -155,9 +155,6 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
         
     } else {
         //If we paste the node in a different graph, it can keep its scriptname/label
-        /*name = internalSerialization.getNodeScriptName();
-        n->setScriptName( name);
-        n->setLabel(internalSerialization.getNodeLabel());*/
     }
 
 

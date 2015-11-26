@@ -933,9 +933,9 @@ public:
         
     /**
      * @brief Set the node name.
-     * @returns True upon success, false otherwise. An error dialog will be displayed upon error.
+     * Throws a run-time error with the message in case of error
      **/
-    bool setScriptName(const std::string & name);
+    void setScriptName(const std::string & name);
 
     void setScriptName_no_error_check(const std::string & name);
     

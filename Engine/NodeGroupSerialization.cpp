@@ -124,7 +124,11 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                                                                                                                 QString(),
                                                                                                                 CreateNodeArgs::DefaultValuesList(),
                                                                                                                 group));
-                    parent->setScriptName( (*it)->getMultiInstanceParentName().c_str() );
+                    try {
+                        parent->setScriptName( (*it)->getMultiInstanceParentName().c_str() );
+                    } catch (...) {
+                        
+                    }
                     parentsToReconnect.insert( std::make_pair(parent, it) );
                 }
             }

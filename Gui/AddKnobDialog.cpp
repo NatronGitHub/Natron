@@ -37,6 +37,7 @@
 #include "Engine/KnobSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/ComboBox.h"
@@ -1456,6 +1457,30 @@ AddKnobDialog::onOkClicked()
         
     }
     
+    Natron::EffectInstance* effect = 0;
+    
+    
+    {
+        KnobHolder* holder = _imp->panel->getHolder();
+        assert(holder);
+        
+        NodeGroup* isHolderGroup = dynamic_cast<NodeGroup*>(holder);
+        if (isHolderGroup) {
+            //Check if the group has a node with the exact same script name as the param script name, in which case we error
+            //otherwise the attribute on the python object would be overwritten
+            NodeList nodes = isHolderGroup->getNodes();
+            for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+                if ((*it)->getScriptName() == stdName) {
+                    Natron::errorDialog(tr("Error").toStdString(), tr("A parameter on a group cannot have the same script-name as a node within "
+                                                                      "the group for scripting purposes.")
+                                        .toStdString());
+                    return;
+
+                }
+            }
+        }
+    }
+    
     ///Remove the previous knob, and recreate it.
     
     ///Index of the type in the combo
@@ -1471,7 +1496,6 @@ AddKnobDialog::onOkClicked()
     std::vector<std::pair<std::string,bool> > expressions;
     std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > > listenersExpressions;
     
-    Natron::EffectInstance* effect = 0;
 
     
     if (!_imp->knob) {
@@ -1535,6 +1559,7 @@ AddKnobDialog::onOkClicked()
     } //if (!_imp->knob) {
     
     
+    
     if (!_imp->isKnobAlias) {
         _imp->createKnobFromSelection(index, oldIndexInGroup);
         assert(_imp->knob);
@@ -1589,7 +1614,7 @@ AddKnobDialog::onOkClicked()
     else {
         //Alias knobs can only have these properties changed
         assert(effect);
-        _imp->knob = _imp->isKnobAlias->createDuplicateOnNode(effect, true, _imp->nameLineEdit->text().toStdString(), _imp->labelLineEdit->text().toStdString(), _imp->tooltipArea->toPlainText().toStdString(), _imp->startNewLineBox->isChecked());
+        _imp->knob = _imp->isKnobAlias->createDuplicateOnNode(effect, true, stdName, _imp->labelLineEdit->text().toStdString(), _imp->tooltipArea->toPlainText().toStdString(), _imp->startNewLineBox->isChecked());
     }
     
     //Recover listeners expressions

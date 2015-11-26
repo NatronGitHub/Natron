@@ -99,7 +99,13 @@ public:
      **/
     void initNodeName(const std::string& pluginLabel,std::string* nodeName);
     
-    bool setNodeName(const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName);
+    /**
+     * @brief Given the baseName, set in nodeName a possible script-name for the node.
+     * @param appendDigit If a node with the same script-name exists, try to add digits at the end until no match is found
+     * @param errorIfExists If a node with the same script-name exists, error
+     * This function throws a runtime exception with the error message in case of error.
+     **/
+    void setNodeName(const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName);
     
     /**
      * @brief Returns true if there is one or more nodes in the collection.

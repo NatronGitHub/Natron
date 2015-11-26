@@ -1905,7 +1905,11 @@ TrackerPanel::onAverageTracksButtonClicked()
         }
     }
     QString newName = QString("Average%1").arg(avgIndex + 1);
-    newInstance->setScriptName(newName.toStdString());
+    try {
+        newInstance->setScriptName(newName.toStdString());
+    } catch (...) {
+        
+    }
     newInstance->updateEffectLabelKnob(newName);
 
     boost::shared_ptr<KnobDouble> newInstanceCenter = getCenterKnobForTracker( newInstance.get() );
