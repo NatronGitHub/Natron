@@ -848,7 +848,7 @@ NodeGui::resize(int width,
 
     _expressionIndicator->refreshPosition( topLeft + QPointF(width,0) );
     _availableViewsIndicator->refreshPosition(topLeft);
-    _passThroughIndicator->refreshPosition(bottomRight - QPointF(NATRON_ELLIPSE_WARN_DIAMETER / 2,NATRON_ELLIPSE_WARN_DIAMETER / 2));
+    _passThroughIndicator->refreshPosition(bottomRight );
     
     _persistentMessage->setPos(topLeft.x() + (width / 2) - (pMWidth / 2), topLeft.y() + height / 2 - metrics.height() / 2);
     _stateIndicator->setRect(topLeft.x() - NATRON_STATE_INDICATOR_OFFSET,topLeft.y() - NATRON_STATE_INDICATOR_OFFSET,
