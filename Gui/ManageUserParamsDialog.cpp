@@ -563,7 +563,11 @@ ManageUserParamsDialog::onUpClicked()
             QList<QTreeWidgetItem*> children = it->item->takeChildren();
             delete it->item;
             
-            QTreeWidgetItem* item = _imp->createItemForKnob(it->knob, index -1);
+            boost::shared_ptr<KnobI> knob = it->knob;
+            //invalidates iterator
+            _imp->items.erase(it);
+            
+            QTreeWidgetItem* item = _imp->createItemForKnob(knob, index -1);
             item->insertChildren(0, children);
             _imp->saveAndRebuildPages();
             QItemSelectionModel* model = _imp->tree->selectionModel();
@@ -636,8 +640,11 @@ ManageUserParamsDialog::onDownClicked()
             
             QList<QTreeWidgetItem*> children = it->item->takeChildren();
             delete it->item;
+            boost::shared_ptr<KnobI> knob = it->knob;
+            //invalidates iterator
+            _imp->items.erase(it);
             
-            QTreeWidgetItem* item = _imp->createItemForKnob(it->knob, index + 1);
+            QTreeWidgetItem* item = _imp->createItemForKnob(knob, index + 1);
             item->insertChildren(0, children);
             _imp->saveAndRebuildPages();
             QItemSelectionModel* model = _imp->tree->selectionModel();
