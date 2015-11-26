@@ -3561,57 +3561,101 @@ KnobHolder::removeDynamicKnob(KnobI* knob)
     
 }
 
-void
+bool
 KnobHolder::moveKnobOneStepUp(KnobI* knob)
 {
-    if (!knob->isUserKnob()) {
-        return;
+    if (!knob->isUserKnob() && !dynamic_cast<KnobPage*>(knob)) {
+        return false;
     }
     boost::shared_ptr<KnobI> parent = knob->getParentKnob();
     KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>(parent.get());
     KnobPage* parentIsPage = dynamic_cast<KnobPage*>(parent.get());
     
     //the knob belongs to a group/page , change its index within the group instead
-    if (parentIsGrp) {
-        parentIsGrp->moveOneStepUp(knob);
-    } else if (parentIsPage) {
-        parentIsPage->moveOneStepUp(knob);
+    bool moveOk = false;
+    if (!parent) {
+        moveOk = true;
+    }
+    try {
+        if (parentIsGrp) {
+            moveOk = parentIsGrp->moveOneStepUp(knob);
+        } else if (parentIsPage) {
+            moveOk = parentIsPage->moveOneStepUp(knob);
+        }
+    } catch (const std::exception& e) {
+        qDebug() << e.what();
+        assert(false);
+        return false;
     }
     
-    QMutexLocker k(&_imp->knobsMutex);
-    int prevInPage = -1;
-    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
-        if (_imp->knobs[i].get() == knob) {
-            if (prevInPage != -1) {
-                boost::shared_ptr<KnobI> tmp = _imp->knobs[prevInPage];
-                _imp->knobs[prevInPage] = _imp->knobs[i];
-                _imp->knobs[i] = tmp;
+    if (moveOk) {
+        QMutexLocker k(&_imp->knobsMutex);
+        int prevInPage = -1;
+        if (parent) {
+            for (U32 i = 0; i < _imp->knobs.size(); ++i) {
+                if (_imp->knobs[i].get() == knob) {
+                    if (prevInPage != -1) {
+                        boost::shared_ptr<KnobI> tmp = _imp->knobs[prevInPage];
+                        _imp->knobs[prevInPage] = _imp->knobs[i];
+                        _imp->knobs[i] = tmp;
+                    }
+                    break;
+                } else {
+                    if (_imp->knobs[i]->isUserKnob() && (_imp->knobs[i]->getParentKnob() == parent)) {
+                        prevInPage = i;
+                    }
+                }
             }
-            break;
         } else {
-            if (_imp->knobs[i]->isUserKnob() && (_imp->knobs[i]->getParentKnob() == knob->getParentKnob())) {
-                prevInPage = i;
+            bool foundPrevPage = false;
+            for (U32 i = 0; i < _imp->knobs.size(); ++i) {
+                if (_imp->knobs[i].get() == knob) {
+                    if (prevInPage != -1) {
+                        boost::shared_ptr<KnobI> tmp = _imp->knobs[prevInPage];
+                        _imp->knobs[prevInPage] = _imp->knobs[i];
+                        _imp->knobs[i] = tmp;
+                        foundPrevPage = true;
+                    }
+                    break;
+                } else {
+                    if (!_imp->knobs[i]->getParentKnob()) {
+                        prevInPage = i;
+                    }
+                }
+            }
+            if (!foundPrevPage) {
+                moveOk = false;
             }
         }
     }
-    
+    return moveOk;
 }
 
-void
+bool
 KnobHolder::moveKnobOneStepDown(KnobI* knob)
 {
-    if (!knob->isUserKnob()) {
-        return;
+    if (!knob->isUserKnob() && !dynamic_cast<KnobPage*>(knob)) {
+        return false;
     }
     boost::shared_ptr<KnobI> parent = knob->getParentKnob();
     KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>(parent.get());
     KnobPage* parentIsPage = dynamic_cast<KnobPage*>(parent.get());
     
     //the knob belongs to a group/page , change its index within the group instead
-    if (parentIsGrp) {
-        parentIsGrp->moveOneStepDown(knob);
-    } else if (parentIsPage) {
-        parentIsPage->moveOneStepDown(knob);
+    bool moveOk = false;
+    if (!parent) {
+        moveOk = true;
+    }
+    try {
+        if (parentIsGrp) {
+            moveOk = parentIsGrp->moveOneStepDown(knob);
+        } else if (parentIsPage) {
+            moveOk = parentIsPage->moveOneStepDown(knob);
+        }
+    } catch (const std::exception& e) {
+        qDebug() << e.what();
+        assert(false);
+        return false;
     }
     
     
@@ -3625,17 +3669,37 @@ KnobHolder::moveKnobOneStepDown(KnobI* knob)
     }
     assert(foundIndex != -1);
     if (foundIndex < 0) {
-        return;
+        return false;
     }
-    for (int i = foundIndex + 1; i < (int)_imp->knobs.size(); ++i) {
-        if (_imp->knobs[i]->isUserKnob() && (_imp->knobs[i]->getParentKnob() == knob->getParentKnob())) {
-            boost::shared_ptr<KnobI> tmp = _imp->knobs[foundIndex];
-            _imp->knobs[foundIndex] = _imp->knobs[i];
-            _imp->knobs[i] = tmp;
-            break;
+    if (moveOk) {
+        //The knob (or page) could be moved inside the group/page, just move it down
+        if (parent) {
+            for (int i = foundIndex + 1; i < (int)_imp->knobs.size(); ++i) {
+                if (_imp->knobs[i]->isUserKnob() && (_imp->knobs[i]->getParentKnob() == parent)) {
+                    boost::shared_ptr<KnobI> tmp = _imp->knobs[foundIndex];
+                    _imp->knobs[foundIndex] = _imp->knobs[i];
+                    _imp->knobs[i] = tmp;
+                    break;
+                }
+            }
+        } else {
+            bool foundNextPage = false;
+            for (int i = foundIndex + 1; i < (int)_imp->knobs.size(); ++i) {
+                if (!_imp->knobs[i]->getParentKnob()) {
+                    boost::shared_ptr<KnobI> tmp = _imp->knobs[foundIndex];
+                    _imp->knobs[foundIndex] = _imp->knobs[i];
+                    _imp->knobs[i] = tmp;
+                    foundNextPage = true;
+                    break;
+                }
+            }
+            
+            if (!foundNextPage) {
+                moveOk = false;
+            }
         }
     }
-    
+    return moveOk;
 }
 
 boost::shared_ptr<KnobPage>
@@ -3652,6 +3716,17 @@ KnobHolder::getOrCreateUserPageKnob()
     boost::shared_ptr<KnobPage> ret = Natron::createKnob<KnobPage>(this,NATRON_USER_MANAGED_KNOBS_PAGE_LABEL,1,false);
     ret->setAsUserKnob();
     ret->setName(NATRON_USER_MANAGED_KNOBS_PAGE);
+    
+    
+    //make it the first page
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+        if ((*it) == ret) {
+            _imp->knobs.erase(it);
+            break;
+        }
+    }
+    _imp->knobs.insert(_imp->knobs.begin(), ret);
+    
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();

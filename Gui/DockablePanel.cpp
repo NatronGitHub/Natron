@@ -1601,10 +1601,13 @@ void
 DockablePanel::scanForNewKnobs()
 {
     
+  
     std::list<KnobPage*> userPages;
     getUserPages(userPages);
-    
     if (_imp->_pagesEnabled) {
+        
+        
+        
         boost::shared_ptr<KnobPage> page = getUserPageKnob();
         userPages.push_back(page.get());
         for (std::list<KnobPage*>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
@@ -1617,6 +1620,7 @@ DockablePanel::scanForNewKnobs()
                 }
             }
         }
+        
     } else {
         
         std::vector<boost::shared_ptr<KnobI> > knobs = _imp->_holder->getKnobs();
@@ -1627,11 +1631,44 @@ DockablePanel::scanForNewKnobs()
     }
     
     _imp->initializeKnobVector(_imp->_holder->getKnobs(),NULL);
-    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
-    /*if (isNodePanel) {
-        isNodePanel->getNode()->getNode()->declarePythonFields();
-    }*/
     
+    
+    ///Refresh pages order
+    if (_imp->_pagesEnabled) {
+        std::list<std::pair<QWidget*,QString> > orderedPages;
+        const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->_holder->getKnobs();
+        
+        std::list<KnobPage*> pages;
+        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            KnobPage* isPage = dynamic_cast<KnobPage*>(it->get());
+            if (isPage) {
+                pages.push_back(isPage);
+            }
+        }
+        for (std::list<KnobPage*>::iterator it = pages.begin(); it!=pages.end(); ++it) {
+            PageMap::iterator foundPage = _imp->_pages.find((*it)->getLabel().c_str());
+            orderedPages.push_back(std::make_pair(foundPage->second.tab,foundPage->first));
+        }
+        
+        QString curTabName = _imp->_tabWidget->tabText(_imp->_tabWidget->currentIndex());
+        
+        _imp->_tabWidget->clear();
+        
+        int index = 0;
+        int i = 0;
+        for (std::list<std::pair<QWidget*,QString> >::iterator it = orderedPages.begin(); it!=orderedPages.end(); ++it,++i) {
+            _imp->_tabWidget->addTab(it->first, it->second);
+            if (it->second == curTabName) {
+                index = i;
+            }
+        }
+        if (index >= 0 && index < int(orderedPages.size())) {
+            _imp->_tabWidget->setCurrentIndex(index);
+        }
+    }
+    
+    NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
+
     
     ///Refresh the curve editor with potential new animated knobs
     if (isNodePanel) {

@@ -1896,8 +1896,8 @@ public:
     void removeDynamicKnob(KnobI* knob);
     
     //To re-arrange user knobs only, does nothing if knob->isUserKnob() returns false
-    void moveKnobOneStepUp(KnobI* knob);
-    void moveKnobOneStepDown(KnobI* knob);
+    bool moveKnobOneStepUp(KnobI* knob);
+    bool moveKnobOneStepDown(KnobI* knob);
 
     template<typename K>
     boost::shared_ptr<K> createKnob(const std::string &label, int dimension = 1) const WARN_UNUSED_RETURN;

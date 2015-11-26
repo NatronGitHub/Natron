@@ -731,8 +731,8 @@ public:
     void addKnob(boost::shared_ptr<KnobI> k);
     void removeKnob(KnobI* k);
     
-    void moveOneStepUp(KnobI* k);
-    void moveOneStepDown(KnobI* k);
+    bool moveOneStepUp(KnobI* k);
+    bool moveOneStepDown(KnobI* k);
     
     void insertKnob(int index, const boost::shared_ptr<KnobI>& k);
 
@@ -781,8 +781,8 @@ public:
     void addKnob(const boost::shared_ptr<KnobI>& k);
     
 
-    void moveOneStepUp(KnobI* k);
-    void moveOneStepDown(KnobI* k);
+    bool moveOneStepUp(KnobI* k);
+    bool moveOneStepDown(KnobI* k);
     
     void removeKnob(KnobI* k);
     

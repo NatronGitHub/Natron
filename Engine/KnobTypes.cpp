@@ -1145,36 +1145,38 @@ KnobGroup::removeKnob(KnobI* k)
     }
 }
 
-void
+bool
 KnobGroup::moveOneStepUp(KnobI* k)
 {
     for (U32 i = 0; i < _children.size(); ++i) {
         if (_children[i].lock().get() == k) {
             if (i == 0) {
-                break;
+                return false;
             }
             boost::weak_ptr<KnobI> tmp = _children[i - 1];
             _children[i - 1] = _children[i];
             _children[i] = tmp;
-            break;
+            return true;
         }
     }
+    throw std::invalid_argument("Given knob does not belong to this group");
 }
 
-void
+bool
 KnobGroup::moveOneStepDown(KnobI* k)
 {
     for (U32 i = 0; i < _children.size(); ++i) {
         if (_children[i].lock().get() == k) {
             if (i == _children.size() - 1) {
-                break;
+                return false;
             }
             boost::weak_ptr<KnobI> tmp = _children[i + 1];
             _children[i + 1] = _children[i];
             _children[i] = tmp;
-            break;
+            return true;
         }
     }
+    throw std::invalid_argument("Given knob does not belong to this group");
 }
 
 void
@@ -1334,36 +1336,38 @@ KnobPage::removeKnob(KnobI* k)
     }
 }
 
-void
+bool
 KnobPage::moveOneStepUp(KnobI* k)
 {
     for (U32 i = 0; i < _children.size(); ++i) {
         if (_children[i].lock().get() == k) {
             if (i == 0) {
-                break;
+                return false;
             }
             boost::weak_ptr<KnobI> tmp = _children[i - 1];
             _children[i - 1] = _children[i];
             _children[i] = tmp;
-            break;
+            return true;
         }
     }
+    throw std::invalid_argument("Given knob does not belong to this page");
 }
 
-void
+bool
 KnobPage::moveOneStepDown(KnobI* k)
 {
     for (U32 i = 0; i < _children.size(); ++i) {
         if (_children[i].lock().get() == k) {
             if (i == _children.size() - 1) {
-                break;
+                return false;
             }
             boost::weak_ptr<KnobI> tmp = _children[i + 1];
             _children[i + 1] = _children[i];
             _children[i] = tmp;
-            break;
+            return true;
         }
     }
+    throw std::invalid_argument("Given knob does not belong to this page");
 }
 
 
