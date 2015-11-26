@@ -6469,7 +6469,7 @@ Node::refreshEnabledKnobsLabel(const Natron::ImageComponents& comp)
             enabled->setSecret(false);
             enabled->setLabel(channels[i]);
         }
-        enabled->setValue(true, 0);
+        //enabled->setValue(true, 0);
     }
 
 }
