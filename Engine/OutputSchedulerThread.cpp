@@ -1869,8 +1869,9 @@ OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
     if (!callback.isEmpty()) {
         QString script = callback;
         std::string appID = _imp->outputEffect->getApp()->getAppIDString();
-        std::string thisNodeStr = appID + "." + _imp->outputEffect->getNode()->getFullyQualifiedName();
-        script.append(thisNodeStr.c_str());
+        std::string nodeName = _imp->outputEffect->getNode()->getFullyQualifiedName();
+        std::string nodeFullName = appID + "." + nodeName;
+        script.append(nodeFullName.c_str());
         script.append(",");
         script.append(appID.c_str());
         script.append(")\n");

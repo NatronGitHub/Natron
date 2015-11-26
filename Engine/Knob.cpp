@@ -1905,7 +1905,9 @@ KnobHelper::validateExpression(const std::string& expression,int dimension,bool 
     NodePtr node = effect->getNode();
     assert(node);
     std::string appID = getHolder()->getApp()->getAppIDString();
-    std::string exprFuncPrefix = appID + "." + node->getFullyQualifiedName() + "." + getName() + ".";
+    std::string nodeName = node->getFullyQualifiedName();
+    std::string nodeFullName = appID + "." + nodeName;
+    std::string exprFuncPrefix = nodeFullName + "." + getName() + ".";
     std::string exprFuncName;
     {
         std::stringstream tmpSs;

@@ -3855,11 +3855,12 @@ void
 RotoContext::changeItemScriptName(const std::string& oldFullyQualifiedName,const std::string& newFullyQUalifiedName)
 {
     std::string appID = getNode()->getApp()->getAppIDString();
-    std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
+    std::string nodeName = getNode()->getFullyQualifiedName();
+    std::string nodeFullName = appID + "." + nodeName;
     std::string err;
     
-    std::string declStr = nodeName + ".roto." + newFullyQUalifiedName + " = " + nodeName + ".roto." + oldFullyQualifiedName + "\n";
-    std::string delStr = "del " + nodeName + ".roto." + oldFullyQualifiedName + "\n";
+    std::string declStr = nodeFullName + ".roto." + newFullyQUalifiedName + " = " + nodeFullName + ".roto." + oldFullyQualifiedName + "\n";
+    std::string delStr = "del " + nodeFullName + ".roto." + oldFullyQualifiedName + "\n";
     std::string script = declStr + delStr;
     if (!appPTR->isBackground()) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
@@ -3879,9 +3880,10 @@ RotoContext::removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
         return;
     }
     std::string appID = getNode()->getApp()->getAppIDString();
-    std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
+    std::string nodeName = getNode()->getFullyQualifiedName();
+    std::string nodeFullName = appID + "." + nodeName;
     std::string err;
-    std::string script = "del " + nodeName + ".roto." + item->getFullyQualifiedName() + "\n";
+    std::string script = "del " + nodeFullName + ".roto." + item->getFullyQualifiedName() + "\n";
     if (!appPTR->isBackground()) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }
@@ -4022,8 +4024,9 @@ void
 RotoContext::declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
 {
     std::string appID = getNode()->getApp()->getAppIDString();
-    std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
-    
+    std::string nodeName = getNode()->getFullyQualifiedName();
+    std::string nodeFullName = appID + "." + nodeName;
+
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(item.get());
     if (isStroke) {
         ///Strokes are unsupported in Python currently
@@ -4032,8 +4035,8 @@ RotoContext::declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
     RotoLayer* isLayer = dynamic_cast<RotoLayer*>(item.get());
     
     std::string err;
-    std::string script = nodeName + ".roto." + item->getFullyQualifiedName() + " = " +
-    nodeName + ".roto.getItemByName(\"" + item->getScriptName() + "\")\n";
+    std::string script = (nodeFullName + ".roto." + item->getFullyQualifiedName() + " = " +
+                          nodeFullName + ".roto.getItemByName(\"" + item->getScriptName() + "\")\n");
     if (!appPTR->isBackground()) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }

@@ -1090,9 +1090,10 @@ Node::declareRotoPythonField()
 {
     assert(_imp->rotoContext);
     std::string appID = getApp()->getAppIDString();
-    std::string fullyQualifiedName = appID + "." + getFullyQualifiedName();
+    std::string nodeName = getFullyQualifiedName();
+    std::string nodeFullName = appID + "." + nodeName;
     std::string err;
-    std::string script = fullyQualifiedName + ".roto = " + fullyQualifiedName + ".getRotoContext()\n";
+    std::string script = nodeFullName + ".roto = " + nodeFullName + ".getRotoContext()\n";
     if (!appPTR->isBackground()) {
         getApp()->printAutoDeclaredVariable(script);
     }
@@ -7672,14 +7673,14 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
     
     std::string appID = getApp()->getAppIDString();
     
-    std::string varName = appID + "." + nodeName;
+    std::string nodeFullName = appID + "." + nodeName;
     bool alreadyDefined = false;
-    PyObject* nodeObj = getAttrRecursive(varName, mainModule, &alreadyDefined);
+    PyObject* nodeObj = getAttrRecursive(nodeFullName, mainModule, &alreadyDefined);
     assert(nodeObj);
     Q_UNUSED(nodeObj);
 
     if (!alreadyDefined) {
-        std::string script = varName + " = " + appID + ".getNode(\"";
+        std::string script = nodeFullName + " = " + appID + ".getNode(\"";
         script.append(nodeName);
         script.append("\")\n");
         std::string err;
@@ -7751,12 +7752,12 @@ Node::declarePythonFields()
     }
     
     std::locale locale;
-    std::string fullName = getFullyQualifiedName();
+    std::string nodeName = getFullyQualifiedName();
     
     std::string appID = getApp()->getAppIDString();
     bool alreadyDefined = false;
     
-    std::string nodeFullName = appID + "." + fullName;
+    std::string nodeFullName = appID + "." + nodeName;
     PyObject* nodeObj = getAttrRecursive(nodeFullName, getMainModule(), &alreadyDefined);
     assert(nodeObj);
     Q_UNUSED(nodeObj);
@@ -7784,8 +7785,8 @@ Node::removeParameterFromPython(const std::string& parameterName)
     }
     Natron::PythonGILLocker pgl;
     std::string appID = getApp()->getAppIDString();
-    std::string fullName = getFullyQualifiedName();
-    std::string nodeFullName = appID + "." + fullName;
+    std::string nodeName = getFullyQualifiedName();
+    std::string nodeFullName = appID + "." + nodeName;
     bool alreadyDefined = false;
     
     PyObject* nodeObj = getAttrRecursive(nodeFullName, getMainModule(), &alreadyDefined);
@@ -8074,7 +8075,9 @@ Node::Implementation::runInputChangedCallback(int index,const std::string& cb)
     std::string thisGroupVar;
     NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(collection.get());
     if (isParentGrp) {
-        thisGroupVar = appID + "." + isParentGrp->getNode()->getFullyQualifiedName();
+        std::string nodeName = isParentGrp->getNode()->getFullyQualifiedName();
+        std::string nodeFullName = appID + "." + nodeName;
+        thisGroupVar = nodeFullName;
     } else {
         thisGroupVar = appID;
     }
