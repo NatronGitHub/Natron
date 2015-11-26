@@ -29,6 +29,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #endif
 
 CLANG_DIAG_OFF(uninitialized)
@@ -37,6 +38,8 @@ CLANG_DIAG_ON(uninitialized)
 
 class DockablePanel;
 class KnobGui;
+class KnobPage;
+class KnobGroup;
 
 struct PickKnobDialogPrivate;
 class PickKnobDialog : public QDialog
@@ -49,11 +52,12 @@ public:
     
     virtual ~PickKnobDialog();
     
-    KnobGui* getSelectedKnob(bool* makeAlias) const;
+    KnobGui* getSelectedKnob(bool* makeAlias,boost::shared_ptr<KnobPage>* page, boost::shared_ptr<KnobGroup>* group) const;
     
 public Q_SLOTS:
     
     void onNodeComboEditingFinished();
+    void onPageComboIndexChanged(int index);
     
 private:
     

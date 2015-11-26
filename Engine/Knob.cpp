@@ -3136,6 +3136,9 @@ KnobHelper::setHasModifications(int dimension,bool value,bool lock)
 
 boost::shared_ptr<KnobI>
 KnobHelper::createDuplicateOnNode(Natron::EffectInstance* effect,
+                                  const boost::shared_ptr<KnobPage>& page,
+                                  const boost::shared_ptr<KnobGroup>& group,
+                                  int indexInParent,
                                   bool makeAlias,
                                   const std::string& newScriptName,
                                   const std::string& newLabel,
@@ -3171,7 +3174,12 @@ KnobHelper::createDuplicateOnNode(Natron::EffectInstance* effect,
     
     //Ensure the group user page is created
 
-    boost::shared_ptr<KnobPage> groupUserPageNode = effect->getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> destPage;
+    if (page) {
+        destPage = page;
+    } else {
+        destPage = effect->getOrCreateUserPageKnob();
+    }
     
     boost::shared_ptr<KnobI> output;
     if (isBool) {
@@ -3263,7 +3271,20 @@ KnobHelper::createDuplicateOnNode(Natron::EffectInstance* effect,
     output->setEvaluateOnChange(getEvaluateOnChange());
     output->setHintToolTip(newToolTip);
     output->setAddNewLine(newStartLine);
-    groupUserPageNode->addKnob(output);
+    if (group) {
+        if (indexInParent == -1) {
+            group->addKnob(output);
+        } else {
+            group->insertKnob(indexInParent, output);
+        }
+    } else {
+        assert(destPage);
+        if (indexInParent == -1) {
+            destPage->addKnob(output);
+        } else {
+            destPage->insertKnob(indexInParent, output);
+        }
+    }
     effect->getNode()->declarePythonFields();
     if (!makeAlias) {
         

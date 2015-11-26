@@ -63,6 +63,7 @@ class QString;
 // Engine
 class Variant; //used by KnobGui
 class KeyFrame;
+class KnobPage;
 
 // Gui
 class ComboBox;
@@ -264,7 +265,11 @@ public:
      **/
     bool isSecretRecursive() const;
     
-    boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,bool makeAlias);
+    boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,
+                                                   bool makeAlias,
+                                                   const boost::shared_ptr<KnobPage>& page,
+                                                   const boost::shared_ptr<KnobGroup>& group,
+                                                   int indexInParent);
 
 
     static bool shouldSliderBeVisible(int sliderMin, int sliderMax)

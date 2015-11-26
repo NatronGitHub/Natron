@@ -47,6 +47,9 @@
 #define NATRON_USER_MANAGED_KNOBS_PAGE_LABEL "User"
 #define NATRON_USER_MANAGED_KNOBS_PAGE "userNatron"
 
+class KnobPage;
+class KnobGroup;
+
 class KnobSignalSlotHandler
 : public QObject
 {
@@ -980,6 +983,9 @@ public:
     virtual bool isMastersPersistenceIgnored() const = 0;
     
     virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,
+                                                           const boost::shared_ptr<KnobPage>& page,
+                                                           const boost::shared_ptr<KnobGroup>& group,
+                                                           int indexInParent,
                                                            bool makeAlias,
                                                            const std::string& newScriptName,
                                                            const std::string& newLabel,
@@ -1249,6 +1255,9 @@ public:
     virtual bool hasModificationsForSerialization() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,
+                                                           const boost::shared_ptr<KnobPage>& page,
+                                                           const boost::shared_ptr<KnobGroup>& group,
+                                                           int indexInParent,
                                                            bool makeAlias,
                                                            const std::string& newScriptName,
                                                            const std::string& newLabel,

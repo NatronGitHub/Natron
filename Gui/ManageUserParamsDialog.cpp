@@ -55,6 +55,7 @@ struct TreeItem
 {
     QTreeWidgetItem* item;
     boost::shared_ptr<KnobI> knob;
+    QString scriptName;
 };
 }
 
@@ -105,6 +106,7 @@ struct ManageUserParamsDialogPrivate
     void rebuildUserPages();
     
     void onKnobAddedInternal(const boost::shared_ptr<KnobI>& knob);
+    
 };
 
 ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* parent)
@@ -258,7 +260,9 @@ ManageUserParamsDialog::onPickClicked()
     PickKnobDialog dialog(_imp->panel,this);
     if (dialog.exec()) {
         bool useAlias;
-        KnobGui* selectedKnob = dialog.getSelectedKnob(&useAlias);
+        boost::shared_ptr<KnobPage> page;
+        boost::shared_ptr<KnobGroup> group;
+        KnobGui* selectedKnob = dialog.getSelectedKnob(&useAlias,&page,&group);
         if (!selectedKnob) {
             return;
         }
@@ -269,7 +273,7 @@ ManageUserParamsDialog::onPickClicked()
         assert(nodeGui);
         NodePtr node = nodeGui->getNode();
         assert(node);
-        boost::shared_ptr<KnobI> duplicate = selectedKnob->createDuplicateOnNode(node->getLiveInstance(), useAlias);
+        boost::shared_ptr<KnobI> duplicate = selectedKnob->createDuplicateOnNode(node->getLiveInstance(), useAlias, page, group, -1);
         _imp->onKnobAddedInternal(duplicate);
     }
 }
@@ -286,6 +290,8 @@ ManageUserParamsDialog::onAddClicked()
         _imp->onKnobAddedInternal(knob);
     }
 }
+
+
 
 void
 ManageUserParamsDialogPrivate::onKnobAddedInternal(const boost::shared_ptr<KnobI>& knob)
@@ -323,7 +329,27 @@ ManageUserParamsDialogPrivate::onKnobAddedInternal(const boost::shared_ptr<KnobI
     } else {
         tree->addTopLevelItem(i.item);
     }
-    i.item->setText(0, knob->getName().c_str());
+    i.scriptName = knob->getName().c_str();
+    
+    QString text = i.scriptName;
+    
+    std::list<boost::shared_ptr<KnobI> > listeners;
+    knob->getListeners(listeners);
+    if (!listeners.empty()) {
+        boost::shared_ptr<KnobI> listener = listeners.front();
+        if (listener->getAliasMaster() == knob) {
+            text += " (alias of ";
+            Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(listener->getHolder());
+            if (effect) {
+                text += effect->getScriptName_mt_safe().c_str();
+                text += '.';
+            }
+            text += listener->getName().c_str();
+            text += ')';
+        }
+    }
+    
+    i.item->setText(0, text);
     items.push_back(i);
 
     rebuildUserPages();
@@ -377,11 +403,10 @@ ManageUserParamsDialog::onEditClickedInternal(const QList<QTreeWidgetItem*> &sel
                     AddKnobDialog dialog(_imp->panel,it->knob,this);
                     if (dialog.exec()) {
                         
-                        
-                        it->knob = dialog.getKnob();
-                        it->item->setText(0, it->knob->getName().c_str());
-                        _imp->rebuildUserPages();
-                        _imp->panel->getGui()->getApp()->triggerAutoSave();
+                        delete it->item;
+                        _imp->items.erase(it);
+                        boost::shared_ptr<KnobI> knob = dialog.getKnob();
+                        _imp->onKnobAddedInternal(knob);
                         break;
                     }
                 }

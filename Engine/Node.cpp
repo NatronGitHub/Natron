@@ -2371,7 +2371,12 @@ Node::setNameInternal(const std::string& name)
     
     boost::shared_ptr<NodeCollection> collection = getGroup();
     if (collection) {
-        collection->setNodeName(name,false, false, &newName);
+        try {
+            collection->setNodeName(name,false, false, &newName);
+        } catch (const std::exception& e) {
+            appPTR->writeToOfxLog_mt_safe(e.what());
+            return;
+        }
     }
     
     bool mustSetCacheID;

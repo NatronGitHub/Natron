@@ -145,7 +145,7 @@ struct AddKnobDialogPrivate
     ComboBox* parentPage;
     
     std::list<KnobGroup*> userGroups;
-    std::list<KnobPage*> userPages; //< all user pages except the "User" one
+    std::list<boost::shared_ptr<KnobPage> > userPages; //< all user pages except the "User" one
     
     AddKnobDialogPrivate(DockablePanel* panel)
     : knob()
@@ -239,6 +239,8 @@ struct AddKnobDialogPrivate
     void createKnobFromSelection(int type,int optionalGroupIndex = -1);
     
     KnobGroup* getSelectedGroup() const;
+    
+    boost::shared_ptr<KnobPage> getSelectedPage() const;
 };
 
 static int getChoiceIndexFromKnobType(KnobI* knob)
@@ -801,76 +803,74 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>
         _imp->mainLayout->addRow(_imp->parentGroupLabel, optContainer);
     }
     
-    if (!knob) {
-        QWidget* optContainer = new QWidget(this);
-        QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
-        optLayout->setContentsMargins(0, 0, 15, 0);
-        _imp->parentPageLabel = new Natron::Label(tr("Page:"),optContainer);
-        _imp->parentPage = new ComboBox(optContainer);
-        _imp->parentPage->addItem(NATRON_USER_MANAGED_KNOBS_PAGE);
-        QObject::connect(_imp->parentPage,SIGNAL(currentIndexChanged(int)),this,SLOT(onPageCurrentIndexChanged(int)));
-        const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->panel->getHolder()->getKnobs();
-        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin() ; it != knobs.end(); ++it) {
-            if ((*it)->isUserKnob()) {
-                KnobPage* isPage = dynamic_cast<KnobPage*>(it->get());
-                if (isPage && isPage->getName() != NATRON_USER_MANAGED_KNOBS_PAGE) {
-                    _imp->userPages.push_back(isPage);
-                }
-            }
-        }
-        
-        for (std::list<KnobPage*>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
-            _imp->parentPage->addItem((*it)->getName().c_str());
-        }
-        _imp->parentPage->setToolTip(Natron::convertFromPlainText(tr("The tab under which this parameter will appear."), Qt::WhiteSpaceNormal));
-        optLayout->addWidget(_imp->parentPage);
-        if (knob) {
-            ////find in which page the knob should be
-            KnobPage* isTopLevelParentAPage = knob->getTopLevelPage();
-            assert(isTopLevelParentAPage);
-            if (isTopLevelParentAPage->getName() != NATRON_USER_MANAGED_KNOBS_PAGE) {
-                int index = 1; // 1 because of the "User" item
-                bool found = false;
-                for (std::list<KnobPage*>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
-                    if ((*it) == isTopLevelParentAPage) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) {
-                    _imp->parentPage->setCurrentIndex(index);
-                }
-            }
-            
-            
-        }
-        
-        _imp->mainLayout->addRow(_imp->parentPageLabel, optContainer);
-        onPageCurrentIndexChanged(0);
-    } else { // if(!knob)
-        
-        if (_imp->parentGroup) {
-            KnobPage* topLvlPage = knob->getTopLevelPage();
-            assert(topLvlPage);
-            boost::shared_ptr<KnobI> parent = knob->getParentKnob();
-            KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
-            _imp->parentGroup->addItem("-");
-            int idx = 1;
-            for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it, ++idx) {
-                KnobPage* page = (*it)->getTopLevelPage();
-                assert(page);
-                
-                ///add only grps whose parent page is the selected page
-                if (page == topLvlPage) {
-                    _imp->parentGroup->addItem((*it)->getName().c_str());
-                    if (isParentGrp && isParentGrp == *it) {
-                        _imp->parentGroup->setCurrentIndex(idx);
-                    }
-                }
-                
+    QWidget* optContainer = new QWidget(this);
+    QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
+    optLayout->setContentsMargins(0, 0, 15, 0);
+    _imp->parentPageLabel = new Natron::Label(tr("Page:"),optContainer);
+    _imp->parentPage = new ComboBox(optContainer);
+    _imp->parentPage->addItem(NATRON_USER_MANAGED_KNOBS_PAGE);
+    QObject::connect(_imp->parentPage,SIGNAL(currentIndexChanged(int)),this,SLOT(onPageCurrentIndexChanged(int)));
+    const std::vector<boost::shared_ptr<KnobI> >& internalKnobs = _imp->panel->getHolder()->getKnobs();
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = internalKnobs.begin() ; it != internalKnobs.end(); ++it) {
+        if ((*it)->isUserKnob()) {
+            boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
+            if (isPage && isPage->getName() != NATRON_USER_MANAGED_KNOBS_PAGE) {
+                _imp->userPages.push_back(isPage);
             }
         }
     }
+    
+    for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
+        _imp->parentPage->addItem((*it)->getName().c_str());
+    }
+    _imp->parentPage->setToolTip(Natron::convertFromPlainText(tr("The tab under which this parameter will appear."), Qt::WhiteSpaceNormal));
+    optLayout->addWidget(_imp->parentPage);
+    if (knob) {
+        ////find in which page the knob should be
+        KnobPage* isTopLevelParentAPage = knob->getTopLevelPage();
+        assert(isTopLevelParentAPage);
+        if (isTopLevelParentAPage->getName() != NATRON_USER_MANAGED_KNOBS_PAGE) {
+            int index = 1; // 1 because of the "User" item
+            bool found = false;
+            for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
+                if (it->get() == isTopLevelParentAPage) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found) {
+                _imp->parentPage->setCurrentIndex(index);
+            }
+        }
+        
+        
+    }
+    
+    _imp->mainLayout->addRow(_imp->parentPageLabel, optContainer);
+    onPageCurrentIndexChanged(0);
+    
+    if (_imp->parentGroup && knob) {
+        KnobPage* topLvlPage = knob->getTopLevelPage();
+        assert(topLvlPage);
+        boost::shared_ptr<KnobI> parent = knob->getParentKnob();
+        KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
+        _imp->parentGroup->addItem("-");
+        int idx = 1;
+        for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it, ++idx) {
+            KnobPage* page = (*it)->getTopLevelPage();
+            assert(page);
+            
+            ///add only grps whose parent page is the selected page
+            if (page == topLvlPage) {
+                _imp->parentGroup->addItem((*it)->getName().c_str());
+                if (isParentGrp && isParentGrp == *it) {
+                    _imp->parentGroup->setCurrentIndex(idx);
+                }
+            }
+            
+        }
+    }
+    
     
     QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),Qt::Horizontal,this);
     QObject::connect(buttons,SIGNAL(rejected()), this, SLOT(reject()));
@@ -907,9 +907,9 @@ AddKnobDialog::onPageCurrentIndexChanged(int index)
     if (selectedPage == NATRON_USER_MANAGED_KNOBS_PAGE) {
         parentPage = _imp->panel->getUserPageKnob().get();
     } else {
-        for (std::list<KnobPage*>::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
+        for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
             if ((*it)->getName() == selectedPage) {
-                parentPage = *it;
+                parentPage = it->get();
                 break;
             }
         }
@@ -942,8 +942,9 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleRichText(false);
         _imp->setVisibleSequence(false);
         _imp->setVisibleGrpAsTab(false);
-        _imp->setVisibleParent(false);
+        _imp->setVisibleParent(true);
         _imp->setVisibleDefaultValues(false,AddKnobDialogPrivate::eDefaultValueTypeInt, 1);
+        _imp->setVisiblePage(true);
         return;
     }
     _imp->setVisiblePage(index != 16);
@@ -1372,20 +1373,18 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
     
     
     if (index != 16 && parentPage && !addedInGrp) {
-        std::string selectedItem = parentPage->getCurrentIndexText().toStdString();
-        if (selectedItem == NATRON_USER_MANAGED_KNOBS_PAGE) {
-            boost::shared_ptr<KnobPage> userPage = panel->getUserPageKnob();
-            userPage->addKnob(knob);
-            panel->setUserPageActiveIndex();
-        } else {
-            for (std::list<KnobPage*>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
-                if ((*it)->getName() == selectedItem) {
-                    (*it)->addKnob(knob);
-                    break;
-                }
+        boost::shared_ptr<KnobPage> page = getSelectedPage();
+        if (page) {
+            if (optionalGroupIndex != -1) {
+                page->insertKnob(optionalGroupIndex, knob);
+            } else {
+                page->addKnob(knob);
             }
-
+            if (page->getName() == NATRON_USER_MANAGED_KNOBS_PAGE) {
+                panel->setUserPageActiveIndex();
+            }
         }
+        
     }
     
     
@@ -1412,6 +1411,25 @@ AddKnobDialogPrivate::getSelectedGroup() const
         }
     }
     return 0;
+}
+
+boost::shared_ptr<KnobPage>
+AddKnobDialogPrivate::getSelectedPage() const
+{
+    if (parentPage) {
+        std::string selectedItem = parentPage->getCurrentIndexText().toStdString();
+        if (selectedItem == NATRON_USER_MANAGED_KNOBS_PAGE) {
+            return panel->getUserPageKnob();
+        }
+        for (std::list<boost::shared_ptr<KnobPage> >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
+            if ((*it)->getName() == selectedItem) {
+                return *it;
+                break;
+            }
+        }
+        
+    }
+    return boost::shared_ptr<KnobPage>();
 }
 
 void
@@ -1490,7 +1508,7 @@ AddKnobDialog::onOkClicked()
     KnobPage* oldParentPage = 0;
     
     ///If the knob was in a group, we need to place it at the same index
-    int oldIndexInGroup = -1;
+    int oldIndexInParent = -1;
     
     std::string oldKnobScriptName;
     std::vector<std::pair<std::string,bool> > expressions;
@@ -1512,18 +1530,18 @@ AddKnobDialog::onOkClicked()
             std::vector<boost::shared_ptr<KnobI> > children = isParentGrp->getChildren();
             for (U32 i = 0; i < children.size(); ++i) {
                 if (children[i] == _imp->knob) {
-                    oldIndexInGroup = i;
+                    oldIndexInParent = i;
                     break;
                 }
             }
         } else {
             std::vector<boost::shared_ptr<KnobI> > children;
-            if (oldParentPage) {
+            if (oldParentPage && oldParentPage == _imp->getSelectedPage().get()) {
                 children = oldParentPage->getChildren();
             }
             for (U32 i = 0; i < children.size(); ++i) {
                 if (children[i] == _imp->knob) {
-                    oldIndexInGroup = i;
+                    oldIndexInParent = i;
                     break;
                 }
             }
@@ -1561,16 +1579,8 @@ AddKnobDialog::onOkClicked()
     
     
     if (!_imp->isKnobAlias) {
-        _imp->createKnobFromSelection(index, oldIndexInGroup);
+        _imp->createKnobFromSelection(index, oldIndexInParent);
         assert(_imp->knob);
-        
-        if (oldParentPage && !_imp->knob->getParentKnob()) {
-            if (oldIndexInGroup == -1) {
-                oldParentPage->addKnob(_imp->knob);
-            } else {
-                oldParentPage->insertKnob(oldIndexInGroup, _imp->knob);
-            }
-        }
         
         //If startsNewLine is false, set the flag on the previous knob
         bool startNewLine = _imp->startNewLineBox->isChecked();
@@ -1614,7 +1624,37 @@ AddKnobDialog::onOkClicked()
     else {
         //Alias knobs can only have these properties changed
         assert(effect);
-        _imp->knob = _imp->isKnobAlias->createDuplicateOnNode(effect, true, stdName, _imp->labelLineEdit->text().toStdString(), _imp->tooltipArea->toPlainText().toStdString(), _imp->startNewLineBox->isChecked());
+        boost::shared_ptr<KnobPage> page;
+        if (_imp->parentPage) {
+            std::string selectedItem = _imp->parentPage->getCurrentIndexText().toStdString();
+            if (selectedItem == NATRON_USER_MANAGED_KNOBS_PAGE) {
+                boost::shared_ptr<KnobPage> userPage = _imp->panel->getUserPageKnob();
+                _imp->panel->setUserPageActiveIndex();
+                page = userPage;
+            } else {
+                for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
+                    if ((*it)->getName() == selectedItem) {
+                        page = *it;
+                        break;
+                    }
+                }
+                
+            }
+        }
+        KnobGroup* group = _imp->getSelectedGroup();
+        boost::shared_ptr<KnobGroup> shrdGrp;
+        if (group) {
+            shrdGrp = boost::dynamic_pointer_cast<KnobGroup>(group->shared_from_this());
+        }
+        _imp->knob = _imp->isKnobAlias->createDuplicateOnNode(effect,
+                                                              page,
+                                                              shrdGrp,
+                                                              oldIndexInParent,
+                                                              true,
+                                                              stdName,
+                                                              _imp->labelLineEdit->text().toStdString(),
+                                                              _imp->tooltipArea->toPlainText().toStdString(),
+                                                              _imp->startNewLineBox->isChecked());
     }
     
     //Recover listeners expressions
