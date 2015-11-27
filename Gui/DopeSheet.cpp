@@ -1428,6 +1428,9 @@ DSNode::DSNode(DopeSheet *model,
     for (KnobsAndGuis::const_iterator it = knobs.begin();
          it != knobs.end(); ++it) {
         boost::shared_ptr<KnobI> knob = it->first.lock();
+        if (!knob) {
+            continue;
+        }
         KnobGui *knobGui = it->second;
 
         if (!knob->canAnimate() || !knob->isAnimationEnabled()) {

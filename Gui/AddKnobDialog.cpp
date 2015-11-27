@@ -802,6 +802,9 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     const std::map<boost::weak_ptr<KnobI>,KnobGui*>& knobs = _imp->panel->getKnobs();
     for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         boost::shared_ptr<KnobI> knob = it->first.lock();
+        if (!knob) {
+            continue;
+        }
         if (knob->isUserKnob()) {
             KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob.get());
             if (isGrp) {

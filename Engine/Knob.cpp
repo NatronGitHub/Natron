@@ -3598,7 +3598,7 @@ KnobHolder::removeDynamicKnob(KnobI* knob)
         for (std::vector<boost::shared_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
             if (it2->get() == knob && (*it2)->isDynamicallyCreated()) {
                 _imp->knobs.erase(it2);
-                return;
+                break;
             }
         }
     }

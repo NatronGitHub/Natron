@@ -2413,19 +2413,21 @@ Node::setNameInternal(const std::string& name, bool throwErrors)
         }
     }
     
-    bool isAttrDefined = false;
-    std::string newPotentialQualifiedName = getFullyQualifiedNameInternal(newName);
-    (void)Natron::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
-    if (isAttrDefined) {
-        std::stringstream ss;
-        ss << "A Python attribute with the same name (" << newPotentialQualifiedName << ") already exists.";
-        if (throwErrors) {
-            throw std::runtime_error(ss.str());
-        } else {
-            std::string err = ss.str();
-            appPTR->writeToOfxLog_mt_safe(err.c_str());
-            std::cerr << err << std::endl;
-            return;
+    if (!newName.empty()) {
+        bool isAttrDefined = false;
+        std::string newPotentialQualifiedName = getFullyQualifiedNameInternal(newName);
+        (void)Natron::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
+        if (isAttrDefined) {
+            std::stringstream ss;
+            ss << "A Python attribute with the same name (" << newPotentialQualifiedName << ") already exists.";
+            if (throwErrors) {
+                throw std::runtime_error(ss.str());
+            } else {
+                std::string err = ss.str();
+                appPTR->writeToOfxLog_mt_safe(err.c_str());
+                std::cerr << err << std::endl;
+                return;
+            }
         }
     }
     
