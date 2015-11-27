@@ -992,6 +992,13 @@ KnobGuiColor::onColorChanged()
         if (isSpinbox) {
             _slider->seekScalePosition(r);
         }
+        if (_dimension >= 3) {
+            _gBox->setValue(g);
+            _bBox->setValue(b);
+            if (_dimension >= 4) {
+                _aBox->setValue(a);
+            }
+        }
     }
     if (_dimension >= 3) {
         newValues.push_back(g);
