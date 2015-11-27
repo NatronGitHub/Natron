@@ -2413,9 +2413,16 @@ Node::setNameInternal(const std::string& name, bool throwErrors)
         }
     }
     
+    
+    
+    if (oldName == newName) {
+        return;
+    }
+
+
     if (!newName.empty()) {
         bool isAttrDefined = false;
-        std::string newPotentialQualifiedName = getFullyQualifiedNameInternal(newName);
+        std::string newPotentialQualifiedName = getApp()->getAppIDString() + getFullyQualifiedNameInternal(newName);
         (void)Natron::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
         if (isAttrDefined) {
             std::stringstream ss;

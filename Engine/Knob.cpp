@@ -2236,7 +2236,7 @@ KnobHelper::setName(const std::string & name,bool throwExceptions)
         NodePtr node = effect->getNode();
         std::string effectScriptName = node->getScriptName_mt_safe();
         if (!effectScriptName.empty()) {
-            std::string newPotentialQualifiedName = node->getFullyQualifiedName();
+            std::string newPotentialQualifiedName = node->getApp()->getAppIDString() +  node->getFullyQualifiedName();
             newPotentialQualifiedName += '.';
             newPotentialQualifiedName += finalName;
             
