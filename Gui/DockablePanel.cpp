@@ -572,6 +572,18 @@ DockablePanel::setUserPageActiveIndex()
     }
 }
 
+void
+DockablePanel::setPageActiveIndex(const boost::shared_ptr<KnobPage>& page)
+{
+    for (int i = 0; i < _imp->_tabWidget->count(); ++i) {
+        if (_imp->_tabWidget->tabText(i) == page->getLabel().c_str()) {
+            _imp->_tabWidget->setCurrentIndex(i);
+            _imp->refreshPagesSecretness();
+            break;
+        }
+    }
+}
+
 int
 DockablePanel::getPagesCount() const
 {

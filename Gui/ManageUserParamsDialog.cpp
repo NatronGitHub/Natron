@@ -123,7 +123,7 @@ struct ManageUserParamsDialogPrivate
     
     QTreeWidgetItem* createItemForKnob(const boost::shared_ptr<KnobI>& knob,int insertIndex = -1);
     
-    void createUserPageItem();
+    bool createUserPageItem();
     
     void saveAndRebuildPages();
     
@@ -344,12 +344,17 @@ ManageUserParamsDialog::onPickClicked()
         boost::shared_ptr<KnobI> duplicate = selectedKnob->createDuplicateOnNode(node->getLiveInstance(), useAlias, page, group, -1);
         if (duplicate) {
 
+            bool hasCreatedUserPage = false;
             if (!hadUserPage) {
-                _imp->createUserPageItem();
+                hasCreatedUserPage = _imp->createUserPageItem();
             }
             _imp->createItemForKnob(duplicate);
         
             _imp->saveAndRebuildPages();
+            
+            if (hasCreatedUserPage) {
+                _imp->panel->setUserPageActiveIndex();
+            }
         }
     }
 }
@@ -361,28 +366,33 @@ ManageUserParamsDialog::onAddClicked()
     AddKnobDialog dialog(_imp->panel,boost::shared_ptr<KnobI>(),this);
     if (dialog.exec()) {
         //Ensure the user page knob exists
+        bool hasCreatedUserPage = false;
         if (!hadUserPage) {
-            _imp->createUserPageItem();
+            hasCreatedUserPage = _imp->createUserPageItem();
         }
         boost::shared_ptr<KnobI> knob = dialog.getKnob();
         _imp->createItemForKnob(knob);
         _imp->saveAndRebuildPages();
+        if (hasCreatedUserPage) {
+            _imp->panel->setUserPageActiveIndex();
+        }
     }
 }
 
-void
+bool
 ManageUserParamsDialogPrivate::createUserPageItem()
 {
     boost::shared_ptr<KnobPage> userPageKnob = panel->getUserPageKnob();
     if (!userPageKnob) {
-        return;
+        return false;
     }
     for (std::list<TreeItem>::iterator it = items.begin(); it!=items.end(); ++it) {
         if (it->knob == userPageKnob) {
-            return;
+            return false;
         }
     }
     createItemForKnob(userPageKnob, -1);
+    return true;
 }
 
 QTreeWidgetItem*
@@ -597,6 +607,11 @@ ManageUserParamsDialog::onUpClicked()
             QItemSelectionModel* model = _imp->tree->selectionModel();
             model->select(_imp->tree->indexFromItemPublic(item), QItemSelectionModel::ClearAndSelect);
             
+            boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+            if (isPage) {
+                _imp->panel->setPageActiveIndex(isPage);
+            }
+            
             break;
         }
     }
@@ -673,6 +688,12 @@ ManageUserParamsDialog::onDownClicked()
             _imp->saveAndRebuildPages();
             QItemSelectionModel* model = _imp->tree->selectionModel();
             model->select(_imp->tree->indexFromItemPublic(item), QItemSelectionModel::ClearAndSelect);
+            
+            boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+            if (isPage) {
+                _imp->panel->setPageActiveIndex(isPage);
+            }
+            
             break;
         }
     }

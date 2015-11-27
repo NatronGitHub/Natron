@@ -157,6 +157,8 @@ public:
     
     void setUserPageActiveIndex();
     
+    void setPageActiveIndex(const boost::shared_ptr<KnobPage>& page);
+    
     boost::shared_ptr<KnobPage> getOrCreateUserPageKnob() const;
     boost::shared_ptr<KnobPage> getUserPageKnob() const;
     
