@@ -350,7 +350,7 @@ EffectInstance::aborted() const
 
                     ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
                     bool ret = !getNode()->isActivated();
-
+                    
                     return ret;
                 } else {
                     bool deactivated = !getNode()->isActivated();
@@ -2467,7 +2467,7 @@ EffectInstance::openImageFileKnob()
 void
 EffectInstance::evaluate(KnobI* knob,
                          bool isSignificant,
-                         Natron::ValueChangedReasonEnum /*reason*/)
+                         Natron::ValueChangedReasonEnum reason)
 {
     KnobPage* isPage = dynamic_cast<KnobPage*>(knob);
     KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob);
@@ -2514,10 +2514,16 @@ EffectInstance::evaluate(KnobI* knob,
 
     ///increments the knobs age following a change
     if (!button && isSignificant) {
+        abortAnyEvaluation();
         node->incrementKnobsAge();
         node->refreshIdentityState();
     }
 
+    if (reason == Natron::eValueChangedReasonSlaveRefresh) {
+        //do not trigger a render, the master will do it already
+        return;
+    }
+    
 
     double time = getCurrentTime();
     std::list<ViewerInstance* > viewers;
@@ -4196,7 +4202,7 @@ EffectInstance::abortAnyEvaluation()
 
     
     assert(node);
-    node->incrementKnobsAge();
+   // node->incrementKnobsAge();
     std::list<Natron::OutputEffectInstance*> outputNodes;
     
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);

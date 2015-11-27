@@ -112,13 +112,31 @@ private:
         bool modifiedKeyFrame = false;
         int i = 0;
 
-        _knob->getKnob()->beginChanges();
+        boost::shared_ptr<KnobI> knob = _knob->getKnob();
+        knob->beginChanges();
+        
+        assert((int)_oldValue.size() == _knob->getKnob()->getDimension() || _dimension != -1);
+        
+        typename std::list<T>::iterator next = _oldValue.end();
+        if (next != _oldValue.end()) {
+            ++next;
+        }
         
         for (typename std::list<T>::iterator it = _oldValue.begin(); it != _oldValue.end(); ++it) {
             int dimension = _dimension == -1 ? i : _dimension;
           
+            if (it == _oldValue.begin() && _oldValue.size() > 1) {
+                knob->blockValueChanges();
+            }
+            
+            if (next == _oldValue.end() && _oldValue.size() > 1) {
+                knob->unblockValueChanges();
+            }
+
+            
             _knob->setValue(dimension,*it,NULL,false,Natron::eValueChangedReasonUserEdited);
-            if ( _knob->getKnob()->getHolder()->getApp() ) {
+            
+            if (knob->getHolder()->getApp() ) {
                 if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
                     _knob->removeKeyFrame(_newKeys[i].getTime(),dimension);
                     modifiedKeyFrame = true;
@@ -130,7 +148,9 @@ private:
                 }
             }
 
-            
+            if (next != _oldValue.end()) {
+                ++next;
+            }
             ++i;
     
         }
@@ -138,7 +158,7 @@ private:
         ///This will refresh all dimensions
         _knob->onInternalValueChanged(-1, Natron::eValueChangedReasonNatronGuiEdited);
         
-        _knob->getKnob()->endChanges();
+        knob->endChanges();
         if (modifiedKeyFrame) {
             _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
         }
@@ -156,15 +176,23 @@ private:
             time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
         }
 
+        assert((int)_oldValue.size() == _knob->getKnob()->getDimension() || _dimension != -1);
+        
         bool modifiedKeyFrames = false;
 
         knob->beginChanges();
         int i = 0;
-        
+        typename std::list<T>::iterator next = _newValue.end();
+        if (next != _newValue.end()) {
+            ++next;
+        }
         for (typename std::list<T>::iterator it = _newValue.begin(); it != _newValue.end(); ++it) {
             int dimension = _dimension == -1 ? i : _dimension;
     
-
+            if (it == _newValue.begin() && _newValue.size() > 1) {
+                knob->blockValueChanges();
+            }
+            
             boost::shared_ptr<Curve> c = knob->getCurve(dimension);
             //find out if there's already an existing keyframe before calling setValue
             if (c) {
@@ -172,7 +200,10 @@ private:
                 Q_UNUSED(found); // we don't care if it existed or not
             }
 
- 
+            if (next == _newValue.end() && _newValue.size() > 1) {
+                knob->unblockValueChanges();
+            }
+            
             _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],false,Natron::eValueChangedReasonUserEdited);
             if (_valueChangedReturnCode[i] != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) {
                 modifiedKeyFrames = true;
@@ -183,6 +214,9 @@ private:
                 _merge = false;
             }
             ++i;
+            if (next != _newValue.end()) {
+                ++next;
+            }
         
         }
         

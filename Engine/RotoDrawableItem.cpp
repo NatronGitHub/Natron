@@ -160,7 +160,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     
     const std::list<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int,int)), this, SLOT(onRotoKnobChanged(int,int)));
+        QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onRotoKnobChanged(int,int)));
     }
     
     boost::shared_ptr<RotoContext> context = getContext();

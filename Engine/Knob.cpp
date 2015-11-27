@@ -71,24 +71,6 @@ KnobSignalSlotHandler::onAnimationRemoved(int dimension)
     getKnob()->onAnimationRemoved(dimension);
 }
 
-void
-KnobSignalSlotHandler::onMasterChanged(int dimension, int /*reason*/)
-{
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
-    
-    assert(handler);
-    getKnob()->onMasterChanged(handler->getKnob().get(), dimension);
-}
-
-void
-KnobSignalSlotHandler::onExprDependencyChanged(int dimension, int /*reason*/)
-{
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
-    
-    assert(handler);
-    getKnob()->onExprDependencyChanged(handler->getKnob().get(), dimension);
-    
-}
 
 void
 KnobSignalSlotHandler::onMasterKeyFrameSet(double time,int dimension,int reason,bool added)
@@ -673,9 +655,9 @@ KnobHelper::deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-        if (holder) {
+        /*if (holder) {
             holder->abortAnyEvaluation();
-        }
+        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -703,9 +685,7 @@ KnobHelper::deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,
     
     if (!useGuiCurve) {
         
-        if (_signalSlotHandler) {
-            _signalSlotHandler->s_updateDependencies(dimension, (int)reason);
-        }
+
         checkAnimationLevel(dimension);
         guiCurveCloneInternalCurve(curveChangeReason,dimension, reason);
         evaluateValueChange(dimension,time,reason);
@@ -744,9 +724,9 @@ KnobHelper::moveValueAtTime(Natron::CurveChangeReason reason, double time,int di
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-        if (holder) {
+        /*if (holder) {
             holder->abortAnyEvaluation();
-        }
+        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -830,9 +810,9 @@ KnobHelper::transformValueAtTime(Natron::CurveChangeReason curveChangeReason, do
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-        if (holder) {
+        /*if (holder) {
             holder->abortAnyEvaluation();
-        }
+        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -904,9 +884,9 @@ KnobHelper::cloneCurve(int dimension,const Curve& curve)
     boost::shared_ptr<Curve> thisCurve;
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     if (!useGuiCurve) {
-        if (holder) {
+        /*if (holder) {
             holder->abortAnyEvaluation();
-        }
+        }*/
         thisCurve = _imp->curves[dimension];
     } else {
         thisCurve = _imp->gui->getCurve(dimension);
@@ -953,9 +933,9 @@ KnobHelper::setInterpolationAtTime(Natron::CurveChangeReason reason,int dimensio
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-        if (holder) {
+       /* if (holder) {
             holder->abortAnyEvaluation();
-        }
+        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -1002,9 +982,9 @@ KnobHelper::moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-        if (holder) {
+       /* if (holder) {
             holder->abortAnyEvaluation();
-        }
+        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -1053,9 +1033,9 @@ KnobHelper::moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-        if (holder) {
+       /* if (holder) {
             holder->abortAnyEvaluation();
-        }
+        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -1111,9 +1091,9 @@ KnobHelper::removeAnimation(int dimension,
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-        if (holder) {
+        /*if (holder) {
             holder->abortAnyEvaluation();
-        }
+        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -1344,10 +1324,10 @@ KnobHelper::evaluateValueChange(int dimension,
     
     bool guiFrozen = app && _imp->gui && _imp->gui->isGuiFrozenForPlayback();
 
-    /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle down
+    /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle
     /// the application responsiveness
     if (reason != Natron::eValueChangedReasonTimeChanged && _imp->holder) {
-        if ( ( app && !app->getProject()->isLoadingProject() /*&& !app->isCreatingPythonGroup()*/) || !app ) {
+        if (!app || !app->getProject()->isLoadingProject()) {
             
             if (_imp->holder->isEvaluationBlocked()) {
                 _imp->holder->appendValueChange(this, time, reason);
@@ -1365,8 +1345,16 @@ KnobHelper::evaluateValueChange(int dimension,
         if (!app || time == app->getTimeLine()->currentFrame()) {
             _signalSlotHandler->s_valueChanged(dimension,(int)reason);
         }
-        _signalSlotHandler->s_updateDependencies(dimension,(int)reason);
-        checkAnimationLevel(dimension);
+        if (reason != Natron::eValueChangedReasonSlaveRefresh) {
+            refreshListenersAfterValueChange(dimension);
+        }
+        if (dimension == -1) {
+            for (int i = 0; i < _imp->dimension; ++i) {
+                checkAnimationLevel(i);
+            }
+        } else {
+            checkAnimationLevel(dimension);
+        }
     }
 }
 
@@ -2095,12 +2083,6 @@ KnobHelper::clearExpression(int dimension,bool clearResults)
                 otherListeners.erase(firstFound);
             }
             
-            if (nbTimesFound == 1) {
-                ///Disconnect only if this knob is not a dependency in other dimension
-                QObject::disconnect(other->getSignalSlotHandler().get(), SIGNAL(updateDependencies(int,int)), _signalSlotHandler.get(),
-                                    SLOT(onExprDependencyChanged(int,int)));
-            }
-            
             {
                 QWriteLocker otherMastersLocker(&other->_imp->mastersMutex);
                 other->_imp->listeners = otherListeners;
@@ -2566,7 +2548,6 @@ KnobHelper::slaveTo(int dimension,
 
     if (helper && helper->_signalSlotHandler && _signalSlotHandler) {
 
-        //QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( updateSlaves(int,int) ), _signalSlotHandler.get(), SLOT( onMasterChanged(int,int) ) );
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameSet(double,int,int,bool) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double,int,int,bool) ) );
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameRemoved(double,int,int) ),
@@ -2709,9 +2690,9 @@ KnobHelper::deleteAnimationConditional(double time,int dimension,Natron::ValueCh
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-        if (holder) {
+        /* if (holder) {
             holder->abortAnyEvaluation();
-        }
+        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -2727,9 +2708,6 @@ KnobHelper::deleteAnimationConditional(double time,int dimension,Natron::ValueCh
     
     if (!useGuiCurve) {
         
-        if (_signalSlotHandler) {
-            _signalSlotHandler->s_updateDependencies(dimension, (int)reason);
-        }
         checkAnimationLevel(dimension);
         guiCurveCloneInternalCurve(Natron::eCurveChangeReasonInternal,dimension, reason);
         evaluateValueChange(dimension, time ,reason);
@@ -2851,68 +2829,95 @@ KnobHelper::getKeyFrameIndex(int dimension,
     return curve->keyFrameIndex(time);
 }
 
-void
-KnobHelper::onMasterChanged(KnobI* master,
-                            int masterDimension)
-{
-    ///Map to the good dimension
-    assert(QThread::currentThread() == qApp->thread());
-    MastersMap masters;
-    {
-        QReadLocker l(&_imp->mastersMutex);
-        masters = _imp->masters;
-    }
-    KnobHolder* holder = getHolder();
-    for (U32 i = 0; i < masters.size(); ++i) {
-        if (masters[i].second.get() == master && masters[i].first == masterDimension) {
-            
-            if (getExpression(i).empty()) {
-                ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
-                ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
-                if (holder && !holder->isSetValueCurrentlyPossible()) {
-                    holder->abortAnyEvaluation();
-                } else {
-                    clone(master,i);
-                    
-                    evaluateValueChange(i, getCurrentTime(),Natron::eValueChangedReasonSlaveRefresh);
-                }
-            }
-            
-            return;
-        }
-    }
-
-}
-
 
 void
-KnobHelper::onExprDependencyChanged(KnobI* knob,int dimensionChanged)
+KnobHelper::refreshListenersAfterValueChange(int dimension)
 {
-    std::set<int> dimensionsToEvaluate;
-    {
-        QMutexLocker k(&_imp->expressionMutex);
-        for (int i = 0; i < _imp->dimension; ++i) {
-            for (std::list<std::pair<KnobI*,int> >::iterator it = _imp->expressions[i].dependencies.begin(); it != _imp->expressions[i].dependencies.end(); ++it) {
-                if (it->first == knob && (it->second == dimensionChanged || it->second == -1)) {
-                    dimensionsToEvaluate.insert(i);
-                }
-            }
-        }
-    }
+    std::list<boost::shared_ptr<KnobI> > listeners;
+    getListeners(listeners);
     
-    KnobHolder* holder = getHolder();
-    double time = getCurrentTime();
-    for (std::set<int>::const_iterator it = dimensionsToEvaluate.begin(); it != dimensionsToEvaluate.end(); ++it) {
-        if (holder && !holder->isSetValueCurrentlyPossible()) {
-            holder->abortAnyEvaluation();
-            QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
-            _imp->mustClearExprResults[*it] = true;
-        } else {
-            clearExpressionsResults(*it);
-            evaluateValueChange(*it, time, Natron::eValueChangedReasonSlaveRefresh);
-        }
+    if (listeners.empty()) {
+        return;
     }
+
+    double time = getCurrentTime();
+    for (std::list<boost::shared_ptr<KnobI> >::iterator it = listeners.begin(); it!=listeners.end(); ++it) {
+        
+        KnobHelper* slaveKnob = dynamic_cast<KnobHelper*>(it->get());
+        assert(slaveKnob);
+        
+        ///Check for expression on listener
+        std::set<int> dimensionsToEvaluate;
+        {
+            QMutexLocker k(&slaveKnob->_imp->expressionMutex);
+            for (int i = 0; i < slaveKnob->_imp->dimension; ++i) {
+                for (std::list<std::pair<KnobI*,int> >::iterator it2 = slaveKnob->_imp->expressions[i].dependencies.begin();
+                     it2 != slaveKnob->_imp->expressions[i].dependencies.end(); ++it2) {
+                    if (it2->first == this && (it2->second == dimension || it2->second == -1 || dimension == -1)) {
+                        dimensionsToEvaluate.insert(i);
+                    }
+                }
+            }
+        }
+        
+        ///Clear appropriate expression results
+        for (std::set<int>::const_iterator it2 = dimensionsToEvaluate.begin(); it2 != dimensionsToEvaluate.end(); ++it2) {
+            {
+                QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
+                slaveKnob->_imp->mustClearExprResults[*it2] = true;
+            }
+            {
+                slaveKnob->clearExpressionsResults(*it2);
+            }
+        }
+        
+        ///Check for slave/master link
+        bool mustClone = false;
+        if (dimensionsToEvaluate.empty()) {
+            
+            QReadLocker k(&slaveKnob->_imp->mastersMutex);
+            int i = 0;
+            for (MastersMap::const_iterator it2 = slaveKnob->_imp->masters.begin(); it2 != slaveKnob->_imp->masters.end(); ++it2,++i) {
+                if (it2->second.get() == this) {
+                    //We found a slave/master link
+                    if (dimension == -1 || dimension == it2->first) {
+                        ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
+                        ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
+                        
+                        mustClone = true;
+                        dimensionsToEvaluate.insert(i);
+                    }
+                }
+            }
+            
+        }
+        
+        
+        if (dimensionsToEvaluate.empty()) {
+            continue;
+        }
+        
+        int dimChanged;
+        if (dimensionsToEvaluate.size() > 1) {
+            dimChanged = -1;
+        } else {
+            dimChanged = *dimensionsToEvaluate.begin();
+        }
+        
+        if (mustClone) {
+            ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
+            ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
+            slaveKnob->clone(this,dimChanged);
+        }
+        
+        slaveKnob->evaluateValueChange(dimChanged, time, Natron::eValueChangedReasonSlaveRefresh);
+        
+        //call recursively
+        slaveKnob->refreshListenersAfterValueChange(dimChanged);
+        
+    } // for all listeners
 }
+
 
 void
 KnobHelper::cloneExpressions(KnobI* other,int dimension)
@@ -2981,14 +2986,8 @@ KnobHelper::addListener(bool isExpression,int fromExprDimension,int thisDimensio
             }
         }
         
-        if (!isExpression) {
-            if (!alreadyListening) {
-                QObject::connect(_signalSlotHandler.get() , SIGNAL( updateSlaves(int,int) ),slave->_signalSlotHandler.get() , SLOT( onMasterChanged(int,int) ) );
-            }
-        } else {
-            if (!alreadyListening) {
-                QObject::connect(_signalSlotHandler.get() , SIGNAL( updateDependencies(int,int) ),slave->_signalSlotHandler.get() , SLOT( onExprDependencyChanged(int,int) ) );
-            }
+        if (isExpression) {
+            
             QMutexLocker k(&slave->_imp->expressionMutex);
             slave->_imp->expressions[fromExprDimension].dependencies.push_back(std::make_pair(this,thisDimension));
         }
@@ -3008,9 +3007,6 @@ KnobHelper::removeListener(KnobI* knob)
 {
     KnobHelper* other = dynamic_cast<KnobHelper*>(knob);
     assert(other);
-    if (other && other->_signalSlotHandler && _signalSlotHandler) {
-        QObject::disconnect( _signalSlotHandler.get(), SIGNAL( updateSlaves(int,int) ), other->_signalSlotHandler.get(), SLOT( onMasterChanged(int,int) ) );
-    }
     
     QWriteLocker l(&_imp->mastersMutex);
     for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
