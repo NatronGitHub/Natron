@@ -394,6 +394,8 @@ private:
                     ar & boost::serialization::make_nvp("name",name);
                     _pagesIndexes.push_back(name);
                 }
+            } else {
+                _pagesIndexes.push_back(NATRON_USER_MANAGED_KNOBS_PAGE);
             }
         }
         

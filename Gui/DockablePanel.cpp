@@ -1610,7 +1610,9 @@ DockablePanel::scanForNewKnobs()
         
         
         boost::shared_ptr<KnobPage> page = getUserPageKnob();
-        userPages.push_back(page.get());
+        if (page) {
+            userPages.push_back(page.get());
+        }
         for (std::list<KnobPage*>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
             PageMap::iterator foundPage = _imp->_pages.find((*it)->getLabel().c_str());
             if (foundPage != _imp->_pages.end()) {
@@ -1738,9 +1740,15 @@ struct ManageUserParamsDialogPrivate
 }
 
 boost::shared_ptr<KnobPage>
-DockablePanel::getUserPageKnob() const
+DockablePanel::getOrCreateUserPageKnob() const
 {
     return _imp->_holder->getOrCreateUserPageKnob();
+}
+
+boost::shared_ptr<KnobPage>
+DockablePanel::getUserPageKnob() const
+{
+    return _imp->_holder->getUserPageKnob();
 }
 
 void

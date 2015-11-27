@@ -182,6 +182,11 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
             if (isPage) {
                 _imp->pages.push_back(isPage);
                 _imp->destPageCombo->addItem(isPage->getName().c_str());
+            } else {
+                boost::shared_ptr<KnobGroup> isGrp = boost::dynamic_pointer_cast<KnobGroup>(knobs[i]);
+                if (isGrp) {
+                    _imp->groups.push_back(isGrp);
+                }
             }
         }
     }
@@ -209,6 +214,8 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     _imp->mainLayout->addWidget(_imp->useAliasCheckBox, 1, 1, 1, 1);
     _imp->mainLayout->addWidget(_imp->destPageLabel, 2, 0 , 1, 1);
     _imp->mainLayout->addWidget(_imp->destPageCombo, 2, 1 , 1, 1);
+    _imp->mainLayout->addWidget(_imp->groupLabel, 2, 2 , 1, 1);
+    _imp->mainLayout->addWidget(_imp->groupCombo, 2, 3 , 1, 1);
     _imp->mainLayout->addWidget(_imp->buttons, 3, 0, 1, 3);
     
     QTimer::singleShot( 25, _imp->nodeSelectionCombo, SLOT( showCompleter() ) );

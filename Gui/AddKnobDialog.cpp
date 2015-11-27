@@ -877,20 +877,23 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         assert(topLvlPage);
         boost::shared_ptr<KnobI> parent = knob->getParentKnob();
         KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
-        _imp->parentGroup->addItem("-");
-        int idx = 1;
-        for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it, ++idx) {
-            KnobPage* page = (*it)->getTopLevelPage();
-            assert(page);
-            
-            ///add only grps whose parent page is the selected page
-            if (page == topLvlPage) {
-                _imp->parentGroup->addItem((*it)->getName().c_str());
-                if (isParentGrp && isParentGrp == *it) {
-                    _imp->parentGroup->setCurrentIndex(idx);
+        if (isParentGrp) {
+            for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
+                KnobPage* page = (*it)->getTopLevelPage();
+                assert(page);
+                
+                ///add only grps whose parent page is the selected page
+                if (isParentGrp == *it && page == topLvlPage) {
+                    for (int i = 0; i < _imp->parentGroup->count(); ++i) {
+                        if (_imp->parentGroup->itemText(i) == QString(isParentGrp->getName().c_str())) {
+                            _imp->parentGroup->setCurrentIndex(i);
+                            break;
+                        }
+                    }
+                    break;
                 }
+                
             }
-            
         }
     }
     
@@ -1397,6 +1400,9 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
     
     if (index != 16 && parentPage && !addedInGrp) {
         boost::shared_ptr<KnobPage> page = getSelectedPage();
+        if (!page) {
+            page = panel->getOrCreateUserPageKnob();
+        }
         if (page) {
             if (optionalGroupIndex != -1) {
                 page->insertKnob(optionalGroupIndex, knob);
@@ -1605,29 +1611,6 @@ AddKnobDialog::onOkClicked()
         _imp->createKnobFromSelection(index, oldIndexInParent);
         assert(_imp->knob);
         
-        //If startsNewLine is false, set the flag on the previous knob
-        bool startNewLine = _imp->startNewLineBox->isChecked();
-        boost::shared_ptr<KnobI> parentKnob = _imp->knob->getParentKnob();
-        if (parentKnob) {
-            KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>(parentKnob.get());
-            KnobPage* parentIsPage = dynamic_cast<KnobPage*>(parentKnob.get());
-            assert(parentIsGrp || parentIsPage);
-            std::vector<boost::shared_ptr<KnobI> > children;
-            if (parentIsGrp) {
-                children = parentIsGrp->getChildren();
-            } else if (parentIsPage) {
-                children = parentIsPage->getChildren();
-            }
-            for (U32 i = 0; i < children.size(); ++i) {
-                if (children[i] == _imp->knob) {
-                    if (i > 0) {
-                        children[i - 1]->setAddNewLine(startNewLine);
-                    }
-                    break;
-                }
-            }
-        }
-        
         
         if (_imp->originalKnobSerialization) {
             _imp->knob->clone(_imp->originalKnobSerialization->getKnob().get());
@@ -1647,22 +1630,10 @@ AddKnobDialog::onOkClicked()
     else {
         //Alias knobs can only have these properties changed
         assert(effect);
-        boost::shared_ptr<KnobPage> page;
-        if (_imp->parentPage) {
-            std::string selectedItem = _imp->parentPage->getCurrentIndexText().toStdString();
-            if (selectedItem == NATRON_USER_MANAGED_KNOBS_PAGE) {
-                boost::shared_ptr<KnobPage> userPage = _imp->panel->getUserPageKnob();
-                _imp->panel->setUserPageActiveIndex();
-                page = userPage;
-            } else {
-                for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
-                    if ((*it)->getName() == selectedItem) {
-                        page = *it;
-                        break;
-                    }
-                }
-                
-            }
+        boost::shared_ptr<KnobPage> page = _imp->getSelectedPage();
+        if (!page) {
+            page = _imp->panel->getOrCreateUserPageKnob();
+            _imp->panel->setUserPageActiveIndex();
         }
         KnobGroup* group = _imp->getSelectedGroup();
         boost::shared_ptr<KnobGroup> shrdGrp;
@@ -1677,7 +1648,30 @@ AddKnobDialog::onOkClicked()
                                                               stdName,
                                                               _imp->labelLineEdit->text().toStdString(),
                                                               _imp->tooltipArea->toPlainText().toStdString(),
-                                                              _imp->startNewLineBox->isChecked());
+                                                              false);
+    }
+    
+    //If startsNewLine is false, set the flag on the previous knob
+    bool startNewLine = _imp->startNewLineBox->isChecked();
+    boost::shared_ptr<KnobI> parentKnob = _imp->knob->getParentKnob();
+    if (parentKnob) {
+        KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>(parentKnob.get());
+        KnobPage* parentIsPage = dynamic_cast<KnobPage*>(parentKnob.get());
+        assert(parentIsGrp || parentIsPage);
+        std::vector<boost::shared_ptr<KnobI> > children;
+        if (parentIsGrp) {
+            children = parentIsGrp->getChildren();
+        } else if (parentIsPage) {
+            children = parentIsPage->getChildren();
+        }
+        for (U32 i = 0; i < children.size(); ++i) {
+            if (children[i] == _imp->knob) {
+                if (i > 0) {
+                    children[i - 1]->setAddNewLine(startNewLine);
+                }
+                break;
+            }
+        }
     }
     
     //Recover listeners expressions

@@ -667,7 +667,7 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,
                                                                newKnobName,
                                                                knob->getLabel(),
                                                                knob->getHintToolTip(),
-                                                               knob->isNewLineActivated());
+                                                               true);
     if (ret) {
         boost::shared_ptr<NodeGuiI> groupNodeGuiI = effect->getNode()->getNodeGui();
         NodeGui* groupNodeGui = dynamic_cast<NodeGui*>(groupNodeGuiI.get());

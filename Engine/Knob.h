@@ -990,7 +990,7 @@ public:
                                                            const std::string& newScriptName,
                                                            const std::string& newLabel,
                                                            const std::string& newToolTip,
-                                                           bool newStartLine) = 0;
+                                                           bool refreshParams) = 0;
     
     /**
      * @brief If a knob was created using createDuplicateOnNode(effect,true), this function will return true
@@ -1262,7 +1262,7 @@ public:
                                                            const std::string& newScriptName,
                                                            const std::string& newLabel,
                                                            const std::string& newToolTip,
-                                                           bool newStartLine) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                                           bool refreshParams) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual boost::shared_ptr<KnobI> getAliasMaster() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool setKnobAsAliasOfThis(const boost::shared_ptr<KnobI>& master, bool doAlias) OVERRIDE FINAL;
     
@@ -1969,6 +1969,8 @@ public:
     
     //////////////////////////////////////////////////////////////////////////////////////////
     boost::shared_ptr<KnobPage> getOrCreateUserPageKnob() ;
+    boost::shared_ptr<KnobPage> getUserPageKnob() const;
+    
     /**
      * @brief These functions below are dynamic in a sense that they can be called at any time (on the main-thread)
      * to create knobs on the fly. Their gui will be properly created. In order to notify the GUI that new parameters were

@@ -3143,7 +3143,7 @@ KnobHelper::createDuplicateOnNode(Natron::EffectInstance* effect,
                                   const std::string& newScriptName,
                                   const std::string& newLabel,
                                   const std::string& newToolTip,
-                                  bool newStartLine)
+                                  bool refreshParams)
 {
     ///find-out to which node that master knob belongs to
     if (!getHolder()->getApp()) {
@@ -3270,7 +3270,7 @@ KnobHelper::createDuplicateOnNode(Natron::EffectInstance* effect,
     }
     output->setEvaluateOnChange(getEvaluateOnChange());
     output->setHintToolTip(newToolTip);
-    output->setAddNewLine(newStartLine);
+    output->setAddNewLine(isNewLineActivated());
     if (group) {
         if (indexInParent == -1) {
             group->addKnob(output);
@@ -3317,7 +3317,9 @@ KnobHelper::createDuplicateOnNode(Natron::EffectInstance* effect,
     } else {
         setKnobAsAliasOfThis(output, true);
     }
-    effect->refreshKnobs();
+    if (refreshParams) {
+        effect->refreshKnobs();
+    }
     return output;
 }
 
@@ -3717,7 +3719,7 @@ KnobHolder::moveKnobOneStepDown(KnobI* knob)
 }
 
 boost::shared_ptr<KnobPage>
-KnobHolder::getOrCreateUserPageKnob() 
+KnobHolder::getUserPageKnob() const
 {
     {
         QMutexLocker k(&_imp->knobsMutex);
@@ -3727,19 +3729,21 @@ KnobHolder::getOrCreateUserPageKnob()
             }
         }
     }
-    boost::shared_ptr<KnobPage> ret = Natron::createKnob<KnobPage>(this,NATRON_USER_MANAGED_KNOBS_PAGE_LABEL,1,false);
+    return boost::shared_ptr<KnobPage>();
+}
+
+boost::shared_ptr<KnobPage>
+KnobHolder::getOrCreateUserPageKnob() 
+{
+    
+    boost::shared_ptr<KnobPage> ret = getUserPageKnob();
+    if (ret) {
+        return ret;
+    }
+    ret = Natron::createKnob<KnobPage>(this,NATRON_USER_MANAGED_KNOBS_PAGE_LABEL,1,false);
     ret->setAsUserKnob();
     ret->setName(NATRON_USER_MANAGED_KNOBS_PAGE);
     
-    
-    //make it the first page
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        if ((*it) == ret) {
-            _imp->knobs.erase(it);
-            break;
-        }
-    }
-    _imp->knobs.insert(_imp->knobs.begin(), ret);
     
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
