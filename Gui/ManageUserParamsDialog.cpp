@@ -712,6 +712,9 @@ ManageUserParamsDialog::onItemDoubleClicked(QTreeWidgetItem *item, int /*column*
     if (item) {
         selection.push_back(item);
     }
+    if (!_imp->editButton->isEnabled()) {
+        return;
+    }
     onEditClickedInternal(selection);
 }
 
