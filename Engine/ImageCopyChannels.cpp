@@ -245,8 +245,8 @@ Image::copyUnProcessedChannelsForPremult(bool doR, bool doG, bool doB, bool doA,
 #             endif
             }
             if (doA) {
-                if (premult) {
 #ifdef            NATRON_COPY_CHANNELS_UNPREMULT
+                if (premult) {
                     if (dstAorig != 0) {
                         // unpremult, then premult
                         if (dstNComps >= 2 && !doR) {
