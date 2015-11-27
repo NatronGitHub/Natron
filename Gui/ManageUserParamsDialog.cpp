@@ -138,10 +138,17 @@ struct ManageUserParamsDialogPrivate
     
 };
 
-ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,QWidget* parent)
+ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel, QWidget* parent)
 : QDialog(parent)
 , _imp(new ManageUserParamsDialogPrivate(panel))
 {
+    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(panel->getHolder());
+    QString title = "User Parameters";
+    if (effect) {
+        title += " for ";
+        title += effect->getScriptName().c_str();
+    }
+    setWindowTitle(title);
     _imp->mainLayout = new QHBoxLayout(this);
     
     _imp->tree = new UserParamsDialogTreeWidget(this);
