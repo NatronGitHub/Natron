@@ -851,6 +851,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     }
     _imp->parentPage->setToolTip(Natron::convertFromPlainText(tr("The tab under which this parameter will appear."), Qt::WhiteSpaceNormal));
     optLayout->addWidget(_imp->parentPage);
+    
+    bool pageIndexLoaded = false;
     if (knob) {
         ////find in which page the knob should be
         KnobPage* isTopLevelParentAPage = knob->getTopLevelPage();
@@ -866,6 +868,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
             }
             if (found) {
                 _imp->parentPage->setCurrentIndex(index);
+                pageIndexLoaded = true;
             }
         }
         
@@ -873,8 +876,9 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     }
     
     _imp->mainLayout->addRow(_imp->parentPageLabel, optContainer);
-    onPageCurrentIndexChanged(0);
-    
+    if (!pageIndexLoaded) {
+        onPageCurrentIndexChanged(0);
+    }
     if (_imp->parentGroup && knob) {
         KnobPage* topLvlPage = knob->getTopLevelPage();
         assert(topLvlPage);
