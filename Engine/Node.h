@@ -1097,7 +1097,9 @@ private:
     
     bool refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
     
-    void setNameInternal(const std::string& name);
+    void setNameInternal(const std::string& name, bool throwErrors);
+    
+    std::string getFullyQualifiedNameInternal(const std::string& scriptName) const;
     
     void s_outputLayerChanged() { Q_EMIT outputLayerChanged(); }
 

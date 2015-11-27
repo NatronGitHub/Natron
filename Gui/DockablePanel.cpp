@@ -1650,7 +1650,9 @@ DockablePanel::scanForNewKnobs()
         }
         for (std::list<KnobPage*>::iterator it = pages.begin(); it!=pages.end(); ++it) {
             PageMap::iterator foundPage = _imp->_pages.find((*it)->getLabel().c_str());
-            orderedPages.push_back(std::make_pair(foundPage->second.tab,foundPage->first));
+            if (foundPage != _imp->_pages.end()) {
+                orderedPages.push_back(std::make_pair(foundPage->second.tab,foundPage->first));
+            }
         }
         
         QString curTabName = _imp->_tabWidget->tabText(_imp->_tabWidget->currentIndex());

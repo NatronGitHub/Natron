@@ -1384,7 +1384,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
     
     
     knob->setSecretByDefault(hideBox->isChecked());
-    knob->setName(nameLineEdit->text().toStdString());
+    knob->setName(nameLineEdit->text().toStdString(), true);
     knob->setHintToolTip(tooltipArea->toPlainText().toStdString());
     bool addedInGrp = false;
     KnobGroup* selectedGrp = getSelectedGroup();
@@ -1608,7 +1608,12 @@ AddKnobDialog::onOkClicked()
     
     
     if (!_imp->isKnobAlias) {
-        _imp->createKnobFromSelection(index, oldIndexInParent);
+        try {
+            _imp->createKnobFromSelection(index, oldIndexInParent);
+        }   catch (const std::exception& e) {
+            Natron::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
+            return;
+        }
         assert(_imp->knob);
         
         
@@ -1640,15 +1645,21 @@ AddKnobDialog::onOkClicked()
         if (group) {
             shrdGrp = boost::dynamic_pointer_cast<KnobGroup>(group->shared_from_this());
         }
-        _imp->knob = _imp->isKnobAlias->createDuplicateOnNode(effect,
-                                                              page,
-                                                              shrdGrp,
-                                                              oldIndexInParent,
-                                                              true,
-                                                              stdName,
-                                                              _imp->labelLineEdit->text().toStdString(),
-                                                              _imp->tooltipArea->toPlainText().toStdString(),
-                                                              false);
+        
+        try {
+            _imp->knob = _imp->isKnobAlias->createDuplicateOnNode(effect,
+                                                                  page,
+                                                                  shrdGrp,
+                                                                  oldIndexInParent,
+                                                                  true,
+                                                                  stdName,
+                                                                  _imp->labelLineEdit->text().toStdString(),
+                                                                  _imp->tooltipArea->toPlainText().toStdString(),
+                                                                  false);
+        } catch (const std::exception& e) {
+            Natron::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
+            return;
+        }
     }
     
     //If startsNewLine is false, set the flag on the previous knob

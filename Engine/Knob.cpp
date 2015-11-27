@@ -2223,7 +2223,7 @@ KnobHelper::isAnimationEnabled() const
 }
 
 void
-KnobHelper::setName(const std::string & name)
+KnobHelper::setName(const std::string & name,bool throwExceptions)
 {
     _imp->originalName = name;
     _imp->name = Natron::makeNameScriptFriendly(name);
@@ -2250,6 +2250,34 @@ KnobHelper::setName(const std::string & name)
         }
         ++no;
     } while (foundItem);
+    
+    
+    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_imp->holder);
+    if (effect) {
+        NodePtr node = effect->getNode();
+        std::string effectScriptName = node->getScriptName_mt_safe();
+        if (!effectScriptName.empty()) {
+            std::string newPotentialQualifiedName = node->getFullyQualifiedName();
+            newPotentialQualifiedName += '.';
+            newPotentialQualifiedName += finalName;
+            
+            bool isAttrDefined = false;
+            (void)Natron::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
+            if (isAttrDefined) {
+                std::stringstream ss;
+                ss << "A Python attribute with the same name (" << newPotentialQualifiedName << ") already exists.";
+                if (throwExceptions) {
+                    throw std::runtime_error(ss.str());
+                } else {
+                    std::string err = ss.str();
+                    appPTR->writeToOfxLog_mt_safe(err.c_str());
+                    std::cerr << err << std::endl;
+                    return;
+                }
+            }
+            
+        }
+    }
     _imp->name = finalName;
 }
 
@@ -2834,15 +2862,20 @@ KnobHelper::onMasterChanged(KnobI* master,
         QReadLocker l(&_imp->mastersMutex);
         masters = _imp->masters;
     }
+    KnobHolder* holder = getHolder();
     for (U32 i = 0; i < masters.size(); ++i) {
         if (masters[i].second.get() == master && masters[i].first == masterDimension) {
             
             if (getExpression(i).empty()) {
                 ///We still want to clone the master's dimension because otherwise we couldn't edit the curve e.g in the curve editor
                 ///For example we use it for roto knobs where selected beziers have their knobs slaved to the gui knobs
-                clone(master,i);
-                
-                evaluateValueChange(i, getCurrentTime(),Natron::eValueChangedReasonSlaveRefresh);
+                if (holder && !holder->isSetValueCurrentlyPossible()) {
+                    holder->abortAnyEvaluation();
+                } else {
+                    clone(master,i);
+                    
+                    evaluateValueChange(i, getCurrentTime(),Natron::eValueChangedReasonSlaveRefresh);
+                }
             }
             
             return;
@@ -3261,7 +3294,7 @@ KnobHelper::createDuplicateOnNode(Natron::EffectInstance* effect,
         return boost::shared_ptr<KnobI>();
     }
     
-    output->setName(newScriptName);
+    output->setName(newScriptName, true);
     output->setAsUserKnob();
     output->cloneDefaultValues(this);
     output->clone(this);

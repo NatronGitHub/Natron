@@ -540,6 +540,9 @@ struct Node::Implementation
     
 };
 
+
+
+
 /**
  *@brief Actually converting to ARGB... but it is called BGRA by
  the texture format GL_UNSIGNED_INT_8_8_8_8_REV
@@ -734,7 +737,7 @@ Node::load(const std::string & parentMultiInstanceName,
             } catch (...) {
                 
             }
-            setNameInternal(name.c_str());
+            setNameInternal(name.c_str(), false);
             nameSet = true;
         } else {
             try {
@@ -1322,7 +1325,7 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
     
     ///If the node is a group, call it on all nodes in the group
     ///Also force a change to their hash
-    NodeGroup* group = dynamic_cast<NodeGroup*>(getLiveInstance());
+    /*NodeGroup* group = dynamic_cast<NodeGroup*>(getLiveInstance());
     if (group) {
         NodeList nodes = group->getNodes();
         for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -1331,7 +1334,7 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
             (*it)->computeHashInternal(marked);
         }
     }
-
+*/
 }
 
 void
@@ -2320,9 +2323,9 @@ static void prependGroupNameRecursive(const boost::shared_ptr<Natron::Node>& gro
 }
 
 std::string
-Node::getFullyQualifiedName() const
+Node::getFullyQualifiedNameInternal(const std::string& scriptName) const
 {
-    std::string ret = getScriptName_mt_safe();
+    std::string ret = scriptName;
     NodePtr parent = getParentMultiInstance();
     if (parent) {
         prependGroupNameRecursive(parent, ret);
@@ -2334,6 +2337,13 @@ Node::getFullyQualifiedName() const
         }
     }
     return ret;
+
+}
+
+std::string
+Node::getFullyQualifiedName() const
+{
+    return getFullyQualifiedNameInternal(getScriptName_mt_safe());
 }
 
 void
@@ -2377,12 +2387,12 @@ Node::getLabel_mt_safe() const
 void
 Node::setScriptName_no_error_check(const std::string & name)
 {
-    setNameInternal(name);
+    setNameInternal(name, false);
 }
 
 
 void
-Node::setNameInternal(const std::string& name)
+Node::setNameInternal(const std::string& name, bool throwErrors)
 {
     std::string oldName = getScriptName_mt_safe();
     std::string fullOldName = getFullyQualifiedName();
@@ -2390,10 +2400,31 @@ Node::setNameInternal(const std::string& name)
     
     boost::shared_ptr<NodeCollection> collection = getGroup();
     if (collection) {
-        try {
+        if (throwErrors) {
+            try {
+                collection->setNodeName(name,false, false, &newName);
+            } catch (const std::exception& e) {
+                appPTR->writeToOfxLog_mt_safe(e.what());
+                std::cerr << e.what() << std::endl;
+                return;
+            }
+        } else {
             collection->setNodeName(name,false, false, &newName);
-        } catch (const std::exception& e) {
-            appPTR->writeToOfxLog_mt_safe(e.what());
+        }
+    }
+    
+    bool isAttrDefined = false;
+    std::string newPotentialQualifiedName = getFullyQualifiedNameInternal(newName);
+    (void)Natron::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
+    if (isAttrDefined) {
+        std::stringstream ss;
+        ss << "A Python attribute with the same name (" << newPotentialQualifiedName << ") already exists.";
+        if (throwErrors) {
+            throw std::runtime_error(ss.str());
+        } else {
+            std::string err = ss.str();
+            appPTR->writeToOfxLog_mt_safe(err.c_str());
+            std::cerr << err << std::endl;
             return;
         }
     }
@@ -2460,7 +2491,7 @@ Node::setScriptName(const std::string& name)
     }
     
     
-    setNameInternal(newName);
+    setNameInternal(newName, true);
 }
 
 
@@ -7655,41 +7686,6 @@ Node::getAttachedRotoItem() const
     return _imp->paintStroke.lock();
 }
 
-/**
- * @brief Given a fullyQualifiedName, e.g: app1.Group1.Blur1
- * this function returns the PyObject attribute of Blur1 if it is defined, or Group1 otherwise
- * If app1 or Group1 does not exist at this point, this is a failure.
- **/
-static PyObject* getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined)
-{
-    std::size_t foundDot = fullyQualifiedName.find(".");
-    std::string attrName = foundDot == std::string::npos ? fullyQualifiedName : fullyQualifiedName.substr(0, foundDot);
-    PyObject* obj = 0;
-    if (PyObject_HasAttrString(parentObj, attrName.c_str())) {
-        obj = PyObject_GetAttrString(parentObj, attrName.c_str());
-    }
-    
-    ///We either found the parent object or we are on the last object in which case we return the parent
-    if (!obj) {
-        assert(fullyQualifiedName.find(".") == std::string::npos);
-        *isDefined = false;
-        return parentObj;
-    } else {
-        assert(obj);
-        std::string recurseName;
-        if (foundDot != std::string::npos) {
-            recurseName = fullyQualifiedName;
-            recurseName.erase(0, foundDot + 1);
-        }
-        if (!recurseName.empty()) {
-            return getAttrRecursive(recurseName, obj, isDefined);
-        } else {
-            *isDefined = true;
-            return obj;
-        }
-    }
-    
-}
 
 
 void
@@ -7710,7 +7706,7 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
     
     std::string nodeFullName = appID + "." + nodeName;
     bool alreadyDefined = false;
-    PyObject* nodeObj = getAttrRecursive(nodeFullName, mainModule, &alreadyDefined);
+    PyObject* nodeObj = Natron::getAttrRecursive(nodeFullName, mainModule, &alreadyDefined);
     assert(nodeObj);
     Q_UNUSED(nodeObj);
 
@@ -7793,7 +7789,7 @@ Node::declarePythonFields()
     bool alreadyDefined = false;
     
     std::string nodeFullName = appID + "." + nodeName;
-    PyObject* nodeObj = getAttrRecursive(nodeFullName, getMainModule(), &alreadyDefined);
+    PyObject* nodeObj = Natron::getAttrRecursive(nodeFullName, getMainModule(), &alreadyDefined);
     assert(nodeObj);
     Q_UNUSED(nodeObj);
     if (!alreadyDefined) {
@@ -7824,7 +7820,7 @@ Node::removeParameterFromPython(const std::string& parameterName)
     std::string nodeFullName = appID + "." + nodeName;
     bool alreadyDefined = false;
     
-    PyObject* nodeObj = getAttrRecursive(nodeFullName, getMainModule(), &alreadyDefined);
+    PyObject* nodeObj = Natron::getAttrRecursive(nodeFullName, getMainModule(), &alreadyDefined);
     assert(nodeObj);
     Q_UNUSED(nodeObj);
     if (!alreadyDefined) {

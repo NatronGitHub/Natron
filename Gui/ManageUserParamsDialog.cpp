@@ -342,12 +342,15 @@ ManageUserParamsDialog::onPickClicked()
         NodePtr node = nodeGui->getNode();
         assert(node);
         boost::shared_ptr<KnobI> duplicate = selectedKnob->createDuplicateOnNode(node->getLiveInstance(), useAlias, page, group, -1);
-        if (!hadUserPage) {
-            _imp->createUserPageItem();
-        }
-        _imp->createItemForKnob(duplicate);
+        if (duplicate) {
+
+            if (!hadUserPage) {
+                _imp->createUserPageItem();
+            }
+            _imp->createItemForKnob(duplicate);
         
-        _imp->saveAndRebuildPages();
+            _imp->saveAndRebuildPages();
+        }
     }
 }
 

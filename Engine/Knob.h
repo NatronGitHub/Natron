@@ -809,7 +809,7 @@ public:
      * the GUI but what Natron uses internally to identify knobs from each other. By default the
      * name is the same as the getLabel(i.e: the text label).
      */
-    virtual void setName(const std::string & name) = 0;
+    virtual void setName(const std::string & name, bool throwExceptions = false) = 0;
 
     /**
      * @brief Returns the knob name. By default the
@@ -1218,7 +1218,7 @@ public:
     virtual bool getDefaultIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setIsFrozen(bool frozen) OVERRIDE FINAL;
     virtual void setDirty(bool d) OVERRIDE FINAL;
-    virtual void setName(const std::string & name) OVERRIDE FINAL;
+    virtual void setName(const std::string & name,bool throwExceptions = false) OVERRIDE FINAL;
     virtual const std::string & getName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::string & getOriginalName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setParentKnob(boost::shared_ptr<KnobI> knob) OVERRIDE FINAL;

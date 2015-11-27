@@ -3308,4 +3308,40 @@ void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vect
     }
 }
     
+/**
+ * @brief Given a fullyQualifiedName, e.g: app1.Group1.Blur1
+ * this function returns the PyObject attribute of Blur1 if it is defined, or Group1 otherwise
+ * If app1 or Group1 does not exist at this point, this is a failure.
+ **/
+PyObject*
+getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined)
+{
+    std::size_t foundDot = fullyQualifiedName.find(".");
+    std::string attrName = foundDot == std::string::npos ? fullyQualifiedName : fullyQualifiedName.substr(0, foundDot);
+    PyObject* obj = 0;
+    if (PyObject_HasAttrString(parentObj, attrName.c_str())) {
+        obj = PyObject_GetAttrString(parentObj, attrName.c_str());
+    }
+    
+    ///We either found the parent object or we are on the last object in which case we return the parent
+    if (!obj) {
+        //assert(fullyQualifiedName.find(".") == std::string::npos);
+        *isDefined = false;
+        return parentObj;
+    } else {
+        std::string recurseName;
+        if (foundDot != std::string::npos) {
+            recurseName = fullyQualifiedName;
+            recurseName.erase(0, foundDot + 1);
+        }
+        if (!recurseName.empty()) {
+            return getAttrRecursive(recurseName, obj, isDefined);
+        } else {
+            *isDefined = true;
+            return obj;
+        }
+    }
+    
+}
+
 } //Namespace Natron

@@ -895,12 +895,14 @@ Settings::initializeKnobsNodeGraph()
     _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
     
     _usePluginIconsInNodeGraph = Natron::createKnob<KnobBool>(this, "Display plug-in icon on node-graph");
+    _usePluginIconsInNodeGraph->setName("usePluginIcons");
     _usePluginIconsInNodeGraph->setHintToolTip("When checked, each node that has a plug-in icon will display it in the node-graph."
                                                "Changing this option will not affect already existing nodes, unless a restart of Natron is made.");
     _usePluginIconsInNodeGraph->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_usePluginIconsInNodeGraph);
     
     _useAntiAliasing = Natron::createKnob<KnobBool>(this, "Anti-Aliasing");
+    _useAntiAliasing->setName("antiAliasing");
     _useAntiAliasing->setHintToolTip("When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances."
                                      " Changing this requires a restart of Natron");
     _useAntiAliasing->setAnimationEnabled(false);
