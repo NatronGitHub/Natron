@@ -189,7 +189,7 @@ public:
     QString getLockAbsoluteFilePath() const;
     void createLockFile();
     void removeLockFile();
-    bool getLockFileInfos(const QString& projectPath,const QString& projectName,QString* authorName,QString* lastSaveDate,qint64* appPID) const;
+    bool getLockFileInfos(const QString& projectPath, const QString& projectName, QString* authorName, QString* lastSaveDate, QString* host, qint64* appPID) const;
     
     virtual bool isProject() const OVERRIDE
     {

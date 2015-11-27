@@ -565,14 +565,21 @@ bool
 GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,const QString& projectName)
 {
     boost::shared_ptr<Natron::Project> project= _appInstance->getProject();
-    QString author,lockCreationDate;
+    QString author;
+    QString lockCreationDate;
+    QString lockHost;
     qint64 lockPID;
-    if (project->getLockFileInfos(projectPath,projectName,&author, &lockCreationDate, &lockPID)) {
+    if (project->getLockFileInfos(projectPath, projectName, &author, &lockCreationDate, &lockHost, &lockPID)) {
         if (lockPID != QCoreApplication::applicationPid()) {
             Natron::StandardButtonEnum rep = Natron::questionDialog(QObject::tr("Project").toStdString(),
-                                                                    QObject::tr("This project is already opened in another instance of Natron by ").toStdString() +
-                                                                    author.toStdString() + QObject::tr(" and was opened on ").toStdString() + lockCreationDate.toStdString()
-                                                                    + QObject::tr(" by a Natron process ID of ").toStdString() + QString::number(lockPID).toStdString() + QObject::tr(".\nContinue anyway?").toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo));
+                                                                    QObject::tr("This project may be open in another instance of Natron "
+                                                                                "running on %1 as process ID %2, "
+                                                                                "and was opened by %3 on %4.\nContinue anyway?").arg(lockHost,
+                                                                                                                                     QString::number(lockPID),
+                                                                                                                                     author,
+                                                                                                                                     lockCreationDate).toStdString(),
+                                                                    false,
+                                                                    Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo));
             if (rep == Natron::eStandardButtonYes) {
                 return true;
             } else {

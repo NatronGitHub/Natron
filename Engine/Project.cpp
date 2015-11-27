@@ -1398,7 +1398,8 @@ Project::createLockFile()
     QString curDateStr = now.toString();
     ts << curDateStr << '\n'
     << lastAuthor << '\n'
-    << QCoreApplication::applicationPid();
+    << QCoreApplication::applicationPid() << '\n'
+    << QHostInfo::localHostName();
 }
     
 void
@@ -1411,7 +1412,12 @@ Project::removeLockFile()
 }
     
 bool
-Project::getLockFileInfos(const QString& projectPath,const QString& projectName,QString* authorName,QString* lastSaveDate,qint64* appPID) const
+Project::getLockFileInfos(const QString& projectPath,
+                          const QString& projectName,
+                          QString* authorName,
+                          QString* lastSaveDate,
+                          QString* host,
+                          qint64* appPID) const
 {
     QString realPath = projectPath;
     if (!realPath.endsWith('/')) {
@@ -1438,6 +1444,12 @@ Project::getLockFileInfos(const QString& projectPath,const QString& projectName,
         *appPID = pidstr.toLongLong();
     } else {
         return false;
+    }
+    // host is optional and was added later
+    if (!ts.atEnd()) {
+        *host = ts.readLine();
+    } else {
+        *host = tr("unknown host");
     }
     return true;
 }
@@ -1528,9 +1540,11 @@ Project::reset(bool aboutToQuit)
     QString projectFilename(_imp->getProjectFilename().c_str());
     ///Remove the lock file if we own it
     if (QFile::exists(lockFilePath)) {
-        QString author,lastsave;
+        QString author;
+        QString lastsave;
+        QString host;
         qint64 pid;
-        if (getLockFileInfos(projectPath, projectFilename, &author, &lastsave, &pid)) {
+        if (getLockFileInfos(projectPath, projectFilename, &author, &lastsave, &host, &pid)) {
             if (pid == QCoreApplication::applicationPid()) {
                 QFile::remove(lockFilePath);
             }

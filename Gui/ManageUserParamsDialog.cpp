@@ -474,10 +474,8 @@ ManageUserParamsDialog::onEditClickedInternal(const QList<QTreeWidgetItem*> &sel
         for (int i = 0; i < selection.size(); ++i) {
             for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
                 if (it->item == selection[i]) {
-
-                    AddKnobDialog dialog(_imp->panel,it->knob,this);
+                    AddKnobDialog dialog(_imp->panel, it->knob, this);
                     if (dialog.exec()) {
-                        
                         int indexIndParent = -1;
                         QTreeWidgetItem* parent = it->item->parent();
                         if (parent) {
@@ -514,10 +512,8 @@ ManageUserParamsDialog::keyPressEvent(QKeyEvent* e)
 void
 ManageUserParamsDialog::onEditClicked()
 {
-    
     QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
     onEditClickedInternal(selection);
-    
 }
 
 void
