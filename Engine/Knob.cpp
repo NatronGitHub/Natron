@@ -3544,7 +3544,8 @@ void
 KnobHolder::removeKnobFromList(const KnobI* knob)
 {
     QMutexLocker kk(&_imp->knobsMutex);
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
+
+    for (std::vector<boost::shared_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
         if (it->get() == knob) {
             _imp->knobs.erase(it);
             return;
