@@ -3457,12 +3457,14 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
         }
 
         if (doHeuristicForPassThrough) {
-            getNonMaskInputsAvailableComponents(time, view, false, comps, markedNodes);
-        } else {
-            if (ptInput) {
-                ptInput->getLiveInstance()->getComponentsAvailableRecursive(useLayerChoice, time, view, comps, markedNodes);
-            }
+            ptInput = node->getInput(node->getPreferredInput());
+            //getNonMaskInputsAvailableComponents(time, view, false, comps, markedNodes);
         }
+        //else {
+        if (ptInput) {
+            ptInput->getLiveInstance()->getComponentsAvailableRecursive(useLayerChoice, time, view, comps, markedNodes);
+        }
+        //}
     }
     if (processAll) {
         //The node makes available everything available upstream
