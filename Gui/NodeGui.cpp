@@ -1548,7 +1548,8 @@ NodeGui::setUserSelected(bool b)
 bool
 NodeGui::getIsSelected() const
 {
-    QMutexLocker l(&_selectedMutex); return _selected;
+    QMutexLocker l(&_selectedMutex);
+    return _selected;
 }
 
 

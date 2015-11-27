@@ -1149,22 +1149,26 @@ public:
 
     std::size_t getMaximumSize() const
     {
-        QMutexLocker k(&_sizeLock); return _maximumCacheSize;
+        QMutexLocker k(&_sizeLock);
+        return _maximumCacheSize;
     }
 
     std::size_t getMaximumMemorySize() const
     {
-        QMutexLocker k(&_sizeLock); return _maximumInMemorySize;
+        QMutexLocker k(&_sizeLock);
+        return _maximumInMemorySize;
     }
 
     std::size_t getMemoryCacheSize() const
     {
-        QMutexLocker k(&_sizeLock); return _memoryCacheSize;
+        QMutexLocker k(&_sizeLock);
+        return _memoryCacheSize;
     }
 
     std::size_t getDiskCacheSize() const
     {
-        QMutexLocker k(&_sizeLock); return _diskCacheSize;
+        QMutexLocker k(&_sizeLock);
+        return _diskCacheSize;
     }
 
     CacheSignalEmitter* activateSignalEmitter() const

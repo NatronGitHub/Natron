@@ -131,7 +131,8 @@ ToolButton::hasChildren() const
 QMenu*
 ToolButton::getMenu() const
 {
-    assert(_imp->_menu); return _imp->_menu;
+    assert(_imp->_menu);
+    return _imp->_menu;
 }
 
 void

@@ -1193,7 +1193,8 @@ DockablePanel::getUndoStack() const
 bool
 DockablePanel::isClosed() const
 {
-    QMutexLocker l(&_imp->_isClosedMutex); return _imp->_isClosed;
+    QMutexLocker l(&_imp->_isClosedMutex);
+    return _imp->_isClosed;
 }
 
 bool
