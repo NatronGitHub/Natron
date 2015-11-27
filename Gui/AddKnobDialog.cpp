@@ -309,14 +309,37 @@ static int getChoiceIndexFromKnobType(KnobI* knob)
     return -1;
 }
 
-AddKnobDialog::AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>& knob,QWidget* parent)
+AddKnobDialog::AddKnobDialog(DockablePanel* panel,
+                             const boost::shared_ptr<KnobI>& knob,
+                             QWidget* parent)
 : QDialog(parent)
 , _imp(new AddKnobDialogPrivate(panel))
 {
     
     _imp->knob = knob;
     assert(!knob || knob->isUserKnob());
-    
+
+    {
+        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(panel->getHolder());
+        QString title = "Add Parameter";
+        if (!knob) {
+            // Add...
+            if (effect) {
+                title += " to ";
+                title += effect->getScriptName().c_str();
+            }
+        } else {
+            // Edit...
+            title = "Edit Parameter ";
+            if (effect) {
+                title += effect->getScriptName().c_str();
+                title += '.';
+            }
+            title += knob->getName().c_str();
+        }
+        setWindowTitle(title);
+    }
+
     //QFont font(NATRON_FONT,NATRON_FONT_SIZE_11);
     
     _imp->vLayout = new QVBoxLayout(this);
