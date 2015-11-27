@@ -248,8 +248,6 @@ public:
     ///Should set to the underlying knob the gui ptr
     virtual void setKnobGuiPointer() OVERRIDE FINAL;
     
-    virtual void onKnobDeletion() OVERRIDE FINAL;
-
     virtual bool isGuiFrozenForPlayback() const OVERRIDE FINAL;
 
     virtual void copyAnimationToClipboard() const OVERRIDE FINAL;

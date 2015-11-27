@@ -474,10 +474,10 @@ ManageUserParamsDialog::onDeleteClicked()
                     _imp->items.erase(it);
                     
                     boost::shared_ptr<KnobPage> userPage = _imp->panel->getUserPageKnob();
-                    if (userPage->getChildren().empty()) {
+                    if (userPage && userPage->getChildren().empty()) {
                         userPage->getHolder()->removeDynamicKnob(userPage.get());
                     }
-                    _imp->panel->getGui()->getApp()->triggerAutoSave();
+                    _imp->saveAndRebuildPages();
                     break;
                 }
             }

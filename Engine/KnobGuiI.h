@@ -52,7 +52,6 @@ public:
     virtual void restoreOpenGLContext() = 0;
     virtual unsigned int getCurrentRenderScale() const { return 0; }
     virtual boost::shared_ptr<Curve> getCurve(int dimension) const = 0;
-    virtual void onKnobDeletion() = 0;
 protected:
 
     ///Should set to the underlying knob the gui ptr

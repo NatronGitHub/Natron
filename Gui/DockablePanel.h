@@ -162,7 +162,7 @@ public:
     
     void getUserPages(std::list<KnobPage*>& userPages) const;
     
-    void deleteKnobGui(const boost::shared_ptr<KnobI>& knob);
+    virtual void deleteKnobGui(const boost::shared_ptr<KnobI>& knob) OVERRIDE FINAL;
     
     int getPagesCount() const;
         

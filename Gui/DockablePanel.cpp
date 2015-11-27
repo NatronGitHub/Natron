@@ -1614,14 +1614,7 @@ DockablePanel::scanForNewKnobs()
             userPages.push_back(page.get());
         }
         for (std::list<KnobPage*>::iterator it = userPages.begin(); it != userPages.end(); ++it) {
-            PageMap::iterator foundPage = _imp->_pages.find((*it)->getLabel().c_str());
-            if (foundPage != _imp->_pages.end()) {
-                foundPage->second.currentRow = 0;
-                std::vector<boost::shared_ptr<KnobI> > children = (*it)->getChildren();
-                for (std::vector<boost::shared_ptr<KnobI> >::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                    deleteKnobGui(*it2);
-                }
-            }
+            deleteKnobGui((*it)->shared_from_this());
         }
         
     } else {
@@ -1649,10 +1642,17 @@ DockablePanel::scanForNewKnobs()
             }
         }
         for (std::list<KnobPage*>::iterator it = pages.begin(); it!=pages.end(); ++it) {
+            
             PageMap::iterator foundPage = _imp->_pages.find((*it)->getLabel().c_str());
             if (foundPage != _imp->_pages.end()) {
-                orderedPages.push_back(std::make_pair(foundPage->second.tab,foundPage->first));
+                if ((*it)->getChildren().size() > 0) {
+                    foundPage->second.tab->show();
+                    orderedPages.push_back(std::make_pair(foundPage->second.tab,foundPage->first));
+                } else {
+                    foundPage->second.tab->hide();
+                }
             }
+            
         }
         
         QString curTabName = _imp->_tabWidget->tabText(_imp->_tabWidget->currentIndex());

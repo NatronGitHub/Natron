@@ -467,10 +467,7 @@ KnobHelper::deleteKnob()
             _imp->holder->removeDynamicKnob(it->get());
         }
     }
-    if (_imp->gui) {
-        _imp->gui->onKnobDeletion();
-    }
-    
+   
     KnobHolder* holder = getHolder();
     if (holder) {
         Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
@@ -3586,9 +3583,12 @@ KnobHolder::removeDynamicKnob(KnobI* knob)
         QMutexLocker k(&_imp->knobsMutex);
         knobs = _imp->knobs;
     }
+    
+    boost::shared_ptr<KnobI> sharedKnob;
     for (std::vector<boost::shared_ptr<KnobI> >::iterator it = knobs.begin(); it != knobs.end(); ++it) {
         if (it->get() == knob && (*it)->isDynamicallyCreated()) {
             (*it)->deleteKnob();
+            sharedKnob = *it;
             break;
         }
     }
@@ -3602,6 +3602,11 @@ KnobHolder::removeDynamicKnob(KnobI* knob)
             }
         }
     }
+    
+    if (_imp->settingsPanel) {
+        _imp->settingsPanel->deleteKnobGui(sharedKnob);
+    }
+    
     
 }
 
@@ -3792,8 +3797,8 @@ KnobHolder::createIntKnob(const std::string& name, const std::string& label,int 
     boost::shared_ptr<KnobInt> ret = Natron::createKnob<KnobInt>(this,label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);
+    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    Q_UNUSED(pageknob);*/
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
@@ -3811,8 +3816,8 @@ KnobHolder::createDoubleKnob(const std::string& name, const std::string& label,i
     boost::shared_ptr<KnobDouble> ret = Natron::createKnob<KnobDouble>(this,label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);
+    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    Q_UNUSED(pageknob);*/
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
@@ -3830,8 +3835,8 @@ KnobHolder::createColorKnob(const std::string& name, const std::string& label,in
     boost::shared_ptr<KnobColor> ret = Natron::createKnob<KnobColor>(this,label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);
+    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    Q_UNUSED(pageknob);*/
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
@@ -3849,8 +3854,8 @@ KnobHolder::createBoolKnob(const std::string& name, const std::string& label)
     boost::shared_ptr<KnobBool> ret = Natron::createKnob<KnobBool>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);
+    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    Q_UNUSED(pageknob);*/
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
@@ -3868,8 +3873,8 @@ KnobHolder::createChoiceKnob(const std::string& name, const std::string& label)
     boost::shared_ptr<KnobChoice> ret = Natron::createKnob<KnobChoice>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);
+    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    Q_UNUSED(pageknob);*/
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
@@ -3887,8 +3892,8 @@ KnobHolder::createButtonKnob(const std::string& name, const std::string& label)
     boost::shared_ptr<KnobButton> ret = Natron::createKnob<KnobButton>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);
+    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    Q_UNUSED(pageknob);*/
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
@@ -3907,8 +3912,8 @@ KnobHolder::createStringKnob(const std::string& name, const std::string& label)
     boost::shared_ptr<KnobString> ret = Natron::createKnob<KnobString>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);
+    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    Q_UNUSED(pageknob);*/
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
@@ -3927,8 +3932,8 @@ KnobHolder::createFileKnob(const std::string& name, const std::string& label)
     boost::shared_ptr<KnobFile> ret = Natron::createKnob<KnobFile>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);
+    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    Q_UNUSED(pageknob);*/
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
@@ -3946,8 +3951,8 @@ KnobHolder::createOuptutFileKnob(const std::string& name, const std::string& lab
     boost::shared_ptr<KnobOutputFile> ret = Natron::createKnob<KnobOutputFile>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);
+    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    Q_UNUSED(pageknob);*/
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
@@ -3966,8 +3971,8 @@ KnobHolder::createPathKnob(const std::string& name, const std::string& label)
     boost::shared_ptr<KnobPath> ret = Natron::createKnob<KnobPath>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);
+    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    Q_UNUSED(pageknob);*/
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
@@ -3986,8 +3991,8 @@ KnobHolder::createGroupKnob(const std::string& name, const std::string& label)
     boost::shared_ptr<KnobGroup> ret = Natron::createKnob<KnobGroup>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);
+    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    Q_UNUSED(pageknob);*/
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
@@ -4006,8 +4011,8 @@ KnobHolder::createPageKnob(const std::string& name, const std::string& label)
     boost::shared_ptr<KnobPage> ret = Natron::createKnob<KnobPage>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);
+    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    Q_UNUSED(pageknob);*/
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
@@ -4026,8 +4031,8 @@ KnobHolder::createParametricKnob(const std::string& name, const std::string& lab
     boost::shared_ptr<KnobParametric> ret = Natron::createKnob<KnobParametric>(this,label, nbCurves, false);
     ret->setName(name);
     ret->setAsUserKnob();
-    boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
-    Q_UNUSED(pageknob);
+    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+    Q_UNUSED(pageknob);*/
     Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
