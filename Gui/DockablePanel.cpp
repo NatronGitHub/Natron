@@ -1617,9 +1617,12 @@ DockablePanel::scanForNewKnobs()
   
     std::list<KnobPage*> userPages;
     getUserPages(userPages);
+    
+    QString curTabName;
+    
     if (_imp->_pagesEnabled) {
         
-        
+        curTabName = _imp->_tabWidget->tabText(_imp->_tabWidget->currentIndex());
         
         boost::shared_ptr<KnobPage> page = getUserPageKnob();
         if (page) {
@@ -1667,7 +1670,6 @@ DockablePanel::scanForNewKnobs()
             
         }
         
-        QString curTabName = _imp->_tabWidget->tabText(_imp->_tabWidget->currentIndex());
         
         _imp->_tabWidget->clear();
         

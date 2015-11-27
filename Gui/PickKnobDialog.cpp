@@ -338,6 +338,8 @@ PickKnobDialog::getSelectedKnob(bool* makeAlias,boost::shared_ptr<KnobPage>* pag
     bool hadPanelVisible = selectedPanel && !selectedPanel->isClosed();
     if (!selectedPanel) {
         selectedNodeGui->ensurePanelCreated();
+        selectedPanel = selectedNodeGui->getSettingPanel();
+        selectedNodeGui->setVisibleSettingsPanel(false);
     }
     if (!selectedPanel) {
         return 0;
