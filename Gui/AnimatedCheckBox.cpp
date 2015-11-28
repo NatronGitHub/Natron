@@ -100,6 +100,8 @@ AnimatedCheckBox::mousePressEvent(QMouseEvent* e)
         Q_EMIT clicked(checked);
         Q_EMIT toggled(checked);
         
+    } else {
+        QFrame::mousePressEvent(e);
     }
 }
 
@@ -149,7 +151,9 @@ AnimatedCheckBox::paintEvent(QPaintEvent* e)
     
     ///Draw tick
     if (checked) {
-        if (readOnly) {
+        if (animation == 3) {
+            activeColor = Qt::black;
+        } else if (readOnly) {
             activeColor.setRgbF(0.5, 0.5, 0.5);
         } else if (altered) {
             double r,g,b;
