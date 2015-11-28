@@ -958,11 +958,17 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     if (_dimension == 1) {
         knob->setValue(Natron::Color::from_func_srgb(color.redF()), 0);
-    } else if (_dimension >= 3) {
+    } else if (_dimension == 3) {
          ///Don't set alpha since the color dialog can only handle RGB
         knob->setValues(Natron::Color::from_func_srgb(color.redF()),
                         Natron::Color::from_func_srgb(color.greenF()),
                         Natron::Color::from_func_srgb(color.blueF()),
+                        Natron::eValueChangedReasonNatronInternalEdited);
+    } else if (_dimension == 4) {
+        knob->setValues(Natron::Color::from_func_srgb(color.redF()),
+                        Natron::Color::from_func_srgb(color.greenF()),
+                        Natron::Color::from_func_srgb(color.blueF()),
+                        1.,
                         Natron::eValueChangedReasonNatronInternalEdited);
     }
 
