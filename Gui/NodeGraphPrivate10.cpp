@@ -169,7 +169,8 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
         }
     }
     std::list<boost::shared_ptr<Natron::Node> > allNodes;
-    _publicInterface->getGui()->getApp()->getProject()->getActiveNodes(&allNodes);
+    
+    _publicInterface->getGui()->getApp()->getProject()->getNodes_recursive(allNodes, true);
     n->restoreKnobsLinks(internalSerialization,allNodes);
 
     //We don't want the clone to have the same hash as the original
