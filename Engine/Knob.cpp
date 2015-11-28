@@ -1339,7 +1339,8 @@ KnobHelper::evaluateValueChange(int dimension,
     
     if (!guiFrozen  && _signalSlotHandler) {
         computeHasModifications();
-        if (!app || time == app->getTimeLine()->currentFrame()) {
+        bool refreshWidget = !app || hasAnimation() || time == app->getTimeLine()->currentFrame();
+        if (refreshWidget) {
             _signalSlotHandler->s_valueChanged(dimension,(int)reason);
         }
         if (reason != Natron::eValueChangedReasonSlaveRefresh) {
