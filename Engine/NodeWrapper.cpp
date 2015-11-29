@@ -765,3 +765,12 @@ Effect::getAvailableLayers() const
     }
     return ret;
 }
+
+void
+Effect::setPagesOrder(const std::list<std::string>& pages)
+{
+    if (!_node) {
+        return;
+    }
+    _node->setPagesOrder(pages);
+}

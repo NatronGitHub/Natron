@@ -41,6 +41,8 @@ Functions
 *    def :meth:`setHelp<NatronEngine.Param.setHelp>` (help)
 *    def :meth:`setPersistant<NatronEngine.Param.setPersistant>` (persistant)
 *    def :meth:`setVisible<NatronEngine.Param.setVisible>` (visible)
+*    def :meth:`setAsAlias<NatronEngine.StringParamBase.setAsAlias>` (otherParam)
+
 
 .. _details:
 
@@ -491,6 +493,19 @@ Set whether this parameter should be visible or not to the user.
 See :func:`getIsVisible()<NatronEngine.Param.getIsVisible>`
 
 
+.. method:: NatronEngine.StringParamBase.setAsAlias(otherParam)
+
+	:param otherParam: :class:`Param<NatronEngine.Param>`
+	:rtype: :class:`bool<PySide.QtCore.bool>`
+	
+		
+Set this parameter as an alias of *otherParam*. 
+They need to be both of the same *type* and of the same *dimension*.
+This parameter will control *otherParam* entirely and in case of a choice param, its 
+drop-down menu will be updated whenever the *otherParam* menu is updated.
+
+This is used generally to make user parameters on groups with the "Pick" option of the
+"Manage User Parameters" dialog.
 
 
 

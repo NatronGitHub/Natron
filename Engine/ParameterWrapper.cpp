@@ -256,6 +256,21 @@ Param::curve(double time, int dimension) const
     return getInternalKnob()->getRawCurveValueAt(time, dimension);
 }
 
+bool
+Param::setAsAlias(Param* other)
+{
+    if (!other) {
+        return false;
+    }
+    boost::shared_ptr<KnobI> otherKnob = other->_knob.lock();
+    boost::shared_ptr<KnobI> thisKnob = getInternalKnob();
+    if (!otherKnob || !thisKnob || otherKnob->typeName() != thisKnob->typeName() ||
+        otherKnob->getDimension() != thisKnob->getDimension()) {
+        return false;
+    }
+    return otherKnob->setKnobAsAliasOfThis(thisKnob, true);
+}
+
 AnimatedParam::AnimatedParam(const boost::shared_ptr<KnobI>& knob)
 : Param(knob)
 {

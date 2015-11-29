@@ -55,7 +55,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_PYPLUG_EXPORTER_VERSION 2
+#define NATRON_PYPLUG_EXPORTER_VERSION 3
 
 using namespace Natron;
 
@@ -1653,7 +1653,7 @@ static QString escapeString(const QString& str)
                 ret.append('\\');
             } else if (str[i] == '"') {
                 ret.append('\\');
-                ret.append('"');
+                ret.append('\"');
             } else if (str[i] == '\'') {
                 ret.append('\\');
                 ret.append('\'');
@@ -1675,7 +1675,7 @@ static QString escapeString(const QString& str)
         
     }
     ret.prepend('"');
-    ret.append('"');
+    ret.append("\".encode('string_escape')");
     return ret;
 }
 
@@ -1838,7 +1838,7 @@ static bool exportKnobValues(int indentLevel,
         
     } // for (int i = 0; i < (*it2)->getDimension(); ++i)
     
-    if (knob->getIsSecret()) {
+    if (knob->getIsSecret() && !knob->getDefaultIsSecret()) {
         if (!hasExportedValue) {
             hasExportedValue = true;
             if (mustDefineParam) {
@@ -2375,6 +2375,23 @@ static void exportAllNodeKnobs(int indentLevel,const boost::shared_ptr<Natron::N
     
     if (!userPages.empty()) {
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Refresh the GUI with the newly created parameters");
+        std::list<std::string> pagesOrdering = node->getPagesOrder();
+        if (!pagesOrdering.empty()) {
+            QString line("lastNode.setPagesOrder([");
+            std::list<std::string>::iterator next = pagesOrdering.begin();
+            ++next;
+            for (std::list<std::string>::iterator it = pagesOrdering.begin(); it!=pagesOrdering.end(); ++it) {
+                line += '\'';
+                line += it->c_str();
+                line += '\'';
+                if (next != pagesOrdering.end()) {
+                    line += ", ";
+                    ++next;
+                }
+            }
+            line += "])";
+            WRITE_INDENT(indentLevel); WRITE_STRING(line);
+        }
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("lastNode.refreshUserParamsGUI()");
     }
     
@@ -2404,29 +2421,55 @@ static void exportAllNodeKnobs(int indentLevel,const boost::shared_ptr<Natron::N
 }
 
 static bool exportKnobLinks(int indentLevel,
+                            const boost::shared_ptr<Natron::Node>& groupNode,
                             const boost::shared_ptr<Natron::Node>& node,
-                     const QString& nodeName,
-                     QTextStream& ts)
+                            const QString& groupName,
+                            const QString& nodeName,
+                            QTextStream& ts)
 {
     bool hasExportedLink = false;
     const std::vector<boost::shared_ptr<KnobI> >& knobs = node->getKnobs();
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
         QString paramName = nodeName + ".getParam(\"" + QString((*it2)->getName().c_str()) + "\")";
-        
         bool hasDefined = false;
-        for (int i = 0; i < (*it2)->getDimension(); ++i) {
-            std::string expr = (*it2)->getExpression(i);
-            QString hasRetVar = (*it2)->isExpressionUsingRetVariable(i) ? "True" : "False";
-            if (!expr.empty()) {
-                if (!hasDefined) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramName);
-                    hasDefined = true;
-                }
-                hasExportedLink = true;
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setExpression(" + ESC(expr) + ", " +
-                                              hasRetVar + ", " + NUM(i) + ")");
+        
+        //Check for alias link
+        boost::shared_ptr<KnobI> alias = (*it2)->getAliasMaster();
+        if (alias) {
+            if (!hasDefined) {
+                WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramName);
+                hasDefined = true;
             }
+            hasExportedLink = true;
             
+            Natron::EffectInstance* aliasHolder = dynamic_cast<Natron::EffectInstance*>(alias->getHolder());
+            assert(aliasHolder);
+            QString aliasName;
+            if (aliasHolder == groupNode->getLiveInstance()) {
+                aliasName = groupName;
+            } else {
+                aliasName = groupName + aliasHolder->getNode()->getScriptName_mt_safe().c_str();
+            }
+            aliasName += '.';
+            aliasName += alias->getName().c_str();
+            
+            WRITE_INDENT(indentLevel); WRITE_STRING(aliasName + ".setAsAlias(" + paramName + ")");
+        } else {
+            
+            for (int i = 0; i < (*it2)->getDimension(); ++i) {
+                std::string expr = (*it2)->getExpression(i);
+                QString hasRetVar = (*it2)->isExpressionUsingRetVariable(i) ? "True" : "False";
+                if (!expr.empty()) {
+                    if (!hasDefined) {
+                        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramName);
+                        hasDefined = true;
+                    }
+                    hasExportedLink = true;
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setExpression(" + ESC(expr) + ", " +
+                                                            hasRetVar + ", " + NUM(i) + ")");
+                }
+                
+            }
         }
         if (hasDefined) {
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del param");
@@ -2547,6 +2590,10 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
     WRITE_STATIC_LINE("");
     
     const NodeGroup* isGroup = dynamic_cast<const NodeGroup*>(collection);
+    NodePtr groupNode;
+    if (isGroup) {
+        groupNode = isGroup->getNode();
+    }
     if (isGroup) {
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Create the parameters of the group node the same way we did for all internal nodes");
         WRITE_INDENT(indentLevel); WRITE_STRING("lastNode = " + groupName);
@@ -2582,9 +2629,12 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
     
     for (NodeList::iterator it = exportedNodes.begin(); it != exportedNodes.end(); ++it) {
         QString nodeQualifiedName(groupName + (*it)->getScriptName_mt_safe().c_str());
-        if (exportKnobLinks(indentLevel,*it,nodeQualifiedName, ts)) {
+        if (exportKnobLinks(indentLevel,groupNode, *it, groupName, nodeQualifiedName, ts)) {
             hasExported = true;
         }
+    }
+    if (isGroup) {
+        exportKnobLinks(indentLevel, groupNode, groupNode, groupName, groupName, ts);
     }
     if (hasExported) {
         WRITE_STATIC_LINE("");

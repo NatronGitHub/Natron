@@ -356,6 +356,8 @@ public:
     bool addUserPlane(const std::string& planeName, const std::vector<std::string>& channels);
     
     std::map<ImageLayer,Effect*> getAvailableLayers() const;
+    
+    void setPagesOrder(const std::list<std::string>& pages);
 };
 
 #endif // NODEWRAPPER_H

@@ -171,6 +171,8 @@ public:
      **/
     double curve(double time, int dimension = 0) const;
     
+    bool setAsAlias(Param* other);
+    
 protected:
     
     /**

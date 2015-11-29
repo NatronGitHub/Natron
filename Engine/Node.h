@@ -163,6 +163,10 @@ public:
     
     void restoreUserKnobs(const NodeSerialization& serialization);
     
+    void setPagesOrder(const std::list<std::string>& pages);
+    
+    std::list<std::string> getPagesOrder() const;
+    
     bool isNodeCreated() const;
     
     /*@brief Quit all processing done by all render instances of this node

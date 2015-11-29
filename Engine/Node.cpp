@@ -1571,6 +1571,42 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
 }
 
 void
+Node::setPagesOrder(const std::list<std::string>& pages)
+{
+    //re-order the pages
+    std::list<boost::shared_ptr<KnobI> > pagesOrdered;
+    
+    for (std::list<std::string>::const_iterator it = pages.begin(); it!=pages.end();++it) {
+        const std::vector<boost::shared_ptr<KnobI> > &knobs = getKnobs();
+        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+            if ((*it2)->getName() == *it) {
+                pagesOrdered.push_back(*it2);
+                _imp->liveInstance->removeKnobFromList(it2->get());
+                break;
+            }
+        }
+    }
+    int index = 0;
+    for (std::list<boost::shared_ptr<KnobI> >::iterator it=  pagesOrdered.begin() ;it!=pagesOrdered.end(); ++it,++index) {
+        _imp->liveInstance->insertKnob(index, *it);
+    }
+}
+
+std::list<std::string>
+Node::getPagesOrder() const
+{
+    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    std::list<std::string> ret;
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        KnobPage* ispage = dynamic_cast<KnobPage*>(it->get());
+        if (ispage) {
+            ret.push_back(ispage->getName());
+        }
+    }
+    return ret;
+}
+
+void
 Node::restoreUserKnobs(const NodeSerialization& serialization)
 {
     const std::list<boost::shared_ptr<GroupKnobSerialization> >& userPages = serialization.getUserPages();
@@ -1590,24 +1626,8 @@ Node::restoreUserKnobs(const NodeSerialization& serialization)
             _imp->restoreUserKnobsRecursive((*it)->getChildren(), boost::shared_ptr<KnobGroup>(), page);
         }
     }
-    //re-order the pages
-    std::list<boost::shared_ptr<KnobI> > pagesOrdered;
-    const std::list<std::string>& pageIndexes = serialization.getPagesOrdered();
-    
-    for (std::list<std::string>::const_iterator it = pageIndexes.begin(); it!=pageIndexes.end();++it) {
-        const std::vector<boost::shared_ptr<KnobI> > &knobs = getKnobs();
-        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-            if ((*it2)->getName() == *it) {
-                pagesOrdered.push_back(*it2);
-                _imp->liveInstance->removeKnobFromList(it2->get());
-                break;
-            }
-        }
-    }
-    int index = 0;
-    for (std::list<boost::shared_ptr<KnobI> >::iterator it=  pagesOrdered.begin() ;it!=pagesOrdered.end(); ++it,++index) {
-        _imp->liveInstance->insertKnob(index, *it);
-    }
+    setPagesOrder(serialization.getPagesOrdered());
+
 }
 
 void
@@ -3196,20 +3216,24 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     baseLayers.push_back(ImageComponents::getForwardMotionComponents().getLayerName());
     baseLayers.push_back(ImageComponents::getBackwardMotionComponents().getLayerName());
     layer->populateChoices(baseLayers);
+    int defVal;
     if (isOutput && liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
-        layer->setDefaultValue(0);
+        defVal = 0;
+        
         //Hide all other input selectors if choice is All in output
         for (std::map<int,ChannelSelector>::iterator it = channelsSelectors.begin(); it!=channelsSelectors.end(); ++it) {
             it->second.layer.lock()->setSecret(true);
         }
     } else {
-        layer->setDefaultValue(1);
+        defVal = 1;
     }
+    layer->setDefaultValue(defVal);
     
     boost::shared_ptr<KnobString> layerName = Natron::createKnob<KnobString>(liveInstance.get(), inputName + "_layer_name", 1, false);
     layerName->setSecretByDefault(true);
     layerName->setAnimationEnabled(false);
     layerName->setEvaluateOnChange(false);
+    layerName->setDefaultValue(baseLayers[defVal]);
     //layerName->setAddNewLine(!sel.useRGBASelectors);
     page->addKnob(layerName);
     sel.layerName = layerName;
