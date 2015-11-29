@@ -79,3 +79,29 @@ GroupInput::knobChanged(KnobI* k,
         
     }
 }
+
+Natron::ImagePremultiplicationEnum
+GroupInput::getOutputPremultiplication() const
+{
+    NodePtr thisNode = getNode();
+    boost::shared_ptr<NodeCollection> group = thisNode->getGroup();
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(group.get());
+    assert(isGroup);
+    int inputNb = -1;
+    std::vector<NodePtr> groupInputs;
+    isGroup->getInputs(&groupInputs);
+    for (std::size_t i = 0; i < groupInputs.size(); ++i) {
+        if (groupInputs[i] == thisNode) {
+            inputNb = i;
+            break;
+        }
+    }
+    assert(inputNb != -1);
+    if (inputNb != -1) {
+        Natron::EffectInstance* input = isGroup->getInput(inputNb);
+        if (input) {
+            return input->getOutputPremultiplication();
+        }
+    }
+    return Natron::eImagePremultiplicationPremultiplied;
+}
