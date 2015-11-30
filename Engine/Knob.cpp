@@ -3297,7 +3297,7 @@ KnobHelper::createDuplicateOnNode(Natron::EffectInstance* effect,
     }
     output->setEvaluateOnChange(getEvaluateOnChange());
     output->setHintToolTip(newToolTip);
-    output->setAddNewLine(isNewLineActivated());
+    output->setAddNewLine(true);
     if (group) {
         if (indexInParent == -1) {
             group->addKnob(output);
