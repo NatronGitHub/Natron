@@ -240,6 +240,9 @@ struct AddKnobDialogPrivate
     
     KnobGroup* getSelectedGroup() const;
     
+    template <typename T>
+    void setKnobMinMax(KnobI* knob);
+    
     boost::shared_ptr<KnobPage> getSelectedPage() const;
 };
 
@@ -963,23 +966,7 @@ AddKnobDialog::onPageCurrentIndexChanged(int index)
 void
 AddKnobDialog::onTypeCurrentIndexChanged(int index)
 {
-    if (_imp->isKnobAlias) {
-        _imp->setVisibleAnimates(false);
-        _imp->setVisibleEvaluate(false);
-        _imp->setVisibleHide(false);
-        _imp->setVisibleMenuItems(false);
-        _imp->setVisibleMinMax(false);
-        _imp->setVisibleStartNewLine(true);
-        _imp->setVisibleMultiLine(false);
-        _imp->setVisibleMultiPath(false);
-        _imp->setVisibleRichText(false);
-        _imp->setVisibleSequence(false);
-        _imp->setVisibleGrpAsTab(false);
-        _imp->setVisibleParent(true);
-        _imp->setVisibleDefaultValues(false,AddKnobDialogPrivate::eDefaultValueTypeInt, 1);
-        _imp->setVisiblePage(true);
-        return;
-    }
+    
     _imp->setVisiblePage(index != 16);
     switch (index) {
         case 0: // int
@@ -1157,6 +1144,24 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         default:
             break;
     }
+    
+    if (_imp->isKnobAlias) {
+        _imp->setVisibleAnimates(false);
+        _imp->setVisibleEvaluate(false);
+        _imp->setVisibleHide(false);
+        _imp->setVisibleMenuItems(false);
+        //_imp->setVisibleMinMax(false);
+        _imp->setVisibleStartNewLine(true);
+        _imp->setVisibleMultiLine(false);
+        _imp->setVisibleMultiPath(false);
+        _imp->setVisibleRichText(false);
+        _imp->setVisibleSequence(false);
+        _imp->setVisibleGrpAsTab(false);
+        _imp->setVisibleParent(true);
+       // _imp->setVisibleDefaultValues(false,AddKnobDialogPrivate::eDefaultValueTypeInt, 1);
+        _imp->setVisiblePage(true);
+        return;
+    }
 }
 
 AddKnobDialog::~AddKnobDialog()
@@ -1168,6 +1173,44 @@ boost::shared_ptr<KnobI>
 AddKnobDialog::getKnob() const
 {
     return _imp->knob;
+}
+
+template <typename T>
+void
+AddKnobDialogPrivate::setKnobMinMax(KnobI* knob)
+{
+    int dim = knob->getDimension();
+    
+    Knob<T>* k = dynamic_cast<Knob<T>*>(knob);
+    assert(k);
+    
+    std::vector<T> mins(dim),dmins(dim);
+    std::vector<T> maxs(dim),dmaxs(dim);
+    for (int i = 0; i < dim; ++i) {
+        mins[i] = minBox->value();
+        dmins[i] = dminBox->value();
+        maxs[i] = maxBox->value();
+        dmaxs[i] = dmaxBox->value();
+    }
+    k->setMinimumsAndMaximums(mins, maxs);
+    k->setDisplayMinimumsAndMaximums(dmins, dmaxs);
+    std::vector<T> defValues;
+    if (dim >= 1) {
+        defValues.push_back(default0->value());
+    }
+    if (dim >= 2) {
+        defValues.push_back(default1->value());
+    }
+    if (dim >= 3) {
+        defValues.push_back(default2->value());
+    }
+    if (dim >= 4) {
+        defValues.push_back(default3->value());
+    }
+    for (U32 i = 0; i < defValues.size(); ++i) {
+        k->setDefaultValue(defValues[i],i);
+    }
+
 }
 
 void
@@ -1183,30 +1226,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             //int
             int dim = index + 1;
             boost::shared_ptr<KnobInt> k = Natron::createKnob<KnobInt>(panel->getHolder(), label, dim, false);
-            std::vector<int> mins(dim),dmins(dim);
-            std::vector<int> maxs(dim),dmaxs(dim);
-            
-            for (int i = 0; i < dim; ++i) {
-                mins[i] = std::floor(minBox->value() + 0.5);
-                dmins[i] = std::floor(dminBox->value() + 0.5);
-                maxs[i] = std::floor(maxBox->value() + 0.5);
-                dmaxs[i] = std::floor(dmaxBox->value() + 0.5);
-            }
-            k->setMinimumsAndMaximums(mins, maxs);
-            k->setDisplayMinimumsAndMaximums(dmins, dmaxs);
-            std::vector<int> defValues;
-            if (dim >= 1) {
-                defValues.push_back(default0->value());
-            }
-            if (dim >= 2) {
-                defValues.push_back(default1->value());
-            }
-            if (dim >= 3) {
-                defValues.push_back(default2->value());
-            }
-            for (U32 i = 0; i < defValues.size(); ++i) {
-                k->setDefaultValue(defValues[i],i);
-            }
+            setKnobMinMax<int>(k.get());
             knob = k;
         } break;
         case 3:
@@ -1215,31 +1235,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             //double
             int dim = index - 2;
             boost::shared_ptr<KnobDouble> k = Natron::createKnob<KnobDouble>(panel->getHolder(), label, dim, false);
-            std::vector<double> mins(dim),dmins(dim);
-            std::vector<double> maxs(dim),dmaxs(dim);
-            for (int i = 0; i < dim; ++i) {
-                mins[i] = minBox->value();
-                dmins[i] = dminBox->value();
-                maxs[i] = maxBox->value();
-                dmaxs[i] = dmaxBox->value();
-            }
-            k->setMinimumsAndMaximums(mins, maxs);
-            k->setDisplayMinimumsAndMaximums(dmins, dmaxs);
-            std::vector<double> defValues;
-            if (dim >= 1) {
-                defValues.push_back(default0->value());
-            }
-            if (dim >= 2) {
-                defValues.push_back(default1->value());
-            }
-            if (dim >= 3) {
-                defValues.push_back(default2->value());
-            }
-            for (U32 i = 0; i < defValues.size(); ++i) {
-                k->setDefaultValue(defValues[i],i);
-            }
-
-            
+            setKnobMinMax<double>(k.get());
             knob = k;
         } break;
         case 6:
@@ -1247,33 +1243,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             // color
             int dim = index - 3;
             boost::shared_ptr<KnobColor> k = Natron::createKnob<KnobColor>(panel->getHolder(), label, dim, false);
-            std::vector<double> mins(dim),dmins(dim);
-            std::vector<double> maxs(dim),dmaxs(dim);
-            for (int i = 0; i < dim; ++i) {
-                mins[i] = minBox->value();
-                dmins[i] = dminBox->value();
-                maxs[i] = maxBox->value();
-                dmaxs[i] = dmaxBox->value();
-            }
-            std::vector<double> defValues;
-            if (dim >= 1) {
-                defValues.push_back(default0->value());
-            }
-            if (dim >= 2) {
-                defValues.push_back(default1->value());
-            }
-            if (dim >= 3) {
-                defValues.push_back(default2->value());
-            }
-            if (dim >= 4) {
-                defValues.push_back(default3->value());
-            }
-            for (U32 i = 0; i < defValues.size(); ++i) {
-                k->setDefaultValue(defValues[i],i);
-            }
-
-            k->setMinimumsAndMaximums(mins, maxs);
-            k->setDisplayMinimumsAndMaximums(dmins, dmaxs);
+            setKnobMinMax<double>(k.get());
             knob = k;
         }  break;
         case 8: {
@@ -1667,6 +1637,33 @@ AddKnobDialog::onOkClicked()
             Natron::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
             return;
         }
+        
+        KnobColor* isColor = dynamic_cast<KnobColor*>(_imp->knob.get());
+        KnobDouble* isDbl = dynamic_cast<KnobDouble*>(_imp->knob.get());
+        KnobInt* isInt = dynamic_cast<KnobInt*>(_imp->knob.get());
+        Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>(_imp->knob.get());
+        KnobGroup* isGrp = dynamic_cast<KnobGroup*>(_imp->knob.get());
+        KnobBool* isBool = dynamic_cast<KnobBool*>(_imp->knob.get());
+        KnobChoice* isChoice = dynamic_cast<KnobChoice*>(_imp->knob.get());
+        if (isColor || isDbl) {
+            _imp->setKnobMinMax<double>(_imp->knob.get());
+        } else if (isInt) {
+            _imp->setKnobMinMax<int>(_imp->knob.get());
+        } else if (isStr) {
+            isStr->setDefaultValue(_imp->defaultStr->text().toStdString());
+        } else if (isGrp) {
+            isGrp->setDefaultValue(true);
+        } else if (isBool) {
+            isBool->setDefaultValue(_imp->defaultBool->isChecked());
+        } else if (isChoice) {
+            int defValue = _imp->default0->value();
+            std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+            if (defValue < (int)entries.size() && defValue >= 0) {
+                isChoice->setDefaultValue(defValue);
+            }
+        }
+
+        
     }
     
     //If startsNewLine is false, set the flag on the previous knob
