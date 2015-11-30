@@ -1611,7 +1611,7 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
 }
 
 void
-DockablePanel::scanForNewKnobs()
+DockablePanel::scanForNewKnobs(bool restorePageIndex)
 {
     
   
@@ -1622,7 +1622,9 @@ DockablePanel::scanForNewKnobs()
     
     if (_imp->_pagesEnabled) {
         
-        curTabName = _imp->_tabWidget->tabText(_imp->_tabWidget->currentIndex());
+        if (restorePageIndex) {
+            curTabName = _imp->_tabWidget->tabText(_imp->_tabWidget->currentIndex());
+        }
         
         boost::shared_ptr<KnobPage> page = getUserPageKnob();
         if (page) {
@@ -1673,14 +1675,16 @@ DockablePanel::scanForNewKnobs()
         
         _imp->_tabWidget->clear();
         
+        
         int index = 0;
         int i = 0;
         for (std::list<std::pair<QWidget*,QString> >::iterator it = orderedPages.begin(); it!=orderedPages.end(); ++it,++i) {
             _imp->_tabWidget->addTab(it->first, it->second);
-            if (it->second == curTabName) {
+            if (restorePageIndex && it->second == curTabName) {
                 index = i;
             }
         }
+        
         if (index >= 0 && index < int(orderedPages.size())) {
             _imp->_tabWidget->setCurrentIndex(index);
         }

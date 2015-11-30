@@ -1872,7 +1872,7 @@ public:
     
     void discardPanelPointer();
     
-    void refreshKnobs();
+    void refreshKnobs(bool keepCurPageIndex = true);
     
     /**
      * @brief Dynamically removes a knob (from the GUI also)

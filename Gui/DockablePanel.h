@@ -153,7 +153,7 @@ public:
 
     void onGuiClosing();
 
-    virtual void scanForNewKnobs() OVERRIDE FINAL;
+    virtual void scanForNewKnobs(bool restorePageIndex = true) OVERRIDE FINAL;
     
     void setUserPageActiveIndex();
     

@@ -3562,11 +3562,11 @@ KnobHolder::discardPanelPointer()
 }
 
 void
-KnobHolder::refreshKnobs()
+KnobHolder::refreshKnobs(bool keepCurPageIndex)
 {
     assert(QThread::currentThread() == qApp->thread());
     if (_imp->settingsPanel) {
-        _imp->settingsPanel->scanForNewKnobs();
+        _imp->settingsPanel->scanForNewKnobs(keepCurPageIndex);
         Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
         if (isEffect) {
             isEffect->getNode()->declarePythonFields();

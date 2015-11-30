@@ -663,7 +663,7 @@ Effect::getUserPageParam() const
 void
 UserParamHolder::refreshUserParamsGUI()
 {
-    _holder->refreshKnobs();
+    _holder->refreshKnobs(false);
 }
 
 Effect*
