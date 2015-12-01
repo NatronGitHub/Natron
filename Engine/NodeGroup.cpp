@@ -1935,6 +1935,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     KnobButton* isButton = dynamic_cast<KnobButton*>(knob.get());
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
     
+#pragma message WARN("TODO: only write min/max/displaymin/displaymax/defaultvalue if it is not an alias, or if the value is different from the aliased param")
     if (isInt) {
         QString createToken;
         switch (isInt->getDimension()) {
