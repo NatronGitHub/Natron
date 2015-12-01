@@ -100,6 +100,12 @@ Param::setVisible(bool visible)
     getInternalKnob()->setSecret(!visible);
 }
 
+void
+Param::setVisibleByDefault(bool visible)
+{
+    getInternalKnob()->setSecretByDefault(!visible);
+}
+
 bool
 Param::getIsEnabled(int dimension) const
 {
@@ -110,6 +116,12 @@ void
 Param::setEnabled(bool enabled,int dimension)
 {
     getInternalKnob()->setEnabled(dimension, enabled);
+}
+
+void
+Param::setEnabledByDefault(bool enabled)
+{
+    getInternalKnob()->setDefaultAllDimensionsEnabled(enabled);
 }
 
 bool

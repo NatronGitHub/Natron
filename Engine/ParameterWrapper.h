@@ -97,6 +97,8 @@ public:
      **/
     void setVisible(bool visible);
     
+    void setVisibleByDefault(bool visible);
+    
     /**
      * @brief Returns whether the given dimension is enabled, i.e: whether the user can interact with it or not.
      **/
@@ -106,6 +108,8 @@ public:
      * @brief Set the given dimension enabledness
      **/
     void setEnabled(bool enabled,int dimension = 0);
+    
+    void setEnabledByDefault(bool enabled = 0);
     
     /**
      * @brief Returns whether this parameter is persistant or not. A persistant parameter will be saved into the project.

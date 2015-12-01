@@ -37,10 +37,12 @@ Functions
 *    def :meth:`setAddNewLine<NatronEngine.Param.setAddNewLine>` (a)
 *    def :meth:`setAnimationEnabled<NatronEngine.Param.setAnimationEnabled>` (e)
 *    def :meth:`setEnabled<NatronEngine.Param.setEnabled>` (enabled[, dimension=0])
+*    def :meth:`setEnabledByDefault<NatronEngine.Param.setEnabledByDefault>` (enabled)
 *    def :meth:`setEvaluateOnChange<NatronEngine.Param.setEvaluateOnChange>` (eval)
 *    def :meth:`setHelp<NatronEngine.Param.setHelp>` (help)
 *    def :meth:`setPersistant<NatronEngine.Param.setPersistant>` (persistant)
 *    def :meth:`setVisible<NatronEngine.Param.setVisible>` (visible)
+*    def :meth:`setVisibleByDefault<NatronEngine.Param.setVisibleByDefault>` (visible)
 *    def :meth:`setAsAlias<NatronEngine.StringParamBase.setAsAlias>` (otherParam)
 
 
@@ -449,7 +451,14 @@ When disabled, the parameter will be displayed in black and the user will not be
 to edit it.
 See :func:`getIsEnabled(dimension)<NatronEngine.Param.getIsEnabled>`
 
+.. method:: NatronEngine.Param.setEnabledByDefault(enabled)
 
+
+    :param enabled: :class:`bool<PySide.QtCore.bool>`
+
+Set whether the parameter should be enabled or not by default.
+When disabled, the parameter will be displayed in black and the user will not be able
+to edit it.
 
 
 .. method:: NatronEngine.Param.setEvaluateOnChange(eval)
@@ -491,6 +500,13 @@ See :func:`getIsPersistant<NatronEngine.Param.getIsPersistant>`
 	
 Set whether this parameter should be visible or not to the user.
 See :func:`getIsVisible()<NatronEngine.Param.getIsVisible>`
+
+.. method:: NatronEngine.Param.setVisibleByDefault(visible)
+
+
+    :param visible: :class:`bool<PySide.QtCore.bool>`
+	
+Set whether this parameter should be visible or not to the user in its default state.
 
 
 .. method:: NatronEngine.StringParamBase.setAsAlias(otherParam)
