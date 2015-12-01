@@ -1231,6 +1231,7 @@ KnobPage::KnobPage(KnobHolder* holder,
                      bool declaredByPlugin)
 : Knob<bool>(holder, label, dimension, declaredByPlugin)
 {
+    setIsPersistant(false);
 }
 
 bool
