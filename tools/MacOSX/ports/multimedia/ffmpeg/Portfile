@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 141538 2015-10-20 12:25:00Z devans@macports.org $
+# $Id: Portfile 142659 2015-11-19 00:26:51Z devans@macports.org $
 
 PortSystem          1.0
 PortGroup           xcodeversion 1.0
@@ -10,7 +10,8 @@ PortGroup           active_variants 1.1
 name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
-version             2.8.1
+version             2.8.2
+revision            1
 license             LGPL-2.1+
 categories          multimedia
 maintainers         devans jeremyhu openmaintainer
@@ -52,8 +53,8 @@ master_sites        http://www.ffmpeg.org/releases/
 
 use_bzip2           yes
 
-checksums           rmd160  d679b110758fcab804ad6eaa45dc6451c614da7b \
-                    sha256  e2ed5ab28dee1af94336739173eb0019afc21a54e38a96f4e3208e94a07866e2
+checksums           rmd160  cee6a076bead7cefb9e0c562e95465855c2c002c \
+                    sha256  830ec647f7ad774fc0caf17ba47774bf5dee7a89cbd65894f364a87ba3ad21b2
 
 depends_build       port:pkgconfig \
                     port:gmake \
@@ -81,6 +82,7 @@ depends_lib         port:lame \
                     port:fribidi \
                     path:lib/libspeex.dylib:speex \
                     port:libsdl \
+                    port:soxr \
                     port:bzip2 \
                     port:xz \
                     port:zlib
@@ -117,6 +119,7 @@ configure.args      --enable-swscale \
                     --enable-libopenjpeg \
                     --enable-libmodplug \
                     --enable-libvpx \
+                    --enable-libsoxr \
                     --enable-libspeex \
                     --enable-libass \
                     --enable-libbluray \

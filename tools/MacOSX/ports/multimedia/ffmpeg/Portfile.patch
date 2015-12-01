@@ -1,6 +1,6 @@
---- Portfile.orig	2015-10-27 15:27:14.000000000 +0100
-+++ Portfile	2015-10-27 15:27:20.000000000 +0100
-@@ -88,6 +88,7 @@
+--- Portfile.orig	2015-12-01 09:14:08.000000000 +0100
++++ Portfile	2015-12-01 09:14:15.000000000 +0100
+@@ -90,6 +90,7 @@
  build.cmd           ${prefix}/bin/gmake
  build.env-append    V=1
  
@@ -8,7 +8,7 @@
  #
  # enable auto configure of asm optimizations
  # requires Xcode 3.1 or better on Leopard
-@@ -130,10 +131,12 @@
+@@ -133,10 +134,12 @@
                      --disable-indev=jack \
                      --disable-outdev=xv \
                      --disable-vda \
@@ -22,7 +22,7 @@
  
  # disable asm on Tiger
  # libblueray doesn't build on Tiger so disable for now (#39442)
-@@ -168,8 +171,12 @@
+@@ -171,8 +174,12 @@
      }
  
      # kCVPixelFormatType_OneComponent8 used in avfoundation indev is only available on 10.8+
@@ -37,7 +37,7 @@
      }
  }
  
-@@ -179,6 +186,17 @@
+@@ -182,6 +189,17 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -55,7 +55,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -203,6 +221,15 @@
+@@ -206,6 +224,15 @@
  configure.universal_args-delete --disable-dependency-tracking
  
  if {[variant_isset universal]} {
@@ -71,7 +71,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -228,11 +255,55 @@
+@@ -231,11 +258,55 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -127,7 +127,7 @@
  }
  
  default_variants +x11
-@@ -295,6 +366,12 @@
+@@ -298,6 +369,12 @@
                              port:samba3
  
      license                 GPL-3+

@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 141286 2015-10-14 17:53:19Z michaelld@macports.org $
+# $Id: Portfile 142934 2015-11-28 18:06:52Z mcalhoun@macports.org $
 
 PortSystem          1.0
 
@@ -14,7 +14,7 @@ name                qt4-mac
 # qt4-mac-devel is "replaced_by" this port,
 # so this port cannot conflict with it.
 #conflicts           qt3 qt3-mac qt4-mac-devel
-conflicts           qt3 qt3-mac qt5-mac
+conflicts           qt3 qt3-mac
 version             4.8.7
 revision            102
 set branch          [join [lrange [split ${version} .] 0 1] .]
