@@ -247,7 +247,73 @@ struct AddKnobDialogPrivate
     boost::shared_ptr<KnobPage> getSelectedPage() const;
 };
 
-static int getChoiceIndexFromKnobType(KnobI* knob)
+enum ParamDataTypeEnum {
+    eParamDataTypeInteger, // 0
+    eParamDataTypeInteger2D, // 1
+    eParamDataTypeInteger3D, // 2
+    eParamDataTypeFloatingPoint, //3
+    eParamDataTypeFloatingPoint2D, // 4
+    eParamDataTypeFloatingPoint3D, // 5
+    eParamDataTypeColorRGB, // 6
+    eParamDataTypeColorRGBA, // 7
+    eParamDataTypeChoice, // 8
+    eParamDataTypeCheckbox, // 9
+    eParamDataTypeLabel, // 10
+    eParamDataTypeTextInput, // 11
+    eParamDataTypeInputFile, // 12
+    eParamDataTypeOutputFile, // 13
+    eParamDataTypeDirectory, // 14
+    eParamDataTypeGroup, // 15
+    eParamDataTypePage, // 16
+    eParamDataTypeButton, // 17
+    eParamDataTypeCount // 18
+};
+
+static const char* dataTypeString(ParamDataTypeEnum e)
+{
+    switch (e) {
+        case eParamDataTypeInteger:
+            return "Integer";
+        case eParamDataTypeInteger2D:
+            return "Integer 2D";
+        case eParamDataTypeInteger3D:
+            return "Integer 3D";
+        case eParamDataTypeFloatingPoint:
+            return "Floating Point";
+        case eParamDataTypeFloatingPoint2D:
+            return "Floating Point 2D";
+        case eParamDataTypeFloatingPoint3D:
+            return "Floating Point 3D";
+        case eParamDataTypeColorRGB:
+            return "Color RGB";
+        case eParamDataTypeColorRGBA:
+            return "Color RGBA";
+        case eParamDataTypeChoice:
+            return "Choice (Pulldown)";
+        case eParamDataTypeCheckbox:
+            return "Checkbox";
+        case eParamDataTypeLabel:
+            return "Label";
+        case eParamDataTypeTextInput:
+            return "Text Input";
+        case eParamDataTypeInputFile:
+            return "Input File";
+        case eParamDataTypeOutputFile:
+            return "Output File";
+        case eParamDataTypeDirectory:
+            return "Directory";
+        case eParamDataTypeGroup:
+            return "Group";
+        case eParamDataTypePage:
+            return "Page";
+        case eParamDataTypeButton:
+            return "Button";
+        default:
+            return NULL;
+    }
+}
+
+static ParamDataTypeEnum getChoiceIndexFromKnobType(KnobI* knob)
 {
     
     int dim = knob->getDimension();
@@ -267,50 +333,50 @@ static int getChoiceIndexFromKnobType(KnobI* knob)
     
     if (isInt) {
         if (dim == 1) {
-            return 0;
+            return eParamDataTypeInteger;
         } else if (dim == 2) {
-            return 1;
+            return eParamDataTypeInteger2D;
         } else if (dim == 3) {
-            return 2;
+            return eParamDataTypeInteger3D;
         }
     } else if (isDbl) {
         if (dim == 1) {
-            return 3;
+            return eParamDataTypeFloatingPoint;
         } else if (dim == 2) {
-            return 4;
+            return eParamDataTypeFloatingPoint2D;
         } else if (dim == 3) {
-            return 5;
+            return eParamDataTypeFloatingPoint3D;
         }
     } else if (isColor) {
         if (dim == 3) {
-            return 6;
+            return eParamDataTypeColorRGB;
         } else if (dim == 4) {
-            return 7;
+            return eParamDataTypeColorRGBA;
         }
     } else if (isChoice) {
-        return 8;
+        return eParamDataTypeChoice;
     } else if (isBool) {
-        return 9;
+        return eParamDataTypeCheckbox;
     } else if (isStr) {
         if (isStr->isLabel()) {
-            return 10;
+            return eParamDataTypeLabel;
         } else  {
-            return 11;
+            return eParamDataTypeTextInput;
         }
     } else if (isFile) {
-        return 12;
+        return eParamDataTypeInputFile;
     } else if (isOutputFile) {
-        return 13;
+        return eParamDataTypeOutputFile;
     } else if (isPath) {
-        return 14;
+        return eParamDataTypeDirectory;
     } else if (isGrp) {
-        return 15;
+        return eParamDataTypeGroup;
     } else if (isPage) {
-        return 16;
+        return eParamDataTypePage;
     } else if (isBtn) {
-        return 17;
+        return eParamDataTypeButton;
     }
-    return -1;
+    return eParamDataTypeCount;
 }
 
 AddKnobDialog::AddKnobDialog(DockablePanel* panel,
@@ -452,7 +518,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         
         _imp->mainLayout->addRow(_imp->labelLabel, secondRowContainer);
     }
-    
+
+
     {
         QWidget* thirdRowContainer = new QWidget(this);
         QHBoxLayout* thirdRowLayout = new QHBoxLayout(thirdRowContainer);
@@ -462,24 +529,10 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
             _imp->typeLabel = new Natron::Label(tr("Type:"),thirdRowContainer);
             _imp->typeChoice = new ComboBox(thirdRowContainer);
             _imp->typeChoice->setToolTip(Natron::convertFromPlainText(tr("The data type of the parameter."), Qt::WhiteSpaceNormal));
-            _imp->typeChoice->addItem("Integer");
-            _imp->typeChoice->addItem("Integer 2D");
-            _imp->typeChoice->addItem("Integer 3D");
-            _imp->typeChoice->addItem("Floating point");
-            _imp->typeChoice->addItem("Floating point 2D");
-            _imp->typeChoice->addItem("Floating point 3D");
-            _imp->typeChoice->addItem("Color RGB");
-            _imp->typeChoice->addItem("Color RGBA");
-            _imp->typeChoice->addItem("Choice (Pulldown)");
-            _imp->typeChoice->addItem("Checkbox");
-            _imp->typeChoice->addItem("Label");
-            _imp->typeChoice->addItem("Text input");
-            _imp->typeChoice->addItem("Input file");
-            _imp->typeChoice->addItem("Output file");
-            _imp->typeChoice->addItem("Directory");
-            _imp->typeChoice->addItem("Group");
-            _imp->typeChoice->addItem("Page");
-            _imp->typeChoice->addItem("Button");
+            for (int i = 0; i < (int)eParamDataTypeCount; ++i) {
+                assert(_imp->typeChoice->count() == i);
+                _imp->typeChoice->addItem(tr(dataTypeString((ParamDataTypeEnum)i)));
+            }
             QObject::connect(_imp->typeChoice, SIGNAL(currentIndexChanged(int)),this, SLOT(onTypeCurrentIndexChanged(int)));
             
             thirdRowLayout->addWidget(_imp->typeChoice);
@@ -918,8 +971,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     if (!knob) {
         type = _imp->typeChoice->activeIndex();
     } else {
-        type = getChoiceIndexFromKnobType(knob.get());
-        assert(type != -1);
+        ParamDataTypeEnum e = getChoiceIndexFromKnobType(knob.get());
+        assert(e != eParamDataTypeCount);
     }
     onTypeCurrentIndexChanged(type);
     _imp->panel->setUserPageActiveIndex();
@@ -967,18 +1020,18 @@ AddKnobDialog::onPageCurrentIndexChanged(int index)
 void
 AddKnobDialog::onTypeCurrentIndexChanged(int index)
 {
-    
-    _imp->setVisiblePage(index != 16);
-    _imp->setVisibleLabel(index != 10);
-    switch (index) {
-        case 0: // int
-        case 1: // int 2D
-        case 2: // int 3D
-        case 3: // fp
-        case 4: // fp 2D
-        case 5: // fp 3D
-        case 6: // RGB
-        case 7: // RGBA
+     enum ParamDataTypeEnum e= (ParamDataTypeEnum)index;
+    _imp->setVisiblePage(e != eParamDataTypePage);
+    _imp->setVisibleLabel(e != eParamDataTypeLabel);
+    switch (e) {
+        case eParamDataTypeInteger: // int
+        case eParamDataTypeInteger2D: // int 2D
+        case eParamDataTypeInteger3D: // int 3D
+        case eParamDataTypeFloatingPoint: // fp
+        case eParamDataTypeFloatingPoint2D: // fp 2D
+        case eParamDataTypeFloatingPoint3D: // fp 3D
+        case eParamDataTypeColorRGB: // RGB
+        case eParamDataTypeColorRGBA: // RGBA
             _imp->setVisibleAnimates(true);
             _imp->setVisibleEvaluate(true);
             _imp->setVisibleHide(true);
@@ -991,23 +1044,25 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
-            if (index == 0 || index == 3) {
+            if (e == eParamDataTypeInteger || e == eParamDataTypeFloatingPoint) {
                 _imp->setVisibleDefaultValues(true,
-                                              index == 0 ? AddKnobDialogPrivate::eDefaultValueTypeInt : AddKnobDialogPrivate::eDefaultValueTypeDouble,
+                                              (e == eParamDataTypeInteger) ? AddKnobDialogPrivate::eDefaultValueTypeInt : AddKnobDialogPrivate::eDefaultValueTypeDouble,
                                               1);
-            } else if (index == 1 || index == 4) {
+            } else if (e == eParamDataTypeInteger2D || e == eParamDataTypeFloatingPoint3D) {
                 _imp->setVisibleDefaultValues(true,
-                                              index == 1 ? AddKnobDialogPrivate::eDefaultValueTypeInt : AddKnobDialogPrivate::eDefaultValueTypeDouble,
+                                              (e == eParamDataTypeInteger2D) ? AddKnobDialogPrivate::eDefaultValueTypeInt : AddKnobDialogPrivate::eDefaultValueTypeDouble,
                                               2);
-            } else if (index == 2 || index == 5 || index == 6) {
+            } else if (e == eParamDataTypeInteger3D || e == eParamDataTypeFloatingPoint3D || e == eParamDataTypeColorRGB) {
                 _imp->setVisibleDefaultValues(true,
-                                              index == 2 ? AddKnobDialogPrivate::eDefaultValueTypeInt : AddKnobDialogPrivate::eDefaultValueTypeDouble,
+                                              (e == eParamDataTypeInteger3D) ? AddKnobDialogPrivate::eDefaultValueTypeInt : AddKnobDialogPrivate::eDefaultValueTypeDouble,
                                               3);
-            } else if (index == 7) {
-                _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeDouble,4);
+            } else if (e == eParamDataTypeColorRGBA) {
+                _imp->setVisibleDefaultValues(true,
+                                              AddKnobDialogPrivate::eDefaultValueTypeDouble,
+                                              4);
             }
             break;
-        case 8: // choice
+        case eParamDataTypeChoice: // choice
             _imp->setVisibleAnimates(true);
             _imp->setVisibleEvaluate(true);
             _imp->setVisibleHide(true);
@@ -1020,9 +1075,9 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
-            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeInt,1);
+            _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeInt, 1);
             break;
-        case 9: // bool
+        case eParamDataTypeCheckbox: // bool
             _imp->setVisibleAnimates(true);
             _imp->setVisibleEvaluate(true);
             _imp->setVisibleHide(true);
@@ -1035,9 +1090,9 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
-            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeBool,1);
+            _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeBool, 1);
             break;
-        case 10: // label
+        case eParamDataTypeLabel: // label
             _imp->setVisibleAnimates(false);
             _imp->setVisibleEvaluate(false);
             _imp->setVisibleHide(true);
@@ -1050,9 +1105,9 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
-            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeString,1);
+            _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeString, 1);
             break;
-        case 11: // text input
+        case eParamDataTypeTextInput: // text input
             _imp->setVisibleAnimates(true);
             _imp->setVisibleEvaluate(true);
             _imp->setVisibleHide(true);
@@ -1065,10 +1120,10 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
-            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeString,1);
+            _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeString, 1);
             break;
-        case 12: // input file
-        case 13: // output file
+        case eParamDataTypeInputFile: // input file
+        case eParamDataTypeOutputFile: // output file
             _imp->setVisibleAnimates(false);
             _imp->setVisibleEvaluate(true);
             _imp->setVisibleHide(true);
@@ -1081,9 +1136,9 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(true);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
-            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeString,1);
+            _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeString, 1);
             break;
-        case 14: // path
+        case eParamDataTypeDirectory: // path
             _imp->setVisibleAnimates(false);
             _imp->setVisibleEvaluate(true);
             _imp->setVisibleHide(true);
@@ -1096,9 +1151,9 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
-            _imp->setVisibleDefaultValues(true,AddKnobDialogPrivate::eDefaultValueTypeString,1);
+            _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeString, 1);
             break;
-        case 15: // grp
+        case eParamDataTypeGroup: // grp
             _imp->setVisibleAnimates(false);
             _imp->setVisibleEvaluate(false);
             _imp->setVisibleHide(true);
@@ -1111,9 +1166,9 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(true);
             _imp->setVisibleParent(false);
-            _imp->setVisibleDefaultValues(false,AddKnobDialogPrivate::eDefaultValueTypeInt,1);
+            _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, 1);
             break;
-        case 16: // page
+        case eParamDataTypePage: // page
             _imp->setVisibleAnimates(false);
             _imp->setVisibleEvaluate(false);
             _imp->setVisibleHide(false);
@@ -1126,9 +1181,9 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(false);
-            _imp->setVisibleDefaultValues(false,AddKnobDialogPrivate::eDefaultValueTypeInt,1);
+            _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, 1);
             break;
-        case 17: // button
+        case eParamDataTypeButton: // button
             _imp->setVisibleAnimates(false);
             _imp->setVisibleEvaluate(false);
             _imp->setVisibleHide(false);
@@ -1141,7 +1196,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
-            _imp->setVisibleDefaultValues(false,AddKnobDialogPrivate::eDefaultValueTypeInt,1);
+            _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, 1);
             break;
         default:
             break;
@@ -1160,7 +1215,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleSequence(false);
         _imp->setVisibleGrpAsTab(false);
         _imp->setVisibleParent(true);
-       // _imp->setVisibleDefaultValues(false,AddKnobDialogPrivate::eDefaultValueTypeInt, 1);
+       // _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, 1);
         _imp->setVisiblePage(true);
         return;
     }
@@ -1216,40 +1271,42 @@ AddKnobDialogPrivate::setKnobMinMax(KnobI* knob)
 }
 
 void
-AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
+AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
 {
     assert(!knob);
     std::string label = labelLineEdit->text().toStdString();
-    
-    switch (index) {
-        case 0:
-        case 1:
-        case 2: {
+    ParamDataTypeEnum e = (ParamDataTypeEnum)index;
+    switch (e) {
+        case eParamDataTypeInteger:
+        case eParamDataTypeInteger2D:
+        case eParamDataTypeInteger3D: {
             //int
             int dim = index + 1;
             boost::shared_ptr<KnobInt> k = Natron::createKnob<KnobInt>(panel->getHolder(), label, dim, false);
             setKnobMinMax<int>(k.get());
             knob = k;
-        } break;
-        case 3:
-        case 4:
-        case 5: {
+            break;
+        }
+        case eParamDataTypeFloatingPoint:
+        case eParamDataTypeFloatingPoint2D:
+        case eParamDataTypeFloatingPoint3D: {
             //double
             int dim = index - 2;
             boost::shared_ptr<KnobDouble> k = Natron::createKnob<KnobDouble>(panel->getHolder(), label, dim, false);
             setKnobMinMax<double>(k.get());
             knob = k;
-        } break;
-        case 6:
-        case 7: {
+            break;
+        }
+        case eParamDataTypeColorRGB:
+        case eParamDataTypeColorRGBA: {
             // color
             int dim = index - 3;
             boost::shared_ptr<KnobColor> k = Natron::createKnob<KnobColor>(panel->getHolder(), label, dim, false);
             setKnobMinMax<double>(k.get());
             knob = k;
-        }  break;
-        case 8: {
-
+            break;
+        }
+        case eParamDataTypeChoice: {
             boost::shared_ptr<KnobChoice> k = Natron::createKnob<KnobChoice>(panel->getHolder(), label, 1, false);
             QString entriesRaw = menuItemsEdit->toPlainText();
             QTextStream stream(&entriesRaw);
@@ -1281,15 +1338,17 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             }
             
             knob = k;
-        } break;
-        case 9: {
+            break;
+        }
+        case eParamDataTypeCheckbox: {
             boost::shared_ptr<KnobBool> k = Natron::createKnob<KnobBool>(panel->getHolder(), label, 1, false);
             bool defValue = defaultBool->isChecked();
             k->setDefaultValue(defValue);
             knob = k;
-        }   break;
-        case 10:
-        case 11: {
+            break;
+        }
+        case eParamDataTypeLabel:
+        case eParamDataTypeTextInput: {
             boost::shared_ptr<KnobString> k = Natron::createKnob<KnobString>(panel->getHolder(), label, 1, false);
             if (multiLine->isChecked()) {
                 k->setAsMultiLine();
@@ -1304,8 +1363,9 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             std::string defValue = defaultStr->text().toStdString();
             k->setDefaultValue(defValue);
             knob = k;
-        }   break;
-        case 12: {
+            break;
+        }
+        case eParamDataTypeInputFile: {
             boost::shared_ptr<KnobFile> k = Natron::createKnob<KnobFile>(panel->getHolder(), label, 1, false);
             if (sequenceDialog->isChecked()) {
                 k->setAsInputImage();
@@ -1313,8 +1373,9 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             std::string defValue = defaultStr->text().toStdString();
             k->setDefaultValue(defValue);
             knob = k;
-        } break;
-        case 13: {
+            break;
+        }
+        case eParamDataTypeOutputFile: {
             boost::shared_ptr<KnobOutputFile> k = Natron::createKnob<KnobOutputFile>(panel->getHolder(), label, 1, false);
             if (sequenceDialog->isChecked()) {
                 k->setAsOutputImageFile();
@@ -1322,8 +1383,9 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             std::string defValue = defaultStr->text().toStdString();
             k->setDefaultValue(defValue);
             knob = k;
-        } break;
-        case 14: {
+            break;
+        }
+        case eParamDataTypeDirectory: {
             boost::shared_ptr<KnobPath> k = Natron::createKnob<KnobPath>(panel->getHolder(), label, 1, false);
             if (multiPath->isChecked()) {
                 k->setMultiPath(true);
@@ -1332,7 +1394,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             k->setDefaultValue(defValue);
             knob = k;
         } break;
-        case 15: {
+        case eParamDataTypeGroup: {
             boost::shared_ptr<KnobGroup> k = Natron::createKnob<KnobGroup>(panel->getHolder(), label, 1, false);
             if (groupAsTab->isChecked()) {
                 k->setAsTab();
@@ -1340,11 +1402,11 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,int optionalGroupIndex)
             k->setDefaultValue(true); //< default to opened
             knob = k;
         } break;
-        case 16: {
+        case eParamDataTypePage: {
             boost::shared_ptr<KnobPage> k = Natron::createKnob<KnobPage>(panel->getHolder(), label, 1, false);
             knob = k;
         } break;
-        case 17: {
+        case eParamDataTypeButton: {
             boost::shared_ptr<KnobButton> k = Natron::createKnob<KnobButton>(panel->getHolder(), label, 1, false);
             knob = k;
         } break;
