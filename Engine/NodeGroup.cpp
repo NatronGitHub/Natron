@@ -1675,7 +1675,7 @@ static QString escapeString(const QString& str)
         
     }
     ret.prepend('"');
-    ret.append("\".encode('string_escape')");
+    ret.append('"');
     
     return ret;
 }
@@ -2729,7 +2729,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     WRITE_STATIC_LINE("");
     
     WRITE_STATIC_LINE("def getLabel():");
-    WRITE_INDENT(1);WRITE_STRING("return \"" + pluginLabel + "\"");
+    WRITE_INDENT(1);WRITE_STRING("return " + ESC(pluginLabel));
     WRITE_STATIC_LINE("");
     
     WRITE_STATIC_LINE("def getVersion():");
@@ -2738,7 +2738,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
   
     if (!pluginIconPath.isEmpty()) {
         WRITE_STATIC_LINE("def getIconPath():");
-        WRITE_INDENT(1);WRITE_STRING("return \"" + pluginIconPath + "\"");
+        WRITE_INDENT(1);WRITE_STRING("return " + ESC(pluginIconPath));
         WRITE_STATIC_LINE("");
     }
     
@@ -2748,7 +2748,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     
     if (!pluginDescription.isEmpty()) {
         WRITE_STATIC_LINE("def getPluginDescription():");
-        WRITE_INDENT(1);WRITE_STRING("return \"" + pluginDescription + "\"");
+        WRITE_INDENT(1);WRITE_STRING("return " + ESC(pluginDescription));
         WRITE_STATIC_LINE("");
     }
     
