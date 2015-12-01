@@ -207,6 +207,7 @@ struct AddKnobDialogPrivate
     {
         
     }
+    void setVisibleLabel(bool visible);
     
     void setVisibleMinMax(bool visible);
     
@@ -968,6 +969,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
 {
     
     _imp->setVisiblePage(index != 16);
+    _imp->setVisibleLabel(index != 10);
     switch (index) {
         case 0: // int
         case 1: // int 2D
@@ -1712,6 +1714,12 @@ AddKnobDialog::onOkClicked()
     
     
     accept();
+}
+
+void
+AddKnobDialogPrivate::setVisibleLabel(bool visible)
+{
+    labelLineEdit->setVisible(visible);
 }
 
 void
