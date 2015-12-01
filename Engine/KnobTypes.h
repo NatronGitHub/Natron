@@ -459,6 +459,7 @@ public:
     ValueChangedReturnCodeEnum setValueFromLabel(const std::string & value,
                                                  int dimension,
                                                  bool turnOffAutoKeying = false);
+    
     /// set the KnobChoice default value from the label
     void setDefaultValueFromLabel(const std::string & value,int dimension = 0);
 

@@ -1935,7 +1935,16 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     KnobButton* isButton = dynamic_cast<KnobButton*>(knob.get());
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
     
-#pragma message WARN("TODO: only write min/max/displaymin/displaymax/defaultvalue if it is not an alias, or if the value is different from the aliased param")
+    
+    boost::shared_ptr<KnobI > aliasedParam;
+    {
+        std::list<boost::shared_ptr<KnobI> > listeners;
+        knob->getListeners(listeners);
+        if (!listeners.empty() && listeners.front()->getAliasMaster() == knob) {
+            aliasedParam = listeners.front();
+        }
+    }
+    
     if (isInt) {
         QString createToken;
         switch (isInt->getDimension()) {
@@ -1956,7 +1965,14 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + ESC(isInt->getName()) +
                                       ", " + ESC(isInt->getLabel()) + ")");
         
+        KnobInt* aliasedIsInt = dynamic_cast<KnobInt*>(aliasedParam.get());
+        
         std::vector<int> defaultValues = isInt->getDefaultValues_mt_safe();
+        std::vector<int> aliasedDefaults;
+        if (aliasedIsInt) {
+            aliasedDefaults = aliasedIsInt->getDefaultValues_mt_safe();
+        }
+        
         assert((int)defaultValues.size() == isInt->getDimension());
         for (int i = 0; i < isInt->getDimension() ; ++i) {
             int min = isInt->getMinimum(i);
@@ -1964,22 +1980,30 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
             int dMin = isInt->getDisplayMinimum(i);
             int dMax = isInt->getDisplayMaximum(i);
             if (min != INT_MIN) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
+                if (!aliasedIsInt || aliasedIsInt->getMinimum(i) != min) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
                                               NUM(i) + ")");
+                }
             }
             if (max != INT_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
+                if (!aliasedIsInt || aliasedIsInt->getMaximum(i) != max) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
                                               NUM(i) + ")");
+                }
             }
             if (dMin != INT_MIN) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
+                if (!aliasedIsInt || aliasedIsInt->getDisplayMinimum(i) != dMin) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
                                               NUM(i) + ")");
+                }
             }
             if (dMax != INT_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
+                if (!aliasedIsInt || aliasedIsInt->getDisplayMaximum(i) != dMax) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
                                               NUM(i) + ")");
+                }
             }
-            if (defaultValues[i] != 0) {
+            if (!aliasedIsInt || defaultValues[i] != 0 != aliasedDefaults[i]) {
                 WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
             }
         }
@@ -2003,6 +2027,12 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + ESC(isDouble->getName()) +
                                       ", " + ESC(isDouble->getLabel()) + ")");
         
+        KnobDouble* aliasedIsDouble = dynamic_cast<KnobDouble*>(aliasedParam.get());
+        
+        std::vector<double> aliasedDefaults;
+        if (aliasedIsDouble) {
+            aliasedDefaults = aliasedIsDouble->getDefaultValues_mt_safe();
+        }
         std::vector<double> defaultValues = isDouble->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isDouble->getDimension());
         for (int i = 0; i < isDouble->getDimension() ; ++i) {
@@ -2011,23 +2041,33 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
             double dMin = isDouble->getDisplayMinimum(i);
             double dMax = isDouble->getDisplayMaximum(i);
             if (min != -DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
+                if (!aliasedIsDouble || aliasedIsDouble->getMinimum(i) != min) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
                                               NUM(i) + ")");
+                }
             }
             if (max != DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
+                if (!aliasedIsDouble || aliasedIsDouble->getMaximum(i) != max) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
                                               NUM(i) + ")");
+                }
             }
             if (dMin != -DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
+                if (!aliasedIsDouble || aliasedIsDouble->getDisplayMinimum(i) != dMin) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
                                               NUM(i) + ")");
+                }
             }
             if (dMax != DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
+                if (!aliasedIsDouble || aliasedIsDouble->getDisplayMaximum(i) != dMax) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
                                               NUM(i) + ")");
+                }
             }
             if (defaultValues[i] != 0.) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
+                if (!aliasedIsDouble || aliasedDefaults[i] != defaultValues[i]) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
+                }
             }
         }
 
@@ -2036,11 +2076,19 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createBooleanParam(" + ESC(isBool->getName()) +
                                       ", " + ESC(isBool->getLabel()) + ")");
         
+        KnobBool* aliasedIsBool = dynamic_cast<KnobBool*>(aliasedParam.get());
+        
+        std::vector<bool> aliasedDefaults;
+        if (aliasedIsBool) {
+            aliasedDefaults = aliasedIsBool->getDefaultValues_mt_safe();
+        }
         std::vector<bool> defaultValues = isBool->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isBool->getDimension());
         
         if (defaultValues[0]) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[0]) + ")");
+            if (!aliasedIsBool || aliasedDefaults[0] != defaultValues[0]) {
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[0]) + ")");
+            }
         }
         
         
@@ -2048,6 +2096,11 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createChoiceParam(" +
                                       ESC(isChoice->getName()) +
                                       ", " + ESC(isChoice->getLabel()) + ")");
+        
+        KnobChoice* aliasedIsChoice = dynamic_cast<KnobChoice*>(aliasedParam.get());
+        
+      
+        
         std::vector<std::string> entries = isChoice->getEntries_mt_safe();
         std::vector<std::string> helps = isChoice->getEntriesHelp_mt_safe();
         if (entries.size() > 0) {
@@ -2065,10 +2118,17 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del entries");
         }
         
+        std::vector<int> aliasedDefaults;
+        if (aliasedIsChoice) {
+            aliasedDefaults = aliasedIsChoice->getDefaultValues_mt_safe();
+        }
         std::vector<int> defaultValues = isChoice->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isChoice->getDimension());
         if (defaultValues[0] != 0) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[0]) + ")");
+            if (!aliasedIsChoice || aliasedDefaults[0] != defaultValues[0]) {
+                std::string entryStr = isChoice->getEntry(defaultValues[0]);
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(entryStr) + ")");
+            }
         }
         
     } else if (isColor) {
@@ -2076,6 +2136,12 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createColorParam(" + ESC(isColor->getName()) +
                                       ", " + ESC(isColor->getLabel()) + ", " + hasAlphaStr +  ")");
         
+        KnobColor* aliasedIsColor = dynamic_cast<KnobColor*>(aliasedParam.get());
+        
+        std::vector<double> aliasedDefaults;
+        if (aliasedIsColor) {
+            aliasedDefaults = aliasedIsColor->getDefaultValues_mt_safe();
+        }
         std::vector<double> defaultValues = isColor->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isColor->getDimension());
         
@@ -2085,23 +2151,33 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
             double dMin = isColor->getDisplayMinimum(i);
             double dMax = isColor->getDisplayMaximum(i);
             if (min != -DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
+                if (!aliasedIsColor || aliasedIsColor->getMinimum(0) != min) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
                                               NUM(i) + ")");
+                }
             }
             if (max != DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
+                if (!aliasedIsColor || aliasedIsColor->getMaximum(0) != max) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
                                               NUM(i) + ")");
+                }
             }
             if (dMin != -DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
+                if (!aliasedIsColor || aliasedIsColor->getDisplayMinimum(0) != dMin) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
                                               NUM(i) + ")");
+                }
             }
             if (dMax != DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
+                if (!aliasedIsColor || aliasedIsColor->getDisplayMaximum(0) != dMax) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
                                               NUM(i) + ")");
+                }
             }
             if (defaultValues[i] != 0.) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
+                if (!aliasedIsColor || aliasedDefaults[i] != defaultValues[i]) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
+                }
             }
         }
 
@@ -2129,11 +2205,15 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         }
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setType(NatronEngine.StringParam.TypeEnum." + typeStr + ")");
         
+        KnobString* aliasedKnob = dynamic_cast<KnobString*>(aliasedParam.get());
+        
         std::vector<std::string> defaultValues = isStr->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isStr->getDimension());
         QString def(defaultValues[0].c_str());
         if (!def.isEmpty()) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+            if (!aliasedKnob || aliasedKnob->getDefaultValue(0) != defaultValues[0]) {
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+            }
         }
         
     } else if (isFile) {
@@ -2142,11 +2222,15 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         QString seqStr = isFile->isInputImageFile() ? "True" : "False";
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
         
+        KnobFile* aliasedKnob = dynamic_cast<KnobFile*>(aliasedParam.get());
+        
         std::vector<std::string> defaultValues = isFile->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isFile->getDimension());
         QString def(defaultValues[0].c_str());
         if (!def.isEmpty()) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + def + ")");
+            if (!aliasedKnob || aliasedKnob->getDefaultValue(0) != defaultValues[0]) {
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + def + ")");
+            }
         }
         
     } else if (isOutFile) {
@@ -2157,11 +2241,15 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         QString seqStr = isOutFile->isOutputImageFile() ? "True" : "False";
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
         
+        KnobOutputFile* aliasedKnob = dynamic_cast<KnobOutputFile*>(aliasedParam.get());
+        
         std::vector<std::string> defaultValues = isOutFile->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isOutFile->getDimension());
         QString def(defaultValues[0].c_str());
         if (!def.isEmpty()) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+            if (!aliasedKnob || aliasedKnob->getDefaultValue(0) != defaultValues[0]) {
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+            }
         }
 
     } else if (isPath) {
@@ -2172,11 +2260,15 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
             WRITE_INDENT(indentLevel); WRITE_STRING("param.setAsMultiPathTable()");
         }
         
+        KnobPath* aliasedKnob = dynamic_cast<KnobPath*>(aliasedParam.get());
+        
         std::vector<std::string> defaultValues = isPath->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isPath->getDimension());
         QString def(defaultValues[0].c_str());
         if (!def.isEmpty()) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+            if (!aliasedKnob || aliasedKnob->getDefaultValue(0) != defaultValues[0]) {
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+            }
         }
 
     } else if (isGrp) {
@@ -2211,7 +2303,9 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Set param properties");
 
     QString help(knob->getHintToolTip().c_str());
-    WRITE_INDENT(indentLevel); WRITE_STRING("param.setHelp(" + ESC(help) + ")");
+    if (!aliasedParam || aliasedParam->getHintToolTip() != knob->getHintToolTip()) {
+        WRITE_INDENT(indentLevel); WRITE_STRING("param.setHelp(" + ESC(help) + ")");
+    }
     if (knob->isNewLineActivated()) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setAddNewLine(True)");
     } else {

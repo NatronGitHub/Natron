@@ -2905,6 +2905,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 boost::shared_ptr<KnobString> channelName = Natron::createKnob<KnobString>(_imp->liveInstance.get(), "",1,false);
                 channelName->setSecretByDefault(true);
                 channelName->setEvaluateOnChange(false);
+                channelName->setDefaultValue(choices[choices.size() - 1]);
                 if (mainPage) {
                     mainPage->addKnob(channelName);
                 }

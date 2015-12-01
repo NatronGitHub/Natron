@@ -826,8 +826,11 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
         KnobBool* isBool = dynamic_cast<KnobBool*>(knob.get());
         Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>(knob.get());
+        KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knob.get());
         
-        if (isDbl) {
+        if (isChoice) {
+            _imp->defaultStr->setText(isChoice->getEntry(isChoice->getDefaultValue(0)).c_str());
+        } else if (isDbl) {
             _imp->default0->setValue(isDbl->getDefaultValue(0));
             if (isDbl->getDimension() >= 2) {
                 _imp->default1->setValue(isDbl->getDefaultValue(1));
@@ -973,6 +976,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     } else {
         ParamDataTypeEnum e = getChoiceIndexFromKnobType(knob.get());
         assert(e != eParamDataTypeCount);
+        type = (int)e;
     }
     onTypeCurrentIndexChanged(type);
     _imp->panel->setUserPageActiveIndex();
@@ -1048,7 +1052,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
                 _imp->setVisibleDefaultValues(true,
                                               (e == eParamDataTypeInteger) ? AddKnobDialogPrivate::eDefaultValueTypeInt : AddKnobDialogPrivate::eDefaultValueTypeDouble,
                                               1);
-            } else if (e == eParamDataTypeInteger2D || e == eParamDataTypeFloatingPoint3D) {
+            } else if (e == eParamDataTypeInteger2D || e == eParamDataTypeFloatingPoint2D) {
                 _imp->setVisibleDefaultValues(true,
                                               (e == eParamDataTypeInteger2D) ? AddKnobDialogPrivate::eDefaultValueTypeInt : AddKnobDialogPrivate::eDefaultValueTypeDouble,
                                               2);
@@ -1075,7 +1079,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleSequence(false);
             _imp->setVisibleGrpAsTab(false);
             _imp->setVisibleParent(true);
-            _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeInt, 1);
+            _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeString, 1);
             break;
         case eParamDataTypeCheckbox: // bool
             _imp->setVisibleAnimates(true);
@@ -1217,7 +1221,6 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         _imp->setVisibleParent(true);
        // _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, 1);
         _imp->setVisiblePage(true);
-        return;
     }
 }
 
@@ -1332,9 +1335,24 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
             }
             k->populateChoices(entries,helps);
             
-            int defValue = default0->value();
-            if (defValue < (int)entries.size() && defValue >= 0) {
-                k->setDefaultValue(defValue);
+            std::string defValue = defaultStr->text().toStdString();
+            int defIndex = -1;
+            for (std::size_t i = 0; i < entries.size(); ++i) {
+                if (entries[i] == defValue) {
+                    defIndex = i;
+                    break;
+                }
+            }
+            if (defIndex == -1) {
+                std::stringstream ss;
+                ss << '"';
+                ss << defValue;
+                ss << '"';
+                ss << " does not exist in the defined menu items";
+                throw std::invalid_argument(ss.str());
+            }
+            if (defIndex < (int)entries.size() && defIndex >= 0) {
+                k->setDefaultValue(defIndex);
             }
             
             knob = k;
@@ -1720,11 +1738,29 @@ AddKnobDialog::onOkClicked()
         } else if (isBool) {
             isBool->setDefaultValue(_imp->defaultBool->isChecked());
         } else if (isChoice) {
-            int defValue = _imp->default0->value();
+            std::string defValue = _imp->defaultStr->text().toStdString();
+            int defIndex = -1;
             std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-            if (defValue < (int)entries.size() && defValue >= 0) {
-                isChoice->setDefaultValue(defValue);
+            for (std::size_t i = 0; i < entries.size(); ++i) {
+                if (entries[i] == defValue) {
+                    defIndex = i;
+                    break;
+                }
             }
+            if (defIndex == -1) {
+                std::stringstream ss;
+                ss << '"';
+                ss << defValue;
+                ss << '"';
+                ss << " does not exist in the defined menu items";
+                Natron::errorDialog(tr("Error while creating parameter").toStdString(), ss.str());
+                return;
+            }
+            if (defIndex < (int)entries.size() && defIndex >= 0) {
+                isChoice->setDefaultValue(defIndex);
+            }
+
+           
         }
 
         
