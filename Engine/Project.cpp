@@ -1291,13 +1291,20 @@ Project::onKnobValueChanged(KnobI* knob,
                             bool /*originatedFromMainThread*/)
 {
     if ( knob == _imp->viewsList.get() ) {
+        
+        /**
+         * All cache entries are linked to a view index which may no longer be correct since the user changed the project settings.
+         * The only way to overcome this is to wipe the cache.
+         **/
+        appPTR->clearAllCaches();
+        
         std::vector<std::string> viewNames = getProjectViewNames();
         getApp()->setupViewersForViews(viewNames);
         if (reason == Natron::eValueChangedReasonUserEdited) {
             ///views change, notify all OneView nodes via getClipPreferences
             forceComputeInputDependentDataOnAllTrees();
         }
-
+        
     } else if (knob == _imp->setupForStereoButton.get()) {
         setupProjectForStereo();
     } else if ( knob == _imp->formatKnob.get() ) {
