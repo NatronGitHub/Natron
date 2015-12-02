@@ -600,7 +600,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
     fi
     tar xvf $SRC_PATH/$ILM_TAR || exit 1
     cd ilmbase-* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     if [ "$DDIR" != "" ]; then
@@ -613,7 +613,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
     fi
     tar xvf $SRC_PATH/$EXR_TAR || exit 1
     cd openexr-* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     if [ "$DDIR" != "" ]; then
