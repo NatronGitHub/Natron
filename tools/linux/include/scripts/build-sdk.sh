@@ -593,6 +593,11 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/libraw.pc ]; then
 fi
 
 # Install openexr
+if [ "$REBUILD_EXR" = "1" ]; then
+  rm -rf $INSTALL_PATH/lib/libI* $INSTALL_PATH/lib/libHalf*
+  rm -f $INSTALL_PATH/lib/pkgconfig/{OpenEXR,IlmBase}.pc
+  rmn -f $INSTALL_PATH/bin/exr*
+fi
 if [ ! -f $INSTALL_PATH/lib/pkgconfig/OpenEXR.pc ]; then
     cd $TMP_PATH || exit 1
     if [ ! -f $SRC_PATH/$ILM_TAR ]; then
@@ -800,7 +805,6 @@ if [ ! -f $INSTALL_PATH/lib/libOpenImageIO.so ]; then
     fi
     tar xvf $SRC_PATH/$OIIO_TAR || exit 1
     cd oiio-Release-* || exit 1
-    patch -p1 -i $INC_PATH/patches/OpenImageIO/pre-1.5.21.patch || exit 1
     patch -p1 -i $INC_PATH/patches/OpenImageIO/oiio-exrthreads.patch || exit 1
     mkdir build || exit 1
     cd build || exit 1
