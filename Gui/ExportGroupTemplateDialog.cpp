@@ -44,6 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Utils.h" // convertFromPlainText
+#include "Gui/GuiDefines.h"
 
 struct ExportGroupTemplateDialogPrivate
 {

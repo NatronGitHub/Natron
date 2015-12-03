@@ -2519,10 +2519,15 @@ EffectInstance::evaluate(KnobI* knob,
         node->refreshIdentityState();
     }
 
-    if (reason == Natron::eValueChangedReasonSlaveRefresh) {
+    
+    /*
+     We always have to trigger a render because this might be a tree not connected via a link to the knob who changed
+     but just an expression
+     
+     if (reason == Natron::eValueChangedReasonSlaveRefresh) {
         //do not trigger a render, the master will do it already
         return;
-    }
+    }*/
     
 
     double time = getCurrentTime();
