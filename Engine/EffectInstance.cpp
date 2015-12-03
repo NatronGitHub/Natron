@@ -251,8 +251,8 @@ EffectInstance::invalidateParallelRenderArgsTLS()
         --args.validArgs;
         if (args.validArgs < 0) {
             args.validArgs = 0;
+            return;
         }
-
         for (NodeList::iterator it = args.rotoPaintNodes.begin(); it != args.rotoPaintNodes.end(); ++it) {
             (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
         }
@@ -3887,22 +3887,21 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         ////tries to call getImage it can render with good parameters.
 
 
-        ParallelRenderArgsSetter frameRenderArgs( getApp()->getProject().get(),
-                                                  time,
-                                                  0, /*view*/
-                                                  true,
-                                                  false,
-                                                  false,
-                                                  0,
-                                                  node,
-                                                  0, // request
-                                                  0, //texture index
-                                                  getApp()->getTimeLine().get(),
-                                                  NodePtr(),
-                                                  true,
-                                                  false,
-                                                  false,
-                                                  boost::shared_ptr<RenderStats>() );
+        ParallelRenderArgsSetter frameRenderArgs(time,
+                                                 0, /*view*/
+                                                 true,
+                                                 false,
+                                                 false,
+                                                 0,
+                                                 node,
+                                                 0, // request
+                                                 0, //texture index
+                                                 getApp()->getTimeLine().get(),
+                                                 NodePtr(),
+                                                 true,
+                                                 false,
+                                                 false,
+                                                 boost::shared_ptr<RenderStats>() );
 
         RECURSIVE_ACTION();
         EffectPointerThreadProperty_RAII propHolder_raii(this);

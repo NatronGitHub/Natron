@@ -245,7 +245,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ParallelRenderArgs & frameRenderArgs = _imp->frameRenderArgs.localData();
     if (!frameRenderArgs.validArgs) {
-        qDebug() << "Thread-storage for the render of the frame was not set, this is a bug.";
+        qDebug() << "[BUG]:" << getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
         frameRenderArgs.time = args.time;
         frameRenderArgs.nodeHash = getHash();
         frameRenderArgs.view = args.view;
