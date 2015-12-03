@@ -71,7 +71,7 @@ class LinkArrow;
 class MultiInstancePanel;
 class NodeGraphPixmapItem;
 class NodeGraphTextItem;
-
+class NodeGraph;
 
 struct NodeGuiIndicatorPrivate;
 class NodeGuiIndicator
