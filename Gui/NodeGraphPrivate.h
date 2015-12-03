@@ -52,7 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 class NodeGraph;
 class Gui;
 class NodeCollection;
-struct NodeClipBoard;
+class NodeClipBoard;
 class NodeGuiSerialization;
 class ViewerTab;
 
@@ -156,8 +156,9 @@ public:
 
 
 
-struct NodeGraphPrivate
+class NodeGraphPrivate
 {
+public:
     NodeGraph* _publicInterface;
     
     boost::weak_ptr<NodeCollection> group;

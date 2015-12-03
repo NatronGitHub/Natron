@@ -26,7 +26,10 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
 #include "Gui/Label.h"
+#include "Gui/GuiFwd.h"
+
 
 namespace Natron {
 class GroupBoxLabel

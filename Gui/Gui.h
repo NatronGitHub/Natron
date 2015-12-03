@@ -40,75 +40,19 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+
+#include "Engine/ScriptObject.h"
+#include "Engine/EngineFwd.h"
+
 #include "Gui/SerializableWindow.h"
 #ifdef __NATRON_WIN32__
 #include "Gui/FileTypeMainWindow_win.h"
 #endif
-#include "Engine/ScriptObject.h"
+#include "Gui/RegisteredTabs.h"
+#include "Gui/GuiFwd.h"
 
 
 #define kMainSplitterObjectName "ToolbarSplitter"
-
-//boost
-namespace boost {
-namespace archive {
-class xml_iarchive;
-class xml_oarchive;
-}
-}
-
-//QtGui
-class Splitter;
-class QUndoStack;
-class QScrollArea;
-class QToolButton;
-class QVBoxLayout;
-class QMutex;
-
-//Natron gui
-#include "Gui/RegisteredTabs.h"
-class GuiLayoutSerialization;
-class GuiAppInstance;
-class PanelWidget;
-class AppInstance;
-class NodeGui;
-class TabWidget;
-class ToolButton;
-class ViewerTab;
-class DockablePanel;
-class NodeGraph;
-class CurveEditor;
-class Histogram;
-class RotoGui;
-class FloatingWidget;
-class BoundAction;
-class ScriptEditor;
-class PyPanel;
-class RectI;
-class DopeSheetEditor;
-class PropertiesBinWrapper;
-class RenderStatsDialog;
-
-//Natron engine
-class ViewerInstance;
-class PluginGroupNode;
-class KnobColor;
-class ProcessHandler;
-class NodeCollection;
-class KnobHolder;
-namespace Natron {
-class Node;
-class Image;
-class EffectInstance;
-class OutputEffectInstance;
-    
-    
-#if defined(Q_OS_MAC)
-//Implementation in Gui/QtMac.mm
-bool isHighDPIInternal(const QWidget* w);
-#endif
-    
-}
 
 
 struct GuiPrivate;

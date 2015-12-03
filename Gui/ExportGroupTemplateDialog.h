@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Gui_DockablePanelTabWidget_h
-#define Gui_DockablePanelTabWidget_h
+#ifndef Natron_Gui_ExportGroupTemplateDialog_h
+#define Natron_Gui_ExportGroupTemplateDialog_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -29,37 +29,37 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QTabWidget>
+#include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
+#include "Global/GlobalDefines.h"
 
 #include "Gui/GuiFwd.h"
 
 
-/**
- * @class This is to overcome an issue in QTabWidget : switching tab does not resize the QTabWidget.
- * This class resizes the QTabWidget to the current tab size.
- **/
-class DockablePanelTabWidget
-    : public QTabWidget
+struct ExportGroupTemplateDialogPrivate;
+class ExportGroupTemplateDialog : public QDialog
 {
-    Gui* _gui;
-public:
-
-    DockablePanelTabWidget(Gui* gui, QWidget* parent = 0);
-
-    virtual QSize sizeHint() const OVERRIDE FINAL;
-    virtual QSize minimumSizeHint() const OVERRIDE FINAL;
+    Q_OBJECT
     
-    QTabBar* getTabBar() const
-    {
-        return tabBar();
-    }
+public:
+    
+    ExportGroupTemplateDialog(NodeCollection* group, Gui* gui, QWidget* parent);
+    
+    virtual ~ExportGroupTemplateDialog();
+    
+public Q_SLOTS:
+
+    void onButtonClicked();
+    
+    void onOkClicked();
+    
+    void onLabelEditingFinished();
     
 private:
     
-    virtual void keyPressEvent(QKeyEvent* event) OVERRIDE FINAL;
+    boost::scoped_ptr<ExportGroupTemplateDialogPrivate> _imp;
 };
 
-
-#endif // Gui_DockablePanelTabWidget_h
+#endif // Natron_Gui_ExportGroupTemplateDialog_h

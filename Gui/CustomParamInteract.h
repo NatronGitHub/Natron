@@ -39,10 +39,9 @@ CLANG_DIAG_ON(uninitialized)
 #endif
 #include "Engine/OverlaySupport.h"
 
-class KnobGui;
-namespace Natron {
-class OfxParamOverlayInteract;
-}
+#include "Gui/GuiFwd.h"
+
+
 struct CustomParamInteractPrivate;
 class CustomParamInteract
     : public QGLWidget, public OverlaySupport

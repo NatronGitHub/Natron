@@ -45,27 +45,12 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
-#include "Gui/CurveEditorUndoRedo.h"
+
 #include "Engine/OverlaySupport.h"
 #include "Engine/Curve.h"
 
-class CurveSelection;
-class QFont;
-class Variant;
-class TimeLine;
-class KnobGui;
-class CurveWidget;
-class Button;
-class LineEdit;
-class SpinBox;
-class Gui;
-class Bezier;
-class RotoContext;
-class QVBoxLayout;
-class QHBoxLayout;
-namespace Natron {
-    class Label;
-}
+#include "Gui/CurveEditorUndoRedo.h"
+#include "Gui/GuiFwd.h"
 
 
 class CurveWidgetPrivate;

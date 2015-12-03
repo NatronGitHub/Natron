@@ -33,14 +33,15 @@
 #include <QWidget>
 
 #include "Engine/RenderStats.h"
+#include "Engine/EngineFwd.h"
 
-namespace Natron {
-    class Node;
-}
+
+class QItemSelection;
+
 
 class TableItem;
 class Gui;
-class QItemSelection;
+
 
 struct RenderStatsDialogPrivate;
 class RenderStatsDialog : public QWidget

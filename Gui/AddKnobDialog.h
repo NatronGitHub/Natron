@@ -36,8 +36,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(uninitialized)
 
-class KnobI;
-class DockablePanel;
+#include "Gui/GuiFwd.h"
+
 
 struct AddKnobDialogPrivate;
 class AddKnobDialog : public QDialog

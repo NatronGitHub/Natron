@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Gui_FloatingWidget_h
-#define Gui_FloatingWidget_h
+#ifndef NATRON_GUI_NODEGUI_H
+#define NATRON_GUI_NODEGUI_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,75 +25,82 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <map>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #endif
 
 #include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QMainWindow>
+#include <QtCore/QRectF>
+#include <QtCore/QMutex>
+#include <QGraphicsItem>
+#include <QDialog>
+#include <QMutex>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/ScriptObject.h"
-#include "Engine/EngineFwd.h"
-
-#include "Gui/SerializableWindow.h"
+#include "Gui/NodeGui.h"
 #include "Gui/GuiFwd.h"
 
-
-#define kMainSplitterObjectName "ToolbarSplitter"
-
-/*This class represents a floating pane that embeds a widget*/
-class FloatingWidget
-    : public QWidget, public SerializableWindow
+class DotGui
+    : public NodeGui
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-
 public:
 
-    explicit FloatingWidget(Gui* gui,
-                            QWidget* parent = 0);
-
-    virtual ~FloatingWidget();
-
-    /*Set the embedded widget. Only 1 widget can be embedded
-       by FloatingWidget. Once set, this function does nothing
-       for subsequent calls..*/
-    void setWidget(QWidget* w);
-
-    void removeEmbeddedWidget();
-
-    QWidget* getEmbeddedWidget() const
-    {
-        return _embeddedWidget;
-    }
-
-public Q_SLOTS:
-
-    void onProjectNameChanged(const QString& filePath, bool modified);
-    
-Q_SIGNALS:
-
-    void closed();
+    DotGui(QGraphicsItem *parent = 0);
 
 private:
 
-    virtual void moveEvent(QMoveEvent* e) OVERRIDE FINAL;
-    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-    virtual void closeEvent(QCloseEvent* e) OVERRIDE;
-    QWidget* _embeddedWidget;
-    QScrollArea* _scrollArea;
-    QVBoxLayout* _layout;
-    Gui* _gui;
+
+    virtual void createGui() OVERRIDE FINAL;
+    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container, const boost::shared_ptr<NodeGui> & thisAsShared) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool canMakePreview() OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+    
+    virtual void refreshStateIndicator() OVERRIDE FINAL;
+    
+    virtual void applyBrush(const QBrush & brush) OVERRIDE FINAL;
+    
+    virtual bool canResize() OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+    
+    virtual QRectF boundingRect() const OVERRIDE FINAL;
+    virtual QPainterPath shape() const OVERRIDE FINAL;
+    QGraphicsEllipseItem* diskShape;
+    QGraphicsEllipseItem* ellipseIndicator;
 };
 
-#endif // Gui_FloatingWidget_h
+struct ExportGroupTemplateDialogPrivate;
+class ExportGroupTemplateDialog : public QDialog
+{
+    Q_OBJECT
+    
+public:
+    
+    ExportGroupTemplateDialog(NodeCollection* group,Gui* gui,QWidget* parent);
+    
+    virtual ~ExportGroupTemplateDialog();
+    
+public Q_SLOTS:
+
+    void onButtonClicked();
+    
+    void onOkClicked();
+    
+    void onLabelEditingFinished();
+    
+private:
+    
+    boost::scoped_ptr<ExportGroupTemplateDialogPrivate> _imp;
+};
+
+#endif // NATRON_GUI_NODEGUI_H

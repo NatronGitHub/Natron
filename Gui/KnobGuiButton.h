@@ -42,6 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Singleton.h"
 #include "Engine/Knob.h"
 #include "Engine/ImageComponents.h"
+#include "Engine/EngineFwd.h"
 
 #include "Gui/CurveSelection.h"
 #include "Gui/KnobGui.h"
@@ -56,19 +57,6 @@ class QTreeWidget;
 class QTreeWidgetItem;
 class QScrollArea;
 class QFontComboBox;
-
-// Engine
-class KnobI;
-class KnobInt;
-class KnobBool;
-class KnobDouble;
-class KnobButton;
-class KnobSeparator;
-class KnobGroup;
-class KnobParametric;
-class KnobColor;
-class KnobChoice;
-class KnobString;
 
 // Gui
 class DockablePanel;

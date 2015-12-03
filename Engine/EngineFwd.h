@@ -118,6 +118,7 @@ class KnobOutputFile;
 class KnobPage;
 class KnobParametric;
 class KnobPath;
+class KnobSeparator;
 class KnobSerialization;
 class KnobString;
 class NodeCollection;

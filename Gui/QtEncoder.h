@@ -26,18 +26,8 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/OutputEffectInstance.h"
+#include "Engine/EngineFwd.h"
 
-namespace Natron {
-namespace Color {
-class Lut;
-}
-}
-
-class KnobOutputFile;
-class KnobChoice;
-class KnobButton;
-class KnobInt;
-class KnobBool;
 
 class QtWriter
     : public Natron::OutputEffectInstance

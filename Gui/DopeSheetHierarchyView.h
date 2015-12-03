@@ -38,16 +38,10 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include "Gui/GuiFwd.h"
 
-class DopeSheet;
-class DSKnob;
-class HierarchyView;
-class DSNode;
-class Gui;
+
 class HierarchyViewPrivate;
-class QModelIndex;
-class QStyleOptionViewItem;
-
 
 /**
  * @brief This class is a part of the hierarchy view.

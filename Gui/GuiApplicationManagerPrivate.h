@@ -46,15 +46,13 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Variant.h"
 #include "Engine/CLArgs.h"
+#include "Engine/EngineFwd.h"
 
 #include "Gui/ActionShortcuts.h" // AppShortcuts
 #include "Gui/GuiApplicationManager.h" // PythonUserCommand
 #include "Gui/NodeClipBoard.h"
+#include "Gui/GuiFwd.h"
 
-class PluginGroupNode;
-class KnobGuiFactory;
-class Curve;
-class SplashScreen;
 
 struct KnobsClipBoard
 {

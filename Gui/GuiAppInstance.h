@@ -27,16 +27,13 @@
 
 #include <map>
 
-#include "Engine/AppInstance.h"
-
 #include "Global/Macros.h"
 
-class NodeGui;
+#include "Engine/AppInstance.h"
 
-class Gui;
-class ViewerTab;
-class Format;
-class KnobHolder;
+#include "Gui/GuiFwd.h"
+
+
 /**
  * @brief This little struct contains what enables file dialogs to show previews.
  * It is shared by all dialogs so that we don't have to recreate the nodes everytimes

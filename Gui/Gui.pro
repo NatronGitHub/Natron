@@ -92,9 +92,11 @@ SOURCES += \
     DopeSheetEditorUndoRedo.cpp \
     DopeSheetHierarchyView.cpp \
     DopeSheetEditor.cpp \
+    DotGui.cpp \
     Edge.cpp \
     EditExpressionDialog.cpp \
     EditScriptDialog.cpp \
+    ExportGroupTemplateDialog.cpp \
     FloatingWidget.cpp \
     QtEnumConvert.cpp \
     Gui.cpp \
@@ -244,19 +246,22 @@ HEADERS += \
     DopeSheetEditorUndoRedo.h \
     DopeSheetHierarchyView.h \
     DopeSheetEditor.h \
+    DotGui.h \
     Edge.h \
     EditExpressionDialog.h \
     EditScriptDialog.h \
+    ExportGroupTemplateDialog.h \
     FileTypeMainWindow_win.h \
     FloatingWidget.h \
     QtEnumConvert.h \
     GroupBoxLabel.h \
     Gui.h \
-    GuiDefines.h \
     GuiApplicationManager.h \
     GuiApplicationManagerPrivate.h \
     GuiAppInstance.h \
     GuiAppWrapper.h \
+    GuiDefines.h \
+    GuiFwd.h \
     GuiMacros.h \
     GuiPrivate.h \
     GlobalGuiWrapper.h \

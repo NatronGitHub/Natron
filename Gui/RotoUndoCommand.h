@@ -35,21 +35,16 @@
 #include <boost/weak_ptr.hpp>
 #endif
 #include "Global/Macros.h"
-class Bezier;
-class BezierCP;
-class RotoGui;
-class RotoLayer;
-class RotoPanel;
+
+#include "Engine/EngineFwd.h"
+
 class QRectF;
-class Curve;
-class RotoDrawableItem;
-class RotoStrokeItem;
 class QTreeWidgetItem;
-class RotoItem;
-class KnobDouble;
-namespace Transform {
-struct Matrix3x3;
-}
+
+class RotoGui;
+class RotoPanel;
+
+
 struct DroppedTreeItem;
 
 class MoveControlPointsUndoCommand

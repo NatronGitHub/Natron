@@ -39,25 +39,17 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/OpenGLViewerI.h"
-#include "Global/Macros.h"
+#include "Engine/EngineFwd.h"
 
 class QKeyEvent;
 class QEvent;
 class QMenu;
 class QGLShaderProgram;
+class QInputEvent;
 
-namespace Natron {
-class ChannelSet;
-class Image;
-}
 class InfoViewerWidget;
-class AppInstance;
-class ViewerInstance;
 class ViewerTab;
 class ImageInfo;
-class QInputEvent;
-struct TextureRect;
-class Format;
 
 /**
  *@class ViewerGL

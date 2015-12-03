@@ -25,27 +25,21 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#endif
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsLineItem>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-class QGraphicsPolygonItem;
-class QGraphicsLineItem;
-class QRectF;
-class QPointF;
-class QPainterPath;
-class QGraphicsScene;
-class QGraphicsTextItem;
-class QGraphicsSceneMouseEvent;
-class NodeGui;
-class Node;
+
+#include "Gui/GuiFwd.h"
+
 
 struct EdgePrivate;
 class Edge

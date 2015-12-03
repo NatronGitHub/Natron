@@ -34,44 +34,13 @@
 
 #include "Global/Enums.h"
 
+#include "Engine/EngineFwd.h"
+
 #include "Gui/ComboBox.h"
+#include "Gui/GuiFwd.h"
 
-class QWidget;
-class QHBoxLayout;
-class QVBoxLayout;
-class QCheckBox;
-
-namespace Natron {
-    class Node;
-    class Label;
-    class ClickableLabel;
-    class EffectInstance;
-    class ImageComponents;
-}
-class ViewerGL;
-class ViewerTab;
-class GuiAppInstance;
-class ComboBox;
-class Button;
-class SpinBox;
-class ChannelsComboBox;
-class ScaleSliderQWidget;
-class InfoViewerWidget;
-class LineEdit;
-class TimeLineGui;
-namespace Transform {
-    struct Matrix3x3;
-}
-class Gui;
-class ViewerInstance;
-class NodeGui;
-class RotoGui;
-class TrackerGui;
 
 #define NATRON_TRANSFORM_AFFECTS_OVERLAYS
-
-
-using namespace Natron;
 
 
 struct ViewerTabPrivate
@@ -165,11 +134,11 @@ struct ViewerTabPrivate
     
     LineEdit* frameRangeEdit;
 
-    ClickableLabel* canEditFrameRangeLabel;
+    Natron::ClickableLabel* canEditFrameRangeLabel;
     Button* tripleSyncButton;
     
     QCheckBox* canEditFpsBox;
-    ClickableLabel* canEditFpsLabel;
+    Natron::ClickableLabel* canEditFpsLabel;
     mutable QMutex fpsLockedMutex;
     bool fpsLocked;
     SpinBox* fpsBox;
@@ -184,7 +153,7 @@ struct ViewerTabPrivate
     std::pair<NodeGui*,TrackerGui*> currentTracker;
     InputNamesMap inputNamesMap;
     mutable QMutex compOperatorMutex;
-    ViewerCompositingOperatorEnum compOperator;
+    Natron::ViewerCompositingOperatorEnum compOperator;
     ViewerInstance* viewerNode; // < pointer to the internal node
     
     mutable QMutex visibleToolbarsMutex; //< protects the 4 bool below
@@ -226,7 +195,7 @@ struct ViewerTabPrivate
 
 #endif
 
-    void getComponentsAvailabel(std::set<ImageComponents>* comps) const;
+    void getComponentsAvailabel(std::set<Natron::ImageComponents>* comps) const;
 
 };
 #endif // Gui_ViewerTabPrivate_h

@@ -42,13 +42,10 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/shared_ptr.hpp>
 #endif
 
-class DopeSheet;
-class DopeSheetViewPrivate;
-class DSNode;
-class Gui;
-class HierarchyView;
-class TimeLine;
+#include "Gui/GuiFwd.h"
 
+
+class DopeSheetViewPrivate;
 
 /**
  * @brief The DopeSheetView class describes the dope sheet view view of the

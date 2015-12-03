@@ -39,6 +39,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
+#include "Engine/EngineFwd.h"
+
 class QInputEvent;
 class QMouseEvent;
 class QToolBar;
@@ -48,17 +50,13 @@ class QString;
 class QToolButton;
 class QKeyEvent;
 class QPointF;
-class ViewerTab;
 class QAction;
-class RotoItem;
 class QUndoCommand;
+
+class ViewerTab;
 class NodeGui;
-class Bezier;
-class RotoDrawableItem;
-class BezierCP;
 class GuiAppInstance;
 struct RotoGuiSharedData;
-class RotoContext;
 
 class RotoToolButton
     : public QToolButton

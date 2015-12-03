@@ -39,15 +39,12 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Global/Macros.h"
+#include "Gui/GuiFwd.h"
+
 
 #define DROP_DOWN_ICON_SIZE 6
 
-class QHBoxLayout;
-class QMouseEvent;
-class QAction;
 
-class MenuWithToolTips;
 
 struct ComboBoxMenuNode
 {

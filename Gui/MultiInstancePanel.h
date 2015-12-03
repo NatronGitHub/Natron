@@ -29,18 +29,22 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
-#include "Engine/Knob.h"
+
 #include <QThread>
-namespace Natron {
-class Node;
-}
-class NodeGui;
+
+#include "Engine/Knob.h"
+#include "Engine/EngineFwd.h"
+
+
 class QVBoxLayout;
 class QHBoxLayout;
 class QItemSelection;
+
+class NodeGui;
 class TableItem;
 class KnobButton;
 class Gui;
+
 /**
  * @brief This class represents a multi-instance settings panel.
  **/

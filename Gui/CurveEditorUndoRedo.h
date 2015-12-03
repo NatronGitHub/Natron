@@ -38,18 +38,11 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
+
 #include "Engine/Curve.h"
 
-namespace Transform
-{
-    struct Matrix3x3;
-}
-class CurveGui;
-class KnobGui;
-class Bezier;
-class Curve;
-class CurveWidget;
-class NodeCurveEditorElement;
+#include "Gui/GuiFwd.h"
+
 
 struct SelectedKey
 {

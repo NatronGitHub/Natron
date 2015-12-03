@@ -27,14 +27,9 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Gui/NodeGui.h"
+#include "Gui/GuiFwd.h"
 
-class QVBoxLayout;
 
-class KnobString;
-
-class NodeGraph;
-class DockablePanel;
-class NodeBackDropSerialization;
 struct BackDropGuiPrivate;
 class BackDropGui : public NodeGui
 {

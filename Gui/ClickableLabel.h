@@ -33,8 +33,9 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
+#include "Gui/GuiFwd.h"
 
-#include "Label.h"
+#include "Gui/Label.h"
 
 namespace Natron {
  

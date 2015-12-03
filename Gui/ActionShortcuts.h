@@ -43,6 +43,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Gui/GuiFwd.h"
+
 #define kShortcutGroupGlobal "Global"
 #define kShortcutGroupNodegraph "NodeGraph"
 #define kShortcutGroupCurveEditor "CurveEditor"
@@ -608,7 +610,6 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionScriptShowOutput "showHideOutput"
 #define kShortcutDescActionScriptShowOutput "Show/Hide Output Window"
 
-class QWidget;
 
 inline
 QKeySequence

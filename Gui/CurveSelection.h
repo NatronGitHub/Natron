@@ -24,7 +24,9 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-class CurveGui;
+#include "Gui/GuiFwd.h"
+
+
 class CurveSelection
 {
 public:

@@ -47,34 +47,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 
 #include "Engine/DockablePanelI.h"
+
 #include "Gui/DockablePanel.h"
+#include "Gui/GuiFwd.h"
 
-class QHBoxLayout;
-class QVBoxLayout;
-class QUndoStack;
-class QUndoCommand;
-class QGridLayout;
-class QTabWidget;
-
-class KnobI;
-class KnobGui;
-class KnobHolder;
-class NodeGui;
-class Gui;
-class KnobPage;
-class Button;
-class RotoPanel;
-class MultiInstancePanel;
-class KnobGroup;
-class LineEdit;
-class FloatingWidget;
-
-class VerticalColorBar;
-class TabGroup;
-
-namespace Natron {
-    class Label;
-}
 
 struct Page
 {

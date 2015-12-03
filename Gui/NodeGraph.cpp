@@ -41,6 +41,7 @@
 #include "Engine/TimeLine.h"
 
 #include "Gui/BackDropGui.h"
+#include "Gui/DotGui.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"

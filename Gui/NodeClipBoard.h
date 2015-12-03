@@ -32,12 +32,12 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
-class NodeSerialization;
-class NodeGuiSerialization;
+#include "Gui/GuiFwd.h"
 
 
-struct NodeClipBoard
+class NodeClipBoard
 {
+public:
     std::list<boost::shared_ptr<NodeSerialization> > nodes;
     std::list<boost::shared_ptr<NodeGuiSerialization> > nodesUI;
     

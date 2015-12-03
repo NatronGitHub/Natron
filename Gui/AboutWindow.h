@@ -34,19 +34,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-class QTextBrowser;
-class QTabWidget;
-class QVBoxLayout;
-class QHBoxLayout;
-class Button;
-class Gui;
-class TableModel;
-class TableView;
-class QItemSelection;
+#include "Gui/GuiFwd.h"
 
-namespace Natron {
-    class Label;
-}
 
 class AboutWindow
     : public QDialog

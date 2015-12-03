@@ -44,25 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/CurveEditorUndoRedo.h" // KeyPtr
 #include "Gui/CurveGui.h" // CurveGui
-
-class CurveSelection;
-class QFont;
-class Variant;
-class TimeLine;
-class KnobGui;
-class CurveWidget;
-class Button;
-class LineEdit;
-class SpinBox;
-class Gui;
-class Bezier;
-class RotoContext;
-class QVBoxLayout;
-class QHBoxLayout;
-namespace Natron {
-    class Label;
-}
-
+#include "Gui/GuiFwd.h"
 
 
 class ImportExportCurveDialog

@@ -25,7 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/GlobalDefines.h"
+#include "Global/Macros.h"
+
 #include <list>
 #include <vector>
 #include <QPointF>
@@ -35,22 +36,23 @@
 #endif
 #include <QUndoCommand>
 
+#include "Global/GlobalDefines.h"
+
+#include "Engine/EngineFwd.h"
+
+
+class Edge;
+class NodeGui;
+
 /**
  * This file gathers undo/redo command associated to the node graph. Each of them triggers an autosave when redone/undone
  * except the move command.
  **/
 
-class Edge;
-class NodeGui;
-class NodeGraph;
-class NodeSerialization;
 
 typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
 typedef std::list<NodeGuiPtr> NodeGuiList;
 
-namespace Natron {
-class Node;
-}
 
 
 class MoveMultipleNodesCommand

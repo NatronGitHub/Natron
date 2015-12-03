@@ -33,11 +33,8 @@
 #include <QtCore/QString>
 
 #include "Gui/EditScriptDialog.h"
+#include "Gui/GuiFwd.h"
 
-class QStringList;
-
-class QWidget;
-class KnobGui;
 
 class EditExpressionDialog : public EditScriptDialog
 {

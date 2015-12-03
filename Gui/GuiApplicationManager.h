@@ -31,6 +31,10 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/Variant.h"
+#include "Engine/EngineFwd.h"
+
+#include "Gui/GuiFwd.h"
+
 
 #if defined(appPTR)
 #undef appPTR
@@ -55,22 +59,7 @@
  **/
 #define getKeybind(group,action) ( appPTR->getKeySequenceForAction(group,action) )
 
-class QPixmap;
-class QCursor;
 
-class ActionWithShortcut;
-class PluginGroupNode;
-class DockablePanel;
-class KnobI;
-class KnobGui;
-class KnobSerialization;
-class Curve;
-class BoundAction;
-class KeyBoundAction;
-class QAction;
-class NodeSerialization;
-class NodeGuiSerialization;
-struct NodeClipBoard;
 
 struct PythonUserCommand {
     QString grouping;

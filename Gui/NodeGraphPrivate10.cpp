@@ -31,6 +31,7 @@
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 
+#include "Gui/DotGui.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -43,9 +44,9 @@
 using namespace Natron;
 
 
-
 void
-NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,const QPointF& scenePos,
+NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
+                                     const QPointF& scenePos,
                                      bool useUndoCommand,
                                      std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > *newNodes)
 {

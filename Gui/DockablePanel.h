@@ -47,21 +47,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/DockablePanelI.h"
 
-class KnobI;
-class KnobGui;
-class KnobHolder;
-class NodeGui;
-class Gui;
-class KnobPage;
-class QVBoxLayout;
-class Button;
-class QUndoStack;
-class QUndoCommand;
-class QGridLayout;
-class RotoPanel;
-class MultiInstancePanel;
-class QTabWidget;
-class KnobGroup;
+#include "Gui/GuiFwd.h"
+
 
 /**
  * @brief An abstract class that defines a dockable properties panel that can be found in the Property bin pane.

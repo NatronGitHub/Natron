@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Gui/ComboBox.h"
+#include "Gui/GuiFwd.h"
 
 
 class ChannelsComboBox : public ComboBox

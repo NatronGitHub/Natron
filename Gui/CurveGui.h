@@ -35,13 +35,12 @@ CLANG_DIAG_ON(uninitialized)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
-#include "Engine/Curve.h" // Curve
-#include "Gui/CurveGui.h" // Curves
 
-class KnobGui;
-class CurveWidget;
-class Bezier;
-class RotoContext;
+#include "Engine/Curve.h" // Curve
+
+#include "Gui/CurveGui.h" // Curves
+#include "Gui/GuiFwd.h"
+
 
 class CurveGui
     : public QObject

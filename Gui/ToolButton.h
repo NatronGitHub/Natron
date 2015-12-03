@@ -36,7 +36,9 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
-class PluginGroupNode;
+
+#include "Engine/EngineFwd.h"
+
 class GuiAppInstance;
 
 class QMenu;

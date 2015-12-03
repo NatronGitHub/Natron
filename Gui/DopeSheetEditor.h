@@ -37,12 +37,9 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/PanelWidget.h"
+#include "Gui/GuiFwd.h"
 
 class DopeSheetEditorPrivate;
-class Gui;
-class DopeSheetView;
-class NodeGui;
-class TimeLine;
 
 /**
  * @class DopeSheetEditor

@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
 #include "Engine/KnobGuiI.h"
+#include "Engine/EngineFwd.h"
 
 // Qt
 class QUndoCommand; //used by KnobGui
@@ -53,17 +54,7 @@ class QVBoxLayout; //used by KnobGui
 class QHBoxLayout; //used by KnobGui
 class QGridLayout;
 class QMenu;
-namespace Natron {
-class ClickableLabel;
-class Label;
-class EffectInstance;
-}
-class QString;
 
-// Engine
-class Variant; //used by KnobGui
-class KeyFrame;
-class KnobPage;
 
 // Gui
 class ComboBox;
@@ -72,6 +63,10 @@ class AnimationButton; //used by KnobGui
 class DockablePanel; //used by KnobGui
 class Gui;
 class NodeGui;
+namespace Natron {
+    class ClickableLabel;
+    class Label;
+}
 
 #define SLIDER_MAX_RANGE 100000
 

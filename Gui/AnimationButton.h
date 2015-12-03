@@ -27,14 +27,8 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Gui/Button.h"
+#include "Gui/GuiFwd.h"
 
-class QDragEnterEvent;
-class QDragLeaveEvent;
-class QMouseEvent;
-class QDropEvent;
-class QEvent;
-
-class KnobGui;
 
 class AnimationButton
     : public Button

@@ -22,20 +22,11 @@
 
 #include "Engine/AppInstanceWrapper.h"
 #include "Engine/ParameterWrapper.h" // ColorTuple
+#include "Engine/EngineFwd.h"
 
 #include "Gui/GuiAppInstance.h"
+#include "Gui/GuiFwd.h"
 
-class PyModalDialog;
-class PyPanel;
-class PyTabWidget;
-class QWidget;
-class Effect;
-class Group;
-class ViewerTab;
-
-namespace Natron {
-class Node;
-}
 
 class PyViewer
 {

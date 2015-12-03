@@ -34,6 +34,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 
+#include "Gui/GuiFwd.h"
+
+
 class AnimatedCheckBox
     : public QFrame
 {
