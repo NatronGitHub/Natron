@@ -2635,6 +2635,8 @@ ViewerGL::fitImageToFormat(bool useProjectFormat)
     }
     
     _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+    
+    update();
 }
 
 /**
