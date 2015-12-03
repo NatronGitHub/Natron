@@ -381,11 +381,11 @@ RotoStrokeItem::appendPoint(bool newStroke, const RotoPoint& p)
             qDebug() << "start stroke!";
             t = 0.;
             // set time origin for this curve
-            _imp->curveT0 = p.timestamp;
-        } else if (p.timestamp == 0.) {
+            _imp->curveT0 = p.timestamp();
+        } else if (p.timestamp() == 0.) {
             t = nk; // some systems may not have a proper timestamp use a dummy one
         } else {
-            t = p.timestamp - _imp->curveT0;
+            t = p.timestamp() - _imp->curveT0;
         }
         if (nk > 0) {
             //Clamp timestamps difference to 1e-3 in case Qt delivers its events all at once
@@ -452,14 +452,14 @@ RotoStrokeItem::appendPoint(bool newStroke, const RotoPoint& p)
         {
             KeyFrame k;
             k.setTime(t);
-            k.setValue(p.pos.x);
+            k.setValue(p.pos().x);
             addKeyFrameOk = stroke->xCurve->addKeyFrame(k);
             ki = (addKeyFrameOk ? nk : (nk - 1));
         }
         {
             KeyFrame k;
             k.setTime(t);
-            k.setValue(p.pos.y);
+            k.setValue(p.pos().y);
             bool aok = stroke->yCurve->addKeyFrame(k);
             assert(aok == addKeyFrameOk);
             if (aok != addKeyFrameOk) {
@@ -470,7 +470,7 @@ RotoStrokeItem::appendPoint(bool newStroke, const RotoPoint& p)
         {
             KeyFrame k;
             k.setTime(t);
-            k.setValue(p.pressure);
+            k.setValue(p.pressure());
             bool aok = stroke->pressureCurve->addKeyFrame(k);
             assert(aok == addKeyFrameOk);
             if (aok != addKeyFrameOk) {

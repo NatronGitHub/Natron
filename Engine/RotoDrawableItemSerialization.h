@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
@@ -45,6 +47,8 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoContextPrivate.h"
 #include "Engine/RotoItemSerialization.h"
+#include "Engine/EngineFwd.h"
+
 
 #define ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING 2
 #define ROTO_DRAWABLE_ITEM_REMOVES_INVERTED 3

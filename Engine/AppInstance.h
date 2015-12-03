@@ -38,9 +38,6 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
-class QFileInfo;
-class QMutex;
-
 struct AppInstancePrivate;
 
 struct CreateNodeArgs

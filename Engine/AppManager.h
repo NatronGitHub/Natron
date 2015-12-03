@@ -48,9 +48,6 @@ CLANG_DIAG_ON(deprecated)
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
 
-class QMutex;
-class QChar;
-
 
 namespace Natron {
 enum AppInstanceStatusEnum
@@ -60,14 +57,6 @@ enum AppInstanceStatusEnum
 };
 }
 
-namespace OFX {
-    namespace Host {
-        namespace ImageEffect {
-            class ImageEffectPlugin;
-            class Descriptor;
-        }
-    }
-}
 
 struct AppInstanceRef
 {

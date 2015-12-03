@@ -37,6 +37,7 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/EngineFwd.h"
 
 class Param
 {

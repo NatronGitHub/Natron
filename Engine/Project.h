@@ -41,21 +41,16 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+
 #include "Engine/Knob.h"
 #include "Engine/Format.h"
 #include "Engine/TimeLine.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/EngineFwd.h"
 
-class QString;
-class QDateTime;
-class AppInstance;
-class ProjectSerialization;
-class KnobSerialization;
-class ProjectGui;
-class AddFormatDialog;
+
 namespace Natron {
-class Node;
-class OutputEffectInstance;
+
 struct ProjectPrivate;
 
 class Project

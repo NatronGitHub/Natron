@@ -19,7 +19,11 @@
 #ifndef ROTOSMEAR_H
 #define ROTOSMEAR_H
 
+#include "Global/Macros.h"
+
 #include "Engine/EffectInstance.h"
+#include "Engine/EngineFwd.h"
+
 
 struct RotoSmearPrivate;
 class RotoSmear : public Natron::EffectInstance

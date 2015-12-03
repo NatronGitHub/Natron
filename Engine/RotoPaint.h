@@ -19,7 +19,11 @@
 #ifndef ROTOPAINT_H
 #define ROTOPAINT_H
 
+#include "Global/Macros.h"
+
 #include "Engine/EffectInstance.h"
+#include "Engine/EngineFwd.h"
+
 
 struct RotoPaintPrivate;
 class RotoPaint : public Natron::EffectInstance

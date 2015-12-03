@@ -34,6 +34,8 @@
 #include "Engine/ViewerInstance.h"
 #include <SequenceParsing.h>
 
+using namespace Natron;
+
 void
 NodeCollectionSerialization::initialize(const NodeCollection& group)
 {

@@ -36,9 +36,9 @@
 #include "Global/GlobalDefines.h"
 #include "Global/Macros.h"
 
-GCC_DIAG_OFF(strict-overflow)
+#include "Engine/EngineFwd.h"
 
-class RectI;
+GCC_DIAG_OFF(strict-overflow)
 
 class RectD
 {

@@ -138,8 +138,9 @@ typedef std::list<RenderThread> RenderThreads;
 
 // Struct used in a queue when rendering the current frame with a viewer, the id is meaningless just to have a member
 // in the structure. We then compare the pointer of this struct
-struct RequestedFrame
+class RequestedFrame
 {
+public:
     int id;
 };
 

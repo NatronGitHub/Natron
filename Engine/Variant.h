@@ -36,7 +36,8 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 
-#include "Global/Macros.h"
+#include "Engine/EngineFwd.h"
+
 
 class Variant
     : public QVariant

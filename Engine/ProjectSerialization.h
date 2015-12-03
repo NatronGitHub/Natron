@@ -55,6 +55,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/NodeSerialization.h"
 #include "Engine/NodeGroupSerialization.h"
 #include "Engine/KnobSerialization.h"
+#include "Engine/EngineFwd.h"
 
 #define PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION 2
 #define PROJECT_SERIALIZATION_REMOVES_NODE_COUNTERS 3
@@ -62,7 +63,6 @@ GCC_DIAG_ON(unused-parameter)
 #define PROJECT_SERIALIZATION_INTRODUCES_GROUPS 5
 #define PROJECT_SERIALIZATION_VERSION PROJECT_SERIALIZATION_INTRODUCES_GROUPS
 
-class AppInstance;
 class ProjectSerialization
 {
     NodeCollectionSerialization _nodes;

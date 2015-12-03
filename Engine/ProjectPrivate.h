@@ -44,16 +44,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobFile.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/ThreadStorage.h"
+#include "Engine/EngineFwd.h"
 
-class QTimer;
-class TimeLine;
-class NodeSerialization;
-class ProjectSerialization;
-class KnobFile;
 namespace Natron {
-class Node;
-class OutputEffectInstance;
-class Project;
 
 inline QString
 generateStringFromFormat(const Format & f)

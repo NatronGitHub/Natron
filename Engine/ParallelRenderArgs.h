@@ -36,24 +36,13 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/RectD.h"
+#include "Engine/EngineFwd.h"
 
 
 //This controls how many frames a plug-in can pre-fetch (per view and per input)
 //This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
 //do not all stick altogether in memory
 #define NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING 4
-
-class RectI;
-class TimeLine;
-namespace Natron {
-    class EffectInstance;
-    class Node;
-}
-namespace Transform {
-    struct Matrix3x3;
-}
-class RenderStats;
-
 
 typedef std::map<Natron::EffectInstance*,RectD> RoIMap; // RoIs are in canonical coordinates
 typedef std::map<int, std::map<int, std::vector<OfxRangeD> > > FramesNeededMap;

@@ -37,21 +37,8 @@
 #endif
 
 #include "Global/Enums.h"
+#include "Engine/EngineFwd.h"
 
-
-namespace OFX{
-    namespace Host{
-        namespace ImageEffect{
-            class ImageEffectPlugin;
-            class Descriptor;
-        }
-    }
-}
-
-class QMutex;
-namespace Natron {
-class LibraryBinary;
-}
 
 class PluginGroupNode
 {

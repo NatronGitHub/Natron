@@ -46,7 +46,6 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/EngineFwd.h"
 
-using namespace Natron;
 
 namespace boost {
 namespace serialization {
@@ -63,6 +62,8 @@ serialize(Archive & ar,
 
 }
 }
+
+namespace Natron {
 
 template<class Archive>
 void
@@ -87,5 +88,7 @@ ImageParams::serialize(Archive & ar,
     ar & boost::serialization::make_nvp("Components",_components);
     ar & boost::serialization::make_nvp("MMLevel",_mipMapLevel);
 }
+
+} // namespace Natron
 
 #endif // IMAGEPARAMSSERIALIZATION_H

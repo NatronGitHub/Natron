@@ -37,14 +37,16 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
-#include "Global/GlobalDefines.h"
-#include "Engine/FitCurve.h"
-
 CLANG_DIAG_OFF(deprecated-declarations)
 #include <QObject>
 #include <QMutex>
 #include <QMetaType>
 CLANG_DIAG_ON(deprecated-declarations)
+
+#include "Global/GlobalDefines.h"
+#include "Engine/FitCurve.h"
+#include "Engine/EngineFwd.h"
+
 
 #define kRotoLayerBaseName "Layer"
 #define kRotoBezierBaseName "Bezier"
@@ -61,37 +63,6 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoPaintDodgeBaseName "Dodge"
 #define kRotoPaintBurnBaseName "Burn"
 
-namespace Natron {
-class Image;
-class ImageComponents;
-class Node;
-}
-namespace boost { namespace serialization { class access; } }
-
-class RectI;
-class RectD;
-class KnobI;
-class KnobBool;
-class KnobDouble;
-class KnobInt;
-class KnobChoice;
-class KnobColor;
-typedef struct _cairo_pattern cairo_pattern_t;
-
-class Curve;
-class Bezier;
-class RotoItemSerialization;
-class BezierCP;
-
-/**
- * @class A base class for all items made by the roto context
- **/
-class RotoContext;
-class RotoLayer;
-
-namespace Transform {
-struct Matrix3x3;
-}
 
 struct RotoItemPrivate;
 class RotoItem

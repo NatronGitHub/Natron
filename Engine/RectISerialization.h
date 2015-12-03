@@ -37,6 +37,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 #endif
 
+#include "Engine/EngineFwd.h"
+
+
 template<class Archive>
 void RectI::serialize(Archive & ar,
                       const unsigned int version)

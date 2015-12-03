@@ -26,19 +26,20 @@
 // ***** END PYTHON BLOCK *****
 
 #include <list>
+
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
 
 #include "Engine/ParameterWrapper.h"
+#include "Engine/EngineFwd.h"
 
-class RotoContext;
-class RotoItem;
-class Bezier;
-class RotoLayer;
 
-class Layer;
+class Layer; // defined below
+
 class ItemBase
 {
     

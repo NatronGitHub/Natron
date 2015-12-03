@@ -36,9 +36,10 @@
 #include "Global/GlobalDefines.h"
 #include "Global/Macros.h"
 
+#include "Engine/EngineFwd.h"
+
 GCC_DIAG_OFF(strict-overflow)
 
-class RectD;
 
 /**
  * @brief A rectangle where x1 < x2 and y1 < y2 such as width() == (x2 - x1) && height() == (y2 - y1)

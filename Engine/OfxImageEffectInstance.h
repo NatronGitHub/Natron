@@ -41,16 +41,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/EngineFwd.h"
 
 
-namespace OFX {
-    namespace Host {
-        class Plugin;
-        namespace Property
-        {
-            class Set;
-        }
-    }
-}
-
 namespace Natron {
 
 class OfxImageEffectInstance

@@ -29,11 +29,14 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 #include <string>
+
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
-class KnobI;
-struct StringAnimationManagerPrivate;
+#include "Engine/EngineFwd.h"
 
+
+struct StringAnimationManagerPrivate;
 
 ///not thread-safe
 class StringAnimationManager

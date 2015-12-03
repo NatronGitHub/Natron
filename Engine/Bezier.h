@@ -44,32 +44,11 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/EngineFwd.h"
 
-#define kRotoLayerBaseName "Layer"
-#define kRotoBezierBaseName "Bezier"
-#define kRotoOpenBezierBaseName "Pencil"
-#define kRotoEllipseBaseName "Ellipse"
-#define kRotoRectangleBaseName "Rectangle"
-#define kRotoPaintBrushBaseName "Brush"
-#define kRotoPaintEraserBaseName "Eraser"
-#define kRotoPaintBlurBaseName "Blur"
-#define kRotoPaintSmearBaseName "Smear"
-#define kRotoPaintSharpenBaseName "Sharpen"
-#define kRotoPaintCloneBaseName "Clone"
-#define kRotoPaintRevealBaseName "Reveal"
-#define kRotoPaintDodgeBaseName "Dodge"
-#define kRotoPaintBurnBaseName "Burn"
-
-
-typedef struct _cairo_pattern cairo_pattern_t;
 
 
 /**
  * @class A base class for all items made by the roto context
  **/
-
-namespace Transform {
-struct Matrix3x3;
-}
 
 
 /**

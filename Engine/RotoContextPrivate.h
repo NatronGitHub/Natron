@@ -59,6 +59,7 @@
 #include "Engine/Transform.h"
 #include "Engine/MergingEnum.h"
 #include "Engine/RotoPaint.h"
+#include "Engine/EngineFwd.h"
 
 #define ROTO_DEFAULT_OPACITY 1.
 #define ROTO_DEFAULT_FEATHER 1.5
@@ -346,10 +347,6 @@
 #define kRotoShutterCustomOffsetParamHint "If the Shutter Offset parameter is set to Custom then this parameter controls the frame at " \
 "which the shutter opens. The value is an offset in frames to the current frame, e.g: -1  would open the shutter 1 frame before the current frame."
 
-class Bezier;
-
-
-class BezierCP;
 
 
 struct BezierPrivate

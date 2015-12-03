@@ -32,21 +32,10 @@
 #include <QThread>
 
 #include "Global/GlobalDefines.h"
+#include "Engine/EngineFwd.h"
 
-///Natron
-class ViewerInstance;
-class RenderStats;
 
 typedef boost::shared_ptr<RenderStats> RenderStatsPtr;
-
-namespace Natron {
-    class Node;
-    class EffectInstance;
-    class OutputEffectInstance;
-}
-
-class RenderStats;
-class RenderEngine;
 
 /**
  * @brief Stub class used by internal implementation of OutputSchedulerThread to pass objects through signal/slots
@@ -550,7 +539,7 @@ private:
  * Instead of re-using the OutputSchedulerClass and adding extra handling for special cases we separated it in a different class, specialized for this kind
  * of "current frame re-rendering" which needs much less code to run than all the code in OutputSchedulerThread
  **/
-struct RequestedFrame;
+
 struct ViewerCurrentFrameRequestSchedulerPrivate;
 class ViewerCurrentFrameRequestScheduler : public QThread
 {

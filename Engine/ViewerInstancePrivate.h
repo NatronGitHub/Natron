@@ -45,14 +45,9 @@
 #include "Engine/Settings.h"
 #include "Engine/Image.h"
 #include "Engine/TextureRect.h"
+#include "Engine/EngineFwd.h"
 
 #define GAMMA_LUT_NB_VALUES 1023
-
-namespace Natron {
-class FrameEntry;
-class FrameParams;
-}
-
 
 
 struct OnGoingRenderInfo
