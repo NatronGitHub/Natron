@@ -44,6 +44,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QSettings>
 #include <QtCore/QThreadPool>
+#include <QtCore/QTextStream>
 #include <QtNetwork/QAbstractSocket>
 #include <QtNetwork/QLocalServer>
 #include <QtNetwork/QLocalSocket>

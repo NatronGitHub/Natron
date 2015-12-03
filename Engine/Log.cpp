@@ -34,9 +34,9 @@
 #include <cstdlib>
 #include <string>
 
-#include <QFile>
-#include <QTextStream>
-#include <QMutex>
+#include <QtCore/QFile>
+#include <QtCore/QTextStream>
+#include <QtCore/QMutex>
 
 #include "Global/GlobalDefines.h"
 
