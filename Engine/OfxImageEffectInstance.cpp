@@ -832,7 +832,7 @@ OfxImageEffectInstance::timeLineGotoTime(double t)
     bool redrawNeeded = _ofxEffectInstance->checkIfOverlayRedrawNeeded();
     Q_UNUSED(redrawNeeded);
     
-    _ofxEffectInstance->getApp()->getTimeLine()->seekFrame( (int)t, false, 0, Natron::eTimelineChangeReasonPlaybackSeek);
+    _ofxEffectInstance->getApp()->getTimeLine()->seekFrame( (int)t, false, 0, Natron::eTimelineChangeReasonOtherSeek);
 }
 
 /// get the first and last times available on the effect's timeline

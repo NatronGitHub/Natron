@@ -885,18 +885,17 @@ Gui::onTimeChanged(SequenceTime time,
     
     ViewerInstance* leadViewer = getApp()->getLastViewerUsingTimeline();
     
-    bool isUserEdited = reason == eTimelineChangeReasonUserSeek ||
-    reason == eTimelineChangeReasonDopeSheetEditorSeek ||
-    reason == eTimelineChangeReasonCurveEditorSeek;
+    bool isPlayback = reason == eTimelineChangeReasonPlaybackSeek;
     
     
 
     const std::list<ViewerTab*>& viewers = getViewersList();
     ///Syncrhronize viewers
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end();++it) {
-        if ((*it)->getInternalNode() != leadViewer || isUserEdited) {
-            (*it)->getInternalNode()->renderCurrentFrame(reason != eTimelineChangeReasonPlaybackSeek);
+        if ((*it)->getInternalNode() == leadViewer && isPlayback) {
+            continue;
         }
+         (*it)->getInternalNode()->renderCurrentFrame(!isPlayback);
     }
 }
 
