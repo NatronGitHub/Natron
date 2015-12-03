@@ -1671,7 +1671,7 @@ RotoContext::goToPreviousKeyframe()
 
     if (minimum != INT_MIN) {
         getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
-        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, Natron::eTimelineChangeReasonOtherSeek);
     }
 }
 
@@ -1704,7 +1704,7 @@ RotoContext::goToNextKeyframe()
     }
     if (maximum != INT_MAX) {
         getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
-        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false, NULL,Natron::eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false, NULL,Natron::eTimelineChangeReasonOtherSeek);
         
     }
 }

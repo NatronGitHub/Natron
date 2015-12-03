@@ -52,6 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+
 struct NodeGuiIndicatorPrivate;
 class NodeGuiIndicator
 {

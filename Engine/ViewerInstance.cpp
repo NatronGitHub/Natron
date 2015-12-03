@@ -372,8 +372,7 @@ class ViewerParallelRenderArgsSetter : public ParallelRenderArgsSetter
     NodePtr viewerInputNode;
 public:
     
-    ViewerParallelRenderArgsSetter(NodeCollection* n,
-                                   double time,
+    ViewerParallelRenderArgsSetter(double time,
                                    int view,
                                    bool isRenderUserInteraction,
                                    bool isSequential,
@@ -389,7 +388,7 @@ public:
                                    bool draftMode,
                                    bool viewerProgressReportEnabled,
                                    const boost::shared_ptr<RenderStats>& stats)
-    : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,treeRoot, request,textureIndex,timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats)
+    : ParallelRenderArgsSetter(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,treeRoot, request,textureIndex,timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats)
     , rotoNode(rotoPaintNode)
     , viewerNode(treeRoot)
     , viewerInputNode()
@@ -492,8 +491,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         
        
         
-        ViewerParallelRenderArgsSetter tls(getApp()->getProject().get(),
-                                           time,
+        ViewerParallelRenderArgsSetter tls(time,
                                            view,
                                            true,
                                            false,
@@ -591,7 +589,6 @@ ViewerInstance::renderViewer(int view,
         if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == Natron::eViewerCompositingOperatorNone) ) {
             break;
         }
-        
         if (args[i] && args[i]->params) {
             assert(args[i]->params->textureIndex == i);
             
@@ -841,8 +838,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     ///need to set TLS for getROD()
     boost::shared_ptr<ParallelRenderArgsSetter> frameArgs;
     if (useTLS) {
-        frameArgs.reset(new ParallelRenderArgsSetter(getApp()->getProject().get(),
-                                                     time,
+        frameArgs.reset(new ParallelRenderArgsSetter(time,
                                                      view,
                                                      !isSequential,  // is this render due to user interaction ?
                                                      isSequential, // is this sequential ?
@@ -925,7 +921,6 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     outArgs->params->renderAge = renderAge;
     outArgs->params->setUniqueID(textureIndex);
     outArgs->params->srcPremult = outArgs->activeInputToRender->getOutputPremultiplication();
-    
     ///Texture rect contains the pixel coordinates in the image to be rendered
     outArgs->params->textureRect.x1 = roi.x1;
     outArgs->params->textureRect.x2 = roi.x2;
@@ -1164,8 +1159,7 @@ ViewerInstance::renderViewer_internal(int view,
             return stat;
         }
         
-        frameArgs.reset(new ViewerParallelRenderArgsSetter(getApp()->getProject().get(),
-                                                           inArgs.params->time,
+        frameArgs.reset(new ViewerParallelRenderArgsSetter(inArgs.params->time,
                                                            view,
                                                            !isSequentialRender,
                                                            isSequentialRender,

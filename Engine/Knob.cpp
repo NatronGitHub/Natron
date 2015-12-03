@@ -3389,6 +3389,52 @@ KnobHelper::getAliasMaster()  const
     return _imp->slaveForAlias;
 }
 
+void
+KnobHelper::getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const
+{
+    std::list<KnobI*> deps;
+    {
+        QMutexLocker k(&_imp->expressionMutex);
+        for (int i = 0; i < _imp->dimension; ++i) {
+            for (std::list< std::pair<KnobI*,int> >::const_iterator it = _imp->expressions[i].dependencies.begin();
+                 it != _imp->expressions[i].dependencies.end(); ++it) {
+                
+                if (std::find(deps.begin(), deps.end(), it->first) == deps.end()) {
+                    deps.push_back(it->first);
+                }
+                
+            }
+        }
+    }
+    {
+        QReadLocker k(&_imp->mastersMutex);
+        for (int i = 0; i < _imp->dimension; ++i) {
+            if (_imp->masters[i].second) {
+                if (std::find(deps.begin(), deps.end(), _imp->masters[i].second.get()) == deps.end()) {
+                    deps.push_back(_imp->masters[i].second.get());
+                }
+            }
+        }
+    }
+    
+    std::list<KnobI*> knobsToInspectRecursive;
+    for (std::list<KnobI*>::iterator it = deps.begin(); it!=deps.end(); ++it) {
+        Natron::EffectInstance* effect  = dynamic_cast<Natron::EffectInstance*>((*it)->getHolder());
+        if (effect) {
+            NodePtr node = effect->getNode();
+            if (std::find(nodes.begin(), nodes.end(), node) == nodes.end()) {
+                nodes.push_back(node);
+                knobsToInspectRecursive.push_back(*it);
+            }
+        }
+    }
+    
+    
+    for (std::list<KnobI*>::iterator it = knobsToInspectRecursive.begin(); it!=knobsToInspectRecursive.end(); ++it) {
+        (*it)->getAllExpressionDependenciesRecursive(nodes);
+    }
+}
+
 /***************************KNOB HOLDER******************************************/
 
 struct KnobHolder::KnobHolderPrivate
@@ -4177,6 +4223,16 @@ KnobHolder::isSetValueCurrentlyPossible() const
         }
     }
     return canSetValue();
+}
+
+
+void
+KnobHolder::getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const
+{
+    QMutexLocker k(&_imp->knobsMutex);
+    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
+        (*it)->getAllExpressionDependenciesRecursive(nodes);
+    }
 }
 
 KnobHolder::MultipleParamsEditEnum

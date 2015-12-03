@@ -748,7 +748,9 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         update();
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, modifiers, key) ) {
         ///Put it after notifyOverlaysKeyDown() because Roto may intercept Enter
-        switchInputAAndB();
+        if (getViewer()->hasFocus()) {
+            switchInputAAndB();
+        }
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDShowLeftView, modifiers, key) ) {
         showView(0);
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDShowRightView, modifiers, key) ) {

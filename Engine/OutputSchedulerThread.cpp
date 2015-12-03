@@ -2163,8 +2163,7 @@ private:
                     return;
                 }
                 
-                ParallelRenderArgsSetter frameRenderArgs(activeInputToRender->getApp()->getProject().get(),
-                                                         time,
+                ParallelRenderArgsSetter frameRenderArgs(time,
                                                          viewsToRender[view],
                                                          false,  // is this render due to user interaction ?
                                                          sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential, // is this sequential ?
@@ -2266,8 +2265,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         ignore_result(_effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat));
         rod.toPixelEnclosing(0, par, &roi);
         
-        ParallelRenderArgsSetter frameRenderArgs(_effect->getApp()->getProject().get(),
-                                                 it->time,
+        ParallelRenderArgsSetter frameRenderArgs(it->time,
                                                  it->view,
                                                  false,  // is this render due to user interaction ?
                                                  canOnlyHandleOneView, // is this sequential ?
@@ -3018,7 +3016,7 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
 };
 
 
-static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs& args)
+static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs args)
 {
     
     ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal

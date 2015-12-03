@@ -4815,8 +4815,7 @@ Node::makePreviewImage(SequenceTime time,
         return false;
     }
     
-    ParallelRenderArgsSetter frameRenderArgs(getApp()->getProject().get(),
-                                             time,
+    ParallelRenderArgsSetter frameRenderArgs(time,
                                              0, //< preview only renders view 0 (left)
                                              true, //<isRenderUserInteraction
                                              false, //isSequential
@@ -5740,8 +5739,7 @@ Node::onInputChanged(int inputNb)
          * The plug-in might call getImage, set a valid thread storage on the tree.
          **/
         double time = getApp()->getTimeLine()->currentFrame();
-        ParallelRenderArgsSetter frameRenderArgs(getApp()->getProject().get(),
-                                                 time,
+        ParallelRenderArgsSetter frameRenderArgs(time,
                                                  0 /*view*/,
                                                  true,
                                                  false,
