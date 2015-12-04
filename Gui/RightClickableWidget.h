@@ -47,22 +47,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/DockablePanelI.h"
 
-class KnobI;
-class KnobGui;
-class KnobHolder;
-class NodeGui;
-class Gui;
-class KnobPage;
-class QVBoxLayout;
-class Button;
-class QUndoStack;
-class QUndoCommand;
-class QGridLayout;
-class RotoPanel;
-class MultiInstancePanel;
-class QTabWidget;
-class KnobGroup;
-class DockablePanel;
+#include "Gui/GuiFwd.h"
+
 
 class RightClickableWidget : public QWidget
 {

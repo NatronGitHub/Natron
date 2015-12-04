@@ -35,9 +35,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(uninitialized)
 
-namespace Natron {
-    class ImageComponents;
-}
+#include "Gui/GuiFwd.h"
+
 
 struct NewLayerDialogPrivate;
 class NewLayerDialog : public QDialog

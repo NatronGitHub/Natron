@@ -36,7 +36,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QThread>
 #include <QKeyEvent>
 #include <QString>
-#include <QTextStream>
+#include <QtCore/QTextStream>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

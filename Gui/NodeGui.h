@@ -50,30 +50,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeGuiI.h"
 #include "Engine/EngineFwd.h"
 
-class QMenu;
-class QUndoStack;
-class QGraphicsSimpleTextItem;
-class QPainterPath;
-class QScrollArea;
-class QVBoxLayout;
-class QLinearGradient;
-class QAction;
-class QUndoStack;
+#include "Gui/GuiFwd.h"
 
-
-class Edge;
-class HostOverlay;
-class NodeSettingsPanel;
-class NodeGuiSerialization;
-class KnobGui;
-class Gui;
-class LinkArrow;
-class MultiInstancePanel;
-class NodeGraphPixmapItem;
-class NodeGraphTextItem;
-class NodeGraph;
 
 struct NodeGuiIndicatorPrivate;
+
 class NodeGuiIndicator
 {
 public:

@@ -28,7 +28,7 @@
 
 #include <QCheckBox>
 #include <QTextEdit>
-#include <QTextStream>
+#include <QtCore/QTextStream>
 #include <QFormLayout>
 #include <QDialogButtonBox>
 

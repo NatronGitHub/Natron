@@ -37,14 +37,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 
-class Settings;
-class DockablePanel;
-class QVBoxLayout;
-//class QHBoxLayout;
-class QDialogButtonBox;
-class Button;
-class KnobI;
-class Gui;
+#include "Gui/GuiFwd.h"
+
+
 class PreferencesPanel
     : public QWidget
 {

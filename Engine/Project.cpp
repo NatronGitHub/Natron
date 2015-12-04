@@ -51,6 +51,7 @@
 #include <QtCore/QTemporaryFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QDebug>
+#include <QtCore/QTextStream>
 #include <QtNetwork/QHostInfo>
 
 #ifdef __NATRON_WIN32__

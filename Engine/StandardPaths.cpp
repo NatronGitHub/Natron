@@ -56,8 +56,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pwd.h>
+
 CLANG_DIAG_OFF(deprecated)
-#include <QTextStream>
+#include <QtCore/QTextStream>
 #include <QHash>
 #include <QVarLengthArray>
 CLANG_DIAG_ON(deprecated)

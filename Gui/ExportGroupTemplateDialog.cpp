@@ -30,12 +30,14 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QTextStream>
 #include <QDialogButtonBox>
 #include <QGridLayout>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/NodeGroup.h"
+#include "Engine/Settings.h"
 
 #include "Gui/Button.h"
 #include "Gui/Gui.h"

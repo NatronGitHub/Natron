@@ -48,13 +48,8 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/NodeGraphUndoRedo.h" // NodeGuiPtr
+#include "Gui/GuiFwd.h"
 
-class NodeGraph;
-class Gui;
-class NodeCollection;
-class NodeClipBoard;
-class NodeGuiSerialization;
-class ViewerTab;
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 

@@ -42,7 +42,6 @@ GCC_DIAG_OFF(deprecated)
 #include <QtCore/QWaitCondition>
 #include <QtCore/QMutexLocker>
 #include <QtCore/QObject>
-#include <QtCore/QTextStream>
 #include <QtCore/QBuffer>
 #include <QtCore/QRunnable>
 GCC_DIAG_ON(deprecated)

@@ -29,6 +29,7 @@
 #include <stdexcept>
 
 #include <QtCore/QDir>
+#include <QtCore/QTextStream>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QUrl>
 #include <QtCore/QFileInfo>

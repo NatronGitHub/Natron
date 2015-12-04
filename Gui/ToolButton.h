@@ -39,12 +39,11 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EngineFwd.h"
 
-class GuiAppInstance;
+#include "Gui/GuiFwd.h"
 
-class QMenu;
-class QAction;
 
 struct ToolButtonPrivate;
+
 class ToolButton
     : public QObject
 {

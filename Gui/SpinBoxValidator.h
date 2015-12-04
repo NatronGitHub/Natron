@@ -33,9 +33,9 @@
 
 #include "Global/Macros.h"
 
-class SpinBox;
-class KnobGui;
-class QString;
+#include "Gui/GuiFwd.h"
+
+
 class SpinBoxValidator
 {
 public:

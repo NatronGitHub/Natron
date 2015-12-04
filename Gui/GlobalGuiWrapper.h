@@ -25,6 +25,7 @@
 
 #include "Gui/GuiAppWrapper.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiFwd.h"
 
 class PyGuiApplication : public PyCoreApplication
 {

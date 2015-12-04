@@ -59,33 +59,10 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 #include "Global/QtCompat.h"
+
 #include "Engine/FileSystemModel.h"
 
-
-class LineEdit;
-class Button;
-class QCheckBox;
-class ComboBox;
-class QWidget;
-namespace Natron {
-class Label;
-}
-class QFileInfo;
-class QHBoxLayout;
-class QVBoxLayout;
-class QSplitter;
-class QAction;
-class SequenceFileDialog;
-class QFileSystemModel;
-class SequenceItemDelegate;
-class Gui;
-class NodeGui;
-namespace SequenceParsing {
-class SequenceFromFiles;
-}
-struct FileDialogPreviewProvider;
-
-
+#include "Gui/GuiFwd.h"
 
 
 /**

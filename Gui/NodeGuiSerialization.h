@@ -45,7 +45,9 @@ GCC_DIAG_ON(unused-parameter)
 #define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_OVERLAY_COLOR
 #include "Engine/AppManager.h"
 
-class NodeGui;
+#include "Gui/GuiFwd.h"
+
+
 class NodeGuiSerialization
 {
 public:

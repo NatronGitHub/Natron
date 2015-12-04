@@ -37,26 +37,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 
 #include "Gui/KnobGui.h"
+#include "Gui/GuiFwd.h"
 
-// Qt
-class QHBoxLayout;
-class QMenu;
-class QFileSystemWatcher;
 
-// Engine
-class KnobI;
-class KnobFile;
-class KnobOutputFile;
-class KnobPath;
-
-// Gui
-class LineEdit;
-class DockablePanel;
-class Button;
-class KnobFile_UndoCommand;
-class TableView;
-class TableModel;
-class TableItem;
 //================================
 class KnobGuiFile
     : public KnobGui
@@ -64,8 +47,6 @@ class KnobGuiFile
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-    friend class KnobFile_UndoCommand;
 
 public:
 

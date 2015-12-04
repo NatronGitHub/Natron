@@ -41,15 +41,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/EngineFwd.h"
 
-class QKeyEvent;
-class QEvent;
-class QMenu;
-class QGLShaderProgram;
-class QInputEvent;
+#include "Gui/GuiFwd.h"
 
-class InfoViewerWidget;
-class ViewerTab;
-class ImageInfo;
+
 
 /**
  *@class ViewerGL

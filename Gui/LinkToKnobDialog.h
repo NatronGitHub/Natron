@@ -43,11 +43,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-class QStringList;
+#include "Gui/GuiFwd.h"
 
-class QWidget;
-class KnobGui;
-class KnobI;
 
 struct LinkToKnobDialogPrivate;
 

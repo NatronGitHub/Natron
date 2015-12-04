@@ -26,9 +26,11 @@
 // ***** END PYTHON BLOCK *****
 
 #include <QGraphicsItem>
+
 #include "Global/Macros.h"
 
-class NodeGraph;
+#include "Gui/GuiFwd.h"
+
 class NodeGraphTextItem : public QGraphicsTextItem
 {
     NodeGraph* _graph;

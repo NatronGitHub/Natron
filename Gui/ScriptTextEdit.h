@@ -38,9 +38,11 @@ CLANG_DIAG_ON(uninitialized)
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
+#include "Gui/GuiFwd.h"
 
 
 struct PySyntaxHighlighterPrivate;
+
 class PySyntaxHighlighter : public QSyntaxHighlighter
 {
 

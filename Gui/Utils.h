@@ -27,6 +27,9 @@
 
 #include <QTextDocument> // for Qt::WhiteSpaceMode
 
+#include "Gui/GuiFwd.h"
+
+
 namespace Natron {
 QString convertFromPlainText(const QString &plain, Qt::WhiteSpaceMode mode);
 }

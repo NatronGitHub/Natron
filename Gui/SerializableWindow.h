@@ -26,7 +26,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-class QMutex;
+#include "Engine/EngineFwd.h"
+
+#include "Gui/GuiFwd.h"
 
 
 /**

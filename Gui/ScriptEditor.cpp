@@ -29,7 +29,7 @@
 #include <QUndoStack>
 #include <QUndoCommand>
 #include <QFile>
-#include <QTextStream>
+#include <QtCore/QTextStream>
 #include <QTextCursor>
 #include <QThread>
 #include <QApplication>

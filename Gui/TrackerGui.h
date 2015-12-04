@@ -37,15 +37,11 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-class QWidget;
-class ViewerTab;
-class TrackerPanel;
-class QKeyEvent;
-class QPointF;
-class QMouseEvent;
-class QInputEvent;
+#include "Gui/GuiFwd.h"
+
 
 struct TrackerGuiPrivate;
+
 class TrackerGui
     : public QObject
 {

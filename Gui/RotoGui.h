@@ -41,22 +41,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EngineFwd.h"
 
-class QInputEvent;
-class QMouseEvent;
-class QToolBar;
-class QWidget;
-class QIcon;
-class QString;
-class QToolButton;
-class QKeyEvent;
-class QPointF;
-class QAction;
-class QUndoCommand;
+#include "Gui/GuiFwd.h"
 
-class ViewerTab;
-class NodeGui;
-class GuiAppInstance;
-struct RotoGuiSharedData;
 
 class RotoToolButton
     : public QToolButton

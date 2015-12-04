@@ -28,7 +28,8 @@
 #include <limits>
 #include <stdexcept>
 
-#include <QDebug>
+#include <QtCore/QTextStream>
+#include <QtCore/QDebug>
 
 #include "Global/Macros.h"
 
