@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef TABLEMODELVIEW_H
 #define TABLEMODELVIEW_H
 

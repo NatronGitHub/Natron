@@ -25,7 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsItem>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 

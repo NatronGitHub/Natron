@@ -6152,7 +6152,7 @@ Node::refreshCreatedViews(KnobI* knob)
             std::string filename = inputFileKnob->getValue();
             
             std::stringstream ss;
-            for (std::size_t i = 0; i < missingViews.size(); ++i) {
+            for (int i = 0; i < missingViews.size(); ++i) {
                 ss << missingViews[i].toStdString();
                 if (i < missingViews.size() - 1) {
                     ss << ", ";

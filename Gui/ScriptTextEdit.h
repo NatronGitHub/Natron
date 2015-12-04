@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
+
 #ifndef SCRIPTTEXTEDIT_H
 #define SCRIPTTEXTEDIT_H
 
