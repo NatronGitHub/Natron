@@ -36,6 +36,7 @@
 #include <QStringList>
 
 #include "Global/GlobalDefines.h"
+#include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
 
 struct AppInstancePrivate;
