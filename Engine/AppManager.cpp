@@ -76,6 +76,7 @@
 #include "Engine/Project.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoSmear.h"
+#include "Engine/StandardPaths.h"
 #include "Engine/ViewerInstance.h" // RenderStatsMap
 
 
@@ -2644,22 +2645,24 @@ AppManager::onCrashReporterOutputWritten()
         //At this point, the CrashReporter just notified us it is ready, so we can create our exception handler safely
         //because we know the pipe is opened on the other side.
         
+        QString dumpPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+        
 #if defined(Q_OS_MAC)
-        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( std::string(),
+        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdString(),
                                                                           0,
                                                                           0/*dmpcb*/,
                                                                           0,
                                                                           true,
                                                                           _imp->crashReporterBreakpadPipe.toStdString().c_str()));
 #elif defined(Q_OS_LINUX)
-        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(std::string()),
+        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(dumpPath.toStdString()),
                                                                           0,
                                                                           0/*dmpCb*/,
                                                                           0,
                                                                           true,
                                                                           _imp->crashReporterBreakpadPipe.handle()));
 #elif defined(Q_OS_WIN32)
-        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( std::wstring(),
+        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
                                                                           0,
                                                                           0/*dmpcb*/,
                                                                           google_breakpad::ExceptionHandler::HANDLER_ALL,
