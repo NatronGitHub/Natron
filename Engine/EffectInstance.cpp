@@ -760,7 +760,7 @@ EffectInstance::getImage(int inputNb,
                 inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, requestComps,
                                                       time, view, depth, mipMapLevel);
                 if ( roto->isDoingNeatRender() ) {
-                    getNode()->updateStrokeImage(inputImg);
+                    getApp()->updateStrokeImage(inputImg, 0, false);
                 }
             }
         }
@@ -2467,7 +2467,7 @@ EffectInstance::openImageFileKnob()
 void
 EffectInstance::evaluate(KnobI* knob,
                          bool isSignificant,
-                         Natron::ValueChangedReasonEnum reason)
+                         Natron::ValueChangedReasonEnum /*reason*/)
 {
     KnobPage* isPage = dynamic_cast<KnobPage*>(knob);
     KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob);

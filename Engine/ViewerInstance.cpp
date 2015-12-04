@@ -348,7 +348,7 @@ static void updateLastStrokeDataRecursively(Natron::Node* node,const NodePtr& ro
         if (invalidate) {
             node->invalidateLastPaintStrokeDataNoRotopaint();
         } else {
-            node->setLastPaintStrokeDataNoRotopaint(lastStrokeBbox);
+            node->setLastPaintStrokeDataNoRotopaint();
         }
         
         if (node == rotoPaintNode.get()) {
@@ -439,6 +439,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                              int view,
                                              U64 viewerHash,
                                              const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                             const boost::shared_ptr<RotoStrokeItem>& activeStroke,
                                              const boost::shared_ptr<RenderStats>& stats,
                                              boost::shared_ptr<ViewerArgs>* argsA,
                                              boost::shared_ptr<ViewerArgs>* argsB)
@@ -455,14 +456,6 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         eStatusFailed, eStatusFailed
     };
 
-    boost::shared_ptr<RotoStrokeItem> activeStroke;
-    if (rotoPaintNode) {
-        activeStroke = rotoPaintNode->getRotoContext()->getStrokeBeingPainted();
-        if (!activeStroke) {
-            return eStatusReplyDefault;
-        }
-    }
-    
     NodePtr thisNode = getNode();
     
     
@@ -524,14 +517,14 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                 RectD lastStrokeBbox;
                 int lastAge,newAge;
                 NodePtr mergeNode = activeStroke->getMergeNode();
-                lastAge = mergeNode->getStrokeImageAge();
+                lastAge = getApp()->getStrokeLastIndex();
                 int strokeIndex;
                 if (activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod ,&newAge,&strokeIndex)) {
                     
+                    getApp()->updateLastPaintStrokeData(newAge, lastStrokePoints, lastStrokeBbox, strokeIndex);
                     for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
-                        if ((*it)->getAttachedRotoItem() == activeStroke) {
-                            (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, lastStrokeBbox,strokeIndex);
-                        }
+                        (*it)->prepareForNextPaintStrokeRender();
+                        
                     }
                     updateLastStrokeDataRecursively(thisNode.get(), rotoPaintNode, lastStrokeBbox, false);
                 } else {
@@ -1194,8 +1187,7 @@ ViewerInstance::renderViewer_internal(int view,
             if (_imp->lastRotoPaintTickParams[inArgs.params->textureIndex] && inArgs.params->mipMapLevel == _imp->lastRotoPaintTickParams[inArgs.params->textureIndex]->mipMapLevel && inArgs.params->textureRect.contains(_imp->lastRotoPaintTickParams[inArgs.params->textureIndex]->textureRect)) {
                 
                 //Overwrite the RoI to only the last portion rendered
-                RectD lastPaintBbox;
-                getNode()->getLastPaintStrokeRoD(&lastPaintBbox);
+                RectD lastPaintBbox = getApp()->getLastPaintStrokeBbox();
                 const double par = inArgs.activeInputToRender->getPreferredAspectRatio();
                 
                 lastPaintBbox.toPixelEnclosing(inArgs.params->mipMapLevel, par, &lastPaintBboxPixel);
@@ -2642,7 +2634,12 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
                                               params->updateOnlyRoi);
         updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;
         
-        if (!instance->getApp()->getIsUserPainting().get()) {
+        boost::shared_ptr<Natron::Node> rotoPaintNode;
+        boost::shared_ptr<RotoStrokeItem> curStroke;
+        bool isDrawing;
+        instance->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke,&isDrawing);
+        
+        if (!isDrawing) {
             uiContext->updateColorPicker(params->textureIndex);
         }
     }

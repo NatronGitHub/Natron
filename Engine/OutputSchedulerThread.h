@@ -591,6 +591,7 @@ struct CurrentFrameFunctorArgs
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
     bool canAbort;
     boost::shared_ptr<Natron::Node> isRotoPaintRequest;
+    boost::shared_ptr<RotoStrokeItem> strokeItem;
     boost::shared_ptr<ViewerArgs> args[2];
 };
 

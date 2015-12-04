@@ -111,7 +111,11 @@ RotoSmear::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale
 
     RectD maskRod;
     boost::shared_ptr<Node> node = getNode();
-    node->getPaintStrokeRoD(time, &maskRod);
+    try {
+        node->getPaintStrokeRoD(time, &maskRod);
+    } catch (...) {
+        
+    }
     if (rod->isNull()) {
         *rod = maskRod;
     } else {

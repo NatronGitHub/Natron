@@ -894,12 +894,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     std::list<RectI> rectsLeftToRender;
     bool isDuringPaintStroke = isDuringPaintStrokeCreationThreadLocal();
     bool fillGrownBoundsWithZeroes = false;
+    
+    //While painting, clear only the needed portion of the bitmap
     RectI lastStrokePixelRoD;
     if ( isDuringPaintStroke && args.inputImagesList.empty() ) {
         RectD lastStrokeRoD;
         NodePtr node = getNode();
         if ( !node->isLastPaintStrokeBitmapCleared() ) {
-            node->getLastPaintStrokeRoD(&lastStrokeRoD);
+            lastStrokeRoD = getApp()->getLastPaintStrokeBbox();
             node->clearLastPaintStrokeRoD();
             // qDebug() << getScriptName_mt_safe().c_str() << "last stroke RoD: " << lastStrokeRoD.x1 << lastStrokeRoD.y1 << lastStrokeRoD.x2 << lastStrokeRoD.y2;
             lastStrokeRoD.toPixelEnclosing(mipMapLevel, par, &lastStrokePixelRoD);

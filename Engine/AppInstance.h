@@ -374,8 +374,13 @@ public:
     
     virtual bool isDraftRenderEnabled() const { return false; }
     
-    virtual void setUserIsPainting(const boost::shared_ptr<Natron::Node>& /*rotopaintNode*/) {}
-    virtual boost::shared_ptr<Natron::Node> getIsUserPainting() const { return boost::shared_ptr<Natron::Node>(); }
+    virtual void setUserIsPainting(const boost::shared_ptr<Natron::Node>& /*rotopaintNode*/,
+                                   const boost::shared_ptr<RotoStrokeItem>& /*stroke*/,
+                                  bool /*isPainting*/) {}
+    
+    virtual void getActiveRotoDrawingStroke(boost::shared_ptr<Natron::Node>* /*node*/,
+                                            boost::shared_ptr<RotoStrokeItem>* /*stroke*/,
+                                            bool* /*isPainting*/) const { }
     
     virtual bool isRenderStatsActionChecked() const { return false; }
     
@@ -394,6 +399,22 @@ public:
     virtual AppInstance* newProject();
     
     virtual void* getOfxHostOSHandle() const { return NULL; }
+    
+    virtual void updateLastPaintStrokeData(int /*newAge*/,
+                                           const std::list<std::pair<Natron::Point,double> >& /*points*/,
+                                           const RectD& /*lastPointsBbox*/,
+                                           int /*strokeIndex*/) {}
+    
+    virtual void getLastPaintStrokePoints(std::list<std::list<std::pair<Natron::Point,double> > >* /*strokes*/, int* /*strokeIndex*/) const {}
+
+    virtual int getStrokeLastIndex() const { return -1; }
+    
+    virtual void getRenderStrokeData(RectD* /*lastStrokeMovementBbox*/, std::list<std::pair<Natron::Point,double> >* /*lastStrokeMovementPoints*/,
+                                     double */*distNextIn*/, boost::shared_ptr<Natron::Image>* /*strokeImage*/) const {}
+    
+    virtual void updateStrokeImage(const boost::shared_ptr<Natron::Image>& /*image*/, double /*distNextOut*/, bool /*setDistNextOut*/) {}
+    
+    virtual RectD getLastPaintStrokeBbox() const { return RectD(); }
     
 public Q_SLOTS:
     

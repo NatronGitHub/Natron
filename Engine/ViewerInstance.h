@@ -135,6 +135,7 @@ public:
                                                     int view,
                                                     U64 viewerHash,
                                                     const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                    const boost::shared_ptr<RotoStrokeItem>& strokeItem,
                                                     const boost::shared_ptr<RenderStats>& stats,
                                                     boost::shared_ptr<ViewerArgs>* argsA,
                                                     boost::shared_ptr<ViewerArgs>* argsB);

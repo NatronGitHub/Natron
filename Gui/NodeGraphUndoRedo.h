@@ -39,7 +39,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/EngineFwd.h"
-
+#include "Gui/GuiFwd.h"
 
 class Edge;
 class NodeGui;

@@ -73,12 +73,17 @@ ViewerTab::drawOverlays(double time,
                         double scaleY) const
 {
 
+    boost::shared_ptr<Natron::Node> rotoPaintNode;
+    boost::shared_ptr<RotoStrokeItem> curStroke;
+    bool isDrawing;
+    getGui()->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke,&isDrawing);
+    
     if (!getGui() ||
         !getGui()->getApp() ||
         !_imp->viewer ||
         getGui()->getApp()->isClosing() ||
         isFileDialogViewer() ||
-        (getGui()->isGUIFrozen() && !getGui()->getApp()->getIsUserPainting()) ||
+        (getGui()->isGUIFrozen() && !isDrawing) ||
         getGui()->getApp()->isShowingDialog()) {
         return;
     }

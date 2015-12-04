@@ -110,17 +110,13 @@ RotoContext::isRotoPaint() const
 }
 
 void
-RotoContext::setStrokeBeingPainted(const boost::shared_ptr<RotoStrokeItem>& stroke)
+RotoContext::setWhileCreatingPaintStrokeOnMergeNodes(bool b)
 {
+    getNode()->setWhileCreatingPaintStroke(b);
     QMutexLocker k(&_imp->rotoContextMutex);
-    _imp->strokeBeingPainted = stroke;
-}
-
-boost::shared_ptr<RotoStrokeItem>
-RotoContext::getStrokeBeingPainted() const
-{
-    QMutexLocker k(&_imp->rotoContextMutex);
-    return _imp->strokeBeingPainted;
+    for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _imp->globalMergeNodes.begin(); it != _imp->globalMergeNodes.end(); ++it) {
+        (*it)->setWhileCreatingPaintStroke(b);
+    }
 }
 
 boost::shared_ptr<Natron::Node>
@@ -131,12 +127,7 @@ RotoContext::getRotoPaintBottomMergeNode() const
         return boost::shared_ptr<Natron::Node>();
     }
     
-    boost::shared_ptr<RotoStrokeItem> strokeBeingPainted;
-    {
-        QMutexLocker k(&_imp->rotoContextMutex);
-        strokeBeingPainted = _imp->strokeBeingPainted;
-    }
-    if (!strokeBeingPainted && isRotoPaintTreeConcatenatableInternal(items)) {
+    if (isRotoPaintTreeConcatenatableInternal(items)) {
         QMutexLocker k(&_imp->rotoContextMutex);
         if (!_imp->globalMergeNodes.empty()) {
             return _imp->globalMergeNodes.front();
@@ -498,7 +489,6 @@ RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName,
         parentLayer->insertItem(curve,0);
     }
     curve->createNodes();
-    _imp->strokeBeingPainted = curve;
     
     _imp->lastInsertedItem = curve;
     
@@ -811,6 +801,14 @@ RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoIt
 
     bool rodSet = false;
     
+    boost::shared_ptr<Natron::Node> activeRotoPaintNode;
+    boost::shared_ptr<RotoStrokeItem> activeStroke;
+    bool isDrawing;
+    getNode()->getApp()->getActiveRotoDrawingStroke(&activeRotoPaintNode, &activeStroke,&isDrawing);
+    if (!isDrawing) {
+        activeStroke.reset();
+    }
+    
     QMutexLocker l(&_imp->rotoContextMutex);
     for (double t = startTime; t <= endTime; t+= mbFrameStep) {
         bool first = true;
@@ -835,7 +833,7 @@ RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoIt
             } else if (isStroke) {
                 RectD strokeRod;
                 if (isStroke->isActivated(time)) {
-                    if (isStroke == _imp->strokeBeingPainted.get()) {
+                    if (isStroke == activeStroke.get()) {
                         strokeRod = isStroke->getMergeNode()->getPaintStrokeRoD_duringPainting();
                     } else {
                         strokeRod = isStroke->getBoundingBox(t);

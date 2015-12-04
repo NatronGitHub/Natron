@@ -419,21 +419,16 @@ public:
     
     /////////////////////ROTO-PAINT related functionnalities//////////////////////
     //////////////////////////////////////////////////////////////////////////////
-    void updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
-                                   const RectD& lastPointsBbox,
-                                   int strokeIndex);
+    
+    void prepareForNextPaintStrokeRender();
     
     //Used by nodes below the rotopaint tree to optimize the RoI
-    void setLastPaintStrokeDataNoRotopaint(const RectD& lastStrokeBbox);
+    void setLastPaintStrokeDataNoRotopaint();
     void invalidateLastPaintStrokeDataNoRotopaint();
     
     void getPaintStrokeRoD(double time,RectD* bbox) const;
     RectD getPaintStrokeRoD_duringPainting() const;
     
-    bool isFirstPaintStrokeRenderTick() const;
-    int getStrokeImageAge() const;
-    void updateStrokeImage(const boost::shared_ptr<Natron::Image>& image);
-    void getLastPaintStrokeRoD(RectD* pointsBbox) ;
     bool isLastPaintStrokeBitmapCleared() const;
     void clearLastPaintStrokeRoD();
     void getLastPaintStrokePoints(double time,std::list<std::list<std::pair<Natron::Point,double> > >* strokes, int* strokeIndex) const;

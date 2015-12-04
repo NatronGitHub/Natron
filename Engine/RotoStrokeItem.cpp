@@ -320,8 +320,7 @@ RotoStrokeItem::setStrokeFinished()
         frameHoldNode->incrementKnobsAge();
     }
     
-    getContext()->setStrokeBeingPainted(boost::shared_ptr<RotoStrokeItem>());
-    getContext()->getNode()->setWhileCreatingPaintStroke(false);
+    getContext()->setWhileCreatingPaintStrokeOnMergeNodes(false);
     getContext()->clearViewersLastRenderedStrokes();
     //Might have to do this somewhere else if several viewers are active on the rotopaint node
     resetNodesThreadSafety();

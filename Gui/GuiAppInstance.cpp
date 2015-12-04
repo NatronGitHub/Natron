@@ -34,6 +34,7 @@
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/Plugin.h"
@@ -56,6 +57,48 @@
 #include "Gui/ViewerGL.h"
 
 using namespace Natron;
+
+struct RotoPaintData
+{
+    boost::shared_ptr<Natron::Node> rotoPaintNode;
+    
+    boost::shared_ptr<RotoStrokeItem> stroke;
+    
+    bool isPainting;
+    
+    bool turboAlreadyActiveBeforePainting;
+    
+    ///The last mouse event tick bounding box, to render the least possible
+    RectD lastStrokeMovementBbox;
+    
+    ///The index of the points/stroke we have rendered
+    int lastStrokeIndex,multiStrokeIndex;
+    
+    ///The last points of the mouse event
+    std::list<std::pair<Natron::Point,double> > lastStrokePoints;
+    
+    ///Used for the rendering algorithm to know where we stopped along the path
+    double distToNextIn,distToNextOut;
+    
+    //The image used to render the currently drawn stroke mask
+    boost::shared_ptr<Natron::Image> strokeImage;
+    
+    RotoPaintData()
+    : rotoPaintNode()
+    , stroke()
+    , turboAlreadyActiveBeforePainting(false)
+    , lastStrokeMovementBbox()
+    , lastStrokeIndex(-1)
+    , multiStrokeIndex(0)
+    , lastStrokePoints()
+    , distToNextIn(0)
+    , distToNextOut(0)
+    , strokeImage()
+    {
+        
+    }
+    
+};
 
 struct GuiAppInstancePrivate
 {
@@ -86,9 +129,8 @@ struct GuiAppInstancePrivate
     std::string declareAppAndParamsString;
     int overlayRedrawRequests;
     
-    mutable QMutex userIsPaintingMutex;
-    boost::shared_ptr<Natron::Node> userIsPainting;
-    bool turboAlreadyActiveBeforePainting;
+    mutable QMutex rotoDataMutex;
+    RotoPaintData rotoData;
     
     GuiAppInstancePrivate()
     : _gui(NULL)
@@ -103,10 +145,10 @@ struct GuiAppInstancePrivate
     , loadProjectSplash(0)
     , declareAppAndParamsString()
     , overlayRedrawRequests(0)
-    , userIsPaintingMutex()
-    , userIsPainting()
-    , turboAlreadyActiveBeforePainting(false)
+    , rotoDataMutex()
+    , rotoData()
     {
+        rotoData.turboAlreadyActiveBeforePainting = false;
     }
 
     void findOrCreateToolButtonRecursive(const boost::shared_ptr<PluginGroupNode>& n);
@@ -1141,26 +1183,46 @@ GuiAppInstance::isDraftRenderEnabled() const
 }
 
 void
-GuiAppInstance::setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopaintNode)
+GuiAppInstance::setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopaintNode,
+                                  const boost::shared_ptr<RotoStrokeItem>& stroke,
+                                  bool isPainting)
 {
     bool wasTurboActive;
     {
-        QMutexLocker k(&_imp->userIsPaintingMutex);
-        _imp->userIsPainting = rotopaintNode;
-        if (rotopaintNode) {
-            _imp->turboAlreadyActiveBeforePainting = _imp->_gui->isGUIFrozen();
+        QMutexLocker k(&_imp->rotoDataMutex);
+        
+        if (isPainting && (rotopaintNode != _imp->rotoData.rotoPaintNode ||
+            stroke != _imp->rotoData.stroke)) {
+            _imp->rotoData.strokeImage.reset();
         }
-        wasTurboActive = _imp->turboAlreadyActiveBeforePainting;
+        
+        _imp->rotoData.isPainting = isPainting;
+        if (isPainting) {
+            _imp->rotoData.rotoPaintNode = rotopaintNode;
+            _imp->rotoData.stroke = stroke;
+        }
+        
+        
+        //Reset the index
+        _imp->rotoData.lastStrokeIndex = -1;
+        if (rotopaintNode) {
+            _imp->rotoData.turboAlreadyActiveBeforePainting = _imp->_gui->isGUIFrozen();
+        }
+        wasTurboActive = _imp->rotoData.turboAlreadyActiveBeforePainting;
     }
-    bool isPainting = rotopaintNode.get() != 0;
-    _imp->_gui->onFreezeUIButtonClicked(isPainting || wasTurboActive);
+    //bool isPainting = rotopaintNode.get() != 0;
+   // _imp->_gui->onFreezeUIButtonClicked(isPainting || wasTurboActive);
 }
 
-boost::shared_ptr<Natron::Node>
-GuiAppInstance::getIsUserPainting() const
+void
+GuiAppInstance::getActiveRotoDrawingStroke(boost::shared_ptr<Natron::Node>* node,
+                                boost::shared_ptr<RotoStrokeItem>* stroke,
+                                           bool *isPainting) const
 {
-    QMutexLocker k(&_imp->userIsPaintingMutex);
-    return _imp->userIsPainting;
+    QMutexLocker k(&_imp->rotoDataMutex);
+    *node = _imp->rotoData.rotoPaintNode;
+    *stroke = _imp->rotoData.stroke;
+    *isPainting = _imp->rotoData.isPainting;
 }
 
 bool
@@ -1232,4 +1294,66 @@ GuiAppInstance::getOfxHostOSHandle() const
     }
     WId ret = _imp->_gui->winId();
     return (void*)ret;
+}
+
+
+
+void
+GuiAppInstance::updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
+                                const RectD& lastPointsBbox,
+                                int strokeIndex)
+{
+    
+    {
+        QMutexLocker k(&_imp->rotoDataMutex);
+        _imp->rotoData.lastStrokePoints = points;
+        _imp->rotoData.lastStrokeMovementBbox = lastPointsBbox;
+        _imp->rotoData.lastStrokeIndex = newAge;
+        _imp->rotoData.distToNextIn = _imp->rotoData.distToNextOut;
+        _imp->rotoData.multiStrokeIndex = strokeIndex;
+    }
+}
+
+void
+GuiAppInstance::getLastPaintStrokePoints(std::list<std::list<std::pair<Natron::Point,double> > >* strokes, int* strokeIndex) const
+{
+    QMutexLocker k(&_imp->rotoDataMutex);
+    strokes->push_back(_imp->rotoData.lastStrokePoints);
+    *strokeIndex = _imp->rotoData.multiStrokeIndex;
+}
+
+int
+GuiAppInstance::getStrokeLastIndex() const
+{
+    QMutexLocker k(&_imp->rotoDataMutex);
+    return _imp->rotoData.lastStrokeIndex;
+}
+
+void
+GuiAppInstance::getRenderStrokeData(RectD* lastStrokeMovementBbox, std::list<std::pair<Natron::Point,double> >* lastStrokeMovementPoints,
+                         double *distNextIn, boost::shared_ptr<Natron::Image>* strokeImage) const
+{
+    QMutexLocker k(&_imp->rotoDataMutex);
+    *lastStrokeMovementBbox = _imp->rotoData.lastStrokeMovementBbox;
+    *lastStrokeMovementPoints = _imp->rotoData.lastStrokePoints;
+    *distNextIn = _imp->rotoData.distToNextIn;
+    *strokeImage = _imp->rotoData.strokeImage;
+}
+
+
+void
+GuiAppInstance::updateStrokeImage(const boost::shared_ptr<Natron::Image>& image, double distNextOut, bool setDistNextOut)
+{
+    QMutexLocker k(&_imp->rotoDataMutex);
+    _imp->rotoData.strokeImage = image;
+    if (setDistNextOut) {
+        _imp->rotoData.distToNextOut = distNextOut;
+    }
+}
+
+RectD
+GuiAppInstance::getLastPaintStrokeBbox() const
+{
+    QMutexLocker k(&_imp->rotoDataMutex);
+    return _imp->rotoData.lastStrokeMovementBbox;
 }

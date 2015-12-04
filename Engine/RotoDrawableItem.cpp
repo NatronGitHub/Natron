@@ -135,7 +135,7 @@ RotoDrawableItem::setNodesThreadSafetyForRotopainting()
     assert(boost::dynamic_pointer_cast<RotoStrokeItem>(boost::dynamic_pointer_cast<RotoDrawableItem>(shared_from_this())));
     
     getContext()->getNode()->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
-    getContext()->getNode()->setWhileCreatingPaintStroke(true);
+    getContext()->setWhileCreatingPaintStrokeOnMergeNodes(true);
     if (_imp->effectNode) {
         _imp->effectNode->setWhileCreatingPaintStroke(true);
         _imp->effectNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);

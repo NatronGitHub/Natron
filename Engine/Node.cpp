@@ -288,14 +288,7 @@ struct Node::Implementation
     , mustComputeInputRelatedData(true)
     , duringPaintStrokeCreation(false)
     , lastStrokeMovementMutex()
-    , lastStrokeMovementBbox()
     , strokeBitmapCleared(false)
-    , lastStrokeIndex(-1)
-    , multiStrokeIndex(0)
-    , strokeImage()
-    , lastStrokePoints()
-    , distToNextIn(0.)
-    , distToNextOut(0.)
     , useAlpha0ToConvertFromRGBToRGBA(false)
     , isBeingDestroyed(false)
     , inputModifiedRecursion(0)
@@ -514,12 +507,8 @@ struct Node::Implementation
     
     bool duringPaintStrokeCreation; // protected by lastStrokeMovementMutex
     mutable QMutex lastStrokeMovementMutex;
-    RectD lastStrokeMovementBbox;
     bool strokeBitmapCleared;
-    int lastStrokeIndex,multiStrokeIndex;
-    ImagePtr strokeImage;
-    std::list<std::pair<Natron::Point,double> > lastStrokePoints;
-    double distToNextIn,distToNextOut;
+    
     
     //This flag is used for the Roto plug-in and for the Merge inside the rotopaint tree
     //so that if the input of the roto node is RGB, it gets converted with alpha = 0, otherwise the user
@@ -823,13 +812,8 @@ Node::usesAlpha0ToConvertFromRGBToRGBA() const
 void
 Node::setWhileCreatingPaintStroke(bool creating)
 {
-    {
-        QMutexLocker k(&_imp->lastStrokeMovementMutex);
-        _imp->duringPaintStrokeCreation = creating;
-        if (creating) {
-            _imp->lastStrokeIndex = -1;
-        }
-    }
+    QMutexLocker k(&_imp->lastStrokeMovementMutex);
+    _imp->duringPaintStrokeCreation = creating;
 }
 
 bool
@@ -914,29 +898,21 @@ Node::refreshDynamicProperties()
 }
 
 void
-Node::updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
-                                const RectD& lastPointsBbox,
-                                int strokeIndex)
+Node::prepareForNextPaintStrokeRender()
 {
     
     {
         QMutexLocker k(&_imp->lastStrokeMovementMutex);
-        _imp->lastStrokePoints = points;
-        _imp->lastStrokeMovementBbox = lastPointsBbox;
-        _imp->lastStrokeIndex = newAge;
-        _imp->distToNextIn = _imp->distToNextOut;
         _imp->strokeBitmapCleared = false;
-        _imp->multiStrokeIndex = strokeIndex;
     }
     _imp->liveInstance->clearActionsCache();
 }
 
 void
-Node::setLastPaintStrokeDataNoRotopaint(const RectD& lastStrokeBbox)
+Node::setLastPaintStrokeDataNoRotopaint()
 {
     {
         QMutexLocker k(&_imp->lastStrokeMovementMutex);
-        _imp->lastStrokeMovementBbox = lastStrokeBbox;
         _imp->strokeBitmapCleared = false;
         _imp->duringPaintStrokeCreation = true;
     }
@@ -948,7 +924,6 @@ Node::invalidateLastPaintStrokeDataNoRotopaint()
 {
     {
         QMutexLocker k(&_imp->lastStrokeMovementMutex);
-        _imp->lastStrokeMovementBbox.clear();
         _imp->duringPaintStrokeCreation = false;
     }
 
@@ -971,7 +946,6 @@ Node::getPaintStrokeRoD(double time, RectD* bbox) const
         *bbox = getPaintStrokeRoD_duringPainting();
     } else {
         boost::shared_ptr<RotoDrawableItem> stroke = _imp->paintStroke.lock();
-        assert(stroke);
         if (!stroke) {
             throw std::logic_error("");
         }
@@ -980,13 +954,7 @@ Node::getPaintStrokeRoD(double time, RectD* bbox) const
     
 }
 
-void
-Node::getLastPaintStrokeRoD(RectD* bbox)
-{
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    *bbox = _imp->lastStrokeMovementBbox;
-    
-}
+
 
 bool
 Node::isLastPaintStrokeBitmapCleared() const
@@ -1008,10 +976,13 @@ Node::getLastPaintStrokePoints(double time,
                                std::list<std::list<std::pair<Natron::Point,double> > >* strokes,
                                int* strokeIndex) const
 {
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    if (_imp->duringPaintStrokeCreation) {
-        strokes->push_back(_imp->lastStrokePoints);
-        *strokeIndex = _imp->multiStrokeIndex;
+    bool duringPaintStroke;
+    {
+        QMutexLocker k(&_imp->lastStrokeMovementMutex);
+        duringPaintStroke = _imp->duringPaintStrokeCreation;
+    }
+    if (duringPaintStroke) {
+        getApp()->getLastPaintStrokePoints(strokes, strokeIndex);
     } else {
         boost::shared_ptr<RotoDrawableItem> item = _imp->paintStroke.lock();
         RotoStrokeItem* stroke = dynamic_cast<RotoStrokeItem*>(item.get());
@@ -1024,26 +995,6 @@ Node::getLastPaintStrokePoints(double time,
     }
 }
 
-bool
-Node::isFirstPaintStrokeRenderTick() const
-{
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    return _imp->lastStrokeIndex == -1;
-}
-
-int
-Node::getStrokeImageAge() const
-{
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    return _imp->lastStrokeIndex;
-}
-
-void
-Node::updateStrokeImage(const boost::shared_ptr<Natron::Image>& image)
-{
-    QMutexLocker k(&_imp->lastStrokeMovementMutex);
-    _imp->strokeImage = image;
-}
 
 boost::shared_ptr<Natron::Image>
 Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
@@ -1064,9 +1015,17 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     }
 
    // qDebug() << getScriptName_mt_safe().c_str() << "Rendering stroke: " << _imp->lastStrokeMovementBbox.x1 << _imp->lastStrokeMovementBbox.y1 << _imp->lastStrokeMovementBbox.x2 << _imp->lastStrokeMovementBbox.y2;
-    _imp->distToNextOut = stroke->renderSingleStroke(stroke, _imp->lastStrokeMovementBbox, _imp->lastStrokePoints, mipMapLevel, par, components, depth, _imp->distToNextIn, &_imp->strokeImage);
+    
+    RectD lastStrokeBbox;
+    std::list<std::pair<Natron::Point,double> > lastStrokePoints;
+    double distNextIn;
+    boost::shared_ptr<Natron::Image> strokeImage;
+    getApp()->getRenderStrokeData(&lastStrokeBbox, &lastStrokePoints, &distNextIn, &strokeImage);
+    double distToNextOut = stroke->renderSingleStroke(stroke, lastStrokeBbox, lastStrokePoints, mipMapLevel, par, components, depth, distNextIn, &strokeImage);
 
-    return _imp->strokeImage;
+    getApp()->updateStrokeImage(strokeImage, distToNextOut, true);
+    
+    return strokeImage;
 }
 
 bool
@@ -4339,7 +4298,6 @@ void
 Node::clearLastRenderedImage()
 {
     _imp->liveInstance->clearLastRenderedImage();
-    _imp->strokeImage.reset();
 }
 
 /*After this call this node still knows the link to the old inputs/outputs

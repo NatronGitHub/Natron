@@ -1324,7 +1324,6 @@ struct RotoContextPrivate
     std::list<boost::shared_ptr<RotoItem> > selectedItems;
     boost::shared_ptr<RotoItem> lastInsertedItem;
     boost::shared_ptr<RotoItem> lastLockedItem;
-    boost::shared_ptr<RotoStrokeItem> strokeBeingPainted;
     
     //Used to prevent 2 threads from writing the same image in the rotocontext
     mutable QMutex cacheAccessMutex;
