@@ -2645,16 +2645,26 @@ AppManager::onCrashReporterOutputWritten()
         //because we know the pipe is opened on the other side.
         
 #if defined(Q_OS_MAC)
-        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( std::string(), 0, 0/*dmpcb*/,  0, true,
+        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( std::string(),
+                                                                          0,
+                                                                          0/*dmpcb*/,
+                                                                          0,
+                                                                          true,
                                                                           _imp->crashReporterBreakpadPipe.toStdString().c_str()));
 #elif defined(Q_OS_LINUX)
-        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(std::string()), 0, 0/*dmpCb*/,
-                                                                          0, true, handle));
+        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(std::string()),
+                                                                          0,
+                                                                          0/*dmpCb*/,
+                                                                          0,
+                                                                          true,
+                                                                          _imp->crashReporterBreakpadPipe.handle()));
 #elif defined(Q_OS_WIN32)
-        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( std::wstring(), 0, 0/*dmpcb*/,
+        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( std::wstring(),
+                                                                          0,
+                                                                          0/*dmpcb*/,
                                                                           google_breakpad::ExceptionHandler::HANDLER_ALL,
                                                                           MiniDumpNormal,
-                                                                          filename.toStdWString(),
+                                                                          _imp->crashReporterBreakpadPipe.toStdWString().c_str(),
                                                                           0));
 #endif
         

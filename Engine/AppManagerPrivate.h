@@ -114,7 +114,11 @@ struct AppManagerPrivate
 #ifdef NATRON_USE_BREAKPAD
     boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
     boost::shared_ptr<QProcess> crashReporter;
+#ifdef Q_OS_LINUX
+    QFile crashReporterBreakpadPipe;
+#else
     QString crashReporterBreakpadPipe;
+#endif
     boost::shared_ptr<QLocalServer> crashClientServer;
     QLocalSocket* crashServerConnection;
 #endif
