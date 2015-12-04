@@ -38,14 +38,8 @@
 
 #include "Engine/EngineFwd.h"
 
-class QRectF;
-class QTreeWidgetItem;
+#include "Gui/GuiFwd.h"
 
-class RotoGui;
-class RotoPanel;
-
-
-struct DroppedTreeItem;
 
 class MoveControlPointsUndoCommand
     : public QUndoCommand

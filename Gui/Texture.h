@@ -27,7 +27,10 @@
 
 #include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
+
 #include "Engine/TextureRect.h"
+#include "Engine/EngineFwd.h"
+
 
 class Texture
 {

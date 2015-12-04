@@ -47,6 +47,8 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/NodeBackDropSerialization.h"
+#include "Gui/GuiFwd.h"
+
 
 #define PYTHON_PANEL_SERIALIZATION_VERSION 1
 
@@ -87,11 +89,6 @@ GCC_DIAG_ON(unused-parameter)
 
 #define kNatronProjectSettingsPanelSerializationName "Natron_Project_Settings_Panel"
 
-class ProjectGui;
-class Gui;
-class Splitter;
-class TabWidget;
-class PyPanel;
 
 struct ViewerData
 {

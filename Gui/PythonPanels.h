@@ -34,12 +34,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeWrapper.h"
 #include "Engine/ScriptObject.h"
 #include "Engine/Knob.h"
-#include "Gui/PanelWidget.h"
 
-class GuiApp;
-class Gui;
-class TabWidget;
-class Param;
+#include "Gui/PanelWidget.h"
+#include "Gui/GuiFwd.h"
+
 
 struct DialogParamHolderPrivate;
 class DialogParamHolder : public NamedKnobHolder

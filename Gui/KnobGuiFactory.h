@@ -30,12 +30,9 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
-class KnobI;
-class DockablePanel;
 
-namespace Natron {
-class LibraryBinary;
-}
+#include "Gui/GuiFwd.h"
+
 
 /******************************KNOB_FACTORY**************************************/
 //Maybe the factory should move to a separate file since it is used to create KnobGui aswell

@@ -2467,7 +2467,7 @@ EffectInstance::openImageFileKnob()
 void
 EffectInstance::evaluate(KnobI* knob,
                          bool isSignificant,
-                         Natron::ValueChangedReasonEnum reason)
+                         Natron::ValueChangedReasonEnum /*reason*/)
 {
     KnobPage* isPage = dynamic_cast<KnobPage*>(knob);
     KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob);

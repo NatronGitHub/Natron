@@ -41,30 +41,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Format.h"
 
-class Button;
-class QWidget;
-class QHBoxLayout;
-class QVBoxLayout;
-class ComboBox;
-class SpinBox;
-class LineEdit;
-class KnobColor;
-class DockablePanel;
-class ProjectGuiSerialization;
-class Gui;
-class NodeGui;
-class ViewerInstance;
-class NodeGuiSerialization;
-namespace boost {
-namespace archive {
-class xml_archive;
-}
-}
+#include "Gui/GuiFwd.h"
 
-namespace Natron {
-class Project;
-class Label;
-}
 
 class ProjectGui
     : public QObject

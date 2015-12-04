@@ -37,12 +37,10 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-using Natron::ScaleTypeEnum;
+#include "Gui/GuiFwd.h"
+
 
 struct ScaleSliderQWidgetPrivate;
-class QColor;
-class QFont;
-class Gui;
 
 class ScaleSliderQWidget
     : public QWidget

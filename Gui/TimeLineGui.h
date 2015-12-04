@@ -42,11 +42,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-class Gui;
-class ViewerTab;
-class QMouseEvent;
-class TimeLine;
-class ViewerInstance;
+#include "Gui/GuiFwd.h"
+
+
 struct TimelineGuiPrivate;
 
 class TimeLineGui

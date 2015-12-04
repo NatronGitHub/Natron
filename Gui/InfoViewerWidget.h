@@ -37,11 +37,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Format.h"
 #include "Engine/ImageComponents.h"
 
-class ViewerGL;
-namespace Natron {
-    class Label;
-}
-class QHBoxLayout;
+#include "Gui/GuiFwd.h"
+
 
 class InfoViewerWidget
     : public QWidget

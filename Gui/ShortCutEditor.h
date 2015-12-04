@@ -42,9 +42,11 @@ CLANG_DIAG_ON(uninitialized)
 CLANG_DIAG_ON(deprecated-register)
 
 #include "Gui/LineEdit.h"
+#include "Gui/GuiFwd.h"
 
-class BoundAction;
+
 struct ShortCutEditorPrivate;
+
 class ShortCutEditor
     : public QWidget
 {

@@ -38,13 +38,10 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-class QVBoxLayout;
-class QTextBrowser;
-class Button;
-class QString;
-class ProcessHandler;
+#include "Gui/GuiFwd.h"
+
+
 struct RenderingProgressDialogPrivate;
-class Gui;
 
 class RenderingProgressDialog
     : public QDialog

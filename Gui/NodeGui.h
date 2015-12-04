@@ -54,6 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 
 
 struct NodeGuiIndicatorPrivate;
+
 class NodeGuiIndicator
 {
 public:

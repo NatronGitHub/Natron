@@ -39,8 +39,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-class QCheckBox;
-class QAbstractButton;
+#include "Gui/GuiFwd.h"
+
 
 namespace Natron {
 struct MessageBoxPrivate;

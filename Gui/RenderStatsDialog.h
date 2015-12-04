@@ -35,15 +35,11 @@
 #include "Engine/RenderStats.h"
 #include "Engine/EngineFwd.h"
 
-
-class QItemSelection;
-
-
-class TableItem;
-class Gui;
+#include "Gui/GuiFwd.h"
 
 
 struct RenderStatsDialogPrivate;
+
 class RenderStatsDialog : public QWidget
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF

@@ -32,7 +32,8 @@
 #include <QtGui/QWidget>
 #include <QtGui/QColor>
 
-class QPaintEvent;
+#include "Gui/GuiFwd.h"
+
 
 class VerticalColorBar : public QWidget
 {

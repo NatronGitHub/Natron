@@ -39,8 +39,8 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/PanelWidget.h"
+#include "Gui/GuiFwd.h"
 
-class Gui;
 
 struct ScriptEditorPrivate;
 

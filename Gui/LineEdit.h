@@ -34,11 +34,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 
-class QPaintEvent;
-class QDropEvent;
-class QDragEnterEvent;
-class QDragMoveEvent;
-class QDragLeaveEvent;
+#include "Gui/GuiFwd.h"
+
 
 class LineEdit
     : public QLineEdit

@@ -45,23 +45,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 
-class QWidget;
-class QStyle;
-class QHBoxLayout;
-class QPushButton;
-class QVBoxLayout;
-class QMenu;
-class Button;
-class QMouseEvent;
-class QDropEvent;
-class QDragEnterEvent;
-class QDragLeaveEvent;
-class TabWidget;
-class QPaintEvent;
-class Gui;
-class ScriptObject;
-class Splitter;
-class PanelWidget;
+#include "Gui/GuiFwd.h"
+
 
 class DragPixmap
     : public QWidget

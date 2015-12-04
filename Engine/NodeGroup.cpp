@@ -1868,7 +1868,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
                                       ", " + ESC(isChoice->getLabel()) + ")");
         
         KnobChoice* aliasedIsChoice = dynamic_cast<KnobChoice*>(aliasedParam.get());
-        
+#pragma message WARN("TODO: if this is an aliased choice parameter, options are fetched from the aliased parameter and should not be written")
       
         
         std::vector<std::string> entries = isChoice->getEntries_mt_safe();

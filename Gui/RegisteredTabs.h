@@ -29,8 +29,8 @@
 #include <map>
 #include <string>
 
-class ScriptObject;
-class PanelWidget;
+#include "Gui/GuiFwd.h"
+
 
 typedef std::map<std::string,std::pair<PanelWidget*,ScriptObject*> > RegisteredTabs;
 

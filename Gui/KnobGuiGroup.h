@@ -48,36 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGui.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
-
-
-// Qt
-class QString;
-class QFrame;
-class QHBoxLayout;
-class QTreeWidget;
-class QTreeWidgetItem;
-class QScrollArea;
-class QFontComboBox;
-
-
-// Gui
-class DockablePanel;
-class LineEdit;
-class Button;
-class SpinBox;
-class ComboBox;
-class ScaleSliderQWidget;
-class CurveWidget;
-class KnobCurveGui;
-class TabGroup;
-
-// private classes, defined in KnobGuiTypes.cpp
-namespace Natron {
-class GroupBoxLabel;
-class ClickableLabel;
-}
-class AnimatedCheckBox;
-
+#include "Gui/GuiFwd.h"
 
 
 class KnobGuiGroup

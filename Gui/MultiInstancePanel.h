@@ -35,15 +35,8 @@
 #include "Engine/Knob.h"
 #include "Engine/EngineFwd.h"
 
+#include "Gui/GuiFwd.h"
 
-class QVBoxLayout;
-class QHBoxLayout;
-class QItemSelection;
-
-class NodeGui;
-class TableItem;
-class KnobButton;
-class Gui;
 
 /**
  * @brief This class represents a multi-instance settings panel.

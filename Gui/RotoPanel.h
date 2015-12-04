@@ -40,15 +40,11 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-class QTreeWidgetItem;
-class QWidget;
-class NodeGui;
-class QUndoCommand;
-class RotoItem;
-class RotoContext;
-class RotoLayer;
-class RotoDrawableItem;
+#include "Gui/GuiFwd.h"
+
+
 struct RotoPanelPrivate;
+
 class RotoPanel
     : public QWidget
 {
@@ -188,8 +184,9 @@ private:
 };
 
 
-struct DroppedTreeItem
+class DroppedTreeItem
 {
+public:
     boost::shared_ptr<RotoLayer> newParentLayer;
     int insertIndex;
     QTreeWidgetItem* newParentItem;

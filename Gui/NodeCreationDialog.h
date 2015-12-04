@@ -40,11 +40,11 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/LineEdit.h"
+#include "Gui/GuiFwd.h"
 
-class QStringList;
-class QModelIndex;
-class QListView;
+
 struct CompleterLineEditPrivate;
+
 class CompleterLineEdit
     : public LineEdit
 {

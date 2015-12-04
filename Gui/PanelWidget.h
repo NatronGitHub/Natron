@@ -35,9 +35,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ScriptObject.h"
 
-class QKeyEvent;
-class Gui;
-class TabWidget;
+#include "Gui/GuiFwd.h"
+
+
 class PanelWidget : public ScriptObject
 {
     QWidget* _thisWidget;

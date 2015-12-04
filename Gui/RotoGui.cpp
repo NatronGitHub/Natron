@@ -153,8 +153,9 @@ enum SelectedCpsTransformModeEnum
 
 
 ///A small structure of all the data shared by all the viewers watching the same Roto
-struct RotoGuiSharedData
+class RotoGuiSharedData
 {
+public:
     SelectedItems selectedItems;
     SelectedCPs selectedCps;
     QRectF selectedCpsBbox;

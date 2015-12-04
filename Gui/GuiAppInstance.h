@@ -38,8 +38,9 @@
  * @brief This little struct contains what enables file dialogs to show previews.
  * It is shared by all dialogs so that we don't have to recreate the nodes everytimes
  **/
-struct FileDialogPreviewProvider
+class FileDialogPreviewProvider
 {
+public:
     ViewerTab* viewerUI;
     boost::shared_ptr<Natron::Node> viewerNodeInternal;
     boost::shared_ptr<NodeGui> viewerNode;

@@ -29,14 +29,23 @@
 
 // Qt
 
+class QAbstractButton;
 class QAction;
 class QCheckBox;
+class QColor;
 class QCursor;
+class QDialogButtonBox;
 class QDragEnterEvent;
 class QDragLeaveEvent;
+class QDragMoveEvent;
 class QDropEvent;
 class QEvent;
+class QFileSystemModel;
+class QFileSystemWatcher;
 class QFont;
+class QFontComboBox;
+class QFrame;
+class QGLShaderProgram;
 class QGraphicsLineItem;
 class QGraphicsPolygonItem;
 class QGraphicsScene;
@@ -45,16 +54,21 @@ class QGraphicsSimpleTextItem;
 class QGraphicsTextItem;
 class QGridLayout;
 class QHBoxLayout;
+class QIcon;
+class QInputEvent;
 class QItemSelection;
 class QKeyEvent;
 class QLinearGradient;
+class QListView;
 class QMenu;
 class QMenuBar;
 class QModelIndex;
 class QMouseEvent;
 class QMutex;
+class QPaintEvent;
 class QPainterPath;
 class QPixmap;
+class QPoint;
 class QPointF;
 class QProgressDialog;
 class QRectF;
@@ -63,6 +77,7 @@ class QSplitter;
 class QStyleOptionViewItem;
 class QTabWidget;
 class QTextBrowser;
+class QToolBar;
 class QToolButton;
 class QTreeWidget;
 class QTreeWidgetItem;
@@ -77,6 +92,8 @@ class QWidget;
 
 class AboutWindow;
 class ActionWithShortcut;
+class AnimatedCheckBox;
+class AnimationButton;
 class BoundAction;
 class Button;
 class ChannelsComboBox;
@@ -92,10 +109,13 @@ class DopeSheet;
 class DopeSheetEditor;
 class DopeSheetKey;
 class DopeSheetView;
+class DroppedTreeItem;
 class Edge;
+class FileDialogPreviewProvider;
 class FloatingWidget;
 class Histogram;
 class Gui;
+class GuiApp;
 class GuiAppInstance;
 class GuiLayoutSerialization;
 class HierarchyView;
@@ -103,6 +123,7 @@ class Histogram;
 class HostOverlay;
 class InfoViewerWidget;
 class KeyBoundAction;
+class KnobCurveGui;
 class KnobGui;
 class KnobGuiFactory;
 class KnobHolder;
@@ -112,6 +133,7 @@ class MenuWithToolTips;
 class MultiInstancePanel;
 class NodeBackDropSerialization;
 class NodeClipBoard;
+class NodeCollection;
 class NodeCurveEditorElement;
 class NodeGraph;
 class NodeGraphPixmapItem;
@@ -123,6 +145,7 @@ class NodeSettingsPanel;
 class PanelWidget;
 class PreferencesPanel;
 class ProjectGui;
+class ProjectGuiSerialization;
 class PropertiesBinWrapper;
 class PyModalDialog;
 class PyPanel;
@@ -130,33 +153,39 @@ class PyTabWidget;
 class RectI;
 class RenderStatsDialog;
 class RotoGui;
+class RotoGuiSharedData;
 class RotoPanel;
 class ScaleSliderQWidget;
 class ScriptEditor;
+class ScriptObject;
+class SequenceFileDialog;
+class SequenceItemDelegate;
 class ShortCutEditor;
 class SpinBox;
+class SpinBoxValidator;
 class SplashScreen;
 class Splitter;
 class TabGroup;
 class TabWidget;
+class TableItem;
 class TableModel;
 class TableView;
+class Texture;
 class TimeLineGui;
 class ToolButton;
 class TrackerGui;
+class TrackerPanel;
 class VerticalColorBar;
 class ViewerGL;
 class ViewerTab;
 
 namespace Natron {
 class ClickableLabel;
+class GroupBoxLabel;
 class Label;
 class Menu;
-#if defined(Q_OS_MAC)
 //Implementation in Gui/QtMac.mm
 bool isHighDPIInternal(const QWidget* w);
-#endif
-
 }
 
 

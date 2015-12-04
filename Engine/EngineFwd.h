@@ -73,6 +73,11 @@ class Descriptor;
 }
 }
 
+// SequenceParsing
+namespace SequenceParsing {
+class SequenceFromFiles;
+}
+
 // Natron Engine
 
 class AppInstance;

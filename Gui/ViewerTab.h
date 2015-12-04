@@ -39,19 +39,7 @@
 #include "Engine/EngineFwd.h"
 
 #include "Gui/PanelWidget.h"
-
-
-
-class QMouseEvent;
-class QInputEvent;
-
-
-class ViewerGL;
-class Gui;
-class RotoGui;
-class NodeGui;
-class TrackerGui;
-struct RotoGuiSharedData;
+#include "Gui/GuiFwd.h"
 
 
 typedef std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > RenderStatsMap;

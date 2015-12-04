@@ -27,6 +27,8 @@
 
 
 #include "Gui/PanelWidget.h"
+#include "Gui/GuiFwd.h"
+
 
 class PropertiesBinWrapper : public QWidget, public PanelWidget
 {

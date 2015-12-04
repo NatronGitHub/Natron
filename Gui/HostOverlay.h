@@ -35,15 +35,13 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/OfxOverlayInteract.h"
 
-class KnobDouble;
-class KnobChoice;
-class KnobBool;
-class KnobI;
-class QPoint;
-class QPointF;
-class NodeGui;
+#include "Gui/GuiFwd.h"
+
+
+// defined below:
 struct PositionInteract;
 struct HostOverlayPrivate;
+
 class HostOverlay : public Natron::NatronOverlayInteractSupport
 {
     
