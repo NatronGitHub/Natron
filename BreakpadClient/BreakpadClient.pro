@@ -64,7 +64,7 @@ unix {
 }
 
 # mac os x
-mac {
+macx {
         # hack to make minidump_generator.cc compile as it uses
         # esp instead of __esp
         # DEFINES += __DARWIN_UNIX03=0 -- looks like we do not need it anymore
@@ -91,7 +91,7 @@ mac {
 }
 
 # linux
-linux {
+unix:!macx {
         SOURCES += \
                 $$BREAKPAD_PATH/client/linux/crash_generation/crash_generation_client.cc \
                 $$BREAKPAD_PATH/client/linux/crash_generation/crash_generation_server.cc \
@@ -105,7 +105,6 @@ linux {
                 $$BREAKPAD_PATH/client/linux/minidump_writer/linux_dumper.cc \
                 $$BREAKPAD_PATH/client/linux/minidump_writer/linux_ptrace_dumper.cc \
                 $$BREAKPAD_PATH/client/linux/minidump_writer/minidump_writer.cc \
-                $$BREAKPAD_PATH/client/linux/sender/google_crash_report_sender.cc \
                 $$BREAKPAD_PATH/common/linux/crc32.cc \
                 $$BREAKPAD_PATH/common/linux/dump_symbols.cc \
                 $$BREAKPAD_PATH/common/linux/elf_core_dump.cc \
