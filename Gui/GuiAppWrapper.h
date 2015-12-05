@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "Engine/AppInstanceWrapper.h"
 #include "Engine/ParameterWrapper.h" // ColorTuple
 #include "Engine/EngineFwd.h"

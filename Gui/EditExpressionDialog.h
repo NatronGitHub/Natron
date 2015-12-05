@@ -25,10 +25,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <utility>
-
-#include "Global/Macros.h"
 
 #include <QtCore/QString>
 

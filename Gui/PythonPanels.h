@@ -25,16 +25,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <Python.h>
-
 #include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-
-#include "Global/Macros.h"
 
 #include "Engine/NodeWrapper.h"
 #include "Engine/ScriptObject.h"

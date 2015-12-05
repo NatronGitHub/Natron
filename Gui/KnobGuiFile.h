@@ -25,8 +25,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <map>
 #include "Global/Macros.h"
+
+#include <map>
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QString>

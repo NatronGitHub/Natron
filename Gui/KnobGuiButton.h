@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <vector> // KnobGuiInt
 #include <list>
 #include "Global/Macros.h"
@@ -36,7 +38,6 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Singleton.h"

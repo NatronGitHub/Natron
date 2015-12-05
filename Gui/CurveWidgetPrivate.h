@@ -25,10 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <boost/shared_ptr.hpp>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-#include "Global/Macros.h"
 
 #include "Gui/CurveEditorUndoRedo.h" // MoveTangentCommand
 #include "Gui/CurveGui.h"

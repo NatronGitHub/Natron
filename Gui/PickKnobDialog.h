@@ -32,8 +32,10 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
+CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
+CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"

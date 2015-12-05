@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
@@ -37,14 +38,17 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 #endif
+
+#include "Engine/AppManager.h"
+
+#include "Gui/GuiFwd.h"
+
+
 #define NODE_GUI_INTRODUCES_COLOR 2
 #define NODE_GUI_INTRODUCES_SELECTED 3
 #define NODE_GUI_MERGE_BACKDROP 4
 #define NODE_GUI_INTRODUCES_OVERLAY_COLOR 5
 #define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_OVERLAY_COLOR
-#include "Engine/AppManager.h"
-
-#include "Gui/GuiFwd.h"
 
 
 class NodeGuiSerialization

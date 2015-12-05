@@ -25,9 +25,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <map>
-
 #include "Global/Macros.h"
+
+#include <map>
 
 #include "Engine/AppInstance.h"
 

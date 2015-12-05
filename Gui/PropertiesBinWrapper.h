@@ -25,6 +25,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
 
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"

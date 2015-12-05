@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <vector>
 #include <map>
 
@@ -33,7 +35,6 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QUndoCommand> // in QtGui on Qt4, in QtWidgets on Qt5

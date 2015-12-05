@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <map>
 #include <string>
@@ -34,11 +36,9 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include <QFutureWatcher>
-
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QFutureWatcher>
 #include <QtCore/QString>
 #include <QtCore/QTimer>
 CLANG_DIAG_ON(deprecated)

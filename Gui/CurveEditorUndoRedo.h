@@ -25,19 +25,22 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <vector>
-#include "Global/Macros.h"
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QUndoCommand> // in QtGui on Qt4, in QtWidgets on Qt5
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QUndoCommand> // in QtGui on Qt4, in QtWidgets on Qt5
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Curve.h"
 
