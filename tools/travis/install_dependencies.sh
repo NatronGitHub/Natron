@@ -48,7 +48,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # ubuntu-toolchain-r/test contains recent versions of gcc
     if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; sudo apt-get update; sudo apt-get install gcc-${GCC_VERSION} g++-${GCC_VERSION}; sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 90; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GCC_VERSION} 90; fi
 
-    if [ "$CC" = "$TEST_CC" ]; then sudo pip install cpp-coveralls --use-mirrors; fi
+    if [ "$CC" = "$TEST_CC" ]; then sudo pip install cpp-coveralls; fi
     ## Python 3.4
     ##sudo add-apt-repository --yes ppa:fkrull/deadsnakes # python3.x
     # we get libyaml-cpp-dev from kubuntu backports (for OpenColorIO)
