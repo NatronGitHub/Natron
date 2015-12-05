@@ -86,6 +86,7 @@ struct RotoPaintData
     RotoPaintData()
     : rotoPaintNode()
     , stroke()
+    , isPainting(false)
     , turboAlreadyActiveBeforePainting(false)
     , lastStrokeMovementBbox()
     , lastStrokeIndex(-1)
