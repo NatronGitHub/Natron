@@ -1868,34 +1868,42 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
                                       ", " + ESC(isChoice->getLabel()) + ")");
         
         KnobChoice* aliasedIsChoice = dynamic_cast<KnobChoice*>(aliasedParam.get());
-#pragma message WARN("TODO: if this is an aliased choice parameter, options are fetched from the aliased parameter and should not be written")
-      
         
-        std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-        std::vector<std::string> helps = isChoice->getEntriesHelp_mt_safe();
-        if (entries.size() > 0) {
-            if (helps.empty()) {
-                for (U32 i = 0; i < entries.size(); ++i) {
-                    helps.push_back("");
+        if (!aliasedIsChoice) {
+            std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+            std::vector<std::string> helps = isChoice->getEntriesHelp_mt_safe();
+            if (entries.size() > 0) {
+                if (helps.empty()) {
+                    for (U32 i = 0; i < entries.size(); ++i) {
+                        helps.push_back("");
+                    }
                 }
+                WRITE_INDENT(indentLevel); ts << "entries = [ (" << ESC(entries[0]) << ", " << ESC(helps[0]) << "),\n";
+                for (U32 i = 1; i < entries.size(); ++i) {
+                    QString endToken = (i == entries.size() - 1) ? ")]" : "),";
+                    WRITE_INDENT(indentLevel); WRITE_STRING("(" + ESC(entries[i]) + ", " + ESC(helps[i]) + endToken);
+                }
+                WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("param.setOptions(entries)");
+                WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del entries");
             }
-            WRITE_INDENT(indentLevel); ts << "entries = [ (" << ESC(entries[0]) << ", " << ESC(helps[0]) << "),\n";
-            for (U32 i = 1; i < entries.size(); ++i) {
-                QString endToken = (i == entries.size() - 1) ? ")]" : "),";
-                WRITE_INDENT(indentLevel); WRITE_STRING("(" + ESC(entries[i]) + ", " + ESC(helps[i]) + endToken);
-            }
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("param.setOptions(entries)");
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del entries");
-        }
-        
-        
-        std::vector<int> defaultValues = isChoice->getDefaultValues_mt_safe();
-        assert((int)defaultValues.size() == isChoice->getDimension());
-        if (defaultValues[0] != 0) {
+            std::vector<int> defaultValues = isChoice->getDefaultValues_mt_safe();
+            assert((int)defaultValues.size() == isChoice->getDimension());
+            if (defaultValues[0] != 0) {
                 std::string entryStr = isChoice->getEntry(defaultValues[0]);
                 WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(entryStr) + ")");
-            
+                
+            }
+        } else {
+            std::vector<int> defaultValues = isChoice->getDefaultValues_mt_safe();
+            assert((int)defaultValues.size() == isChoice->getDimension());
+            if (defaultValues[0] != 0) {
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[0]) + ")");
+                
+            }
         }
+        
+        
+        
         
     } else if (isColor) {
         QString hasAlphaStr = (isColor->getDimension() == 4) ? "True" : "False";
@@ -2243,7 +2251,6 @@ static void exportAllNodeKnobs(int indentLevel,const boost::shared_ptr<Natron::N
             if (paramName.empty()) {
                 continue;
             }
-            qDebug() << paramName.c_str();
             getParamStr += paramName.c_str();
             getParamStr += "\")";
             if (exportKnobValues(indentLevel,*it2,getParamStr, true, ts)) {

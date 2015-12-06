@@ -3224,7 +3224,9 @@ KnobHelper::createDuplicateOnNode(Natron::EffectInstance* effect,
         output = newKnob;
     } else if (isChoice) {
         boost::shared_ptr<KnobChoice> newKnob = effect->createChoiceKnob(newScriptName, newLabel);
-        newKnob->populateChoices(isChoice->getEntries_mt_safe(),isChoice->getEntriesHelp_mt_safe());
+        if (!makeAlias) {
+            newKnob->populateChoices(isChoice->getEntries_mt_safe(),isChoice->getEntriesHelp_mt_safe());
+        }
         output = newKnob;
     } else if (isColor) {
         boost::shared_ptr<KnobColor> newKnob = effect->createColorKnob(newScriptName, newLabel,getDimension());
@@ -3359,6 +3361,17 @@ KnobHelper::setKnobAsAliasOfThis(const boost::shared_ptr<KnobI>& master, bool do
         return false;
     }
     
+    /*
+     For choices, copy exactly the menu entries because they have to be the same
+     */
+    if (doAlias) {
+        KnobChoice* isChoice = dynamic_cast<KnobChoice*>(master.get());
+        if (isChoice) {
+            KnobChoice* thisChoice = dynamic_cast<KnobChoice*>(this);
+            assert(thisChoice);
+            isChoice->populateChoices(thisChoice->getEntries_mt_safe(),thisChoice->getEntriesHelp_mt_safe());
+        }
+    }
     beginChanges();
     for (int i = 0; i < getDimension(); ++i) {
         
