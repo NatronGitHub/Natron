@@ -26,7 +26,12 @@
 // ***** END PYTHON BLOCK *****
 
 #include <cstdlib> // for std::atexit()
+
 #include <QtCore/QMutexLocker>
+
+#include "Global/Macros.h"
+
+#include "Engine/EngineFwd.h"
 
 // Singleton pattern ( thread-safe) , to have 1 global ptr
 

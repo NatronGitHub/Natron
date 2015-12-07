@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <map>
 #include <string>
@@ -34,11 +36,9 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include <QFutureWatcher>
-
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QFutureWatcher>
 #include <QtCore/QString>
 #include <QtCore/QTimer>
 CLANG_DIAG_ON(deprecated)
@@ -46,15 +46,13 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Variant.h"
 #include "Engine/CLArgs.h"
+#include "Engine/EngineFwd.h"
 
 #include "Gui/ActionShortcuts.h" // AppShortcuts
 #include "Gui/GuiApplicationManager.h" // PythonUserCommand
 #include "Gui/NodeClipBoard.h"
+#include "Gui/GuiFwd.h"
 
-class PluginGroupNode;
-class KnobGuiFactory;
-class Curve;
-class SplashScreen;
 
 struct KnobsClipBoard
 {

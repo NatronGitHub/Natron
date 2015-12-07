@@ -25,8 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
 
 #include "Gui/PanelWidget.h"
+#include "Gui/GuiFwd.h"
+
 
 class PropertiesBinWrapper : public QWidget, public PanelWidget
 {

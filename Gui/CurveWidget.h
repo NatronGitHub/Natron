@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <set>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -33,7 +35,6 @@
 #endif
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -45,27 +46,12 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
-#include "Gui/CurveEditorUndoRedo.h"
+
 #include "Engine/OverlaySupport.h"
 #include "Engine/Curve.h"
 
-class CurveSelection;
-class QFont;
-class Variant;
-class TimeLine;
-class KnobGui;
-class CurveWidget;
-class Button;
-class LineEdit;
-class SpinBox;
-class Gui;
-class Bezier;
-class RotoContext;
-class QVBoxLayout;
-class QHBoxLayout;
-namespace Natron {
-    class Label;
-}
+#include "Gui/CurveEditorUndoRedo.h"
+#include "Gui/GuiFwd.h"
 
 
 class CurveWidgetPrivate;

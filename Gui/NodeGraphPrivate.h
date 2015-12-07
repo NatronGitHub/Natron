@@ -25,17 +25,16 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/weak_ptr.hpp>
 #endif
-
-#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QTimer>
 #include <QtCore/QMutex>
-
 #include <QGraphicsItem>
 #include <QGraphicsLineItem>
 #include <QGraphicsPixmapItem>
@@ -48,13 +47,8 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/NodeGraphUndoRedo.h" // NodeGuiPtr
+#include "Gui/GuiFwd.h"
 
-class NodeGraph;
-class Gui;
-class NodeCollection;
-struct NodeClipBoard;
-class NodeGuiSerialization;
-class ViewerTab;
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
 
@@ -156,8 +150,9 @@ public:
 
 
 
-struct NodeGraphPrivate
+class NodeGraphPrivate
 {
+public:
     NodeGraph* _publicInterface;
     
     boost::weak_ptr<NodeCollection> group;

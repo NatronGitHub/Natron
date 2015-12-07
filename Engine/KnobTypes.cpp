@@ -848,12 +848,8 @@ KnobChoice::choiceRestoration(KnobChoice* knob,const ChoiceExtraData* data)
 void
 KnobChoice::onOriginalKnobPopulated()
 {
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
-    if (!handler) {
-        return;
-    }
-    boost::shared_ptr<KnobI> originalKnob = handler->getKnob();
-    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(originalKnob.get());
+    
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(sender());
     if (!isChoice) {
         return;
     }
@@ -876,16 +872,19 @@ void
 KnobChoice::handleSignalSlotsForAliasLink(const boost::shared_ptr<KnobI>& alias,bool connect)
 {
     assert(alias);
-    boost::shared_ptr<KnobSignalSlotHandler> handler = alias->getSignalSlotHandler();
+    KnobChoice* aliasIsChoice = dynamic_cast<KnobChoice*>(alias.get());
+    if (!aliasIsChoice) {
+        return;
+    }
     if (connect) {
-        QObject::connect(_signalSlotHandler.get(), SIGNAL(populated()), handler.get(), SLOT(onOriginalKnobPopulated()));
-        QObject::connect(_signalSlotHandler.get(), SIGNAL(entriesReset()), handler.get(), SLOT(onOriginalKnobEntriesReset()));
-        QObject::connect(_signalSlotHandler.get(), SIGNAL(entryAppended(QString,QString)), handler.get(),
+        QObject::connect(this, SIGNAL(populated()), aliasIsChoice, SLOT(onOriginalKnobPopulated()));
+        QObject::connect(this, SIGNAL(entriesReset()), aliasIsChoice, SLOT(onOriginalKnobEntriesReset()));
+        QObject::connect(this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice,
                          SLOT(onOriginalKnobEntryAppend(QString,QString)));
     } else {
-        QObject::disconnect(_signalSlotHandler.get(), SIGNAL(populated()), handler.get(), SLOT(onOriginalKnobPopulated()));
-        QObject::disconnect(_signalSlotHandler.get(), SIGNAL(entriesReset()), handler.get(), SLOT(onOriginalKnobEntriesReset()));
-        QObject::disconnect(_signalSlotHandler.get(), SIGNAL(entryAppended(QString,QString)), handler.get(),
+        QObject::disconnect(this, SIGNAL(populated()), aliasIsChoice, SLOT(onOriginalKnobPopulated()));
+        QObject::disconnect(this, SIGNAL(entriesReset()), aliasIsChoice, SLOT(onOriginalKnobEntriesReset()));
+        QObject::disconnect(this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice,
                          SLOT(onOriginalKnobEntryAppend(QString,QString)));
     }
 }
@@ -1146,36 +1145,38 @@ KnobGroup::removeKnob(KnobI* k)
     }
 }
 
-void
+bool
 KnobGroup::moveOneStepUp(KnobI* k)
 {
     for (U32 i = 0; i < _children.size(); ++i) {
         if (_children[i].lock().get() == k) {
             if (i == 0) {
-                break;
+                return false;
             }
             boost::weak_ptr<KnobI> tmp = _children[i - 1];
             _children[i - 1] = _children[i];
             _children[i] = tmp;
-            break;
+            return true;
         }
     }
+    throw std::invalid_argument("Given knob does not belong to this group");
 }
 
-void
+bool
 KnobGroup::moveOneStepDown(KnobI* k)
 {
     for (U32 i = 0; i < _children.size(); ++i) {
         if (_children[i].lock().get() == k) {
             if (i == _children.size() - 1) {
-                break;
+                return false;
             }
             boost::weak_ptr<KnobI> tmp = _children[i + 1];
             _children[i + 1] = _children[i];
             _children[i] = tmp;
-            break;
+            return true;
         }
     }
+    throw std::invalid_argument("Given knob does not belong to this group");
 }
 
 void
@@ -1230,6 +1231,7 @@ KnobPage::KnobPage(KnobHolder* holder,
                      bool declaredByPlugin)
 : Knob<bool>(holder, label, dimension, declaredByPlugin)
 {
+    setIsPersistant(false);
 }
 
 bool
@@ -1335,36 +1337,38 @@ KnobPage::removeKnob(KnobI* k)
     }
 }
 
-void
+bool
 KnobPage::moveOneStepUp(KnobI* k)
 {
     for (U32 i = 0; i < _children.size(); ++i) {
         if (_children[i].lock().get() == k) {
             if (i == 0) {
-                break;
+                return false;
             }
             boost::weak_ptr<KnobI> tmp = _children[i - 1];
             _children[i - 1] = _children[i];
             _children[i] = tmp;
-            break;
+            return true;
         }
     }
+    throw std::invalid_argument("Given knob does not belong to this page");
 }
 
-void
+bool
 KnobPage::moveOneStepDown(KnobI* k)
 {
     for (U32 i = 0; i < _children.size(); ++i) {
         if (_children[i].lock().get() == k) {
             if (i == _children.size() - 1) {
-                break;
+                return false;
             }
             boost::weak_ptr<KnobI> tmp = _children[i + 1];
             _children[i + 1] = _children[i];
             _children[i] = tmp;
-            break;
+            return true;
         }
     }
+    throw std::invalid_argument("Given knob does not belong to this page");
 }
 
 

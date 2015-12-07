@@ -31,17 +31,21 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
+CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-class DockablePanel;
-class QTreeWidgetItem;
+#include "Gui/GuiFwd.h"
+
 
 struct ManageUserParamsDialogPrivate;
 class ManageUserParamsDialog : public QDialog
 {
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
@@ -71,6 +75,8 @@ public Q_SLOTS:
     void onItemDoubleClicked(QTreeWidgetItem *item, int column);
     
 private:
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     void onEditClickedInternal(const QList<QTreeWidgetItem*> &selection);
     

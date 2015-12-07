@@ -138,8 +138,9 @@ typedef std::list<RenderThread> RenderThreads;
 
 // Struct used in a queue when rendering the current frame with a viewer, the id is meaningless just to have a member
 // in the structure. We then compare the pointer of this struct
-struct RequestedFrame
+class RequestedFrame
 {
+public:
     int id;
 };
 
@@ -1869,8 +1870,9 @@ OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
     if (!callback.isEmpty()) {
         QString script = callback;
         std::string appID = _imp->outputEffect->getApp()->getAppIDString();
-        std::string thisNodeStr = appID + "." + _imp->outputEffect->getNode()->getFullyQualifiedName();
-        script.append(thisNodeStr.c_str());
+        std::string nodeName = _imp->outputEffect->getNode()->getFullyQualifiedName();
+        std::string nodeFullName = appID + "." + nodeName;
+        script.append(nodeFullName.c_str());
         script.append(",");
         script.append(appID.c_str());
         script.append(")\n");
@@ -2161,8 +2163,7 @@ private:
                     return;
                 }
                 
-                ParallelRenderArgsSetter frameRenderArgs(activeInputToRender->getApp()->getProject().get(),
-                                                         time,
+                ParallelRenderArgsSetter frameRenderArgs(time,
                                                          viewsToRender[view],
                                                          false,  // is this render due to user interaction ?
                                                          sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential, // is this sequential ?
@@ -2264,8 +2265,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         ignore_result(_effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat));
         rod.toPixelEnclosing(0, par, &roi);
         
-        ParallelRenderArgsSetter frameRenderArgs(_effect->getApp()->getProject().get(),
-                                                 it->time,
+        ParallelRenderArgsSetter frameRenderArgs(it->time,
                                                  it->view,
                                                  false,  // is this render due to user interaction ?
                                                  canOnlyHandleOneView, // is this sequential ?
@@ -3016,7 +3016,7 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
 };
 
 
-static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs& args)
+static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs args)
 {
     
     ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
@@ -3029,7 +3029,7 @@ static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs& args)
             stat = args.viewer->renderViewer(args.view,QThread::currentThread() == qApp->thread(),false,args.viewerHash,args.canAbort,
                                              NodePtr(), true,args.args, args.request, args.stats);
         } else {
-            stat = args.viewer->getViewerArgsAndRenderViewer(args.time, args.canAbort, args.view, args.viewerHash, args.isRotoPaintRequest, args.stats,&args.args[0],&args.args[1]);
+            stat = args.viewer->getViewerArgsAndRenderViewer(args.time, args.canAbort, args.view, args.viewerHash, args.isRotoPaintRequest, args.strokeItem, args.stats,&args.args[0],&args.args[1]);
         }
     } catch (...) {
         stat = eStatusFailed;
@@ -3295,12 +3295,21 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
     if (enableRenderStats) {
         stats.reset(new RenderStats(enableRenderStats));
     }
-    NodePtr isUserRotopainting = _imp->viewer->getApp()->getIsUserPainting();
+    
+    boost::shared_ptr<Natron::Node> rotoPaintNode;
+    boost::shared_ptr<RotoStrokeItem> curStroke;
+    bool isDrawing;
+    _imp->viewer->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke,&isDrawing);
+    if (!isDrawing) {
+        rotoPaintNode.reset();
+        curStroke.reset();
+    }
+    
     boost::shared_ptr<ViewerArgs> args[2];
-    if (!isUserRotopainting) {
+    if (!rotoPaintNode) {
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
-            status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public(frame, false, canAbort, view, i, viewerHash,isUserRotopainting, true, stats, args[i].get());
+            status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public(frame, false, canAbort, view, i, viewerHash,rotoPaintNode, true, stats, args[i].get());
         }
         
         if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
@@ -3340,7 +3349,8 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
     functorArgs.viewerHash = viewerHash;
     functorArgs.scheduler = _imp.get();
     functorArgs.canAbort = canAbort;
-    functorArgs.isRotoPaintRequest = isUserRotopainting;
+    functorArgs.isRotoPaintRequest = rotoPaintNode;
+    functorArgs.strokeItem = curStroke;
     functorArgs.stats = stats;
     
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
@@ -3367,7 +3377,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
         int maxThreads = QThreadPool::globalInstance()->maxThreadCount();
         
         //When painting, limit the number of threads to 1 to be sure strokes are painted in the right order
-        if (_imp->viewer->getApp()->getIsUserPainting().get() != 0) {
+        if (rotoPaintNode) {
             maxThreads = 1;
         }
         if (maxThreads == 1 || (QThreadPool::globalInstance()->activeThreadCount() >= maxThreads - 1)) {

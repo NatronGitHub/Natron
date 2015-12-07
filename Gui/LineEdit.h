@@ -26,19 +26,15 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QLineEdit>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Global/Macros.h"
+#include "Gui/GuiFwd.h"
 
-class QPaintEvent;
-class QDropEvent;
-class QDragEnterEvent;
-class QDragMoveEvent;
-class QDragLeaveEvent;
 
 class LineEdit
     : public QLineEdit

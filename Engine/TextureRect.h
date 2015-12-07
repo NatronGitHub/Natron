@@ -27,7 +27,10 @@
 
 #include <algorithm> // min, max
 
-class RectI;
+#include "Global/Macros.h"
+
+#include "Engine/EngineFwd.h"
+
 
 /** @class This class describes the rectangle (or portion) of an image that is contained
  * into a texture. x1,y1,x2,y2 are respectivly the image coordinates of the left,bottom,right,top
@@ -35,8 +38,14 @@ class RectI;
  * and likewise y2 - y1 != h , this is because a texture might not contain all the lines/columns
  * of the image in the portion defined.
  **/
-struct TextureRect
+class TextureRect
 {
+public:
+    int x1,y1,x2,y2; // the edges of the texture. These are coordinates in the full size image
+    int w,h; // the width and height of the texture. This has nothing to do with x,y,r,t
+    int closestPo2; //< the closest power of 2 of the original region of interest of the image
+    double par; // the par of the associated image
+
     TextureRect()
         : x1(0)
           , y1(0)
@@ -92,11 +101,6 @@ struct TextureRect
         set(0, 0, 0, 0, 0, 0, 1, 1.);
     }
 
-    int x1,y1,x2,y2; // the edges of the texture. These are coordinates in the full size image
-    int w,h; // the width and height of the texture. This has nothing to do with x,y,r,t
-    int closestPo2; //< the closest power of 2 of the original region of interest of the image
-    double par; // the par of the associated image
-    
     bool isNull() const
     {
         return (x2 <= x1) || (y2 <= y1);

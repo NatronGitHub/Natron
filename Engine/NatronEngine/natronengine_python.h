@@ -131,7 +131,7 @@ extern SbkConverter** SbkNatronEngineTypeConverters;
 #define SBK_NATRONENGINE_STD_LIST_EFFECTPTR_IDX                      7 // std::list<Effect * >
 #define SBK_NATRONENGINE_STD_LIST_INT_IDX                            8 // const std::list<int > &
 #define SBK_NATRONENGINE_STD_MAP_IMAGELAYER_EFFECTPTR_IDX            9 // std::map<ImageLayer, Effect * >
-#define SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX                     10 // std::list<std::string >
+#define SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX                     10 // const std::list<std::string > &
 #define SBK_NATRONENGINE_QLIST_QVARIANT_IDX                          11 // QList<QVariant >
 #define SBK_NATRONENGINE_QLIST_QSTRING_IDX                           12 // QList<QString >
 #define SBK_NATRONENGINE_QMAP_QSTRING_QVARIANT_IDX                   13 // QMap<QString, QVariant >

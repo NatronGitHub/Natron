@@ -25,10 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <vector>
 #include <string>
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
@@ -36,16 +37,9 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EffectInstance.h"
+#include "Engine/EngineFwd.h"
 
-namespace Natron {
-namespace Color {
-class Lut;
-}
-}
 
-class KnobFile;
-class KnobChoice;
-class KnobInt;
 class QtReader
     : public Natron::EffectInstance
 {

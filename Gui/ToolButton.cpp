@@ -131,7 +131,8 @@ ToolButton::hasChildren() const
 QMenu*
 ToolButton::getMenu() const
 {
-    assert(_imp->_menu); return _imp->_menu;
+    assert(_imp->_menu);
+    return _imp->_menu;
 }
 
 void
@@ -144,13 +145,12 @@ void
 ToolButton::tryAddChild(ToolButton* child)
 {
     assert(_imp->_menu);
-    for (unsigned int i = 0; i < _imp->_children.size(); ++i) {
-        if (_imp->_children[i] == child) {
-            return;
-        }
+    // insert if not present
+    std::vector<ToolButton*> &children = _imp->_children;
+    if (std::find(children.begin(), children.end(), child) == children.end()) {
+        children.push_back(child);
+        _imp->_menu->addAction( child->getAction() );
     }
-    _imp->_children.push_back(child);
-    _imp->_menu->addAction( child->getAction() );
 }
 
 const std::vector<ToolButton*> &

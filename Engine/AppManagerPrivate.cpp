@@ -128,26 +128,37 @@ AppManagerPrivate::initBreakpad()
     
     assert(!breakpadHandler);
     std::srand(2000);
-    QString filename;
-    int handle;
+    
+    /*
+     Use a temporary file to get a random file name for the pipes.
+     We use 2 different pipe: 1 for the CrashReporter to notify to Natron that it has started correctly, and another
+     one that is used by the google_breakpad server itself.
+     */
+    QString tmpFileName;
     {
         QTemporaryFile tmpf(NATRON_APPLICATION_NAME "_CRASH_PIPE_");
         tmpf.open();
-        handle = tmpf.handle();
-        filename = tmpf.fileName();
+        tmpFileName = tmpf.fileName();
         tmpf.remove();
     }
+    int handle = 0;
     
-    QString comPipeFilename = filename + "_COM_PIPE_";
+    QString natronCrashReporterPipeFilename = tmpFileName + "_COM_PIPE_";
     crashClientServer.reset(new QLocalServer());
     QObject::connect(crashClientServer.get(),SIGNAL( newConnection() ),appPTR,SLOT( onNewCrashReporterConnectionPending() ) );
-    crashClientServer->listen(comPipeFilename);
+    crashClientServer->listen(natronCrashReporterPipeFilename);
     
-    crashReporterBreakpadPipe = filename;
+#ifdef Q_OS_LINUX
+    crashReporterBreakpadPipe.setFileName(tmpFileName);
+    crashReporterBreakpadPipe.open(QIODevice::ReadWrite);
+    handle = crashReporterBreakpadPipe.handle();
+#else
+    crashReporterBreakpadPipe = tmpFileName;
+#endif
     QStringList args;
-    args << filename;
+    args << tmpFileName;
     args << QString::number(handle);
-    args << comPipeFilename;
+    args << natronCrashReporterPipeFilename;
     crashReporter.reset(new QProcess);
     QString crashReporterBinaryPath = qApp->applicationDirPath() + "/NatronCrashReporter";
     crashReporter->start(crashReporterBinaryPath, args);

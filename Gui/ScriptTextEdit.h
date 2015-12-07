@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
+
 #ifndef SCRIPTTEXTEDIT_H
 #define SCRIPTTEXTEDIT_H
 
@@ -25,6 +26,13 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QTextEdit>
@@ -32,15 +40,12 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QSyntaxHighlighter>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#endif
 
+#include "Gui/GuiFwd.h"
 
 
 struct PySyntaxHighlighterPrivate;
+
 class PySyntaxHighlighter : public QSyntaxHighlighter
 {
 

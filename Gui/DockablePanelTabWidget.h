@@ -33,9 +33,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-class QKeyEvent;
+#include "Gui/GuiFwd.h"
 
-class Gui;
 
 /**
  * @class This is to overcome an issue in QTabWidget : switching tab does not resize the QTabWidget.

@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef ROTOUNDOCOMMAND_H
 #define ROTOUNDOCOMMAND_H
 
@@ -26,31 +25,27 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <map>
-#include <QUndoCommand>
-#include <QList>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
-#include "Global/Macros.h"
-class Bezier;
-class BezierCP;
-class RotoGui;
-class RotoLayer;
-class RotoPanel;
-class QRectF;
-class Curve;
-class RotoDrawableItem;
-class RotoStrokeItem;
-class QTreeWidgetItem;
-class RotoItem;
-class KnobDouble;
-namespace Transform {
-struct Matrix3x3;
-}
-struct DroppedTreeItem;
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QUndoCommand>
+#include <QList>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
+#include "Engine/EngineFwd.h"
+
+#include "Gui/GuiFwd.h"
+
 
 class MoveControlPointsUndoCommand
     : public QUndoCommand

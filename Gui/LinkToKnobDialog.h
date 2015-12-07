@@ -25,10 +25,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <utility>
-
-#include "Global/Macros.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -43,11 +43,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-class QStringList;
+#include "Gui/GuiFwd.h"
 
-class QWidget;
-class KnobGui;
-class KnobI;
 
 struct LinkToKnobDialogPrivate;
 

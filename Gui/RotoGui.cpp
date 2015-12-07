@@ -153,8 +153,9 @@ enum SelectedCpsTransformModeEnum
 
 
 ///A small structure of all the data shared by all the viewers watching the same Roto
-struct RotoGuiSharedData
+class RotoGuiSharedData
 {
+public:
     SelectedItems selectedItems;
     SelectedCPs selectedCps;
     QRectF selectedCpsBbox;
@@ -2715,7 +2716,6 @@ RotoGui::penDown(double time,
                  */
                 _imp->checkViewersAreDirectlyConnected();
                 
-                _imp->context->getNode()->getApp()->setUserIsPainting(_imp->context->getNode());
                 if (_imp->rotoData->strokeBeingPaint &&
                     _imp->rotoData->strokeBeingPaint->getParentLayer() && 
                     _imp->multiStrokeEnabled->isChecked()) {
@@ -2730,7 +2730,9 @@ RotoGui::penDown(double time,
                         assert(layer);
                         _imp->context->addItem(layer, 0, _imp->rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);
                     }
-                    _imp->context->setStrokeBeingPainted(_imp->rotoData->strokeBeingPaint);
+
+                    _imp->context->getNode()->getApp()->setUserIsPainting(_imp->context->getNode(),_imp->rotoData->strokeBeingPaint, true);
+
                     boost::shared_ptr<KnobInt> lifeTimeFrameKnob = _imp->rotoData->strokeBeingPaint->getLifeTimeFrameKnob();
                     lifeTimeFrameKnob->setValue(_imp->context->getTimelineCurrentTime(), 0);
                     
@@ -3272,7 +3274,7 @@ RotoGui::penUp(double /*time*/,
     
     if (_imp->state == eEventStateBuildingStroke) {
         assert(_imp->rotoData->strokeBeingPaint);
-        _imp->context->getNode()->getApp()->setUserIsPainting(boost::shared_ptr<Node>());
+        _imp->context->getNode()->getApp()->setUserIsPainting(_imp->context->getNode(),_imp->rotoData->strokeBeingPaint, false);
         assert(_imp->rotoData->strokeBeingPaint->getParentLayer());
         _imp->rotoData->strokeBeingPaint->setStrokeFinished();
         if (!_imp->multiStrokeEnabled->isChecked()) {
@@ -3504,7 +3506,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
         }
         assert(layer);
         context->addItem(layer, 0, rotoData->strokeBeingPaint, RotoItem::eSelectionReasonOther);
-        context->setStrokeBeingPainted(rotoData->strokeBeingPaint);
+        context->getNode()->getApp()->setUserIsPainting(context->getNode(),rotoData->strokeBeingPaint, true);
         rotoData->strokeBeingPaint->appendPoint(true,p);
     }
     

@@ -13,7 +13,7 @@ PortGroup        qt4 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.5.20 tags/Release-
+github.setup     OpenImageIO oiio 1.5.21 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 

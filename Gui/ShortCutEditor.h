@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /opt/boost/include/boost/serialization/static_warning.hpp:104:18: warning: typedef 'STATIC_WARNING_LINE102' locally defined but not used [-Wunused-local-typedefs]
@@ -42,9 +43,11 @@ CLANG_DIAG_ON(uninitialized)
 CLANG_DIAG_ON(deprecated-register)
 
 #include "Gui/LineEdit.h"
+#include "Gui/GuiFwd.h"
 
-class BoundAction;
+
 struct ShortCutEditorPrivate;
+
 class ShortCutEditor
     : public QWidget
 {

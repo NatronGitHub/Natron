@@ -27,6 +27,11 @@
 
 #include <QString>
 
+#include "Global/Macros.h"
+
+#include "Engine/EngineFwd.h"
+
+
 namespace Natron {
 class StandardPaths
 {

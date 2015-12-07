@@ -173,7 +173,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         }
         
         /// 2) restore the timeline
-        timeline->seekFrame(obj.getCurrentTime(), false, 0, Natron::eTimelineChangeReasonPlaybackSeek);
+        timeline->seekFrame(obj.getCurrentTime(), false, 0, Natron::eTimelineChangeReasonOtherSeek);
         
         
         /// 3) Restore the nodes

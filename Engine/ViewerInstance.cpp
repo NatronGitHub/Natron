@@ -348,7 +348,7 @@ static void updateLastStrokeDataRecursively(Natron::Node* node,const NodePtr& ro
         if (invalidate) {
             node->invalidateLastPaintStrokeDataNoRotopaint();
         } else {
-            node->setLastPaintStrokeDataNoRotopaint(lastStrokeBbox);
+            node->setLastPaintStrokeDataNoRotopaint();
         }
         
         if (node == rotoPaintNode.get()) {
@@ -372,8 +372,7 @@ class ViewerParallelRenderArgsSetter : public ParallelRenderArgsSetter
     NodePtr viewerInputNode;
 public:
     
-    ViewerParallelRenderArgsSetter(NodeCollection* n,
-                                   double time,
+    ViewerParallelRenderArgsSetter(double time,
                                    int view,
                                    bool isRenderUserInteraction,
                                    bool isSequential,
@@ -389,7 +388,7 @@ public:
                                    bool draftMode,
                                    bool viewerProgressReportEnabled,
                                    const boost::shared_ptr<RenderStats>& stats)
-    : ParallelRenderArgsSetter(n,time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,treeRoot, request,textureIndex,timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats)
+    : ParallelRenderArgsSetter(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,treeRoot, request,textureIndex,timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats)
     , rotoNode(rotoPaintNode)
     , viewerNode(treeRoot)
     , viewerInputNode()
@@ -440,6 +439,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                              int view,
                                              U64 viewerHash,
                                              const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                             const boost::shared_ptr<RotoStrokeItem>& activeStroke,
                                              const boost::shared_ptr<RenderStats>& stats,
                                              boost::shared_ptr<ViewerArgs>* argsA,
                                              boost::shared_ptr<ViewerArgs>* argsB)
@@ -456,14 +456,6 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         eStatusFailed, eStatusFailed
     };
 
-    boost::shared_ptr<RotoStrokeItem> activeStroke;
-    if (rotoPaintNode) {
-        activeStroke = rotoPaintNode->getRotoContext()->getStrokeBeingPainted();
-        if (!activeStroke) {
-            return eStatusReplyDefault;
-        }
-    }
-    
     NodePtr thisNode = getNode();
     
     
@@ -492,8 +484,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         
        
         
-        ViewerParallelRenderArgsSetter tls(getApp()->getProject().get(),
-                                           time,
+        ViewerParallelRenderArgsSetter tls(time,
                                            view,
                                            true,
                                            false,
@@ -526,14 +517,14 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                 RectD lastStrokeBbox;
                 int lastAge,newAge;
                 NodePtr mergeNode = activeStroke->getMergeNode();
-                lastAge = mergeNode->getStrokeImageAge();
+                lastAge = getApp()->getStrokeLastIndex();
                 int strokeIndex;
                 if (activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod ,&newAge,&strokeIndex)) {
                     
+                    getApp()->updateLastPaintStrokeData(newAge, lastStrokePoints, lastStrokeBbox, strokeIndex);
                     for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
-                        if ((*it)->getAttachedRotoItem() == activeStroke) {
-                            (*it)->updateLastPaintStrokeData(newAge, lastStrokePoints, lastStrokeBbox,strokeIndex);
-                        }
+                        (*it)->prepareForNextPaintStrokeRender();
+                        
                     }
                     updateLastStrokeDataRecursively(thisNode.get(), rotoPaintNode, lastStrokeBbox, false);
                 } else {
@@ -591,7 +582,6 @@ ViewerInstance::renderViewer(int view,
         if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == Natron::eViewerCompositingOperatorNone) ) {
             break;
         }
-        
         if (args[i] && args[i]->params) {
             assert(args[i]->params->textureIndex == i);
             
@@ -841,8 +831,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     ///need to set TLS for getROD()
     boost::shared_ptr<ParallelRenderArgsSetter> frameArgs;
     if (useTLS) {
-        frameArgs.reset(new ParallelRenderArgsSetter(getApp()->getProject().get(),
-                                                     time,
+        frameArgs.reset(new ParallelRenderArgsSetter(time,
                                                      view,
                                                      !isSequential,  // is this render due to user interaction ?
                                                      isSequential, // is this sequential ?
@@ -925,7 +914,6 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     outArgs->params->renderAge = renderAge;
     outArgs->params->setUniqueID(textureIndex);
     outArgs->params->srcPremult = outArgs->activeInputToRender->getOutputPremultiplication();
-    
     ///Texture rect contains the pixel coordinates in the image to be rendered
     outArgs->params->textureRect.x1 = roi.x1;
     outArgs->params->textureRect.x2 = roi.x2;
@@ -1164,8 +1152,7 @@ ViewerInstance::renderViewer_internal(int view,
             return stat;
         }
         
-        frameArgs.reset(new ViewerParallelRenderArgsSetter(getApp()->getProject().get(),
-                                                           inArgs.params->time,
+        frameArgs.reset(new ViewerParallelRenderArgsSetter(inArgs.params->time,
                                                            view,
                                                            !isSequentialRender,
                                                            isSequentialRender,
@@ -1200,8 +1187,7 @@ ViewerInstance::renderViewer_internal(int view,
             if (_imp->lastRotoPaintTickParams[inArgs.params->textureIndex] && inArgs.params->mipMapLevel == _imp->lastRotoPaintTickParams[inArgs.params->textureIndex]->mipMapLevel && inArgs.params->textureRect.contains(_imp->lastRotoPaintTickParams[inArgs.params->textureIndex]->textureRect)) {
                 
                 //Overwrite the RoI to only the last portion rendered
-                RectD lastPaintBbox;
-                getNode()->getLastPaintStrokeRoD(&lastPaintBbox);
+                RectD lastPaintBbox = getApp()->getLastPaintStrokeBbox();
                 const double par = inArgs.activeInputToRender->getPreferredAspectRatio();
                 
                 lastPaintBbox.toPixelEnclosing(inArgs.params->mipMapLevel, par, &lastPaintBboxPixel);
@@ -2648,7 +2634,12 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
                                               params->updateOnlyRoi);
         updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;
         
-        if (!instance->getApp()->getIsUserPainting().get()) {
+        boost::shared_ptr<Natron::Node> rotoPaintNode;
+        boost::shared_ptr<RotoStrokeItem> curStroke;
+        bool isDrawing;
+        instance->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke,&isDrawing);
+        
+        if (!isDrawing) {
             uiContext->updateColorPicker(params->textureIndex);
         }
     }

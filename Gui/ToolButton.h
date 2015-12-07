@@ -26,23 +26,26 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QObject>
 #include <QIcon>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#endif
-class PluginGroupNode;
-class GuiAppInstance;
 
-class QMenu;
-class QAction;
+#include "Engine/EngineFwd.h"
+
+#include "Gui/GuiFwd.h"
+
 
 struct ToolButtonPrivate;
+
 class ToolButton
     : public QObject
 {

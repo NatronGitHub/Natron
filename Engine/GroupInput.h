@@ -85,6 +85,8 @@ public:
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
     
+    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
     
 };
 

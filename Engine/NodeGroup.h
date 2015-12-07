@@ -99,7 +99,13 @@ public:
      **/
     void initNodeName(const std::string& pluginLabel,std::string* nodeName);
     
-    bool setNodeName(const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName);
+    /**
+     * @brief Given the baseName, set in nodeName a possible script-name for the node.
+     * @param appendDigit If a node with the same script-name exists, try to add digits at the end until no match is found
+     * @param errorIfExists If a node with the same script-name exists, error
+     * This function throws a runtime exception with the error message in case of error.
+     **/
+    void setNodeName(const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName);
     
     /**
      * @brief Returns true if there is one or more nodes in the collection.
@@ -237,27 +243,7 @@ public:
      * @brief Computes the union of the frame range of all readers in the group and subgroups.
      **/
     void recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame);
-    
-    /**
-     * @brief Recursively sets render preferences for the rendering of a frame for the current thread.
-     * This is thread local storage
-     **/
-    void setParallelRenderArgs(double time,
-                               int view,
-                               bool isRenderUserInteraction,
-                               bool isSequential,
-                               bool canAbort,
-                               U64 renderAge,
-                               const boost::shared_ptr<Natron::Node>& treeRoot,
-                               const FrameRequestMap* request,
-                               int textureIndex,
-                               const TimeLine* timeline,
-                               const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
-                               bool isAnalysis,
-                               bool draftMode,
-                               bool viewerProgressReportEnabled,
-                               const boost::shared_ptr<RenderStats>& stats);
-    void invalidateParallelRenderArgs();
+
     
     void getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const;
     
@@ -303,46 +289,7 @@ private:
     boost::scoped_ptr<NodeCollectionPrivate> _imp;
 };
 
-struct ParallelRenderArgs;
-class ParallelRenderArgsSetter
-{
-    NodeCollection* collection;
-    std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > argsMap;
-    
-        
-public:
-    
-    /**
-     * @brief Set the TLS for rendering a frame on the NodeCollection n and all its children recursively.
-     * The argument passed here should always be the project, that is all nodes in the project should have their 
-     * TLS set regardless whether they are connected to the tree that takes root from the treeRoot parameter.
-     * We do this because TLS is needed to know the correct frame, view at which the frame is evaluated (i.e rendered)
-     * even in nodes that do not belong in the tree. The reason why is because the nodes in the tree may have parameters
-     * relying on other nodes that do not belong in the tree through expressions.
-     * An enhancement could be to set the TLS only on the nodes in the tree and on the nodes that are dependencies through
-     * expressions.
-     **/
-    ParallelRenderArgsSetter(NodeCollection* n,
-                             double time,
-                             int view,
-                             bool isRenderUserInteraction,
-                             bool isSequential,
-                             bool canAbort,
-                             U64 renderAge,
-                             const boost::shared_ptr<Natron::Node>& treeRoot,
-                             const FrameRequestMap* request,
-                             int textureIndex,
-                             const TimeLine* timeline,
-                             const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
-                             bool isAnalysis,
-                             bool draftMode,
-                             bool viewerProgressReportEnabled,
-                             const boost::shared_ptr<RenderStats>& stats);
-    
-    ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args);
-    
-    virtual ~ParallelRenderArgsSetter();
-};
+
 
 
 struct NodeGroupPrivate;

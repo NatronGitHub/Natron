@@ -191,6 +191,9 @@ KnobGuiBool::onLabelChangedInternal()
 void
 KnobGuiBool::onLabelClicked(bool b)
 {
+    if (_checkBox->getReadOnly()) {
+        return;
+    }
     _checkBox->setChecked(b);
     pushUndoCommand( new KnobUndoCommand<bool>(this,_knob.lock()->getValue(0),b, 0, false) );
 }
@@ -220,14 +223,14 @@ KnobGuiBool::setEnabled()
 
     bool b = knob->isEnabled(0)  && knob->getExpression(0).empty();
 
-    _checkBox->setEnabled(b);
+    _checkBox->setReadOnly(!b);
 }
 
 void
 KnobGuiBool::setReadOnly(bool readOnly,
                           int /*dimension*/)
 {
-    _checkBox->setEnabled(!readOnly);
+    _checkBox->setReadOnly(readOnly);
 }
 
 void
@@ -248,7 +251,7 @@ KnobGuiBool::reflectExpressionState(int /*dimension*/,
 {
     bool isEnabled = _knob.lock()->isEnabled(0);
     _checkBox->setAnimation(3);
-    _checkBox->setEnabled(!hasExpr && isEnabled);
+    _checkBox->setReadOnly(hasExpr || !isEnabled);
 }
 
 void

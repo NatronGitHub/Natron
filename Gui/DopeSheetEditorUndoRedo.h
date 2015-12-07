@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <vector>
 #include <map>
 
@@ -32,23 +34,19 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
-#include "Global/Enums.h"
-#include "Global/Macros.h"
-#include "Engine/Transform.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QUndoCommand> // in QtGui on Qt4, in QtWidgets on Qt5
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-class DopeSheetEditor;
-class DSNode;
-class Curve;
-class DSKnob;
-struct DopeSheetKey;
-namespace Natron {
-class Node;
-}
+#include "Global/Enums.h"
+
+#include "Engine/Transform.h"
+
+#include "Gui/GuiFwd.h"
+
 
 typedef boost::shared_ptr<DopeSheetKey> DSKeyPtr;
 typedef std::list<DSKeyPtr> DSKeyPtrList;

@@ -33,7 +33,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-class Gui;
+#include "Gui/GuiFwd.h"
+
 
 class AutoHideToolBar
 : public QToolBar

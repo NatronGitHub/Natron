@@ -29,6 +29,7 @@
 #include <stdexcept>
 
 #include <QtCore/QDir>
+#include <QtCore/QTextStream>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QUrl>
 #include <QtCore/QFileInfo>
@@ -685,8 +686,12 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
                                      group);
             containerNode = createNode(groupArgs);
             std::string containerName;
-            group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
-            containerNode->setScriptName(containerName);
+            try {
+                group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
+                containerNode->setScriptName(containerName);
+            } catch (...) {
+                
+            }
             
             
         } else {
@@ -1013,7 +1018,11 @@ AppInstance::createNodeInternal(const QString & pluginID,
                                     CreateNodeArgs::DefaultValuesList(),
                                     isGrp);
                 output = createNode(args);
-                output->setScriptName("Output");
+                try {
+                    output->setScriptName("Output");
+                } catch (...) {
+                    
+                }
                 assert(output);
             }
             {
@@ -1510,9 +1519,9 @@ AppInstance::save(const std::string& filename)
 {
     boost::shared_ptr<Natron::Project> project= getProject();
     if (project->hasProjectBeenSavedByUser()) {
-        QString projectName = project->getProjectName();
+        QString projectFilename = project->getProjectFilename();
         QString projectPath = project->getProjectPath();
-        return project->saveProject(projectPath, projectName, 0);
+        return project->saveProject(projectPath, projectFilename, 0);
     } else {
         return saveAs(filename);
     }

@@ -36,16 +36,13 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
-
-
 #include "Global/GlobalDefines.h"
 
 #include "Engine/RectI.h"
 #include "Engine/RectD.h"
+#include "Engine/EngineFwd.h"
 
-namespace Natron {
-    class Node;
-}
+
 /**
  * @brief Holds render infos for one frame for one node. Not MT-safe: MT-safety is handled by RenderStats.
  **/

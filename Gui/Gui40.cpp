@@ -189,12 +189,13 @@ Gui::screenShot(QWidget* w)
 }
 
 void
-Gui::onProjectNameChanged(const QString & name)
+Gui::onProjectNameChanged(const QString & filePath, bool modified)
 {
-    QString text(QCoreApplication::applicationName() + " - ");
-
-    text.append(name);
-    setWindowTitle(text);
+    // handles window title and appearance formatting
+    // http://doc.qt.io/qt-4.8/qwidget.html#windowModified-prop
+    setWindowModified(modified);
+    // http://doc.qt.io/qt-4.8/qwidget.html#windowFilePath-prop
+    setWindowFilePath(filePath.isEmpty() ? NATRON_PROJECT_UNTITLED : filePath);
 }
 
 void
@@ -884,18 +885,17 @@ Gui::onTimeChanged(SequenceTime time,
     
     ViewerInstance* leadViewer = getApp()->getLastViewerUsingTimeline();
     
-    bool isUserEdited = reason == eTimelineChangeReasonUserSeek ||
-    reason == eTimelineChangeReasonDopeSheetEditorSeek ||
-    reason == eTimelineChangeReasonCurveEditorSeek;
+    bool isPlayback = reason == eTimelineChangeReasonPlaybackSeek;
     
     
 
     const std::list<ViewerTab*>& viewers = getViewersList();
     ///Syncrhronize viewers
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it!=viewers.end();++it) {
-        if ((*it)->getInternalNode() != leadViewer || isUserEdited) {
-            (*it)->getInternalNode()->renderCurrentFrame(reason != eTimelineChangeReasonPlaybackSeek);
+        if ((*it)->getInternalNode() == leadViewer && isPlayback) {
+            continue;
         }
+         (*it)->getInternalNode()->renderCurrentFrame(!isPlayback);
     }
 }
 

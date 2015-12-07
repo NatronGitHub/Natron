@@ -25,12 +25,14 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <utility> // pair
 #include <map>
 #include <string>
 
-class ScriptObject;
-class PanelWidget;
+#include "Gui/GuiFwd.h"
+
 
 typedef std::map<std::string,std::pair<PanelWidget*,ScriptObject*> > RegisteredTabs;
 

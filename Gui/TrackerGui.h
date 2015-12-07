@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef TRACKERGUI_H
 #define TRACKERGUI_H
 
@@ -26,26 +25,24 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
-#include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QObject>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-class QWidget;
-class ViewerTab;
-class TrackerPanel;
-class QKeyEvent;
-class QPointF;
-class QMouseEvent;
-class QInputEvent;
+#include "Gui/GuiFwd.h"
+
 
 struct TrackerGuiPrivate;
+
 class TrackerGui
     : public QObject
 {

@@ -36,24 +36,13 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/RectD.h"
+#include "Engine/EngineFwd.h"
 
 
 //This controls how many frames a plug-in can pre-fetch (per view and per input)
 //This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
 //do not all stick altogether in memory
 #define NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING 4
-
-class RectI;
-class TimeLine;
-namespace Natron {
-    class EffectInstance;
-    class Node;
-}
-namespace Transform {
-    struct Matrix3x3;
-}
-class RenderStats;
-
 
 typedef std::map<Natron::EffectInstance*,RectD> RoIMap; // RoIs are in canonical coordinates
 typedef std::map<int, std::map<int, std::vector<OfxRangeD> > > FramesNeededMap;
@@ -176,6 +165,9 @@ struct ParallelRenderArgs
     }
 };
 
+
+
+
 struct FrameViewPair {
     double time;
     int view;
@@ -263,6 +255,41 @@ struct NodeFrameRequest
 
 typedef std::map<boost::shared_ptr<Natron::Node>,boost::shared_ptr<NodeFrameRequest> > FrameRequestMap;
 
+
+class ParallelRenderArgsSetter
+{
+    std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > argsMap;
+    std::list<boost::shared_ptr<Natron::Node> > nodes;
+    
+public:
+    
+    /**
+     * @brief Set the TLS for rendering a frame on the tree upstream of treeRoot (including it) and all nodes that 
+     * can be reached through expressions.
+     * We do this because TLS is needed to know the correct frame, view at which the frame is evaluated (i.e rendered)
+     * even in nodes that do not belong in the tree. The reason why is because the nodes in the tree may have parameters
+     * relying on other nodes that do not belong in the tree through expressions.
+     **/
+    ParallelRenderArgsSetter(double time,
+                             int view,
+                             bool isRenderUserInteraction,
+                             bool isSequential,
+                             bool canAbort,
+                             U64 renderAge,
+                             const boost::shared_ptr<Natron::Node>& treeRoot,
+                             const FrameRequestMap* request,
+                             int textureIndex,
+                             const TimeLine* timeline,
+                             const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
+                             bool isAnalysis,
+                             bool draftMode,
+                             bool viewerProgressReportEnabled,
+                             const boost::shared_ptr<RenderStats>& stats);
+    
+    ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args);
+    
+    virtual ~ParallelRenderArgsSetter();
+};
 
 
 #endif // PARALLELRENDERARGS_H

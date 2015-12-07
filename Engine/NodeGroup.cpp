@@ -55,7 +55,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_PYPLUG_EXPORTER_VERSION 2
+#define NATRON_PYPLUG_EXPORTER_VERSION 3
 
 using namespace Natron;
 
@@ -435,18 +435,36 @@ NodeCollection::clearNodes(bool emitSignal)
 }
 
 
-bool
+void
 NodeCollection::setNodeName(const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName)
 {
     if (baseName.empty()) {
-        return false;
+        throw std::runtime_error(QObject::tr("Invalid script-name").toStdString());
+        return;
     }
     ///Remove any non alpha-numeric characters from the baseName
     std::string cpy = Natron::makeNameScriptFriendly(baseName);
     if (cpy.empty()) {
-        return false;
+        throw std::runtime_error(QObject::tr("Invalid script-name").toStdString());
+        return;
     }
     
+    ///If this is a group and one of its parameter has the same script-name as the script-name of one of the node inside
+    ///the python attribute will be overwritten. Try to prevent this situation.
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
+    if (isGroup) {
+        const std::vector<boost::shared_ptr<KnobI> >&  knobs = isGroup->getKnobs();
+        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            if ((*it)->getName() == cpy) {
+                std::stringstream ss;
+                ss << QObject::tr("A node within a group cannot have the same script-name (").toStdString();
+                ss << cpy;
+                ss << QObject::tr(") as a parameter on the group for scripting purposes.").toStdString();
+                throw std::runtime_error(ss.str());
+                return;
+            }
+        }
+    }
     bool foundNodeWithName = false;
     int no = 1;
 
@@ -469,7 +487,12 @@ NodeCollection::setNodeName(const std::string& baseName,bool appendDigit,bool er
         }
         if (foundNodeWithName) {
             if (errorIfExists || !appendDigit) {
-                return false;
+                std::stringstream ss;
+                ss << QObject::tr("A node with the script-name ").toStdString();
+                ss << *nodeName;
+                ss << QObject::tr(" already exists").toStdString();
+                throw std::runtime_error(ss.str());
+                return;
             }
             ++no;
             {
@@ -479,7 +502,6 @@ NodeCollection::setNodeName(const std::string& baseName,bool appendDigit,bool er
             }
         }
     } while (foundNodeWithName);
-    return true;
 }
 
 void
@@ -493,9 +515,8 @@ NodeCollection::initNodeName(const std::string& pluginLabel,std::string* nodeNam
         baseName = baseName.substr(0,baseName.size() - 3);
     }
 
-    if (!setNodeName(baseName,true, false, nodeName)) {
-        throw std::invalid_argument(QObject::tr("Invalid plugin label: ").toStdString() + pluginLabel);
-    }
+    setNodeName(baseName,true, false, nodeName);
+    
 }
 
 bool
@@ -940,166 +961,6 @@ NodeCollection::forceComputeInputDependentDataOnAllTrees()
 }
 
 
-
-
-
-void
-NodeCollection::setParallelRenderArgs(double time,
-                                      int view,
-                                      bool isRenderUserInteraction,
-                                      bool isSequential,
-                                      bool canAbort,
-                                      U64 renderAge,
-                                      const boost::shared_ptr<Natron::Node>& treeRoot,
-                                      const FrameRequestMap* request,
-                                      int textureIndex,
-                                      const TimeLine* timeline,
-                                      const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
-                                      bool isAnalysis,
-                                      bool draftMode,
-                                      bool viewerProgressReportEnabled,
-                                      const boost::shared_ptr<RenderStats>& stats)
-{
-    
-    bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
-    
-    NodeList nodes = getNodes();
-    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        assert(*it);
-        
-        Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
-        assert(liveInstance);
-        bool duringPaintStrokeCreation = activeRotoPaintNode && (*it)->isDuringPaintStrokeCreation();
-        Natron::RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
-        
-        NodeList rotoPaintNodes;
-        boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
-        if (roto) {
-            roto->getRotoPaintTreeNodes(&rotoPaintNodes);
-        }
-        
-        {
-            U64 nodeHash = 0;
-            bool hashSet = false;
-            boost::shared_ptr<NodeFrameRequest> nodeRequest;
-            if (request) {
-                FrameRequestMap::const_iterator foundRequest = request->find(*it);
-                if (foundRequest != request->end()) {
-                    nodeRequest = foundRequest->second;
-                    nodeHash = nodeRequest->nodeHash;
-                    hashSet = true;
-                }
-            }
-            if (!hashSet) {
-                nodeHash = (*it)->getHashValue();
-            }
-            
-            liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash,
-                                                   renderAge,treeRoot, nodeRequest,textureIndex, timeline, isAnalysis,duringPaintStrokeCreation, rotoPaintNodes, safety, doNanHandling, draftMode, viewerProgressReportEnabled, stats);
-        }
-        for (NodeList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
-            
-            boost::shared_ptr<NodeFrameRequest> childRequest;
-            U64 nodeHash = 0;
-            bool hashSet = false;
-            if (request) {
-                FrameRequestMap::const_iterator foundRequest = request->find(*it2);
-                if (foundRequest != request->end()) {
-                    childRequest = foundRequest->second;
-                    nodeHash = childRequest->nodeHash;
-                    hashSet = true;
-                }
-            }
-            if (!hashSet) {
-                nodeHash = (*it2)->getHashValue();
-            }
-            
-            (*it2)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge, treeRoot, childRequest, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodeList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
-        }
-        
-        if ((*it)->isMultiInstance()) {
-            
-            ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
-            ///on parameters.
-            NodeList children;
-            (*it)->getChildrenMultiInstance(&children);
-            for (NodeList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
-                
-                boost::shared_ptr<NodeFrameRequest> childRequest;
-                U64 nodeHash = 0;
-                bool hashSet = false;
-                if (request) {
-                    FrameRequestMap::const_iterator foundRequest = request->find(*it2);
-                    if (foundRequest != request->end()) {
-                        childRequest = foundRequest->second;
-                        nodeHash = childRequest->nodeHash;
-                        hashSet = true;
-                    }
-                }
-                if (!hashSet) {
-                    nodeHash = (*it2)->getHashValue();
-                }
-                
-                assert(*it2);
-                Natron::EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
-                assert(childLiveInstance);
-                Natron::RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge,treeRoot, childRequest, textureIndex, timeline, isAnalysis, false, std::list<boost::shared_ptr<Natron::Node> >(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled,stats);
-                
-            }
-        }
-        
-        
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
-        if (isGrp) {
-            isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, treeRoot, request, textureIndex, timeline, activeRotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats);
-        }
-
-    }
-}
-
-
-void
-NodeCollection::invalidateParallelRenderArgs()
-{
-    
-    NodeList nodes = getNodes();
-    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if (!(*it) || !(*it)->getLiveInstance()) {
-            continue;
-        }
-        (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
-        
-        if ((*it)->isMultiInstance()) {
-            
-            ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
-            ///on parameters.
-            NodeList children;
-            (*it)->getChildrenMultiInstance(&children);
-            for (NodeList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
-                (*it2)->getLiveInstance()->invalidateParallelRenderArgsTLS();
-                
-            }
-        }
-        
-        NodeList rotoPaintNodes;
-        boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
-        if (roto) {
-            roto->getRotoPaintTreeNodes(&rotoPaintNodes);
-        }
-        for (NodeList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
-            (*it2)->getLiveInstance()->invalidateParallelRenderArgsTLS();
-        }
-        
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
-        if (isGrp) {
-            isGrp->invalidateParallelRenderArgs();
-        }
-    }
-    
-}
-
-
 void
 NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const
 {
@@ -1147,51 +1008,6 @@ NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,P
 
     }
 }
-
-
-ParallelRenderArgsSetter::ParallelRenderArgsSetter(NodeCollection* n,
-                                                   double time,
-                                                   int view,
-                                                   bool isRenderUserInteraction,
-                                                   bool isSequential,
-                                                   bool canAbort,
-                                                   U64 renderAge,
-                                                   const boost::shared_ptr<Natron::Node>& treeRoot,
-                                                   const FrameRequestMap* request,
-                                                   int textureIndex,
-                                                   const TimeLine* timeline,
-                                                   const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
-                                                   bool isAnalysis,
-                                                   bool draftMode,
-                                                   bool viewerProgressReportEnabled,
-                                                   const boost::shared_ptr<RenderStats>& stats)
-: collection(n)
-, argsMap()
-{
-    collection->setParallelRenderArgs(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge, treeRoot, request ,textureIndex,timeline, activeRotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats);
-}
-
-ParallelRenderArgsSetter::ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args)
-: collection(0)
-, argsMap(args)
-{
-    for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it != argsMap.end(); ++it) {
-        it->first->getLiveInstance()->setParallelRenderArgsTLS(it->second);
-    }
-}
-
-ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
-{
-    if (collection) {
-        collection->invalidateParallelRenderArgs();
-    } else {
-        for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it != argsMap.end(); ++it) {
-            it->first->getLiveInstance()->invalidateParallelRenderArgsTLS();
-        }
-    }
-}
-
-
 
 
 struct NodeGroupPrivate
@@ -1632,7 +1448,7 @@ static QString escapeString(const QString& str)
                 ret.append('\\');
             } else if (str[i] == '"') {
                 ret.append('\\');
-                ret.append('"');
+                ret.append('\"');
             } else if (str[i] == '\'') {
                 ret.append('\\');
                 ret.append('\'');
@@ -1655,6 +1471,7 @@ static QString escapeString(const QString& str)
     }
     ret.prepend('"');
     ret.append('"');
+    
     return ret;
 }
 
@@ -1817,7 +1634,8 @@ static bool exportKnobValues(int indentLevel,
         
     } // for (int i = 0; i < (*it2)->getDimension(); ++i)
     
-    if (knob->getIsSecret()) {
+    bool isSecretByDefault = knob->getDefaultIsSecret();
+    if (knob->isUserKnob() && isSecretByDefault) {
         if (!hasExportedValue) {
             hasExportedValue = true;
             if (mustDefineParam) {
@@ -1825,12 +1643,14 @@ static bool exportKnobValues(int indentLevel,
                 WRITE_INDENT(indentLevel); WRITE_STRING("if param is not None:");
             }
         }
+        
+        WRITE_INDENT(innerIdent); WRITE_STRING("param.setVisibleByDefault(False)");
 
-        WRITE_INDENT(innerIdent); WRITE_STRING("param.setVisible(False)");
     }
     
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        if (!knob->isEnabled(i)) {
+    if (knob->isUserKnob()) {
+        bool isSecret = knob->getIsSecret();
+        if (isSecret != isSecretByDefault) {
             if (!hasExportedValue) {
                 hasExportedValue = true;
                 if (mustDefineParam) {
@@ -1838,10 +1658,55 @@ static bool exportKnobValues(int indentLevel,
                     WRITE_INDENT(indentLevel); WRITE_STRING("if param is not None:");
                 }
             }
-
-            WRITE_INDENT(innerIdent); WRITE_STRING("param.setEnabled(False, " +  NUM(i) + ")");
+            
+            QString str("param.setVisible(");
+            if (isSecret) {
+                str += "False";
+            } else {
+                str += "True";
+            }
+            str += ")";
+            WRITE_INDENT(innerIdent); WRITE_STRING(str);
         }
-    }
+        
+        bool enabledByDefault = knob->isDefaultEnabled(0);
+        if (!enabledByDefault) {
+            if (!hasExportedValue) {
+                hasExportedValue = true;
+                if (mustDefineParam) {
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramFullName);
+                    WRITE_INDENT(indentLevel); WRITE_STRING("if param is not None:");
+                }
+            }
+            
+            WRITE_INDENT(innerIdent); WRITE_STRING("param.setEnabledByDefault(False)");
+        }
+        
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            
+            bool isEnabled = knob->isEnabled(i);
+            if (isEnabled != enabledByDefault) {
+                if (!hasExportedValue) {
+                    hasExportedValue = true;
+                    if (mustDefineParam) {
+                        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramFullName);
+                        WRITE_INDENT(indentLevel); WRITE_STRING("if param is not None:");
+                    }
+                }
+                
+                QString str("param.setEnabled(");
+                if (isEnabled) {
+                    str += "True";
+                } else {
+                    str += "False";
+                }
+                str += ", ";
+                str += NUM(i);
+                str += ")";
+                WRITE_INDENT(innerIdent); WRITE_STRING(str);
+            }
+        }
+    } // isuserknob
     
     if (mustDefineParam && hasExportedValue) {
         WRITE_INDENT(innerIdent); WRITE_STRING("del param");
@@ -1865,6 +1730,16 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     KnobButton* isButton = dynamic_cast<KnobButton*>(knob.get());
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
     
+    
+    boost::shared_ptr<KnobI > aliasedParam;
+    {
+        std::list<boost::shared_ptr<KnobI> > listeners;
+        knob->getListeners(listeners);
+        if (!listeners.empty() && listeners.front()->getAliasMaster() == knob) {
+            aliasedParam = listeners.front();
+        }
+    }
+    
     if (isInt) {
         QString createToken;
         switch (isInt->getDimension()) {
@@ -1885,7 +1760,10 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + ESC(isInt->getName()) +
                                       ", " + ESC(isInt->getLabel()) + ")");
         
+        
         std::vector<int> defaultValues = isInt->getDefaultValues_mt_safe();
+      
+        
         assert((int)defaultValues.size() == isInt->getDimension());
         for (int i = 0; i < isInt->getDimension() ; ++i) {
             int min = isInt->getMinimum(i);
@@ -1893,24 +1771,26 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
             int dMin = isInt->getDisplayMinimum(i);
             int dMax = isInt->getDisplayMaximum(i);
             if (min != INT_MIN) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
                                               NUM(i) + ")");
             }
             if (max != INT_MAX) {
                 WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
                                               NUM(i) + ")");
+                
             }
             if (dMin != INT_MIN) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
                                               NUM(i) + ")");
+                
             }
             if (dMax != INT_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
                                               NUM(i) + ")");
+                
             }
-            if (defaultValues[i] != 0) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
-            }
+            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
+            
         }
     } else if (isDouble) {
         QString createToken;
@@ -1932,6 +1812,8 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + ESC(isDouble->getName()) +
                                       ", " + ESC(isDouble->getLabel()) + ")");
         
+        
+        
         std::vector<double> defaultValues = isDouble->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isDouble->getDimension());
         for (int i = 0; i < isDouble->getDimension() ; ++i) {
@@ -1940,23 +1822,28 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
             double dMin = isDouble->getDisplayMinimum(i);
             double dMax = isDouble->getDisplayMaximum(i);
             if (min != -DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
                                               NUM(i) + ")");
+                
             }
             if (max != DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
                                               NUM(i) + ")");
+                
             }
             if (dMin != -DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
                                               NUM(i) + ")");
+                
             }
             if (dMax != DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
                                               NUM(i) + ")");
+                
             }
             if (defaultValues[i] != 0.) {
                 WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
+                
             }
         }
 
@@ -1965,11 +1852,13 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createBooleanParam(" + ESC(isBool->getName()) +
                                       ", " + ESC(isBool->getLabel()) + ")");
         
+        
         std::vector<bool> defaultValues = isBool->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isBool->getDimension());
         
         if (defaultValues[0]) {
             WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[0]) + ")");
+            
         }
         
         
@@ -1977,33 +1866,50 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createChoiceParam(" +
                                       ESC(isChoice->getName()) +
                                       ", " + ESC(isChoice->getLabel()) + ")");
-        std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-        std::vector<std::string> helps = isChoice->getEntriesHelp_mt_safe();
-        if (entries.size() > 0) {
-            if (helps.empty()) {
-                for (U32 i = 0; i < entries.size(); ++i) {
-                    helps.push_back("");
+        
+        KnobChoice* aliasedIsChoice = dynamic_cast<KnobChoice*>(aliasedParam.get());
+        
+        if (!aliasedIsChoice) {
+            std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+            std::vector<std::string> helps = isChoice->getEntriesHelp_mt_safe();
+            if (entries.size() > 0) {
+                if (helps.empty()) {
+                    for (U32 i = 0; i < entries.size(); ++i) {
+                        helps.push_back("");
+                    }
                 }
+                WRITE_INDENT(indentLevel); ts << "entries = [ (" << ESC(entries[0]) << ", " << ESC(helps[0]) << "),\n";
+                for (U32 i = 1; i < entries.size(); ++i) {
+                    QString endToken = (i == entries.size() - 1) ? ")]" : "),";
+                    WRITE_INDENT(indentLevel); WRITE_STRING("(" + ESC(entries[i]) + ", " + ESC(helps[i]) + endToken);
+                }
+                WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("param.setOptions(entries)");
+                WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del entries");
             }
-            WRITE_INDENT(indentLevel); ts << "entries = [ (" << ESC(entries[0]) << ", " << ESC(helps[0]) << "),\n";
-            for (U32 i = 1; i < entries.size(); ++i) {
-                QString endToken = (i == entries.size() - 1) ? ")]" : "),";
-                WRITE_INDENT(indentLevel); WRITE_STRING("(" + ESC(entries[i]) + ", " + ESC(helps[i]) + endToken);
+            std::vector<int> defaultValues = isChoice->getDefaultValues_mt_safe();
+            assert((int)defaultValues.size() == isChoice->getDimension());
+            if (defaultValues[0] != 0) {
+                std::string entryStr = isChoice->getEntry(defaultValues[0]);
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(entryStr) + ")");
+                
             }
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("param.setOptions(entries)");
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del entries");
+        } else {
+            std::vector<int> defaultValues = isChoice->getDefaultValues_mt_safe();
+            assert((int)defaultValues.size() == isChoice->getDimension());
+            if (defaultValues[0] != 0) {
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[0]) + ")");
+                
+            }
         }
         
-        std::vector<int> defaultValues = isChoice->getDefaultValues_mt_safe();
-        assert((int)defaultValues.size() == isChoice->getDimension());
-        if (defaultValues[0] != 0) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[0]) + ")");
-        }
+        
+        
         
     } else if (isColor) {
         QString hasAlphaStr = (isColor->getDimension() == 4) ? "True" : "False";
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createColorParam(" + ESC(isColor->getName()) +
                                       ", " + ESC(isColor->getLabel()) + ", " + hasAlphaStr +  ")");
+        
         
         std::vector<double> defaultValues = isColor->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isColor->getDimension());
@@ -2014,23 +1920,28 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
             double dMin = isColor->getDisplayMinimum(i);
             double dMax = isColor->getDisplayMaximum(i);
             if (min != -DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
                                               NUM(i) + ")");
+                
             }
             if (max != DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
                                               NUM(i) + ")");
+                
             }
             if (dMin != -DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
                                               NUM(i) + ")");
             }
+            
             if (dMax != DBL_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
                                               NUM(i) + ")");
+                
             }
             if (defaultValues[i] != 0.) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
+                
             }
         }
 
@@ -2058,11 +1969,13 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         }
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setType(NatronEngine.StringParam.TypeEnum." + typeStr + ")");
         
+        
         std::vector<std::string> defaultValues = isStr->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isStr->getDimension());
         QString def(defaultValues[0].c_str());
         if (!def.isEmpty()) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+            
         }
         
     } else if (isFile) {
@@ -2071,11 +1984,13 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         QString seqStr = isFile->isInputImageFile() ? "True" : "False";
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
         
+        
         std::vector<std::string> defaultValues = isFile->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isFile->getDimension());
         QString def(defaultValues[0].c_str());
         if (!def.isEmpty()) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + def + ")");
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + def + ")");
+            
         }
         
     } else if (isOutFile) {
@@ -2086,11 +2001,13 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         QString seqStr = isOutFile->isOutputImageFile() ? "True" : "False";
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
         
+        
         std::vector<std::string> defaultValues = isOutFile->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isOutFile->getDimension());
         QString def(defaultValues[0].c_str());
         if (!def.isEmpty()) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+            
         }
 
     } else if (isPath) {
@@ -2101,12 +2018,14 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
             WRITE_INDENT(indentLevel); WRITE_STRING("param.setAsMultiPathTable()");
         }
         
+        
         std::vector<std::string> defaultValues = isPath->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isPath->getDimension());
         QString def(defaultValues[0].c_str());
         if (!def.isEmpty()) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
         }
+        
 
     } else if (isGrp) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createGroupParam(" +
@@ -2140,7 +2059,9 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Set param properties");
 
     QString help(knob->getHintToolTip().c_str());
-    WRITE_INDENT(indentLevel); WRITE_STRING("param.setHelp(" + ESC(help) + ")");
+    if (!aliasedParam || aliasedParam->getHintToolTip() != knob->getHintToolTip()) {
+        WRITE_INDENT(indentLevel); WRITE_STRING("param.setHelp(" + ESC(help) + ")");
+    }
     if (knob->isNewLineActivated()) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setAddNewLine(True)");
     } else {
@@ -2325,7 +2246,14 @@ static void exportAllNodeKnobs(int indentLevel,const boost::shared_ptr<Natron::N
     std::list<KnobPage*> userPages;
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
         if ((*it2)->getIsPersistant() && !(*it2)->isUserKnob()) {
-            if (exportKnobValues(indentLevel,*it2,"lastNode.getParam(\"" + QString((*it2)->getName().c_str()) + "\")", true, ts)) {
+            QString getParamStr("lastNode.getParam(\"");
+            const std::string& paramName =  (*it2)->getName();
+            if (paramName.empty()) {
+                continue;
+            }
+            getParamStr += paramName.c_str();
+            getParamStr += "\")";
+            if (exportKnobValues(indentLevel,*it2,getParamStr, true, ts)) {
                 WRITE_STATIC_LINE("");
             }
             
@@ -2354,6 +2282,23 @@ static void exportAllNodeKnobs(int indentLevel,const boost::shared_ptr<Natron::N
     
     if (!userPages.empty()) {
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Refresh the GUI with the newly created parameters");
+        std::list<std::string> pagesOrdering = node->getPagesOrder();
+        if (!pagesOrdering.empty()) {
+            QString line("lastNode.setPagesOrder([");
+            std::list<std::string>::iterator next = pagesOrdering.begin();
+            ++next;
+            for (std::list<std::string>::iterator it = pagesOrdering.begin(); it!=pagesOrdering.end(); ++it) {
+                line += '\'';
+                line += it->c_str();
+                line += '\'';
+                if (next != pagesOrdering.end()) {
+                    line += ", ";
+                    ++next;
+                }
+            }
+            line += "])";
+            WRITE_INDENT(indentLevel); WRITE_STRING(line);
+        }
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("lastNode.refreshUserParamsGUI()");
     }
     
@@ -2383,29 +2328,55 @@ static void exportAllNodeKnobs(int indentLevel,const boost::shared_ptr<Natron::N
 }
 
 static bool exportKnobLinks(int indentLevel,
+                            const boost::shared_ptr<Natron::Node>& groupNode,
                             const boost::shared_ptr<Natron::Node>& node,
-                     const QString& nodeName,
-                     QTextStream& ts)
+                            const QString& groupName,
+                            const QString& nodeName,
+                            QTextStream& ts)
 {
     bool hasExportedLink = false;
     const std::vector<boost::shared_ptr<KnobI> >& knobs = node->getKnobs();
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
         QString paramName = nodeName + ".getParam(\"" + QString((*it2)->getName().c_str()) + "\")";
-        
         bool hasDefined = false;
-        for (int i = 0; i < (*it2)->getDimension(); ++i) {
-            std::string expr = (*it2)->getExpression(i);
-            QString hasRetVar = (*it2)->isExpressionUsingRetVariable(i) ? "True" : "False";
-            if (!expr.empty()) {
-                if (!hasDefined) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramName);
-                    hasDefined = true;
-                }
-                hasExportedLink = true;
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setExpression(" + ESC(expr) + ", " +
-                                              hasRetVar + ", " + NUM(i) + ")");
+        
+        //Check for alias link
+        boost::shared_ptr<KnobI> alias = (*it2)->getAliasMaster();
+        if (alias) {
+            if (!hasDefined) {
+                WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramName);
+                hasDefined = true;
             }
+            hasExportedLink = true;
             
+            Natron::EffectInstance* aliasHolder = dynamic_cast<Natron::EffectInstance*>(alias->getHolder());
+            assert(aliasHolder);
+            QString aliasName;
+            if (aliasHolder == groupNode->getLiveInstance()) {
+                aliasName = groupName;
+            } else {
+                aliasName = groupName + aliasHolder->getNode()->getScriptName_mt_safe().c_str();
+            }
+            aliasName += '.';
+            aliasName += alias->getName().c_str();
+            
+            WRITE_INDENT(indentLevel); WRITE_STRING(aliasName + ".setAsAlias(" + paramName + ")");
+        } else {
+            
+            for (int i = 0; i < (*it2)->getDimension(); ++i) {
+                std::string expr = (*it2)->getExpression(i);
+                QString hasRetVar = (*it2)->isExpressionUsingRetVariable(i) ? "True" : "False";
+                if (!expr.empty()) {
+                    if (!hasDefined) {
+                        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramName);
+                        hasDefined = true;
+                    }
+                    hasExportedLink = true;
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setExpression(" + ESC(expr) + ", " +
+                                                            hasRetVar + ", " + NUM(i) + ")");
+                }
+                
+            }
         }
         if (hasDefined) {
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del param");
@@ -2526,6 +2497,10 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
     WRITE_STATIC_LINE("");
     
     const NodeGroup* isGroup = dynamic_cast<const NodeGroup*>(collection);
+    NodePtr groupNode;
+    if (isGroup) {
+        groupNode = isGroup->getNode();
+    }
     if (isGroup) {
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Create the parameters of the group node the same way we did for all internal nodes");
         WRITE_INDENT(indentLevel); WRITE_STRING("lastNode = " + groupName);
@@ -2561,9 +2536,12 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
     
     for (NodeList::iterator it = exportedNodes.begin(); it != exportedNodes.end(); ++it) {
         QString nodeQualifiedName(groupName + (*it)->getScriptName_mt_safe().c_str());
-        if (exportKnobLinks(indentLevel,*it,nodeQualifiedName, ts)) {
+        if (exportKnobLinks(indentLevel,groupNode, *it, groupName, nodeQualifiedName, ts)) {
             hasExported = true;
         }
+    }
+    if (isGroup) {
+        exportKnobLinks(indentLevel, groupNode, groupNode, groupName, groupName, ts);
     }
     if (hasExported) {
         WRITE_STATIC_LINE("");
@@ -2611,7 +2589,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     WRITE_STATIC_LINE("");
     
     WRITE_STATIC_LINE("def getLabel():");
-    WRITE_INDENT(1);WRITE_STRING("return \"" + pluginLabel + "\"");
+    WRITE_INDENT(1);WRITE_STRING("return " + ESC(pluginLabel));
     WRITE_STATIC_LINE("");
     
     WRITE_STATIC_LINE("def getVersion():");
@@ -2620,7 +2598,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
   
     if (!pluginIconPath.isEmpty()) {
         WRITE_STATIC_LINE("def getIconPath():");
-        WRITE_INDENT(1);WRITE_STRING("return \"" + pluginIconPath + "\"");
+        WRITE_INDENT(1);WRITE_STRING("return " + ESC(pluginIconPath));
         WRITE_STATIC_LINE("");
     }
     
@@ -2630,7 +2608,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     
     if (!pluginDescription.isEmpty()) {
         WRITE_STATIC_LINE("def getPluginDescription():");
-        WRITE_INDENT(1);WRITE_STRING("return \"" + pluginDescription + "\"");
+        WRITE_INDENT(1);WRITE_STRING("return " + ESC(pluginDescription));
         WRITE_STATIC_LINE("");
     }
     

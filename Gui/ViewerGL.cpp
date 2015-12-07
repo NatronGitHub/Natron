@@ -2635,6 +2635,8 @@ ViewerGL::fitImageToFormat(bool useProjectFormat)
     }
     
     _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+    
+    update();
 }
 
 /**
@@ -3450,7 +3452,13 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
 {
     Format dispW = getDisplayWindow();
     RectD canonicalDispW = dispW.toCanonicalFormat();
-    if (!_imp->viewerTab->getGui()->getApp()->getIsUserPainting().get()) {
+    
+    NodePtr rotoPaintNode;
+    boost::shared_ptr<RotoStrokeItem> curStroke;
+    bool isDrawing;
+    _imp->viewerTab->getGui()->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
+    
+    if (!isDrawing) {
         for (int i = 0; i < 2; ++i) {
             const RectD& rod = getRoD(i);
             updateInfoWidgetColorPickerInternal(imgPos, widgetPos, width(), height(), rod, canonicalDispW, i);

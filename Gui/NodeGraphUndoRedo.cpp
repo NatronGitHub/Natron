@@ -1207,6 +1207,14 @@ LoadNodePresetsCommand::redo()
             panel->addInstances(newChildren);
         }
     }
+    
+    NodeList allNodes;
+    internalNode->getGroup()->getActiveNodes(&allNodes);
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(internalNode->getLiveInstance());
+    if (isGroup) {
+        isGroup->getActiveNodes(&allNodes);
+    }
+    internalNode->restoreKnobsLinks(*_newSerializations.front(), allNodes);
     internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;
@@ -1622,7 +1630,11 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
                                 CreateNodeArgs::DefaultValuesList(),
                                 isGrp);
             NodePtr output = graph->getGui()->getApp()->createNode(args);
-            output->setScriptName("Output");
+            try {
+                output->setScriptName("Output");
+            } catch (...) {
+                
+            }
             assert(output);
             
             double thisNodeX,thisNodeY;

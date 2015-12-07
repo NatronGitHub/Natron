@@ -25,10 +25,16 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <QGraphicsItem>
 #include "Global/Macros.h"
 
-class NodeGraph;
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QGraphicsItem>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
+#include "Gui/GuiFwd.h"
+
 class NodeGraphTextItem : public QGraphicsTextItem
 {
     NodeGraph* _graph;

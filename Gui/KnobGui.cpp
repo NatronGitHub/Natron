@@ -22,15 +22,18 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Gui/KnobGui.h"
-#include "Gui/KnobGuiPrivate.h"
-
 #include <cassert>
-
 #include <boost/weak_ptr.hpp>
 
+#include "Engine/KnobTypes.h"
+
+#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiPrivate.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/ClickableLabel.h"
+
+
+
 
 using namespace Natron;
 
@@ -623,7 +626,11 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
 } // createAnimationMenu
 
 boost::shared_ptr<KnobI>
-KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool makeAlias)
+KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,
+                               bool makeAlias,
+                               const boost::shared_ptr<KnobPage>& page,
+                               const boost::shared_ptr<KnobGroup>& group,
+                               int indexInParent)
 {
     ///find-out to which node that master knob belongs to
     assert( getKnob()->getHolder()->getApp() );
@@ -645,7 +652,27 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,bool makeAlias)
         }
     }
     
-    boost::shared_ptr<KnobI> ret = knob->createDuplicateOnNode(effect,makeAlias);
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(knob->getHolder());
+    if (!isEffect) {
+        return boost::shared_ptr<KnobI>();
+    }
+    const std::string& nodeScriptName = isEffect->getNode()->getScriptName();
+    std::string newKnobName = nodeScriptName +  knob->getName();
+    boost::shared_ptr<KnobI> ret;
+    try {
+        ret = knob->createDuplicateOnNode(effect,
+                                          page,
+                                          group,
+                                          indexInParent,
+                                          makeAlias,
+                                          newKnobName,
+                                          knob->getLabel(),
+                                          knob->getHintToolTip(),
+                                          true);
+    } catch (const std::exception& e) {
+        Natron::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
+        return boost::shared_ptr<KnobI>();
+    }
     if (ret) {
         boost::shared_ptr<NodeGuiI> groupNodeGuiI = effect->getNode()->getNodeGui();
         NodeGui* groupNodeGui = dynamic_cast<NodeGui*>(groupNodeGuiI.get());

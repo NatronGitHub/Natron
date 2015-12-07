@@ -63,7 +63,8 @@ using namespace Natron;
 void
 Gui::setupUi()
 {
-    setWindowTitle( QCoreApplication::applicationName() );
+    onProjectNameChanged(QString(), false);
+
     setMouseTracking(true);
     installEventFilter(this);
     assert( !isFullScreen() );
@@ -137,7 +138,7 @@ Gui::setupUi()
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
     
     boost::shared_ptr<Project> project = _imp->_appInstance->getProject();
-    QObject::connect( project.get(), SIGNAL( projectNameChanged(QString) ), this, SLOT( onProjectNameChanged(QString) ) );
+    QObject::connect( project.get(), SIGNAL( projectNameChanged(QString, bool) ), this, SLOT( onProjectNameChanged(QString, bool) ) );
     
     boost::shared_ptr<TimeLine> timeline = project->getTimeLine();
     QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ), this,SLOT( onTimeChanged(SequenceTime,int) ) );

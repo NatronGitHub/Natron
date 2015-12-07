@@ -40,30 +40,16 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Global/GlobalDefines.h"
 
 #include "Engine/NodeGraphI.h"
-#include "Global/GlobalDefines.h"
-#include "Gui/PanelWidget.h"
+#include "Engine/EngineFwd.h"
 
-class QVBoxLayout;
-class QScrollArea;
-class QEvent;
-class QKeyEvent;
-class Gui;
-class NodeGui;
-class QDropEvent;
-class QUndoCommand;
-class QDragEnterEvent;
-class NodeSerialization;
-class NodeGuiSerialization;
-class NodeBackDropSerialization;
-class NodeCollection;
-class ViewerTab;
-struct NodeClipBoard;
-struct NodeGraphPrivate;
-namespace Natron {
-class Node;
-}
+#include "Gui/PanelWidget.h"
+#include "Gui/GuiFwd.h"
+
+
+class NodeGraphPrivate;
 
 class NodeGraph : public QGraphicsView, public NodeGraphI, public PanelWidget, public boost::noncopyable
 {

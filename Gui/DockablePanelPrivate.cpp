@@ -712,18 +712,10 @@ DockablePanelPrivate::getOrCreatePage(KnobPage* page)
     tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING);
     
     if (_tabWidget) {
-        if (name == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL || (page && page->isUserKnob())) {
-            _tabWidget->insertTab(0,newTab,name);
-            _tabWidget->setCurrentIndex(0);
-        } else {
-            _tabWidget->addTab(newTab,name);
-        }
+        _tabWidget->addTab(newTab,name);
     } else {
-        if (name == NATRON_USER_MANAGED_KNOBS_PAGE_LABEL || (page && page->isUserKnob())) {
-            _horizLayout->insertWidget(0, newTab);
-        } else {
-            _horizLayout->addWidget(newTab);
-        }
+        _horizLayout->addWidget(newTab);
+    
     }
     
     

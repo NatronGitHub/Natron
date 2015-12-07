@@ -1,20 +1,20 @@
 --- Source/QtDialog/CMakeLists.txt.orig
 +++ Source/QtDialog/CMakeLists.txt
-@@ -15,7 +15,10 @@
-   cmake_policy(SET CMP0020 NEW) # Drop when CMake >= 2.8.11 required
+@@ -16,7 +16,10 @@
  endif()
+ CMake_OPTIONAL_COMPONENT(cmake-gui)
  find_package(Qt5Widgets QUIET)
 -if (Qt5Widgets_FOUND)
-+if (NOT Qt5Widgets_FOUND)
++if(NOT Qt5Widgets_FOUND)
 +  message(FATAL_ERROR "Qt5 required but not found")
 +endif()
 +
    include_directories(${Qt5Widgets_INCLUDE_DIRS})
    add_definitions(${Qt5Widgets_DEFINITONS})
    macro(qt4_wrap_ui)
-@@ -65,25 +68,6 @@
-     get_property(_Qt5_Core_LOCATION TARGET Qt5::Core PROPERTY LOCATION)
-     get_filename_component(Qt_BIN_DIR "${_Qt5_Core_LOCATION}" PATH)
+@@ -85,19 +88,6 @@
+       get_filename_component(Qt_BIN_DIR "${Qt_BIN_DIR}" PATH)
+     endif()
    endif()
 -else()
 -  set(QT_MIN_VERSION "4.4.0")
@@ -28,17 +28,11 @@
 -
 -  set(CMake_QT_LIBRARIES ${QT_LIBRARIES})
 -
--  if(WIN32 AND EXISTS "${QT_QMAKE_EXECUTABLE}")
--    get_filename_component(_Qt_BIN_DIR "${QT_QMAKE_EXECUTABLE}" PATH)
--    if(EXISTS "${_Qt_BIN_DIR}/QtCore4.dll")
--      set(Qt_BIN_DIR ${_Qt_BIN_DIR})
--    endif()
--  endif()
 -endif()
  
  set(SRCS
    AddCacheEntry.cxx
-@@ -121,7 +105,7 @@
+@@ -135,7 +125,7 @@
  if(WIN32)
    set(SRCS ${SRCS} CMakeSetup.rc)
  endif()
@@ -47,34 +41,33 @@
    set(SRCS ${SRCS} CMakeSetup.icns)
    set(MACOSX_BUNDLE_ICON_FILE CMakeSetup.icns)
    set_source_files_properties(CMakeSetup.icns PROPERTIES
-@@ -137,13 +121,13 @@
+@@ -152,10 +142,10 @@
  
  set(CMAKE_INCLUDE_CURRENT_DIR ON)
  
--add_executable(cmake-gui WIN32 MACOSX_BUNDLE ${SRCS})
-+add_executable(cmake-gui WIN32 ${SRCS})
+-add_executable(cmake-gui WIN32 MACOSX_BUNDLE ${SRCS} ${MANIFEST_FILE})
++add_executable(cmake-gui WIN32 ${SRCS} ${MANIFEST_FILE})
  target_link_libraries(cmake-gui CMakeLib ${QT_QTMAIN_LIBRARY} ${CMake_QT_LIBRARIES})
- if(Qt_BIN_DIR)
-   set_property(TARGET cmake-gui PROPERTY Qt_BIN_DIR ${Qt_BIN_DIR})
- endif()
  
 -if(APPLE)
 +if(APPLEBUNDLE)
    file(STRINGS "${CMake_SOURCE_DIR}/Copyright.txt" copyright_line
      LIMIT_COUNT 1 REGEX "^Copyright 2000-20[0-9][0-9] Kitware")
  
-@@ -181,16 +165,16 @@
-   install(FILES cmakecache.xml DESTINATION share/mime/packages )
+@@ -200,18 +190,18 @@
+     ${COMPONENT})
  endif()
  
 -if(APPLE)
 +if(APPLEBUNDLE)
-   install(CODE "execute_process(COMMAND ln -s \"../MacOS/CMake\" cmake-gui
-                 WORKING_DIRECTORY \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin)")
+   install(CODE "
+     execute_process(COMMAND ln -s \"../MacOS/CMake\" cmake-gui
+         WORKING_DIRECTORY \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin)
+   " ${COMPONENT})
  endif()
  
--if(APPLE OR WIN32)
-+if(APPLEBUNDLE OR WIN32)
+-if(CMake_INSTALL_DEPENDENCIES AND (APPLE OR WIN32))
++if(CMake_INSTALL_DEPENDENCIES AND (APPLEBUNDLE OR WIN32))
    # install rules for including 3rd party libs such as Qt
    # if a system Qt is used (e.g. installed in /usr/lib/), it will not be included in the installation
    set(fixup_exe "\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin/cmake-gui${CMAKE_EXECUTABLE_SUFFIX}")
@@ -85,7 +78,7 @@
    install(CODE "
 --- CMakeLists.txt.orig
 +++ CMakeLists.txt
-@@ -550,12 +550,6 @@
+@@ -563,12 +563,6 @@ if(NOT CMake_TEST_EXTERNAL_CMAKE)
        set(CMAKE_BUNDLE_VERSION
          "${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}.${CMake_VERSION_PATCH}")
        set(CMAKE_BUNDLE_LOCATION "${CMAKE_INSTALL_PREFIX}")

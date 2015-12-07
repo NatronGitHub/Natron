@@ -253,7 +253,12 @@ Effect::getScriptName() const
 bool
 Effect::setScriptName(const std::string& scriptName)
 {
-    return _node->setScriptName(scriptName);
+    try {
+        _node->setScriptName(scriptName);
+    } catch (...) {
+        return false;
+    }
+    return true;
 }
 
 std::string
@@ -658,7 +663,7 @@ Effect::getUserPageParam() const
 void
 UserParamHolder::refreshUserParamsGUI()
 {
-    _holder->refreshKnobs();
+    _holder->refreshKnobs(false);
 }
 
 Effect*
@@ -759,4 +764,13 @@ Effect::getAvailableLayers() const
         }
     }
     return ret;
+}
+
+void
+Effect::setPagesOrder(const std::list<std::string>& pages)
+{
+    if (!_node) {
+        return;
+    }
+    _node->setPagesOrder(pages);
 }

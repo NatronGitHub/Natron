@@ -364,7 +364,7 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
 void
 ComboBox::mousePressEvent(QMouseEvent* e)
 {
-    if ( buttonDownIsLeft(e) && !_readOnly && _enabled ) {
+    if ( buttonDownIsLeft(e) && !_readOnly ) {
         _clicked = true;
         createMenu();
         update();

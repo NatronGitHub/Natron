@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef ABOUTWINDOW_H
 #define ABOUTWINDOW_H
 
@@ -34,19 +33,8 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-class QTextBrowser;
-class QTabWidget;
-class QVBoxLayout;
-class QHBoxLayout;
-class Button;
-class Gui;
-class TableModel;
-class TableView;
-class QItemSelection;
+#include "Gui/GuiFwd.h"
 
-namespace Natron {
-    class Label;
-}
 
 class AboutWindow
     : public QDialog

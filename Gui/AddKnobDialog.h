@@ -25,19 +25,19 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include "Global/Macros.h"
-
 CLANG_DIAG_OFF(uninitialized)
 #include <QDialog>
 CLANG_DIAG_ON(uninitialized)
 
-class KnobI;
-class DockablePanel;
+#include "Gui/GuiFwd.h"
+
 
 struct AddKnobDialogPrivate;
 class AddKnobDialog : public QDialog

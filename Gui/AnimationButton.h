@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef ANIMATIONBUTTON_H
 #define ANIMATIONBUTTON_H
 
@@ -26,15 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "Gui/Button.h"
+#include "Gui/GuiFwd.h"
 
-class QDragEnterEvent;
-class QDragLeaveEvent;
-class QMouseEvent;
-class QDropEvent;
-class QEvent;
-
-class KnobGui;
 
 class AnimationButton
     : public Button

@@ -31,45 +31,15 @@
 #endif
 
 #include "Global/Macros.h"
-//#include "Global/GlobalDefines.h"
-//#include "Global/KeySymbols.h"
-//
-#include "Engine/EffectInstance.h"
-//#include "Engine/ImageComponents.h"
-//#include "Engine/ImageLocker.h"
-//#include "Engine/Knob.h" // for KnobHolder
-//#include "Engine/ParallelRenderArgs.h"
-//#include "Engine/RectD.h"
-//#include "Engine/RectI.h"
-//#include "Engine/RenderStats.h"
 
+#include "Engine/EffectInstance.h"
+#include "Engine/EngineFwd.h"
 
 
 class QThread;
-class Hash64;
-class Format;
-class TimeLine;
-class OverlaySupport;
-class PluginMemory;
-class BlockingBackgroundRender;
-class NodeSerialization;
-class ViewerInstance;
-class RenderEngine;
-class BufferableObject;
-namespace Natron {
-class OutputEffectInstance;
-}
-namespace Transform {
-struct Matrix3x3;
-}
 
 
 namespace Natron {
-class Node;
-class ImageKey;
-class Image;
-class ImageParams;
-
 
 class OutputEffectInstance
     : public Natron::EffectInstance

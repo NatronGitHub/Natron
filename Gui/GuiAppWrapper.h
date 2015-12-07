@@ -16,26 +16,24 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef GUIAPPWRAPPER_H
 #define GUIAPPWRAPPER_H
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
 #include "Engine/AppInstanceWrapper.h"
 #include "Engine/ParameterWrapper.h" // ColorTuple
+#include "Engine/EngineFwd.h"
 
 #include "Gui/GuiAppInstance.h"
+#include "Gui/GuiFwd.h"
 
-class PyModalDialog;
-class PyPanel;
-class PyTabWidget;
-class QWidget;
-class Effect;
-class Group;
-class ViewerTab;
-
-namespace Natron {
-class Node;
-}
 
 class PyViewer
 {

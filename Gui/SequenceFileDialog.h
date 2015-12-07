@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <vector>
 #include <string>
 #include <map>
@@ -36,8 +38,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
-
-#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -57,35 +57,11 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Global/Macros.h"
 #include "Global/QtCompat.h"
+
 #include "Engine/FileSystemModel.h"
 
-
-class LineEdit;
-class Button;
-class QCheckBox;
-class ComboBox;
-class QWidget;
-namespace Natron {
-class Label;
-}
-class QFileInfo;
-class QHBoxLayout;
-class QVBoxLayout;
-class QSplitter;
-class QAction;
-class SequenceFileDialog;
-class QFileSystemModel;
-class SequenceItemDelegate;
-class Gui;
-class NodeGui;
-namespace SequenceParsing {
-class SequenceFromFiles;
-}
-struct FileDialogPreviewProvider;
-
-
+#include "Gui/GuiFwd.h"
 
 
 /**

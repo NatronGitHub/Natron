@@ -41,21 +41,16 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+
 #include "Engine/Knob.h"
 #include "Engine/Format.h"
 #include "Engine/TimeLine.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/EngineFwd.h"
 
-class QString;
-class QDateTime;
-class AppInstance;
-class ProjectSerialization;
-class KnobSerialization;
-class ProjectGui;
-class AddFormatDialog;
+
 namespace Natron {
-class Node;
-class OutputEffectInstance;
+
 struct ProjectPrivate;
 
 class Project
@@ -116,7 +111,7 @@ public:
     
     bool isLoadingProjectInternal() const;
 
-    QString getProjectName() const WARN_UNUSED_RETURN;
+    QString getProjectFilename() const WARN_UNUSED_RETURN;
 
     QString getLastAutoSaveFilePath() const;
 
@@ -189,7 +184,7 @@ public:
     QString getLockAbsoluteFilePath() const;
     void createLockFile();
     void removeLockFile();
-    bool getLockFileInfos(const QString& projectPath,const QString& projectName,QString* authorName,QString* lastSaveDate,qint64* appPID) const;
+    bool getLockFileInfos(const QString& projectPath, const QString& projectName, QString* authorName, QString* lastSaveDate, QString* host, qint64* appPID) const;
     
     virtual bool isProject() const OVERRIDE
     {
@@ -330,7 +325,7 @@ Q_SIGNALS:
 
     void autoPreviewChanged(bool);
 
-    void projectNameChanged(QString);
+    void projectNameChanged(QString name, bool modified);
 
     void knobsInitialized();
     

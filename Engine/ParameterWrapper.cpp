@@ -100,6 +100,12 @@ Param::setVisible(bool visible)
     getInternalKnob()->setSecret(!visible);
 }
 
+void
+Param::setVisibleByDefault(bool visible)
+{
+    getInternalKnob()->setSecretByDefault(!visible);
+}
+
 bool
 Param::getIsEnabled(int dimension) const
 {
@@ -110,6 +116,12 @@ void
 Param::setEnabled(bool enabled,int dimension)
 {
     getInternalKnob()->setEnabled(dimension, enabled);
+}
+
+void
+Param::setEnabledByDefault(bool enabled)
+{
+    getInternalKnob()->setDefaultAllDimensionsEnabled(enabled);
 }
 
 bool
@@ -254,6 +266,21 @@ Param::curve(double time, int dimension) const
         return 0.;
     }
     return getInternalKnob()->getRawCurveValueAt(time, dimension);
+}
+
+bool
+Param::setAsAlias(Param* other)
+{
+    if (!other) {
+        return false;
+    }
+    boost::shared_ptr<KnobI> otherKnob = other->_knob.lock();
+    boost::shared_ptr<KnobI> thisKnob = getInternalKnob();
+    if (!otherKnob || !thisKnob || otherKnob->typeName() != thisKnob->typeName() ||
+        otherKnob->getDimension() != thisKnob->getDimension()) {
+        return false;
+    }
+    return otherKnob->setKnobAsAliasOfThis(thisKnob, true);
 }
 
 AnimatedParam::AnimatedParam(const boost::shared_ptr<KnobI>& knob)

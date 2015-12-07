@@ -25,9 +25,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <vector>
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <Qt>
@@ -37,6 +38,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/KeySymbols.h"
 #include "Global/Enums.h"
+
+#include "Gui/GuiFwd.h"
+
 
 class QtEnumConvert
 {

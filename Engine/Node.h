@@ -163,6 +163,10 @@ public:
     
     void restoreUserKnobs(const NodeSerialization& serialization);
     
+    void setPagesOrder(const std::list<std::string>& pages);
+    
+    std::list<std::string> getPagesOrder() const;
+    
     bool isNodeCreated() const;
     
     /*@brief Quit all processing done by all render instances of this node
@@ -415,21 +419,16 @@ public:
     
     /////////////////////ROTO-PAINT related functionnalities//////////////////////
     //////////////////////////////////////////////////////////////////////////////
-    void updateLastPaintStrokeData(int newAge,const std::list<std::pair<Natron::Point,double> >& points,
-                                   const RectD& lastPointsBbox,
-                                   int strokeIndex);
+    
+    void prepareForNextPaintStrokeRender();
     
     //Used by nodes below the rotopaint tree to optimize the RoI
-    void setLastPaintStrokeDataNoRotopaint(const RectD& lastStrokeBbox);
+    void setLastPaintStrokeDataNoRotopaint();
     void invalidateLastPaintStrokeDataNoRotopaint();
     
     void getPaintStrokeRoD(double time,RectD* bbox) const;
     RectD getPaintStrokeRoD_duringPainting() const;
     
-    bool isFirstPaintStrokeRenderTick() const;
-    int getStrokeImageAge() const;
-    void updateStrokeImage(const boost::shared_ptr<Natron::Image>& image);
-    void getLastPaintStrokeRoD(RectD* pointsBbox) ;
     bool isLastPaintStrokeBitmapCleared() const;
     void clearLastPaintStrokeRoD();
     void getLastPaintStrokePoints(double time,std::list<std::list<std::pair<Natron::Point,double> > >* strokes, int* strokeIndex) const;
@@ -933,9 +932,9 @@ public:
         
     /**
      * @brief Set the node name.
-     * @returns True upon success, false otherwise. An error dialog will be displayed upon error.
+     * Throws a run-time error with the message in case of error
      **/
-    bool setScriptName(const std::string & name);
+    void setScriptName(const std::string & name);
 
     void setScriptName_no_error_check(const std::string & name);
     
@@ -1097,7 +1096,9 @@ private:
     
     bool refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
     
-    void setNameInternal(const std::string& name);
+    void setNameInternal(const std::string& name, bool throwErrors);
+    
+    std::string getFullyQualifiedNameInternal(const std::string& scriptName) const;
     
     void s_outputLayerChanged() { Q_EMIT outputLayerChanged(); }
 

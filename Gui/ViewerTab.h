@@ -36,28 +36,14 @@
 #include "Global/KeySymbols.h" // Key
 
 #include "Engine/RenderStats.h"
+#include "Engine/EngineFwd.h"
 
 #include "Gui/PanelWidget.h"
+#include "Gui/GuiFwd.h"
 
-namespace Natron
-{
-    class Node;
-    class ImageComponents;
-}
+
 typedef std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > RenderStatsMap;
 
-class ViewerGL;
-class ViewerInstance;
-class Gui;
-class RectD;
-class Format;
-class QMouseEvent;
-class RotoGui;
-class NodeGui;
-class TimeLine;
-class TrackerGui;
-class QInputEvent;
-struct RotoGuiSharedData;
 struct ViewerTabPrivate;
 class ViewerTab : public QWidget, public PanelWidget
 {

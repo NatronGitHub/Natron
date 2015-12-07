@@ -36,11 +36,8 @@ CLANG_DIAG_OFF(deprecated)
 #include <QString>
 CLANG_DIAG_ON(deprecated)
 
-class AppInstance;
+#include "Engine/EngineFwd.h"
 
-namespace Natron {
-class Node;
-}
 
 class BaseTest
     : public testing::Test

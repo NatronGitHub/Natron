@@ -23,6 +23,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/Knob.h"
+#include "Engine/KnobTypes.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiPrivate.h"
 
@@ -47,7 +48,7 @@ KnobGui::onCreateAliasOnGroupActionTriggered()
     NodeGroup* isCollecGroup = dynamic_cast<NodeGroup*>(collec.get());
     assert(isCollecGroup);
     if (isCollecGroup) {
-        createDuplicateOnNode(isCollecGroup, true);
+        createDuplicateOnNode(isCollecGroup, true, boost::shared_ptr<KnobPage>(), boost::shared_ptr<KnobGroup>(), -1);
     }
 }
 

@@ -158,7 +158,9 @@ KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
     int i = 0;
     
     if (_masterIsAlias) {
-        assert(!_masters.empty());
+        /*
+         * _masters can be empty for example if we expand a group: the slaved knobs are no longer slaves
+         */
         if (!_masters.empty()) {
             const std::string& aliasKnobName = _masters.front().masterKnobName;
             const std::string& aliasNodeName = _masters.front().masterNodeName;

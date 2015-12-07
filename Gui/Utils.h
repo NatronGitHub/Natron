@@ -25,7 +25,16 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QTextDocument> // for Qt::WhiteSpaceMode
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
+#include "Gui/GuiFwd.h"
+
 
 namespace Natron {
 QString convertFromPlainText(const QString &plain, Qt::WhiteSpaceMode mode);

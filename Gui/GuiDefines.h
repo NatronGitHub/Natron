@@ -25,6 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
+#include "Gui/GuiFwd.h"
+
+
 #define NATRON_BUTTON_BORDER 4
 #define NATRON_SMALL_BUTTON_SIZE 15
 #define NATRON_SMALL_BUTTON_ICON_SIZE (NATRON_SMALL_BUTTON_SIZE - NATRON_BUTTON_BORDER)

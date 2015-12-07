@@ -28,23 +28,11 @@
 #include <string>
 
 #include "Global/Macros.h"
-#include "Engine/OutputEffectInstance.h"
 
-class ParallelRenderArgsSetter;
-class RenderingFlagSetter;
-struct RequestedFrame;
-namespace Natron {
-class Image;
-class FrameEntry;
-class EffectInstance;
-namespace Color {
-class Lut;
-}
-}
-class UpdateViewerParams;
-class TimeLine;
-class OpenGLViewerI;
-struct TextureRect;
+#include "Engine/OutputEffectInstance.h"
+#include "Engine/EngineFwd.h"
+
+class UpdateViewerParams; // ViewerInstancePrivate
 
 typedef std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > RenderStatsMap;
 
@@ -147,6 +135,7 @@ public:
                                                     int view,
                                                     U64 viewerHash,
                                                     const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                    const boost::shared_ptr<RotoStrokeItem>& strokeItem,
                                                     const boost::shared_ptr<RenderStats>& stats,
                                                     boost::shared_ptr<ViewerArgs>* argsA,
                                                     boost::shared_ptr<ViewerArgs>* argsB);

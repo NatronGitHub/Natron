@@ -25,9 +25,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <QtCore/QThread>
 #include <QtCore/QThreadStorage>
 #include <QtCore/QCoreApplication>
+
+#include "Engine/EngineFwd.h"
 
 // A class that inherits from QThreadStorage, but never sets local data in the main thread.
 // It uses an actual instance of the data.

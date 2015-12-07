@@ -68,6 +68,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ComboBox.h"
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheetEditor.h"
+#include "Gui/ExportGroupTemplateDialog.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/GuiPrivate.h"

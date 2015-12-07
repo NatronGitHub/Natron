@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef NODECREATIONDIALOG_H
 #define NODECREATIONDIALOG_H
 
@@ -26,12 +25,12 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
-
-#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -40,11 +39,11 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/LineEdit.h"
+#include "Gui/GuiFwd.h"
 
-class QStringList;
-class QModelIndex;
-class QListView;
+
 struct CompleterLineEditPrivate;
+
 class CompleterLineEdit
     : public LineEdit
 {

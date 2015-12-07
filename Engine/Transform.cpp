@@ -162,7 +162,16 @@ Matrix3x3::Matrix3x3(const Matrix3x3 & mat)
 Matrix3x3 &
 Matrix3x3::operator=(const Matrix3x3 & m)
 {
-    a = m.a; b = m.b; c = m.c; d = m.d; e = m.e; f = m.f; g = m.g; h = m.h; i = m.i; return *this;
+    a = m.a;
+    b = m.b;
+    c = m.c;
+    d = m.d;
+    e = m.e;
+    f = m.f;
+    g = m.g;
+    h = m.h;
+    i = m.i;
+    return *this;
 }
 
 bool

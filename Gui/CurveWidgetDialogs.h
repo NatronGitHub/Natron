@@ -25,14 +25,14 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <set>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
-
-#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -44,25 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/CurveEditorUndoRedo.h" // KeyPtr
 #include "Gui/CurveGui.h" // CurveGui
-
-class CurveSelection;
-class QFont;
-class Variant;
-class TimeLine;
-class KnobGui;
-class CurveWidget;
-class Button;
-class LineEdit;
-class SpinBox;
-class Gui;
-class Bezier;
-class RotoContext;
-class QVBoxLayout;
-class QHBoxLayout;
-namespace Natron {
-    class Label;
-}
-
+#include "Gui/GuiFwd.h"
 
 
 class ImportExportCurveDialog

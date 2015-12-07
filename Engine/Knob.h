@@ -47,6 +47,12 @@
 #define NATRON_USER_MANAGED_KNOBS_PAGE_LABEL "User"
 #define NATRON_USER_MANAGED_KNOBS_PAGE "userNatron"
 
+class KnobPage;
+class KnobGroup;
+namespace Natron {
+    class Node;
+}
+
 class KnobSignalSlotHandler
 : public QObject
 {
@@ -114,12 +120,7 @@ public:
         Q_EMIT animationRemoved(dimension);
     }
     
-    void s_updateDependencies(int dimension,int reason)
-    {
-        Q_EMIT updateSlaves(dimension,reason);
-        Q_EMIT updateDependencies(dimension,reason);
-    }
-    
+ 
     void s_knobSlaved(int dim,
                       bool slaved)
     {
@@ -213,13 +214,6 @@ public Q_SLOTS:
      * @brief Calls KnobI::onAnimationRemoved
      **/
     void onAnimationRemoved(int dimension);
-    
-    /**
-     * @brief Calls KnobI::evaluateValueChange with a reason of Natron::eValueChangedReasonPluginEdited
-     **/
-    void onMasterChanged(int,int);
-    
-    void onExprDependencyChanged(int,int);
 
     void onMasterKeyFrameSet(double time,int dimension,int reason,bool added);
     
@@ -277,12 +271,6 @@ Q_SIGNALS:
     
     ///Emitted whenever all keyframes of a dimension are effectively removed
     void animationRemoved(int);
-    
-    ///Emitted whenever setValueAtTime,setValue or deleteValueAtTime is called. It notifies slaves
-    ///of the changes that occured in this knob, letting them a chance to update their interface.
-    void updateSlaves(int dimension,int reason);
-    
-    void updateDependencies(int dimension,int reason);
     
     ///Emitted whenever a knob is slaved via the slaveTo function with a reason of eValueChangedReasonPluginEdited.
     void knobSlaved(int,bool);
@@ -594,10 +582,12 @@ public:
     virtual std::string validateExpression(const std::string& expression,int dimension,bool hasRetVariable,
                                            std::string* resultAsString) = 0;
     
-    /**
-     * @brief Called whenever a dependency through expressions has changed its value. This function will refresh the GUI for this knob.
-     **/
-    virtual void onExprDependencyChanged(KnobI* knob,int dimension) = 0;
+
+protected:
+    
+    virtual void refreshListenersAfterValueChange(int dimension) = 0;
+    
+public:
 
     /**
      * @brief Returns whether the expr at the given dimension uses the ret variable to assign to the return value or not
@@ -610,11 +600,6 @@ public:
      **/
     virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobI*,int> >& dependencies) const = 0;
 
-    /**
-     * @brief Called when the master knob has changed its values or keyframes.
-     * @param masterDimension The dimension of the master which has changed
-     **/
-    virtual void onMasterChanged(KnobI* master,int masterDimension) = 0;
 
     /**
      * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonUserEdited.
@@ -806,7 +791,7 @@ public:
      * the GUI but what Natron uses internally to identify knobs from each other. By default the
      * name is the same as the getLabel(i.e: the text label).
      */
-    virtual void setName(const std::string & name) = 0;
+    virtual void setName(const std::string & name, bool throwExceptions = false) = 0;
 
     /**
      * @brief Returns the knob name. By default the
@@ -945,6 +930,8 @@ public:
      **/
     virtual void addListener(bool isExpression,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) = 0;
     
+    virtual void getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const = 0;
+    
 private:
     virtual void removeListener(KnobI* knob) = 0;
 public:
@@ -979,7 +966,15 @@ public:
     bool slaveTo(int dimension,const boost::shared_ptr<KnobI> & other,int otherDimension,bool ignoreMasterPersistence = false);
     virtual bool isMastersPersistenceIgnored() const = 0;
     
-    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,bool makeAlias) = 0;
+    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,
+                                                           const boost::shared_ptr<KnobPage>& page,
+                                                           const boost::shared_ptr<KnobGroup>& group,
+                                                           int indexInParent,
+                                                           bool makeAlias,
+                                                           const std::string& newScriptName,
+                                                           const std::string& newLabel,
+                                                           const std::string& newToolTip,
+                                                           bool refreshParams) = 0;
     
     /**
      * @brief If a knob was created using createDuplicateOnNode(effect,true), this function will return true
@@ -1153,7 +1148,6 @@ public:
     virtual bool setInterpolationAtTime(Natron::CurveChangeReason reason,int dimension,double time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) OVERRIDE FINAL;
     virtual bool moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension,double time,double left,double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,double time,double derivative,bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void onMasterChanged(KnobI* master,int masterDimension) OVERRIDE FINAL;
     virtual void deleteAnimationBeforeTime(double time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
     virtual void deleteAnimationAfterTime(double time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
@@ -1176,7 +1170,13 @@ public:
     virtual void clearExpression(int dimension,bool clearResults) OVERRIDE FINAL;
     virtual std::string validateExpression(const std::string& expression,int dimension,bool hasRetVariable,
                                            std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void onExprDependencyChanged(KnobI* knob,int dimension) OVERRIDE FINAL;
+    
+protected:
+    
+    virtual void refreshListenersAfterValueChange(int dimension) OVERRIDE FINAL;
+    
+public:
+    
     virtual bool isExpressionUsingRetVariable(int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getExpressionDependencies(int dimension, std::list<std::pair<KnobI*,int> >& dependencies) const OVERRIDE FINAL;
     virtual std::string getExpression(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1207,7 +1207,7 @@ public:
     virtual bool getDefaultIsSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setIsFrozen(bool frozen) OVERRIDE FINAL;
     virtual void setDirty(bool d) OVERRIDE FINAL;
-    virtual void setName(const std::string & name) OVERRIDE FINAL;
+    virtual void setName(const std::string & name,bool throwExceptions = false) OVERRIDE FINAL;
     virtual const std::string & getName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::string & getOriginalName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setParentKnob(boost::shared_ptr<KnobI> knob) OVERRIDE FINAL;
@@ -1243,7 +1243,15 @@ public:
     virtual bool hasModifications(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasModificationsForSerialization() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,bool makeAlias) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,
+                                                           const boost::shared_ptr<KnobPage>& page,
+                                                           const boost::shared_ptr<KnobGroup>& group,
+                                                           int indexInParent,
+                                                           bool makeAlias,
+                                                           const std::string& newScriptName,
+                                                           const std::string& newLabel,
+                                                           const std::string& newToolTip,
+                                                           bool refreshParams) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual boost::shared_ptr<KnobI> getAliasMaster() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool setKnobAsAliasOfThis(const boost::shared_ptr<KnobI>& master, bool doAlias) OVERRIDE FINAL;
     
@@ -1282,6 +1290,8 @@ public:
      **/
     virtual void addListener(bool isFromExpr,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) OVERRIDE FINAL;
     virtual void removeListener(KnobI* knob) OVERRIDE FINAL;
+    
+    virtual void getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const OVERRIDE FINAL;
 
     virtual void getListeners(std::list<boost::shared_ptr<KnobI> >& listeners) const OVERRIDE FINAL;
     
@@ -1869,7 +1879,7 @@ public:
     
     void discardPanelPointer();
     
-    void refreshKnobs();
+    void refreshKnobs(bool keepCurPageIndex = true);
     
     /**
      * @brief Dynamically removes a knob (from the GUI also)
@@ -1877,8 +1887,9 @@ public:
     void removeDynamicKnob(KnobI* knob);
     
     //To re-arrange user knobs only, does nothing if knob->isUserKnob() returns false
-    void moveKnobOneStepUp(KnobI* knob);
-    void moveKnobOneStepDown(KnobI* knob);
+    bool moveKnobOneStepUp(KnobI* knob);
+    bool moveKnobOneStepDown(KnobI* knob);
+    
 
     template<typename K>
     boost::shared_ptr<K> createKnob(const std::string &label, int dimension = 1) const WARN_UNUSED_RETURN;
@@ -1949,6 +1960,8 @@ public:
     
     //////////////////////////////////////////////////////////////////////////////////////////
     boost::shared_ptr<KnobPage> getOrCreateUserPageKnob() ;
+    boost::shared_ptr<KnobPage> getUserPageKnob() const;
+    
     /**
      * @brief These functions below are dynamic in a sense that they can be called at any time (on the main-thread)
      * to create knobs on the fly. Their gui will be properly created. In order to notify the GUI that new parameters were
@@ -1992,6 +2005,8 @@ public:
     void appendValueChange(KnobI* knob,double time, Natron::ValueChangedReasonEnum reason);
     
     bool isSetValueCurrentlyPossible() const;
+    
+    void getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const;
     
 protected:
     
@@ -2129,6 +2144,7 @@ public:
     void addKnob(boost::shared_ptr<KnobI> k);
     
     void insertKnob(int idx, const boost::shared_ptr<KnobI>& k);
+    void removeKnobFromList(const KnobI* knob);
 
 
     void initializeKnobsPublic();

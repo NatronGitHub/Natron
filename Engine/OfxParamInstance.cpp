@@ -2846,7 +2846,7 @@ OfxStringInstance::set(OfxTime time,
                        const char* str)
 {
 
-    assert( !KnobString::canAnimateStatic() );
+    assert( KnobString::canAnimateStatic() );
     if (_fileKnob.lock()) {
         std::string s(str);
         projectEnvVar_setProxy(s);

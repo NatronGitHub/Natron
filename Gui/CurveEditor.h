@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -37,37 +39,15 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
-#include "Global/Macros.h"
+
+#include "Engine/EngineFwd.h"
 
 #include "Gui/PanelWidget.h"
 #include "Gui/CurveSelection.h"
 #include "Gui/CurveEditorUndoRedo.h"
+#include "Gui/GuiFwd.h"
 
-class RectD;
-class NodeGui;
-class QTreeWidget;
-class QTreeWidgetItem;
-class QVBoxLayout;
-class CurveWidget;
-class CurveEditor;
-class Curve;
-class CurveGui;
-class QHBoxLayout;
-class QSplitter;
-class KnobGui;
-class KnobI;
-class BezierCP;
-class Bezier;
-class RotoDrawableItem;
-class RotoStrokeItem;
-class LineEdit;
-class RotoItem;
-class RotoContext;
-class KeyFrame;
-class Variant;
-class Gui;
-class QAction;
-class TimeLine;
+
 
 /**
  * All nodes are tracked in the CurveEditor and they all have a NodeCurveEditorContext.

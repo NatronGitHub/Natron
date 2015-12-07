@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef SERIALIZABLEWINDOW_H
 #define SERIALIZABLEWINDOW_H
 
@@ -26,7 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-class QMutex;
+#include "Global/Macros.h"
+
+#include "Engine/EngineFwd.h"
+
+#include "Gui/GuiFwd.h"
 
 
 /**

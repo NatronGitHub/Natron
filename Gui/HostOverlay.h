@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef Gui_HostOverlay_h
 #define Gui_HostOverlay_h
 
@@ -26,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -33,17 +34,16 @@
 #endif
 
 #include "Global/GlobalDefines.h"
+
 #include "Engine/OfxOverlayInteract.h"
 
-class KnobDouble;
-class KnobChoice;
-class KnobBool;
-class KnobI;
-class QPoint;
-class QPointF;
-class NodeGui;
+#include "Gui/GuiFwd.h"
+
+
+// defined below:
 struct PositionInteract;
 struct HostOverlayPrivate;
+
 class HostOverlay : public Natron::NatronOverlayInteractSupport
 {
     

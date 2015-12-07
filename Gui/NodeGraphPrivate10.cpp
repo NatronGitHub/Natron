@@ -31,6 +31,7 @@
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 
+#include "Gui/DotGui.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -43,9 +44,9 @@
 using namespace Natron;
 
 
-
 void
-NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,const QPointF& scenePos,
+NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
+                                     const QPointF& scenePos,
                                      bool useUndoCommand,
                                      std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > *newNodes)
 {
@@ -155,9 +156,6 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
         
     } else {
         //If we paste the node in a different graph, it can keep its scriptname/label
-        /*name = internalSerialization.getNodeScriptName();
-        n->setScriptName( name);
-        n->setLabel(internalSerialization.getNodeLabel());*/
     }
 
 
@@ -172,7 +170,8 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
         }
     }
     std::list<boost::shared_ptr<Natron::Node> > allNodes;
-    _publicInterface->getGui()->getApp()->getProject()->getActiveNodes(&allNodes);
+    
+    _publicInterface->getGui()->getApp()->getProject()->getNodes_recursive(allNodes, true);
     n->restoreKnobsLinks(internalSerialization,allNodes);
 
     //We don't want the clone to have the same hash as the original

@@ -32,19 +32,11 @@ CLANG_DIAG_OFF(deprecated)
 #include <QStringList>
 #include <QString>
 CLANG_DIAG_ON(deprecated)
+
 #include "Global/GlobalDefines.h"
 
-//natron
-class AppInstance;
-namespace Natron {
-class OutputEffectInstance;
-}
+#include "Engine/EngineFwd.h"
 
-//qt
-class QLocalServer;
-class QLocalSocket;
-class QMutex;
-class QWaitCondition;
 
 /**
  * @brief This class represents a background render process. It starts a render and reports progress via a

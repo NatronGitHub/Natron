@@ -25,11 +25,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
-#include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QObject>
@@ -39,26 +41,10 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-class QInputEvent;
-class QMouseEvent;
-class QToolBar;
-class QWidget;
-class QIcon;
-class QString;
-class QToolButton;
-class QKeyEvent;
-class QPointF;
-class ViewerTab;
-class QAction;
-class RotoItem;
-class QUndoCommand;
-class NodeGui;
-class Bezier;
-class RotoDrawableItem;
-class BezierCP;
-class GuiAppInstance;
-struct RotoGuiSharedData;
-class RotoContext;
+#include "Engine/EngineFwd.h"
+
+#include "Gui/GuiFwd.h"
+
 
 class RotoToolButton
     : public QToolButton

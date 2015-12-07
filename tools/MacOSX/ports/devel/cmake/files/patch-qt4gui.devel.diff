@@ -1,6 +1,6 @@
 --- Source/QtDialog/CMakeLists.txt.orig
 +++ Source/QtDialog/CMakeLists.txt
-@@ -15,74 +15,6 @@
+@@ -15,77 +15,6 @@ if(POLICY CMP0020)
    cmake_policy(SET CMP0020 NEW) # Drop when CMake >= 2.8.11 required
  endif()
  CMake_OPTIONAL_COMPONENT(cmake-gui)
@@ -67,23 +67,27 @@
 -    endif()
 -  endif()
 -
--  if(WIN32 AND TARGET Qt5::Core)
+-  if(TARGET Qt5::Core)
 -    get_property(_Qt5_Core_LOCATION TARGET Qt5::Core PROPERTY LOCATION)
 -    get_filename_component(Qt_BIN_DIR "${_Qt5_Core_LOCATION}" PATH)
+-    if(APPLE)
+-      get_filename_component(Qt_BIN_DIR "${Qt_BIN_DIR}" PATH)
+-    endif()
 -  endif()
 -else()
    set(QT_MIN_VERSION "4.4.0")
    find_package(Qt4 REQUIRED)
    if(NOT QT4_FOUND)
-@@ -100,7 +32,6 @@
-       set(Qt_BIN_DIR ${_Qt_BIN_DIR})
-     endif()
-   endif()
--endif()
+@@ -97,8 +26,6 @@ else()
  
+   set(CMake_QT_LIBRARIES ${QT_LIBRARIES})
+ 
+-endif()
+-
  set(SRCS
    AddCacheEntry.cxx
-@@ -138,7 +69,7 @@
+   AddCacheEntry.h
+@@ -135,7 +62,7 @@ set(SRCS ${SRCS} ${UI_SRCS} ${MOC_SRCS} ${RC_SRCS})
  if(WIN32)
    set(SRCS ${SRCS} CMakeSetup.rc)
  endif()
@@ -92,23 +96,20 @@
    set(SRCS ${SRCS} CMakeSetup.icns)
    set(MACOSX_BUNDLE_ICON_FILE CMakeSetup.icns)
    set_source_files_properties(CMakeSetup.icns PROPERTIES
-@@ -155,13 +86,13 @@
+@@ -152,10 +79,10 @@ endif()
  
  set(CMAKE_INCLUDE_CURRENT_DIR ON)
  
--add_executable(cmake-gui WIN32 MACOSX_BUNDLE ${SRCS})
-+add_executable(cmake-gui WIN32 ${SRCS})
+-add_executable(cmake-gui WIN32 MACOSX_BUNDLE ${SRCS} ${MANIFEST_FILE})
++add_executable(cmake-gui WIN32 ${SRCS} ${MANIFEST_FILE})
  target_link_libraries(cmake-gui CMakeLib ${QT_QTMAIN_LIBRARY} ${CMake_QT_LIBRARIES})
- if(Qt_BIN_DIR)
-   set_property(TARGET cmake-gui PROPERTY Qt_BIN_DIR ${Qt_BIN_DIR})
- endif()
  
 -if(APPLE)
 +if(APPLEBUNDLE)
    file(STRINGS "${CMake_SOURCE_DIR}/Copyright.txt" copyright_line
      LIMIT_COUNT 1 REGEX "^Copyright 2000-20[0-9][0-9] Kitware")
  
-@@ -206,18 +137,18 @@
+@@ -200,18 +127,18 @@ if(UNIX AND NOT APPLE)
      ${COMPONENT})
  endif()
  
@@ -130,9 +131,9 @@
      set(fixup_exe "\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/MacOS/CMake")
    endif()
    install(CODE "
---- CMakeLists.txt.orig	2015-08-03 13:51:16.000000000 -0400
-+++ CMakeLists.txt	2015-08-03 13:51:26.000000000 -0400
-@@ -566,12 +566,6 @@
+--- CMakeLists.txt.orig
++++ CMakeLists.txt
+@@ -565,12 +565,6 @@ if(NOT CMake_TEST_EXTERNAL_CMAKE)
        set(CMAKE_BUNDLE_VERSION
          "${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}.${CMake_VERSION_PATCH}")
        set(CMAKE_BUNDLE_LOCATION "${CMAKE_INSTALL_PREFIX}")

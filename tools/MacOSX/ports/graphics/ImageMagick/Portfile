@@ -148,8 +148,9 @@ variant natron conflicts x11 requires pango rsvg q32 hdri universal description 
     configure.args-replace  --with-tiff --without-tiff
     depends_lib-delete       port:webp
     configure.args-replace  --with-webp --without-webp
-    depends_lib-delete       port:zlib
-    configure.args-replace  --with-zlib --without-zlib
+    # zlib is required by PNG
+    #depends_lib-delete       port:zlib
+    #configure.args-replace  --with-zlib --without-zlib
     depends_lib-delete       port:bzip2
     configure.args-replace  --with-bzlib --without-bzlib
     configure.args-replace  --enable-shared --disable-shared

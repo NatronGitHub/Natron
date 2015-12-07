@@ -747,12 +747,6 @@ KnobGui::onHelpChanged()
     updateToolTip();
 }
 
-void
-KnobGui::onKnobDeletion()
-{
-    _imp->container->deleteKnobGui(getKnob());
-}
-
 
 void
 KnobGui::onHasModificationsChanged()

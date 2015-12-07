@@ -26,9 +26,11 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
@@ -37,12 +39,10 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
-using Natron::ScaleTypeEnum;
+#include "Gui/GuiFwd.h"
+
 
 struct ScaleSliderQWidgetPrivate;
-class QColor;
-class QFont;
-class Gui;
 
 class ScaleSliderQWidget
     : public QWidget

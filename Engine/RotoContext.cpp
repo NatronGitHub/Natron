@@ -110,17 +110,13 @@ RotoContext::isRotoPaint() const
 }
 
 void
-RotoContext::setStrokeBeingPainted(const boost::shared_ptr<RotoStrokeItem>& stroke)
+RotoContext::setWhileCreatingPaintStrokeOnMergeNodes(bool b)
 {
+    getNode()->setWhileCreatingPaintStroke(b);
     QMutexLocker k(&_imp->rotoContextMutex);
-    _imp->strokeBeingPainted = stroke;
-}
-
-boost::shared_ptr<RotoStrokeItem>
-RotoContext::getStrokeBeingPainted() const
-{
-    QMutexLocker k(&_imp->rotoContextMutex);
-    return _imp->strokeBeingPainted;
+    for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _imp->globalMergeNodes.begin(); it != _imp->globalMergeNodes.end(); ++it) {
+        (*it)->setWhileCreatingPaintStroke(b);
+    }
 }
 
 boost::shared_ptr<Natron::Node>
@@ -131,12 +127,7 @@ RotoContext::getRotoPaintBottomMergeNode() const
         return boost::shared_ptr<Natron::Node>();
     }
     
-    boost::shared_ptr<RotoStrokeItem> strokeBeingPainted;
-    {
-        QMutexLocker k(&_imp->rotoContextMutex);
-        strokeBeingPainted = _imp->strokeBeingPainted;
-    }
-    if (!strokeBeingPainted && isRotoPaintTreeConcatenatableInternal(items)) {
+    if (isRotoPaintTreeConcatenatableInternal(items)) {
         QMutexLocker k(&_imp->rotoContextMutex);
         if (!_imp->globalMergeNodes.empty()) {
             return _imp->globalMergeNodes.front();
@@ -498,7 +489,6 @@ RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName,
         parentLayer->insertItem(curve,0);
     }
     curve->createNodes();
-    _imp->strokeBeingPainted = curve;
     
     _imp->lastInsertedItem = curve;
     
@@ -811,6 +801,14 @@ RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoIt
 
     bool rodSet = false;
     
+    boost::shared_ptr<Natron::Node> activeRotoPaintNode;
+    boost::shared_ptr<RotoStrokeItem> activeStroke;
+    bool isDrawing;
+    getNode()->getApp()->getActiveRotoDrawingStroke(&activeRotoPaintNode, &activeStroke,&isDrawing);
+    if (!isDrawing) {
+        activeStroke.reset();
+    }
+    
     QMutexLocker l(&_imp->rotoContextMutex);
     for (double t = startTime; t <= endTime; t+= mbFrameStep) {
         bool first = true;
@@ -835,7 +833,7 @@ RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoIt
             } else if (isStroke) {
                 RectD strokeRod;
                 if (isStroke->isActivated(time)) {
-                    if (isStroke == _imp->strokeBeingPainted.get()) {
+                    if (isStroke == activeStroke.get()) {
                         strokeRod = isStroke->getMergeNode()->getPaintStrokeRoD_duringPainting();
                     } else {
                         strokeRod = isStroke->getBoundingBox(t);
@@ -1671,7 +1669,7 @@ RotoContext::goToPreviousKeyframe()
 
     if (minimum != INT_MIN) {
         getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
-        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, Natron::eTimelineChangeReasonOtherSeek);
     }
 }
 
@@ -1704,7 +1702,7 @@ RotoContext::goToNextKeyframe()
     }
     if (maximum != INT_MAX) {
         getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
-        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false, NULL,Natron::eTimelineChangeReasonPlaybackSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false, NULL,Natron::eTimelineChangeReasonOtherSeek);
         
     }
 }
@@ -3855,11 +3853,12 @@ void
 RotoContext::changeItemScriptName(const std::string& oldFullyQualifiedName,const std::string& newFullyQUalifiedName)
 {
     std::string appID = getNode()->getApp()->getAppIDString();
-    std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
+    std::string nodeName = getNode()->getFullyQualifiedName();
+    std::string nodeFullName = appID + "." + nodeName;
     std::string err;
     
-    std::string declStr = nodeName + ".roto." + newFullyQUalifiedName + " = " + nodeName + ".roto." + oldFullyQualifiedName + "\n";
-    std::string delStr = "del " + nodeName + ".roto." + oldFullyQualifiedName + "\n";
+    std::string declStr = nodeFullName + ".roto." + newFullyQUalifiedName + " = " + nodeFullName + ".roto." + oldFullyQualifiedName + "\n";
+    std::string delStr = "del " + nodeFullName + ".roto." + oldFullyQualifiedName + "\n";
     std::string script = declStr + delStr;
     if (!appPTR->isBackground()) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
@@ -3879,9 +3878,10 @@ RotoContext::removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
         return;
     }
     std::string appID = getNode()->getApp()->getAppIDString();
-    std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
+    std::string nodeName = getNode()->getFullyQualifiedName();
+    std::string nodeFullName = appID + "." + nodeName;
     std::string err;
-    std::string script = "del " + nodeName + ".roto." + item->getFullyQualifiedName() + "\n";
+    std::string script = "del " + nodeFullName + ".roto." + item->getFullyQualifiedName() + "\n";
     if (!appPTR->isBackground()) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }
@@ -4022,8 +4022,9 @@ void
 RotoContext::declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
 {
     std::string appID = getNode()->getApp()->getAppIDString();
-    std::string nodeName = appID + "." + getNode()->getFullyQualifiedName();
-    
+    std::string nodeName = getNode()->getFullyQualifiedName();
+    std::string nodeFullName = appID + "." + nodeName;
+
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(item.get());
     if (isStroke) {
         ///Strokes are unsupported in Python currently
@@ -4032,8 +4033,8 @@ RotoContext::declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
     RotoLayer* isLayer = dynamic_cast<RotoLayer*>(item.get());
     
     std::string err;
-    std::string script = nodeName + ".roto." + item->getFullyQualifiedName() + " = " +
-    nodeName + ".roto.getItemByName(\"" + item->getScriptName() + "\")\n";
+    std::string script = (nodeFullName + ".roto." + item->getFullyQualifiedName() + " = " +
+                          nodeFullName + ".roto.getItemByName(\"" + item->getScriptName() + "\")\n");
     if (!appPTR->isBackground()) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }

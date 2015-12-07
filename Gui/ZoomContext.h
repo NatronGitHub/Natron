@@ -26,11 +26,15 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QPointF>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
+#include "Gui/GuiFwd.h"
+
 
 /**
  *@class ZoomContext

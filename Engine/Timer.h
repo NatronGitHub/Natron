@@ -31,13 +31,19 @@
 //
 //----------------------------------------------------------------------------
 
-#include <QString>
-#include <QObject>
 #ifdef _WIN32
-    #include <windows.h>
+#include <windows.h>
 #else
-    #include <sys/time.h>
+#include <sys/time.h>
 #endif
+
+#include "Global/Macros.h"
+
+#include <QtCore/QString>
+#include <QtCore/QObject>
+
+#include "Engine/EngineFwd.h"
+
 
 #ifdef _WIN32
 int gettimeofday (struct timeval *tv, void *tz);
@@ -49,7 +55,6 @@ enum PlayStateEnum
     ePlayStatePause,
 };
 
-class QMutex;
 class Timer : public QObject
 {
     

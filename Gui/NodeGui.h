@@ -16,14 +16,16 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_NODEGUI_H
-#define NATRON_GUI_NODEGUI_H
+#ifndef Natron_Gui_NodeGui_h
+#define Natron_Gui_NodeGui_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
 
 #include <map>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -32,8 +34,6 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #endif
-
-#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -46,39 +46,15 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
-#include "Engine/NodeGuiI.h"
 
-class HostOverlay;
-class Edge;
-class QPainterPath;
-class QScrollArea;
-class NodeSettingsPanel;
-class QVBoxLayout;
-class QLinearGradient;
-class AppInstance;
-class NodeGraph;
-class QAction;
-class KnobI;
-class NodeGuiSerialization;
-class NodeSerialization;
-class KnobGui;
-class Gui;
-class QUndoStack;
-class LinkArrow;
-class MultiInstancePanel;
-class QMenu;
-class NodeGroup;
-class QUndoStack;
-class QGraphicsSimpleTextItem;
-class NodeGraphPixmapItem;
-class NodeGraphTextItem;
-class NodeCollection;
-namespace Natron {
-class ChannelSet;
-class Node;
-}
+#include "Engine/NodeGuiI.h"
+#include "Engine/EngineFwd.h"
+
+#include "Gui/GuiFwd.h"
+
 
 struct NodeGuiIndicatorPrivate;
+
 class NodeGuiIndicator
 {
 public:
@@ -140,7 +116,10 @@ private:
 };
 
 class NodeGui
-: public QObject,public QGraphicsItem, public NodeGuiI, public boost::enable_shared_from_this<NodeGui>
+: public QObject
+, public QGraphicsItem
+, public NodeGuiI
+, public boost::enable_shared_from_this<NodeGui>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -680,57 +659,4 @@ private:
 };
 
 
-class DotGui
-    : public NodeGui
-{
-public:
-
-    DotGui(QGraphicsItem *parent = 0);
-
-private:
-
-
-    virtual void createGui() OVERRIDE FINAL;
-    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container, const boost::shared_ptr<NodeGui> & thisAsShared) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool canMakePreview() OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-    
-    virtual void refreshStateIndicator() OVERRIDE FINAL;
-    
-    virtual void applyBrush(const QBrush & brush) OVERRIDE FINAL;
-    
-    virtual bool canResize() OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-    
-    virtual QRectF boundingRect() const OVERRIDE FINAL;
-    virtual QPainterPath shape() const OVERRIDE FINAL;
-    QGraphicsEllipseItem* diskShape;
-    QGraphicsEllipseItem* ellipseIndicator;
-};
-
-struct ExportGroupTemplateDialogPrivate;
-class ExportGroupTemplateDialog : public QDialog
-{
-    Q_OBJECT
-    
-public:
-    
-    ExportGroupTemplateDialog(NodeCollection* group,Gui* gui,QWidget* parent);
-    
-    virtual ~ExportGroupTemplateDialog();
-    
-public Q_SLOTS:
-
-    void onButtonClicked();
-    
-    void onOkClicked();
-    
-    void onLabelEditingFinished();
-    
-private:
-    
-    boost::scoped_ptr<ExportGroupTemplateDialogPrivate> _imp;
-};
-
-#endif // NATRON_GUI_NODEGUI_H
+#endif // Natron_Gui_NodeGui_h

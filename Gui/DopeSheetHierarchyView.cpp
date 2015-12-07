@@ -526,8 +526,11 @@ void HierarchyViewPrivate::drawNodeTopSeparation(QPainter *p, QTreeWidgetItem *i
     int lineWidth = (appPTR->getCurrentSettings()->getDopeSheetEditorNodeSeparationWith() / 2);
     int lineBegin = q_ptr->rect().left();
 
-    if (boost::shared_ptr<DSNode> parentNode = dopeSheetModel->mapNameItemToDSNode(item->parent())) {
-        lineBegin = getBranchRect(parentNode->getTreeItem()).right() + 2;
+    {
+        boost::shared_ptr<DSNode> parentNode = dopeSheetModel->mapNameItemToDSNode(item->parent());
+        if (parentNode) {
+            lineBegin = getBranchRect(parentNode->getTreeItem()).right() + 2;
+        }
     }
 
     QPen pen(Qt::black);
@@ -548,9 +551,12 @@ void HierarchyViewPrivate::drawNodeBottomSeparation(QPainter *p, boost::shared_p
         if (dsNode->getTreeItem()->isExpanded()) {
             lineBegin = getBranchRect(dsNode->getTreeItem()).right() + 2;
         }
-    }
-    else if (boost::shared_ptr<DSNode> parentNode = dopeSheetModel->mapNameItemToDSNode(nodeBelow->getTreeItem()->parent())) {
-        lineBegin = getBranchRect(parentNode->getTreeItem()).right() + 2;
+
+    } else {
+        boost::shared_ptr<DSNode> parentNode = dopeSheetModel->mapNameItemToDSNode(nodeBelow->getTreeItem()->parent());
+        if (parentNode) {
+            lineBegin = getBranchRect(parentNode->getTreeItem()).right() + 2;
+        }
     }
 
     QPen pen(Qt::black);
@@ -774,8 +780,11 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
             _imp->drawNodeTopSeparation(painter, item, rowRect);
         }
 
-        if (boost::shared_ptr<DSNode> nodeBelow = _imp->itemBelowIsNode(item)) {
-            _imp->drawNodeBottomSeparation(painter, dsNode, nodeBelow, rowRect);
+        {
+            boost::shared_ptr<DSNode> nodeBelow = _imp->itemBelowIsNode(item);
+            if (nodeBelow) {
+                _imp->drawNodeBottomSeparation(painter, dsNode, nodeBelow, rowRect);
+            }
         }
 
         painter->restore();

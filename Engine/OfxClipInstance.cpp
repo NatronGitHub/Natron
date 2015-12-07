@@ -28,7 +28,8 @@
 #include <limits>
 #include <stdexcept>
 
-#include <QDebug>
+#include <QtCore/QTextStream>
+#include <QtCore/QDebug>
 
 #include "Global/Macros.h"
 
@@ -860,21 +861,22 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
      Get mipmaplevel, and transform concatenation data from the TLS
      */
     if (tls) {
-        if (!tls->isViewValid) {
+        if (view == -1) {
+            if (!tls->isViewValid) {
 #ifdef DEBUG
-            if (QThread::currentThread() != qApp->thread()) {
-                qDebug() << _nodeInstance->getNode()->getScriptName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
-                "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
-                "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
-            }
+                if (QThread::currentThread() != qApp->thread()) {
+                    qDebug() << _nodeInstance->getNode()->getScriptName_mt_safe().c_str() << " is trying to call clipGetImage on a thread "
+                    "not controlled by Natron (probably from the multi-thread suite).\n If you're a developer of that plug-in, please "
+                    "fix it. Natron is now going to try to recover from that mistake but doing so can yield unpredictable results.";
+                }
 #endif
-            view = 0;
-        } else {
-            if (view == -1) {
+                view = 0;
+            } else {
                 view = tls->view;
             }
+            
         }
-        
+
         if (!tls->isMipmapLevelValid) {
             mipMapLevel = 0;
         } else {

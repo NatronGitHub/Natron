@@ -25,13 +25,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
-
-#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -40,62 +40,15 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
-#include "Gui/SerializableWindow.h"
+
 #include "Engine/ScriptObject.h"
+#include "Engine/EngineFwd.h"
+
+#include "Gui/SerializableWindow.h"
+#include "Gui/GuiFwd.h"
 
 
 #define kMainSplitterObjectName "ToolbarSplitter"
-
-//boost
-namespace boost {
-namespace archive {
-class xml_iarchive;
-class xml_oarchive;
-}
-}
-
-//QtGui
-class Splitter;
-class QUndoStack;
-class QScrollArea;
-class QToolButton;
-class QVBoxLayout;
-class QMutex;
-
-//Natron gui
-class GuiLayoutSerialization;
-class GuiAppInstance;
-class NodeGui;
-class TabWidget;
-class ToolButton;
-class ViewerTab;
-class DockablePanel;
-class NodeGraph;
-class CurveEditor;
-class Histogram;
-class RotoGui;
-class FloatingWidget;
-class BoundAction;
-class ScriptEditor;
-class PyPanel;
-class RectI;
-class DopeSheetEditor;
-
-//Natron engine
-class ViewerInstance;
-class PluginGroupNode;
-class KnobColor;
-class ProcessHandler;
-class NodeCollection;
-class KnobHolder;
-namespace Natron {
-class Node;
-class Image;
-class EffectInstance;
-class OutputEffectInstance;
-}
-
-class Gui;
 
 /*This class represents a floating pane that embeds a widget*/
 class FloatingWidget
@@ -126,7 +79,7 @@ public:
 
 public Q_SLOTS:
 
-    void onProjectNameChanged(const QString& name);
+    void onProjectNameChanged(const QString& filePath, bool modified);
     
 Q_SIGNALS:
 

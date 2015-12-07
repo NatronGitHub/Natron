@@ -100,3 +100,13 @@ NoOpBase::getInputsHoldingTransform(std::list<int>* inputs) const
     inputs->push_back(0);
     return true;
 }
+
+Natron::ImagePremultiplicationEnum
+NoOpBase::getOutputPremultiplication() const
+{
+    Natron::EffectInstance* input = getInput(0);
+    if (input) {
+        return input->getOutputPremultiplication();
+    }
+    return Natron::eImagePremultiplicationPremultiplied;
+}

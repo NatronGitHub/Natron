@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include <list>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
@@ -34,17 +35,14 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 
+#include "Engine/EngineFwd.h"
+
 /**
  * @brief A simple TimeLine representing the time for image sequences.
  * The interval [_firstFrame,_lastFrame] represents where images exist in the time space.
  * The interval [_leftBoundary,_rightBoundary] represents what the user interval of interest within the time space.
  * The _currentFrame represents the current time in the time space. It doesn't have to be within any aforementioned interval.
  **/
-namespace Natron {
-class Project;
-class OutputEffectInstance;
-class Node;
-}
 
 class TimeLine
     : public QObject

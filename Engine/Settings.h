@@ -33,6 +33,8 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Knob.h"
+#include "Engine/EngineFwd.h"
+
 
 #define kQSettingsSoftwareMajorVersionSettingName "SoftwareVersionMajor"
 
@@ -40,25 +42,6 @@
    @todo Move this class to QSettings instead*/
 
 
-namespace Natron {
-class LibraryBinary;
-class Plugin;
-}
-
-class KnobI;
-class KnobFile;
-class KnobPage;
-class KnobDouble;
-class KnobInt;
-class KnobBool;
-class KnobButton;
-class KnobGroup;
-class KnobChoice;
-class KnobPath;
-class KnobColor;
-class KnobString;
-class QSettings;
-class KnobSeparator;
 class Settings
     : public KnobHolder
 {

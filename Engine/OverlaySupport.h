@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Engine/EngineFwd.h"
+
 /**
  * @class An abstract interface for overlay holders. Any OpenGL widget capable of drawing overlays should
  * implement this interface.

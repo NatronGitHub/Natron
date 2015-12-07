@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
@@ -37,11 +38,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Format.h"
 #include "Engine/ImageComponents.h"
 
-class ViewerGL;
-namespace Natron {
-    class Label;
-}
-class QHBoxLayout;
+#include "Gui/GuiFwd.h"
+
 
 class InfoViewerWidget
     : public QWidget

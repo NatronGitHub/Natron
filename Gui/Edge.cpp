@@ -314,7 +314,7 @@ Edge::refreshState(bool hovered)
                 boost::shared_ptr<NodeGui> src = _imp->source.lock();
                 
                 //The viewer does not hide its optional edges
-                bool isViewer = effect ? dynamic_cast<ViewerInstance*>(effect) : false;
+                bool isViewer = effect ? dynamic_cast<ViewerInstance*>(effect) != 0 : false;
                 bool isReader = effect ? effect->isReader() : false;
                 bool autoHide = areOptionalInputsAutoHidden();
                 bool isSelected = dst->getIsSelected();

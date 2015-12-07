@@ -34,6 +34,8 @@
 #include "Engine/ViewerInstance.h"
 #include <SequenceParsing.h>
 
+using namespace Natron;
+
 void
 NodeCollectionSerialization::initialize(const NodeCollection& group)
 {
@@ -124,7 +126,11 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                                                                                                                 QString(),
                                                                                                                 CreateNodeArgs::DefaultValuesList(),
                                                                                                                 group));
-                    parent->setScriptName( (*it)->getMultiInstanceParentName().c_str() );
+                    try {
+                        parent->setScriptName( (*it)->getMultiInstanceParentName().c_str() );
+                    } catch (...) {
+                        
+                    }
                     parentsToReconnect.insert( std::make_pair(parent, it) );
                 }
             }

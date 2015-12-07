@@ -1142,6 +1142,48 @@ static PyObject* Sbk_EffectFunc_setLabel(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_EffectFunc_setPagesOrder(PyObject* self, PyObject* pyArg)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setPagesOrder(std::list<std::string>)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], (pyArg)))) {
+        overloadId = 0; // setPagesOrder(std::list<std::string>)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_setPagesOrder_TypeError;
+
+    // Call function/method
+    {
+        ::std::list<std::string > cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setPagesOrder(std::list<std::string>)
+            cppSelf->setPagesOrder(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_EffectFunc_setPagesOrder_TypeError:
+        const char* overloads[] = {"list", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.setPagesOrder", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_EffectFunc_setPosition(PyObject* self, PyObject* args)
 {
     ::Effect* cppSelf = 0;
@@ -1373,6 +1415,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"isNodeSelected", (PyCFunction)Sbk_EffectFunc_isNodeSelected, METH_NOARGS},
     {"setColor", (PyCFunction)Sbk_EffectFunc_setColor, METH_VARARGS},
     {"setLabel", (PyCFunction)Sbk_EffectFunc_setLabel, METH_O},
+    {"setPagesOrder", (PyCFunction)Sbk_EffectFunc_setPagesOrder, METH_O},
     {"setPosition", (PyCFunction)Sbk_EffectFunc_setPosition, METH_VARARGS},
     {"setScriptName", (PyCFunction)Sbk_EffectFunc_setScriptName, METH_O},
     {"setSize", (PyCFunction)Sbk_EffectFunc_setSize, METH_VARARGS},

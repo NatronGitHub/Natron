@@ -25,11 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <map>
 #include <vector>
-
-#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -44,46 +44,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiDefines.h"
 #include "Gui/RegisteredTabs.h"
+#include "Gui/GuiFwd.h"
 
-class QAction;
-class QEvent;
-class QHBoxLayout;
-class QVBoxLayout;
-class QMenuBar;
-class QProgressDialog;
-class QScrollArea;
-class QUndoGroup;
-class QUndoStack;
-class QWidget;
-class QToolButton;
-
-class AboutWindow;
-class ActionWithShortcut;
-class Button;
-class CurveEditor;
-class DopeSheetEditor;
-class FloatingWidget;
-class Histogram;
-class Gui;
-class GuiAppInstance;
-namespace Natron {
-    class Menu;
-}
-class NodeGraph;
-class PreferencesPanel;
-class ProjectGui;
-class PropertiesBinWrapper;
-class PyPanel;
-class ShortCutEditor;
-class SpinBox;
-class Splitter;
-class TabWidget;
-class ToolButton;
-class ViewerTab;
-class KnobHolder;
-class DockablePanel;
-class ScriptEditor;
-class RenderStatsDialog;
 
 #define kPropertiesBinName "properties"
 

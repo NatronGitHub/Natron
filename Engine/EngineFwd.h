@@ -25,16 +25,61 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-namespace boost { namespace serialization { class access; } }
+// boost
 
 namespace boost {
 namespace archive {
 class xml_iarchive;
 class xml_oarchive;
 }
+namespace serialization {
+class access;
+}
+}
+class AbstractOfxEffectInstance;
+
+
+// Qt
+
+class QChar;
+class QDateTime;
+class QFileInfo;
+class QLocalServer;
+class QLocalSocket;
+class QMutex;
+class QSettings;
+class QString;
+class QStringList;
+class QTimer;
+class QWaitCondition;
+
+// cairo
+
+typedef struct _cairo_pattern cairo_pattern_t;
+
+
+// OpenFX
+
+namespace OFX {
+namespace Host {
+class Plugin;
+namespace Property {
+class Set;
+}
+namespace ImageEffect {
+class ImageEffectPlugin;
+class Descriptor;
+}
+}
 }
 
-class AbstractOfxEffectInstance;
+// SequenceParsing
+namespace SequenceParsing {
+class SequenceFromFiles;
+}
+
+// Natron Engine
+
 class AppInstance;
 class AppSettings;
 class Bezier;
@@ -78,6 +123,7 @@ class KnobOutputFile;
 class KnobPage;
 class KnobParametric;
 class KnobPath;
+class KnobSeparator;
 class KnobSerialization;
 class KnobString;
 class NodeCollection;
@@ -88,32 +134,40 @@ class NodeSettingsPanel;
 class OfxClipInstance;
 class OfxEffectInstance;
 class OfxImage;
+class OpenGLViewerI;
 class OutputFileParam;
 class OverlaySupport;
 class PageParam;
+class ParallelRenderArgsSetter;
 class Param;
 class ParametricParam;
 class PathParam;
+class PluginGroupNode;
 class PluginMemory;
 class ProcessHandler;
 class ProcessInputChannel;
-class QMutex;
+class ProjectSerialization;
 class RectD;
 class RectI;
 class RenderEngine;
 class RenderStats;
+class RenderingFlagSetter;
+class RequestedFrame;
 class RichText_Knob;
 class Roto;
 class RotoContext;
 class RotoDrawableItem;
+class RotoItem;
 class RotoItemSerialization;
 class RotoLayer;
+class RotoPoint;
+class RotoStrokeItem;
 class Settings;
 class StringAnimationManager;
 class StringParam;
+class TextureRect;
 class TimeLine;
 class ViewerInstance;
-struct TextureRect;
 
 namespace Natron {
 class CacheSignalEmitter;
@@ -135,10 +189,16 @@ class OfxParamOverlayInteract;
 class OutputEffectInstance;
 class Plugin;
 class Project;
+namespace Color {
+class Lut;
+}
 }
 
 namespace Transform {
 struct Matrix3x3;
 }
+
+
+
 
 #endif // Engine_EngineFwd_h

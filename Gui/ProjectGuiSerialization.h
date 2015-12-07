@@ -25,9 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <string>
-#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
@@ -47,6 +49,8 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/NodeBackDropSerialization.h"
+#include "Gui/GuiFwd.h"
+
 
 #define PYTHON_PANEL_SERIALIZATION_VERSION 1
 
@@ -87,11 +91,6 @@ GCC_DIAG_ON(unused-parameter)
 
 #define kNatronProjectSettingsPanelSerializationName "Natron_Project_Settings_Panel"
 
-class ProjectGui;
-class Gui;
-class Splitter;
-class TabWidget;
-class PyPanel;
 
 struct ViewerData
 {

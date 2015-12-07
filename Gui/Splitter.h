@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef SPLITTER_H
 #define SPLITTER_H
 
@@ -26,8 +25,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <list>
 #include "Global/Macros.h"
+
+#include <list>
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QSplitter>
@@ -35,10 +36,12 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Gui/GuiFwd.h"
+
+
 /**
  * @class A thread-safe wrapper over QSplitter
  **/
-class QString;
 class Splitter
     : public QSplitter
 {

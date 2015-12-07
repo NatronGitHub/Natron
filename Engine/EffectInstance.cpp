@@ -251,8 +251,8 @@ EffectInstance::invalidateParallelRenderArgsTLS()
         --args.validArgs;
         if (args.validArgs < 0) {
             args.validArgs = 0;
+            return;
         }
-
         for (NodeList::iterator it = args.rotoPaintNodes.begin(); it != args.rotoPaintNodes.end(); ++it) {
             (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
         }
@@ -350,7 +350,7 @@ EffectInstance::aborted() const
 
                     ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
                     bool ret = !getNode()->isActivated();
-
+                    
                     return ret;
                 } else {
                     bool deactivated = !getNode()->isActivated();
@@ -760,7 +760,7 @@ EffectInstance::getImage(int inputNb,
                 inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, requestComps,
                                                       time, view, depth, mipMapLevel);
                 if ( roto->isDoingNeatRender() ) {
-                    getNode()->updateStrokeImage(inputImg);
+                    getApp()->updateStrokeImage(inputImg, 0, false);
                 }
             }
         }
@@ -2514,10 +2514,21 @@ EffectInstance::evaluate(KnobI* knob,
 
     ///increments the knobs age following a change
     if (!button && isSignificant) {
+        abortAnyEvaluation();
         node->incrementKnobsAge();
         node->refreshIdentityState();
     }
 
+    
+    /*
+     We always have to trigger a render because this might be a tree not connected via a link to the knob who changed
+     but just an expression
+     
+     if (reason == Natron::eValueChangedReasonSlaveRefresh) {
+        //do not trigger a render, the master will do it already
+        return;
+    }*/
+    
 
     double time = getCurrentTime();
     std::list<ViewerInstance* > viewers;
@@ -3457,12 +3468,14 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
         }
 
         if (doHeuristicForPassThrough) {
-            getNonMaskInputsAvailableComponents(time, view, false, comps, markedNodes);
-        } else {
-            if (ptInput) {
-                ptInput->getLiveInstance()->getComponentsAvailableRecursive(useLayerChoice, time, view, comps, markedNodes);
-            }
+            ptInput = node->getInput(node->getPreferredInput());
+            //getNonMaskInputsAvailableComponents(time, view, false, comps, markedNodes);
         }
+        //else {
+        if (ptInput) {
+            ptInput->getLiveInstance()->getComponentsAvailableRecursive(useLayerChoice, time, view, comps, markedNodes);
+        }
+        //}
     }
     if (processAll) {
         //The node makes available everything available upstream
@@ -3879,22 +3892,21 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         ////tries to call getImage it can render with good parameters.
 
 
-        ParallelRenderArgsSetter frameRenderArgs( getApp()->getProject().get(),
-                                                  time,
-                                                  0, /*view*/
-                                                  true,
-                                                  false,
-                                                  false,
-                                                  0,
-                                                  node,
-                                                  0, // request
-                                                  0, //texture index
-                                                  getApp()->getTimeLine().get(),
-                                                  NodePtr(),
-                                                  true,
-                                                  false,
-                                                  false,
-                                                  boost::shared_ptr<RenderStats>() );
+        ParallelRenderArgsSetter frameRenderArgs(time,
+                                                 0, /*view*/
+                                                 true,
+                                                 false,
+                                                 false,
+                                                 0,
+                                                 node,
+                                                 0, // request
+                                                 0, //texture index
+                                                 getApp()->getTimeLine().get(),
+                                                 NodePtr(),
+                                                 true,
+                                                 false,
+                                                 false,
+                                                 boost::shared_ptr<RenderStats>() );
 
         RECURSIVE_ACTION();
         EffectPointerThreadProperty_RAII propHolder_raii(this);
@@ -4194,7 +4206,7 @@ EffectInstance::abortAnyEvaluation()
 
     
     assert(node);
-    node->incrementKnobsAge();
+   // node->incrementKnobsAge();
     std::list<Natron::OutputEffectInstance*> outputNodes;
     
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);

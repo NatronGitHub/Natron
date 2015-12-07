@@ -26,6 +26,8 @@
 
 #include <QDebug>
 
+//#define NATRON_COPY_CHANNELS_UNPREMULT
+
 using namespace Natron;
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult>
@@ -130,6 +132,7 @@ Image::copyUnProcessedChannelsForPremult(const RectI& roi,
 #             endif
             }
             if (doA) {
+#ifdef        NATRON_COPY_CHANNELS_UNPREMULT
                 if (premult) {
                     if (dstAorig != 0) {
                         // unpremult, then premult
@@ -153,6 +156,7 @@ Image::copyUnProcessedChannelsForPremult(const RectI& roi,
                         }
                     }
                 }
+#             endif
                 if (dstNComps == 1 || dstNComps == 4) {
                     dst_pixels[dstNComps - 1] = srcA;
 #                 ifdef DEBUG
@@ -241,6 +245,7 @@ Image::copyUnProcessedChannelsForPremult(bool doR, bool doG, bool doB, bool doA,
 #             endif
             }
             if (doA) {
+#ifdef            NATRON_COPY_CHANNELS_UNPREMULT
                 if (premult) {
                     if (dstAorig != 0) {
                         // unpremult, then premult
@@ -264,6 +269,7 @@ Image::copyUnProcessedChannelsForPremult(bool doR, bool doG, bool doB, bool doA,
                         }
                     }
                 }
+#              endif
                 if (dstNComps == 1 || dstNComps == 4) {
                     dst_pixels[dstNComps - 1] = srcA;
 #                 ifdef DEBUG

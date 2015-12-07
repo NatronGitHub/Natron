@@ -25,27 +25,23 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <boost/shared_ptr.hpp>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
-#include "Global/Macros.h"
 
 #include "Gui/CurveEditorUndoRedo.h" // MoveTangentCommand
 #include "Gui/CurveGui.h"
 #include "Gui/Menu.h"
 #include "Gui/TextRenderer.h"
 #include "Gui/ZoomContext.h"
+#include "Gui/GuiFwd.h"
 
-class Gui;
-class CurveSelection;
-class TimeLine;
-class CurveWidget;
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
-
-using namespace Natron;
 
 #define CURVEWIDGET_DERIVATIVE_ROUND_PRECISION 3.
 
@@ -154,10 +150,10 @@ public:
     QPoint _lastMousePos; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
     ZoomContext zoomCtx;
     EventStateEnum _state;
-    Menu* _rightClickMenu;
+    Natron::Menu* _rightClickMenu;
     QColor _selectedCurveColor;
     QColor _nextCurveAddedColor;
-    TextRenderer textRenderer;
+    Natron::TextRenderer textRenderer;
     QFont* _font;
     Curves _curves;
     SelectedKeys _selectedKeyFrames;

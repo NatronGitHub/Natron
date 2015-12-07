@@ -410,8 +410,8 @@ static PythonToCppFunc is_std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_Imag
     return 0;
 }
 
-// C++ to Python conversion for type 'std::list<std::string >'.
-static PyObject* std_list_std_string__CppToPython_std_list_std_string_(const void* cppIn) {
+// C++ to Python conversion for type 'const std::list<std::string > &'.
+static PyObject* conststd_list_std_string_REF_CppToPython_conststd_list_std_string_REF(const void* cppIn) {
     ::std::list<std::string >& cppInRef = *((::std::list<std::string >*)cppIn);
 
                     // TEMPLATE - stdListToPyList - START
@@ -425,7 +425,7 @@ static PyObject* std_list_std_string__CppToPython_std_list_std_string_(const voi
         // TEMPLATE - stdListToPyList - END
 
 }
-static void std_list_std_string__PythonToCpp_std_list_std_string_(PyObject* pyIn, void* cppOut) {
+static void conststd_list_std_string_REF_PythonToCpp_conststd_list_std_string_REF(PyObject* pyIn, void* cppOut) {
     ::std::list<std::string >& cppOutRef = *((::std::list<std::string >*)cppOut);
 
                     // TEMPLATE - pyListToStdList - START
@@ -438,9 +438,9 @@ static void std_list_std_string__PythonToCpp_std_list_std_string_(PyObject* pyIn
     // TEMPLATE - pyListToStdList - END
 
 }
-static PythonToCppFunc is_std_list_std_string__PythonToCpp_std_list_std_string__Convertible(PyObject* pyIn) {
+static PythonToCppFunc is_conststd_list_std_string_REF_PythonToCpp_conststd_list_std_string_REF_Convertible(PyObject* pyIn) {
     if (Shiboken::Conversions::convertibleSequenceTypes(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), pyIn))
-        return std_list_std_string__PythonToCpp_std_list_std_string_;
+        return conststd_list_std_string_REF_PythonToCpp_conststd_list_std_string_REF;
     return 0;
 }
 
@@ -716,12 +716,13 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
         std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR_,
         is_std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR__Convertible);
 
-    // Register converter for type 'std::list<std::string>'.
-    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_std_string__CppToPython_std_list_std_string_);
+    // Register converter for type 'const std::list<std::string>&'.
+    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, conststd_list_std_string_REF_CppToPython_conststd_list_std_string_REF);
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], "const std::list<std::string>&");
     Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], "std::list<std::string>");
     Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX],
-        std_list_std_string__PythonToCpp_std_list_std_string_,
-        is_std_list_std_string__PythonToCpp_std_list_std_string__Convertible);
+        conststd_list_std_string_REF_PythonToCpp_conststd_list_std_string_REF,
+        is_conststd_list_std_string_REF_PythonToCpp_conststd_list_std_string_REF_Convertible);
 
     // Register converter for type 'QList<QVariant>'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_QLIST_QVARIANT_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _QList_QVariant__CppToPython__QList_QVariant_);

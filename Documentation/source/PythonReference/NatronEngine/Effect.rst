@@ -46,6 +46,7 @@ Functions
 *    def :meth:`setScriptName<NatronEngine.Effect.setScriptName>` (scriptName)
 *    def :meth:`setSize<NatronEngine.Effect.setSize>` (w, h)
 *    def :meth:`setSubGraphEditable<NatronEngine.Effect.setSubGraphEditable>` (editable)
+*    def :meth:`setPagesOrder<NatronEngine.Effect.setPagesOrder>` (pages)
 
 .. _details:
 
@@ -487,5 +488,13 @@ This is handy to prevent users from accidentally breaking the sub-graph.
 This can always be reverted by editing the python script associated.
 The user will still be able to see the internal node graph but will not be able to
 unlock it.
+
+
+.. method:: NatronEngine.Effect.setPagesOrder(pages)
+
+	:param pages: :class:`sequence`
+	
+Given the string list *pages* try to find the corresponding pages by their-script name
+and order them in the given order.
 
 

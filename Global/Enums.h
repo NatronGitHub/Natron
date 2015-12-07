@@ -48,6 +48,7 @@ enum TimelineChangeReasonEnum
     eTimelineChangeReasonPlaybackSeek = 1,
     eTimelineChangeReasonCurveEditorSeek = 2,
     eTimelineChangeReasonDopeSheetEditorSeek = 3,
+    eTimelineChangeReasonOtherSeek
 };
 
 enum StatusEnum

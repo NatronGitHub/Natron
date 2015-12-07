@@ -25,9 +25,16 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <QMessageBox>
-
 #include "Global/Macros.h"
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QMessageBox>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
+#include "Gui/GuiFwd.h"
+
 
 // resizable message box,
 // see http://www.qtcentre.org/threads/24888-Resizing-a-QMessageBox#post135851

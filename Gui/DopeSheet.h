@@ -25,22 +25,27 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
-#include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QTreeWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/Curve.h"
-
 #include "Global/GlobalDefines.h"
-#include "Global/Macros.h"
+
+#include "Engine/Curve.h"
+#include "Engine/EngineFwd.h"
+
+#include "Gui/GuiFwd.h"
+
 
 #define kReaderParamNameFirstFrame "firstFrame"
 #define kReaderParamNameLastFrame "lastFrame"
@@ -52,28 +57,14 @@ CLANG_DIAG_ON(uninitialized)
 #define kFrameRangeParamNameFrameRange "frameRange"
 #define kTimeOffsetParamNameTimeOffset "timeOffset"
 
+
+
 class DopeSheetPrivate;
-class DopeSheetEditor;
 class DopeSheetSelectionModel;
 class DopeSheetSelectionModelPrivate;
 class DSKnobPrivate;
 class DSNodePrivate;
-class Gui;
-class HierarchyView;
-class KnobI;
-class KnobGui;
-class NodeGroup;
-class NodeGui;
-class QUndoCommand;
-class TimeLine;
-namespace Transform {
-    struct Matrix3x3;
-}
-namespace Natron {
-class Node;
-}
 
-class DSKnob;
 class DSNode;
 class DopeSheet;
 
@@ -256,20 +247,21 @@ private:
  *
  * It is and should be used only to handle keyframe selections.
  */
-struct DopeSheetKey
+class DopeSheetKey
 {
-    DopeSheetKey(const boost::shared_ptr<DSKnob> &knob, const KeyFrame& kf) :
-    context(knob),
-    key(kf)
+public:
+    DopeSheetKey(const boost::shared_ptr<DSKnob> &knob, const KeyFrame& kf)
+    : context(knob)
+    , key(kf)
     {
         boost::shared_ptr<DSKnob> knobContext = context.lock();
         assert(knobContext);
         
     }
     
-    DopeSheetKey(const DopeSheetKey &other) :
-    context(other.context),
-    key(other.key)
+    DopeSheetKey(const DopeSheetKey &other)
+    : context(other.context)
+    , key(other.key)
     {}
     
     friend bool operator==(const DopeSheetKey &key, const DopeSheetKey &other)

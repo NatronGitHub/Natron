@@ -44,6 +44,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QSettings>
 #include <QtCore/QThreadPool>
+#include <QtCore/QTextStream>
 #include <QtNetwork/QAbstractSocket>
 #include <QtNetwork/QLocalServer>
 #include <QtNetwork/QLocalSocket>
@@ -75,6 +76,7 @@
 #include "Engine/Project.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoSmear.h"
+#include "Engine/StandardPaths.h"
 #include "Engine/ViewerInstance.h" // RenderStatsMap
 
 
@@ -2616,7 +2618,7 @@ AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
         boost::shared_ptr<Natron::Project> proj = it->second.app->getProject();
                 if (proj) {
                         QString path = proj->getProjectPath();
-                        QString name = proj->getProjectName();
+                        QString name = proj->getProjectFilename();
                         std::string existingProject = path.toStdString() + name.toStdString();
                         if (existingProject == projectFilePath) {
                                 return it->first;
@@ -2643,17 +2645,29 @@ AppManager::onCrashReporterOutputWritten()
         //At this point, the CrashReporter just notified us it is ready, so we can create our exception handler safely
         //because we know the pipe is opened on the other side.
         
+        QString dumpPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+        
 #if defined(Q_OS_MAC)
-        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( std::string(), 0, 0/*dmpcb*/,  0, true,
+        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdString(),
+                                                                          0,
+                                                                          0/*dmpcb*/,
+                                                                          0,
+                                                                          true,
                                                                           _imp->crashReporterBreakpadPipe.toStdString().c_str()));
 #elif defined(Q_OS_LINUX)
-        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(std::string()), 0, 0/*dmpCb*/,
-                                                                          0, true, handle));
+        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(dumpPath.toStdString()),
+                                                                          0,
+                                                                          0/*dmpCb*/,
+                                                                          0,
+                                                                          true,
+                                                                          _imp->crashReporterBreakpadPipe.handle()));
 #elif defined(Q_OS_WIN32)
-        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( std::wstring(), 0, 0/*dmpcb*/,
+        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
+                                                                          0,
+                                                                          0/*dmpcb*/,
                                                                           google_breakpad::ExceptionHandler::HANDLER_ALL,
                                                                           MiniDumpNormal,
-                                                                          filename.toStdWString(),
+                                                                          _imp->crashReporterBreakpadPipe.toStdWString().c_str(),
                                                                           0));
 #endif
         
@@ -3000,6 +3014,7 @@ bool interpretPythonScript(const std::string& script,std::string* error,std::str
         }
 
         if (error && !error->empty()) {
+            *error = "While executing script:\n" + script + "Python error:\n" + *error;
             return false;
         }
         return true;
@@ -3307,4 +3322,40 @@ void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vect
     }
 }
     
+/**
+ * @brief Given a fullyQualifiedName, e.g: app1.Group1.Blur1
+ * this function returns the PyObject attribute of Blur1 if it is defined, or Group1 otherwise
+ * If app1 or Group1 does not exist at this point, this is a failure.
+ **/
+PyObject*
+getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined)
+{
+    std::size_t foundDot = fullyQualifiedName.find(".");
+    std::string attrName = foundDot == std::string::npos ? fullyQualifiedName : fullyQualifiedName.substr(0, foundDot);
+    PyObject* obj = 0;
+    if (PyObject_HasAttrString(parentObj, attrName.c_str())) {
+        obj = PyObject_GetAttrString(parentObj, attrName.c_str());
+    }
+    
+    ///We either found the parent object or we are on the last object in which case we return the parent
+    if (!obj) {
+        //assert(fullyQualifiedName.find(".") == std::string::npos);
+        *isDefined = false;
+        return parentObj;
+    } else {
+        std::string recurseName;
+        if (foundDot != std::string::npos) {
+            recurseName = fullyQualifiedName;
+            recurseName.erase(0, foundDot + 1);
+        }
+        if (!recurseName.empty()) {
+            return getAttrRecursive(recurseName, obj, isDefined);
+        } else {
+            *isDefined = true;
+            return obj;
+        }
+    }
+    
+}
+
 } //Namespace Natron

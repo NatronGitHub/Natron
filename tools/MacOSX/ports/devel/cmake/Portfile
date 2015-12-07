@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 142106 2015-11-03 18:30:17Z michaelld@macports.org $
+# $Id: Portfile 142646 2015-11-18 15:01:12Z michaelld@macports.org $
 
 PortSystem          1.0
 universal_variant no
@@ -23,16 +23,15 @@ dist_subdir         cmake
 
 subport cmake-devel {}
 
-set branch          3.3
+set branch          3.4
 
 if {${subport} eq ${name}} {
 
     # release
 
-    version         ${branch}.2
-    revision        1
-    checksums       rmd160 c7d3b8895e2e143b7e1019477764370535917dca \
-                    sha256 e75a178d6ebf182b048ebfe6e0657c49f0dc109779170bad7ffcb17463f2fc22
+    version         ${branch}.0
+    checksums       rmd160 95d3d0cd86e17c249459975eb9b293a5075ae87a \
+                    sha256 a5b82bf6ace6c481cdb911fd5d372a302740cbefd387e05297cb37f7468d1cea
 
     long_description ${base_long_description} \
         The ${subport} release port is updated roughly every few months.
@@ -41,13 +40,6 @@ if {${subport} eq ${name}} {
 
     master_sites    http://www.cmake.org/files/v${branch}/
 
-    patchfiles-append patch-Modules-noArchCheck.release.diff
-
-    # temporary patch to find Boost 1.59;
-    # remove when updating to next release
-
-    patchfiles-append patch-Modules-FindBoost.cmake.diff
-
     livecheck.type  regex
     livecheck.regex ${name}-(\[0-9.\]+)${extract.suffix}
     livecheck.url   [lindex $master_sites 0]
@@ -55,12 +47,12 @@ if {${subport} eq ${name}} {
 } else {
 
     # devel
-    version         20151102
+    version         20151116
     set dist_branch 3.4
-    set dist_date   20151102
-    set dist_hash   g7b24b
-    checksums       rmd160 f0aa044cc36f29eb5f962e4fc36660c9d29e7011 \
-                    sha256 42a24505a5927d5d37bbc79fb05d2fc4355d261b0502282639761144a45cb197
+    set dist_date   20151116
+    set dist_hash   g89134
+    checksums       rmd160 6140db936ca93e0718d58694cdf8651c783cb907 \
+                    sha256 60cccf1952cc3faf9e7e3312ac9b7239b06cb22f0a4e24bef89b3fc901ae5474
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
@@ -68,8 +60,6 @@ if {${subport} eq ${name}} {
 
     long_description ${base_long_description} \
         The ${subport} port is updated roughly every week.
-
-    patchfiles-append patch-Modules-noArchCheck.devel.diff
 
     livecheck.type  regex
     livecheck.regex (${name}-\[0-9a-g.-\]+)${extract.suffix}
@@ -82,7 +72,8 @@ depends_lib-append  port:curl \
                     port:expat \
                     port:zlib \
                     port:bzip2 \
-                    port:libarchive
+                    port:libarchive \
+                    port:ncurses
 
 # CMake 3.2 changed dependency requirements to include jsoncpp.
 # jsoncpp 1.0+ requires CMake for building. catch 22. So, have CMake
@@ -92,7 +83,8 @@ patchfiles-append   patch-CMakeFindFrameworks.cmake.diff \
                     patch-Modules-FindFreetype.cmake.diff \
                     patch-Modules-FindQt4.cmake.diff \
                     patch-Modules-Platform-Darwin.cmake.diff \
-                    patch-Modules-Platform-Darwin-Initialize.cmake.diff
+                    patch-Modules-Platform-Darwin-Initialize.cmake.diff \
+                    patch-Modules-noArchCheck.diff
 
 configure.env-append \
                     CMAKE_PREFIX_PATH=${prefix} \
