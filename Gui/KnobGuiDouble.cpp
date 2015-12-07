@@ -482,10 +482,13 @@ KnobGuiDouble::updateGUI(int dimension)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
     const int knobDim = knob->getDimension();
+    if (knobDim < 1 || dimension >= knobDim) {
+        return;
+    }
     assert(1 <= knobDim && knobDim <= 3);
     assert(dimension == -1 || (dimension >= 0 && dimension < knobDim));
     double values[3];
-    double refValue;
+    double refValue = 0.;
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
     for (int i = 0; i < knobDim ; ++i) {
         double v = knob->getValue(i);

@@ -87,6 +87,9 @@ GroupInput::getOutputPremultiplication() const
     boost::shared_ptr<NodeCollection> group = thisNode->getGroup();
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(group.get());
     assert(isGroup);
+    if (!isGroup) {
+        return Natron::eImagePremultiplicationPremultiplied;
+    }
     int inputNb = -1;
     std::vector<NodePtr> groupInputs;
     isGroup->getInputs(&groupInputs);

@@ -1552,6 +1552,9 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
                 }
             }
             assert(foundOriginalNode);
+            if (!foundOriginalNode) {
+                continue;
+            }
         
             NodePtr originalNodeInternal = foundOriginalNode->getNode();
             const std::vector<NodePtr>& originalNodeInputs = originalNodeInternal->getInputs();

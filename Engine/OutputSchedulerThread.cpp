@@ -1278,7 +1278,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
 {
     assert(viewsToRender.size() > 0);
     
-    double percentage ;
+    double percentage = 0.;
     double timeSpent;
     int nbCurParallelRenders;
     

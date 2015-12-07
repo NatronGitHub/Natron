@@ -940,12 +940,14 @@ TransformKeysCommand::redo()
             } else {
                 BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>(*it);
                 assert(isBezier);
-                BezierCopy b;
-                b.guiCurve = *it;
-                b.original = isBezier->getBezier();
-                b.oldCpy.reset(new Bezier(b.original->getContext(),b.original->getScriptName(),b.original->getParentLayer(),b.original->isOpenBezier()));
-                b.oldCpy->clone(b.original.get());
-                _beziers.push_back(b);
+                if (isBezier) {
+                    BezierCopy b;
+                    b.guiCurve = *it;
+                    b.original = isBezier->getBezier();
+                    b.oldCpy.reset(new Bezier(b.original->getContext(),b.original->getScriptName(),b.original->getParentLayer(),b.original->isOpenBezier()));
+                    b.oldCpy->clone(b.original.get());
+                    _beziers.push_back(b);
+                }
             }
         }
        

@@ -392,8 +392,11 @@ void
 KnobGuiInt::updateGUI(int dimension)
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
-    int values[3];
     const int knobDim =  knob->getDimension();
+    if (knobDim < 1 || dimension >= knobDim) {
+        return;
+    }
+    int values[3];
     assert(1 <= knobDim && knobDim <= 3);
     assert(dimension == -1 || (0 <= dimension && dimension < knobDim));
     for (int i = 0; i < knobDim; ++i) {

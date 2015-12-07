@@ -647,10 +647,13 @@ KnobGuiColor::updateGUI(int dimension)
         updateLabel(r, g, b, a);
     } else {
         const int knobDim = _dimension;
+        if (knobDim < 1 || dimension >= knobDim) {
+            return;
+        }
         assert(1 <= knobDim && knobDim <= 4);
         assert(dimension == -1 || (0 <= dimension && dimension < knobDim));
         double values[4];
-        double refValue;
+        double refValue = 0.;
         for (int i = 0; i < knobDim; ++i) {
             values[i] = knob->getValue(i);
         }
