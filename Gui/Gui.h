@@ -687,6 +687,10 @@ public Q_SLOTS:
     
     void onShowApplicationConsoleActionTriggered();
 
+    void openHelpWebsite();
+    void openHelpForum();
+    void openHelpIssues();
+
 private:
 
     void setCurrentPanelFocus(PanelWidget* widget);

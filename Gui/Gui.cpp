@@ -36,6 +36,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QApplication> // qApp
 #include <QMenuBar>
 #include <QUndoGroup>
+#include <QDesktopServices>
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -385,6 +386,7 @@ Gui::createMenuActions()
     _imp->viewerInputsMenu = new Menu(QObject::tr("Connect Current Viewer"), _imp->viewersMenu);
     _imp->viewersViewMenu = new Menu(QObject::tr("Display View Number"), _imp->viewersMenu);
     _imp->cacheMenu = new Menu(QObject::tr("Cache"), _imp->menubar);
+    _imp->menuHelp = new Menu(QObject::tr("Help"), _imp->menubar);
 
 
     _imp->actionNew_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionNewProject, kShortcutDescActionNewProject, this);
@@ -541,7 +543,15 @@ Gui::createMenuActions()
     _imp->menubar->addAction( _imp->menuDisplay->menuAction() );
     _imp->menubar->addAction( _imp->menuRender->menuAction() );
     _imp->menubar->addAction( _imp->cacheMenu->menuAction() );
+    _imp->menubar->addAction( _imp->menuHelp->menuAction() );
+
+#ifndef __APPLE__
+    _imp->menuHelp->addAction(_imp->actionShowAboutWindow);
+    _imp->menuHelp->addSeparator();
+#else
     _imp->menuFile->addAction(_imp->actionShowAboutWindow);
+#endif
+
     _imp->menuFile->addAction(_imp->actionNew_project);
     _imp->menuFile->addAction(_imp->actionOpen_project);
     _imp->menuFile->addAction( _imp->menuRecentFiles->menuAction() );
@@ -597,9 +607,42 @@ Gui::createMenuActions()
     _imp->cacheMenu->addSeparator();
     _imp->cacheMenu->addAction(_imp->actionClearPluginsLoadingCache);
 
+    _imp->actionHelpWebsite = new QAction(this);
+    _imp->actionHelpWebsite->setText(QObject::tr("Website"));
+    _imp->menuHelp->addAction(_imp->actionHelpWebsite);
+    QObject::connect( _imp->actionHelpWebsite, SIGNAL( triggered() ), this, SLOT( openHelpWebsite() ) );
+
+    _imp->actionHelpForum = new QAction(this);
+    _imp->actionHelpForum->setText(QObject::tr("Forum"));
+    _imp->menuHelp->addAction(_imp->actionHelpForum);
+    QObject::connect( _imp->actionHelpForum, SIGNAL( triggered() ), this, SLOT( openHelpForum() ) );
+
+    _imp->actionHelpIssues = new QAction(this);
+    _imp->actionHelpIssues->setText(QObject::tr("Issues"));
+    _imp->menuHelp->addAction(_imp->actionHelpIssues);
+    QObject::connect( _imp->actionHelpIssues, SIGNAL( triggered() ), this, SLOT( openHelpIssues() ) );
+
     ///Create custom menu
     const std::list<PythonUserCommand> & commands = appPTR->getUserPythonCommands();
     for (std::list<PythonUserCommand>::const_iterator it = commands.begin(); it != commands.end(); ++it) {
         addMenuEntry(it->grouping, it->pythonFunction, it->key, it->modifiers);
     }
 } // createMenuActions
+
+void
+Gui::openHelpWebsite()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_WEBSITE_URL));
+}
+
+void
+Gui::openHelpForum()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_FORUM_URL));
+}
+
+void
+Gui::openHelpIssues()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_ISSUE_TRACKER_URL));
+}

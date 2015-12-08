@@ -118,6 +118,10 @@ struct GuiPrivate
     ActionWithShortcut* actionPrevTab;
     ActionWithShortcut* actionCloseTab;
 
+    QAction* actionHelpWebsite;
+    QAction* actionHelpForum;
+    QAction* actionHelpIssues;
+
     ///the main "central" widget
     QWidget *_centralWidget;
     QHBoxLayout* _mainLayout; //< its layout
@@ -192,6 +196,7 @@ struct GuiPrivate
     Natron::Menu *viewerInputsMenu;
     Natron::Menu *viewersViewMenu;
     Natron::Menu *cacheMenu;
+    Natron::Menu *menuHelp;
 
 
     ///all TabWidget's : used to know what to hide/show for fullscreen mode
