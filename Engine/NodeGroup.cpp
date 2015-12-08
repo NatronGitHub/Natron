@@ -1487,7 +1487,12 @@ static QString escapeString(const std::string& str)
 #define WRITE_INDENT(x) \
         for (int _i = 0; _i < x; ++_i) ts << "    ";
 #define WRITE_STRING(str) ts << str << "\n"
-#define NUM(n) QString::number(n)
+//#define NUM(n) QString::number(n)
+#define NUM_INT(n) QString::number(n, 10)
+#define NUM_COLOR(n) QString::number(n, 'g', 4)
+#define NUM_PIXEL(n) QString::number(n, 'f', 0)
+#define NUM_VALUE(n) QString::number(n, 'g', 16)
+#define NUM_TIME(n) QString::number(n, 'g', 16)
 
 static bool exportKnobValues(int indentLevel,
                              const boost::shared_ptr<KnobI> knob,
@@ -1534,16 +1539,16 @@ static bool exportKnobValues(int indentLevel,
             boost::shared_ptr<Curve> curve = isParametric->getParametricCurve(i);
             double r,g,b;
             isParametric->getCurveColor(i, &r, &g, &b);
-            WRITE_INDENT(innerIdent); WRITE_STRING("param.setCurveColor(" + NUM(i) + ", " +
-                                          NUM(r) + ", " + NUM(g) + ", " + NUM(b) + ")");
+            WRITE_INDENT(innerIdent); WRITE_STRING("param.setCurveColor(" + NUM_INT(i) + ", " +
+                                          NUM_COLOR(r) + ", " + NUM_COLOR(g) + ", " + NUM_COLOR(b) + ")");
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
                 int c = 0;
                 for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3, ++c) {
-                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setNthControlPoint(" + NUM(i) + ", " +
-                                                  NUM(c) + ", " + NUM(it3->getTime()) + ", " +
-                                                  NUM(it3->getValue()) + ", " + NUM(it3->getLeftDerivative())
-                                                  + ", " + NUM(it3->getRightDerivative()) + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setNthControlPoint(" + NUM_INT(i) + ", " +
+                                                  NUM_INT(c) + ", " + NUM_TIME(it3->getTime()) + ", " +
+                                                  NUM_VALUE(it3->getValue()) + ", " + NUM_VALUE(it3->getLeftDerivative())
+                                                  + ", " + NUM_VALUE(it3->getRightDerivative()) + ")");
                 }
                 
             }
@@ -1566,19 +1571,19 @@ static bool exportKnobValues(int indentLevel,
                     if (isAnimatedStr) {
                         std::string value = isAnimatedStr->getValueAtTime(it3->getTime(),i, true);
                         WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + ESC(value) + ", "
-                                                      + NUM(it3->getTime())+ ")");
+                                                      + NUM_TIME(it3->getTime())+ ")");
                         
                     } else if (isBool) {
-                        int v = std::min(1., std::max(0.,std::floor(it3->getValue() + 0.5)));
+                        int v = std::min(1., std::max(0., std::floor(it3->getValue() + 0.5)));
                         QString vStr = v ? "True" : "False";
                         WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + vStr + ", "
-                                                      + NUM(it3->getTime())  + ")");
+                                                      + NUM_TIME(it3->getTime())  + ")");
                     } else if (isChoice) {
-                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + NUM(it3->getValue()) + ", "
-                                                      + NUM(it3->getTime()) + ")");
+                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + NUM_INT((int)it3->getValue()) + ", "
+                                                      + NUM_TIME(it3->getTime()) + ")");
                     } else {
-                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + NUM(it3->getValue()) + ", "
-                                                      + NUM(it3->getTime()) + ", " + NUM(i) + ")");
+                        WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + NUM_VALUE(it3->getValue()) + ", "
+                                                      + NUM_TIME(it3->getTime()) + ", " + NUM_INT(i) + ")");
 
                     }
                 }
@@ -1602,7 +1607,7 @@ static bool exportKnobValues(int indentLevel,
                     WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + ESC(v)  + ")");
                 } else if (isDouble) {
                     double v = isDouble->getValue(i, true);
-                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM_VALUE(v) + ", " + NUM_INT(i) + ")");
                 } else if (isChoice) {
                     WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("options = param.getOptions()");
                     WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("foundOption = False");
@@ -1622,7 +1627,7 @@ static bool exportKnobValues(int indentLevel,
                     WRITE_INDENT(innerIdent + 1); WRITE_STRING("app.writeToScriptEditor(" + ESC(error.str()) + ")");
                 } else if (isInt) {
                     int v = isInt->getValue(i, true);
-                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM(v) + ", " + NUM(i) + ")");
+                    WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM_INT(v) + ", " + NUM_INT(i) + ")");
                 } else if (isBool) {
                     int v = std::min(1., std::max(0.,std::floor(isBool->getValue(i, true) + 0.5)));
                     QString vStr = v ? "True" : "False";
@@ -1701,7 +1706,7 @@ static bool exportKnobValues(int indentLevel,
                     str += "False";
                 }
                 str += ", ";
-                str += NUM(i);
+                str += NUM_INT(i);
                 str += ")";
                 WRITE_INDENT(innerIdent); WRITE_STRING(str);
             }
@@ -1771,26 +1776,22 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
             int dMin = isInt->getDisplayMinimum(i);
             int dMax = isInt->getDisplayMaximum(i);
             if (min != INT_MIN) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
-                                              NUM(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM_INT(min) + ", " +
+                                              NUM_INT(i) + ")");
             }
             if (max != INT_MAX) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
-                                              NUM(i) + ")");
-                
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM_INT(max) + ", " +
+                                              NUM_INT(i) + ")");
             }
             if (dMin != INT_MIN) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
-                                              NUM(i) + ")");
-                
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM_INT(dMin) + ", " +
+                                              NUM_INT(i) + ")");
             }
             if (dMax != INT_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
-                                              NUM(i) + ")");
-                
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM_INT(dMax) + ", " +
+                                              NUM_INT(i) + ")");
             }
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
-            
+            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM_INT(defaultValues[i]) + ", " + NUM_INT(i) + ")");
         }
     } else if (isDouble) {
         QString createToken;
@@ -1811,9 +1812,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         }
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + createToken + ESC(isDouble->getName()) +
                                       ", " + ESC(isDouble->getLabel()) + ")");
-        
-        
-        
+
         std::vector<double> defaultValues = isDouble->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isDouble->getDimension());
         for (int i = 0; i < isDouble->getDimension() ; ++i) {
@@ -1822,46 +1821,37 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
             double dMin = isDouble->getDisplayMinimum(i);
             double dMax = isDouble->getDisplayMaximum(i);
             if (min != -DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
-                                              NUM(i) + ")");
-                
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM_VALUE(min) + ", " +
+                                              NUM_INT(i) + ")");
             }
             if (max != DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
-                                              NUM(i) + ")");
-                
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM_VALUE(max) + ", " +
+                                              NUM_INT(i) + ")");
             }
             if (dMin != -DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
-                                              NUM(i) + ")");
-                
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM_VALUE(dMin) + ", " +
+                                              NUM_INT(i) + ")");
             }
             if (dMax != DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
-                                              NUM(i) + ")");
-                
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM_VALUE(dMax) + ", " +
+                                              NUM_INT(i) + ")");
             }
             if (defaultValues[i] != 0.) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
-                
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM_VALUE(defaultValues[i]) + ", " + NUM_INT(i) + ")");
             }
         }
 
     } else if (isBool) {
-        
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createBooleanParam(" + ESC(isBool->getName()) +
                                       ", " + ESC(isBool->getLabel()) + ")");
-        
-        
+
         std::vector<bool> defaultValues = isBool->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isBool->getDimension());
         
         if (defaultValues[0]) {
-            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[0]) + ")");
-            
+            WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(True)");
         }
-        
-        
+
     } else if (isChoice) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createChoiceParam(" +
                                       ESC(isChoice->getName()) +
@@ -1897,7 +1887,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
             std::vector<int> defaultValues = isChoice->getDefaultValues_mt_safe();
             assert((int)defaultValues.size() == isChoice->getDimension());
             if (defaultValues[0] != 0) {
-                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[0]) + ")");
+                WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM_INT(defaultValues[0]) + ")");
                 
             }
         }
@@ -1920,28 +1910,23 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
             double dMin = isColor->getDisplayMinimum(i);
             double dMax = isColor->getDisplayMaximum(i);
             if (min != -DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM(min) + ", " +
-                                              NUM(i) + ")");
-                
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMinimum(" + NUM_VALUE(min) + ", " +
+                                              NUM_INT(i) + ")");
             }
             if (max != DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM(max) + ", " +
-                                              NUM(i) + ")");
-                
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setMaximum(" + NUM_VALUE(max) + ", " +
+                                              NUM_INT(i) + ")");
             }
             if (dMin != -DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM(dMin) + ", " +
-                                              NUM(i) + ")");
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMinimum(" + NUM_VALUE(dMin) + ", " +
+                                              NUM_INT(i) + ")");
             }
-            
             if (dMax != DBL_MAX) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM(dMax) + ", " +
-                                              NUM(i) + ")");
-                
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDisplayMaximum(" + NUM_VALUE(dMax) + ", " +
+                                              NUM_INT(i) + ")");
             }
             if (defaultValues[i] != 0.) {
-                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM(defaultValues[i]) + ", " + NUM(i) + ")");
-                
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + NUM_VALUE(defaultValues[i]) + ", " + NUM_INT(i) + ")");
             }
         }
 
@@ -1949,6 +1934,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createButtonParam(" +
                                       ESC(isButton->getName()) +
                                       ", " + ESC(isButton->getLabel()) + ")");
+
     } else if (isStr) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createStringParam(" +
                                       ESC(isStr->getName()) +
@@ -1969,7 +1955,6 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         }
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setType(NatronEngine.StringParam.TypeEnum." + typeStr + ")");
         
-        
         std::vector<std::string> defaultValues = isStr->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isStr->getDimension());
         QString def(defaultValues[0].c_str());
@@ -1984,13 +1969,11 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         QString seqStr = isFile->isInputImageFile() ? "True" : "False";
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
         
-        
         std::vector<std::string> defaultValues = isFile->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isFile->getDimension());
         QString def(defaultValues[0].c_str());
         if (!def.isEmpty()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + def + ")");
-            
         }
         
     } else if (isOutFile) {
@@ -2000,14 +1983,12 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         assert(isOutFile); 
         QString seqStr = isOutFile->isOutputImageFile() ? "True" : "False";
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setSequenceEnabled("+ seqStr + ")");
-        
-        
+
         std::vector<std::string> defaultValues = isOutFile->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isOutFile->getDimension());
         QString def(defaultValues[0].c_str());
         if (!def.isEmpty()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
-            
         }
 
     } else if (isPath) {
@@ -2017,15 +1998,13 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         if (isPath->isMultiPath()) {
             WRITE_INDENT(indentLevel); WRITE_STRING("param.setAsMultiPathTable()");
         }
-        
-        
+
         std::vector<std::string> defaultValues = isPath->getDefaultValues_mt_safe();
         assert((int)defaultValues.size() == isPath->getDimension());
         QString def(defaultValues[0].c_str());
         if (!def.isEmpty()) {
                 WRITE_INDENT(indentLevel); WRITE_STRING("param.setDefaultValue(" + ESC(def) + ")");
         }
-        
 
     } else if (isGrp) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createGroupParam(" +
@@ -2039,24 +2018,24 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createParametricParam(" +
                                       ESC(isParametric->getName()) +
                                       ", " + ESC(isParametric->getLabel()) +  ", " +
-                                      NUM(isParametric->getDimension()) + ")");
+                                      NUM_INT(isParametric->getDimension()) + ")");
     }
     
     WRITE_STATIC_LINE("");
 
     if (group) {
         QString grpFullName = fullyQualifiedNodeName + "." + QString(group->getName().c_str());
-        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Add the param to the group, no need to add it to the page");
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Add the param to the group, no need to add it to the page");
         WRITE_INDENT(indentLevel); WRITE_STRING(grpFullName + ".addParam(param)");
     } else {
         assert(page);
         QString pageFullName = fullyQualifiedNodeName + "." + QString(page->getName().c_str());
-        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Add the param to the page");
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Add the param to the page");
         WRITE_INDENT(indentLevel); WRITE_STRING(pageFullName + ".addParam(param)");
     }
     
     WRITE_STATIC_LINE("");
-    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Set param properties");
+    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Set param properties");
 
     QString help(knob->getHintToolTip().c_str());
     if (!aliasedParam || aliasedParam->getHintToolTip() != knob->getHintToolTip()) {
@@ -2080,9 +2059,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
         QString animStr = knob->isAnimationEnabled() ? "True" : "False";
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setAnimationEnabled(" + animStr + ")");
     }
-    
-    
-    
+
     exportKnobValues(indentLevel,knob,"", false, ts);
     WRITE_INDENT(indentLevel); WRITE_STRING(fullyQualifiedNodeName + "." + QString(knob->getName().c_str()) + " = param");
     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del param");
@@ -2112,11 +2089,11 @@ static void exportBezierPointAtTime(int indentLevel,
     point->getLeftBezierPointAtTime(false ,time, &lx, &ly);
     point->getRightBezierPointAtTime(false ,time, &rx, &ry);
     
-    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE(token + NUM(idx) + ", " +
-                                       NUM(time) + ", " + NUM(x) + ", " +
-                                       NUM(y) + ", " + NUM(lx) + ", " +
-                                       NUM(ly) + ", " + NUM(rx) + ", " +
-                                       NUM(ry) + ")");
+    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE(token + NUM_INT(idx) + ", " +
+                                       NUM_TIME(time) + ", " + NUM_VALUE(x) + ", " +
+                                       NUM_VALUE(y) + ", " + NUM_VALUE(lx) + ", " +
+                                       NUM_VALUE(ly) + ", " + NUM_VALUE(rx) + ", " +
+                                       NUM_VALUE(ry) + ")");
    
 }
 
@@ -2143,7 +2120,7 @@ static void exportRotoLayer(int indentLevel,
             
             time = cps.front()->getKeyframeTime(false ,0);
             
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("bezier = roto.createBezier(0,0, " + NUM(time) + ")");
+            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("bezier = roto.createBezier(0, 0, " + NUM_TIME(time) + ")");
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("bezier.setScriptName(" + ESC(isBezier->getScriptName()) + ")");
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("bezier.setLabel(" + ESC(isBezier->getLabel()) + ")");
             QString lockedStr = isBezier->getLocked() ? "True" : "False";
@@ -2180,7 +2157,7 @@ static void exportRotoLayer(int indentLevel,
             
             //the last python call already registered the first control point
             int nbPts = cps.size() - 1;
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("for i in range(0, " + NUM(nbPts) +"):");
+            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("for i in range(0, " + NUM_INT(nbPts) +"):");
             WRITE_INDENT(2); WRITE_STATIC_LINE("bezier.addControlPoint(0,0)");
           
             ///Now that all points are created position them
@@ -2203,8 +2180,8 @@ static void exportRotoLayer(int indentLevel,
                     int trackTime = (*it2)->getOffsetTime();
                     WRITE_INDENT(indentLevel); WRITE_STRING("tracker = group.getNode(\"" + QString(trackerName.c_str()) + "\")");
                     WRITE_INDENT(indentLevel); WRITE_STRING("center = tracker.getParam(\"" + QString(track->getName().c_str()) + "\")");
-                    WRITE_INDENT(indentLevel); WRITE_STRING("bezier.slavePointToTrack(" + NUM(idx) + ", " +
-                                                  NUM(trackTime) + ",center)");
+                    WRITE_INDENT(indentLevel); WRITE_STRING("bezier.slavePointToTrack(" + NUM_INT(idx) + ", " +
+                                                  NUM_TIME(trackTime) + ",center)");
                     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del center");
                     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del tracker");
                 }
@@ -2268,7 +2245,7 @@ static void exportAllNodeKnobs(int indentLevel,const boost::shared_ptr<Natron::N
     }// for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2)
     if (!userPages.empty()) {
         WRITE_STATIC_LINE("");
-        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Create the user-parameters");
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create the user parameters");
     }
     for (std::list<KnobPage*>::iterator it2 = userPages.begin(); it2!= userPages.end(); ++it2) {
         WRITE_INDENT(indentLevel); WRITE_STRING("lastNode." + QString((*it2)->getName().c_str()) +
@@ -2281,7 +2258,7 @@ static void exportAllNodeKnobs(int indentLevel,const boost::shared_ptr<Natron::N
     }
     
     if (!userPages.empty()) {
-        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Refresh the GUI with the newly created parameters");
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Refresh the GUI with the newly created parameters");
         std::list<std::string> pagesOrdering = node->getPagesOrder();
         if (!pagesOrdering.empty()) {
             QString line("lastNode.setPagesOrder([");
@@ -2307,7 +2284,7 @@ static void exportAllNodeKnobs(int indentLevel,const boost::shared_ptr<Natron::N
         const std::list<boost::shared_ptr<RotoLayer> >& layers = roto->getLayers();
         
         if (!layers.empty()) {
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#For the roto node, create all layers and beziers");
+            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# For the roto node, create all layers and beziers");
             WRITE_INDENT(indentLevel); WRITE_STRING("roto = lastNode.getRotoContext()");
             boost::shared_ptr<RotoLayer> baseLayer = layers.front();
             QString baseLayerName = QString(baseLayer->getScriptName().c_str());
@@ -2373,7 +2350,7 @@ static bool exportKnobLinks(int indentLevel,
                     }
                     hasExportedLink = true;
                     WRITE_INDENT(indentLevel); WRITE_STRING("param.setExpression(" + ESC(expr) + ", " +
-                                                            hasRetVar + ", " + NUM(i) + ")");
+                                                            hasRetVar + ", " + NUM_INT(i) + ")");
                 }
                 
             }
@@ -2387,8 +2364,9 @@ static bool exportKnobLinks(int indentLevel,
 
 static void exportGroupInternal(int indentLevel,const NodeCollection* collection,const QString& groupName, QTextStream& ts)
 {
-    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Create all nodes in the group");
-    
+    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create all nodes in the group");
+    WRITE_STATIC_LINE("");
+
     NodeList nodes = collection->getNodes();
     NodeList exportedNodes;
     
@@ -2405,30 +2383,27 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
     newNodes.insert(newNodes.end(), rotos.begin(),rotos.end());
     
     for (NodeList::iterator it = newNodes.begin(); it != newNodes.end(); ++it) {
-        
         ///Don't create viewer while exporting
         ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>((*it)->getLiveInstance());
         if (isViewer) {
             continue;
         }
-        
         if (!(*it)->isActivated()) {
             continue;
         }
         
         exportedNodes.push_back(*it);
         
-        
         ///Let the parent of the multi-instance node create the children
         if ((*it)->getParentMultiInstance()) {
             continue;
         }
     
-        
         QString nodeName((*it)->getPluginID().c_str());
         
+        WRITE_INDENT(indentLevel); WRITE_STRING("# Start of node " + ESC((*it)->getScriptName_mt_safe()));
         WRITE_INDENT(indentLevel); WRITE_STRING("lastNode = app.createNode(" + ESC(nodeName) + ", " +
-                                      NUM((*it)->getPlugin()->getMajorVersion()) + ", " + groupName +
+                                      NUM_INT((*it)->getPlugin()->getMajorVersion()) + ", " + groupName +
                                       ")");
         WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setScriptName(" + ESC((*it)->getScriptName_mt_safe()) + ")");
         WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setLabel(" + ESC((*it)->getLabel_mt_safe()) + ")");
@@ -2436,12 +2411,14 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
         (*it)->getPosition(&x,&y);
         double w,h;
         (*it)->getSize(&w, &h);
-        WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setPosition(" + NUM(x) + ", " + NUM(y) + ")");
-        WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setSize(" + NUM(w) + ", " + NUM(h) + ")");
+        // a precision of 1 pixel is enough for the position on the nodegraph
+        WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setPosition(" + NUM_PIXEL(x) + ", " + NUM_PIXEL(y) + ")");
+        WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setSize(" + NUM_PIXEL(w) + ", " + NUM_PIXEL(h) + ")");
         
         double r,g,b;
         (*it)->getColor(&r,&g,&b);
-        WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setColor(" + NUM(r) + ", " + NUM(g) + ", " + NUM(b) +  ")");
+        // a precision of 3 digits is enough for the node coloe
+        WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setColor(" + NUM_COLOR(r) + ", " + NUM_COLOR(g) + ", " + NUM_COLOR(b) +  ")");
         
         std::list<Natron::ImageComponents> userComps;
         (*it)->getUserCreatedComponents(&userComps);
@@ -2464,13 +2441,13 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
         WRITE_STATIC_LINE("");
         exportAllNodeKnobs(indentLevel,*it,ts);
         WRITE_INDENT(indentLevel); WRITE_STRING("del lastNode");
+        WRITE_INDENT(indentLevel); WRITE_STRING("# End of node " + ESC((*it)->getScriptName_mt_safe()));
         WRITE_STATIC_LINE("");
-        
-        
+
         std::list< NodePtr > children;
         (*it)->getChildrenMultiInstance(&children);
         if (!children.empty()) {
-            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Create children if the node is a multi-instance such as a tracker");
+            WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create children if the node is a multi-instance such as a tracker");
             for (std::list< NodePtr > ::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
                 if ((*it2)->isActivated()) {
                     WRITE_INDENT(indentLevel); WRITE_STRING("lastNode = " + nodeNameInScript + ".createChild()");
@@ -2481,35 +2458,31 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
                     WRITE_INDENT(indentLevel); WRITE_STRING("del lastNode");
                 }
             }
+            WRITE_STATIC_LINE("");
         }
-        
-        
-        WRITE_STATIC_LINE("");
-        
+
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
             WRITE_INDENT(indentLevel); WRITE_STRING(groupName + "group = " + nodeNameInScript);
             exportGroupInternal(indentLevel, isGrp, groupName + "group", ts);
+            WRITE_STATIC_LINE("");
         }
-        WRITE_STATIC_LINE("");
-        
     }
-    WRITE_STATIC_LINE("");
-    
+
     const NodeGroup* isGroup = dynamic_cast<const NodeGroup*>(collection);
     NodePtr groupNode;
     if (isGroup) {
         groupNode = isGroup->getNode();
     }
     if (isGroup) {
-        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Create the parameters of the group node the same way we did for all internal nodes");
+        WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create the parameters of the group node the same way we did for all internal nodes");
         WRITE_INDENT(indentLevel); WRITE_STRING("lastNode = " + groupName);
         exportAllNodeKnobs(indentLevel,isGroup->getNode(),ts);
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del lastNode");
         WRITE_STATIC_LINE("");
     }
     
-    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("#Now that all nodes are created we can connect them together, restore expressions");
+    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Now that all nodes are created we can connect them together, restore expressions");
     bool hasConnected = false;
     for (NodeList::iterator it = exportedNodes.begin(); it != exportedNodes.end(); ++it) {
         
@@ -2521,7 +2494,7 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
                 if (inputNode) {
                     hasConnected = true;
                     QString inputQualifiedName(groupName  + inputNode->getScriptName_mt_safe().c_str());
-                    WRITE_INDENT(indentLevel); WRITE_STRING(nodeQualifiedName + ".connectInput(" + NUM(i) +
+                    WRITE_INDENT(indentLevel); WRITE_STRING(nodeQualifiedName + ".connectInput(" + NUM_INT(i) +
                                                   ", " + inputQualifiedName + ")");
                 }
             }
@@ -2540,13 +2513,12 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
             hasExported = true;
         }
     }
-    if (isGroup) {
-        exportKnobLinks(indentLevel, groupNode, groupNode, groupName, groupName, ts);
-    }
     if (hasExported) {
         WRITE_STATIC_LINE("");
     }
-    
+    if (isGroup) {
+        exportKnobLinks(indentLevel, groupNode, groupNode, groupName, groupName, ts);
+    }
 }
 
 void
@@ -2563,19 +2535,19 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     QTextStream ts(&output);
     // coding must be set in first or second line, see https://www.python.org/dev/peps/pep-0263/
     WRITE_STATIC_LINE("# -*- coding: utf-8 -*-");
-    WRITE_STATIC_LINE("#DO NOT EDIT THIS FILE");
-    QString descline = QString("#This file was automatically generated by " NATRON_APPLICATION_NAME " PyPlug exporter version %1.").arg(NATRON_PYPLUG_EXPORTER_VERSION);
+    WRITE_STATIC_LINE("# DO NOT EDIT THIS FILE");
+    QString descline = QString("# This file was automatically generated by " NATRON_APPLICATION_NAME " PyPlug exporter version %1.").arg(NATRON_PYPLUG_EXPORTER_VERSION);
     WRITE_STRING(descline);
     WRITE_STATIC_LINE();
-    QString handWrittenStr = QString("#Hand-written code should be added in a separate file named %1.py").arg(extModule);
+    QString handWrittenStr = QString("# Hand-written code should be added in a separate file named %1.py").arg(extModule);
     WRITE_STRING(handWrittenStr);
-    WRITE_STATIC_LINE("#See http://natron.readthedocs.org/en/workshop/groups.html#adding-hand-written-code-callbacks-etc");
-    WRITE_STATIC_LINE("#Note that Viewers are never exported");
+    WRITE_STATIC_LINE("# See http://natron.readthedocs.org/en/workshop/groups.html#adding-hand-written-code-callbacks-etc");
+    WRITE_STATIC_LINE("# Note that Viewers are never exported");
     WRITE_STATIC_LINE();
     WRITE_STATIC_LINE("import " NATRON_ENGINE_PYTHON_MODULE_NAME);
     WRITE_STATIC_LINE("import sys");
     WRITE_STATIC_LINE("");
-    WRITE_STATIC_LINE("#Try to import the extensions file where callbacks and hand-written code should be located.");
+    WRITE_STATIC_LINE("# Try to import the extensions file where callbacks and hand-written code should be located.");
     WRITE_STATIC_LINE("try:");
     
     
@@ -2614,8 +2586,6 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     
     
     WRITE_STATIC_LINE("def createInstance(app,group):");
-    WRITE_STATIC_LINE("");
-    
     exportGroupInternal(1, this, "group", ts);
     
     ///Import user hand-written code
