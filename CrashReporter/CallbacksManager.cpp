@@ -20,7 +20,7 @@
 
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
-#include <QNetworkReply>
+#include <QHttpMultiPart>
 
 #define UPLOAD_URL "http://breakpad.natron.fr/submit"
 
@@ -32,6 +32,7 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include <QThread>
 #ifndef REPORTER_CLI_ONLY
 #include <QApplication>
+#include <QProgressDialog>
 #else
 #include <QCoreApplication>
 #endif
@@ -45,14 +46,21 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include "CrashDialog.h"
 #endif
 
+#include "../Global/Macros.h"
+
 CallbacksManager::CallbacksManager(bool autoUpload)
-    : QObject()
+: QObject()
 #ifdef DEBUG
-    , _dFileMutex()
-    , _dFile(0)
+, _dFileMutex()
+, _dFile(0)
 #endif
-    , _outputPipe(0)
-    , _autoUpload(autoUpload)
+, _outputPipe(0)
+, _uploadReply(0)
+, _autoUpload(autoUpload)
+#ifndef REPORTER_CLI_ONLY
+, _dialog(0)
+, _progressDialog(0)
+#endif
 {
     _instance = this;
     QObject::connect(this, SIGNAL(doDumpCallBackOnMainThread(QString)), this, SLOT(onDoDumpOnMainThread(QString)));
@@ -74,27 +82,130 @@ CallbacksManager::~CallbacksManager() {
 
 }
 
-void
-CallbacksManager::uploadFileToRepository(const QString& str)
+static void addTextHttpPart(QHttpMultiPart* multiPart, const QString& string)
 {
-    QNetworkAccessManager *networkMnger = new QNetworkAccessManager(this);
-    QObject::connect(networkMnger, SIGNAL(finished(QNetworkReply*)),
-            this, SLOT(replyFinished(QNetworkReply*)));
+    QHttpPart part;
+    part.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("text/plain"));
+    part.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"text\""));
+    part.setBody(string.toLatin1());
+    multiPart->append(part);
+}
 
-    QNetworkRequest request(QUrl(UPLOAD_URL));
-
-    ///To complete...
+static void addFileHttpPart(QHttpMultiPart* multiPart, const QString& filePath)
+{
+    QFile *file = new QFile(filePath);
+    file->setParent(multiPart);
+    if (!file->open(QIODevice::ReadOnly)) {
+        CallbacksManager::instance()->writeDebugMessage("Failed to open the following file for uploading: " + filePath);
+        return;
+    }
+    
+    QHttpPart part;
+    part.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("binary/dmp"));
+    part.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant("form-data; name=\"dmp\"; filename=\"" +  file->fileName() + "\""));
+    part.setBodyDevice(file);
+    
+    multiPart->append(part);
 }
 
 void
-CallbacksManager::replyFinished(QNetworkReply* reply) {
-    if (!reply) {
+CallbacksManager::uploadFileToRepository(const QString& filepath, const QString& comments)
+{
+    assert(!_uploadReply);
+    
+    const QString productName(NATRON_APPLICATION_NAME);
+    QString versionStr(NATRON_VERSION_STRING " " NATRON_DEVELOPMENT_STATUS);
+    if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+        versionStr += ' ';
+        versionStr += QString::number(NATRON_BUILD_NUMBER);
+    }
+    
+    QHttpMultiPart *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
+    addTextHttpPart(multiPart, productName);
+    addTextHttpPart(multiPart, versionStr);
+    addTextHttpPart(multiPart, comments);
+    addFileHttpPart(multiPart, filepath);
+    
+    QNetworkRequest request(QUrl(UPLOAD_URL));
+
+    writeDebugMessage("Attempt to upload crash report...");
+#ifndef REPORTER_CLI_ONLY
+    assert(_dialog);
+    _progressDialog = new QProgressDialog(_dialog);
+    _progressDialog->setRange(0, 100);
+    _progressDialog->setMinimumDuration(100);
+    _progressDialog->setLabelText(tr("Uploading crash report..."));
+    QObject::connect(_progressDialog, SIGNAL(canceled()), this, SLOT(onProgressDialogCanceled()));
+#endif
+    
+    
+    
+    QNetworkAccessManager *networkMnger = new QNetworkAccessManager(this);
+    QObject::connect(networkMnger, SIGNAL(finished(QNetworkReply*)),
+                     this, SLOT(replyFinished()));
+    _uploadReply = networkMnger->post(request, multiPart);
+    QObject::connect(_uploadReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(replyError(QNetworkReply::NetworkError)));
+    QObject::connect(_uploadReply, SIGNAL(finished()), this, SLOT(replyFinished()));
+    QObject::connect(_uploadReply, SIGNAL(uploadProgress(qint64,qint64)), this, SLOT(onUploadProgress(qint64,qint64)));
+    multiPart->setParent(_uploadReply);
+    
+    
+}
+
+void
+CallbacksManager::onProgressDialogCanceled()
+{
+    if (_uploadReply) {
+        _uploadReply->abort();
+    }
+}
+
+void
+CallbacksManager::onUploadProgress(qint64 bytesSent, qint64 bytesTotal)
+{
+    assert(_progressDialog);
+    double percent = (double)bytesSent / bytesTotal;
+    _progressDialog->setValue(percent * 100);
+}
+
+void
+CallbacksManager::replyFinished() {
+    if (!_uploadReply) {
         return;
     }
+    
+    writeDebugMessage("File uploaded successfully! ");
 
-    ///What to do when the server replied
+    _uploadReply->deleteLater();
+    _uploadReply = 0;
+#ifndef REPORTER_CLI_ONLY
+    if (_dialog) {
+        _dialog->deleteLater();
+    }
+#endif
+    qApp->exit();
+}
 
-    reply->deleteLater();
+void
+CallbacksManager::replyError(QNetworkReply::NetworkError errCode)
+{
+    if (!_uploadReply) {
+        return;
+    }
+    
+#ifdef DEBUG
+    writeDebugMessage("Network error code " + QString::number((int)errCode));
+#endif
+    
+    
+    _uploadReply->deleteLater();
+    _uploadReply = 0;
+#ifndef REPORTER_CLI_ONLY
+    if (_dialog) {
+        _dialog->deleteLater();
+    }
+#endif
+    qApp->exit();
 }
 
 void
@@ -103,32 +214,57 @@ CallbacksManager::onDoDumpOnMainThread(const QString& filePath)
 
     assert(QThread::currentThread() == qApp->thread());
 
-    bool doUpload = false;
 #ifdef REPORTER_CLI_ONLY
-    doUpload = _autoUpload;
+    if (_autoUpload) {
+        uploadFileToRepository(filePath,"");
+    }
     ///@todo We must notify the user the log is available at filePath but we don't have access to the terminal with this process
+#else
+    assert(!_dialog);
+    _dialog = new CrashDialog(filePath);
+    QObject::connect(_dialog ,SIGNAL(rejected()), this, SLOT(onCrashDialogFinished()));
+    QObject::connect(_dialog ,SIGNAL(accepted()), this, SLOT(onCrashDialogFinished()));
+    _dialog->raise();
+    _dialog->show();
+    
 #endif
+}
 
-
+void
+CallbacksManager::onCrashDialogFinished()
+{
 #ifndef REPORTER_CLI_ONLY
-    CrashDialog d(filePath);
+    assert(_dialog == qobject_cast<CrashDialog*>(sender()));
+    if (!_dialog) {
+        return;
+    }
+    
+    bool doUpload = false;
     CrashDialog::UserChoice ret = CrashDialog::eUserChoiceIgnore;
-    if (d.exec()) {
-        ret = d.getUserChoice();
+    QDialog::DialogCode code =  (QDialog::DialogCode)_dialog->result();
+    if (code == QDialog::Accepted) {
+        ret = _dialog->getUserChoice();
+        
     }
+    
     switch (ret) {
-    case CrashDialog::eUserChoiceUpload:
-        doUpload = true;
-        break;
-    case CrashDialog::eUserChoiceSave: // already handled in the dialog
-    case CrashDialog::eUserChoiceIgnore:
-        break;
+        case CrashDialog::eUserChoiceUpload:
+            doUpload = true;
+            break;
+        case CrashDialog::eUserChoiceSave: // already handled in the dialog
+        case CrashDialog::eUserChoiceIgnore:
+            break;
     }
-#endif
+    
+    writeDebugMessage("Dialog finished with ret code "+ QString::number((int)ret));
 
     if (doUpload) {
-        uploadFileToRepository(filePath);
+        uploadFileToRepository(_dialog->getOriginalDumpFilePath(),_dialog->getDescription());
+    } else {
+        _dialog->deleteLater();
     }
+
+#endif
 
 }
 

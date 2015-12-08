@@ -110,6 +110,13 @@ void OnClientDumpRequest(void* context,
 #endif
 
 
+QString printUsage()
+{
+    QString ret("Wrong number of arguments: ");
+    ret += qApp->applicationName();
+    ret += "  <breakpad_pipe> <fd> <natron_init_com_pipe> [--auto-upload] ";
+    return ret;
+}
 
 int
 main(int argc,
@@ -120,9 +127,14 @@ main(int argc,
     QCoreApplication app(argc,argv);
 #else
     QApplication app(argc,argv);
+    app.setQuitOnLastWindowClosed(false);
 #endif
 
     QStringList args = app.arguments();
+    if (args.size() < 4) {
+        std::cerr << printUsage().toStdString() << std::endl;
+        return 1;
+    }
     assert(args.size() >= 4);
     QString qPipeName = args[1];
 
@@ -144,7 +156,7 @@ main(int argc,
 
 
     if (showUsage) {
-        manager.writeDebugMessage("Wrong number of arguments: " + app.applicationName() + "  <breakpad_pipe> <fd> <natron_init_com_pipe> [--auto-upload] ");
+        manager.writeDebugMessage(printUsage());
         return 1;
     }
 

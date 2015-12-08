@@ -21,6 +21,7 @@
 
 #include <QMutex>
 #include <QObject>
+#include <QNetworkReply>
 
 class QLocalSocket;
 class QNetworkReply;
@@ -28,6 +29,11 @@ class QNetworkReply;
 #ifdef DEBUG
 class QTextStream;
 class QFile;
+#endif
+
+#ifndef REPORTER_CLI_ONLY
+class CrashDialog;
+class QProgressDialog;
 #endif
 
 class CallbacksManager : public QObject
@@ -58,19 +64,27 @@ public:
 
 public slots:
 
-    void replyFinished(QNetworkReply* reply);
+    void replyFinished();
 
     void onDoDumpOnMainThread(const QString& filePath);
 
     void onOutputPipeConnectionMade();
 
+    void onCrashDialogFinished();
+    
+    void replyError(QNetworkReply::NetworkError);
+    
+    void onUploadProgress(qint64 bytesSent, qint64 bytesTotal);
+    
+    void onProgressDialogCanceled();
+    
 signals:
 
     void doDumpCallBackOnMainThread(QString);
 
 private:
 
-    void uploadFileToRepository(const QString& str);
+    void uploadFileToRepository(const QString& filepath, const QString& comments);
 
     static CallbacksManager *_instance;
 
@@ -80,7 +94,12 @@ private:
 #endif
 
     QLocalSocket* _outputPipe;
+    QNetworkReply* _uploadReply;
     bool _autoUpload;
+#ifndef REPORTER_CLI_ONLY
+    CrashDialog* _dialog;
+    QProgressDialog* _progressDialog;
+#endif
 };
 
 #endif // CALLBACKSMANAGER_H

@@ -22,6 +22,7 @@
 #include <iostream>
 #include <cassert>
 
+#include <QDir>
 #include <QThread>
 #include <QTextStream>
 #include <QFile>
@@ -40,6 +41,7 @@
 #include <QTextDocument>
 #include <QMessageBox>
 #include <QStyle>
+
 
 
 class PlaceHolderTextEdit: public QTextEdit
@@ -85,7 +87,7 @@ private:
 
 
 CrashDialog::CrashDialog(const QString &filePath)
-: QDialog(0,Qt::Dialog | Qt::WindowStaysOnTopHint)
+: QDialog(0,Qt::Dialog)
 , _filePath(filePath)
 , _mainLayout(0)
 , _mainFrame(0)
@@ -114,7 +116,7 @@ CrashDialog::CrashDialog(const QString &filePath)
                            .arg("rgb(50,50,50)") // %2: medium background
                            .arg("rgb(71,71,71)") // %3: soft background
                            .arg("rgb(38,38,38)") // %4: strong background
-                           .arg("rgb(200,200,200)") // %5: text colour
+                           .arg("rgb(150,150,150)") // %5: text colour
                            .arg("rgb(86,117,156)") // %6: interpolated value color
                            .arg("rgb(21,97,248)") // %7: keyframe value color
                            .arg("rgb(200,200,200)")  // %8: disabled editable text
@@ -124,6 +126,7 @@ CrashDialog::CrashDialog(const QString &filePath)
         }
     
     setWindowTitle(tr("Natron Issue Reporter"));
+    setAttribute(Qt::WA_DeleteOnClose, false);
     
     _mainLayout = new QVBoxLayout(this);
     
@@ -176,14 +179,17 @@ CrashDialog::CrashDialog(const QString &filePath)
     _buttonsLayout = new QHBoxLayout(_buttonsFrame);
     
     _sendButton = new QPushButton(tr("Send report"),_buttonsFrame);
+    _sendButton->setFocusPolicy(Qt::TabFocus);
     QObject::connect(_sendButton, SIGNAL(clicked(bool)), this, SLOT(onSendClicked()));
     _buttonsLayout->addWidget(_sendButton);
     
     _dontSendButton = new QPushButton(tr("Don't send"),_buttonsFrame);
+    _dontSendButton->setFocusPolicy(Qt::TabFocus);
     QObject::connect(_dontSendButton, SIGNAL(clicked(bool)), this, SLOT(onDontSendClicked()));
     _buttonsLayout->addWidget(_dontSendButton);
     
     _saveReportButton = new QPushButton(tr("Save report..."),_buttonsFrame);
+    _saveReportButton->setFocusPolicy(Qt::TabFocus);
     QObject::connect(_saveReportButton, SIGNAL(clicked(bool)), this, SLOT(onSaveClicked()));
     _buttonsLayout->addWidget(_saveReportButton);
     
@@ -250,39 +256,38 @@ CrashDialog::onSaveClicked()
 {
     _pressedButton = _saveReportButton;
 
-    bool saveOk = false;
-    QString filename ;
-    while (!saveOk) {
-        filename = QFileDialog::getSaveFileName(this,
-                                                        tr("Save report"),
-                                                        QString(),
-                                                        QString(),
-                                                        0,
-                                                        0);
-        if (!filename.isEmpty()) {
-            saveOk = QFile::copy(_filePath, filename);
-
-        }
-
-        if (!saveOk) {
-            QMessageBox ques(QMessageBox::Question, tr("Invalid filename"), tr("The issue could not be saved to ") + filename +
-                                                                                tr("Would you like to continue anyway?"),
-                             QMessageBox::Yes | QMessageBox::No,
-                             this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
-            ques.setDefaultButton(QMessageBox::No);
-            ques.setWindowFlags(ques.windowFlags() | Qt::WindowStaysOnTopHint);
-            if ( ques.exec() ) {
-                QMessageBox::StandardButton rep = ques.standardButton(ques.clickedButton());
-                if (rep == QMessageBox::Yes) {
-                    reject();
-                    return;
-                }
-            } else {
-                reject();
-                return;
-            }
-        }
+    QString fileName = _filePath;
+    fileName.replace('\\', '/');
+    int foundLastSep = fileName.lastIndexOf('/');
+    if (foundLastSep != -1) {
+        fileName = fileName.mid(foundLastSep + 1);
     }
+    
+    fileName = QDir::homePath() + '/' + fileName;
+    
+    bool saveOk = false;
+    QString saveFileName = QFileDialog::getSaveFileName(this,
+                                            tr("Save report"),
+                                            fileName,
+                                            QString("*.dmp"),
+                                            0,
+                                            0);
+    if (!saveFileName.isEmpty()) {
+        saveOk = QFile::copy(_filePath, saveFileName);
+        
+    } else {
+        return;
+    }
+    
+    if (!saveOk) {
+        QMessageBox ques(QMessageBox::Critical, tr("Invalid filename"), tr("The issue could not be saved to: ") + saveFileName,
+                         QMessageBox::Ok,
+                         this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        ques.setWindowFlags(ques.windowFlags() | Qt::WindowStaysOnTopHint);
+        ques.exec();
+        return;
+    }
+    
     accept();
 
 }

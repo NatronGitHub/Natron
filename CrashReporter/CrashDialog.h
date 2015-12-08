@@ -54,6 +54,11 @@ public:
 
     UserChoice getUserChoice() const;
     
+    const QString& getOriginalDumpFilePath() const
+    {
+        return _filePath;
+    }
+    
 public slots:
     
     void onSendClicked();
