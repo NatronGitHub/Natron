@@ -145,7 +145,11 @@ And install (after making sure `/opt/qt4` is user-writable) using:
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
 to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz).
-Place it at the root of Natron repository.
+Place it at the root of Natron source tree:
+
+    curl -k -L https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz | tar zxf -
+    mv OpenColorIO-Configs-Natron-v2.0 OpenColorIO-Configs
+
 
 ## Add the config.pri file
 
