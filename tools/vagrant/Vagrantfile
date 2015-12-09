@@ -12,7 +12,6 @@ SCRIPT
 
 # VMs
 Vagrant.configure(2) do |config|
-  # Linux
   config.vm.define "centos" do |centos|
     config.vm.box = "olear/centos65"
     config.vm.box_check_update = true
@@ -23,9 +22,9 @@ Vagrant.configure(2) do |config|
       vb.customize ["modifyvm", :id, "--ioapic", "on"]
     end
   end
-  # Mac
-  #config.vm.define "macos" do |macos|
-  #end
+  config.vm.define "macos" do |macos|
+    config.vm.box = "tuupola/osx-lion-10.7-xcode"
+  end
   # Windows
   #config.vm.define "windows" do |windows|
   #  config.vm.boot_mode = "gui"
