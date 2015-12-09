@@ -2672,7 +2672,7 @@ AppManager::onCrashReporterOutputWritten()
                                                                           0));
 #endif
         
-        crash_application();
+        //crash_application();
 
     } else {
         qDebug() << "Error: Unable to interpret message.";
