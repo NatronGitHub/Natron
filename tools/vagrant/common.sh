@@ -52,7 +52,7 @@ CORELIBS_VERSION=20151209
 
 # Common values
 SDK_VERSION=CY2015
-SDK_PATH=/tmp
+SDK_PATH=/opt
 PYV=2 # Python 2 or 3
 CWD=`pwd`
 TMP_DIR=/tmp

@@ -1,32 +1,21 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# Add build script on init (cron is optional)
-$centos = <<SCRIPT
-cd /root
-git clone https://github.com/MrKepzie/Natron
-#chkconfig crond on
-#service crond start
-#ln -sf /root/Natron/tools/linux/cron.sh /etc/cron.hourly/natron.sh
-SCRIPT
-
 # VMs
 Vagrant.configure(2) do |config|
   config.vm.define "centos" do |centos|
-    config.vm.box = "olear/centos65"
-    config.vm.box_check_update = true
-    config.vm.provision "shell", inline: $centos
-    config.vm.provider "virtualbox" do |vb|
+    centos.vm.box = "olear/centos65"
+    centos.vm.box_check_update = true
+    centos.vm.provider "virtualbox" do |vb|
       vb.memory = "3000"
       vb.cpus = 4
       vb.customize ["modifyvm", :id, "--ioapic", "on"]
     end
   end
   config.vm.define "macos" do |macos|
-    config.vm.box = "tuupola/osx-lion-10.7-xcode"
+    macos.vm.box = "tuupola/osx-lion-10.7-xcode"
   end
-  # Windows
-  #config.vm.define "windows" do |windows|
-  #  config.vm.boot_mode = "gui"
-  #end
+  config.vm.define "windows" do |windows|
+    windows.vm.box = "ferventcoder/win7pro-x64-nocm-lite"
+  end
 end
