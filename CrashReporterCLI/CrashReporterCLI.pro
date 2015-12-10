@@ -53,6 +53,13 @@ win32-msvc* {
     }
 }
 
+isEmpty(BUILD_NUMBER) {
+        DEFINES += NATRON_BUILD_NUMBER=0
+} else {
+        DEFINES += NATRON_BUILD_NUMBER=$$BUILD_NUMBER
+}
+
+
 DEFINES *= REPORTER_CLI_ONLY
 
 CONFIG(debug, debug|release){
