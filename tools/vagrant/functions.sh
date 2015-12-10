@@ -598,9 +598,9 @@ function setup_glew {
     tar xvf $SRC_PATH/$GLEW_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/glew-* || exit 1
     if [ "$ARCH" = "i686" ]; then
-        make -j${MKJOBS} 'CFLAGS.EXTRA=-o2 -g -march=i686 -mtune=i686' includedir=/usr/include GLEW_DEST= libdir=/usr/lib bindir=/usr/bin || exit 1
+        make -j${MKJOBS} 'CFLAGS.EXTRA=-O2 -g -march=i686 -mtune=i686' includedir=/usr/include GLEW_DEST= libdir=/usr/lib bindir=/usr/bin || exit 1
     else
-        make -j${MKJOBS} 'CFLAGS.EXTRA=-o2 -g -m64 -fPIC -mtune=generic' includedir=/usr/include GLEW_DEST= libdir=/usr/lib64 bindir=/usr/bin || exit 1
+        make -j${MKJOBS} 'CFLAGS.EXTRA=-O2 -g -m64 -fPIC -mtune=generic' includedir=/usr/include GLEW_DEST= libdir=/usr/lib64 bindir=/usr/bin || exit 1
     fi
     make install GLEW_DEST=$INSTALL_PATH libdir=/lib bindir=/bin includedir=/include || exit 1
     if [ "$1" = "static" ]; then
