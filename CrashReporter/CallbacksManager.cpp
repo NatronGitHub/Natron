@@ -28,6 +28,7 @@
 CallbacksManager* CallbacksManager::_instance = 0;
 
 #include <cassert>
+#include <iostream>
 #include <QLocalSocket>
 
 #include <QThread>
@@ -194,9 +195,11 @@ CallbacksManager::onProgressDialogCanceled()
 void
 CallbacksManager::onUploadProgress(qint64 bytesSent, qint64 bytesTotal)
 {
+#ifndef REPORTER_CLI_ONLY
     assert(_progressDialog);
     double percent = (double)bytesSent / bytesTotal;
     _progressDialog->setValue(percent * 100);
+#endif
 }
 
 void
