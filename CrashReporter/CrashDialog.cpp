@@ -62,6 +62,15 @@ public:
         placeHolder = ph;
     }
     
+    QString getText() const
+    {
+        QString ret = toPlainText();
+        if (ret == placeHolder) {
+            return QString();
+        }
+        return ret;
+    }
+    
 private:
     
     virtual void focusInEvent(QFocusEvent *e){
@@ -205,7 +214,7 @@ CrashDialog::~CrashDialog()
 }
 
 QString CrashDialog::getDescription() const {
-    return _descEdit->toPlainText();
+    return _descEdit->getText();
 }
 
 CrashDialog::UserChoice

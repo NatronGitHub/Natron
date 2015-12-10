@@ -34,6 +34,7 @@ class QGridLayout;
 class QPushButton;
 class QHBoxLayout;
 class QFrame;
+class PlaceHolderTextEdit;
 
 class CrashDialog : public QDialog
 {    
@@ -79,7 +80,7 @@ private:
     QLabel* _refLabel;
     QLabel* _refContent;
     QLabel* _descLabel;
-    QTextEdit* _descEdit;
+    PlaceHolderTextEdit* _descEdit;
     QFrame* _buttonsFrame;
     QHBoxLayout* _buttonsLayout;
     QPushButton* _sendButton;

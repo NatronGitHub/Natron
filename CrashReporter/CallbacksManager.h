@@ -100,6 +100,8 @@ private:
     CrashDialog* _dialog;
     QProgressDialog* _progressDialog;
 #endif
+    bool _didError;
+    QString _dumpFilePath;
 };
 
 #endif // CALLBACKSMANAGER_H
