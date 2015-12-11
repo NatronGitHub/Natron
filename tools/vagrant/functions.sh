@@ -2,23 +2,19 @@
 source `pwd`/common.sh
 
 function setup_ssl {
-  if [ "$1" = "static" ]; then
-    SSL_LIB=libcrypto.a
-  else
-    SSL_CONFIG=-shared
-    SSL_LIB=libcrypto.so
-  fi
-  if [ ! -f "${INSTALL_PATH}/lib/${SSL_LIB}" ]; then
+  if [ ! -f "${INSTALL_PATH}/lib/pkgconfig/openssl.pc" ]; then
     if [ ! -f $SRC_PATH/$SSL_TAR ]; then
       curl $THIRD_PARTY_SRC_URL/$SSL_TAR -o $SRC_PATH/$SSL_TAR || exit 1
     fi
     tar xvf $SRC_PATH/$SSL_TAR -C $TMP_PATH || exit 1
     cd $TMP_PATH/openssl-* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./config --prefix="$INSTALL_PATH" $SSL_CONF || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./config --prefix="$INSTALL_PATH" || exit 1
     make || exit 1
     make install || exit 1
-    cd .. || exit 1
-    rm -rf openssl-*
+    make clean
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./config --prefix="$INSTALL_PATH" -shared || exit 1
+    make || exit 1
+    make install || exit 1
   fi 
 }
 
@@ -213,6 +209,8 @@ function setup_python {
   fi
   if [ ! -f "$INSTALL_PATH/lib/pkgconfig/python${PYV}.pc" ]; then
     setup_icu || exit 1
+    setup_ssl || exit 1
+    setup_zlib || exit 
     if [ ! -f "$SRC_PATH/$PY_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$PY_TAR" -o "$SRC_PATH/$PY_TAR" || exit 1
     fi
@@ -335,13 +333,16 @@ function setup_xslt {
 
 function setup_boost {
   if [ ! -f "$INSTALL_PATH/lib/libboost_atomic.so" ]; then
+    setup_zlib || exit 1
+    setup_bzip || exit 1
     if [ ! -f "$SRC_PATH/$BOOST_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$BOOST_TAR" -o "$SRC_PATH/$BOOST_TAR" || exit 1
     fi
+    rm -f $TMP_PATH/boost_1*
     tar xvf "$SRC_PATH/$BOOST_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/boost_* || exit 1
     ./bootstrap.sh || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./b2 --prefix=$INSTALL_PATH cflags="-fPIC" --disable-icu -j${MKJOBS} install || exit 1
+    ./b2 --prefix=$INSTALL_PATH cflags="$BF" cxxflags="$BF -I${INSTALL_PATH}/include" linkflags="-L${INSTALL_PATH}/lib" link=shared variant=release threading=multi runtime-link=shared --layout=system --disable-icu -j${MKJOBS} install || exit 1
   fi
 }
 
@@ -790,9 +791,6 @@ function setup_dirac {
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
-    if [ "$1" = "static" ]; then
-      rm -f $INSTALL_PATH/lib/libschro*.so*
-    fi
     sed -i "s/-lschroedinger-1.0/-lschroedinger-1.0 -lorc-0.4/" $INSTALL_PATH/lib/pkgconfig/schroedinger-1.0.pc || exit 1
   fi
 }
@@ -807,9 +805,6 @@ function setup_x264 {
     ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static --enable-pic --bit-depth=10  CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
-    if [ "$1" = "static" ]; then
-      rm -f $INSTALL_PATH/lib/libx264*.so*
-    fi
   fi
 }
 
@@ -823,9 +818,6 @@ function setup_xvid {
     ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
-    if [ "$1" = "static" ]; then
-      rm -f $INSTALL_PATH/lib/libxvidcore*.so*
-    fi
   fi
 }
 
@@ -844,6 +836,7 @@ function setup_ffmpeg {
     setup_dirac || exit 1
     setup_x264 || exit 1
     setup_xvid || exit 1
+    setup_openjpeg || exit 1
     if [ ! -f $SRC_PATH/$FFMPEG_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$FFMPEG_TAR -o $SRC_PATH/$FFMPEG_TAR || exit 1
     fi
