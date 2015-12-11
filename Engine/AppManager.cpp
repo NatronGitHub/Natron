@@ -49,15 +49,7 @@
 #include <QtNetwork/QLocalServer>
 #include <QtNetwork/QLocalSocket>
 
-#ifdef NATRON_USE_BREAKPAD
-#if defined(Q_OS_MAC)
-#include "client/mac/handler/exception_handler.h"
-#elif defined(Q_OS_LINUX)
-#include "client/linux/handler/exception_handler.h"
-#elif defined(Q_OS_WIN32)
-#include "client/windows/handler/exception_handler.h"
-#endif
-#endif
+
 
 #include "Engine/AppInstance.h"
 #include "Engine/BackDrop.h"
@@ -86,23 +78,6 @@ AppManager* AppManager::_instance = 0;
 
 
 
-#if defined(NATRON_USE_BREAKPAD) || defined(Q_OS_LINUX)
-#ifdef DEBUG
-inline
-void crash_application()
-{
-#pragma message WARN("crash_application() defined, make sure it is not used anywhere!")
-#ifdef __NATRON_UNIX__
-    sleep(2);
-#endif
-    volatile int* a = (int*)(NULL);
-    // coverity[var_deref_op]
-    *a = 1;
-}
-#else
-inline void crash_application() {}
-#endif // DEBUG
-#endif // NATRON_USE_BREAKPAD
 
 
 //namespace  {
@@ -2617,18 +2592,18 @@ AppManager::launchPythonInterpreter()
 int
 AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
 {
-        for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         boost::shared_ptr<Natron::Project> proj = it->second.app->getProject();
-                if (proj) {
-                        QString path = proj->getProjectPath();
-                        QString name = proj->getProjectFilename();
-                        std::string existingProject = path.toStdString() + name.toStdString();
-                        if (existingProject == projectFilePath) {
-                                return it->first;
-                        }
-                }
+        if (proj) {
+            QString path = proj->getProjectPath();
+            QString name = proj->getProjectFilename();
+            std::string existingProject = path.toStdString() + name.toStdString();
+            if (existingProject == projectFilePath) {
+                return it->first;
+            }
+        }
     }
-        return -1;
+    return -1;
 }
 
 void
@@ -2647,38 +2622,7 @@ AppManager::onCrashReporterOutputWritten()
     if (str.startsWith("-i")) {
         //At this point, the CrashReporter just notified us it is ready, so we can create our exception handler safely
         //because we know the pipe is opened on the other side.
-        
-        QString dumpPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
-        
-        try {
-#if defined(Q_OS_MAC)
-            _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdString(),
-                                                                              0,
-                                                                              0/*dmpcb*/,
-                                                                              0,
-                                                                              true,
-                                                                              _imp->crashReporterBreakpadPipe.toStdString().c_str()));
-#elif defined(Q_OS_LINUX)
-            _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(dumpPath.toStdString()),
-                                                                              0,
-                                                                              0/*dmpCb*/,
-                                                                              0,
-                                                                              true,
-                                                                              _imp->crashServerConnection->socketDescriptor()));
-#elif defined(Q_OS_WIN32)
-            _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
-                                                                              0,
-                                                                              0/*dmpcb*/,
-                                                                              google_breakpad::ExceptionHandler::HANDLER_ALL,
-                                                                              MiniDumpNormal,
-                                                                              _imp->crashReporterBreakpadPipe.toStdWString().c_str(),
-                                                                              0));
-#endif
-        } catch (const std::exception& e) {
-            qDebug() << e.what();
-            return;
-        }
-        //crash_application();
+        _imp->createBreakpadHandler();
 
     } else {
         qDebug() << "Error: Unable to interpret message.";

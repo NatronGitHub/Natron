@@ -57,10 +57,31 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/RectDSerialization.h"
 #include "Engine/RectISerialization.h"
+#include "Engine/StandardPaths.h"
 
 
 BOOST_CLASS_EXPORT(Natron::FrameParams)
 BOOST_CLASS_EXPORT(Natron::ImageParams)
+
+
+
+#if defined(NATRON_USE_BREAKPAD) || defined(Q_OS_LINUX)
+#ifdef DEBUG
+inline
+void crash_application()
+{
+#pragma message WARN("crash_application() defined, make sure it is not used anywhere!")
+#ifdef __NATRON_UNIX__
+    sleep(2);
+#endif
+    volatile int* a = (int*)(NULL);
+    // coverity[var_deref_op]
+    *a = 1;
+}
+#else
+inline void crash_application() {}
+#endif // DEBUG
+#endif // NATRON_USE_BREAKPAD
 
 using namespace Natron;
 
@@ -103,6 +124,9 @@ AppManagerPrivate::AppManagerPrivate()
 ,crashReporter()
 ,crashReporterBreakpadPipe()
 ,crashClientServer()
+#ifdef Q_OS_LINUX
+,client_fd(0)
+#endif
 ,crashServerConnection(0)
 #endif
 ,natronPythonGIL(QMutex::Recursive)
@@ -125,6 +149,15 @@ AppManagerPrivate::initBreakpad()
     if (appPTR->isBackground()) {
         return;
     }
+
+
+    int server_fd = 0;
+#ifdef Q_OS_LINUX
+    if (!google_breakpad::CrashGenerationServer::CreateReportChannel(&client_fd,&server_fd)) {
+        qDebug() << "Failure to create breakpad pipe";
+        return;
+    }
+#endif
     
     assert(!breakpadHandler);
     std::srand(2000);
@@ -134,24 +167,28 @@ AppManagerPrivate::initBreakpad()
      We use 2 different pipe: 1 for the CrashReporter to notify to Natron that it has started correctly, and another
      one that is used by the google_breakpad server itself.
      */
-    QString tmpFileName;
+    QString tmpFileName = QDir::tempPath();
+    tmpFileName += '/';
+    tmpFileName += NATRON_APPLICATION_NAME;
+    tmpFileName += "_CRASH_PIPE_";
     {
-        QTemporaryFile tmpf(NATRON_APPLICATION_NAME "_CRASH_PIPE_");
-        tmpf.open();
+        QTemporaryFile tmpf(tmpFileName);
+        tmpf.open(); // this will append a random unique string  to the passed template (tmpFileName)
         tmpFileName = tmpf.fileName();
         tmpf.remove();
     }
-    
+
     QString natronCrashReporterPipeFilename = tmpFileName + "_COM_PIPE_";
     crashClientServer.reset(new QLocalServer());
     QObject::connect(crashClientServer.get(),SIGNAL( newConnection() ),appPTR,SLOT( onNewCrashReporterConnectionPending() ) );
     crashClientServer->listen(natronCrashReporterPipeFilename);
     
-
     crashReporterBreakpadPipe = tmpFileName;
+
 
     QStringList args;
     args << tmpFileName;
+    args << QString::number(server_fd);
     args << natronCrashReporterPipeFilename;
     crashReporter.reset(new QProcess);
     QString crashReporterBinaryPath = qApp->applicationDirPath() + "/NatronCrashReporter";
@@ -159,7 +196,43 @@ AppManagerPrivate::initBreakpad()
     
     
 }
+
+void
+AppManagerPrivate::createBreakpadHandler()
+{
+    QString dumpPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+
+    try {
+#if defined(Q_OS_MAC)
+        breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdString(),
+                                                                     0,
+                                                                     0/*dmpcb*/,
+                                                                     0,
+                                                                     true,
+                                                                     crashReporterBreakpadPipe.toStdString().c_str()));
+#elif defined(Q_OS_LINUX)
+        breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(dumpPath.toStdString()),
+                                                                     0,
+                                                                     0/*dmpCb*/,
+                                                                     0,
+                                                                     true,
+                                                                     client_fd));
+#elif defined(Q_OS_WIN32)
+        breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
+                                                                     0,
+                                                                     0/*dmpcb*/,
+                                                                     google_breakpad::ExceptionHandler::HANDLER_ALL,
+                                                                     MiniDumpNormal,
+                                                                     crashReporterBreakpadPipe.toStdWString().c_str(),
+                                                                     0));
 #endif
+    } catch (const std::exception& e) {
+        qDebug() << e.what();
+        return;
+    }
+    crash_application();
+}
+#endif // NATRON_USE_BREAKPAD
 
 
 void

@@ -36,7 +36,7 @@ QString printUsage()
 {
     QString ret("Wrong number of arguments: ");
     ret += qApp->applicationName();
-    ret += "  <crash_generation_pipe> <natron_init_com_pipe> [--auto-upload] ";
+    ret += "  <crash_generation_pipe> <server_fd> <natron_init_com_pipe> [--auto-upload] ";
     return ret;
 }
 
@@ -53,28 +53,29 @@ main(int argc,
 #endif
 
     QStringList args = app.arguments();
-    if (args.size() < 3) {
+    if (args.size() < 4) {
         std::cerr << printUsage().toStdString() << std::endl;
         return 1;
     }
-    assert(args.size() >= 3);
+    assert(args.size() >= 4);
     QString qPipeName = args[1];
-    QString comPipName = args[2];
+    int server_fd = args[2].toInt();
+    QString comPipName = args[3];
     
     bool autoUpload = false;
     
-    if (args.size() == 4) {
+    if (args.size() == 5) {
         ///Optionnally on CLI only, --auto-upload can be given to upload crash reports instead of just saying where the dump is.
-        autoUpload = args[3] == "--auto-upload";
+        autoUpload = args[4] == "--auto-upload";
     }
     
     
     CallbacksManager manager(autoUpload);
-    manager.writeDebugMessage("Crash reporter started with following arguments: " + qPipeName + " " + comPipName);
+    manager.writeDebugMessage("Crash reporter started with following arguments: " + qPipeName + " " + QString::number(server_fd) + " " + comPipName);
 
 
     QString dumpPath = QDir::tempPath();
-    manager.initOuptutPipe(comPipName, qPipeName, dumpPath);
+    manager.initOuptutPipe(comPipName, qPipeName, dumpPath, server_fd);
     
     int ret = app.exec();
     

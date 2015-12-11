@@ -30,6 +30,7 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include <cassert>
 #include <iostream>
 #include <QLocalSocket>
+#include <QLocalServer>
 
 #include <QThread>
 #ifndef REPORTER_CLI_ONLY
@@ -99,6 +100,7 @@ CallbacksManager::~CallbacksManager() {
     _instance = 0;
     delete _crashServer;
 
+
 }
 
 static void addTextHttpPart(QHttpMultiPart* multiPart, const QString& name, const QString& value)
@@ -129,8 +131,10 @@ static void addFileHttpPart(QHttpMultiPart* multiPart, const QString& name, cons
 
 static QString getVersionString()
 {
-    QString versionStr(NATRON_VERSION_STRING " " NATRON_DEVELOPMENT_STATUS);
-    if (NATRON_DEVELOPMENT_STATUS == NATRON_DEVELOPMENT_RELEASE_CANDIDATE) {
+    QString versionStr(NATRON_VERSION_STRING);
+    versionStr.append(" ");
+    versionStr.append(NATRON_DEVELOPMENT_STATUS);
+    if (QString(NATRON_DEVELOPMENT_STATUS) == QString(NATRON_DEVELOPMENT_RELEASE_CANDIDATE)) {
         versionStr += ' ';
         versionStr += QString::number(NATRON_BUILD_NUMBER);
     }
@@ -491,9 +495,9 @@ void OnClientDumpRequest(void* /*context*/,
 #endif
 
 void
-CallbacksManager::onOutputPipeConnectionMade()
+CallbacksManager::startCrashGenerationServer()
 {
-    writeDebugMessage("Output IPC pipe with Natron successfully connected, starting crash generation server.");
+     writeDebugMessage("Starting crash generation server and notifying Natron...");
 
     /*
      * We initialize the CrashGenerationServer now that the connection is made between Natron & the Crash reporter
@@ -509,9 +513,8 @@ CallbacksManager::onOutputPipeConnectionMade()
                                              true, // auto-generate dumps
                                              _dumpDirPath.toStdString()); // path to dump to
 #elif defined(Q_OS_LINUX)
-    int listenFd = args[2].toInt();
-    std::string stdDumpPath = _dumpDirPath.toStdString();
-    _crashServer = new CrashGenerationServer(_outputPipe->socketDescriptor(),
+     std::string stdDumpPath = _dumpDirPath.toStdString();
+    _crashServer = new CrashGenerationServer(_serverFD,
                                           OnClientDumpRequest, // dump cb
                                           0, // dump ctx
                                           0, // exit cb
@@ -543,11 +546,22 @@ CallbacksManager::onOutputPipeConnectionMade()
     } else {
         writeDebugMessage("Crash generation server started successfully.");
     }
-    
 
-    
+    //Notify Natron that the server is started
+    QString message("-i");
+    writeToOutputPipe(message);
+}
+
+void
+CallbacksManager::onOutputPipeConnectionMade()
+{
+    writeDebugMessage("IPC pipe with Natron successfully connected.");
+
     //At this point we're sure that the server is created, so we notify Natron about it so it can create its ExceptionHandler
-    writeToOutputPipe("-i");
+    startCrashGenerationServer();
+
+
+
 }
 
 void
@@ -561,16 +575,22 @@ CallbacksManager::writeToOutputPipe(const QString& str)
     _outputPipe->flush();
 }
 
+
 void
 CallbacksManager::initOuptutPipe(const QString& comPipeName,
                                  const QString& pipeName,
-                                 const QString& dumpPath)
+                                 const QString& dumpPath, int server_fd)
 {
     assert(!_outputPipe);
     _dumpDirPath = dumpPath;
     _pipePath = pipeName;
+    _serverFD = server_fd;
+
+    //Request a connection to the socket opened by Natron for our own IPC. We use it to notify Natron that our crash generation server has been created
     _outputPipe = new QLocalSocket;
     QObject::connect( _outputPipe, SIGNAL( connected() ), this, SLOT( onOutputPipeConnectionMade() ) );
     _outputPipe->connectToServer(comPipeName,QLocalSocket::ReadWrite);
+
+
     
 }

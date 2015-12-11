@@ -24,6 +24,7 @@
 #include <QNetworkReply>
 
 class QLocalSocket;
+class QLocalServer;
 class QNetworkReply;
 
 #ifdef DEBUG
@@ -65,7 +66,8 @@ public:
 
     void initOuptutPipe(const QString& comPipeName,
                         const QString& pipeName,
-                        const QString& dumpPath);
+                        const QString& dumpPath,
+                        int server_fd);
 
     void writeToOutputPipe(const QString& str);
 
@@ -91,6 +93,8 @@ signals:
 
 private:
 
+    void startCrashGenerationServer();
+
     void uploadFileToRepository(const QString& filepath, const QString& comments);
 
     static CallbacksManager *_instance;
@@ -100,7 +104,9 @@ private:
     QFile* _dFile;
 #endif
 
+    //This is the pipe used for our own IPC between Natron & this program, mainly for the handshake on startup
     QLocalSocket* _outputPipe;
+
     QNetworkReply* _uploadReply;
     bool _autoUpload;
 #ifndef REPORTER_CLI_ONLY
@@ -112,6 +118,7 @@ private:
     QString _dumpDirPath;
     QString _pipePath;
     google_breakpad::CrashGenerationServer* _crashServer;
+    int _serverFD;
     
 };
 

@@ -29,6 +29,17 @@
 #include <QtCore/QString>
 #include <QtCore/QAtomicInt>
 
+#ifdef NATRON_USE_BREAKPAD
+#if defined(Q_OS_MAC)
+#include "client/mac/handler/exception_handler.h"
+#elif defined(Q_OS_LINUX)
+#include "client/linux/handler/exception_handler.h"
+#include "client/linux/crash_generation/crash_generation_server.h"
+#elif defined(Q_OS_WIN32)
+#include "client/windows/handler/exception_handler.h"
+#endif
+#endif
+
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/FrameEntry.h"
@@ -38,13 +49,6 @@
 class QProcess;
 class QLocalServer;
 class QLocalSocket;
-
-#ifdef NATRON_USE_BREAKPAD
-namespace google_breakpad {
-    class ExceptionHandler;
-}
-#endif
-
 
 struct AppManagerPrivate
 {
@@ -117,6 +121,12 @@ struct AppManagerPrivate
 
     QString crashReporterBreakpadPipe;
     boost::shared_ptr<QLocalServer> crashClientServer;
+
+#ifdef Q_OS_LINUX
+    int client_fd;
+#endif
+
+    //Will be deleted by crashClientServer as the connection socket is a qt child of the server
     QLocalSocket* crashServerConnection;
 #endif
     
@@ -161,6 +171,8 @@ struct AppManagerPrivate
     
 #ifdef NATRON_USE_BREAKPAD
     void initBreakpad();
+
+    void createBreakpadHandler();
 #endif
 };
 
