@@ -5,11 +5,6 @@
 set -x
 source `pwd`/functions.sh
 
-# setup
-#if [ "$PKGOS" = "Linux" ] && [ -f "/etc/redhat-release" ]; then
-#  setup_centos
-#fi
-
 # basic tools/libs
 setup_dumpsyms
 setup_ssl

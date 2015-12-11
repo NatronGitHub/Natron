@@ -218,6 +218,13 @@ if [ "$NATRON_LICENSE" != "GPL" ] && [ "$NATRON_LICENSE" != "COMMERCIAL" ]; then
 fi
 
 # setup default dirs
+if [ "$PKGOS" != "Windows" ]; then
+  USERID=`id -u`
+  if [ "$USERID" != "0" ]; then
+    echo "Please run as root"
+    exit 1
+  fi
+fi
 if [ ! -d "$CWD/src" ]; then
   mkdir -p "$CWD/src" || exit 1
 fi
@@ -227,10 +234,12 @@ fi
 if [ ! -d "$INSTALL_PATH" ]; then
     mkdir -p "$INSTALL_PATH" || exit 1
 fi
-if [ ! -h "$INSTALL_PATH/lib64" ]; then
-    if [ ! -d "$INSTALL_PATH/lib" ]; then
-        mkdir -p "$INSTALL_PATH/lib" || exit 1
-    fi
-    cd "$INSTALL_PATH" || exit 1
-    ln -sf lib lib64 || exit 1
+if [ "$PKGOS" = "Linux" ]; then
+  if [ ! -h "$INSTALL_PATH/lib64" ]; then
+      if [ ! -d "$INSTALL_PATH/lib" ]; then
+          mkdir -p "$INSTALL_PATH/lib" || exit 1
+      fi
+      cd "$INSTALL_PATH" || exit 1
+      ln -sf lib lib64 || exit 1
+  fi
 fi

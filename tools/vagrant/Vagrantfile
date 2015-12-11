@@ -1,19 +1,34 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+$centos = <<SCRIPT
+rm -f /etc/yum.repos.d/CentOS-Base.repo
+sed -i 's#baseurl=file:///media/CentOS/#baseurl=http://vault.centos.org/6.5/os/$basearch/#;s/enabled=0/enabled=1/;s/gpgcheck=1/gpgcheck=0/;/file:/d' /etc/yum.repos.d/CentOS-Media.repo
+yum -y install gettext make wget glibc-devel glibc-devel.i686 vixie-cron crontabs unzip rsync git screen file tree bc gcc-c++ kernel-devel libX*devel *GL*devel *xcb*devel xorg*devel libdrm-devel mesa*devel *glut*devel dbus-devel xz patch bison flex libtool-ltdl-devel
+cd /root
+git clone https://github.com/MrKepzie/Natron
+SCRIPT
+
+$macos = <<SCRIPT
+xcodebuild -license accept
+cd /var/root
+git clone https://github.com/MrKepzie/Natron
+SCRIPT
+
 # VMs
 Vagrant.configure(2) do |config|
   config.vm.define "centos" do |centos|
-    centos.vm.box = "olear/centos65"
-    centos.vm.box_check_update = true
+    centos.vm.box = "nrel/CentOS-6.5-x86_64"
+    centos.vm.provision "shell", inline: $centos
     centos.vm.provider "virtualbox" do |vb|
-      vb.memory = "3000"
-      vb.cpus = 4
+      vb.memory = "2500"
+      vb.cpus = 1
       vb.customize ["modifyvm", :id, "--ioapic", "on"]
     end
   end
   config.vm.define "macos" do |macos|
-    macos.vm.box = "tuupola/osx-lion-10.7-xcode"
+    macos.vm.box = "http://files.dryga.com/boxes/osx-mavericks-0.1.0.box"
+    macos.vm.provision "shell", inline: $macos
   end
   config.vm.define "windows" do |windows|
     windows.vm.box = "ferventcoder/win7pro-x64-nocm-lite"
