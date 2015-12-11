@@ -121,7 +121,11 @@ AppManagerPrivate::AppManagerPrivate()
 ,mainThreadState(0)
 #ifdef NATRON_USE_BREAKPAD
 ,breakpadHandler()
+#ifndef Q_OS_LINUX
 ,crashReporter()
+#else
+,crashReporterPID(-1)
+#endif
 ,crashReporterBreakpadPipe()
 ,crashClientServer()
 #ifdef Q_OS_LINUX
@@ -137,12 +141,34 @@ AppManagerPrivate::AppManagerPrivate()
 }
 
 
+AppManagerPrivate::~AppManagerPrivate()
+{
+    for (U32 i = 0; i < args.size() ; ++i) {
+        free(args[i]);
+    }
+    args.clear();
 
+#ifdef Q_OS_LINUX
+#ifdef NATRON_USE_BREAKPAD
+    if (crashReporterPID != -1) {
+        kill(crashReporterPID, SIGKILL);
+    }
+#endif
+#endif
+}
 
 
 
 
 #ifdef NATRON_USE_BREAKPAD
+#ifdef Q_OS_LINUX
+static char* qstringToMallocCharArray(const QString& str)
+{
+    std::string stdStr = str.toStdString();
+    return strndup(stdStr.c_str(), stdStr.size() + 1);
+}
+#endif
+
 void
 AppManagerPrivate::initBreakpad()
 {
@@ -153,7 +179,7 @@ AppManagerPrivate::initBreakpad()
 
     int server_fd = 0;
 #ifdef Q_OS_LINUX
-    if (!google_breakpad::CrashGenerationServer::CreateReportChannel(&client_fd,&server_fd)) {
+    if (!google_breakpad::CrashGenerationServer::CreateReportChannel(&server_fd, &client_fd)) {
         qDebug() << "Failure to create breakpad pipe";
         return;
     }
@@ -184,16 +210,37 @@ AppManagerPrivate::initBreakpad()
     crashClientServer->listen(natronCrashReporterPipeFilename);
     
     crashReporterBreakpadPipe = tmpFileName;
+    QString crashReporterBinaryPath = qApp->applicationDirPath() + "/NatronCrashReporter";
 
+#ifdef Q_OS_LINUX
+    //On Linux we have to fork this process to create the crash reporter so that it inherits the file descriptors gotten from
+    //CreateReportChannel. This is specific to Linux, on OS X and Windows we do not need that.
+    crashReporterPID = fork();
+    if (crashReporterPID == 0) {
+        //We are in the child, i.e: the NatronCrashReporter.
+        //Just exec the crash reporter
+        char pipe_fd_string[8];
+        sprintf(pipe_fd_string, "%d", server_fd);
+        char* const argv[] = {
+            qstringToMallocCharArray(crashReporterBinaryPath),
+            qstringToMallocCharArray(tmpFileName),
+            pipe_fd_string,
+            qstringToMallocCharArray(natronCrashReporterPipeFilename),
+            0
+        };
+        //This call returns only upon errors
+        execv(crashReporterBinaryPath.toStdString().c_str(),argv);
 
+        qDebug() << "Child process failed to execute NatronCrashReporter";
+    }
+#else
     QStringList args;
     args << tmpFileName;
     args << QString::number(server_fd);
     args << natronCrashReporterPipeFilename;
     crashReporter.reset(new QProcess);
-    QString crashReporterBinaryPath = qApp->applicationDirPath() + "/NatronCrashReporter";
     crashReporter->start(crashReporterBinaryPath, args);
-    
+#endif
     
 }
 
