@@ -33,6 +33,7 @@
 #if defined(Q_OS_MAC)
 #include "client/mac/handler/exception_handler.h"
 #elif defined(Q_OS_LINUX)
+#include <fcntl.h>
 #include "client/linux/handler/exception_handler.h"
 #include "client/linux/crash_generation/crash_generation_server.h"
 #elif defined(Q_OS_WIN32)
@@ -117,7 +118,12 @@ struct AppManagerPrivate
     
 #ifdef NATRON_USE_BREAKPAD
     boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
+
+#ifdef Q_OS_LINUX
+    pid_t crashReporterPID;
+#else
     boost::shared_ptr<QProcess> crashReporter;
+#endif
 
     QString crashReporterBreakpadPipe;
     boost::shared_ptr<QLocalServer> crashClientServer;
@@ -140,13 +146,7 @@ struct AppManagerPrivate
     
     AppManagerPrivate();
     
-    ~AppManagerPrivate()
-    {
-        for (U32 i = 0; i < args.size() ; ++i) {
-            free(args[i]);
-        }
-        args.clear();
-    }
+    ~AppManagerPrivate();
 
     void initProcessInputChannel(const QString & mainProcessServerName);
 

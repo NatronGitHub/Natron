@@ -323,9 +323,11 @@ AppManager::~AppManager()
     tearDownPython();
     
 #ifdef NATRON_USE_BREAKPAD
+#ifndef Q_OS_LINUX
     if (_imp->crashReporter) {
         _imp->crashReporter->terminate();
     }
+#endif
 #endif
     
     _instance = 0;
