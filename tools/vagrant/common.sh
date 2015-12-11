@@ -107,7 +107,7 @@ fi
 THIRD_PARTY_SRC_URL=http://downloads.natron.fr/Third_Party_Sources
 
 GIT_INSTALLER=https://github.com/olear/qtifw.git
-
+GIT_BREAKPAD=https://github.com/MrKepzie/google-breakpad
 GIT_NATRON=https://github.com/MrKepzie/Natron.git
 GIT_IO=https://github.com/MrKepzie/openfx-io.git
 GIT_MISC=https://github.com/devernay/openfx-misc.git

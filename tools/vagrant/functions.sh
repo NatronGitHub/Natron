@@ -1,24 +1,35 @@
 #!/bin/sh
 source `pwd`/common.sh
 
-function setup_ssl {
-  if [ "$1" = "static" ]; then
-    SSL_LIB=libcrypto.a
-  else
-    SSL_CONFIG=-shared
-    SSL_LIB=libcrypto.so
+function setup_dumpsyms {
+  if [ ! -f "${INSTALL_PATH}/bin/dump_syms" ]; then
+    cd "$TMP_PATH" || exit 1
+    rm -f google-breakpad
+    git clone $GIT_BREAKPAD || exit 1
+    cd google-breakpad || exit 1 
+    if [ "$PKGOS" = "Linux" ]; then
+      ./configure || exit 1
+       make || exit 1
+      cp src/tools/linux/dump_syms/dump_syms "$INSTALL_PATH/bin/" || exit 1
+    fi
   fi
-  if [ ! -f "${INSTALL_PATH}/lib/${SSL_LIB}" ]; then
+}
+
+function setup_ssl {
+  if [ ! -f "${INSTALL_PATH}/lib/pkgconfig/openssl.pc" ]; then
     if [ ! -f $SRC_PATH/$SSL_TAR ]; then
       curl $THIRD_PARTY_SRC_URL/$SSL_TAR -o $SRC_PATH/$SSL_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/openssl*
     tar xvf $SRC_PATH/$SSL_TAR -C $TMP_PATH || exit 1
     cd $TMP_PATH/openssl-* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./config --prefix="$INSTALL_PATH" $SSL_CONF || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./config --prefix="$INSTALL_PATH" || exit 1
     make || exit 1
     make install || exit 1
-    cd .. || exit 1
-    rm -rf openssl-*
+    make clean
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./config --prefix="$INSTALL_PATH" -shared || exit 1
+    make || exit 1
+    make install || exit 1
   fi 
 }
 
@@ -32,7 +43,7 @@ function setup_qt {
   fi
   if [ ! -f "$QT_MAKE" ]; then
     if [ "$1" = "installer" ]; then
-      setup_ssl static || exit 1
+      setup_ssl || exit 1
     else
       setup_ssl || exit 1
       setup_zlib || exit 1
@@ -50,6 +61,7 @@ function setup_qt {
     if [ ! -f $SRC_PATH/$QT_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$QT_TAR -o $SRC_PATH/$QT_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/qt-everywhere-opensource-src-4.8*
     tar xvf $SRC_PATH/$QT_TAR -C $TMP_PATH || exit 1
     cd $TMP_PATH/qt-everywhere-opensource-src-4.8* || exit 1
     QT_SRC=`pwd`/src
@@ -84,6 +96,7 @@ function setup_patchelf {
     if [ ! -f "$SRC_PATH/$ELF_TAR" ]; then
       curl "$THIRD_PARTY_SRC_URL/$ELF_TAR" -o "$SRC_PATH/$ELF_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/patchelf*
     tar xvf $SRC_PATH/$ELF_TAR -C $TMP_PATH || exit 1
     cd $TMP_PATH/patchelf* || exit 1
     ./configure || exit 1
@@ -113,6 +126,7 @@ function setup_gcc {
     if [ ! -f $SRC_PATH/$CLOOG_TAR ]; then
         curl "$THIRD_PARTY_SRC_URL/$CLOOG_TAR" -o "$SRC_PATH/$CLOOG_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/gcc*
     tar xvf "$SRC_PATH/$GCC_TAR" || exit 1
     cd "gcc-$TC_GCC" || exit 1
     tar xvf "$SRC_PATH/$MPC_TAR" || exit 1
@@ -137,6 +151,7 @@ function setup_zlib {
     if [ ! -f "$SRC_PATH/$ZLIB_TAR" ]; then
       curl "$THIRD_PARTY_SRC_URL/$ZLIB_TAR" -o "$SRC_PATH/$ZLIB_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/zlib*
     tar xvf "$SRC_PATH/$ZLIB_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/zlib-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" || exit 1
@@ -153,6 +168,7 @@ function setup_bzip {
     if [ ! -f "$SRC_PATH/$BZIP_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$BZIP_TAR" -o "$SRC_PATH/$BZIP_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/bzip*
     tar xvf "$SRC_PATH/$BZIP_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/bzip* || exit 1
     sed -e 's/^CFLAGS=\(.*\)$/CFLAGS=\1 \$(BIGFILES)/' -i ./Makefile-libbz2_so || exit 1
@@ -171,6 +187,7 @@ function setup_yasm {
     if [ ! -f "$SRC_PATH/$YASM_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$YASM_TAR" -o "$SRC_PATH/$YASM_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/yasm*
     tar xvf "$SRC_PATH/$YASM_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/yasm* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" || exit 1
@@ -184,6 +201,7 @@ function setup_cmake {
     if [ ! -f "$SRC_PATH/$CMAKE_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$CMAKE_TAR" -o "$SRC_PATH/$CMAKE_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/cmake*
     tar xvf "$SRC_PATH/$CMAKE_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/cmake* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH/cmake" || exit 1
@@ -197,6 +215,7 @@ function setup_icu {
     if [ ! -f "$SRC_PATH/$ICU_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$ICU_TAR" -o "$SRC_PATH/$ICU_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/icu*
     tar xvf "$SRC_PATH/$ICU_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/icu/source || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --enable-shared || exit 1
@@ -213,9 +232,12 @@ function setup_python {
   fi
   if [ ! -f "$INSTALL_PATH/lib/pkgconfig/python${PYV}.pc" ]; then
     setup_icu || exit 1
+    setup_ssl || exit 1
+    setup_zlib || exit 
     if [ ! -f "$SRC_PATH/$PY_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$PY_TAR" -o "$SRC_PATH/$PY_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/python*
     tar xvf "$SRC_PATH/$PY_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/Python-$PYV* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix="$INSTALL_PATH" --enable-shared  || exit 1
@@ -229,6 +251,7 @@ function setup_expat {
     if [ ! -f "$SRC_PATH/$EXPAT_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$EXPAT_TAR" -o "$SRC_PATH/$EXPAT_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/expat*
     tar xvf "$SRC_PATH/$EXPAT_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/expat* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-static --enable-shared || exit 1
@@ -243,6 +266,7 @@ function setup_png {
     if [ ! -f $SRC_PATH/$PNG_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$PNG_TAR -o $SRC_PATH/$PNG_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/libpng*
     tar xvf $SRC_PATH/$PNG_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/libpng* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
@@ -257,6 +281,7 @@ function setup_freetype {
     if [ ! -f "$SRC_PATH/$FTYPE_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$FTYPE_TAR" -o "$SRC_PATH/$FTYPE_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/freetype*
     tar xvf "$SRC_PATH/$FTYPE_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/freetype* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-static --enable-shared || exit 1
@@ -271,6 +296,7 @@ function setup_fontconfig {
     if [ ! -f "$SRC_PATH/$FCONFIG_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$FCONFIG_TAR" -o "$SRC_PATH/$FCONFIG_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/fontconfig*
     tar xvf "$SRC_PATH/$FCONFIG_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/fontconfig* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared || exit 1
@@ -284,6 +310,7 @@ function setup_ffi {
     if [ ! -f "$SRC_PATH/$FFI_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$FFI_TAR" -o "$SRC_PATH/$FFI_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/ffi*
     tar xvf "$SRC_PATH/$FFI_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/libffi* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared || exit 1
@@ -298,6 +325,7 @@ function setup_glib {
     if [ ! -f "$SRC_PATH/$GLIB_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$GLIB_TAR" -o "$SRC_PATH/$GLIB_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/glib*
     tar xvf "$SRC_PATH/$GLIB_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/glib-2* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared || exit 1
@@ -311,6 +339,7 @@ function setup_xml {
     if [ ! -f "$SRC_PATH/$LIBXML_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$LIBXML_TAR" -o "$SRC_PATH/$LIBXML_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/libxml*
     tar xvf "$SRC_PATH/$LIBXML_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/libxml* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared --without-python || exit 1
@@ -325,6 +354,7 @@ function setup_xslt {
     if [ ! -f "$SRC_PATH/$LIBXSLT_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$LIBXSLT_TAR" -o "$SRC_PATH/$LIBXSLT_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/libxsl*
     tar xvf "$SRC_PATH/$LIBXSLT_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/libxslt* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared --without-python || exit 1
@@ -335,13 +365,16 @@ function setup_xslt {
 
 function setup_boost {
   if [ ! -f "$INSTALL_PATH/lib/libboost_atomic.so" ]; then
+    setup_zlib || exit 1
+    setup_bzip || exit 1
     if [ ! -f "$SRC_PATH/$BOOST_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$BOOST_TAR" -o "$SRC_PATH/$BOOST_TAR" || exit 1
     fi
+    rm -f $TMP_PATH/boost_1*
     tar xvf "$SRC_PATH/$BOOST_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/boost_* || exit 1
     ./bootstrap.sh || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./b2 --prefix=$INSTALL_PATH cflags="-fPIC" --disable-icu -j${MKJOBS} install || exit 1
+    ./b2 --prefix=$INSTALL_PATH cflags="$BF" cxxflags="$BF -I${INSTALL_PATH}/include" linkflags="-L${INSTALL_PATH}/lib" link=shared variant=release threading=multi runtime-link=shared --layout=system --disable-icu -j${MKJOBS} install || exit 1
   fi
 }
 
@@ -350,6 +383,7 @@ function setup_jpeg {
     if [ ! -f $SRC_PATH/$JPG_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$JPG_TAR -o $SRC_PATH/$JPG_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/jpeg-*
     tar xvf $SRC_PATH/$JPG_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/jpeg-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
@@ -364,6 +398,7 @@ function setup_tiff {
     if [ ! -f $SRC_PATH/$TIF_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$TIF_TAR -o $SRC_PATH/$TIF_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/tiff*
     tar xvf $SRC_PATH/$TIF_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/tiff-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
@@ -379,6 +414,7 @@ function setup_jasper {
         curl $THIRD_PARTY_SRC_URL/$JASP_TAR -o $SRC_PATH/$JASP_TAR || exit 1
     fi
     cd "$TMP_PATH" || exit 1 
+    rm -rf $TMP_PATH/jasper*
     unzip $SRC_PATH/$JASP_TAR || exit 1
     cd jasper* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
@@ -393,6 +429,7 @@ function setup_lcms {
     if [ ! -f $SRC_PATH/$LCMS_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$LCMS_TAR -o $SRC_PATH/$LCMS_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/lcms*
     tar xvf $SRC_PATH/$LCMS_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/lcms2-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
@@ -410,6 +447,7 @@ function setup_openjpeg {
     if [ ! -f $SRC_PATH/$OJPG_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$OJPG_TAR -o $SRC_PATH/$OJPG_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/openjpeg*
     tar xvf $SRC_PATH/$OJPG_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/openjpeg-* || exit 1
     ./bootstrap.sh || exit 1
@@ -426,6 +464,7 @@ function setup_libraw {
     if [ ! -f $SRC_PATH/$LIBRAW_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$LIBRAW_TAR -o $SRC_PATH/$LIBRAW_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/LibRaw*
     tar xvf $SRC_PATH/$LIBRAW_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/LibRaw* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --disable-static --enable-shared || exit 1
@@ -440,6 +479,7 @@ function setup_openexr {
     if [ ! -f $SRC_PATH/$ILM_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$ILM_TAR -o $SRC_PATH/$ILM_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/ilmbase*
     tar xvf $SRC_PATH/$ILM_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/ilmbase-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-shared --enable-static || exit 1
@@ -448,6 +488,7 @@ function setup_openexr {
     if [ ! -f $SRC_PATH/$EXR_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$EXR_TAR -o $SRC_PATH/$EXR_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/openexr*
     tar xvf $SRC_PATH/$EXR_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/openexr-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-shared --enable-static || exit 1
@@ -461,6 +502,7 @@ function setup_pixman {
     if [ ! -f $SRC_PATH/$PIX_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$PIX_TAR -o $SRC_PATH/$PIX_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/pixman*
     tar xvf $SRC_PATH/$PIX_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/pixman-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
@@ -477,6 +519,7 @@ function setup_cairo {
     if [ ! -f $SRC_PATH/$CAIRO_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$CAIRO_TAR -o $SRC_PATH/$CAIRO_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/cairo*
     tar xvf $SRC_PATH/$CAIRO_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/cairo-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include -I${INSTALL_PATH}/include/pixman-1" LDFLAGS="-L${INSTALL_PATH}/lib -lpixman-1" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
@@ -493,6 +536,7 @@ function setup_harfbuzz {
     if [ ! -f $SRC_PATH/$BUZZ_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$BUZZ_TAR -o $SRC_PATH/$BUZZ_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/harfbuzz*
     tar xvf $SRC_PATH/$BUZZ_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/harfbuzz-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-docs --disable-static --enable-shared --with-freetype --with-cairo --with-gobject --with-glib --without-icu || exit 1
@@ -509,6 +553,7 @@ function setup_pango {
     if [ ! -f "$SRC_PATH/$PANGO_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$PANGO_TAR" -o "$SRC_PATH/$PANGO_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/pango*
     tar xvf "$SRC_PATH/$PANGO_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/pango-* || exit 1
     env FONTCONFIG_CFLAGS="-I$INSTALL_PATH/include" FONTCONFIG_LIBS="-L$INSTALL_PATH/lib -lfontconfig" CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared --with-included-modules=basic-fc || exit 1
@@ -524,6 +569,7 @@ function setup_croco {
     if [ ! -f "$SRC_PATH/$CROCO_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$CROCO_TAR" -o "$SRC_PATH/$CROCO_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/libcroco*
     tar xvf "$SRC_PATH/$CROCO_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/libcroco-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared || exit 1
@@ -542,6 +588,7 @@ function setup_gdk {
     if [ ! -f "$SRC_PATH/$GDK_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$GDK_TAR" -o "$SRC_PATH/$GDK_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/gdk-*
     tar xvf "$SRC_PATH/$GDK_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/gdk-pix* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared --without-libtiff || exit 1
@@ -559,6 +606,7 @@ function setup_rsvg {
     if [ ! -f "$SRC_PATH/$SVG_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$SVG_TAR" -o "$SRC_PATH/$SVG_TAR" || exit 1
     fi
+    rm -rf $TMP_PATH/librsvg*
     tar xvf "$SRC_PATH/$SVG_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/librsvg-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared --disable-introspection --disable-vala --disable-pixbuf-loader || exit 1
@@ -581,6 +629,7 @@ function setup_magick {
     if [ ! -f $SRC_PATH/$MAGICK_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$MAGICK_TAR -o $SRC_PATH/$MAGICK_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/ImageMagick*
     tar xvf $SRC_PATH/$MAGICK_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/ImageMagick-* || exit 1
     patch -p0 < $CWD/patches/ImageMagick/pango-align-hack.diff || exit 1
@@ -595,6 +644,7 @@ function setup_glew {
     if [ ! -f $SRC_PATH/$GLEW_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$GLEW_TAR -o $SRC_PATH/$GLEW_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/glew*
     tar xvf $SRC_PATH/$GLEW_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/glew-* || exit 1
     if [ "$ARCH" = "i686" ]; then
@@ -615,6 +665,7 @@ function setup_ocio {
     if [ ! -f $SRC_PATH/$OCIO_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$OCIO_TAR -o $SRC_PATH/$OCIO_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/OpenColor*
     tar xvf $SRC_PATH/$OCIO_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/OpenColorIO-* || exit 1
     mkdir build || exit 1
@@ -642,6 +693,7 @@ function setup_oiio {
     if [ ! -f $SRC_PATH/$OIIO_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$OIIO_TAR -o $SRC_PATH/$OIIO_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/oiio*
     tar xvf $SRC_PATH/$OIIO_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/oiio-Release-* || exit 1
     patch -p1 -i $CWD/patches/OpenImageIO/oiio-exrthreads.patch || exit 1
@@ -659,6 +711,7 @@ function setup_seexpr {
     if [ ! -f $SRC_PATH/$SEE_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$SEE_TAR -o $SRC_PATH/$SEE_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/SeExpr*
     tar xvf $SRC_PATH/$SEE_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/SeExpr-* || exit 1
     mkdir build || exit 1
@@ -677,6 +730,7 @@ function setup_lame {
     if [ ! -f $SRC_PATH/$LAME_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$LAME_TAR -o $SRC_PATH/$LAME_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/lame*
     tar xvf $SRC_PATH/$LAME_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/lame-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
@@ -690,6 +744,7 @@ function setup_ogg {
     if [ ! -f $SRC_PATH/$OGG_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$OGG_TAR -o $SRC_PATH/$OGG_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/libogg*
     tar xvf $SRC_PATH/$OGG_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/libogg-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
@@ -704,6 +759,7 @@ function setup_vorbis {
     if [ ! -f $SRC_PATH/$VORBIS_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$VORBIS_TAR -o $SRC_PATH/$VORBIS_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/libvorbis*
     tar xvf $SRC_PATH/$VORBIS_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/libvorbis-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --disable-shared --enable-static || exit 1
@@ -719,6 +775,7 @@ function setup_theora {
     if [ ! -f $SRC_PATH/$THEORA_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$THEORA_TAR -o $SRC_PATH/$THEORA_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/libtheora*
     tar xvf $SRC_PATH/$THEORA_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/libtheora-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
@@ -732,6 +789,7 @@ function setup_modplug {
     if [ ! -f $SRC_PATH/$MODPLUG_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$MODPLUG_TAR -o $SRC_PATH/$MODPLUG_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/libmodplug*
     tar xvf $SRC_PATH/$MODPLUG_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/libmodplug-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
@@ -745,6 +803,7 @@ function setup_vpx {
     if [ ! -f $SRC_PATH/$VPX_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$VPX_TAR -o $SRC_PATH/$VPX_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/libvpx*
     tar xvf $SRC_PATH/$VPX_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/libvpx-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static --enable-vp8 --enable-vp9 --enable-runtime-cpu-detect --enable-postproc --enable-pic --disable-avx --disable-avx2 --disable-examples || exit 1
@@ -758,6 +817,7 @@ function setup_opus {
     if [ ! -f $SRC_PATH/$OPUS_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$OPUS_TAR -o $SRC_PATH/$OPUS_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/opus*
     tar xvf $SRC_PATH/$OPUS_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/opus-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static --enable-custom-modes || exit 1
@@ -771,6 +831,7 @@ function setup_orc {
     if [ ! -f $SRC_PATH/$ORC_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$ORC_TAR -o $SRC_PATH/$ORC_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/orc*
     tar xvf $SRC_PATH/$ORC_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/orc-* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
@@ -785,14 +846,12 @@ function setup_dirac {
     if [ ! -f $SRC_PATH/$DIRAC_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$DIRAC_TAR -o $SRC_PATH/$DIRAC_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/schro*
     tar xvf $SRC_PATH/$DIRAC_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/schro* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
-    if [ "$1" = "static" ]; then
-      rm -f $INSTALL_PATH/lib/libschro*.so*
-    fi
     sed -i "s/-lschroedinger-1.0/-lschroedinger-1.0 -lorc-0.4/" $INSTALL_PATH/lib/pkgconfig/schroedinger-1.0.pc || exit 1
   fi
 }
@@ -802,14 +861,12 @@ function setup_x264 {
     if [ ! -f $SRC_PATH/$X264_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$X264_TAR -o $SRC_PATH/$X264_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/x264*
     tar xvf $SRC_PATH/$X264_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/x264* || exit 1
     ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static --enable-pic --bit-depth=10  CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
-    if [ "$1" = "static" ]; then
-      rm -f $INSTALL_PATH/lib/libx264*.so*
-    fi
   fi
 }
 
@@ -818,14 +875,12 @@ function setup_xvid {
     if [ ! -f $SRC_PATH/$XVID_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$XVID_TAR -o $SRC_PATH/$XVID_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/xvidcore*
     tar xvf $SRC_PATH/$XVID_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/xvidcore/build/generic || exit 1
     ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --enable-static CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
-    if [ "$1" = "static" ]; then
-      rm -f $INSTALL_PATH/lib/libxvidcore*.so*
-    fi
   fi
 }
 
@@ -844,9 +899,11 @@ function setup_ffmpeg {
     setup_dirac || exit 1
     setup_x264 || exit 1
     setup_xvid || exit 1
+    setup_openjpeg || exit 1
     if [ ! -f $SRC_PATH/$FFMPEG_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$FFMPEG_TAR -o $SRC_PATH/$FFMPEG_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/ffmpeg*
     tar xvf $SRC_PATH/$FFMPEG_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/ffmpeg-2* || exit 1
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH/ffmpeg-gpl --libdir=$INSTALL_PATH/ffmpeg-gpl/lib --enable-shared --disable-static $GPL_SETTINGS || exit 1
@@ -880,6 +937,7 @@ function setup_shiboken {
     if [ ! -f $SRC_PATH/$SHIBOK_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$SHIBOK_TAR -o $SRC_PATH/$SHIBOK_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/shiboken*
     tar xvf $SRC_PATH/$SHIBOK_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/shiboken-* || exit 1
     mkdir -p build && cd build || exit 1
@@ -918,6 +976,7 @@ function setup_pyside {
     if [ ! -f $SRC_PATH/$PYSIDE_TAR ]; then
         curl $THIRD_PARTY_SRC_URL/$PYSIDE_TAR -o $SRC_PATH/$PYSIDE_TAR || exit 1
     fi
+    rm -rf $TMP_PATH/pyside*
     tar xvf $SRC_PATH/$PYSIDE_TAR -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/pyside-* || exit 1
     mkdir -p build && cd build || exit 1
