@@ -141,23 +141,17 @@ AppManagerPrivate::initBreakpad()
         tmpFileName = tmpf.fileName();
         tmpf.remove();
     }
-    int handle = 0;
     
     QString natronCrashReporterPipeFilename = tmpFileName + "_COM_PIPE_";
     crashClientServer.reset(new QLocalServer());
     QObject::connect(crashClientServer.get(),SIGNAL( newConnection() ),appPTR,SLOT( onNewCrashReporterConnectionPending() ) );
     crashClientServer->listen(natronCrashReporterPipeFilename);
     
-#ifdef Q_OS_LINUX
-    crashReporterBreakpadPipe.setFileName(tmpFileName);
-    crashReporterBreakpadPipe.open(QIODevice::ReadWrite);
-    handle = crashReporterBreakpadPipe.handle();
-#else
+
     crashReporterBreakpadPipe = tmpFileName;
-#endif
+
     QStringList args;
     args << tmpFileName;
-    args << QString::number(handle);
     args << natronCrashReporterPipeFilename;
     crashReporter.reset(new QProcess);
     QString crashReporterBinaryPath = qApp->applicationDirPath() + "/NatronCrashReporter";

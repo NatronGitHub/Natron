@@ -36,6 +36,11 @@ class CrashDialog;
 class QProgressDialog;
 #endif
 
+namespace google_breakpad {
+class CrashGenerationServer;
+}
+
+
 class CallbacksManager : public QObject
 {
     Q_OBJECT
@@ -58,7 +63,9 @@ public:
     void writeDebugMessage(const QString& /*str*/) {}
 #endif
 
-    void initOuptutPipe(const QString& comPipeName);
+    void initOuptutPipe(const QString& comPipeName,
+                        const QString& pipeName,
+                        const QString& dumpPath);
 
     void writeToOutputPipe(const QString& str);
 
@@ -102,6 +109,10 @@ private:
 #endif
     bool _didError;
     QString _dumpFilePath;
+    QString _dumpDirPath;
+    QString _pipePath;
+    google_breakpad::CrashGenerationServer* _crashServer;
+    
 };
 
 #endif // CALLBACKSMANAGER_H
