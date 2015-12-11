@@ -99,6 +99,8 @@ void crash_application()
     // coverity[var_deref_op]
     *a = 1;
 }
+#else
+inline void crash_application() {}
 #endif // DEBUG
 #endif // NATRON_USE_BREAKPAD
 
@@ -2648,30 +2650,34 @@ AppManager::onCrashReporterOutputWritten()
         
         QString dumpPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
         
+        try {
 #if defined(Q_OS_MAC)
-        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdString(),
-                                                                          0,
-                                                                          0/*dmpcb*/,
-                                                                          0,
-                                                                          true,
-                                                                          _imp->crashReporterBreakpadPipe.toStdString().c_str()));
+            _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdString(),
+                                                                              0,
+                                                                              0/*dmpcb*/,
+                                                                              0,
+                                                                              true,
+                                                                              _imp->crashReporterBreakpadPipe.toStdString().c_str()));
 #elif defined(Q_OS_LINUX)
-        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(dumpPath.toStdString()),
-                                                                          0,
-                                                                          0/*dmpCb*/,
-                                                                          0,
-                                                                          true,
-                                                                          _imp->crashReporterBreakpadPipe.handle()));
+            _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(dumpPath.toStdString()),
+                                                                              0,
+                                                                              0/*dmpCb*/,
+                                                                              0,
+                                                                              true,
+                                                                              _imp->crashServerConnection->socketDescriptor()));
 #elif defined(Q_OS_WIN32)
-        _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
-                                                                          0,
-                                                                          0/*dmpcb*/,
-                                                                          google_breakpad::ExceptionHandler::HANDLER_ALL,
-                                                                          MiniDumpNormal,
-                                                                          _imp->crashReporterBreakpadPipe.toStdWString().c_str(),
-                                                                          0));
+            _imp->breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
+                                                                              0,
+                                                                              0/*dmpcb*/,
+                                                                              google_breakpad::ExceptionHandler::HANDLER_ALL,
+                                                                              MiniDumpNormal,
+                                                                              _imp->crashReporterBreakpadPipe.toStdWString().c_str(),
+                                                                              0));
 #endif
-        
+        } catch (const std::exception& e) {
+            qDebug() << e.what();
+            return;
+        }
         //crash_application();
 
     } else {

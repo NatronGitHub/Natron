@@ -47,11 +47,21 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include <QFileInfo>
 
 
+#if defined(Q_OS_MAC)
+#include "client/mac/crash_generation/crash_generation_server.h"
+#elif defined(Q_OS_LINUX)
+#include "client/linux/crash_generation/crash_generation_server.h"
+#elif defined(Q_OS_WIN32)
+#include "client/windows/crash_generation/crash_generation_server.h"
+#endif
+
 #ifndef REPORTER_CLI_ONLY
 #include "CrashDialog.h"
 #endif
 
 #include "../Global/Macros.h"
+
+using namespace google_breakpad;
 
 CallbacksManager::CallbacksManager(bool autoUpload)
 : QObject()
@@ -68,6 +78,7 @@ CallbacksManager::CallbacksManager(bool autoUpload)
 #endif
 , _didError(false)
 , _dumpFilePath()
+, _crashServer(0)
 {
     _instance = this;
     QObject::connect(this, SIGNAL(doDumpCallBackOnMainThread(QString)), this, SLOT(onDoDumpOnMainThread(QString)));
@@ -86,6 +97,7 @@ CallbacksManager::~CallbacksManager() {
 
     delete _outputPipe;
     _instance = 0;
+    delete _crashServer;
 
 }
 
@@ -408,11 +420,132 @@ CallbacksManager::writeDebugMessage(const QString& str)
 }
 #endif
 
+
+
+/*Converts a std::string to wide string*/
+inline std::wstring
+s2ws(const std::string & s)
+{
+    
+    
+#ifdef Q_OS_WIN32
+    int len;
+    int slength = (int)s.length() + 1;
+    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+    wchar_t* buf = new wchar_t[len];
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+    std::wstring r(buf);
+    delete[] buf;
+    return r;
+#else
+    std::wstring dest;
+    
+    size_t max = s.size() * 4;
+    mbtowc (NULL, NULL, max);  /* reset mbtowc */
+    
+    const char* cstr = s.c_str();
+    
+    while (max > 0) {
+        wchar_t w;
+        size_t length = mbtowc(&w,cstr,max);
+        if (length < 1) {
+            break;
+        }
+        dest.push_back(w);
+        cstr += length;
+        max -= length;
+    }
+    return dest;
+#endif
+    
+}
+
+
+void dumpRequest_xPlatform(const QString& filePath)
+{
+    CallbacksManager::instance()->s_emitDoCallBackOnMainThread(filePath);
+}
+
+#if defined(Q_OS_MAC)
+void OnClientDumpRequest(void */*context*/,
+                         const ClientInfo &/*client_info*/,
+                         const std::string &file_path) {
+    
+    dumpRequest_xPlatform(file_path.c_str());
+}
+#elif defined(Q_OS_LINUX)
+void OnClientDumpRequest(void* /*context*/,
+                         const ClientInfo* /*client_info*/,
+                         const string* file_path) {
+    
+    dumpRequest_xPlatform(file_path->c_str());
+}
+#elif defined(Q_OS_WIN32)
+void OnClientDumpRequest(void* /*context*/,
+                         const google_breakpad::ClientInfo* /*client_info*/,
+                         const std::wstring* file_path) {
+    
+    QString str = QString::fromWCharArray(file_path->c_str());
+    dumpRequest_xPlatform(str);
+}
+#endif
+
 void
 CallbacksManager::onOutputPipeConnectionMade()
 {
-    writeDebugMessage("Output IPC pipe with Natron successfully connected.");
+    writeDebugMessage("Output IPC pipe with Natron successfully connected, starting crash generation server.");
 
+    /*
+     * We initialize the CrashGenerationServer now that the connection is made between Natron & the Crash reporter
+     */
+#if defined(Q_OS_MAC)
+    _crashServer = new CrashGenerationServer(_pipePath.toStdString().c_str(),
+                                             0, // filter cb
+                                             0, // filter ctx
+                                             OnClientDumpRequest, // dump cb
+                                             0, // dump ctx
+                                             0, // exit cb
+                                             0, // exit ctx
+                                             true, // auto-generate dumps
+                                             _dumpDirPath.toStdString()); // path to dump to
+#elif defined(Q_OS_LINUX)
+    int listenFd = args[2].toInt();
+    std::string stdDumpPath = _dumpDirPath.toStdString();
+    _crashServer = new CrashGenerationServer(_outputPipe->socketDescriptor(),
+                                          OnClientDumpRequest, // dump cb
+                                          0, // dump ctx
+                                          0, // exit cb
+                                          0, // exit ctx
+                                          true, // auto-generate dumps
+                                          &stdDumpPath); // path to dump to
+#elif defined(Q_OS_WIN32)
+    std::string pipeName = _pipePath.toStdString();
+    std::wstring wpipeName = s2ws(pipeName);
+    std::string stdDumPath = _dumpDirPath.toStdString();
+    std::wstring stdWDumpPath = s2ws(stdDumPath);
+    _crashServer = new CrashGenerationServer(wpipeName,
+                                          0, // SECURITY ATTRS
+                                          0, // on client connected cb
+                                          0, // on client connected ctx
+                                          OnClientDumpRequest, // dump cb
+                                          0, // dump ctx
+                                          0, // exit cb
+                                          0, // exit ctx
+                                          0, // upload request cb
+                                          0, //  upload request ctx
+                                          true, // auto-generate dumps
+                                          &stdWDumpPath); // path to dump to
+#endif
+    if (!_crashServer->Start()) {
+        writeDebugMessage("Failure to start breakpad server, crash generation will fail.");
+        qApp->exit();
+        return;
+    } else {
+        writeDebugMessage("Crash generation server started successfully.");
+    }
+    
+
+    
     //At this point we're sure that the server is created, so we notify Natron about it so it can create its ExceptionHandler
     writeToOutputPipe("-i");
 }
@@ -429,10 +562,15 @@ CallbacksManager::writeToOutputPipe(const QString& str)
 }
 
 void
-CallbacksManager::initOuptutPipe(const QString& comPipeName)
+CallbacksManager::initOuptutPipe(const QString& comPipeName,
+                                 const QString& pipeName,
+                                 const QString& dumpPath)
 {
     assert(!_outputPipe);
+    _dumpDirPath = dumpPath;
+    _pipePath = pipeName;
     _outputPipe = new QLocalSocket;
     QObject::connect( _outputPipe, SIGNAL( connected() ), this, SLOT( onOutputPipeConnectionMade() ) );
     _outputPipe->connectToServer(comPipeName,QLocalSocket::ReadWrite);
+    
 }
