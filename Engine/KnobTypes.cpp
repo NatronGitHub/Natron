@@ -688,9 +688,11 @@ KnobChoice::getActiveEntryText_mt_safe() const
     int activeIndex = getValue();
     
     QMutexLocker l(&_entriesMutex);
-    assert( activeIndex < (int)_entries.size() );
+    if ( activeIndex < (int)_entries.size()) {
+        return _entries[activeIndex];
+    }
+    return std::string();
     
-    return _entries[activeIndex];
 }
 
 

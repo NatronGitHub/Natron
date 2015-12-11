@@ -277,7 +277,7 @@ AppManagerPrivate::createBreakpadHandler()
         qDebug() << e.what();
         return;
     }
-    crash_application();
+    //crash_application();
 }
 #endif // NATRON_USE_BREAKPAD
 
