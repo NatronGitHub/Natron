@@ -109,7 +109,7 @@ GIT_ARENA=https://github.com/olear/openfx-arena.git
 
 #Installer is a fork of qtifw to fix a few bugs (TODO update/move to v2 upstream)
 GIT_INSTALLER=https://github.com/olear/qtifw.git
-
+GIT_BREAKPAD=https://github.com/MrKepzie/google-breakpad
 GIT_NATRON=https://github.com/MrKepzie/Natron.git
 GIT_IO=https://github.com/MrKepzie/openfx-io.git
 GIT_MISC=https://github.com/devernay/openfx-misc.git

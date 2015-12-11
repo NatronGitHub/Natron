@@ -1174,6 +1174,17 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/pyside.pc ]; then
     make install || exit 1
 fi
 
+# Install breakpad tools
+if [ ! -f "${INSTALL_PATH}/bin/dump_syms" ]; then
+  cd "$TMP_PATH" || exit 1
+  rm -f google-breakpad
+  git clone $GIT_BREAKPAD || exit 1
+  cd google-breakpad || exit 1 
+  ./configure || exit 1
+  make || exit 1
+  cp src/tools/linux/dump_syms/dump_syms "$INSTALL_PATH/bin/" || exit 1
+fi
+
 if [ ! -z "$TAR_SDK" ]; then
     # Done, make a tarball
     cd "$INSTALL_PATH/.." || exit 1
