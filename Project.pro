@@ -21,6 +21,8 @@ TEMPLATE = subdirs
 # build things in the order we give
 CONFIG += ordered
 
+gbreakpad: SUBDIRS += BreakpadClient CrashReporter CrashReporterCLI
+
 SUBDIRS += \
     HostSupport \
     Engine \
@@ -28,8 +30,6 @@ SUBDIRS += \
     Gui \
     Tests \
     App
-
-gbreakpad: SUBDIRS += BreakpadClient CrashReporter CrashReporterCLI
 
 OTHER_FILES += \
     Global/Enums.h \
