@@ -11,6 +11,7 @@ source `pwd`/functions.sh
 #fi
 
 # basic tools/libs
+setup_dumpsyms
 setup_ssl
 setup_qt installer
 setup_installer 
