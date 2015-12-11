@@ -99,6 +99,8 @@ void crash_application()
     // coverity[var_deref_op]
     *a = 1;
 }
+#else
+inline void crash_application() {}
 #endif // DEBUG
 #endif // NATRON_USE_BREAKPAD
 
@@ -2676,7 +2678,7 @@ AppManager::onCrashReporterOutputWritten()
             qDebug() << e.what();
             return;
         }
-        crash_application();
+        //crash_application();
 
     } else {
         qDebug() << "Error: Unable to interpret message.";
