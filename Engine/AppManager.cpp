@@ -326,6 +326,7 @@ AppManager::~AppManager()
 #ifndef Q_OS_LINUX
     if (_imp->crashReporter) {
         _imp->crashReporter->terminate();
+        _imp->crashReporter->waitForFinished();
     }
 #endif
 #endif
