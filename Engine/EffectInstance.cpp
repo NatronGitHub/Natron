@@ -3435,7 +3435,6 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
         QMutexLocker k(&_imp->componentsAvailableMutex);
         if (!_imp->componentsAvailableDirty) {
             comps->insert( _imp->outputComponentsAvailable.begin(), _imp->outputComponentsAvailable.end() );
-
             return;
         }
     }
@@ -3452,7 +3451,6 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
     bool processAll;
     bool processChannels[4];
     getComponentsNeededAndProduced_public(useLayerChoice, time, view, &neededComps, &processAll, &ptTime, &ptView, processChannels, &ptInput);
-
 
     ///If the plug-in is not pass-through, only consider the components processed by the plug-in in output,
     ///so we do not need to recurse.
@@ -3579,7 +3577,7 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
     }
     markedNodes->push_back(this);
 
-
+    
     if (useLayerChoice) {
         QMutexLocker k(&_imp->componentsAvailableMutex);
         _imp->componentsAvailableDirty = false;
@@ -4379,6 +4377,27 @@ EffectInstance::checkOFXClipPreferences_recursive(double time,
     }
 }
 
+static void setComponentsDirty_recursive(const Node* node, std::list<const Natron::Node*> & markedNodes)
+{
+    std::list<const Natron::Node*>::iterator found = std::find( markedNodes.begin(), markedNodes.end(), node );
+    
+    if ( found != markedNodes.end() ) {
+        return;
+    }
+    
+    markedNodes.push_back(node);
+    
+    node->getLiveInstance()->setComponentsAvailableDirty(true);
+    
+    
+    std::list<Natron::Node*>  outputs;
+    node->getOutputsWithGroupRedirection(outputs);
+    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        setComponentsDirty_recursive(*it,markedNodes);
+    }
+    
+}
+
 void
 EffectInstance::checkOFXClipPreferences_public(double time,
                                                const RenderScale & scale,
@@ -4389,8 +4408,14 @@ EffectInstance::checkOFXClipPreferences_public(double time,
     assert( QThread::currentThread() == qApp->thread() );
 
     if (recurse) {
-        std::list<Natron::Node*> markedNodes;
-        checkOFXClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
+        {
+            std::list<const Natron::Node*> markedNodes;
+            setComponentsDirty_recursive(_node.lock().get(),markedNodes);
+        }
+        {
+            std::list<Natron::Node*> markedNodes;
+            checkOFXClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
+        }
     } else {
         checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
     }

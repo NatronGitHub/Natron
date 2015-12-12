@@ -476,15 +476,15 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
     NodePtr internalNewSrc = newSrc ? newSrc->getNode() : NodePtr();
     NodePtr internalOldSrc = oldSrc ? oldSrc->getNode() : NodePtr();
     
-    InspectorNode* inspector = dynamic_cast<InspectorNode*>(internalDst.get());
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(internalDst->getLiveInstance());
 
     
     
-    if (inspector) {
+    if (isViewer) {
         ///if the node is an inspector  disconnect any current connection between the inspector and the _newSrc
-        for (int i = 0; i < inspector->getMaxInputCount(); ++i) {
-            if (i != inputNb && inspector->getInput(i) == internalNewSrc) {
-                inspector->disconnectInput(i);
+        for (int i = 0; i < internalDst->getMaxInputCount(); ++i) {
+            if (i != inputNb && internalDst->getInput(i) == internalNewSrc) {
+                internalDst->disconnectInput(i);
             }
         }
     }
