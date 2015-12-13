@@ -542,17 +542,16 @@ static bool tryParseFrameRange(const QString& arg,std::pair<int,int>& range, int
 static bool tryParseMultipleFrameRanges(const QString& args,std::list<std::pair<int,std::pair<int,int> > >& frameRanges)
 {
     QStringList splits = args.split(',');
+    bool added = false;
     for (int i = 0; i < splits.size(); ++i) {
         std::pair<int,int> frameRange;
         int frameStep;
         if (tryParseFrameRange(splits[i], frameRange, frameStep)) {
+            added = true;
             frameRanges.push_back(std::make_pair(frameStep, frameRange));
         }
     }
-    if (!frameRanges.empty()) {
-        return true;
-    }
-    return false;
+    return added;
 }
 
 void

@@ -1280,7 +1280,6 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
     
     double percentage = 0.;
     double timeSpent;
-    int nbCurParallelRenders;
     
     if (stats) {
         std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > statResults = stats->getStats(&timeSpent);
@@ -1303,7 +1302,6 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             percentage = (double)_imp->nFramesRendered / totalFrames;
         }
         nbFramesLeftToRender = totalFrames - _imp->nFramesRendered;
-        
         if ( _imp->nFramesRendered == totalFrames) {
 
             _imp->renderFinished = true;
@@ -1315,33 +1313,32 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
                 ignore_result(_imp->appendBufferedFrame(0, 0, RenderStatsPtr(), boost::shared_ptr<BufferableObject>()));
                 _imp->bufCondition.wakeOne();
             }
-            nbCurParallelRenders = getNRenderThreads();
         } else {
             l.unlock();
             
             ///////////
             /////If we were analysing the CPU activity, now set the appropriate number of threads to render.
             int newNThreads;
+            int nbCurParallelRenders;
             adjustNumberOfThreads(&newNThreads, &nbCurParallelRenders);
         }
     } else {
         {
             QMutexLocker l(&_imp->runArgsMutex);
-            U64 totalFrames = std::floor((_imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1) / _imp->livingRunArgs.frameStep);
+            U64 totalFrames = std::floor((double)(_imp->livingRunArgs.lastFrame - _imp->livingRunArgs.firstFrame + 1) / _imp->livingRunArgs.frameStep);
             assert(totalFrames > 0);
             if (_imp->livingRunArgs.timelineDirection == eRenderDirectionForward) {
                 if (totalFrames != 0) {
-                    percentage = (double)frame - _imp->livingRunArgs.firstFrame / totalFrames;
+                    percentage = (double)(frame - _imp->livingRunArgs.firstFrame) / _imp->livingRunArgs.frameStep / totalFrames;
                 }
-                nbFramesLeftToRender = (_imp->livingRunArgs.lastFrame - frame) / _imp->livingRunArgs.frameStep;
+                nbFramesLeftToRender = (double)(_imp->livingRunArgs.lastFrame - frame) / _imp->livingRunArgs.frameStep;
             } else {
                 if (totalFrames != 0) {
-                    percentage = _imp->livingRunArgs.lastFrame - (double)frame  / totalFrames;
+                    percentage = (double)(_imp->livingRunArgs.lastFrame - frame)  / totalFrames;
                 }
                 nbFramesLeftToRender = (double)(frame - _imp->livingRunArgs.firstFrame) / _imp->livingRunArgs.frameStep;
             }
         }
-        nbCurParallelRenders = getNRenderThreads();
     } // if (policy == eSchedulingPolicyFFA) {
     
     double avgTimeSpent = 0.;
@@ -1349,8 +1346,13 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
     double totalTimeSpent = 0.;
     if (stats) {
         _imp->outputEffect->updateRenderTimeInfos(timeSpent, &avgTimeSpent, &totalTimeSpent);
-        assert(nbCurParallelRenders > 0);
-        timeRemaining = nbCurParallelRenders ? (nbFramesLeftToRender * avgTimeSpent) / (double)nbCurParallelRenders : 0;
+        if (percentage != 0) {
+            timeRemaining = avgTimeSpent * (1 - percentage) / percentage;
+        } else {
+            //Unknown yet
+            timeRemaining = -1;
+        }
+        //timeRemaining = nbCurParallelRenders ? (nbFramesLeftToRender * avgTimeSpent) / (double)nbCurParallelRenders : 0;
     }
     
     if (isBackground) {

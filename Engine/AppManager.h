@@ -375,9 +375,7 @@ public:
     void saveCaches() const;
 
     PyObject* getMainModule();
-    
-    QString getSystemNonOFXPluginsPath() const;
-    
+        
     QStringList getAllNonOFXPluginsPaths() const;
     
     void launchPythonInterpreter();

@@ -114,8 +114,12 @@ RenderingProgressDialog::onFrameRenderedWithTimer(int frame, double /*timeElapse
     ts << "Frame " << frame << " (" << QString::number(progress,'f',1) << "%)";
     _imp->_totalProgressInfo->setText(infoStr);
     
-    QString timeStr = Timer::printAsTime(remainingTime, true);
-    _imp->_estimatedWaitTimeInfo->setText(timeStr);
+    if (remainingTime != -1) {
+        QString timeStr = Timer::printAsTime(remainingTime, true);
+        _imp->_estimatedWaitTimeInfo->setText(timeStr);
+    } else {
+        _imp->_estimatedWaitTimeInfo->setText(tr("Unknown"));
+    }
 }
 
 void

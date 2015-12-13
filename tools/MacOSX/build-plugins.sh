@@ -56,7 +56,7 @@ IO_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 sed -i "" -e "s/IOPLUG_DEVEL_GIT=.*/IOPLUG_DEVEL_GIT=${IO_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
 make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG OCIO_HOME=/opt/local OIIO_HOME=/opt/local SEEXPR_HOME=/opt/local -j${MKJOBS} || exit 1
-cp -r IO/$OS-$BITS-$CONFIG/IO.ofx.bundle "$PLUGINDIR/" || exit 1
+cp -r IO/$OS-$BITS-$CONFIG/IO.ofx.bundle "$PLUGINDIR/OFX/Natron" || exit 1
 cd ..
 
 #Build openfx-misc
@@ -74,7 +74,7 @@ MISC_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 sed -i "" -e "s/MISCPLUG_DEVEL_GIT=.*/MISCPLUG_DEVEL_GIT=${MISC_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
 make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} HAVE_CIMG=0 || exit 1
-cp -r Misc/$OS-$BITS-$CONFIG/Misc.ofx.bundle "$PLUGINDIR/" || exit 1
+cp -r Misc/$OS-$BITS-$CONFIG/Misc.ofx.bundle "$PLUGINDIR/OFX/Natron" || exit 1
 make -C CImg CImg.h || exit 1
 if [ "$COMPILER" = "gcc" ]; then
     # build CImg with OpenMP support
@@ -86,7 +86,7 @@ elif [ -n "$GXX" ]; then
     # build CImg with OpenMP support, but statically link libgomp (see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=31400)
     make -C CImg CXX="$GXX" BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} CXXFLAGS_ADD=-fopenmp LDFLAGS_ADD="-fopenmp -static-libgcc" || exit 1
 fi
-cp -r CImg/$OS-$BITS-$CONFIG/CImg.ofx.bundle "$PLUGINDIR/" || exit 1
+cp -r CImg/$OS-$BITS-$CONFIG/CImg.ofx.bundle "$PLUGINDIR/OFX/Natron" || exit 1
 cd ..
 
 #Build openfx-arena
@@ -111,7 +111,7 @@ ARENA_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 sed -i "" -e "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
 make CXX="$CXX" USE_PANGO=1 USE_SVG=1 STATIC=1 BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
-cp -r Bundle/$OS-$BITS-$CONFIG/Arena.ofx.bundle "$PLUGINDIR/" || exit 1
+cp -r Bundle/$OS-$BITS-$CONFIG/Arena.ofx.bundle "$PLUGINDIR/OFX/Natron" || exit 1
 cd ..
 
 # move all libraries to the same place, put symbolic links instead

@@ -120,7 +120,7 @@ fi
 # OFX IO
 OFX_IO_VERSION=$TAG
 OFX_IO_PATH=$INSTALLER/packages/$IOPLUG_PKG
-mkdir -p $OFX_IO_PATH/data $OFX_IO_PATH/meta $OFX_IO_PATH/data/Plugins $OFX_IO_PATH/data/bin || exit 1
+mkdir -p $OFX_IO_PATH/data $OFX_IO_PATH/meta $OFX_IO_PATH/data/Plugins/OFX/Natron $OFX_IO_PATH/data/bin || exit 1
 cat $XML/openfx-io.xml | sed "s/_VERSION_/${OFX_IO_VERSION}/;s/_DATE_/${DATE}/" > $OFX_IO_PATH/meta/package.xml || exit 1
 cat $QS/openfx-io.qs > $OFX_IO_PATH/meta/installscript.qs || exit 1
 cp $INSTALL_PATH/ffmpeg-$FFLIC/bin/{ffmpeg,ffprobe} $OFX_IO_PATH/data/ || exit 1
@@ -129,12 +129,12 @@ cp $INSTALL_PATH/ffmpeg-$FFLIC/bin/{ffmpeg,ffprobe} $OFX_IO_PATH/data/ || exit 1
 #chmod +x $OFX_IO_PATH/data/{ffmpeg,ffprobe} || exit 1
 strip -s $OFX_IO_PATH/data/ffmpeg
 strip -s $OFX_IO_PATH/data/ffprobe
-cp -a $INSTALL_PATH/Plugins/IO.ofx.bundle $OFX_IO_PATH/data/Plugins/ || exit 1
-strip -s $OFX_IO_PATH/data/Plugins/*/*/*/*
-IO_LIBS=$OFX_IO_PATH/data/Plugins/IO.ofx.bundle/Libraries
+cp -a $INSTALL_PATH/Plugins/IO.ofx.bundle $OFX_IO_PATH/data/Plugins/OFX/Natron/ || exit 1
+strip -s $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/*
+IO_LIBS=$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Libraries
 mkdir -p $IO_LIBS || exit 1
 
-OFX_DEPENDS=$(ldd $INSTALLER/packages/*/data/Plugins/*/*/*/*|grep opt | awk '{print $3}')
+OFX_DEPENDS=$(ldd $INSTALLER/packages/*/data/Plugins/OFX/Natron/*/*/*/*|grep opt | awk '{print $3}')
 for x in $OFX_DEPENDS; do
     cp -v $x $IO_LIBS/ || exit 1
 done
@@ -166,15 +166,15 @@ strip -s $IO_LIBS/*
 # OFX MISC
 OFX_MISC_VERSION=$TAG
 OFX_MISC_PATH=$INSTALLER/packages/$MISCPLUG_PKG
-mkdir -p $OFX_MISC_PATH/data $OFX_MISC_PATH/meta $OFX_MISC_PATH/data/Plugins || exit 1
+mkdir -p $OFX_MISC_PATH/data $OFX_MISC_PATH/meta $OFX_MISC_PATH/data/Plugins/OFX/Natron || exit 1
 cat $XML/openfx-misc.xml | sed "s/_VERSION_/${OFX_MISC_VERSION}/;s/_DATE_/${DATE}/" > $OFX_MISC_PATH/meta/package.xml || exit 1
 cat $QS/openfx-misc.qs > $OFX_MISC_PATH/meta/installscript.qs || exit 1
-cp -a $INSTALL_PATH/Plugins/{CImg,Misc}.ofx.bundle $OFX_MISC_PATH/data/Plugins/ || exit 1
-strip -s $OFX_MISC_PATH/data/Plugins/*/*/*/*
-CIMG_LIBS=$OFX_MISC_PATH/data/Plugins/CImg.ofx.bundle/Libraries
+cp -a $INSTALL_PATH/Plugins/{CImg,Misc}.ofx.bundle $OFX_MISC_PATH/data/Plugins/OFX/Natron/ || exit 1
+strip -s $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/*
+CIMG_LIBS=$OFX_MISC_PATH/data/Plugins/OFX/Natron/CImg.ofx.bundle/Libraries
 mkdir -p $CIMG_LIBS || exit 1
 
-OFX_CIMG_DEPENDS=$(ldd $OFX_MISC_PATH/data/Plugins/*/*/*/*|grep opt | awk '{print $3}')
+OFX_CIMG_DEPENDS=$(ldd $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/*|grep opt | awk '{print $3}')
 for x in $OFX_CIMG_DEPENDS; do
     cp -v $x $CIMG_LIBS/ || exit 1
 done
@@ -185,7 +185,7 @@ rm -f $CIMG_LIBS/{libgcc*,libstdc*,libgomp*}
   ln -sf ../../../lib/libgomp.so.1 .
 )
 strip -s $CIMG_LIBS/*
-MISC_LIBS=$OFX_MISC_PATH/data/Plugins/Misc.ofx.bundle/Libraries
+MISC_LIBS=$OFX_MISC_PATH/data/Plugins/OFX/Natron/Misc.ofx.bundle/Libraries
 mkdir -p $MISC_LIBS || exit 1
 (cd $MISC_LIBS ;
   ln -sf ../../../lib/libgcc_s.so.1 .
@@ -194,7 +194,7 @@ mkdir -p $MISC_LIBS || exit 1
 
 # NATRON
 NATRON_PATH=$INSTALLER/packages/$NATRON_PKG
-mkdir -p $NATRON_PATH/meta $NATRON_PATH/data/docs $NATRON_PATH/data/bin $NATRON_PATH/data/share || exit 1
+mkdir -p $NATRON_PATH/meta $NATRON_PATH/data/docs $NATRON_PATH/data/bin $NATRON_PATH/data/share $NATRON_PATH/data/Plugins/PyPlugs || exit 1
 cat $XML/natron.xml | sed "s/_VERSION_/${TAG}/;s/_DATE_/${DATE}/" > $NATRON_PATH/meta/package.xml || exit 1
 cat $QS/natron.qs > $NATRON_PATH/meta/installscript.qs || exit 1
 cp -a $INSTALL_PATH/docs/natron/* $NATRON_PATH/data/docs/ || exit 1
@@ -378,15 +378,15 @@ patchelf --set-rpath "\$ORIGIN/Plugins/IO.ofx.bundle/Libraries" $OFX_IO_PATH/dat
 # OFX ARENA
 OFX_ARENA_VERSION=$TAG
 OFX_ARENA_PATH=$INSTALLER/packages/$ARENAPLUG_PKG
-mkdir -p $OFX_ARENA_PATH/meta $OFX_ARENA_PATH/data/Plugins || exit 1
+mkdir -p $OFX_ARENA_PATH/meta $OFX_ARENA_PATH/data/Plugins/OFX/Natron || exit 1
 cat $XML/openfx-arena.xml | sed "s/_VERSION_/${OFX_ARENA_VERSION}/;s/_DATE_/${DATE}/" > $OFX_ARENA_PATH/meta/package.xml || exit 1
 cat $QS/openfx-arena.qs > $OFX_ARENA_PATH/meta/installscript.qs || exit 1
-cp -av $INSTALL_PATH/Plugins/Arena.ofx.bundle $OFX_ARENA_PATH/data/Plugins/ || exit 1
-strip -s $OFX_ARENA_PATH/data/Plugins/*/*/*/*
+cp -av $INSTALL_PATH/Plugins/Arena.ofx.bundle $OFX_ARENA_PATH/data/Plugins/OFX/Natron/ || exit 1
+strip -s $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/*
 
-ARENA_LIBS=$OFX_ARENA_PATH/data/Plugins/Arena.ofx.bundle/Libraries
+ARENA_LIBS=$OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Libraries
 mkdir -p $ARENA_LIBS || exit 1
-OFX_ARENA_DEPENDS=$(ldd $OFX_ARENA_PATH/data/Plugins/*/*/*/*|grep opt | awk '{print $3}')
+OFX_ARENA_DEPENDS=$(ldd $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/*|grep opt | awk '{print $3}')
 for x in $OFX_ARENA_DEPENDS; do
     cp -v $x $ARENA_LIBS/ || exit 1
 done
@@ -416,16 +416,16 @@ strip -s $ARENA_LIBS/*
 # OFX CV
 #OFX_CV_VERSION=$TAG
 #OFX_CV_PATH=$INSTALLER/packages/$CVPLUG_PKG
-#mkdir -p $OFX_CV_PATH/{data,meta} $OFX_CV_PATH/data/Plugins $OFX_CV_PATH/data/docs/openfx-opencv || exit 1
+#mkdir -p $OFX_CV_PATH/{data,meta} $OFX_CV_PATH/data/Plugins/OFX/Natron $OFX_CV_PATH/data/docs/openfx-opencv || exit 1
 #cat $XML/openfx-opencv.xml | sed "s/_VERSION_/${OFX_CV_VERSION}/;s/_DATE_/${DATE}/" > $OFX_CV_PATH/meta/package.xml || exit 1
 #cat $QS/openfx-opencv.qs > $OFX_CV_PATH/meta/installscript.qs || exit 1
 #cp -a $INSTALL_PATH/docs/openfx-opencv $OFX_CV_PATH/data/docs/ || exit 1
 #cat $OFX_CV_PATH/data/docs/openfx-opencv/README > $OFX_CV_PATH/meta/license.txt || exit 1
-#cp -a $INSTALL_PATH/Plugins/{inpaint,segment}.ofx.bundle $OFX_CV_PATH/data/Plugins/ || exit 1
-#strip -s $OFX_CV_PATH/data/Plugins/*/*/*/*
+#cp -a $INSTALL_PATH/Plugins/{inpaint,segment}.ofx.bundle $OFX_CV_PATH/data/Plugins/OFX/Natron/ || exit 1
+#strip -s $OFX_CV_PATH/data/Plugins/OFX/Natron/*/*/*/*
 
 #mkdir -p $OFX_CV_PATH/data/lib || exit 1
-#OFX_CV_DEPENDS=$(ldd $OFX_CV_PATH/data/Plugins/*/*/*/*|grep opt | awk '{print $3}')
+#OFX_CV_DEPENDS=$(ldd $OFX_CV_PATH/data/Plugins/OFX/Natron/*/*/*/*|grep opt | awk '{print $3}')
 #for x in $OFX_CV_DEPENDS; do
 #  cp -v $x $OFX_CV_PATH/data/lib/ || exit 1
 #done
@@ -433,9 +433,9 @@ strip -s $ARENA_LIBS/*
 #cp -a $INSTALL_PATH/docs/opencv $OFX_CV_PATH/data/docs/ || exit 1
 #cat $INSTALL_PATH/docs/opencv/LICENSE >> $OFX_CV_PATH/meta/ofx-cv-license.txt || exit 1
 
-#mkdir -p $OFX_CV_PATH/data/Plugins/inpaint.ofx.bundle/Libraries || exit 1
-#mv $OFX_CV_PATH/data/lib/* $OFX_CV_PATH/data/Plugins/inpaint.ofx.bundle/Libraries/ || exit 1
-#(cd $OFX_CV_PATH/data/Plugins/segment.ofx.bundle; ln -sf ../inpaint.ofx.bundle/Libraries .)
+#mkdir -p $OFX_CV_PATH/data/Plugins/OFX/Natron/inpaint.ofx.bundle/Libraries || exit 1
+#mv $OFX_CV_PATH/data/lib/* $OFX_CV_PATH/data/Plugins/OFX/Natron/inpaint.ofx.bundle/Libraries/ || exit 1
+#(cd $OFX_CV_PATH/data/Plugins/OFX/Natron/segment.ofx.bundle; ln -sf ../inpaint.ofx.bundle/Libraries .)
 #rm -rf $OFX_CV_PATH/data/lib || exit 1
 
 # Clean and perms
