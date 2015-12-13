@@ -716,7 +716,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
     // if Natron is /usr/bin/Natron, /usr/bin/../OFX/Natron points to Natron-specific plugins
     QDir dir( QCoreApplication::applicationDirPath() );
     dir.cdUp();
-    std::string natronBundledPluginsPath = QString(dir.absolutePath() +  "Plugins/OFX/" + QString(NATRON_APPLICATION_NAME)).toStdString();
+    std::string natronBundledPluginsPath = QString(dir.absolutePath() +  "/Plugins/OFX/" + QString(NATRON_APPLICATION_NAME)).toStdString();
     try {
         if ( appPTR->getCurrentSettings()->loadBundledPlugins() ) {
             if ( appPTR->getCurrentSettings()->preferBundledPlugins() ) {
