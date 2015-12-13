@@ -657,7 +657,16 @@ bool getGroupInfos(const std::string& modulePath,
                    std::string* grouping,
                    std::string* description,
                    unsigned int* version);
-
+bool getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
+                                     const std::string& modulePath,
+                                     const std::string& pythonModule,
+                                     std::string* pluginID,
+                                     std::string* pluginLabel,
+                                     std::string* iconFilePath,
+                                     std::string* grouping,
+                                     std::string* description,
+                                     unsigned int* version);
+    
 // Does not work for functions with var args
 void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args);
     
