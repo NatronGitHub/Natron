@@ -1,10 +1,39 @@
 #!/bin/sh
 source `pwd`/common.sh
 
+function setup_gettext {
+  if [ "$PKGOS" = "Mac" ] && [ ! -f "$INSTALL_PATH/bin/gettext" ]; then
+    if [ ! -f $SRC_PATH/$GETTEXT_TAR ]; then
+      curl $THIRD_PARTY_SRC_URL/$GETTEXT_TAR -o $SRC_PATH/$GETTEXT_TAR || exit 1
+    fi
+    rm -rf $TMP_PATH/gettext-*
+    tar xvf $SRC_PATH/$GETTEXT_TAR -C $TMP_PATH || exit 1
+    cd $TMP_PATH/gettext-* || exit 1
+    ./configure --prefix=$INSTALL_PATH || exit 1
+    make || exit 1
+    make install || exit 1
+  fi
+}
+
+function setup_pkgconfig {
+  if [ "$PKGOS" = "Mac" ] && [ ! -f "$INSTALL_PATH/bin/pkg-config" ]; then
+    if [ ! -f $SRC_PATH/$PKGCONF_TAR ]; then
+      curl $THIRD_PARTY_SRC_URL/$PKGCONF_TAR -o $SRC_PATH/$PKGCONF_TAR || exit 1
+    fi
+    rm -rf $TMP_PATH/pkg-config-*
+    tar xvf $SRC_PATH/$PKGCONF_TAR -C $TMP_PATH || exit 1
+    cd $TMP_PATH/pkg-config-* || exit 1
+    patch -p0< $CWD/patches/pkg-config/patch-glib-configure.diff || exit 1
+    ./configure --with-internal-glib --prefix=$INSTALL_PATH  --with-pc-path=${INSTALL_PATH}/lib/pkgconfig:${INSTALL_PATH}/share/pkgconfig --disable-host-tool || exit 1
+    make || exit 1
+    make install || exit 1 
+  fi
+}
+
 function setup_dumpsyms {
   if [ ! -f "${INSTALL_PATH}/bin/dump_syms" ]; then
     cd "$TMP_PATH" || exit 1
-    rm -f google-breakpad
+    rm -rf google-breakpad
     git clone $GIT_BREAKPAD || exit 1
     cd google-breakpad || exit 1 
     if [ "$PKGOS" = "Linux" ]; then
@@ -23,13 +52,20 @@ function setup_ssl {
     rm -rf $TMP_PATH/openssl*
     tar xvf $SRC_PATH/$SSL_TAR -C $TMP_PATH || exit 1
     cd $TMP_PATH/openssl-* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./config --prefix="$INSTALL_PATH" || exit 1
+    if [ "$PKGOS" = "Mac" ]; then
+      ./Configure darwin64-x86_64-cc --prefix="$INSTALL_PATH" -shared || exit 1
+    fi
+    if [ "$PKGOS" = "Linux" ]; then
+      env CFLAGS="$BF" CXXFLAGS="$BF" ./config $EXTRA --prefix="$INSTALL_PATH" || exit 1
+    fi
     make || exit 1
     make install || exit 1
-    make clean
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./config --prefix="$INSTALL_PATH" -shared || exit 1
-    make || exit 1
-    make install || exit 1
+    if [ "$PKGOS" = "Linux" ]; then
+      make clean
+      env CFLAGS="$BF" CXXFLAGS="$BF" ./config $EXTRA --prefix="$INSTALL_PATH" -shared || exit 1
+      make || exit 1
+      make install || exit 1
+    fi
   fi 
 }
 
@@ -147,7 +183,13 @@ function setup_gcc {
 }
 
 function setup_zlib {
-  if [ ! -f "$INSTALL_PATH/lib/libz.so.1" ]; then
+  if [ "$PKGOS" = "Linux" ]; then
+    Z_LIB=libz.so.1
+  fi
+  if [ "$PKGOS" = "Mac" ]; then
+    Z_LIB=libz.1.2.8.dylib
+  fi
+  if [ ! -f "$INSTALL_PATH/lib/$Z_LIB" ]; then
     if [ ! -f "$SRC_PATH/$ZLIB_TAR" ]; then
       curl "$THIRD_PARTY_SRC_URL/$ZLIB_TAR" -o "$SRC_PATH/$ZLIB_TAR" || exit 1
     fi
@@ -164,21 +206,37 @@ function setup_zlib {
 }
 
 function setup_bzip {
-  if [ ! -f "$INSTALL_PATH/lib/libbz2.so.1" ]; then
+  if [ "$PKGOS" = "Linux" ]; then
+    BZ_LIB=libbz2.so.1
+  fi
+  if [ "$PKGOS" = "Mac" ]; then
+    BZ_LIB=libbz2.dylib
+  fi
+  if [ ! -f "$INSTALL_PATH/lib/$BZ_LIB" ]; then
     if [ ! -f "$SRC_PATH/$BZIP_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$BZIP_TAR" -o "$SRC_PATH/$BZIP_TAR" || exit 1
     fi
     rm -rf $TMP_PATH/bzip*
     tar xvf "$SRC_PATH/$BZIP_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/bzip* || exit 1
-    sed -e 's/^CFLAGS=\(.*\)$/CFLAGS=\1 \$(BIGFILES)/' -i ./Makefile-libbz2_so || exit 1
-    sed -i "s/libbz2.so.1.0 -o libbz2.so.1.0.6/libbz2.so.1 -o libbz2.so.1.0.6/;s/rm -f libbz2.so.1.0/rm -f libbz2.so.1/;s/ln -s libbz2.so.1.0.6 libbz2.so.1.0/ln -s libbz2.so.1.0.6 libbz2.so.1/" Makefile-libbz2_so || exit 1
-    make -f Makefile-libbz2_so || exit 1
-    install -m755 libbz2.so.1.0.6 $INSTALL_PATH/lib || exit 1
-    install -m644 bzlib.h $INSTALL_PATH/include/ || exit 1
-    cd $INSTALL_PATH/lib || exit 1
-    ln -s libbz2.so.1.0.6 libbz2.so || exit 1
-    ln -s libbz2.so.1.0.6 libbz2.so.1 || exit 1
+    if [ "$PKGOS" = "Linux" ]; then
+      sed -e 's/^CFLAGS=\(.*\)$/CFLAGS=\1 \$(BIGFILES)/' -i ./Makefile-libbz2_so || exit 1
+      sed -i "s/libbz2.so.1.0 -o libbz2.so.1.0.6/libbz2.so.1 -o libbz2.so.1.0.6/;s/rm -f libbz2.so.1.0/rm -f libbz2.so.1/;s/ln -s libbz2.so.1.0.6 libbz2.so.1.0/ln -s libbz2.so.1.0.6 libbz2.so.1/" Makefile-libbz2_so || exit 1
+      make -f Makefile-libbz2_so || exit 1
+      install -m755 libbz2.so.1.0.6 $INSTALL_PATH/lib || exit 1
+      install -m644 bzlib.h $INSTALL_PATH/include/ || exit 1
+      cd $INSTALL_PATH/lib || exit 1
+      ln -s libbz2.so.1.0.6 libbz2.so || exit 1
+      ln -s libbz2.so.1.0.6 libbz2.so.1 || exit 1
+    fi
+    if [ "$PKGOS" = "Mac" ]; then
+      patch -p0< $CWD/patches/bzip2/patch-Makefile-dylib.diff || exit 1
+      make || exit 1
+      install -m755 libbz2.1.0.6.dylib $INSTALL_PATH/lib || exit 1
+      install -m755 libbz2.1.0.dylib $INSTALL_PATH/lib || exit 1
+      install -m755 libbz2.dylib $INSTALL_PATH/lib || exit 1
+      install -m644 bzlib.h $INSTALL_PATH/include/ || exit 1
+    fi
   fi
 }
 
@@ -299,7 +357,7 @@ function setup_fontconfig {
     rm -rf $TMP_PATH/fontconfig*
     tar xvf "$SRC_PATH/$FCONFIG_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/fontconfig* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --libdir="$INSTALL_PATH/lib" --disable-docs --disable-static --enable-shared || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
   fi
@@ -322,13 +380,16 @@ function setup_ffi {
 function setup_glib {
   if [ ! -f "$INSTALL_PATH/lib/pkgconfig/glib-2.0.pc" ]; then
     setup_ffi || exit 1
+    if [ "$PKGOS" = "Mac" ]; then
+      setup_gettext || exit 1
+    fi
     if [ ! -f "$SRC_PATH/$GLIB_TAR" ]; then
         curl "$THIRD_PARTY_SRC_URL/$GLIB_TAR" -o "$SRC_PATH/$GLIB_TAR" || exit 1
     fi
     rm -rf $TMP_PATH/glib*
     tar xvf "$SRC_PATH/$GLIB_TAR" -C "$TMP_PATH" || exit 1
     cd $TMP_PATH/glib-2* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared || exit 1
+    env CFLAGS="$BF -L${INSTALL_PATH}/lib -I${INSTALL_PATH}/include" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
   fi
