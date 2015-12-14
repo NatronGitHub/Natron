@@ -3202,6 +3202,41 @@ static bool getGroupInfosInternal(const std::string& modulePath,
     return true;
     
 }
+  
+    
+bool
+getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
+                                const std::string& modulePath,
+                                const std::string& pythonModule,
+                                std::string* pluginID,
+                                std::string* pluginLabel,
+                                std::string* iconFilePath,
+                                std::string* grouping,
+                                std::string* description,
+                                unsigned int* version)
+{
+    QString qModulePath(resourceFileName.c_str());
+    assert(qModulePath.startsWith(":/Resources"));
+    
+    QFile moduleContent(qModulePath);
+    if (!moduleContent.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return false;
+    }
+    
+    QByteArray utf8bytes = QString(pythonModule.c_str()).toUtf8();
+    char *moduleName = utf8bytes.data();
+    
+    PyObject* moduleCode = Py_CompileString(moduleContent.readAll().constData(), moduleName, Py_file_input);
+    PyObject* module = PyImport_ExecCodeModule(moduleName, moduleCode);
+    if (!module) {
+        return false;
+    }
+    
+    //Now that the module is loaded, use the regular version
+    return getGroupInfosInternal(modulePath,pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, version);
+    //PyDict_SetItemString(priv->globals, moduleName, module);
+    
+}
     
 bool
 getGroupInfos(const std::string& modulePath,
@@ -3228,40 +3263,7 @@ getGroupInfos(const std::string& modulePath,
     return getGroupInfosInternal(modulePath, pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, version);
     
 }
-    
-bool
-getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
-                                    const std::string& modulePath,
-                                    const std::string& pythonModule,
-                                    std::string* pluginID,
-                                    std::string* pluginLabel,
-                                    std::string* iconFilePath,
-                                    std::string* grouping,
-                                    std::string* description,
-                                    unsigned int* version)
-{
-    QString qModulePath(resourceFileName.c_str());
-    assert(qModulePath.startsWith(":/Resources"));
-    
-    QFile moduleContent(qModulePath);
-    if (!moduleContent.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return false;
-    }
-    
-    QByteArray utf8bytes = QString(pythonModule.c_str()).toUtf8();
-    char *moduleName = utf8bytes.data();
-    
-    PyObject* moduleCode = Py_CompileString(moduleContent.readAll().constData(), moduleName, Py_file_input);
-    PyObject* module = PyImport_ExecCodeModule(moduleName, moduleCode);
-    if (!module) {
-        return false;
-    }
-    
-    //Now that the module is loaded, use the regular version
-    return getGroupInfosInternal(modulePath,pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, version);
-    //PyDict_SetItemString(priv->globals, moduleName, module);
-    
-}
+
 
     
 void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args)
