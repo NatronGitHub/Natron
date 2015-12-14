@@ -822,6 +822,10 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
         _nodeInstance->getThreadLocalNeededComponents(&neededComps);
         EffectInstance::ComponentsNeededMap::iterator found = neededComps.find(inputnb);
         if (found != neededComps.end()) {
+            if (found->second.empty()) {
+                qDebug() << "Plug-in didn't specify any needed components via getClipComponents for clip " << getName().c_str();
+                return 0;
+            }
             comp = found->second.front();
         } else {
             ///We are in analysis or the effect does not have any input
