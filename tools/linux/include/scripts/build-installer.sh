@@ -147,16 +147,16 @@ done
 
 rm -f $IO_LIBS/{liblcms*,libgcc*,libstdc*,libbz2*,libfont*,libfree*,libpng*,libjpeg*,libtiff*,libz.*}
 (cd $IO_LIBS ;
-  ln -sf ../../../lib/libbz2.so.1 .
-  ln -sf ../../../lib/libfontconfig.so.1 .
-  ln -sf ../../../lib/libfreetype.so.6 .
-  ln -sf ../../../lib/libpng12.so.0 .
-  ln -sf ../../../lib/libjpeg.so.9 .
-  ln -sf ../../../lib/libtiff.so.5 .
-  ln -sf ../../../lib/libz.so.1 .
-  ln -sf ../../../lib/libgcc_s.so.1 .
-  ln -sf ../../../lib/libstdc++.so.6 .
-  ln -sf ../../../lib/liblcms2.so.2 .
+  ln -sf ../../../../../lib/libbz2.so.1 .
+  ln -sf ../../../../../lib/libfontconfig.so.1 .
+  ln -sf ../../../../../lib/libfreetype.so.6 .
+  ln -sf ../../../../../lib/libpng12.so.0 .
+  ln -sf ../../../../../lib/libjpeg.so.9 .
+  ln -sf ../../../../../lib/libtiff.so.5 .
+  ln -sf ../../../../../lib/libz.so.1 .
+  ln -sf ../../../../../lib/libgcc_s.so.1 .
+  ln -sf ../../../../../lib/libstdc++.so.6 .
+  ln -sf ../../../../../lib/liblcms2.so.2 .
   for i in *.so*; do
     patchelf --set-rpath "\$ORIGIN" $i
   done;
@@ -180,16 +180,16 @@ for x in $OFX_CIMG_DEPENDS; do
 done
 rm -f $CIMG_LIBS/{libgcc*,libstdc*,libgomp*}
 (cd $CIMG_LIBS ;
-  ln -sf ../../../lib/libgcc_s.so.1 .
-  ln -sf ../../../lib/libstdc++.so.6 .
-  ln -sf ../../../lib/libgomp.so.1 .
+  ln -sf ../../../../../lib/libgcc_s.so.1 .
+  ln -sf ../../../../../lib/libstdc++.so.6 .
+  ln -sf ../../../../../lib/libgomp.so.1 .
 )
 strip -s $CIMG_LIBS/*
 MISC_LIBS=$OFX_MISC_PATH/data/Plugins/OFX/Natron/Misc.ofx.bundle/Libraries
 mkdir -p $MISC_LIBS || exit 1
 (cd $MISC_LIBS ;
-  ln -sf ../../../lib/libgcc_s.so.1 .
-  ln -sf ../../../lib/libstdc++.so.6 .
+  ln -sf ../../../../../lib/libgcc_s.so.1 .
+  ln -sf ../../../../../lib/libstdc++.so.6 .
 )
 
 # NATRON
@@ -252,8 +252,8 @@ cp $INSTALL_PATH/lib/{libicudata.so.55,libicui18n.so.55,libicuuc.so.55} $CLIBS_P
 
 mv $IO_LIBS/{libOpenColor*,libgomp*} $CLIBS_PATH/data/lib/ || exit 1
 (cd $IO_LIBS ;
-  ln -sf ../../../lib/libOpenColorIO.so.1 .
-  ln -sf ../../../lib/libgomp.so.1 .
+  ln -sf ../../../../../lib/libOpenColorIO.so.1 .
+  ln -sf ../../../../../lib/libgomp.so.1 .
 )
 
 mkdir -p $CLIBS_PATH/data/share/etc/fonts/conf.d || exit 1
@@ -392,21 +392,21 @@ for x in $OFX_ARENA_DEPENDS; do
 done
 rm -f $ARENA_LIBS/{libcairo*,libpix*,liblcms*,libgomp*,libOpenColorIO*,libbz2*,libfont*,libz.so*,libglib-2*,libgthread*,libpng*,libfree*,libexpat*,libgcc*,libstdc*}
 (cd $ARENA_LIBS ; 
-  ln -sf ../../../lib/libbz2.so.1 .
-  ln -sf ../../../lib/libexpat.so.1 .
-  ln -sf ../../../lib/libfontconfig.so.1 .
-  ln -sf ../../../lib/libfreetype.so.6 .
-  ln -sf ../../../lib/libglib-2.0.so.0 .
-  ln -sf ../../../lib/libgthread-2.0.so.0 .
-  ln -sf ../../../lib/libpng12.so.0 .
-  ln -sf ../../../lib/libz.so.1 .
-  ln -sf ../../../lib/libgcc_s.so.1 .
-  ln -sf ../../../lib/libstdc++.so.6 .
-  ln -sf ../../../lib/libOpenColorIO.so.1 .
-  ln -sf ../../../lib/libgomp.so.1 .
-  ln -sf ../../../lib/libpixman-1.so.0 .
-  ln -sf ../../../lib/libcairo.so.2 .
-  ln -sf ../../../lib/liblcms2.so.2 .
+  ln -sf ../../../../../lib/libbz2.so.1 .
+  ln -sf ../../../../../lib/libexpat.so.1 .
+  ln -sf ../../../../../lib/libfontconfig.so.1 .
+  ln -sf ../../../../../lib/libfreetype.so.6 .
+  ln -sf ../../../../../lib/libglib-2.0.so.0 .
+  ln -sf ../../../../../lib/libgthread-2.0.so.0 .
+  ln -sf ../../../../../lib/libpng12.so.0 .
+  ln -sf ../../../../../lib/libz.so.1 .
+  ln -sf ../../../../../lib/libgcc_s.so.1 .
+  ln -sf ../../../../../lib/libstdc++.so.6 .
+  ln -sf ../../../../../lib/libOpenColorIO.so.1 .
+  ln -sf ../../../../../lib/libgomp.so.1 .
+  ln -sf ../../../../../lib/libpixman-1.so.0 .
+  ln -sf ../../../../../lib/libcairo.so.2 .
+  ln -sf ../../../../../lib/liblcms2.so.2 .
   for i in *.so*; do
     patchelf --set-rpath "\$ORIGIN" $i
   done;
