@@ -342,6 +342,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _buttonsLayout->addWidget(_lookInLabel);
 
     _lookInCombobox = new FileDialogComboBox(this,_buttonsWidget);
+    _lookInCombobox->setMinimumWidth(200);
     _buttonsLayout->addWidget(_lookInCombobox);
     QObject::connect( _lookInCombobox, SIGNAL( activated(QString) ), this, SLOT( onLookingComboboxChanged(QString) ) );
     _lookInCombobox->setInsertPolicy(QComboBox::NoInsert);
@@ -872,7 +873,7 @@ SequenceFileDialog::createMenuActions()
 
     _showHiddenAction = new QAction(this);
     _showHiddenAction->setCheckable(true);
-    _showHiddenAction->setText( tr("Show hidden fildes") );
+    _showHiddenAction->setText( tr("Show hidden files") );
     QObject::connect( _showHiddenAction, SIGNAL( triggered() ), this, SLOT( showHidden() ) );
 
     _newFolderAction = new QAction(this);
