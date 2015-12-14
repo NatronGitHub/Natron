@@ -42,6 +42,8 @@
 #define NATRON_APPLICATION_NAME "Natron"
 #define NATRON_WEBSITE_URL "http://www.natron.fr"
 #define NATRON_FORUM_URL "https://forum.natron.fr"
+#define NATRON_PYTHON_URL "https://natron.readthedocs.org/en/workshop/"
+#define NATRON_WIKI_URL "https://github.com/MrKepzie/Natron/wiki"
 #define NATRON_ISSUE_TRACKER_URL "https://github.com/MrKepzie/Natron/issues"
 // The MIME types for Natron documents are:
 // *.ntp: application/vnd.natron.project

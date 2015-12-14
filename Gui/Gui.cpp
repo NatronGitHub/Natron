@@ -545,10 +545,7 @@ Gui::createMenuActions()
     _imp->menubar->addAction( _imp->cacheMenu->menuAction() );
     _imp->menubar->addAction( _imp->menuHelp->menuAction() );
 
-#ifndef __APPLE__
-    _imp->menuHelp->addAction(_imp->actionShowAboutWindow);
-    _imp->menuHelp->addSeparator();
-#else
+#ifdef __APPLE__
     _imp->menuFile->addAction(_imp->actionShowAboutWindow);
 #endif
 
@@ -607,6 +604,7 @@ Gui::createMenuActions()
     _imp->cacheMenu->addSeparator();
     _imp->cacheMenu->addAction(_imp->actionClearPluginsLoadingCache);
 
+    // Help menu
     _imp->actionHelpWebsite = new QAction(this);
     _imp->actionHelpWebsite->setText(QObject::tr("Website"));
     _imp->menuHelp->addAction(_imp->actionHelpWebsite);
@@ -621,6 +619,21 @@ Gui::createMenuActions()
     _imp->actionHelpIssues->setText(QObject::tr("Issues"));
     _imp->menuHelp->addAction(_imp->actionHelpIssues);
     QObject::connect( _imp->actionHelpIssues, SIGNAL( triggered() ), this, SLOT( openHelpIssues() ) );
+
+    _imp->actionHelpWiki = new QAction(this);
+    _imp->actionHelpWiki->setText(QObject::tr("Wiki"));
+    _imp->menuHelp->addAction(_imp->actionHelpWiki);
+    QObject::connect( _imp->actionHelpWiki, SIGNAL( triggered() ), this, SLOT( openHelpWiki() ) );
+
+    _imp->actionHelpPython = new QAction(this);
+    _imp->actionHelpPython->setText(QObject::tr("Python API"));
+    _imp->menuHelp->addAction(_imp->actionHelpPython);
+    QObject::connect( _imp->actionHelpPython, SIGNAL( triggered() ), this, SLOT( openHelpPython() ) );
+
+#ifndef __APPLE__
+    _imp->menuHelp->addSeparator();
+    _imp->menuHelp->addAction(_imp->actionShowAboutWindow);
+#endif
 
     ///Create custom menu
     const std::list<PythonUserCommand> & commands = appPTR->getUserPythonCommands();
@@ -646,3 +659,16 @@ Gui::openHelpIssues()
 {
     QDesktopServices::openUrl(QUrl(NATRON_ISSUE_TRACKER_URL));
 }
+
+void
+Gui::openHelpWiki()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_WIKI_URL));
+}
+
+void
+Gui::openHelpPython()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_PYTHON_URL));
+}
+
