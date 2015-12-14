@@ -275,9 +275,6 @@ macx {
     QMAKE_BUNDLE_DATA += OCIO
     OCIO_aces_101.path = Contents/Resources/OpenColorIO-Configs/aces_1.0.1
     QMAKE_BUNDLE_DATA += OCIO_aces_101
-    PyPlugs.files = $$PWD/../Gui/Resources/PyPlugs
-    PyPlugs.path = Contents/Resources/PyPlugs
-    QMAKE_BUNDLE_DATA += PyPlugs
 }
 !macx {
     Resources.path = $$OUT_PWD
