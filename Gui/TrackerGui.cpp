@@ -257,6 +257,7 @@ TrackerGui::onAddTrackClicked(bool clicked)
 
 void
 TrackerGui::drawOverlays(double time,
+                         int view,
                          double scaleX,
                          double scaleY) const
 {
@@ -281,7 +282,7 @@ TrackerGui::drawOverlays(double time,
                 Natron::EffectInstance* effect = instance->getLiveInstance();
                 assert(effect);
                 effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-                effect->drawOverlay_public(time, scaleX,scaleY);
+                effect->drawOverlay_public(time, view, scaleX,scaleY);
             } else {
                 ///Draw a custom interact, indicating the track isn't selected
                 boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");
@@ -366,6 +367,7 @@ TrackerGui::drawOverlays(double time,
 
 bool
 TrackerGui::penDown(double time,
+                    int view,
                     double scaleX,
                     double scaleY,
                     const QPointF & viewportPos,
@@ -385,7 +387,7 @@ TrackerGui::penDown(double time,
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            didSomething = effect->onOverlayPenDown_public(time, scaleX, scaleY, viewportPos, pos, pressure);
+            didSomething = effect->onOverlayPenDown_public(time, view, scaleX, scaleY, viewportPos, pos, pressure);
         }
     }
 
@@ -437,6 +439,7 @@ TrackerGui::penDown(double time,
 
 bool
 TrackerGui::penDoubleClicked(double /*time*/,
+                             int /*view*/,
                              double /*scaleX*/,
                              double /*scaleY*/,
                              const QPointF & /*viewportPos*/,
@@ -450,6 +453,7 @@ TrackerGui::penDoubleClicked(double /*time*/,
 
 bool
 TrackerGui::penMotion(double time,
+                      int view,
                       double scaleX,
                       double scaleY,
                       const QPointF & viewportPos,
@@ -467,7 +471,7 @@ TrackerGui::penMotion(double time,
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            if ( effect->onOverlayPenMotion_public(time, scaleX, scaleY, viewportPos, pos, pressure) ) {
+            if ( effect->onOverlayPenMotion_public(time, view, scaleX, scaleY, viewportPos, pos, pressure) ) {
                 didSomething = true;
             }
         }
@@ -484,6 +488,7 @@ TrackerGui::penMotion(double time,
 
 bool
 TrackerGui::penUp(double time,
+                  int view,
                   double scaleX,
                   double scaleY,
                   const QPointF & viewportPos,
@@ -501,7 +506,7 @@ TrackerGui::penUp(double time,
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            didSomething = effect->onOverlayPenUp_public(time, scaleX, scaleY, viewportPos, pos, pressure);
+            didSomething = effect->onOverlayPenUp_public(time, view, scaleX, scaleY, viewportPos, pos, pressure);
             if (didSomething) {
                 return true;
             }
@@ -513,6 +518,7 @@ TrackerGui::penUp(double time,
 
 bool
 TrackerGui::keyDown(double time,
+                    int view,
                     double scaleX,
                     double scaleY,
                     QKeyEvent* e)
@@ -536,7 +542,7 @@ TrackerGui::keyDown(double time,
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            didSomething = effect->onOverlayKeyDown_public(time, scaleX, scaleY, natronKey, natronMod);
+            didSomething = effect->onOverlayKeyDown_public(time, view, scaleX, scaleY, natronKey, natronMod);
             if (didSomething) {
                 return true;
             }
@@ -589,6 +595,7 @@ TrackerGui::keyDown(double time,
 
 bool
 TrackerGui::keyUp(double time,
+                  int view,
                   double scaleX,
                   double scaleY,
                   QKeyEvent* e)
@@ -611,7 +618,7 @@ TrackerGui::keyUp(double time,
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            didSomething = effect->onOverlayKeyUp_public(time, scaleX, scaleY, natronKey, natronMod);
+            didSomething = effect->onOverlayKeyUp_public(time, view, scaleX, scaleY, natronKey, natronMod);
             if (didSomething) {
                 return true;
             }
@@ -630,6 +637,7 @@ TrackerGui::keyUp(double time,
 
 bool
 TrackerGui::loseFocus(double time,
+                      int view,
                       double scaleX,
                       double scaleY)
 {
@@ -645,7 +653,7 @@ TrackerGui::loseFocus(double time,
             Natron::EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            didSomething |= effect->onOverlayFocusLost_public(time, scaleX, scaleY);
+            didSomething |= effect->onOverlayFocusLost_public(time, view, scaleX, scaleY);
         }
     }
 

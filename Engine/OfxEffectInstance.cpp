@@ -2105,6 +2105,7 @@ OfxEffectInstance::initializeOverlayInteract()
 
 void
 OfxEffectInstance::drawOverlay(double time,
+                               int view,
                                double scaleX,
                                double scaleY)
 {
@@ -2117,7 +2118,7 @@ OfxEffectInstance::drawOverlay(double time,
         rs.y = scaleY;
 
         SET_CAN_SET_VALUE(false);
-        _overlayInteract->drawAction(time, rs);
+        _overlayInteract->drawAction(time, view, rs);
     }
 }
 
@@ -2131,6 +2132,7 @@ OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport)
 
 bool
 OfxEffectInstance::onOverlayPenDown(double time,
+                                    int view,
                                     double scaleX,
                                     double scaleY,
                                     const QPointF & viewportPos,
@@ -2153,7 +2155,7 @@ OfxEffectInstance::onOverlayPenDown(double time,
 
         SET_CAN_SET_VALUE(true);
 
-        OfxStatus stat = _overlayInteract->penDownAction(time, rs, penPos, penPosViewport, pressure);
+        OfxStatus stat = _overlayInteract->penDownAction(time, view, rs, penPos, penPosViewport, pressure);
         
 
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
@@ -2174,6 +2176,7 @@ OfxEffectInstance::onOverlayPenDown(double time,
 
 bool
 OfxEffectInstance::onOverlayPenMotion(double time,
+                                      int view,
                                       double scaleX,
                                       double scaleY,
                                       const QPointF & viewportPos,
@@ -2196,7 +2199,7 @@ OfxEffectInstance::onOverlayPenMotion(double time,
         OfxStatus stat;
 
         SET_CAN_SET_VALUE(true);
-        stat = _overlayInteract->penMotionAction(time, rs, penPos, penPosViewport, pressure);
+        stat = _overlayInteract->penMotionAction(time, view, rs, penPos, penPosViewport, pressure);
         
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
             stat = _overlayInteract->redraw();
@@ -2213,6 +2216,7 @@ OfxEffectInstance::onOverlayPenMotion(double time,
 
 bool
 OfxEffectInstance::onOverlayPenUp(double time,
+                                  int view,
                                   double scaleX,
                                   double scaleY,
                                   const QPointF & viewportPos,
@@ -2234,7 +2238,7 @@ OfxEffectInstance::onOverlayPenUp(double time,
         penPosViewport.y = viewportPos.y();
 
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _overlayInteract->penUpAction(time, rs, penPos, penPosViewport, pressure);
+        OfxStatus stat = _overlayInteract->penUpAction(time, view, rs, penPos, penPosViewport, pressure);
 
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
             stat = _overlayInteract->redraw();
@@ -2253,6 +2257,7 @@ OfxEffectInstance::onOverlayPenUp(double time,
 
 bool
 OfxEffectInstance::onOverlayKeyDown(double time,
+                                    int view,
                                     double scaleX,
                                     double scaleY,
                                     Natron::Key key,
@@ -2267,7 +2272,7 @@ OfxEffectInstance::onOverlayKeyDown(double time,
         rs.y = scaleY;
         QByteArray keyStr;
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _overlayInteract->keyDownAction( time, rs, (int)key, keyStr.data() );
+        OfxStatus stat = _overlayInteract->keyDownAction( time, view, rs, (int)key, keyStr.data() );
 
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
             stat = _overlayInteract->redraw();
@@ -2284,6 +2289,7 @@ OfxEffectInstance::onOverlayKeyDown(double time,
 
 bool
 OfxEffectInstance::onOverlayKeyUp(double time,
+                                  int view,
                                   double scaleX,
                                   double scaleY,
                                   Natron::Key key,
@@ -2298,7 +2304,7 @@ OfxEffectInstance::onOverlayKeyUp(double time,
         rs.y = scaleY;
         QByteArray keyStr;
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _overlayInteract->keyUpAction( time, rs, (int)key, keyStr.data() );
+        OfxStatus stat = _overlayInteract->keyUpAction( time, view, rs, (int)key, keyStr.data() );
 
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
             stat = _overlayInteract->redraw();
@@ -2317,6 +2323,7 @@ OfxEffectInstance::onOverlayKeyUp(double time,
 
 bool
 OfxEffectInstance::onOverlayKeyRepeat(double time,
+                                      int view,
                                       double scaleX,
                                       double scaleY,
                                       Natron::Key key,
@@ -2332,7 +2339,7 @@ OfxEffectInstance::onOverlayKeyRepeat(double time,
         QByteArray keyStr;
 
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _overlayInteract->keyRepeatAction( time, rs, (int)key, keyStr.data() );
+        OfxStatus stat = _overlayInteract->keyRepeatAction( time, view, rs, (int)key, keyStr.data() );
 
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
             stat = _overlayInteract->redraw();
@@ -2349,6 +2356,7 @@ OfxEffectInstance::onOverlayKeyRepeat(double time,
 
 bool
 OfxEffectInstance::onOverlayFocusGained(double time,
+                                        int view,
                                         double scaleX,
                                         double scaleY)
 {
@@ -2361,7 +2369,7 @@ OfxEffectInstance::onOverlayFocusGained(double time,
         rs.y = scaleY;
         OfxStatus stat;
         SET_CAN_SET_VALUE(true);
-        stat = _overlayInteract->gainFocusAction(time, rs);
+        stat = _overlayInteract->gainFocusAction(time, view, rs);
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -2372,6 +2380,7 @@ OfxEffectInstance::onOverlayFocusGained(double time,
 
 bool
 OfxEffectInstance::onOverlayFocusLost(double time,
+                                      int view,
                                       double scaleX,
                                       double scaleY)
 {
@@ -2384,7 +2393,7 @@ OfxEffectInstance::onOverlayFocusLost(double time,
         rs.y = scaleY;
         OfxStatus stat;
         SET_CAN_SET_VALUE(true);
-        stat = _overlayInteract->loseFocusAction(time, rs);
+        stat = _overlayInteract->loseFocusAction(time, view, rs);
         if (stat == kOfxStatOK) {
             return true;
         }

@@ -2713,6 +2713,7 @@ EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
 
 void
 EffectInstance::drawOverlay_public(double time,
+                                   int view,
                                    double scaleX,
                                    double scaleY)
 {
@@ -2725,13 +2726,14 @@ EffectInstance::drawOverlay_public(double time,
     RECURSIVE_ACTION();
 
     _imp->setDuringInteractAction(true);
-    drawOverlay(time, scaleX, scaleY);
+    drawOverlay(time, view, scaleX, scaleY);
     getNode()->drawHostOverlay(time, scaleX, scaleY);
     _imp->setDuringInteractAction(false);
 }
 
 bool
 EffectInstance::onOverlayPenDown_public(double time,
+                                        int view,
                                         double scaleX,
                                         double scaleY,
                                         const QPointF & viewportPos,
@@ -2748,7 +2750,7 @@ EffectInstance::onOverlayPenDown_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenDown(time, scaleX, scaleY, viewportPos, pos, pressure);
+        ret = onOverlayPenDown(time, view, scaleX, scaleY, viewportPos, pos, pressure);
         if (!ret) {
             ret |= getNode()->onOverlayPenDownDefault(scaleX, scaleY, viewportPos, pos, pressure);
         }
@@ -2761,6 +2763,7 @@ EffectInstance::onOverlayPenDown_public(double time,
 
 bool
 EffectInstance::onOverlayPenMotion_public(double time,
+                                          int view,
                                           double scaleX,
                                           double scaleY,
                                           const QPointF & viewportPos,
@@ -2776,7 +2779,7 @@ EffectInstance::onOverlayPenMotion_public(double time,
 
     NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayPenMotion(time, scaleX, scaleY, viewportPos, pos, pressure);
+    bool ret = onOverlayPenMotion(time, view, scaleX, scaleY, viewportPos, pos, pressure);
     if (!ret) {
         ret |= getNode()->onOverlayPenMotionDefault(scaleX, scaleY, viewportPos, pos, pressure);
     }
@@ -2789,6 +2792,7 @@ EffectInstance::onOverlayPenMotion_public(double time,
 
 bool
 EffectInstance::onOverlayPenUp_public(double time,
+                                      int view,
                                       double scaleX,
                                       double scaleY,
                                       const QPointF & viewportPos,
@@ -2804,7 +2808,7 @@ EffectInstance::onOverlayPenUp_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenUp(time, scaleX, scaleY, viewportPos, pos, pressure);
+        ret = onOverlayPenUp(time, view, scaleX, scaleY, viewportPos, pos, pressure);
         if (!ret) {
             ret |= getNode()->onOverlayPenUpDefault(scaleX, scaleY, viewportPos, pos, pressure);
         }
@@ -2817,6 +2821,7 @@ EffectInstance::onOverlayPenUp_public(double time,
 
 bool
 EffectInstance::onOverlayKeyDown_public(double time,
+                                        int view,
                                         double scaleX,
                                         double scaleY,
                                         Natron::Key key,
@@ -2832,7 +2837,7 @@ EffectInstance::onOverlayKeyDown_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyDown(time, scaleX, scaleY, key, modifiers);
+        ret = onOverlayKeyDown(time, view, scaleX, scaleY, key, modifiers);
         if (!ret) {
             ret |= getNode()->onOverlayKeyDownDefault(scaleX, scaleY, key, modifiers);
         }
@@ -2845,6 +2850,7 @@ EffectInstance::onOverlayKeyDown_public(double time,
 
 bool
 EffectInstance::onOverlayKeyUp_public(double time,
+                                      int view,
                                       double scaleX,
                                       double scaleY,
                                       Natron::Key key,
@@ -2861,7 +2867,7 @@ EffectInstance::onOverlayKeyUp_public(double time,
         NON_RECURSIVE_ACTION();
 
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyUp(time, scaleX, scaleY, key, modifiers);
+        ret = onOverlayKeyUp(time, view, scaleX, scaleY, key, modifiers);
         if (!ret) {
             ret |= getNode()->onOverlayKeyUpDefault(scaleX, scaleY, key, modifiers);
         }
@@ -2874,6 +2880,7 @@ EffectInstance::onOverlayKeyUp_public(double time,
 
 bool
 EffectInstance::onOverlayKeyRepeat_public(double time,
+                                          int view,
                                           double scaleX,
                                           double scaleY,
                                           Natron::Key key,
@@ -2889,7 +2896,7 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyRepeat(time, scaleX, scaleY, key, modifiers);
+        ret = onOverlayKeyRepeat(time, view, scaleX, scaleY, key, modifiers);
         if (!ret) {
             ret |= getNode()->onOverlayKeyRepeatDefault(scaleX, scaleY, key, modifiers);
         }
@@ -2902,6 +2909,7 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
 
 bool
 EffectInstance::onOverlayFocusGained_public(double time,
+                                            int view,
                                             double scaleX,
                                             double scaleY)
 {
@@ -2915,7 +2923,7 @@ EffectInstance::onOverlayFocusGained_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayFocusGained(time, scaleX, scaleY);
+        ret = onOverlayFocusGained(time, view, scaleX, scaleY);
         if (!ret) {
             ret |= getNode()->onOverlayFocusGainedDefault(scaleX, scaleY);
         }
@@ -2928,6 +2936,7 @@ EffectInstance::onOverlayFocusGained_public(double time,
 
 bool
 EffectInstance::onOverlayFocusLost_public(double time,
+                                          int view,
                                           double scaleX,
                                           double scaleY)
 {
@@ -2940,7 +2949,7 @@ EffectInstance::onOverlayFocusLost_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayFocusLost(time, scaleX, scaleY);
+        ret = onOverlayFocusLost(time, view, scaleX, scaleY);
         if (!ret) {
             ret |= getNode()->onOverlayFocusLostDefault(scaleX, scaleY);
         }

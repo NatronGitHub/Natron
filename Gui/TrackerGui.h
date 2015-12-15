@@ -61,21 +61,21 @@ public:
     QWidget* getButtonsBar() const;
 
 
-    void drawOverlays(double time, double scaleX, double scaleY) const;
+    void drawOverlays(double time, int view, double scaleX, double scaleY) const;
 
-    bool penDown(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, QMouseEvent* e);
+    bool penDown(double time, int view, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, QMouseEvent* e);
 
-    bool penDoubleClicked(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penDoubleClicked(double time, int view, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool penMotion(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, QInputEvent* e);
+    bool penMotion(double time, int view, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, QInputEvent* e);
 
-    bool penUp(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, QMouseEvent* e);
+    bool penUp(double time, int view, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, QMouseEvent* e);
 
-    bool keyDown(double time, double scaleX, double scaleY, QKeyEvent* e);
+    bool keyDown(double time, int view, double scaleX, double scaleY, QKeyEvent* e);
 
-    bool keyUp(double time, double scaleX, double scaleY, QKeyEvent* e);
+    bool keyUp(double time, int view, double scaleX, double scaleY, QKeyEvent* e);
 
-    bool loseFocus(double time, double scaleX, double scaleY);
+    bool loseFocus(double time, int view, double scaleX, double scaleY);
 
 public Q_SLOTS:
 

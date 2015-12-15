@@ -88,9 +88,7 @@ ViewerTab::drawOverlays(double time,
         return;
     }
     
-#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     int view = getCurrentView();
-#endif
     
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
@@ -138,14 +136,14 @@ ViewerTab::drawOverlays(double time,
             }
         } else if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
             if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                _imp->currentTracker.second->drawOverlays(time, scaleX, scaleY);
+                _imp->currentTracker.second->drawOverlays(time, view, scaleX, scaleY);
             }
         } else {
             
             Natron::EffectInstance* effect = (*it)->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
-            effect->drawOverlay_public(time, scaleX,scaleY);
+            effect->drawOverlay_public(time, view, scaleX,scaleY);
         }
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         if (ok) {
@@ -172,10 +170,12 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
     QPointF transformViewportPos;
     QPointF transformPos;
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
+    int view = getCurrentView();
+
+    
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     
     
-    int view = getCurrentView();
     
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, view, node, getInternalNode(), &transformedTime);
@@ -234,7 +234,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
         }
     } else if (_imp->currentTracker.first && node == _imp->currentTracker.first->getNode()) {
         if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentTracker.second->penDown(time, scaleX, scaleY, transformViewportPos, transformPos, pressure, e) ) {
+            if ( _imp->currentTracker.second->penDown(time, view, scaleX, scaleY, transformViewportPos, transformPos, pressure, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -244,7 +244,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenDown_public(time, scaleX, scaleY, transformViewportPos, transformPos, pressure);
+        bool didSmthing = effect->onOverlayPenDown_public(time, view, scaleX, scaleY, transformViewportPos, transformPos, pressure);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -380,7 +380,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
         }
         
         if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentTracker.second->penDoubleClicked(time, scaleX, scaleY, transformViewportPos, transformPos, e) ) {
+            if ( _imp->currentTracker.second->penDoubleClicked(time, view, scaleX, scaleY, transformViewportPos, transformPos, e) ) {
                 _imp->lastOverlayNode = _imp->currentRoto.first->getNode();
                 return true;
             }
@@ -404,8 +404,9 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
     QPointF transformViewportPos;
     QPointF transformPos;
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     int view = getCurrentView();
+
+#ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, view, node, getInternalNode(), &transformedTime);
@@ -464,7 +465,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
         }
     } else if (_imp->currentTracker.first && node == _imp->currentTracker.first->getNode()) {
         if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentTracker.second->penMotion(time, scaleX, scaleY, transformViewportPos, transformPos, pressure, e) ) {
+            if ( _imp->currentTracker.second->penMotion(time, view, scaleX, scaleY, transformViewportPos, transformPos, pressure, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -479,7 +480,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenMotion_public(time, scaleX, scaleY, transformViewportPos, transformPos, pressure);
+        bool didSmthing = effect->onOverlayPenMotion_public(time, view, scaleX, scaleY, transformViewportPos, transformPos, pressure);
         if (didSmthing) {
             
             if (_imp->hasPenDown) {
@@ -577,14 +578,17 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
     
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
+    
+    double time = getGui()->getApp()->getTimeLine()->currentFrame();
+
+    int view = getCurrentView();
+
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         
         
         QPointF transformViewportPos;
         QPointF transformPos;
-        double time = getGui()->getApp()->getTimeLine()->currentFrame();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-        int view = getCurrentView();
         
         
         double transformedTime;
@@ -644,14 +648,14 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         }
         if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
             if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                didSomething |=  _imp->currentTracker.second->penUp(time, scaleX, scaleY, transformViewportPos, transformPos, pressure, e)  ;
+                didSomething |=  _imp->currentTracker.second->penUp(time, view, scaleX, scaleY, transformViewportPos, transformPos, pressure, e)  ;
             }
         }
         
         Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        didSomething |= effect->onOverlayPenUp_public(time, scaleX, scaleY, transformViewportPos, transformPos, pressure);
+        didSomething |= effect->onOverlayPenUp_public(time, view, scaleX, scaleY, transformViewportPos, transformPos, pressure);
         
         
     }
@@ -680,6 +684,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>&
 {
     
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
+    int view = getCurrentView();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     double transformedTime;
     bool ok = _imp->getTimeTransform(time, 0, node, getInternalNode(), &transformedTime);
@@ -707,7 +712,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>&
         }
     } else if (_imp->currentTracker.first && node == _imp->currentTracker.first->getNode()) {
         if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentTracker.second->keyDown(time, scaleX, scaleY, e) ) {
+            if ( _imp->currentTracker.second->keyDown(time, view, scaleX, scaleY, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -718,7 +723,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>&
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyDown_public(time, scaleX,scaleY,k,km);
+        bool didSmthing = effect->onOverlayKeyDown_public(time, view, scaleX,scaleY,k,km);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -819,7 +824,7 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
     _imp->lastOverlayNode.reset();
     
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-
+    int view = getCurrentView();
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -849,12 +854,12 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
         }
         if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
             if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                didSomething |= _imp->currentTracker.second->keyUp(time, scaleX, scaleY, e);
+                didSomething |= _imp->currentTracker.second->keyUp(time, view, scaleX, scaleY, e);
             }
         }
         
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        didSomething |= effect->onOverlayKeyUp_public( time, scaleX,scaleY,
+        didSomething |= effect->onOverlayKeyUp_public( time, view, scaleX,scaleY,
                                             QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
         
     }
@@ -873,7 +878,7 @@ bool
 ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,
                                       Natron::KeyboardModifiers km)
 {
-    
+    int view = getCurrentView();
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     double transformedTime;
@@ -908,7 +913,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyRepeat_public(time, scaleX,scaleY,k,km);
+        bool didSmthing = effect->onOverlayKeyRepeat_public(time, view, scaleX,scaleY,k,km);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -976,7 +981,7 @@ ViewerTab::notifyOverlaysFocusGained(double scaleX,
     }
     
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
-
+    int view = getCurrentView();
     
     bool ret = false;
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
@@ -994,7 +999,7 @@ ViewerTab::notifyOverlaysFocusGained(double scaleX,
 #endif
         
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayFocusGained_public(time, scaleX,scaleY);
+        bool didSmthing = effect->onOverlayFocusGained_public(time, view, scaleX,scaleY);
         if (didSmthing) {
             ret = true;
         }
@@ -1018,6 +1023,7 @@ ViewerTab::notifyOverlaysFocusLost(double scaleX,
     }
     
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
+    int view = getCurrentView();
     
     bool ret = false;
     std::list<boost::shared_ptr<Natron::Node> >  nodes;
@@ -1039,7 +1045,7 @@ ViewerTab::notifyOverlaysFocusLost(double scaleX,
             }
         } else if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
             if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                if ( _imp->currentTracker.second->loseFocus(time, scaleX, scaleY) ) {
+                if ( _imp->currentTracker.second->loseFocus(time, view, scaleX, scaleY) ) {
                     return true;
                 }
             }
@@ -1049,7 +1055,7 @@ ViewerTab::notifyOverlaysFocusLost(double scaleX,
         assert(effect);
         
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayFocusLost_public(time, scaleX,scaleY);
+        bool didSmthing = effect->onOverlayFocusLost_public(time, view, scaleX,scaleY);
         if (didSmthing) {
             ret = true;
         }
