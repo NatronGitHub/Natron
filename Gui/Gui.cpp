@@ -37,6 +37,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QMenuBar>
 #include <QUndoGroup>
 #include <QDesktopServices>
+#include <QUrl>
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
