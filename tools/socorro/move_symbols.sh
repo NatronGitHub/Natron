@@ -2,7 +2,7 @@
 #
 # Script that moves uploaded symbols
 #
-TMP=/home/tmp
+TMP=/home/uploads
 DEST=/home/socorro/symbols
 cd $TMP || exit 1
 for i in *.sym; do

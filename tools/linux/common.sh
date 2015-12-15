@@ -85,6 +85,9 @@ if [ -f $CWD/repo.sh ]; then
 else
     REPO_DEST=localhost
     REPO_URL=http://localhost
+    REPO_SYM_URL=root@betelgeuse.inrialpes.fr #for internal testing
+    REPO_SYM_PORT=-P2121
+    REPO_SYM_PATH=/home/uploads
 fi
 
 #Dist repo is expected to be layout as such:
