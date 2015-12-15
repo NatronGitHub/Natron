@@ -6,11 +6,15 @@ set -x
 source `pwd`/functions.sh
 
 # basic tools/libs
+setup_gettext #osx
+setup_pkgconfig #osx
 setup_dumpsyms
 setup_ssl
-setup_qt installer
-setup_installer 
-setup_patchelf
+if [ "$PKGOS" != "Mac" ]; then
+  setup_qt installer
+  setup_installer
+fi 
+setup_patchelf #linux
 setup_yasm
 setup_cmake
 
@@ -29,6 +33,12 @@ if [ "$PKGOS" = "Linux" ]; then
   export CXX="${INSTALL_PATH}/gcc/bin/g++"
 fi
 
+if [ "$PKGOS" = "Mac" ]; then
+  export LD_LIBRARY_PATH="$INSTALL_PATH/lib"
+  export LIBRARY_PATH="$INSTALL_PATH/lib"
+  export PATH="$INSTALL_PATH/bin:$INSTALL_PATH/sbin:$INSTALL_PATH/cmake/bin:$PATH"
+fi
+
 # core depends
 setup_zlib 
 setup_bzip 
@@ -36,7 +46,7 @@ setup_icu
 setup_python 
 
 # common env
-PKG_CONFIG_PATH="$INSTALL_PATH/lib/pkgconfig"
+PKG_CONFIG_PATH="$INSTALL_PATH/lib/pkgconfig:$INSTALL_PATH/share/pkgconfig"
 QTDIR="$INSTALL_PATH"
 BOOST_ROOT="$INSTALL_PATH"
 OPENJPEG_HOME="$INSTALL_PATH"
@@ -48,13 +58,14 @@ export PKG_CONFIG_PATH LD_LIBRARY_PATH PATH QTDIR BOOST_ROOT OPENJPEG_HOME THIRD
 
 # depends
 setup_expat 
-setup_png 
+setup_png
 setup_freetype 
 setup_fontconfig 
 setup_ffi 
 setup_glib 
 setup_xml 
 setup_xslt 
+# boost fails on 14 target on osx, TODO!
 setup_boost 
 setup_jpeg 
 setup_tiff 
