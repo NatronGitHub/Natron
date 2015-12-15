@@ -687,6 +687,12 @@ public Q_SLOTS:
     
     void onShowApplicationConsoleActionTriggered();
 
+    void openHelpWebsite();
+    void openHelpForum();
+    void openHelpIssues();
+    void openHelpPython();
+    void openHelpWiki();
+
 private:
 
     void setCurrentPanelFocus(PanelWidget* widget);

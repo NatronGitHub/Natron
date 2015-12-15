@@ -119,7 +119,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionClearAllCaches "Clear All Caches"
 
 #define kShortcutIDActionShowAbout "showAbout"
-#define kShortcutDescActionShowAbout "About..."
+#define kShortcutDescActionShowAbout "About Natron"
 
 #define kShortcutIDActionRenderSelected "renderSelect"
 #define kShortcutDescActionRenderSelected "Render Selected Writers"
