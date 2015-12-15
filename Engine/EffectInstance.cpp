@@ -3544,6 +3544,9 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
             ///Foreach user component, add it as an available component, but use this node only if it is also
             ///in the "needed components" list
             for (std::list<ImageComponents>::iterator it = userComps.begin(); it != userComps.end(); ++it) {
+                
+                
+                ///If this is a user comp and used by the node it will be in the needed output components
                 bool found = false;
                 for (std::vector<Natron::ImageComponents>::iterator it2 = foundOutput->second.begin();
                      it2 != foundOutput->second.end(); ++it2) {
@@ -3575,11 +3578,16 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
                     alreadyExisting = comps->find(*it);
                 }
                 
-                //If the component already exists from above in the tree, do not add it
+                ///If the component already exists from above in the tree, do not add it
                 if ( alreadyExisting == comps->end() ) {
                     comps->insert( std::make_pair( *it, (found) ? node : NodePtr() ) );
                 } else {
-                    alreadyExisting->second = node;
+                    ///The user component may very well have been created on a node upstream
+                    ///Set the component as available only if the node uses it actively,i.e if
+                    ///it was found in the needed output components
+                    if (found) {
+                        alreadyExisting->second = node;
+                    }
                 }
             }
         }
