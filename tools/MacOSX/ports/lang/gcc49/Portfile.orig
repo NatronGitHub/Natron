@@ -64,6 +64,7 @@ configure.cmd       ${worksrcpath}/configure
 configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
                     --libdir=${prefix}/lib/${name} \
                     --includedir=${prefix}/include/${name} \
+                    --with-sysroot=${configure.sdkroot} \
                     --infodir=${prefix}/share/info \
                     --mandir=${prefix}/share/man \
                     --datarootdir=${prefix}/share/gcc-${major} \
@@ -81,6 +82,7 @@ configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
                     --disable-multilib \
                     --enable-lto \
                     --enable-libstdcxx-time \
+                    --enable-install-libiberty \
                     --with-as=${prefix}/bin/as \
                     --with-ld=${prefix}/bin/ld \
                     --with-ar=${prefix}/bin/ar \

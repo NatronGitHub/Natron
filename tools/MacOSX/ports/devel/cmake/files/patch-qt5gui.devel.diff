@@ -32,7 +32,7 @@
  
  set(SRCS
    AddCacheEntry.cxx
-@@ -135,7 +125,7 @@
+@@ -139,7 +129,7 @@
  if(WIN32)
    set(SRCS ${SRCS} CMakeSetup.rc)
  endif()
@@ -41,7 +41,7 @@
    set(SRCS ${SRCS} CMakeSetup.icns)
    set(MACOSX_BUNDLE_ICON_FILE CMakeSetup.icns)
    set_source_files_properties(CMakeSetup.icns PROPERTIES
-@@ -152,10 +142,10 @@
+@@ -156,10 +146,10 @@
  
  set(CMAKE_INCLUDE_CURRENT_DIR ON)
  
@@ -54,7 +54,7 @@
    file(STRINGS "${CMake_SOURCE_DIR}/Copyright.txt" copyright_line
      LIMIT_COUNT 1 REGEX "^Copyright 2000-20[0-9][0-9] Kitware")
  
-@@ -200,18 +190,18 @@
+@@ -204,18 +194,18 @@
      ${COMPONENT})
  endif()
  

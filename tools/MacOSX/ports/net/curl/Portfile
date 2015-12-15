@@ -1,10 +1,10 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 141021 2015-10-08 04:21:56Z ryandesign@macports.org $
+# $Id: Portfile 143158 2015-12-05 14:02:11Z ryandesign@macports.org $
 
 PortSystem                      1.0
 
 name                            curl
-version                         7.45.0
+version                         7.46.0
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     ryandesign
@@ -28,8 +28,8 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  3be0355ef398ac83b716cbf4fe69854b63dfa7f8 \
-                                sha256  65154e66b9f8a442b57c436904639507b4ac37ec13d6f8a48248f1b4012b98ea
+                                rmd160  59a70f558853483a2b63ddb59e9d02b7d95bb2e8 \
+                                sha256  b7d726cdd8ed4b6db0fa1b474a3c59ebbbe4dcd4c61ac5e7ade0e0270d3195ad
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
@@ -58,7 +58,8 @@ if {${name} eq ${subport}} {
                                 --disable-ares \
                                 --disable-ldap \
                                 --disable-ldaps \
-                                --with-zlib=${prefix}
+                                --with-zlib=${prefix} \
+                                ac_cv_prog_AWK=/usr/bin/awk
 
     configure.env               PKG_CONFIG_PATH=${prefix}
 
@@ -211,8 +212,8 @@ subport curl-ca-bundle {
     set certdata_file           certdata.txt
     # The output of the Tcl command "clock seconds" (you can run it in tclsh) when
     # the certdata.txt file in the port was last updated.
-    set certdata_updated        1438893540
-    set certdata_version        2f1a37cb43ac
+    set certdata_updated        1449322857
+    set certdata_version        64df3815df9c
     set certdata_distfile       certdata-${certdata_version}${extract.suffix}
     set certdata_path           security/nss/lib/ckfw/builtins/${certdata_file}
 
@@ -226,8 +227,8 @@ subport curl-ca-bundle {
     distfiles-append            ${certdata_distfile}:certdata
 
     checksums-append            ${certdata_distfile} \
-                                rmd160  40ed746c393c5597a8e8fbf0b3b6fa26a3ea4f78 \
-                                sha256  fc5e116913183a91c8a4cdb248f4ecd1808f9a1dac92aef2f1b6fe67cb5944e6
+                                rmd160  770ca7aec5e1b229469c8c2de8f8ee6ff74e488a \
+                                sha256  1358fc2c9db3c3d47911f7d94532cd3d297e80ebf3e13918b1396ed16e0df14a
 
     extract.only                ${certdata_distfile}
 

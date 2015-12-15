@@ -1,6 +1,6 @@
---- Portfile.orig	2015-08-26 15:46:30.000000000 +0200
-+++ Portfile	2015-08-26 15:46:36.000000000 +0200
-@@ -76,6 +76,10 @@
+--- Portfile.orig	2015-12-11 01:33:16.000000000 -0800
++++ Portfile	2015-12-11 01:33:23.000000000 -0800
+@@ -77,6 +77,10 @@
                  ${dir}/curl-config \
                  ${dir}/libcurl.pc
              reinplace -E {s/ '(host_alias|--host)=[^']+'//g} ${dir}/curl-config
