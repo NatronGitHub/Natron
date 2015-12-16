@@ -105,7 +105,7 @@ public:
      * @param errorIfExists If a node with the same script-name exists, error
      * This function throws a runtime exception with the error message in case of error.
      **/
-    void setNodeName(const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName);
+    void checkNodeName(const Natron::Node* node,const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName);
     
     /**
      * @brief Returns true if there is one or more nodes in the collection.

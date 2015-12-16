@@ -436,7 +436,7 @@ NodeCollection::clearNodes(bool emitSignal)
 
 
 void
-NodeCollection::setNodeName(const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName)
+NodeCollection::checkNodeName(const Natron::Node* node, const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName)
 {
     if (baseName.empty()) {
         throw std::runtime_error(QObject::tr("Invalid script-name").toStdString());
@@ -480,7 +480,7 @@ NodeCollection::setNodeName(const std::string& baseName,bool appendDigit,bool er
         foundNodeWithName = false;
         QMutexLocker l(&_imp->nodesMutex);
         for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-            if ((*it)->getScriptName_mt_safe() == *nodeName) {
+            if (it->get() != node && (*it)->getScriptName_mt_safe() == *nodeName) {
                 foundNodeWithName = true;
                 break;
             }
@@ -515,7 +515,7 @@ NodeCollection::initNodeName(const std::string& pluginLabel,std::string* nodeNam
         baseName = baseName.substr(0,baseName.size() - 3);
     }
 
-    setNodeName(baseName,true, false, nodeName);
+    checkNodeName(0, baseName,true, false, nodeName);
     
 }
 

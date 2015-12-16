@@ -501,7 +501,7 @@ EditNodeNameDialog::EditNodeNameDialog(const boost::shared_ptr<NodeGui>& node,QW
     mainLayout->setContentsMargins(0, 0, 0, 0);
     setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
     _imp->field = new LineEdit(this);
-    QObject::connect(_imp->field,SIGNAL(editingFinished()), this, SLOT(accept()));
+    //QObject::connect(_imp->field,SIGNAL(editingFinished()), this, SLOT(accept()));
     _imp->field->setPlaceholderText(tr("Edit node name"));
     mainLayout->addWidget(_imp->field);
 }

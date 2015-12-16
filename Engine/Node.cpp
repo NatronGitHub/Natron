@@ -2381,14 +2381,14 @@ Node::setNameInternal(const std::string& name, bool throwErrors)
     if (collection) {
         if (throwErrors) {
             try {
-                collection->setNodeName(name,false, false, &newName);
+                collection->checkNodeName(this, name,false, false, &newName);
             } catch (const std::exception& e) {
                 appPTR->writeToOfxLog_mt_safe(e.what());
                 std::cerr << e.what() << std::endl;
                 return;
             }
         } else {
-            collection->setNodeName(name,false, false, &newName);
+            collection->checkNodeName(this, name,false, false, &newName);
         }
     }
     
@@ -2401,7 +2401,7 @@ Node::setNameInternal(const std::string& name, bool throwErrors)
 
     if (!newName.empty()) {
         bool isAttrDefined = false;
-        std::string newPotentialQualifiedName = getApp()->getAppIDString() + getFullyQualifiedNameInternal(newName);
+        std::string newPotentialQualifiedName = getApp()->getAppIDString() + "." + getFullyQualifiedNameInternal(newName);
         (void)Natron::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
         if (isAttrDefined) {
             std::stringstream ss;
@@ -2468,7 +2468,7 @@ Node::setScriptName(const std::string& name)
 {
     std::string newName;
     if (getGroup()) {
-        getGroup()->setNodeName(name,false, true, &newName);
+        getGroup()->checkNodeName(this, name,false, true, &newName);
     } else {
         newName = name;
     }
