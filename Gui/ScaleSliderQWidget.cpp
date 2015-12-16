@@ -274,15 +274,23 @@ ScaleSliderQWidget::leaveEvent(QEvent* e)
 void
 ScaleSliderQWidget::keyPressEvent(QKeyEvent* e)
 {
+    
+    bool accepted = true;
     if (e->key() == Qt::Key_Control) {
         _imp->ctrlDown = true;
         zoomRange();
+        accepted = false;
     } else if (e->key() == Qt::Key_Shift) {
         _imp->shiftDown = true;
         zoomRange();
+        accepted = false;
     } else {
+        accepted = false;
+    }
+    if (!accepted) {
         QWidget::keyPressEvent(e);
     }
+
 }
 
 double
@@ -307,13 +315,19 @@ ScaleSliderQWidget::getAltered() const
 void
 ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
 {
+    bool accepted = true;
     if (e->key() == Qt::Key_Control) {
         _imp->ctrlDown = false;
         zoomRange();
+        accepted = false;
     } else if (e->key() == Qt::Key_Shift) {
         _imp->shiftDown = false;
         zoomRange();
+        accepted = false;
     } else {
+        accepted = false;
+    }
+    if (!accepted) {
         QWidget::keyReleaseEvent(e);
     }
 }

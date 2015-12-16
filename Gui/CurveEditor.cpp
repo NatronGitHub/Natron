@@ -1549,15 +1549,23 @@ CurveEditor::keyPressEvent(QKeyEvent* e)
         _imp->filterEdit->setFocus();
     } else {
         accept = false;
-        QWidget::keyPressEvent(e);
     }
     if (accept) {
         takeClickFocus();
         e->accept();
     } else {
         handleUnCaughtKeyPressEvent(e);
+        QWidget::keyPressEvent(e);
     }
 }
+
+void
+CurveEditor::keyReleaseEvent(QKeyEvent* e)
+{
+    handleUnCaughtKeyUpEvent(e);
+    QWidget::keyReleaseEvent(e);
+}
+
 
 void
 CurveEditor::enterEvent(QEvent* e)

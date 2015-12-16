@@ -757,13 +757,13 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         showView(1);
     } else {
         accept = false;
-        QWidget::keyPressEvent(e);
     }
     if (accept) {
         takeClickFocus();
         e->accept();
     } else {
         handleUnCaughtKeyPressEvent(e);
+        QWidget::keyPressEvent(e);
     }
 } // keyPressEvent
 
@@ -781,6 +781,7 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
     if ( notifyOverlaysKeyUp(scale, scale, e) ) {
         _imp->viewer->redraw();
     } else {
+        handleUnCaughtKeyUpEvent(e);
         QWidget::keyReleaseEvent(e);
     }
 }

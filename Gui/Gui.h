@@ -547,7 +547,8 @@ public:
     PanelWidget* getCurrentPanelFocus() const;
     
     void setLastKeyPressVisitedClickFocus(bool visited);
-
+    void setLastKeyUpVisitedClickFocus(bool visited);
+    
     void setApplicationConsoleActionVisible(bool visible);
 
 protected:
@@ -711,7 +712,8 @@ private:
     //virtual bool event(QEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
     boost::scoped_ptr<GuiPrivate> _imp;
 };
 #endif // Gui_Gui_h

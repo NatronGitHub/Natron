@@ -394,6 +394,8 @@ private:
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+
     
     void recursiveSelect(QTreeWidgetItem* cur,std::vector<boost::shared_ptr<CurveGui> > *curves,bool inspectRotos = true);
 

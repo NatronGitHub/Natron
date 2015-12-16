@@ -434,7 +434,6 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         
         if (!intercepted) {
             accept = false;
-            QGraphicsView::keyPressEvent(e);
         }
     }
     if (accept) {
@@ -442,6 +441,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         e->accept();
     } else {
         handleUnCaughtKeyPressEvent(e);
+        QGraphicsView::keyPressEvent(e);
     }
 } // keyPressEvent
 

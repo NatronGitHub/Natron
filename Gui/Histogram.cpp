@@ -1437,14 +1437,21 @@ Histogram::keyPressEvent(QKeyEvent* e)
         computeHistogramAndRefresh();
     } else {
         accept = false;
-        QGLWidget::keyPressEvent(e);
     }
     if (accept) {
         takeClickFocus();
         e->accept();
     } else {
         handleUnCaughtKeyPressEvent(e);
+        QGLWidget::keyPressEvent(e);
     }
+}
+
+void
+Histogram::keyReleaseEvent(QKeyEvent* e)
+{
+    handleUnCaughtKeyUpEvent(e);
+    QGLWidget::keyReleaseEvent(e);
 }
 
 void

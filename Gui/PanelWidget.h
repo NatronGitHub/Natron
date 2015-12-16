@@ -71,6 +71,12 @@ public:
      */
     void handleUnCaughtKeyPressEvent(QKeyEvent* e);
     
+    /*
+     * @brief To be called when a keyrelease event is not accepted
+     */
+    void handleUnCaughtKeyUpEvent(QKeyEvent* e);
+    
+    
 protected:
     
     virtual void notifyGuiClosing() {}

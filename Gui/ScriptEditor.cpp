@@ -539,14 +539,21 @@ ScriptEditor::keyPressEvent(QKeyEvent* e)
         onShowHideOutputClicked(!_imp->showHideOutputB->isChecked());
     } else {
         accept = false;
-        QWidget::keyPressEvent(e);
     }
     if (accept) {
         takeClickFocus();
         e->accept();
     } else {
         handleUnCaughtKeyPressEvent(e);
+        QWidget::keyPressEvent(e);
     }
+}
+
+void
+ScriptEditor::keyReleaseEvent(QKeyEvent* e)
+{
+    handleUnCaughtKeyPressEvent(e);
+    QWidget::keyReleaseEvent(e);
 }
 
 void

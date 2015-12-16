@@ -140,6 +140,20 @@ PanelWidget::leaveEventBase()
 }
 
 void
+PanelWidget::handleUnCaughtKeyUpEvent(QKeyEvent* e)
+{
+    if (!_gui) {
+        return;
+    }
+    _gui->setLastKeyUpVisitedClickFocus(_gui->getCurrentPanelFocus() == this);
+    TabWidget* parentPane = getParentPane();
+    if (parentPane && parentPane->isFloatingWindowChild()) {
+        //We have to send the event to the Gui object, because it won't receive it as they are part from different windows
+        qApp->sendEvent(_gui, e);
+    }
+}
+
+void
 PanelWidget::handleUnCaughtKeyPressEvent(QKeyEvent* e)
 {
     if (!_gui) {

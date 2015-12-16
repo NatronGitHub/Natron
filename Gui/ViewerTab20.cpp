@@ -756,14 +756,7 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
     bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
     e->key() == Qt::Key_Meta;
     
-    /*
-     * We should not pass to the plug-in the event if the panel doesn't have the focus because this event was forwarded from the Gui
-     * but if this panel does not accept the keyDown, the following keyUp will never be issued (since this panel did not take focus)
-     * which can lead to plug-in ending up in bad state with modifiers tracking (e.g: Transform).
-     */
-    if (isModifier && !isClickFocusPanel()) {
-        return false;
-    }
+   
     
     Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
@@ -864,6 +857,14 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
         
     }
     
+    /*
+     Do not catch the event if this is a modifier, let it propagate to the Gui 
+     */
+    bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
+    e->key() == Qt::Key_Meta;
+    if (isModifier) {
+        didSomething = false;
+    }
    
     if (!didSomething && getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
         getGui()->getApp()->redrawAllViewers();

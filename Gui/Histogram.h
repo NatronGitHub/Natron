@@ -105,6 +105,7 @@ private:
     virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
     virtual void showEvent(QShowEvent* e) OVERRIDE FINAL;

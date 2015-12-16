@@ -224,6 +224,9 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
             _imp->setNodesBendPointsVisible(false);
         }
     }
+    
+    handleUnCaughtKeyUpEvent(e);
+    QGraphicsView::keyReleaseEvent(e);
 }
 
 void

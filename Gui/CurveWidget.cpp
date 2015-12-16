@@ -1342,7 +1342,6 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
         wheelEvent(&e);
     } else {
         accept = false;
-        QGLWidget::keyPressEvent(e);
     }
     
     CurveEditor* ce = 0;
@@ -1365,6 +1364,8 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
         if (ce) {
             ce->handleUnCaughtKeyPressEvent(e);
         }
+        QGLWidget::keyPressEvent(e);
+
     }
 } // keyPressEvent
 
