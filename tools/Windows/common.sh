@@ -118,7 +118,6 @@ BOOST_TAR=boost_1_55_0.tar.gz
 CAIRO_TAR=cairo-1.14.2.tar.xz
 # [FD] FFmpeg on windows is kept back at version 2.7.2, why?
 # please comment.
-FFMPEG_TAR=ffmpeg-2.7.2.tar.bz2
 OCIO_TAR=OpenColorIO-1.0.9.tar.gz
 OIIO_TAR=oiio-Release-1.5.22.tar.gz
 PYSIDE_TAR=pyside-qt4.8+1.2.2.tar.bz2
@@ -136,10 +135,10 @@ JASP_TAR=jasper-1.900.1.zip
 INSTALLER32_BIN_TAR=natron-win32-installer-extra.zip
 INSTALLER64_BIN_TAR=natron-win64-installer-extra.zip
 
-FFMPEG_MXE_BIN_64_GPL_TAR=ffmpeg-2.7.2-windows-x86_64-shared-GPLv2.tar.xz
-FFMPEG_MXE_BIN_32_GPL_TAR=ffmpeg-2.7.2-windows-i686-shared-GPLv2.tar.xz
-FFMPEG_MXE_BIN_64_LGPL_TAR=ffmpeg-2.7.2-windows-x86_64-shared-LGPL.tar.xz
-FFMPEG_MXE_BIN_32_LGPL_TAR=ffmpeg-2.7.2-windows-i686-shared-LGPL.tar.xz
+FFMPEG_MXE_BIN_64_GPL_TAR=ffmpeg-2.8.3-windows-x86_64-shared-GPLv2.tar.xz
+FFMPEG_MXE_BIN_32_GPL_TAR=ffmpeg-2.8.3-windows-i686-shared-GPLv2.tar.xz
+FFMPEG_MXE_BIN_64_LGPL_TAR=ffmpeg-2.8.3-windows-x86_64-shared-LGPL.tar.xz
+FFMPEG_MXE_BIN_32_LGPL_TAR=ffmpeg-2.8.3-windows-i686-shared-LGPL.tar.xz
 
 NATRON_API_DOC=https://media.readthedocs.org/pdf/natron/workshop/natron.pdf # TODO generate own
 
