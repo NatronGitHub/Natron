@@ -28,7 +28,7 @@ def getGrouping():
     return "Filter"
 
 def getPluginDescription():
-    return "Creates a drop shadow on the source image using its alpha channel.\n"
+    return "Creates a drop shadow on the source image using its alpha channel."
 
 def createInstance(app,group):
     # Create all nodes in the group
@@ -81,8 +81,8 @@ def createInstance(app,group):
 
     param = lastNode.getParam("translate")
     if param is not None:
-        param.setValue(7.794960518281882, 0)
-        param.setValue(-1.79960843475092, 1)
+        param.setValue(14.14213562373095, 0)
+        param.setValue(-14.14213562373095, 1)
         del param
 
     param = lastNode.getParam("center")
@@ -137,10 +137,10 @@ def createInstance(app,group):
 
     param = lastNode.getParam("value")
     if param is not None:
-        param.setValue(0.8539603960396041, 0)
-        param.setValue(0.8539603960396041, 1)
-        param.setValue(0.8539603960396041, 2)
-        param.setValue(0.8539603960396041, 3)
+        param.setValue(0.5, 0)
+        param.setValue(0.5, 1)
+        param.setValue(0.5, 2)
+        param.setValue(0.5, 3)
         del param
 
     param = lastNode.getParam("premult")
@@ -209,8 +209,8 @@ def createInstance(app,group):
 
     param = lastNode.getParam("size")
     if param is not None:
-        param.setValue(27.5, 0)
-        param.setValue(27.5, 1)
+        param.setValue(0, 0)
+        param.setValue(0, 1)
         del param
 
     del lastNode
@@ -257,7 +257,6 @@ def createInstance(app,group):
     param.setHelp("")
     param.setAddNewLine(True)
     param.setAnimationEnabled(True)
-    param.setValue(-13, 0)
     lastNode.shadowAngle = param
     del param
 
@@ -275,7 +274,6 @@ def createInstance(app,group):
     param.setHelp("")
     param.setAddNewLine(True)
     param.setAnimationEnabled(True)
-    param.setValue(8, 0)
     lastNode.shadowDist = param
     del param
 
@@ -293,10 +291,9 @@ def createInstance(app,group):
     lastNode.controls.addParam(param)
 
     # Set param properties
+    param.setHelp("")
     param.setAddNewLine(True)
     param.setAnimationEnabled(True)
-    param.setValue(27.5, 0)
-    param.setValue(27.5, 1)
     lastNode.shadowBlur = param
     del param
 
@@ -326,12 +323,9 @@ def createInstance(app,group):
     lastNode.controls.addParam(param)
 
     # Set param properties
+    param.setHelp("")
     param.setAddNewLine(True)
     param.setAnimationEnabled(True)
-    param.setValue(0.8539603960396041, 0)
-    param.setValue(0.8539603960396041, 1)
-    param.setValue(0.8539603960396041, 2)
-    param.setValue(0.8539603960396041, 3)
     lastNode.shadowOpacity = param
     del param
 
@@ -353,6 +347,7 @@ def createInstance(app,group):
     lastNode.controls.addParam(param)
 
     # Set param properties
+    param.setHelp("")
     param.setAddNewLine(True)
     param.setAnimationEnabled(True)
     lastNode.shadowColor = param
@@ -364,6 +359,7 @@ def createInstance(app,group):
     lastNode.controls.addParam(param)
 
     # Set param properties
+    param.setHelp("")
     param.setAddNewLine(True)
     param.setAnimationEnabled(False)
     lastNode.shadowCFS = param
@@ -375,6 +371,7 @@ def createInstance(app,group):
     lastNode.controls.addParam(param)
 
     # Set param properties
+    param.setHelp("")
     param.setAddNewLine(True)
     param.setAnimationEnabled(False)
     lastNode.shadowOnly = param
