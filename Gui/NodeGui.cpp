@@ -50,6 +50,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Knob.h"
 #include "Engine/MergingEnum.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
+#include "Engine/GroupInput.h"
+#include "Engine/GroupOutput.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -525,8 +528,10 @@ NodeGui::createGui()
         _resizeHandle = new QGraphicsPolygonItem(this);
         _resizeHandle->setZValue(depth + 1);
     }
+    
+    NodePtr node = getNode();
 
-    const QString& iconFilePath = getNode()->getPlugin()->getIconFilePath();
+    const QString& iconFilePath = node->getPlugin()->getIconFilePath();
 
     BackDropGui* isBd = dynamic_cast<BackDropGui*>(this);
 
@@ -547,13 +552,13 @@ NodeGui::createGui()
         }
     }
 
-    if (getNode()->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
+    if (node->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
         _mergeIcon = new NodeGraphPixmapItem(getDagGui(),this);
         _mergeIcon->setZValue(depth + 1);
     }
 
     _nameItem = new NodeGraphTextItem(getDagGui(),this,false);
-    _nameItem->setPlainText(getNode()->getLabel().c_str());
+    _nameItem->setPlainText(node->getLabel().c_str());
     _nameItem->setDefaultTextColor( QColor(0,0,0,255) );
     //_nameItem->setFont( QFont(appFont,appFontSize) );
     _nameItem->setZValue(depth+ 1);
@@ -598,13 +603,17 @@ NodeGui::createGui()
     
     onAvailableViewsChanged();
     
-    QGradientStops ptGrad;
-    ptGrad.push_back(qMakePair(0., QColor(0,0,255)));
-    ptGrad.push_back(qMakePair(0.5, QColor(0,50,200)));
-    ptGrad.push_back(qMakePair(1., QColor(0,100,150)));
-    _passThroughIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "P", bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,ptGrad, QColor(255,255,255), this));
-    _passThroughIndicator->setActive(false);
-
+    GroupInput* isGroupInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
+    GroupOutput* isGroupOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
+    
+    if (!isGroupInput && !isGroupOutput) {
+        QGradientStops ptGrad;
+        ptGrad.push_back(qMakePair(0., QColor(0,0,255)));
+        ptGrad.push_back(qMakePair(0.5, QColor(0,50,200)));
+        ptGrad.push_back(qMakePair(1., QColor(0,100,150)));
+        _passThroughIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "P", bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,ptGrad, QColor(255,255,255), this));
+        _passThroughIndicator->setActive(false);
+    }
 
     _disabledBtmLeftTopRight = new QGraphicsLineItem(this);
     _disabledBtmLeftTopRight->setZValue(depth + 1);
@@ -846,9 +855,15 @@ NodeGui::resize(int width,
     QPointF bitDepthPos(topLeft.x() + iconWidth + (width - iconWidth) / 2,0);
     _bitDepthWarning->refreshPosition(bitDepthPos);
 
-    _expressionIndicator->refreshPosition( topLeft + QPointF(width,0) );
-    _availableViewsIndicator->refreshPosition(topLeft);
-    _passThroughIndicator->refreshPosition(bottomRight );
+    if (_expressionIndicator) {
+        _expressionIndicator->refreshPosition( topLeft + QPointF(width,0) );
+    }
+    if (_availableViewsIndicator) {
+        _availableViewsIndicator->refreshPosition(topLeft);
+    }
+    if (_passThroughIndicator) {
+        _passThroughIndicator->refreshPosition(bottomRight );
+    }
     
     _persistentMessage->setPos(topLeft.x() + (width / 2) - (pMWidth / 2), topLeft.y() + height / 2 - metrics.height() / 2);
     _stateIndicator->setRect(topLeft.x() - NATRON_STATE_INDICATOR_OFFSET,topLeft.y() - NATRON_STATE_INDICATOR_OFFSET,
