@@ -1280,20 +1280,6 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         }
         
     }
-    
-    
-    ///If the node is a group, call it on all nodes in the group
-    ///Also force a change to their hash
-    /*NodeGroup* group = dynamic_cast<NodeGroup*>(getLiveInstance());
-    if (group) {
-        NodeList nodes = group->getNodes();
-        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            assert(*it);
-            (*it)->incrementKnobsAge_internal();
-            (*it)->computeHashInternal(marked);
-        }
-    }
-*/
 }
 
 void
@@ -6248,6 +6234,19 @@ Node::onEffectKnobValueChanged(KnobI* what,
     } else if ( ( what == _imp->disableNodeKnob.lock().get() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent.lock() ) {
         Q_EMIT disabledKnobToggled( _imp->disableNodeKnob.lock()->getValue() );
         getApp()->redrawAllViewers();
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>(getLiveInstance());
+        if (isGroup) {
+            ///When a group is disabled we have to force a hash change of all nodes inside otherwise the image will stay cached
+            
+            NodeList nodes = isGroup->getNodes();
+            std::list<Natron::Node*> markedNodes;
+            for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+                //This will not trigger a hash recomputation
+                (*it)->incrementKnobsAge_internal();
+                (*it)->computeHashInternal(markedNodes);
+            }
+        }
+        
     } else if ( what == _imp->nodeLabelKnob.lock().get() ) {
         Q_EMIT nodeExtraLabelChanged( _imp->nodeLabelKnob.lock()->getValue().c_str() );
     } else if (what->getName() == kNatronOfxParamStringSublabelName) {
@@ -6637,6 +6636,12 @@ Node::replaceCustomDataInlabel(const QString & data)
     label.insert(i + customTagStart.size(), data);
     label.insert(i + customTagStart.size() + data.size(), customTagEnd);
     labelKnob->setValue(label.toStdString(), 0);
+}
+
+boost::shared_ptr<KnobBool>
+Node::getDisabledKnob() const
+{
+    return _imp->disableNodeKnob.lock();
 }
 
 bool
