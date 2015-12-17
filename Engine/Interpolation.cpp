@@ -954,8 +954,8 @@ Natron::autoComputeDerivatives(Natron::KeyframeTypeEnum interpPrev,
     // If there is no next/previous keyframe, should there be a continuous derivative?
     bool keyframe_none_same_derivative = false;
 
-    // if there is no next/previous keyframe, use LINEAR interpolation, and set keyframe_none_same_derivative
-    if ( (interpPrev == eKeyframeTypeNone) || (interpNext == eKeyframeTypeNone) ) {
+    // if there is no next/previous keyframe, use LINEAR interpolation (except for horizontal, see bug #1050), and set keyframe_none_same_derivative
+    if ( interp != eKeyframeTypeHorizontal && ((interpPrev == eKeyframeTypeNone) || (interpNext == eKeyframeTypeNone)) ) {
         // Do this before modifying interp (next line)
         keyframe_none_same_derivative = (interp == eKeyframeTypeCatmullRom || interp == eKeyframeTypeCubic);
         interp = eKeyframeTypeLinear;
