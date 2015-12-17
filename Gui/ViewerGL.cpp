@@ -3897,10 +3897,7 @@ getColorAtInternal(const ImageList& tiles,
                 *b = 1.;
                 *a = 1.;
             } else {
-                *r = 0.;
-                *g = 0.;
-                *b = 0.;
-                *a = pix[0] / (float)maxValue;
+                *r = *g = *b = *a = pix[0] / (float)maxValue;
             }
             
             
