@@ -2408,8 +2408,10 @@ Node::setNameInternal(const std::string& name, bool throwErrors)
         QMutexLocker l(&_imp->nameMutex);
         _imp->scriptName = newName;
         mustSetCacheID = _imp->cacheID.empty();
-        ///Set the label at the same time
-        _imp->label = newName;
+        ///Set the label at the same time if the label is empty
+        if (_imp->label.empty()) {
+            _imp->label = newName;
+        }
     }
     std::string fullySpecifiedName = getFullyQualifiedName();
 
