@@ -762,9 +762,9 @@ public:
 
     void incrementKnobsAge();
     
-private:
-    
     void incrementKnobsAge_internal();
+
+    
     
 public:
     
@@ -806,6 +806,8 @@ public:
     bool isNodeDisabled() const;
 
     void setNodeDisabled(bool disabled);
+    
+    boost::shared_ptr<KnobBool> getDisabledKnob() const;
 
     Natron::ImageBitDepthEnum getBitDepth() const;
 
@@ -1070,6 +1072,9 @@ public:
     
     int getFrameStepKnobValue() const;
     
+    void computeHashInternal(std::list<Natron::Node*>& marked);
+
+    
 private:
     
     void refreshEnabledKnobsLabel(const Natron::ImageComponents& layer);
@@ -1102,6 +1107,8 @@ private:
     
     void s_outputLayerChanged() { Q_EMIT outputLayerChanged(); }
 
+
+    
 public Q_SLOTS:
 
 
@@ -1229,7 +1236,6 @@ protected:
 
 private:
     
-    void computeHashInternal(std::list<Natron::Node*>& marked);
     
     void declareRotoPythonField();
 

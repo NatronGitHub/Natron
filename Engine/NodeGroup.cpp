@@ -1418,7 +1418,7 @@ NodeGroup::knobChanged(KnobI* k,Natron::ValueChangedReasonEnum /*reason*/,
         if (gui_i) {
             gui_i->exportGroupAsPythonScript();
         }
-    }
+    } 
 }
 
 void
