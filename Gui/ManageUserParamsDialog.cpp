@@ -412,15 +412,14 @@ ManageUserParamsDialogPrivate::createItemForKnob(const boost::shared_ptr<KnobI>&
             }
         }
     }
-    if (!parent) {
-        KnobPage* isPage = dynamic_cast<KnobPage*>(knob.get());
-        if (!isPage) {
-            //Default to user page
-            for (std::list<TreeItem>::iterator it = items.begin(); it != items.end(); ++it) {
-                if (it->scriptName == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
-                    parent = it->item;
-                    break;
-                }
+    
+    KnobPage* isPage = dynamic_cast<KnobPage*>(knob.get());
+    if (!parent && !isPage) {
+        //Default to user page
+        for (std::list<TreeItem>::iterator it = items.begin(); it != items.end(); ++it) {
+            if (it->scriptName == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+                parent = it->item;
+                break;
             }
         }
         
@@ -506,14 +505,23 @@ ManageUserParamsDialog::onEditClickedInternal(const QList<QTreeWidgetItem*> &sel
                     if (dialog.exec()) {
                         int indexIndParent = -1;
                         QTreeWidgetItem* parent = it->item->parent();
+                        KnobPage* isPage = dynamic_cast<KnobPage*>(it->knob.get());
                         if (parent) {
                             indexIndParent = parent->indexOfChild(it->item);
+                        } else {
+                            if (isPage) {
+                                indexIndParent = isPage->getHolder()->getPageIndex(isPage);
+                            }
                         }
+                        
                         delete it->item;
                         _imp->items.erase(it);
                         boost::shared_ptr<KnobI> knob = dialog.getKnob();
                         QTreeWidgetItem* item = _imp->createItemForKnob(knob,indexIndParent);
-                        _imp->saveAndRebuildPages();
+                        if (!isPage) {
+                            //Nothing is to be rebuilt when editing a page
+                            _imp->saveAndRebuildPages();
+                        }
                         QItemSelectionModel* model = _imp->tree->selectionModel();
                         model->select(_imp->tree->indexFromItemPublic(item), QItemSelectionModel::ClearAndSelect);
 
@@ -726,17 +734,17 @@ ManageUserParamsDialog::onSelectionChanged()
     bool canDelete = true;
     if (!selection.isEmpty()) {
         QTreeWidgetItem* item = selection[0];
-        if (item->text(0) == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
-            canEdit = false;
-        }
+        //if (item->text(0) == QString(NATRON_USER_MANAGED_KNOBS_PAGE)) {
+        //    canEdit = false;
+       // }
         for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
             if (it->item == item) {
                 KnobPage* isPage = dynamic_cast<KnobPage*>(it->knob.get());
                 KnobGroup* isGroup = dynamic_cast<KnobGroup*>(it->knob.get());
                 if (isPage) {
-                    canEdit = false;
                     if (!isPage->isUserKnob()) {
                         canDelete = false;
+                        canEdit = false;
                     }
                 } else if (isGroup) {
                     canEdit = false;

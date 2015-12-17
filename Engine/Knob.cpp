@@ -166,22 +166,22 @@ KnobI::onAnimationRemoved(int dimension)
     }
 }
 
-KnobPage*
+boost::shared_ptr<KnobPage>
 KnobI::getTopLevelPage()
 {
     boost::shared_ptr<KnobI> parentKnob = getParentKnob();
-    KnobI* parentKnobTmp = parentKnob.get();
+    boost::shared_ptr<KnobI> parentKnobTmp = parentKnob;
     while (parentKnobTmp) {
         boost::shared_ptr<KnobI> parent = parentKnobTmp->getParentKnob();
         if (!parent) {
             break;
         } else {
-            parentKnobTmp = parent.get();
+            parentKnobTmp = parent;
         }
     }
 
     ////find in which page the knob should be
-    KnobPage* isTopLevelParentAPage = dynamic_cast<KnobPage*>(parentKnobTmp);
+    boost::shared_ptr<KnobPage> isTopLevelParentAPage = boost::dynamic_pointer_cast<KnobPage>(parentKnobTmp);
     return isTopLevelParentAPage;
 }
 
@@ -4672,6 +4672,23 @@ KnobHolder::discardAppPointer()
     _imp->app = 0;
 }
 
+int
+KnobHolder::getPageIndex(const KnobPage* page) const
+{
+    QMutexLocker k(&_imp->knobsMutex);
+    int pageIndex = 0;
+    for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
+        KnobPage* ispage = dynamic_cast<KnobPage*>(_imp->knobs[i].get());
+        if (ispage) {
+            if (page == ispage) {
+                return pageIndex;
+            } else {
+                ++pageIndex;
+            }
+        }
+    }
+    return -1;
+}
 
 bool
 KnobHolder::getHasAnimation() const

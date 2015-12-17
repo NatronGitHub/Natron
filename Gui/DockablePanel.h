@@ -170,6 +170,8 @@ public:
     
 public Q_SLOTS:
     
+    void onPageLabelChangedInternally();
+    
     void onPageIndexChanged(int index);
 
     /*Internal slot, not meant to be called externally.*/

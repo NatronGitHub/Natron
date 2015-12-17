@@ -1046,7 +1046,7 @@ public:
      **/
     virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const = 0;
 
-    KnobPage* getTopLevelPage();
+    boost::shared_ptr<KnobPage> getTopLevelPage();
 };
 
 
@@ -2167,6 +2167,8 @@ public:
     virtual int getCurrentView() const {
         return 0;
     }
+    
+    int getPageIndex(const KnobPage* page) const;
     
 protected:
 

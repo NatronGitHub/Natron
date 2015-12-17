@@ -57,14 +57,15 @@ struct Page
     QWidget* tab;
     int currentRow;
     TabGroup* groupAsTab; //< to gather group knobs that are set as a tab
-
+    boost::weak_ptr<KnobPage> pageKnob;
+    
     Page()
-    : tab(0), currentRow(0),groupAsTab(0)
+    : tab(0), currentRow(0),groupAsTab(0), pageKnob()
     {
     }
 
     Page(const Page & other)
-    : tab(other.tab), currentRow(other.currentRow), groupAsTab(other.groupAsTab)
+    : tab(other.tab), currentRow(other.currentRow), groupAsTab(other.groupAsTab), pageKnob(other.pageKnob)
     {
     }
 };
@@ -151,7 +152,7 @@ struct DockablePanelPrivate
                          const boost::shared_ptr<QUndoStack>& stack);
     
     /*inserts a new page to the dockable panel.*/
-    PageMap::iterator getOrCreatePage(KnobPage* page);
+    PageMap::iterator getOrCreatePage(const boost::shared_ptr<KnobPage>& page);
 
     boost::shared_ptr<KnobPage> ensureDefaultPageKnobCreated() ;
 

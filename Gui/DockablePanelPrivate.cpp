@@ -244,7 +244,7 @@ DockablePanelPrivate::ensureDefaultPageKnobCreated()
     for (U32 i = 0; i < knobs.size(); ++i) {
         boost::shared_ptr<KnobPage> p = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
         if ( p && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_INFO) && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
-            getOrCreatePage(p.get());
+            getOrCreatePage(p);
             return p;
         }
     }
@@ -258,7 +258,7 @@ DockablePanelPrivate::ensureDefaultPageKnobCreated()
         pk = boost::dynamic_pointer_cast<KnobPage>(knob);
     }
     assert(pk);
-    getOrCreatePage(pk.get());
+    getOrCreatePage(pk);
     return pk;
 }
 
@@ -269,7 +269,7 @@ DockablePanelPrivate::getDefaultPage(const boost::shared_ptr<KnobI> &knob)
     const std::vector< boost::shared_ptr<KnobI> > & knobs = _holder->getKnobs();
     ///find in all knobs a page param to set this param into
     for (U32 i = 0; i < knobs.size(); ++i) {
-        KnobPage* p = dynamic_cast<KnobPage*>( knobs[i].get() );
+        boost::shared_ptr<KnobPage> p = boost::dynamic_pointer_cast<KnobPage>( knobs[i]);
         if ( p && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_INFO) && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
             page = getOrCreatePage(p);
             p->addKnob(knob);
@@ -290,7 +290,7 @@ DockablePanelPrivate::getDefaultPage(const boost::shared_ptr<KnobI> &knob)
         
         ///Last resort: The plug-in didn't specify ANY page, just put it into the default page
         if ( page == _pages.end() ) {
-            page = getOrCreatePage(NULL);
+            page = getOrCreatePage(boost::shared_ptr<KnobPage>());
         }
     }
     return page;
@@ -325,7 +325,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
         if (isPage->getChildren().empty()) {
             return 0;
         }
-        getOrCreatePage(isPage.get());
+        getOrCreatePage(isPage);
 
     } else {
         
@@ -351,7 +351,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
         ///For group only create the gui if it is not  a tab.
         if (isGroup  && isGroup->isTab()) {
             
-            KnobPage* parentIsPage = dynamic_cast<KnobPage*>(parentKnob.get());
+            boost::shared_ptr<KnobPage> parentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentKnob);
             if (!parentKnob || parentIsPage) {
                 PageMap::iterator page = _pages.end();
                 if (!parentKnob) {
@@ -395,7 +395,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     assert(parentParentIsGroup || parentParentIsPage);
                     TabGroup* parentTabGroup = 0;
                     if (parentParentIsPage) {
-                        PageMap::iterator page = getOrCreatePage(parentParentIsPage.get());
+                        PageMap::iterator page = getOrCreatePage(parentParentIsPage);
                         assert(page != _pages.end());
                         parentTabGroup = page->second.groupAsTab;
                     } else {
@@ -411,7 +411,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     layout->addWidget(groupAsTab, 0, 0, 1, 2);
                     
                 } else {
-                    KnobPage* topLevelPage = knob->getTopLevelPage();
+                    boost::shared_ptr<KnobPage> topLevelPage = knob->getTopLevelPage();
                     PageMap::iterator page = getOrCreatePage(topLevelPage);
                     assert(page != _pages.end());
                     ///retrieve the form layout
@@ -430,18 +430,18 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             }
             
         } else if (!ret->hasWidgetBeenCreated()) {
-            KnobI* parentKnobTmp = parentKnob.get();
+            boost::shared_ptr<KnobI> parentKnobTmp = parentKnob;
             while (parentKnobTmp) {
                 boost::shared_ptr<KnobI> parent = parentKnobTmp->getParentKnob();
                 if (!parent) {
                     break;
                 } else {
-                    parentKnobTmp = parent.get();
+                    parentKnobTmp = parent;
                 }
             }
 
             ////find in which page the knob should be
-            KnobPage* isTopLevelParentAPage = dynamic_cast<KnobPage*>(parentKnobTmp);
+            boost::shared_ptr<KnobPage> isTopLevelParentAPage = boost::dynamic_pointer_cast<KnobPage>(parentKnobTmp);
             assert(isTopLevelParentAPage);
             
             PageMap::iterator page = getOrCreatePage(isTopLevelParentAPage);
@@ -534,7 +534,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 
                 boost::shared_ptr<KnobI> parentParent = closestParentGroupTab->getParentKnob();
                 KnobGroup* parentParentIsGroup = dynamic_cast<KnobGroup*>(parentParent.get());
-                KnobPage* parentParentIsPage = dynamic_cast<KnobPage*>(parentParent.get());
+                boost::shared_ptr<KnobPage> parentParentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentParent);
                 
                 assert(parentParentIsGroup || parentParentIsPage);
                 if (parentParentIsGroup) {
@@ -658,7 +658,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
 } // findKnobGuiOrCreate
 
 PageMap::iterator
-DockablePanelPrivate::getOrCreatePage(KnobPage* page)
+DockablePanelPrivate::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
 {
     if (!_pagesEnabled && _pages.size() > 0) {
         return _pages.begin();
@@ -722,7 +722,13 @@ DockablePanelPrivate::getOrCreatePage(KnobPage* page)
     Page p;
     p.tab = newTab;
     p.currentRow = 0;
-
+    p.pageKnob =  page;
+    if (page) {
+        boost::shared_ptr<KnobSignalSlotHandler> handler = page->getSignalSlotHandler();
+        if (handler) {
+            QObject::connect(handler.get(), SIGNAL(labelChanged()), _publicInterface, SLOT(onPageLabelChangedInternally()));
+        }
+    }
     return _pages.insert( make_pair(name,p) ).first;
 }
 

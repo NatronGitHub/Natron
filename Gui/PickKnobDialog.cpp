@@ -279,21 +279,21 @@ PickKnobDialog::onPageComboIndexChanged(int index)
     _imp->groupCombo->addItem("-");
     
     std::string selectedPage = _imp->destPageCombo->itemText(index).toStdString();
-    KnobPage* parentPage = 0;
+    boost::shared_ptr<KnobPage> parentPage ;
     
     if (selectedPage == NATRON_USER_MANAGED_KNOBS_PAGE) {
-        parentPage = _imp->panel->getUserPageKnob().get();
+        parentPage = _imp->panel->getUserPageKnob();
     } else {
         for (std::vector<boost::shared_ptr<KnobPage> >::iterator it = _imp->pages.begin(); it != _imp->pages.end(); ++it) {
             if ((*it)->getName() == selectedPage) {
-                parentPage = it->get();
+                parentPage = *it;
                 break;
             }
         }
     }
     
     for (std::vector<boost::shared_ptr<KnobGroup> >::iterator it = _imp->groups.begin(); it != _imp->groups.end(); ++it) {
-        KnobPage* page = (*it)->getTopLevelPage();
+        boost::shared_ptr<KnobPage> page = (*it)->getTopLevelPage();
         assert(page);
         
         ///add only grps whose parent page is the selected page

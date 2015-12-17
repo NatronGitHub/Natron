@@ -450,7 +450,7 @@ DockablePanel::DockablePanel(Gui* gui ,
     _imp->_mainLayout->addWidget(_imp->_horizContainer);
 
     if (createDefaultPage) {
-        _imp->getOrCreatePage(NULL);
+        _imp->getOrCreatePage(boost::shared_ptr<KnobPage>());
     }
 }
 
@@ -472,6 +472,33 @@ DockablePanel::~DockablePanel()
                 knob->setKnobGuiPointer(0);
             }
             it->second->callDeleteLater();
+        }
+    }
+}
+
+void
+DockablePanel::onPageLabelChangedInternally()
+{
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
+    if (!handler) {
+        return;
+    }
+    boost::shared_ptr<KnobI> knob = handler->getKnob();
+    QString newLabel(knob->getLabel().c_str());
+    for (PageMap::iterator it = _imp->_pages.begin(); it != _imp->_pages.end(); ++it) {
+        if (it->second.pageKnob.lock() == knob) {
+            if (_imp->_tabWidget) {
+                int nTabs = _imp->_tabWidget->count();
+                for (int i = 0; i < nTabs; ++i) {
+                    if (_imp->_tabWidget->widget(i) == it->second.tab) {
+                        _imp->_tabWidget->setTabText(i, newLabel);
+                        break;
+                    }
+                }
+            }
+            _imp->_pages.insert(std::make_pair(newLabel, it->second));
+            _imp->_pages.erase(it);
+            break;
         }
     }
 }
@@ -503,7 +530,7 @@ DockablePanel::turnOffPages()
     setFrameShape(QFrame::NoFrame);
     
     boost::shared_ptr<KnobPage> userPage = _imp->_holder->getOrCreateUserPageKnob();
-    _imp->getOrCreatePage(userPage.get());
+    _imp->getOrCreatePage(userPage);
     
 }
 
