@@ -25,7 +25,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
