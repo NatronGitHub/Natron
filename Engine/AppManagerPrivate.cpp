@@ -266,8 +266,9 @@ AppManagerPrivate::createBreakpadHandler()
                                                                      client_fd));
 #elif defined(Q_OS_WIN32)
         breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
-                                                                     0,
+                                                                     0, //filter callback
                                                                      0/*dmpcb*/,
+																	 0, //context
                                                                      google_breakpad::ExceptionHandler::HANDLER_ALL,
                                                                      MiniDumpNormal,
                                                                      crashReporterBreakpadPipe.toStdWString().c_str(),
