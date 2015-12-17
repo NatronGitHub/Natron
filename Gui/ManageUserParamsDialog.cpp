@@ -514,10 +514,15 @@ ManageUserParamsDialog::onEditClickedInternal(const QList<QTreeWidgetItem*> &sel
                             }
                         }
                         
+                        QList<QTreeWidgetItem*> children = it->item->takeChildren();
+                        
                         delete it->item;
                         _imp->items.erase(it);
                         boost::shared_ptr<KnobI> knob = dialog.getKnob();
                         QTreeWidgetItem* item = _imp->createItemForKnob(knob,indexIndParent);
+                        if (item && !children.isEmpty()) {
+                            item->insertChildren(0, children);
+                        }
                         if (!isPage) {
                             //Nothing is to be rebuilt when editing a page
                             _imp->saveAndRebuildPages();
