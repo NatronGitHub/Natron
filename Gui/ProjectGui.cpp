@@ -545,7 +545,10 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
     
     _gui->getApp()->updateProjectLoadStatus(QObject::tr("Restoring layout"));
     
-    _gui->restoreLayout( true,obj.getVersion() < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL,obj.getGuiLayout() );
+    bool loadWorkspace = appPTR->getCurrentSettings()->getLoadProjectWorkspce();
+    if (loadWorkspace) {
+        _gui->restoreLayout( true,obj.getVersion() < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL,obj.getGuiLayout() );
+    }
 
     ///restore the histograms
     const std::list<std::string> & histograms = obj.getHistograms();

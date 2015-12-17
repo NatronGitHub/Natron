@@ -2137,6 +2137,9 @@ TabWidgetPrivate::declareTabToPython(PanelWidget* widget,const std::string& tabN
 void
 TabWidgetPrivate::removeTabToPython(PanelWidget* widget,const std::string& tabName)
 {
+    if (!gui) {
+        return;
+    }
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(widget);
     PyPanel* isPanel = dynamic_cast<PyPanel*>(widget);
     

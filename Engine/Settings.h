@@ -212,6 +212,8 @@ public:
         return _knownHostNames[(int)e];
     }
     std::string getDefaultLayoutFile() const;
+    
+    bool getLoadProjectWorkspce() const;
 
     bool useCursorPositionIncrements() const;
 
@@ -382,6 +384,7 @@ private:
     boost::shared_ptr<KnobInt> _maxPanelsOpened;
     boost::shared_ptr<KnobBool> _useCursorPositionIncrements;
     boost::shared_ptr<KnobFile> _defaultLayoutFile;
+    boost::shared_ptr<KnobBool> _loadProjectsWorkspace;
     boost::shared_ptr<KnobBool> _renderOnEditingFinished;
     boost::shared_ptr<KnobBool> _activateRGBSupport;
     boost::shared_ptr<KnobBool> _activateTransformConcatenationSupport;

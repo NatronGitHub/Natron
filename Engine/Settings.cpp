@@ -279,6 +279,13 @@ Settings::initializeKnobsGeneral()
                                                                             "from the Layout menu. If empty, the default application layout is used.");
     _defaultLayoutFile->setAnimationEnabled(false);
     _generalTab->addKnob(_defaultLayoutFile);
+    
+    _loadProjectsWorkspace = Natron::createKnob<KnobBool>(this, "Load workspace embedded within projects");
+    _loadProjectsWorkspace->setName("loadProjectWorkspace");
+    _loadProjectsWorkspace->setHintToolTip("When checked, when loading a project, the workspace (windows layout) will also be loaded, otherwise it "
+                                           "will use your current layout.");
+    _loadProjectsWorkspace->setAnimationEnabled(false);
+    _generalTab->addKnob(_loadProjectsWorkspace);
 
     _renderOnEditingFinished = Natron::createKnob<KnobBool>(this, "Refresh viewer only when editing is finished");
     _renderOnEditingFinished->setName("renderOnEditingFinished");
@@ -1333,6 +1340,7 @@ Settings::setDefaultValues()
     _convertNaNValues->setDefaultValue(true);
     _snapNodesToConnections->setDefaultValue(true);
     _useBWIcons->setDefaultValue(false);
+    _loadProjectsWorkspace->setDefaultValue(false);
     _useNodeGraphHints->setDefaultValue(true);
     _numberOfThreads->setDefaultValue(0,0);
     _numberOfParallelRenders->setDefaultValue(0,0);
@@ -2819,6 +2827,12 @@ std::string
 Settings::getDefaultLayoutFile() const
 {
     return _defaultLayoutFile->getValue();
+}
+
+bool
+Settings::getLoadProjectWorkspce() const
+{
+    return _loadProjectsWorkspace->getValue();
 }
 
 bool
