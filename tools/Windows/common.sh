@@ -116,9 +116,11 @@ EXR_TAR=openexr-2.2.0.tar.gz
 GLEW_TAR=glew-1.12.0.tgz
 BOOST_TAR=boost_1_55_0.tar.gz
 CAIRO_TAR=cairo-1.14.2.tar.xz
+# [FD] FFmpeg on windows is kept back at version 2.7.2, why?
+# please comment.
 FFMPEG_TAR=ffmpeg-2.7.2.tar.bz2
 OCIO_TAR=OpenColorIO-1.0.9.tar.gz
-OIIO_TAR=oiio-Release-1.5.20.tar.gz
+OIIO_TAR=oiio-Release-1.5.22.tar.gz
 PYSIDE_TAR=pyside-qt4.8+1.2.2.tar.bz2
 SHIBOK_TAR=shiboken-1.2.2.tar.bz2
 LIBXML_TAR=libxml2-2.9.2.tar.gz
