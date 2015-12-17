@@ -66,7 +66,7 @@ using namespace google_breakpad;
 
 CallbacksManager::CallbacksManager(bool autoUpload)
 : QObject()
-#ifdef DEBUG
+#ifdef TRACE_CRASH_RERPORTER
 , _dFileMutex()
 , _dFile(0)
 #endif
@@ -84,15 +84,15 @@ CallbacksManager::CallbacksManager(bool autoUpload)
     _instance = this;
     QObject::connect(this, SIGNAL(doDumpCallBackOnMainThread(QString)), this, SLOT(onDoDumpOnMainThread(QString)));
 
-#ifdef DEBUG
-    _dFile = new QFile("debug.txt");
+#ifdef TRACE_CRASH_RERPORTER
+    _dFile = new QFile("debugCrashReporter.txt");
     _dFile->open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text);
 #endif
 }
 
 
 CallbacksManager::~CallbacksManager() {
-#ifdef DEBUG
+#ifdef TRACE_CRASH_RERPORTER
     delete _dFile;
 #endif
 
@@ -414,7 +414,7 @@ CallbacksManager::s_emitDoCallBackOnMainThread(const QString& filePath)
     }
 }
 
-#ifdef DEBUG
+#ifdef TRACE_CRASH_RERPORTER
 void
 CallbacksManager::writeDebugMessage(const QString& str)
 {
@@ -522,6 +522,7 @@ CallbacksManager::startCrashGenerationServer()
                                           true, // auto-generate dumps
                                           &stdDumpPath); // path to dump to
 #elif defined(Q_OS_WIN32)
+    _pipePath.replace("/","\\");
     std::string pipeName = _pipePath.toStdString();
     std::wstring wpipeName = s2ws(pipeName);
     std::string stdDumPath = _dumpDirPath.toStdString();

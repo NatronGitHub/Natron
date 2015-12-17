@@ -27,7 +27,8 @@ class QLocalSocket;
 class QLocalServer;
 class QNetworkReply;
 
-#ifdef DEBUG
+//#define TRACE_CRASH_RERPORTER
+#ifdef TRACE_CRASH_RERPORTER
 class QTextStream;
 class QFile;
 #endif
@@ -58,7 +59,7 @@ public:
         return _instance;
     }
 
-#ifdef DEBUG
+#ifdef TRACE_CRASH_RERPORTER
     void writeDebugMessage(const QString& str);
 #else
     void writeDebugMessage(const QString& /*str*/) {}
@@ -99,7 +100,7 @@ private:
 
     static CallbacksManager *_instance;
 
-#ifdef DEBUG
+#ifdef TRACE_CRASH_RERPORTER
     QMutex _dFileMutex;
     QFile* _dFile;
 #endif

@@ -1076,6 +1076,9 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
 
 static bool findAndRunScriptFile(const QString& path,const QStringList& files,const QString& script)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+    return false;
+#endif
     for (QStringList::const_iterator it = files.begin(); it != files.end(); ++it) {
         if (*it == script) {
             QFile file(path + *it);
@@ -3071,6 +3074,9 @@ static bool getGroupInfosInternal(const std::string& modulePath,
                                   std::string* description,
                                   unsigned int* version)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+    return false;
+#endif
     Natron::PythonGILLocker pgl;
     
     QString script("import sys\n"
@@ -3268,6 +3274,9 @@ getGroupInfos(const std::string& modulePath,
     
 void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+    return;
+#endif
     std::stringstream ss;
     ss << "import inspect\n";
     ss << "args_spec = inspect.getargspec(" << pyFunc << ")\n";
@@ -3320,6 +3329,9 @@ void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vect
 PyObject*
 getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+    return 0;
+#endif
     std::size_t foundDot = fullyQualifiedName.find(".");
     std::string attrName = foundDot == std::string::npos ? fullyQualifiedName : fullyQualifiedName.substr(0, foundDot);
     PyObject* obj = 0;
