@@ -193,14 +193,14 @@ MoveControlPointsUndoCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    if ( ( mvCmd->_selectedPoints.size() != _selectedPoints.size() ) || (mvCmd->_time != _time) || (mvCmd->_selectedTool != _selectedTool)
+    if ( ( mvCmd->_pointsToDrag.size() != _pointsToDrag.size() ) || (mvCmd->_time != _time) || (mvCmd->_selectedTool != _selectedTool)
          || ( mvCmd->_rippleEditEnabled != _rippleEditEnabled) || ( mvCmd->_featherLinkEnabled != _featherLinkEnabled) ) {
         return false;
     }
 
-    SelectedCpList::const_iterator it = _selectedPoints.begin();
-    SelectedCpList::const_iterator oIt = mvCmd->_selectedPoints.begin();
-    for (; it != _selectedPoints.end(); ++it, ++oIt) {
+    std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >::const_iterator it = _pointsToDrag.begin();
+    std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >::const_iterator oIt = mvCmd->_pointsToDrag.begin();
+    for (; it != _pointsToDrag.end(); ++it, ++oIt) {
         if ( (it->first != oIt->first) || (it->second != oIt->second) ) {
             return false;
         }
