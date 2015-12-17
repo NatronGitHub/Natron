@@ -414,7 +414,7 @@ AppInstance::createWriter(const std::string& filename,
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
     
     QString fileCpy(filename.c_str());
-    std::string ext = Natron::removeFileExtension(fileCpy).toStdString();
+    std::string ext = Natron::removeFileExtension(fileCpy).toLower().toStdString();
     std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
     if ( found == writersForFormat.end() ) {
         Natron::errorDialog( tr("Writer").toStdString(),
