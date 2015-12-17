@@ -801,10 +801,10 @@ struct RotoDrawableItemPrivate
         feather->setHintToolTip(kRotoFeatherHint);
         feather->setName(kRotoFeatherParam);
         feather->populate();
-        feather->setMinimum(-100);
-        feather->setMaximum(100);
-        feather->setDisplayMinimum(-100);
-        feather->setDisplayMaximum(100);
+        feather->setMinimum(-1000);
+        feather->setMaximum(1000);
+        feather->setDisplayMinimum(-500);
+        feather->setDisplayMaximum(500);
         feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
         knobs.push_back(feather);
         
@@ -1458,10 +1458,10 @@ struct RotoContextPrivate
         boost::shared_ptr<KnobDouble> featherKnob = Natron::createKnob<KnobDouble>(effect, kRotoFeatherParamLabel, 1, false);
         featherKnob->setHintToolTip(kRotoFeatherHint);
         featherKnob->setName(kRotoFeatherParam);
-        featherKnob->setMinimum(-100);
-        featherKnob->setMaximum(100);
-        featherKnob->setDisplayMinimum(-100);
-        featherKnob->setDisplayMaximum(100);
+        featherKnob->setMinimum(-1000);
+        featherKnob->setMaximum(1000);
+        featherKnob->setDisplayMinimum(-500);
+        featherKnob->setDisplayMaximum(500);
         featherKnob->setDefaultValue(ROTO_DEFAULT_FEATHER);
         featherKnob->setDefaultAllDimensionsEnabled(false);
         featherKnob->setIsPersistant(false);
