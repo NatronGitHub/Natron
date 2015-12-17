@@ -3156,120 +3156,90 @@ NodeGui::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
 }
 
 void
-NodeGui::drawHostOverlay(double time, double scaleX,double scaleY)
+NodeGui::drawHostOverlay(double time, const RenderScale & renderScale)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         NatronOverlayInteractSupport::OGLContextSaver s(_hostOverlay->getLastCallingViewport());
-        _hostOverlay->draw(time , rs);
+        _hostOverlay->draw(time , renderScale);
     }
 }
 
 bool
-NodeGui::onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure)
+NodeGui::onOverlayPenDownDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
-
-       return _hostOverlay->penDown(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
+       return _hostOverlay->penDown(getNode()->getLiveInstance()->getCurrentTime(), renderScale, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayPenMotionDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)
+NodeGui::onOverlayPenMotionDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
-        
-        return _hostOverlay->penMotion(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
+        return _hostOverlay->penMotion(getNode()->getLiveInstance()->getCurrentTime(), renderScale, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure)
+NodeGui::onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
-        
-        return _hostOverlay->penUp(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
+        return _hostOverlay->penUp(getNode()->getLiveInstance()->getCurrentTime(), renderScale, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         QByteArray keyStr;
-        return _hostOverlay->keyDown(getNode()->getLiveInstance()->getCurrentTime(), rs,(int)key,keyStr.data());
+        return _hostOverlay->keyDown(getNode()->getLiveInstance()->getCurrentTime(), renderScale, (int)key,keyStr.data());
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayKeyUpDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         QByteArray keyStr;
-        return _hostOverlay->keyUp(getNode()->getLiveInstance()->getCurrentTime(), rs,(int)key,keyStr.data());
-
-    }
-    return false;
-}
-
-bool
-NodeGui::onOverlayKeyRepeatDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
-{
-    if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
-        QByteArray keyStr;
-        return _hostOverlay->keyRepeat(getNode()->getLiveInstance()->getCurrentTime(), rs,(int)key,keyStr.data());
+        return _hostOverlay->keyUp(getNode()->getLiveInstance()->getCurrentTime(), renderScale, (int)key,keyStr.data());
 
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayFocusGainedDefault(double scaleX,double scaleY)
+NodeGui::onOverlayKeyRepeatDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         QByteArray keyStr;
-        return _hostOverlay->gainFocus(getNode()->getLiveInstance()->getCurrentTime(), rs);
+        return _hostOverlay->keyRepeat(getNode()->getLiveInstance()->getCurrentTime(), renderScale, (int)key,keyStr.data());
 
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayFocusLostDefault(double scaleX,double scaleY)
+NodeGui::onOverlayFocusGainedDefault(const RenderScale & renderScale)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         QByteArray keyStr;
-        return _hostOverlay->loseFocus(getNode()->getLiveInstance()->getCurrentTime(), rs);
+        return _hostOverlay->gainFocus(getNode()->getLiveInstance()->getCurrentTime(), renderScale);
+
+    }
+    return false;
+}
+
+bool
+NodeGui::onOverlayFocusLostDefault(const RenderScale & renderScale)
+{
+    if (_hostOverlay) {
+        QByteArray keyStr;
+        return _hostOverlay->loseFocus(getNode()->getLiveInstance()->getCurrentTime(), renderScale);
     }
     return false;
 }

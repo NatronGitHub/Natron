@@ -974,23 +974,23 @@ public:
     bool shouldDrawOverlay() const;
     
     
-    void drawHostOverlay(double time, double scaleX,double scaleY);
+    void drawHostOverlay(double time, const RenderScale & renderScale);
     
-    bool onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenDownDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenMotionDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyUpDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyRepeatDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyRepeatDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayFocusGainedDefault(double scaleX,double scaleY) WARN_UNUSED_RETURN;
+    bool onOverlayFocusGainedDefault(const RenderScale & renderScale) WARN_UNUSED_RETURN;
     
-    bool onOverlayFocusLostDefault(double scaleX,double scaleY) WARN_UNUSED_RETURN;
+    bool onOverlayFocusLostDefault(const RenderScale & renderScale) WARN_UNUSED_RETURN;
     
     void addDefaultPositionOverlay(const boost::shared_ptr<KnobDouble>& position);
     

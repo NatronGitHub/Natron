@@ -855,8 +855,7 @@ OutputSchedulerThread::startRender()
         Natron::SequentialPreferenceEnum pref = _imp->outputEffect->getSequentialPreference();
         if (pref == eSequentialPreferenceOnlySequential || pref == eSequentialPreferencePreferSequential) {
             
-            RenderScale scaleOne;
-            scaleOne.x = scaleOne.y = 1.;
+            RenderScale scaleOne(1.);
             if (_imp->outputEffect->beginSequenceRender_public(firstFrame, lastFrame,
                                                                1,
                                                                false,
@@ -903,8 +902,7 @@ OutputSchedulerThread::stopRender()
         }
 
         
-        RenderScale scaleOne;
-        scaleOne.x = scaleOne.y = 1.;
+        RenderScale scaleOne(1.);
         ignore_result(_imp->outputEffect->endSequenceRender_public(firstFrame, lastFrame,
                                                            1,
                                                            !appPTR->isBackground(),
@@ -2098,8 +2096,7 @@ private:
         try {
             ////Writers always render at scale 1.
             int mipMapLevel = 0;
-            RenderScale scale;
-            scale.x = scale.y = 1.;
+            RenderScale scale(1.);
             
             RectD rod;
             bool isProjectFormat;
@@ -2245,8 +2242,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     const BufferedFrame& frame = frames.front();
     
     ///Writers render to scale 1 always
-    RenderScale scale;
-    scale.x = scale.y = 1.;
+    RenderScale scale(1.);
     
     U64 hash = _effect->getHash();
     

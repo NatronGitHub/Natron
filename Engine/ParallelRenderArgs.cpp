@@ -252,11 +252,9 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                 
                             } else {
                                 
-                                RenderScale scaleOne;
-                                scaleOne.x = scaleOne.y = 1.;
+                                RenderScale scaleOne(1.);
                                 
-                                RenderScale scale;
-                                scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(originalMipMapLevel);
+                                RenderScale scale(Natron::Image::getScaleFromMipMapLevel(originalMipMapLevel));
                                 
                                 ///Render the input image with the bit depth of its preference
                                 std::list<Natron::ImageComponents> inputPrefComps;
@@ -280,7 +278,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                 
                                 RectI inputRoIPixelCoords;
                                 const unsigned int upstreamMipMapLevel = useScaleOneInputs ? 0 : originalMipMapLevel;
-                                const RenderScale& upstreamScale = useScaleOneInputs ? scaleOne : scale;
+                                const RenderScale & upstreamScale = useScaleOneInputs ? scaleOne : scale;
                                 roi.toPixelEnclosing(upstreamMipMapLevel, inputPar, &inputRoIPixelCoords);
                                 
                                 EffectInstance::RenderRoIArgs inArgs(f, //< time

@@ -106,23 +106,23 @@ public :
                                       const boost::shared_ptr<KnobChoice>& skewOrder,
                                       const boost::shared_ptr<KnobDouble>& center) = 0;
     
-    virtual void drawHostOverlay(double time, double scaleX, double scaleY)  = 0;
+    virtual void drawHostOverlay(double time, const RenderScale & renderScale)  = 0;
     
-    virtual bool onOverlayPenDownDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
+    virtual bool onOverlayPenDownDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
     
-    virtual bool onOverlayPenMotionDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
+    virtual bool onOverlayPenMotionDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
     
-    virtual bool onOverlayPenUpDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
+    virtual bool onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
     
-    virtual bool onOverlayKeyDownDefault(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers)  = 0;
+    virtual bool onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers)  = 0;
     
-    virtual bool onOverlayKeyUpDefault(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers)  = 0;
+    virtual bool onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers)  = 0;
     
-    virtual bool onOverlayKeyRepeatDefault(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers) = 0;
+    virtual bool onOverlayKeyRepeatDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers) = 0;
     
-    virtual bool onOverlayFocusGainedDefault(double scaleX, double scaleY) = 0;
+    virtual bool onOverlayFocusGainedDefault(const RenderScale & renderScale) = 0;
     
-    virtual bool onOverlayFocusLostDefault(double scaleX, double scaleY) = 0;
+    virtual bool onOverlayFocusLostDefault(const RenderScale & renderScale) = 0;
     
     virtual bool hasHostOverlay() const = 0;
     
@@ -136,7 +136,7 @@ public :
     
     virtual void setPluginDescription(const std::string& description) = 0;
 
-    virtual void setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version) = 0;
+    virtual void setPluginIDAndVersion(const std::string& pluginLabel, const std::string& pluginID, unsigned int version) = 0;
     
     virtual bool isUserSelected() const = 0;
     

@@ -174,31 +174,31 @@ public:
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputRotoBrush(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getRotoBrushInputIndex() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance
-    virtual void calcDefaultRegionOfDefinition(U64 hash,double time,int view, const RenderScale & scale, RectD *rod)  OVERRIDE;
+    virtual void calcDefaultRegionOfDefinition(U64 hash, double time, const RenderScale & scale, int view, RectD *rod)  OVERRIDE;
     virtual void getRegionsOfInterest(double time,
-                                  const RenderScale & scale,
-                                  const RectD & outputRoD, //!< full RoD in canonical coordinates
-                                  const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                  int view,
-                                  RoIMap* ret) OVERRIDE FINAL;
+                                      const RenderScale & scale,
+                                      const RectD & outputRoD, //!< full RoD in canonical coordinates
+                                      const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
+                                      int view,
+                                      RoIMap* ret) OVERRIDE FINAL;
 
     virtual FramesNeededMap getFramesNeeded(double time,int view) OVERRIDE WARN_UNUSED_RETURN;
     virtual void getFrameRange(double *first,double *last) OVERRIDE;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
     virtual bool hasOverlay() const OVERRIDE FINAL;
-    virtual void drawOverlay(double time, int view, double scaleX, double scaleY) OVERRIDE FINAL;
-    virtual bool onOverlayPenDown(double time, int view, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenMotion(double time, int view, double scaleX, double scaleY,
+    virtual void drawOverlay(double time, const RenderScale & renderScale, int view) OVERRIDE FINAL;
+    virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenMotion(double time, const RenderScale & renderScale, int view,
                                     const QPointF & viewportPos, const QPointF & pos, double pressure) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenUp(double time, int view, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyDown(double time, int view, double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyUp(double time, int view, double scaleX, double scaleY, Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyRepeat(double time, int view, double scaleX, double scaleY, Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayFocusGained(double time, int view, double scaleX, double scaleY) OVERRIDE FINAL;
-    virtual bool onOverlayFocusLost(double time, int view, double scaleX, double scaleY) OVERRIDE FINAL;
+    virtual bool onOverlayPenUp(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyDown(double time, const RenderScale & renderScale, int view, Natron::Key key, Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(double time, const RenderScale & renderScale, int view, Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(double time, const RenderScale & renderScale, int view, Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayFocusGained(double time, const RenderScale & renderScale, int view) OVERRIDE FINAL;
+    virtual bool onOverlayFocusLost(double time, const RenderScale & renderScale, int view) OVERRIDE FINAL;
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
     virtual void beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE;
     virtual void endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE;
@@ -285,7 +285,7 @@ public:
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getInputsHoldingTransform(std::list<int>* inputs) const  OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual Natron::StatusEnum getTransform(double time,
-                                            const RenderScale& renderScale,
+                                            const RenderScale & renderScale,
                                             int view,
                                             Natron::EffectInstance** inputToTransform,
                                             Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;

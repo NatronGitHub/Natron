@@ -142,8 +142,8 @@ public:
     //    time              - the effect time at which changed occured
     //    renderScale       - the render scale
     virtual OfxStatus drawAction(OfxTime time,
-                                 int view,
-                                 const OfxPointD &renderScale) OVERRIDE FINAL;
+                                 const OfxPointD &renderScale,
+                                 int view) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionPenMotion
     //
@@ -155,8 +155,8 @@ public:
     //    penY              - the Y position
     //    pressure          - the pen pressue 0 to 1
     virtual OfxStatus penMotionAction(OfxTime time,
-                                      int view,
                                       const OfxPointD &renderScale,
+                                      int view,
                                       const OfxPointD &penPos,
                                       const OfxPointI &penPosViewport,
                                       double pressure) OVERRIDE FINAL;
@@ -171,8 +171,8 @@ public:
     //    penY              - the Y position
     //    pressure          - the pen pressue 0 to 1
     virtual OfxStatus penUpAction(OfxTime time,
-                                  int view,
                                   const OfxPointD &renderScale,
+                                  int view,
                                   const OfxPointD &penPos,
                                   const OfxPointI &penPosViewport,
                                   double  pressure) OVERRIDE FINAL;
@@ -187,8 +187,8 @@ public:
     //    penY              - the Y position
     //    pressure          - the pen pressue 0 to 1
     virtual OfxStatus penDownAction(OfxTime time,
-                                    int view,
                                     const OfxPointD &renderScale,
+                                    int view,
                                     const OfxPointD &penPos,
                                     const OfxPointI &penPosViewport,
                                     double  pressure) OVERRIDE FINAL;
@@ -202,8 +202,8 @@ public:
     //    key               - the pressed key
     //    keyString         - the pressed key string
     virtual OfxStatus keyDownAction(OfxTime time,
-                                    int view,
                                     const OfxPointD &renderScale,
+                                    int view,
                                     int     key,
                                     char*   keyString) OVERRIDE FINAL;
 
@@ -216,8 +216,8 @@ public:
     //    key               - the pressed key
     //    keyString         - the pressed key string
     virtual OfxStatus keyUpAction(OfxTime time,
-                                  int view,
                                   const OfxPointD &renderScale,
+                                  int view,
                                   int     key,
                                   char*   keyString) OVERRIDE FINAL;
 
@@ -230,8 +230,8 @@ public:
     //    key               - the pressed key
     //    keyString         - the pressed key string
     virtual OfxStatus keyRepeatAction(OfxTime time,
-                                      int view,
                                       const OfxPointD &renderScale,
+                                      int view,
                                       int     key,
                                       char*   keyString) OVERRIDE FINAL;
 
@@ -242,8 +242,8 @@ public:
     //    time              - the effect time at which changed occured
     //    renderScale       - the render scale
     virtual OfxStatus gainFocusAction(OfxTime time,
-                                      int view,
-                                      const OfxPointD &renderScale) OVERRIDE FINAL;
+                                      const OfxPointD &renderScale,
+                                      int view) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionLoseFocus
     //
@@ -252,8 +252,8 @@ public:
     //    time              - the effect time at which changed occured
     //    renderScale       - the render scale
     virtual OfxStatus loseFocusAction(OfxTime  time,
-                                      int view,
-                                      const OfxPointD &renderScale) OVERRIDE FINAL;
+                                      const OfxPointD &renderScale,
+                                      int view) OVERRIDE FINAL;
 
 };
 

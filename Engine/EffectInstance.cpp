@@ -902,8 +902,8 @@ EffectInstance::getImage(int inputNb,
 void
 EffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
                                               double /*time*/,
-                                              int /*view*/,
                                               const RenderScale & /*scale*/,
+                                              int /*view*/,
                                               RectD *rod)
 {
     Format projectDefault;
@@ -981,7 +981,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
     ///Do the following only if one coordinate is infinite otherwise we wont need the RoD of the input
     if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
         // initialize with the effect's default RoD, because inputs may not be connected to other effects (e.g. Roto)
-        calcDefaultRegionOfDefinition(hash, time, view, scale, &inputsUnion);
+        calcDefaultRegionOfDefinition(hash, time, scale, view, &inputsUnion);
         bool firstInput = true;
         for (int i = 0; i < getMaxInputCount(); ++i) {
             Natron::EffectInstance* input = getInput(i);
@@ -1071,12 +1071,7 @@ EffectInstance::getRegionsOfInterest(double time,
                 //Tiles not supported: get the RoD as RoI
                 RectD rod;
                 bool isPF;
-                RenderScale inpScale;
-                if (input->supportsRenderScale()) {
-                    inpScale.x = inpScale.y = scale.x;
-                } else {
-                    inpScale.x = inpScale.y = 1.;
-                }
+                RenderScale inpScale(input->supportsRenderScale() ? scale.x : 1.);
                 Natron::StatusEnum stat = input->getRegionOfDefinition_public(input->getRenderHash(), time, inpScale, view, &rod, &isPF);
                 if (stat == eStatusFailed) {
                     return;
@@ -1870,9 +1865,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     }
 
 #ifndef NDEBUG
-    RenderScale scale;
-    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-    scale.y = scale.x;
+    RenderScale scale(Image::getScaleFromMipMapLevel(mipMapLevel));
     // check the dimensions of all input and output images
     const RectD & dstRodCanonical = firstPlaneToRender.renderMappedImage->getRoD();
     RectI dstBounds;
@@ -2713,9 +2706,8 @@ EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
 
 void
 EffectInstance::drawOverlay_public(double time,
-                                   int view,
-                                   double scaleX,
-                                   double scaleY)
+                                   const RenderScale & renderScale,
+                                   int view)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2726,16 +2718,15 @@ EffectInstance::drawOverlay_public(double time,
     RECURSIVE_ACTION();
 
     _imp->setDuringInteractAction(true);
-    drawOverlay(time, view, scaleX, scaleY);
-    getNode()->drawHostOverlay(time, scaleX, scaleY);
+    drawOverlay(time, renderScale, view);
+    getNode()->drawHostOverlay(time, renderScale);
     _imp->setDuringInteractAction(false);
 }
 
 bool
 EffectInstance::onOverlayPenDown_public(double time,
+                                        const RenderScale & renderScale,
                                         int view,
-                                        double scaleX,
-                                        double scaleY,
                                         const QPointF & viewportPos,
                                         const QPointF & pos,
                                         double pressure)
@@ -2750,9 +2741,9 @@ EffectInstance::onOverlayPenDown_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenDown(time, view, scaleX, scaleY, viewportPos, pos, pressure);
+        ret = onOverlayPenDown(time, renderScale, view, viewportPos, pos, pressure);
         if (!ret) {
-            ret |= getNode()->onOverlayPenDownDefault(scaleX, scaleY, viewportPos, pos, pressure);
+            ret |= getNode()->onOverlayPenDownDefault(renderScale, viewportPos, pos, pressure);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2763,9 +2754,8 @@ EffectInstance::onOverlayPenDown_public(double time,
 
 bool
 EffectInstance::onOverlayPenMotion_public(double time,
+                                          const RenderScale & renderScale,
                                           int view,
-                                          double scaleX,
-                                          double scaleY,
                                           const QPointF & viewportPos,
                                           const QPointF & pos,
                                           double pressure)
@@ -2779,9 +2769,9 @@ EffectInstance::onOverlayPenMotion_public(double time,
 
     NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayPenMotion(time, view, scaleX, scaleY, viewportPos, pos, pressure);
+    bool ret = onOverlayPenMotion(time, renderScale, view, viewportPos, pos, pressure);
     if (!ret) {
-        ret |= getNode()->onOverlayPenMotionDefault(scaleX, scaleY, viewportPos, pos, pressure);
+        ret |= getNode()->onOverlayPenMotionDefault(renderScale, viewportPos, pos, pressure);
     }
     _imp->setDuringInteractAction(false);
     //Don't chek if render is needed on pen motion, wait for the pen up
@@ -2792,9 +2782,8 @@ EffectInstance::onOverlayPenMotion_public(double time,
 
 bool
 EffectInstance::onOverlayPenUp_public(double time,
+                                      const RenderScale & renderScale,
                                       int view,
-                                      double scaleX,
-                                      double scaleY,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
                                       double pressure)
@@ -2808,9 +2797,9 @@ EffectInstance::onOverlayPenUp_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenUp(time, view, scaleX, scaleY, viewportPos, pos, pressure);
+        ret = onOverlayPenUp(time, renderScale, view, viewportPos, pos, pressure);
         if (!ret) {
-            ret |= getNode()->onOverlayPenUpDefault(scaleX, scaleY, viewportPos, pos, pressure);
+            ret |= getNode()->onOverlayPenUpDefault(renderScale, viewportPos, pos, pressure);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2821,9 +2810,8 @@ EffectInstance::onOverlayPenUp_public(double time,
 
 bool
 EffectInstance::onOverlayKeyDown_public(double time,
+                                        const RenderScale & renderScale,
                                         int view,
-                                        double scaleX,
-                                        double scaleY,
                                         Natron::Key key,
                                         Natron::KeyboardModifiers modifiers)
 {
@@ -2837,9 +2825,9 @@ EffectInstance::onOverlayKeyDown_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyDown(time, view, scaleX, scaleY, key, modifiers);
+        ret = onOverlayKeyDown(time, renderScale, view, key, modifiers);
         if (!ret) {
-            ret |= getNode()->onOverlayKeyDownDefault(scaleX, scaleY, key, modifiers);
+            ret |= getNode()->onOverlayKeyDownDefault(renderScale, key, modifiers);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2850,9 +2838,8 @@ EffectInstance::onOverlayKeyDown_public(double time,
 
 bool
 EffectInstance::onOverlayKeyUp_public(double time,
+                                      const RenderScale & renderScale,
                                       int view,
-                                      double scaleX,
-                                      double scaleY,
                                       Natron::Key key,
                                       Natron::KeyboardModifiers modifiers)
 {
@@ -2867,9 +2854,9 @@ EffectInstance::onOverlayKeyUp_public(double time,
         NON_RECURSIVE_ACTION();
 
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyUp(time, view, scaleX, scaleY, key, modifiers);
+        ret = onOverlayKeyUp(time, renderScale, view, key, modifiers);
         if (!ret) {
-            ret |= getNode()->onOverlayKeyUpDefault(scaleX, scaleY, key, modifiers);
+            ret |= getNode()->onOverlayKeyUpDefault(renderScale, key, modifiers);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2880,9 +2867,8 @@ EffectInstance::onOverlayKeyUp_public(double time,
 
 bool
 EffectInstance::onOverlayKeyRepeat_public(double time,
+                                          const RenderScale & renderScale,
                                           int view,
-                                          double scaleX,
-                                          double scaleY,
                                           Natron::Key key,
                                           Natron::KeyboardModifiers modifiers)
 {
@@ -2896,9 +2882,9 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyRepeat(time, view, scaleX, scaleY, key, modifiers);
+        ret = onOverlayKeyRepeat(time, renderScale, view, key, modifiers);
         if (!ret) {
-            ret |= getNode()->onOverlayKeyRepeatDefault(scaleX, scaleY, key, modifiers);
+            ret |= getNode()->onOverlayKeyRepeatDefault(renderScale, key, modifiers);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2909,9 +2895,8 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
 
 bool
 EffectInstance::onOverlayFocusGained_public(double time,
-                                            int view,
-                                            double scaleX,
-                                            double scaleY)
+                                            const RenderScale & renderScale,
+                                            int view)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2923,9 +2908,9 @@ EffectInstance::onOverlayFocusGained_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayFocusGained(time, view, scaleX, scaleY);
+        ret = onOverlayFocusGained(time, renderScale, view);
         if (!ret) {
-            ret |= getNode()->onOverlayFocusGainedDefault(scaleX, scaleY);
+            ret |= getNode()->onOverlayFocusGainedDefault(renderScale);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2936,9 +2921,8 @@ EffectInstance::onOverlayFocusGained_public(double time,
 
 bool
 EffectInstance::onOverlayFocusLost_public(double time,
-                                          int view,
-                                          double scaleX,
-                                          double scaleY)
+                                          const RenderScale & renderScale,
+                                          int view)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2949,9 +2933,9 @@ EffectInstance::onOverlayFocusLost_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayFocusLost(time, view, scaleX, scaleY);
+        ret = onOverlayFocusLost(time, renderScale, view);
         if (!ret) {
-            ret |= getNode()->onOverlayFocusLostDefault(scaleX, scaleY);
+            ret |= getNode()->onOverlayFocusLostDefault(renderScale);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -3121,8 +3105,7 @@ EffectInstance::getRegionOfDefinition_publicInternal(U64 hash,
         }
 
         Natron::StatusEnum ret;
-        RenderScale scaleOne;
-        scaleOne.x = scaleOne.y = 1.;
+        RenderScale scaleOne(1.);
         {
             RECURSIVE_ACTION();
 
@@ -4165,9 +4148,7 @@ Natron::EffectInstance*
 EffectInstance::getNearestNonIdentity(double time)
 {
     U64 hash = getRenderHash();
-    RenderScale scale;
-
-    scale.x = scale.y = 1.;
+    RenderScale scale(1.);
 
     RectD rod;
     bool isProjectFormat;

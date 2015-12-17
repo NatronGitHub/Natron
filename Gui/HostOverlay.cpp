@@ -1009,7 +1009,7 @@ HostOverlayPrivate::drawTransform(const TransformInteract& p,
 }
 
 void
-HostOverlay::draw(double time,const RenderScale& /*renderScale*/)
+HostOverlay::draw(double time,const RenderScale & /*renderScale*/)
 {
     OfxRGBColourD color;
     if (!getNode()->getOverlayColor(&color.r, &color.g, &color.b)) {

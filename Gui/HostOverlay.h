@@ -66,7 +66,7 @@ public:
                               const boost::shared_ptr<KnobChoice>& skewOrder,
                               const boost::shared_ptr<KnobDouble>& center);
     
-    void draw(double time,const RenderScale& renderScale);
+    void draw(double time,const RenderScale & renderScale);
     
     
 

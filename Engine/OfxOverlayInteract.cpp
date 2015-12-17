@@ -70,98 +70,98 @@ OfxOverlayInteract::createInstanceAction()
 
 OfxStatus
 OfxOverlayInteract::drawAction(OfxTime time,
-                               int view,
-                               const OfxPointD &renderScale)
+                               const OfxPointD &renderScale,
+                               int view)
 {
     NatronOverlayInteractSupport::OGLContextSaver s(_viewport);
-    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::drawAction(time, view, renderScale);
+    OfxStatus stat = OFX::Host::ImageEffect::OverlayInteract::drawAction(time, renderScale, view);
     return stat;
 }
 
 OfxStatus
 OfxOverlayInteract::penMotionAction(OfxTime time,
-                                    int view,
                                     const OfxPointD &renderScale,
+                                    int view,
                                     const OfxPointD &penPos,
                                     const OfxPointI &penPosViewport,
                                     double  pressure)
 {
     //OGLContextSaver s(_viewport);
-    return OFX::Host::ImageEffect::OverlayInteract::penMotionAction(time, view, renderScale, penPos, penPosViewport, pressure);
+    return OFX::Host::ImageEffect::OverlayInteract::penMotionAction(time, renderScale, view, penPos, penPosViewport, pressure);
 
 }
 
 OfxStatus
 OfxOverlayInteract::penUpAction(OfxTime time,
-                                int view,
                                 const OfxPointD &renderScale,
+                                int view,
                                 const OfxPointD &penPos,
                                 const OfxPointI &penPosViewport,
                                 double pressure)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::penUpAction(time, view, renderScale, penPos, penPosViewport, pressure);
+    return OFX::Host::ImageEffect::OverlayInteract::penUpAction(time, renderScale, view, penPos, penPosViewport, pressure);
 
 }
 
 OfxStatus
 OfxOverlayInteract::penDownAction(OfxTime time,
-                                  int view,
                                   const OfxPointD &renderScale,
+                                  int view,
                                   const OfxPointD &penPos,
                                   const OfxPointI &penPosViewport,
                                   double pressure)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::penDownAction(time, view, renderScale, penPos, penPosViewport, pressure);
+    return OFX::Host::ImageEffect::OverlayInteract::penDownAction(time, renderScale, view, penPos, penPosViewport, pressure);
 
 }
 
 OfxStatus
 OfxOverlayInteract::keyDownAction(OfxTime time,
-                                  int view,
                                   const OfxPointD &renderScale,
+                                  int view,
                                   int     key,
                                   char*   keyString)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::keyDownAction(time, view, renderScale, key, keyString);
+    return OFX::Host::ImageEffect::OverlayInteract::keyDownAction(time, renderScale, view, key, keyString);
 
 }
 
 OfxStatus
 OfxOverlayInteract::keyUpAction(OfxTime time,
-                                int view,
                                 const OfxPointD &renderScale,
+                                int view,
                                 int     key,
                                 char*   keyString)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::keyUpAction(time, view, renderScale, key, keyString);
+    return OFX::Host::ImageEffect::OverlayInteract::keyUpAction(time, renderScale, view, key, keyString);
 
 }
 
 OfxStatus
 OfxOverlayInteract::keyRepeatAction(OfxTime time,
-                                    int view,
                                     const OfxPointD &renderScale,
+                                    int view,
                                     int     key,
                                     char*   keyString)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::keyRepeatAction(time, view, renderScale, key, keyString);
+    return OFX::Host::ImageEffect::OverlayInteract::keyRepeatAction(time, renderScale, view, key, keyString);
 }
 
 OfxStatus
 OfxOverlayInteract::gainFocusAction(OfxTime time,
-                                    int view,
-                                    const OfxPointD &renderScale)
+                                    const OfxPointD &renderScale,
+                                    int view)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::gainFocusAction(time, view, renderScale);
+    return OFX::Host::ImageEffect::OverlayInteract::gainFocusAction(time, renderScale, view);
 
 }
 
 OfxStatus
 OfxOverlayInteract::loseFocusAction(OfxTime  time,
-                                    int view,
-                                    const OfxPointD &renderScale)
+                                    const OfxPointD &renderScale,
+                                    int view)
 {
-    return OFX::Host::ImageEffect::OverlayInteract::loseFocusAction(time, view, renderScale);
+    return OFX::Host::ImageEffect::OverlayInteract::loseFocusAction(time, renderScale, view);
 }
 
 bool

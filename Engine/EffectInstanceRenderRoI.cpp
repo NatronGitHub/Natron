@@ -279,8 +279,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     } else {
         renderMappedMipMapLevel = args.mipMapLevel;
     }
-    RenderScale renderMappedScale;
-    renderMappedScale.x = renderMappedScale.y = Image::getScaleFromMipMapLevel(renderMappedMipMapLevel);
+    RenderScale renderMappedScale(Image::getScaleFromMipMapLevel(renderMappedMipMapLevel));
     assert( !( (supportsRS == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
 
 
@@ -1648,7 +1647,6 @@ EffectInstance::renderRoIInternal(double time,
         getApp()->getProject()->setOrAddProjectFormat(frmt);
     }
 
-    RenderScale renderMappedScale;
     unsigned int renderMappedMipMapLevel = 0;
 
     for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender.planes.begin(); it != planesToRender.planes.end(); ++it) {
@@ -1658,8 +1656,7 @@ EffectInstance::renderRoIInternal(double time,
         }
     }
 
-    renderMappedScale.x = Image::getScaleFromMipMapLevel(renderMappedMipMapLevel);
-    renderMappedScale.y = renderMappedScale.x;
+    RenderScale renderMappedScale(Image::getScaleFromMipMapLevel(renderMappedMipMapLevel));
 
 
     RenderingFunctorRetEnum renderStatus = eRenderingFunctorRetOK;

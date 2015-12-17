@@ -742,9 +742,9 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
         QWheelEvent e(mapFromGlobal(QCursor::pos()), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
-    } else if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(scale, scale, e) ) {
+    } else if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale(scale), e) ) {
         update();
-    } else if ( notifyOverlaysKeyDown(scale, scale, e) ) {
+    } else if ( notifyOverlaysKeyDown(RenderScale(scale), e) ) {
         update();
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, modifiers, key) ) {
         ///Put it after notifyOverlaysKeyDown() because Roto may intercept Enter
@@ -778,7 +778,7 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
         return QWidget::keyPressEvent(e);
     }
     double scale = 1. / (1 << _imp->viewer->getCurrentRenderScale());
-    if ( notifyOverlaysKeyUp(scale, scale, e) ) {
+    if ( notifyOverlaysKeyUp(RenderScale(scale), e) ) {
         _imp->viewer->redraw();
     } else {
         handleUnCaughtKeyUpEvent(e);

@@ -367,23 +367,23 @@ public:
     
     boost::shared_ptr<HostOverlay> getHostOverlay() const WARN_UNUSED_RETURN;
     
-    virtual void drawHostOverlay(double time,double scaleX, double scaleY)  OVERRIDE FINAL;
+    virtual void drawHostOverlay(double time, const RenderScale & renderScale)  OVERRIDE FINAL;
     
-    virtual bool onOverlayPenDownDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenDownDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayPenMotionDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenMotionDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayPenUpDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayKeyDownDefault(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayKeyUpDefault(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayKeyRepeatDefault(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyRepeatDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayFocusGainedDefault(double scaleX, double scaleY) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayFocusGainedDefault(const RenderScale & renderScale) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual bool onOverlayFocusLostDefault(double scaleX, double scaleY) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayFocusLostDefault(const RenderScale & renderScale) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool hasHostOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     

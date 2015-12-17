@@ -2558,8 +2558,7 @@ Node::makeInfoForInput(int inputNumber) const
     EffectInstance::ComponentsAvailableMap availableComps;
     input->getComponentsAvailable(true, time, &availableComps);
     
-    RenderScale scale;
-    scale.x = scale.y = 1.;
+    RenderScale scale(1.);
     RectD rod;
     bool isProjectFormat;
     StatusEnum stat = input->getRegionOfDefinition_public(getHashValue(),
@@ -3685,8 +3684,7 @@ static Node::CanConnectInputReturnValue checkCanConnectNoMultiRes(const Node* ou
 {
     //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
     //Check that the input has the same RoD that another input and that its rod is set to 0,0
-    RenderScale scale;
-    scale.x = scale.y = 1.;
+    RenderScale scale(1.);
     RectD rod;
     bool isProjectFormat;
     Natron::StatusEnum stat = input->getLiveInstance()->getRegionOfDefinition_public(input->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &rod, &isProjectFormat);
@@ -4726,8 +4724,7 @@ Node::makePreviewImage(SequenceTime time,
     
     RectD rod;
     bool isProjectFormat;
-    RenderScale scale;
-    scale.x = scale.y = 1.;
+    RenderScale scale(1.);
     U64 nodeHash = getHashValue();
     
     Natron::EffectInstance* effect = 0;
@@ -5830,90 +5827,90 @@ Node::shouldDrawOverlay() const
 }
 
 void
-Node::drawHostOverlay(double time, double scaleX, double scaleY)
+Node::drawHostOverlay(double time, const RenderScale & renderScale)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        nodeGui->drawHostOverlay(time, scaleX, scaleY);
+        nodeGui->drawHostOverlay(time, renderScale);
     }
 }
 
 bool
-Node::onOverlayPenDownDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)
+Node::onOverlayPenDownDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayPenDownDefault(scaleX, scaleY, viewportPos, pos, pressure);
-    }
-    return false;
-}
-
-bool
-Node::onOverlayPenMotionDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)
-{
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
-    if (nodeGui) {
-        return nodeGui->onOverlayPenMotionDefault(scaleX, scaleY, viewportPos, pos, pressure);
+        return nodeGui->onOverlayPenDownDefault(renderScale, viewportPos, pos, pressure);
     }
     return false;
 }
 
 bool
-Node::onOverlayPenUpDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)
+Node::onOverlayPenMotionDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayPenUpDefault(scaleX, scaleY, viewportPos, pos, pressure);
+        return nodeGui->onOverlayPenMotionDefault(renderScale, viewportPos, pos, pressure);
     }
     return false;
 }
 
 bool
-Node::onOverlayKeyDownDefault(double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers)
+Node::onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayKeyDownDefault(scaleX, scaleY, key, modifiers);
+        return nodeGui->onOverlayPenUpDefault(renderScale, viewportPos, pos, pressure);
     }
     return false;
 }
 
 bool
-Node::onOverlayKeyUpDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers)
+Node::onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayKeyUpDefault(scaleX, scaleY, key, modifiers);
+        return nodeGui->onOverlayKeyDownDefault(renderScale, key, modifiers);
     }
     return false;
 }
 
 bool
-Node::onOverlayKeyRepeatDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers)
+Node::onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayKeyRepeatDefault(scaleX, scaleY, key, modifiers);
+        return nodeGui->onOverlayKeyUpDefault(renderScale, key, modifiers);
     }
     return false;
 }
 
 bool
-Node::onOverlayFocusGainedDefault(double scaleX,double scaleY)
+Node::onOverlayKeyRepeatDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayFocusGainedDefault(scaleX, scaleY);
+        return nodeGui->onOverlayKeyRepeatDefault(renderScale, key, modifiers);
     }
     return false;
 }
 
 bool
-Node::onOverlayFocusLostDefault(double scaleX,double scaleY)
+Node::onOverlayFocusGainedDefault(const RenderScale & renderScale)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
-        return nodeGui->onOverlayFocusLostDefault(scaleX, scaleY);
+        return nodeGui->onOverlayFocusGainedDefault(renderScale);
+    }
+    return false;
+}
+
+bool
+Node::onOverlayFocusLostDefault(const RenderScale & renderScale)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    if (nodeGui) {
+        return nodeGui->onOverlayFocusLostDefault(renderScale);
     }
     return false;
 }
@@ -6205,8 +6202,7 @@ void
 Node::refreshIdentityState()
 {
     double time = _imp->liveInstance->getCurrentTime();
-    RenderScale scale;
-    scale.x = scale.y = 1;
+    RenderScale scale(1.);
     
     double inputTime = 0;
     int inputNb = -1;
@@ -6452,8 +6448,7 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
     }
     {
         ///Clip preferences have changed
-        RenderScale s;
-        s.x = s.y = 1;
+        RenderScale s(1.);
         liveInstance->checkOFXClipPreferences_public(_publicInterface->getApp()->getTimeLine()->currentFrame(),
                                                      s,
                                                      OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::eValueChangedReasonUserEdited),
@@ -6521,8 +6516,7 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,const MaskSelector& sele
     selector.channelName.lock()->setValue(entries[curChan_i], 0);
     {
         ///Clip preferences have changed
-        RenderScale s;
-        s.x = s.y = 1;
+        RenderScale s(1.);
         liveInstance->checkOFXClipPreferences_public(_publicInterface->getApp()->getTimeLine()->currentFrame(),
                                                      s,
                                                      OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::eValueChangedReasonUserEdited),
@@ -7078,8 +7072,7 @@ static void addIdentityNodesRecursively(const Node* caller,
             /*
              Very unlikely that there's no request pass. But we still check
              */
-            RenderScale scale;
-            scale.x = scale.y = 1;
+            RenderScale scale(1.);
             double inputTimeId;
             int inputNbId;
             U64 renderHash;
@@ -7334,17 +7327,14 @@ Node::refreshAllInputRelatedData(bool canChangeValues,const std::vector<boost::s
         
         double time = (double)getApp()->getTimeLine()->currentFrame();
         
-        RenderScale scaleOne;
-        scaleOne.x = scaleOne.y = 1.;
+        RenderScale scaleOne(1.);
         ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
         if (_imp->liveInstance->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
             RectD rod;
             
             Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition(getHashValue(), time, scaleOne, 0, &rod);
             if (stat != eStatusFailed) {
-                RenderScale scale;
-                scale.x = 0.5;
-                scale.y = 0.5;
+                RenderScale scale(0.5);
                 stat = _imp->liveInstance->getRegionOfDefinition(getHashValue(), time, scale, 0, &rod);
                 if (stat != eStatusFailed) {
                     _imp->liveInstance->setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
@@ -8457,8 +8447,7 @@ Node::addUserComponents(const Natron::ImageComponents& comps)
     }
     {
         ///Clip preferences have changed
-        RenderScale s;
-        s.x = s.y = 1;
+        RenderScale s(1.);
         getLiveInstance()->checkOFXClipPreferences_public(getApp()->getTimeLine()->currentFrame(),
                                                           s,
                                                           OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::eValueChangedReasonUserEdited),

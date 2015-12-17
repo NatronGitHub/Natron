@@ -79,7 +79,11 @@ typedef int SequenceTime;
 
 Q_DECLARE_METATYPE(SequenceTime)
 
-typedef OfxPointD RenderScale;
+struct RenderScale : public OfxPointD {
+    RenderScale() { x = y = 1.; }
+    RenderScale(double scale) { x = y = scale; }
+    RenderScale(double scaleX, double scaleY) { x = scaleX; y = scaleY; }
+};
 
 namespace Natron {
 typedef OfxPointD Point;

@@ -69,8 +69,7 @@ static void transformToOpenGLMatrix(const Transform::Matrix3x3& mat,GLdouble* og
 
 void
 ViewerTab::drawOverlays(double time,
-                        double scaleX,
-                        double scaleY) const
+                        const RenderScale & renderScale) const
 {
 
     boost::shared_ptr<Natron::Node> rotoPaintNode;
@@ -132,18 +131,18 @@ ViewerTab::drawOverlays(double time,
         
         if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
             if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                _imp->currentRoto.second->drawOverlays(time, scaleX, scaleY);
+                _imp->currentRoto.second->drawOverlays(time, renderScale);
             }
         } else if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
             if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                _imp->currentTracker.second->drawOverlays(time, view, scaleX, scaleY);
+                _imp->currentTracker.second->drawOverlays(time, renderScale, view);
             }
         } else {
             
             Natron::EffectInstance* effect = (*it)->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
-            effect->drawOverlay_public(time, view, scaleX,scaleY);
+            effect->drawOverlay_public(time, renderScale, view);
         }
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         if (ok) {
@@ -156,8 +155,7 @@ ViewerTab::drawOverlays(double time,
 
 bool
 ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node,
-                                          double scaleX,
-                                          double scaleY,
+                                          const RenderScale & renderScale,
                                           Natron::PenType pen,
                                           bool isTabletEvent,
                                           const QPointF & viewportPos,
@@ -227,14 +225,14 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
     
     if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->penDown(time, scaleX, scaleY, pen, isTabletEvent, transformViewportPos, transformPos, pressure, timestamp, e) ) {
+            if ( _imp->currentRoto.second->penDown(time, renderScale, pen, isTabletEvent, transformViewportPos, transformPos, pressure, timestamp, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
         }
     } else if (_imp->currentTracker.first && node == _imp->currentTracker.first->getNode()) {
         if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentTracker.second->penDown(time, view, scaleX, scaleY, transformViewportPos, transformPos, pressure, e) ) {
+            if ( _imp->currentTracker.second->penDown(time, renderScale, view, transformViewportPos, transformPos, pressure, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -244,7 +242,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenDown_public(time, view, scaleX, scaleY, transformViewportPos, transformPos, pressure);
+        bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, transformViewportPos, transformPos, pressure);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -259,8 +257,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>&
 }
 
 bool
-ViewerTab::notifyOverlaysPenDown(double scaleX,
-                                 double scaleY,
+ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
                                  Natron::PenType pen,
                                  bool isTabletEvent,
                                  const QPointF & viewportPos,
@@ -286,7 +283,7 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
         for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
                 
-                if (notifyOverlaysPenDown_internal(*it, scaleX, scaleY, pen, isTabletEvent, viewportPos, pos, pressure, timestamp, e)) {
+                if (notifyOverlaysPenDown_internal(*it, renderScale, pen, isTabletEvent, viewportPos, pos, pressure, timestamp, e)) {
                     return true;
                 } else {
                     nodes.erase(it);
@@ -297,7 +294,7 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
     }
     
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
-        if (notifyOverlaysPenDown_internal(*it, scaleX, scaleY, pen, isTabletEvent, viewportPos, pos, pressure, timestamp, e)) {
+        if (notifyOverlaysPenDown_internal(*it, renderScale, pen, isTabletEvent, viewportPos, pos, pressure, timestamp, e)) {
             return true;
         }
     }
@@ -311,8 +308,7 @@ ViewerTab::notifyOverlaysPenDown(double scaleX,
 
 
 bool
-ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
-                                        double scaleY,
+ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
                                         const QPointF & viewportPos,
                                         const QPointF & pos,
                                         QMouseEvent* e)
@@ -373,14 +369,14 @@ ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
 #endif
         
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->penDoubleClicked(time, scaleX, scaleY, transformViewportPos, transformPos, e) ) {
+            if ( _imp->currentRoto.second->penDoubleClicked(time, renderScale, transformViewportPos, transformPos, e) ) {
                 _imp->lastOverlayNode = _imp->currentRoto.first->getNode();
                 return true;
             }
         }
         
         if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentTracker.second->penDoubleClicked(time, view, scaleX, scaleY, transformViewportPos, transformPos, e) ) {
+            if ( _imp->currentTracker.second->penDoubleClicked(time, renderScale, view, transformViewportPos, transformPos, e) ) {
                 _imp->lastOverlayNode = _imp->currentRoto.first->getNode();
                 return true;
             }
@@ -392,8 +388,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(double scaleX,
 
 bool
 ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node,
-                                            double scaleX,
-                                            double scaleY,
+                                            const RenderScale & renderScale,
                                             const QPointF & viewportPos,
                                             const QPointF & pos,
                                             double pressure,
@@ -458,14 +453,14 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
     
     if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->penMotion(time, scaleX, scaleY, transformViewportPos, transformPos, pressure, timestamp, e) ) {
+            if ( _imp->currentRoto.second->penMotion(time, renderScale, transformViewportPos, transformPos, pressure, timestamp, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
         }
     } else if (_imp->currentTracker.first && node == _imp->currentTracker.first->getNode()) {
         if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentTracker.second->penMotion(time, view, scaleX, scaleY, transformViewportPos, transformPos, pressure, e) ) {
+            if ( _imp->currentTracker.second->penMotion(time, renderScale, view, transformViewportPos, transformPos, pressure, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -480,7 +475,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenMotion_public(time, view, scaleX, scaleY, transformViewportPos, transformPos, pressure);
+        bool didSmthing = effect->onOverlayPenMotion_public(time, renderScale, view, transformViewportPos, transformPos, pressure);
         if (didSmthing) {
             
             if (_imp->hasPenDown) {
@@ -499,8 +494,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node
 }
 
 bool
-ViewerTab::notifyOverlaysPenMotion(double scaleX,
-                                   double scaleY,
+ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
                                    const QPointF & viewportPos,
                                    const QPointF & pos,
                                    double pressure,
@@ -521,7 +515,7 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
     if (lastOverlay) {
         for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
-                if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, pressure, timestamp, e)) {
+                if (notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp, e)) {
                     return true;
                 } else {
                     nodes.erase(it);
@@ -533,7 +527,7 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
 
     
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
-        if (notifyOverlaysPenMotion_internal(*it, scaleX, scaleY, viewportPos, pos, pressure, timestamp, e)) {
+        if (notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp, e)) {
             return true;
         }
     }
@@ -549,8 +543,7 @@ ViewerTab::notifyOverlaysPenMotion(double scaleX,
 }
 
 bool
-ViewerTab::notifyOverlaysPenUp(double scaleX,
-                               double scaleY,
+ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
                                const QPointF & viewportPos,
                                const QPointF & pos,
                                double pressure,
@@ -643,19 +636,19 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
         if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
             
             if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                didSomething |= _imp->currentRoto.second->penUp(time, scaleX, scaleY, transformViewportPos, transformPos, pressure, timestamp, e);
+                didSomething |= _imp->currentRoto.second->penUp(time, renderScale, transformViewportPos, transformPos, pressure, timestamp, e);
             }
         }
         if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
             if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                didSomething |=  _imp->currentTracker.second->penUp(time, view, scaleX, scaleY, transformViewportPos, transformPos, pressure, e)  ;
+                didSomething |=  _imp->currentTracker.second->penUp(time, renderScale, view, transformViewportPos, transformPos, pressure, e)  ;
             }
         }
         
         Natron::EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        didSomething |= effect->onOverlayPenUp_public(time, view, scaleX, scaleY, transformViewportPos, transformPos, pressure);
+        didSomething |= effect->onOverlayPenUp_public(time, renderScale, view, transformViewportPos, transformPos, pressure);
         
         
     }
@@ -678,7 +671,9 @@ ViewerTab::notifyOverlaysPenUp(double scaleX,
 }
 
 bool
-ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,
+ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>& node,
+                                          const RenderScale & renderScale,
+                                          QKeyEvent* e,
                                           Natron::Key k,
                                           Natron::KeyboardModifiers km)
 {
@@ -705,14 +700,14 @@ ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>&
     if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
         
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->keyDown(time, scaleX, scaleY, e) ) {
+            if ( _imp->currentRoto.second->keyDown(time, renderScale, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
         }
     } else if (_imp->currentTracker.first && node == _imp->currentTracker.first->getNode()) {
         if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentTracker.second->keyDown(time, view, scaleX, scaleY, e) ) {
+            if ( _imp->currentTracker.second->keyDown(time, renderScale, view, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -723,7 +718,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>&
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyDown_public(time, view, scaleX,scaleY,k,km);
+        bool didSmthing = effect->onOverlayKeyDown_public(time, renderScale, view, k, km);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -737,8 +732,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>&
 }
 
 bool
-ViewerTab::notifyOverlaysKeyDown(double scaleX,
-                                 double scaleY,
+ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
                                  QKeyEvent* e)
 {
     bool didSomething = false;
@@ -768,7 +762,7 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
     if (lastOverlay) {
         for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
-                if (notifyOverlaysKeyDown_internal(*it, scaleX, scaleY, e, natronKey, natronMod)) {
+                if (notifyOverlaysKeyDown_internal(*it, renderScale, e, natronKey, natronMod)) {
                     if (isModifier) {
                         nodes.erase(it);
                         break;
@@ -787,7 +781,7 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin();
          it != nodes.rend();
          ++it) {
-        if (notifyOverlaysKeyDown_internal(*it, scaleX, scaleY, e, natronKey, natronMod)) {
+        if (notifyOverlaysKeyDown_internal(*it, renderScale, e, natronKey, natronMod)) {
             if (isModifier) {
                 continue;
             }
@@ -804,8 +798,7 @@ ViewerTab::notifyOverlaysKeyDown(double scaleX,
 }
 
 bool
-ViewerTab::notifyOverlaysKeyUp(double scaleX,
-                               double scaleY,
+ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
                                QKeyEvent* e)
 {
     bool didSomething = false;
@@ -842,17 +835,17 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
         
         if (_imp->currentRoto.first && (*it) == _imp->currentRoto.first->getNode()) {
             if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                didSomething |= _imp->currentRoto.second->keyUp(time, scaleX, scaleY, e);
+                didSomething |= _imp->currentRoto.second->keyUp(time, renderScale, e);
             }
         }
         if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
             if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                didSomething |= _imp->currentTracker.second->keyUp(time, view, scaleX, scaleY, e);
+                didSomething |= _imp->currentTracker.second->keyUp(time, renderScale, view, e);
             }
         }
         
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        didSomething |= effect->onOverlayKeyUp_public( time, view, scaleX,scaleY,
+        didSomething |= effect->onOverlayKeyUp_public( time, renderScale, view,
                                             QtEnumConvert::fromQtKey( (Qt::Key)e->key() ),QtEnumConvert::fromQtModifiers( e->modifiers() ) );
         
     }
@@ -876,8 +869,11 @@ ViewerTab::notifyOverlaysKeyUp(double scaleX,
 }
 
 bool
-ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node,double scaleX,double scaleY,QKeyEvent* e,Natron::Key k,
-                                      Natron::KeyboardModifiers km)
+ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node,
+                                            const RenderScale & renderScale,
+                                            QKeyEvent* e,
+                                            Natron::Key k,
+                                            Natron::KeyboardModifiers km)
 {
     int view = getCurrentView();
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
@@ -900,7 +896,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node
     if (_imp->currentRoto.first && node == _imp->currentRoto.first->getNode()) {
         
         if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->keyRepeat(time, scaleX, scaleY, e) ) {
+            if ( _imp->currentRoto.second->keyRepeat(time, renderScale, e) ) {
                 _imp->lastOverlayNode = node;
                 return true;
             }
@@ -914,7 +910,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node
         Natron::EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyRepeat_public(time, view, scaleX,scaleY,k,km);
+        bool didSmthing = effect->onOverlayKeyRepeat_public(time, renderScale, view, k, km);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -928,8 +924,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node
 }
 
 bool
-ViewerTab::notifyOverlaysKeyRepeat(double scaleX,
-                                   double scaleY,
+ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
                                    QKeyEvent* e)
 {
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
@@ -946,7 +941,7 @@ ViewerTab::notifyOverlaysKeyRepeat(double scaleX,
     if (lastOverlay) {
         for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
-                if (notifyOverlaysKeyRepeat_internal(*it, scaleX, scaleY, e, natronKey, natronMod)) {
+                if (notifyOverlaysKeyRepeat_internal(*it, renderScale, e, natronKey, natronMod)) {
                     return true;
                 } else {
                     nodes.erase(it);
@@ -959,7 +954,7 @@ ViewerTab::notifyOverlaysKeyRepeat(double scaleX,
 
     
     for (std::list<boost::shared_ptr<Natron::Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
-        if (notifyOverlaysKeyRepeat_internal(*it, scaleX, scaleY, e, natronKey, natronMod)) {
+        if (notifyOverlaysKeyRepeat_internal(*it, renderScale, e, natronKey, natronMod)) {
             return true;
         }
     }
@@ -974,8 +969,7 @@ ViewerTab::notifyOverlaysKeyRepeat(double scaleX,
 }
 
 bool
-ViewerTab::notifyOverlaysFocusGained(double scaleX,
-                                     double scaleY)
+ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 {
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
@@ -1000,7 +994,7 @@ ViewerTab::notifyOverlaysFocusGained(double scaleX,
 #endif
         
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayFocusGained_public(time, view, scaleX,scaleY);
+        bool didSmthing = effect->onOverlayFocusGained_public(time, renderScale, view);
         if (didSmthing) {
             ret = true;
         }
@@ -1016,8 +1010,7 @@ ViewerTab::notifyOverlaysFocusGained(double scaleX,
 }
 
 bool
-ViewerTab::notifyOverlaysFocusLost(double scaleX,
-                                   double scaleY)
+ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
 {
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
@@ -1046,7 +1039,7 @@ ViewerTab::notifyOverlaysFocusLost(double scaleX,
             }
         } else if (_imp->currentTracker.first && (*it) == _imp->currentTracker.first->getNode()) {
             if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                if ( _imp->currentTracker.second->loseFocus(time, view, scaleX, scaleY) ) {
+                if ( _imp->currentTracker.second->loseFocus(time, renderScale, view) ) {
                     return true;
                 }
             }
@@ -1056,7 +1049,7 @@ ViewerTab::notifyOverlaysFocusLost(double scaleX,
         assert(effect);
         
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayFocusLost_public(time, view, scaleX,scaleY);
+        bool didSmthing = effect->onOverlayFocusLost_public(time, renderScale, view);
         if (didSmthing) {
             ret = true;
         }

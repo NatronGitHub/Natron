@@ -708,8 +708,7 @@ Effect::getRegionOfDefinition(double time,int view) const
         return rod;
     }
     U64 hash = _node->getHashValue();
-    RenderScale s;
-    s.x = s.y = 1.;
+    RenderScale s(1.);
     bool isProject;
     Natron::StatusEnum stat = _node->getLiveInstance()->getRegionOfDefinition_public(hash, time, s, view, &rod, &isProject);
     if (stat != Natron::eStatusOK) {

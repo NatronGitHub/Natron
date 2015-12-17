@@ -763,7 +763,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     ///
     ///Note that we can't yet use the texture cache because we would need the TextureRect identifyin
     ///the texture in order to retrieve from the cache, but to make the TextureRect we need the RoD!
-    RenderScale scale;
+    RenderScale scale(1.);
     int mipMapLevel;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
@@ -805,8 +805,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
     // this after the first call to getRegionOfDefinition().
-    RenderScale scaleOne;
-    scaleOne.x = scaleOne.y = 1.;
+    RenderScale scaleOne(1.);
     EffectInstance::SupportsEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
     scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(originalMipMapLevel);
     

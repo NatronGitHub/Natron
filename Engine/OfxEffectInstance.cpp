@@ -464,8 +464,9 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
     OfxPluginEntryPoint *overlayEntryPoint = _effect->getOverlayInteractMainEntry();
     if (overlayEntryPoint) {
         _overlayInteract = new OfxOverlayInteract(*_effect,8,true);
-        RenderScale s;
-        effectInstance()->getRenderScaleRecursive(s.x, s.y);
+        double sx, sy;
+        effectInstance()->getRenderScaleRecursive(sx, sy);
+        RenderScale s(sx, sy);
 
         {
             ClipsThreadStorageSetter clipSetter(effectInstance(),
@@ -946,8 +947,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
     OfxClipInstance* clip = getClipCorrespondingToInput(inputNo);
     assert(clip);
     double time = getApp()->getTimeLine()->currentFrame();
-    RenderScale s;
-    s.x = s.y = 1.;
+    RenderScale s(1.);
     
     
     EffectPointerThreadProperty_RAII propHolder_raii(this);
@@ -1408,7 +1408,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
         /// This code is not needed since getRegionOfDefinitionAction in HostSupport does it for us
         /// plus it is horribly slow (don't know why)
 //        if (stat == kOfxStatReplyDefault) {
-//            calcDefaultRegionOfDefinition(hash,time,view, scale, rod);
+//            calcDefaultRegionOfDefinition(hash, time, scale, view, rod);
 //
 //            return eStatusReplyDefault;
 //        }
@@ -1439,8 +1439,8 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
 void
 OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
                                                  double time,
-                                                 int view,
                                                  const RenderScale & scale,
+                                                 int view,
                                                  RectD *rod)
 {
     assert(_context != eContextNone);
@@ -1477,9 +1477,9 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
             
             // the following ofxh function does the job
             QReadLocker preferencesLocker(_preferencesLock);
-            ofxRod = _effect->calcDefaultRegionOfDefinition(time, (OfxPointD)scale);
+            ofxRod = _effect->calcDefaultRegionOfDefinition(time, scale);
         } else {
-            ofxRod = _effect->calcDefaultRegionOfDefinition(time, (OfxPointD)scale);
+            ofxRod = _effect->calcDefaultRegionOfDefinition(time, scale);
         }
     }
     rod->x1 = ofxRod.x1;
@@ -2105,20 +2105,15 @@ OfxEffectInstance::initializeOverlayInteract()
 
 void
 OfxEffectInstance::drawOverlay(double time,
-                               int view,
-                               double scaleX,
-                               double scaleY)
+                               const RenderScale & renderScale,
+                               int view)
 {
     if (!_initialized) {
         return;
     }
     if (_overlayInteract) {
-        OfxPointD rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
-
         SET_CAN_SET_VALUE(false);
-        _overlayInteract->drawAction(time, view, rs);
+        _overlayInteract->drawAction(time, renderScale, view);
     }
 }
 
@@ -2132,9 +2127,8 @@ OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport)
 
 bool
 OfxEffectInstance::onOverlayPenDown(double time,
+                                    const RenderScale & renderScale,
                                     int view,
-                                    double scaleX,
-                                    double scaleY,
                                     const QPointF & viewportPos,
                                     const QPointF & pos,
                                     double pressure)
@@ -2143,9 +2137,6 @@ OfxEffectInstance::onOverlayPenDown(double time,
         return false;
     }
     if (_overlayInteract) {
-        OfxPointD rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
@@ -2155,7 +2146,7 @@ OfxEffectInstance::onOverlayPenDown(double time,
 
         SET_CAN_SET_VALUE(true);
 
-        OfxStatus stat = _overlayInteract->penDownAction(time, view, rs, penPos, penPosViewport, pressure);
+        OfxStatus stat = _overlayInteract->penDownAction(time, renderScale, view, penPos, penPosViewport, pressure);
         
 
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
@@ -2176,9 +2167,8 @@ OfxEffectInstance::onOverlayPenDown(double time,
 
 bool
 OfxEffectInstance::onOverlayPenMotion(double time,
+                                      const RenderScale & renderScale,
                                       int view,
-                                      double scaleX,
-                                      double scaleY,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
                                       double pressure)
@@ -2187,9 +2177,6 @@ OfxEffectInstance::onOverlayPenMotion(double time,
         return false;
     }
     if (_overlayInteract) {
-        OfxPointD rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
@@ -2199,7 +2186,7 @@ OfxEffectInstance::onOverlayPenMotion(double time,
         OfxStatus stat;
 
         SET_CAN_SET_VALUE(true);
-        stat = _overlayInteract->penMotionAction(time, view, rs, penPos, penPosViewport, pressure);
+        stat = _overlayInteract->penMotionAction(time, renderScale, view, penPos, penPosViewport, pressure);
         
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
             stat = _overlayInteract->redraw();
@@ -2216,9 +2203,8 @@ OfxEffectInstance::onOverlayPenMotion(double time,
 
 bool
 OfxEffectInstance::onOverlayPenUp(double time,
+                                  const RenderScale & renderScale,
                                   int view,
-                                  double scaleX,
-                                  double scaleY,
                                   const QPointF & viewportPos,
                                   const QPointF & pos,
                                   double pressure)
@@ -2227,9 +2213,6 @@ OfxEffectInstance::onOverlayPenUp(double time,
         return false;
     }
     if (_overlayInteract) {
-        OfxPointD rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         OfxPointD penPos;
         penPos.x = pos.x();
         penPos.y = pos.y();
@@ -2238,7 +2221,7 @@ OfxEffectInstance::onOverlayPenUp(double time,
         penPosViewport.y = viewportPos.y();
 
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _overlayInteract->penUpAction(time, view, rs, penPos, penPosViewport, pressure);
+        OfxStatus stat = _overlayInteract->penUpAction(time, renderScale, view, penPos, penPosViewport, pressure);
 
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
             stat = _overlayInteract->redraw();
@@ -2257,9 +2240,8 @@ OfxEffectInstance::onOverlayPenUp(double time,
 
 bool
 OfxEffectInstance::onOverlayKeyDown(double time,
+                                    const RenderScale & renderScale,
                                     int view,
-                                    double scaleX,
-                                    double scaleY,
                                     Natron::Key key,
                                     Natron::KeyboardModifiers /*modifiers*/)
 {
@@ -2267,12 +2249,9 @@ OfxEffectInstance::onOverlayKeyDown(double time,
         return false;;
     }
     if (_overlayInteract) {
-        OfxPointD rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         QByteArray keyStr;
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _overlayInteract->keyDownAction( time, view, rs, (int)key, keyStr.data() );
+        OfxStatus stat = _overlayInteract->keyDownAction( time, renderScale, view, (int)key, keyStr.data() );
 
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
             stat = _overlayInteract->redraw();
@@ -2289,9 +2268,8 @@ OfxEffectInstance::onOverlayKeyDown(double time,
 
 bool
 OfxEffectInstance::onOverlayKeyUp(double time,
+                                  const RenderScale & renderScale,
                                   int view,
-                                  double scaleX,
-                                  double scaleY,
                                   Natron::Key key,
                                   Natron::KeyboardModifiers /* modifiers*/)
 {
@@ -2299,12 +2277,9 @@ OfxEffectInstance::onOverlayKeyUp(double time,
         return false;
     }
     if (_overlayInteract) {
-        OfxPointD rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         QByteArray keyStr;
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _overlayInteract->keyUpAction( time, view, rs, (int)key, keyStr.data() );
+        OfxStatus stat = _overlayInteract->keyUpAction( time, renderScale, view, (int)key, keyStr.data() );
 
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
             stat = _overlayInteract->redraw();
@@ -2323,9 +2298,8 @@ OfxEffectInstance::onOverlayKeyUp(double time,
 
 bool
 OfxEffectInstance::onOverlayKeyRepeat(double time,
+                                      const RenderScale & renderScale,
                                       int view,
-                                      double scaleX,
-                                      double scaleY,
                                       Natron::Key key,
                                       Natron::KeyboardModifiers /*modifiers*/)
 {
@@ -2333,13 +2307,10 @@ OfxEffectInstance::onOverlayKeyRepeat(double time,
         return false;
     }
     if (_overlayInteract) {
-        OfxPointD rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         QByteArray keyStr;
 
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _overlayInteract->keyRepeatAction( time, view, rs, (int)key, keyStr.data() );
+        OfxStatus stat = _overlayInteract->keyRepeatAction( time, renderScale, view, (int)key, keyStr.data() );
 
         if (getRecursionLevel() == 1 && checkIfOverlayRedrawNeeded()) {
             stat = _overlayInteract->redraw();
@@ -2356,20 +2327,16 @@ OfxEffectInstance::onOverlayKeyRepeat(double time,
 
 bool
 OfxEffectInstance::onOverlayFocusGained(double time,
-                                        int view,
-                                        double scaleX,
-                                        double scaleY)
+                                        const RenderScale & renderScale,
+                                        int view)
 {
     if (!_initialized) {
         return false;
     }
     if (_overlayInteract) {
-        OfxPointD rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         OfxStatus stat;
         SET_CAN_SET_VALUE(true);
-        stat = _overlayInteract->gainFocusAction(time, view, rs);
+        stat = _overlayInteract->gainFocusAction(time, renderScale, view);
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -2380,20 +2347,16 @@ OfxEffectInstance::onOverlayFocusGained(double time,
 
 bool
 OfxEffectInstance::onOverlayFocusLost(double time,
-                                      int view,
-                                      double scaleX,
-                                      double scaleY)
+                                      const RenderScale & renderScale,
+                                      int view)
 {
     if (!_initialized) {
         return false;
     }
     if (_overlayInteract) {
-        OfxPointD rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         OfxStatus stat;
         SET_CAN_SET_VALUE(true);
-        stat = _overlayInteract->loseFocusAction(time, view, rs);
+        stat = _overlayInteract->loseFocusAction(time, renderScale, view);
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -2453,14 +2416,12 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     assert( !ofxReason.empty() ); // crashes when resetting to defaults
-    OfxPointD renderScale;
+    RenderScale renderScale(1.);
     if (isDoingInteractAction() && _overlayInteract) {
         OverlaySupport* lastInteract = _overlayInteract->getLastCallingViewport();
         assert(lastInteract);
         unsigned int mmLevel = lastInteract->getCurrentRenderScale();
         renderScale.x = renderScale.y = 1 << mmLevel;
-    } else {
-        renderScale.x = renderScale.y = 1;
     }
     OfxStatus stat = kOfxStatOK;
     
@@ -2949,7 +2910,7 @@ OfxEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
 
 Natron::StatusEnum
 OfxEffectInstance::getTransform(double time,
-                                const RenderScale& renderScale, //< the plug-in accepted scale
+                                const RenderScale & renderScale, //< the plug-in accepted scale
                                 int view,
                                 Natron::EffectInstance** inputToTransform,
                                 Transform::Matrix3x3* transform)

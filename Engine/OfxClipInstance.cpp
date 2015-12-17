@@ -536,8 +536,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
         
         U64 nodeHash = associatedNode->getRenderHash();
         RectD rod;
-        RenderScale scale;
-        scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipmapLevel);
+        RenderScale scale(Natron::Image::getScaleFromMipMapLevel(mipmapLevel));
         Natron::StatusEnum st = associatedNode->getRegionOfDefinition_public(nodeHash,time, scale, view, &rod, &isProjectFormat);
         if (st == eStatusFailed) {
             ret->x1 = 0.;
@@ -902,9 +901,7 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
     
     assert( !isOutput() && node);
     
-    OfxPointD renderScale;
-    renderScale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-    renderScale.y = renderScale.x;
+    RenderScale renderScale(Image::getScaleFromMipMapLevel(mipMapLevel));
     
     RectD bounds;
     if (optionalBounds) {
@@ -1270,10 +1267,7 @@ OfxImage::OfxImage(std::list<OfxImage*>* tlsImages,
     assert(internalImage);
     
     unsigned int mipMapLevel = internalImage->getMipMapLevel();
-    RenderScale scale;
-
-    scale.x = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
-    scale.y = scale.x;
+    RenderScale scale(Natron::Image::getScaleFromMipMapLevel(mipMapLevel));
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
     

@@ -3515,9 +3515,9 @@ void
 OfxParametricInstance::onCustomBackgroundDrawingRequested()
 {
     if (_overlayInteract) {
-        RenderScale s;
-        _overlayInteract->getPixelScale(s.x, s.y);
-        _overlayInteract->drawAction(_effect->getApp()->getTimeLine()->currentFrame(), 0, s);
+        double sx, sy;
+        _overlayInteract->getPixelScale(sx, sy);
+        _overlayInteract->drawAction(_effect->getApp()->getTimeLine()->currentFrame(), RenderScale(sx, sy), /*view=*/0);
     }
 }
 

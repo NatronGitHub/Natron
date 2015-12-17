@@ -163,8 +163,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
     if (currentNode == target->getLiveInstance()) {
         return true;
     }
-    RenderScale s;
-    s.x = s.y = 1.;
+    RenderScale s(1.);
     Natron::EffectInstance* input = 0;
     Natron::StatusEnum stat = eStatusReplyDefault;
     Transform::Matrix3x3 mat;

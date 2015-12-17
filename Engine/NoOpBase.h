@@ -84,7 +84,7 @@ public:
     }
 
     virtual Natron::StatusEnum getTransform(double time,
-                                            const RenderScale& renderScale,
+                                            const RenderScale & renderScale,
                                             int view,
                                             Natron::EffectInstance** inputToTransform,
                                             Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;

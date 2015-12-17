@@ -1886,10 +1886,8 @@ Image::scaleBoxForDepth(const RectI & roi,
     }
    
 
-    RenderScale scale;
     // FIXME: should use the RoD instead of RoI/bounds !
-    scale.x = (double) srcRoi.width() / dstBounds.width();
-    scale.y = (double) srcRoi.height() / dstBounds.height();
+    RenderScale scale((double) srcRoi.width() / dstBounds.width(), (double) srcRoi.height() / dstBounds.height());
 
     int convx_int = std::floor(scale.x);
     int convy_int = std::floor(scale.y);
