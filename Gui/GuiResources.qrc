@@ -326,5 +326,6 @@
         <file>Resources/Images/merge_under.png</file>
         <file>Resources/Images/merge_xor.png</file>
         <file>Resources/PyPlugs/LightWrap.py</file>
+        <file>Resources/PyPlugs/DropShadow.py</file>
     </qresource>
 </RCC>
