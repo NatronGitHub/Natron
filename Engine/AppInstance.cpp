@@ -105,7 +105,7 @@ struct AppInstancePrivate
     bool _creatingNode;
     
     //When a node tree is created
-    bool _creatingTree;
+    int _creatingTree;
     
     AppInstancePrivate(int appID,
                        AppInstance* app)
@@ -115,7 +115,7 @@ struct AppInstancePrivate
     , creatingGroupMutex()
     , _creatingGroup(false)
     , _creatingNode(false)
-    , _creatingTree(false)
+    , _creatingTree(0)
     {
     }
     
@@ -167,7 +167,15 @@ void
 AppInstance::setIsCreatingNodeTree(bool b)
 {
     QMutexLocker k(&_imp->creatingGroupMutex);
-    _imp->_creatingTree = b;
+    if (b) {
+        ++_imp->_creatingTree;
+    } else {
+        if (_imp->_creatingTree >= 1) {
+            --_imp->_creatingTree;
+        } else {
+            _imp->_creatingTree = 0;
+        }
+    }
 }
 
 void
