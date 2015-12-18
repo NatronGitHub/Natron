@@ -354,7 +354,7 @@ ViewerGL::paintGL()
 
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, _imp->activeTextures[1] ? eDrawPolygonModeWhole : eDrawPolygonModeWipeLeft);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
@@ -365,7 +365,7 @@ ViewerGL::paintGL()
             } else if (compOp == eViewerCompositingOperatorMinus) {
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, _imp->activeTextures[1] ? eDrawPolygonModeWhole : eDrawPolygonModeWipeLeft);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
@@ -377,7 +377,7 @@ ViewerGL::paintGL()
             } else if (compOp == eViewerCompositingOperatorUnder) {
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, _imp->activeTextures[1] ? eDrawPolygonModeWhole : eDrawPolygonModeWipeLeft);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
