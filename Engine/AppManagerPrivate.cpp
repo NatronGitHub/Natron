@@ -197,7 +197,7 @@ AppManagerPrivate::initBreakpad()
     QString tmpFileName;
 #ifndef Q_OS_WIN32
 	tmpFileName	= QDir::tempPath();
-     += '/';
+    tmpFileName += '/';
     tmpFileName += NATRON_APPLICATION_NAME;
 #else
 	tmpFileName += "//./pipe/";
