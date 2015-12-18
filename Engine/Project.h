@@ -69,7 +69,7 @@ public:
     /**
      * @brief Loads the project with the given path and name corresponding to a file on disk.
      **/
-    bool loadProject(const QString & path,const QString & name, bool isUntitledAutosave = false);
+    bool loadProject(const QString & path,const QString & name, bool isUntitledAutosave = false, bool attemptToLoadAutosave = true);
 
     
     

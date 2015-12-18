@@ -182,7 +182,7 @@ Gui::reloadProject()
         return;
     }
    
-    (void)openProjectInternal(projectPath.toStdString());
+    (void)openProjectInternal(projectPath.toStdString(), false);
 }
 
 void

@@ -701,7 +701,7 @@ private:
 
     void setCurrentPanelFocus(PanelWidget* widget);
     
-    AppInstance* openProjectInternal(const std::string & absoluteFileName) WARN_UNUSED_RETURN;
+    AppInstance* openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave) WARN_UNUSED_RETURN;
 
     void setupUi();
 

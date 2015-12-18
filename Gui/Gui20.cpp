@@ -969,7 +969,7 @@ Gui::openProject()
         std::string patternCpy = selectedFile;
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadProjectOpenedDir = path.c_str();
-        AppInstance* app = openProjectInternal(selectedFile);
+        AppInstance* app = openProjectInternal(selectedFile, true);
         if (!app) {
             throw std::runtime_error(tr("Failed to open project").toStdString() + ' ' + selectedFile);
         }
@@ -979,11 +979,11 @@ Gui::openProject()
 AppInstance*
 Gui::openProject(const std::string & filename)
 {
-    return openProjectInternal(filename);
+    return openProjectInternal(filename, true);
 }
 
 AppInstance*
-Gui::openProjectInternal(const std::string & absoluteFileName)
+Gui::openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave)
 {
     QFileInfo file(absoluteFileName.c_str());
     if (!file.exists()) {
@@ -1008,14 +1008,14 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
     AppInstance* ret = 0;
     ///if the current graph has no value, just load the project in the same window
     if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
-      bool ok = _imp->_appInstance->getProject()->loadProject( path, fileUnPathed);
+      bool ok = _imp->_appInstance->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
         if (ok) {
             ret = _imp->_appInstance;
         }
     } else {
         CLArgs cl;
         AppInstance* newApp = appPTR->newAppInstance(cl);
-        bool ok  = newApp->getProject()->loadProject( path, fileUnPathed);
+        bool ok  = newApp->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
         if (ok) {
             ret = newApp;
         }

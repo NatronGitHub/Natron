@@ -161,7 +161,8 @@ public:
 bool
 Project::loadProject(const QString & path,
                      const QString & name,
-                     bool isUntitledAutosave)
+                     bool isUntitledAutosave,
+                     bool attemptToLoadAutosave)
 {
 
     reset(false);
@@ -179,12 +180,16 @@ Project::loadProject(const QString & path,
             QString autosaveFileName;
             bool hasAutoSave = findAutoSaveForProject(realPath, name,&autosaveFileName);
             if (hasAutoSave) {
-                QString text = tr("A recent auto-save of %1 was found.\n"
-                                  "Would you like to use it instead? "
-                                  "Clicking No will remove this auto-save.").arg(name);
-                Natron::StandardButtonEnum ret = Natron::questionDialog(tr("Auto-save").toStdString(),
-                                                                        text.toStdString(),false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                                                        Natron::eStandardButtonYes);
+                
+                Natron::StandardButtonEnum ret = Natron::eStandardButtonNo;
+                if (attemptToLoadAutosave) {
+                    QString text = tr("A recent auto-save of %1 was found.\n"
+                                      "Would you like to use it instead? "
+                                      "Clicking No will remove this auto-save.").arg(name);
+                    ret = Natron::questionDialog(tr("Auto-save").toStdString(),
+                                                 text.toStdString(),false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                                 Natron::eStandardButtonYes);
+                }
                 if ( (ret == Natron::eStandardButtonNo) || (ret == Natron::eStandardButtonEscape) ) {
                     QFile::remove(realPath + autosaveFileName);
                 } else {
