@@ -163,6 +163,29 @@ Gui::closeProject()
 }
 
 void
+Gui::reloadProject()
+{
+    
+    boost::shared_ptr<Project> proj = getApp()->getProject();
+    if (!proj->hasProjectBeenSavedByUser()) {
+        Natron::errorDialog(tr("Reload project").toStdString(), tr("This project has not been saved yet").toStdString());
+        return;
+    }
+    QString filename = proj->getProjectFilename();
+    QString projectPath = proj->getProjectPath();
+    if (!projectPath.endsWith("/")) {
+        projectPath.append('/');
+    }
+    projectPath.append(filename);
+    
+    if (!abortProject(false)) {
+        return;
+    }
+   
+    (void)openProjectInternal(projectPath.toStdString());
+}
+
+void
 Gui::setGuiAboutToClose(bool about)
 {
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
@@ -402,6 +425,10 @@ Gui::createMenuActions()
     _imp->actionClose_project->setIcon( get_icon("document-close") );
     QObject::connect( _imp->actionClose_project, SIGNAL( triggered() ), this, SLOT( closeProject() ) );
 
+    _imp->actionReload_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionReloadProject, kShortcutDescActionReloadProject, this);
+    _imp->actionReload_project->setIcon( get_icon("document-open") );
+    QObject::connect( _imp->actionReload_project, SIGNAL( triggered() ), this, SLOT( reloadProject() ) );
+    
     _imp->actionSave_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionSaveProject, kShortcutDescActionSaveProject, this);
     _imp->actionSave_project->setIcon( get_icon("document-save") );
     QObject::connect( _imp->actionSave_project, SIGNAL( triggered() ), this, SLOT( saveProject() ) );
@@ -558,6 +585,7 @@ Gui::createMenuActions()
         _imp->menuRecentFiles->addAction(_imp->actionsOpenRecentFile[c]);
     }
 
+    _imp->menuFile->addAction(_imp->actionReload_project);
     _imp->menuFile->addSeparator();
     _imp->menuFile->addAction(_imp->actionClose_project);
     _imp->menuFile->addAction(_imp->actionSave_project);

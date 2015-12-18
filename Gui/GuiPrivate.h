@@ -86,6 +86,7 @@ struct GuiPrivate
     ActionWithShortcut *actionNew_project;
     ActionWithShortcut *actionOpen_project;
     ActionWithShortcut *actionClose_project;
+    ActionWithShortcut *actionReload_project;
     ActionWithShortcut *actionSave_project;
     ActionWithShortcut *actionSaveAs_project;
     ActionWithShortcut *actionExportAsGroup;

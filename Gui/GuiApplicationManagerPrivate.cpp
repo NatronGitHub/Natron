@@ -357,7 +357,9 @@ void
 GuiApplicationManagerPrivate::addStandardKeybind(const QString & grouping,
                                                  const QString & id,
                                                  const QString & description,
-                                                 QKeySequence::StandardKey key)
+                                                 QKeySequence::StandardKey key,
+                                                 const Qt::KeyboardModifiers & fallbackmodifiers,
+                                                 Qt::Key fallbacksymbol)
 {
     AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
     if ( foundGroup != _actionShortcuts.end() ) {
@@ -371,6 +373,12 @@ GuiApplicationManagerPrivate::addStandardKeybind(const QString & grouping,
     Qt::Key symbol;
 
     extractKeySequence(QKeySequence(key), modifiers, symbol);
+    
+    if (symbol == (Qt::Key)0) {
+        symbol = fallbacksymbol;
+        modifiers = fallbackmodifiers;
+    }
+    
     KeyBoundAction* kA = new KeyBoundAction;
     kA->grouping = grouping;
     kA->description = description;

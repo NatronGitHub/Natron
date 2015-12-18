@@ -76,8 +76,9 @@ CLANG_DIAG_ON(uninitialized)
 /**
  * @brief Performs the same that the registerKeybind macro, except that it takes a QKeySequence::StandardKey in parameter.
  * This way the keybind will be standard and will adapt bery well across all platforms supporting the standard.
+ * If the standard parameter has no shortcut associated, the fallbackmodifiers and fallbacksymbol will be used instead.
  **/
-#define registerStandardKeybind(group,id,description,key) ( _imp->addStandardKeybind(group,id,description,key) )
+#define registerStandardKeybind(group,id,description,key, fallbackmodifiers, fallbacksymbol) ( _imp->addStandardKeybind(group,id,description,key,fallbackmodifiers, fallbacksymbol) )
 
 /**
  * @brief Performs the same that the registerKeybind macro, except that it works for shortcuts using mouse buttons instead of key symbols.
@@ -743,16 +744,17 @@ void
 GuiApplicationManager::populateShortcuts()
 {
     ///General
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionNewProject, kShortcutDescActionNewProject,QKeySequence::New);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionOpenProject, kShortcutDescActionOpenProject,QKeySequence::Open);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveProject, kShortcutDescActionSaveProject,QKeySequence::Save);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveAsProject, kShortcutDescActionSaveAsProject,QKeySequence::SaveAs);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseProject, kShortcutDescActionCloseProject,QKeySequence::Close);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionPreferences, kShortcutDescActionPreferences,QKeySequence::Preferences);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionQuit, kShortcutDescActionQuit,QKeySequence::Quit);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionNewProject, kShortcutDescActionNewProject,QKeySequence::New, Qt::ControlModifier, Qt::Key_N);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionOpenProject, kShortcutDescActionOpenProject,QKeySequence::Open, Qt::ControlModifier, Qt::Key_O);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveProject, kShortcutDescActionSaveProject,QKeySequence::Save, Qt::ControlModifier, Qt::Key_S);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveAsProject, kShortcutDescActionSaveAsProject,QKeySequence::SaveAs, Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_S);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseProject, kShortcutDescActionCloseProject,QKeySequence::Close, Qt::ControlModifier, Qt::Key_W);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionPreferences, kShortcutDescActionPreferences,QKeySequence::Preferences, Qt::ShiftModifier, Qt::Key_S);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionQuit, kShortcutDescActionQuit,QKeySequence::Quit, Qt::ControlModifier, Qt::Key_Q);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveAndIncrVersion, kShortcutDescActionSaveAndIncrVersion, Qt::ControlModifier | Qt::ShiftModifier |
                     Qt::AltModifier, Qt::Key_S);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionReloadProject, kShortcutDescActionReloadProject, Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_R);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionExportProject, kShortcutDescActionExportProject, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowAbout, kShortcutDescActionShowAbout, Qt::NoModifier, (Qt::Key)0);
 

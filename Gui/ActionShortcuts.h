@@ -67,6 +67,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionCloseProject "closeProject"
 #define kShortcutDescActionCloseProject "Close Project"
 
+#define kShortcutIDActionReloadProject "reloadProject"
+#define kShortcutDescActionReloadProject "Reload Project"
+
 #define kShortcutIDActionSaveProject "saveProject"
 #define kShortcutDescActionSaveProject "Save Project"
 

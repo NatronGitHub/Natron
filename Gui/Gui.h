@@ -579,6 +579,9 @@ public Q_SLOTS:
 
     ///Close the project instance, asking questions to the user and leaving the main window intact
     void closeProject();
+    
+    //Same as close + open same project to discard unsaved changes
+    void reloadProject();
     void toggleFullScreen();
     void closeEvent(QCloseEvent* e) OVERRIDE;
     void newProject();

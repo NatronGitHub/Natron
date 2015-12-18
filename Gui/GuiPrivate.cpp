@@ -156,6 +156,7 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , actionNew_project(0)
 , actionOpen_project(0)
 , actionClose_project(0)
+, actionReload_project(0)
 , actionSave_project(0)
 , actionSaveAs_project(0)
 , actionExportAsGroup(0)

@@ -107,7 +107,8 @@ struct GuiApplicationManagerPrivate
     void removePluginToolButton(const QStringList& grouping);
 
     void addStandardKeybind(const QString & grouping,const QString & id,
-                            const QString & description,QKeySequence::StandardKey key);
+                            const QString & description,QKeySequence::StandardKey key,
+                            const Qt::KeyboardModifiers & fallbackmodifiers,Qt::Key fallbacksymbol);
 
     void addKeybind(const QString & grouping,const QString & id,
                     const QString & description,
