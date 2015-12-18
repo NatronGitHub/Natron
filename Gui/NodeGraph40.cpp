@@ -233,6 +233,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     
     std::list <boost::shared_ptr<NodeGui> > newNodesList;
     
+    std::map<std::string,std::string> oldNewScriptNameMapping;
     for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         boost::shared_ptr<NodeSerialization>  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
         NodeGuiSerialization guiSerialization;
@@ -244,18 +245,14 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         newNodesList.push_back(clone);
         serializations.push_back(internalSerialization);
         
-        ///The script-name of the copy node is different than the one of the original one, update all input connections in the serialization
-        for (std::list<boost::shared_ptr<NodeSerialization> >::iterator it2 = serializations.begin(); it2!=serializations.end(); ++it2) {
-            (*it2)->switchInput(internalSerialization->getNodeScriptName(), clone->getNode()->getScriptName());
-        }
-        
+        oldNewScriptNameMapping[internalSerialization->getNodeScriptName()] = clone->getNode()->getScriptName();
         
     }
     
     
     assert( serializations.size() == newNodes.size() );
     ///restore connections
-    _imp->restoreConnections(serializations, newNodes);
+    _imp->restoreConnections(serializations, newNodes, oldNewScriptNameMapping);
     
     
     pushUndoCommand( new AddMultipleNodesCommand(this,newNodesList) );

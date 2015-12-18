@@ -245,7 +245,8 @@ public:
      * list. We're not using 2 lists to avoid a copy from the paste function.
      **/
     void restoreConnections(const std::list<boost::shared_ptr<NodeSerialization> > & serializations,
-                            const std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > & newNodes);
+                            const std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > & newNodes,
+                            const std::map<std::string,std::string>& oldNewScriptNamesMap);
 
     void editSelectionFromSelectionRectangle(bool addToSelection);
 

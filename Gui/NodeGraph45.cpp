@@ -653,16 +653,25 @@ NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> 
         NodeClipBoard clipboard;
         _imp->copyNodesInternal(nodes,clipboard);
         
+        std::map<std::string,std::string> oldNewScriptNamesMapping;
         std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it, ++itOther) {
             boost::shared_ptr<NodeGui> node = _imp->pasteNode( **itOther,**it,QPointF(0,0),group,std::string(), false);
-            createdNodes.push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
+            assert(node);
+            if (node) {
+                oldNewScriptNamesMapping[(*itOther)->getNodeScriptName()] = node->getNode()->getScriptName();
+                createdNodes.push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
+            }
+            
         }
         assert( clipboard.nodes.size() == createdNodes.size() );
+        if (clipboard.nodes.size() != createdNodes.size()) {
+            return;
+        }
         
         ///Now that all nodes have been duplicated, try to restore nodes connections
-        _imp->restoreConnections(clipboard.nodes, createdNodes);
+        _imp->restoreConnections(clipboard.nodes, createdNodes, oldNewScriptNamesMapping);
     }
     
     getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
