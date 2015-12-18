@@ -615,6 +615,10 @@ UserParamHolder::createGroupParam(const std::string& name, const std::string& la
 PageParam*
 UserParamHolder::createPageParam(const std::string& name, const std::string& label)
 {
+    if (!_holder) {
+        assert(false);
+        return 0;
+    }
     boost::shared_ptr<KnobPage> knob = _holder->createPageKnob(name, label);
     if (knob) {
         return new PageParam(knob);

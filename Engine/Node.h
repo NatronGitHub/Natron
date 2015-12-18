@@ -1101,7 +1101,7 @@ private:
     
     bool refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
     
-    void setNameInternal(const std::string& name, bool throwErrors);
+    void setNameInternal(const std::string& name, bool throwErrors, bool declareToPython);
     
     std::string getFullyQualifiedNameInternal(const std::string& scriptName) const;
     

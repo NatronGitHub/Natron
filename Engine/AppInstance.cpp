@@ -697,6 +697,7 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
             try {
                 group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
                 containerNode->setScriptName(containerName);
+                containerNode->setLabel(containerName);
             } catch (...) {
                 
             }

@@ -625,7 +625,35 @@ Node::load(const std::string & parentMultiInstanceName,
     bool isFileDialogPreviewReader = fixedName.contains(NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
     
     bool nameSet = false;
-   
+    
+    if (!serialization.isNull()) {
+        {
+            QMutexLocker k(&_imp->nameMutex);
+            _imp->cacheID = serialization.getCacheID();
+        }
+        if (!dontLoadName && !nameSet && fixedName.isEmpty()) {
+            const std::string& baseName = serialization.getNodeScriptName();
+            std::string name = baseName;
+            int no = 1;
+            do {
+                
+                if (no > 1) {
+                    std::stringstream ss;
+                    ss << baseName;
+                    ss << '_';
+                    ss << no;
+                    name = ss.str();
+                }
+                ++no;
+            } while(getGroup() && getGroup()->checkIfNodeNameExists(name, this));
+            
+            //This version of setScriptName will not error if the name is invalid or already taken
+            //and will not declare to python the node (because liveInstance is not instanced yet)
+            setScriptName_no_error_check(name);
+            setLabel(serialization.getNodeLabel());
+            nameSet = true;
+        }
+    }
 
     bool hasUsedFileDialog = false;
     if (func.first) {
@@ -681,32 +709,7 @@ Node::load(const std::string & parentMultiInstanceName,
     if (isTrackerNode()) {
         _imp->isMultiInstance = true;
     }
-    
-    if (!serialization.isNull()) {
-        {
-            QMutexLocker k(&_imp->nameMutex);
-            _imp->cacheID = serialization.getCacheID();
-        }
-        if (!dontLoadName && !nameSet && fixedName.isEmpty()) {
-            const std::string& baseName = serialization.getNodeScriptName();
-            std::string name = baseName;
-            int no = 1;
-            do {
-                
-                if (no > 1) {
-                    std::stringstream ss;
-                    ss << baseName;
-                    ss << '_';
-                    ss << no;
-                    name = ss.str();
-                }
-                ++no;
-            } while(getGroup() && getGroup()->checkIfNodeNameExists(name, this));
-            setScriptName_no_error_check(name);
-            setLabel(serialization.getNodeLabel());
-            nameSet = true;
-        }
-    }
+   
     
     if (!nameSet) {
         if (fixedName.isEmpty()) {
@@ -726,7 +729,7 @@ Node::load(const std::string & parentMultiInstanceName,
             } catch (...) {
                 
             }
-            setNameInternal(name.c_str(), false);
+            setNameInternal(name.c_str(), false, true);
             nameSet = true;
         } else {
             try {
@@ -738,6 +741,10 @@ Node::load(const std::string & parentMultiInstanceName,
         if (!isMultiInstanceChild && _imp->isMultiInstance) {
             updateEffectLabelKnob( getScriptName().c_str() );
         }
+    } else { //nameSet
+        //We have to declare the node to Python now since we didn't declare it before
+        //with setScriptName_no_error_check
+        declareNodeVariableToPython(getFullyQualifiedName());
     }
     if ( isMultiInstanceChild && serialization.isNull() ) {
         assert(nameSet);
@@ -2352,12 +2359,12 @@ Node::getLabel_mt_safe() const
 void
 Node::setScriptName_no_error_check(const std::string & name)
 {
-    setNameInternal(name, false);
+    setNameInternal(name, false, false);
 }
 
 
 void
-Node::setNameInternal(const std::string& name, bool throwErrors)
+Node::setNameInternal(const std::string& name, bool throwErrors, bool declareToPython)
 {
     std::string oldName = getScriptName_mt_safe();
     std::string fullOldName = getFullyQualifiedName();
@@ -2432,7 +2439,7 @@ Node::setNameInternal(const std::string& name, bool throwErrors)
         _imp->cacheID = cacheID;
     }
     
-    if (collection) {
+    if (declareToPython && collection) {
         if (!oldName.empty()) {
             if (fullOldName != fullySpecifiedName) {
                 try {
@@ -2467,7 +2474,7 @@ Node::setScriptName(const std::string& name)
     }
     
     
-    setNameInternal(newName, true);
+    setNameInternal(newName, true, true);
 }
 
 
