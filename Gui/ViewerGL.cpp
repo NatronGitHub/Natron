@@ -324,6 +324,7 @@ ViewerGL::paintGL()
         if ( (activeInputs[0] == activeInputs[1]) && (compOp != eViewerCompositingOperatorMinus) ) {
             drawTexture[1] = false;
         }
+                
         double wipeMix;
         {
             QMutexLocker l(&_imp->wipeControlsMutex);
@@ -353,7 +354,7 @@ ViewerGL::paintGL()
 
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
@@ -364,7 +365,7 @@ ViewerGL::paintGL()
             } else if (compOp == eViewerCompositingOperatorMinus) {
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
@@ -376,7 +377,7 @@ ViewerGL::paintGL()
             } else if (compOp == eViewerCompositingOperatorUnder) {
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
