@@ -147,7 +147,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     assert(gui);
 
     std::string name;
-    if (grp == group.lock() && internalSerialization.getNode()->getGroup() == group.lock()) {
+    if (grp == group.lock() && (!internalSerialization.getNode() || internalSerialization.getNode()->getGroup() == group.lock())) {
         //We pasted the node in the same group, give it another label
         int no = 1;
         std::string label = internalSerialization.getNodeLabel();
@@ -193,6 +193,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     gui->forceComputePreview( _publicInterface->getGui()->getApp()->getProject()->currentFrame() );
 
     if (clone) {
+        assert(internalSerialization.getNode());
         DotGui* isDot = dynamic_cast<DotGui*>( gui.get() );
         ///Dots cannot be cloned, just copy them
         if (!isDot) {
@@ -201,8 +202,6 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     }
 
     ///Recurse if this is a group or multi-instance
-    NodePtr serializedNode = internalSerialization.getNode();
-    assert(serializedNode);
     boost::shared_ptr<NodeGroup> isGrp =
     boost::dynamic_pointer_cast<NodeGroup>(n->getLiveInstance()->shared_from_this());
 
