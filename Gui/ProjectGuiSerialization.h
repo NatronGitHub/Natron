@@ -63,7 +63,8 @@ GCC_DIAG_ON(unused-parameter)
 #define VIEWER_DATA_INTRODUCES_FPS_LOCK 8
 #define VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK 9
 #define VIEWER_DATA_INTRODUCES_GAMMA 10
-#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_GAMMA
+#define VIEWER_DATA_INTRODUCES_ACTIVE_INPUTS 11
+#define VIEWER_DATA_SERIALIZATION_VERSION VIEWER_DATA_INTRODUCES_ACTIVE_INPUTS
 
 #define PROJECT_GUI_INTRODUCES_BACKDROPS 2
 #define PROJECT_GUI_REMOVES_ALL_NODE_PREVIEW_TOGGLED 3
@@ -123,6 +124,8 @@ struct ViewerData
     bool fpsLocked;
     
     int leftBound,rightBound;
+    
+    int aChoice,bChoice;
     
     unsigned int version;
     
@@ -206,6 +209,15 @@ struct ViewerData
         } else {
             fpsLocked = true;
         }
+        
+        if (version >= VIEWER_DATA_INTRODUCES_ACTIVE_INPUTS) {
+            ar & boost::serialization::make_nvp("aInput",aChoice);
+            ar & boost::serialization::make_nvp("bInput",bChoice);
+        } else {
+            aChoice = -1;
+            bChoice = -1;
+        }
+        
     }
 };
 

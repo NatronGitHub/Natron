@@ -271,6 +271,8 @@ public:
     void onMousePressCalledInViewer();
     
     void updateViewsMenu(const std::vector<std::string>& viewNames);
+    
+    void getActiveInputs(int* a, int* b) const;
 
 public Q_SLOTS:
 

@@ -867,6 +867,13 @@ ViewerTab::setInputB(int index)
 }
 
 void
+ViewerTab::getActiveInputs(int* a, int* b) const
+{
+    _imp->viewerNode->getActiveInputs(*a, *b);
+}
+
+
+void
 ViewerTab::switchInputAAndB()
 {
     QString aIndex = _imp->firstInputImage->getCurrentIndexText();

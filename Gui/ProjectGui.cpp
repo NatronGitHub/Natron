@@ -406,6 +406,12 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
                 tab->setInfobarVisible(found->second.infobarVisible);
                 tab->setTimelineVisible(found->second.timelineVisible);
                 tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
+                if (found->second.aChoice >= 0) {
+                    tab->setInputA(found->second.aChoice);
+                }
+                if (found->second.bChoice >= 0) {
+                    tab->setInputB(found->second.bChoice);
+                }
                 if (found->second.version >= VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
                     tab->setFrameRange(found->second.leftBound, found->second.rightBound);
                     tab->setFrameRangeEdited(leftBound != found->second.leftBound || rightBound != found->second.rightBound);
