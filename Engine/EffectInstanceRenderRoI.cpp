@@ -1032,7 +1032,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         for (int i = 0; i < maxInput; ++i) {
             bool isMask = isInputMask(i) || isInputRotoBrush(i);
             RectD inputRod;
-            if ((attachedStroke && isMask)) {
+            if (attachedStroke && isMask) {
                 getNode()->getPaintStrokeRoD(args.time, &inputRod);
                 hasMask = true;
             } else {
@@ -1428,7 +1428,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 # ifdef DEBUG
 
-            {
+            /*{
                 const std::list<RectToRender>& rectsToRender = planesToRender.rectsToRender;
                 qDebug() <<'('<<QThread::currentThread()<<")--> "<< getNode()->getScriptName_mt_safe().c_str() << ": render view: " << args.view << ", time: " << args.time << " No. tiles: " << rectsToRender.size() << " rectangles";
                 for (std::list<RectToRender>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
@@ -1439,7 +1439,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 }
                 qDebug() << "Cached:" << (isPlaneCached.get() != 0) << "Rendered elsewhere:" << planesToRender.isBeingRenderedElsewhere;
 
-               }
+               }*/
 # endif
             renderRetCode = renderRoIInternal(args.time,
                                               frameRenderArgs,

@@ -3942,6 +3942,9 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
         return mergeNode;
     }
     mergeNode->setUseAlpha0ToConvertFromRGBToRGBA(true);
+    if (getNode()->isDuringPaintStrokeCreation()) {
+        mergeNode->setWhileCreatingPaintStroke(true);
+    }
     *availableInputIndex = 1;
     
     QMutexLocker k(&_imp->rotoContextMutex);

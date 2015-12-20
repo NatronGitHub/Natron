@@ -206,7 +206,15 @@ RotoPaint::getPreferredDepthAndComponents(int inputNb,std::list<Natron::ImageCom
 {
 
     if (inputNb != ROTOPAINT_MASK_INPUT_INDEX) {
-        comp->push_back(ImageComponents::getRGBAComponents());
+        Natron::EffectInstance* input = getInput(inputNb);
+        if (input) {
+            std::list<Natron::ImageComponents> ic;
+            Natron::ImageBitDepthEnum id;
+            input->getPreferredDepthAndComponents(-1, &ic, &id);
+            *comp = ic;
+        } else {
+            comp->push_back(ImageComponents::getRGBAComponents());
+        }
     } else {
         comp->push_back(ImageComponents::getAlphaComponents());
     }

@@ -2024,8 +2024,18 @@ EffectInstance::renderHandler(RenderArgs & args,
 
     if (identity) {
         std::list<Natron::ImageComponents> comps;
+        
         for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
-            comps.push_back( it->second.renderMappedImage->getComponents() );
+            //If color plane, request the preferred comp of the identity input
+            if (identityInput && it->second.renderMappedImage->getComponents().isColorPlane()) {
+                std::list<ImageComponents> prefInputComps;
+                ImageBitDepthEnum prefInputDepth;
+                identityInput->getPreferredDepthAndComponents(-1, &prefInputComps, &prefInputDepth);
+                assert(!prefInputComps.empty());
+                comps.push_back(prefInputComps.front());
+            } else {
+                comps.push_back( it->second.renderMappedImage->getComponents() );
+            }
         }
         assert( !comps.empty() );
         ImageList identityPlanes;
