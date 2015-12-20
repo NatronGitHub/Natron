@@ -417,6 +417,8 @@ public:
     
     virtual RectD getLastPaintStrokeBbox() const { return RectD(); }
     
+    virtual RectD getPaintStrokeWholeBbox() const { return RectD(); }
+    
 public Q_SLOTS:
     
     void quit();

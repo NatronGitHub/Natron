@@ -939,9 +939,7 @@ Node::invalidateLastPaintStrokeDataNoRotopaint()
 RectD
 Node::getPaintStrokeRoD_duringPainting() const
 {
-    RotoStrokeItem* item = dynamic_cast<RotoStrokeItem*>(_imp->paintStroke.lock().get());
-    assert(item);
-    return item->getWholeStrokeRoDWhilePainting();
+    return getApp()->getPaintStrokeWholeBbox();
 }
 
 void

@@ -4222,10 +4222,6 @@ EffectInstance::abortAnyEvaluation()
         }
     }
     for (std::list<Natron::OutputEffectInstance*>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
-        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(*it);
-        if (isViewer) {
-            isViewer->markAllOnRendersAsAborted();
-        }
         (*it)->getRenderEngine()->abortRendering(true,false);
     }
 }

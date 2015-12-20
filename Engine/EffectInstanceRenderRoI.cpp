@@ -682,10 +682,17 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             upscaledImageBoundsNc.intersect(roi, &upscaledImageBoundsNc);
             downscaledImageBoundsNc.intersect(args.roi, &downscaledImageBoundsNc);
 #endif
-        } else {
-            roi = renderFullScaleThenDownscale ? upscaledImageBoundsNc : downscaledImageBoundsNc;
         }
     }
+    
+    /*
+     * Keep in memory what the user as requested, and change the roi to the full bounds if the effect doesn't support tiles
+     */
+    const RectI originalRoI = roi;
+    if (!frameRenderArgs.tilesSupported) {
+        roi = renderFullScaleThenDownscale ? upscaledImageBoundsNc : downscaledImageBoundsNc;
+    }
+    
     const RectI & downscaledImageBounds = downscaledImageBoundsNc;
     const RectI & upscaledImageBounds = upscaledImageBoundsNc;
     RectD canonicalRoI;
@@ -1025,7 +1032,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         for (int i = 0; i < maxInput; ++i) {
             bool isMask = isInputMask(i) || isInputRotoBrush(i);
             RectD inputRod;
-            if (attachedStroke && isMask) {
+            if ((attachedStroke && isMask)) {
                 getNode()->getPaintStrokeRoD(args.time, &inputRod);
                 hasMask = true;
             } else {
@@ -1421,7 +1428,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 # ifdef DEBUG
 
-            /*{
+            {
                 const std::list<RectToRender>& rectsToRender = planesToRender.rectsToRender;
                 qDebug() <<'('<<QThread::currentThread()<<")--> "<< getNode()->getScriptName_mt_safe().c_str() << ": render view: " << args.view << ", time: " << args.time << " No. tiles: " << rectsToRender.size() << " rectangles";
                 for (std::list<RectToRender>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
@@ -1432,7 +1439,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 }
                 qDebug() << "Cached:" << (isPlaneCached.get() != 0) << "Rendered elsewhere:" << planesToRender.isBeingRenderedElsewhere;
 
-               }*/
+               }
 # endif
             renderRetCode = renderRoIInternal(args.time,
                                               frameRenderArgs,
@@ -1571,11 +1578,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                            false) );
             }
 
-            it->second.fullscaleImage->downscaleMipMap( it->second.fullscaleImage->getRoD(), roi, 0, args.mipMapLevel, false, it->second.downscaleImage.get() );
+            it->second.fullscaleImage->downscaleMipMap( it->second.fullscaleImage->getRoD(), originalRoI, 0, args.mipMapLevel, false, it->second.downscaleImage.get() );
         }
         
         ///The image might need to be converted to fit the original requested format
-        it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), false, it->second.downscaleImage, roi, it->first, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender.outputPremult, -1);
+        it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), false, it->second.downscaleImage, originalRoI, it->first, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender.outputPremult, -1);
         
         assert(it->second.downscaleImage->getComponents() == it->first && it->second.downscaleImage->getBitDepth() == args.bitdepth);
         outputPlanes->push_back(it->second.downscaleImage);

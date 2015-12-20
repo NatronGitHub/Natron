@@ -42,6 +42,7 @@
 #include "Engine/Settings.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
+#include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Global/QtCompat.h"
@@ -1357,4 +1358,14 @@ GuiAppInstance::getLastPaintStrokeBbox() const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
     return _imp->rotoData.lastStrokeMovementBbox;
+}
+
+RectD
+GuiAppInstance::getPaintStrokeWholeBbox() const
+{
+    QMutexLocker k(&_imp->rotoDataMutex);
+    if (!_imp->rotoData.stroke) {
+        return RectD();
+    }
+    return _imp->rotoData.stroke->getWholeStrokeRoDWhilePainting();
 }

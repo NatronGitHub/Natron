@@ -236,6 +236,8 @@ public:
 
     virtual RectD getLastPaintStrokeBbox() const OVERRIDE FINAL;
     
+    virtual RectD getPaintStrokeWholeBbox() const OVERRIDE FINAL;
+    
     virtual void setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopaintNode,
                                    const boost::shared_ptr<RotoStrokeItem>& stroke,
                                    bool isPainting) OVERRIDE FINAL;
