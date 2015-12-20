@@ -301,8 +301,10 @@ inform the user of various informations, warnings or errors.
 	:param filename: :class:`str<NatronEngine.std::string>`
 	:rtype: :class:`App<NatronEngine.App>`
 	
-	Loads the project indicated by *filename* in a new :ref:`App<NatronEngine.App>`.
+	Loads the project indicated by *filename*.
 	In GUI mode, this will open a new window only if the current window has modifications.
+	In background mode this will close the current project of this :ref:`App<NatronEngine.App>`
+	and open the project indicated by *filename* in it.
 	This function returns the :ref:`App<NatronEngine.App>` object upon success, *None* otherwise.
 	
 	

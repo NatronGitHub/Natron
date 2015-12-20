@@ -177,22 +177,15 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         
         
         /// 3) Restore the nodes
-        
-        bool hasProjectAWriter = false;
-        
+                
         std::map<std::string,bool> processedModules;
         ok = NodeCollectionSerialization::restoreFromSerialization(obj.getNodesSerialization().getNodesSerialization(),
-                                                                        _publicInterface->shared_from_this(),true, &processedModules, &hasProjectAWriter);
+                                                                        _publicInterface->shared_from_this(),true, &processedModules);
         for (std::map<std::string,bool>::iterator it = processedModules.begin(); it!=processedModules.end(); ++it) {
             if (it->second) {
                 *mustSave = true;
                 break;
             }
-        }
-        
-        if ( !hasProjectAWriter && appPTR->isBackground() ) {
-            _publicInterface->clearNodes(true);
-            throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
         }
         
         

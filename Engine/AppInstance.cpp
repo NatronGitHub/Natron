@@ -1250,6 +1250,11 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
         }
     }
     
+    
+    if (renderers.empty()) {
+        throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
+    }
+    
     startWritersRendering(enableRenderStats, doBlockingRender, renderers);
 }
 
@@ -1555,16 +1560,16 @@ AppInstance::loadProject(const std::string& filename)
     QString fileUnPathed = file.fileName();
     QString path = file.path() + "/";
     
-    CLArgs cl;
-    AppInstance* app = appPTR->newAppInstance(cl);
-    
-    bool ok  = app->getProject()->loadProject( path, fileUnPathed);
+    //We are in background mode, there can only be 1 instance active, wipe the current project
+    boost::shared_ptr<Project> project = getProject();
+    project->resetProject();
+ 
+    bool ok  = project->loadProject( path, fileUnPathed);
     if (ok) {
-        return app;
+        return this;
     }
     
-    app->getProject()->closeProject(true);
-    app->quit();
+    project->resetProject();
     
     return 0;
 }
