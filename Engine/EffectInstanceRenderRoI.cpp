@@ -251,14 +251,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         frameRenderArgs.view = args.view;
         frameRenderArgs.isSequentialRender = false;
         frameRenderArgs.isRenderResponseToUserInteraction = true;
-        frameRenderArgs.validArgs = true;
+        frameRenderArgs.validArgs = 0;
     } else {
         //The hash must not have changed if we did a pre-pass.
         assert(!frameRenderArgs.request || frameRenderArgs.nodeHash == frameRenderArgs.request->nodeHash);
     }
 
-    ///The args must have been set calling setParallelRenderArgs
-    assert(frameRenderArgs.validArgs);
 
     ///For writer we never want to cache otherwise the next time we want to render it will skip writing the image on disk!
     bool byPassCache = args.byPassCache;
