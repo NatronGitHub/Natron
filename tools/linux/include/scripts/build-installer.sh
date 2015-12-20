@@ -381,8 +381,8 @@ tar xvf $SRC_PATH/strings$BIT.tgz -C $CLIBS_PATH/data/bin/ || exit 1
     done;
   )
 )
-patchelf --set-rpath "\$ORIGIN/Plugins/IO.ofx.bundle/Libraries" $OFX_IO_PATH/data/ffmpeg || exit 1
-patchelf --set-rpath "\$ORIGIN/Plugins/IO.ofx.bundle/Libraries" $OFX_IO_PATH/data/ffprobe || exit 1
+patchelf --set-rpath "\$ORIGIN/Plugins/OFX/Natron/IO.ofx.bundle/Libraries" $OFX_IO_PATH/data/ffmpeg || exit 1
+patchelf --set-rpath "\$ORIGIN/Plugins/OFX/Natron/IO.ofx.bundle/Libraries" $OFX_IO_PATH/data/ffprobe || exit 1
 
 # OFX ARENA
 OFX_ARENA_VERSION=$TAG
