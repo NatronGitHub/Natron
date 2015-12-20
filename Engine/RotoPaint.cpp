@@ -501,8 +501,18 @@ RotoPaint::render(const RenderActionArgs& args)
                     plane->second->fillZero(bRect);
                     plane->second->fillZero(cRect);
                     plane->second->fillZero(dRect);
-
-                    plane->second->pasteFrom(*bgImg, args.roi, false);
+                    
+                    if (bgImg->getComponents() != plane->second->getComponents()) {
+                        RectI intersection;
+                        args.roi.intersect(bgImg->getBounds(), &intersection);
+                        bgImg->convertToFormat(intersection,
+                                               getApp()->getDefaultColorSpaceForBitDepth((*rotoImagesIt)->getBitDepth()),
+                                               getApp()->getDefaultColorSpaceForBitDepth(plane->second->getBitDepth()), 3
+                                               , false, false, plane->second.get());
+                    } else {
+                        plane->second->pasteFrom(*bgImg, args.roi, false);
+                    }
+                    
                 } else {
                     plane->second->fillZero(args.roi);
                 }
