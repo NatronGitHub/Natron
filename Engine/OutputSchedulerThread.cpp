@@ -882,6 +882,12 @@ OutputSchedulerThread::stopRender()
     _imp->timer->playState = ePlayStatePause;
     
     ///Wait for all render threads to be done
+    ///Clear the work queue
+    {
+        QMutexLocker framesLocker (&_imp->framesToRenderMutex);
+        _imp->framesToRender.clear();
+    }
+
     {
         QMutexLocker l(&_imp->renderThreadsMutex);
         
@@ -949,11 +955,6 @@ OutputSchedulerThread::stopRender()
             _imp->abortedRequestedCondition.wakeAll();
         }
         
-        ///Clear the work queue
-        {
-            QMutexLocker framesLocker (&_imp->framesToRenderMutex);
-            _imp->framesToRender.clear();
-        }
         
         {
             QMutexLocker k(&_imp->bufMutex);
