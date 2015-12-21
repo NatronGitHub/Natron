@@ -330,5 +330,6 @@
         <file>Resources/PyPlugs/DropShadow.py</file>
         <file>Resources/PyPlugs/LightWrap.py</file>
         <file>Resources/PyPlugs/ZRemap.py</file>
+        <file>Resources/PyPlugs/ZMask.py</file>
     </qresource>
 </RCC>
