@@ -271,7 +271,9 @@ FileSystemItem::addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFi
         std::string pattern = sequence->generateValidSequencePattern();
         SequenceParsing::removePath(pattern);
         filename = pattern.c_str();
-        pattern = sequence->generateUserFriendlySequencePatternFromValidPattern(pattern);
+        if (!sequence->isSingleFile()) {
+            pattern = sequence->generateUserFriendlySequencePatternFromValidPattern(pattern);
+        }
         userFriendlyFilename = pattern.c_str();
     }
     
