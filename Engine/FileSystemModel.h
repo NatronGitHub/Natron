@@ -52,6 +52,7 @@ public:
     
     FileSystemItem(bool isDir,
                    const QString& filename,
+                   const QString& userFriendlySequenceName,
                    const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
                    const QDateTime& dateModified,
                    quint64 size,
@@ -83,6 +84,8 @@ public:
      * If this is a directory this function returns an empty string.
      **/
     const QString& fileName() const;
+    
+    const QString& getUserFriendlyFilename() const;
     
     const QString& fileExtension() const;
     

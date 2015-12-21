@@ -1213,7 +1213,7 @@ SequenceItemDelegate::paint(QPainter * painter,
         return QStyledItemDelegate::paint(painter,option,index);
     }
     
-    QString filename = item->fileName();
+    QString filename = item->getUserFriendlyFilename();
     //QFont f(appFont,appFontSize);
     //painter->setFont(f);
     if (option.state & QStyle::State_Selected) {

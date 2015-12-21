@@ -102,6 +102,7 @@ struct FileSystemItemPrivate
 
     bool isDir;
     QString filename;
+    QString userFriendlySequenceName;
     
     ///This will be set when the file system model is in sequence mode and this is a file
     boost::shared_ptr<SequenceParsing::SequenceFromFiles> sequence;
@@ -111,13 +112,14 @@ struct FileSystemItemPrivate
     QString fileExtension;
     QString absoluteFilePath;
     
-    FileSystemItemPrivate(bool isDir,const QString& filename,const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+    FileSystemItemPrivate(bool isDir,const QString& filename,const QString& userFriendlySequenceName,const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
                           const QDateTime& dateModified,quint64 size,FileSystemItem* parent)
     : parent(parent)
     , children()
     , childrenMutex()
     , isDir(isDir)
     , filename(filename)
+    , userFriendlySequenceName(userFriendlySequenceName)
     , sequence(sequence)
     , dateModified(dateModified)
     , size(size)
@@ -149,11 +151,12 @@ struct FileSystemItemPrivate
 
 FileSystemItem::FileSystemItem(bool isDir,
                                const QString& filename,
+                               const QString& userFriendlySequenceName,
                                const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
                                const QDateTime& dateModified,
                                quint64 size,
                                FileSystemItem* parent)
-: _imp(new FileSystemItemPrivate(isDir,filename,sequence,dateModified,size,parent))
+: _imp(new FileSystemItemPrivate(isDir,filename,userFriendlySequenceName, sequence,dateModified,size,parent))
 {
     
 }
@@ -214,6 +217,12 @@ FileSystemItem::fileName() const
     return _imp->filename;
 }
 
+const QString&
+FileSystemItem::getUserFriendlyFilename() const
+{
+    return _imp->userFriendlySequenceName;
+}
+
 boost::shared_ptr<SequenceParsing::SequenceFromFiles>
 FileSystemItem::getSequence() const
 {
@@ -252,7 +261,20 @@ FileSystemItem::addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFi
 {
     QMutexLocker l(&_imp->childrenMutex);
     ///Does the child exist already ?
-    QString filename = sequence ? sequence->generateUserFriendlySequencePattern().c_str() : info.fileName();
+    
+    QString filename;
+    QString userFriendlyFilename;
+    if (!sequence) {
+        filename = info.fileName();
+        userFriendlyFilename = filename;
+    } else {
+        std::string pattern = sequence->generateValidSequencePattern();
+        SequenceParsing::removePath(pattern);
+        filename = pattern.c_str();
+        pattern = sequence->generateUserFriendlySequencePatternFromValidPattern(pattern);
+        userFriendlyFilename = pattern.c_str();
+    }
+    
     
     for (std::vector<boost::shared_ptr<FileSystemItem> >::iterator it = _imp->children.begin(); it!=_imp->children.end();++it) {
         if ((*it)->fileName() == filename) {
@@ -274,6 +296,7 @@ FileSystemItem::addChild(const boost::shared_ptr<SequenceParsing::SequenceFromFi
     ///Create the child
     boost::shared_ptr<FileSystemItem> child( new FileSystemItem(isDir,
                                                                 filename,
+                                                                userFriendlyFilename,
                                                                 sequence,
                                                                 info.lastModified(),
                                                                 size,
@@ -386,7 +409,7 @@ FileSystemModel::FileSystemModel(SortableViewI* view)
     
     _imp->headers << tr("Name") << tr("Size") << tr("Type") << tr("Date Modified");
     
-    _imp->rootItem.reset(new FileSystemItem(true,QString(),boost::shared_ptr<SequenceParsing::SequenceFromFiles>(),QDateTime(),0));
+    _imp->rootItem.reset(new FileSystemItem(true,QString(),QString(),boost::shared_ptr<SequenceParsing::SequenceFromFiles>(),QDateTime(),0));
     
     _imp->watcher = new QFileSystemWatcher;
     QObject::connect(_imp->watcher, SIGNAL(directoryChanged(QString)), this, SLOT(onWatchedDirectoryChanged(QString)));
@@ -408,6 +431,7 @@ FileSystemModel::FileSystemModel(SortableViewI* view)
         
         boost::shared_ptr<FileSystemItem> child(new FileSystemItem(true, //isDir
                                                                    driveName, //drives have canonical path
+                                                                   driveName,
                                                                    boost::shared_ptr<SequenceParsing::SequenceFromFiles>(),
                                                                    drives[i].lastModified(),
                                                                    drives[i].size(),
@@ -839,6 +863,7 @@ static boost::shared_ptr<FileSystemItem> mkPathInternal(FileSystemItem* item,con
         QFileInfo info(generateChildAbsoluteName(item, path[index]));
         ///The child doesn't exist already, create it without populating it
         child.reset(new FileSystemItem(true, //isDir
+                                       path[index], //name
                                        path[index], //name
                                        boost::shared_ptr<SequenceParsing::SequenceFromFiles>(),
                                        info.lastModified(),
