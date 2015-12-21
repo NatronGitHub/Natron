@@ -372,11 +372,13 @@ CLArgs::getImageFilename() const
             if (!it->startsWith("-")) {
                 QString fileCopy = *it;
                 QString ext = Natron::removeFileExtension(fileCopy);
-                std::string readerId = appPTR->isImageFileSupportedByNatron(ext.toStdString());
-                if (!readerId.empty()) {
-                    _imp->imageFilename = *it;
-                    _imp->args.erase(it);
-                    break;
+                if (!ext.isEmpty()) {
+                    std::string readerId = appPTR->isImageFileSupportedByNatron(ext.toStdString());
+                    if (!readerId.empty()) {
+                        _imp->imageFilename = *it;
+                        _imp->args.erase(it);
+                        break;
+                    }
                 }
             }
         }
