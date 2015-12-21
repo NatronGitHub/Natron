@@ -1345,7 +1345,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
     if (stats) {
         _imp->outputEffect->updateRenderTimeInfos(timeSpent, &avgTimeSpent, &totalTimeSpent);
         if (percentage != 0) {
-            timeRemaining = avgTimeSpent * (1 - percentage) / percentage;
+            timeRemaining = totalTimeSpent * (1 - percentage) / percentage;
         } else {
             //Unknown yet
             timeRemaining = -1;
