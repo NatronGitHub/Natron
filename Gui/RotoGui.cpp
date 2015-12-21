@@ -2235,7 +2235,7 @@ void
 RotoGui::RotoGuiPrivate::computeSelectedCpsBBOX()
 {
     boost::shared_ptr<Natron::Node> n = node->getNode();
-    if (n && !n->isActivated()) {
+    if ((n && !n->isActivated()) || !viewer) {
         return;
     }
     double time = context->getTimelineCurrentTime();
