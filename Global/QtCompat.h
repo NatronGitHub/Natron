@@ -52,6 +52,8 @@ removeRecursively(const QString & dirName)
 
 #include <QtCore/QString>
 #include <QtCore/QUrl>
+#include <QtCore/QFileInfo>
+//#include <QtCore/QDebug>
 
 namespace Natron {
 /*Removes the . and the extension from the filename and also
@@ -59,15 +61,13 @@ namespace Natron {
 inline QString
 removeFileExtension(QString & filename)
 {
-    int i = filename.size() - 1;
-    QString extension;
-
-    while ( i >= 0 && filename.at(i) != QChar('.') ) {
-        extension.prepend( filename.at(i) );
-        --i;
+    //qDebug() << "remove file ext from" << filename;
+    QFileInfo fi(filename);
+    QString extension = fi.suffix();
+    if (!extension.isEmpty()) {
+        filename.truncate(filename.size() - extension.size() - 1);
     }
-    filename = filename.left(i);
-
+    //qDebug() << "->" << filename << fi.suffix();
     return extension;
 }
 
