@@ -83,8 +83,8 @@ Plugin::getLabelVersionMajorMinorEncoded() const
 QString
 Plugin::makeLabelWithoutSuffix(const QString& label)
 {
-    if (label.endsWith("OIIOOFX")) {
-        return label.mid(0,label.size() - 7);
+    if (label.startsWith("Read") || label.startsWith("Write")) {
+        return label;
     } else if (label.endsWith("OFX")) {
         return label.mid(0,label.size() - 3);
     } else if (label.endsWith("CImg")) {
