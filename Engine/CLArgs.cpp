@@ -363,16 +363,21 @@ CLArgs::getScriptFilename() const
 const QString&
 CLArgs::getImageFilename() const
 {
-    if (_imp->imageFilename.isEmpty()) {
+    if (_imp->imageFilename.isEmpty() && !_imp->args.empty()) {
         ///Check for image file passed to command line
-        for (QStringList::iterator it = _imp->args.begin(); it!=_imp->args.end(); ++it) {
-            QString fileCopy = *it;
-            QString ext = Natron::removeFileExtension(fileCopy);
-            std::string readerId = appPTR->isImageFileSupportedByNatron(ext.toStdString());
-            if (!readerId.empty()) {
-                _imp->imageFilename = *it;
-                _imp->args.erase(it);
-                break;
+        QStringList::iterator it = _imp->args.begin();
+        // first argument is the program name, skip it
+        ++it;
+        for (; it!=_imp->args.end(); ++it) {
+            if (!it->startsWith("-")) {
+                QString fileCopy = *it;
+                QString ext = Natron::removeFileExtension(fileCopy);
+                std::string readerId = appPTR->isImageFileSupportedByNatron(ext.toStdString());
+                if (!readerId.empty()) {
+                    _imp->imageFilename = *it;
+                    _imp->args.erase(it);
+                    break;
+                }
             }
         }
     }
