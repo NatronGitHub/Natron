@@ -1072,10 +1072,17 @@ public:
     
     int getFrameStepKnobValue() const;
     
-    void computeHashInternal(std::list<Natron::Node*>& marked);
-
+    
     
 private:
+    
+    void computeHashRecursive(std::list<Natron::Node*>& marked);
+    
+    /**
+     * @brief Refreshes the node hash depending on its context (knobs age, inputs etc...)
+     * @return True if the hash has changed, false otherwise
+     **/
+    bool computeHashInternal() WARN_UNUSED_RETURN;
     
     void refreshEnabledKnobsLabel(const Natron::ImageComponents& layer);
     

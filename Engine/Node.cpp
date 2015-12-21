@@ -770,7 +770,10 @@ Node::load(const std::string & parentMultiInstanceName,
         _imp->useAlpha0ToConvertFromRGBToRGBA = true;
     }
     
-    computeHash();
+    if (serialization.isNull()) {
+        computeHash();
+    }
+    
     assert(_imp->liveInstance);
     
     _imp->pluginSafety = _imp->liveInstance->renderThreadSafety();
@@ -1160,15 +1163,11 @@ Node::getCacheID() const
     return _imp->cacheID;
 }
 
-
-void
-Node::computeHashInternal(std::list<Natron::Node*>& marked)
+bool
+Node::computeHashInternal()
 {
-    if (std::find(marked.begin(), marked.end(), this) != marked.end()) {
-        return;
-    }
     if (!_imp->liveInstance) {
-        return;
+        return false;
     }
     ///Always called in the main thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -1229,11 +1228,11 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         // have their own age. Instead each action in the Rotocontext is followed by a incrementNodesAge() call so that each
         // node respecitively have their hash correctly set.
         
-//        boost::shared_ptr<RotoContext> roto = attachedStroke ? attachedStroke->getContext() : getRotoContext();
-//        if (roto) {
-//            U64 rotoAge = roto->getAge();
-//            _imp->hash.append(rotoAge);
-//        }
+        //        boost::shared_ptr<RotoContext> roto = attachedStroke ? attachedStroke->getContext() : getRotoContext();
+        //        if (roto) {
+        //            U64 rotoAge = roto->getAge();
+        //            _imp->hash.append(rotoAge);
+        //        }
         
         ///Also append the effect's label to distinguish 2 instances with the same parameters
         ::Hash64_appendQString( &_imp->hash, QString( getScriptName().c_str() ) );
@@ -1249,14 +1248,37 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         
     } // QWriteLocker l(&_imp->knobsAgeMutex);
     
-    marked.push_back(this);
-    if (oldHash != newHash) {
-        /*
-         * We changed the node hash. That means all cache entries for this node with a different hash
-         * are impossible to re-create again. Just discard them all. This is done in a separate thread.
-         */
-        removeAllImagesFromCacheWithMatchingIDAndDifferentKey(newHash);
+    bool hashChanged = oldHash != newHash;
+    
+    if (hashChanged) {
+        _imp->liveInstance->onNodeHashChanged(newHash);
+        if (_imp->nodeCreated && !getApp()->getProject()->isProjectClosing()) {
+            /*
+             * We changed the node hash. That means all cache entries for this node with a different hash
+             * are impossible to re-create again. Just discard them all. This is done in a separate thread.
+             */
+            removeAllImagesFromCacheWithMatchingIDAndDifferentKey(newHash);
+        }
     }
+
+    return hashChanged;
+}
+
+
+void
+Node::computeHashRecursive(std::list<Natron::Node*>& marked)
+{
+    if (std::find(marked.begin(), marked.end(), this) != marked.end()) {
+        return;
+    }
+    
+    bool hasChanged = computeHashInternal();
+    marked.push_back(this);
+    if (!hasChanged) {
+        //Nothing changed, no need to recurse on outputs
+        return;
+    }
+    
     
     bool isRotoPaint = _imp->liveInstance->isRotoPaintNode();
     
@@ -1271,17 +1293,16 @@ Node::computeHashInternal(std::list<Natron::Node*>& marked)
         if (isRotoPaint && attachedStroke && attachedStroke->getContext()->getNode().get() == this) {
             continue;
         }
-        (*it)->computeHashInternal(marked);
+        (*it)->computeHashRecursive(marked);
     }
     
-    _imp->liveInstance->onNodeHashChanged(getHashValue());
     
     ///If the node has a rotopaint tree, compute the hash of the nodes in the tree
     if (_imp->rotoContext) {
         NodeList allItems;
         _imp->rotoContext->getRotoPaintTreeNodes(&allItems);
         for (NodeList::iterator it = allItems.begin(); it!=allItems.end(); ++it) {
-            (*it)->computeHashInternal(marked);
+            (*it)->computeHashRecursive(marked);
         }
         
     }
@@ -1328,7 +1349,7 @@ Node::computeHash()
         return;
     }
     std::list<Natron::Node*> marked;
-    computeHashInternal(marked);
+    computeHashRecursive(marked);
     
 } // computeHash
 
@@ -1858,13 +1879,17 @@ Node::setKnobsAge(U64 newAge)
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     
-    QWriteLocker l(&_imp->knobsAgeMutex);
-    if (_imp->knobsAge != newAge) {
-        _imp->knobsAge = newAge;
-        Q_EMIT knobsAgeChanged(_imp->knobsAge);
-        l.unlock();
+    bool changed;
+    {
+        QWriteLocker l(&_imp->knobsAgeMutex);
+        changed = _imp->knobsAge != newAge;
+        if (changed) {
+            _imp->knobsAge = newAge;
+        }
+    }
+    if (changed) {
+        Q_EMIT knobsAgeChanged(newAge);
         computeHash();
-        l.relock();
     }
 }
 
@@ -3843,8 +3868,11 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
         onInputChanged(inputNumber);
     }
     
-    ///Recompute the hash
-    computeHash();
+    bool creatingNodeTree = getApp()->isCreatingNodeTree();
+    if (!creatingNodeTree) {
+        ///Recompute the hash
+        computeHash();
+    }
     
     _imp->ifGroupForceHashChangeOfInputs();
     
@@ -3865,7 +3893,7 @@ Node::Implementation::ifGroupForceHashChangeOfInputs()
 {
     ///If the node is a group, force a change of the outputs of the GroupInput nodes so the hash of the tree changes downstream
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(liveInstance.get());
-    if (isGrp) {
+    if (isGrp && !isGrp->getApp()->isCreatingNodeTree()) {
         std::list<Natron::Node* > inputsOutputs;
         isGrp->getInputsOutputs(&inputsOutputs);
         for (std::list<Natron::Node* >::iterator it = inputsOutputs.begin(); it != inputsOutputs.end(); ++it) {
@@ -3937,8 +3965,11 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
         onInputChanged(inputNumber);
     }
     
-    ///Recompute the hash
-    computeHash();
+    bool creatingNodeTree = getApp()->isCreatingNodeTree();
+    if (!creatingNodeTree) {
+        ///Recompute the hash
+        computeHash();
+    }
     
     _imp->ifGroupForceHashChangeOfInputs();
     
@@ -4029,7 +4060,11 @@ Node::switchInput0And1()
         onInputChanged(inputBIndex);
         
     }
-    computeHash();
+    bool creatingNodeTree = getApp()->isCreatingNodeTree();
+    if (!creatingNodeTree) {
+        ///Recompute the hash
+        computeHash();
+    }
     
     std::string inputChangedCB = getInputChangedCallback();
     if (!inputChangedCB.empty()) {
@@ -4141,7 +4176,11 @@ Node::disconnectInput(int inputNumber)
         mustCallEnd= true;
         onInputChanged(inputNumber);
     }
-    computeHash();
+    bool creatingNodeTree = getApp()->isCreatingNodeTree();
+    if (!creatingNodeTree) {
+        ///Recompute the hash
+        computeHash();
+    }
     
     _imp->ifGroupForceHashChangeOfInputs();
     
@@ -4205,7 +4244,12 @@ Node::disconnectInput(Node* input)
             mustCallEnd = true;
             onInputChanged(found);
         }
-        computeHash();
+        bool creatingNodeTree = getApp()->isCreatingNodeTree();
+        if (!creatingNodeTree) {
+            ///Recompute the hash
+            computeHash();
+        }
+
         
         _imp->ifGroupForceHashChangeOfInputs();
         
@@ -6250,7 +6294,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
             for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
                 //This will not trigger a hash recomputation
                 (*it)->incrementKnobsAge_internal();
-                (*it)->computeHashInternal(markedNodes);
+                (*it)->computeHashRecursive(markedNodes);
             }
         }
         
@@ -7331,6 +7375,7 @@ Node::refreshAllInputRelatedData(bool canChangeValues,const std::vector<boost::s
     ///The clip preferences action is never called until all non optional clips have been attached to the plugin.
     if (!hasMandatoryInputDisconnected()) {
         
+        
         if (getApp()->getProject()->isLoadingProject()) {
             //Nb: we clear the action cache because when creating the node many calls to getRoD and stuff might have returned
             //empty rectangles, but since we force the hash to remain what was in the project file, we might then get wrong RoDs returned
@@ -7362,6 +7407,11 @@ Node::refreshAllInputRelatedData(bool canChangeValues,const std::vector<boost::s
     hasChanged |= refreshChannelSelectors(canChangeValues);
     
     refreshIdentityState();
+    
+    if (getApp()->isCreatingNodeTree()) {
+        //When loading the project, refresh the hash of the nodes in a recursive manner in the proper order
+        hasChanged |= computeHashInternal();
+    }
 
     {
         QMutexLocker k(&_imp->pluginsPropMutex);
@@ -8537,7 +8587,12 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
     }
     
     if ( !Node::connectInput(input, inputNumber) ) {
-        computeHash();
+        bool creatingNodeTree = getApp()->isCreatingNodeTree();
+        if (!creatingNodeTree) {
+            ///Recompute the hash
+            computeHash();
+        }
+
     }
     
     return true;
@@ -8553,7 +8608,12 @@ InspectorNode::setActiveInputAndRefresh(int inputNb, bool /*fromViewer*/)
         return;
     }
 
-    computeHash();
+    bool creatingNodeTree = getApp()->isCreatingNodeTree();
+    if (!creatingNodeTree) {
+        ///Recompute the hash
+        computeHash();
+    }
+
     Q_EMIT inputChanged(inputNb);
     onInputChanged(inputNb);
 

@@ -52,6 +52,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
 #include "Engine/Interpolation.h"
+#include "Engine/Project.h"
 #include "Engine/KnobSerialization.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoDrawableItemSerialization.h"
@@ -656,6 +657,9 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, Natron::
 void
 RotoDrawableItem::incrementNodesAge()
 {
+    if (getContext()->getNode()->getApp()->getProject()->isLoadingProject()) {
+        return;
+    }
     if (_imp->effectNode) {
         _imp->effectNode->incrementKnobsAge();
     }
