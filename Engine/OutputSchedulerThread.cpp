@@ -150,6 +150,7 @@ struct ProducedFrame
     boost::shared_ptr<RequestedFrame> request;
     RenderStatsPtr stats;
     bool processRequest;
+    bool isAborted;
 };
 
 static bool isBufferFull(int nbBufferedElement, int hardwardIdealThreadCount)
@@ -3007,6 +3008,7 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
         ProducedFrame p;
         p.frames = frames;
         p.request = request;
+        p.isAborted = false;
         p.processRequest = processRequest;
         p.stats = stats;
         producedQueue.push_back(p);
@@ -3099,6 +3101,7 @@ ViewerCurrentFrameRequestScheduler::run()
             ///Wait for the work to be done
             BufferableObjectList frames;
             RenderStatsPtr stats;
+            bool frameAborted = false;
             {
                 QMutexLocker k(&_imp->producedQueueMutex);
                 
@@ -3125,6 +3128,8 @@ ViewerCurrentFrameRequestScheduler::run()
                 }
                 
                 assert(found != _imp->producedQueue.end());
+                frameAborted = found->isAborted;
+
                 found->request.reset();
                 if (found->processRequest) {
                     firstRequest.reset();
@@ -3133,11 +3138,12 @@ ViewerCurrentFrameRequestScheduler::run()
                 stats = found->stats;
                 _imp->producedQueue.erase(found);
             } // QMutexLocker k(&_imp->producedQueueMutex);
+           
             if (_imp->checkForExit()) {
                 return;
             }
             
-            {
+            if (!frameAborted) {
                 _imp->viewer->setCurrentlyUpdatingOpenGLViewer(true);
                 QMutexLocker processLocker(&_imp->processMutex);
                 _imp->processRunning = true;
@@ -3216,12 +3222,16 @@ ViewerCurrentFrameRequestScheduler::abortRendering()
         _imp->processCondition.wakeOne();
     }
     {
+        //Clear any irrelevant render requests
         QMutexLocker k(&_imp->requestsQueueMutex);
         _imp->requestsQueue.clear();
     }
     {
+        //mark all frames waiting to be displayed as aborted
         QMutexLocker k(&_imp->producedQueueMutex);
-        _imp->producedQueue.clear();
+        for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it!=_imp->producedQueue.end(); ++it) {
+            it->isAborted = true;
+        }
     }
     {
         QMutexLocker k(&_imp->abortRequestedMutex);
