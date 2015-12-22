@@ -2867,11 +2867,14 @@ RenderEngine::abortRendering(bool enableAutoRestartPlayback, bool blocking)
         viewer->markAllOnRendersAsAborted();
         
     }
+    if (_imp->currentFrameScheduler) {
+        _imp->currentFrameScheduler->abortRendering();
+    }
+
     if (_imp->scheduler && _imp->scheduler->isWorking()) {
         _imp->scheduler->abortRendering(enableAutoRestartPlayback, blocking);
         return true;
     }
-    
     return false;
 }
 
@@ -3212,11 +3215,19 @@ ViewerCurrentFrameRequestScheduler::abortRendering()
         _imp->processRunning = false;
         _imp->processCondition.wakeOne();
     }
-    
+    {
+        QMutexLocker k(&_imp->requestsQueueMutex);
+        _imp->requestsQueue.clear();
+    }
+    {
+        QMutexLocker k(&_imp->producedQueueMutex);
+        _imp->producedQueue.clear();
+    }
     {
         QMutexLocker k(&_imp->abortRequestedMutex);
         ++_imp->abortRequested;
     }
+    
 }
 
 void
