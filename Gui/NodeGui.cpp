@@ -1458,7 +1458,9 @@ NodeGui::refreshEdgesVisibilityInternal(bool hovered)
                     inputAsideDisplayed = true;
                 }
             } else {
-                _inputEdges[i]->setVisible(false);
+                if (!_inputEdges[i]->getSource()) {
+                    _inputEdges[i]->setVisible(false);
+                }
             }
         }
     }
