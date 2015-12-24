@@ -651,6 +651,9 @@ PrecompNodePrivate::refreshOutputNode()
         outputnode = app->getProject()->getNodeByFullySpecifiedName(outputNodeName);
     }
     
+    //Clear any persistent message set
+    _publicInterface->clearPersistentMessage(false);
+    
     NodePtr precompOutput;
     {
         QMutexLocker k(&dataMutex);
@@ -749,7 +752,11 @@ PrecompNode::onReadNodePersistentMessageChanged()
     QString message;
     int type;
     node->getPersistentMessage(&message, &type, false);
-    setPersistentMessage((Natron::MessageTypeEnum)type, message.toStdString());
+    if (message.isEmpty()) {
+        clearPersistentMessage(false);
+    } else {
+        setPersistentMessage((Natron::MessageTypeEnum)type, message.toStdString());
+    }
 }
 
 AppInstance*

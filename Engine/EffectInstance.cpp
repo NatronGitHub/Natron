@@ -2522,7 +2522,7 @@ EffectInstance::evaluate(KnobI* knob,
         node->refreshIdentityState();
         
         //Clear any persitent message, the user might have unlocked the situation 
-        node->clearPersistentMessage(false);
+        //node->clearPersistentMessage(false);
     }
 
     
