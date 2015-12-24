@@ -129,7 +129,7 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
     containerLayout->addWidget(_lineEdit);
     containerLayout->addWidget(_openFileButton);
     
-    if (knob->getHolder() && knob->isInputImageFile()) {
+    if (knob->getHolder()) {
         _reloadButton = new Button(container);
         _reloadButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _reloadButton->setFocusPolicy(Qt::NoFocus);

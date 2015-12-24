@@ -793,6 +793,9 @@ DockablePanel::getLastUndoCommand() const
 void
 DockablePanel::pushUndoCommand(QUndoCommand* cmd)
 {
+    if (!_imp->_gui) {
+        return;
+    }
     _imp->_undoStack->setActive();
     _imp->_undoStack->push(cmd);
     if (_imp->_undoButton && _imp->_redoButton) {

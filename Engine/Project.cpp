@@ -175,7 +175,7 @@ Project::loadProject(const QString & path,
         QString realName = name;
         
         bool isAutoSave = isUntitledAutosave;
-        if (!appPTR->isBackground() && !isUntitledAutosave) {
+        if (!getApp()->isBackground() && !isUntitledAutosave) {
             // In Gui mode, attempt to load an auto-save for this project if there's one.
             QString autosaveFileName;
             bool hasAutoSave = findAutoSaveForProject(realPath, name,&autosaveFileName);
@@ -211,7 +211,7 @@ Project::loadProject(const QString & path,
         }
     } catch (const std::exception & e) {
         Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what() );
-        if ( !appPTR->isBackground() ) {
+        if ( !getApp()->isBackground() ) {
             getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                   "",
                                                   -1,-1,
@@ -229,7 +229,7 @@ Project::loadProject(const QString & path,
     } catch (...) {
 
         Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Unkown error while loading project").toStdString() );
-        if ( !appPTR->isBackground() ) {
+        if ( !getApp()->isBackground() ) {
             getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                   "",
                                                   -1,-1,
@@ -556,7 +556,7 @@ Project::saveProjectInternal(const QString & path,
     
     try {
         boost::archive::xml_oarchive oArchive(ofile);
-        bool bgProject = appPTR->isBackground();
+        bool bgProject = getApp()->isBackground();
         oArchive << boost::serialization::make_nvp("Background_project",bgProject);
         ProjectSerialization projectSerializationObj( getApp() );
         save(&projectSerializationObj);
@@ -624,7 +624,7 @@ void
 Project::autoSave()
 {
     ///don't autosave in background mode...
-    if ( appPTR->isBackground() ) {
+    if ( getApp()->isBackground() ) {
         return;
     }
     
@@ -639,7 +639,7 @@ Project::triggerAutoSave()
     ///Should only be called in the main-thread, that is upon user interaction.
     assert( QThread::currentThread() == qApp->thread() );
 
-    if ( appPTR->isBackground() || !appPTR->isLoaded() || isProjectClosing() ) {
+    if ( getApp()->isBackground() || !appPTR->isLoaded() || isProjectClosing() ) {
         return;
     }
     {
@@ -655,7 +655,7 @@ Project::triggerAutoSave()
 void
 Project::onAutoSaveTimerTriggered()
 {
-    assert( !appPTR->isBackground() );
+    assert( !getApp()->isBackground() );
 
     if (!getApp()) {
         return;
@@ -1532,7 +1532,7 @@ void
 Project::resetProject()
 {
     reset(false);
-    if (!appPTR->isBackground()) {
+    if (!getApp()->isBackground()) {
         createViewer();
     }
 }
@@ -1577,7 +1577,7 @@ Project::reset(bool aboutToQuit)
             _imp->autoSaveTimer->stop();
             _imp->additionalFormats.clear();
         }
-        _imp->timeline->removeAllKeyframesIndicators();
+        getApp()->removeAllKeyframesIndicators();
         
         Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED, false);
         
@@ -2178,7 +2178,7 @@ Project::recomputeFrameRangeFromReaders()
 void
 Project::createViewer()
 {
-    if (appPTR->isBackground()) {
+    if (getApp()->isBackground()) {
         return;
     }
     getApp()->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
@@ -2303,6 +2303,12 @@ bool Project::addFormat(const std::string& formatSpec)
     } else {
         return false;
     }
+}
+    
+void
+Project::setTimeLine(const boost::shared_ptr<TimeLine>& timeline)
+{
+    _imp->timeline = timeline;
 }
     
 } //namespace Natron

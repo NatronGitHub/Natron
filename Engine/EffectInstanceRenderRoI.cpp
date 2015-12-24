@@ -245,7 +245,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ParallelRenderArgs & frameRenderArgs = _imp->frameRenderArgs.localData();
     if (!frameRenderArgs.validArgs) {
-        qDebug() << "[BUG]:" << getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
+        qDebug() << QThread::currentThread() << "[BUG]:" << getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
         frameRenderArgs.time = args.time;
         frameRenderArgs.nodeHash = getHash();
         frameRenderArgs.view = args.view;
@@ -1495,7 +1495,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         if (isDuringPaintStroke) {
             //We know the image will never be used ever again
-            getNode()->removeAllImagesFromCache();
+            getNode()->removeAllImagesFromCache(false);
         }
 
         return eRenderRoIRetCodeAborted;

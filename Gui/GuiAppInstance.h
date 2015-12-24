@@ -70,6 +70,8 @@ public:
     virtual ~GuiAppInstance();
 
     void resetPreviewProvider();
+    
+    virtual bool isBackground() const { return false; }
 private:
     
     
@@ -85,7 +87,7 @@ private:
 public:
     
     virtual void aboutToQuit() OVERRIDE FINAL;
-    virtual void load(const CLArgs& cl) OVERRIDE FINAL;
+    virtual void load(const CLArgs& cl,bool makeEmptyInstance) OVERRIDE FINAL;
     
     Gui* getGui() const WARN_UNUSED_RETURN;
 
@@ -182,7 +184,7 @@ public:
     
     void clearOverlayRedrawRequests();
     
-    public Q_SLOTS:
+public Q_SLOTS:
     
 
     void reloadStylesheet();
@@ -214,6 +216,14 @@ public:
     
     void handleFileOpenEvent(const std::string& filename);
     
+    virtual void goToPreviousKeyframe() OVERRIDE FINAL;
+    
+    virtual void goToNextKeyframe() OVERRIDE FINAL;
+    
+Q_SIGNALS:
+    
+    void keyframeIndicatorsChanged();
+    
 public:
 
     virtual void* getOfxHostOSHandle() const OVERRIDE FINAL;
@@ -244,6 +254,31 @@ public:
     virtual void getActiveRotoDrawingStroke(boost::shared_ptr<Natron::Node>* node,
                                             boost::shared_ptr<RotoStrokeItem>* stroke,
                                             bool* isPainting) const OVERRIDE FINAL;
+    
+    
+    ///////////////// OVERRIDEN FROM TIMELINEKEYFRAMES
+    virtual void removeAllKeyframesIndicators() OVERRIDE FINAL;
+    
+    virtual void addKeyframeIndicator(SequenceTime time) OVERRIDE FINAL;
+    
+    virtual void addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys,bool emitSignal) OVERRIDE FINAL;
+    
+    virtual void removeKeyFrameIndicator(SequenceTime time) OVERRIDE FINAL;
+    
+    virtual void removeMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,bool emitSignal) OVERRIDE FINAL;
+    
+    virtual void addNodesKeyframesToTimeline(const std::list<Natron::Node*> & nodes) OVERRIDE FINAL;
+    
+    virtual void addNodeKeyframesToTimeline(Natron::Node* node) OVERRIDE FINAL;
+    
+    virtual void removeNodesKeyframesFromTimeline(const std::list<Natron::Node*> & nodes) OVERRIDE FINAL;
+    
+    virtual void removeNodeKeyframesFromTimeline(Natron::Node* node) OVERRIDE FINAL;
+
+    virtual void getKeyframes(std::list<SequenceTime>* keys) const OVERRIDE FINAL;
+    
+   
+    ///////////////// END OVERRIDEN FROM TIMELINEKEYFRAMES
     
 private:
     

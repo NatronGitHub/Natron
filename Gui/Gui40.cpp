@@ -149,7 +149,7 @@ Gui::openRecentFile()
             _imp->_appInstance->getProject()->loadProject( path, f.fileName() );
         } else {
             CLArgs cl;
-            AppInstance* newApp = appPTR->newAppInstance(cl);
+            AppInstance* newApp = appPTR->newAppInstance(cl, false);
             newApp->getProject()->loadProject( path, f.fileName() );
         }
     }

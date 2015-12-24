@@ -100,7 +100,7 @@ void
 GuiApplicationManager::updateAllRecentFileMenus()
 {
     const std::map<int,AppInstanceRef> & instances = getAppInstances();
-
+    
     for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* appInstance = dynamic_cast<GuiAppInstance*>(it->second.app);
         if (appInstance) {
@@ -192,20 +192,8 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
 # else // !NATRON_ENABLE_QT_IO_NODES
     Q_UNUSED(readersMap);
     Q_UNUSED(writersMap);
-# endif // DEBUG
-
-    {
-        boost::shared_ptr<EffectInstance> viewer( ViewerInstance::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        assert(viewer);
-        std::map<std::string,void(*)()> viewerFunctions;
-        viewerFunctions.insert( std::make_pair("BuildEffect", (void(*)())&ViewerInstance::BuildEffect) );
-        LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
-        assert(viewerPlugin);
-        
-        registerPlugin(grouping, viewer->getPluginID().c_str(), viewer->getPluginLabel().c_str(),NATRON_IMAGES_PATH "viewer_icon.png", QStringList(), false, false, viewerPlugin, false, viewer->getMajorVersion(), viewer->getMinorVersion(), false);
-
-    }
-
+# endif // NATRON_ENABLE_QT_IO_NODES
+    
     ///Also load the plug-ins of the AppManager
     AppManager::loadBuiltinNodePlugins(readersMap, writersMap);
 } // loadBuiltinNodePlugins
@@ -363,7 +351,7 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
     bool instanceCreated = false;
     if (!mainInstance || !mainInstance->getProject()->isGraphWorthLess()) {
         CLArgs cl;
-        mainInstance = appPTR->newAppInstance(cl);
+        mainInstance = appPTR->newAppInstance(cl, false);
         instanceCreated = true;
     }
     if (!mainInstance) {
@@ -450,11 +438,29 @@ GuiApplicationManager::exitApp()
 {
     ///make a copy of the map because it will be modified when closing projects
     std::map<int,AppInstanceRef> instances = getAppInstances();
-
+    
+    std::list<GuiAppInstance*> guiApps;
     for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(it->second.app);
-        if ( app && !app->getGui()->closeInstance() ) {
+        if (app) {
+            guiApps.push_back(app);
+        }
+    }
+    
+    while (!guiApps.empty()) {
+        GuiAppInstance* app = guiApps.front();
+        if ( app && app->getGui()->closeInstance() ) {
             return;
+        }
+        
+        //refreshg ui instances
+        instances = getAppInstances();
+        guiApps.clear();
+        for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+            GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(it->second.app);
+            if (app) {
+                guiApps.push_back(app);
+            }
         }
     }
 }

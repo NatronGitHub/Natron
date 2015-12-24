@@ -67,6 +67,7 @@
 #include "Engine/OfxHost.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/Project.h"
+#include "Engine/PrecompNode.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoSmear.h"
 #include "Engine/StandardPaths.h"
@@ -550,7 +551,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         args = cl;
     }
     
-    AppInstance* mainInstance = newAppInstance(args);
+    AppInstance* mainInstance = newAppInstance(args, false);
     
     hideSplashScreen();
     
@@ -580,13 +581,18 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 }
 
 AppInstance*
-AppManager::newAppInstance(const CLArgs& cl)
+AppManager::newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool makeEmptyInstance)
 {
-    AppInstance* instance = makeNewInstance(_imp->_availableID);
+    AppInstance* instance;
+    if (!alwaysBackground) {
+        instance = makeNewInstance(_imp->_availableID);
+    } else {
+        instance = new AppInstance(_imp->_availableID);
+    }
     ++_imp->_availableID;
-
+    
     try {
-        instance->load(cl);
+        instance->load(cl, makeEmptyInstance);
     } catch (const std::exception & e) {
         Natron::errorDialog( NATRON_APPLICATION_NAME,e.what(), false );
         removeInstance(_imp->_availableID);
@@ -600,12 +606,24 @@ AppManager::newAppInstance(const CLArgs& cl)
         --_imp->_availableID;
         return NULL;
     }
-
-
+    
+    
     ///flag that we finished loading the Appmanager even if it was already true
     _imp->_loaded = true;
-
+    
     return instance;
+}
+
+AppInstance*
+AppManager::newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance)
+{
+    return newAppInstanceInternal(cl, true, makeEmptyInstance);
+}
+
+AppInstance*
+AppManager::newAppInstance(const CLArgs& cl, bool makeEmptyInstance)
+{
+    return newAppInstanceInternal(cl, false, makeEmptyInstance);
 }
 
 AppInstance*
@@ -919,159 +937,47 @@ AppManager::onAllPluginsLoaded()
     }
 }
 
+template <typename PLUGIN>
+void
+AppManager::registerBuiltInPlugin(const QString& iconPath, bool isDeprecated, bool internalUseOnly)
+{
+    boost::shared_ptr<EffectInstance> node( PLUGIN::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
+    std::map<std::string,void(*)()> functions;
+    functions.insert( std::make_pair("BuildEffect", (void(*)())&PLUGIN::BuildEffect) );
+    LibraryBinary *binary = new LibraryBinary(functions);
+    assert(binary);
+    
+    std::list<std::string> grouping;
+    node->getPluginGrouping(&grouping);
+    QStringList qgrouping;
+    
+    for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
+        qgrouping.push_back( it->c_str() );
+    }
+    Natron::Plugin* p = registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
+                                       iconPath, QStringList(), node->isReader(), node->isWriter(), binary, node->renderThreadSafety() == Natron::eRenderSafetyUnsafe, node->getMajorVersion(), node->getMinorVersion(), isDeprecated);
+    if (internalUseOnly) {
+        p->setForInternalUseOnly(true);
+    }
+}
+
 void
 AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* /*readersMap*/,
                                    std::map<std::string,std::vector< std::pair<std::string,double> > >* /*writersMap*/)
 {
-    {
-        boost::shared_ptr<EffectInstance> node( BackDrop::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&BackDrop::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        node->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "backdrop_icon.png", QStringList(), false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
+    registerBuiltInPlugin<BackDrop>(NATRON_IMAGES_PATH "backdrop_icon.png", false, false);
+    registerBuiltInPlugin<GroupOutput>(NATRON_IMAGES_PATH "output_icon.png", false, false);
+    registerBuiltInPlugin<GroupInput>(NATRON_IMAGES_PATH "input_icon.png", false, false);
+    registerBuiltInPlugin<NodeGroup>(NATRON_IMAGES_PATH "group_icon.png", false, false);
+    registerBuiltInPlugin<Dot>(NATRON_IMAGES_PATH "dot_icon.png", false, false);
+    registerBuiltInPlugin<DiskCacheNode>(NATRON_IMAGES_PATH "diskcache_icon.png", false, false);
+    registerBuiltInPlugin<RotoPaint>(NATRON_IMAGES_PATH "GroupingIcons/Set2/paint_grouping_2.png", false, false);
+    registerBuiltInPlugin<RotoNode>(NATRON_IMAGES_PATH "rotoNodeIcon.png", false, false);
+    registerBuiltInPlugin<RotoSmear>("", false, true);
+    //registerBuiltInPlugin<PrecompNode>("", false, false);
+    if (!isBackground()) {
+        registerBuiltInPlugin<ViewerInstance>(NATRON_IMAGES_PATH "viewer_icon.png", false, false);
     }
-    {
-        boost::shared_ptr<EffectInstance> node( GroupOutput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&GroupOutput::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        node->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "output_icon.png", QStringList(), false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
-    }
-    {
-        boost::shared_ptr<EffectInstance> node( GroupInput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&GroupInput::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        node->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "input_icon.png", QStringList(), false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
-    }
-    {
-        boost::shared_ptr<EffectInstance> groupNode( NodeGroup::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&NodeGroup::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        groupNode->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, groupNode->getPluginID().c_str(), groupNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "group_icon.png", QStringList(), false, false, binary, false, groupNode->getMajorVersion(), groupNode->getMinorVersion(), false);
-    }
-    {
-        boost::shared_ptr<EffectInstance> dotNode( Dot::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&Dot::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-
-        std::list<std::string> grouping;
-        dotNode->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, dotNode->getPluginID().c_str(), dotNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "dot_icon.png", QStringList(), false, false, binary, false, dotNode->getMajorVersion(), dotNode->getMinorVersion(), false);
-    }
-    {
-        boost::shared_ptr<EffectInstance> node( DiskCacheNode::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&DiskCacheNode::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        node->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "diskcache_icon.png", QStringList(), false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
-    }
-    {
-        boost::shared_ptr<EffectInstance> node( RotoPaint::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&RotoPaint::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        node->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
-                       NATRON_IMAGES_PATH "GroupingIcons/Set2/paint_grouping_2.png", QStringList(), false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
-    }
-    {
-        boost::shared_ptr<EffectInstance> node( RotoNode::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&RotoNode::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        node->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
-                       NATRON_IMAGES_PATH "rotoNodeIcon.png", QStringList(), false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
-    }
-    {
-        boost::shared_ptr<EffectInstance> node( RotoSmear::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&RotoSmear::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        node->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        Natron::Plugin* p = registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
-                        "", QStringList(), false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
-        p->setForInternalUseOnly(true);
-    }
-
 }
 
 static bool findAndRunScriptFile(const QString& path,const QStringList& files,const QString& script)
@@ -1723,11 +1629,11 @@ AppManager::removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheE
 }
 
 void
-AppManager::removeAllCacheEntriesForHolder(const CacheEntryHolder* holder)
+AppManager::removeAllCacheEntriesForHolder(const CacheEntryHolder* holder,bool blocking)
 {
-    _imp->_nodeCache->removeAllEntriesForHolderPublic(holder);
-    _imp->_diskCache->removeAllEntriesForHolderPublic(holder);
-    _imp->_viewerCache->removeAllEntriesForHolderPublic(holder);
+    _imp->_nodeCache->removeAllEntriesForHolderPublic(holder,blocking);
+    _imp->_diskCache->removeAllEntriesForHolderPublic(holder,blocking);
+    _imp->_viewerCache->removeAllEntriesForHolderPublic(holder,blocking);
 }
 
 const QString &

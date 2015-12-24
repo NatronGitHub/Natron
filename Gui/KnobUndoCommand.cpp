@@ -499,7 +499,8 @@ RestoreDefaultsCommand::undo()
 
     std::list<SequenceTime> times;
     const boost::shared_ptr<KnobI> & first = _knobs.front();
-    boost::shared_ptr<TimeLine> timeline = first->getHolder()->getApp()->getTimeLine();
+    AppInstance* app = first->getHolder()->getApp();
+    assert(app);
     std::list<boost::shared_ptr<KnobI> >::const_iterator itClone = _clones.begin();
     for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
         (*it)->cloneAndUpdateGui( itClone->get() );
@@ -517,7 +518,7 @@ RestoreDefaultsCommand::undo()
             }
         }
     }
-    timeline->addMultipleKeyframeIndicatorsAdded(times,true);
+    app->addMultipleKeyframeIndicatorsAdded(times,true);
 
     _knobs.front()->getHolder()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
     first->getHolder()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
@@ -534,11 +535,11 @@ RestoreDefaultsCommand::redo()
     std::list<SequenceTime> times;
     const boost::shared_ptr<KnobI> & first = _knobs.front();
     
-    boost::shared_ptr<TimeLine> timeline;
+    AppInstance* app = 0;
     
     KnobHolder* holder = first->getHolder();
-    if (holder && holder->getApp()) {
-        timeline = holder->getApp()->getTimeLine();
+    if (holder) {
+        app = holder->getApp();
         holder->beginChanges();
     }
     
@@ -578,8 +579,8 @@ RestoreDefaultsCommand::redo()
      in a correct state
      */
     double time = 0;
-    if (timeline) {
-        time = timeline->currentFrame();
+    if (app) {
+        time = app->getTimeLine()->currentFrame();
     }
    for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
        if ((*it)->getHolder()) {
@@ -592,8 +593,8 @@ RestoreDefaultsCommand::redo()
     }
     
     
-    if (timeline) {
-        timeline->removeMultipleKeyframeIndicator(times,true);
+    if (app) {
+        app->removeMultipleKeyframeIndicator(times,true);
     }
     
     if (first->getHolder()) {

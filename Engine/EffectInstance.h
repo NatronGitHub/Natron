@@ -82,7 +82,7 @@
 #define PLUGINID_NATRON_ROTOPAINT (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoPaint")
 #define PLUGINID_NATRON_ROTO (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Roto")
 #define PLUGINID_NATRON_ROTOSMEAR (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoSmear")
-
+#define PLUGINID_NATRON_PRECOMP     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Precomp")
 
 #define kNatronTLSEffectPointerProperty "NatronTLSEffectPointerProperty"
 
@@ -1441,6 +1441,9 @@ bool onOverlayPenDown_public(double time, const RenderScale & renderScale, int v
                                              ComponentsAvailableMap* comps,
                                              std::list<Natron::EffectInstance*>* markedNodes);
 
+    virtual void onKnobsLoaded() {}
+
+
 private:
 
     void getComponentsAvailableRecursive(bool useLayerChoice, double time, int view, ComponentsAvailableMap* comps,
@@ -1487,6 +1490,8 @@ protected:
     virtual void initializeKnobs() OVERRIDE
     {
     };
+
+
 
 
     /**

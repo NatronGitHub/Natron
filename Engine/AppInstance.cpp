@@ -455,11 +455,15 @@ AppInstance::createWriter(const std::string& filename,
 }
 
 void
-AppInstance::load(const CLArgs& cl)
+AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
 {
     
     declareCurrentAppVariable_Python();
 
+    if (makeEmptyInstance) {
+        return;
+    }
+    
     const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
     
     ///if the app is a background project autorun and the project name is empty just throw an exception.
@@ -511,8 +515,15 @@ AppInstance::load(const CLArgs& cl)
         
     } else if (appPTR->getAppType() == AppManager::eAppTypeInterpreter) {
         QFileInfo info(cl.getScriptFilename());
-        if (info.exists() && info.suffix() == "py") {
-            loadPythonScript(info);
+        if (info.exists()) {
+            
+            if (info.suffix() == "py") {
+                loadPythonScript(info);
+            } else if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
+                if ( !_imp->_currentProject->loadProject(info.path(),info.fileName()) ) {
+                    throw std::invalid_argument(tr("Project file loading failed.").toStdString());
+                }
+            }
         }
         
         if (!extraOnProjectCreatedScript.isEmpty()) {
@@ -1596,6 +1607,6 @@ AppInstance*
 AppInstance::newProject()
 {
     CLArgs cl;
-    AppInstance* app = appPTR->newAppInstance(cl);
+    AppInstance* app = appPTR->newAppInstance(cl, false);
     return app;
 }

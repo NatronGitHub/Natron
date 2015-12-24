@@ -133,7 +133,16 @@ public:
 
     bool isLoaded() const;
 
-    AppInstance* newAppInstance(const CLArgs& cl);
+    AppInstance* newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
+    AppInstance* newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
+    
+private:
+    
+    AppInstance* newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool makeEmptyInstance);
+    
+public:
+    
+    
     virtual void hideSplashScreen()
     {
     }
@@ -217,7 +226,7 @@ public:
     void  removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
     void  removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
     
-    void removeAllCacheEntriesForHolder(const CacheEntryHolder* holder);
+    void removeAllCacheEntriesForHolder(const CacheEntryHolder* holder, bool blocking);
 
     boost::shared_ptr<Settings> getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;
@@ -482,6 +491,10 @@ protected:
 
     virtual void loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                         std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap);
+    
+    template <typename PLUGIN>
+    void registerBuiltInPlugin(const QString& iconPath, bool isDeprecated, bool internalUseOnly);
+    
     virtual AppInstance* makeNewInstance(int appID) const;
     virtual void registerGuiMetaTypes() const
     {

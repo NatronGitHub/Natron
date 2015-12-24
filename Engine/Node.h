@@ -106,6 +106,9 @@ public:
      **/
     void switchInternalPlugin(Natron::Plugin* plugin);
     
+    void setPrecompNode(const boost::shared_ptr<PrecompNode>& precomp);
+    boost::shared_ptr<PrecompNode> isPartOfPrecomp() const;
+    
     /**
      * @brief Creates the EffectInstance that will be embedded into this node and set it up.
      * This function also loads all parameters. Node connections will not be setup in this method.
@@ -128,6 +131,7 @@ public:
 
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization & serialization,bool updateKnobGui = false);
+
 
 private:
     void loadKnob(const boost::shared_ptr<KnobI> & knob,const std::list< boost::shared_ptr<KnobSerialization> > & serialization,
@@ -915,7 +919,7 @@ public:
     
     bool hasPersistentMessage() const;
     
-    void getPersistentMessage(QString* message,int* type) const;
+    void getPersistentMessage(QString* message,int* type, bool prefixLabelAndType = true) const;
 
     
     /**
@@ -1050,7 +1054,7 @@ public:
     double getHostMixingValue(double time) const;
     
     void removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey);
-    void removeAllImagesFromCache();
+    void removeAllImagesFromCache(bool blocking);
     
     bool isDraftModeUsed() const;
     bool isInputRelatedDataDirty() const;

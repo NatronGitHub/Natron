@@ -944,7 +944,7 @@ AppInstance*
 Gui::createNewProject()
 {
     CLArgs cl;
-    AppInstance* app = appPTR->newAppInstance(cl);
+    AppInstance* app = appPTR->newAppInstance(cl, false);
     
     app->execOnProjectCreatedCallback();
     return app;
@@ -997,7 +997,6 @@ Gui::openProjectInternal(const std::string & absoluteFileName, bool attemptToLoa
         AppInstance* instance = appPTR->getAppInstance(openedProject);
         if (instance) {
             GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(instance);
-            assert(guiApp);
             if (guiApp) {
                 guiApp->getGui()->activateWindow();
                 return instance;
@@ -1014,7 +1013,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName, bool attemptToLoa
         }
     } else {
         CLArgs cl;
-        AppInstance* newApp = appPTR->newAppInstance(cl);
+        AppInstance* newApp = appPTR->newAppInstance(cl, false);
         bool ok  = newApp->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
         if (ok) {
             ret = newApp;

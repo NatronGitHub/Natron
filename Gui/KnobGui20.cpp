@@ -57,7 +57,7 @@ KnobGui::onMultipleKeySet(const std::list<double>& keys,int /*dimension*/, int r
             for (std::list<double>::const_iterator it = keys.begin() ; it != keys.end(); ++it) {
                 intKeys.push_back(*it);
             }
-            knob->getHolder()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(intKeys, true);
+            knob->getHolder()->getApp()->addMultipleKeyframeIndicatorsAdded(intKeys, true);
         }
     }
     
@@ -75,7 +75,7 @@ KnobGui::onInternalKeySet(double time,
         if (added) {
             boost::shared_ptr<KnobI> knob = getKnob();
             if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
-                knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+                knob->getHolder()->getApp()->addKeyframeIndicator(time);
             }
         }
 
@@ -91,7 +91,7 @@ KnobGui::onInternalKeyRemoved(double time,
 {
     boost::shared_ptr<KnobI> knob = getKnob();
     if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
-        knob->getHolder()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
+        knob->getHolder()->getApp()->removeKeyFrameIndicator(time);
     }
     Q_EMIT keyFrameRemoved();
 }
@@ -558,7 +558,8 @@ KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
     if ( knob->getHolder() && knob->getHolder()->getApp() && !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
-        boost::shared_ptr<TimeLine> timeline = knob->getHolder()->getApp()->getTimeLine();
+        AppInstance* app = knob->getHolder()->getApp();
+        assert(app);
         std::list<SequenceTime> times;
         std::set<SequenceTime> tmpTimes;
         if (dimension == -1) {
@@ -585,7 +586,7 @@ KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
             }
         }
         if (!times.empty()) {
-            timeline->removeMultipleKeyframeIndicator(times,true);
+            app->removeMultipleKeyframeIndicator(times,true);
         }
     }
 }
@@ -594,7 +595,8 @@ void
 KnobGui::setAllKeyframeMarkersOnTimeline(int dimension)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-    boost::shared_ptr<TimeLine> timeline = knob->getHolder()->getApp()->getTimeLine();
+    AppInstance* app = knob->getHolder()->getApp();
+    assert(app);
     std::list<SequenceTime> times;
 
     if (dimension == -1) {
@@ -611,7 +613,7 @@ KnobGui::setAllKeyframeMarkersOnTimeline(int dimension)
             times.push_back( it->getTime() );
         }
     }
-    timeline->addMultipleKeyframeIndicatorsAdded(times,true);
+    app->addMultipleKeyframeIndicatorsAdded(times,true);
 }
 
 void
@@ -619,7 +621,7 @@ KnobGui::setKeyframeMarkerOnTimeline(double time)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
     if (knob->isDeclaredByPlugin()) {
-        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+        knob->getHolder()->getApp()->addKeyframeIndicator(time);
     }
 }
 
@@ -634,9 +636,10 @@ KnobGui::onKeyFrameMoved(int /*dimension*/,
         return;
     }
     if (knob->isDeclaredByPlugin()) {
-        boost::shared_ptr<TimeLine> timeline = knob->getHolder()->getApp()->getTimeLine();
-        timeline->removeKeyFrameIndicator(oldTime + 0.5);
-        timeline->addKeyframeIndicator(newTime + 0.5);
+        AppInstance* app = knob->getHolder()->getApp();
+        assert(app);
+        app->removeKeyFrameIndicator(oldTime);
+        app->addKeyframeIndicator(newTime);
     }
 }
 

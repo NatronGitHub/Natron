@@ -144,6 +144,7 @@ class ParametricParam;
 class PathParam;
 class PluginGroupNode;
 class PluginMemory;
+class PrecompNode;
 class ProcessHandler;
 class ProcessInputChannel;
 class ProjectSerialization;

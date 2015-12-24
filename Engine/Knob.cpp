@@ -2712,7 +2712,7 @@ KnobHelper::deleteAnimationConditional(double time,int dimension,Natron::ValueCh
     }
     
     if (holder && holder->getApp()) {
-        holder->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keysRemoved, true);
+        holder->getApp()->removeMultipleKeyframeIndicator(keysRemoved, true);
     }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_animationRemoved(dimension);

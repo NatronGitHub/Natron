@@ -49,6 +49,7 @@
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
+#include "Engine/PrecompNode.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
@@ -332,7 +333,7 @@ NodeCollection::refreshViewersAndPreviews()
 {
     assert(QThread::currentThread() == qApp->thread());
     
-    if ( !appPTR->isBackground() ) {
+    if ( !getApplication()->isBackground() ) {
         double time = _imp->app->getTimeLine()->currentFrame();
         
         NodeList nodes = getNodes();
@@ -355,6 +356,9 @@ NodeCollection::refreshViewersAndPreviews()
 void
 NodeCollection::refreshPreviews()
 {
+    if (getApplication()->isBackground()) {
+        return;
+    }
     double time = _imp->app->getTimeLine()->currentFrame();
     NodeList nodes;
     getActiveNodes(&nodes);
@@ -372,6 +376,9 @@ NodeCollection::refreshPreviews()
 void
 NodeCollection::forceRefreshPreviews()
 {
+    if (getApplication()->isBackground()) {
+        return;
+    }
     double time = _imp->app->getTimeLine()->currentFrame();
     NodeList nodes;
     getActiveNodes(&nodes);
@@ -1005,7 +1012,11 @@ NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,P
         if (isGrp) {
             isGrp->getParallelRenderArgs(argsMap);
         }
-
+        
+        const PrecompNode* isPrecomp = dynamic_cast<const PrecompNode*>((*it)->getLiveInstance());
+        if (isPrecomp) {
+            isPrecomp->getPrecompApp()->getProject()->getParallelRenderArgs(argsMap);
+        }
     }
 }
 
@@ -1388,22 +1399,36 @@ NodeGroup::getRealInputForInput(bool useGuiConnexions,const boost::shared_ptr<Na
 }
 
 void
-NodeGroup::getInputsOutputs(std::list<Natron::Node* >* nodes) const
+NodeGroup::getInputsOutputs(std::list<Natron::Node* >* nodes, bool useGuiConnexions) const
 {
     QMutexLocker k(&_imp->nodesLock);
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        std::list<Natron::Node*> outputs;
-        _imp->inputs[i].lock()->getOutputs_mt_safe(outputs);
-        nodes->insert(nodes->end(), outputs.begin(),outputs.end());
+    if (!useGuiConnexions) {
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            std::list<Natron::Node*> outputs;
+            _imp->inputs[i].lock()->getOutputs_mt_safe(outputs);
+            nodes->insert(nodes->end(), outputs.begin(),outputs.end());
+        }
+    } else {
+        for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
+            std::list<Natron::Node*> outputs;
+            _imp->guiInputs[i].lock()->getOutputs_mt_safe(outputs);
+            nodes->insert(nodes->end(), outputs.begin(),outputs.end());
+        }
     }
 }
 
 void
-NodeGroup::getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs) const
+NodeGroup::getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs,bool useGuiConnexions) const
 {
     QMutexLocker k(&_imp->nodesLock);
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        inputs->push_back(_imp->inputs[i].lock());
+    if (!useGuiConnexions) {
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            inputs->push_back(_imp->inputs[i].lock());
+        }
+    } else {
+        for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
+            inputs->push_back(_imp->guiInputs[i].lock());
+        }
     }
 }
 

@@ -910,6 +910,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     /*slots & signals*/
     
     manageTimelineSlot(false,timeline);
+    QObject::connect( _imp->nextKeyFrame_Button,SIGNAL( clicked(bool) ),getGui()->getApp(), SLOT( goToNextKeyframe() ) );
+    QObject::connect( _imp->previousKeyFrame_Button,SIGNAL( clicked(bool) ),getGui()->getApp(), SLOT( goToPreviousKeyframe() ) );
+
     
     boost::shared_ptr<Node> wrapperNode = _imp->viewerNode->getNode();
     QObject::connect( _imp->viewerNode, SIGNAL(renderStatsAvailable(int,int,double,RenderStatsMap)),

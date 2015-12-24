@@ -1149,7 +1149,7 @@ RotoPanel::onItemRemoved(const boost::shared_ptr<RotoItem>& item,
         if ( it != _imp->keyframes.end() ) {
 
             for (std::set<double>::iterator it2 = it->second.keys.begin(); it2 != it->second.keys.end(); ++it2) {
-                getNode()->getNode()->getApp()->getTimeLine()->removeKeyFrameIndicator(*it2);
+                getNode()->getNode()->getApp()->removeKeyFrameIndicator(*it2);
             }
             _imp->keyframes.erase(it);
         }
@@ -2179,7 +2179,7 @@ RotoPanelPrivate::setItemKey(const boost::shared_ptr<RotoItem>& item,
 
         std::pair<std::set<double>::iterator,bool> ret = it->second.keys.insert(time);
         if (ret.second && it->second.visible) {
-            node.lock()->getNode()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+            node.lock()->getNode()->getApp()->addKeyframeIndicator(time);
         }
     } else {
         TimeLineKeys keys;
@@ -2201,7 +2201,7 @@ RotoPanelPrivate::removeItemKey(const boost::shared_ptr<RotoItem>& item,
         if ( it2 != it->second.keys.end() ) {
             it->second.keys.erase(it2);
             if (it->second.visible) {
-                node.lock()->getNode()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
+                node.lock()->getNode()->getApp()->removeKeyFrameIndicator(time);
             }
         }
     }
@@ -2220,7 +2220,7 @@ RotoPanelPrivate::removeItemAnimation(const boost::shared_ptr<RotoItem>& item)
         }
         it->second.keys.clear();
         if (it->second.visible) {
-            node.lock()->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(toRemove, true);
+            node.lock()->getNode()->getApp()->removeMultipleKeyframeIndicator(toRemove, true);
         }
     }
 }
@@ -2234,9 +2234,9 @@ RotoPanelPrivate::setVisibleItemKeyframes(const std::set<double>& keyframes,bool
         keys.push_back(*it2);
     }
     if (!visible) {
-        node.lock()->getNode()->getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keys, emitSignal);
+        node.lock()->getNode()->getApp()->removeMultipleKeyframeIndicator(keys, emitSignal);
     } else {
-        node.lock()->getNode()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(keys, emitSignal);
+        node.lock()->getNode()->getApp()->addMultipleKeyframeIndicatorsAdded(keys, emitSignal);
     }
 }
 

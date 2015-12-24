@@ -700,7 +700,7 @@ EffectInstance::getImage(int inputNb,
         } else {
             ///Oops, we didn't find the roi in the thread-storage... use  the RoD instead...
             if (n) {
-                qDebug() << getScriptName_mt_safe().c_str() << "[Bug] RoI not found in TLS...falling back on RoD when calling getImage() on" <<
+                qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "[Bug] RoI not found in TLS...falling back on RoD when calling getImage() on" <<
                 n->getScriptName_mt_safe().c_str();
             }
             roi = rod;
@@ -2520,6 +2520,9 @@ EffectInstance::evaluate(KnobI* knob,
         abortAnyEvaluation();
         node->incrementKnobsAge();
         node->refreshIdentityState();
+        
+        //Clear any persitent message, the user might have unlocked the situation 
+        node->clearPersistentMessage(false);
     }
 
     
@@ -4218,7 +4221,7 @@ EffectInstance::abortAnyEvaluation()
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
     if (isGroup) {
         std::list<Node*> inputOutputs;
-        isGroup->getInputsOutputs(&inputOutputs);
+        isGroup->getInputsOutputs(&inputOutputs, false);
         for (std::list<Node*>::iterator it = inputOutputs.begin(); it!=inputOutputs.end();++it) {
             (*it)->hasOutputNodesConnected(&outputNodes);
         }

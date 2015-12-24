@@ -303,6 +303,8 @@ public:
     
     bool addFormat(const std::string& formatSpec);
     
+    void setTimeLine(const boost::shared_ptr<TimeLine>& timeline);
+    
 public Q_SLOTS:
 
     void onAutoSaveTimerTriggered();

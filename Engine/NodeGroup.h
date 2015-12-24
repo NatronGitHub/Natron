@@ -376,9 +376,9 @@ public:
     
     boost::shared_ptr<Natron::Node> getRealInputForInput(bool useGuiConnexions,const boost::shared_ptr<Natron::Node>& input) const;
     
-    void getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs) const;
+    void getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs, bool useGuiConnexions) const;
     
-    void getInputsOutputs(std::list<Natron::Node* >* nodes) const;
+    void getInputsOutputs(std::list<Natron::Node* >* nodes, bool useGuiConnexions) const;
     
     void dequeueConnexions();
     

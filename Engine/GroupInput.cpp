@@ -92,7 +92,7 @@ GroupInput::getOutputPremultiplication() const
     }
     int inputNb = -1;
     std::vector<NodePtr> groupInputs;
-    isGroup->getInputs(&groupInputs);
+    isGroup->getInputs(&groupInputs, false);
     for (std::size_t i = 0; i < groupInputs.size(); ++i) {
         if (groupInputs[i] == thisNode) {
             inputNb = i;

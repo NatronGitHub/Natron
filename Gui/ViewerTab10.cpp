@@ -655,10 +655,10 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         lastFrame();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
         //prev key
-        getGui()->getApp()->getTimeLine()->goToPreviousKeyframe();
+        getGui()->getApp()->goToPreviousKeyframe();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
         //next key
-        getGui()->getApp()->getTimeLine()->goToNextKeyframe();
+        getGui()->getApp()->goToNextKeyframe();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key) ) {
         centerViewer();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionClipEnabled, modifiers, key) ) {

@@ -537,16 +537,12 @@ ViewerTab::manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<Ti
 {
     if (disconnectPrevious) {
         boost::shared_ptr<TimeLine> previous = _imp->timeLineGui->getTimeline();
-        QObject::disconnect( _imp->nextKeyFrame_Button,SIGNAL( clicked(bool) ),previous.get(), SLOT( goToNextKeyframe() ) );
-        QObject::disconnect( _imp->previousKeyFrame_Button,SIGNAL( clicked(bool) ),previous.get(), SLOT( goToPreviousKeyframe() ) );
         QObject::disconnect( previous.get(),SIGNAL( frameChanged(SequenceTime,int) ),
                          this, SLOT( onTimeLineTimeChanged(SequenceTime,int) ) );
         
 
     }
     
-    QObject::connect( _imp->nextKeyFrame_Button,SIGNAL( clicked(bool) ),timeline.get(), SLOT( goToNextKeyframe() ) );
-    QObject::connect( _imp->previousKeyFrame_Button,SIGNAL( clicked(bool) ),timeline.get(), SLOT( goToPreviousKeyframe() ) );
     QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ),
                      this, SLOT( onTimeLineTimeChanged(SequenceTime,int) ) );
 

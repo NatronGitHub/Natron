@@ -144,6 +144,7 @@ SOURCES += \
     ParallelRenderArgs.cpp \
     Plugin.cpp \
     PluginMemory.cpp \
+    PrecompNode.cpp \
     ProcessHandler.cpp \
     Project.cpp \
     ProjectPrivate.cpp \
@@ -303,6 +304,7 @@ HEADERS += \
     ParallelRenderArgs.h \
     Plugin.h \
     PluginMemory.h \
+    PrecompNode.h \
     ProcessHandler.h \
     Project.h \
     ProjectPrivate.h \
@@ -337,6 +339,7 @@ HEADERS += \
     TextureRectSerialization.h \
     ThreadStorage.h \
     TimeLine.h \
+    TimeLineKeyFrames.h \
     Timer.h \
     Transform.h \
     Variant.h \

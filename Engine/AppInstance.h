@@ -37,6 +37,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/RectD.h"
+#include "Engine/TimeLineKeyFrames.h"
 #include "Engine/EngineFwd.h"
 
 struct AppInstancePrivate;
@@ -142,7 +143,7 @@ public:
 }
 
 class AppInstance
-    : public QObject, public boost::noncopyable
+    : public QObject, public boost::noncopyable, public TimeLineKeyFrames
 {
     Q_OBJECT
 
@@ -154,6 +155,8 @@ public:
     virtual ~AppInstance();
 
     virtual void aboutToQuit();
+    
+    virtual bool isBackground() const { return true; }
     
     struct RenderRequest {
         QString writerName;
@@ -167,7 +170,7 @@ public:
         int frameStep;
     };
     
-    virtual void load(const CLArgs& cl);
+    virtual void load(const CLArgs& cl,bool makeEmptyInstance);
 
     int getAppID() const;
 

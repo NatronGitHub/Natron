@@ -1191,7 +1191,7 @@ LoadNodePresetsCommand::redo()
                 newNode->loadKnobs(**it);
                 std::list<SequenceTime> keys;
                 newNode->getAllKnobsKeyframes(&keys);
-                newNode->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(keys, true);
+                newNode->getApp()->addMultipleKeyframeIndicatorsAdded(keys, true);
                 _newChildren.push_back(newNode);
             }
         }
@@ -1740,7 +1740,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,const std::list<boost::s
         std::vector<NodePtr> groupInputs;
         
         NodePtr groupOutput = group->getOutputNode(true);
-        group->getInputs(&groupInputs);
+        group->getInputs(&groupInputs, true);
         
         std::list<boost::shared_ptr<NodeGui> > nodesToCopy;
         for (NodeList::iterator it2 = nodes.begin(); it2!=nodes.end(); ++it2) {

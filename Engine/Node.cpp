@@ -66,6 +66,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
 #include "Engine/Plugin.h"
+#include "Engine/PrecompNode.h"
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoPaint.h"
@@ -188,6 +189,7 @@ struct Node::Implementation
                    Natron::Plugin* plugin_)
     : _publicInterface(publicInterface)
     , group(collection)
+    , precomp()
     , app(app_)
     , isPartOfProject(true)
     , knobsInitialized(false)
@@ -342,6 +344,8 @@ struct Node::Implementation
     Node* _publicInterface;
     
     boost::weak_ptr<NodeCollection> group;
+    
+    boost::weak_ptr<PrecompNode> precomp;
     
     AppInstance* app; // pointer to the app: needed to access the application's default-project's format
     
@@ -581,6 +585,20 @@ void
 Node::switchInternalPlugin(Natron::Plugin* plugin)
 {
     _imp->plugin = plugin;
+}
+
+void
+Node::setPrecompNode(const boost::shared_ptr<PrecompNode>& precomp)
+{
+    //QMutexLocker k(&_imp->pluginsPropMutex);
+    _imp->precomp = precomp;
+}
+
+boost::shared_ptr<PrecompNode>
+Node::isPartOfPrecomp() const
+{
+    //QMutexLocker k(&_imp->pluginsPropMutex);
+    return _imp->precomp.lock();
 }
 
 void
@@ -1249,7 +1267,7 @@ Node::computeHashInternal()
     } // QWriteLocker l(&_imp->knobsAgeMutex);
     
     bool hashChanged = oldHash != newHash;
-    
+
     if (hashChanged) {
         _imp->liveInstance->onNodeHashChanged(newHash);
         if (_imp->nodeCreated && !getApp()->getProject()->isProjectClosing()) {
@@ -1325,13 +1343,13 @@ Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
 }
 
 void
-Node::removeAllImagesFromCache()
+Node::removeAllImagesFromCache(bool blocking)
 {
     boost::shared_ptr<Project> proj = getApp()->getProject();
     if (proj->isProjectClosing() || proj->isLoadingProject()) {
         return;
     }
-    appPTR->removeAllCacheEntriesForHolder(this);
+    appPTR->removeAllCacheEntriesForHolder(this, blocking);
 }
 
 void
@@ -1403,6 +1421,8 @@ Node::loadKnobs(const NodeSerialization & serialization,bool updateKnobGui)
     restoreUserKnobs(serialization);
     
     setKnobsAge( serialization.getKnobsAge() );
+    
+    _imp->liveInstance->onKnobsLoaded();
 }
 
 void
@@ -2076,7 +2096,7 @@ Node::removeReferences(bool ensureThreadsFinished)
         isOutput->getRenderEngine()->quitEngine();
     }
     
-    removeAllImagesFromCache();
+    removeAllImagesFromCache(false);
     
     
     deleteNodeVariableToPython(getFullyQualifiedName());
@@ -2650,7 +2670,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
         
             
             bool disableNatronKnobs = _imp->liveInstance->isReader() || isWriter || _imp->liveInstance->isTrackerNode() || dynamic_cast<NodeGroup*>(_imp->liveInstance.get()) || dynamic_cast<GroupInput*>(_imp->liveInstance.get()) ||
-            dynamic_cast<GroupOutput*>(_imp->liveInstance.get());
+            dynamic_cast<GroupOutput*>(_imp->liveInstance.get()) || dynamic_cast<PrecompNode*>(_imp->liveInstance.get());
             
             bool useChannels = !_imp->liveInstance->isMultiPlanar() && !disableNatronKnobs && !isDiskCache;
             
@@ -3300,25 +3320,126 @@ Node::hasViewersConnected(std::list<ViewerInstance* >* viewers) const
     }
 }
 
-void
-Node::getOutputsWithGroupRedirection(std::list<Node*>& outputs) const
+/**
+ * @brief Resolves links of the graph in the case of containers (that do not do any rendering but only contain nodes inside) 
+ * so that algorithms that cycle the tree from bottom to top
+ * properly visit all nodes in the correct order
+ **/
+static NodePtr applyNodeRedirectionsUpstream(const NodePtr& node, bool useGuiInput)
 {
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
-    GroupOutput* isOutput = dynamic_cast<GroupOutput*>(_imp->liveInstance.get());
+    if (!node) {
+        return node;
+    }
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
     if (isGrp) {
-        isGrp->getInputsOutputs(&outputs);
-    } else if (isOutput) {
+        //The node is a group, instead jump directly to the output node input of the  group
+        return applyNodeRedirectionsUpstream(isGrp->getOutputNodeInput(useGuiInput), useGuiInput);
+    }
+    
+    PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>(node->getLiveInstance());
+    if (isPrecomp) {
+        //The node is a precomp, instead jump directly to the output node of the precomp
+        return applyNodeRedirectionsUpstream(isPrecomp->getOutputNode(), useGuiInput);
+    }
+    
+    GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
+    if (isInput) {
+        //The node is a group input,  jump to the corresponding input of the group
+        boost::shared_ptr<NodeCollection> collection = node->getGroup();
+        assert(collection);
+        isGrp = dynamic_cast<NodeGroup*>(collection.get());
+        if (isGrp) {
+            return applyNodeRedirectionsUpstream(isGrp->getRealInputForInput(useGuiInput,node),useGuiInput);
+        }
+    }
+    
+    return node;
+}
+
+/**
+ * @brief Resolves links of the graph in the case of containers (that do not do any rendering but only contain nodes inside)
+ * so that algorithms that cycle the tree from top to bottom
+ * properly visit all nodes in the correct order. Note that one node may translate to several nodes since multiple nodes
+ * may be connected to the same node.
+ **/
+static void applyNodeRedirectionsDownstream(int recurseCounter, Node* node, bool useGuiOutputs, std::list<Node*>& translated)
+{
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+    if (isGrp) {
+        //The node is a group, meaning it should not be taken into account, instead jump directly to the input nodes output of the group
+        std::list<Node*> inputNodes;
+        isGrp->getInputsOutputs(&inputNodes, useGuiOutputs);
+        for (std::list<Node*>::iterator it2 = inputNodes.begin(); it2 != inputNodes.end(); ++it2) {
+            //Call recursively on them
+            applyNodeRedirectionsDownstream(recurseCounter + 1,*it2, useGuiOutputs, translated);
+        }
+        return;
+    }
+    
+    GroupOutput* isOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
+    if (isOutput) {
+        //The node is the output of a group, its outputs are the outputs of the group
         boost::shared_ptr<NodeCollection> collection = isOutput->getNode()->getGroup();
         assert(collection);
         isGrp = dynamic_cast<NodeGroup*>(collection.get());
         if (isGrp) {
             
             std::list<Node*> groupOutputs;
-            isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
+            if (useGuiOutputs) {
+                groupOutputs = isGrp->getNode()->getGuiOutputs();
+            } else {
+                isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
+            }
             for (std::list<Node*>::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
-                outputs.push_back(*it2);
+                //Call recursively on them
+                applyNodeRedirectionsDownstream(recurseCounter + 1, *it2,useGuiOutputs, translated);
             }
         }
+        return;
+    }
+    
+    PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>(node->getLiveInstance());
+    if (isPrecomp) {
+        //The node is a precomp, meaning it should not be taken into account, instead jump directly to the input nodes output of the precomp
+        NodeList precompInputs;
+        isPrecomp->getPrecompInputs(&precompInputs);
+        for (NodeList::iterator it = precompInputs.begin(); it!=precompInputs.end(); ++it) {
+            //Call recursively on them
+            applyNodeRedirectionsDownstream(recurseCounter + 1, it->get(),useGuiOutputs, translated);
+        }
+        return;
+    }
+    
+    boost::shared_ptr<PrecompNode> isInPrecomp = node->isPartOfPrecomp();
+    if (isInPrecomp && isInPrecomp->getOutputNode().get() == node) {
+        //This node is the output of the precomp, its outputs are the outputs of the precomp node
+        std::list<Node*> groupOutputs;
+        if (useGuiOutputs) {
+            groupOutputs = isInPrecomp->getNode()->getGuiOutputs();
+        } else {
+            isInPrecomp->getNode()->getOutputs_mt_safe(groupOutputs);
+        }
+        for (std::list<Node*>::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
+            //Call recursively on them
+            applyNodeRedirectionsDownstream(recurseCounter + 1, *it2,useGuiOutputs, translated);
+        }
+        return;
+    }
+    
+    //Base case: return this node
+    if (recurseCounter > 0) {
+        translated.push_back(node);
+    }
+}
+
+
+void
+Node::getOutputsWithGroupRedirection(std::list<Node*>& outputs) const
+{
+    std::list<Node*> redirections;
+    applyNodeRedirectionsDownstream(0, const_cast<Node*>(this), false, redirections);
+    if (!redirections.empty()) {
+        outputs.insert(outputs.begin(), redirections.begin(), redirections.end());
     } else {
         QMutexLocker l(&_imp->outputsMutex);
         outputs.insert(outputs.begin(), _imp->outputs.begin(), _imp->outputs.end());
@@ -3421,6 +3542,8 @@ Node::getInput(int index) const
     return getInputInternal(false, true, index);
 }
 
+
+
 boost::shared_ptr<Node>
 Node::getInputInternal(bool useGuiInput, bool useGroupRedirections, int index) const
 {
@@ -3438,23 +3561,7 @@ Node::getInputInternal(bool useGuiInput, bool useGroupRedirections, int index) c
     
     boost::shared_ptr<Node> ret =  useGuiInput ? _imp->guiInputs[index] : _imp->inputs[index];
     if (ret && useGroupRedirections) {
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(ret->getLiveInstance());
-        if (isGrp) {
-            ret =  isGrp->getOutputNodeInput(useGuiInput);
-        }
-        
-        if (ret) {
-            GroupInput* isInput = dynamic_cast<GroupInput*>(ret->getLiveInstance());
-            if (isInput) {
-                boost::shared_ptr<NodeCollection> collection = ret->getGroup();
-                assert(collection);
-                isGrp = dynamic_cast<NodeGroup*>(collection.get());
-                if (isGrp) {
-                    ret = isGrp->getRealInputForInput(useGuiInput,ret);
-                }
-            }
-        }
-        
+        ret = applyNodeRedirectionsUpstream(ret, useGuiInput);
     }
     return ret;
 }
@@ -3895,7 +4002,7 @@ Node::Implementation::ifGroupForceHashChangeOfInputs()
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(liveInstance.get());
     if (isGrp && !isGrp->getApp()->isCreatingNodeTree()) {
         std::list<Natron::Node* > inputsOutputs;
-        isGrp->getInputsOutputs(&inputsOutputs);
+        isGrp->getInputsOutputs(&inputsOutputs, false);
         for (std::list<Natron::Node* >::iterator it = inputsOutputs.begin(); it != inputsOutputs.end(); ++it) {
             (*it)->incrementKnobsAge_internal();
             (*it)->computeHash();
@@ -5110,21 +5217,12 @@ Node::setPersistentMessage(MessageTypeEnum type,
         
         {
             QMutexLocker k(&_imp->persistentMessageMutex);
-            
-            QString message;
-            message.append( getLabel_mt_safe().c_str() );
-            if (type == eMessageTypeError) {
-                message.append(" error: ");
-                _imp->persistentMessageType = 1;
-            } else if (type == eMessageTypeWarning) {
-                message.append(" warning: ");
-                _imp->persistentMessageType = 2;
-            }
-            message.append( content.c_str() );
-            if (message == _imp->persistentMessage) {
+            QString mess(content.c_str());
+            if (mess == _imp->persistentMessage) {
                 return;
             }
-            _imp->persistentMessage = message;
+            _imp->persistentMessageType = (int)type;
+            _imp->persistentMessage = mess;
         }
         Q_EMIT persistentMessageChanged();
     } else {
@@ -5140,11 +5238,20 @@ Node::hasPersistentMessage() const
 }
 
 void
-Node::getPersistentMessage(QString* message,int* type) const
+Node::getPersistentMessage(QString* message,int* type,bool prefixLabelAndType) const
 {
     QMutexLocker k(&_imp->persistentMessageMutex);
     *type = _imp->persistentMessageType;
-    *message = _imp->persistentMessage;
+    
+    if (prefixLabelAndType && !_imp->persistentMessage.isEmpty()) {
+        message->append( getLabel_mt_safe().c_str() );
+        if (*type == eMessageTypeError) {
+            message->append(" error: ");
+        } else if (*type == eMessageTypeWarning) {
+            message->append(" warning: ");
+        }
+    }
+    message->append(_imp->persistentMessage);
 }
 
 void
@@ -5760,7 +5867,7 @@ Node::onInputChanged(int inputNb)
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
     if (isGroup) {
         std::vector<NodePtr> groupInputs;
-        isGroup->getInputs(&groupInputs);
+        isGroup->getInputs(&groupInputs, false);
         if (inputNb >= 0 && inputNb < (int)groupInputs.size() && groupInputs[inputNb]) {
             std::map<Node*,int> inputOutputs;
             groupInputs[inputNb]->getOutputsConnectedToThisNode(&inputOutputs);
@@ -5783,6 +5890,19 @@ Node::onInputChanged(int inputNb)
                 it->first->onInputChanged(it->second);
             }
         }
+    }
+    
+    /*
+     * If this node is the output of a pre-comp, notify the precomp output nodes that their input have changed
+     */
+    boost::shared_ptr<PrecompNode> isInPrecomp = isPartOfPrecomp();
+    if (isInPrecomp && isInPrecomp->getOutputNode().get() == this) {
+        std::map<Node*,int> inputOutputs;
+        isInPrecomp->getNode()->getOutputsConnectedToThisNode(&inputOutputs);
+        for (std::map<Node*,int> ::iterator it = inputOutputs.begin(); it!=inputOutputs.end(); ++it) {
+            it->first->onInputChanged(it->second);
+        }
+
     }
     
     if (mustCallEndInputEdition) {
@@ -6726,7 +6846,7 @@ Node::showKeyframesOnTimeline(bool emitSignal)
     _imp->keyframesDisplayedOnTimeline = true;
     std::list<SequenceTime> keys;
     getAllKnobsKeyframes(&keys);
-    getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(keys, emitSignal);
+    getApp()->addMultipleKeyframeIndicatorsAdded(keys, emitSignal);
 }
 
 void
@@ -6739,7 +6859,7 @@ Node::hideKeyframesFromTimeline(bool emitSignal)
     _imp->keyframesDisplayedOnTimeline = false;
     std::list<SequenceTime> keys;
     getAllKnobsKeyframes(&keys);
-    getApp()->getTimeLine()->removeMultipleKeyframeIndicator(keys, emitSignal);
+    getApp()->removeMultipleKeyframeIndicator(keys, emitSignal);
 }
 
 bool
@@ -7481,7 +7601,7 @@ Node::forceRefreshAllInputRelatedData()
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
     if (isGroup) {
         std::list<Node*> inputs;
-        isGroup->getInputsOutputs(&inputs);
+        isGroup->getInputsOutputs(&inputs, false);
         for (std::list<Node*>::iterator it = inputs.begin(); it != inputs.end(); ++it) {
             if ((*it)) {
                 (*it)->refreshInputRelatedDataRecursive();
@@ -7545,26 +7665,6 @@ Node::refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedN
         return;
     }
     refreshInputRelatedDataInternal(markedNodes);
-    
-    /*
-     If this node is the bottom node of the rotopaint tree, forward directly to the outputs of the Rotopaint node
-     */
-   /* boost::shared_ptr<RotoDrawableItem> attachedItem = _imp->paintStroke.lock();
-    if (attachedItem) {
-        NodePtr rotoPaintNode = attachedItem->getContext()->getNode();
-        assert(rotoPaintNode);
-        boost::shared_ptr<RotoContext> context = rotoPaintNode->getRotoContext();
-        assert(context);
-        NodePtr bottomMerge = context->getRotoPaintBottomMergeNode();
-        if (bottomMerge.get() == this) {
-            std::list<Natron::Node*>  outputs;
-            rotoPaintNode->getOutputsWithGroupRedirection(outputs);
-            for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-                (*it)->refreshInputRelatedDataRecursiveInternal( markedNodes );
-            }
-            return;
-        }
-    }*/
     
     ///Now notify outputs we have changed
     std::list<Natron::Node*>  outputs;
