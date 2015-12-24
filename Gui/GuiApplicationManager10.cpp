@@ -103,10 +103,11 @@ GuiApplicationManager::updateAllRecentFileMenus()
 
     for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* appInstance = dynamic_cast<GuiAppInstance*>(it->second.app);
-        assert(appInstance);
-        Gui* gui = appInstance->getGui();
-        assert(gui);
-        gui->updateRecentFileActions();
+        if (appInstance) {
+            Gui* gui = appInstance->getGui();
+            assert(gui);
+            gui->updateRecentFileActions();
+        }
     }
 }
 
@@ -125,13 +126,14 @@ void
 GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                               std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap)
 {
-    ////Use ReadQt and WriteQt only for debug versions of Natron.
-    // these  are built-in nodes
+    ////ReadQt and WriteQt are buggy and not maintained
+    // these are built-in nodes
     QStringList grouping;
+    grouping.push_back(PLUGIN_GROUP_IMAGE);
 
-    grouping.push_back(PLUGIN_GROUP_IMAGE); // Readers, Writers, and Generators are in the "Image" group in Nuke
-
-# ifdef DEBUG
+# ifdef NATRON_ENABLE_QT_IO_NODES
+   
+    
     {
         QStringList pgrp = grouping;
         pgrp.push_back("Readers");
@@ -187,7 +189,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
             }
         }
     }
-# else // !DEBUG
+# else // !NATRON_ENABLE_QT_IO_NODES
     Q_UNUSED(readersMap);
     Q_UNUSED(writersMap);
 # endif // DEBUG
