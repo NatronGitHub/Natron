@@ -24,6 +24,8 @@
 
 #include "QtEncoder.h"
 
+#ifdef NATRON_ENABLE_QT_IO_NODES
+
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -293,4 +295,6 @@ QtWriter::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) con
 {
     depths->push_back(eImageBitDepthFloat);
 }
+
+#endif //NATRON_ENABLE_QT_IO_NODES
 

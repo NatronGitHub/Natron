@@ -27,6 +27,8 @@
 
 #include "Global/Macros.h"
 
+#ifdef NATRON_ENABLE_QT_IO_NODES
+
 #include <vector>
 #include <string>
 
@@ -139,5 +141,7 @@ private:
     boost::shared_ptr<KnobInt> _timeOffset;
     bool _settingFrameRange;
 };
+
+#endif // NATRON_ENABLE_QT_IO_NODES
 
 #endif /* defined(NATRON_READERS_READQT_H_) */

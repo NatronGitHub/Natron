@@ -193,6 +193,9 @@ NATRON_VERSION_REVISION)
 //In this context, the reader of the bitmap should then wait for the pixel to be available.
 #define NATRON_ENABLE_TRIMAP 1
 
+//Uncomment to get access to ReadQt and WriteQt nodes. Note that they are no longer maintained and probably buggy.
+//#define NATRON_ENABLE_QT_IO_NODES
+
 // compiler_warning.h
 #define STRINGISE_IMPL(x) # x
 #define STRINGISE(x) STRINGISE_IMPL(x)
