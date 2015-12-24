@@ -27,6 +27,8 @@
 
 #include "Global/Macros.h"
 
+#ifdef NATRON_ENABLE_QT_IO_NODES
+
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/EngineFwd.h"
 
@@ -101,5 +103,7 @@ private:
     boost::shared_ptr<KnobInt> _lastFrameKnob;
     boost::shared_ptr<KnobButton> _renderKnob;
 };
+
+#endif // NATRON_ENABLE_QT_IO_NODES
 
 #endif /* defined(NATRON_WRITERS_WRITEQT_H_) */

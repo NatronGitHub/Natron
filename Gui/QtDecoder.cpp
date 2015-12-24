@@ -24,6 +24,8 @@
 
 #include "QtDecoder.h"
 
+#ifdef NATRON_ENABLE_QT_IO_NODES
+
 #include <stdexcept>
 
 CLANG_DIAG_OFF(deprecated)
@@ -542,3 +544,4 @@ QtReader::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) con
     depths->push_back(eImageBitDepthFloat);
 }
 
+#endif // NATRON_ENABLE_QT_IO_NODES

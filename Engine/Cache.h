@@ -1278,9 +1278,13 @@ public:
         _cleanerThread.appendToQueue(holder->getCacheID(), nodeHash, false);
     }
 
-    void removeAllEntriesForHolderPublic(const CacheEntryHolder* holder)
+    void removeAllEntriesForHolderPublic(const CacheEntryHolder* holder, bool blocking)
     {
-        _cleanerThread.appendToQueue(holder->getCacheID(), 0, true);
+        if (blocking) {
+            removeAllEntriesWithDifferentNodeHashForHolderPrivate(holder->getCacheID(), 0, true);
+        } else {
+            _cleanerThread.appendToQueue(holder->getCacheID(), 0, true);
+        }
     }
     
     void getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
