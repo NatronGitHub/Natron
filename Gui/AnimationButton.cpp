@@ -87,7 +87,7 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
         } else {
             expr << effect->getApp()->getAppIDString() << ".";
         }
-        expr << effect->getNode()->getFullyQualifiedName() << "." << _knob->getKnob()->getName()
+        expr << effect->getNode()->getScriptName_mt_safe() << "." << _knob->getKnob()->getName()
         << ".get()";
         if (_knob->getKnob()->getDimension() > 1) {
             expr << "[dimension]";
