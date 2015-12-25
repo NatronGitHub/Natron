@@ -105,6 +105,8 @@ struct PrecompNodePrivate
     
     void setReadNodeErrorChoice();
     
+    void setFirstAndLastFrame();
+    
     void refreshReadNodeInput();
     
     void populateWriteNodesChoice(bool setPartOfPrecomp, bool setWriteNodeChoice);
@@ -308,6 +310,7 @@ PrecompNode::initializeKnobs()
     first->setName("first");
     first->setHintToolTip("The first-frame to render");
     first->setAnimationEnabled(false);
+    first->setEvaluateOnChange(false);
     first->setAddNewLine(false);
     renderGroup->addKnob(first);
     _imp->firstFrameKnob = first;
@@ -316,6 +319,7 @@ PrecompNode::initializeKnobs()
     last->setName("last");
     last->setHintToolTip("The last-frame to render");
     last->setAnimationEnabled(false);
+    last->setEvaluateOnChange(false);
     last->setAddNewLine(false);
     renderGroup->addKnob(last);
     _imp->lastFrameKnob = last;
@@ -389,6 +393,7 @@ PrecompNode::knobChanged(KnobI* k,Natron::ValueChangedReasonEnum /*reason*/,
         _imp->refreshOutputNode();
     } else if (k == _imp->writeNodesKnob.lock().get()) {
         _imp->createReadNode();
+        _imp->setFirstAndLastFrame();
     } else if (k == _imp->errorBehaviourKnbo.lock().get()) {
         _imp->setReadNodeErrorChoice();
     } else if (k == _imp->enablePreRenderKnob.lock().get()) {
@@ -635,8 +640,10 @@ PrecompNodePrivate::createReadNode()
     
     QObject::connect(read.get(), SIGNAL(persistentMessageChanged()), _publicInterface, SLOT(onReadNodePersistentMessageChanged()));
     
-    QMutexLocker k(&dataMutex);
-    readNode = read;
+    {
+        QMutexLocker k(&dataMutex);
+        readNode = read;
+    }
 }
 
 void
@@ -680,6 +687,26 @@ PrecompNodePrivate::refreshOutputNode()
         it->first->onInputChanged(it->second);
     }
 }
+
+void
+PrecompNodePrivate::setFirstAndLastFrame()
+{
+    NodePtr writeNode = getWriteNodeFromPreComp();
+    if (!writeNode) {
+        return;
+    }
+    boost::shared_ptr<KnobI> writefirstFrameKnob = writeNode->getKnobByName("firstFrame");
+    boost::shared_ptr<KnobI> writelastFrameKnob = writeNode->getKnobByName("lastFrame");
+    KnobInt* firstFrame = dynamic_cast<KnobInt*>(writefirstFrameKnob.get());
+    KnobInt* lastFrame = dynamic_cast<KnobInt*>(writelastFrameKnob.get());
+    if (firstFrame) {
+        firstFrameKnob.lock()->setValue(firstFrame->getValue(), 0);
+    }
+    if (lastFrame) {
+        lastFrameKnob.lock()->setValue(lastFrame->getValue(), 0);
+    }
+}
+
 
 void
 PrecompNodePrivate::refreshReadNodeInput()
