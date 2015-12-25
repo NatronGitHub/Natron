@@ -1503,9 +1503,21 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
 , _isRedone(false)
 {
     
+    assert(!nodes.empty());
+    
+    QPointF groupPosition;
     for (NodeGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _originalNodes.push_back(*it);
+        
+        QPointF nodePos = (*it)->getPos_mt_safe();
+        groupPosition += nodePos;
     }
+    
+    if (!nodes.empty()) {
+        groupPosition.rx() /= nodes.size();
+        groupPosition.ry() /= nodes.size();
+    }
+    
     CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
                              "",
                              -1,-1,
@@ -1524,9 +1536,12 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
     assert(container_i);
     _group = boost::dynamic_pointer_cast<NodeGui>(container_i);
     assert(_group.lock());
+    container_i->setPosition(groupPosition.x(), groupPosition.y());
     
     std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
     _graph->copyNodesAndCreateInGroup(nodes,isGrp,newNodes);
+    
+    
     
     NodeList internalNewNodes;
     for (std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >::iterator it = newNodes.begin(); it!=newNodes.end(); ++it) {
