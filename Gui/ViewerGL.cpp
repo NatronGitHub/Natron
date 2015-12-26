@@ -2758,6 +2758,9 @@ ViewerGL::onProjectFormatChangedInternal(const Format & format,bool triggerRende
     for (int i = 0; i < 2; ++i) {
         if (_imp->infoViewer[i]) {
             _imp->infoViewer[i]->setResolution(format);
+            if (!_imp->activeTextures[i]) {
+                _imp->currentViewerInfo[i].setRoD(canonicalFormat);
+            }
         }
     }
     {
