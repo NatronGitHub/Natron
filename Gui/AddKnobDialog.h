@@ -45,7 +45,11 @@ class AddKnobDialog : public QDialog
     Q_OBJECT
 public:
     
-    AddKnobDialog(DockablePanel* panel,const boost::shared_ptr<KnobI>& knob, QWidget* parent);
+    AddKnobDialog(DockablePanel* panel,
+                  const boost::shared_ptr<KnobI>& knob,
+                  const std::string& selectedPageName,
+                  const std::string& selectedGroupName,
+                  QWidget* parent);
     
     virtual ~AddKnobDialog();
     

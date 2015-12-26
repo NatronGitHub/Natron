@@ -417,6 +417,8 @@ static ParamDataTypeEnum getChoiceIndexFromKnobType(KnobI* knob)
 
 AddKnobDialog::AddKnobDialog(DockablePanel* panel,
                              const boost::shared_ptr<KnobI>& knob,
+                             const std::string& selectedPageName,
+                             const std::string& selectedGroupName,
                              QWidget* parent)
 : QDialog(parent)
 , _imp(new AddKnobDialogPrivate(panel))
@@ -969,8 +971,18 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
                 pageIndexLoaded = index;
             }
         }
-        
-        
+    } else {
+        ///If the selected page name in the manage user params dialog is valid, set the page accordingly
+        if (!selectedPageName.empty()) {
+            int index = 0;
+            for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
+                if ((*it)->getName() == selectedPageName) {
+                    _imp->parentPage->setCurrentIndex_no_emit(index);
+                    pageIndexLoaded = index;
+                    break;
+                }
+            }
+        }
     }
     
     _imp->mainLayout->addRow(_imp->parentPageLabel, optContainer);
@@ -998,6 +1010,14 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
                     break;
                 }
                 
+            }
+        }
+    } else {
+        ///If the selected group name in the manage user params dialog is valid, set the group accordingly
+        for (int i = 0; i < _imp->parentGroup->count(); ++i) {
+            if (_imp->parentGroup->itemText(i) == QString(selectedGroupName.c_str())) {
+                _imp->parentGroup->setCurrentIndex(i);
+                break;
             }
         }
     }
