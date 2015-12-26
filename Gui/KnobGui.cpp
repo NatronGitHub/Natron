@@ -257,7 +257,8 @@ bool
 KnobGui::isLabelVisible() const
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-    return !knob->getLabel().empty() && knob->isLabelVisible();
+    KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
+    return isStringKnob || (!knob->getLabel().empty() && knob->isLabelVisible());
 }
 
 void

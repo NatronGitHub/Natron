@@ -974,7 +974,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
     registerBuiltInPlugin<RotoPaint>(NATRON_IMAGES_PATH "GroupingIcons/Set2/paint_grouping_2.png", false, false);
     registerBuiltInPlugin<RotoNode>(NATRON_IMAGES_PATH "rotoNodeIcon.png", false, false);
     registerBuiltInPlugin<RotoSmear>("", false, true);
-    registerBuiltInPlugin<PrecompNode>(NATRON_IMAGES_PATH "natronProjectIcon_linux.png", false, false);
+    registerBuiltInPlugin<PrecompNode>(NATRON_IMAGES_PATH "precompNodeIcon.png", false, false);
     if (!isBackground()) {
         registerBuiltInPlugin<ViewerInstance>(NATRON_IMAGES_PATH "viewer_icon.png", false, false);
     }
