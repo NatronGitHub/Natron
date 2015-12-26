@@ -36,6 +36,7 @@
 
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
+#include <QtCore/QReadWriteLock>
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
 
@@ -453,7 +454,7 @@ public:
     QWaitCondition textureBeingRenderedCond;
     std::list<boost::shared_ptr<Natron::FrameEntry> > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
     
-    mutable QMutex gammaLookupMutex;
+    mutable QReadWriteLock gammaLookupMutex;
     std::vector<float> gammaLookup; // protected by gammaLookupMutex
     
     //When painting, this is the last texture we've drawn onto so that we can update only the specific portion needed

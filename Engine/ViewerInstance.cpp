@@ -947,7 +947,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         outArgs->params->alphaChannelName = _imp->viewerParamsAlphaChannelName;
     }
     {
-        QMutexLocker k(&_imp->gammaLookupMutex);
+        QWriteLocker k(&_imp->gammaLookupMutex);
         if (_imp->gammaLookup.empty()) {
             _imp->fillGammaLut(1. / outArgs->params->gamma);
         }
@@ -1534,7 +1534,7 @@ ViewerInstance::renderViewer_internal(int view,
                                         lutFromColorspace(inArgs.params->lut),
                                         alphaChannelIndex);
             
-            QMutexLocker k(&_imp->gammaLookupMutex);
+            QReadLocker k(&_imp->gammaLookupMutex);
             renderFunctor(viewerRenderRoI,
                           args,
                           this,
@@ -1606,11 +1606,11 @@ ViewerInstance::renderViewer_internal(int view,
                                         lutFromColorspace(inArgs.params->lut),
                                         alphaChannelIndex);
             if (runInCurrentThread) {
-                QMutexLocker k(&_imp->gammaLookupMutex);
+                QReadLocker k(&_imp->gammaLookupMutex);
                 renderFunctor(viewerRenderRoI,
                               args, this, inArgs.params->ramBuffer);
             } else {
-                QMutexLocker k(&_imp->gammaLookupMutex);
+                QReadLocker k(&_imp->gammaLookupMutex);
                 QtConcurrent::map( splitRects,
                                   boost::bind(&renderFunctor,
                                               _1,
@@ -2672,11 +2672,15 @@ ViewerInstance::onGammaChanged(double value)
     bool changed = false;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
+        
         if (_imp->viewerParamsGamma != value) {
             _imp->viewerParamsGamma = value;
-            _imp->fillGammaLut(1. / value);
             changed = true;
         }
+    }
+    if (changed) {
+        QWriteLocker k(&_imp->gammaLookupMutex);
+        _imp->fillGammaLut(1. / value);
     }
     assert(_imp->uiContext);
     if (changed) {
