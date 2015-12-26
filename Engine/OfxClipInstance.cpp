@@ -817,10 +817,14 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
     Natron::ImageComponents comp;
     if (!ofxPlane) {
         
-        EffectInstance::ComponentsNeededMap neededComps;
+        boost::shared_ptr<EffectInstance::ComponentsNeededMap> neededComps;
         _nodeInstance->getThreadLocalNeededComponents(&neededComps);
-        EffectInstance::ComponentsNeededMap::iterator found = neededComps.find(inputnb);
-        if (found != neededComps.end()) {
+        if (!neededComps) {
+            qDebug() << "Plug-in didn't specify any needed components via getClipComponents for clip " << getName().c_str();
+            return 0;
+        }
+        EffectInstance::ComponentsNeededMap::iterator found = neededComps->find(inputnb);
+        if (found != neededComps->end()) {
             if (found->second.empty()) {
                 qDebug() << "Plug-in didn't specify any needed components via getClipComponents for clip " << getName().c_str();
                 return 0;

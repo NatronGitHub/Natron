@@ -39,7 +39,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                                                             const boost::shared_ptr<Natron::Node>& node,
                                                                             const FramesNeededMap& framesNeeded,
                                                                             const RoIMap& inputRois,
-                                                                            const std::map<int, Natron::EffectInstance*>& reroutesMap,
+                                                                            const boost::shared_ptr<std::map<int, Natron::EffectInstance*> >& reroutesMap,
                                                                             bool useTransforms, // roi functor specific
                                                                             unsigned int originalMipMapLevel, // roi functor specific
                                                                             double time,
@@ -83,26 +83,16 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         }
         
         //Redirect for transforms if needed
-        EffectInstance* inputEffect = NULL;
-        std::map<int, EffectInstance*>::const_iterator foundReroute = reroutesMap.find(inputNb);
-        if (foundReroute != reroutesMap.end()) {
-            inputEffect = foundReroute->second->getInput(inputNb);
-        } else {
-            //if (!isRoto || isRenderFunctor) {
-                inputEffect = node->getLiveInstance()->getInput(inputNb);
-            /*} else {
-                //For the roto, propagate the request to the internal tree when not rendering
-                boost::shared_ptr<RotoContext> roto = node->getRotoContext();
-                std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder();
-                if (!items.empty()) {
-                    const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
-                    assert(firstStrokeItem);
-                    boost::shared_ptr<Node> bottomMerge = firstStrokeItem->getMergeNode();
-                    assert(bottomMerge);
-                    inputEffect = bottomMerge->getLiveInstance();
-                }
-                
-            }*/
+        EffectInstance* inputEffect = 0;
+        if (reroutesMap) {
+            std::map<int, EffectInstance*>::const_iterator foundReroute = reroutesMap->find(inputNb);
+            if (foundReroute != reroutesMap->end()) {
+                inputEffect = foundReroute->second->getInput(inputNb);
+            }
+        }
+        
+        if (!inputEffect) {
+            inputEffect = node->getLiveInstance()->getInput(inputNb);
         }
         
         //Redirect the mask input
@@ -426,7 +416,8 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
         
         ///Concatenate transforms if needed
         if (useTransforms) {
-            effect->tryConcatenateTransforms(time, view, nodeRequest->mappedScale, &fvRequest->globalData.transforms);
+            fvRequest->globalData.transforms.reset(new InputMatrixMap);
+            effect->tryConcatenateTransforms(time, view, nodeRequest->mappedScale, fvRequest->globalData.transforms.get());
         }
         
         ///Get the frame/views needed for this frame/view
@@ -487,7 +478,10 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
     
     ///Transform Rois and get the reroutes map
     if (useTransforms) {
-        transformInputRois(effect,fvRequest->globalData.transforms,par,nodeRequest->mappedScale,&fvPerRequestData.inputsRoi,&fvRequest->globalData.reroutesMap);
+        if (fvRequest->globalData.transforms) {
+            fvRequest->globalData.reroutesMap.reset(new std::map<int, Natron::EffectInstance*>());
+            transformInputRois(effect,fvRequest->globalData.transforms,par,nodeRequest->mappedScale,&fvPerRequestData.inputsRoi,fvRequest->globalData.reroutesMap.get());
+        }
     }
     
     /*qDebug() << node->getFullyQualifiedName().c_str() << "RoI request: x1="<<canonicalRenderWindow.x1<<"y1="<<canonicalRenderWindow.y1<<"x2="<<canonicalRenderWindow.x2<<"y2="<<canonicalRenderWindow.y2;
@@ -742,11 +736,13 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     
 }
 
-ParallelRenderArgsSetter::ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args)
+ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > >& args)
 : argsMap(args)
 {
-    for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it != argsMap.end(); ++it) {
-        it->first->getLiveInstance()->setParallelRenderArgsTLS(it->second);
+    if (args) {
+        for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
+            it->first->getLiveInstance()->setParallelRenderArgsTLS(it->second);
+        }
     }
 }
 
@@ -777,7 +773,9 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
         }*/
     }
     
-    for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it != argsMap.end(); ++it) {
-        it->first->getLiveInstance()->invalidateParallelRenderArgsTLS();
+    if (argsMap) {
+        for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
+            it->first->getLiveInstance()->invalidateParallelRenderArgsTLS();
+        }
     }
 }

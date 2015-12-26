@@ -158,9 +158,9 @@ struct EffectInstance::RenderArgs
 
     //This is set only when the plug-in has set ePassThroughRenderAllRequestedPlanes
     ImageComponents _outputPlaneBeingRendered;
-    EffectInstance::ComponentsNeededMap  _compsNeeded;
+    boost::shared_ptr<EffectInstance::ComponentsNeededMap>  _compsNeeded;
     double _firstFrame, _lastFrame;
-
+    
     RenderArgs();
 
     RenderArgs(const RenderArgs & o);
@@ -296,7 +296,7 @@ public:
                                bool isIdentity,
                                double identityTime,
                                int inputNbIdentity,
-                               const EffectInstance::ComponentsNeededMap & compsNeeded);
+                               const boost::shared_ptr<EffectInstance::ComponentsNeededMap>& compsNeeded);
 
         void setArgs_secondPass(const RoIMap & roiMap,
                                 int firstFrame,

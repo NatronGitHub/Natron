@@ -656,6 +656,7 @@ EffectInstance::getImage(int inputNb,
                 return ImagePtr();
             }
         } else {
+            
             if (n) {
                 const ParallelRenderArgs* inputFrameArgs = n->getParallelRenderArgsTLS();
                 const FrameViewRequest* request = 0;
@@ -1562,14 +1563,17 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
 
 void
 EffectInstance::transformInputRois(Natron::EffectInstance* self,
-                                   const InputMatrixMap & inputTransforms,
+                                   const boost::shared_ptr<InputMatrixMap> & inputTransforms,
                                    double par,
                                    const RenderScale & scale,
                                    RoIMap* inputsRoi,
                                    std::map<int, EffectInstance*>* reroutesMap)
 {
+    if (!inputTransforms) {
+        return;
+    }
     //Transform the RoIs by the inverse of the transform matrix (which is in pixel coordinates)
-    for (InputMatrixMap::const_iterator it = inputTransforms.begin(); it != inputTransforms.end(); ++it) {
+    for (InputMatrixMap::const_iterator it = inputTransforms->begin(); it != inputTransforms->end(); ++it) {
         RectD transformedRenderWindow;
         Natron::EffectInstance* effectInTransformInput = self->getInput(it->first);
         assert(effectInTransformInput);
@@ -1611,7 +1615,7 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
                                         double par,
                                         const RectD & rod,
                                         const RectD & canonicalRenderWindow,
-                                        const InputMatrixMap & inputTransforms,
+                                        const boost::shared_ptr<InputMatrixMap>& inputTransforms,
                                         unsigned int mipMapLevel,
                                         const RenderScale & scale,
                                         const RenderScale & renderMappedScale,
@@ -1632,11 +1636,17 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
     }
 #endif
 
-    std::map<int, EffectInstance*> reroutesMap;
+    boost::shared_ptr<std::map<int, EffectInstance*> > reroutesMap;
     if (!request) {
-        transformInputRois(this, inputTransforms, par, scale, inputsRoi, &reroutesMap);
+        if (inputTransforms && !inputTransforms->empty()) {
+            reroutesMap.reset(new std::map<int, EffectInstance*>);
+            transformInputRois(this, inputTransforms, par, scale, inputsRoi, reroutesMap.get());
+        }
     } else {
-        reroutesMap = request->globalData.reroutesMap;
+        if (request->globalData.reroutesMap && !request->globalData.reroutesMap->empty()) {
+            reroutesMap = request->globalData.reroutesMap;
+        }
+        
     }
 
     return treeRecurseFunctor(true,
@@ -1690,7 +1700,7 @@ EffectInstance::RenderingFunctorRetEnum
 EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                       const ParallelRenderArgs & frameArgs,
                                       const RectToRender & rectToRender,
-                                      const std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > & frameTLS,
+                                      const boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > >& frameTLS,
                                       const bool renderFullScaleThenDownscale,
                                       const bool isSequentialRender,
                                       const bool isRenderResponseToUserInteraction,
@@ -1706,15 +1716,15 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                       const bool byPassCache,
                                       const Natron::ImageBitDepthEnum outputClipPrefDepth,
                                       const std::list<Natron::ImageComponents> & outputClipPrefsComps,
-                                      const ComponentsNeededMap & compsNeeded,
+                                      const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                       bool* processChannels,
-                                      ImagePlanesToRender & planes) // when MT, planes is a copy so there's is no data race
+                                      const boost::shared_ptr<ImagePlanesToRender> & planes) // when MT, planes is a copy so there's is no data race
 {
     assert( !rectToRender.rect.isNull() );
 
     ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
     boost::shared_ptr<ParallelRenderArgsSetter> scopedFrameArgs;
-    if ( !frameTLS.empty() && ( callingThread != QThread::currentThread() ) ) {
+    if ( frameTLS && !frameTLS->empty() && ( callingThread != QThread::currentThread() ) ) {
         scopedFrameArgs.reset( new ParallelRenderArgsSetter(frameTLS) );
     }
 
@@ -1743,7 +1753,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
         canonicalRectToRender.toPixelEnclosing(mipMapLevel, par, &downscaledRectToRender);
     }
 
-    const PlaneToRender & firstPlaneToRender = planes.planes.begin()->second;
+    const PlaneToRender & firstPlaneToRender = planes->planes.begin()->second;
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
 # ifndef NDEBUG
     RectI renderBounds = firstPlaneToRender.renderMappedImage->getBounds();
@@ -1852,8 +1862,8 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     if ( ( foundPrefInput != rectToRender.imgs.end() ) && !foundPrefInput->second.empty() ) {
         originalInputImage = foundPrefInput->second.front();
     }
-    std::map<int, Natron::ImagePremultiplicationEnum>::const_iterator foundPrefPremult = planes.inputPremult.find(preferredInput);
-    if ( ( foundPrefPremult != planes.inputPremult.end() ) && originalInputImage ) {
+    std::map<int, Natron::ImagePremultiplicationEnum>::const_iterator foundPrefPremult = planes->inputPremult.find(preferredInput);
+    if ( ( foundPrefPremult != planes->inputPremult.end() ) && originalInputImage ) {
         originalImagePremultiplication = foundPrefPremult->second;
     } else {
         originalImagePremultiplication = Natron::eImagePremultiplicationOpaque;
@@ -1952,7 +1962,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                                         originalInputImage,
                                                         maskImage,
                                                         originalImagePremultiplication,
-                                                        planes);
+                                                        *planes);
     if (handlerRet == eRenderingFunctorRetOK) {
         if (isBeingRenderedElseWhere) {
             return eRenderingFunctorRetTakeImageLock;
@@ -3828,7 +3838,7 @@ EffectInstance::getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents, P
 }
 
 bool
-EffectInstance::getThreadLocalNeededComponents(EffectInstance::ComponentsNeededMap* neededComps) const
+EffectInstance::getThreadLocalNeededComponents(boost::shared_ptr<EffectInstance::ComponentsNeededMap>* neededComps) const
 {
     if ( _imp->renderArgs.hasLocalData() ) {
         const RenderArgs & args = _imp->renderArgs.localData();

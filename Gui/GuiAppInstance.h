@@ -71,7 +71,7 @@ public:
 
     void resetPreviewProvider();
     
-    virtual bool isBackground() const { return false; }
+    virtual bool isBackground() const OVERRIDE FINAL { return false; }
 private:
     
     

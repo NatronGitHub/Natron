@@ -607,7 +607,7 @@ public:
                                                                        const boost::shared_ptr<Natron::Node> & node,
                                                                        const FramesNeededMap & framesNeeded,
                                                                        const RoIMap & inputRois,
-                                                                       const std::map<int, Natron::EffectInstance*> & reroutesMap,
+                                                                       const boost::shared_ptr<std::map<int, Natron::EffectInstance*> > & reroutesMap,
                                                                        bool useTransforms, // roi functor specific
                                                                        unsigned int originalMipMapLevel, // roi functor specific
                                                                        double time,
@@ -1268,7 +1268,7 @@ public:
                                       Natron::ImageComponents* planeBeingRendered,
                                       RectI* renderWindow) const;
 
-    bool getThreadLocalNeededComponents(EffectInstance::ComponentsNeededMap* neededComps) const;
+    bool getThreadLocalNeededComponents(boost::shared_ptr<EffectInstance::ComponentsNeededMap>* neededComps) const;
 
     /**
      * @brief Called when the associated node's hash has changed.
@@ -1470,7 +1470,7 @@ public:
 
 
     static void transformInputRois(Natron::EffectInstance* self,
-                                   const InputMatrixMap & inputTransforms,
+                                   const boost::shared_ptr<InputMatrixMap>& inputTransforms,
                                    double par,
                                    const RenderScale & scale,
                                    RoIMap* inputRois,
@@ -1635,7 +1635,7 @@ private:
                                           int view,
                                           const RectD & rod, //!< rod in canonical coordinates
                                           const double par,
-                                          ImagePlanesToRender & planes,
+                                          const boost::shared_ptr<ImagePlanesToRender> & planes,
                                           bool isSequentialRender,
                                           bool isRenderMadeInResponseToUserInteraction,
                                           U64 nodeHash,
@@ -1643,7 +1643,7 @@ private:
                                           bool byPassCache,
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents> & outputClipPrefsComps,
-                                          const ComponentsNeededMap & compsNeeded,
+                                          const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                           bool* processChannels);
 
 
@@ -1655,7 +1655,7 @@ private:
                                              double par,
                                              const RectD & rod,
                                              const RectD & canonicalRenderWindow,
-                                             const InputMatrixMap & transformMatrix,
+                                             const boost::shared_ptr<InputMatrixMap> & transformMatrix,
                                              unsigned int mipMapLevel,
                                              const RenderScale & scale,
                                              const RenderScale & renderMappedScale,
@@ -1735,7 +1735,7 @@ private:
     struct TiledRenderingFunctorArgs
     {
         ParallelRenderArgs frameArgs;
-        std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > frameTLS;
+        boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > > frameTLS;
         bool renderFullScaleThenDownscale;
         bool isSequentialRender;
         bool isRenderResponseToUserInteraction;
@@ -1749,11 +1749,11 @@ private:
         int view;
         double par;
         Natron::ImageBitDepthEnum outputClipPrefDepth;
-        ComponentsNeededMap  compsNeeded;
+        boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
         std::list<Natron::ImageComponents> outputClipPrefsComps;
         bool byPassCache;
         bool* processChannels;
-        ImagePlanesToRender planes;
+        boost::shared_ptr<ImagePlanesToRender> planes;
     };
 
     RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,  const RectToRender & specificData,
@@ -1762,7 +1762,7 @@ private:
     RenderingFunctorRetEnum tiledRenderingFunctor(const QThread* callingThread,
                                                   const ParallelRenderArgs & frameArgs,
                                                   const RectToRender & rectToRender,
-                                                  const std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > & frameTls,
+                                                  const boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > >& frameTls,
                                                   const bool renderFullScaleThenDownscale,
                                                   const bool isSequentialRender,
                                                   const bool isRenderResponseToUserInteraction,
@@ -1777,9 +1777,9 @@ private:
                                                   const bool byPassCache,
                                                   const Natron::ImageBitDepthEnum outputClipPrefDepth,
                                                   const std::list<Natron::ImageComponents> & outputClipPrefsComps,
-                                                  const ComponentsNeededMap & compsNeeded,
+                                                  const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                                   bool* processChannels,
-                                                  ImagePlanesToRender & planes);
+                                                  const boost::shared_ptr<ImagePlanesToRender> & planes);
 
 
     ///These are the image passed to the plug-in to render

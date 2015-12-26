@@ -988,7 +988,7 @@ static OfxStatus
 threadFunctionWrapper(OfxThreadFunctionV1 func,
                       unsigned int threadIndex,
                       unsigned int threadMax,
-                      const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& tlsCopy,
+                      const boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > >& tlsCopy,
                       void *customArg)
 {
     assert(threadIndex < threadMax);
@@ -997,7 +997,7 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
     
     boost::shared_ptr<ParallelRenderArgsSetter> tlsRaii;
     //Set the TLS if not NULL
-    if (!tlsCopy.empty()) {
+    if (tlsCopy && !tlsCopy->empty()) {
         tlsRaii.reset(new ParallelRenderArgsSetter(tlsCopy));
     }
 
@@ -1026,7 +1026,7 @@ public:
     OfxThread(OfxThreadFunctionV1 func,
               unsigned int threadIndex,
               unsigned int threadMax,
-              const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& tlsCopy,
+             const boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > >& tlsCopy,
               void *customArg,
               OfxStatus *stat)
     : _func(func)
@@ -1047,7 +1047,7 @@ public:
         
         //Copy the TLS of the caller thread to the newly spawned thread
         boost::shared_ptr<ParallelRenderArgsSetter> tlsRaii;
-        if (!_tlsCopy.empty()) {
+        if (_tlsCopy && !_tlsCopy->empty()) {
             tlsRaii.reset(new ParallelRenderArgsSetter(_tlsCopy));
         }
         
@@ -1068,7 +1068,7 @@ private:
     OfxThreadFunctionV1 *_func;
     unsigned int _threadIndex;
     unsigned int _threadMax;
-    std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > _tlsCopy;
+    boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > > _tlsCopy;
     void *_customArg;
     OfxStatus *_stat;
 };
@@ -1116,14 +1116,15 @@ Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,
     }
     
     //Retrieve a handle to the thread calling this action if possible so we can copy the TLS
-    std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > tlsCopy;
+    boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > > tlsCopy;
     QVariant imageEffectPointerProperty = QThread::currentThread()->property(kNatronTLSEffectPointerProperty);
     if (!imageEffectPointerProperty.isNull()) {
         QObject* pointerqobject = imageEffectPointerProperty.value<QObject*>();
         if (pointerqobject) {
             Natron::EffectInstance* instance = dynamic_cast<Natron::EffectInstance*>(pointerqobject);
             if (instance) {
-                instance->getApp()->getProject()->getParallelRenderArgs(tlsCopy);
+                tlsCopy.reset(new  std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >());
+                instance->getApp()->getProject()->getParallelRenderArgs(*tlsCopy);
             }
         }
     }

@@ -587,7 +587,7 @@ EffectInstance::Implementation::ScopedRenderArgs::setArgs_firstPass(const RectD 
                                                                     bool isIdentity,
                                                                     double identityTime,
                                                                     int inputNbIdentity,
-                                                                    const EffectInstance::ComponentsNeededMap & compsNeeded)
+                                                                    const boost::shared_ptr<EffectInstance::ComponentsNeededMap> & compsNeeded)
 {
     localData->_rod = rod;
     localData->_renderWindowPixel = renderWindow;

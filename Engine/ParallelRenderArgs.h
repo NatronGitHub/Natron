@@ -180,8 +180,8 @@ struct FrameViewRequestGlobalData
     bool isProjectFormat;
     
     ///The transforms associated to each input branch, set on first request
-    InputMatrixMap transforms;
-    std::map<int, Natron::EffectInstance*> reroutesMap;
+    boost::shared_ptr<InputMatrixMap> transforms;
+    boost::shared_ptr<std::map<int, Natron::EffectInstance*> > reroutesMap;
     
     ///The required frame/views in input, set on first request
     FramesNeededMap frameViewsNeeded;
@@ -258,7 +258,7 @@ typedef std::map<boost::shared_ptr<Natron::Node>,boost::shared_ptr<NodeFrameRequ
 
 class ParallelRenderArgsSetter
 {
-    std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > argsMap;
+    boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > > argsMap;
     std::list<boost::shared_ptr<Natron::Node> > nodes;
     
 public:
@@ -286,7 +286,7 @@ public:
                              bool viewerProgressReportEnabled,
                              const boost::shared_ptr<RenderStats>& stats);
     
-    ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args);
+    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > >& args);
     
     virtual ~ParallelRenderArgsSetter();
 };
