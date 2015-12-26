@@ -951,12 +951,12 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     _imp->parentPage->setToolTip(Natron::convertFromPlainText(tr("The tab under which this parameter will appear."), Qt::WhiteSpaceNormal));
     optLayout->addWidget(_imp->parentPage);
     
-    bool pageIndexLoaded = false;
+    int pageIndexLoaded = -1;
     if (knob) {
         ////find in which page the knob should be
         boost::shared_ptr<KnobPage> isTopLevelParentAPage = knob->getTopLevelPage();
         if (isTopLevelParentAPage && isTopLevelParentAPage->getName() != NATRON_USER_MANAGED_KNOBS_PAGE) {
-            int index = 1; // 1 because of the "User" item
+            int index = 0; // 1 because of the "User" item
             bool found = false;
             for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
                 if (*it == isTopLevelParentAPage) {
@@ -965,8 +965,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
                 }
             }
             if (found) {
-                _imp->parentPage->setCurrentIndex(index);
-                pageIndexLoaded = true;
+                _imp->parentPage->setCurrentIndex_no_emit(index);
+                pageIndexLoaded = index;
             }
         }
         
@@ -974,9 +974,9 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     }
     
     _imp->mainLayout->addRow(_imp->parentPageLabel, optContainer);
-    if (!pageIndexLoaded) {
-        onPageCurrentIndexChanged(0);
-    }
+
+    onPageCurrentIndexChanged(pageIndexLoaded == -1 ? 0 : pageIndexLoaded);
+    
     if (_imp->parentGroup && knob) {
         boost::shared_ptr<KnobPage> topLvlPage = knob->getTopLevelPage();
         assert(topLvlPage);
