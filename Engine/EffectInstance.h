@@ -686,10 +686,7 @@ public:
     /**
      * @brief Returns the output aspect ratio to render with
      **/
-    virtual double getPreferredAspectRatio() const
-    {
-        return 1.;
-    }
+    virtual double getPreferredAspectRatio() const;
 
     virtual double getPreferredFrameRate() const;
     virtual void lock(const boost::shared_ptr<Natron::Image> & entry) OVERRIDE FINAL;

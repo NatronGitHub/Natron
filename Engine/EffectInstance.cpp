@@ -4352,6 +4352,20 @@ EffectInstance::getPreferredFrameRate() const
     return getApp()->getProjectFrameRate();
 }
 
+double
+EffectInstance::getPreferredAspectRatio() const
+{
+    int prefInput = getNode()->getPreferredInput();
+    if (prefInput == -1) {
+        return 1.;
+    }
+    EffectInstance* input = getInput(prefInput);
+    if (!input) {
+        return 1.;
+    }
+    return input->getPreferredAspectRatio();
+}
+
 void
 EffectInstance::checkOFXClipPreferences_recursive(double time,
                                                   const RenderScale & scale,
