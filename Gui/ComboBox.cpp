@@ -389,7 +389,10 @@ ComboBox::wheelEvent(QWheelEvent *e)
     if (e->delta()>0) {
         setCurrentIndex((activeIndex() - 1 < 0) ? count() - 1 : activeIndex() - 1);
     } else {
-        setCurrentIndex((activeIndex() + 1) % count());
+        int c = count();
+        if (c != 0) {
+            setCurrentIndex((activeIndex() + 1) % c);
+        }
     }
 }
 
