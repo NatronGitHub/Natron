@@ -2494,6 +2494,44 @@ Node::setNameInternal(const std::string& name, bool throwErrors, bool declareToP
         } else { //if (!oldName.empty()) {
             declareNodeVariableToPython(fullySpecifiedName);
         }
+        
+        
+        ///For all knobs that have listeners, change in the expressions of listeners this knob script-name
+        const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
+        for (U32 i = 0; i < knobs.size(); ++i) {
+            std::list<boost::shared_ptr<KnobI> > listeners;
+            knobs[i]->getListeners(listeners);
+            for (std::list<boost::shared_ptr<KnobI> >::iterator it = listeners.begin(); it != listeners.end(); ++it) {
+                KnobHolder* holder = (*it)->getHolder();
+                if (!holder) {
+                    continue;
+                }
+                Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
+                if (!isEffect) {
+                    continue;
+                }
+                
+                isEffect->beginChanges();
+                for (int dim = 0; dim < (*it)->getDimension(); ++dim) {
+                    std::string hasExpr = (*it)->getExpression(dim);
+                    if (hasExpr.empty()) {
+                        continue;
+                    }
+                    bool hasRetVar = (*it)->isExpressionUsingRetVariable(dim);
+                    try {
+                        //Change in expressions the script-name
+                        QString estr(hasExpr.c_str());
+                        estr.replace(oldName.c_str(), newName.c_str());
+                        hasExpr = estr.toStdString();
+                        
+                        (*it)->setExpression(dim, hasExpr, hasRetVar);
+                    } catch (...) {
+                        
+                    }
+                }
+                isEffect->endChanges(true);
+            }
+        }
     }
     
     QString qnewName(newName.c_str());
