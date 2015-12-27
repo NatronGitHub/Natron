@@ -819,18 +819,20 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
         
         boost::shared_ptr<EffectInstance::ComponentsNeededMap> neededComps;
         _nodeInstance->getThreadLocalNeededComponents(&neededComps);
-        if (!neededComps) {
-            qDebug() << "Plug-in didn't specify any needed components via getClipComponents for clip " << getName().c_str();
-            return 0;
-        }
-        EffectInstance::ComponentsNeededMap::iterator found = neededComps->find(inputnb);
-        if (found != neededComps->end()) {
-            if (found->second.empty()) {
-                qDebug() << "Plug-in didn't specify any needed components via getClipComponents for clip " << getName().c_str();
-                return 0;
+        bool foundCompsInTLS = false;
+        if (neededComps) {
+            EffectInstance::ComponentsNeededMap::iterator found = neededComps->find(inputnb);
+            if (found != neededComps->end()) {
+                if (found->second.empty()) {
+                    qDebug() << "Plug-in didn't specify any needed components via getClipComponents for clip " << getName().c_str();
+                    return 0;
+                }
+                comp = found->second.front();
+                foundCompsInTLS = true;
             }
-            comp = found->second.front();
-        } else {
+        }
+        
+       if (!foundCompsInTLS) {
             ///We are in analysis or the effect does not have any input
             bool processChannels[4];
             bool isAll;

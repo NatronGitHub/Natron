@@ -153,6 +153,20 @@ public:
 
     int currentFrame() const WARN_UNUSED_RETURN;
 
+    /**
+     * @brief Stops all processing threads. 
+     * This is the proper way to destroy Qt thread local storage:
+     * 1) First finish the threads
+     * 2) Then kill all objects containing the Thread local storage
+     * Otherwise the following warning may be printed: "QThreadStorage: Thread %p exited after QThreadStorage %d destroyed"
+     * and a crash might occur in qThreadStorage_deleteData<T> in the function QThreadStorageData::finish(void**)
+     *
+     * This function only achieves step 1.
+     *
+     * Note: It would be easier to have a SINGLE global static TLS object in Natron so that we are sure that all threads
+     * are killed whenever it is destroyed. On the other hand their should be a bit of housekeeping of that object so it is
+     * efficient, but it would guard us against such potential crashes.
+     **/
     void ensureAllProcessingThreadsFinished();
 
     /**
