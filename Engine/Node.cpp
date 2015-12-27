@@ -3436,18 +3436,6 @@ static void applyNodeRedirectionsDownstream(int recurseCounter, Node* node, bool
         return;
     }
     
-    PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>(node->getLiveInstance());
-    if (isPrecomp) {
-        //The node is a precomp, meaning it should not be taken into account, instead jump directly to the input nodes output of the precomp
-        NodeList precompInputs;
-        isPrecomp->getPrecompInputs(&precompInputs);
-        for (NodeList::iterator it = precompInputs.begin(); it!=precompInputs.end(); ++it) {
-            //Call recursively on them
-            applyNodeRedirectionsDownstream(recurseCounter + 1, it->get(),useGuiOutputs, translated);
-        }
-        return;
-    }
-    
     boost::shared_ptr<PrecompNode> isInPrecomp = node->isPartOfPrecomp();
     if (isInPrecomp && isInPrecomp->getOutputNode().get() == node) {
         //This node is the output of the precomp, its outputs are the outputs of the precomp node

@@ -661,22 +661,10 @@ PrecompNodePrivate::refreshOutputNode()
     //Clear any persistent message set
     _publicInterface->clearPersistentMessage(false);
     
-    NodePtr precompOutput;
     {
         QMutexLocker k(&dataMutex);
         outputNode = outputnode;
-        if (!outputnode) {
-            precompOutput = readNode;
-        } else {
-            precompOutput = outputNode;
-        }
     }
-    
-    if (precompOutput) {
-        //Increment the hash to trigger a new render
-        precompOutput->incrementKnobsAge();
-    }
-    
     
     ///Notify outputs that the node has changed
     std::map<Node*, int> outputs;
