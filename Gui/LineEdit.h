@@ -85,6 +85,8 @@ protected:
     
     virtual void paintEvent(QPaintEvent* e) OVERRIDE;
 
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
+    
 private:
     
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
@@ -95,7 +97,6 @@ private:
 
     virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
     
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     
     int animation;
     bool dirty;

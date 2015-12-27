@@ -60,6 +60,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/QtCompat.h"
 
 #include "Engine/FileSystemModel.h"
+#include "Gui/LineEdit.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -231,6 +232,7 @@ public:
     virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
 
 
@@ -267,6 +269,25 @@ private:
     SequenceFileDialog *dialog;
     QStringList m_history;
     bool doResize;
+};
+
+//Same as LineEdit but we do not process keyPresses for Key_Up and Key_Down
+class FileDialogLineEdit : public LineEdit
+{
+public:
+    
+    FileDialogLineEdit(QWidget* parent)
+    : LineEdit(parent)
+    {
+        
+    }
+    
+    virtual ~FileDialogLineEdit()
+    {
+        
+    }
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
 
 /**
@@ -559,12 +580,12 @@ private:
     Button* _cancelButton;
     Button* _addFavoriteButton;
     Button* _removeFavoriteButton;
-    LineEdit* _selectionLineEdit;
+    FileDialogLineEdit* _selectionLineEdit;
     Natron::Label* _relativeLabel;
     ComboBox* _relativeChoice;
     ComboBox* _sequenceButton;
     Natron::Label* _filterLabel;
-    LineEdit* _filterLineEdit;
+    FileDialogLineEdit* _filterLineEdit;
     Button* _filterDropDown;
     ComboBox* _fileExtensionCombo;
     QHBoxLayout* _buttonsLayout;
