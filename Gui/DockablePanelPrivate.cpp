@@ -623,7 +623,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     layout->addWidget(foundSpacer,layout->rowCount(), 0, 1, 2);
                // }
                 
-            }
+            } // makeNewLine
 
             ret->setSecret();
             

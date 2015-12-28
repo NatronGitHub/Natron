@@ -1675,7 +1675,7 @@ AddKnobDialog::onOkClicked()
     std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > > listenersExpressions;
     
     boost::shared_ptr<KnobPage> oldKnobIsPage ;
-    
+    bool wasNewLineActivated = true;
     if (!_imp->knob) {
         assert(_imp->typeChoice);
         t = (ParamDataTypeEnum)_imp->typeChoice->activeIndex();
@@ -1684,6 +1684,7 @@ AddKnobDialog::onOkClicked()
         oldKnobScriptName = _imp->knob->getName();
         effect = dynamic_cast<Natron::EffectInstance*>(_imp->knob->getHolder());
         oldParentPage = _imp->knob->getTopLevelPage();
+        wasNewLineActivated = _imp->knob->isNewLineActivated();
         t = getChoiceIndexFromKnobType(_imp->knob.get());
         boost::shared_ptr<KnobI> parent = _imp->knob->getParentKnob();
         KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
@@ -1838,10 +1839,11 @@ AddKnobDialog::onOkClicked()
             }
             if (defIndex == -1) {
                 std::stringstream ss;
-                ss << '"';
+                ss << QObject::tr("The default value").toStdString();
+                ss << " \"";
                 ss << defValue;
-                ss << '"';
-                ss << " does not exist in the defined menu items";
+                ss << "\" ";
+                ss << QObject::tr("does not exist in the defined menu items").toStdString();
                 Natron::errorDialog(tr("Error while creating parameter").toStdString(), ss.str());
                 return;
             }
@@ -1876,6 +1878,10 @@ AddKnobDialog::onOkClicked()
                 break;
             }
         }
+    }
+    //also refresh the new line flag for this knob if it was set
+    if (_imp->knob && !wasNewLineActivated) {
+        _imp->knob->setAddNewLine(false);
     }
     
     //Recover listeners expressions
