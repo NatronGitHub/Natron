@@ -1762,6 +1762,13 @@ AddKnobDialog::onOkClicked()
             _imp->knob->clone(_imp->originalKnobSerialization->getKnob().get());
         }
         
+        KnobString* isLabelKnob = dynamic_cast<KnobString*>(_imp->knob.get());
+        if (isLabelKnob && isLabelKnob->isLabel()) {
+            ///Label knob only has a default value, but the "clone" function call above will keep the previous value,
+            ///so we have to force a reset to the default value.
+            isLabelKnob->resetToDefaultValue(0);
+        }
+        
         //Recover expressions
         try {
             for (std::size_t i = 0 ; i < expressions.size(); ++i) {
