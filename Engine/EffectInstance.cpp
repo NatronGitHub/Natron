@@ -4359,7 +4359,15 @@ EffectInstance::isPaintingOverItselfEnabled() const
 double
 EffectInstance::getPreferredFrameRate() const
 {
-    return getApp()->getProjectFrameRate();
+    int prefInput = getNode()->getPreferredInput();
+    if (prefInput == -1) {
+        return getApp()->getProjectFrameRate();
+    }
+    EffectInstance* input = getInput(prefInput);
+    if (!input) {
+        return getApp()->getProjectFrameRate();
+    }
+    return input->getPreferredFrameRate();
 }
 
 double
