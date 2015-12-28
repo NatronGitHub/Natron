@@ -48,7 +48,7 @@ def createInstance(app,group):
     # Start of node "Output1"
     lastNode = app.createNode("fr.inria.built-in.Output", 1, group)
     lastNode.setScriptName("Output1")
-    lastNode.setLabel("")
+    lastNode.setLabel("Output1")
     lastNode.setPosition(1000, 497)
     lastNode.setSize(104, 34)
     lastNode.setColor(0.7, 0.7, 0.7)
@@ -188,6 +188,10 @@ def createInstance(app,group):
     del param
     param = groupTransform3.getParam("rotate")
     param.setExpression("thisGroup.angleBlur_angle.get()", False, 0)
+    del param
+    param = groupTransform3.getParam("center")
+    param.setExpression("thisGroup.Transform1.center.get()[dimension]", False, 0)
+    param.setExpression("thisGroup.Transform1.center.get()[dimension]", False, 1)
     del param
     param = groupBlur2.getParam("size")
     param.setExpression("thisGroup.angleBlur_distance.get()", False, 0)
