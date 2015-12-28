@@ -973,7 +973,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         }
     } else {
         ///If the selected page name in the manage user params dialog is valid, set the page accordingly
-        if (!selectedPageName.empty()) {
+        if (_imp->parentPage && !selectedPageName.empty()) {
             int index = 0;
             for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
                 if ((*it)->getName() == selectedPageName) {
@@ -1014,10 +1014,12 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         }
     } else {
         ///If the selected group name in the manage user params dialog is valid, set the group accordingly
-        for (int i = 0; i < _imp->parentGroup->count(); ++i) {
-            if (_imp->parentGroup->itemText(i) == QString(selectedGroupName.c_str())) {
-                _imp->parentGroup->setCurrentIndex(i);
-                break;
+        if (_imp->parentGroup) {
+            for (int i = 0; i < _imp->parentGroup->count(); ++i) {
+                if (_imp->parentGroup->itemText(i) == QString(selectedGroupName.c_str())) {
+                    _imp->parentGroup->setCurrentIndex(i);
+                    break;
+                }
             }
         }
     }
