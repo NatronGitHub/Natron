@@ -457,9 +457,9 @@ GuiApplicationManager::exitApp()
         instances = getAppInstances();
         guiApps.clear();
         for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(it->second.app);
-            if (app) {
-                guiApps.push_back(app);
+            GuiAppInstance* ga = dynamic_cast<GuiAppInstance*>(it->second.app);
+            if (ga && ga != app) {
+                guiApps.push_back(ga);
             }
         }
     }
