@@ -141,13 +141,19 @@ OfxClipInstance::getUnmappedComponents() const
     }*/
     if (inputNode) {
         ///Get the input node's output preferred bit depth and componentns
+        std::string& tls = _unmappedComponents.localData();
+
+        
         std::list<Natron::ImageComponents> comps;
         Natron::ImageBitDepthEnum depth;
         inputNode->getPreferredDepthAndComponents(-1, &comps, &depth);
-        assert(!comps.empty());
         
-        Natron::ImageComponents comp = comps.front();
-        std::string& tls = _unmappedComponents.localData();
+        Natron::ImageComponents comp;
+        if (comps.empty()) {
+            comp = comp = Natron::ImageComponents::getRGBAComponents();
+        } else {
+            comp = comps.front();
+        }
         
         //default to RGBA
         if (comp.getNumComponents() == 0) {
@@ -198,9 +204,13 @@ OfxClipInstance::getPremult() const
         std::list<Natron::ImageComponents> comps;
         Natron::ImageBitDepthEnum depth;
         effect->getPreferredDepthAndComponents(-1, &comps, &depth);
-        assert(!comps.empty());
         
-        const Natron::ImageComponents& comp = comps.front();
+        Natron::ImageComponents comp;
+        if (!comps.empty()) {
+            comp = comps.front();
+        } else {
+            comp = ImageComponents::getRGBAComponents();
+        }
         
         if (comp == ImageComponents::getRGBComponents()) {
             return opaqueStr;

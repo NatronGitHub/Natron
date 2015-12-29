@@ -4327,21 +4327,19 @@ EffectInstance::getPreferredDepthAndComponents(int inputNb,
                                                std::list<Natron::ImageComponents>* comp,
                                                Natron::ImageBitDepthEnum* depth) const
 {
-    EffectInstance* inp = 0;
-    std::list<Natron::ImageComponents> inputComps;
-    
+
     if (inputNb != -1) {
-        inp = getInput(inputNb);
+        EffectInstance* inp = getInput(inputNb);
         if (inp) {
-            inp->getPreferredDepthAndComponents(-1, &inputComps, depth);
+            inp->getPreferredDepthAndComponents(-1, comp, depth);
         }
     } else {
         QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
         *comp = _imp->clipPrefsData.comps;
         *depth = _imp->clipPrefsData.bitdepth;
     }
-    if ( inputComps.empty() ) {
-        inputComps.push_back( ImageComponents::getNoneComponents() );
+    if ( comp->empty() ) {
+        comp->push_back( ImageComponents::getNoneComponents() );
     }
    
 }
