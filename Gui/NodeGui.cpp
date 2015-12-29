@@ -233,7 +233,6 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL( bitDepthWarningToggled(bool,QString) ),this,SLOT( toggleBitDepthIndicator(bool,QString) ) );
     QObject::connect( internalNode.get(), SIGNAL( nodeExtraLabelChanged(QString) ),this,SLOT( onNodeExtraLabelChanged(QString) ) );
     QObject::connect( internalNode.get(), SIGNAL( outputLayerChanged() ),this,SLOT( onOutputLayerChanged() ) );
-    QObject::connect( internalNode.get(), SIGNAL( identityChanged(int) ),this,SLOT( onIdentityStateChanged(int) ) );
     QObject::connect( internalNode.get(), SIGNAL( hideInputsKnobChanged(bool) ),this,SLOT( onHideInputsKnobValueChanged(bool) ) );
     QObject::connect( internalNode.get(), SIGNAL( availableViewsChanged() ),this,SLOT( onAvailableViewsChanged() ) );
     

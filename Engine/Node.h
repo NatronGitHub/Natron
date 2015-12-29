@@ -307,6 +307,10 @@ public:
     static Natron::ImageComponents findClosestInList(const Natron::ImageComponents& comp,
                                                      const std::list<Natron::ImageComponents> &components,
                                                      bool multiPlanar);
+    
+    Natron::ImageBitDepthEnum getBestSupportedBitDepth() const;
+    bool isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const;
+    Natron::ImageBitDepthEnum getClosestSupportedBitDepth(Natron::ImageBitDepthEnum depth);
 
     /**
      * @brief Returns the components and index of the channel to use to produce the mask.
@@ -813,10 +817,6 @@ public:
     
     boost::shared_ptr<KnobBool> getDisabledKnob() const;
 
-    Natron::ImageBitDepthEnum getBitDepth() const;
-
-    bool isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const;
-
     void toggleBitDepthWarning(bool on,
                                const QString & tooltip)
     {
@@ -1076,8 +1076,6 @@ public:
     
     int getFrameStepKnobValue() const;
     
-    
-    
 private:
     
     void computeHashRecursive(std::list<Natron::Node*>& marked);
@@ -1122,6 +1120,7 @@ private:
     
 public Q_SLOTS:
 
+    void onRefreshIdentityStateRequestReceived();
 
     void setKnobsAge(U64 newAge);
 
@@ -1162,7 +1161,7 @@ Q_SIGNALS:
     
     void hideInputsKnobChanged(bool hidden);
     
-    void identityChanged(int inputNb);
+    void refreshIdentityStateRequested();
     
     void availableViewsChanged();
     

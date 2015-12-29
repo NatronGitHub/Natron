@@ -930,7 +930,7 @@ public:
      **/
     virtual void addListener(bool isExpression,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) = 0;
     
-    virtual void getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const = 0;
+    virtual void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const = 0;
     
 private:
     virtual void removeListener(KnobI* knob) = 0;
@@ -1291,7 +1291,7 @@ public:
     virtual void addListener(bool isFromExpr,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) OVERRIDE FINAL;
     virtual void removeListener(KnobI* knob) OVERRIDE FINAL;
     
-    virtual void getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const OVERRIDE FINAL;
+    virtual void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const OVERRIDE FINAL;
 
     virtual void getListeners(std::list<boost::shared_ptr<KnobI> >& listeners) const OVERRIDE FINAL;
     
@@ -2006,7 +2006,7 @@ public:
     
     bool isSetValueCurrentlyPossible() const;
     
-    void getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const;
+    void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const;
     
 protected:
     

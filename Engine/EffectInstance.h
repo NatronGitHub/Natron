@@ -404,7 +404,7 @@ public:
      * return eImageBitDepthShort if 16 bits is supported, and as a last resort, return
      * eImageBitDepthByte. At least one must be returned.
      **/
-    Natron::ImageBitDepthEnum getBitDepth() const;
+    Natron::ImageBitDepthEnum getBestSupportedBitDepth() const;
 
     bool isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const;
 
@@ -419,23 +419,6 @@ public:
      * If inputNb equals -1 then this function will check the output components.
      **/
     Natron::ImageComponents findClosestSupportedComponents(int inputNb, const Natron::ImageComponents & comp) const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Returns the preferred depth and components for the given input.
-     * If inputNb equals -1 then this function will check the output components.
-     **/
-    virtual void getPreferredDepthAndComponents(int inputNb,
-                                                std::list<Natron::ImageComponents>* comp,
-                                                Natron::ImageBitDepthEnum* depth) const;
-
-
-    /**
-     * @brief Override to get the preffered premultiplication flag for the output image
-     **/
-    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const
-    {
-        return Natron::eImagePremultiplicationPremultiplied;
-    }
 
     /**
      * @brief Can be derived to give a more meaningful label to the input 'inputNb'
@@ -663,13 +646,10 @@ public:
     virtual void onChannelsSelectorRefreshed() {}
 
 
-    virtual bool checkOFXClipPreferences(double /*time*/,
-                                     const RenderScale & /*scale*/,
-                                     const std::string & /*reason*/,
-                                     bool /*forceGetClipPrefAction*/)
-    {
-        return false;
-    }
+    virtual bool checkOFXClipPreferences(double time,
+                                     const RenderScale & scale,
+                                     const std::string & reason,
+                                     bool forceGetClipPrefAction);
 
 protected:
 
@@ -683,12 +663,34 @@ protected:
 
 public:
 
+
+    ///////////////////////Clip preferences related////////////////////////
+    // These data are refreshed during a call to getClipPreferences to optimize the getters below
+    // which would involve cycling through the tree
+    struct DefaultClipPreferencesData;
+
     /**
      * @brief Returns the output aspect ratio to render with
      **/
     virtual double getPreferredAspectRatio() const;
-
     virtual double getPreferredFrameRate() const;
+
+    /**
+    * @brief Returns the preferred depth and components for the given input.
+    * If inputNb equals -1 then this function will check the output components.
+    **/
+    virtual void getPreferredDepthAndComponents(int inputNb,
+                                            std::list<Natron::ImageComponents>* comp,
+                                            Natron::ImageBitDepthEnum* depth) const;
+
+
+    /**
+    * @brief Override to get the preffered premultiplication flag for the output image
+    **/
+    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const;
+    ///////////////////////End Clip preferences related////////////////////////
+
+
     virtual void lock(const boost::shared_ptr<Natron::Image> & entry) OVERRIDE FINAL;
     virtual bool tryLock(const boost::shared_ptr<Natron::Image> & entry) OVERRIDE FINAL;
     virtual void unlock(const boost::shared_ptr<Natron::Image> & entry) OVERRIDE FINAL;

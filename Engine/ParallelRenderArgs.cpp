@@ -589,32 +589,93 @@ NodeFrameRequest::getFrameViewCanonicalRoI(double time, int view, RectD* roi) co
     return true;
 }
 
+struct FindDependenciesNode
+{
+    NodePtr node;
+    bool recursed;
+    
+    FindDependenciesNode() : node(), recursed(false) {}
+};
+
+struct FindDependenciesNode_compare
+{
+    bool operator() (const FindDependenciesNode & lhs,
+                     const FindDependenciesNode & rhs) const
+    {
+        return lhs.node < rhs.node;
+    }
+};
+
+typedef std::set<FindDependenciesNode,FindDependenciesNode_compare> FindDependenciesSet;
 
 /**
  * @brief Builds a list with all nodes upstream of the given node (including this node) and all its dependencies through expressions as well (which
  * also may be recursive)
  **/
-static void getAllUpstreamNodesRecursiveWithDependencies(const boost::shared_ptr<Natron::Node>& node, std::list<boost::shared_ptr<Natron::Node> >& finalNodes)
+static void getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node, FindDependenciesSet& finalNodes)
 {
-    if (std::find(finalNodes.begin(), finalNodes.end(), node) != finalNodes.end()) {
+    //There may be cases where nodes gets added to the finalNodes in getAllExpressionDependenciesRecursive(), but we still
+    //want to recurse upstream for them too
+    bool foundButDidntRecursivelyCallUpstream = false;
+    
+    if (!node || !node->isNodeCreated()) {
         return;
     }
     
-    finalNodes.push_back(node);
+    for (FindDependenciesSet::iterator it = finalNodes.begin(); it!=finalNodes.end(); ++it) {
+        if (it->node == node) {
+            if ( it->recursed) {
+                //We already called getAllUpstreamNodesRecursiveWithDependencies on its inputs
+                return;
+            } else {
+                //Now we set the recurse flag below
+                finalNodes.erase(it);
+                foundButDidntRecursivelyCallUpstream = true;
+                break;
+            }
+        }
+    }
+ 
+    {
+        //Add this node to the set
+        FindDependenciesNode n;
+        n.node = node;
+        n.recursed = true;
+        finalNodes.insert(n);
+    }
     
-    node->getLiveInstance()->getAllExpressionDependenciesRecursive(finalNodes);
+    //If we already called it, don't do it again
+    if (!foundButDidntRecursivelyCallUpstream) {
+        
+        std::set<NodePtr> expressionsDeps;
+        node->getLiveInstance()->getAllExpressionDependenciesRecursive(expressionsDeps);
+        
+        //Also add all expression dependencies but mark them as we did not recursed on them yet
+        for (std::set<NodePtr>::iterator it = expressionsDeps.begin(); it!=expressionsDeps.end(); ++it) {
+            FindDependenciesNode n;
+            n.node = node;
+            n.recursed = false;
+            finalNodes.insert(n);
+        }
+    }
    
-    if (!node->isNodeCreated()) {
-        return;
-    }
     int maxInputs = node->getMaxInputCount();
     for (int i = 0; i < maxInputs; ++i) {
         boost::shared_ptr<Natron::Node> inputNode = node->getInput(i);
         if (inputNode) {
-            getAllUpstreamNodesRecursiveWithDependencies(inputNode, finalNodes);
+            getAllUpstreamNodesRecursiveWithDependencies_internal(inputNode, finalNodes);
         }
     }
     
+}
+
+static void getAllUpstreamNodesRecursiveWithDependencies(const NodePtr& node, NodeList& finalNodes)
+{
+    FindDependenciesSet tmp;
+    getAllUpstreamNodesRecursiveWithDependencies_internal(node, tmp);
+    for (FindDependenciesSet::iterator it = tmp.begin(); it!=tmp.end(); ++it) {
+        finalNodes.push_back(it->node);
+    }
 }
 
 

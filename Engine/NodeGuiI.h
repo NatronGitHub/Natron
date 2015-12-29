@@ -141,6 +141,8 @@ public :
     virtual bool isUserSelected() const = 0;
     
     virtual void restoreStateAfterCreation() = 0;
+    
+    virtual void onIdentityStateChanged(int inputNb) = 0;
 };
 
 #endif // NODEGUII_H

@@ -165,6 +165,17 @@ struct EffectInstance::RenderArgs
 
     RenderArgs(const RenderArgs & o);
 };
+    
+struct EffectInstance::DefaultClipPreferencesData
+{
+    //These datas are stored for plug-ins that do not implement clip preference functions, i.e:
+    // getPreferredDepthAndComponents, getPreferredPAR, getPreferredFrameRate, getPreferredOutputPremult, etc...
+    Natron::ImagePremultiplicationEnum outputPremult;
+    double pixelAspectRatio;
+    double frameRate;
+    std::list<Natron::ImageComponents> comps;
+    Natron::ImageBitDepthEnum bitdepth;
+};
 
 struct EffectInstance::Implementation
 {
@@ -224,6 +235,9 @@ struct EffectInstance::Implementation
     mutable QMutex componentsAvailableMutex;
     bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
     EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
+    
+    mutable QMutex defaultClipPreferencesDataMutex;
+    EffectInstance::DefaultClipPreferencesData clipPrefsData;
 
     void runChangedParamCallback(KnobI* k, bool userEdited, const std::string & callback);
 

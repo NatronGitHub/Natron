@@ -3316,9 +3316,9 @@ EffectInstance::isSupportedComponent(int inputNb,
 }
 
 Natron::ImageBitDepthEnum
-EffectInstance::getBitDepth() const
+EffectInstance::getBestSupportedBitDepth() const
 {
-    return getNode()->getBitDepth();
+    return getNode()->getBestSupportedBitDepth();
 }
 
 bool
@@ -3334,41 +3334,7 @@ EffectInstance::findClosestSupportedComponents(int inputNb,
     return getNode()->findClosestSupportedComponents(inputNb, comp);
 }
 
-void
-EffectInstance::getPreferredDepthAndComponents(int inputNb,
-                                               std::list<Natron::ImageComponents>* comp,
-                                               Natron::ImageBitDepthEnum* depth) const
-{
-    EffectInstance* inp = 0;
-    std::list<Natron::ImageComponents> inputComps;
 
-    if (inputNb != -1) {
-        inp = getInput(inputNb);
-        if (inp) {
-            Natron::ImageBitDepthEnum depth;
-            inp->getPreferredDepthAndComponents(-1, &inputComps, &depth);
-        }
-    } else {
-        int index = getNode()->getPreferredInput();
-        if (index != -1) {
-            Natron::EffectInstance* input = getInput(index);
-            if (input) {
-                Natron::ImageBitDepthEnum inputDepth;
-                input->getPreferredDepthAndComponents(-1, &inputComps, &inputDepth);
-            }
-        }
-    }
-    if ( inputComps.empty() ) {
-        inputComps.push_back( ImageComponents::getNoneComponents() );
-    }
-    for (std::list<Natron::ImageComponents>::iterator it = inputComps.begin(); it != inputComps.end(); ++it) {
-        comp->push_back( findClosestSupportedComponents(inputNb, *it) );
-    }
-
-
-    ///find deepest bitdepth
-    *depth = getBitDepth();
-}
 
 void
 EffectInstance::clearActionsCache()
@@ -4356,32 +4322,49 @@ EffectInstance::isPaintingOverItselfEnabled() const
     return isDuringPaintStrokeCreationThreadLocal();
 }
 
+void
+EffectInstance::getPreferredDepthAndComponents(int inputNb,
+                                               std::list<Natron::ImageComponents>* comp,
+                                               Natron::ImageBitDepthEnum* depth) const
+{
+    EffectInstance* inp = 0;
+    std::list<Natron::ImageComponents> inputComps;
+    
+    if (inputNb != -1) {
+        inp = getInput(inputNb);
+        if (inp) {
+            inp->getPreferredDepthAndComponents(-1, &inputComps, depth);
+        }
+    } else {
+        QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
+        *comp = _imp->clipPrefsData.comps;
+        *depth = _imp->clipPrefsData.bitdepth;
+    }
+    if ( inputComps.empty() ) {
+        inputComps.push_back( ImageComponents::getNoneComponents() );
+    }
+   
+}
+
 double
 EffectInstance::getPreferredFrameRate() const
 {
-    int prefInput = getNode()->getPreferredInput();
-    if (prefInput == -1) {
-        return getApp()->getProjectFrameRate();
-    }
-    EffectInstance* input = getInput(prefInput);
-    if (!input) {
-        return getApp()->getProjectFrameRate();
-    }
-    return input->getPreferredFrameRate();
+    QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
+    return _imp->clipPrefsData.frameRate;
 }
 
 double
 EffectInstance::getPreferredAspectRatio() const
 {
-    int prefInput = getNode()->getPreferredInput();
-    if (prefInput == -1) {
-        return 1.;
-    }
-    EffectInstance* input = getInput(prefInput);
-    if (!input) {
-        return 1.;
-    }
-    return input->getPreferredAspectRatio();
+    QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
+    return _imp->clipPrefsData.pixelAspectRatio;
+}
+
+Natron::ImagePremultiplicationEnum
+EffectInstance::getOutputPremultiplication() const
+{
+    QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
+    return _imp->clipPrefsData.outputPremult;
 }
 
 void
@@ -4458,6 +4441,51 @@ EffectInstance::checkOFXClipPreferences_public(double time,
     } else {
         checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
     }
+}
+
+bool
+EffectInstance::checkOFXClipPreferences(double /*time*/,
+                                        const RenderScale & /*scale*/,
+                                        const std::string & /*reason*/,
+                                        bool forceGetClipPrefAction)
+{
+
+    if (forceGetClipPrefAction) {
+        int prefInput = getNode()->getPreferredInput();
+        EffectInstance* input = 0;
+        if (prefInput != -1) {
+            input = getInput(prefInput);
+        }
+        if (!input) {
+            QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
+            _imp->clipPrefsData.outputPremult = Natron::eImagePremultiplicationPremultiplied;
+            _imp->clipPrefsData.frameRate = getApp()->getProjectFrameRate();
+            _imp->clipPrefsData.pixelAspectRatio = 1.;
+            _imp->clipPrefsData.comps.clear();
+            _imp->clipPrefsData.bitdepth = getBestSupportedBitDepth();
+        } else {
+            EffectInstance::DefaultClipPreferencesData data;
+            data.outputPremult = input->getOutputPremultiplication();
+            data.frameRate = input->getPreferredFrameRate();
+            data.pixelAspectRatio = input->getPreferredAspectRatio();
+            input->getPreferredDepthAndComponents(-1, &data.comps, &data.bitdepth);
+            
+            for (std::list<Natron::ImageComponents>::iterator it = data.comps.begin(); it != data.comps.end(); ++it) {
+                *it = findClosestSupportedComponents(-1, *it);
+            }
+            
+            
+            ///find deepest bitdepth
+            data.bitdepth = getNode()->getClosestSupportedBitDepth(data.bitdepth);
+            
+            {
+                QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
+                _imp->clipPrefsData = data;
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 void

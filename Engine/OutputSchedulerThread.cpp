@@ -2693,6 +2693,19 @@ struct RenderEnginePrivate
     
     ViewerCurrentFrameRequestScheduler* currentFrameScheduler;
     
+    struct RefreshRequest
+    {
+        bool enableStats;
+        bool enableAbort;
+    };
+    
+    /*
+     This queue tracks all calls made to renderCurrentFrame() and attempts to concatenate the calls
+     once the event loop fires the signal currentFrameRenderRequestPosted()
+     This is only accessed on the main thread
+     */
+    std::list<RefreshRequest> refreshQueue;
+    
     RenderEnginePrivate(Natron::OutputEffectInstance* output)
     : schedulerCreationLock()
     , scheduler(0)
@@ -2700,6 +2713,7 @@ struct RenderEnginePrivate
     , pbModeMutex()
     , pbMode(ePlaybackModeLoop)
     , currentFrameScheduler(0)
+    , refreshQueue()
     {
         
     }
@@ -2708,7 +2722,7 @@ struct RenderEnginePrivate
 RenderEngine::RenderEngine(Natron::OutputEffectInstance* output)
 : _imp(new RenderEnginePrivate(output))
 {
-    
+    QObject::connect(this, SIGNAL(currentFrameRenderRequestPosted()), this, SLOT(onCurrentFrameRenderRequestPosted()), Qt::QueuedConnection);
 }
 
 RenderEngine::~RenderEngine()
@@ -2757,9 +2771,32 @@ RenderEngine::renderFromCurrentFrame(bool enableRenderStats,const std::vector<in
 }
 
 
+void
+RenderEngine::onCurrentFrameRenderRequestPosted()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    //Okay we are at the end of the event loop, concatenate all similar events
+    RenderEnginePrivate::RefreshRequest r;
+    bool rSet = false;
+    while (!_imp->refreshQueue.empty()) {
+        const RenderEnginePrivate::RefreshRequest& queueBegin = _imp->refreshQueue.front();
+        if (!rSet) {
+            rSet = true;
+        } else {
+            if (queueBegin.enableAbort == r.enableAbort && queueBegin.enableStats == r.enableStats) {
+                _imp->refreshQueue.erase(_imp->refreshQueue.begin());
+                continue;
+            }
+        }
+        r = queueBegin;
+        renderCurrentFrameInternal(r.enableStats, r.enableAbort);
+        _imp->refreshQueue.erase(_imp->refreshQueue.begin());
+    }
+}
 
 void
-RenderEngine::renderCurrentFrame(bool enableRenderStats,bool canAbort)
+RenderEngine::renderCurrentFrameInternal(bool enableRenderStats,bool canAbort)
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -2795,6 +2832,18 @@ RenderEngine::renderCurrentFrame(bool enableRenderStats,bool canAbort)
     }
     
     _imp->currentFrameScheduler->renderCurrentFrame(enableRenderStats,canAbort);
+
+}
+
+void
+RenderEngine::renderCurrentFrame(bool enableRenderStats,bool canAbort)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    RenderEnginePrivate::RefreshRequest r;
+    r.enableStats = enableRenderStats;
+    r.enableAbort = canAbort;
+    _imp->refreshQueue.push_back(r);
+    Q_EMIT currentFrameRenderRequestPosted();
 }
 
 

@@ -204,6 +204,7 @@ struct Node::Implementation
     , liveInstance()
     , inputsComponents()
     , outputComponents()
+    , inputsLabelsMutex()
     , inputLabels()
     , scriptName()
     , label()
@@ -295,6 +296,7 @@ struct Node::Implementation
     , isBeingDestroyed(false)
     , inputModifiedRecursion(0)
     , inputsModified()
+    , refreshIdentityStateRequestsCount(0)
     {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -373,6 +375,7 @@ struct Node::Implementation
     std::list<Natron::ImageComponents> outputComponents;
     
     mutable QMutex nameMutex;
+    mutable QMutex inputsLabelsMutex;
     std::vector<std::string> inputLabels; // inputs name
     std::string scriptName; //node name internally and as visible to python
     std::string label; // node label as visible in the GUI
@@ -531,6 +534,9 @@ struct Node::Implementation
     //For readers, this is the name of the views in the file
     std::vector<std::string> createdViews;
     
+    //To concatenate calls to refreshIdentityState, accessed only on main-thread
+    int refreshIdentityStateRequestsCount;
+    
 };
 
 
@@ -559,6 +565,7 @@ Node::Node(AppInstance* app,
     QObject::connect( this, SIGNAL( pluginMemoryUsageChanged(qint64) ), appPTR, SLOT( onNodeMemoryRegistered(qint64) ) );
     QObject::connect(this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()));
     QObject::connect(this, SIGNAL(mustComputeHashOnMainThread()), this, SLOT(doComputeHashOnMainThread()));
+    QObject::connect(this, SIGNAL(refreshIdentityStateRequested()), this, SLOT(onRefreshIdentityStateRequestReceived()), Qt::QueuedConnection);
 }
 
 void
@@ -2160,7 +2167,7 @@ Node::getInputNames(std::map<std::string,std::string> & inputNames) const
         return;
     }
     
-    QMutexLocker l(&_imp->inputsMutex);
+    QMutexLocker l(&_imp->inputsLabelsMutex);
     assert(_imp->inputs.size() == _imp->inputLabels.size());
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
         if (_imp->inputs[i]) {
@@ -2229,29 +2236,29 @@ Node::getPreferredInputInternal(bool connected) const
     int firstNonOptionalEmptyInput = -1;
     std::list<int> optionalEmptyInputs;
     std::list<int> optionalEmptyMasks;
-    {
-        QMutexLocker l(&_imp->inputsMutex);
-        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            if (_imp->liveInstance->isInputRotoBrush(i)) {
-                continue;
-            }
-            
-            if ((connected && _imp->inputs[i]) || (!connected && !_imp->inputs[i])) {
-                if ( !_imp->liveInstance->isInputOptional(i) ) {
-                    if (firstNonOptionalEmptyInput == -1) {
-                        firstNonOptionalEmptyInput = i;
-                        break;
-                    }
+    int nMaxInputs = getMaxInputCount();
+    
+    for (int i = 0; i < nMaxInputs; ++i) {
+        if (_imp->liveInstance->isInputRotoBrush(i)) {
+            continue;
+        }
+        NodePtr input = getInput(i);
+        if ((connected && input) || (!connected && !input)) {
+            if ( !_imp->liveInstance->isInputOptional(i) ) {
+                if (firstNonOptionalEmptyInput == -1) {
+                    firstNonOptionalEmptyInput = i;
+                    break;
+                }
+            } else {
+                if (_imp->liveInstance->isInputMask(i)) {
+                    optionalEmptyMasks.push_back(i);
                 } else {
-                    if (_imp->liveInstance->isInputMask(i)) {
-                        optionalEmptyMasks.push_back(i);
-                    } else {
-                        optionalEmptyInputs.push_back(i);
-                    }
+                    optionalEmptyInputs.push_back(i);
                 }
             }
         }
     }
+    
     
     
     ///Default to the first non optional empty input
@@ -3526,18 +3533,20 @@ Node::initializeInputs()
     
     InputsV oldInputs;
     {
-        QMutexLocker l(&_imp->inputsMutex);
-        oldInputs = _imp->inputs;
-        /*if ((int)oldInputs.size() == inputCount) {
-            _imp->inputsInitialized = true;
-            return;
-        }*/
-        _imp->inputs.resize(inputCount);
-        _imp->guiInputs.resize(inputCount);
+        QMutexLocker k(&_imp->inputsLabelsMutex);
         _imp->inputLabels.resize(inputCount);
-        ///if we added inputs, just set to NULL the new inputs, and add their label to the labels map
         for (int i = 0; i < inputCount; ++i) {
             _imp->inputLabels[i] = _imp->liveInstance->getInputLabel(i);
+        }
+    }
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        oldInputs = _imp->inputs;
+        
+        _imp->inputs.resize(inputCount);
+        _imp->guiInputs.resize(inputCount);
+        ///if we added inputs, just set to NULL the new inputs, and add their label to the labels map
+        for (int i = 0; i < inputCount; ++i) {
             if (i < (int)oldInputs.size()) {
                 _imp->inputs[i] = oldInputs[i];
                 _imp->guiInputs[i] = oldInputs[i];
@@ -3672,7 +3681,7 @@ Node::getInputLabel(int inputNb) const
 {
     assert(_imp->inputsInitialized);
     
-    QMutexLocker l(&_imp->inputsMutex);
+    QMutexLocker l(&_imp->inputsLabelsMutex);
     if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputLabels.size() ) ) {
         throw std::invalid_argument("Index out of range");
     }
@@ -3684,7 +3693,7 @@ int
 Node::getInputNumberFromLabel(const std::string& inputLabel) const
 {
     assert(_imp->inputsInitialized);
-    QMutexLocker l(&_imp->inputsMutex);
+    QMutexLocker l(&_imp->inputsLabelsMutex);
     for (U32 i = 0; i < _imp->inputLabels.size(); ++i) {
         if (_imp->inputLabels[i] == inputLabel) {
             return i;
@@ -4787,10 +4796,9 @@ Node::getKnobByName(const std::string & name) const
 
 namespace {
     ///output is always RGBA with alpha = 255
-    template<typename PIX,int maxValue>
+    template<typename PIX,int maxValue, int srcNComps>
     void
     renderPreview(const Natron::Image & srcImg,
-                  int elemCount,
                   int *dstWidth,
                   int *dstHeight,
                   bool convertToSrgb,
@@ -4812,7 +4820,6 @@ namespace {
         
         Natron::Image::ReadAccess acc = srcImg.getReadRights();
         
-        assert(elemCount >= 3);
         
         for (int i = 0; i < *dstHeight; ++i) {
             double y = (i - *dstHeight / 2.) / zoomFactor + (srcBounds.y1 + srcBounds.y2) / 2.;
@@ -4841,9 +4848,12 @@ namespace {
                         dst_pixels[j] = toBGRA(0, 0, 0, 255);
 #endif
                     } else {
-                        float rFilt = src_pixels[xi * elemCount + 0] / (float)maxValue;
-                        float gFilt = src_pixels[xi * elemCount + 1] / (float)maxValue;
-                        float bFilt = src_pixels[xi * elemCount + 2] / (float)maxValue;
+                        float rFilt = src_pixels[xi * srcNComps] / (float)maxValue;
+                        float gFilt = srcNComps < 2 ? 0 : src_pixels[xi * srcNComps + 1] / (float)maxValue;
+                        float bFilt = srcNComps < 3 ? 0 : src_pixels[xi * srcNComps + 2] / (float)maxValue;
+                        if (srcNComps == 1) {
+                            gFilt = bFilt = rFilt;
+                        }
                         int r = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(rFilt) : rFilt);
                         int g = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(gFilt) : gFilt);
                         int b = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(bFilt) : bFilt);
@@ -4853,6 +4863,35 @@ namespace {
             }
         }
     } // renderPreview
+    
+    ///output is always RGBA with alpha = 255
+    template<typename PIX,int maxValue>
+    void
+    renderPreviewForDepth(const Natron::Image & srcImg,
+                          int elemCount,
+                          int *dstWidth,
+                          int *dstHeight,
+                          bool convertToSrgb,
+                          unsigned int* dstPixels) {
+        switch (elemCount) {
+            case 0:
+                return;
+            case 1:
+                renderPreview<PIX,maxValue,1>(srcImg, dstWidth, dstHeight, convertToSrgb, dstPixels);
+                break;
+            case 2:
+                renderPreview<PIX,maxValue,2>(srcImg, dstWidth, dstHeight, convertToSrgb, dstPixels);
+                break;
+            case 3:
+                renderPreview<PIX,maxValue,3>(srcImg, dstWidth, dstHeight, convertToSrgb, dstPixels);
+                break;
+            case 4:
+                renderPreview<PIX,maxValue,4>(srcImg, dstWidth, dstHeight, convertToSrgb, dstPixels);
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 class ComputingPreviewSetter_RAII
@@ -4957,7 +4996,10 @@ Node::makePreviewImage(SequenceTime time,
                                              boost::shared_ptr<RenderStats>());
     
     std::list<ImageComponents> requestedComps;
-    requestedComps.push_back(ImageComponents::getRGBComponents());
+    Natron::ImageBitDepthEnum depth;
+    getLiveInstance()->getPreferredDepthAndComponents(-1, &requestedComps, &depth);
+    
+    
     
     // Exceptions are caught because the program can run without a preview,
     // but any exception in renderROI is probably fatal.
@@ -4972,7 +5014,7 @@ Node::makePreviewImage(SequenceTime time,
                                                          renderWindow,
                                                          rod,
                                                          requestedComps, //< preview is always rgb...
-                                                         getBitDepth(), false, effect) ,&planes);
+                                                         depth, false, effect) ,&planes);
         if (retCode != Natron::EffectInstance::eRenderRoIRetCodeOk) {
             return false;
         }
@@ -4995,17 +5037,17 @@ Node::makePreviewImage(SequenceTime time,
     
     switch ( img->getBitDepth() ) {
         case Natron::eImageBitDepthByte: {
-            renderPreview<unsigned char, 255>(*img, elemCount, width, height,convertToSrgb, buf);
+            renderPreviewForDepth<unsigned char, 255>(*img, elemCount, width, height,convertToSrgb, buf);
             break;
         }
         case Natron::eImageBitDepthShort: {
-            renderPreview<unsigned short, 65535>(*img, elemCount, width, height,convertToSrgb, buf);
+            renderPreviewForDepth<unsigned short, 65535>(*img, elemCount, width, height,convertToSrgb, buf);
             break;
         }
         case Natron::eImageBitDepthHalf:
             break;
         case Natron::eImageBitDepthFloat: {
-            renderPreview<float, 1>(*img, elemCount, width, height,convertToSrgb, buf);
+            renderPreviewForDepth<float, 1>(*img, elemCount, width, height,convertToSrgb, buf);
             break;
         }
         case Natron::eImageBitDepthNone:
@@ -6382,9 +6424,16 @@ Node::setHideInputsKnobValue(bool hidden)
 }
 
 void
-Node::refreshIdentityState()
+Node::onRefreshIdentityStateRequestReceived()
 {
-    double time = _imp->liveInstance->getCurrentTime();
+    assert(QThread::currentThread() == qApp->thread());
+    if (_imp->refreshIdentityStateRequestsCount == 0 || !_imp->liveInstance) {
+        //was already processed
+        return;
+    }
+    _imp->refreshIdentityStateRequestsCount = 0;
+    
+    double time = getApp()->getTimeLine()->currentFrame();
     RenderScale scale(1.);
     
     double inputTime = 0;
@@ -6402,9 +6451,24 @@ Node::refreshIdentityState()
         isIdentity = _imp->liveInstance->isIdentity_public(true, hash, time, scale, pixelRod, 0, &inputTime, &inputNb);
     }
     
-    
-    Q_EMIT identityChanged(isIdentity ? inputNb : -1);
+    boost::shared_ptr<NodeGuiI> nodeUi = _imp->guiPointer.lock();
+    assert(nodeUi);
+    nodeUi->onIdentityStateChanged(isIdentity ? inputNb : -1);
 
+}
+
+void
+Node::refreshIdentityState()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    if (!_imp->guiPointer.lock()) {
+        return;
+    }
+    
+    //Post a new request
+    ++_imp->refreshIdentityStateRequestsCount;
+    Q_EMIT refreshIdentityStateRequested();
 }
 
 /*
@@ -6927,7 +6991,35 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
 }
 
 Natron::ImageBitDepthEnum
-Node::getBitDepth() const
+Node::getClosestSupportedBitDepth(Natron::ImageBitDepthEnum depth)
+{
+    bool foundShort = false;
+    bool foundByte = false;
+    for (std::list<ImageBitDepthEnum>::const_iterator it = _imp->supportedDepths.begin(); it != _imp->supportedDepths.end(); ++it) {
+        if (*it == depth) {
+            return depth;
+        } else if (*it == eImageBitDepthFloat) {
+            return eImageBitDepthFloat;
+        } else if (*it == eImageBitDepthShort) {
+            foundShort = true;
+        } else if (*it == eImageBitDepthByte) {
+            foundByte = true;
+        }
+    }
+    if (foundShort) {
+        return Natron::eImageBitDepthShort;
+    } else if (foundByte) {
+        return Natron::eImageBitDepthByte;
+    } else {
+        ///The plug-in doesn't support any bitdepth, the program shouldn't even have reached here.
+        assert(false);
+        
+        return Natron::eImageBitDepthNone;
+    }
+}
+
+Natron::ImageBitDepthEnum
+Node::getBestSupportedBitDepth() const
 {
     bool foundShort = false;
     bool foundByte = false;

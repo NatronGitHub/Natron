@@ -399,6 +399,8 @@ public:
     
     virtual void setPluginIDAndVersion(const std::string& pluginLabel,const std::string& pluginID,unsigned int version) OVERRIDE FINAL;
     
+    virtual void onIdentityStateChanged(int inputNb) OVERRIDE FINAL;
+
 protected:
     
     virtual int getBaseDepth() const { return 20; }
@@ -416,15 +418,12 @@ protected:
     virtual void adjustSizeToContent(int *w,int *h,bool adjustToTextSize);
     
     virtual void resizeExtraContent(int /*w*/,int /*h*/,bool /*forceResize*/) {}
-    
-    
+
 
     
 public Q_SLOTS:
     
     void onHideInputsKnobValueChanged(bool hidden);
-    
-    void onIdentityStateChanged(int inputNb);
     
     void onAvailableViewsChanged();
 

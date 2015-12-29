@@ -2547,14 +2547,14 @@ KnobHelper::slaveTo(int dimension,
     if (helper && helper->_signalSlotHandler && _signalSlotHandler) {
 
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameSet(double,int,int,bool) ),
-                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double,int,int,bool) ) );
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double,int,int,bool) ), Qt::UniqueConnection );
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameRemoved(double,int,int) ),
-                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(double,int,int)) );
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(double,int,int)),Qt::UniqueConnection );
         
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameMoved(int,double,double) ),
-                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(int,double,double) ) );
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(int,double,double) ),Qt::UniqueConnection );
         QObject::connect( helper->_signalSlotHandler.get(), SIGNAL(animationRemoved(int) ),
-                         _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(int)) );
+                         _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(int)),Qt::UniqueConnection );
         
     }
     
@@ -3403,19 +3403,17 @@ KnobHelper::getAliasMaster()  const
 }
 
 void
-KnobHelper::getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const
+KnobHelper::getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const
 {
-    std::list<KnobI*> deps;
+    std::set<KnobI*> deps;
     {
         QMutexLocker k(&_imp->expressionMutex);
         for (int i = 0; i < _imp->dimension; ++i) {
             for (std::list< std::pair<KnobI*,int> >::const_iterator it = _imp->expressions[i].dependencies.begin();
                  it != _imp->expressions[i].dependencies.end(); ++it) {
                 
-                if (std::find(deps.begin(), deps.end(), it->first) == deps.end()) {
-                    deps.push_back(it->first);
-                }
-                
+                deps.insert(it->first);
+               
             }
         }
     }
@@ -3424,19 +3422,20 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Na
         for (int i = 0; i < _imp->dimension; ++i) {
             if (_imp->masters[i].second) {
                 if (std::find(deps.begin(), deps.end(), _imp->masters[i].second.get()) == deps.end()) {
-                    deps.push_back(_imp->masters[i].second.get());
+                    deps.insert(_imp->masters[i].second.get());
                 }
             }
         }
     }
     
     std::list<KnobI*> knobsToInspectRecursive;
-    for (std::list<KnobI*>::iterator it = deps.begin(); it!=deps.end(); ++it) {
+    for (std::set<KnobI*>::iterator it = deps.begin(); it!=deps.end(); ++it) {
         Natron::EffectInstance* effect  = dynamic_cast<Natron::EffectInstance*>((*it)->getHolder());
         if (effect) {
             NodePtr node = effect->getNode();
-            if (std::find(nodes.begin(), nodes.end(), node) == nodes.end()) {
-                nodes.push_back(node);
+
+            std::pair<std::set<NodePtr>::iterator,bool> ok = nodes.insert(node);
+            if (ok.second) {
                 knobsToInspectRecursive.push_back(*it);
             }
         }
@@ -4240,7 +4239,7 @@ KnobHolder::isSetValueCurrentlyPossible() const
 
 
 void
-KnobHolder::getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const
+KnobHolder::getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const
 {
     QMutexLocker k(&_imp->knobsMutex);
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
