@@ -1110,6 +1110,7 @@ GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
 void
 GuiApplicationManager::showOfxLog()
 {
+    hideSplashScreen();
     GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(getTopLevelInstance());
     if (app) {
         app->getGui()->showOfxLog();
