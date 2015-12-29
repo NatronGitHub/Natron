@@ -447,8 +447,10 @@ GuiApplicationManager::exitApp()
         }
     }
     
+    std::set<GuiAppInstance*> triedInstances;
     while (!guiApps.empty()) {
         GuiAppInstance* app = guiApps.front();
+        triedInstances.insert(app);
         if ( app && app->getGui()->closeInstance() ) {
             return;
         }
@@ -458,7 +460,7 @@ GuiApplicationManager::exitApp()
         guiApps.clear();
         for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             GuiAppInstance* ga = dynamic_cast<GuiAppInstance*>(it->second.app);
-            if (ga && ga != app) {
+            if (ga && triedInstances.find(ga) == triedInstances.end()) {
                 guiApps.push_back(ga);
             }
         }
