@@ -398,7 +398,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         // If we don't, the following assert will crash at the beginning of EffectInstance::renderRoIInternal():
         // assert(isSupportedBitDepth(outputDepth) && isSupportedComponent(-1, outputComponents));
         // If a component/bitdepth is not supported (this is probably a plugin bug), use the closest one, but don't crash Natron.
-        //checkOFXClipPreferences_public(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited,true, false);
+        //refreshClipPreferences_public(getApp()->getTimeLine()->currentFrame(), scaleOne, kOfxChangeUserEdited,true, false);
         
 
     } catch (const std::exception & e) {
@@ -1170,9 +1170,9 @@ clipPrefsProxy(OfxEffectInstance* self,
 
 
 bool
-OfxEffectInstance::checkOFXClipPreferences(double time,
+OfxEffectInstance::refreshClipPreferences(double time,
                                            const RenderScale & scale,
-                                           const std::string & reason,
+                                          Natron::ValueChangedReasonEnum reason,
                                            bool forceGetClipPrefAction)
 {
     
@@ -1254,16 +1254,21 @@ OfxEffectInstance::checkOFXClipPreferences(double time,
     ////////////////////////////////
     //////////////// STEP 4: If our proxy remapping changed some clips preferences, notifying the plug-in of the clips which changed
     if (!getApp()->isCreatingNodeTree()) {
+        
+        std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
+        assert(!ofxReason.empty());
+
+        
         RECURSIVE_ACTION();
         SET_CAN_SET_VALUE(true);
         if (!modifiedClips.empty()) {
-            effectInstance()->beginInstanceChangedAction(reason);
+            effectInstance()->beginInstanceChangedAction(ofxReason);
         }
         for (std::list<OfxClipInstance*>::iterator it = modifiedClips.begin(); it != modifiedClips.end(); ++it) {
-            effectInstance()->clipInstanceChangedAction((*it)->getName(), reason, time, scale);
+            effectInstance()->clipInstanceChangedAction((*it)->getName(), ofxReason, time, scale);
         }
         if (!modifiedClips.empty()) {
-            effectInstance()->endInstanceChangedAction(reason);
+            effectInstance()->endInstanceChangedAction(ofxReason);
         }
     }
     
@@ -2371,6 +2376,26 @@ OfxEffectInstance::hasOverlay() const
     return _overlayInteract != NULL;
 }
 
+void
+OfxEffectInstance::redrawOverlayInteract()
+{
+    assert(_overlayInteract);
+    (void)_overlayInteract->redraw();
+}
+
+RenderScale
+OfxEffectInstance::getOverlayInteractRenderScale() const
+{
+    RenderScale renderScale(1.);
+    if (isDoingInteractAction() && _overlayInteract) {
+        OverlaySupport* lastInteract = _overlayInteract->getLastCallingViewport();
+        assert(lastInteract);
+        unsigned int mmLevel = lastInteract->getCurrentRenderScale();
+        renderScale.x = renderScale.y = 1 << mmLevel;
+    }
+    return renderScale;
+}
+
 std::string
 OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReasonEnum reason)
 {
@@ -2396,7 +2421,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
                                Natron::ValueChangedReasonEnum reason,
                                int view,
                                double time,
-                               bool originatedFromMainThread)
+                               bool /*originatedFromMainThread*/)
 {
     if (!_initialized) {
         return;
@@ -2416,13 +2441,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     assert( !ofxReason.empty() ); // crashes when resetting to defaults
-    RenderScale renderScale(1.);
-    if (isDoingInteractAction() && _overlayInteract) {
-        OverlaySupport* lastInteract = _overlayInteract->getLastCallingViewport();
-        assert(lastInteract);
-        unsigned int mmLevel = lastInteract->getCurrentRenderScale();
-        renderScale.x = renderScale.y = 1 << mmLevel;
-    }
+    RenderScale renderScale  = getOverlayInteractRenderScale();
     OfxStatus stat = kOfxStatOK;
     
     int recursionLevel = getRecursionLevel();
@@ -2449,32 +2468,10 @@ OfxEffectInstance::knobChanged(KnobI* k,
         stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason,(OfxTime)time,renderScale);
     }
     
-    if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
+    /*if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
         return;
-    }
+    }*/
     
-    if (QThread::currentThread() == qApp->thread() &&
-        originatedFromMainThread) { //< change didnt occur in main-thread in the first, palce don't attempt to draw the overlay
-        
-        ///Run the following only in the main-thread
-
-        if ( _effect->isClipPreferencesSlaveParam( k->getOriginalName() ) ) {
-            RECURSIVE_ACTION();
-            checkOFXClipPreferences_public(time, renderScale, ofxReason,true, true);
-        }
-        if (_overlayInteract && getNode()->shouldDrawOverlay() && !getNode()->hasHostOverlayForParam(k)) {
-            // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
-            // Most hosts trigger a redraw if the plugin has an active overlay.
-            //if (std::find(_overlaySlaves.begin(), _overlaySlaves.end(), (void*)k) != _overlaySlaves.end()) {
-            incrementRedrawNeededCounter();
-            //}
-
-            if (recursionLevel == 1 && checkIfOverlayRedrawNeeded()) {
-                stat = _overlayInteract->redraw();
-                assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-            }
-        }
-    }
 } // knobChanged
 
 void

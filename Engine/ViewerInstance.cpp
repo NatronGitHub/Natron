@@ -3014,10 +3014,10 @@ ViewerInstance::onInputChanged(int /*inputNb*/)
 }
 
 bool
-ViewerInstance::checkOFXClipPreferences(double /*time*/,
-                             const RenderScale & /*scale*/,
-                             const std::string & /*reason*/,
-                             bool /*forceGetClipPrefAction*/)
+ViewerInstance::refreshClipPreferences(double /*time*/,
+                                       const RenderScale & /*scale*/,
+                                       Natron::ValueChangedReasonEnum /*reason*/,
+                                       bool /*forceGetClipPrefAction*/)
 {
     Q_EMIT clipPreferencesChanged();
     return false;

@@ -3856,6 +3856,24 @@ EffectInstance::getCurrentThreadSafetyThreadLocal() const
 }
 
 void
+EffectInstance::redrawOverlayInteract()
+{
+    if (isDoingInteractAction()) {
+        getApp()->queueRedrawForAllViewers();
+    } else {
+        getApp()->redrawAllViewers();
+    }
+    
+}
+
+RenderScale
+EffectInstance::getOverlayInteractRenderScale() const
+{
+    RenderScale r(1.);
+    return r;
+}
+
+void
 EffectInstance::onKnobValueChanged_public(KnobI* k,
                                           Natron::ValueChangedReasonEnum reason,
                                           double time,
@@ -3894,10 +3912,29 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                                                  false,
                                                  false,
                                                  boost::shared_ptr<RenderStats>() );
-
-        RECURSIVE_ACTION();
-        EffectPointerThreadProperty_RAII propHolder_raii(this);
-        knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);
+        {
+            RECURSIVE_ACTION();
+            EffectPointerThreadProperty_RAII propHolder_raii(this);
+            knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);
+        }
+        
+        if (QThread::currentThread() == qApp->thread() &&
+            originatedFromMainThread) {
+            
+            ///Run the following only in the main-thread
+            if (k->getIsClipPreferencesSlave()) {
+                refreshClipPreferences_public(time, getOverlayInteractRenderScale(), reason,true, true);
+            }
+            if (hasOverlay() && node->shouldDrawOverlay() && !node->hasHostOverlayForParam(k)) {
+                // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
+                // Most hosts trigger a redraw if the plugin has an active overlay.
+                incrementRedrawNeededCounter();
+                
+                if (!isDequeueingValuesSet() && getRecursionLevel() == 0 && checkIfOverlayRedrawNeeded()) {
+                    redrawOverlayInteract();
+                }
+            }
+        }
     }
 
     node->onEffectKnobValueChanged(k, reason);
@@ -4366,9 +4403,9 @@ EffectInstance::getOutputPremultiplication() const
 }
 
 void
-EffectInstance::checkOFXClipPreferences_recursive(double time,
+EffectInstance::refreshClipPreferences_recursive(double time,
                                                   const RenderScale & scale,
-                                                  const std::string & reason,
+                                                 Natron::ValueChangedReasonEnum reason,
                                                   bool forceGetClipPrefAction,
                                                   std::list<Natron::Node*> & markedNodes)
 {
@@ -4380,7 +4417,7 @@ EffectInstance::checkOFXClipPreferences_recursive(double time,
     }
 
 
-    checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
+    refreshClipPreferences(time, scale, reason, forceGetClipPrefAction);
     node->refreshIdentityState();
 
     if ( !node->duringInputChangedAction() ) {
@@ -4393,7 +4430,7 @@ EffectInstance::checkOFXClipPreferences_recursive(double time,
     std::list<Natron::Node*>  outputs;
     node->getOutputsWithGroupRedirection(outputs);
     for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        (*it)->getLiveInstance()->checkOFXClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
+        (*it)->getLiveInstance()->refreshClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
     }
 }
 
@@ -4419,9 +4456,9 @@ static void setComponentsDirty_recursive(const Node* node, std::list<const Natro
 }
 
 void
-EffectInstance::checkOFXClipPreferences_public(double time,
+EffectInstance::refreshClipPreferences_public(double time,
                                                const RenderScale & scale,
-                                               const std::string & reason,
+                                                Natron::ValueChangedReasonEnum reason,
                                                bool forceGetClipPrefAction,
                                                bool recurse)
 {
@@ -4434,17 +4471,17 @@ EffectInstance::checkOFXClipPreferences_public(double time,
         }
         {
             std::list<Natron::Node*> markedNodes;
-            checkOFXClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
+            refreshClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
         }
     } else {
-        checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
+        refreshClipPreferences(time, scale, reason, forceGetClipPrefAction);
     }
 }
 
 bool
-EffectInstance::checkOFXClipPreferences(double /*time*/,
+EffectInstance::refreshClipPreferences(double /*time*/,
                                         const RenderScale & /*scale*/,
-                                        const std::string & /*reason*/,
+                                       Natron::ValueChangedReasonEnum /*reason*/,
                                         bool forceGetClipPrefAction)
 {
 

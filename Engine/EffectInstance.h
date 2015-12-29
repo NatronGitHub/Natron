@@ -637,25 +637,25 @@ public:
     /**
      * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
      **/
-    void checkOFXClipPreferences_public(double time,
+    void refreshClipPreferences_public(double time,
                                         const RenderScale & scale,
-                                        const std::string & reason,
+                                        Natron::ValueChangedReasonEnum reason,
                                         bool forceGetClipPrefAction,
                                         bool recurse);
 
     virtual void onChannelsSelectorRefreshed() {}
 
 
-    virtual bool checkOFXClipPreferences(double time,
-                                     const RenderScale & scale,
-                                     const std::string & reason,
-                                     bool forceGetClipPrefAction);
+    virtual bool refreshClipPreferences(double time,
+                                        const RenderScale & scale,
+                                        Natron::ValueChangedReasonEnum reason,
+                                        bool forceGetClipPrefAction);
 
 protected:
 
-    void checkOFXClipPreferences_recursive(double time,
+    void refreshClipPreferences_recursive(double time,
                                            const RenderScale & scale,
-                                           const std::string & reason,
+                                          Natron::ValueChangedReasonEnum reason,
                                            bool forceGetClipPrefAction,
                                            std::list<Natron::Node*> & markedNodes);
 
@@ -702,6 +702,8 @@ public:
     {
         return false;
     }
+
+    virtual RenderScale getOverlayInteractRenderScale() const;
 
     SequenceTime getFrameRenderArgsCurrentTime() const;
 
@@ -1389,6 +1391,8 @@ bool onOverlayPenDown_public(double time, const RenderScale & renderScale, int v
     {
         return false;
     }
+
+    virtual void redrawOverlayInteract();
 
     /**
      * @brief Returns the components available on each input for this effect at the given time.

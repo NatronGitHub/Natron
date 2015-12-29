@@ -189,6 +189,8 @@ public:
     virtual void getFrameRange(double *first,double *last) OVERRIDE;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
     virtual bool hasOverlay() const OVERRIDE FINAL;
+    virtual void redrawOverlayInteract() OVERRIDE FINAL;
+    virtual RenderScale getOverlayInteractRenderScale() const OVERRIDE FINAL;
     virtual void drawOverlay(double time, const RenderScale & renderScale, int view) OVERRIDE FINAL;
     virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool onOverlayPenMotion(double time, const RenderScale & renderScale, int view,
@@ -261,10 +263,10 @@ public:
     virtual void getPreferredDepthAndComponents(int inputNb, std::list<Natron::ImageComponents>* comp, Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;
     virtual Natron::SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool checkOFXClipPreferences(double time,
-                                     const RenderScale & scale,
-                                     const std::string & reason,
-                                         bool forceGetClipPrefAction) OVERRIDE FINAL;
+    virtual bool refreshClipPreferences(double time,
+                                        const RenderScale & scale,
+                                        Natron::ValueChangedReasonEnum reason,
+                                        bool forceGetClipPrefAction) OVERRIDE FINAL;
     
     virtual void getComponentsNeededAndProduced(double time, int view,
                                                 ComponentsNeededMap* comps,

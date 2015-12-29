@@ -222,9 +222,9 @@ public:
     
     static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
-    virtual bool checkOFXClipPreferences(double time,
+    virtual bool refreshClipPreferences(double time,
                                          const RenderScale & scale,
-                                         const std::string & reason,
+                                        Natron::ValueChangedReasonEnum reason,
                                          bool forceGetClipPrefAction) OVERRIDE FINAL;
     
     virtual void onChannelsSelectorRefreshed() OVERRIDE FINAL;

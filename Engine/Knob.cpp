@@ -296,6 +296,8 @@ struct KnobHelperPrivate
     mutable QMutex valueChangedBlockedMutex;
     bool valueChangedBlocked;
     
+    bool isClipPreferenceSlave;
+    
     KnobHelperPrivate(KnobHelper* publicInterface_,
                       KnobHolder*  holder_,
                       int dimension_,
@@ -351,6 +353,7 @@ struct KnobHelperPrivate
     , hasModifications()
     , valueChangedBlockedMutex()
     , valueChangedBlocked(false)
+    , isClipPreferenceSlave(false)
     {
         mustCloneGuiCurves.resize(dimension);
         mustCloneInternalCurves.resize(dimension);
@@ -2379,6 +2382,19 @@ KnobHelper::getCanUndo() const
     return _imp->CanUndo;
 }
 
+
+void
+KnobHelper::setIsClipPreferencesSlave(bool slave)
+{
+    _imp->isClipPreferenceSlave = slave;
+}
+
+bool
+KnobHelper::getIsClipPreferencesSlave() const
+{
+    return _imp->isClipPreferenceSlave;
+}
+
 bool
 KnobHelper::getEvaluateOnChange() const
 {
@@ -3492,6 +3508,7 @@ struct KnobHolder::KnobHolderPrivate
     ///to just redraw it once when the recursion level is back to 0
     QMutex overlayRedrawStackMutex;
     int overlayRedrawStack;
+    bool isDequeingValuesSet;
 
     mutable QMutex paramsEditLevelMutex;
     KnobHolder::MultipleParamsEditEnum paramsEditLevel;
@@ -3523,6 +3540,7 @@ struct KnobHolder::KnobHolderPrivate
     , actionsRecursionLevel()
     , overlayRedrawStackMutex()
     , overlayRedrawStack(0)
+    , isDequeingValuesSet(false)
     , paramsEditLevel(eMultipleParamsEditOff)
     , paramsEditRecursionLevel(0)
     , evaluationBlockedMutex(QMutex::Recursive)
@@ -4649,13 +4667,32 @@ KnobHolder::areKnobsFrozen() const
 }
 
 bool
+KnobHolder::isDequeueingValuesSet() const
+{
+    {
+        QMutexLocker k(&_imp->overlayRedrawStackMutex);
+        return _imp->isDequeingValuesSet;
+    }
+}
+
+bool
 KnobHolder::dequeueValuesSet()
 {
     assert(QThread::currentThread() == qApp->thread());
+    beginChanges();
+    {
+        QMutexLocker k(&_imp->overlayRedrawStackMutex);
+        _imp->isDequeingValuesSet = true;
+    }
     bool ret = false;
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         ret |= _imp->knobs[i]->dequeueValuesSet(false);
     }
+    {
+        QMutexLocker k(&_imp->overlayRedrawStackMutex);
+        _imp->isDequeingValuesSet = false;
+    }
+    endChanges();
     return ret;
 }
 

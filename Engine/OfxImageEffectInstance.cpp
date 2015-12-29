@@ -587,6 +587,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     if (!paramShouldBePersistant) {
         persistant = false;
     }
+    knob->setIsClipPreferencesSlave(isClipPreferencesSlaveParam(paramName));
     knob->setIsPersistant(persistant);
     knob->setAnimationEnabled( descriptor.getCanAnimate() );
     knob->setSecretByDefault( descriptor.getSecret() );

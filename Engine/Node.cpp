@@ -3049,6 +3049,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             assert(disableNodeKnob);
             disableNodeKnob->setAnimationEnabled(false);
             disableNodeKnob->setDefaultValue(false);
+            disableNodeKnob->setIsClipPreferencesSlave(true);
             disableNodeKnob->setName(kDisableNodeKnobName);
             disableNodeKnob->setAddNewLine(false);
             disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
@@ -6603,7 +6604,6 @@ Node::onEffectKnobValueChanged(KnobI* what,
             isGrp->getNode()->initializeInputs();
         }
     }
-    
 }
 
 bool
@@ -6709,9 +6709,9 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
     {
         ///Clip preferences have changed
         RenderScale s(1.);
-        liveInstance->checkOFXClipPreferences_public(_publicInterface->getApp()->getTimeLine()->currentFrame(),
+        liveInstance->refreshClipPreferences_public(_publicInterface->getApp()->getTimeLine()->currentFrame(),
                                                      s,
-                                                     OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::eValueChangedReasonUserEdited),
+                                                     Natron::eValueChangedReasonUserEdited,
                                                      true, true);
     }
     if (!enabledChan[0].lock()) {
@@ -6777,9 +6777,9 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,const MaskSelector& sele
     {
         ///Clip preferences have changed
         RenderScale s(1.);
-        liveInstance->checkOFXClipPreferences_public(_publicInterface->getApp()->getTimeLine()->currentFrame(),
+        liveInstance->refreshClipPreferences_public(_publicInterface->getApp()->getTimeLine()->currentFrame(),
                                                      s,
-                                                     OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::eValueChangedReasonUserEdited),
+                                                     Natron::eValueChangedReasonUserEdited,
                                                      true, true);
     }
 }
@@ -7639,7 +7639,7 @@ Node::refreshAllInputRelatedData(bool canChangeValues,const std::vector<boost::s
             }
             
         }
-        hasChanged |= _imp->liveInstance->checkOFXClipPreferences(time, scaleOne, kOfxChangeUserEdited, true);
+        hasChanged |= _imp->liveInstance->refreshClipPreferences(time, scaleOne, Natron::eValueChangedReasonUserEdited, true);
     }
     
     hasChanged |= refreshChannelSelectors(canChangeValues);
@@ -8728,9 +8728,9 @@ Node::addUserComponents(const Natron::ImageComponents& comps)
     {
         ///Clip preferences have changed
         RenderScale s(1.);
-        getLiveInstance()->checkOFXClipPreferences_public(getApp()->getTimeLine()->currentFrame(),
+        getLiveInstance()->refreshClipPreferences_public(getApp()->getTimeLine()->currentFrame(),
                                                           s,
-                                                          OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::eValueChangedReasonUserEdited),
+                                                          Natron::eValueChangedReasonUserEdited,
                                                           true, true);
     }
     {
