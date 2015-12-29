@@ -34,6 +34,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 #include <QtCore/QString>
+#include <QtCore/QProcess>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
@@ -701,6 +702,14 @@ public:
     
     ~PythonGILLocker();
 };
+    
+/**
+ * @brief Check if there is currently a running Natron process on this computer with the given PID. Note that this function might
+ * return true even if the process is not actually Natron because the operating system recycles PIDs. This function should be used
+ * only for non-vital GUI elements.
+ **/
+bool checkIfNatronProcessIsRunning(Q_PID pid);
+    
 } // namespace Natron
 
 

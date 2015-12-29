@@ -1411,7 +1411,7 @@ Project::createLockFile()
     QString curDateStr = now.toString();
     ts << curDateStr << '\n'
     << lastAuthor << '\n'
-    << QCoreApplication::applicationPid() << '\n'
+    << (qint64)QCoreApplication::applicationPid() << '\n'
     << QHostInfo::localHostName();
 }
     

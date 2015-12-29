@@ -39,6 +39,14 @@
 #include <execinfo.h>
 #endif
 
+#ifdef Q_OS_UNIX
+#include <stdio.h>
+#include <stdlib.h>
+#ifdef Q_OS_MAC
+#include <sys/sysctl.h>
+#endif
+#endif
+
 #include <QtCore/QDebug>
 #include <QtCore/QDir>
 #include <QtCore/QTextCodec>
@@ -3264,6 +3272,70 @@ getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool*
         }
     }
     
+}
+
+
+bool checkIfNatronProcessIsRunning(Q_PID /*pid*/)
+{
+    return true;
+#if 0
+#ifdef __NATRON_WIN32__
+    DWORD dwExitCode = 9999;
+    //See https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=12&checkda=1&ct=1451385015&rver=6.0.5276.0&wp=MCMBI&wlcxt=msdn%24msdn%24msdn&wreply=https%3a%2f%2fmsdn.microsoft.com%2fen-us%2flibrary%2fwindows%2fdesktop%2fms683189%2528v%3dvs.85%2529.aspx&lc=1033&id=254354&mkt=en-US
+    if (GetExitCodeProcess(pid, &dwExitCode)) {
+        if (dwExitCode == STILL_ACTIVE) {
+            return true;
+        }
+        return false;
+    } else {
+        qDebug() << "Call to GetExitCodeProcess failed.";
+        return false;
+    }
+#elif defined(__NATRON_LINUX__)
+    FILE *fp = 0;
+    char buf[512];
+    snprintf(buf, sizeof(buf), "/proc/%ld/stat", (long)pid);
+    fp = fopen(buf, "r");
+    if (!fp) {
+        return false;
+    }
+    
+    char pname[512] = {0,};
+    char state;
+    //See http://man7.org/linux/man-pages/man5/proc.5.html
+    if ( (fscanf(fp, "%ld (%[^)]) %c", &pid, pname, &state)) != 3 ){
+        qDebug() << "checkIfProcessIsRunning(): fscanf call on" << buf << "failed";
+        fclose(fp);
+        return false;
+    }
+    //If the process is called Natron and it is running, return true
+    if (!strcmp(pname, NATRON_APPLICATION_NAME) && state == 'R') {
+        fclose(fp);
+        closedir(dir);
+        return true;
+    }
+    fclose(fp);
+    return false;
+#elif defined(__NATRON_OSX__)
+    //See https://developer.apple.com/legacy/library/qa/qa2001/qa1123.html
+    static const int    name[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)pid };
+    // Declaring name as const requires us to cast it when passing it to
+    // sysctl because the prototype doesn't include the const modifier.
+    
+    struct kinfo_proc process;
+    size_t procBufferSize = sizeof(process);
+    int err = sysctl( (int *)name, 4,NULL, &procBufferSize, NULL, 0);
+    if (err == 0 && procBufferSize != 0) {
+        if (process.kp_proc.p_pid != (pid_t)pid) {
+            return false;
+        }
+        if (process.kp_proc.p_stat == SRUN) {
+            return true;
+        }
+    }
+    return false;
+#endif
+#endif
 }
 
 } //Namespace Natron
