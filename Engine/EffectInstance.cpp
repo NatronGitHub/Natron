@@ -1636,24 +1636,12 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
     }
 #endif
 
-    boost::shared_ptr<std::map<int, EffectInstance*> > reroutesMap;
-    if (!request) {
-        if (inputTransforms && !inputTransforms->empty()) {
-            reroutesMap.reset(new std::map<int, EffectInstance*>);
-            transformInputRois(this, inputTransforms, par, scale, inputsRoi, reroutesMap.get());
-        }
-    } else {
-        if (request->globalData.reroutesMap && !request->globalData.reroutesMap->empty()) {
-            reroutesMap = request->globalData.reroutesMap;
-        }
-        
-    }
 
     return treeRecurseFunctor(true,
                               getNode(),
                               framesNeeded,
                               *inputsRoi,
-                              reroutesMap,
+                              inputTransforms,
                               useTransforms,
                               mipMapLevel,
                               time,

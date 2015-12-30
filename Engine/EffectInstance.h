@@ -590,7 +590,7 @@ public:
                                                                        const boost::shared_ptr<Natron::Node> & node,
                                                                        const FramesNeededMap & framesNeeded,
                                                                        const RoIMap & inputRois,
-                                                                       const boost::shared_ptr<std::map<int, Natron::EffectInstance*> > & reroutesMap,
+                                                                       const boost::shared_ptr<InputMatrixMap> & reroutesMap,
                                                                        bool useTransforms, // roi functor specific
                                                                        unsigned int originalMipMapLevel, // roi functor specific
                                                                        double time,

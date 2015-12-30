@@ -39,7 +39,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                                                             const boost::shared_ptr<Natron::Node>& node,
                                                                             const FramesNeededMap& framesNeeded,
                                                                             const RoIMap& inputRois,
-                                                                            const boost::shared_ptr<std::map<int, Natron::EffectInstance*> >& reroutesMap,
+                                                                            const boost::shared_ptr<InputMatrixMap>& reroutesMap,
                                                                             bool useTransforms, // roi functor specific
                                                                             unsigned int originalMipMapLevel, // roi functor specific
                                                                             double time,
@@ -85,9 +85,9 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         //Redirect for transforms if needed
         EffectInstance* inputEffect = 0;
         if (reroutesMap) {
-            std::map<int, EffectInstance*>::const_iterator foundReroute = reroutesMap->find(inputNb);
+            InputMatrixMap::const_iterator foundReroute = reroutesMap->find(inputNb);
             if (foundReroute != reroutesMap->end()) {
-                inputEffect = foundReroute->second->getInput(inputNb);
+                inputEffect = foundReroute->second.newInputEffect->getInput(foundReroute->second.newInputNbToFetchFrom);
             }
         }
         
@@ -166,7 +166,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         
         if (!roiIsInRequestPass) {
             RoIMap::const_iterator foundInputRoI = inputRois.find(inputEffect);
-            if(foundInputRoI == inputRois.end()) {
+            if (foundInputRoI == inputRois.end()) {
                 continue;
             }
             if (foundInputRoI->second.isInfinite()) {
@@ -476,6 +476,8 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
     FrameViewPerRequestData fvPerRequestData;
     effect->getRegionsOfInterest_public(time, nodeRequest->mappedScale, fvRequest->globalData.rod, canonicalRenderWindow, view, &fvPerRequestData.inputsRoi);
     
+    
+    
     ///Transform Rois and get the reroutes map
     if (useTransforms) {
         if (fvRequest->globalData.transforms) {
@@ -484,11 +486,11 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
         }
     }
     
-    /*qDebug() << node->getFullyQualifiedName().c_str() << "RoI request: x1="<<canonicalRenderWindow.x1<<"y1="<<canonicalRenderWindow.y1<<"x2="<<canonicalRenderWindow.x2<<"y2="<<canonicalRenderWindow.y2;
+    qDebug() << node->getFullyQualifiedName().c_str() << "RoI request: x1="<<canonicalRenderWindow.x1<<"y1="<<canonicalRenderWindow.y1<<"x2="<<canonicalRenderWindow.x2<<"y2="<<canonicalRenderWindow.y2;
     qDebug() << "Input RoIs:";
     for (RoIMap::iterator it = fvPerRequestData.inputsRoi.begin(); it!=fvPerRequestData.inputsRoi.end(); ++it) {
         qDebug() << it->first->getNode()->getFullyQualifiedName().c_str()<<"x1="<<it->second.x1<<"y1="<<it->second.y1<<"x2="<<it->second.x2<<"y2"<<it->second.y2;
-    }*/
+    }
     ///Append the request
     fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, fvPerRequestData));
     
@@ -496,7 +498,7 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
                                                               node,
                                                               fvRequest->globalData.frameViewsNeeded,
                                                               fvPerRequestData.inputsRoi,
-                                                              fvRequest->globalData.reroutesMap,
+                                                              fvRequest->globalData.transforms,
                                                               useTransforms,
                                                               originalMipMapLevel,
                                                               time,

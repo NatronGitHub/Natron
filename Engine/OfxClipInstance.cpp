@@ -970,8 +970,9 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
             RoIMap regionsOfInterests;
             bool gotit = _nodeInstance->getThreadLocalRegionsOfInterests(regionsOfInterests);
             
+            RoIMap::iterator found = regionsOfInterests.find(inputNode);
             
-            if (!gotit) {
+            if (!gotit || found == regionsOfInterests.end()) {
                 qDebug() << "Bug in transform concatenations: thread-storage has not been set on the new upstream input.";
                 
                 RectD rod;
@@ -984,18 +985,12 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
                     Q_UNUSED(stat);
                 }
                 node->getRegionsOfInterest_public(time, renderScale, rod, rod, 0,&regionsOfInterests);
+            } else {
+                ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
+                roi = found->second;
             }
-            
-            
-            
-            RoIMap::iterator found = regionsOfInterests.find(inputNode);
-            assert(found != regionsOfInterests.end());
-            ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
-            roi = found->second;
-            
         }
         
-       
         
         RectI pixelRoI;
         roi.toPixelEnclosing(mipMapLevel, par, &pixelRoI);
