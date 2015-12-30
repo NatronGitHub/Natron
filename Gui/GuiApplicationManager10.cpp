@@ -450,9 +450,9 @@ GuiApplicationManager::exitApp()
     std::set<GuiAppInstance*> triedInstances;
     while (!guiApps.empty()) {
         GuiAppInstance* app = guiApps.front();
-        triedInstances.insert(app);
-        if ( app && app->getGui()->closeInstance() ) {
-            return;
+        if (app) {
+            triedInstances.insert(app);
+            app->getGui()->closeInstance();
         }
         
         //refreshg ui instances

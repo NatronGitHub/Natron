@@ -2544,9 +2544,7 @@ KnobHelper::slaveTo(int dimension,
     }
 
     assert( !other->isSlave(otherDimension) );
-    if (dynamic_cast<KnobButton*>(this)) {
-        return false;
-    }
+   
     {
         QWriteLocker l(&_imp->mastersMutex);
         if (_imp->masters[dimension].second) {
@@ -2575,7 +2573,13 @@ KnobHelper::slaveTo(int dimension,
     }
     
     bool hasChanged = cloneAndCheckIfChanged(other.get(),dimension);
-    setEnabled(dimension, false);
+    
+    //Do not disable buttons when they are slaved
+    KnobButton* isBtn = dynamic_cast<KnobButton*>(this);
+    if (!isBtn) {
+        setEnabled(dimension, false);
+    }
+    
     if (_signalSlotHandler) {
         ///Notify we want to refresh
         if (reason == Natron::eValueChangedReasonPluginEdited) {
@@ -2585,6 +2589,12 @@ KnobHelper::slaveTo(int dimension,
     
     if (hasChanged) {
         evaluateValueChange(dimension, getCurrentTime(), reason);
+    } else if (isBtn) {
+        //For buttons, don't evaluate or the instanceChanged action of the button will be called,
+        //just refresh the hasModifications flag so it gets serialized
+        isBtn->computeHasModifications();
+        //force the aliased parameter to be persistant if it's not, otherwise it will not be saved
+        isBtn->setIsPersistant(true);
     }
 
     ///Register this as a listener of the master

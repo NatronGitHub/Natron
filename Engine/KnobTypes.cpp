@@ -512,7 +512,7 @@ KnobButton::KnobButton(KnobHolder*  holder,
 : Knob<bool>(holder, label, dimension, declaredByPlugin)
 , _renderButton(false)
 {
-    setIsPersistant(false);
+    //setIsPersistant(false);
 }
 
 bool

@@ -161,7 +161,7 @@ void
 KnobGuiButton::setEnabled()
 {
     boost::shared_ptr<KnobButton> knob = _knob.lock();
-    bool b = knob->isEnabled(0) && knob->getExpression(0).empty();
+    bool b = knob->isEnabled(0);
 
     _button->setEnabled(b);
 }

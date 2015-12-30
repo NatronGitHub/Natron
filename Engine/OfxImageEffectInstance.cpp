@@ -555,7 +555,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         OfxPushButtonInstance *ret = new OfxPushButtonInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-        paramShouldBePersistant = false;
+        //paramShouldBePersistant = false;
     } else if (descriptor.getType() == kOfxParamTypeParametric) {
         OfxParametricInstance* ret = new OfxParametricInstance(getOfxEffectInstance(), descriptor);
         OfxStatus stat = ret->defaultInitializeAllCurves(descriptor);

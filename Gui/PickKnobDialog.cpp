@@ -247,10 +247,9 @@ PickKnobDialog::onNodeComboEditingFinished()
     const std::vector< boost::shared_ptr<KnobI> > & knobs = selectedNode->getKnobs();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if (!knobs[j]->getIsSecret()) {
-            KnobButton* isButton = dynamic_cast<KnobButton*>( knobs[j].get() );
             KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[j].get() );
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[j].get() );
-            if (!isButton && !isPage && !isGroup) {
+            if (!isPage && !isGroup) {
                 QString name( knobs[j]->getName().c_str() );
                 
                 bool canInsertKnob = true;

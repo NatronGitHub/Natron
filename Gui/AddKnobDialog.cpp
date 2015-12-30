@@ -268,7 +268,8 @@ enum ParamDataTypeEnum {
     eParamDataTypeGroup, // 15
     eParamDataTypePage, // 16
     eParamDataTypeButton, // 17
-    eParamDataTypeCount // 18
+    eParamDataTypeSeparator, // 18
+    eParamDataTypeCount // 19
 };
 
 static const char* dataTypeString(ParamDataTypeEnum t)
@@ -310,6 +311,8 @@ static const char* dataTypeString(ParamDataTypeEnum t)
             return "Page";
         case eParamDataTypeButton:
             return "Button";
+        case eParamDataTypeSeparator:
+            return "Separator";
         default:
             return NULL;
     }
@@ -344,6 +347,7 @@ static int dataTypeDim(ParamDataTypeEnum t)
         case eParamDataTypeGroup:
         case eParamDataTypePage:
         case eParamDataTypeButton:
+        case eParamDataTypeSeparator:
         default:
             return 1;
     }
@@ -366,7 +370,7 @@ static ParamDataTypeEnum getChoiceIndexFromKnobType(KnobI* knob)
     KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob);
     KnobPage* isPage = dynamic_cast<KnobPage*>(knob);
     KnobButton* isBtn = dynamic_cast<KnobButton*>(knob);
-    
+    KnobSeparator* isSep = dynamic_cast<KnobSeparator*>(knob);
     if (isInt) {
         if (dim == 1) {
             return eParamDataTypeInteger;
@@ -411,6 +415,8 @@ static ParamDataTypeEnum getChoiceIndexFromKnobType(KnobI* knob)
         return eParamDataTypePage;
     } else if (isBtn) {
         return eParamDataTypeButton;
+    } else if (isSep) {
+        return eParamDataTypeSeparator;
     }
     return eParamDataTypeCount;
 }
@@ -1273,6 +1279,22 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleParent(true);
             _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, d);
             break;
+        case eParamDataTypeSeparator: // separator
+            _imp->setVisibleToolTipEdit(true);
+            _imp->setVisibleAnimates(false);
+            _imp->setVisibleEvaluate(false);
+            _imp->setVisibleHide(false);
+            _imp->setVisibleMenuItems(false);
+            _imp->setVisibleMinMax(false);
+            _imp->setVisibleStartNewLine(false);
+            _imp->setVisibleMultiLine(false);
+            _imp->setVisibleMultiPath(false);
+            _imp->setVisibleRichText(false);
+            _imp->setVisibleSequence(false);
+            _imp->setVisibleGrpAsTab(false);
+            _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, d);
+            break;
         default:
             break;
     }
@@ -1498,6 +1520,10 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
         } break;
         case eParamDataTypeButton: {
             boost::shared_ptr<KnobButton> k = Natron::createKnob<KnobButton>(panel->getHolder(), label, 1, false);
+            knob = k;
+        } break;
+        case eParamDataTypeSeparator: {
+            boost::shared_ptr<KnobSeparator> k = Natron::createKnob<KnobSeparator>(panel->getHolder(), label, 1, false);
             knob = k;
         } break;
         default:
