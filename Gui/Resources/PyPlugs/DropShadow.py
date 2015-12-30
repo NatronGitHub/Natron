@@ -18,6 +18,9 @@ except ImportError:
 def getPluginID():
     return "fr.inria.DropShadow"
 
+def getIconPath():
+    return "DropShadow.png"
+
 def getLabel():
     return "DropShadow"
 

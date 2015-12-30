@@ -18,6 +18,9 @@ except ImportError:
 def getPluginID():
     return "fr.inria.ZRemap"
 
+def getIconPath():
+    return "ZRemap.png"
+
 def getLabel():
     return "ZRemap"
 

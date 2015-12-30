@@ -18,6 +18,9 @@ except ImportError:
 def getPluginID():
     return "fr.inria.Fill"
 
+def getIconPath():
+    return "Fill.png"
+
 def getLabel():
     return "Fill"
 
