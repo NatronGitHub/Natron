@@ -540,6 +540,13 @@ public:
     
     bool isSettingsPanelOpened() const;
     
+private:
+    
+    
+    bool isSettingsPanelOpenedInternal(std::set<const Node*>& recursionList) const;
+    
+public:
+    
     bool isUserSelected() const;
     
     bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, int view) const;

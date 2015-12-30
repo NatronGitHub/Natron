@@ -7895,9 +7895,8 @@ Node::isUserSelected() const
     return gui->isUserSelected();
 }
 
-
 bool
-Node::isSettingsPanelOpened() const
+Node::isSettingsPanelOpenedInternal(std::set<const Node*>& recursionList) const
 {
     boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
     if (!gui) {
@@ -7907,19 +7906,31 @@ Node::isSettingsPanelOpened() const
     if (parent) {
         return parent->isSettingsPanelOpened();
     }
+    
+    if (recursionList.find(this) != recursionList.end()) {
+        return false;
+    }
+    recursionList.insert(this);
+    
     {
         NodePtr master = getMasterNode();
         if (master) {
             return master->isSettingsPanelOpened();
         }
         for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
-            if (it->masterNode.get() != this && it->masterNode->isSettingsPanelOpened()) {
+            if (it->masterNode.get() != this && it->masterNode->isSettingsPanelOpenedInternal(recursionList)) {
                 return true;
             }
         }
     }
     return gui->isSettingsPanelOpened();
-    
+}
+
+bool
+Node::isSettingsPanelOpened() const
+{
+    std::set<const Node*> tmplist;
+    return isSettingsPanelOpenedInternal(tmplist);
 }
 
 
