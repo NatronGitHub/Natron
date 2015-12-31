@@ -108,7 +108,10 @@ boost::shared_ptr<KnobI> KnobSerialization::createKnob(const std::string & typeN
         ret.reset( new KnobOutputFile(NULL,"",dimension,false) );
     } else if ( typeName == KnobButton::typeNameStatic() ) {
         ret.reset(new KnobButton(NULL,"",dimension,false));
+    } else if (typeName == KnobSeparator::typeNameStatic()) {
+        ret.reset(new KnobSeparator(NULL, "", dimension, false));
     }
+    
     if (ret) {
         ret->populate();
     }

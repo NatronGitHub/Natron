@@ -374,6 +374,8 @@ OfxClipInstance::getAspectRatio() const
 {
     EffectInstance* input = getAssociatedNode();
     if (input && input != _nodeInstance) {
+        input = input->getNearestNonDisabled();
+        assert(input);
         return input->getPreferredAspectRatio();
     }
     return _aspectRatio;
@@ -396,6 +398,8 @@ OfxClipInstance::getFrameRate() const
     
     EffectInstance* input = getAssociatedNode();
     if (input) {
+        input = input->getNearestNonDisabled();
+        assert(input);
         return input->getPreferredFrameRate();
     }
     return 24.;

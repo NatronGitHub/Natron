@@ -3904,21 +3904,23 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);
         }
         
-        if (QThread::currentThread() == qApp->thread() &&
-            originatedFromMainThread) {
+        
+    }
+    
+    if (kh && QThread::currentThread() == qApp->thread() &&
+        originatedFromMainThread) {
+        
+        ///Run the following only in the main-thread
+        if (k->getIsClipPreferencesSlave()) {
+            refreshClipPreferences_public(time, getOverlayInteractRenderScale(), reason,true, true);
+        }
+        if (hasOverlay() && node->shouldDrawOverlay() && !node->hasHostOverlayForParam(k)) {
+            // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
+            // Most hosts trigger a redraw if the plugin has an active overlay.
+            incrementRedrawNeededCounter();
             
-            ///Run the following only in the main-thread
-            if (k->getIsClipPreferencesSlave()) {
-                refreshClipPreferences_public(time, getOverlayInteractRenderScale(), reason,true, true);
-            }
-            if (hasOverlay() && node->shouldDrawOverlay() && !node->hasHostOverlayForParam(k)) {
-                // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
-                // Most hosts trigger a redraw if the plugin has an active overlay.
-                incrementRedrawNeededCounter();
-                
-                if (!isDequeueingValuesSet() && getRecursionLevel() == 0 && checkIfOverlayRedrawNeeded()) {
-                    redrawOverlayInteract();
-                }
+            if (!isDequeueingValuesSet() && getRecursionLevel() == 0 && checkIfOverlayRedrawNeeded()) {
+                redrawOverlayInteract();
             }
         }
     }
@@ -4472,11 +4474,7 @@ EffectInstance::refreshClipPreferences(double /*time*/,
 {
 
     if (forceGetClipPrefAction) {
-        int prefInput = getNode()->getPreferredInput();
-        EffectInstance* input = 0;
-        if (prefInput != -1) {
-            input = getInput(prefInput);
-        }
+        EffectInstance* input = getNearestNonDisabled();
         if (!input) {
             QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
             _imp->clipPrefsData.outputPremult = Natron::eImagePremultiplicationPremultiplied;

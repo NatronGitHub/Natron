@@ -1675,8 +1675,9 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             KnobOutputFile* isOutFile = dynamic_cast<KnobOutputFile*>(sKnob.get());
             KnobPath* isPath = dynamic_cast<KnobPath*>(sKnob.get());
             KnobButton* isBtn = dynamic_cast<KnobButton*>(sKnob.get());
+            KnobSeparator* isSep = dynamic_cast<KnobSeparator*>(sKnob.get());
             
-            assert(isInt || isDbl || isBool || isChoice || isColor || isStr || isFile || isOutFile || isPath || isBtn);
+            assert(isInt || isDbl || isBool || isChoice || isColor || isStr || isFile || isOutFile || isPath || isBtn || isSep);
             
             if (isInt) {
                 boost::shared_ptr<KnobInt> k;
@@ -1868,6 +1869,18 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                                                                                sKnob->getDimension(), false);
                 } else {
                     k = boost::dynamic_pointer_cast<KnobButton>(found);
+                    if (!k) {
+                        continue;
+                    }
+                }
+                knob = k;
+            } else if (isSep) {
+                boost::shared_ptr<KnobSeparator> k;
+                if (!found) {
+                    k = Natron::createKnob<KnobSeparator>(liveInstance.get(), isRegular->getLabel() ,
+                                                       sKnob->getDimension(), false);
+                } else {
+                    k = boost::dynamic_pointer_cast<KnobSeparator>(found);
                     if (!k) {
                         continue;
                     }
