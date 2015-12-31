@@ -99,7 +99,6 @@ public:
     
     virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL;
 
-    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE WARN_UNUSED_RETURN;
 private:
 
     /**

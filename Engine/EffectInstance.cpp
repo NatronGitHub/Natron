@@ -4475,6 +4475,9 @@ EffectInstance::refreshClipPreferences(double /*time*/,
 
     if (forceGetClipPrefAction) {
         EffectInstance* input = getNearestNonDisabled();
+        if (input == this) {
+            input = 0;
+        }
         if (!input) {
             QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
             _imp->clipPrefsData.outputPremult = Natron::eImagePremultiplicationPremultiplied;
