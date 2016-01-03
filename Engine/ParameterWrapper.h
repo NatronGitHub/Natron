@@ -1049,6 +1049,19 @@ public:
     void trigger();
 };
 
+
+class SeparatorParam : public Param
+{
+    
+protected:
+    boost::weak_ptr<KnobSeparator> _separatorKnob;
+public:
+    
+    SeparatorParam(const boost::shared_ptr<KnobSeparator>& knob);
+    
+    virtual ~SeparatorParam();
+};
+
 class GroupParam : public Param
 {
     

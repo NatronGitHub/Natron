@@ -1515,6 +1515,20 @@ ButtonParam::trigger()
     _buttonKnob.lock()->trigger();
 }
 
+////////////////////SeparatorParam
+
+SeparatorParam::SeparatorParam(const boost::shared_ptr<KnobSeparator>& knob)
+: Param(knob)
+, _separatorKnob(boost::dynamic_pointer_cast<KnobSeparator>(knob))
+{
+    
+}
+
+SeparatorParam::~SeparatorParam()
+{
+    
+}
+
 ///////////////////GroupParam
 
 GroupParam::GroupParam(const boost::shared_ptr<KnobGroup>& knob)

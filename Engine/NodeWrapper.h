@@ -186,6 +186,8 @@ public:
     
     ButtonParam* createButtonParam(const std::string& name, const std::string& label);
     
+    SeparatorParam* createSeparatorParam(const std::string& name, const std::string& label);
+    
     GroupParam* createGroupParam(const std::string& name, const std::string& label);
     
     PageParam* createPageParam(const std::string& name, const std::string& label);

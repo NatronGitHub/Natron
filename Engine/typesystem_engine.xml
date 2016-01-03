@@ -500,6 +500,11 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="createSeparatorParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="createGroupParam(std::string,std::string)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
@@ -959,6 +964,7 @@
     <object-type name="ChoiceParam">
     </object-type>
     <object-type name="ButtonParam"/>
+    <object-type name="SeparatorParam"/>
     <object-type name="StringParamBase">
     </object-type>
     <object-type name="StringParam">

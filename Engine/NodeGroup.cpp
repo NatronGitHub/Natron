@@ -56,7 +56,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_PYPLUG_EXPORTER_VERSION 3
+#define NATRON_PYPLUG_EXPORTER_VERSION 4
 
 using namespace Natron;
 
@@ -1758,6 +1758,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     KnobPath* isPath = dynamic_cast<KnobPath*>(knob.get());
     KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob.get());
     KnobButton* isButton = dynamic_cast<KnobButton*>(knob.get());
+    KnobSeparator* isSep = dynamic_cast<KnobSeparator*>(knob.get());
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
     
     
@@ -1960,6 +1961,11 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
                                       ESC(isButton->getName()) +
                                       ", " + ESC(isButton->getLabel()) + ")");
 
+    } else if (isSep) {
+        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createSeparatorParam(" +
+                                                ESC(isSep->getName()) +
+                                                ", " + ESC(isSep->getLabel()) + ")");
+        
     } else if (isStr) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createStringParam(" +
                                       ESC(isStr->getName()) +

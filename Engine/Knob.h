@@ -1990,6 +1990,8 @@ public:
     
     boost::shared_ptr<KnobButton> createButtonKnob(const std::string& name, const std::string& label);
     
+    boost::shared_ptr<KnobSeparator> createSeparatorKnob(const std::string& name, const std::string& label);
+    
     //Type corresponds to the Type enum defined in StringParamBase in ParameterWrapper.h
     boost::shared_ptr<KnobString> createStringKnob(const std::string& name, const std::string& label);
     

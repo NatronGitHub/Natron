@@ -18,6 +18,7 @@
 
 /**
 * @brief This is the global header used by Shiboken to generate bindings for the Engine library.
+* Do not include it when compiling Natron.
 **/
 
 #ifndef PYSIDE_ENGINE_PYTHON_H

@@ -163,6 +163,7 @@ class RotoItemSerialization;
 class RotoLayer;
 class RotoPoint;
 class RotoStrokeItem;
+class SeparatorParam;
 class Settings;
 class StringAnimationManager;
 class StringParam;

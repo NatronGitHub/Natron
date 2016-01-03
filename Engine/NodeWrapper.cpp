@@ -308,6 +308,7 @@ Effect::createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
     boost::shared_ptr<KnobGroup> isGroup = boost::dynamic_pointer_cast<KnobGroup>(knob);
     boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
     boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+    boost::shared_ptr<KnobSeparator> isSep = boost::dynamic_pointer_cast<KnobSeparator>(knob);
     
     if (isInt) {
         switch (dims) {
@@ -353,6 +354,8 @@ Effect::createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
         return new ParametricParam(isParametric);
     } else if (isButton) {
         return new ButtonParam(isButton);
+    } else if (isSep) {
+        return new SeparatorParam(isSep);
     }
     return NULL;
 }
@@ -596,6 +599,17 @@ UserParamHolder::createButtonParam(const std::string& name, const std::string& l
     boost::shared_ptr<KnobButton> knob = _holder->createButtonKnob(name, label);
     if (knob) {
         return new ButtonParam(knob);
+    } else {
+        return 0;
+    }
+}
+
+SeparatorParam*
+UserParamHolder::createSeparatorParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<KnobSeparator> knob = _holder->createSeparatorKnob(name, label);
+    if (knob) {
+        return new SeparatorParam(knob);
     } else {
         return 0;
     }

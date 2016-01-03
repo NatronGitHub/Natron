@@ -38,7 +38,10 @@
 
 #include "Engine/EngineFwd.h"
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+//Shiboken fails if defined at the start of a header
 GCC_DIAG_OFF(strict-overflow)
+#endif
 
 class RectD
 {

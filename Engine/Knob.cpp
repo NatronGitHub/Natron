@@ -3988,6 +3988,26 @@ KnobHolder::createButtonKnob(const std::string& name, const std::string& label)
     return ret;
 }
 
+boost::shared_ptr<KnobSeparator>
+KnobHolder::createSeparatorKnob(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<KnobI> existingKnob = getKnobByName(name);
+    if (existingKnob) {
+        return boost::dynamic_pointer_cast<KnobSeparator>(existingKnob);
+    }
+    boost::shared_ptr<KnobSeparator> ret = Natron::createKnob<KnobSeparator>(this,label, 1, false);
+    ret->setName(name);
+    ret->setAsUserKnob();
+    /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
+     Q_UNUSED(pageknob);*/
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(this);
+    if (isEffect) {
+        isEffect->getNode()->declarePythonFields();
+    }
+    return ret;
+
+}
+
 //Type corresponds to the Type enum defined in StringParamBase in ParameterWrapper.h
 boost::shared_ptr<KnobString>
 KnobHolder::createStringKnob(const std::string& name, const std::string& label)

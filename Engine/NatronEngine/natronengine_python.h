@@ -83,6 +83,7 @@ CLANG_DIAG_ON(uninitialized)
 #define SBK_PARAMETRICPARAM_IDX                                      45
 #define SBK_PAGEPARAM_IDX                                            43
 #define SBK_GROUPPARAM_IDX                                           18
+#define SBK_SEPARATORPARAM_IDX                                       52
 #define SBK_BUTTONPARAM_IDX                                          6
 #define SBK_ANIMATEDPARAM_IDX                                        0
 #define SBK_CHOICEPARAM_IDX                                          7
@@ -93,14 +94,14 @@ CLANG_DIAG_ON(uninitialized)
 #define SBK_INTPARAM_IDX                                             24
 #define SBK_INT2DPARAM_IDX                                           20
 #define SBK_INT3DPARAM_IDX                                           22
-#define SBK_STRINGPARAMBASE_IDX                                      54
+#define SBK_STRINGPARAMBASE_IDX                                      55
 #define SBK_PATHPARAM_IDX                                            46
 #define SBK_OUTPUTFILEPARAM_IDX                                      42
 #define SBK_FILEPARAM_IDX                                            16
-#define SBK_STRINGPARAM_IDX                                          52
-#define SBK_STRINGPARAM_TYPEENUM_IDX                                 53
+#define SBK_STRINGPARAM_IDX                                          53
+#define SBK_STRINGPARAM_TYPEENUM_IDX                                 54
 #define SBK_BOOLEANPARAM_IDX                                         5
-#define SBK_USERPARAMHOLDER_IDX                                      55
+#define SBK_USERPARAMHOLDER_IDX                                      56
 #define SBK_IMAGELAYER_IDX                                           19
 #define SBK_ROTO_IDX                                                 51
 #define SBK_ITEMBASE_IDX                                             25
@@ -112,7 +113,7 @@ CLANG_DIAG_ON(uninitialized)
 #define SBK_APP_IDX                                                  1
 #define SBK_EFFECT_IDX                                               15
 #define SBK_PYCOREAPPLICATION_IDX                                    47
-#define SBK_NatronEngine_IDX_COUNT                                   56
+#define SBK_NatronEngine_IDX_COUNT                                   57
 
 // This variable stores all Python types exported by this module.
 extern PyTypeObject** SbkNatronEngineTypes;
@@ -169,6 +170,7 @@ template<> inline PyTypeObject* SbkType< ::Param >() { return reinterpret_cast<P
 template<> inline PyTypeObject* SbkType< ::ParametricParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::PageParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_PAGEPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::GroupParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType< ::SeparatorParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_SEPARATORPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::ButtonParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::AnimatedParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType< ::ChoiceParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX]); }
