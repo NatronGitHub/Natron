@@ -13,7 +13,7 @@ PortGroup        qt4 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.5.22 tags/Release-
+github.setup     OpenImageIO oiio 1.6.8 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
@@ -68,13 +68,16 @@ compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-
 
 patch.pre_args	-p1
 patchfiles \
-    oiio-exrthreads.patch
+    oiio-x86intrin.patch
+
+cmake.out_of_source yes
 
 configure.args-append \
     -DBOOST_ROOT=${prefix} \
     -DUSE_QT:BOOL=FALSE \
     -DUSE_TBB:BOOL=FALSE \
     -DUSE_PYTHON:BOOL=FALSE \
+    -DUSE_PYTHON3:BOOL=FALSE \
     -DUSE_FIELD3D:BOOL=FALSE \
     -DUSE_FFMPEG:BOOL=FALSE \
     -DUSE_OPENJPEG:BOOL=FALSE \
@@ -83,6 +86,7 @@ configure.args-append \
     -DUSE_OPENSSL:BOOL=FALSE \
     -DUSE_FREETYPE:BOOL=FALSE \
     -DUSE_GIF:BOOL=TRUE \
+    -DUSE_PTEX:BOOL=FALSE \
     -DUSE_LIBRAW:BOOL=TRUE \
     -DSTOP_ON_WARNING:BOOL=FALSE
 
