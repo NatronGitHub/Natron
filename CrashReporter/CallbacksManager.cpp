@@ -22,8 +22,8 @@
 #include <QNetworkRequest>
 #include <QHttpMultiPart>
 
-#define UPLOAD_URL "http://betelgeuse.inrialpes.fr:8181/submit"//"http://breakpad.natron.fr/submit"
-#define FALLBACK_FORM_URL "http://breakpad.natron.fr/submit-form.html"
+#define UPLOAD_URL "http://breakpad.natron.fr/submit"
+#define FALLBACK_FORM_URL "http://breakpad.natron.fr/form/"
 
 CallbacksManager* CallbacksManager::_instance = 0;
 
