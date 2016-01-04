@@ -191,6 +191,10 @@ if [ "$SYNC" = "1" -a "$FAIL" != "1" ]; then
     rsync -avz --progress  --verbose -e ssh "$REPO_DIR/installers/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files"
 fi
 
+# Symbols
+echo "sync symbols ..."
+rsync -avz --progress --verbose -e ssh "$INSTALL_PATH/symbols/" "${REPO_DEST}:/home/dump-uploads/"
+
 #Always upload logs, even upon failure
 rsync -avz --progress --delete --verbose -e ssh "$LOGS/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs"
 
