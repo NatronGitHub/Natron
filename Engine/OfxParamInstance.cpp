@@ -1639,6 +1639,11 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
         dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedX);
         dblKnob->setValueIsNormalized(1, KnobDouble::eValueIsNormalizedY);
     }
+    // disable slider if the type is an absolute position
+    if ( (doubleType == kOfxParamDoubleTypeXYAbsolute) ||
+        ( doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute) ) {
+        dblKnob->disableSlider();
+    }
 
     std::vector<double> minimum(dims);
     std::vector<double> maximum(dims);
