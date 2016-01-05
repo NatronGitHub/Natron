@@ -53,8 +53,8 @@ public:
                Natron::StorageModeEnum storage,
                const std::string & path)
         : CacheEntryHelper<U8,FrameKey,FrameParams>(key,params,cache,storage,path)
-        , _aborted(false)
         , _abortedMutex()
+        , _aborted(false)
     {
     }
 

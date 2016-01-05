@@ -31,6 +31,8 @@ CLANG_DIAG_OFF(deprecated)
 #include <QThread>
 #include <QStringList>
 #include <QString>
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
 CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"

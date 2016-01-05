@@ -83,13 +83,13 @@ class KnobOutputFile;
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
     : Natron::EffectInstance(node)
-    , _writerCurrentFrame(0)
-    , _writerFirstFrame(0)
-    , _writerLastFrame(0)
-    , _outputEffectDataLock(new QMutex)
+    , _outputEffectDataLock()
     , _renderSequenceRequests()
     , _engine(0)
     , _timeSpentPerFrameRendered()
+    , _writerCurrentFrame(0)
+    , _writerFirstFrame(0)
+    , _writerLastFrame(0)
 {
 }
 
@@ -100,7 +100,6 @@ OutputEffectInstance::~OutputEffectInstance()
         assert( !_engine->hasThreadsAlive() );
     }
     delete _engine;
-    delete _outputEffectDataLock;
 }
 
 void
@@ -268,7 +267,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
     
     RenderSequenceArgs args;
     {
-        QMutexLocker k(_outputEffectDataLock);
+        QMutexLocker k(&_outputEffectDataLock);
         args.firstFrame = first;
         args.lastFrame = last;
         args.frameStep = frameStep;
@@ -329,7 +328,7 @@ OutputEffectInstance::notifyRenderFinished()
     RenderSequenceArgs newArgs;
     
     {
-        QMutexLocker k(_outputEffectDataLock);
+        QMutexLocker k(&_outputEffectDataLock);
         if (!_renderSequenceRequests.empty()) {
             const RenderSequenceArgs& args = _renderSequenceRequests.front();
             if (args.renderController) {
@@ -348,7 +347,7 @@ OutputEffectInstance::notifyRenderFinished()
 int
 OutputEffectInstance::getCurrentFrame() const
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     return _writerCurrentFrame;
 }
@@ -356,7 +355,7 @@ OutputEffectInstance::getCurrentFrame() const
 void
 OutputEffectInstance::setCurrentFrame(int f)
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     _writerCurrentFrame = f;
 }
@@ -364,7 +363,7 @@ OutputEffectInstance::setCurrentFrame(int f)
 void
 OutputEffectInstance::incrementCurrentFrame()
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     ++_writerCurrentFrame;
 }
@@ -372,7 +371,7 @@ OutputEffectInstance::incrementCurrentFrame()
 void
 OutputEffectInstance::decrementCurrentFrame()
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     --_writerCurrentFrame;
 }
@@ -380,7 +379,7 @@ OutputEffectInstance::decrementCurrentFrame()
 int
 OutputEffectInstance::getFirstFrame() const
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     return _writerFirstFrame;
 }
@@ -400,7 +399,7 @@ OutputEffectInstance::isDoingSequentialRender() const
 void
 OutputEffectInstance::setFirstFrame(int f)
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     _writerFirstFrame = f;
 }
@@ -408,7 +407,7 @@ OutputEffectInstance::setFirstFrame(int f)
 int
 OutputEffectInstance::getLastFrame() const
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     return _writerLastFrame;
 }
@@ -416,7 +415,7 @@ OutputEffectInstance::getLastFrame() const
 void
 OutputEffectInstance::setLastFrame(int f)
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     _writerLastFrame = f;
 }
@@ -442,7 +441,7 @@ OutputEffectInstance::updateRenderTimeInfos(double lastTimeSpent,
 
     *totalTimeSpent = 0;
 
-    QMutexLocker k(_outputEffectDataLock);
+    QMutexLocker k(&_outputEffectDataLock);
     _timeSpentPerFrameRendered.push_back(lastTimeSpent);
 
     for (std::list<double>::iterator it = _timeSpentPerFrameRendered.begin(); it != _timeSpentPerFrameRendered.end(); ++it) {
@@ -455,7 +454,7 @@ OutputEffectInstance::updateRenderTimeInfos(double lastTimeSpent,
 void
 OutputEffectInstance::resetTimeSpentRenderingInfos()
 {
-    QMutexLocker k(_outputEffectDataLock);
+    QMutexLocker k(&_outputEffectDataLock);
 
     _timeSpentPerFrameRendered.clear();
 }

@@ -26,9 +26,12 @@
 // ***** END PYTHON BLOCK *****
 
 #include <list>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
+
+#include <QtCore/QMutex>
 
 #include "Global/Macros.h"
 
@@ -57,7 +60,7 @@ class OutputEffectInstance
     };
 
     
-    mutable QMutex* _outputEffectDataLock;
+    mutable QMutex _outputEffectDataLock;
     std::list<RenderSequenceArgs> _renderSequenceRequests;
     RenderEngine* _engine;
     std::list<double> _timeSpentPerFrameRendered;
