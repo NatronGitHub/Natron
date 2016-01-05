@@ -522,8 +522,8 @@ public:
     class NotifyInputNRenderingStarted_RAII
     {
         Node* _node;
-        bool _didEmit;
         int _inputNumber;
+        bool _didEmit;
 
 public:
 
@@ -789,14 +789,14 @@ public:
         RenderScale originalScale;
         RenderScale mappedScale;
         RectI roi;
+        std::list<std::pair<Natron::ImageComponents, boost::shared_ptr<Natron::Image> > > outputPlanes;
+        EffectInstance::InputImagesMap inputImages;
         int view;
         bool isSequentialRender;
         bool isRenderResponseToUserInteraction;
-        std::list<std::pair<Natron::ImageComponents, boost::shared_ptr<Natron::Image> > > outputPlanes;
-        EffectInstance::InputImagesMap inputImages;
-        std::bitset<4> processChannels;
         bool byPassCache;
         bool draftMode;
+        std::bitset<4> processChannels;
     };
 
 protected:
@@ -1241,25 +1241,26 @@ public:
     {
         Natron::EffectInstance* identityInput;
         RectI rect;
-        bool isIdentity;
-        double identityTime;
         RoIMap inputRois;
         EffectInstance::InputImagesMap imgs;
+        double identityTime;
+        bool isIdentity;
     };
 
     struct ImagePlanesToRender
     {
         std::list<RectToRender> rectsToRender;
         std::map<Natron::ImageComponents, PlaneToRender> planes;
-        bool isBeingRenderedElsewhere;
-        Natron::ImagePremultiplicationEnum outputPremult;
         std::map<int, Natron::ImagePremultiplicationEnum> inputPremult;
+        Natron::ImagePremultiplicationEnum outputPremult;
+        bool isBeingRenderedElsewhere;
 
         ImagePlanesToRender()
             : rectsToRender()
             , planes()
-            , isBeingRenderedElsewhere(false)
+            , inputPremult()
             , outputPremult(eImagePremultiplicationPremultiplied)
+            , isBeingRenderedElsewhere(false)
         {
         }
     };
@@ -1758,10 +1759,10 @@ private:
         double time;
         double par;
         int view;
-        bool renderFullScaleThenDownscale:1;
-        bool isSequentialRender:1;
-        bool isRenderResponseToUserInteraction:1;
-        bool byPassCache:1;
+        bool renderFullScaleThenDownscale;
+        bool isSequentialRender;
+        bool isRenderResponseToUserInteraction;
+        bool byPassCache;
         std::bitset<4> processChannels;
     };
 

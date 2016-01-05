@@ -83,7 +83,9 @@ public:
      * constructor above but takes in parameter another key.
      **/
     KeyHelper(const KeyHelper & other)
-        : _hashComputed(true), _hash( other.getHash() ), _holderID( other.getCacheHolderID() )
+        : _holderID( other.getCacheHolderID() )
+        , _hash( other.getHash() )
+        , _hashComputed(true)
     {
     }
 
@@ -113,7 +115,6 @@ public:
 
 
 protected:
-
     /*for now HashType can only be 64 bits...the implementation should
        fill the Hash64 using the append function with the values contained in the
        derived class.*/
@@ -129,13 +130,12 @@ private:
         _hash = hash.value();
     }
 
-    mutable bool _hashComputed;
-    mutable hash_type _hash;
-    
-public:
-    
+protected:
     std::string _holderID;
 
+private:
+    mutable hash_type _hash;
+    mutable bool _hashComputed;
 };
 
 

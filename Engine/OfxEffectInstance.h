@@ -398,24 +398,18 @@ private:
 private:
     Natron::OfxImageEffectInstance* _effect;
     std::string _natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
-    bool _isOutput; //if the OfxNode can output a file somehow
-    bool _penDown; // true when the overlay trapped a penDow action
     Natron::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any
     std::list< void* > _overlaySlaves; //void* to actually a KnobI* but stored as void to avoid dereferencing
-
-    bool _created; // true after the call to createInstance
-    bool _initialized; //true when the image effect instance has been created and populated
     boost::shared_ptr<KnobButton> _renderButton; //< render button for writers
+    mutable QReadWriteLock* _preferencesLock;
+    mutable QReadWriteLock* _renderSafetyLock;
     mutable Natron::RenderSafetyEnum _renderSafety;
     mutable bool _wasRenderSafetySet;
-    mutable QReadWriteLock* _renderSafetyLock;
     Natron::ContextEnum _context;
-    mutable QReadWriteLock* _preferencesLock;
 #ifdef DEBUG
     Natron::ThreadStorage<bool> _canSetValue;
 #endif
-    int _nbSourceClips;
-    
+
     struct ClipsInfo {
         bool optional;
         bool mask;
@@ -424,6 +418,12 @@ private:
     };
     std::vector<ClipsInfo> _clipsInfos;
     OfxClipInstance* _outputClip;
+    int _nbSourceClips;
+    bool _isOutput; //if the OfxNode can output a file somehow
+    bool _penDown; // true when the overlay trapped a penDow action
+
+    bool _created; // true after the call to createInstance
+    bool _initialized; //true when the image effect instance has been created and populated
 };
 
 #endif // NATRON_ENGINE_OFXNODE_H

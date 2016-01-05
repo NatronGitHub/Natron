@@ -505,9 +505,10 @@ public:
     , _params()
     , _data()
     , _cache()
-    , _removeBackingFileBeforeDestruction(false)
-    , _requestedStorage(eStorageModeNone)
+    , _requestedPath()
     , _entryLock(QReadWriteLock::Recursive)
+    , _requestedStorage(eStorageModeNone)
+    , _removeBackingFileBeforeDestruction(false)
     {
     }
 
@@ -526,10 +527,10 @@ public:
     , _params(params)
     , _data()
     , _cache(cache)
-    , _removeBackingFileBeforeDestruction(false)
     , _requestedPath(path)
-    , _requestedStorage(storage)
     , _entryLock(QReadWriteLock::Recursive)
+    , _requestedStorage(storage)
+    , _removeBackingFileBeforeDestruction(false)
     {
     }
 
@@ -888,10 +889,10 @@ protected:
     boost::shared_ptr<ParamsType> _params;
     Buffer<DataType> _data;
     const CacheAPI* _cache;
-    bool _removeBackingFileBeforeDestruction;
     std::string _requestedPath;
-    Natron::StorageModeEnum _requestedStorage;
     mutable QReadWriteLock _entryLock;
+    Natron::StorageModeEnum _requestedStorage;
+    bool _removeBackingFileBeforeDestruction;
 };
 }
 

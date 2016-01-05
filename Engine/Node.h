@@ -29,6 +29,7 @@
 #include <string>
 #include <map>
 #include <list>
+#include <bitset>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -888,11 +889,11 @@ public:
         KnobI* slave;
         KnobI* master;
 
-        ///The dimension being slaved, -1 if irrelevant
-        int dimension;
-
         ///The master node to which the knob is slaved to
         boost::shared_ptr<Node> masterNode;
+
+        ///The dimension being slaved, -1 if irrelevant
+        int dimension;
     };
 
     void getKnobsLinks(std::list<KnobLink> & links) const;

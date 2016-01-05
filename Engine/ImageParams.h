@@ -116,12 +116,12 @@ public:
         : NonKeyParams()
         , _rod()
         , _bounds()
-        , _isRoDProjectFormat(false)
         , _framesNeeded()
+        , _par(1.)
         , _components(ImageComponents::getRGBAComponents())
         , _bitdepth(Natron::eImageBitDepthFloat)
         , _mipMapLevel(0)
-        , _par(1.)
+        , _isRoDProjectFormat(false)
     {
     }
 
@@ -129,12 +129,12 @@ public:
         : NonKeyParams(other)
         , _rod(other._rod)
         , _bounds(other._bounds)
-        , _isRoDProjectFormat(other._isRoDProjectFormat)
         , _framesNeeded(other._framesNeeded)
+        , _par(other._par)
         , _components(other._components)
         , _bitdepth(other._bitdepth)
         , _mipMapLevel(other._mipMapLevel)
-        , _par(other._par)
+        , _isRoDProjectFormat(other._isRoDProjectFormat)
     {
     }
 
@@ -150,12 +150,12 @@ public:
         : NonKeyParams( cost,bounds.area() * components.getNumComponents() * getSizeOfForBitDepth(bitdepth) )
         , _rod(rod)
         , _bounds(bounds)
-        , _isRoDProjectFormat(isRoDProjectFormat)
         , _framesNeeded(framesNeeded)
+        , _par(par)
         , _components(components)
         , _bitdepth(bitdepth)
         , _mipMapLevel(mipMapLevel)
-        , _par(par)
+        , _isRoDProjectFormat(isRoDProjectFormat)
     {
     }
 
@@ -274,20 +274,18 @@ public:
     
 private:
 
-
     RectD _rod;
     RectI _bounds;
 
-
+    std::map<int, std::map<int,std::vector<RangeD> > > _framesNeeded;
+    double _par;
+    Natron::ImageComponents _components;
+    Natron::ImageBitDepthEnum _bitdepth;
+    unsigned int _mipMapLevel;
     /// if true then when retrieving the associated image from cache
     /// the caller should update the rod to the current project format.
     /// This is because the project format might have changed since this image was cached.
     bool _isRoDProjectFormat;
-    std::map<int, std::map<int,std::vector<RangeD> > > _framesNeeded;
-    Natron::ImageComponents _components;
-    Natron::ImageBitDepthEnum _bitdepth;
-    unsigned int _mipMapLevel;
-    double _par;
 };
 }
 

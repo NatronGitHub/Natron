@@ -550,11 +550,11 @@ private:
     };
 
     std::map<const Natron::Plugin*,PerPluginKnobs> _pluginsMap;
+    std::vector<std::string> _knownHostNames;
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;
     bool _defaultAppearanceOutdated;
-    std::vector<std::string> _knownHostNames;
 };
 
 #endif // NATRON_ENGINE_SETTINGS_H

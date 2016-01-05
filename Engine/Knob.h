@@ -301,10 +301,11 @@ Q_SIGNALS:
 
 struct KnobChange
 {
+    KnobI* knob;
     Natron::ValueChangedReasonEnum reason;
     bool originatedFromMainThread;
-    KnobI* knob;
 };
+
 typedef std::list<KnobChange> ChangesList;
 
 
@@ -1792,12 +1793,13 @@ private:
     mutable QReadWriteLock _minMaxMutex;
     std::vector<T>  _minimums,_maximums,_displayMins,_displayMaxs;
     
-    ///this flag is to avoid recursive setValue calls
-    int _setValueRecursionLevel;
-    mutable QMutex _setValueRecursionLevelMutex;
-    
+
     mutable QMutex _setValuesQueueMutex;
     std::list< boost::shared_ptr<QueuedSetValue> > _setValuesQueue;
+
+    ///this flag is to avoid recursive setValue calls
+    mutable QMutex _setValueRecursionLevelMutex;
+    int _setValueRecursionLevel;
 };
 
 

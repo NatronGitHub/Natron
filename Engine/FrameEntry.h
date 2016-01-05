@@ -109,8 +109,8 @@ private:
     ///The thread rendering the frame entry might have been aborted and the entry removed from the cache
     ///but another thread might successfully have found it in the cache. This flag is to notify it the frame
     ///is invalid.
-    bool _aborted;
     mutable QMutex _abortedMutex;
+    bool _aborted;
 };
 }
 

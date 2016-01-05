@@ -35,12 +35,12 @@ class ImageKey
 public:
 
     U64 _nodeHashKey;
-    bool _frameVaryingOrAnimated;
     double _time;
-    int _view;
     double _pixelAspect;
+    int _view;
     bool _draftMode;
-    
+    bool _frameVaryingOrAnimated;
+
     //When true that means the image has been computed based on inputs using a mipmaplevel != 0
     //hence it is probably not very high quality, even though the mipmap level is 0
     bool _fullScaleWithDownscaleInputs;

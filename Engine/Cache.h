@@ -76,10 +76,10 @@ class DeleterThread
     mutable QMutex _entriesQueueMutex;
     std::list<boost::shared_ptr<T> >_entriesQueue;
     QWaitCondition _entriesQueueNotEmptyCond;
-    bool mustQuit;
+    CacheAPI* cache;
     QMutex mustQuitMutex;
     QWaitCondition mustQuitCond;
-    CacheAPI* cache;
+    bool mustQuit;
 
 public:
 
@@ -88,10 +88,10 @@ public:
         , _entriesQueueMutex()
         , _entriesQueue()
         , _entriesQueueNotEmptyCond()
-        , mustQuit(false)
+        , cache(cache)
         , mustQuitMutex()
         , mustQuitCond()
-        , cache(cache)
+        , mustQuit(false)
     {
         setObjectName("CacheDeleter");
     }
@@ -201,10 +201,10 @@ class CacheCleanerThread
 
     std::list<CleanRequest> _requestsQueues;
     QWaitCondition _requestsQueueNotEmptyCond;
-    bool mustQuit;
+    CacheAPI* cache;
     QMutex mustQuitMutex;
     QWaitCondition mustQuitCond;
-    CacheAPI* cache;
+    bool mustQuit;
 
 public:
 
@@ -213,10 +213,10 @@ public:
         , _requestQueueMutex()
         , _requestsQueues()
         , _requestsQueueNotEmptyCond()
-        , mustQuit(false)
+        , cache(cache)
         , mustQuitMutex()
         , mustQuitCond()
-        , cache(cache)
+        , mustQuit(false)
     {
         setObjectName("CacheCleaner");
     }

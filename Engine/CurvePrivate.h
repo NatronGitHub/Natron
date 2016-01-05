@@ -53,12 +53,12 @@ struct CurvePrivate
     std::map<double,double> resultCache; //< a cache for interpolations
     KnobI* owner;
     int dimensionInOwner;
-    bool isParametric;
     CurveTypeEnum type;
     double xMin, xMax;
     double yMin, yMax;
-    bool hasYRange;
     mutable QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
+    bool isParametric;
+    bool hasYRange;
 
 
     CurvePrivate()
@@ -66,14 +66,14 @@ struct CurvePrivate
     , resultCache()
     , owner(NULL)
     , dimensionInOwner(-1)
-    , isParametric(false)
     , type(eCurveTypeDouble)
     , xMin(INT_MIN)
     , xMax(INT_MAX)
     , yMin(INT_MIN)
     , yMax(INT_MAX)
-    , hasYRange(false)
     , _lock(QMutex::Recursive)
+    , isParametric(false)
+    , hasYRange(false)
     {
     }
 

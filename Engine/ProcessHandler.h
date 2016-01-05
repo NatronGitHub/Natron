@@ -249,9 +249,9 @@ private:
     QLocalServer* _backgroundIPCServer; //< for a background app used to manage input IPC  with the gui app
     QLocalSocket* _backgroundInputPipe; //<if the process is bg but managed by a gui process then the pipe is used
                                         //to read input messages
+    QMutex _mustQuitMutex;
+    QWaitCondition _mustQuitCond;
     bool _mustQuit;
-    QWaitCondition* _mustQuitCond;
-    QMutex* _mustQuitMutex;
 };
 
 #endif // PROCESSHANDLER_H

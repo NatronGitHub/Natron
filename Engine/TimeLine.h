@@ -85,8 +85,8 @@ Q_SIGNALS:
 private:
     
     mutable QMutex _lock; // protects the following SequenceTime members
-    SequenceTime _currentFrame;
     Natron::Project* _project;
+    SequenceTime _currentFrame;
 };
 
 #endif /* defined(NATRON_ENGINE_TIMELINE_H_) */

@@ -65,9 +65,9 @@ namespace Natron {
     public:
         Bitmap(const RectI & bounds)
         : _bounds(bounds)
+        , _map( bounds.area() )
         , _dirtyZone()
         , _dirtyZoneSet(false)
-        , _map( bounds.area() )
         {
             //Do not assert !rod.isNull() : An empty image can be created for entries that correspond to
             // "identities" images (i.e: images that are just a link to another image). See EffectInstance :
@@ -78,9 +78,9 @@ namespace Natron {
 
         Bitmap()
         : _bounds()
+        , _map()
         , _dirtyZone()
         , _dirtyZoneSet(false)
-        , _map()
         {
         }
         
@@ -152,7 +152,8 @@ namespace Natron {
         
     private:
         RectI _bounds;
-        
+        std::vector<char> _map;
+
         /**
          * This represents the zone that has potentially something to render. In minimalNonMarkedRects
          * we intersect the region of interest with the dirty zone. This is useful to optimize the bitmap checking
@@ -161,7 +162,6 @@ namespace Natron {
          **/
         RectI _dirtyZone;
         bool _dirtyZoneSet;
-        std::vector<char> _map;
     };
 
     class Image
