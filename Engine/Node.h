@@ -1048,7 +1048,7 @@ public:
     
     boost::shared_ptr<KnobChoice> getChannelSelectorKnob(int inputNb) const;
     
-    bool getSelectedLayer(int inputNb,bool* processChannels,bool* isAll,Natron::ImageComponents *layer) const;
+    bool getSelectedLayer(int inputNb, std::bitset<4> *processChannels, bool* isAll, Natron::ImageComponents *layer) const;
     
     bool addUserComponents(const Natron::ImageComponents& comps);
     

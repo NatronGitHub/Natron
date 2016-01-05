@@ -2140,9 +2140,9 @@ private:
                 bool processAll;
                 SequenceTime ptTime;
                 int ptView;
-                bool processChannels[4];
+                std::bitset<4> processChannels;
                 NodePtr ptInput;
-                activeInputToRender->getComponentsNeededAndProduced_public(true, time, viewsToRender[view], &neededComps, &processAll, &ptTime, &ptView, processChannels, &ptInput);
+                activeInputToRender->getComponentsNeededAndProduced_public(true, time, viewsToRender[view], &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
                 
                 //Retrieve bitdepth only
                 activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);

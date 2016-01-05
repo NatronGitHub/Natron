@@ -22,6 +22,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <bitset>
+
 #include "RenderStats.h"
 
 #include <QMutex>
@@ -67,7 +69,7 @@ struct NodeRenderStatsPrivate
     bool renderScaleSupportEnabled;
     
     //Channels rendered
-    bool channelsEnabled[4];
+    std::bitset<4> channelsEnabled;
     
     //Premultiplication of the output imge
     Natron::ImagePremultiplicationEnum outputPremult;
@@ -270,21 +272,15 @@ NodeRenderStats::isRenderScaleSupportEnabled() const
 }
 
 void
-NodeRenderStats::setChannelsRendered(bool r, bool g, bool b, bool a)
+NodeRenderStats::setChannelsRendered(const std::bitset<4> channelsRendered)
 {
-    _imp->channelsEnabled[0] = r;
-    _imp->channelsEnabled[1] = g;
-    _imp->channelsEnabled[2] = b;
-    _imp->channelsEnabled[3] = a;
+    _imp->channelsEnabled = channelsRendered;
 }
 
-void
-NodeRenderStats::getChannelsRendered(bool* r, bool* g, bool* b, bool* a) const
+std::bitset<4>
+NodeRenderStats::getChannelsRendered() const
 {
-    *r = _imp->channelsEnabled[0];
-    *g = _imp->channelsEnabled[1];
-    *b = _imp->channelsEnabled[2];
-    *a = _imp->channelsEnabled[3];
+    return _imp->channelsEnabled;
 }
 
 void
@@ -380,12 +376,12 @@ RenderStats::setNodeIdentity(const boost::shared_ptr<Natron::Node>& node, const 
 
 void
 RenderStats::setGlobalRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
-                                 const RectD& rod,
-                                 Natron::ImagePremultiplicationEnum outputPremult,
-                                 bool channelsRendered[4],
-                                 bool tilesSupported,
-                                 bool renderScaleSupported,
-                                 unsigned int mipmapLevel)
+                                         const RectD& rod,
+                                         Natron::ImagePremultiplicationEnum outputPremult,
+                                         std::bitset<4> channelsRendered,
+                                         bool tilesSupported,
+                                         bool renderScaleSupported,
+                                         unsigned int mipmapLevel)
 {
     QMutexLocker k(&_imp->lock);
     assert(_imp->doNodesProfiling);
@@ -395,7 +391,7 @@ RenderStats::setGlobalRenderInfosForNode(const boost::shared_ptr<Natron::Node>& 
     stats.setTilesSupported(tilesSupported);
     stats.setRenderScaleSupported(renderScaleSupported);
     stats.addMipMapLevelRendered(mipmapLevel);
-    stats.setChannelsRendered(channelsRendered[0], channelsRendered[1], channelsRendered[2], channelsRendered[3]);
+    stats.setChannelsRendered(channelsRendered);
     stats.setRoD(rod);
 }
 

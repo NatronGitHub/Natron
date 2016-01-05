@@ -27,6 +27,7 @@
 #include <cfloat>
 #include <limits>
 #include <stdexcept>
+#include <bitset>
 
 #include <QtCore/QTextStream>
 #include <QtCore/QDebug>
@@ -848,9 +849,9 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
         
        if (!foundCompsInTLS) {
             ///We are in analysis or the effect does not have any input
-            bool processChannels[4];
+            std::bitset<4> processChannels;
             bool isAll;
-            bool hasUserComps = _nodeInstance->getNode()->getSelectedLayer(inputnb, processChannels, &isAll,&comp);
+            bool hasUserComps = _nodeInstance->getNode()->getSelectedLayer(inputnb, &processChannels, &isAll,&comp);
             if (!hasUserComps) {
                 //There's no selector...fallback on the basic components indicated on the clip
                 std::list<ImageComponents> comps = ofxComponentsToNatronComponents(getComponents());

@@ -22,6 +22,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <bitset>
+
 #include "RenderStatsDialog.h"
 
 #include <QVBoxLayout>
@@ -444,18 +446,17 @@ public:
             assert(item);
             QString str;
             
-            bool r,g,b,a;
-            stats.getChannelsRendered(&r, &g, &b, &a);
-            if (r) {
+            std::bitset<4> processChannels = stats.getChannelsRendered();
+            if (processChannels[0]) {
                 str.append("R ");
             }
-            if (g) {
+            if (processChannels[1]) {
                 str.append("G ");
             }
-            if (b) {
+            if (processChannels[2]) {
                 str.append("B ");
             }
-            if (a) {
+            if (processChannels[3]) {
                 str.append("A");
             }
             item->setText(str);

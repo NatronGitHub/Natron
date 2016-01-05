@@ -1344,7 +1344,7 @@ ViewerInstance::renderViewer_internal(int view,
     }
     
     if (stats && stats->isInDepthProfilingEnabled()) {
-        bool channelsRendered[4];
+        std::bitset<4> channelsRendered;
         switch (inArgs.channels) {
             case Natron::eDisplayChannelsMatte:
             case Natron::eDisplayChannelsRGB:

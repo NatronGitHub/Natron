@@ -28,6 +28,7 @@
 #include <locale>
 #include <algorithm> // min, max
 #include <stdexcept>
+#include <bitset>
 
 #include <QtCore/QDebug>
 #include <QtCore/QReadWriteLock>
@@ -1068,7 +1069,7 @@ Node::isNodeCreated() const
 }
 
 void
-Node::setProcessChannelsValues(bool doR,bool doG, bool doB, bool doA)
+Node::setProcessChannelsValues(bool doR, bool doG, bool doB, bool doA)
 {
     boost::shared_ptr<KnobBool> eR = _imp->enabledChan[0].lock();
     if (eR) {
@@ -6809,7 +6810,10 @@ Node::getProcessChannel(int channelIndex) const
 }
 
 bool
-Node::getSelectedLayer(int inputNb,bool* processChannels, bool* isAll,Natron::ImageComponents* layer) const
+Node::getSelectedLayer(int inputNb,
+                       std::bitset<4> *processChannels,
+                       bool* isAll,
+                       Natron::ImageComponents* layer) const
 {
     //If the effect is multi-planar, it is expected to handle itself all the planes
     assert(!_imp->liveInstance->isMultiPlanar());
@@ -6822,10 +6826,10 @@ Node::getSelectedLayer(int inputNb,bool* processChannels, bool* isAll,Natron::Im
         
         *isAll = false;
         Q_UNUSED(chanIndex);
-        processChannels[0] = true;
-        processChannels[1] = true;
-        processChannels[2] = true;
-        processChannels[3] = true;
+        (*processChannels)[0] = true;
+        (*processChannels)[1] = true;
+        (*processChannels)[2] = true;
+        (*processChannels)[3] = true;
         
         return true;
     } else {
@@ -6843,19 +6847,18 @@ Node::getSelectedLayer(int inputNb,bool* processChannels, bool* isAll,Natron::Im
         *isAll = false;
     }
     if (_imp->enabledChan[0].lock()) {
-        processChannels[0] = _imp->enabledChan[0].lock()->getValue();
-        processChannels[1] = _imp->enabledChan[1].lock()->getValue();
-        processChannels[2] = _imp->enabledChan[2].lock()->getValue();
-        processChannels[3] = _imp->enabledChan[3].lock()->getValue();
+        (*processChannels)[0] = _imp->enabledChan[0].lock()->getValue();
+        (*processChannels)[1] = _imp->enabledChan[1].lock()->getValue();
+        (*processChannels)[2] = _imp->enabledChan[2].lock()->getValue();
+        (*processChannels)[3] = _imp->enabledChan[3].lock()->getValue();
     } else {
-        processChannels[0] = true;
-        processChannels[1] = true;
-        processChannels[2] = true;
-        processChannels[3] = true;
+        (*processChannels)[0] = true;
+        (*processChannels)[1] = true;
+        (*processChannels)[2] = true;
+        (*processChannels)[3] = true;
     }
  
     return hasChannelSelector;
-
 }
 
 bool
@@ -6866,7 +6869,7 @@ Node::hasAtLeastOneChannelToProcess() const
         return true;
     }
     if (_imp->enabledChan[0].lock()) {
-        bool processChannels[4];
+        std::bitset<4> processChannels;
         processChannels[0] = _imp->enabledChan[0].lock()->getValue();
         processChannels[1] = _imp->enabledChan[1].lock()->getValue();
         processChannels[2] = _imp->enabledChan[2].lock()->getValue();

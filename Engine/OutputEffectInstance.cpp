@@ -532,18 +532,17 @@ OutputEffectInstance::reportStats(int time,
         ofile << std::endl;
         ofile << "Channels processed: ";
 
-        bool r, g, b, a;
-        it->second.getChannelsRendered(&r, &g, &b, &a);
-        if (r) {
+        std::bitset<4> processChannels = it->second.getChannelsRendered();
+        if (processChannels[0]) {
             ofile << "red ";
         }
-        if (g) {
+        if (processChannels[1]) {
             ofile << "green ";
         }
-        if (b) {
+        if (processChannels[2]) {
             ofile << "blue ";
         }
-        if (a) {
+        if (processChannels[3]) {
             ofile << "alpha";
         }
         ofile << std::endl;

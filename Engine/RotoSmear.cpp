@@ -264,11 +264,11 @@ RotoSmear::render(const RenderActionArgs& args)
     
     ComponentsNeededMap neededComps;
     bool processAll;
-    bool processComponents[4];
+    std::bitset<4> processChannels;
     SequenceTime ptTime;
     int ptView;
     boost::shared_ptr<Node> ptInput;
-    getComponentsNeededAndProduced_public(true, args.time, args.view, &neededComps, &processAll, &ptTime, &ptView, processComponents, &ptInput);
+    getComponentsNeededAndProduced_public(true, args.time, args.view, &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
     
     ComponentsNeededMap::iterator foundBg = neededComps.find(0);
     assert(foundBg != neededComps.end() && !foundBg->second.empty());

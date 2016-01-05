@@ -341,7 +341,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ///Determine needed planes
     boost::shared_ptr<ComponentsNeededMap> neededComps(new ComponentsNeededMap);
     ComponentsNeededMap::iterator foundOutputNeededComps;
-    bool processChannels[4];
+    std::bitset<4> processChannels;
     {
         bool processAllComponentsRequested;
 
@@ -349,7 +349,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             SequenceTime ptTime;
             int ptView;
             boost::shared_ptr<Natron::Node> ptInput;
-            getComponentsNeededAndProduced_public(true, args.time, args.view, neededComps.get(), &processAllComponentsRequested, &ptTime, &ptView, processChannels, &ptInput);
+            getComponentsNeededAndProduced_public(true, args.time, args.view, neededComps.get(), &processAllComponentsRequested, &ptTime, &ptView, &processChannels, &ptInput);
 
             foundOutputNeededComps = neededComps->find(-1);
             if ( foundOutputNeededComps == neededComps->end() ) {
@@ -1620,7 +1620,7 @@ EffectInstance::renderRoIInternal(double time,
                                   Natron::ImageBitDepthEnum outputClipPrefDepth,
                                   const std::list<Natron::ImageComponents> & outputClipPrefsComps,
                                   const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
-                                  bool* processChannels)
+                                  const std::bitset<4> processChannels)
 {
     EffectInstance::RenderRoIStatusEnum retCode;
 

@@ -30,6 +30,7 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 #include <fstream>
+#include <bitset>
 
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QReadWriteLock>
@@ -1703,7 +1704,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                       const Natron::ImageBitDepthEnum outputClipPrefDepth,
                                       const std::list<Natron::ImageComponents> & outputClipPrefsComps,
                                       const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
-                                      bool* processChannels,
+                                      const std::bitset<4> processChannels,
                                       const boost::shared_ptr<ImagePlanesToRender> & planes) // when MT, planes is a copy so there's is no data race
 {
     assert( !rectToRender.rect.isNull() );
@@ -1977,7 +1978,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                               const bool bitmapMarkedForRendering,
                               const Natron::ImageBitDepthEnum outputClipPrefDepth,
                               const std::list<Natron::ImageComponents> & outputClipPrefsComps,
-                              bool* processChannels,
+                              const std::bitset<4> processChannels,
                               const boost::shared_ptr<Natron::Image> & originalInputImage,
                               const boost::shared_ptr<Natron::Image> & maskImage,
                               const Natron::ImagePremultiplicationEnum originalImagePremultiplication,
@@ -2002,9 +2003,7 @@ EffectInstance::renderHandler(RenderArgs & args,
 
     RenderActionArgs actionArgs;
     actionArgs.byPassCache = byPassCache;
-    for (int i = 0; i < 4; ++i) {
-        actionArgs.processChannels[i] = processChannels[i];
-    }
+    actionArgs.processChannels = processChannels;
     actionArgs.mappedScale.x = actionArgs.mappedScale.y = Image::getScaleFromMipMapLevel( firstPlane.renderMappedImage->getMipMapLevel() );
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(actionArgs.mappedScale.x == 1. && actionArgs.mappedScale.y == 1.) ) );
     actionArgs.originalScale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
@@ -2287,7 +2286,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                 
                 if (originalInputImage && originalInputImage->getMipMapLevel() != 0) {
                     
-                    bool mustCopyUnprocessedChannels = it->second.tmpImage->canCallCopyUnPorcessedChannels(processChannels);
+                    bool mustCopyUnprocessedChannels = it->second.tmpImage->canCallCopyUnProcessedChannels(processChannels);
                     if (mustCopyUnprocessedChannels || useMaskMix) {
                         ///there is some processing to be done by copyUnProcessedChannels or applyMaskMix
                         ///but originalInputImage is not in the correct mipMapLevel, upscale it
@@ -2300,7 +2299,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                 }
                 
                 if (mappedOriginalInputImage) {
-                    it->second.tmpImage->copyUnProcessedChannels(renderMappedRectToRender, planes.outputPremult, originalImagePremultiplication,  processChannels, mappedOriginalInputImage);
+                    it->second.tmpImage->copyUnProcessedChannels(renderMappedRectToRender, planes.outputPremult, originalImagePremultiplication, processChannels, mappedOriginalInputImage);
                     if (useMaskMix) {
                         it->second.tmpImage->applyMaskMix(renderMappedRectToRender, maskImage.get(), mappedOriginalInputImage.get(), doMask, false, mix);
                     }
@@ -3416,8 +3415,8 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
     int ptView;
     NodePtr ptInput;
     bool processAll;
-    bool processChannels[4];
-    getComponentsNeededAndProduced_public(useLayerChoice, time, view, &neededComps, &processAll, &ptTime, &ptView, processChannels, &ptInput);
+    std::bitset<4> processChannels;
+    getComponentsNeededAndProduced_public(useLayerChoice, time, view, &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
 
     ///If the plug-in is not pass-through, only consider the components processed by the plug-in in output,
     ///so we do not need to recurse.
@@ -3648,14 +3647,14 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
                                                       bool* processAllRequested,
                                                       SequenceTime* passThroughTime,
                                                       int* passThroughView,
-                                                      bool* processChannels,
+                                                      std::bitset<4> *processChannels,
                                                       boost::shared_ptr<Natron::Node>* passThroughInput)
 
 {
     RECURSIVE_ACTION();
 
     if ( isMultiPlanar() ) {
-        processChannels[0] = processChannels[1] = processChannels[2] = processChannels[3] = true;
+        (*processChannels)[0] = (*processChannels)[1] = (*processChannels)[2] = (*processChannels)[3] = true;
         getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInput);
         *processAllRequested = false;
     } else {
@@ -3703,10 +3702,10 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
                 comps->insert(std::make_pair(i, comps->at(-1)));
             } else if (input) {
                 std::vector<ImageComponents> compVec;
-                bool inputProcChannels[4];
+                std::bitset<4> inputProcChannels;
                 ImageComponents layer;
                 bool isAll;
-                bool ok = getNode()->getSelectedLayer(i, inputProcChannels, &isAll, &layer);
+                bool ok = getNode()->getSelectedLayer(i, &inputProcChannels, &isAll, &layer);
                 ImageComponents maskComp;
                 NodePtr maskInput;
                 int channelMask = getNode()->getMaskChannel(i, &maskComp, &maskInput);

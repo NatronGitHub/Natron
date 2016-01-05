@@ -26,6 +26,8 @@
 // ***** END PYTHON BLOCK *****
 
 #include <list>
+#include <bitset>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -110,35 +112,38 @@ public:
 
     struct RenderRoIArgs
     {
+        // Developper note: the fields were reordered to optimize packing.
+        // see http://www.catb.org/esr/structure-packing/
+        
         double time; //< the time at which to render
         RenderScale scale; //< the scale at which to render
         unsigned int mipMapLevel; //< the mipmap level (redundant with the scale, stored here to avoid refetching it everytimes)
         int view; //< the view to render
-        bool byPassCache;
         RectI roi; //< the renderWindow (in pixel coordinates) , watch out OpenFX action getRegionsOfInterest expects canonical coords!
         RectD preComputedRoD; //<  pre-computed region of definition in canonical coordinates for this effect to speed-up the call to renderRoi
         std::list<Natron::ImageComponents> components; //< the requested image components (per plane)
-        Natron::ImageBitDepthEnum bitdepth; //< the requested bit depth
 
         ///When called from getImage() the calling node  will have already computed input images, hence the image of this node
         ///might already be in this list
         EffectInstance::InputImagesMap inputImagesList;
-        bool calledFromGetImage;
         const EffectInstance* caller;
+        Natron::ImageBitDepthEnum bitdepth; //< the requested bit depth
+        bool byPassCache;
+        bool calledFromGetImage;
 
         RenderRoIArgs()
         : time(0)
         , scale(1.)
         , mipMapLevel(0)
         , view(0)
-        , byPassCache(false)
         , roi()
         , preComputedRoD()
         , components()
-        , bitdepth(eImageBitDepthFloat)
         , inputImagesList()
-        , calledFromGetImage(false)
         , caller(0)
+        , bitdepth(eImageBitDepthFloat)
+        , byPassCache(false)
+        , calledFromGetImage(false)
         {
         }
         
@@ -158,14 +163,14 @@ public:
         , scale(scale_)
         , mipMapLevel(mipMapLevel_)
         , view(view_)
-        , byPassCache(byPassCache_)
         , roi(roi_)
         , preComputedRoD(preComputedRoD_)
         , components(components_)
-        , bitdepth(bitdepth_)
         , inputImagesList(inputImages)
-        , calledFromGetImage(calledFromGetImage)
         , caller(caller)
+        , bitdepth(bitdepth_)
+        , byPassCache(byPassCache_)
+        , calledFromGetImage(calledFromGetImage)
         {
         }
     };
@@ -789,8 +794,8 @@ public:
         bool isRenderResponseToUserInteraction;
         std::list<std::pair<Natron::ImageComponents, boost::shared_ptr<Natron::Image> > > outputPlanes;
         EffectInstance::InputImagesMap inputImages;
+        std::bitset<4> processChannels;
         bool byPassCache;
-        bool processChannels[4];
         bool draftMode;
     };
 
@@ -1460,7 +1465,7 @@ public:
                                                bool* processAllRequested,
                                                SequenceTime* passThroughTime,
                                                int* passThroughView,
-                                               bool* processChannels,
+                                               std::bitset<4> *processChannels,
                                                boost::shared_ptr<Natron::Node>* passThroughInput);
 
     void setComponentsAvailableDirty(bool dirty);
@@ -1650,7 +1655,7 @@ private:
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents> & outputClipPrefsComps,
                                           const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
-                                          bool* processChannels);
+                                          std::bitset<4> processChannels);
 
 
     /// \returns false if rendering was aborted
@@ -1740,24 +1745,24 @@ private:
     {
         ParallelRenderArgs frameArgs;
         boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > > frameTLS;
-        bool renderFullScaleThenDownscale;
-        bool isSequentialRender;
-        bool isRenderResponseToUserInteraction;
+        RectD rod;
+        boost::shared_ptr<ImagePlanesToRender> planes;
+        boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
+        std::list<Natron::ImageComponents> outputClipPrefsComps;
+        Natron::ImageBitDepthEnum outputClipPrefDepth;
         int firstFrame;
         int lastFrame;
         int preferredInput;
         unsigned int mipMapLevel;
         unsigned int renderMappedMipMapLevel;
-        RectD rod;
         double time;
-        int view;
         double par;
-        Natron::ImageBitDepthEnum outputClipPrefDepth;
-        boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
-        std::list<Natron::ImageComponents> outputClipPrefsComps;
-        bool byPassCache;
-        bool* processChannels;
-        boost::shared_ptr<ImagePlanesToRender> planes;
+        int view;
+        bool renderFullScaleThenDownscale:1;
+        bool isSequentialRender:1;
+        bool isRenderResponseToUserInteraction:1;
+        bool byPassCache:1;
+        std::bitset<4> processChannels;
     };
 
     RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,  const RectToRender & specificData,
@@ -1782,7 +1787,7 @@ private:
                                                   const Natron::ImageBitDepthEnum outputClipPrefDepth,
                                                   const std::list<Natron::ImageComponents> & outputClipPrefsComps,
                                                   const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
-                                                  bool* processChannels,
+                                                  std::bitset<4> processChannels,
                                                   const boost::shared_ptr<ImagePlanesToRender> & planes);
 
 
@@ -1823,7 +1828,7 @@ private:
                                           const bool bitmapMarkedForRendering,
                                           const Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents> & outputClipPrefsComps,
-                                          bool* processChannels,
+                                          std::bitset<4> processChannels,
                                           const boost::shared_ptr<Natron::Image> & originalInputImage,
                                           const boost::shared_ptr<Natron::Image> & maskImage,
                                           const Natron::ImagePremultiplicationEnum originalImagePremultiplication,
