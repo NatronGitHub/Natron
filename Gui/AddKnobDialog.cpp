@@ -1340,7 +1340,7 @@ AddKnobDialogPrivate::setKnobMinMax(KnobI* knob)
     
     std::vector<T> mins(dim),dmins(dim);
     std::vector<T> maxs(dim),dmaxs(dim);
-    for (int i = 0; i < dim; ++i) {
+    for (std::size_t i = 0; i < (std::size_t)dim; ++i) {
         mins[i] = minBox->value();
         dmins[i] = dminBox->value();
         maxs[i] = maxBox->value();

@@ -176,7 +176,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
     if (getKnobsCountOnSameLine() > 1) {
         knob->disableSlider();
     }
-    
+
     if (!knob->isSliderDisabled()) {
         layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     }
@@ -192,7 +192,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
     const std::vector<double > & mins = knob->getMinimums();
     const std::vector<double > & maxs = knob->getMaximums();
     const std::vector<int> &decimals = knob->getDecimals();
-    for (int i = 0; i < dim; ++i) {
+    for (std::size_t i = 0; i < (std::size_t)dim; ++i) {
 
         QWidget *boxContainer = new QWidget( _container );
         boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
