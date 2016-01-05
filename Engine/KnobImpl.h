@@ -109,10 +109,10 @@ Knob<T>::Knob(KnobHolder*  holder,
       , _maximums(dimension)
       , _displayMins(dimension)
       , _displayMaxs(dimension)
-      , _setValueRecursionLevel(0)
-      , _setValueRecursionLevelMutex(QMutex::Recursive)
       , _setValuesQueueMutex()
       , _setValuesQueue()
+      , _setValueRecursionLevelMutex(QMutex::Recursive)
+      , _setValueRecursionLevel(0)
 {
     initMinMax();
 }

@@ -28,21 +28,21 @@ using namespace Natron;
 
 
 NonKeyParams::NonKeyParams()
-    : _cost(0)
-      , _elementsCount(0)
+    : _elementsCount(0)
+    , _cost(0)
 {
 }
 
 NonKeyParams::NonKeyParams(int cost,
                            U64 elementsCount)
-    : _cost(cost)
-      , _elementsCount(elementsCount)
+    : _elementsCount(elementsCount)
+    , _cost(cost)
 {
 }
 
 NonKeyParams::NonKeyParams(const NonKeyParams & other)
-    : _cost(other._cost)
-      , _elementsCount(other._elementsCount)
+    : _elementsCount(other._elementsCount)
+    , _cost(other._cost)
 {
 }
 

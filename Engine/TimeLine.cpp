@@ -36,8 +36,8 @@
 #include "Engine/EffectInstance.h"
 
 TimeLine::TimeLine(Natron::Project* project)
-: _currentFrame(1)
-, _project(project)
+: _project(project)
+, _currentFrame(1)
 {
 }
 
