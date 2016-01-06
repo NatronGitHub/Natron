@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 143019 2015-12-02 02:16:10Z devans@macports.org $
+# $Id: Portfile 143787 2015-12-21 18:00:29Z devans@macports.org $
 
 PortSystem          1.0
 PortGroup           xcodeversion 1.0
@@ -52,8 +52,8 @@ master_sites        http://www.ffmpeg.org/releases/
 
 use_bzip2           yes
 
-checksums           rmd160  48055359bbf8db923c0c62afb56ca309c749dbbd \
-                    sha256  1bcf993a71839bb4a37eaa0c51daf315932b6dad6089f672294545cc51a5caf6
+checksums           rmd160  8f01909af99d0601f27b890edcb4720c9c7d9b59 \
+                    sha256  83cc8136a7845546062a43cda9ae3cf0a02f43ef5e434d2f997f055231a75f8e
 
 depends_build       port:pkgconfig \
                     port:gmake \
