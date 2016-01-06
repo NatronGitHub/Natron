@@ -1288,9 +1288,10 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             _imp->outputEffect->reportStats(frame, viewIndex, timeSpent, statResults);
         }
     }
-    U64 nbFramesLeftToRender;
+    //U64 nbFramesLeftToRender;
     bool isBackground = appPTR->isBackground();
-    
+    int nbCurParallelRenders = 1;
+
     if (policy == eSchedulingPolicyFFA) {
         
         QMutexLocker l(&_imp->runArgsMutex);
@@ -1302,7 +1303,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
         if (totalFrames != 0) {
             percentage = (double)_imp->nFramesRendered / totalFrames;
         }
-        nbFramesLeftToRender = totalFrames - _imp->nFramesRendered;
+        //nbFramesLeftToRender = totalFrames - _imp->nFramesRendered;
         if ( _imp->nFramesRendered == totalFrames) {
 
             _imp->renderFinished = true;
@@ -1320,7 +1321,6 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             ///////////
             /////If we were analysing the CPU activity, now set the appropriate number of threads to render.
             int newNThreads;
-            int nbCurParallelRenders;
             adjustNumberOfThreads(&newNThreads, &nbCurParallelRenders);
         }
     } else {
@@ -1332,14 +1332,15 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
                 if (totalFrames != 0) {
                     percentage = (double)(frame - _imp->livingRunArgs.firstFrame) / _imp->livingRunArgs.frameStep / totalFrames;
                 }
-                nbFramesLeftToRender = (double)(_imp->livingRunArgs.lastFrame - frame) / _imp->livingRunArgs.frameStep;
+               // nbFramesLeftToRender = (double)(_imp->livingRunArgs.lastFrame - frame) / _imp->livingRunArgs.frameStep;
             } else {
                 if (totalFrames != 0) {
                     percentage = (double)(_imp->livingRunArgs.lastFrame - frame)  / totalFrames;
                 }
-                nbFramesLeftToRender = (double)(frame - _imp->livingRunArgs.firstFrame) / _imp->livingRunArgs.frameStep;
+               // nbFramesLeftToRender = (double)(frame - _imp->livingRunArgs.firstFrame) / _imp->livingRunArgs.frameStep;
             }
         }
+        nbCurParallelRenders = getNRenderThreads();
     } // if (policy == eSchedulingPolicyFFA) {
     
     double avgTimeSpent = 0.;
@@ -1348,12 +1349,11 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
     if (stats) {
         _imp->outputEffect->updateRenderTimeInfos(timeSpent, &avgTimeSpent, &totalTimeSpent);
         if (percentage != 0) {
-            timeRemaining = totalTimeSpent * (1 - percentage) / percentage;
+            timeRemaining = nbCurParallelRenders ? (totalTimeSpent * (1 - percentage) / percentage) / (double)nbCurParallelRenders : 0.;
         } else {
             //Unknown yet
             timeRemaining = -1;
         }
-        //timeRemaining = nbCurParallelRenders ? (nbFramesLeftToRender * avgTimeSpent) / (double)nbCurParallelRenders : 0;
     }
     
     if (isBackground) {

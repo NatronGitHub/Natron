@@ -60,12 +60,12 @@ public:
      * @brief Constructs an empty key. This constructor is used by boost::serialization.
      **/
     KeyHelper()
-        : _hashComputed(false), _hash(), _holderID()
+        : _holderID(), _hash(), _hashComputed(false)
     {
     }
 
     KeyHelper(const CacheEntryHolder* holder)
-    : _hashComputed(false), _hash(), _holderID()
+    : _holderID(), _hash(), _hashComputed(false)
     {
         if (holder) {
             _holderID = holder->getCacheID();

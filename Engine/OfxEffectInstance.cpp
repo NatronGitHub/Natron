@@ -1337,12 +1337,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
     OfxStatus stat;
     
     {
-        bool skipDiscarding = false;
-        if (getRecursionLevel() > 1) {
-            skipDiscarding = true;
-        }
-        
-        
+ 
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             view,
                                             mipMapLevel);
@@ -1467,10 +1462,6 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
         throw std::runtime_error("OfxEffectInstance not initialized");
     }
     
-    bool skipDiscarding = false;
-    if (getRecursionLevel() > 1) {
-        skipDiscarding = true;
-    }
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     OfxRectD ofxRod;
     
@@ -1545,11 +1536,6 @@ OfxEffectInstance::getRegionsOfInterest(double time,
     {
         SET_CAN_SET_VALUE(false);
 
-        bool skipDiscarding = false;
-        if (getRecursionLevel() > 1) {
-            // getRegionsOfInterest may be called recursively as a result of calling fetchImage() from an action
-            skipDiscarding = true;
-        }
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             view,
                                             mipMapLevel);
@@ -1771,17 +1757,6 @@ OfxEffectInstance::isIdentity(double time,
     OfxStatus stat;
     
     {
-        bool skipDiscarding = false;
-        
-        if (getRecursionLevel() > 1) {
-            
-//#ifdef DEBUG
-//            if (QThread::currentThread() != qApp->thread()) {
-//                qDebug() << "isIdentity cannot be called recursively as an action. Please check this.";
-//            }
-//#endif
-            skipDiscarding = true;
-        }
         
         SET_CAN_SET_VALUE(false);
 
@@ -1860,11 +1835,7 @@ OfxEffectInstance::beginSequenceRender(double first,
     OfxStatus stat;
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     {
-        bool skipDiscarding = false;
-        if (getRecursionLevel() > 1) {
-            qDebug() << "beginRenderAction cannot be called recursively as an action. Please check this.";
-            skipDiscarding = true;
-        }
+
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             view,
                                             mipMapLevel);
@@ -1907,11 +1878,7 @@ OfxEffectInstance::endSequenceRender(double first,
     OfxStatus stat;
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     {
-        bool skipDiscarding = false;
-        if (getRecursionLevel() > 1) {
-            qDebug() << "endRenderAction cannot be called recursively as an action. Please check this.";
-            skipDiscarding = true;
-        }
+
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             view,
                                             mipMapLevel);
@@ -1993,12 +1960,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
     }
 # endif // DEBUG
     {
-        bool skipDiscarding = false;
-        if (getRecursionLevel() > 1) {
-            qDebug() << "renderAction cannot be called recursively as an action. Please check this.";
-            skipDiscarding = true;
-        }
-        
+
         SET_CAN_SET_VALUE(false);
         
         
@@ -2695,10 +2657,7 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time, int view,
 {
     OfxStatus stat ;
     {
-        bool skipDiscarding = false;
-        if (getRecursionLevel() > 1) {
-            skipDiscarding = true;
-        }
+
         
         SET_CAN_SET_VALUE(false);
         
@@ -2907,10 +2866,7 @@ OfxEffectInstance::getTransform(double time,
     
     OfxStatus stat ;
     {
-        bool skipDiscarding = false;
-        if (getRecursionLevel() > 1) {
-            skipDiscarding = true;
-        }
+
         SET_CAN_SET_VALUE(false);
         
         

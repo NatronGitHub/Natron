@@ -3409,7 +3409,7 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
         return;
     }
 
-    if (useLayerChoice) {
+    if (useLayerChoice && useThisNodeComponentsNeeded) {
         QMutexLocker k(&_imp->componentsAvailableMutex);
         if (!_imp->componentsAvailableDirty) {
             comps->insert( _imp->outputComponentsAvailable.begin(), _imp->outputComponentsAvailable.end() );
@@ -3422,7 +3422,7 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
     if (!node) {
         return;
     }
-   EffectInstance::ComponentsNeededMap neededComps;
+    EffectInstance::ComponentsNeededMap neededComps;
     SequenceTime ptTime;
     int ptView;
     NodePtr ptInput;
@@ -3556,7 +3556,7 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
     markedNodes->push_back(this);
 
     
-    if (useLayerChoice) {
+    if (useLayerChoice && useThisNodeComponentsNeeded) {
         QMutexLocker k(&_imp->componentsAvailableMutex);
         _imp->componentsAvailableDirty = false;
         _imp->outputComponentsAvailable = *comps;

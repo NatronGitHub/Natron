@@ -29,6 +29,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <set>
 
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
