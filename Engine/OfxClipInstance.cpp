@@ -31,6 +31,7 @@
 
 #include <QtCore/QTextStream>
 #include <QtCore/QDebug>
+#include <QtCore/QCoreApplication>
 
 #include "Global/Macros.h"
 
