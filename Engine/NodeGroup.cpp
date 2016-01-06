@@ -247,6 +247,24 @@ NodeCollection::getWriters(std::list<Natron::OutputEffectInstance*>* writers) co
 
 }
 
+void
+NodeCollection::notifyRenderBeingAborted()
+{
+    QMutexLocker k(&_imp->nodesMutex);
+    for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+        (*it)->notifyRenderBeingAborted();
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+        if (isGrp) {
+            isGrp->notifyRenderBeingAborted();
+        }
+        PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>((*it)->getLiveInstance());
+        if (isPrecomp) {
+            isPrecomp->getPrecompApp()->getProject()->notifyRenderBeingAborted();
+        }
+        
+    }
+}
+
 static void setMustQuitProcessingRecursive(bool mustQuit, NodeCollection* grp)
 {
     NodeList nodes = grp->getNodes();
@@ -256,6 +274,11 @@ static void setMustQuitProcessingRecursive(bool mustQuit, NodeCollection* grp)
         if (isGrp) {
             setMustQuitProcessingRecursive(mustQuit,isGrp);
         }
+        PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>((*it)->getLiveInstance());
+        if (isPrecomp) {
+            setMustQuitProcessingRecursive(mustQuit,isPrecomp->getPrecompApp()->getProject().get());
+        }
+
     }
 }
 
@@ -266,6 +289,10 @@ static void quitAnyProcessingInternal(NodeCollection* grp) {
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
             quitAnyProcessingInternal(isGrp);
+        }
+        PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>((*it)->getLiveInstance());
+        if (isPrecomp) {
+            quitAnyProcessingInternal(isPrecomp->getPrecompApp()->getProject().get());
         }
     }
 }
@@ -310,19 +337,24 @@ NodeCollection::hasNodeRendering() const
     QMutexLocker k(&_imp->nodesMutex);
     for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         if ( (*it)->isOutputNode() ) {
-            Natron::OutputEffectInstance* effect = dynamic_cast<Natron::OutputEffectInstance*>( (*it)->getLiveInstance() );
-            assert(effect);
-            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(effect);
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+            PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>((*it)->getLiveInstance());
             if (isGrp) {
                 if (isGrp->hasNodeRendering()) {
                     return true;
                 }
-            } else {
-                if ( effect->getRenderEngine()->hasThreadsWorking() ) {
+            } else if (isPrecomp) {
+                if (isPrecomp->getPrecompApp()->getProject()->hasNodeRendering()) {
                     return true;
-                    break;
                 }
+            } else {
+                OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>((*it)->getLiveInstance());
+                if (effect && effect->getRenderEngine()->hasThreadsWorking()) {
+                    return true;
+                }
+                
             }
+            
         }
     }
     return false;
@@ -406,16 +438,16 @@ NodeCollection::clearNodes(bool emitSignal)
     
     ///First quit any processing
     for (NodeList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
+        (*it)->quitAnyProcessing();
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
             isGrp->clearNodes(emitSignal);
         }
-        (*it)->quitAnyProcessing();
+        PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>((*it)->getLiveInstance());
+        if (isPrecomp) {
+            isPrecomp->getPrecompApp()->getProject()->clearNodes(emitSignal);
+        }
     }
-    
-    ///Kill thread pool so threads are killed before killing thread storage
-    QThreadPool::globalInstance()->waitForDone();
-    
     
     ///Kill effects
     for (NodeList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
@@ -423,7 +455,7 @@ NodeCollection::clearNodes(bool emitSignal)
     }
     
     for (NodeList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-        (*it)->removeReferences(false);
+        (*it)->removeReferences();
     }
     
     
@@ -800,18 +832,7 @@ NodeCollection::getNodeByFullySpecifiedName(const std::string& fullySpecifiedNam
 }
 
 
-void
-NodeCollection::notifyRenderBeingAborted()
-{
-    QMutexLocker k(&_imp->nodesMutex);
-    for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        (*it)->notifyRenderBeingAborted();
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
-        if (isGrp) {
-            isGrp->notifyRenderBeingAborted();
-        }
-    }
-}
+
 
 
 void

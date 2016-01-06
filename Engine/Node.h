@@ -151,7 +151,7 @@ public:
     void createRotoContextConditionnally();
 
     ///called by Project::removeNode, never call this
-    void removeReferences(bool ensureThreadsFinished);
+    void removeReferences();
 
     ///function called by EffectInstance to create a knob
     template <class K>
@@ -178,10 +178,17 @@ public:
        This is called when the effect is about to be deleted pluginsly
      */
     void setMustQuitProcessing(bool mustQuit);
+    
+    /**
+     * @brief Quits any processing on going on this node and waits until done
+     * After this call all threads launched by this node are stopped.
+     * This is called when clearing all nodes of the project (see Project::reset) or when calling
+     * AppManager::abortAnyProcessing()
+     **/
     void quitAnyProcessing();
 
-    /*@brief Similar to quitAnyProcessing except that the threads aren't destroyed
-
+    /* @brief Similar to quitAnyProcessing except that the threads aren't destroyed
+     * This is called when a node is deleted by the user
      */
     void abortAnyProcessing();
 

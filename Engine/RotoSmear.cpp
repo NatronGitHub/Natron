@@ -262,15 +262,16 @@ RotoSmear::render(const RenderActionArgs& args)
     }
     
     
-    ComponentsNeededMap neededComps;
+    EffectInstance::ComponentsNeededMap neededComps;
     bool processAll;
     std::bitset<4> processChannels;
     SequenceTime ptTime;
     int ptView;
     boost::shared_ptr<Node> ptInput;
-    getComponentsNeededAndProduced_public(true, args.time, args.view, &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
+    getComponentsNeededAndProduced_public(true, true, args.time, args.view, &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
+
     
-    ComponentsNeededMap::iterator foundBg = neededComps.find(0);
+    EffectInstance::ComponentsNeededMap::iterator foundBg = neededComps.find(0);
     assert(foundBg != neededComps.end() && !foundBg->second.empty());
     
     double par = getPreferredAspectRatio();

@@ -73,9 +73,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"
-#include "Engine/ThreadStorage.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
+#include "Engine/TLSHolder.h"
 #include "Engine/ViewerInstance.h"
 
 ///The flickering of edges/nodes in the nodegraph will be refreshed
@@ -2078,11 +2078,13 @@ Node::quitAnyProcessing()
     }
     
     
+    //If this effect has a RenderEngine, make sure it is finished
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getLiveInstance() );
-    
     if (isOutput) {
         isOutput->getRenderEngine()->quitEngine();
     }
+    
+    //Returns when the preview is done computign
     _imp->abortPreview();
     
     if (isRotoPaintingNode()) {
@@ -2101,7 +2103,7 @@ Node::~Node()
 }
 
 void
-Node::removeReferences(bool ensureThreadsFinished)
+Node::removeReferences()
 {
     if (!_imp->liveInstance) {
         return;
@@ -2109,9 +2111,7 @@ Node::removeReferences(bool ensureThreadsFinished)
     
     _imp->isBeingDestroyed = true;
     
-    if (ensureThreadsFinished) {
-        getApp()->getProject()->ensureAllProcessingThreadsFinished();
-    }
+
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(_imp->liveInstance.get());
     if (isOutput) {
         isOutput->getRenderEngine()->quitEngine();
@@ -2653,7 +2653,7 @@ Node::makeInfoForInput(int inputNumber) const
     double time = getApp()->getTimeLine()->currentFrame();
 
     EffectInstance::ComponentsAvailableMap availableComps;
-    input->getComponentsAvailable(true, time, &availableComps);
+    input->getComponentsAvailable(true, true, time, &availableComps);
     
     RenderScale scale(1.);
     RectD rod;
@@ -4797,7 +4797,7 @@ Node::destroyNode(bool autoReconnect)
         isGrp->clearNodes(true);
     }
     
-    removeReferences(true);
+    removeReferences();
 }
 
 boost::shared_ptr<KnobI>
@@ -4924,9 +4924,7 @@ public:
     {
         _imp->setComputingPreview(false);
         
-        if (_imp->checkForExitPreview()) {
-            return;
-        }
+        (void)_imp->checkForExitPreview();
     }
 };
 
@@ -4994,82 +4992,87 @@ Node::makePreviewImage(SequenceTime time,
         return false;
     }
     
-    ParallelRenderArgsSetter frameRenderArgs(time,
-                                             0, //< preview only renders view 0 (left)
-                                             true, //<isRenderUserInteraction
-                                             false, //isSequential
-                                             true, //can abort
-                                             0, //render Age
-                                             thisNode, // viewer requester
-                                             &request,
-                                             0, //texture index
-                                             getApp()->getTimeLine().get(), // timeline
-                                             NodePtr(), //rotoPaint node
-                                             false, // isAnalysis
-                                             true, // isDraft
-                                             false, // enableProgress
-                                             boost::shared_ptr<RenderStats>());
-    
-    std::list<ImageComponents> requestedComps;
-    Natron::ImageBitDepthEnum depth;
-    getLiveInstance()->getPreferredDepthAndComponents(-1, &requestedComps, &depth);
-    
-    
-    
-    // Exceptions are caught because the program can run without a preview,
-    // but any exception in renderROI is probably fatal.
-    ImageList planes;
-    try {
-        Natron::EffectInstance::RenderRoIRetCode retCode =
-        effect->renderRoI( EffectInstance::RenderRoIArgs( time,
-                                                         scale,
-                                                         mipMapLevel,
-                                                         0, //< preview only renders view 0 (left)
-                                                         false,
-                                                         renderWindow,
-                                                         rod,
-                                                         requestedComps, //< preview is always rgb...
-                                                         depth, false, effect) ,&planes);
-        if (retCode != Natron::EffectInstance::eRenderRoIRetCodeOk) {
+    {
+        ParallelRenderArgsSetter frameRenderArgs(time,
+                                                 0, //< preview only renders view 0 (left)
+                                                 true, //<isRenderUserInteraction
+                                                 false, //isSequential
+                                                 true, //can abort
+                                                 0, //render Age
+                                                 thisNode, // viewer requester
+                                                 &request,
+                                                 0, //texture index
+                                                 getApp()->getTimeLine().get(), // timeline
+                                                 NodePtr(), //rotoPaint node
+                                                 false, // isAnalysis
+                                                 true, // isDraft
+                                                 false, // enableProgress
+                                                 boost::shared_ptr<RenderStats>());
+        
+        std::list<ImageComponents> requestedComps;
+        Natron::ImageBitDepthEnum depth;
+        getLiveInstance()->getPreferredDepthAndComponents(-1, &requestedComps, &depth);
+        
+        
+        
+        // Exceptions are caught because the program can run without a preview,
+        // but any exception in renderROI is probably fatal.
+        ImageList planes;
+        try {
+            Natron::EffectInstance::RenderRoIRetCode retCode =
+            effect->renderRoI( EffectInstance::RenderRoIArgs( time,
+                                                             scale,
+                                                             mipMapLevel,
+                                                             0, //< preview only renders view 0 (left)
+                                                             false,
+                                                             renderWindow,
+                                                             rod,
+                                                             requestedComps, //< preview is always rgb...
+                                                             depth, false, effect) ,&planes);
+            if (retCode != Natron::EffectInstance::eRenderRoIRetCodeOk) {
+                return false;
+            }
+        } catch (...) {
             return false;
         }
-    } catch (...) {
-        return false;
-    }
-    
-    if (planes.empty()) {
-        return false;
-    }
-    
-    const ImagePtr& img = planes.front();
-    
-    const ImageComponents& components = img->getComponents();
-    int elemCount = components.getNumComponents();
-    
-    ///we convert only when input is Linear.
-    //Rec709 and srGB is acceptable for preview
-    bool convertToSrgb = getApp()->getDefaultColorSpaceForBitDepth( img->getBitDepth() ) == Natron::eViewerColorSpaceLinear;
-    
-    switch ( img->getBitDepth() ) {
-        case Natron::eImageBitDepthByte: {
-            renderPreviewForDepth<unsigned char, 255>(*img, elemCount, width, height,convertToSrgb, buf);
-            break;
+        
+        if (planes.empty()) {
+            return false;
         }
-        case Natron::eImageBitDepthShort: {
-            renderPreviewForDepth<unsigned short, 65535>(*img, elemCount, width, height,convertToSrgb, buf);
-            break;
+        
+        const ImagePtr& img = planes.front();
+        
+        const ImageComponents& components = img->getComponents();
+        int elemCount = components.getNumComponents();
+        
+        ///we convert only when input is Linear.
+        //Rec709 and srGB is acceptable for preview
+        bool convertToSrgb = getApp()->getDefaultColorSpaceForBitDepth( img->getBitDepth() ) == Natron::eViewerColorSpaceLinear;
+        
+        switch ( img->getBitDepth() ) {
+            case Natron::eImageBitDepthByte: {
+                renderPreviewForDepth<unsigned char, 255>(*img, elemCount, width, height,convertToSrgb, buf);
+                break;
+            }
+            case Natron::eImageBitDepthShort: {
+                renderPreviewForDepth<unsigned short, 65535>(*img, elemCount, width, height,convertToSrgb, buf);
+                break;
+            }
+            case Natron::eImageBitDepthHalf:
+                break;
+            case Natron::eImageBitDepthFloat: {
+                renderPreviewForDepth<float, 1>(*img, elemCount, width, height,convertToSrgb, buf);
+                break;
+            }
+            case Natron::eImageBitDepthNone:
+                break;
         }
-        case Natron::eImageBitDepthHalf:
-            break;
-        case Natron::eImageBitDepthFloat: {
-            renderPreviewForDepth<float, 1>(*img, elemCount, width, height,convertToSrgb, buf);
-            break;
-        }
-        case Natron::eImageBitDepthNone:
-            break;
-    }
+    } // ParallelRenderArgsSetter
+    
+    ///Exit of the thread
+    appPTR->getAppTLS()->cleanupTLSForThread();
+    
     return true;
-    
 } // makePreviewImage
 
 bool
@@ -8482,7 +8485,7 @@ Node::refreshChannelSelectors(bool setValues)
         
         if (node) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
-            node->getLiveInstance()->getComponentsAvailable(it->first != -1, time, &compsAvailable);
+            node->getLiveInstance()->getComponentsAvailable(it->first != -1, true, time, &compsAvailable);
             {
                 QMutexLocker k(&it->second.compsMutex);
                 it->second.compsAvailable = compsAvailable;
@@ -8634,7 +8637,7 @@ Node::refreshChannelSelectors(bool setValues)
         EffectInstance::ComponentsAvailableMap compsAvailable;
         std::list<EffectInstance*> markedNodes;
         if (node) {
-            node->getLiveInstance()->getComponentsAvailable(true, time, &compsAvailable,&markedNodes);
+            node->getLiveInstance()->getComponentsAvailable(true, true, time, &compsAvailable,&markedNodes);
         }
         
         ///Also inject in masks available components from all non mask inputs

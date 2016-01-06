@@ -332,7 +332,7 @@ ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
         activeInput[i] = viewerNode->getInput(activeInputIdx[i]);
         if (activeInput[i]) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
-            activeInput[i]->getComponentsAvailable(true, publicInterface->getGui()->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
+            activeInput[i]->getComponentsAvailable(true, true, publicInterface->getGui()->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
             for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
                 if (it->second.lock()) {
                     comps->insert(it->first);

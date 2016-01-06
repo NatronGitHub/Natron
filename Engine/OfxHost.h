@@ -41,6 +41,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Global/Enums.h"
 #include "Engine/EngineFwd.h"
 
+
 //#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
 
 namespace Natron {
@@ -153,8 +154,28 @@ public:
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                                     Natron::ContextEnum* ctx);
     
-    GlobalOFXTLS& getCurrentThreadTLS();
-
+    
+    /**
+     * @brief A application-wide TLS struct containing all stuff needed to workaround OFX poor specs:
+     * missing image effect handles etc...
+     **/
+    struct OfxHostTLSData
+    {
+        Natron::OfxImageEffectInstance* lastEffectCallingMainEntry;
+        
+        ///Stored as int, because we need -1; list because we need it recursive for the multiThread func
+        std::list<int> threadIndexes;
+        
+        OfxHostTLSData()
+        : lastEffectCallingMainEntry(0)
+        , threadIndexes()
+        {
+            
+        }
+    };
+    typedef boost::shared_ptr<OfxHostTLSData> OfxHostDataTLSPtr;
+    
+    OfxHostDataTLSPtr getTLSData() const;
     
 private:
     

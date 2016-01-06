@@ -168,6 +168,7 @@ SOURCES += \
     TextureRect.cpp \
     TimeLine.cpp \
     Timer.cpp \
+    TLSHolder.cpp \
     Transform.cpp \
     ViewerInstance.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
@@ -342,6 +343,8 @@ HEADERS += \
     TimeLine.h \
     TimeLineKeyFrames.h \
     Timer.h \
+    TLSHolder.h \
+    TLSHolderImpl.h \
     Transform.h \
     Variant.h \
     VariantSerialization.h \

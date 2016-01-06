@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include <cassert>
+#include <list>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -34,6 +35,7 @@ CLANG_DIAG_ON(deprecated)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #endif
 //ofx
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
@@ -47,21 +49,18 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Image.h"
-#include "Engine/ThreadStorage.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
 
+struct OfxClipInstancePrivate;
 class OfxClipInstance
     : public OFX::Host::ImageEffect::ClipInstance
 {
 public:
-    OfxClipInstance(OfxEffectInstance* node
-                    ,
-                    Natron::OfxImageEffectInstance* effect
-                    ,
-                    int index
-                    ,
+    OfxClipInstance(OfxEffectInstance* node,
+                    Natron::OfxImageEffectInstance* effect,
+                    int index,
                     OFX::Host::ImageEffect::ClipDescriptor* desc);
 
     virtual ~OfxClipInstance();
@@ -197,19 +196,10 @@ public:
     {
     }
 
-    void setRenderedView(int view);
-
-    ///Set the view stored in the thread-local storage to be invalid
-    void discardView();
-
-    void setMipMapLevel(unsigned int mipMapLevel);
-    
-    void discardMipMapLevel();
-    
-    void clearOfxImagesTLS();
-    
-    void setClipComponentTLS(bool hasImage,const Natron::ImageComponents& components);
-    void clearClipComponentsTLS();
+    void setClipTLS(int view,
+                    unsigned int mipmapLevel,
+                    const Natron::ImageComponents& components);
+    void invalidateClipTLS();
 
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
@@ -223,58 +213,80 @@ public:
     static Natron::ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
     static std::string natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth);
 
-    void setTransformAndReRouteInput(const Transform::Matrix3x3& m,Natron::EffectInstance* rerouteInput,int newInputNb);
-    void clearTransform();
-    
-private:
 
-    /**
-     * @brief These are datas that are local to an action call but that we need in order to perform the API call like
-     * clipGetRegionOfDefinition or clipGetFrameRange, etc...
-     * The mipmapLevel and time are NOT stored here since they can be recovered by other means, that is:
-     * - the thread-storage of the render args of the associated nodes when the thread is rendering (in a render call)
-     * - The current time of the timeline otherwise and 0 for mipMapLevel.
-     **/
-    struct ActionLocalData {
-        
-        bool isViewValid;
-        int view;
-        
-        bool isMipmapLevelValid;
-        unsigned int mipMapLevel;
-        
-        bool isTransformDataValid;
-        boost::shared_ptr<Transform::Matrix3x3> matrix; //< if the clip is associated to a node that can transform
-        Natron::EffectInstance* rerouteNode; //< if the associated node is a concatenated transform, this is the effect from which to fetch images from
-        int rerouteInputNb;
-        
+
+
+    struct RenderActionData
+    {
+    //We keep track of the images being rendered (on the output clip) so that we return the same pointer
+        //if this is the same image
         std::list<OfxImage*> imagesBeingRendered;
         
-        //We keep track of the input images fetch so we do not attempt to take a lock on the image if it has already been fetched
-        std::list<boost::weak_ptr<Natron::Image> > inputImagesFetched;
-        
-        //String indicating what a subsequent call to getComponents should return
-        bool clipComponentsValid;
+        //Used to determine the plane to render in a call to getOutputImageInternal()
         Natron::ImageComponents clipComponents;
-        bool hasImage;
         
-        ActionLocalData()
-        : isViewValid(false)
-        , view(0)
-        , isMipmapLevelValid(false)
-        , mipMapLevel(false)
-        , isTransformDataValid(false)
-        , matrix()
-        , rerouteNode(0)
-        , rerouteInputNb(-1)
-        , imagesBeingRendered()
-        , inputImagesFetched()
-        , clipComponentsValid(false)
+        RenderActionData()
+        : imagesBeingRendered()
         , clipComponents()
-        , hasImage(false)
+        {
+            
+        }
+    
+    };
+
+    //These are per-clip thread-local data
+    struct ClipTLSData
+    {
+        //////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////
+        ///////These data are valid only throughout a recursive action
+        
+        //View may be involved in a recursive action
+        std::list<int> view;
+        //mipmaplevel may be involved in a recursive action
+        std::list<unsigned int> mipMapLevel;
+        
+        //////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////
+        /// Valid only throughought a render action
+        std::list< boost::shared_ptr<RenderActionData> > renderData;
+        //////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////
+        
+        
+        //////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////
+        //The following data are always valid and do not necessitate a valid flag
+        std::vector<std::string> componentsPresent;
+        std::string unmappedComponents;
+        
+        ClipTLSData()
+        : view()
+        , mipMapLevel()
+        , componentsPresent()
+        , unmappedComponents()
         {
         }
+        
+        ClipTLSData(const ClipTLSData& other)
+        : view(other.view)
+        , mipMapLevel(other.mipMapLevel)
+        , renderData()
+        , componentsPresent(other.componentsPresent)
+        , unmappedComponents(other.unmappedComponents)
+        {
+            for (std::list< boost::shared_ptr<RenderActionData> >::const_iterator it = other.renderData.begin();
+                 it!= other.renderData.end(); ++it) {
+                boost::shared_ptr<RenderActionData> d(new RenderActionData(**it));
+                renderData.push_back(d);
+            }
+        }
     };
+
+    typedef boost::shared_ptr<ClipTLSData> ClipDataTLSPtr;
+
+private:
+
 
     
     void getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,Natron::EffectInstance* associatedNode,
@@ -288,57 +300,21 @@ private:
     OFX::Host::ImageEffect::Image* getImagePlaneInternal(OfxTime time, int view, const OfxRectD *optionalBounds, const std::string* ofxPlane);
 
 
-    OfxEffectInstance* _nodeInstance;
-    Natron::OfxImageEffectInstance* const _effect;
-    double _aspectRatio;
- 
-    mutable Natron::ThreadStorage<ActionLocalData> _lastActionData; //< foreach  thread, the args
-    
-    
-   /* struct CompPresent
-    {
-        ///The component in question
-        Natron::ImageComponentsEnum comp;
-        
-        ///For input clips, the node from which to fetch the components, otherwise NULL for output clips
-        boost::weak_ptr<Natron::Node> node;
-    };*/
-    
-    ///  pair< component, ofxcomponent> 
-    typedef std::vector<std::string>  ComponentsPresentMap;
-    mutable Natron::ThreadStorage<ComponentsPresentMap> _componentsPresent;
-    
-    mutable Natron::ThreadStorage<std::string> _unmappedComponents;
+
+    boost::scoped_ptr<OfxClipInstancePrivate> _imp;
     
 };
 
+
+struct OfxImagePrivate;
 class OfxImage
     : public OFX::Host::ImageEffect::Image
 {
 public:
 
-    /** @brief Enumerates the pixel depths supported */
-    enum BitDepthEnum
-    {
-        eBitDepthNone = 0,                /**< @brief bit depth that indicates no data is present */
-        eBitDepthUByte,
-        eBitDepthUShort,
-        eBitDepthFloat,
-        eBitDepthDouble
-    };
 
-    /** @brief Enumerates the component types supported */
-    enum PixelComponentEnum
-    {
-        ePixelComponentNone = 0,
-        ePixelComponentRGBA,
-        ePixelComponentRGB,
-        ePixelComponentAlpha
-    };
-
-
-    explicit OfxImage(std::list<OfxImage*>* tlsImages,
-                      boost::shared_ptr<Natron::Image> internalImage,
+    explicit OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
+                      const boost::shared_ptr<Natron::Image>& internalImage,
                       bool isSrcImage,
                       const RectI& renderWindow,
                       const boost::shared_ptr<Transform::Matrix3x3>& mat,
@@ -348,16 +324,12 @@ public:
 
     virtual ~OfxImage();
 
-    boost::shared_ptr<Natron::Image> getInternalImage() const
-    {
-        return _floatImage;
-    }
+    boost::shared_ptr<Natron::Image> getInternalImage() const;
 
 private:
+    
+    boost::scoped_ptr<OfxImagePrivate> _imp;
 
-    boost::shared_ptr<Natron::Image> _floatImage;
-    boost::shared_ptr<Natron::GenericAccess> _imgAccess;
-    std::list<OfxImage*>* tlsImages;
 };
 
 #endif // NATRON_ENGINE_OFXCLIPINSTANCE_H

@@ -45,13 +45,8 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Engine/OutputEffectInstance.h"
-#ifdef DEBUG
-#include "Engine/ThreadStorage.h"
-#endif
+
 #include "Engine/EngineFwd.h"
-
-
-class QReadWriteLock;
 
 
 class AbstractOfxEffectInstance
@@ -86,6 +81,7 @@ public:
     
 };
 
+struct OfxEffectInstancePrivate;
 class OfxEffectInstance
     : public AbstractOfxEffectInstance
 {
@@ -107,35 +103,17 @@ public:
                                       bool disableRenderScaleSupport,
                                       bool *hasUsedFileDialog) OVERRIDE FINAL;
 
-    Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN
-    {
-        return _effect;
-    }
-
-    const Natron::OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN
-    {
-        return _effect;
-    }
-
-    void setAsOutputNode()
-    {
-        _isOutput = true;
-    }
-
+    Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN;
+    
+    const Natron::OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN;
+    
     const std::string & getShortLabel() const WARN_UNUSED_RETURN;
 
     typedef std::vector<OFX::Host::ImageEffect::ClipDescriptor*> MappedInputV;
     MappedInputV inputClipsCopyWithoutOutput() const WARN_UNUSED_RETURN;
 
-    bool isCreated() const
-    {
-        return _created;
-    }
-
-    bool isInitialized() const
-    {
-        return _initialized;
-    }
+    bool isCreated() const;
+    bool isInitialized() const;
 
     const std::string & ofxGetOutputPremultiplication() const;
 
@@ -269,7 +247,7 @@ public:
                                         bool forceGetClipPrefAction) OVERRIDE FINAL;
     
     virtual void getComponentsNeededAndProduced(double time, int view,
-                                                ComponentsNeededMap* comps,
+                                               EffectInstance::ComponentsNeededMap* comps,
                                                 SequenceTime* passThroughTime,
                                                 int* passThroughView,
                                                 boost::shared_ptr<Natron::Node>* passThroughInput) OVERRIDE;
@@ -291,8 +269,6 @@ public:
                                             int view,
                                             Natron::EffectInstance** inputToTransform,
                                             Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void rerouteInputAndSetTransform(const InputMatrixMap& inputTransforms) OVERRIDE FINAL;
-    virtual void clearTransform(int inputNb) OVERRIDE FINAL;
 
     virtual bool isFrameVarying() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
@@ -329,101 +305,11 @@ private:
 
     void initializeContextDependentParams();
 
-#ifdef DEBUG
-/*
-    Debug helper to track plug-in that do setValue calls that are forbidden
- 
- http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#SettingParams
- Officially, setValue calls are allowed during the following actions:
- 
- The Create Instance Action
- The The Begin Instance Changed Action
- The The Instance Changed Action
- The The End Instance Changed Action
- The The Sync Private Data Action
-
- 
- */
-
-    void setCanSetValue(bool can)
-    {
-        _canSetValue.localData() = can;
-    }
-
-    void invalidateCanSetValueFlag()
-    {
-        _canSetValue.localData() = true;
-    }
-
-
-    bool isDuringActionThatCanSetValue() const
-    {
-        if (_canSetValue.hasLocalData()) {
-            return _canSetValue.localData();
-        } else {
-            ///Not during an action
-            return true;
-        }
-    }
-
-    class CanSetSetValueFlag_RAII
-    {
-        OfxEffectInstance* effect;
-        
-        public:
-        
-        CanSetSetValueFlag_RAII(OfxEffectInstance* effect,bool canSetValue)
-        : effect(effect)
-        {
-            effect->setCanSetValue(canSetValue);
-        }
-        
-        ~CanSetSetValueFlag_RAII()
-        {
-            effect->invalidateCanSetValueFlag();
-        }
-    };
-
-    virtual bool checkCanSetValue() const OVERRIDE { return isDuringActionThatCanSetValue(); }
-
-#define SET_CAN_SET_VALUE(canSetValue) OfxEffectInstance::CanSetSetValueFlag_RAII canSetValueSetter(this,canSetValue)
-
-#else
-
-#define SET_CAN_SET_VALUE(canSetValue) ( (void)0 )
-
-#endif
 
     
 private:
-    Natron::OfxImageEffectInstance* _effect;
-    std::string _natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
-    Natron::OfxOverlayInteract* _overlayInteract; // ptr to the overlay interact if any
-    std::list< void* > _overlaySlaves; //void* to actually a KnobI* but stored as void to avoid dereferencing
-    boost::shared_ptr<KnobButton> _renderButton; //< render button for writers
-    mutable QReadWriteLock* _preferencesLock;
-    mutable QReadWriteLock* _renderSafetyLock;
-    mutable Natron::RenderSafetyEnum _renderSafety;
-    mutable bool _wasRenderSafetySet;
-    Natron::ContextEnum _context;
-#ifdef DEBUG
-    Natron::ThreadStorage<bool> _canSetValue;
-#endif
 
-    struct ClipsInfo {
-        bool optional;
-        bool mask;
-        bool rotoBrush;
-        OfxClipInstance* clip;
-    };
-    std::vector<ClipsInfo> _clipsInfos;
-    OfxClipInstance* _outputClip;
-    int _nbSourceClips;
-    bool _isOutput; //if the OfxNode can output a file somehow
-    bool _penDown; // true when the overlay trapped a penDow action
-
-    bool _created; // true after the call to createInstance
-    bool _initialized; //true when the image effect instance has been created and populated
+    boost::scoped_ptr<OfxEffectInstancePrivate> _imp;
 };
 
 #endif // NATRON_ENGINE_OFXNODE_H

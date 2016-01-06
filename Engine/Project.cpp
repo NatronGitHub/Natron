@@ -1058,13 +1058,6 @@ Project::getProjectDefaultFormat(Format *f) const
 }
 
 
-    
-void
-Project::ensureAllProcessingThreadsFinished()
-{
-    quitAnyProcessingForAllNodes();
-    QThreadPool::globalInstance()->waitForDone();
-}
 int
 Project::currentFrame() const
 {
@@ -1132,7 +1125,7 @@ Project::getProjectViewNames() const
 {
 
     ///Tls is needed to implement getViewName in the multi-plane suite
-    std::vector<std::string>& tls = _imp->viewNamesTLS.localData();
+    std::vector<std::string>& tls = _imp->tlsData->getOrCreateTLSData()->viewNames;
     tls.clear();
     
     std::list<std::pair<std::string,std::string> > pairs;

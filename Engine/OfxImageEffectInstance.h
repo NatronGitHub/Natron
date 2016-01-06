@@ -263,23 +263,7 @@ public:
     bool isInAnalysis() const;
 #endif
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////
-    //////////////////////////////////////// THREAD-LOCAL-STORAGE
-    /*       These functions below set and unset data on the clip thread-local storage.
-     See EffectInstance::Implementation::ScopedRenderArgs for an explanation on what is thread storage,
-     why we use it and why some are on the clips on some aren't.
-     */
-    void setClipsView(int view);
-    void discardClipsView();
-    void setClipsMipMapLevel(unsigned int mipMapLevel);
-    void discardClipsMipMapLevel();
-    void setClipsPlaneBeingRendered(const Natron::ImageComponents& comp);
-    void discardClipsPlaneBeingRendered();
-    void setInputClipPlane(int inputNb,bool hasImage, const Natron::ImageComponents& comp);
-    ////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////
-
+  
     bool getInputsHoldingTransform(std::list<int>* inputs) const;
     
     const std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>& getClips() const;

@@ -624,11 +624,7 @@ AddStrokeUndoCommand::AddStrokeUndoCommand(RotoGui* roto,const boost::shared_ptr
 
 AddStrokeUndoCommand::~AddStrokeUndoCommand()
 {
-    /*
-     * At this point, the stroke might get deleted, deleting the attached nodes in the meantime, hence we must ensure that all threads
-     * are deleted so that the ThreadLocalStorage used is correctly cleared.
-     */
-    _item->getContext()->getNode()->getApp()->getProject()->ensureAllProcessingThreadsFinished();
+
 }
 
 void
@@ -667,11 +663,7 @@ AddMultiStrokeUndoCommand::AddMultiStrokeUndoCommand(RotoGui* roto,const boost::
 
 AddMultiStrokeUndoCommand::~AddMultiStrokeUndoCommand()
 {
-    /*
-     * At this point, the stroke might get deleted, deleting the attached nodes in the meantime, hence we must ensure that all threads
-     * are deleted so that the ThreadLocalStorage used is correctly cleared.
-     */
-    _item->getContext()->getNode()->getApp()->getProject()->ensureAllProcessingThreadsFinished();
+
 }
 
 void

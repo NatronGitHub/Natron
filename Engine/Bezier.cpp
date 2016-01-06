@@ -1528,7 +1528,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
         } else {
             cp = cpParam;
         }
-        if (useFeatherPoints()) {
+        if (useFeatherPoints() && !cpParam) {
             BezierCPs::iterator fpIt = _imp->featherPoints.begin();
             std::advance(fpIt, index);
             assert(fpIt != _imp->featherPoints.end());

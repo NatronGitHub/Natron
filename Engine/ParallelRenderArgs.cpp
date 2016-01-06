@@ -46,7 +46,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                                                             int view,
                                                                             const boost::shared_ptr<Natron::Node>& treeRoot,
                                                                             FrameRequestMap* requests,  // roi functor specific
-                                                                            EffectInstance::InputImagesMap* inputImages, // render functor specific
+                                                                           EffectInstance::InputImagesMap* inputImages, // render functor specific
                                                                             const EffectInstance::ComponentsNeededMap* neededComps, // render functor specific
                                                                             bool useScaleOneInputs, // render functor specific
                                                                             bool byPassCache) // render functor specific
@@ -143,9 +143,9 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         
         ImageList* inputImagesList = 0;
         if (isRenderFunctor) {
-            EffectInstance::InputImagesMap::iterator foundInputImages = inputImages->find(inputNb);
+           EffectInstance::InputImagesMap::iterator foundInputImages = inputImages->find(inputNb);
             if (foundInputImages == inputImages->end()) {
-                std::pair<EffectInstance::InputImagesMap::iterator,bool> ret = inputImages->insert(std::make_pair(inputNb, ImageList()));
+                std::pair<InputImagesMap::iterator,bool> ret = inputImages->insert(std::make_pair(inputNb, ImageList()));
                 inputImagesList = &ret.first->second;
                 assert(ret.second);
             }
@@ -187,7 +187,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         const std::vector<Natron::ImageComponents>* compsNeeded = 0;
         
         if (neededComps) {
-            EffectInstance::ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(inputNb);
+           EffectInstance::ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(inputNb);
             if (foundCompsNeeded == neededComps->end()) {
                 continue;
             } else {

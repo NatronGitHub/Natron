@@ -56,6 +56,7 @@
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
 #include "Engine/TimeLine.h"
+#include "Engine/TLSHolder.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerInstancePrivate.h"
 
@@ -1951,6 +1952,8 @@ RenderThreadTask::run()
         
         renderFrame(time, viewsToRender, enableRenderStats);
         
+        appPTR->getAppTLS()->cleanupTLSForThread();
+        
         if ( mustQuit() ) {
             break;
         }
@@ -2136,19 +2139,20 @@ private:
                 ImageBitDepthEnum imageDepth;
                 
                 //Use needed components to figure out what we need to render
-                EffectInstance::ComponentsNeededMap neededComps;
+               EffectInstance::ComponentsNeededMap neededComps;
                 bool processAll;
                 SequenceTime ptTime;
                 int ptView;
                 std::bitset<4> processChannels;
                 NodePtr ptInput;
-                activeInputToRender->getComponentsNeededAndProduced_public(true, time, viewsToRender[view], &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
+                activeInputToRender->getComponentsNeededAndProduced_public(true, true, time, viewsToRender[view], &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
+
                 
                 //Retrieve bitdepth only
                 activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
                 components.clear();
                 
-                EffectInstance::ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
+               EffectInstance::ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
                 if (foundOutput != neededComps.end()) {
                     for (std::size_t j = 0; j < foundOutput->second.size(); ++j) {
                         components.push_back(foundOutput->second[j]);
@@ -2286,7 +2290,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         ImagePtr inputImage = boost::dynamic_pointer_cast<Natron::Image>(it->frame);
         assert(inputImage);
         
-        EffectInstance::InputImagesMap inputImages;
+       EffectInstance::InputImagesMap inputImages;
         inputImages[0].push_back(inputImage);
         Natron::EffectInstance::RenderRoIArgs args(frame.time,
                                                    scale,0,
@@ -3108,6 +3112,9 @@ static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs args)
         assert(QThread::currentThread() == qApp->thread());
         args.scheduler->processProducedFrame(args.stats, ret);
     }
+    
+    ///This thread is done, clean-up its TLS
+    appPTR->getAppTLS()->cleanupTLSForThread();
     
     
 }

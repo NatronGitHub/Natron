@@ -188,7 +188,7 @@ GuiAppInstance::deletePreviewProvider()
                 if (liveInstance) {
                     node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
                     liveInstance->invalidateUiContext();
-                    node->removeReferences(false);
+                    node->removeReferences();
                     _imp->_previewProvider->viewerNode->deleteReferences();
                     _imp->_previewProvider->viewerNodeInternal.reset();
                 }
@@ -199,7 +199,7 @@ GuiAppInstance::deletePreviewProvider()
         for (std::map<std::string,std::pair< boost::shared_ptr<Natron::Node>, boost::shared_ptr<NodeGui> > >::iterator it =
              _imp->_previewProvider->readerNodes.begin();
              it != _imp->_previewProvider->readerNodes.end(); ++it) {
-            it->second.second->getNode()->removeReferences(false);
+            it->second.second->getNode()->removeReferences();
             it->second.second->deleteReferences();
         }
         _imp->_previewProvider->readerNodes.clear();
@@ -602,7 +602,7 @@ GuiAppInstance::deleteNode(const boost::shared_ptr<NodeGui> & n)
         boost::shared_ptr<Natron::Node> internalNode = n->getNode();
         if (internalNode) {
             getProject()->removeNode(internalNode);
-            internalNode->removeReferences(true);
+            internalNode->removeReferences();
         }
     }
 }

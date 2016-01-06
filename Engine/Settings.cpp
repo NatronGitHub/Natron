@@ -68,8 +68,8 @@
 using namespace Natron;
 
 
-Settings::Settings(AppInstance* appInstance)
-    : KnobHolder(appInstance)
+Settings::Settings()
+    : KnobHolder(0)
     , _restoringSettings(false)
     , _ocioRestored(false)
     , _settingsExisted(false)

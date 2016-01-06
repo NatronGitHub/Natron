@@ -68,7 +68,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/Settings.h"
-#include "Engine/ThreadStorage.h"
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
@@ -77,37 +76,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 
 using namespace Natron;
-
-
-class KnobFile;
-class KnobOutputFile;
-
-namespace {
-
-class TransformReroute_RAII
-{
-    EffectInstance* self;
-    boost::shared_ptr<InputMatrixMap> transforms;
-
-public:
-
-    TransformReroute_RAII(EffectInstance* self,
-                          const boost::shared_ptr<InputMatrixMap> & inputTransforms)
-    : self(self)
-    , transforms(inputTransforms)
-    {
-        self->rerouteInputAndSetTransform(*inputTransforms);
-    }
-
-    ~TransformReroute_RAII()
-    {
-        for (InputMatrixMap::iterator it = transforms->begin(); it != transforms->end(); ++it) {
-            self->clearTransform(it->first);
-        }
-    }
-};
-
-} // anon. namespace
 
 /*
  * @brief Split all rects to render in smaller rects and check if each one of them is identity.
@@ -128,6 +96,7 @@ optimizeRectsToRender(Natron::EffectInstance* self,
         EffectInstance::RectToRender nonIdentityRect;
         nonIdentityRect.isIdentity = false;
         nonIdentityRect.identityInput = 0;
+        nonIdentityRect.identityTime = 0;
         nonIdentityRect.rect.x1 = INT_MAX;
         nonIdentityRect.rect.x2 = INT_MIN;
         nonIdentityRect.rect.y1 = INT_MAX;
@@ -243,18 +212,20 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         return eRenderRoIRetCodeOk;
     }
 
-    ParallelRenderArgs & frameRenderArgs = _imp->frameRenderArgs.localData();
-    if (!frameRenderArgs.validArgs) {
+    //Create the TLS data for this node if it did not exist yet
+    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    assert(tls);
+    if (!tls->frameArgs.validArgs) {
         qDebug() << QThread::currentThread() << "[BUG]:" << getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
-        frameRenderArgs.time = args.time;
-        frameRenderArgs.nodeHash = getHash();
-        frameRenderArgs.view = args.view;
-        frameRenderArgs.isSequentialRender = false;
-        frameRenderArgs.isRenderResponseToUserInteraction = true;
-        frameRenderArgs.validArgs = 0;
+        tls->frameArgs.time = args.time;
+        tls->frameArgs.nodeHash = getHash();
+        tls->frameArgs.view = args.view;
+        tls->frameArgs.isSequentialRender = false;
+        tls->frameArgs.isRenderResponseToUserInteraction = true;
+        tls->frameArgs.validArgs = 0;
     } else {
         //The hash must not have changed if we did a pre-pass.
-        assert(!frameRenderArgs.request || frameRenderArgs.nodeHash == frameRenderArgs.request->nodeHash);
+        assert(!tls->frameArgs.request || tls->frameArgs.nodeHash == tls->frameArgs.request->nodeHash);
     }
 
 
@@ -263,7 +234,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ///Use the hash at this time, and then copy it to the clips in the thread local storage to use the same value
     ///through all the rendering of this frame.
-    U64 nodeHash = frameRenderArgs.nodeHash;
+    U64 nodeHash = tls->frameArgs.nodeHash;
     const double par = getPreferredAspectRatio();
     const unsigned int mipMapLevel = args.mipMapLevel;
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
@@ -282,8 +253,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 
     const FrameViewRequest* requestPassData = 0;
-    if (frameRenderArgs.request) {
-        requestPassData = frameRenderArgs.request->getFrameViewRequest(args.time, args.view);
+    if (tls->frameArgs.request) {
+        requestPassData = tls->frameArgs.request->getFrameViewRequest(args.time, args.view);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -342,6 +313,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     boost::shared_ptr<ComponentsNeededMap> neededComps(new ComponentsNeededMap);
     ComponentsNeededMap::iterator foundOutputNeededComps;
     std::bitset<4> processChannels;
+
     {
         bool processAllComponentsRequested;
 
@@ -349,7 +321,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             SequenceTime ptTime;
             int ptView;
             boost::shared_ptr<Natron::Node> ptInput;
-            getComponentsNeededAndProduced_public(true, args.time, args.view, neededComps.get(), &processAllComponentsRequested, &ptTime, &ptView, &processChannels, &ptInput);
+            getComponentsNeededAndProduced_public(true, true, args.time, args.view, neededComps.get(), &processAllComponentsRequested, &ptTime, &ptView, &processChannels, &ptInput);
+
 
             foundOutputNeededComps = neededComps->find(-1);
             if ( foundOutputNeededComps == neededComps->end() ) {
@@ -389,7 +362,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             ComponentsAvailableMap componentsAvailables;
 
             //Available planes/components is view agnostic
-            getComponentsAvailable(true, args.time, &componentsAvailables);
+            getComponentsAvailable(true, true, args.time, &componentsAvailables);
 
 
             /*
@@ -525,8 +498,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
             Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
-                if ( frameRenderArgs.stats && frameRenderArgs.stats->isInDepthProfilingEnabled() ) {
-                    frameRenderArgs.stats->setNodeIdentity( getNode(), inputEffectIdentity->getNode() );
+                if ( tls->frameArgs.stats && tls->frameArgs.stats->isInDepthProfilingEnabled() ) {
+                    tls->frameArgs.stats->setNodeIdentity( getNode(), inputEffectIdentity->getNode() );
                 }
 
 
@@ -554,7 +527,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 
                 if (fetchUserSelectedComponentsUpstream) {
                     /// This corresponds to choice B)
-                    ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(inputNbIdentity);
+                   EffectInstance::ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(inputNbIdentity);
                     if (foundCompsNeeded != neededComps->end()) {
                         inputArgs->components.clear();
                         for (std::size_t i = 0; i < foundCompsNeeded->second.size(); ++i) {
@@ -626,25 +599,17 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Transform concatenations ///////////////////////////////////////////////////////////////
     ///Try to concatenate transform effects
-    boost::shared_ptr<InputMatrixMap> inputsToTransform;
-    boost::shared_ptr<TransformReroute_RAII> transformConcatenationReroute;
     bool useTransforms;
-    {
-        if (requestPassData) {
-            inputsToTransform.reset(new InputMatrixMap);
-            inputsToTransform = requestPassData->globalData.transforms;
-            useTransforms = !inputsToTransform->empty();
-        } else {
-            useTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
-            if (useTransforms) {
-                inputsToTransform.reset(new InputMatrixMap);
-                tryConcatenateTransforms(args.time, args.view, args.scale, inputsToTransform.get());
-            }
-        }
-
-        ///Ok now we have the concatenation of all matrices, set it on the associated clip and reroute the tree
-        if ( inputsToTransform && !inputsToTransform->empty() ) {
-            transformConcatenationReroute.reset( new TransformReroute_RAII(this, inputsToTransform) );
+    
+    if (requestPassData) {
+        tls->currentRenderArgs.transformRedirections.reset(new InputMatrixMap);
+        tls->currentRenderArgs.transformRedirections = requestPassData->globalData.transforms;
+        useTransforms = !tls->currentRenderArgs.transformRedirections->empty();
+    } else {
+        useTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
+        if (useTransforms) {
+            tls->currentRenderArgs.transformRedirections.reset(new InputMatrixMap);
+            tryConcatenateTransforms(args.time, args.view, args.scale, tls->currentRenderArgs.transformRedirections.get());
         }
     }
 
@@ -665,7 +630,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         ///Make sure the RoI falls within the image bounds
         ///Intersection will be in pixel coordinates
-        if (frameRenderArgs.tilesSupported) {
+        if (tls->frameArgs.tilesSupported) {
             if (renderFullScaleThenDownscale) {
                 if ( !roi.intersect(upscaledImageBoundsNc, &roi) ) {
                     return eRenderRoIRetCodeOk;
@@ -691,7 +656,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
      * Keep in memory what the user as requested, and change the roi to the full bounds if the effect doesn't support tiles
      */
     const RectI originalRoI = roi;
-    if (!frameRenderArgs.tilesSupported) {
+    if (!tls->frameArgs.tilesSupported) {
         roi = renderFullScaleThenDownscale ? upscaledImageBoundsNc : downscaledImageBoundsNc;
     }
     
@@ -727,7 +692,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                          args.time,
                          args.view,
                          1.,
-                         draftModeSupported && frameRenderArgs.draftMode,
+                         draftModeSupported && tls->frameArgs.draftMode,
                          renderMappedMipMapLevel == 0 && args.mipMapLevel != 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled);
     Natron::ImageKey nonDraftKey(getNode().get(),
                          nodeHash,
@@ -762,7 +727,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         bool missingPlane = false;
 
         for (std::list<ImageComponents>::iterator it = requestedComponents.begin(); it != requestedComponents.end(); ++it) {
-            PlaneToRender plane;
+            EffectInstance::PlaneToRender plane;
 
             /*
              * If the plane is the color plane, we might have to convert between components, hence we always
@@ -783,10 +748,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             assert(components);
             
             //For writers, we always want to call the render action when doing a sequential render, but we still want to use the cache for nodes upstream
-            bool doCacheLookup = !isWriter() || !frameRenderArgs.isSequentialRender;
+            bool doCacheLookup = !isWriter() || !tls->frameArgs.isSequentialRender;
             if (doCacheLookup) {
      
-                int nLookups = draftModeSupported && frameRenderArgs.draftMode ? 2 : 1;
+                int nLookups = draftModeSupported && tls->frameArgs.draftMode ? 2 : 1;
                 
                 for (int n = 0; n < nLookups; ++n) {
                     getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, n == 0 ? nonDraftKey : key, renderMappedMipMapLevel,
@@ -796,7 +761,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                         outputDepth,
                                                         *components,
                                                         args.inputImagesList,
-                                                        frameRenderArgs.stats,
+                                                        tls->frameArgs.stats,
                                                         &plane.fullscaleImage);
                     if (plane.fullscaleImage) {
                         break;
@@ -828,8 +793,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if (!missingPlane) {
                     missingPlane = true;
                     //Ensure that previous planes are either already rendered or otherwise render them  again
-                    std::map<ImageComponents, PlaneToRender> newPlanes;
-                    for (std::map<ImageComponents, PlaneToRender>::iterator it2 = planesToRender->planes.begin();
+                    std::map<ImageComponents, EffectInstance::PlaneToRender> newPlanes;
+                    for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it2 = planesToRender->planes.begin();
                          it2 != planesToRender->planes.end(); ++it2) {
                         if (it2->second.fullscaleImage) {
                             std::list<RectI> restToRender;
@@ -910,7 +875,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         if ( isDuringPaintStroke && !lastStrokePixelRoD.isNull() ) {
             fillGrownBoundsWithZeroes = true;
             //Clear the bitmap of the cached image in the portion of the last stroke to only recompute what's needed
-            for (std::map<ImageComponents, PlaneToRender>::iterator it2 = planesToRender->planes.begin();
+            for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it2 = planesToRender->planes.begin();
                  it2 != planesToRender->planes.end(); ++it2) {
                 it2->second.fullscaleImage->clearBitmap(lastStrokePixelRoD);
 
@@ -925,7 +890,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         ///We check what is left to render.
 #if NATRON_ENABLE_TRIMAP
-        if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
+        if (!tls->frameArgs.canAbort && tls->frameArgs.isRenderResponseToUserInteraction) {
 #ifndef DEBUG
             isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
 #else
@@ -980,7 +945,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             ///instead of the rest to render. This way, even if the image is cleared from the cache we already have rendered the full RoI anyway.
             rectsLeftToRender.clear();
             rectsLeftToRender.push_back(roi);
-            for (std::map<ImageComponents, PlaneToRender>::iterator it2 = planesToRender->planes.begin(); it2 != planesToRender->planes.end(); ++it2) {
+            for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it2 = planesToRender->planes.begin(); it2 != planesToRender->planes.end(); ++it2) {
                 //Keep track of the original cached image for the re-lookup afterward, if the pointer doesn't match the first look-up, don't consider
                 //the image because the region to render might have changed and we might have to re-trigger a render on inputs again.
 
@@ -997,26 +962,26 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         ///If the effect doesn't support tiles and it has something left to render, just render the bounds again
         ///Note that it should NEVER happen because if it doesn't support tiles in the first place, it would
         ///have rendered the rod already.
-        if (!frameRenderArgs.tilesSupported && !rectsLeftToRender.empty() && isPlaneCached) {
+        if (!tls->frameArgs.tilesSupported && !rectsLeftToRender.empty() && isPlaneCached) {
             ///if the effect doesn't support tiles, just render the whole rod again even though
             rectsLeftToRender.clear();
             rectsLeftToRender.push_back(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds);
         }
-    } else {
-        if (frameRenderArgs.tilesSupported) {
+    } else { // !isPlaneCached
+        if (tls->frameArgs.tilesSupported) {
             rectsLeftToRender.push_back(roi);
         } else {
             rectsLeftToRender.push_back(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds);
         }
-    }
+    } //  // !isPlaneCached
 
     /*
      * If the effect has multiple inputs (such as masks) try to call isIdentity if the RoDs do not intersect the RoI
      */
     bool tryIdentityOptim = false;
     RectI inputsRoDIntersectionPixel;
-    if ( frameRenderArgs.tilesSupported && !rectsLeftToRender.empty()
-         && (frameRenderArgs.viewerProgressReportEnabled || isDuringPaintStroke) ) {
+    if ( tls->frameArgs.tilesSupported && !rectsLeftToRender.empty()
+         && (tls->frameArgs.viewerProgressReportEnabled || isDuringPaintStroke) ) {
         RectD inputsIntersection;
         bool inputsIntersectionSet = false;
         bool hasDifferentRods = false;
@@ -1120,7 +1085,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                 args.view,
                                                 rod,
                                                 canonicalRoI,
-                                                inputsToTransform,
+                                                tls->currentRenderArgs.transformRedirections,
                                                 args.mipMapLevel,
                                                 renderMappedScale,
                                                 renderScaleOneUpstreamIfRenderScaleSupportDisabled,
@@ -1162,7 +1127,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
 
     if (redoCacheLookup) {
-        for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+        for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
             /*
              * If the plane is the color plane, we might have to convert between components, hence we always
              * try to find in the cache the "preferred" components of this node for the color plane.
@@ -1186,14 +1151,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                 &rod,
                                                 args.bitdepth, it->first,
                                                 outputDepth, *components,
-                                                args.inputImagesList, frameRenderArgs.stats, &it->second.fullscaleImage);
+                                                args.inputImagesList, tls->frameArgs.stats, &it->second.fullscaleImage);
 
             ///We must retrieve from the cache exactly the originally retrieved image, otherwise we might have to call  renderInputImagesForRoI
             ///again, which could create a vicious cycle.
             if ( it->second.fullscaleImage && (it->second.fullscaleImage.get() == it->second.originalCachedImage) ) {
                 it->second.downscaleImage = it->second.fullscaleImage;
             } else {
-                for (std::map<ImageComponents, PlaneToRender>::iterator it2 = planesToRender->planes.begin(); it2 != planesToRender->planes.end(); ++it2) {
+                for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it2 = planesToRender->planes.begin(); it2 != planesToRender->planes.end(); ++it2) {
                     it2->second.fullscaleImage.reset();
                     it2->second.downscaleImage.reset();
                 }
@@ -1206,7 +1171,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         if (!isPlaneCached) {
             planesToRender->rectsToRender.clear();
             rectsLeftToRender.clear();
-            if (frameRenderArgs.tilesSupported) {
+            if (tls->frameArgs.tilesSupported) {
                 rectsLeftToRender.push_back(roi);
             } else {
                 rectsLeftToRender.push_back(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds);
@@ -1219,6 +1184,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it != rectsLeftToRender.end(); ++it) {
                     RectToRender r;
                     r.rect = *it;
+                    r.identityTime = 0;
                     r.identityInput = 0;
                     r.isIdentity = false;
                     planesToRender->rectsToRender.push_back(r);
@@ -1245,7 +1211,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                                         args.view,
                                                                         rod,
                                                                         canonicalRoI,
-                                                                        inputsToTransform,
+                                                                        tls->currentRenderArgs.transformRedirections,
                                                                         args.mipMapLevel,
                                                                         renderMappedScale,
                                                                         renderScaleOneUpstreamIfRenderScaleSupportDisabled,
@@ -1271,7 +1237,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ///For all planes, if needed allocate the associated image
     if (hasSomethingToRender) {
-        for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin();
+        for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin();
              it != planesToRender->planes.end(); ++it) {
             const ImageComponents *components = 0;
 
@@ -1377,12 +1343,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     bool renderAborted;
 
     if (!hasSomethingToRender && !planesToRender->isBeingRenderedElsewhere) {
-        renderAborted = aborted();
+        renderAborted = _imp->aborted(tls);
     } else {
 #if NATRON_ENABLE_TRIMAP
         ///Only use trimap system if the render cannot be aborted.
-        if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
-            for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+        if (!tls->frameArgs.canAbort && tls->frameArgs.isRenderResponseToUserInteraction) {
+            for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
                 _imp->markImageAsBeingRendered(renderFullScaleThenDownscale ? it->second.fullscaleImage : it->second.downscaleImage);
             }
         }
@@ -1402,7 +1368,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             ///locks belongs to an instance)
 
             boost::shared_ptr<QMutexLocker> locker;
-            Natron::RenderSafetyEnum safety = getCurrentThreadSafetyThreadLocal();
+            Natron::RenderSafetyEnum safety = tls->frameArgs.currentThreadSafety;
             if (safety == eRenderSafetyInstanceSafe) {
                 locker.reset( new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() ) );
             } else if (safety == eRenderSafetyUnsafe) {
@@ -1412,8 +1378,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
             ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
 
-            if ( frameRenderArgs.stats && frameRenderArgs.stats->isInDepthProfilingEnabled() ) {
-                frameRenderArgs.stats->setGlobalRenderInfosForNode(getNode(), rod, planesToRender->outputPremult, processChannels, frameRenderArgs.tilesSupported, !renderFullScaleThenDownscale, renderMappedMipMapLevel);
+            if ( tls->frameArgs.stats && tls->frameArgs.stats->isInDepthProfilingEnabled() ) {
+                tls->frameArgs.stats->setGlobalRenderInfosForNode(getNode(), rod, planesToRender->outputPremult, processChannels, tls->frameArgs.tilesSupported, !renderFullScaleThenDownscale, renderMappedMipMapLevel);
             }
 
 # ifdef DEBUG
@@ -1432,15 +1398,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                }*/
 # endif
             renderRetCode = renderRoIInternal(args.time,
-                                              frameRenderArgs,
+                                              tls->frameArgs,
                                               safety,
                                               args.mipMapLevel,
                                               args.view,
                                               rod,
                                               par,
                                               planesToRender,
-                                              frameRenderArgs.isSequentialRender,
-                                              frameRenderArgs.isRenderResponseToUserInteraction,
+                                              tls->frameArgs.isSequentialRender,
+                                              tls->frameArgs.isRenderResponseToUserInteraction,
                                               nodeHash,
                                               renderFullScaleThenDownscale,
                                               byPassCache,
@@ -1450,14 +1416,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                               processChannels);
         } // if (hasSomethingToRender) {
 
-        renderAborted = aborted();
+        renderAborted = _imp->aborted(tls);
 #if NATRON_ENABLE_TRIMAP
 
-        if (!frameRenderArgs.canAbort && frameRenderArgs.isRenderResponseToUserInteraction) {
+        if (!tls->frameArgs.canAbort && tls->frameArgs.isRenderResponseToUserInteraction) {
             ///Only use trimap system if the render cannot be aborted.
             ///If we were aborted after all (because the node got deleted) then return a NULL image and empty the cache
             ///of this image
-            for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+            for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
                 if (!renderAborted) {
                     if ( (renderRetCode == eRenderRoIStatusRenderFailed) || !planesToRender->isBeingRenderedElsewhere ) {
                         _imp->unmarkImageAsBeingRendered(renderFullScaleThenDownscale ? it->second.fullscaleImage : it->second.downscaleImage,
@@ -1501,8 +1467,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     if (hasSomethingToRender && (renderRetCode != eRenderRoIStatusRenderFailed) && !renderAborted) {
         // Kindly check that everything we asked for is rendered!
 
-        for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
-            if (!frameRenderArgs.tilesSupported) {
+        for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+            if (!tls->frameArgs.tilesSupported) {
                 //assert that bounds are consistent with the RoD if tiles are not supported
                 const RectD & srcRodCanonical = renderFullScaleThenDownscale ? it->second.fullscaleImage->getRoD() : it->second.downscaleImage->getRoD();
                 RectI srcBounds;
@@ -1539,7 +1505,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
     //bool multiplanar = isMultiPlanar();
-    for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+    for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
         
         //If we have worked on a local swaped image, swap it in the cache
         if (it->second.cacheSwapImage) {
@@ -1644,7 +1610,7 @@ EffectInstance::renderRoIInternal(double time,
 
     unsigned int renderMappedMipMapLevel = 0;
 
-    for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+    for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
         it->second.renderMappedImage = renderFullScaleThenDownscale ? it->second.fullscaleImage : it->second.downscaleImage;
         if ( it == planesToRender->planes.begin() ) {
             renderMappedMipMapLevel = it->second.renderMappedImage->getMipMapLevel();
@@ -1728,13 +1694,14 @@ EffectInstance::renderRoIInternal(double time,
         preferredInput = -1;
     }
 
-    const QThread* currentThread = QThread::currentThread();
 
     if (renderStatus != eRenderingFunctorRetFailed) {
-        if (safety == eRenderSafetyFullySafeFrame) {
-            boost::scoped_ptr<TiledRenderingFunctorArgs> tiledArgs(new TiledRenderingFunctorArgs);
-            tiledArgs->frameArgs = frameArgs;
-            tiledArgs->frameTLS = tlsCopy;
+        if (safety == eRenderSafetyFullySafeFrame && planesToRender->rectsToRender.size() > 1) {
+
+            
+            const QThread* currentThread = QThread::currentThread();
+
+            boost::scoped_ptr<Implementation::TiledRenderingFunctorArgs> tiledArgs(new Implementation::TiledRenderingFunctorArgs);
             tiledArgs->renderFullScaleThenDownscale = renderFullScaleThenDownscale;
             tiledArgs->isRenderResponseToUserInteraction = isRenderMadeInResponseToUserInteraction;
             tiledArgs->firstFrame = firstFrame;
@@ -1768,8 +1735,8 @@ EffectInstance::renderRoIInternal(double time,
 
 
             QFuture<RenderingFunctorRetEnum> ret = QtConcurrent::mapped( planesToRender->rectsToRender,
-                                                                        boost::bind(&EffectInstance::tiledRenderingFunctor,
-                                                                                    this,
+                                                                        boost::bind(&EffectInstance::Implementation::tiledRenderingFunctor,
+                                                                                    _imp.get(),
                                                                                     *tiledArgs,
                                                                                     _1,
                                                                                     currentThread) );
@@ -1794,7 +1761,7 @@ EffectInstance::renderRoIInternal(double time,
             }
         } else {
             for (std::list<RectToRender>::const_iterator it = planesToRender->rectsToRender.begin(); it != planesToRender->rectsToRender.end(); ++it) {
-                RenderingFunctorRetEnum functorRet = tiledRenderingFunctor(currentThread, frameArgs, *it, tlsCopy, renderFullScaleThenDownscale, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, compsNeeded, processChannels, planesToRender);
+                RenderingFunctorRetEnum functorRet = _imp->tiledRenderingFunctor(*it,  renderFullScaleThenDownscale, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, compsNeeded, processChannels, planesToRender);
 
                 if ( (functorRet == eRenderingFunctorRetFailed) || (functorRet == eRenderingFunctorRetAborted) ) {
                     renderStatus = functorRet;

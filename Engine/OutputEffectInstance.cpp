@@ -66,7 +66,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/Settings.h"
-#include "Engine/ThreadStorage.h"
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"

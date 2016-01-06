@@ -43,7 +43,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Project.h"
 #include "Engine/KnobSerialization.h"
-#include "Engine/ThreadStorage.h"
+#include "Engine/TLSHolder.h"
 #include "Engine/Transform.h"
 
 #include "Engine/AppManager.h"
@@ -288,7 +288,7 @@ struct KnobHelperPrivate
     mutable U32 lastRandomHash;
     
     ///Used to prevent recursive calls for expressions
-    mutable ThreadStorage<int> expressionRecursionLevel;
+    boost::shared_ptr<TLSHolder<KnobHelper::KnobTLSData> > tlsData;
     
     mutable QMutex hasModificationsMutex;
     std::vector<bool> hasModifications;
@@ -348,7 +348,7 @@ struct KnobHelperPrivate
     , expressionMutex()
     , expressions()
     , lastRandomHash(0)
-    , expressionRecursionLevel()
+    , tlsData(new TLSHolder<KnobHelper::KnobTLSData>())
     , hasModificationsMutex()
     , hasModifications()
     , valueChangedBlockedMutex()
@@ -393,32 +393,28 @@ KnobHelper::~KnobHelper()
 void
 KnobHelper::incrementExpressionRecursionLevel() const
 {
-    if (!_imp->expressionRecursionLevel.hasLocalData()) {
-        _imp->expressionRecursionLevel.localData() = 1;
-    } else {
-        int& tls = _imp->expressionRecursionLevel.localData();
-        ++tls;
-    }
-    
+    KnobDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    assert(tls);
+    ++tls->expressionRecursionLevel;
 }
 
 void
 KnobHelper::decrementExpressionRecursionLevel() const
 {
-    assert(_imp->expressionRecursionLevel.hasLocalData());
-    int& tls = _imp->expressionRecursionLevel.localData();
-    --tls;
+    KnobDataTLSPtr tls = _imp->tlsData->getTLSData();
+    assert(tls);
+    assert(tls->expressionRecursionLevel > 0);
+    --tls->expressionRecursionLevel;
 }
 
 int
 KnobHelper::getExpressionRecursionLevel() const
 {
-    if (!_imp->expressionRecursionLevel.hasLocalData()) {
+    KnobDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls) {
         return 0;
-    } else {
-        int& tls = _imp->expressionRecursionLevel.localData();
-        return tls;
     }
+    return tls->expressionRecursionLevel;
 }
 
 void
@@ -655,9 +651,6 @@ KnobHelper::deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-        /*if (holder) {
-            holder->abortAnyEvaluation();
-        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -724,9 +717,6 @@ KnobHelper::moveValueAtTime(Natron::CurveChangeReason reason, double time,int di
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-        /*if (holder) {
-            holder->abortAnyEvaluation();
-        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -810,9 +800,6 @@ KnobHelper::transformValueAtTime(Natron::CurveChangeReason curveChangeReason, do
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-        /*if (holder) {
-            holder->abortAnyEvaluation();
-        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -884,9 +871,6 @@ KnobHelper::cloneCurve(int dimension,const Curve& curve)
     boost::shared_ptr<Curve> thisCurve;
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     if (!useGuiCurve) {
-        /*if (holder) {
-            holder->abortAnyEvaluation();
-        }*/
         thisCurve = _imp->curves[dimension];
     } else {
         thisCurve = _imp->gui->getCurve(dimension);
@@ -933,9 +917,6 @@ KnobHelper::setInterpolationAtTime(Natron::CurveChangeReason reason,int dimensio
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-       /* if (holder) {
-            holder->abortAnyEvaluation();
-        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -982,9 +963,6 @@ KnobHelper::moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-       /* if (holder) {
-            holder->abortAnyEvaluation();
-        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -1033,9 +1011,6 @@ KnobHelper::moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-       /* if (holder) {
-            holder->abortAnyEvaluation();
-        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -1091,9 +1066,6 @@ KnobHelper::removeAnimation(int dimension,
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-        /*if (holder) {
-            holder->abortAnyEvaluation();
-        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -2714,9 +2686,6 @@ KnobHelper::deleteAnimationConditional(double time,int dimension,Natron::ValueCh
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
     
     if (!useGuiCurve) {
-        /* if (holder) {
-            holder->abortAnyEvaluation();
-        }*/
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(dimension);
@@ -3484,35 +3453,6 @@ struct KnobHolder::KnobHolderPrivate
     bool knobsInitialized;
     bool isSlave;
     
-    ///Use to count the recursion in the function calls
-    /* The image effect actions which may trigger a recursive action call on a single instance are...
-     
-     kOfxActionBeginInstanceChanged
-     kOfxActionInstanceChanged
-     kOfxActionEndInstanceChanged
-     The interact actions which may trigger a recursive action to be called on the associated plugin instance are...
-     
-     kOfxInteractActionGainFocus
-     kOfxInteractActionKeyDown
-     kOfxInteractActionKeyRepeat
-     kOfxInteractActionKeyUp
-     kOfxInteractActionLoseFocus
-     kOfxInteractActionPenDown
-     kOfxInteractActionPenMotion
-     kOfxInteractActionPenUp
-     
-     The image effect actions which may be called recursively are...
-     
-     kOfxActionBeginInstanceChanged
-     kOfxActionInstanceChanged
-     kOfxActionEndInstanceChanged
-     kOfxImageEffectActionGetClipPreferences
-     The interact actions which may be called recursively are...
-     
-     kOfxInteractActionDraw
-     
-     */
-    ThreadStorage<int> actionsRecursionLevel;
 
     ///Count how many times an overlay needs to be redrawn for the instanceChanged/penMotion/penDown etc... actions
     ///to just redraw it once when the recursion level is back to 0
@@ -3547,7 +3487,6 @@ struct KnobHolder::KnobHolderPrivate
     , knobs()
     , knobsInitialized(false)
     , isSlave(false)
-    , actionsRecursionLevel()
     , overlayRedrawStackMutex()
     , overlayRedrawStack(0)
     , isDequeingValuesSet(false)
@@ -3565,11 +3504,7 @@ struct KnobHolder::KnobHolderPrivate
     , settingsPanel(0)
 
     {
-        // Initialize local data on the main-thread
-        ///Don't remove the if condition otherwise this will crash because QApp is not initialized yet for Natron settings.
-        if (appInstance_) {
-            actionsRecursionLevel.localData() = 0;
-        }
+
     }
 };
 
@@ -4553,25 +4488,6 @@ KnobHolder::checkIfRenderNeeded()
     }
 }
 
-void
-KnobHolder::assertActionIsNotRecursive() const
-{
-# ifdef DEBUG
-    
-    ///Only check recursions which are on a render threads, because we do authorize recursions in getRegionOfDefinition and such which
-    ///always happen in the main thread.
-    if (QThread::currentThread() != qApp->thread()) {
-        int recursionLvl = getRecursionLevel();
-        
-        if ( getApp() && getApp()->isShowingDialog() ) {
-            return;
-        }
-        if (recursionLvl != 0) {
-            qDebug() << "A non-recursive action has been called recursively.";
-        }
-    }
-# endif // DEBUG
-}
 
 void
 KnobHolder::incrementRedrawNeededCounter()
@@ -4593,59 +4509,6 @@ KnobHolder::checkIfOverlayRedrawNeeded()
     }
 }
 
-void
-KnobHolder::incrementRecursionLevel()
-{
-    if ( !_imp->actionsRecursionLevel.hasLocalData() ) {
-        _imp->actionsRecursionLevel.localData() = 1;
-    } else {
-        _imp->actionsRecursionLevel.localData() += 1;
-    }
-    
-    /*NamedKnobHolder* named = dynamic_cast<NamedKnobHolder*>(this);
-     if (named) {
-     std::cout << named->getScriptName_mt_safe() <<  " INCR: " << _imp->actionsRecursionLevel.localData() <<  " ( "<<
-     QThread::currentThread() <<
-     " ) main-thread = " << (QThread::currentThread() == qApp->thread()) << std::endl;
-     }
-     */
-}
-
-void
-KnobHolder::decrementRecursionLevel()
-{
-    assert( _imp->actionsRecursionLevel.hasLocalData() );
-    _imp->actionsRecursionLevel.localData() -= 1;
-    /*NamedKnobHolder* named = dynamic_cast<NamedKnobHolder*>(this);
-     if (named) {
-     std::cout << named->getScriptName_mt_safe() << " DECR: "<< _imp->actionsRecursionLevel.localData() <<  " ( "<<QThread::currentThread() <<
-     " ) main-thread = " << (QThread::currentThread() == qApp->thread()) << std::endl;
-     }
-     */
-}
-
-int
-KnobHolder::getRecursionLevel() const
-{
-    
-    if ( _imp->actionsRecursionLevel.hasLocalData() ) {
-        /* const NamedKnobHolder* named = dynamic_cast<const NamedKnobHolder*>(this);
-         if (named) {
-         std::cout << named->getScriptName_mt_safe() << " GET: "<< _imp->actionsRecursionLevel.localData() <<  " ( "<<
-         QThread::currentThread() <<
-         " ) main-thread = " << (QThread::currentThread() == qApp->thread()) << std::endl;
-         }*/
-        return _imp->actionsRecursionLevel.localData();
-    } else {
-        /*const NamedKnobHolder* named = dynamic_cast<const NamedKnobHolder*>(this);
-         if (named) {
-         std::cout << named->getScriptName_mt_safe() << "GET: "<< 0 <<  "( "<< QThread::currentThread() <<
-         " ) main-thread = " << (QThread::currentThread() == qApp->thread()) << std::endl;
-         }
-         */
-        return 0;
-    }
-}
 
 void
 KnobHolder::restoreDefaultValues()

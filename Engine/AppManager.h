@@ -238,6 +238,11 @@ public:
      **/
     bool writeToOutputPipe(const QString & longMessage,const QString & shortMessage);
 
+    /**
+     * @brief Abort any processing on all AppInstance. It is called in some very rare cases
+     * such as when changing the number of threads used by the application or when a background render
+     * receives a message from the GUI application.
+     **/
     void abortAnyProcessing();
 
     virtual void setLoadingStatus(const QString & str);
@@ -418,6 +423,12 @@ public:
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                                     Natron::ContextEnum* ctx);
     
+    AppTLS* getAppTLS() const;
+    
+    const Natron::OfxHost* getOFXHost() const;
+    
+    bool hasThreadsRendering() const;
+    
 public Q_SLOTS:
     
     void onNewCrashReporterConnectionPending();
@@ -470,9 +481,7 @@ public Q_SLOTS:
     
     void setOnProjectLoadedCallback(const std::string& pythonFunc);
     void setOnProjectCreatedCallback(const std::string& pythonFunc);
-    
-    GlobalOFXTLS& getCurrentThreadTLS();
-    
+        
     void requestOFXDIalogOnMainThread(Natron::OfxImageEffectInstance* instance, void* instanceData);
     
 public Q_SLOTS:
@@ -538,7 +547,8 @@ private:
 
     static AppManager *_instance;
     boost::scoped_ptr<AppManagerPrivate> _imp;
-};
+}; // AppManager
+
 
 namespace Natron {
     

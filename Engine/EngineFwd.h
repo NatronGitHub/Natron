@@ -82,6 +82,7 @@ class SequenceFromFiles;
 
 class AppInstance;
 class AppSettings;
+class AppTLS;
 class Bezier;
 class BezierCP;
 class BlockingBackgroundRender;
@@ -101,7 +102,6 @@ class DoubleParam;
 class Effect;
 class FileParam;
 class Format;
-class GlobalOFXTLS;
 class GroupParam;
 class Hash64;
 class Int2DParam;
@@ -134,6 +134,8 @@ class NodeSettingsPanel;
 class OfxClipInstance;
 class OfxEffectInstance;
 class OfxImage;
+class OfxStringInstance;
+class OfxParamToKnob;
 class OpenGLViewerI;
 class OutputFileParam;
 class OverlaySupport;
@@ -169,6 +171,7 @@ class StringAnimationManager;
 class StringParam;
 class TextureRect;
 class TimeLine;
+class TLSHolderBase;
 class ViewerInstance;
 
 namespace Natron {

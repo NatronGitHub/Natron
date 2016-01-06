@@ -25,6 +25,7 @@
 #include "ProjectPrivate.h"
 
 #include <stdexcept>
+#include <list>
 
 #include <QtCore/QDebug>
 #include <QtCore/QTimer>
@@ -45,6 +46,7 @@
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
+
 
 namespace Natron {
 ProjectPrivate::ProjectPrivate(Natron::Project* project)
@@ -85,6 +87,7 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , isSavingProject(false)
     , autoSaveTimer( new QTimer() )
     , projectClosing(false)
+    , tlsData(new TLSHolder<Project::ProjectTLSData>())
     
 {
     

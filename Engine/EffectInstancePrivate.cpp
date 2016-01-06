@@ -292,47 +292,49 @@ ActionsCache::setTimeDomainResult(U64 hash,
 
 
 EffectInstance::RenderArgs::RenderArgs()
-    : _rod()
-    , _regionOfInterestResults()
-    , _renderWindowPixel()
-    , _time(0)
-    , _view(0)
-    , _validArgs(false)
-    , _isIdentity(false)
-    , _identityTime(0)
-    , _identityInputNb(-1)
-    , _outputPlanes()
-    , _outputPlaneBeingRendered()
-    , _firstFrame(0)
-    , _lastFrame(0)
+: rod()
+, regionOfInterestResults()
+, renderWindowPixel()
+, time(0)
+, view(0)
+, validArgs(false)
+, isIdentity(false)
+, identityTime(0)
+, identityInput(0)
+, inputImages()
+, outputPlanes()
+, outputPlaneBeingRendered()
+, firstFrame(0)
+, lastFrame(0)
+, transformRedirections()
 {
 }
 
 
 EffectInstance::RenderArgs::RenderArgs(const RenderArgs & o)
-    : _rod(o._rod)
-    , _regionOfInterestResults(o._regionOfInterestResults)
-    , _renderWindowPixel(o._renderWindowPixel)
-    , _time(o._time)
-    , _view(o._view)
-    , _validArgs(o._validArgs)
-    , _isIdentity(o._isIdentity)
-    , _identityTime(o._identityTime)
-    , _identityInputNb(o._identityInputNb)
-    , _outputPlanes(o._outputPlanes)
-    , _outputPlaneBeingRendered(o._outputPlaneBeingRendered)
-    , _firstFrame(o._firstFrame)
-    , _lastFrame(o._lastFrame)
+: rod(o.rod)
+, regionOfInterestResults(o.regionOfInterestResults)
+, renderWindowPixel(o.renderWindowPixel)
+, time(o.time)
+, view(o.view)
+, validArgs(o.validArgs)
+, isIdentity(o.isIdentity)
+, identityTime(o.identityTime)
+, identityInput(o.identityInput)
+, inputImages(o.inputImages)
+, outputPlanes(o.outputPlanes)
+, outputPlaneBeingRendered(o.outputPlaneBeingRendered)
+, firstFrame(o.firstFrame)
+, lastFrame(o.lastFrame)
+, transformRedirections(o.transformRedirections)
 {
 }
 
 
+
 EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     : _publicInterface(publicInterface)
-    , renderArgs()
-    , frameRenderArgs()
-    , beginEndRenderCount()
-    , inputImages()
+    , tlsData(new TLSHolder<EffectTLSData>())
     , duringInteractActionMutex()
     , duringInteractAction(false)
     , pluginMemoryChunksMutex()
@@ -545,113 +547,79 @@ EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_p
 
 
 
-EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(ThreadStorage<RenderArgs>* dst)
-    : localData( &dst->localData() )
-    , _dst(dst)
+EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
+                                                                   const RectD & rod,
+                                                                   const RectI & renderWindow,
+                                                                   double time,
+                                                                   int view,
+                                                                   bool isIdentity,
+                                                                   double identityTime,
+                                                                   Natron::EffectInstance* identityInput,
+                                                                   const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
+                                                                   const EffectInstance::InputImagesMap& inputImages,
+                                                                   const RoIMap & roiMap,
+                                                                   int firstFrame,
+                                                                   int lastFrame)
+: tlsData(tlsData)
 {
-    assert(_dst);
+    tlsData->currentRenderArgs.rod = rod;
+    tlsData->currentRenderArgs.renderWindowPixel = renderWindow;
+    tlsData->currentRenderArgs.time = time;
+    tlsData->currentRenderArgs.view = view;
+    tlsData->currentRenderArgs.isIdentity = isIdentity;
+    tlsData->currentRenderArgs.identityTime = identityTime;
+    tlsData->currentRenderArgs.identityInput = identityInput;
+    tlsData->currentRenderArgs.compsNeeded = compsNeeded;
+    tlsData->currentRenderArgs.inputImages.insert(inputImages.begin(), inputImages.end());
+    tlsData->currentRenderArgs.regionOfInterestResults = roiMap;
+    tlsData->currentRenderArgs.firstFrame = firstFrame;
+    tlsData->currentRenderArgs.lastFrame = lastFrame;
+
+    tlsData->currentRenderArgs.validArgs = true;
 }
 
 
-EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(ThreadStorage<RenderArgs>* dst,
-                                                                   const RenderArgs & a)
-    : localData( &dst->localData() )
-    , _dst(dst)
+EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
+                                                                   const EffectDataTLSPtr& otherThreadData)
+    : tlsData(tlsData)
 {
-    *localData = a;
-    localData->_validArgs = true;
+    tlsData->currentRenderArgs = otherThreadData->currentRenderArgs;
 }
 
 
 EffectInstance::Implementation::ScopedRenderArgs::~ScopedRenderArgs()
 {
-    assert( _dst->hasLocalData() );
-    localData->_outputPlanes.clear();
-    localData->_validArgs = false;
+    assert(tlsData);
+    tlsData->currentRenderArgs.outputPlanes.clear();
+    tlsData->currentRenderArgs.inputImages.clear();
+    tlsData->currentRenderArgs.validArgs = false;
 }
 
-
-EffectInstance::RenderArgs &
-EffectInstance::Implementation::ScopedRenderArgs::getLocalData()
-{
-    return *localData;
-}
-
-
-///Setup the first pass on thread-local storage.
-///RoIMap and frame range are separated because those actions might need
-///the thread-storage set up in the first pass to work
-void
-EffectInstance::Implementation::ScopedRenderArgs::setArgs_firstPass(const RectD & rod,
-                                                                    const RectI & renderWindow,
-                                                                    double time,
-                                                                    int view,
-                                                                    bool isIdentity,
-                                                                    double identityTime,
-                                                                    int inputNbIdentity,
-                                                                    const boost::shared_ptr<EffectInstance::ComponentsNeededMap> & compsNeeded)
-{
-    localData->_rod = rod;
-    localData->_renderWindowPixel = renderWindow;
-    localData->_time = time;
-    localData->_view = view;
-    localData->_isIdentity = isIdentity;
-    localData->_identityTime = identityTime;
-    localData->_identityInputNb = inputNbIdentity;
-    localData->_compsNeeded = compsNeeded;
-    localData->_validArgs = true;
-}
-
-
-void
-EffectInstance::Implementation::ScopedRenderArgs::setArgs_secondPass(const RoIMap & roiMap,
-                                                                     int firstFrame,
-                                                                     int lastFrame)
-{
-    localData->_regionOfInterestResults = roiMap;
-    localData->_firstFrame = firstFrame;
-    localData->_lastFrame = lastFrame;
-    localData->_validArgs = true;
-}
 
 
 void
 EffectInstance::Implementation::addInputImageTempPointer(int inputNb,
                                                          const boost::shared_ptr<Natron::Image> & img)
 {
-    InputImagesMap & tls = inputImages.localData();
+    EffectDataTLSPtr tls = tlsData->getTLSData();
+    if (!tls) {
+        return;
+    }
+    tls->currentRenderArgs.inputImages[inputNb].push_back(img);
 
-    tls[inputNb].push_back(img);
 }
 
 
 void
 EffectInstance::Implementation::clearInputImagePointers()
 {
-    if ( inputImages.hasLocalData() ) {
-        inputImages.localData().clear();
+    EffectDataTLSPtr tls = tlsData->getTLSData();
+    if (!tls) {
+        return;
     }
+    tls->currentRenderArgs.inputImages.clear();
+
 }
 
 
-InputImagesHolder_RAII::InputImagesHolder_RAII(const EffectInstance::InputImagesMap & imgs,
-                                               ThreadStorage< EffectInstance::InputImagesMap>* storage)
-    : storage(storage)
-    , localData(0)
-{
-    if ( !imgs.empty() ) {
-        localData = &storage->localData();
-        localData->insert( imgs.begin(), imgs.end() );
-    } else {
-        this->storage = 0;
-    }
-}
 
-
-InputImagesHolder_RAII::~InputImagesHolder_RAII()
-{
-    if (storage) {
-        assert(localData);
-        localData->clear();
-    }
-}

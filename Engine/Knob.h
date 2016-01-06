@@ -1093,6 +1093,18 @@ private:
     virtual void deleteKnob() OVERRIDE FINAL;
 public:
     
+    struct KnobTLSData
+    {
+        int expressionRecursionLevel;
+        
+        KnobTLSData()
+        : expressionRecursionLevel(0)
+        {
+            
+        }
+    };
+    typedef boost::shared_ptr<KnobTLSData> KnobDataTLSPtr;
+    
     virtual void setKnobGuiPointer(KnobGuiI* ptr) OVERRIDE FINAL;
     virtual KnobGuiI* getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
@@ -1863,10 +1875,14 @@ private:
  **/
 class KnobHolder : public QObject
 {
-    struct KnobHolderPrivate;
-    boost::scoped_ptr<KnobHolderPrivate> _imp;
+    
 
     Q_OBJECT
+    
+    friend class RecursionLevelRAII;
+    
+    struct KnobHolderPrivate;
+    boost::scoped_ptr<KnobHolderPrivate> _imp;
     
 public:
 
@@ -1945,6 +1961,11 @@ public:
     
     bool areKnobsFrozen() const;
 
+    /**
+     * @brief Makes all output nodes connected downstream to this node abort any rendering.
+     * Should be called prior to changing the state of the user interface that could impact the
+     * final image.
+     **/
     virtual void abortAnyEvaluation() {}
     
     /**
@@ -2035,9 +2056,6 @@ protected:
     virtual bool canSetValue() const { return true; }
     
     
-protected:
-
-
     /**
      * @brief Equivalent to assert(actionsRecursionLevel == 0).
      * In release mode an exception is thrown instead.
@@ -2048,50 +2066,27 @@ protected:
      * kOfxActionEndInstanceChanged
      * kOfxImageEffectActionGetClipPreferences
      * kOfxInteractActionDraw
+     *
+     * We also allow recursion in some other actions such as getRegionOfDefinition or isIdentity
      **/
-    void assertActionIsNotRecursive() const;
-
+    virtual void assertActionIsNotRecursive() const {}
+    
     /**
      * @brief Should be called in the begining of an action.
      * Right after assertActionIsNotRecursive() for non recursive actions.
      **/
-    void incrementRecursionLevel();
-
+    virtual void incrementRecursionLevel() {}
+    
     /**
      * @brief Should be called at the end of an action.
      **/
-    void decrementRecursionLevel();
-
-        
-    /**
-     * @brief A small class to help managing the recursion level
-     * that can also that an action is not recursive.
-     **/
-    class RecursionLevelManager
-    {
-        KnobHolder* _holder;
-
+    virtual void decrementRecursionLevel() {}
+    
 public:
+    
+    virtual int getRecursionLevel() const { return 0; }
+    
 
-        RecursionLevelManager(KnobHolder* holder,
-                              bool assertNotRecursive)
-            : _holder(holder)
-        {
-            if (assertNotRecursive) {
-                _holder->assertActionIsNotRecursive();
-            }
-            _holder->incrementRecursionLevel();
-        }
-
-        ~RecursionLevelManager()
-        {
-            _holder->decrementRecursionLevel();
-        }
-    };
-
-public:
-
-    int getRecursionLevel() const;
 
     /**
      * @brief Use this to bracket setValue() calls, this will actually trigger the evaluate() and instanceChanged()
@@ -2276,13 +2271,40 @@ private:
     virtual void initializeKnobs() = 0;
 };
 
+
+/**
+ * @brief A small class to help managing the recursion level
+ * that can also that an action is not recursive.
+ **/
+class RecursionLevelRAII
+{
+    KnobHolder* effect;
+    
+public:
+    
+    RecursionLevelRAII(KnobHolder* effect,
+                       bool assertNotRecursive)
+    : effect(effect)
+    {
+        if (assertNotRecursive) {
+            effect->assertActionIsNotRecursive();
+        }
+        effect->incrementRecursionLevel();
+    }
+    
+    ~RecursionLevelRAII()
+    {
+        effect->decrementRecursionLevel();
+    }
+};
+
 /**
  * @macro This special macro creates an object that will increment the recursion level in the constructor and decrement it in the
  * destructor.
  * @param assertNonRecursive If true then it will check that the recursion level is 0 and otherwise print a warning indicating that
  * this action was called recursively.
  **/
-#define MANAGE_RECURSION(assertNonRecursive) KnobHolder::RecursionLevelManager actionRecursionManager(this,assertNonRecursive)
+#define MANAGE_RECURSION(assertNonRecursive) RecursionLevelRAII actionRecursionManager(this,assertNonRecursive)
 
 /**
  * @brief Should be called in the begining of any action that cannot be called recursively.

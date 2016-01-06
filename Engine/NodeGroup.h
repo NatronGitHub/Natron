@@ -223,6 +223,7 @@ public:
     
     /**
      * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup
+     * This is called only when calling AppManager::abortAnyProcessing()
      **/
     void quitAnyProcessingForAllNodes();
     

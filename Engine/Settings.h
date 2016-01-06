@@ -75,7 +75,7 @@ public:
         eKnownHostNameNone,
     };
 
-    Settings(AppInstance* appInstance);
+    Settings();
 
     virtual ~Settings()
     {

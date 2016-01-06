@@ -771,7 +771,7 @@ Effect::getAvailableLayers() const
         return ret;
     }
     Natron::EffectInstance::ComponentsAvailableMap availComps;
-    _node->getLiveInstance()->getComponentsAvailable(true, _node->getLiveInstance()->getCurrentTime(), &availComps);
+    _node->getLiveInstance()->getComponentsAvailable(true, true, _node->getLiveInstance()->getCurrentTime(), &availComps);
     for (Natron::EffectInstance::ComponentsAvailableMap::iterator it = availComps.begin(); it != availComps.end(); ++it) {
         NodePtr node = it->second.lock();
         if (node) {

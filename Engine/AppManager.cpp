@@ -296,8 +296,25 @@ AppManager::load(int &argc,
 
 AppManager::~AppManager()
 {
-    while (!_imp->_appInstances.empty()) {
-        _imp->_appInstances.begin()->second.app->quit();
+    bool appsEmpty;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        appsEmpty = _imp->_appInstances.empty();
+    }
+    while (!appsEmpty) {
+        AppInstance* front = 0;
+        {
+            QMutexLocker k(&_imp->_appInstancesMutex);
+            front = _imp->_appInstances.begin()->second.app;
+        }
+        if (front) {
+            front->quit();
+        }
+        {
+            QMutexLocker k(&_imp->_appInstancesMutex);
+            appsEmpty = _imp->_appInstances.empty();
+        }
+        
     }
     
     for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
@@ -317,6 +334,7 @@ AppManager::~AppManager()
     } catch (std::runtime_error) {
         // ignore errors
     }
+    
 
 
     ///Caches may have launched some threads to delete images, wait for them to be done
@@ -352,12 +370,18 @@ void
 AppManager::quit(AppInstance* instance)
 {
     instance->aboutToQuit();
-    std::map<int, AppInstanceRef>::iterator found = _imp->_appInstances.find( instance->getAppID() );
-    assert( found != _imp->_appInstances.end() );
-    found->second.status = eAppInstanceStatusInactive;
+    
+    int nbApps;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        std::map<int, AppInstanceRef>::iterator found = _imp->_appInstances.find( instance->getAppID() );
+        assert( found != _imp->_appInstances.end() );
+        found->second.status = eAppInstanceStatusInactive;
+        nbApps = (int)_imp->_appInstances.size();
+    }
     ///if we exited the last instance, exit the event loop, this will make
     /// the exec() function return.
-    if (_imp->_appInstances.size() == 1) {
+    if (nbApps == 1) {
         assert(qApp);
         qApp->quit();
     }
@@ -367,9 +391,25 @@ AppManager::quit(AppInstance* instance)
 void
 AppManager::quitApplication()
 {
-    while (!_imp->_appInstances.empty()) {
-        std::map<int, AppInstanceRef>::iterator begin = _imp->_appInstances.begin();
-        quit(begin->second.app);
+    bool appsEmpty;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        appsEmpty = _imp->_appInstances.empty();
+    }
+    while (!appsEmpty) {
+        AppInstance* app = 0;
+        {
+            QMutexLocker k(&_imp->_appInstancesMutex);
+            app = _imp->_appInstances.begin()->second.app;
+        }
+        if (app) {
+            quit(app);
+        }
+        
+        {
+            QMutexLocker k(&_imp->_appInstancesMutex);
+            appsEmpty = _imp->_appInstances.empty();
+        }
     }
 }
 
@@ -458,6 +498,7 @@ AppManager::loadInternal(const CLArgs& cl)
     _imp->initBreakpad();
 #endif
     
+    _imp->_settings.reset(new Settings());
     _imp->_settings->initializeKnobsPublic();
     ///Call restore after initializing knobs
     _imp->_settings->restoreSettings();
@@ -637,6 +678,8 @@ AppManager::newAppInstance(const CLArgs& cl, bool makeEmptyInstance)
 AppInstance*
 AppManager::getAppInstance(int appID) const
 {
+    QMutexLocker k(&_imp->_appInstancesMutex);
+    
     std::map<int,AppInstanceRef>::const_iterator it;
 
     it = _imp->_appInstances.find(appID);
@@ -650,21 +693,30 @@ AppManager::getAppInstance(int appID) const
 int
 AppManager::getNumInstances() const
 {
+    QMutexLocker k(&_imp->_appInstancesMutex);
     return (int)_imp->_appInstances.size();
 }
 
 const std::map<int,AppInstanceRef> &
 AppManager::getAppInstances() const
 {
+    assert(QThread::currentThread() == qApp->thread());
     return _imp->_appInstances;
 }
 
 void
 AppManager::removeInstance(int appID)
 {
-    _imp->_appInstances.erase(appID);
-    if ( !_imp->_appInstances.empty() ) {
-        setAsTopLevelInstance(_imp->_appInstances.begin()->first);
+    int newApp = -1;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        _imp->_appInstances.erase(appID);
+        if ( !_imp->_appInstances.empty() ) {
+            newApp = _imp->_appInstances.begin()->first;
+        }
+    }
+    if (newApp != -1) {
+        setAsTopLevelInstance(newApp);
     }
 }
 
@@ -693,7 +745,12 @@ AppManager::clearDiskCache()
 void
 AppManager::clearNodeCache()
 {
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
         it->second.app->clearAllLastRenderedImages();
     }
     _imp->_nodeCache->clear();
@@ -711,12 +768,17 @@ AppManager::clearAllCaches()
     clearDiskCache();
     clearNodeCache();
 
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
     ///for each app instance clear all its nodes cache
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
         it->second.app->clearOpenFXPluginsCaches();
     }
     
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
         it->second.app->renderAllViewers(true);
     }
     
@@ -743,6 +805,7 @@ AppManager::wipeAndCreateDiskCacheStructure()
 AppInstance*
 AppManager::getTopLevelInstance () const
 {
+    QMutexLocker k(&_imp->_appInstancesMutex);
     std::map<int,AppInstanceRef>::const_iterator it = _imp->_appInstances.find(_imp->_topLevelInstanceID);
 
     if ( it == _imp->_appInstances.end() ) {
@@ -762,8 +825,12 @@ AppManager::isLoaded() const
 void
 AppManager::abortAnyProcessing()
 {
- 
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
         
         it->second.app->getProject()->quitAnyProcessingForAllNodes();
     }
@@ -792,6 +859,8 @@ AppManager::registerAppInstance(AppInstance* app)
 
     ref.app = app;
     ref.status = Natron::eAppInstanceStatusActive;
+    
+    QMutexLocker k(&_imp->_appInstancesMutex);
     _imp->_appInstances.insert( std::make_pair(app->getAppID(),ref) );
 }
 
@@ -1371,6 +1440,7 @@ AppManager::findExistingFormat(int w,
 void
 AppManager::setAsTopLevelInstance(int appID)
 {
+    QMutexLocker k(&_imp->_appInstancesMutex);
     if (_imp->_topLevelInstanceID == appID) {
         return;
     }
@@ -1840,7 +1910,12 @@ AppManager::decreaseNCacheFilesOpened()
 void
 AppManager::onMaxPanelsOpenedChanged(int maxPanels)
 {
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
         it->second.app->onMaxPanelsOpenedChanged(maxPanels);
     }
 }
@@ -2021,7 +2096,14 @@ void
 AppManager::onOCIOConfigPathChanged(const std::string& path)
 {
     _imp->currentOCIOConfigPath = path;
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin() ; it != _imp->_appInstances.end(); ++it) {
+    
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
+    
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin() ; it != copy.end(); ++it) {
         it->second.app->onOCIOConfigPathChanged(path);
     }
 }
@@ -2105,12 +2187,12 @@ AppManager::onOFXDialogOnMainThreadReceived(Natron::OfxImageEffectInstance* inst
     assert(QThread::currentThread() == qApp->thread());
     if (instance == NULL) {
         // instance may be NULL if using OfxDialogSuiteV1
-        GlobalOFXTLS& tls = _imp->ofxHost->getCurrentThreadTLS();
-        instance = tls.lastEffectCallingMainEntry;
+        Natron::OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
+        instance = tls->lastEffectCallingMainEntry;
     } else {
 #ifdef DEBUG
-        GlobalOFXTLS& tls = _imp->ofxHost->getCurrentThreadTLS();
-        assert(instance == tls.lastEffectCallingMainEntry);
+        Natron::OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
+        assert(instance == tls->lastEffectCallingMainEntry);
 #endif
     }
 #ifdef OFX_SUPPORTS_DIALOG
@@ -2492,7 +2574,12 @@ AppManager::wasProjectCreatedDuringRC2Or3() const
 void
 AppManager::toggleAutoHideGraphInputs()
 {
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
         it->second.app->toggleAutoHideGraphInputs();
     }
 }
@@ -2517,6 +2604,7 @@ AppManager::launchPythonInterpreter()
 int
 AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
 {
+    QMutexLocker k(&_imp->_appInstancesMutex);
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         boost::shared_ptr<Natron::Project> proj = it->second.app->getProject();
         if (proj) {
@@ -2585,11 +2673,6 @@ AppManager::setOnProjectCreatedCallback(const std::string& pythonFunc)
     _imp->_settings->setOnProjectCreatedCB(pythonFunc);
 }
 
-GlobalOFXTLS&
-AppManager::getCurrentThreadTLS()
-{
-    return _imp->ofxHost->getCurrentThreadTLS();
-}
 
 OFX::Host::ImageEffect::Descriptor*
 AppManager::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
@@ -2654,7 +2737,6 @@ AppManager::mapUNCPathToPathWithDriveLetter(const QString& uncPath) const
 std::string
 AppManager::isImageFileSupportedByNatron(const std::string& ext)
 {
-    //*.264 *.265 *.302 *.3fr *.3g2 *.3gp *.669 *.722 *.aa3 *.aac *.abc *.ac3 *.adf *.adp *.adx *.aea *.afc *.al *.alaw *.amf *.ams *.ans *.ape *.apl *.aqt *.aqtitle *.art *.arw *.asc *.ast *.avc *.avi *.avr *.bay *.bin *.bit *.bmp *.bmq *.bmv *.brstm *.bw *.cap *.cdata *.cdg *.cdxl *.cgi *.cif *.cin *.cine *.cr2 *.crw *.cs1 *.daud *.dbm *.dc2 *.dcr *.dds *.dif *.diz *.dmf *.dng *.dpx *.drf *.dsc *.dsm *.dss *.dtk *.dts *.dtshd *.dv *.ea_cdata *.eac3 *.env *.epaf *.erf *.exr *.fap *.far *.fff *.filmstrip *.fits *.flac *.flm *.flv *.g722 *.g723_1 *.g729 *.gif *.gsm *.h261 *.h264 *.h265 *.h26l *.hdr *.hevc *.ia *.ice *.ico *.idf *.idx *.iff *.iiq *.ingenient *.int *.inta *.ircam *.it *.itgz *.itr *.itz *.jfi *.jfif *.jif *.jpe *.jpeg *.jpg *.k25 *.kc2 *.kdc *.latm *.libmodplug *.live_flv *.lvf *.m2a *.m2ts *.m4a *.m4v *.mac *.matroska *.mdc *.mdgz *.mdl *.mdr *.mdz *.med *.mef *.mid *.mj2 *.mjpeg *.mjpg *.mk3d *.mka *.mks *.mkv *.mlp *.mng *.mod *.mos *.mov *.mp2 *.mp3 *.mp4 *.mpa *.mpc *.mpg *.mpjpeg *.mpl2 *.mpo *.mpsub *.mrw *.mt2 *.mtm *.mulaw *.mvi *.mxf *.mxg *.mxr *.nc *.nef *.nfo *.nist *.nistsphere *.nrw *.nut *.ogg *.okt *.oma *.omg *.orf *.paf *.pbm *.pdd *.pef *.pfm *.pgm *.pic *.pjs *.png *.pnm *.ppm *.psb *.psd *.psm *.ptex *.ptm *.ptx *.pvf *.pxn *.qcif *.qtk *.raf *.raw *.rawvideo *.rco *.rdc *.realtext *.redspark *.rgb *.rgba *.rgbe *.rla *.rsd *.rso *.rt *.rw2 *.rwl *.rwz *.s16le *.s3gz *.s3m *.s3r *.s3z *.s8 *.sami *.sb *.sbg *.sdr2 *.sf *.sgi *.shn *.siff *.sln *.sm *.smi *.smjpeg *.socket *.son *.sph *.sr2 *.srf *.srw *.sti *.stl *.stm *.sub *.subviewer *.subviewer1 *.sup *.svg *.svgz *.sw *.sxr *.tak *.tco *.tga *.thd *.tif *.tiff *.tpic *.truehd *.tta *.tty *.tx *.txt *.u16le *.u8 *.ub *.ul *.ult *.umx *.uw *.v *.vb *.vc1 *.viv *.vivo *.vobsub *.vplayer *.vqe *.vqf *.vql *.vsm *.vt *.vtt *.webm *.webp *.webvtt *.x3f *.xbm *.xcf *.xl *.xm *.xmgz *.xmr *.xmz *.xpm *.y4m *.yop *.yuv *.yuv4mpegpipe *.z *.zfile
     std::string readId;
     try {
         readId = appPTR->getCurrentSettings()->getReaderPluginIDForFileType(ext);
@@ -2662,6 +2744,34 @@ AppManager::isImageFileSupportedByNatron(const std::string& ext)
         return std::string();
     }
     return readId;
+}
+
+AppTLS*
+AppManager::getAppTLS() const
+{
+    return &_imp->globalTLS;
+}
+
+bool
+AppManager::hasThreadsRendering() const
+{
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
+    for (std::map<int,AppInstanceRef>::const_iterator it = copy.begin(); it!=copy.end(); ++it) {
+        if (it->second.app->getProject()->hasNodeRendering()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+const Natron::OfxHost*
+AppManager::getOFXHost() const
+{
+    return _imp->ofxHost.get();
 }
 
 namespace Natron {

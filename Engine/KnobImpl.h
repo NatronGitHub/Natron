@@ -1688,9 +1688,6 @@ Knob<T>::onKeyFrameSet(double time,
     
     if (!useGuiCurve) {
         assert(holder);
-        /*if (holder && getEvaluateOnChange()) {
-            holder->abortAnyEvaluation();
-        }*/
         curve = getCurve(dimension);
     } else {
         curve = getGuiCurve(dimension);
@@ -1711,9 +1708,6 @@ Knob<T>::setKeyFrame(const KeyFrame& key,int dimension,Natron::ValueChangedReaso
     
     if (!useGuiCurve) {
         assert(holder);
-        /*if (holder && getEvaluateOnChange()) {
-            holder->abortAnyEvaluation();
-        }*/
         curve = getCurve(dimension);
     } else {
         curve = getGuiCurve(dimension);
