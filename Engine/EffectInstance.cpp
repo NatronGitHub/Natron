@@ -3496,19 +3496,20 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
                 alreadyExisting->second = node;
             }
         }
+    }
 
-
-        ///If the user has selected "All", do not add created components as they will not be available
-        if (!processAll) {
-            std::list<ImageComponents> userComps;
-            node->getUserCreatedComponents(&userComps);
-            ///Foreach user component, add it as an available component, but use this node only if it is also
-            ///in the "needed components" list
-            for (std::list<ImageComponents>::iterator it = userComps.begin(); it != userComps.end(); ++it) {
-                
-                
-                ///If this is a user comp and used by the node it will be in the needed output components
-                bool found = false;
+    ///If the user has selected "All", do not add created components as they will not be available
+    if (!processAll) {
+        std::list<ImageComponents> userComps;
+        node->getUserCreatedComponents(&userComps);
+        ///Foreach user component, add it as an available component, but use this node only if it is also
+        ///in the "needed components" list
+        for (std::list<ImageComponents>::iterator it = userComps.begin(); it != userComps.end(); ++it) {
+            
+            
+            ///If this is a user comp and used by the node it will be in the needed output components
+            bool found = false;
+            if (foundOutput != neededComps.end()) {
                 for (std::vector<Natron::ImageComponents>::iterator it2 = foundOutput->second.begin();
                      it2 != foundOutput->second.end(); ++it2) {
                     if (*it2 == *it) {
@@ -3516,43 +3517,44 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
                         break;
                     }
                 }
+            }
+            
+            
+            ComponentsAvailableMap::iterator alreadyExisting = comps->end();
+            
+            if ( it->isColorPlane() ) {
+                ComponentsAvailableMap::iterator colorMatch = comps->end();
                 
-                
-                ComponentsAvailableMap::iterator alreadyExisting = comps->end();
-                
-                if ( it->isColorPlane() ) {
-                    ComponentsAvailableMap::iterator colorMatch = comps->end();
-                    
-                    for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
-                        if (it2->first == *it) {
-                            alreadyExisting = it2;
-                            break;
-                        } else if ( it2->first.isColorPlane() ) {
-                            colorMatch = it2;
-                        }
+                for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
+                    if (it2->first == *it) {
+                        alreadyExisting = it2;
+                        break;
+                    } else if ( it2->first.isColorPlane() ) {
+                        colorMatch = it2;
                     }
-                    
-                    if ( ( alreadyExisting == comps->end() ) && ( colorMatch != comps->end() ) ) {
-                        comps->erase(colorMatch);
-                    }
-                } else {
-                    alreadyExisting = comps->find(*it);
                 }
                 
-                ///If the component already exists from above in the tree, do not add it
-                if ( alreadyExisting == comps->end() ) {
-                    comps->insert( std::make_pair( *it, (found) ? node : NodePtr() ) );
-                } else {
-                    ///The user component may very well have been created on a node upstream
-                    ///Set the component as available only if the node uses it actively,i.e if
-                    ///it was found in the needed output components
-                    if (found) {
-                        alreadyExisting->second = node;
-                    }
+                if ( ( alreadyExisting == comps->end() ) && ( colorMatch != comps->end() ) ) {
+                    comps->erase(colorMatch);
+                }
+            } else {
+                alreadyExisting = comps->find(*it);
+            }
+            
+            ///If the component already exists from above in the tree, do not add it
+            if ( alreadyExisting == comps->end() ) {
+                comps->insert( std::make_pair( *it, (found) ? node : NodePtr() ) );
+            } else {
+                ///The user component may very well have been created on a node upstream
+                ///Set the component as available only if the node uses it actively,i.e if
+                ///it was found in the needed output components
+                if (found) {
+                    alreadyExisting->second = node;
                 }
             }
         }
     }
+    
     markedNodes->push_back(this);
 
     

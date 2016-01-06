@@ -60,20 +60,24 @@ using namespace Natron;
 
 struct OfxClipInstancePrivate
 {
+    OfxClipInstance* _publicInterface;
     OfxEffectInstance* nodeInstance;
     Natron::OfxImageEffectInstance* const effect;
     double aspectRatio;
     
     boost::shared_ptr<TLSHolder<OfxClipInstance::ClipTLSData> > tlsData;
     
-    OfxClipInstancePrivate(OfxEffectInstance* nodeInstance, Natron::OfxImageEffectInstance* effect)
-    : nodeInstance(nodeInstance)
+    OfxClipInstancePrivate(OfxClipInstance* publicInterface, OfxEffectInstance* nodeInstance, Natron::OfxImageEffectInstance* effect)
+    : _publicInterface(publicInterface)
+    , nodeInstance(nodeInstance)
     , effect(effect)
     , aspectRatio(1.)
     , tlsData(new TLSHolder<OfxClipInstance::ClipTLSData>())
     {
         
     }
+    
+    const std::vector<std::string>& getComponentsPresentInternal(const OfxClipInstance::ClipDataTLSPtr& tls) const;
 };
 
 OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance,
@@ -81,7 +85,7 @@ OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance,
                                  int  /*index*/,
                                  OFX::Host::ImageEffect::ClipDescriptor* desc)
     : OFX::Host::ImageEffect::ClipInstance(effect, *desc)
-    , _imp(new OfxClipInstancePrivate(nodeInstance,effect))
+    , _imp(new OfxClipInstancePrivate(this,nodeInstance,effect))
 {
     assert(nodeInstance && effect);
 }
@@ -260,16 +264,9 @@ OfxClipInstance::getPremult() const
 }
 
 
-/*
- * We have to use TLS here because the OpenFX API necessitate that strings
- * live through the entire duration of the calling action. The is the only way
- * to have it thread-safe and local to a current calling time.
- */
 const std::vector<std::string>&
-OfxClipInstance::getComponentsPresent() const
+OfxClipInstancePrivate::getComponentsPresentInternal(const OfxClipInstance::ClipDataTLSPtr& tls) const
 {
-    
-    ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     tls->componentsPresent.clear();
     
     EffectInstance::ComponentsAvailableMap compsAvailable;
@@ -318,7 +315,7 @@ OfxClipInstance::getComponentsPresent() const
                 }
                 
             }
-        } 
+        }
         std::list<ImageComponents> userComps;
         _imp->nodeInstance->getNode()->getUserCreatedComponents(&userComps);
         
@@ -354,24 +351,37 @@ OfxClipInstance::getComponentsPresent() const
             }
             
         }
-
-        
-    } else { //!isOutput*/
-        Natron::EffectInstance* effect = getAssociatedNode();
-        if (!effect) {
-            return tls->componentsPresent;
-        }
-        double time = effect->getCurrentTime();
-        
-        effect->getComponentsAvailable(true, !isOutput(), time, &compsAvailable);
- //   } // if (isOutput())
+     
+     
+     } else { //!isOutput*/
+    Natron::EffectInstance* effect = _publicInterface->getAssociatedNode();
+    if (!effect) {
+        return tls->componentsPresent;
+    }
+    double time = effect->getCurrentTime();
+    
+    effect->getComponentsAvailable(true, !_publicInterface->isOutput(), time, &compsAvailable);
+    //   } // if (isOutput())
     
     for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
-        tls->componentsPresent.push_back(natronsComponentsToOfxComponents(it->first));
+        tls->componentsPresent.push_back(OfxClipInstance::natronsComponentsToOfxComponents(it->first));
     }
+    
+    return tls->componentsPresent;
+}
 
+/*
+ * We have to use TLS here because the OpenFX API necessitate that strings
+ * live through the entire duration of the calling action. The is the only way
+ * to have it thread-safe and local to a current calling time.
+ */
+const std::vector<std::string>&
+OfxClipInstance::getComponentsPresent() const
+{
     
-    
+    //The components present have just been computed in the previous call to getDimension()
+    //so we are fine here
+    ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     return tls->componentsPresent;
 }
 
@@ -379,7 +389,9 @@ int
 OfxClipInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
 {
     if (name == kFnOfxImageEffectPropComponentsPresent) {
-        return (int)getComponentsPresent().size();
+        ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+        const std::vector<std::string>& components = _imp->getComponentsPresentInternal(tls);
+        return (int)components.size();
     }
     return OFX::Host::ImageEffect::ClipInstance::getDimension(name);
 }
