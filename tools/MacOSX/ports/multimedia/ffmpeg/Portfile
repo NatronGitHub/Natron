@@ -10,7 +10,7 @@ PortGroup           active_variants 1.1
 name                ffmpeg
 conflicts           ffmpeg-devel
 epoch               1
-version             2.8.3
+version             2.8.4
 license             LGPL-2.1+
 categories          multimedia
 maintainers         devans jeremyhu openmaintainer
