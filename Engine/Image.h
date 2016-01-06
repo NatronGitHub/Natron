@@ -809,12 +809,12 @@ namespace Natron {
         void premultImage(const RectI& roi);
         void unpremultImage(const RectI& roi);
         
-        bool canCallCopyUnProcessedChannels(std::bitset<4> processChannels) const;
+        bool canCallCopyUnProcessedChannels(const std::bitset<4>& processChannels) const;
         
         void copyUnProcessedChannels(const RectI& roi,
                                      Natron::ImagePremultiplicationEnum outputPremult,
                                      Natron::ImagePremultiplicationEnum originalImagePremult,
-                                     std::bitset<4> processChannels,
+                                     const std::bitset<4>& processChannels,
                                      const boost::shared_ptr<Image>& originalImage);
         
         void applyMaskMix(const RectI& roi,
@@ -880,19 +880,19 @@ namespace Natron {
                                                const boost::shared_ptr<Image>& originalImage);
 
         template <typename PIX, int maxValue, int srcNComps, int dstNComps>
-        void copyUnProcessedChannelsForPremult(std::bitset<4> processChannels, bool premult, bool originalPremult,
+        void copyUnProcessedChannelsForPremult(const std::bitset<4>& processChannels, bool premult, bool originalPremult,
                                                const RectI& roi,
                                                const boost::shared_ptr<Image>& originalImage);
 
         template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
-        void copyUnProcessedChannelsForChannels(std::bitset<4> processChannels,
+        void copyUnProcessedChannelsForChannels(const std::bitset<4>& processChannels,
                                                 bool premult,
                                                 const RectI& roi,
                                                 const boost::shared_ptr<Image>& originalImage,
                                                 bool originalPremult);
 
         template <typename PIX, int maxValue, int srcNComps, int dstNComps>
-        void copyUnProcessedChannelsForChannels(std::bitset<4> processChannels,
+        void copyUnProcessedChannelsForChannels(const std::bitset<4>& processChannels,
                                                 bool premult,
                                                 const RectI& roi,
                                                 const boost::shared_ptr<Image>& originalImage,
@@ -903,14 +903,14 @@ namespace Natron {
         template <typename PIX, int maxValue,int srcNComps, int dstNComps>
         void copyUnProcessedChannelsForComponents(bool premult,
                                                   const RectI& roi,
-                                                  std::bitset<4> processChannels,
+                                                  const std::bitset<4>& processChannels,
                                                   const boost::shared_ptr<Image>& originalImage,
                                                   bool originalPremult);
         
         template <typename PIX, int maxValue>
         void copyUnProcessedChannelsForDepth(bool premult,
                                              const RectI& roi,
-                                             std::bitset<4> processChannels,
+                                             const std::bitset<4>& processChannels,
                                              const boost::shared_ptr<Image>& originalImage,
                                              bool originalPremult);
 
