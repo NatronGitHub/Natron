@@ -4473,7 +4473,10 @@ EffectInstance::refreshClipPreferences(double /*time*/,
     if (forceGetClipPrefAction) {
         EffectInstance* input = getNearestNonDisabled();
         if (input == this) {
-            input = 0;
+            int prefInput = getNode()->getPreferredInput();
+            if (prefInput != -1) {
+                input = getInput(prefInput);
+            }
         }
         if (!input) {
             QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
