@@ -876,11 +876,13 @@ namespace Natron {
                                           float mix);
 
         template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult>
-        void copyUnProcessedChannelsForPremult(const RectI& roi,
+        void copyUnProcessedChannelsForPremult(std::bitset<4> processChannels,
+                                               const RectI& roi,
                                                const boost::shared_ptr<Image>& originalImage);
 
         template <typename PIX, int maxValue, int srcNComps, int dstNComps>
-        void copyUnProcessedChannelsForPremult(std::bitset<4> processChannels, bool premult, bool originalPremult,
+        void copyUnProcessedChannelsForPremult(bool premult, bool originalPremult,
+                                               std::bitset<4> processChannels,
                                                const RectI& roi,
                                                const boost::shared_ptr<Image>& originalImage);
 

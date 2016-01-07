@@ -32,27 +32,20 @@ using namespace Natron;
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult>
 void
-Image::copyUnProcessedChannelsForPremult(const RectI& roi,
+Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
+                                         const RectI& roi,
                                          const ImagePtr& originalImage)
 {
+    assert(((doR == !processChannels[0]) || !(dstNComps >= 2)) &&
+           ((doG == !processChannels[1]) || !(dstNComps >= 2)) &&
+           ((doB == !processChannels[2]) || !(dstNComps >= 3)) &&
+           ((doA == !processChannels[3]) || !(dstNComps == 1 || dstNComps == 4)));
     ReadAccess acc(originalImage.get());
 
     int dstRowElements = dstNComps * _bounds.width();
     
     PIX* dst_pixels = (PIX*)pixelAt(roi.x1, roi.y1);
     assert(dst_pixels);
-    if (doR) {
-        assert(dstNComps >= 2);
-    }
-    if (doG) {
-        assert(dstNComps >= 2);
-    }
-    if (doB) {
-        assert(dstNComps >= 3);
-    }
-    if (doA) {
-        assert(dstNComps == 1 || dstNComps == 4);
-    }
     assert(srcNComps == 4 || !originalPremult); // only RGBA can be premult
     assert(dstNComps == 4 || !premult); // only RGBA can be premult
 
@@ -172,7 +165,9 @@ Image::copyUnProcessedChannelsForPremult(const RectI& roi,
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps>
 void
-Image::copyUnProcessedChannelsForPremult(std::bitset<4> processChannels, bool premult, bool originalPremult,
+Image::copyUnProcessedChannelsForPremult(const bool premult,
+                                         const bool originalPremult,
+                                         const std::bitset<4> processChannels,
                                          const RectI& roi,
                                          const ImagePtr& originalImage)
 {
@@ -182,22 +177,10 @@ Image::copyUnProcessedChannelsForPremult(std::bitset<4> processChannels, bool pr
 
     PIX* dst_pixels = (PIX*)pixelAt(roi.x1, roi.y1);
     assert(dst_pixels);
-    const bool doR = processChannels[0];
-    const bool doG = processChannels[1];
-    const bool doB = processChannels[2];
-    const bool doA = processChannels[3];
-    if (doR) {
-        assert(dstNComps >= 2);
-    }
-    if (doG) {
-        assert(dstNComps >= 2);
-    }
-    if (doB) {
-        assert(dstNComps >= 3);
-    }
-    if (doA) {
-        assert(dstNComps == 1 || dstNComps == 4);
-    }
+    const bool doR = !processChannels[0] && (dstNComps >= 2);
+    const bool doG = !processChannels[1] && (dstNComps >= 2);
+    const bool doB = !processChannels[2] && (dstNComps >= 3);
+    const bool doA = !processChannels[3] && (dstNComps == 1 || dstNComps == 4);
     assert(srcNComps == 4 || !originalPremult); // only RGBA can be premult
     assert(dstNComps == 4 || !premult); // only RGBA can be premult
 
@@ -288,22 +271,26 @@ Image::copyUnProcessedChannelsForPremult(std::bitset<4> processChannels, bool pr
 template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
 void
 Image::copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
-                                          bool premult,
+                                          const bool premult,
                                           const RectI& roi,
                                           const ImagePtr& originalImage,
-                                          bool originalPremult)
+                                          const bool originalPremult)
 {
+    assert(((doR == !processChannels[0]) || !(dstNComps >= 2)) &&
+           ((doG == !processChannels[1]) || !(dstNComps >= 2)) &&
+           ((doB == !processChannels[2]) || !(dstNComps >= 3)) &&
+           ((doA == !processChannels[3]) || !(dstNComps == 1 || dstNComps == 4)));
     if (premult) {
         if (originalPremult) {
-            copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps, doR, doG, doB, doA, true, true>(roi, originalImage);
+            copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps, doR, doG, doB, doA, true, true>(processChannels, roi, originalImage);
         } else {
-            copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps>(processChannels, true, false, roi, originalImage);
+            copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps>(true, false, processChannels, roi, originalImage);
         }
     } else {
         if (originalPremult) {
-            copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps>(processChannels, false, true, roi, originalImage);
+            copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps>(false, true, processChannels, roi, originalImage);
         } else {
-            copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps, doR, doG, doB, doA, false, false>(roi, originalImage);
+            copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps, doR, doG, doB, doA, false, false>(processChannels, roi, originalImage);
         }
     }
 }
@@ -311,26 +298,26 @@ Image::copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
 template <typename PIX, int maxValue, int srcNComps, int dstNComps>
 void
 Image::copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
-                                          bool premult,
+                                          const bool premult,
                                           const RectI& roi,
                                           const ImagePtr& originalImage,
-                                          bool originalPremult)
+                                          const bool originalPremult)
 {
-    copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps>(processChannels, premult, originalPremult, roi, originalImage);
+    copyUnProcessedChannelsForPremult<PIX, maxValue, srcNComps, dstNComps>(premult, originalPremult, processChannels, roi, originalImage);
 }
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps>
 void
-Image::copyUnProcessedChannelsForComponents(bool premult,
+Image::copyUnProcessedChannelsForComponents(const bool premult,
                                             const RectI& roi,
                                             const std::bitset<4> processChannels,
                                             const ImagePtr& originalImage,
-                                            bool originalPremult)
+                                            const bool originalPremult)
 {
-    const bool doR = !processChannels[0];
-    const bool doG = !processChannels[1];
-    const bool doB = !processChannels[2];
-    const bool doA = !processChannels[3];
+    const bool doR = !processChannels[0] && (dstNComps >= 2);
+    const bool doG = !processChannels[1] && (dstNComps >= 2);
+    const bool doB = !processChannels[2] && (dstNComps >= 3);
+    const bool doA = !processChannels[3] && (dstNComps == 1 || dstNComps == 4);
     if (dstNComps == 1) {
             if (doA) {
                 copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, false, false, true>(processChannels, premult, roi, originalImage, originalPremult); // RGB were processed, copy A
@@ -406,11 +393,11 @@ Image::copyUnProcessedChannelsForComponents(bool premult,
 
 template <typename PIX, int maxValue>
 void
-Image::copyUnProcessedChannelsForDepth(bool premult,
+Image::copyUnProcessedChannelsForDepth(const bool premult,
                                        const RectI& roi,
-                                       std::bitset<4> processChannels,
+                                       const std::bitset<4> processChannels,
                                        const ImagePtr& originalImage,
-                                       bool originalPremult)
+                                       const bool originalPremult)
 {
     int dstNComps = getComponents().getNumComponents();
     int srcNComps = originalImage ? originalImage->getComponents().getNumComponents() : 0;
@@ -532,8 +519,8 @@ Image::canCallCopyUnProcessedChannels(const std::bitset<4> processChannels) cons
 
 void
 Image::copyUnProcessedChannels(const RectI& roi,
-                               Natron::ImagePremultiplicationEnum outputPremult,
-                               Natron::ImagePremultiplicationEnum originalImagePremult,
+                               const Natron::ImagePremultiplicationEnum outputPremult,
+                               const Natron::ImagePremultiplicationEnum originalImagePremult,
                                const std::bitset<4> processChannels,
                                const ImagePtr& originalImage)
 {
