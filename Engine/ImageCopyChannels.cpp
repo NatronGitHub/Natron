@@ -327,10 +327,10 @@ Image::copyUnProcessedChannelsForComponents(bool premult,
                                             const ImagePtr& originalImage,
                                             bool originalPremult)
 {
-    const bool doR = processChannels[0];
-    const bool doG = processChannels[1];
-    const bool doB = processChannels[2];
-    const bool doA = processChannels[3];
+    const bool doR = !processChannels[0];
+    const bool doG = !processChannels[1];
+    const bool doB = !processChannels[2];
+    const bool doA = !processChannels[3];
     if (dstNComps == 1) {
             if (doA) {
                 copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, false, false, true>(processChannels, premult, roi, originalImage, originalPremult); // RGB were processed, copy A
