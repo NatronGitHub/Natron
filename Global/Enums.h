@@ -342,7 +342,8 @@ enum ValueChangedReasonEnum
     //A user change to the knob triggered the call, gui will not be refreshed but instanceChangedAction called
     eValueChangedReasonUserEdited = 0,
     
-    //A plugin change triggered the call, gui will be refreshed but instanceChangedAction not called
+    //A plugin change triggered the call, gui will be refreshed and instanceChangedAction called. This is stricly reserved
+    //to calls made directly from an OpenFX plug-in
     eValueChangedReasonPluginEdited ,
     
     // Natron gui called setValue itself, instanceChangedAction will be called (with a reason of User edited) AND knob gui refreshed

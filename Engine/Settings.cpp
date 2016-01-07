@@ -1326,7 +1326,7 @@ Settings::setCachingLabels()
 void
 Settings::setDefaultValues()
 {
-    beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
+    beginChanges();
     _hostName->setDefaultValue(0);
     _customHostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _natronSettingsExist->setDefaultValue(false);
@@ -1579,7 +1579,7 @@ Settings::setDefaultValues()
     _curLineColor->setDefaultValue(0.35,1);
     _curLineColor->setDefaultValue(0.35,2);
 
-    endKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
+    endChanges();
 } // setDefaultValues
 
 void
@@ -2549,7 +2549,7 @@ Settings::restoreDefault()
         qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
     }
 
-    beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
+    beginChanges();
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
@@ -2557,7 +2557,7 @@ Settings::restoreDefault()
         }
     }
     setCachingLabels();
-    endKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
+    endChanges();
 }
 
 bool

@@ -485,7 +485,7 @@ OfxEffectInstance::initializeContextDependentParams()
     assert(_imp->context != eContextNone);
     if ( isWriter() ) {
         
-        boost::shared_ptr<KnobButton> b = Natron::createKnob<KnobButton>(this, "Render");
+        boost::shared_ptr<KnobButton> b = Natron::createKnob<KnobButton>(this, "Render", 1, false);
         b->setHintToolTip("Starts rendering the specified frame range.");
         b->setAsRenderButton();
         _imp->renderButton = b;
@@ -2361,9 +2361,9 @@ OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::Value
         case Natron::eValueChangedReasonNatronGuiEdited:
         case Natron::eValueChangedReasonSlaveRefresh:
         case Natron::eValueChangedReasonRestoreDefault:
+        case Natron::eValueChangedReasonNatronInternalEdited:
             return kOfxChangeUserEdited;
         case Natron::eValueChangedReasonPluginEdited:
-        case Natron::eValueChangedReasonNatronInternalEdited:
             return kOfxChangePluginEdited;
         case Natron::eValueChangedReasonTimeChanged:
             return kOfxChangeTime;
@@ -2381,17 +2381,6 @@ OfxEffectInstance::knobChanged(KnobI* k,
                                bool /*originatedFromMainThread*/)
 {
     if (!_imp->initialized) {
-        return;
-    }
-
-    ///If the param changed is a button and the node is disabled don't do anything which might
-    ///trigger an analysis
-    if ( (reason == eValueChangedReasonUserEdited) && dynamic_cast<KnobButton*>(k) && getNode()->isNodeDisabled() ) {
-        return;
-    }
-
-    if (k == _imp->renderButton.lock().get()) {
-        ///don't do anything since it is handled upstream
         return;
     }
 

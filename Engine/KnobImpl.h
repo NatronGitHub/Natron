@@ -2305,7 +2305,7 @@ Knob<T>::clone(KnobI* other,
         }
     }
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonPluginEdited);
+        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonNatronInternalEdited);
         refreshListenersAfterValueChange(dimension);
     }
     cloneExtraData(other,dimension);
@@ -2347,7 +2347,7 @@ Knob<T>::cloneAndCheckIfChanged(KnobI* other,int dimension)
     }
     if (hasChanged) {
         if (_signalSlotHandler) {
-            _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonPluginEdited);
+            _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonNatronInternalEdited);
             refreshListenersAfterValueChange(dimension);
         }
     }
@@ -2390,7 +2390,7 @@ Knob<T>::clone(KnobI* other,
         }
     }
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonPluginEdited);
+        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonNatronInternalEdited);
         refreshListenersAfterValueChange(dimension);
     }
     cloneExtraData(other,offset,range,dimension);
@@ -2442,7 +2442,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
         }
     }
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonPluginEdited);
+        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonNatronInternalEdited);
     }
     refreshListenersAfterValueChange(dimension);
     cloneExtraData(other,dimension);

@@ -533,7 +533,7 @@ public:
     virtual void deleteAnimationAfterTime(double time,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
-     * @brief Calls removeAnimation with a reason of Natron::eValueChangedReasonPluginEdited.
+     * @brief Calls removeAnimation with a reason of Natron::eValueChangedReasonNatronInternalEdited.
      **/
     void removeAnimation(int dimension);
 
@@ -968,7 +968,7 @@ protected:
 public:
 
     /**
-     * @brief Calls slaveTo with a value changed reason of Natron::eValueChangedReasonPluginEdited.
+     * @brief Calls slaveTo with a value changed reason of Natron::eValueChangedReasonNatronInternalEdited.
      * @param ignoreMasterPersistence If true the master will not be serialized.
      **/
     bool slaveTo(int dimension,const boost::shared_ptr<KnobI> & other,int otherDimension,bool ignoreMasterPersistence = false);
@@ -998,7 +998,7 @@ public:
 
 
     /**
-     * @brief Calls unSlave with a value changed reason of Natron::eValueChangedReasonPluginEdited.
+     * @brief Calls unSlave with a value changed reason of Natron::eValueChangedReasonNatronInternalEdited.
      **/
     void unSlave(int dimension,bool copyState);
 

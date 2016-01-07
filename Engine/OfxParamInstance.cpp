@@ -225,8 +225,8 @@ copyFrom(const boost::shared_ptr<KnobI> & from,
 {
     ///copy only if type is the same
     if ( from->typeName() == to->typeName() ) {
-        to->clone(from,offset,range);
         to->beginChanges();
+        to->clone(from,offset,range);
         int dims = to->getDimension();
         for (int i = 0; i < dims; ++i) {
             to->evaluateValueChange(i, from->getCurrentTime(), Natron::eValueChangedReasonPluginEdited);

@@ -3870,6 +3870,12 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
 //    if (!node->isNodeCreated()) {
 //        return;
 //    }
+    
+    ///If the param changed is a button and the node is disabled don't do anything which might
+    ///trigger an analysis
+    if ((reason == eValueChangedReasonUserEdited) && dynamic_cast<KnobButton*>(k) && node->isNodeDisabled()) {
+        return;
+    }
 
     if ( isReader() && (k->getName() == kOfxImageEffectFileParamName) ) {
         node->computeFrameRangeForReader(k);
@@ -3878,7 +3884,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
 
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
     assert(kh);
-    if ( kh && kh->isDeclaredByPlugin() ) {
+    if (kh && kh->isDeclaredByPlugin()) {
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
 
