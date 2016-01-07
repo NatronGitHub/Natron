@@ -1817,7 +1817,7 @@ private:
                                           Natron::ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<Natron::ImageComponents> & outputClipPrefsComps,
                                           const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
-                                          const std::bitset<4>& processChannels);
+                                          std::bitset<4> processChannels);
 
 
     /// \returns false if rendering was aborted

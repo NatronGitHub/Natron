@@ -1586,7 +1586,7 @@ EffectInstance::renderRoIInternal(double time,
                                   Natron::ImageBitDepthEnum outputClipPrefDepth,
                                   const std::list<Natron::ImageComponents> & outputClipPrefsComps,
                                   const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
-                                  const std::bitset<4>& processChannels)
+                                  const std::bitset<4> processChannels)
 {
     EffectInstance::RenderRoIStatusEnum retCode;
 
