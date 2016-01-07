@@ -361,14 +361,17 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                     {
                                         NodeGuiPtr edgeHasSource = edge->getSource();
                                         if (edgeHasSource) {
-                                            Natron::Node::CanConnectInputReturnValue ret = selectedNodeInternalNode->canConnectInput(edgeHasSource->getNode(), selectedNodeInternalNode->getPreferredInput());
-                                            if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
-                                                !selectedNodeIsReader) {
-                                                ret = Natron::Node::eCanConnectInput_ok;
-                                            }
-                                            
-                                            if (ret != Natron::Node::eCanConnectInput_ok) {
-                                                edge = 0;
+                                            int prefInput = selectedNodeInternalNode->getPreferredInputForConnection();
+                                            if (prefInput != -1) {
+                                                Natron::Node::CanConnectInputReturnValue ret = selectedNodeInternalNode->canConnectInput(edgeHasSource->getNode(), prefInput);
+                                                if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
+                                                    !selectedNodeIsReader) {
+                                                    ret = Natron::Node::eCanConnectInput_ok;
+                                                }
+                                                
+                                                if (ret != Natron::Node::eCanConnectInput_ok) {
+                                                    edge = 0;
+                                                }
                                             }
                                         }
                                     }
