@@ -343,14 +343,34 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                         continue;
                                     }
                                     
-                                    Natron::Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput(selectedNodeInternalNode, edge->getInputNumber());
-                                    if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
-                                        !selectedNodeIsReader) {
-                                        ret = Natron::Node::eCanConnectInput_ok;
+                                    //Check that the edge can connect to the selected node
+                                    {
+                                        Natron::Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput(selectedNodeInternalNode, edge->getInputNumber());
+                                        if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
+                                            !selectedNodeIsReader) {
+                                            ret = Natron::Node::eCanConnectInput_ok;
+                                        }
+                                        
+                                        if (ret != Natron::Node::eCanConnectInput_ok) {
+                                            edge = 0;
+                                        }
                                     }
                                     
-                                    if (ret != Natron::Node::eCanConnectInput_ok) {
-                                        edge = 0;
+                                    //Check that the selected node can connect to the input of the edge
+                                    
+                                    {
+                                        NodeGuiPtr edgeHasSource = edge->getSource();
+                                        if (edgeHasSource) {
+                                            Natron::Node::CanConnectInputReturnValue ret = selectedNodeInternalNode->canConnectInput(edgeHasSource->getNode(), selectedNodeInternalNode->getPreferredInput());
+                                            if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
+                                                !selectedNodeIsReader) {
+                                                ret = Natron::Node::eCanConnectInput_ok;
+                                            }
+                                            
+                                            if (ret != Natron::Node::eCanConnectInput_ok) {
+                                                edge = 0;
+                                            }
+                                        }
                                     }
                                     
                                 }

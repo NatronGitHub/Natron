@@ -3909,6 +3909,17 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
         return eCanConnectInput_givenNodeNotConnectable;
     }
     
+    ///Check for invalid index
+    {
+        QMutexLocker l(&_imp->inputsMutex);
+        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->guiInputs.size() )) {
+            return eCanConnectInput_indexOutOfRange;
+        }
+        if (_imp->guiInputs[inputNumber]) {
+            return eCanConnectInput_inputAlreadyConnected;
+        }
+    }
+    
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(input->getLiveInstance());
     if (isGrp && !isGrp->getOutputNode(true)) {
         return eCanConnectInput_groupHasNoOutput;
@@ -3936,15 +3947,6 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
     }
     
     {
-        ///Check for invalid index
-        QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->guiInputs.size() )) {
-            return eCanConnectInput_indexOutOfRange;
-        }
-        if (_imp->guiInputs[inputNumber]) {
-            return eCanConnectInput_inputAlreadyConnected;
-        }
-        
         ///Check for invalid pixel aspect ratio if the node doesn't support multiple clip PARs
         if (!_imp->liveInstance->supportsMultipleClipsPAR()) {
             
@@ -3952,6 +3954,8 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
             
             double inputFPS = input->getLiveInstance()->getPreferredFrameRate();
             
+            QMutexLocker l(&_imp->inputsMutex);
+
             for (InputsV::const_iterator it = _imp->guiInputs.begin(); it != _imp->guiInputs.end(); ++it) {
                 if (*it) {
                     if ((*it)->getLiveInstance()->getPreferredAspectRatio() != inputPAR) {
@@ -3986,6 +3990,15 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
     if (_imp->liveInstance->isInputRotoBrush(inputNumber)) {
         qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
         return false;
+    }
+    
+    ///For effects that do not support multi-resolution, make sure the input effect is correct
+    ///otherwise the rendering might crash
+    if (!_imp->liveInstance->supportsMultiResolution()) {
+        CanConnectInputReturnValue ret = checkCanConnectNoMultiRes(this, input);
+        if (ret != eCanConnectInput_ok) {
+            return false;
+        }
     }
     
     bool useGuiInputs = isNodeRendering();
@@ -4076,6 +4089,16 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
         qDebug() << "Debug: Attempt to connect " << input->getScriptName_mt_safe().c_str() << " to Roto brush";
         return false;
     }
+    
+    ///For effects that do not support multi-resolution, make sure the input effect is correct
+    ///otherwise the rendering might crash
+    if (!_imp->liveInstance->supportsMultiResolution()) {
+        CanConnectInputReturnValue ret = checkCanConnectNoMultiRes(this, input);
+        if (ret != eCanConnectInput_ok) {
+            return false;
+        }
+    }
+    
     bool useGuiInputs = isNodeRendering();
     _imp->liveInstance->abortAnyEvaluation();
     {
@@ -8820,6 +8843,15 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
     
     if ( !checkIfConnectingInputIsOk( input.get() ) ) {
         return false;
+    }
+    
+    ///For effects that do not support multi-resolution, make sure the input effect is correct
+    ///otherwise the rendering might crash
+    if (!getLiveInstance()->supportsMultiResolution()) {
+        CanConnectInputReturnValue ret = checkCanConnectNoMultiRes(this, input);
+        if (ret != eCanConnectInput_ok) {
+            return false;
+        }
     }
     
     ///If the node 'input' is already to an input of the inspector, find it.
