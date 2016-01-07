@@ -249,6 +249,20 @@ ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
 
     _imp->frameRangeEdit->setText(text);
     _imp->frameRangeEdit->adjustSize();
+    
+    if (getGui() ) {
+        const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+            ViewerInstance* viewer = (*it)->getInternalNode();
+            if (viewer) {
+                RenderEngine* engine = viewer->getRenderEngine();
+                if (engine && engine->hasThreadsWorking()) {
+                    engine->abortRendering(true,false);
+                    engine->renderCurrentFrame(false, true);
+                }
+            }
+        }
+    }
 }
 
 

@@ -668,7 +668,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                 grp->addKnob( knobHolder->getKnob() );
             } else {
                 // coverity[dead_error_line]
-                qDebug() << "Warning: attempting to set a parent which is not a group to parameter " << (*it)->getName().c_str();
+                std::cerr << "Warning: attempting to set a parent which is not a group to parameter " << (*it)->getName() << std::endl;;
                 continue;
             }
             
@@ -703,7 +703,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                 }
             }
             if (!child) {
-                qDebug() << "Warning: " << childName.c_str() << " is in the children list of " << (*it)->getName().c_str() << " but does not seem to be a valid parameter.";
+                std::cerr << "Warning: " << childName << " is in the children list of " << (*it)->getName() << " but does not seem to be a valid parameter." << std::endl;
                 continue;
             }
             if (child && !child->getParentKnob()) {
