@@ -848,11 +848,20 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
            EffectInstance::ComponentsNeededMap::iterator found = neededComps->find(inputnb);
             if (found != neededComps->end()) {
                 if (found->second.empty()) {
-                    qDebug() << "Plug-in didn't specify any needed components via getClipComponents for clip " << getName().c_str();
-                    return 0;
+                    
+                    ///We are in the case of a multi-plane effect who did not specify correctly the needed components for an input
+                    //fallback on the basic components indicated on the clip
+                    //This could be the case for example for the Mask Input
+                    std::list<ImageComponents> comps = ofxComponentsToNatronComponents(getComponents());
+                    assert(comps.size() == 1);
+                    comp = comps.front();
+                    foundCompsInTLS = true;
+                    //qDebug() << _imp->nodeInstance->getScriptName_mt_safe().c_str() << " didn't specify any needed components via getClipComponents for clip " << getName().c_str();
+                    
+                } else {
+                    comp = found->second.front();
+                    foundCompsInTLS = true;
                 }
-                comp = found->second.front();
-                foundCompsInTLS = true;
             }
         }
         

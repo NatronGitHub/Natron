@@ -1838,7 +1838,6 @@ private:
                                              RoIMap* inputsRoI);
 
     static boost::shared_ptr<Natron::Image> convertPlanesFormatsIfNeeded(const AppInstance* app,
-                                                                         bool targetIsMultiPlanar,
                                                                          const boost::shared_ptr<Natron::Image>& inputImage,
                                                                          const RectI& roi,
                                                                          const ImageComponents& targetComponents,

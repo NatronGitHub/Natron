@@ -158,7 +158,6 @@ optimizeRectsToRender(Natron::EffectInstance* self,
 
 ImagePtr
 EffectInstance::convertPlanesFormatsIfNeeded(const AppInstance* app,
-                                             bool targetIsMultiPlanar,
                                              const ImagePtr& inputImage,
                                              const RectI& roi,
                                              const ImageComponents& targetComponents,
@@ -167,7 +166,7 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstance* app,
                                              ImagePremultiplicationEnum outputPremult,
                                              int channelForAlpha)
 {
-    bool imageConversionNeeded = (!targetIsMultiPlanar && targetComponents.getNumComponents() != inputImage->getComponents().getNumComponents()) || targetDepth != inputImage->getBitDepth();
+    bool imageConversionNeeded = (/*!targetIsMultiPlanar &&*/ targetComponents.getNumComponents() != inputImage->getComponents().getNumComponents()) || targetDepth != inputImage->getBitDepth();
     if (!imageConversionNeeded) {
         return inputImage;
     } else {
@@ -565,7 +564,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                             premult = eImagePremultiplicationOpaque;
                         }
                         
-                        ImagePtr tmp = convertPlanesFormatsIfNeeded(app, isMultiPlanar(), *it, args.roi, *compIt, inputArgs->bitdepth, useAlpha0ForRGBToRGBAConversion, premult, -1);
+                        ImagePtr tmp = convertPlanesFormatsIfNeeded(app, *it, args.roi, *compIt, inputArgs->bitdepth, useAlpha0ForRGBToRGBAConversion, premult, -1);
                         assert(tmp);
                         convertedPlanes.push_back(tmp);
                     }
@@ -1538,7 +1537,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         
         ///The image might need to be converted to fit the original requested format
-        it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), false, it->second.downscaleImage, originalRoI, it->first, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender->outputPremult, -1);
+        it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, originalRoI, it->first, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender->outputPremult, -1);
         
         assert(it->second.downscaleImage->getComponents() == it->first && it->second.downscaleImage->getBitDepth() == args.bitdepth);
         outputPlanes->push_back(it->second.downscaleImage);

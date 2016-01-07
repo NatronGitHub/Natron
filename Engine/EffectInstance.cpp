@@ -925,7 +925,7 @@ EffectInstance::getImage(int inputNb,
     getPreferredDepthAndComponents(inputNb, &prefComps, &prefDepth);
     assert(!prefComps.empty());
     
-    inputImg = convertPlanesFormatsIfNeeded(getApp(), isMultiPlanar(), inputImg, pixelRoI, prefComps.front(), prefDepth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult, channelForMask);
+    inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, prefComps.front(), prefDepth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult, channelForMask);
     
     if (inputImagesThreadLocal.empty()) {
         ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
