@@ -2193,24 +2193,29 @@ Node::getInputNames(std::map<std::string,std::string> & inputNames) const
 int
 Node::getPreferredInputInternal(bool connected) const
 {
-    if (getMaxInputCount() == 0) {
+    
+    int nInputs = getMaxInputCount();
+    if (nInputs == 0) {
         return -1;
+    }
+    std::vector<NodePtr> inputs(nInputs);
+    std::vector<std::string> inputLabels(nInputs);
+    for (int i = 0; i < nInputs; ++i) {
+        inputLabels[i] = getInputLabel(i);
     }
     
     {
         ///Find an input named Source
         std::string inputNameToFind(kOfxImageEffectSimpleSourceClipName);
-        int maxinputs = getMaxInputCount();
-        for (int i = 0; i < maxinputs ; ++i) {
-            if (getInputLabel(i) == inputNameToFind) {
-                NodePtr inp = getInput(i);
-                if ((connected && inp) || (!connected && !inp)) {
+        for (int i = 0; i < nInputs ; ++i) {
+            if (inputLabels[i] == inputNameToFind) {
+                inputs[i] = getInput(i);
+                if ((connected && inputs[i]) || (!connected && !inputs[i])) {
                     return i;
                 }
             }
         }
     }
-    
     
     bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
     
@@ -2224,40 +2229,41 @@ Node::getPreferredInputInternal(bool connected) const
         otherName = "A";
     }
     int foundOther = -1;
-    int maxinputs = getMaxInputCount();
-    for (int i = 0; i < maxinputs ; ++i) {
-        std::string inputLabel = getInputLabel(i);
-        if (inputLabel == inputNameToFind ) {
-            NodePtr inp = getInput(i);
-            if ((connected && inp) || (!connected && !inp)) {
+    for (int i = 0; i < nInputs ; ++i) {
+        if (inputLabels[i] == inputNameToFind ) {
+            inputs[i] = getInput(i);
+            if ((connected && inputs[i]) || (!connected && !inputs[i])) {
                 return i;
             }
-        } else if (inputLabel == otherName) {
+        } else if (inputLabels[i] == otherName) {
             foundOther = i;
         }
     }
     if (foundOther != -1) {
-        NodePtr inp = getInput(foundOther);
-        if ((connected && inp) || (!connected && !inp)) {
+        inputs[foundOther] = getInput(foundOther);
+        if ((connected && inputs[foundOther]) || (!connected && !inputs[foundOther])) {
             return foundOther;
         }
     }
     
     
-    
+    for (int i = 0; i < nInputs; ++i) {
+        if (!inputs[i]) {
+            inputs[i] = getInput(i);
+        }
+    }
+
     
     ///we return the first non-optional empty input
     int firstNonOptionalEmptyInput = -1;
     std::list<int> optionalEmptyInputs;
     std::list<int> optionalEmptyMasks;
-    int nMaxInputs = getMaxInputCount();
     
-    for (int i = 0; i < nMaxInputs; ++i) {
+    for (int i = 0; i < nInputs; ++i) {
         if (_imp->liveInstance->isInputRotoBrush(i)) {
             continue;
         }
-        NodePtr input = getInput(i);
-        if ((connected && input) || (!connected && !input)) {
+        if ((connected && inputs[i]) || (!connected && !inputs[i])) {
             if ( !_imp->liveInstance->isInputOptional(i) ) {
                 if (firstNonOptionalEmptyInput == -1) {
                     firstNonOptionalEmptyInput = i;
