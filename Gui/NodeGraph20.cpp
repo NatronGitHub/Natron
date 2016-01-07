@@ -358,7 +358,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
                                     
                                     //Check that the selected node can connect to the input of the edge
                                     
-                                    {
+                                    if (edge) {
                                         NodeGuiPtr edgeHasSource = edge->getSource();
                                         if (edgeHasSource) {
                                             int prefInput = selectedNodeInternalNode->getPreferredInputForConnection();
