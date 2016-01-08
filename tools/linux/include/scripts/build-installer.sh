@@ -209,7 +209,7 @@ cp $INSTALL_PATH/share/stylesheets/mainstyle.qss $NATRON_PATH/data/share/ || exi
 cat $INSTALL_PATH/docs/natron/LICENSE.txt > $NATRON_PATH/meta/natron-license.txt || exit 1
 cp $INSTALL_PATH/bin/Natron* $NATRON_PATH/data/bin/ || exit 1
 $INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/Natron > $INSTALL_PATH/symbols/Natron-${TAG}-${PKGOS}.sym || exit 1
-$INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/NatronRenderer > $INSTALL_PATH/symbols/NatronRenderer-${TAG}${PKGOS}.sym || exit 1
+$INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/NatronRenderer > $INSTALL_PATH/symbols/NatronRenderer-${TAG}-${PKGOS}.sym || exit 1
 strip -s $NATRON_PATH/data/bin/Natron $NATRON_PATH/data/bin/NatronRenderer
 if [ -f "$NATRON_PATH/data/bin/NatronCrashReporter" ]; then
     strip -s $NATRON_PATH/data/bin/NatronCrashReporter $NATRON_PATH/data/bin/NatronRendererCrashReporter
