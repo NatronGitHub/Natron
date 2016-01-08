@@ -2847,7 +2847,6 @@ OfxEffectInstance::getTransform(double time,
                                 Natron::EffectInstance** inputToTransform,
                                 Transform::Matrix3x3* transform)
 {
-    assert(getCanTransform());
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     
     std::string clipName;
