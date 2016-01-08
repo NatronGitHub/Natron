@@ -68,7 +68,8 @@ compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-
 
 patch.pre_args	-p1
 patchfiles \
-    oiio-x86intrin.patch
+    oiio-x86intrin.patch \
+    oiio-sha1.patch
 
 cmake.out_of_source yes
 
