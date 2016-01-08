@@ -171,7 +171,11 @@ if [ "$PYV" = "3" ]; then
     PYO="PYTHON_CONFIG=python3.4m-config"
 fi
 
-env CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo CONFIG+=gbreakpad CONFIG+=silent ${EXTRA_QMAKE_FLAG} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
+if [ "${BREAKPAD}" != "0" ]; then
+  WITH_BPAD="CONFIG+=gbreakpad"
+fi
+
+env CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${WITH_BPAD} CONFIG+=silent ${EXTRA_QMAKE_FLAG} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
 make -j${MKJOBS} || exit 1
 
 cp App/Natron $INSTALL_PATH/bin/ || exit 1
