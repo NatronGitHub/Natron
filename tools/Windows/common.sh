@@ -119,7 +119,7 @@ CAIRO_TAR=cairo-1.14.2.tar.xz
 # [FD] FFmpeg on windows is kept back at version 2.7.2, why?
 # please comment.
 OCIO_TAR=OpenColorIO-1.0.9.tar.gz
-OIIO_TAR=oiio-Release-1.6.8.tar.gz
+OIIO_TAR=oiio-Release-1.6.9.tar.gz
 PYSIDE_TAR=pyside-qt4.8+1.2.2.tar.bz2
 SHIBOK_TAR=shiboken-1.2.2.tar.bz2
 LIBXML_TAR=libxml2-2.9.2.tar.gz
