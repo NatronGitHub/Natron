@@ -18,7 +18,7 @@
 # ***** END LICENSE BLOCK *****
 
 # DISABLE_BREAKPAD=1: When set, automatic crash reporting (google-breakpad support) will be disabled
-source `pwd`/common.sh || exit 1
+source "$CWD"/common.sh || exit 1
 if [ $# -ne 1 ]; then
     echo "$0: Make a Natron.app that doesn't depend on MacPorts (can be used out of the build system too)"
     echo "Usage: $0 App/Natron.app"
