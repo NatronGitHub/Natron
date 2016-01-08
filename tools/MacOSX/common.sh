@@ -24,6 +24,8 @@ TMP=$CWD/tmp
 PKGOS=OSX
 BIT=Universal
 
+DUMP_SYMS=/usr/local/bin/dump_syms
+
 
 if [ ! -f "$CWD/local.sh" ]; then
     echo "Please create local.sh, see README."
