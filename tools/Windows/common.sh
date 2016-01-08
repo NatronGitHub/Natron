@@ -116,10 +116,8 @@ EXR_TAR=openexr-2.2.0.tar.gz
 GLEW_TAR=glew-1.12.0.tgz
 BOOST_TAR=boost_1_55_0.tar.gz
 CAIRO_TAR=cairo-1.14.2.tar.xz
-# [FD] FFmpeg on windows is kept back at version 2.7.2, why?
-# please comment.
 OCIO_TAR=OpenColorIO-1.0.9.tar.gz
-OIIO_TAR=oiio-Release-1.6.9.tar.gz
+OIIO_TAR=oiio-Release-1.6.9.tar.gz 
 PYSIDE_TAR=pyside-qt4.8+1.2.2.tar.bz2
 SHIBOK_TAR=shiboken-1.2.2.tar.bz2
 LIBXML_TAR=libxml2-2.9.2.tar.gz
@@ -141,17 +139,6 @@ FFMPEG_MXE_BIN_64_LGPL_TAR=ffmpeg-2.8.3-windows-x86_64-shared-LGPL.tar.xz
 FFMPEG_MXE_BIN_32_LGPL_TAR=ffmpeg-2.8.3-windows-i686-shared-LGPL.tar.xz
 
 NATRON_API_DOC=https://media.readthedocs.org/pdf/natron/workshop/natron.pdf # TODO generate own
-
-GCC_V=`gcc --version | awk '{print $0;exit 0;}' | awk '{print $7}' | sed -e 's#\.# #g'`
-GCC_MAJOR=`echo $GCC_V | awk '{print $1}'`
-GCC_MINOR=`echo $GCC_V | awk '{print $2}'`
-if [ "$GCC_MAJOR" -lt "4" ]; then
-    echo "Wrong GCC version. Must be at least 4.8"
-    exit 1
-elif [ "$GCC_MAJOR" -eq "4" ] && [ "$GCC_MINOR" -lt "8" ]; then
-    echo "Wrong GCC version. Must be at least 4.8"
-    exit 1
-fi
 
 # Threads
 #
