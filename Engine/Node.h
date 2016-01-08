@@ -428,6 +428,9 @@ public:
     void setCurrentSequentialRenderSupport(Natron::SequentialPreferenceEnum support);
     Natron::SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
     
+    void setCurrentCanTransform(bool support);
+    bool getCurrentCanTransform() const;
+    
     void setCurrentSupportTiles(bool support);
     bool getCurrentSupportTiles() const;
     

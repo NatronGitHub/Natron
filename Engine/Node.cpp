@@ -288,6 +288,7 @@ struct Node::Implementation
     , currentSupportTiles(false)
     , currentSupportOpenGLRender(Natron::ePluginOpenGLRenderSupportNone)
     , currentSupportSequentialRender(Natron::eSequentialPreferenceNotSequential)
+    , currentCanTransform(false)
     , draftModeUsed(false)
     , mustComputeInputRelatedData(true)
     , duringPaintStrokeCreation(false)
@@ -510,6 +511,7 @@ struct Node::Implementation
     bool currentSupportTiles;
     Natron::PluginOpenGLRenderSupport currentSupportOpenGLRender;
     Natron::SequentialPreferenceEnum currentSupportSequentialRender;
+    bool currentCanTransform;
     bool draftModeUsed,mustComputeInputRelatedData;
 
     
@@ -923,14 +925,29 @@ Node::getCurrentSupportTiles() const
 }
 
 void
+Node::setCurrentCanTransform(bool support)
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+    _imp->currentCanTransform = support;
+}
+
+bool
+Node::getCurrentCanTransform() const
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+    return _imp->currentCanTransform;
+}
+
+void
 Node::refreshDynamicProperties()
 {
     setCurrentOpenGLRenderSupport(_imp->liveInstance->supportsOpenGLRender());
     bool tilesSupported = _imp->liveInstance->supportsTiles();
     bool multiResSupported = _imp->liveInstance->supportsMultiResolution();
+    bool canTransform = _imp->liveInstance->getCanTransform();
     setCurrentSupportTiles(multiResSupported && tilesSupported);
     setCurrentSequentialRenderSupport(_imp->liveInstance->getSequentialPreference());
-
+    setCurrentCanTransform(canTransform);
 }
 
 void

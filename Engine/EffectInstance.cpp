@@ -1343,23 +1343,28 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 boost::shared_ptr<ImageParams> oldParams = imageToConvert->getParams();
 
                 assert(imageToConvert->getMipMapLevel() < mipMapLevel);
-
+                
+                //This is the bounds of the upscaled image
                 RectI imgToConvertBounds = imageToConvert->getBounds();
+                
+                //The rodParam might be different of oldParams->getRoD() simply because the RoD is dependent on the mipmap level
                 const RectD & rod = rodParam ? *rodParam : oldParams->getRoD();
-                RectD imgToConvertCanonical;
-                imgToConvertBounds.toCanonical(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), rod, &imgToConvertCanonical);
+                
+                
+                //RectD imgToConvertCanonical;
+                //imgToConvertBounds.toCanonical(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), rod, &imgToConvertCanonical);
                 RectI downscaledBounds;
-
+                rod.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
                 //imgToConvertCanonical.toPixelEnclosing(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), &imgToConvertBounds);
-                imgToConvertCanonical.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
+                //imgToConvertCanonical.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
 
                 if (boundsParam) {
                     downscaledBounds.merge(*boundsParam);
                 }
 
-                RectI pixelRoD;
-                rod.toPixelEnclosing(mipMapLevel, oldParams->getPixelAspectRatio(), &pixelRoD);
-                downscaledBounds.intersect(pixelRoD, &downscaledBounds);
+                //RectI pixelRoD;
+                //rod.toPixelEnclosing(mipMapLevel, oldParams->getPixelAspectRatio(), &pixelRoD);
+                //downscaledBounds.intersect(pixelRoD, &downscaledBounds);
 
                 boost::shared_ptr<ImageParams> imageParams = Image::makeParams( oldParams->getCost(),
                                                                                 rod,
@@ -1381,9 +1386,22 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                     return;
                 }
 
+                
+                /*
+                 Since the RoDs of the 2 mipmaplevels are different, their bounds do not match exactly as po2
+                 To determine which portion we downscale, we downscale the initial image bounds to the mipmap level
+                 of the downscale image, clip it against the bounds of the downscale image, re-upscale it to the
+                 original mipmap level and ensure that it lies into the original image bounds
+                 */
+                int downscaleLevels = img->getMipMapLevel() - imageToConvert->getMipMapLevel();
+                RectI dstRoi = imgToConvertBounds.downscalePowerOfTwoSmallestEnclosing(downscaleLevels);
+                dstRoi.intersect(downscaledBounds, &dstRoi);
+                dstRoi = dstRoi.upscalePowerOfTwo(downscaleLevels);
+                dstRoi.intersect(imgToConvertBounds, &dstRoi);
+                
                 if (imgToConvertBounds.area() > 1) {
                     imageToConvert->downscaleMipMap( rod,
-                                                     imgToConvertBounds,
+                                                     dstRoi,
                                                      imageToConvert->getMipMapLevel(), img->getMipMapLevel(),
                                                      useCache && imageToConvert->usesBitMap(),
                                                      img.get() );
@@ -1420,7 +1438,7 @@ EffectInstance::tryConcatenateTransforms(double time,
                                          const RenderScale & scale,
                                          InputMatrixMap* inputTransforms)
 {
-    bool canTransform = getCanTransform();
+    bool canTransform = getNode()->getCurrentCanTransform();
 
     //An effect might not be able to concatenate transforms but can still apply a transform (e.g CornerPinMasked)
     std::list<int> inputHoldingTransforms;
@@ -1460,7 +1478,7 @@ EffectInstance::tryConcatenateTransforms(double time,
             bool inputIsDisabled  =  input->getNode()->isNodeDisabled();
 
             if (!inputIsDisabled) {
-                inputCanTransform = input->getCanTransform();
+                inputCanTransform = input->getNode()->getCurrentCanTransform();
             }
 
 
@@ -1499,7 +1517,7 @@ EffectInstance::tryConcatenateTransforms(double time,
                 if (input) {
                     inputIsDisabled = input->getNode()->isNodeDisabled();
                     if (!inputIsDisabled) {
-                        inputCanTransform = input->getCanTransform();
+                        inputCanTransform = input->getNode()->getCurrentCanTransform();
                     }
                 }
             }
@@ -3003,7 +3021,7 @@ EffectInstance::getTransform_public(double time,
                                     Transform::Matrix3x3* transform)
 {
     RECURSIVE_ACTION();
-    assert( getCanTransform() );
+    assert( getNode()->getCurrentCanTransform() );
 
     return getTransform(time, renderScale, view, inputToTransform, transform);
 }
