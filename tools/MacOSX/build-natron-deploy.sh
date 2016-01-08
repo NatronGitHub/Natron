@@ -17,6 +17,8 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
+# DISABLE_BREAKPAD=1: When set, automatic crash reporting (google-breakpad support) will be disabled
+source `pwd`/common.sh || exit 1
 if [ $# -ne 1 ]; then
     echo "$0: Make a Natron.app that doesn't depend on MacPorts (can be used out of the build system too)"
     echo "Usage: $0 App/Natron.app"
@@ -412,9 +414,20 @@ done
 
 find $pkglib -type f -exec sed -e "s@$MACPORTS@$MACRAND@g" -e "s@$HOMEBREW@$HOMEBREWRAND@g" -e "s@$LOCAL@$LOCALRAND@g" -i "" {} \;
 
+for bin in Natron NatronRenderer ; do
+
+    binary="$package/Contents/MacOS/$bin";
+    #Dump symbols for breakpad before stripping
+    if [ "$DISABLE_BREAKPAD" != "1" ]; then
+        $DUMP_SYMS "$binary" -a x86_64 > "$CWD/build/symbols/Natron-${TAG}-Mac-x86_64.sym"
+        $DUMP_SYMS "$binary" -a i386 > "$CWD/build/symbols/Natron-${TAG}-Mac-i386.sym"
+    fi
+fi
+
 if [ "$STRIP" = 1 ]; then
     for bin in Natron NatronRenderer NatronCrashReporter NatronRendererCrashReporter; do
         binary="$package/Contents/MacOS/$bin";
+
         if [ -x "$binary" ]; then
             echo "* stripping $binary";
             # Retain the original binary for QA and use with the util 'atos'

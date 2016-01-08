@@ -155,6 +155,17 @@ env BUILD_CONFIG=STABLE BUILD_NUMBER=1 CONFIG=relwithdebinfo BRANCH=tag  MKJOBS=
 
 The server will now auto build from the workshop branch on changes.
 
+## Google-breakpad
+
+In order to have the automatic crash report system working, the build script will dump symbols from the binaries
+and upload them to the server so that the Socorro server can process them upon receiving a crash.
+The binary to dump symbols is located in Natron/google-breakpad/src/tools/mac/dump_syms and can be built as so:
+
+cd Natron/google-breakpad/src/tools/mac/dump_syms
+xcodebuild GCC_VERSION=com.apple.compilers.llvmgcc42 GCC_TREAT_WARNINGS_AS_ERRORS=NO
+mkdir -p /usr/local/bin
+cp build/Release/dump_syms /usr/local/bin
+
 ## Online repository
 
 When building Natron you can upload it to a server (`UPLOAD=1`). For this to work you need to create a file named `local.sh` next to `snapshot.sh`, with for example the following content:

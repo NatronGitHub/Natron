@@ -17,6 +17,10 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
+# MKJOBS: Number of threads
+# CONFIG=(debug,release,relwithdebinfo): the build type
+# DISABLE_BREAKPAD=1: When set, automatic crash reporting (google-breakpad support) will be disabled
+# PLUGINDIR: The path to the plug-ins in the final bundle, e.g: "$CWD/build/Natron/App/Natron.app/Contents/Plugins"
 #Usage PLUGINDIR="..." MKJOBS=4 CONFIG=relwithdebinfo BRANCH=workshop ./build-plugins.sh
 
 source `pwd`/common.sh || exit 1
@@ -56,6 +60,7 @@ IO_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 sed -i "" -e "s/IOPLUG_DEVEL_GIT=.*/IOPLUG_DEVEL_GIT=${IO_GIT_VERSION}/" $CWD/commits-hash.sh || exit 1
 
 make CXX="$CXX" BITS=$BITS CONFIG=$CONFIG OCIO_HOME=/opt/local OIIO_HOME=/opt/local SEEXPR_HOME=/opt/local -j${MKJOBS} || exit 1
+
 cp -r IO/$OS-$BITS-$CONFIG/IO.ofx.bundle "$PLUGINDIR/OFX/Natron" || exit 1
 cd ..
 
@@ -113,6 +118,39 @@ sed -i "" -e "s/ARENAPLUG_DEVEL_GIT=.*/ARENAPLUG_DEVEL_GIT=${ARENA_GIT_VERSION}/
 make CXX="$CXX" USE_PANGO=1 USE_SVG=1 STATIC=1 BITS=$BITS CONFIG=$CONFIG -j${MKJOBS} || exit 1
 cp -r Bundle/$OS-$BITS-$CONFIG/Arena.ofx.bundle "$PLUGINDIR/OFX/Natron" || exit 1
 cd ..
+
+#Dump symbols for breakpad before stripping
+if [ "$DISABLE_BREAKPAD" != "1" ]; then
+    for bin in IO Misc CImg Arena;
+        binary="$PLUGINDIR"/$bin.ofx.bundle/*/*/$bin.ofx
+        $DUMP_SYMS "$PLUGINDIR/$bin.ofx.bundle/*/*/$bin.ofx" -a x86_64 > "$CWD/build/symbols/$bin.ofx-${TAG}-Mac-x86_64.sym"
+        $DUMP_SYMS "$PLUGINDIR/$bin.ofx.bundle/*/*/$bin.ofx" -a i386 > "$CWD/build/symbols/$bin.ofx-${TAG}-Mac-i386.sym"
+        #Strip binary
+        if [ -x "$binary" ]; then
+            echo "* stripping $binary";
+            # Retain the original binary for QA and use with the util 'atos'
+            #mv -f "$binary" "${binary}_FULL";
+            if lipo "$binary" -verify_arch i386 x86_64; then
+                # Extract each arch into a "thin" binary for stripping
+                lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
+                lipo "$binary" -thin i386   -output "${binary}_i386";
+
+
+                # Perform desired stripping on each thin binary.
+                strip -S -x -r "${binary}_i386";
+                strip -S -x -r "${binary}_x86_64";
+
+                # Make the new universal binary from our stripped thin pieces.
+                lipo -arch i386 "${binary}_i386" -arch x86_64 "${binary}_x86_64" -create -output "${binary}";
+
+                # We're now done with the temp thin binaries, so chuck them.
+                rm -f "${binary}_i386";
+                rm -f "${binary}_x86_64";
+            fi
+            #rm -f "${binary}_FULL";
+        fi
+    done
+fi
 
 # move all libraries to the same place, put symbolic links instead
 for plugin in "$PLUGINDIR"/*.ofx.bundle; do
