@@ -755,6 +755,15 @@ public:
      * This function will also be called on all inputs
      **/
     void clearPersistentMessage(bool recurse);
+    
+private:
+    
+    void clearPersistentMessageRecursive(std::list<Node*>& markedNodes);
+    
+    void clearPersistentMessageInternal();
+    
+public:
+    
 
     void purgeAllInstancesCaches();
 

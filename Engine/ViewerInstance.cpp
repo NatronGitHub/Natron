@@ -1269,6 +1269,10 @@ ViewerInstance::renderViewer_internal(int view,
     }
     assert(inArgs.params->ramBuffer);
     
+    //We are going to render a non cached frame and not in playback, clear persistent messages
+    if (!inArgs.params->isSequential) {
+        clearPersistentMessage(true);
+    }
     
     std::list<ImageComponents> components;
     ImageBitDepthEnum imageDepth;

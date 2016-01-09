@@ -5387,27 +5387,52 @@ Node::getPersistentMessage(QString* message,int* type,bool prefixLabelAndType) c
 }
 
 void
-Node::clearPersistentMessage(bool recurse)
+Node::clearPersistentMessageRecursive(std::list<Node*>& markedNodes)
 {
-    if ( !appPTR->isBackground() ) {
-        {
-            QMutexLocker k(&_imp->persistentMessageMutex);
-            if (!_imp->persistentMessage.isEmpty()) {
-                _imp->persistentMessage.clear();
-                k.unlock();
-                Q_EMIT persistentMessageChanged();
-            }
+    if (std::find(markedNodes.begin(), markedNodes.end(), this) != markedNodes.end()) {
+        return;
+    }
+    markedNodes.push_back(this);
+    clearPersistentMessageInternal();
+    
+    int nInputs = getMaxInputCount();
+    ///No need to lock, guiInputs is only written to by the main-thread
+    for (int i = 0; i < nInputs; ++i) {
+        NodePtr input = getInput(i);
+        if (input) {
+            input->clearPersistentMessageRecursive(markedNodes);
         }
     }
+}
+
+void
+Node::clearPersistentMessageInternal()
+{
     
-    if (recurse) {
-        QMutexLocker l(&_imp->inputsMutex);
-        ///No need to lock, guiInputs is only written to by the main-thread
-        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            if (_imp->inputs[i]) {
-                _imp->inputs[i]->clearPersistentMessage(true);
-            }
+    bool changed;
+    {
+        QMutexLocker k(&_imp->persistentMessageMutex);
+        changed = !_imp->persistentMessage.isEmpty();
+        if (changed) {
+            _imp->persistentMessage.clear();
         }
+    }
+    if (changed) {
+        Q_EMIT persistentMessageChanged();
+    }
+}
+
+void
+Node::clearPersistentMessage(bool recurse)
+{
+    if (getApp()->isBackground()) {
+        return;
+    }
+    if (recurse) {
+        std::list<Node*> markedNodes;
+        clearPersistentMessageRecursive(markedNodes);
+    } else {
+        clearPersistentMessageInternal();
     }
     
 }
