@@ -56,7 +56,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_PYPLUG_EXPORTER_VERSION 4
+#define NATRON_PYPLUG_EXPORTER_VERSION 5
 
 using namespace Natron;
 
@@ -2093,7 +2093,25 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     if (!aliasedParam || aliasedParam->getHintToolTip() != knob->getHintToolTip()) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setHelp(" + ESC(help) + ")");
     }
-    if (knob->isNewLineActivated()) {
+    
+    
+    bool previousHasNewLineActivated = true;
+    std::vector<boost::shared_ptr<KnobI> > children;
+    if (group) {
+        children = group->getChildren();
+    } else if (page) {
+        children = page->getChildren();
+    }
+    for (U32 i = 0; i < children.size(); ++i) {
+        if (children[i] == knob) {
+            if (i > 0) {
+                previousHasNewLineActivated = children[i - 1]->isNewLineActivated();
+            }
+            break;
+        }
+    }
+    
+    if (previousHasNewLineActivated) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setAddNewLine(True)");
     } else {
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setAddNewLine(False)");
