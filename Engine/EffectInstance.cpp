@@ -4077,7 +4077,7 @@ EffectInstance::getNearestNonDisabled() const
         }
 
         ///We didn't find anything upstream, return
-        return NULL;
+        return node->getLiveInstance();
     }
 } // EffectInstance::getNearestNonDisabled
 
