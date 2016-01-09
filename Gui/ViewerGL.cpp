@@ -1726,6 +1726,8 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         displayingImage() ) {
         // disable picker if picker is set when clicking
         _imp->pickerState = ePickerStateInactive;
+        _imp->viewerTab->getGui()->clearColorPickers();
+        unsetCursor();
         mustRedraw = true;
         overlaysCaught = true;
     }
