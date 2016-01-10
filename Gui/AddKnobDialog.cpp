@@ -1586,7 +1586,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
 KnobGroup*
 AddKnobDialogPrivate::getSelectedGroup() const
 {
-    if (parentGroup) {
+    if (parentGroup && parentGroup->isVisible()) {
         std::string selectedItem = parentGroup->getCurrentIndexText().toStdString();
         if (selectedItem != "-") {
             for (std::list<KnobGroup*>::const_iterator it = userGroups.begin(); it != userGroups.end(); ++it) {
@@ -1602,7 +1602,7 @@ AddKnobDialogPrivate::getSelectedGroup() const
 boost::shared_ptr<KnobPage>
 AddKnobDialogPrivate::getSelectedPage() const
 {
-    if (parentPage) {
+    if (parentPage && parentPage->isVisible()) {
         std::string selectedItem = parentPage->getCurrentIndexText().toStdString();
         if (selectedItem == NATRON_USER_MANAGED_KNOBS_PAGE) {
             return panel->getUserPageKnob();

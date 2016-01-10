@@ -1107,14 +1107,17 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
                     _imp->refreshPagesSecretness();
                 }
             }
-            found->second.tab->deleteLater();
-            found->second.currentRow = 0;
-            _imp->_pages.erase(found);
             
             std::vector<boost::shared_ptr<KnobI> > children = isPage->getChildren();
             for (U32 i = 0; i < children.size(); ++i) {
                 deleteKnobGui(children[i]);
             }
+            
+            found->second.tab->deleteLater();
+            found->second.currentRow = 0;
+            _imp->_pages.erase(found);
+            
+            
         }
         
     } else {
