@@ -17,8 +17,9 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
+# DUMP_SYMS=...: Absolute path to binary of dump_syms
+# SYMBOLS_PATH=...: Absolute path to the dst symbols
 # DISABLE_BREAKPAD=1: When set, automatic crash reporting (google-breakpad support) will be disabled
-source `pwd`/../../common.sh || exit 1
 if [ $# -ne 1 ]; then
     echo "$0: Make a Natron.app that doesn't depend on MacPorts (can be used out of the build system too)"
     echo "Usage: $0 App/Natron.app"
@@ -419,8 +420,8 @@ for bin in Natron NatronRenderer ; do
     binary="$package/Contents/MacOS/$bin";
     #Dump symbols for breakpad before stripping
     if [ "$DISABLE_BREAKPAD" != "1" ]; then
-        $DUMP_SYMS "$binary" -a x86_64 > "$CWD/build/symbols/Natron-${TAG}-Mac-x86_64.sym"
-        $DUMP_SYMS "$binary" -a i386 > "$CWD/build/symbols/Natron-${TAG}-Mac-i386.sym"
+        $DUMP_SYMS "$binary" -a x86_64 > "$SYMBOLS_PATH/Natron-${TAG}-Mac-x86_64.sym"
+        $DUMP_SYMS "$binary" -a i386 > "../../build/symbols/Natron-${TAG}-Mac-i386.sym"
     fi
 fi
 
