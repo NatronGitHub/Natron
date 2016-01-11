@@ -886,12 +886,14 @@ KnobGuiColor::showColorDialog()
         curA = knob->getValue(3);
         _lastColor[3] = curA;
     }
+    
+    bool isSimple = knob->isSimplified();
 
     QColor curColor;
-    curColor.setRgbF(Natron::clamp<qreal>(Natron::Color::to_func_srgb(curR), 0., 1.),
-                     Natron::clamp<qreal>(Natron::Color::to_func_srgb(curG), 0., 1.),
-                     Natron::clamp<qreal>(Natron::Color::to_func_srgb(curB), 0., 1.),
-                     Natron::clamp<qreal>(Natron::Color::to_func_srgb(curA), 0., 1.));
+    curColor.setRgbF(Natron::clamp<qreal>(isSimple ? curR : Natron::Color::to_func_srgb(curR), 0., 1.),
+                     Natron::clamp<qreal>(isSimple ? curG : Natron::Color::to_func_srgb(curG), 0., 1.),
+                     Natron::clamp<qreal>(isSimple ? curB : Natron::Color::to_func_srgb(curB), 0., 1.),
+                     Natron::clamp<qreal>(curA, 0., 1.));
     dialog.setCurrentColor(curColor);
     QObject::connect( &dialog,SIGNAL( currentColorChanged(QColor) ),this,SLOT( onDialogCurrentColorChanged(QColor) ) );
     if (!dialog.exec()) {
@@ -926,15 +928,15 @@ KnobGuiColor::showColorDialog()
         realColor.setAlpha(255);
 
         if (getKnob()->isEnabled(0)) {
-            _rBox->setValue(Natron::Color::from_func_srgb(realColor.redF()));
+            _rBox->setValue(isSimple ? realColor.redF() : Natron::Color::from_func_srgb(realColor.redF()));
         }
 
         if (_dimension >= 3) {
             if (getKnob()->isEnabled(1)) {
-                _gBox->setValue(Natron::Color::from_func_srgb(userColor.greenF()));
+                _gBox->setValue(isSimple ? realColor.greenF() : Natron::Color::from_func_srgb(userColor.greenF()));
             }
             if (getKnob()->isEnabled(2)) {
-                _bBox->setValue(Natron::Color::from_func_srgb(userColor.blueF()));
+                _bBox->setValue(isSimple ? realColor.blueF() : Natron::Color::from_func_srgb(userColor.blueF()));
             }
             realColor.setGreen(userColor.green());
             realColor.setBlue(userColor.blue());
@@ -959,18 +961,19 @@ void
 KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
 {
     boost::shared_ptr<KnobColor> knob = _knob.lock();
+    bool isSimple = knob->isSimplified();
     if (_dimension == 1) {
-        knob->setValue(Natron::Color::from_func_srgb(color.redF()), 0);
+        knob->setValue(color.redF(), 0);
     } else if (_dimension == 3) {
          ///Don't set alpha since the color dialog can only handle RGB
-        knob->setValues(Natron::Color::from_func_srgb(color.redF()),
-                        Natron::Color::from_func_srgb(color.greenF()),
-                        Natron::Color::from_func_srgb(color.blueF()),
+        knob->setValues(isSimple ? color.redF() : Natron::Color::from_func_srgb(color.redF()),
+                        isSimple ? color.greenF() : Natron::Color::from_func_srgb(color.greenF()),
+                        isSimple ? color.blueF() : Natron::Color::from_func_srgb(color.blueF()),
                         Natron::eValueChangedReasonNatronInternalEdited);
     } else if (_dimension == 4) {
-        knob->setValues(Natron::Color::from_func_srgb(color.redF()),
-                        Natron::Color::from_func_srgb(color.greenF()),
-                        Natron::Color::from_func_srgb(color.blueF()),
+        knob->setValues(isSimple ? color.redF() : Natron::Color::from_func_srgb(color.redF()),
+                        isSimple ? color.greenF() : Natron::Color::from_func_srgb(color.greenF()),
+                        isSimple ? color.blueF() : Natron::Color::from_func_srgb(color.blueF()),
                         1.,
                         Natron::eValueChangedReasonNatronInternalEdited);
     }
