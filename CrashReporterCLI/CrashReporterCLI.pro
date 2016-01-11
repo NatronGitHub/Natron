@@ -27,6 +27,8 @@ CONFIG += qt
 
 TEMPLATE = app
 
+include(../global.pri)
+
 gbreakpad {
 
 *g++* | *clang* {

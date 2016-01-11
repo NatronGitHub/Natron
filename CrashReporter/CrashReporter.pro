@@ -28,6 +28,8 @@ TEMPLATE = app
 
 INCLUDEPATH += $$PWD/..
 
+include(../global.pri)
+
 gbreakpad {
 
 *g++* | *clang* {
@@ -156,3 +158,4 @@ RESOURCES += \
 INSTALLS += target
 
 }
+

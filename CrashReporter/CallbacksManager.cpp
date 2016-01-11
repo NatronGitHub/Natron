@@ -407,7 +407,7 @@ CallbacksManager::s_emitDoCallBackOnMainThread(const QString& filePath)
     writeDebugMessage("Dump request received, file located at: " + filePath);
     if (QFile::exists(filePath)) {
 
-        emit doDumpCallBackOnMainThread(filePath);
+        Q_EMIT doDumpCallBackOnMainThread(filePath);
 
     } else {
         writeDebugMessage("Dump file does not seem to exist...exiting crash reporter now.");
