@@ -843,12 +843,15 @@ public:
     /**
      * @brief This function cannot be called until all knobs of the project have been created.
      **/
-    void restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,const std::list<boost::shared_ptr<Natron::Node> > & allNodes);
+    void restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
+                          const std::list<boost::shared_ptr<Natron::Node> > & allNodes,
+                          const std::map<std::string,std::string>& oldNewScriptNamesMapping);
     
     /**
      * @brief This function cannot be called until all knobs of the project have been created.
      **/
-    void restoreExpressions(const boost::shared_ptr<KnobI> & knob);
+    void restoreExpressions(const boost::shared_ptr<KnobI> & knob,
+                            const std::map<std::string,std::string>& oldNewScriptNamesMapping);
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL
     {

@@ -415,7 +415,7 @@ done
 
 find $pkglib -type f -exec sed -e "s@$MACPORTS@$MACRAND@g" -e "s@$HOMEBREW@$HOMEBREWRAND@g" -e "s@$LOCAL@$LOCALRAND@g" -i "" {} \;
 
-for bin in Natron NatronRenderer ; do
+for bin in Natron NatronRenderer; do
 
     binary="$package/Contents/MacOS/$bin";
     #Dump symbols for breakpad before stripping
@@ -423,7 +423,7 @@ for bin in Natron NatronRenderer ; do
         $DUMP_SYMS "$binary" -a x86_64 > "$SYMBOLS_PATH/Natron-${TAG}-Mac-x86_64.sym"
         $DUMP_SYMS "$binary" -a i386 > "../../build/symbols/Natron-${TAG}-Mac-i386.sym"
     fi
-fi
+done
 
 if [ "$STRIP" = 1 ]; then
     for bin in Natron NatronRenderer NatronCrashReporter NatronRendererCrashReporter; do

@@ -110,6 +110,7 @@ public Q_SLOTS:
     void initializeKnobsGui();
 
 private:
+    
 
 
     Gui* _gui;

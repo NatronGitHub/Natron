@@ -365,13 +365,17 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     if (isNodeGroup) {
         nodes.push_back(isNodeGroup->getNode());
     }
-    for (std::map<NodePtr, boost::shared_ptr<NodeSerialization> >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
-        if ( appPTR->isBackground() && (dynamic_cast<ViewerInstance*>((it->first)->getLiveInstance()))) {
-            //ignore viewers on background mode
-            continue;
+    
+    {
+        std::map<std::string,std::string> oldNewScriptNamesMapping;
+        for (std::map<NodePtr, boost::shared_ptr<NodeSerialization> >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
+            if ( appPTR->isBackground() && (dynamic_cast<ViewerInstance*>((it->first)->getLiveInstance()))) {
+                //ignore viewers on background mode
+                continue;
+            }
+            it->first->restoreKnobsLinks(*it->second,nodes,oldNewScriptNamesMapping);
+            
         }
-        it->first->restoreKnobsLinks(*it->second,nodes);
-        
     }
     
     ///Also reconnect parents of multiinstance nodes that were created on the fly

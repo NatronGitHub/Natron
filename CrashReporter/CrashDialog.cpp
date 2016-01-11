@@ -96,7 +96,7 @@ private:
 
 
 CrashDialog::CrashDialog(const QString &filePath)
-: QDialog(0,Qt::Dialog)
+: QDialog(0,Qt::Dialog | Qt::WindowStaysOnTopHint)
 , _filePath(filePath)
 , _mainLayout(0)
 , _mainFrame(0)

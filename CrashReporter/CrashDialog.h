@@ -60,7 +60,7 @@ public:
         return _filePath;
     }
     
-public slots:
+public Q_SLOTS:
     
     void onSendClicked();
     

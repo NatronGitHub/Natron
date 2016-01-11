@@ -319,7 +319,8 @@ struct Node::Implementation
                                    const boost::shared_ptr<KnobPage>& page);
     
     void restoreKnobLinksRecursive(const GroupKnobSerialization* group,
-                                   const std::list<boost::shared_ptr<Natron::Node> > & allNodes);
+                                   const std::list<boost::shared_ptr<Natron::Node> > & allNodes,
+                                   const std::map<std::string,std::string>& oldNewScriptNamesMapping);
     
     void ifGroupForceHashChangeOfInputs();
     
@@ -1529,7 +1530,8 @@ Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
 
 void
 Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* group,
-                                                const std::list<boost::shared_ptr<Natron::Node> > & allNodes)
+                                                const std::list<boost::shared_ptr<Natron::Node> > & allNodes,
+                                                const std::map<std::string,std::string>& oldNewScriptNamesMapping)
 {
     const std::list <boost::shared_ptr<KnobSerializationBase> >&  children = group->getChildren();
     for (std::list <boost::shared_ptr<KnobSerializationBase> >::const_iterator it = children.begin(); it != children.end(); ++it) {
@@ -1537,7 +1539,7 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
         KnobSerialization* isRegular = dynamic_cast<KnobSerialization*>(it->get());
         assert(isGrp || isRegular);
         if (isGrp) {
-            restoreKnobLinksRecursive(isGrp,allNodes);
+            restoreKnobLinksRecursive(isGrp,allNodes, oldNewScriptNamesMapping);
         } else if (isRegular) {
             boost::shared_ptr<KnobI> knob =  _publicInterface->getKnobByName( isRegular->getName() );
             if (!knob) {
@@ -1547,8 +1549,8 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
                 appPTR->writeToOfxLog_mt_safe(err);
                 continue;
             }
-            isRegular->restoreKnobLinks(knob,allNodes);
-            isRegular->restoreExpressions(knob);
+            isRegular->restoreKnobLinks(knob,allNodes, oldNewScriptNamesMapping);
+            isRegular->restoreExpressions(knob, oldNewScriptNamesMapping);
             isRegular->restoreTracks(knob,allNodes);
 
         }
@@ -1557,7 +1559,8 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
 
 void
 Node::restoreKnobsLinks(const NodeSerialization & serialization,
-                        const std::list<boost::shared_ptr<Natron::Node> > & allNodes)
+                        const std::list<boost::shared_ptr<Natron::Node> > & allNodes,
+                        const std::map<std::string,std::string>& oldNewScriptNamesMapping)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -1573,15 +1576,15 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
             appPTR->writeToOfxLog_mt_safe(err);
             continue;
         }
-        (*it)->restoreKnobLinks(knob,allNodes);
-        (*it)->restoreExpressions(knob);
+        (*it)->restoreKnobLinks(knob,allNodes, oldNewScriptNamesMapping);
+        (*it)->restoreExpressions(knob,oldNewScriptNamesMapping);
         (*it)->restoreTracks(knob,allNodes);
       
     }
     
     const std::list<boost::shared_ptr<GroupKnobSerialization> >& userKnobs = serialization.getUserPages();
     for (std::list<boost::shared_ptr<GroupKnobSerialization > >::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
-        _imp->restoreKnobLinksRecursive((*it).get(), allNodes);
+        _imp->restoreKnobLinksRecursive((*it).get(), allNodes, oldNewScriptNamesMapping);
     }
     
 }

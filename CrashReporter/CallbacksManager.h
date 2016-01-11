@@ -72,7 +72,7 @@ public:
 
     void writeToOutputPipe(const QString& str);
 
-public slots:
+public Q_SLOTS:
 
     void replyFinished();
 
@@ -88,7 +88,7 @@ public slots:
     
     void onProgressDialogCanceled();
     
-signals:
+Q_SIGNALS:
 
     void doDumpCallBackOnMainThread(QString);
 
