@@ -270,90 +270,6 @@ OfxClipInstancePrivate::getComponentsPresentInternal(const OfxClipInstance::Clip
     tls->componentsPresent.clear();
     
     EffectInstance::ComponentsAvailableMap compsAvailable;
-    
-    //The output clip cannot call getComponentsAvailable directly on _imp->nodeInstance because it will call
-    //the getClipComponents action which in turn might call getComponentsPresent for this clip.
-    //For the output clip we just merge components returned by getComponentsAvailable
-    /*if (isOutput()) {
-        //If called on the output clip and by a multi-planar effect while in the getClipComponents action
-        //this might lead to infinite recursion, so make sure we do not issue a call to getClipComponents again
-        double time = _imp->nodeInstance->getCurrentTime();
-        int maxInputs = _imp->nodeInstance->getMaxInputCount();
-        for (int i = 0; i < maxInputs; ++i) {
-            if (!_imp->nodeInstance->isInputMask(i) && !_imp->nodeInstance->isInputRotoBrush(i)) {
-                
-                EffectInstance::ComponentsAvailableMap comps;
-                EffectInstance* input = _imp->nodeInstance->getInput(i);
-                if (input) {
-                    input->getComponentsAvailable(true, time,&comps);
-                }
-                
-                
-                for (EffectInstance::ComponentsAvailableMap::iterator it = comps.begin(); it != comps.end(); ++it) {
-                    
-                    EffectInstance::ComponentsAvailableMap::iterator alreadyExisting = compsAvailable.end();
-                    EffectInstance::ComponentsAvailableMap::iterator colorMatch = compsAvailable.end();
-                    bool isColor = it->first.isColorPlane();
-                    for (EffectInstance::ComponentsAvailableMap::iterator it2 = compsAvailable.begin(); it2 != compsAvailable.end(); ++it2) {
-                        if (it2->first == it->first) {
-                            alreadyExisting = it2;
-                            break;
-                        } else if (isColor && it2->first.isColorPlane()) {
-                            colorMatch = it2;
-                        }
-                    }
-                    if (alreadyExisting == compsAvailable.end()) {
-                        if (colorMatch != compsAvailable.end()) {
-                            if (colorMatch->first.getNumComponents() < it->first.getNumComponents()) {
-                                compsAvailable.erase(colorMatch);
-                            } else {
-                                continue;
-                            }
-                        }
-                        compsAvailable.insert(*it);
-                    }
-                }
-                
-            }
-        }
-        std::list<ImageComponents> userComps;
-        _imp->nodeInstance->getNode()->getUserCreatedComponents(&userComps);
-        
-        ///Foreach user component, add it as an available component, but use this node only if it is also
-        ///in the "needed components" list
-        for (std::list<ImageComponents>::iterator it = userComps.begin(); it != userComps.end(); ++it) {
-            
-            EffectInstance::ComponentsAvailableMap::iterator alreadyExisting = compsAvailable.end();
-            
-            if (it->isColorPlane()) {
-                
-                EffectInstance::ComponentsAvailableMap::iterator colorMatch = compsAvailable.end();
-                
-                for (EffectInstance::ComponentsAvailableMap::iterator it2 = compsAvailable.begin(); it2 != compsAvailable.end(); ++it2) {
-                    if (it2->first == *it) {
-                        alreadyExisting = it2;
-                        break;
-                    } else if (it2->first.isColorPlane()) {
-                        colorMatch = it2;
-                    }
-                }
-                
-                if (alreadyExisting == compsAvailable.end() && colorMatch != compsAvailable.end()) {
-                    alreadyExisting = colorMatch;
-                }
-            } else {
-                alreadyExisting = compsAvailable.find(*it);
-            }
-            
-            //If the component already exists from below in the tree, do not add it
-            if (alreadyExisting == compsAvailable.end()) {
-                compsAvailable.insert(std::make_pair(*it, _imp->nodeInstance->getNode()));
-            }
-            
-        }
-     
-     
-     } else { //!isOutput*/
     Natron::EffectInstance* effect = _publicInterface->getAssociatedNode();
     if (!effect) {
         return tls->componentsPresent;
@@ -938,12 +854,19 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
     RectI renderWindow;
     boost::shared_ptr<Transform::Matrix3x3> transform;
 
+    //If the plug-in used fetchImage and not fetchImagePlane it is expected that we return
+    //an image mapped to the clip components
+    const bool mapImageToClipPref = ofxPlane == 0;
+    
     ImagePtr image = _imp->nodeInstance->getImage(inputnb, time, renderScale, view,
                                                   optionalBounds ? &bounds : NULL,
                                                   comp,
                                                   bitDepth,
                                                   par,
-                                                  false,&renderWindow,&transform);
+                                                  false,
+                                                  mapImageToClipPref,
+                                                  &renderWindow,
+                                                  &transform);
     
     
     if (!image || renderWindow.isNull()) {

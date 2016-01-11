@@ -323,7 +323,7 @@ RotoSmear::render(const RenderActionArgs& args)
         
         if (strokeIndex == 0) {
             ///For the first multi-stroke, init background
-            bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), Natron::eImageBitDepthFloat, par, false, &bgImgRoI);
+            bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), Natron::eImageBitDepthFloat, par, false, true, &bgImgRoI);
         }
 
         

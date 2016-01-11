@@ -582,6 +582,7 @@ EffectInstance::getImage(int inputNb,
                          const Natron::ImageBitDepthEnum depth,
                          const double par,
                          const bool dontUpscale,
+                         const bool mapImageToPreferredComps,
                          RectI* roiPixel,
                          boost::shared_ptr<Transform::Matrix3x3>* transform)
 {
@@ -920,12 +921,15 @@ EffectInstance::getImage(int inputNb,
     }
     
 
-    std::list<Natron::ImageComponents> prefComps;
-    ImageBitDepthEnum prefDepth;
-    getPreferredDepthAndComponents(inputNb, &prefComps, &prefDepth);
-    assert(!prefComps.empty());
     
-    inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, prefComps.front(), prefDepth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult, channelForMask);
+    if (mapImageToPreferredComps) {
+        std::list<Natron::ImageComponents> prefComps;
+        ImageBitDepthEnum prefDepth;
+        getPreferredDepthAndComponents(inputNb, &prefComps, &prefDepth);
+        assert(!prefComps.empty());
+        
+        inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, prefComps.front(), prefDepth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult, channelForMask);
+    }
     
     if (inputImagesThreadLocal.empty()) {
         ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
