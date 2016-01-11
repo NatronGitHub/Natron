@@ -1214,7 +1214,8 @@ LoadNodePresetsCommand::redo()
     if (isGroup) {
         isGroup->getActiveNodes(&allNodes);
     }
-    internalNode->restoreKnobsLinks(*_newSerializations.front(), allNodes);
+    std::map<std::string,std::string> oldNewScriptNames;
+    internalNode->restoreKnobsLinks(*_newSerializations.front(), allNodes,oldNewScriptNames);
     internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;

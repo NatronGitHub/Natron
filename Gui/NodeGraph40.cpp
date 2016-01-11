@@ -295,7 +295,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         NodeGuiSerialization guiSerialization;
         (*it)->serialize(&guiSerialization);
         boost::shared_ptr<NodeGui> clone = _imp->pasteNode( *internalSerialization, guiSerialization, offset,
-                                                           _imp->group.lock(),std::string(),true );
+                                                           _imp->group.lock(),std::string(),true, &oldNewScriptNameMapping );
         
         newNodes.push_back(std::make_pair(internalSerialization->getNodeScriptName(),clone));
         newNodesList.push_back(clone);

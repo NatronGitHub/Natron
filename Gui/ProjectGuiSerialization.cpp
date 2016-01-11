@@ -70,9 +70,15 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
         boost::shared_ptr<NodeGui> nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
         
         if (nodegui->isVisible()) {
-            NodeGuiSerialization state;
-            nodegui->serialize(&state);
-            _serializedNodes.push_back(state);
+            
+            boost::shared_ptr<NodeCollection> isInCollection = (*it)->getGroup();
+            NodeGroup* isCollectionAGroup = dynamic_cast<NodeGroup*>(isInCollection.get());
+            if (!isCollectionAGroup) {
+                ///Nodes within a group will be serialized recursively in the node group serialization
+                NodeGuiSerialization state;
+                nodegui->serialize(&state);
+                _serializedNodes.push_back(state);
+            }
             ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( (*it)->getLiveInstance() );
             if (viewer) {
                 ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);

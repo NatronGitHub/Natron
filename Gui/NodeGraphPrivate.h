@@ -236,7 +236,8 @@ public:
                                          const QPointF & offset,
                                          const boost::shared_ptr<NodeCollection>& group,
                                          const std::string& parentName,
-                                         bool clone);
+                                         bool clone,
+                                         std::map<std::string,std::string>* oldNewScriptNameMapping);
 
 
     /**
