@@ -144,7 +144,6 @@ if [ "$NOBUILD" != "1" ]; then
             echo OK
         else
             echo ERROR
-            sleep 2
             cat "$log"
         fi
     fi
@@ -156,8 +155,7 @@ if [ "$NOBUILD" != "1" ]; then
             echo OK
         else
             echo ERROR
-            sleep 2
-            cat 
+            cat "$log"
         fi  
     fi
 fi
@@ -170,7 +168,6 @@ if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
         echo OK
     else
         echo ERROR
-        sleep 2
         cat "$log"
     fi 
 fi
