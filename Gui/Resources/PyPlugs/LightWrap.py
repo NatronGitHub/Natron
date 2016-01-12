@@ -18,14 +18,14 @@ except ImportError:
 def getPluginID():
     return "fr.inria.LightWrap"
 
-def getIconPath():
-    return "LightWrap.png"
-
 def getLabel():
     return "LightWrap"
 
 def getVersion():
     return 1
+
+def getIconPath():
+    return "LightWrap.png"
 
 def getGrouping():
     return "Draw"
