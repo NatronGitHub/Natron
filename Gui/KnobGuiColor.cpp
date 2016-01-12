@@ -932,21 +932,22 @@ KnobGuiColor::showColorDialog()
         }
 
         if (_dimension >= 3) {
+            realColor.setGreen(userColor.green());
+            realColor.setBlue(userColor.blue());
             if (getKnob()->isEnabled(1)) {
                 _gBox->setValue(isSimple ? realColor.greenF() : Natron::Color::from_func_srgb(userColor.greenF()));
             }
             if (getKnob()->isEnabled(2)) {
                 _bBox->setValue(isSimple ? realColor.blueF() : Natron::Color::from_func_srgb(userColor.blueF()));
             }
-            realColor.setGreen(userColor.green());
-            realColor.setBlue(userColor.blue());
+           
         }
         if (_dimension >= 4) {
+            //            realColor.setAlpha(userColor.alpha());
             ///Don't set alpha since the color dialog can only handle RGB
 //            if (getKnob()->isEnabled(3)) {
 //                _aBox->setValue(userColor.alphaF()); // no conversion, alpha is linear
 //            }
-//            realColor.setAlpha(userColor.alpha());
         }
 
         onColorChanged();
