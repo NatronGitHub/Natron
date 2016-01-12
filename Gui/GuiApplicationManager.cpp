@@ -47,6 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiDefines.h"
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/SplashScreen.h"
+#include "Gui/PreviewThread.h"
 
 
 using namespace Natron;
@@ -66,6 +67,7 @@ GuiApplicationManager::~GuiApplicationManager()
             delete it2->second;
         }
     }
+    _imp->previewRenderThread.quitThread();
 }
 
 void
@@ -997,4 +999,10 @@ GuiApplicationManager::getKnobClipBoard(bool* copyAnimation,
     *appID = _imp->_knobsClipBoard->appID;
     *nodeFullyQualifiedName = _imp->_knobsClipBoard->nodeFullyQualifiedName;
     *paramName = _imp->_knobsClipBoard->paramName;
+}
+
+void
+GuiApplicationManager::appendTaskToPreviewThread(const boost::shared_ptr<NodeGui>& node, double time)
+{
+    _imp->previewRenderThread.appendToQueue(node, time);
 }

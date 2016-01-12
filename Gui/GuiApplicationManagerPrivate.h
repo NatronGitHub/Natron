@@ -52,6 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h" // PythonUserCommand
 #include "Gui/NodeClipBoard.h"
 #include "Gui/GuiFwd.h"
+#include "Gui/PreviewThread.h"
 
 
 struct KnobsClipBoard
@@ -98,6 +99,9 @@ struct GuiApplicationManagerPrivate
     boost::shared_ptr<QFutureWatcher<void> > fontconfigUpdateWatcher;
     QTimer updateSplashscreenTimer;
     int fontconfigMessageDots;
+    
+    
+    PreviewThread previewRenderThread;
     
     GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface);
 

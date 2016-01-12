@@ -1148,7 +1148,10 @@ public:
     virtual double random(double min = 0., double max = 1.) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int randomInt(double time,unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int randomInt(int min = 0,int max = INT_MAX) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
 protected:
+    
+    virtual bool evaluateValueChangeOnTimeChange() const { return false; }
     
     void randomSeed(double time, unsigned int seed) const;
     

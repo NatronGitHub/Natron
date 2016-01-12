@@ -166,6 +166,7 @@ SOURCES += \
     PanelWidget.cpp \
     PickKnobDialog.cpp \
     PreferencesPanel.cpp \
+    PreviewThread.cpp \
     ProjectGui.cpp \
     ProjectGuiSerialization.cpp \
     PropertiesBinWrapper.cpp \
@@ -304,6 +305,7 @@ HEADERS += \
     PanelWidget.h \
     PickKnobDialog.h \
     PreferencesPanel.h \
+    PreviewThread.h \
     ProjectGui.h \
     ProjectGuiSerialization.h \
     PropertiesBinWrapper.h \

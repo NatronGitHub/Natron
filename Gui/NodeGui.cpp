@@ -32,7 +32,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QLayout>
 #include <QAction>
-#include <QtConcurrentRun>
+#include <QThread>
 #include <QFontMetrics>
 #include <QTextBlockFormat>
 #include <QTextCursor>
@@ -83,6 +83,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/NodeGraphTextItem.h"
 #include "Gui/NodeSettingsPanel.h"
+#include "Gui/PreviewThread.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/SpinBox.h"
@@ -154,6 +155,10 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _boundingBox(NULL)
 , _channelsPixmap(NULL)
 , _previewPixmap(NULL)
+, _previewDataMutex()
+, _previewData(NATRON_PREVIEW_HEIGHT * NATRON_PREVIEW_WIDTH * sizeof(unsigned int))
+, _previewW(0)
+, _previewH(0)
 , _persistentMessage(NULL)
 , _stateIndicator(NULL)
 , _mergeHintActive(false)
@@ -236,6 +241,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL( hideInputsKnobChanged(bool) ),this,SLOT( onHideInputsKnobValueChanged(bool) ) );
     QObject::connect( internalNode.get(), SIGNAL( availableViewsChanged() ),this,SLOT( onAvailableViewsChanged() ) );
     
+    QObject::connect(this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()));
     setCacheMode(DeviceCoordinateCache);
 
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(internalNode->getLiveInstance());
@@ -495,7 +501,7 @@ NodeGui::getSizeWithPreview(int *w, int *h) const
 {
     getInitialSize(w,h);
     *w = *w -  (NODE_WIDTH / 2.) + NATRON_PREVIEW_WIDTH;
-    *h = *h + NATRON_PREVIEW_HEIGHT;
+    *h = *h + NATRON_PREVIEW_HEIGHT + 10;
 }
 
 void
@@ -778,6 +784,53 @@ NodeGui::adjustSizeToContent(int* /*w*/,int *h,bool adjustToTextSize)
     }
 }
 
+int
+NodeGui::getPluginIconWidth() const
+{
+    return _pluginIcon ? NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2 : 0;
+}
+
+double
+NodeGui::refreshPreviewAndLabelPosition(const QRectF& bbox)
+{
+    const QRectF labelBbox = _nameItem->boundingRect();
+    const double labelHeight = labelBbox.height();
+    const double textPlusPixHeight = std::min((double)NATRON_PREVIEW_HEIGHT + 5. + labelHeight, bbox.height() - 5);
+    const int iconWidth = getPluginIconWidth();
+
+    if (_previewPixmap) {
+        double pixX = bbox.x() + iconWidth + NODE_WIDTH / 4.;
+        double pixY = bbox.y() + bbox.height() / 2 - textPlusPixHeight / 2;
+        _previewPixmap->setPos(pixX ,pixY);
+    }
+    
+    double height = bbox.height();
+    
+    {
+        int nameWidth = labelBbox.width();
+        double textX = bbox.x() + iconWidth +  ((bbox.width() - iconWidth) / 2) - (nameWidth / 2);
+        //double textY = topLeft.y() + labelHeight * 0.1;
+        
+        double textY;
+        if (mustFrameName()) {
+            double frameHeight = 1.5 * labelHeight;
+            QRectF nameFrameBox(bbox.x(),bbox.y(), bbox.width(), frameHeight);
+            _nameFrame->setRect(nameFrameBox);
+            height = std::max((double)bbox.height(), nameFrameBox.height());
+            textY = bbox.y() + frameHeight / 2 -  labelHeight / 2;
+        } else {
+            if (_previewPixmap) {
+                textY = bbox.y() + height / 2 - textPlusPixHeight / 2 + NATRON_PREVIEW_HEIGHT;
+            } else {
+                textY = bbox.y() + height / 2 - labelHeight / 2;
+            }
+        }
+        
+        _nameItem->setPos(textX, textY);
+    }
+    return height;
+}
+
 void
 NodeGui::resize(int width,
                 int height,
@@ -788,12 +841,13 @@ NodeGui::resize(int width,
         return;
     }
 
-    QPointF topLeft = mapFromParent( pos() );
-    QRectF labelBbox = _nameItem->boundingRect();
-
+    const QPointF topLeft = mapFromParent(pos());
+    const QPointF bottomRight(topLeft.x() + width,topLeft.y() + height);
+    
+    const bool hasPluginIcon = _pluginIcon != NULL;
+    const int iconWidth = getPluginIconWidth();
     adjustSizeToContent(&width,&height,adjustToTextSize);
 
-    bool hasPluginIcon = _pluginIcon != NULL;
 
     {
         QMutexLocker k(&_mtSafeSizeMutex);
@@ -802,7 +856,6 @@ NodeGui::resize(int width,
         
     }
 
-    int iconWidth = hasPluginIcon ? NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2 : 0;
 
     QRectF bbox(topLeft.x(),topLeft.y(),width,height);
 
@@ -812,7 +865,7 @@ NodeGui::resize(int width,
         _pluginIcon->setX(topLeft.x() + PLUGIN_ICON_OFFSET);
         int iconsOffset = _mergeIcon  && _mergeIcon->isVisible() ? (height - 2 * NATRON_PLUGIN_ICON_SIZE) / 3. : (height - NATRON_PLUGIN_ICON_SIZE) /2.;
         _pluginIcon->setY(topLeft.y() + iconsOffset);
-        _pluginIconFrame->setRect(topLeft.x(),topLeft.y(),iconWidth, height);
+        _pluginIconFrame->setRect(topLeft.x(),topLeft.y(), iconWidth, height);
     }
 
     if (_mergeIcon && _mergeIcon->isVisible()) {
@@ -824,20 +877,9 @@ NodeGui::resize(int width,
     QFont f(appFont,appFontSize);
     QFontMetrics metrics(f);
     
-    int nameWidth = labelBbox.width();
-    double textX = topLeft.x() + iconWidth +  ((width - iconWidth) / 2) - (nameWidth / 2);
-    _nameItem->setX(textX);
+    height = refreshPreviewAndLabelPosition(bbox);
 
-    double mh = labelBbox.height();
-    _nameItem->setY(topLeft.y() + mh * 0.1);
 
-    if (mustFrameName()) {
-        QRectF nameFrameBox(topLeft.x(),topLeft.y(), width, 1.5 * mh);
-        _nameFrame->setRect(nameFrameBox);
-        height = std::max((double)height, nameFrameBox.height());
-    }
-
-    QPointF bottomRight(topLeft.x() + width,topLeft.y() + height);
     if (mustAddResizeHandle()) {
         QPolygonF poly;
         poly.push_back( QPointF( bottomRight.x() - 20,bottomRight.y() ) );
@@ -867,11 +909,7 @@ NodeGui::resize(int width,
     _persistentMessage->setPos(topLeft.x() + (width / 2) - (pMWidth / 2), topLeft.y() + height / 2 - metrics.height() / 2);
     _stateIndicator->setRect(topLeft.x() - NATRON_STATE_INDICATOR_OFFSET,topLeft.y() - NATRON_STATE_INDICATOR_OFFSET,
                              width + NATRON_STATE_INDICATOR_OFFSET * 2,height + NATRON_STATE_INDICATOR_OFFSET * 2);
-    if (_previewPixmap) {
-        _previewPixmap->setPos(topLeft.x() + iconWidth + NODE_WIDTH / 4. ,
-                               topLeft.y() + height / 2 - NATRON_PREVIEW_HEIGHT / 2 + 10);
-    }
-
+   
     _disabledBtmLeftTopRight->setLine( QLineF( bbox.bottomLeft(),bbox.topRight() ) );
     _disabledTopLeftBtmRight->setLine( QLineF( bbox.topLeft(),bbox.bottomRight() ) );
 
@@ -1160,7 +1198,9 @@ NodeGui::updatePreviewImage(double time)
 
         ensurePreviewCreated();
 
-        QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
+        boost::shared_ptr<NodeGui> thisShared = shared_from_this();
+        assert(thisShared);
+        appPTR->appendTaskToPreviewThread(thisShared, time);
     }
 }
 
@@ -1179,48 +1219,49 @@ NodeGui::forceComputePreview(double time)
         }
 
         ensurePreviewCreated();
-
-        QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
+        boost::shared_ptr<NodeGui> thisShared = shared_from_this();
+        assert(thisShared);
+        appPTR->appendTaskToPreviewThread(thisShared, time);
     }
 }
 
 void
-NodeGui::computePreviewImage(double time)
+NodeGui::onPreviewImageComputed()
 {
-    NodePtr node = getNode();
-    if ( node->isRenderingPreview() ) {
-        return;
-    }
-
-
-    int w = NATRON_PREVIEW_WIDTH;
-    int h = NATRON_PREVIEW_HEIGHT;
-    size_t dataSize = 4 * w * h;
+    assert(QThread::currentThread() == qApp->thread());
+    assert(_previewPixmap);
+    
     {
-#ifndef __NATRON_WIN32__
-        unsigned int* buf = (unsigned int*)calloc(dataSize,1);
-#else
-        unsigned int* buf = (unsigned int*)malloc(dataSize);
-        for (int i = 0; i < w * h; ++i) {
-            buf[i] = qRgba(0,0,0,255);
-        }
-#endif
-        bool success = node->makePreviewImage(time, &w, &h, buf);
-
-        if (success) {
-            QImage img(reinterpret_cast<const uchar*>(buf), w, h, QImage::Format_ARGB32_Premultiplied);
-            QPixmap prev_pixmap = QPixmap::fromImage(img);
-            _previewPixmap->setPixmap(prev_pixmap);
-            QPointF topLeft = mapFromParent( pos() );
-            QRectF bbox = boundingRect();
-
-            int iconWidth = _pluginIcon ? NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2 : 0;
-            _previewPixmap->setPos(topLeft.x() + iconWidth + NODE_WIDTH / 4. ,
-                                   topLeft.y() + bbox.height() / 2 - NATRON_PREVIEW_HEIGHT / 2 + 10);
-        }
-        free(buf);
+        QMutexLocker k(&_previewDataMutex);
+        QImage img(reinterpret_cast<const uchar*>(_previewData.data()), _previewW, _previewH, QImage::Format_ARGB32_Premultiplied);
+        QPixmap pix = QPixmap::fromImage(img);
+        _previewPixmap->setPixmap(pix);
     }
+    const QPointF topLeft = mapFromParent(pos());
+    int width,height;
+    {
+        QMutexLocker k(&_mtSafeSizeMutex);
+        height = _mtSafeHeight;
+        width = _mtSafeWidth;
+    }
+    QRectF bbox(topLeft.x(), topLeft.y(), width, height);
+    refreshPreviewAndLabelPosition(bbox);
+
 }
+
+void
+NodeGui::copyPreviewImageBuffer(const std::vector<unsigned int>& data, int width, int height)
+{
+    {
+        QMutexLocker k(&_previewDataMutex);
+        assert(_previewData.size() == data.size());
+        memcpy(_previewData.data(), data.data(), data.size() * sizeof(unsigned int));
+        _previewW = width;
+        _previewH = height;
+    }
+    Q_EMIT previewImageComputed();
+}
+
 
 bool
 NodeGui::getOverlayColor(double* r, double* g, double* b) const

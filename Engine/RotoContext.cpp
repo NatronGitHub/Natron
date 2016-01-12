@@ -2040,16 +2040,26 @@ RotoContext::notifyRenderFinished()
     setIsDoingNeatRender(false);
 }
 
+bool
+RotoContext::mustDoNeatRender() const
+{
+    QMutexLocker k(&_imp->doingNeatRenderMutex);
+    return _imp->mustDoNeatRender;
+}
+
 void
 RotoContext::setIsDoingNeatRender(bool doing)
 {
     
     QMutexLocker k(&_imp->doingNeatRenderMutex);
-    _imp->doingNeatRender = doing;
+    bool wasDoingNeatRender = _imp->doingNeatRender;
     if (doing && _imp->mustDoNeatRender) {
+        _imp->doingNeatRender = true;
         _imp->mustDoNeatRender = false;
+    } else {
+        _imp->doingNeatRender = false;
     }
-    if (!doing) {
+    if (!doing && wasDoingNeatRender) {
         _imp->doingNeatRenderCond.wakeAll();
     }
 }

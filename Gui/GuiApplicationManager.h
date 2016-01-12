@@ -190,6 +190,8 @@ public:
     
     bool handleImageFileOpenRequest(const std::string& imageFile);
     
+    void appendTaskToPreviewThread(const boost::shared_ptr<NodeGui>& node, double time);
+    
 public Q_SLOTS:
 
 

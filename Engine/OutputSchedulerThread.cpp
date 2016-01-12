@@ -53,6 +53,7 @@
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
+#include "Engine/RotoContext.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
 #include "Engine/TimeLine.h"
@@ -3390,9 +3391,17 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
     boost::shared_ptr<RotoStrokeItem> curStroke;
     bool isDrawing;
     _imp->viewer->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke,&isDrawing);
+    
+    bool rotoUse1Thread = false;
     if (!isDrawing) {
+        if (rotoPaintNode && rotoPaintNode->getRotoContext()->mustDoNeatRender()) {
+            rotoUse1Thread = true;
+        }
         rotoPaintNode.reset();
         curStroke.reset();
+    } else {
+        assert(rotoPaintNode);
+        rotoUse1Thread = true;
     }
     
     boost::shared_ptr<ViewerArgs> args[2];
@@ -3427,8 +3436,6 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
             _imp->viewer->redrawViewer();
             return;
         }
-    } else {
-        
     }
     CurrentFrameFunctorArgs functorArgs;
     functorArgs.viewer = _imp->viewer;
@@ -3467,7 +3474,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
         int maxThreads = QThreadPool::globalInstance()->maxThreadCount();
         
         //When painting, limit the number of threads to 1 to be sure strokes are painted in the right order
-        if (rotoPaintNode) {
+        if (rotoUse1Thread) {
             maxThreads = 1;
         }
         if (maxThreads == 1 || (QThreadPool::globalInstance()->activeThreadCount() >= maxThreads - 1)) {

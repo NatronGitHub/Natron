@@ -1298,7 +1298,7 @@ KnobHelper::evaluateValueChange(int dimension,
 
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle
     /// the application responsiveness
-    if (reason != Natron::eValueChangedReasonTimeChanged && _imp->holder) {
+    if ((reason != Natron::eValueChangedReasonTimeChanged || evaluateValueChangeOnTimeChange()) && _imp->holder) {
         if (!app || !app->getProject()->isLoadingProject()) {
             
             if (_imp->holder->isEvaluationBlocked()) {
@@ -4176,6 +4176,10 @@ KnobHolder::appendValueChange(KnobI* knob,double time,  Natron::ValueChangedReas
             } else {
                 onKnobValueChanged_public(knob, reason, time, k.originatedFromMainThread);
             }
+        }
+        
+        if (reason == Natron::eValueChangedReasonTimeChanged) {
+            return;
         }
 
         _imp->knobChanged.push_back(k);

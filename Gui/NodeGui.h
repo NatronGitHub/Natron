@@ -401,6 +401,8 @@ public:
     
     virtual void onIdentityStateChanged(int inputNb) OVERRIDE FINAL;
 
+    void copyPreviewImageBuffer(const std::vector<unsigned int>& data, int width, int height);
+
 protected:
     
     virtual int getBaseDepth() const { return 20; }
@@ -418,7 +420,6 @@ protected:
     virtual void adjustSizeToContent(int *w,int *h,bool adjustToTextSize);
     
     virtual void resizeExtraContent(int /*w*/,int /*h*/,bool /*forceResize*/) {}
-
 
     
 public Q_SLOTS:
@@ -444,7 +445,7 @@ public Q_SLOTS:
      * the new width and height.
      **/
     void resize(int width,int height, bool forceSize = false, bool adjustToTextSize = false);
-    
+
     void refreshSize();
 
     /*Updates the preview image, only if the project is in auto-preview mode*/
@@ -517,11 +518,15 @@ public Q_SLOTS:
     void refreshEdgesVisility(bool hovered);
     void refreshEdgesVisility();
     
+    void onPreviewImageComputed();
+    
 Q_SIGNALS:
 
     void positionChanged(int x,int y);
 
     void settingsPanelClosed(bool b);
+    
+    void previewImageComputed();
 
 protected:
 
@@ -536,6 +541,10 @@ protected:
 
 private:
     
+    int getPluginIconWidth() const;
+    
+    double refreshPreviewAndLabelPosition(const QRectF& bbox);
+    
     void refreshEdgesVisibilityInternal(bool hovered);
     
     void refreshPositionEnd(double x,double y);
@@ -547,8 +556,6 @@ private:
     void ensurePreviewCreated();
     
     void setAboveItem(QGraphicsItem* item);
-
-    void computePreviewImage(double time);
 
     void populateMenu();
 
@@ -590,6 +597,9 @@ private:
 
     /*A pointer to the preview pixmap displayed for readers/*/
     QGraphicsPixmapItem* _previewPixmap;
+    mutable QMutex _previewDataMutex;
+    std::vector<unsigned int> _previewData;
+    int _previewW,_previewH;
     QGraphicsSimpleTextItem* _persistentMessage;
     QGraphicsRectItem* _stateIndicator;    
     
@@ -655,6 +665,7 @@ private:
     boost::shared_ptr<NodeGuiIndicator> _availableViewsIndicator;
     boost::shared_ptr<NodeGuiIndicator> _passThroughIndicator;
     boost::weak_ptr<Natron::Node> _identityInput;
+    
 };
 
 

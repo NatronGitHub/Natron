@@ -1732,7 +1732,7 @@ Knob<T>::onKeyFrameSet(double /*time*/,const KeyFrame& key,int dimension)
 
 template<typename T>
 void
-Knob<T>::onTimeChanged(double /*time*/)
+Knob<T>::onTimeChanged(double time)
 {
     int dims = getDimension();
 
@@ -1741,7 +1741,6 @@ Knob<T>::onTimeChanged(double /*time*/)
     }
     bool shouldRefresh = false;
     for (int i = 0; i < dims; ++i) {
-        
         if (getKnobGuiPointer() && _signalSlotHandler && (isAnimated(i) || !getExpression(i).empty())) {
             shouldRefresh = true;
         }
@@ -1749,6 +1748,10 @@ Knob<T>::onTimeChanged(double /*time*/)
     }
     if (shouldRefresh) {
         _signalSlotHandler->s_valueChanged(-1, Natron::eValueChangedReasonTimeChanged);
+    }
+    if (evaluateValueChangeOnTimeChange()) {
+        //Some knobs like KnobFile do not animate but the plug-in may need to know the time has changed
+        evaluateValueChange(0, time, Natron::eValueChangedReasonTimeChanged);
     }
 }
 

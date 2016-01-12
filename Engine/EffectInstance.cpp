@@ -3899,7 +3899,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         return;
     }
 
-    if ( isReader() && (k->getName() == kOfxImageEffectFileParamName) ) {
+    if ( reason != Natron::eValueChangedReasonTimeChanged && isReader() && (k->getName() == kOfxImageEffectFileParamName) ) {
         node->computeFrameRangeForReader(k);
     }
 
@@ -3909,23 +3909,24 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     if (kh && kh->isDeclaredByPlugin()) {
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
-
-
-        ParallelRenderArgsSetter frameRenderArgs(time,
-                                                 0, /*view*/
-                                                 true,
-                                                 false,
-                                                 false,
-                                                 0,
-                                                 node,
-                                                 0, // request
-                                                 0, //texture index
-                                                 getApp()->getTimeLine().get(),
-                                                 NodePtr(),
-                                                 true,
-                                                 false,
-                                                 false,
-                                                 boost::shared_ptr<RenderStats>() );
+        boost::shared_ptr<ParallelRenderArgsSetter> setter;
+        if (reason != Natron::eValueChangedReasonTimeChanged) {
+            setter.reset(new ParallelRenderArgsSetter(time,
+                                                      0, /*view*/
+                                                      true,
+                                                      false,
+                                                      false,
+                                                      0,
+                                                      node,
+                                                      0, // request
+                                                      0, //texture index
+                                                      getApp()->getTimeLine().get(),
+                                                      NodePtr(),
+                                                      true,
+                                                      false,
+                                                      false,
+                                                      boost::shared_ptr<RenderStats>()));
+        }
         {
             RECURSIVE_ACTION();
             knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);

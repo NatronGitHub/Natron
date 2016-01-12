@@ -413,6 +413,8 @@ public:
      **/
     void notifyRenderFinished();
     
+    bool mustDoNeatRender() const;
+    
     void setIsDoingNeatRender(bool doing);
     
     bool isDoingNeatRender() const;

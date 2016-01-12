@@ -110,7 +110,11 @@ Q_SIGNALS:
 
 private:
 
-
+    /**
+     * @brief a KnobFile is never animated but it's value may change, indicate this to the plug-in
+     **/
+    virtual bool evaluateValueChangeOnTimeChange() const OVERRIDE FINAL { return true; }
+    
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
 
@@ -177,6 +181,8 @@ Q_SIGNALS:
     void openFile(bool);
 
 private:
+    
+    virtual bool evaluateValueChangeOnTimeChange() const OVERRIDE FINAL { return false; }
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;

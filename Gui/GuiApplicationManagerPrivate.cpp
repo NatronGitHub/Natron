@@ -60,6 +60,7 @@ GuiApplicationManagerPrivate::GuiApplicationManagerPrivate(GuiApplicationManager
 , fontconfigUpdateWatcher()
 , updateSplashscreenTimer()
 , fontconfigMessageDots(3)
+, previewRenderThread()
 {
 }
 
