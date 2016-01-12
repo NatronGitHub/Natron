@@ -30,6 +30,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QMouseEvent>
 #include <QCursor>
+#include <QApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
@@ -338,6 +339,17 @@ NodeGraph::scrollViewIfNeeded(const QPointF& scenePos)
     
     if (dx != 0 || dy != 0) {
         moveRootInternal(-dx, -dy);
+        /*if (_imp->_evtState == eEventStateDraggingArrow && _imp->_arrowSelected) {
+            
+        } else if (_imp->_evtState == eEventStateDraggingNode && !_imp->_selection.empty()) {
+            Qt::KeyboardModifiers mods = qApp->keyboardModifiers();
+            QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos);
+            QPoint newPos = _imp->_lastMousePos + QPoint(dx,dy);
+            QPointF newPosScene = mapToScene(newPos);
+            moveSelectedNodesBy(mods.testFlag(Qt::ShiftModifier), mods.testFlag(Qt::ControlModifier), lastMousePosScene, newPosScene, visibleSceneRect(), false);
+            _imp->_lastMousePos = newPos;
+        }*/
+
         _imp->_refreshOverlays = true;
         update();
     } else {

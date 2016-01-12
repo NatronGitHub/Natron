@@ -245,6 +245,10 @@ public Q_SLOTS:
     
 private:
     
+    void checkForHints(bool shiftdown, bool controlDown, const boost::shared_ptr<NodeGui>& selectedNode,const QRectF& visibleSceneR);
+    
+    void moveSelectedNodesBy(bool shiftdown, bool controlDown, const QPointF& lastMousePosScene, const QPointF& newPos, const QRectF& visibleSceneR, bool userEdit);
+    
     void scrollViewIfNeeded(const QPointF& scenePos);
     
     void checkAndStartAutoScrollTimer(const QPointF& scenePos);
