@@ -17,6 +17,7 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
+# TAG=...: Date to timestamp symbols
 # DUMP_SYMS=...: Absolute path to binary of dump_syms
 # SYMBOLS_PATH=...: Absolute path to the dst symbols
 # DISABLE_BREAKPAD=1: When set, automatic crash reporting (google-breakpad support) will be disabled
