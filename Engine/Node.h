@@ -71,8 +71,8 @@ CLANG_DIAG_ON(deprecated)
 #define kWriteParamFrameStep "frameIncr"
 #define kWriteParamFrameStepLabel "Frame Increment"
 #define kWriteParamFrameStepHint "The number of frames the timeline should step before rendering the new frame. " \
-"If 1, all frames will be rendered, if 2 only 1 frame out of 2" \
-" etc...This number cannot be inferior to 1."
+"If 1, all frames will be rendered, if 2 only 1 frame out of 2, " \
+"etc. This number cannot be less than 1."
 
 
 

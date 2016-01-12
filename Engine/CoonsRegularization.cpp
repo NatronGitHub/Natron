@@ -614,7 +614,7 @@ static bool splitAt(const BezierCPs &cps, double time, double t, std::list<Bezie
 }
 
 /**
- * @brief Given the original coon's patch, check if all interior angles are inferior to 180°. If not then we split
+ * @brief Given the original coon's patch, check if all interior angles are less than 180°. If not then we split
  * along the bysector angle and separate the patch.
  **/
 static bool checkAnglesAndSplitIfNeeded(const BezierCPs &cps, double time, int sign, std::list<BezierCPs>* ret)
