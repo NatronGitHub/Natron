@@ -1413,7 +1413,10 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             }
             
             std::stringstream ss;
-            ss << cb << "(" << frame << ",";
+            std::string appStr = _imp->outputEffect->getApp()->getAppIDString();
+            std::string outputNodeName = appStr + "." + _imp->outputEffect->getNode()->getFullyQualifiedName();
+            ss << cb << "(" << frame << ", ";
+            ss << outputNodeName << ", " << appStr << ")";
             std::string script = ss.str();
             try {
                 runCallbackWithVariables(script.c_str());
@@ -2087,7 +2090,9 @@ private:
             }
 
             std::stringstream ss;
-            ss << cb << "(" << time << ",";
+            std::string appStr = outputNode->getApp()->getAppIDString();
+            std::string outputNodeName = appStr + "." + outputNode->getFullyQualifiedName();
+            ss << cb << "(" << time << ", " << outputNodeName << ", " << appStr << ")";
             std::string script = ss.str();
             try {
                 _imp->scheduler->runCallbackWithVariables(script.c_str());
@@ -2418,7 +2423,11 @@ DefaultScheduler::aboutToStartRender()
         }
         
         
-        std::string script(cb + "(");
+        std::stringstream ss;
+        std::string appStr = _effect->getApp()->getAppIDString();
+        std::string outputNodeName = appStr + "." + _effect->getNode()->getFullyQualifiedName();
+        ss << cb << "(" << outputNodeName << ", " << appStr << ")";
+        std::string script = ss.str();
         try {
             runCallbackWithVariables(script.c_str());
         } catch (const std::exception &e) {
@@ -2467,12 +2476,17 @@ DefaultScheduler::onRenderStopped(bool aborted)
         }
 
         
-        std::string script(cb + "(");
+        std::stringstream ss;
+        std::string appStr = _effect->getApp()->getAppIDString();
+        std::string outputNodeName = appStr + "." + _effect->getNode()->getFullyQualifiedName();
+        ss << cb << "(";
         if (aborted) {
-            script += "True,";
+            ss << "True, ";
         } else {
-            script += "False,";
+            ss << "False, ";
         }
+        ss << outputNodeName << ", " << appStr << ")";
+        std::string script = ss.str();
         try {
             runCallbackWithVariables(script.c_str());
         } catch (...) {
