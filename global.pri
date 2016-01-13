@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,7 +36,6 @@ DEFINES += OFX_SUPPORTS_DIALOG
         DEFINES *= NDEBUG
         QMAKE_CXXFLAGS += -O2 -g
         QMAKE_CXXFLAGS -= -O3
-        QMAKE_LFLAGS_RELEASE -= -s
     }
 }
 
@@ -242,7 +241,17 @@ unix {
      CONFIG += link_pkgconfig
      glew:      PKGCONFIG += glew
      expat:     PKGCONFIG += expat
+     linux-* {
+         # link with static cairo on linux, to avoid linking to X11 libraries in NatronRenderer
+         cairo {
+             PKGCONFIG += pixman-1 freetype2 fontconfig
+             LIBS +=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
+         }
+         LIBS += -ldl
+         QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\',-z,origin'
+     } else {
          cairo:     PKGCONFIG += cairo
+     }
 
      # User may specify an alternate python2-config from the command-line,
      # as in "qmake PYTHON_CONFIG=python2.7-config"
