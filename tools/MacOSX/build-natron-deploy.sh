@@ -421,10 +421,14 @@ for bin in Natron NatronRenderer; do
     binary="$package/Contents/MacOS/$bin";
     #Dump symbols for breakpad before stripping
     if [ "$DISABLE_BREAKPAD" != "1" ]; then
-        dsymutil -arch x86_64 -o ${bin}x86_64.dSYM "$binary"
-        dsymutil -arch i386 -o ${bin}i386.dSYM "$binary"
-        $DUMP_SYMS "$binary" -a x86_64 -g ${bin}x86_64.dSYM > "$SYMBOLS_PATH/Natron-${TAG}-Mac-x86_64.sym"
-        $DUMP_SYMS "$binary" -a i386 -g ${bin}i386.dSYM > "$SYMBOLS_PATH/Natron-${TAG}-Mac-i386.sym"
+		DSYM_64=${bin}x86_64.dSYM
+		DSYM_32=${bin}i386.dSYM
+        dsymutil -arch x86_64 -o $DSYM_64 "$binary"
+        dsymutil -arch i386 -o $DSYM_32 "$binary"
+        $DUMP_SYMS "$binary" -a x86_64 -g $DSYM_64 > "$SYMBOLS_PATH/Natron-${TAG}-Mac-x86_64.sym"
+        $DUMP_SYMS "$binary" -a i386 -g $DSYM_32 > "$SYMBOLS_PATH/Natron-${TAG}-Mac-i386.sym"
+		rm -rf $DSYM_64;
+		rm -rf $DSYM_32;
     fi
 done
 

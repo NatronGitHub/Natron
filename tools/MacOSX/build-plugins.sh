@@ -123,12 +123,14 @@ cd ..
 if [ "$DISABLE_BREAKPAD" != "1" ]; then
     for bin in IO Misc CImg Arena; do
         binary="$PLUGINDIR"/${bin}.ofx.bundle/*/*/$bin.ofx
+	
+		DSYM_64=${bin}x86_64.dSYM
+		DSYM_32=${bin}i386.dSYM
+        dsymutil -arch x86_64 -o $DSYM_64 "$binary"
+        dsymutil -arch i386 -o $DSYM_32 "$binary"
 
-        dsymutil -arch x86_64 -o ${bin}x86_64.dSYM "$binary"
-        dsymutil -arch i386 -o ${bin}i386.dSYM "$binary"
-
-$DUMP_SYMS "$PLUGINDIR"/${bin}.ofx.bundle/*/*/${bin}.ofx -a x86_64 -g ${bin}x86_64.dSYM > "$CWD/build/symbols/${bin}.ofx-${TAG}-Mac-x86_64.sym"
-$DUMP_SYMS "$PLUGINDIR"/${bin}.ofx.bundle/*/*/${bin}.ofx -a i386 -g ${bin}i386.dSYM > "$CWD/build/symbols/${bin}.ofx-${TAG}-Mac-i386.sym"
+		$DUMP_SYMS "$PLUGINDIR"/${bin}.ofx.bundle/*/*/${bin}.ofx -a x86_64 -g $DSYM_64 > "$CWD/build/symbols/${bin}.ofx-${TAG}-Mac-x86_64.sym"
+		$DUMP_SYMS "$PLUGINDIR"/${bin}.ofx.bundle/*/*/${bin}.ofx -a i386 -g $DSYM_32 > "$CWD/build/symbols/${bin}.ofx-${TAG}-Mac-i386.sym"
         #Strip binary
         if [ -x "$binary" ]; then
             echo "* stripping $binary";
