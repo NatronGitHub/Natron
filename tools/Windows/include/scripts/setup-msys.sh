@@ -45,5 +45,5 @@ pacman $PKG_INSTALL_OPS wget tar diffutils file gawk gettext grep make patch pat
 
 # needed by oiio
 if [ ! -f /mingw${1}/include/byteswap.h ]; then
-  cp $CWD/include/patches/byteswap.h /mingw${1}/usr/include/byteswap.h || exit  1
+  cp $CWD/include/patches/byteswap.h /usr/include/byteswap.h || exit  1
 fi
