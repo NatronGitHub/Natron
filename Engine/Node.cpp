@@ -6754,49 +6754,48 @@ Node::Implementation::getSelectedLayerInternal(int inputNb,const ChannelSelector
     const std::string& layer = entries[index];
     if (layer == "All") {
         return false;
-    } else {
-        
-        std::string mappedLayerName = ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(layer);
-        
-        bool isCurLayerColorComp = mappedLayerName == kNatronRGBAComponentsName || mappedLayerName == kNatronRGBComponentsName || mappedLayerName == kNatronAlphaComponentsName;
-
-        EffectInstance::ComponentsAvailableMap compsAvailable;
-        {
-            QMutexLocker k(&selector.compsMutex);
-            compsAvailable = selector.compsAvailable;
-        }
-        if (node) {
-            for (EffectInstance::ComponentsAvailableMap::iterator it2 = compsAvailable.begin(); it2!= compsAvailable.end(); ++it2) {
-                if (it2->first.isColorPlane()) {
-                    if (isCurLayerColorComp) {
-                        *comp = it2->first;
-                        break;
-                        
-                    }
-                } else {
-                    if (it2->first.getLayerName() == mappedLayerName) {
-                        *comp = it2->first;
-                        break;
-                        
-                    }
+    }
+    std::string mappedLayerName = ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(layer);
+    
+    bool isCurLayerColorComp = mappedLayerName == kNatronRGBAComponentsName || mappedLayerName == kNatronRGBComponentsName || mappedLayerName == kNatronAlphaComponentsName;
+    
+    EffectInstance::ComponentsAvailableMap compsAvailable;
+    {
+        QMutexLocker k(&selector.compsMutex);
+        compsAvailable = selector.compsAvailable;
+    }
+    if (node) {
+        for (EffectInstance::ComponentsAvailableMap::iterator it2 = compsAvailable.begin(); it2!= compsAvailable.end(); ++it2) {
+            if (it2->first.isColorPlane()) {
+                if (isCurLayerColorComp) {
+                    *comp = it2->first;
+                    break;
+                    
+                }
+            } else {
+                if (it2->first.getLayerName() == mappedLayerName) {
+                    *comp = it2->first;
+                    break;
+                    
                 }
             }
         }
-        if (comp->getNumComponents() == 0) {
-            if (mappedLayerName == kNatronRGBAComponentsName) {
-                *comp = ImageComponents::getRGBAComponents();
-            } else if (mappedLayerName == kNatronDisparityLeftPlaneName) {
-                *comp = ImageComponents::getDisparityLeftComponents();
-            } else if (mappedLayerName == kNatronDisparityRightPlaneName) {
-                *comp = ImageComponents::getDisparityRightComponents();
-            } else if (mappedLayerName == kNatronBackwardMotionVectorsPlaneName) {
-                *comp = ImageComponents::getBackwardMotionComponents();
-            } else if (mappedLayerName == kNatronForwardMotionVectorsPlaneName) {
-                *comp = ImageComponents::getForwardMotionComponents();
-            }
-        }
-        return true;
     }
+    if (comp->getNumComponents() == 0) {
+        if (mappedLayerName == kNatronRGBAComponentsName) {
+            *comp = ImageComponents::getRGBAComponents();
+        } else if (mappedLayerName == kNatronDisparityLeftPlaneName) {
+            *comp = ImageComponents::getDisparityLeftComponents();
+        } else if (mappedLayerName == kNatronDisparityRightPlaneName) {
+            *comp = ImageComponents::getDisparityRightComponents();
+        } else if (mappedLayerName == kNatronBackwardMotionVectorsPlaneName) {
+            *comp = ImageComponents::getBackwardMotionComponents();
+        } else if (mappedLayerName == kNatronForwardMotionVectorsPlaneName) {
+            *comp = ImageComponents::getForwardMotionComponents();
+        }
+    }
+    return true;
+    
     
 }
 

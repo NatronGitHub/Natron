@@ -205,9 +205,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                           ImageList* outputPlanes)
 {
     //Do nothing if no components were requested
-    if ( args.components.empty() || args.roi.isNull() ) {
-        qDebug() << getScriptName_mt_safe().c_str() << "renderRoi: Early bail-out components requested empty or RoI is NULL";
-
+    if (args.components.empty()) {
+        qDebug() << getScriptName_mt_safe().c_str() << "renderRoi: Early bail-out components requested empty";
+        return eRenderRoIRetCodeOk;
+    }
+    if (args.roi.isNull()) {
+        qDebug() << getScriptName_mt_safe().c_str() << "renderRoi: Early bail-out ROI requested empty ";
         return eRenderRoIRetCodeOk;
     }
 

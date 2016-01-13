@@ -261,6 +261,9 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                         componentsToRender.push_back(compsNeeded->at(k));
                                     }
                                 }
+                                if (componentsToRender.empty()) {
+                                    continue;
+                                }
                                 
                                 if (roiIsInRequestPass) {
                                     frameArgs->request->getFrameViewCanonicalRoI(f, viewIt->first, &roi);

@@ -31,9 +31,9 @@ static const char* xyComps[2] = {"X","Y"};
 
 const char* ImageComponents::defaultComponents[][2] =
 {
-    {kNatronColorPlaneName, kNatronRGBAPlaneUserName},
-    {kNatronColorPlaneName, kNatronRGBPlaneUserName},
-    {kNatronColorPlaneName, kNatronAlphaPlaneUserName},
+    {kNatronRGBAComponentsName, kNatronRGBAPlaneUserName},
+    {kNatronRGBComponentsName, kNatronRGBPlaneUserName},
+    {kNatronAlphaComponentsName, kNatronAlphaPlaneUserName},
     {kNatronDisparityLeftPlaneName, kNatronDisparityLeftPlaneUserName},
     {kNatronDisparityRightPlaneName, kNatronDisparityRightPlaneUserName},
     {kNatronBackwardMotionVectorsPlaneName, kNatronBackwardMotionVectorsPlaneUserName},
