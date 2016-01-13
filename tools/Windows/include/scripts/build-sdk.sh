@@ -266,6 +266,12 @@ if [ ! -f "${INSTALL_PATH}/bin/repogen.exe" ] || [ "$DOWNLOAD_INSTALLER" = "1" ]
     cp repogen.exe $INSTALL_PATH/bin || exit 1
 fi
 
+if [ ! -f "/mingw32/bin/dump_syms.exe" ] || [ ! -f "/mingw64/bin/dump_syms.exe" ]; then
+  cd $SRC_PATH || exit 1
+  wget $THIRD_PARTY_BIN_URL/dump_syms.exe -O $SRC_PATH/dump_syms.exe || exit 1
+  cp dump_syms.exe /mingw{32,64}/bin/ || exit 1
+fi
+
 echo
 echo "Natron build-sdk done."
 echo
