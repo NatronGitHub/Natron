@@ -120,7 +120,8 @@ ComboBox::sizeForWidth(int w) const
     }
     QRect br;
     
-    QFontMetrics fm = fontMetrics();
+    //Using this constructor of QFontMetrics will respect the DPI of the screen, see http://doc.qt.io/qt-4.8/qfontmetrics.html#QFontMetrics-2
+    QFontMetrics fm(font(),0);
     
     Qt::Alignment align = QStyle::visualAlignment(Qt::LeftToRight, QFlag(_align));
     

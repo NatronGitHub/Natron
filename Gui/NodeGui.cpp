@@ -157,8 +157,8 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _previewPixmap(NULL)
 , _previewDataMutex()
 , _previewData(NATRON_PREVIEW_HEIGHT * NATRON_PREVIEW_WIDTH * sizeof(unsigned int))
-, _previewW(0)
-, _previewH(0)
+, _previewW(NATRON_PREVIEW_WIDTH)
+, _previewH(NATRON_PREVIEW_HEIGHT)
 , _persistentMessage(NULL)
 , _stateIndicator(NULL)
 , _mergeHintActive(false)
@@ -795,11 +795,20 @@ NodeGui::refreshPreviewAndLabelPosition(const QRectF& bbox)
 {
     const QRectF labelBbox = _nameItem->boundingRect();
     const double labelHeight = labelBbox.height();
-    const double textPlusPixHeight = std::min((double)NATRON_PREVIEW_HEIGHT + 5. + labelHeight, bbox.height() - 5);
+    
+    int prevW,prevH;
+    {
+        QMutexLocker k(&_previewDataMutex);
+        prevW = _previewW;
+        prevH = _previewH;
+    }
+    const double textPlusPixHeight = std::min((double)prevH + 5. + labelHeight, bbox.height() - 5);
     const int iconWidth = getPluginIconWidth();
 
     if (_previewPixmap) {
-        double pixX = bbox.x() + iconWidth + NODE_WIDTH / 4.;
+        double pixX = bbox.x() + iconWidth;
+        double remainingSpace = bbox.width() - pixX;
+        pixX = pixX + remainingSpace / 2. - prevW / 2.;
         double pixY = bbox.y() + bbox.height() / 2 - textPlusPixHeight / 2;
         _previewPixmap->setPos(pixX ,pixY);
     }
@@ -820,7 +829,7 @@ NodeGui::refreshPreviewAndLabelPosition(const QRectF& bbox)
             textY = bbox.y() + frameHeight / 2 -  labelHeight / 2;
         } else {
             if (_previewPixmap) {
-                textY = bbox.y() + height / 2 - textPlusPixHeight / 2 + NATRON_PREVIEW_HEIGHT;
+                textY = bbox.y() + height / 2 - textPlusPixHeight / 2 + prevH;
             } else {
                 textY = bbox.y() + height / 2 - labelHeight / 2;
             }
@@ -2748,9 +2757,10 @@ NodeGui::onOutputLayerChanged()
     if (!foundLayer) {
         return;
     }
-    if (selectedLayer != ImageComponents::getRGBAComponents().getComponentsGlobalName() &&
-        selectedLayer != ImageComponents::getRGBComponents().getComponentsGlobalName() &&
-        selectedLayer != ImageComponents::getAlphaComponents().getComponentsGlobalName() &&
+
+    bool isCurLayerColorComp = selectedLayer == kNatronAlphaPlaneUserName || selectedLayer == kNatronRGBPlaneUserName || selectedLayer == kNatronRGBAPlaneUserName;
+    
+    if (!isCurLayerColorComp &&
         selectedLayer != "None" &&
         selectedLayer != "All") {
         extraLayerStr.append("<br>");

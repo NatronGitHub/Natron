@@ -4380,7 +4380,7 @@ EffectInstance::refreshClipPreferences_recursive(double time,
 
     if ( !node->duringInputChangedAction() ) {
         ///The channels selector refreshing is already taken care of in the inputChanged action
-        node->refreshChannelSelectors(false);
+        node->refreshChannelSelectors();
     }
 
     markedNodes.push_back( node.get() );

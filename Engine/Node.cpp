@@ -6530,19 +6530,40 @@ Node::onRefreshIdentityStateRequestReceived()
     RenderScale scale(1.);
     
     double inputTime = 0;
-    int inputNb = -1;
     
     U64 hash = getHashValue();
-    RectD rod;
-    bool isProj;
-    Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(hash, time, scale, 0, &rod, &isProj);
     
-    RectI pixelRod;
-    rod.toPixelEnclosing(scale, _imp->liveInstance->getPreferredAspectRatio(), &pixelRod);
-    bool isIdentity =  false;
-    if (!pixelRod.isNull() && stat != Natron::eStatusFailed) {
-        isIdentity = _imp->liveInstance->isIdentity_public(true, hash, time, scale, pixelRod, 0, &inputTime, &inputNb);
+    bool viewAware =  _imp->liveInstance->isViewAware();
+    int nViews = !viewAware ? 1 : getApp()->getProject()->getProjectViewsCount();
+    
+    bool isIdentity = false;
+    int inputNb = -1;
+    for (int i = 0; i < nViews; ++i) {
+        RectD rod;
+        bool isProj;
+        Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(hash, time, scale, i, &rod, &isProj);
+        RectI pixelRod;
+        rod.toPixelEnclosing(scale, _imp->liveInstance->getPreferredAspectRatio(), &pixelRod);
+        if (!pixelRod.isNull() && stat != Natron::eStatusFailed) {
+            int identityInputNb = -1;
+            bool isIdentityView = _imp->liveInstance->isIdentity_public(true, hash, time, scale, pixelRod, i, &inputTime, &identityInputNb);
+            if (i > 0 && (isIdentityView != isIdentity || identityInputNb != inputNb)) {
+                isIdentity = false;
+                inputNb = -1;
+                break;
+            }
+            isIdentity |= isIdentityView;
+            inputNb = identityInputNb;
+            if (!isIdentity) {
+                break;
+            }
+        }
     }
+    
+   
+    //Check for consistency across views or then say the effect is not identity since the UI cannot display 2 different states
+    //depending on the view
+    
     
     boost::shared_ptr<NodeGuiI> nodeUi = _imp->guiPointer.lock();
     assert(nodeUi);
@@ -6735,6 +6756,10 @@ Node::Implementation::getSelectedLayerInternal(int inputNb,const ChannelSelector
         return false;
     } else {
         
+        std::string mappedLayerName = ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(layer);
+        
+        bool isCurLayerColorComp = mappedLayerName == kNatronRGBAComponentsName || mappedLayerName == kNatronRGBComponentsName || mappedLayerName == kNatronAlphaComponentsName;
+
         EffectInstance::ComponentsAvailableMap compsAvailable;
         {
             QMutexLocker k(&selector.compsMutex);
@@ -6743,13 +6768,13 @@ Node::Implementation::getSelectedLayerInternal(int inputNb,const ChannelSelector
         if (node) {
             for (EffectInstance::ComponentsAvailableMap::iterator it2 = compsAvailable.begin(); it2!= compsAvailable.end(); ++it2) {
                 if (it2->first.isColorPlane()) {
-                    if (it2->first.getComponentsGlobalName() == layer) {
+                    if (isCurLayerColorComp) {
                         *comp = it2->first;
                         break;
                         
                     }
                 } else {
-                    if (it2->first.getLayerName() == layer) {
+                    if (it2->first.getLayerName() == mappedLayerName) {
                         *comp = it2->first;
                         break;
                         
@@ -6758,15 +6783,15 @@ Node::Implementation::getSelectedLayerInternal(int inputNb,const ChannelSelector
             }
         }
         if (comp->getNumComponents() == 0) {
-            if (layer == kNatronRGBAComponentsName) {
+            if (mappedLayerName == kNatronRGBAComponentsName) {
                 *comp = ImageComponents::getRGBAComponents();
-            } else if (layer == kNatronDisparityLeftPlaneName) {
+            } else if (mappedLayerName == kNatronDisparityLeftPlaneName) {
                 *comp = ImageComponents::getDisparityLeftComponents();
-            } else if (layer == kNatronDisparityRightPlaneName) {
+            } else if (mappedLayerName == kNatronDisparityRightPlaneName) {
                 *comp = ImageComponents::getDisparityRightComponents();
-            } else if (layer == kNatronBackwardMotionVectorsPlaneName) {
+            } else if (mappedLayerName == kNatronBackwardMotionVectorsPlaneName) {
                 *comp = ImageComponents::getBackwardMotionComponents();
-            } else if (layer == kNatronForwardMotionVectorsPlaneName) {
+            } else if (mappedLayerName == kNatronForwardMotionVectorsPlaneName) {
                 *comp = ImageComponents::getForwardMotionComponents();
             }
         }
@@ -6862,7 +6887,7 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,const MaskSelector& sele
     std::vector<std::string> entries = channel->getEntries_mt_safe();
     int curChan_i = channel->getValue();
     if (curChan_i < 0 || curChan_i >= (int)entries.size()) {
-        _publicInterface->refreshChannelSelectors(true);
+        _publicInterface->refreshChannelSelectors();
         return;
     }
     selector.channelName.lock()->setValue(entries[curChan_i], 0);
@@ -7698,7 +7723,7 @@ Node::refreshAllInputRelatedData(bool canChangeValues)
 }
 
 bool
-Node::refreshAllInputRelatedData(bool canChangeValues,const std::vector<boost::shared_ptr<Natron::Node> >& inputs)
+Node::refreshAllInputRelatedData(bool /*canChangeValues*/,const std::vector<boost::shared_ptr<Natron::Node> >& inputs)
 {
     bool hasChanged = false;
     hasChanged |= refreshDraftFlagInternal(inputs);
@@ -7736,7 +7761,7 @@ Node::refreshAllInputRelatedData(bool canChangeValues,const std::vector<boost::s
         hasChanged |= _imp->liveInstance->refreshClipPreferences(time, scaleOne, Natron::eValueChangedReasonUserEdited, true);
     }
     
-    hasChanged |= refreshChannelSelectors(canChangeValues);
+    hasChanged |= refreshChannelSelectors();
     
     refreshIdentityState();
     
@@ -8512,7 +8537,7 @@ Node::getChannelSelectorKnob(int inputNb) const
 }
 
 bool
-Node::refreshChannelSelectors(bool setValues)
+Node::refreshChannelSelectors()
 {
     if (!isNodeCreated()) {
         return false;
@@ -8533,8 +8558,9 @@ Node::refreshChannelSelectors(bool setValues)
         
         boost::shared_ptr<KnobChoice> layerKnob = it->second.layer.lock();
         const std::vector<std::string> currentLayerEntries = layerKnob->getEntries_mt_safe();
-        const std::string curLayer = it->second.layerName.lock()->getValue();
-
+        const std::string curLayer = ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(it->second.layerName.lock()->getValue());
+        
+        bool isCurLayerColorComp = curLayer == kNatronAlphaComponentsName || curLayer == kNatronRGBAComponentsName || curLayer == kNatronRGBComponentsName;
         
         std::vector<std::string> choices;
         if (it->second.hasAllChoice) {
@@ -8545,18 +8571,25 @@ Node::refreshChannelSelectors(bool setValues)
         int gotColor = -1;
 
         Natron::ImageComponents colorComp,selectedComp;
-        bool foundSelectedComp = false;
-        
+
         /*
          These are default layers that we always display in the layer selector.
          If one of them is found in the clip preferences, we set the default value to it.
          */
-        std::map<std::string, int> defaultLayers;
-        defaultLayers[kNatronDisparityLeftPlaneName] = -1;
-        defaultLayers[kNatronDisparityRightPlaneName] = -1;
-        defaultLayers[kNatronForwardMotionVectorsPlaneName] = -1;
-        defaultLayers[kNatronBackwardMotionVectorsPlaneName] = -1;
-
+        std::map<std::string, int > defaultLayers;
+        {
+            int i = 0;
+            while (ImageComponents::defaultComponents[i][0] != 0) {
+                std::string layer = ImageComponents::defaultComponents[i][0];
+                if (!ImageComponents::isColorPlane(layer)) {
+                    //Do not add the color plane, because it is handled in a separate case to make sure it is always the first choice
+                    defaultLayers[layer] = -1;
+                }
+                ++i;
+            }
+        }
+        
+        int foundCurLayerChoice = -1;
         
         if (node) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
@@ -8572,40 +8605,50 @@ Node::refreshChannelSelectors(bool setValues)
                     
                     assert(choices.size() > 0);
                     std::vector<std::string>::iterator pos = choices.begin();
-                    ++pos;
+                    ++pos; // bypass the "None" choice
                     gotColor = 1;
-                    
-                    if (!foundSelectedComp && (curLayer == kNatronRGBAComponentsName || curLayer == kNatronRGBComponentsName || curLayer == kNatronAlphaComponentsName)) {
-                        selectedComp = it2->first;
-                        foundSelectedComp = true;
-                    }
 
+
+                    std::string colorCompName;
                     if (numComp == 1) {
-                        choices.insert(pos,kNatronAlphaComponentsName);
+                        colorCompName = kNatronAlphaPlaneUserName;
                     } else if (numComp == 3) {
-                        choices.insert(pos,kNatronRGBComponentsName);
+                        colorCompName = kNatronRGBPlaneUserName;
                     } else if (numComp == 4) {
-                        choices.insert(pos,kNatronRGBAComponentsName);
+                        colorCompName = kNatronRGBAPlaneUserName;
                     } else {
                         assert(false);
                     }
+                    choices.insert(pos,colorCompName);
+                    
+                    if (foundCurLayerChoice == -1 && isCurLayerColorComp) {
+                        selectedComp = it2->first;
+                        foundCurLayerChoice = 1;
+                    }
+
                     
                     ///Increment all default indexes
-                    for (std::map<std::string, int>::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
+                    for (std::map<std::string, int >::iterator it = defaultLayers.begin() ;it!=defaultLayers.end(); ++it) {
                         if (it->second != -1) {
                             ++it->second;
                         }
                     }
                 } else {
-                    if (!foundSelectedComp && it2->first.getLayerName() == curLayer) {
-                        selectedComp = it2->first;
-                        foundSelectedComp = true;
-                    }
-                    choices.push_back(it2->first.getLayerName());
+                    
+                    std::string choiceName = ImageComponents::mapNatronInternalPlaneNameToUserFriendlyPlaneName(it2->first.getLayerName());
                     std::map<std::string, int>::iterator foundDefaultLayer = defaultLayers.find(it2->first.getLayerName());
                     if (foundDefaultLayer != defaultLayers.end()) {
                         foundDefaultLayer->second = choices.size() -1;
                     }
+                    
+                   
+                    choices.push_back(choiceName);
+                    
+                    if (foundCurLayerChoice == -1 && it2->first.getLayerName() == curLayer) {
+                        selectedComp = it2->first;
+                        foundCurLayerChoice = choices.size()-1;
+                    }
+                    
                 }
             }
         } // if (node) {
@@ -8622,12 +8665,13 @@ Node::refreshChannelSelectors(bool setValues)
                 }
             }
             colorComp = ImageComponents::getRGBAComponents();
-            choices.insert(pos,kNatronRGBAComponentsName);
+            choices.insert(pos,kNatronRGBAPlaneUserName);
             
         }
         for (std::map<std::string, int>::iterator itl = defaultLayers.begin(); itl != defaultLayers.end(); ++itl) {
             if (itl->second == -1) {
-                choices.push_back(itl->first);
+                std::string choiceName = ImageComponents::mapNatronInternalPlaneNameToUserFriendlyPlaneName(itl->first);
+                choices.push_back(choiceName);
             }
         }
 
@@ -8647,9 +8691,19 @@ Node::refreshChannelSelectors(bool setValues)
             s_outputLayerChanged();
         }
         
- 
-        if (setValues) {
-
+        
+        if (!curLayer.empty() && foundCurLayerChoice != -1) {
+            assert(foundCurLayerChoice >= 0 && foundCurLayerChoice < (int)choices.size());
+            layerKnob->blockValueChanges();
+            _imp->liveInstance->beginChanges();
+            layerKnob->setValue(foundCurLayerChoice, 0);
+            _imp->liveInstance->endChanges(true);
+            layerKnob->unblockValueChanges();
+            if (it->first == -1 && _imp->enabledChan[0].lock()) {
+                refreshEnabledKnobsLabel(selectedComp);
+            }
+            
+        } else {
             if (it->second.hasAllChoice &&
                 _imp->liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
                 layerKnob->setValue(0, 0);
@@ -8670,27 +8724,7 @@ Node::refreshChannelSelectors(bool setValues)
                 layerKnob->setValue(defaultIndex,0);
                 it->second.layerName.lock()->setValue(choices[defaultIndex], 0);
             }
-        } else {
-            if (!curLayer.empty()) {
-                bool isColor = curLayer == kNatronRGBAComponentsName ||
-                curLayer == kNatronRGBComponentsName ||
-                curLayer == kNatronAlphaComponentsName;
-                for (std::size_t i = 0; i < choices.size(); ++i) {
-                    if (choices[i] == curLayer || (isColor && (choices[i] == kNatronRGBAComponentsName || choices[i] ==
-                                                               kNatronRGBComponentsName || choices[i] == kNatronAlphaComponentsName))) {
-                        layerKnob->blockValueChanges();
-                        _imp->liveInstance->beginChanges();
-                        layerKnob->setValue(i, 0);
-                        _imp->liveInstance->endChanges(true);
-                        layerKnob->unblockValueChanges();
-                        if (foundSelectedComp && it->first == -1 && _imp->enabledChan[0].lock()) {
-                            refreshEnabledKnobsLabel(selectedComp);
-                        }
-                        break;
-                    }
-                }
-            }
-        } // if (setValues) {
+        }
     } // for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
     
     NodePtr prefInputNode;
@@ -8872,7 +8906,7 @@ Node::refreshChannelSelectors(bool setValues)
     
     return hasChanged;
     
-} // Node::refreshChannelSelectors(bool setValues)
+} // Node::refreshChannelSelectors()
 
 bool
 Node::addUserComponents(const Natron::ImageComponents& comps)

@@ -1064,7 +1064,7 @@ public:
     unsigned int getPluginPythonModuleVersion() const;
   
     //Returns true if changed
-    bool refreshChannelSelectors(bool setValues);
+    bool refreshChannelSelectors();
     
     bool getProcessChannel(int channelIndex) const;
     

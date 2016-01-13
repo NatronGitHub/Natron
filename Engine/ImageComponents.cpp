@@ -28,6 +28,45 @@ static const char* motionComps[2] = {"U","V"};
 static const char* disparityComps[2] = {"X","Y"};
 static const char* xyComps[2] = {"X","Y"};
 
+
+const char* ImageComponents::defaultComponents[][2] =
+{
+    {kNatronColorPlaneName, kNatronRGBAPlaneUserName},
+    {kNatronColorPlaneName, kNatronRGBPlaneUserName},
+    {kNatronColorPlaneName, kNatronAlphaPlaneUserName},
+    {kNatronDisparityLeftPlaneName, kNatronDisparityLeftPlaneUserName},
+    {kNatronDisparityRightPlaneName, kNatronDisparityRightPlaneUserName},
+    {kNatronBackwardMotionVectorsPlaneName, kNatronBackwardMotionVectorsPlaneUserName},
+    {kNatronForwardMotionVectorsPlaneName, kNatronForwardMotionVectorsPlaneUserName},
+    {0, 0}
+};
+
+std::string
+ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(const std::string& userfriendlyPlaneName)
+{
+    int i = 0;
+    while (defaultComponents[i][0] != 0) {
+        if (userfriendlyPlaneName == std::string(defaultComponents[i][1])) {
+            return std::string(defaultComponents[i][0]);
+        }
+        ++i;
+    }
+    return userfriendlyPlaneName;
+}
+
+std::string
+ImageComponents::mapNatronInternalPlaneNameToUserFriendlyPlaneName(const std::string& planeName)
+{
+    int i = 0;
+    while (defaultComponents[i][0] != 0) {
+        if (planeName == std::string(defaultComponents[i][0])) {
+            return std::string(defaultComponents[i][1]);
+        }
+        ++i;
+    }
+    return planeName;
+}
+
 ImageComponents::ImageComponents()
 : _layerName("none")
 , _componentNames()
@@ -68,6 +107,12 @@ ImageComponents::ImageComponents(const std::string& layerName,
 ImageComponents::~ImageComponents()
 {
     
+}
+
+bool
+ImageComponents::isColorPlane(const std::string& layerName)
+{
+    return layerName == kNatronColorPlaneName;
 }
 
 bool
