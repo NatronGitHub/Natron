@@ -50,7 +50,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/PreviewThread.h"
 
 //All fixed sizes were calculated for a 96 dpi screen
+#ifndef Q_OS_MAC
 #define NATRON_PIXELS_FOR_DPI_DEFAULT 96.
+#else
+#define NATRON_PIXELS_FOR_DPI_DEFAULT 72.
+#endif
 
 using namespace Natron;
 
