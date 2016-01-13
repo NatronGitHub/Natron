@@ -119,6 +119,7 @@ if [ "$NOBUILD" != "1" ]; then
             echo OK
         else
             echo ERROR
+            echo "BUILD__ERROR" >> $LOGS/natron.$PKGOS$BIT.$TAG.log
             sleep 2
             cat $LOGS/natron.$PKGOS$BIT.$TAG.log
         fi
@@ -130,6 +131,7 @@ if [ "$NOBUILD" != "1" ]; then
             echo OK
         else
             echo ERROR
+            echo "BUILD__ERROR" >> $LOGS/plugins.$PKGOS$BIT.$TAG.log
             sleep 2
             cat $LOGS/plugins.$PKGOS$BIT.$TAG.log
         fi  
@@ -143,6 +145,7 @@ if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
         echo OK
     else
         echo ERROR
+        echo "BUILD__ERROR" >> $LOGS/installer.$PKGOS$BIT.$TAG.log
         sleep 2
         cat $LOGS/installer.$PKGOS$BIT.$TAG.log
     fi 

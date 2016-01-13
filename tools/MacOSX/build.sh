@@ -148,6 +148,7 @@ if [ "$FAIL" != "1" ]; then
     echo OK
 else
     echo ERROR
+    echo "BUILD__ERROR" >> "$NATRONLOG"
     sleep 2
     cat "$NATRONLOG"
 fi
@@ -161,6 +162,7 @@ if [ "$FAIL" != "1" ]; then
         echo OK
     else
         echo ERROR
+        echo "BUILD__ERROR" >> "$PLUGINSLOG"
         sleep 2
         cat "$PLUGINSLOG"
     fi
@@ -219,6 +221,7 @@ if [ "$FAIL" != "1" ]; then
         echo OK
     else
         echo ERROR
+        echo "BUILD__ERROR" >> "$INSTALLERLOG"
         sleep 2
         cat "$INSTALLERLOG"
     fi

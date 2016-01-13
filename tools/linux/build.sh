@@ -144,6 +144,7 @@ if [ "$NOBUILD" != "1" ]; then
             echo OK
         else
             echo ERROR
+            echo "BUILD__ERROR" >> $log
             cat "$log"
         fi
     fi
@@ -155,6 +156,7 @@ if [ "$NOBUILD" != "1" ]; then
             echo OK
         else
             echo ERROR
+            echo "BUILD__ERROR" >> $log
             cat "$log"
         fi  
     fi
@@ -168,6 +170,7 @@ if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
         echo OK
     else
         echo ERROR
+        echo "BUILD__ERROR" >> $log
         cat "$log"
     fi 
 fi
