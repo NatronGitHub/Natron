@@ -34,7 +34,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphTextItem.h"
-
+#include "Gui/GuiApplicationManager.h"
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
