@@ -35,6 +35,11 @@ elif [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
     FFMPEG_BIN_PATH=$INSTALL_PATH/ffmpeg-LGPL
 fi
 
+if [ -d "$INSTALL_PATH/symbols" ]; then
+  rm -rf $INSTALL_PATH/symbols || exit 1
+fi
+mkdir -p $INSTALL_PATH/symbols || exit 1
+
 
 if [ "$BUILD_CONFIG" = "ALPHA" ]; then
 	if [ -z "$BUILD_NUMBER" ]; then
@@ -122,6 +127,9 @@ if [ "$BUNDLE_IO" = "1" ]; then
         cp "$INSTALL_PATH/bin/$depend" "$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
     done
     cp $INSTALL_PATH/lib/{LIBOPENCOLORIO.DLL,LIBSEEXPR.DLL} "$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
+    if [ "${BREAKPAD}" != "0" ]; then
+      $INSTALL_PATH/bin/dump_syms $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/IO.ofx > $INSTALL_PATH/symbols/IO.ofx-${TAG}-${PKGOS}.sym || exit 1
+    fi
     strip -s $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/*
 	
 fi
@@ -142,7 +150,10 @@ if [ "$BUNDLE_MISC" = "1" ]; then
     for depend in $CIMG_DLL; do
         cp $INSTALL_PATH/bin/$depend  $OFX_MISC_PATH/data/Plugins/OFX/Natron/CImg.ofx.bundle/Contents/Win$BIT/ || exit 1
     done
-    
+    if [ "${BREAKPAD}" != "0" ]; then
+      $INSTALL_PATH/bin/dump_syms $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/CImg.ofx > $INSTALL_PATH/symbols/CImg.ofx-${TAG}-${PKGOS}.sym || exit 1
+      $INSTALL_PATH/bin/dump_syms $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/Misc.ofx > $INSTALL_PATH/symbols/Misc.ofx-${TAG}-${PKGOS}.sym || exit 1
+    fi
     strip -s $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/*
 	
 fi
@@ -167,6 +178,10 @@ rm $NATRON_PATH/data/docs/TuttleOFX-README.txt || exit 1
 mkdir -p $NATRON_PATH/data/share/pixmaps || exit 1
 cp $CWD/include/config/natronProjectIcon_windows.ico $NATRON_PATH/data/share/pixmaps/ || exit 1
 cp $INSTALL_PATH/share/stylesheets/mainstyle.qss $NATRON_PATH/data/share/ || exit 1
+if [ "${BREAKPAD}" != "0" ]; then
+  $INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/Natron > $INSTALL_PATH/symbols/Natron-${TAG}-${PKGOS}.sym || exit 1
+  $INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/NatronRenderer > $INSTALL_PATH/symbols/NatronRenderer-${TAG}-${PKGOS}.sym || exit 1
+fi
 strip -s $NATRON_PATH/data/bin/*
 
 if [ "$NO_ZIP" != "1" ]; then
@@ -225,8 +240,6 @@ done
 #cp $FFMPEG_BIN_PATH/bin/ffmpeg.exe $CLIBS_PATH/data/bin || exit 1
 #cp $FFMPEG_BIN_PATH/bin/ffprobe.exe $CLIBS_PATH/data/bin || exit 1
 
-# TODO: At this point send unstripped binaries (and debug binaries?) to Socorro server for breakpad
-
 strip -s $CLIBS_PATH/data/bin/*
 strip -s $CLIBS_PATH/data/bin/*/*
 
@@ -279,6 +292,9 @@ if [ "$BUNDLE_ARENA" = "1" ]; then
         cp $INSTALL_PATH/bin/$depend  $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT/ || exit 1
     done
     cp $INSTALL_PATH/lib/LIBOPENCOLORIO.DLL $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT/ || exit 1
+    if [ "${BREAKPAD}" != "0" ]; then
+      $INSTALL_PATH/bin/dump_syms $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/Arena.ofx > $INSTALL_PATH/symbols/Arena.ofx-${TAG}-${PKGOS}.sym || exit 1
+    fi
     strip -s $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/*
     echo "ImageMagick License:" >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
     cat $INSTALL_PATH/docs/imagemagick/LICENSE >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
