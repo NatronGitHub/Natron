@@ -3839,10 +3839,6 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
 {
     NodePtr node = getNode();
 
-//    if (!node->isNodeCreated()) {
-//        return;
-//    }
-    
     ///If the param changed is a button and the node is disabled don't do anything which might
     ///trigger an analysis
     if ((reason == eValueChangedReasonUserEdited) && dynamic_cast<KnobButton*>(k) && node->isNodeDisabled()) {
@@ -3886,7 +3882,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     }
     
     if (kh && QThread::currentThread() == qApp->thread() &&
-        originatedFromMainThread) {
+        originatedFromMainThread && reason != eValueChangedReasonTimeChanged) {
         
         ///Run the following only in the main-thread
         if (k->getIsClipPreferencesSlave()) {
@@ -3905,6 +3901,11 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
 
     node->onEffectKnobValueChanged(k, reason);
 
+    //Don't call the python callback if the reason is time changed
+    if (reason == eValueChangedReasonTimeChanged) {
+        return;
+    }
+    
     ///If there's a knobChanged Python callback, run it
     std::string pythonCB = getNode()->getKnobChangedCallback();
 
