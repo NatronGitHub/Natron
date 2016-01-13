@@ -6637,7 +6637,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
         }
     } else if (what == _imp->hideInputs.lock().get()) {
         Q_EMIT hideInputsKnobChanged(_imp->hideInputs.lock()->getValue());
-    } else if (what->getName() == kOfxImageEffectFileParamName) {
+    } else if (what->getName() == kOfxImageEffectFileParamName && reason != eValueChangedReasonTimeChanged) {
         
         if (_imp->liveInstance->isReader()) {
             ///Refresh the preview automatically if the filename changed
