@@ -22,9 +22,14 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 #include <list>
+#include <vector>
 
 #include "PreviewThread.h"
 
+#include <QWaitCondition>
+#include <QMutex>
+
+#include "Gui/GuiDefines.h"
 #include "Gui/NodeGui.h"
 
 #include "Engine/Node.h"
