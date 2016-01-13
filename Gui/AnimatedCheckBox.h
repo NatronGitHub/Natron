@@ -86,15 +86,9 @@ public:
 
     void setDirty(bool b);
 
-    virtual QSize minimumSizeHint() const OVERRIDE FINAL
-    {
-        return QSize(15,15);
-    }
+    virtual QSize minimumSizeHint() const OVERRIDE FINAL;
 
-    virtual QSize sizeHint() const OVERRIDE FINAL
-    {
-        return QSize(15,15);
-    }
+    virtual QSize sizeHint() const OVERRIDE FINAL;
     
     virtual void getBackgroundColor(double *r,double *g,double *b) const;
     

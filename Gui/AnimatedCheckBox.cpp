@@ -68,6 +68,18 @@ AnimatedCheckBox::setDirty(bool b)
     update();
 }
 
+QSize
+AnimatedCheckBox::minimumSizeHint() const
+{
+    return QSize(TO_DPIX(15),TO_DPIY(15));
+}
+
+QSize
+AnimatedCheckBox::sizeHint() const
+{
+    return QSize(TO_DPIX(15),TO_DPIY(15));
+}
+
 void
 AnimatedCheckBox::setChecked(bool c) {
     checked = c;

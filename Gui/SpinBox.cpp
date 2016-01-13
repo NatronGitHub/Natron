@@ -50,7 +50,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobGui.h"
 #include "Gui/SpinBoxValidator.h"
+#include "Gui/GuiApplicationManager.h"
 
+#define SPINBOX_MAX_WIDTH 50
+#define SPINBOX_MIN_WIDTH 35
 
 struct SpinBoxPrivate
 {
@@ -107,8 +110,8 @@ SpinBox::SpinBox(QWidget* parent,
 {
     QObject::connect( this, SIGNAL( returnPressed() ), this, SLOT( interpretReturn() ) );
     setValue(0);
-    setMaximumWidth(50);
-    setMinimumWidth(35);
+    setMaximumWidth(TO_DPIX(SPINBOX_MAX_WIDTH));
+    setMinimumWidth(TO_DPIX(SPINBOX_MIN_WIDTH));
     setFocusPolicy(Qt::WheelFocus); // mouse wheel gives focus too - see also SpinBox::focusInEvent()
     decimals(_imp->decimals);
 

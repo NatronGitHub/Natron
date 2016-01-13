@@ -709,7 +709,7 @@ DockablePanelPrivate::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
     layoutContainer->setLayout(tabLayout);
     //tabLayout->setContentsMargins(1, 1, 1, 1);
     tabLayout->setColumnStretch(1, 1);
-    tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING);
+    tabLayout->setSpacing(TO_DPIY(NATRON_FORM_LAYOUT_LINES_SPACING));
     
     if (_tabWidget) {
         _tabWidget->addTab(newTab,name);
