@@ -367,7 +367,9 @@ NodeGui::restoreStateAfterCreation()
 {
     NodePtr internalNode = getNode();
     ///Refresh the disabled knob
-    if ( internalNode->isNodeDisabled() ) {
+    
+    boost::shared_ptr<KnobBool> disabledknob = internalNode->getDisabledKnob();
+    if (disabledknob && disabledknob->getValue()) {
         onDisabledKnobToggled(true);
     }
     if ( !internalNode->isMultiInstance() ) {
