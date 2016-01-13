@@ -425,8 +425,8 @@ for bin in Natron NatronRenderer; do
 		DSYM_32=${bin}i386.dSYM
         dsymutil -arch x86_64 -o $DSYM_64 "$binary"
         dsymutil -arch i386 -o $DSYM_32 "$binary"
-        $DUMP_SYMS "$binary" -a x86_64 -g $DSYM_64 > "$SYMBOLS_PATH/Natron-${TAG}-Mac-x86_64.sym"
-        $DUMP_SYMS "$binary" -a i386 -g $DSYM_32 > "$SYMBOLS_PATH/Natron-${TAG}-Mac-i386.sym"
+        $DUMP_SYMS -a x86_64 -g $DSYM_64 "$binary"  > "$SYMBOLS_PATH/Natron-${TAG}-Mac-x86_64.sym"
+        $DUMP_SYMS -a i386 -g $DSYM_32 "$binary"  > "$SYMBOLS_PATH/Natron-${TAG}-Mac-i386.sym"
 		rm -rf $DSYM_64;
 		rm -rf $DSYM_32;
     fi
