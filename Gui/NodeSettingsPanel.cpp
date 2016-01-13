@@ -1,3 +1,4 @@
+
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
  * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
@@ -84,11 +85,14 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     
     QObject::connect( this,SIGNAL( closeChanged(bool) ),NodeUi.get(),SLOT( onSettingsPanelClosedChanged(bool) ) );
     
+    const QSize mediumBSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
+    const QSize mediumIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+
     QPixmap pixSettings;
-    appPTR->getIcon(NATRON_PIXMAP_SETTINGS, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixSettings);
+    appPTR->getIcon(NATRON_PIXMAP_SETTINGS, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &pixSettings);
     _settingsButton = new Button( QIcon(pixSettings),"",getHeaderWidget() );
-    _settingsButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _settingsButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _settingsButton->setFixedSize(mediumBSize);
+    _settingsButton->setIconSize(mediumIconSize);
     _settingsButton->setToolTip(Natron::convertFromPlainText(tr("Settings and presets."), Qt::WhiteSpaceNormal));
     _settingsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _settingsButton,SIGNAL( clicked() ),this,SLOT( onSettingsButtonClicked() ) );

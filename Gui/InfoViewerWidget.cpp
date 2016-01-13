@@ -36,6 +36,7 @@
 #include "Engine/ViewerInstance.h"
 #include "Engine/Lut.h"
 #include "Engine/Image.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/Label.h"
 
@@ -156,7 +157,7 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
     }
 
     color = new Natron::Label(this);
-    color->setFixedSize(20, 20);
+    color->setFixedSize(TO_DPIX(20), TO_DPIY(20));
     
     hvl_lastOption = new Natron::Label(this);
     {

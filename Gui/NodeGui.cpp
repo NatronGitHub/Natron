@@ -130,7 +130,7 @@ static void getPixmapForMergeOperator(const QString& op,QPixmap* pix)
         std::string opStr = Natron::getNatronOperationString((Natron::MergingFunctionEnum)i);
         if (opStr == opstd) {
             Natron::PixmapEnum pixEnum = Natron::getPixmapForMergingOperator((Natron::MergingFunctionEnum)i);
-            appPTR->getIcon(pixEnum, NATRON_PLUGIN_ICON_SIZE, pix);
+            appPTR->getIcon(pixEnum, TO_DPIX(NATRON_PLUGIN_ICON_SIZE), pix);
             return;
         }
     }
@@ -549,7 +549,7 @@ NodeGui::createGui()
             _pluginIconFrame = new QGraphicsRectItem(this);
             _pluginIconFrame->setZValue(depth);
             _pluginIconFrame->setBrush(QColor(50,50,50));
-            int size = NATRON_PLUGIN_ICON_SIZE;
+            int size = TO_DPIX(NATRON_PLUGIN_ICON_SIZE);
             if (std::max(pix.width(), pix.height()) != size) {
                 pix = pix.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
             }
@@ -790,7 +790,7 @@ NodeGui::adjustSizeToContent(int* /*w*/,int *h,bool adjustToTextSize)
 int
 NodeGui::getPluginIconWidth() const
 {
-    return _pluginIcon ? NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2 : 0;
+    return _pluginIcon ? TO_DPIX(NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2) : 0;
 }
 
 double
@@ -873,21 +873,23 @@ NodeGui::resize(int width,
 
     _boundingBox->setRect(bbox);
 
+    int iconSize = TO_DPIY(NATRON_PLUGIN_ICON_SIZE);
+    int iconOffsetX = TO_DPIX(PLUGIN_ICON_OFFSET);
     if (hasPluginIcon) {
-        _pluginIcon->setX(topLeft.x() + PLUGIN_ICON_OFFSET);
-        int iconsOffset = _mergeIcon  && _mergeIcon->isVisible() ? (height - 2 * NATRON_PLUGIN_ICON_SIZE) / 3. : (height - NATRON_PLUGIN_ICON_SIZE) /2.;
+        _pluginIcon->setX(topLeft.x() + iconOffsetX);
+        int iconsOffset = _mergeIcon  && _mergeIcon->isVisible() ? (height - 2 * iconSize) / 3. : (height - iconSize) /2.;
         _pluginIcon->setY(topLeft.y() + iconsOffset);
         _pluginIconFrame->setRect(topLeft.x(),topLeft.y(), iconWidth, height);
     }
 
     if (_mergeIcon && _mergeIcon->isVisible()) {
-        int iconsOffset =  (height - 2 * NATRON_PLUGIN_ICON_SIZE) / 3.;
-        _mergeIcon->setX(topLeft.x() + PLUGIN_ICON_OFFSET);
-        _mergeIcon->setY(topLeft.y() + iconsOffset * 2 + NATRON_PLUGIN_ICON_SIZE);
+        int iconsOffset =  (height - 2 * iconSize) / 3.;
+        _mergeIcon->setX(topLeft.x() + iconOffsetX);
+        _mergeIcon->setY(topLeft.y() + iconsOffset * 2 + iconSize);
     }
 
     QFont f(appFont,appFontSize);
-    QFontMetrics metrics(f);
+    QFontMetrics metrics(f,0);
     
     height = refreshPreviewAndLabelPosition(bbox);
 
@@ -903,7 +905,7 @@ NodeGui::resize(int width,
 
     QString persistentMessage = _persistentMessage->text();
     f.setPixelSize(25);
-    metrics = QFontMetrics(f);
+    metrics = QFontMetrics(f,0);
     int pMWidth = metrics.width(persistentMessage);
     QPointF bitDepthPos(topLeft.x() + iconWidth + (width - iconWidth) / 2,0);
     _bitDepthWarning->refreshPosition(bitDepthPos);
@@ -918,9 +920,10 @@ NodeGui::resize(int width,
         _passThroughIndicator->refreshPosition(bottomRight );
     }
     
+    int indicatorOffset = TO_DPIX(NATRON_STATE_INDICATOR_OFFSET);
     _persistentMessage->setPos(topLeft.x() + (width / 2) - (pMWidth / 2), topLeft.y() + height / 2 - metrics.height() / 2);
-    _stateIndicator->setRect(topLeft.x() - NATRON_STATE_INDICATOR_OFFSET,topLeft.y() - NATRON_STATE_INDICATOR_OFFSET,
-                             width + NATRON_STATE_INDICATOR_OFFSET * 2,height + NATRON_STATE_INDICATOR_OFFSET * 2);
+    _stateIndicator->setRect(topLeft.x() - indicatorOffset,topLeft.y() - indicatorOffset,
+                             width + indicatorOffset * 2,height + indicatorOffset * 2);
    
     _disabledBtmLeftTopRight->setLine( QLineF( bbox.bottomLeft(),bbox.topRight() ) );
     _disabledTopLeftBtmRight->setLine( QLineF( bbox.topLeft(),bbox.bottomRight() ) );
@@ -3343,7 +3346,7 @@ NodeGui::setPluginIconFilePath(const std::string& filePath)
     if (p.isNull() || !currentSettings->isPluginIconActivatedOnNodeGraph()) {
         return;
     }
-    int size = NATRON_PLUGIN_ICON_SIZE;
+    int size = TO_DPIX(NATRON_PLUGIN_ICON_SIZE);
     if (std::max(p.width(), p.height()) != size) {
         p = p.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }

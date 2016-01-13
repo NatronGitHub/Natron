@@ -39,6 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DockablePanel.h"
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/Utils.h"
 
 PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
@@ -82,7 +83,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
 
     _panel->initializeKnobs();
 
-    resize(900, 600);
+    resize(TO_DPIX(900), TO_DPIY(600));
 }
 
 void

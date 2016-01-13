@@ -774,8 +774,8 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
     QIcon toolButtonIcon,menuIcon;
     if ( !plugin->getIconPath().isEmpty() && QFile::exists( plugin->getIconPath() ) ) {
         QPixmap pix(plugin->getIconPath());
-        int menuSize = NATRON_MEDIUM_BUTTON_ICON_SIZE;
-        int toolButtonSize = !plugin->hasParent() ? NATRON_TOOL_BUTTON_ICON_SIZE : NATRON_MEDIUM_BUTTON_ICON_SIZE;
+        int menuSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+        int toolButtonSize = !plugin->hasParent() ? TO_DPIX(NATRON_TOOL_BUTTON_ICON_SIZE) : TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
         
         QPixmap menuPix = pix,toolbuttonPix = pix;
         if (std::max(menuPix.width(), menuPix.height()) != menuSize) {
@@ -790,9 +790,9 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         //add the default group icon only if it has no parent
         if ( !plugin->hasParent() ) {
             QPixmap toolbuttonPix,menuPix;
-            getPixmapForGrouping( &toolbuttonPix, NATRON_TOOL_BUTTON_ICON_SIZE, plugin->getLabel() );
+            getPixmapForGrouping( &toolbuttonPix, TO_DPIX(NATRON_TOOL_BUTTON_ICON_SIZE), plugin->getLabel() );
             toolButtonIcon.addPixmap(toolbuttonPix);
-            getPixmapForGrouping( &menuPix, NATRON_TOOL_BUTTON_ICON_SIZE, plugin->getLabel() );
+            getPixmapForGrouping( &menuPix, TO_DPIX(NATRON_TOOL_BUTTON_ICON_SIZE), plugin->getLabel() );
             menuIcon.addPixmap(menuPix);
 
         }
@@ -854,7 +854,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         QObject::connect( createReaderAction, SIGNAL( triggered() ), this, SLOT( createReader() ) );
         createReaderAction->setText( tr("Read") );
         QPixmap readImagePix;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_READ_IMAGE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &readImagePix);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_READ_IMAGE, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &readImagePix);
         createReaderAction->setIcon( QIcon(readImagePix) );
         createReaderAction->setShortcutContext(Qt::WidgetShortcut);
         createReaderAction->setShortcut( QKeySequence(Qt::Key_R) );
@@ -864,7 +864,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         QObject::connect( createWriterAction, SIGNAL( triggered() ), this, SLOT( createWriter() ) );
         createWriterAction->setText( tr("Write") );
         QPixmap writeImagePix;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_WRITE_IMAGE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &writeImagePix);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_WRITE_IMAGE, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &writeImagePix);
         createWriterAction->setIcon( QIcon(writeImagePix) );
         createWriterAction->setShortcutContext(Qt::WidgetShortcut);
         createWriterAction->setShortcut( QKeySequence(Qt::Key_W) );

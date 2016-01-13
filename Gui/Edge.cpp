@@ -561,9 +561,9 @@ Edge::initLine()
 
     qreal arrowSize;
     if (source && dest) {
-        arrowSize = ARROW_SIZE_CONNECTED * sc;
+        arrowSize = TO_DPIX(ARROW_SIZE_CONNECTED) * sc;
     } else {
-        arrowSize = ARROW_SIZE_DISCONNECTED * sc;
+        arrowSize = TO_DPIX(ARROW_SIZE_DISCONNECTED) * sc;
     }
     QPointF arrowP1 = arrowIntersect + QPointF(std::cos(a + ARROW_HEAD_ANGLE/2) * arrowSize,
                                                std::sin(a + ARROW_HEAD_ANGLE/2) * arrowSize);
@@ -643,7 +643,7 @@ Edge::dragSource(const QPointF & src)
         a = 2 * M_PI - a;
     }
 
-    double arrowSize = ARROW_SIZE_DISCONNECTED;
+    double arrowSize = TO_DPIX(ARROW_SIZE_DISCONNECTED);
     QPointF arrowP1 = line().p1() + QPointF(std::cos(a + ARROW_HEAD_ANGLE/2) * arrowSize,
                                             std::sin(a + ARROW_HEAD_ANGLE/2) * arrowSize);
     QPointF arrowP2 = line().p1() + QPointF(std::cos(a - ARROW_HEAD_ANGLE/2) * arrowSize,
@@ -667,7 +667,7 @@ Edge::dragDest(const QPointF & dst)
         a = 2 * M_PI - a;
     }
 
-    double arrowSize = ARROW_SIZE_DISCONNECTED;
+    double arrowSize = TO_DPIX(ARROW_SIZE_DISCONNECTED);
     QPointF arrowP1 = line().p1() + QPointF(std::cos(a + ARROW_HEAD_ANGLE/2) * arrowSize,
                                             std::sin(a + ARROW_HEAD_ANGLE/2) * arrowSize);
     QPointF arrowP2 = line().p1() + QPointF(std::cos(a - ARROW_HEAD_ANGLE/2) * arrowSize,

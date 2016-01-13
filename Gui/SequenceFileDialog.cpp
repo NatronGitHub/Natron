@@ -563,7 +563,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
     _mainLayout->addWidget(_filterLineWidget);
 
-    resize(900, 400);
+    resize(TO_DPIX(900), TO_DPIY(400));
 
     std::vector<QUrl> initialBookmarks;
     initialBookmarks.push_back( QUrl::fromLocalFile( QDir::homePath() ) );
