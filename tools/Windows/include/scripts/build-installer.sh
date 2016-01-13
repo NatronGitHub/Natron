@@ -179,8 +179,8 @@ mkdir -p $NATRON_PATH/data/share/pixmaps || exit 1
 cp $CWD/include/config/natronProjectIcon_windows.ico $NATRON_PATH/data/share/pixmaps/ || exit 1
 cp $INSTALL_PATH/share/stylesheets/mainstyle.qss $NATRON_PATH/data/share/ || exit 1
 if [ "${BREAKPAD}" != "0" ]; then
-  $INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/Natron > $INSTALL_PATH/symbols/Natron-${TAG}-${PKGOS}.sym || exit 1
-  $INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/NatronRenderer > $INSTALL_PATH/symbols/NatronRenderer-${TAG}-${PKGOS}.sym || exit 1
+  $INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/Natron.exe > $INSTALL_PATH/symbols/Natron-${TAG}-${PKGOS}.sym || exit 1
+  $INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/NatronRenderer.exe > $INSTALL_PATH/symbols/NatronRenderer-${TAG}-${PKGOS}.sym || exit 1
 fi
 strip -s $NATRON_PATH/data/bin/*
 
