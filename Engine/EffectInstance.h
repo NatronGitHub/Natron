@@ -1447,7 +1447,6 @@ bool onOverlayPenDown_public(double time, const RenderScale & renderScale, int v
     void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps);
     void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps, std::list<Natron::EffectInstance*>* markedNodes);
 
-
     /**
      * @brief Reimplement to control how the host adds the RGBA checkboxes.
      * @returns True if you want the host to add the RGBA checkboxes, false otherwise.
@@ -1484,12 +1483,6 @@ bool onOverlayPenDown_public(double time, const RenderScale & renderScale, int v
     {
         return false;
     }
-
-    void getNonMaskInputsAvailableComponents(double time,
-                                             int view,
-                                             bool preferExistingComponents,
-                                             ComponentsAvailableMap* comps,
-                                             std::list<Natron::EffectInstance*>* markedNodes);
 
     virtual void onKnobsLoaded() {}
 

@@ -141,6 +141,7 @@ namespace { // protect local classes in anonymous namespace
         
         mutable QMutex compsMutex;
         //Stores the components available at build time of the choice menu
+      
         std::vector<std::pair<ImageComponents,boost::weak_ptr<Node> > > compsAvailable;
         
         MaskSelector()
@@ -2958,12 +2959,12 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 
                 std::vector<std::string> choices;
                 choices.push_back("None");
-                const ImageComponents& rgba = ImageComponents::getRGBAComponents();
+                /*const ImageComponents& rgba = ImageComponents::getRGBAComponents();
                 const std::vector<std::string>& channels = rgba.getComponentsNames();
                 const std::string& layerName = rgba.getComponentsGlobalName();
                 for (std::size_t c = 0; c < channels.size(); ++c) {
                     choices.push_back(layerName + "." + channels[c]);
-                }
+                }*/
                 
                 channel->populateChoices(choices);
                 channel->setDefaultValue(choices.size() - 1, 0);
@@ -8692,6 +8693,14 @@ Node::refreshChannelSelectors(bool setValues)
         } // if (setValues) {
     } // for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
     
+    NodePtr prefInputNode;
+    if (!_imp->maskSelectors.empty()) {
+        int prefInputNb = getPreferredInput();
+        if (prefInputNb != -1) {
+            prefInputNode = getInput(prefInputNb);
+        }
+    }
+    
     for (std::map<int,MaskSelector>::iterator it = _imp->maskSelectors.begin(); it != _imp->maskSelectors.end(); ++it) {
         NodePtr node;
         if (it->first == -1) {
@@ -8700,22 +8709,71 @@ Node::refreshChannelSelectors(bool setValues)
             node = getInput(it->first);
         }
         
-        const std::vector<std::string> currentLayerEntries = it->second.channel.lock()->getEntries_mt_safe();
-        const std::string curLayer = it->second.channelName.lock()->getValue();
+        boost::shared_ptr<KnobChoice> channelKnob = it->second.channel.lock();
+        boost::shared_ptr<KnobString> channelNameKnob = it->second.channelName.lock();
+
+        const std::vector<std::string> currentLayerEntries = channelKnob->getEntries_mt_safe();
+        const std::string curLayer = channelNameKnob->getValue();
+        std::string curLayerName = curLayer,curChannelName;
+        {
+            std::size_t foundLastDot = curLayer.find_last_of(".");
+            if (foundLastDot != std::string::npos) {
+                curLayerName = curLayer.substr(0, foundLastDot);
+                std::size_t foundPrevDot = curLayerName.find_first_of(".");
+                if (foundPrevDot != std::string::npos) {
+                    //Remove the node name
+                    curLayerName = curLayerName.substr(foundPrevDot + 1);
+                }
+                curChannelName = curLayer.substr(foundLastDot + 1);
+            }
+        }
         
+        bool isCurLayerColor = curLayerName == kNatronRGBAComponentsName ||
+        curLayerName == kNatronRGBComponentsName ||
+        curLayerName == kNatronAlphaComponentsName;
         
         std::vector<std::string> choices;
         choices.push_back("None");
         bool gotColor = false;
-        int alphaIndex = -1;
+        int alphaIndex = 0;
+        
+        //Get the mask input components
         EffectInstance::ComponentsAvailableMap compsAvailable;
         std::list<EffectInstance*> markedNodes;
         if (node) {
             node->getLiveInstance()->getComponentsAvailable(true, true, time, &compsAvailable,&markedNodes);
         }
         
-        ///Also inject in masks available components from all non mask inputs
-        _imp->liveInstance->getNonMaskInputsAvailableComponents(time, 0, true, &compsAvailable, &markedNodes);
+        //Also get the node's preferred input (the "main" input) components
+        EffectInstance::ComponentsAvailableMap prefInputAvailComps;
+        
+        if (prefInputNode) {
+            prefInputNode->getLiveInstance()->getComponentsAvailable(true, true, time, &prefInputAvailComps, &markedNodes);
+            
+            //Merge the 2 components available maps, but preferring channels coming from the Mask input
+            for (EffectInstance::ComponentsAvailableMap::iterator it = prefInputAvailComps.begin(); it != prefInputAvailComps.end(); ++it) {
+                //If the component is already present in the 'comps' map, only add it if we are the preferred input
+                EffectInstance::ComponentsAvailableMap::iterator colorMatch = compsAvailable.end();
+                bool found = false;
+                for (EffectInstance::ComponentsAvailableMap::iterator it2 = compsAvailable.begin(); it2 != compsAvailable.end(); ++it2) {
+                    if (it2->first == it->first) {
+                        found = true;
+                        break;
+                    } else if ( it2->first.isColorPlane() ) {
+                        colorMatch = it2;
+                    }
+                }
+                if (!found) {
+                    if ( ( colorMatch != compsAvailable.end() ) && it->first.isColorPlane() ) {
+                        //we found another color components type, skip
+                        continue;
+                    } else {
+                        compsAvailable.insert(*it);
+                    }
+                }
+            }
+        } // if (prefInputNode)
+        
         
         std::vector<std::pair<ImageComponents,boost::weak_ptr<Node> > > compsOrdered;
         for (EffectInstance::ComponentsAvailableMap::iterator comp = compsAvailable.begin(); comp != compsAvailable.end(); ++comp) {
@@ -8730,28 +8788,42 @@ Node::refreshChannelSelectors(bool setValues)
             QMutexLocker k(&it->second.compsMutex);
             it->second.compsAvailable = compsOrdered;
         }
+        int foundLastLayerChoice = -1;
+        if (curLayer == "None") {
+            foundLastLayerChoice = 0;
+        }
         for (std::vector<std::pair<ImageComponents,boost::weak_ptr<Node> > >::iterator it2 = compsOrdered.begin(); it2!= compsOrdered.end(); ++it2) {
             
             const std::vector<std::string>& channels = it2->first.getComponentsNames();
             const std::string& layerName = it2->first.isColorPlane() ? it2->first.getComponentsGlobalName() : it2->first.getLayerName();
-            for (std::size_t i = 0; i < channels.size(); ++i) {
-                choices.push_back(layerName + "." + channels[i]);
+            bool isLastLayer = false;
+            bool isColorPlane = it2->first.isColorPlane();
+            
+            if (foundLastLayerChoice == -1 && (layerName == curLayerName || (isCurLayerColor && isColorPlane))) {
+                isLastLayer = true;
             }
+            
+            std::string nodeName = it2->second.lock()->getScriptName_mt_safe();
+            
+            for (std::size_t i = 0; i < channels.size(); ++i) {
+                choices.push_back(nodeName + "." + layerName + "." + channels[i]);
+                if (isLastLayer && channels[i] == curChannelName) {
+                    foundLastLayerChoice = choices.size() - 1;
+                }
+            }
+            
             if (it2->first.isColorPlane()) {
                 if (channels.size() == 1 || channels.size() == 4) {
                     alphaIndex = choices.size() - 1;
                 } else {
-                    alphaIndex = 1;
+                    alphaIndex = 0;
                 }
                 gotColor = true;
             }
         }
         
         
-        if (!gotColor) {
-            std::vector<std::string>::iterator pos = choices.begin();
-            assert(choices.size() > 0);
-            ++pos;
+        /*if (!gotColor) {
             const ImageComponents& rgba = ImageComponents::getRGBAComponents();
             const std::vector<std::string>& channels = rgba.getComponentsNames();
             const std::string& layerName = rgba.getComponentsGlobalName();
@@ -8759,7 +8831,7 @@ Node::refreshChannelSelectors(bool setValues)
                 choices.push_back(layerName + "." + channels[i]);
             }
             alphaIndex = choices.size() - 1;
-        }
+        }*/
         
         if (choices.size() != currentLayerEntries.size()) {
             hasChanged = true;
@@ -8771,27 +8843,28 @@ Node::refreshChannelSelectors(bool setValues)
                 }
             }
         }
-        it->second.channel.lock()->populateChoices(choices);
+        channelKnob->populateChoices(choices);
         
         
-        if (setValues) {
+        /*if (setValues) {
             assert(alphaIndex != -1 && alphaIndex >= 0 && alphaIndex < (int)choices.size());
-            it->second.channel.lock()->setValue(alphaIndex,0);
-            it->second.channelName.lock()->setValue(choices[alphaIndex], 0);
-        } else {
-            if (!curLayer.empty()) {
-                for (std::size_t i = 0; i < choices.size(); ++i) {
-                    if (choices[i] == curLayer) {
-                        it->second.channel.lock()->blockValueChanges();
-                        _imp->liveInstance->beginChanges();
-                        it->second.channel.lock()->setValue(i, 0);
-                        it->second.channel.lock()->unblockValueChanges();
-                        _imp->liveInstance->endChanges();
-                        break;
-                    }
-                }
+            channelKnob->setValue(alphaIndex,0);
+            channelNameKnob->setValue(choices[alphaIndex], 0);
+        } else {*/
+            if (foundLastLayerChoice != -1) {
+                channelKnob->blockValueChanges();
+                _imp->liveInstance->beginChanges();
+                channelKnob->setValue(foundLastLayerChoice, 0);
+                channelKnob->unblockValueChanges();
+                channelNameKnob->setValue(choices[foundLastLayerChoice], 0);
+                _imp->liveInstance->endChanges();
+                
+            } else {
+                assert(alphaIndex != -1 && alphaIndex >= 0 && alphaIndex < (int)choices.size());
+                channelKnob->setValue(alphaIndex,0);
+                channelNameKnob->setValue(choices[alphaIndex], 0);
             }
-        }
+        //}
     }
     
     //Notify the effect channels have changed (the viewer needs this)

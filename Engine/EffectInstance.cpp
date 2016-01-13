@@ -3368,56 +3368,6 @@ EffectInstance::setComponentsAvailableDirty(bool dirty)
     _imp->componentsAvailableDirty = dirty;
 }
 
-void
-EffectInstance::getNonMaskInputsAvailableComponents(double time,
-                                                    int view,
-                                                    bool preferExistingComponents,
-                                                    ComponentsAvailableMap* comps,
-                                                    std::list<Natron::EffectInstance*>* markedNodes)
-{
-    NodePtr node  = getNode();
-
-    if (!node) {
-        return;
-    }
-    int preferredInput = node->getPreferredInput();
-
-    //Call recursively on all inputs which are not masks
-    int maxInputs = getMaxInputCount();
-    for (int i = 0; i < maxInputs; ++i) {
-        if ( !isInputMask(i) && !isInputRotoBrush(i) ) {
-            EffectInstance* input = getInput(i);
-            if (input) {
-                ComponentsAvailableMap inputAvailComps;
-                input->getComponentsAvailableRecursive(true, true, time, view, &inputAvailComps, markedNodes);
-                for (ComponentsAvailableMap::iterator it = inputAvailComps.begin(); it != inputAvailComps.end(); ++it) {
-                    //If the component is already present in the 'comps' map, only add it if we are the preferred input
-                    ComponentsAvailableMap::iterator colorMatch = comps->end();
-                    bool found = false;
-                    for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
-                        if (it2->first == it->first) {
-                            if ( (i == preferredInput) && !preferExistingComponents ) {
-                                it2->second = node;
-                            }
-                            found = true;
-                            break;
-                        } else if ( it2->first.isColorPlane() ) {
-                            colorMatch = it2;
-                        }
-                    }
-                    if (!found) {
-                        if ( ( colorMatch != comps->end() ) && it->first.isColorPlane() ) {
-                            //we found another color components type, skip
-                            continue;
-                        } else {
-                            comps->insert(*it);
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
 void
 EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,

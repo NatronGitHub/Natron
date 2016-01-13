@@ -72,6 +72,7 @@ PreviewThread::PreviewThread()
 : QThread()
 , _imp(new PreviewThreadPrivate())
 {
+    setObjectName("PreviewThread");
 }
 
 PreviewThread::~PreviewThread()

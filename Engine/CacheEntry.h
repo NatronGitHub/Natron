@@ -99,6 +99,9 @@ public:
             free(data);
             data = 0;
         }
+        if (count == 0) {
+            return;
+        }
         data = (T*)malloc(size * sizeof(T));
         if (!data) {
             throw std::bad_alloc();
