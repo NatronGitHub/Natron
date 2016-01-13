@@ -131,6 +131,10 @@ if [ "$DISABLE_BREAKPAD" != "1" ]; then
 
 		$DUMP_SYMS "$PLUGINDIR"/${bin}.ofx.bundle/*/*/${bin}.ofx -a x86_64 -g $DSYM_64 > "$CWD/build/symbols/${bin}.ofx-${TAG}-Mac-x86_64.sym"
 		$DUMP_SYMS "$PLUGINDIR"/${bin}.ofx.bundle/*/*/${bin}.ofx -a i386 -g $DSYM_32 > "$CWD/build/symbols/${bin}.ofx-${TAG}-Mac-i386.sym"
+		
+		rm -rf $DSYM_64
+		rm -rf $DSYM_32
+		
         #Strip binary
         if [ -x "$binary" ]; then
             echo "* stripping $binary";
