@@ -45,8 +45,10 @@ fi
 
 if [ "$1" = "32" ]; then
     BIT=32
+    INSTALL_PATH=$INSTALL32_PATH
 else
     BIT=64
+    INSTALL_PATH=$INSTALL64_PATH
 fi
 
 if [ "$2" = "workshop" ]; then
