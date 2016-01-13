@@ -132,7 +132,10 @@ elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
 	fi
 	EXTRA_QMAKE_FLAG="CONFIG+=stable BUILD_USER_NAME=$CUSTOM_BUILD_USER_NAME"
 fi
-#EXTRA_QMAKE_FLAG="CONFIG+=gbreakpad" Enable when ready
+if [ "${BREAKPAD}" != "0" ]; then
+  EXTRA_QMAKE_FLAG="CONFIG+=gbreakpad" 
+fi
+
 $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo CONFIG+=silent ${EXTRA_QMAKE_FLAG} CONFIG+=${BIT}bit DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
 make -j${MKJOBS} || exit 1
 
