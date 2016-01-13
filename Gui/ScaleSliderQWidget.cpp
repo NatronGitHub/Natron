@@ -439,7 +439,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     QColor scaleColor;
     scaleColor.setRgbF(textColor.redF() / 2., textColor.greenF() / 2., textColor.blueF() / 2.);
     
-    QFontMetrics fontM(_imp->font);
+    QFontMetrics fontM(_imp->font, 0);
     
     if (!_imp->useLineColor) {
         p.setPen(scaleColor);
