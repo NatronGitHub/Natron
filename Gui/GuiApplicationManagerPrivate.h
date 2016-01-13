@@ -99,10 +99,12 @@ struct GuiApplicationManagerPrivate
     boost::shared_ptr<QFutureWatcher<void> > fontconfigUpdateWatcher;
     QTimer updateSplashscreenTimer;
     int fontconfigMessageDots;
-    
-    
+        
     PreviewThread previewRenderThread;
     
+    int dpiX,dpiY;
+
+
     GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface);
 
     void createColorPickerCursor();

@@ -49,6 +49,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SplashScreen.h"
 #include "Gui/PreviewThread.h"
 
+//All fixed sizes were calculated for a 96 dpi screen
+#define NATRON_PIXELS_FOR_DPI_DEFAULT 96.
 
 using namespace Natron;
 
@@ -1005,4 +1007,24 @@ void
 GuiApplicationManager::appendTaskToPreviewThread(const boost::shared_ptr<NodeGui>& node, double time)
 {
     _imp->previewRenderThread.appendToQueue(node, time);
+}
+
+double
+GuiApplicationManager::getLogicalDPIXRATIO() const
+{
+    return _imp->dpiX / NATRON_PIXELS_FOR_DPI_DEFAULT;
+}
+
+double
+GuiApplicationManager::getLogicalDPIYRATIO() const
+{
+   return _imp->dpiY / NATRON_PIXELS_FOR_DPI_DEFAULT;
+}
+
+
+void
+GuiApplicationManager::setCurrentLogicalDPI(double dpiX,double dpiY)
+{
+    _imp->dpiX = dpiX;
+    _imp->dpiY = dpiY;
 }

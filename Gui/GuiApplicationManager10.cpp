@@ -35,6 +35,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDebug>
 #include <QtCore/QSettings>
 #include <QApplication>
+#include <QDesktopWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -282,6 +283,11 @@ GuiApplicationManager::initializeQApp(int &argc,
                                       char** argv)
 {
     QApplication* app = new Application(this,argc, argv);
+
+    QDesktopWidget* desktop = app->desktop();
+    int dpiX = desktop->logicalDpiX();
+    int dpiY = desktop->logicalDpiY();
+    setCurrentLogicalDPI(dpiX,dpiY);
 
     app->setQuitOnLastWindowClosed(true);
     Q_INIT_RESOURCE(GuiResources);

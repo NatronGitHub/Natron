@@ -59,7 +59,9 @@
  **/
 #define getKeybind(group,action) ( appPTR->getKeySequenceForAction(group,action) )
 
-
+#define TO_DPI(x,y) ( appPTR->adjustSizeToDPI(x,y) )
+#define TO_DPIX(x) ( appPTR->adjustSizeToDPIX(x) )
+#define TO_DPIY(y) ( appPTR->adjustSizeToDPIY(y) )
 
 struct PythonUserCommand {
     QString grouping;
@@ -192,6 +194,27 @@ public:
     
     void appendTaskToPreviewThread(const boost::shared_ptr<NodeGui>& node, double time);
     
+
+    void setCurrentLogicalDPI(double dpiX,double dpiY);
+    double getLogicalDPIXRATIO() const;
+    double getLogicalDPIYRATIO() const;
+
+    template <typename T>
+    void adjustSizeToDPI(T &x, T &y) const {
+        x *= getLogicalDPIXRATIO();
+        y *= getLogicalDPIYRATIO();
+    }
+
+    template <typename T>
+    T adjustSizeToDPIX(T x) const {
+        return x * getLogicalDPIXRATIO();
+    }
+
+    template <typename T>
+    T adjustSizeToDPIY(T y) const {
+        return y * getLogicalDPIYRATIO();
+    }
+
 public Q_SLOTS:
 
 

@@ -101,8 +101,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #define NATRON_ELLIPSE_WARN_DIAMETER 10
 
-#define NODE_WIDTH 80
-#define NODE_HEIGHT 30
 
 #define DOT_GUI_DIAMETER 15
 
@@ -502,8 +500,8 @@ void
 NodeGui::getSizeWithPreview(int *w, int *h) const
 {
     getInitialSize(w,h);
-    *w = *w -  (NODE_WIDTH / 2.) + NATRON_PREVIEW_WIDTH;
-    *h = *h + NATRON_PREVIEW_HEIGHT + 10;
+    *w = *w -  (TO_DPIX(NODE_WIDTH) / 2.) + TO_DPIX(NATRON_PREVIEW_WIDTH);
+    *h = *h + TO_DPIY(NATRON_PREVIEW_HEIGHT) + 10;
 }
 
 void
@@ -511,11 +509,11 @@ NodeGui::getInitialSize(int *w, int *h) const
 {
     const QString& iconFilePath = getNode()->getPlugin()->getIconFilePath();
     if (!iconFilePath.isEmpty() && QFile::exists(iconFilePath) && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
-        *w = NODE_WIDTH + NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2;
+        *w = TO_DPIX(NODE_WIDTH) + TO_DPIX(NATRON_PLUGIN_ICON_SIZE) + TO_DPIX(PLUGIN_ICON_OFFSET)* 2;
     } else {
-        *w = NODE_WIDTH;
+        *w = TO_DPIX(NODE_WIDTH);
     }
-    *h = NODE_HEIGHT;
+    *h = TO_DPIY(NODE_HEIGHT);
 }
 
 void
@@ -676,6 +674,9 @@ NodeGui::ensurePreviewCreated()
         prev.fill(Qt::black);
         QPixmap prev_pixmap = QPixmap::fromImage(prev);
         _previewPixmap = new NodeGraphPixmapItem(getDagGui(),this);
+        //Scale the widget according to the DPI of the screen otherwise the pixmap will cover exactly as many pixels
+        //as there are in the image
+        _previewPixmap->scale(appPTR->getLogicalDPIXRATIO(),appPTR->getLogicalDPIYRATIO());
         _previewPixmap->setPixmap(prev_pixmap);
         _previewPixmap->setZValue(getBaseDepth() + 1);
 
@@ -3371,12 +3372,12 @@ NodeGui::setPluginIconFilePath(const std::string& filePath)
         }
         double w,h;
         getSize(&w, &h);
-        w = NODE_WIDTH + NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2;
+        w = TO_DPIX(NODE_WIDTH) + TO_DPIX(NATRON_PLUGIN_ICON_SIZE) + TO_DPIX(PLUGIN_ICON_OFFSET) * 2;
         resize(w,h);
 
         double x,y;
         getPosition(&x, &y);
-        x -= (NATRON_PLUGIN_ICON_SIZE) / 2. + PLUGIN_ICON_OFFSET;
+        x -= TO_DPIX(NATRON_PLUGIN_ICON_SIZE) / 2. + TO_DPIX(PLUGIN_ICON_OFFSET);
         setPosition(x, y);
 
     }

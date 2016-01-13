@@ -54,7 +54,11 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
     for (int i = 0; i < 4; ++i) {
         currentColor[i] = 0;
     }
-    setFixedHeight(20);
+
+    //Using this constructor of QFontMetrics will respect the DPI of the screen, see http://doc.qt.io/qt-4.8/qfontmetrics.html#QFontMetrics-2
+    QFontMetrics fm(font(),0);
+    setFixedHeight(fm.height());
+
     setStyleSheet( QString("background-color: black;\n"
                            "color : rgba(200,200,200,255);\n"
                            "QToolTip { background-color: black;}") );
