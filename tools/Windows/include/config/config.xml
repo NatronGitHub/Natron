@@ -10,7 +10,6 @@
 	<AllowSpaceInPath>true</AllowSpaceInPath>
 	<UninstallerName>NatronSetup</UninstallerName>
 	<InstallerWindowIcon>icon.png</InstallerWindowIcon>
-        <RequiresAdminRights>true</RequiresAdminRights>
 	<Logo>logo.png</Logo>
 	<Watermark>watermark.png</Watermark>
 	<TargetDir>@ApplicationsDir@/_APP_INSTALL_SUFFIX_</TargetDir>
