@@ -36,6 +36,7 @@ DEFINES += OFX_SUPPORTS_DIALOG
         DEFINES *= NDEBUG
         QMAKE_CXXFLAGS += -O2 -g
         QMAKE_CXXFLAGS -= -O3
+        QMAKE_LFLAGS_RELEASE -= -s
     }
 }
 
