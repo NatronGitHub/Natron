@@ -103,7 +103,7 @@ ComboBox::ComboBox(QWidget* parent)
 
     setSizePolicy(QSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed,QSizePolicy::Label));
     setFocusPolicy(Qt::StrongFocus);
-    //setFixedHeight(NATRON_MEDIUM_BUTTON_SIZE);
+    setFixedHeight(TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
 }
 
 QSize
