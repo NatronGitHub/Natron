@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 #include "Engine/ViewerInstance.h"
 #include "Engine/Lut.h"
 #include "Engine/Image.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/Label.h"
 
@@ -54,7 +55,11 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
     for (int i = 0; i < 4; ++i) {
         currentColor[i] = 0;
     }
-    setFixedHeight(20);
+
+    //Using this constructor of QFontMetrics will respect the DPI of the screen, see http://doc.qt.io/qt-4.8/qfontmetrics.html#QFontMetrics-2
+    QFontMetrics fm(font(),0);
+    setFixedHeight(fm.height());
+
     setStyleSheet( QString("background-color: black;\n"
                            "color : rgba(200,200,200,255);\n"
                            "QToolTip { background-color: black;}") );
@@ -152,7 +157,7 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
     }
 
     color = new Natron::Label(this);
-    color->setFixedSize(20, 20);
+    color->setFixedSize(TO_DPIX(20), TO_DPIY(20));
     
     hvl_lastOption = new Natron::Label(this);
     {

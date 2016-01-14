@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,6 +52,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
 #include "Engine/Interpolation.h"
+#include "Engine/Project.h"
 #include "Engine/KnobSerialization.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoDrawableItemSerialization.h"
@@ -656,6 +657,9 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, Natron::
 void
 RotoDrawableItem::incrementNodesAge()
 {
+    if (getContext()->getNode()->getApp()->getProject()->isLoadingProject()) {
+        return;
+    }
     if (_imp->effectNode) {
         _imp->effectNode->incrementKnobsAge();
     }

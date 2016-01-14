@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1513,6 +1513,20 @@ void
 ButtonParam::trigger()
 {
     _buttonKnob.lock()->trigger();
+}
+
+////////////////////SeparatorParam
+
+SeparatorParam::SeparatorParam(const boost::shared_ptr<KnobSeparator>& knob)
+: Param(knob)
+, _separatorKnob(boost::dynamic_pointer_cast<KnobSeparator>(knob))
+{
+    
+}
+
+SeparatorParam::~SeparatorParam()
+{
+    
 }
 
 ///////////////////GroupParam

@@ -1,7 +1,7 @@
 #!/bin/sh
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -144,7 +144,7 @@ if [ "$NOBUILD" != "1" ]; then
             echo OK
         else
             echo ERROR
-            sleep 2
+            echo "BUILD__ERROR" >> $log
             cat "$log"
         fi
     fi
@@ -156,8 +156,8 @@ if [ "$NOBUILD" != "1" ]; then
             echo OK
         else
             echo ERROR
-            sleep 2
-            cat 
+            echo "BUILD__ERROR" >> $log
+            cat "$log"
         fi  
     fi
 fi
@@ -170,7 +170,7 @@ if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
         echo OK
     else
         echo ERROR
-        sleep 2
+        echo "BUILD__ERROR" >> $log
         cat "$log"
     fi 
 fi
@@ -190,6 +190,10 @@ if [ "$SYNC" = "1" -a "$FAIL" != "1" ]; then
 
     rsync -avz --progress  --verbose -e ssh "$REPO_DIR/installers/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files"
 fi
+
+# Symbols
+echo "sync symbols ..."
+rsync -avz --progress --verbose -e ssh "$INSTALL_PATH/symbols/" "${REPO_DEST}/symbols/"
 
 #Always upload logs, even upon failure
 rsync -avz --progress --delete --verbose -e ssh "$LOGS/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs"

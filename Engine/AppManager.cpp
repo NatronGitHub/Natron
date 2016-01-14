@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,14 @@
 #include <execinfo.h>
 #endif
 
+#ifdef Q_OS_UNIX
+#include <stdio.h>
+#include <stdlib.h>
+#ifdef Q_OS_MAC
+#include <sys/sysctl.h>
+#endif
+#endif
+
 #include <QtCore/QDebug>
 #include <QtCore/QDir>
 #include <QtCore/QTextCodec>
@@ -67,6 +75,7 @@
 #include "Engine/OfxHost.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/Project.h"
+#include "Engine/PrecompNode.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoSmear.h"
 #include "Engine/StandardPaths.h"
@@ -287,8 +296,25 @@ AppManager::load(int &argc,
 
 AppManager::~AppManager()
 {
-    while (!_imp->_appInstances.empty()) {
-        _imp->_appInstances.begin()->second.app->quit();
+    bool appsEmpty;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        appsEmpty = _imp->_appInstances.empty();
+    }
+    while (!appsEmpty) {
+        AppInstance* front = 0;
+        {
+            QMutexLocker k(&_imp->_appInstancesMutex);
+            front = _imp->_appInstances.begin()->second.app;
+        }
+        if (front) {
+            front->quit();
+        }
+        {
+            QMutexLocker k(&_imp->_appInstancesMutex);
+            appsEmpty = _imp->_appInstances.empty();
+        }
+        
     }
     
     for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
@@ -308,6 +334,7 @@ AppManager::~AppManager()
     } catch (std::runtime_error) {
         // ignore errors
     }
+    
 
 
     ///Caches may have launched some threads to delete images, wait for them to be done
@@ -343,12 +370,18 @@ void
 AppManager::quit(AppInstance* instance)
 {
     instance->aboutToQuit();
-    std::map<int, AppInstanceRef>::iterator found = _imp->_appInstances.find( instance->getAppID() );
-    assert( found != _imp->_appInstances.end() );
-    found->second.status = eAppInstanceStatusInactive;
+    
+    int nbApps;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        std::map<int, AppInstanceRef>::iterator found = _imp->_appInstances.find( instance->getAppID() );
+        assert( found != _imp->_appInstances.end() );
+        found->second.status = eAppInstanceStatusInactive;
+        nbApps = (int)_imp->_appInstances.size();
+    }
     ///if we exited the last instance, exit the event loop, this will make
     /// the exec() function return.
-    if (_imp->_appInstances.size() == 1) {
+    if (nbApps == 1) {
         assert(qApp);
         qApp->quit();
     }
@@ -358,9 +391,25 @@ AppManager::quit(AppInstance* instance)
 void
 AppManager::quitApplication()
 {
-    while (!_imp->_appInstances.empty()) {
-        std::map<int, AppInstanceRef>::iterator begin = _imp->_appInstances.begin();
-        quit(begin->second.app);
+    bool appsEmpty;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        appsEmpty = _imp->_appInstances.empty();
+    }
+    while (!appsEmpty) {
+        AppInstance* app = 0;
+        {
+            QMutexLocker k(&_imp->_appInstancesMutex);
+            app = _imp->_appInstances.begin()->second.app;
+        }
+        if (app) {
+            quit(app);
+        }
+        
+        {
+            QMutexLocker k(&_imp->_appInstancesMutex);
+            appsEmpty = _imp->_appInstances.empty();
+        }
     }
 }
 
@@ -449,6 +498,7 @@ AppManager::loadInternal(const CLArgs& cl)
     _imp->initBreakpad();
 #endif
     
+    _imp->_settings.reset(new Settings());
     _imp->_settings->initializeKnobsPublic();
     ///Call restore after initializing knobs
     _imp->_settings->restoreSettings();
@@ -550,7 +600,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         args = cl;
     }
     
-    AppInstance* mainInstance = newAppInstance(args);
+    AppInstance* mainInstance = newAppInstance(args, false);
     
     hideSplashScreen();
     
@@ -580,13 +630,18 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 }
 
 AppInstance*
-AppManager::newAppInstance(const CLArgs& cl)
+AppManager::newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool makeEmptyInstance)
 {
-    AppInstance* instance = makeNewInstance(_imp->_availableID);
+    AppInstance* instance;
+    if (!alwaysBackground) {
+        instance = makeNewInstance(_imp->_availableID);
+    } else {
+        instance = new AppInstance(_imp->_availableID);
+    }
     ++_imp->_availableID;
-
+    
     try {
-        instance->load(cl);
+        instance->load(cl, makeEmptyInstance);
     } catch (const std::exception & e) {
         Natron::errorDialog( NATRON_APPLICATION_NAME,e.what(), false );
         removeInstance(_imp->_availableID);
@@ -600,17 +655,31 @@ AppManager::newAppInstance(const CLArgs& cl)
         --_imp->_availableID;
         return NULL;
     }
-
-
+    
+    
     ///flag that we finished loading the Appmanager even if it was already true
     _imp->_loaded = true;
-
+    
     return instance;
+}
+
+AppInstance*
+AppManager::newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance)
+{
+    return newAppInstanceInternal(cl, true, makeEmptyInstance);
+}
+
+AppInstance*
+AppManager::newAppInstance(const CLArgs& cl, bool makeEmptyInstance)
+{
+    return newAppInstanceInternal(cl, false, makeEmptyInstance);
 }
 
 AppInstance*
 AppManager::getAppInstance(int appID) const
 {
+    QMutexLocker k(&_imp->_appInstancesMutex);
+    
     std::map<int,AppInstanceRef>::const_iterator it;
 
     it = _imp->_appInstances.find(appID);
@@ -624,21 +693,30 @@ AppManager::getAppInstance(int appID) const
 int
 AppManager::getNumInstances() const
 {
+    QMutexLocker k(&_imp->_appInstancesMutex);
     return (int)_imp->_appInstances.size();
 }
 
 const std::map<int,AppInstanceRef> &
 AppManager::getAppInstances() const
 {
+    assert(QThread::currentThread() == qApp->thread());
     return _imp->_appInstances;
 }
 
 void
 AppManager::removeInstance(int appID)
 {
-    _imp->_appInstances.erase(appID);
-    if ( !_imp->_appInstances.empty() ) {
-        setAsTopLevelInstance(_imp->_appInstances.begin()->first);
+    int newApp = -1;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        _imp->_appInstances.erase(appID);
+        if ( !_imp->_appInstances.empty() ) {
+            newApp = _imp->_appInstances.begin()->first;
+        }
+    }
+    if (newApp != -1) {
+        setAsTopLevelInstance(newApp);
     }
 }
 
@@ -667,7 +745,12 @@ AppManager::clearDiskCache()
 void
 AppManager::clearNodeCache()
 {
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
         it->second.app->clearAllLastRenderedImages();
     }
     _imp->_nodeCache->clear();
@@ -685,12 +768,17 @@ AppManager::clearAllCaches()
     clearDiskCache();
     clearNodeCache();
 
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
     ///for each app instance clear all its nodes cache
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
         it->second.app->clearOpenFXPluginsCaches();
     }
     
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
         it->second.app->renderAllViewers(true);
     }
     
@@ -717,6 +805,7 @@ AppManager::wipeAndCreateDiskCacheStructure()
 AppInstance*
 AppManager::getTopLevelInstance () const
 {
+    QMutexLocker k(&_imp->_appInstancesMutex);
     std::map<int,AppInstanceRef>::const_iterator it = _imp->_appInstances.find(_imp->_topLevelInstanceID);
 
     if ( it == _imp->_appInstances.end() ) {
@@ -736,8 +825,12 @@ AppManager::isLoaded() const
 void
 AppManager::abortAnyProcessing()
 {
- 
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
         
         it->second.app->getProject()->quitAnyProcessingForAllNodes();
     }
@@ -766,6 +859,8 @@ AppManager::registerAppInstance(AppInstance* app)
 
     ref.app = app;
     ref.status = Natron::eAppInstanceStatusActive;
+    
+    QMutexLocker k(&_imp->_appInstancesMutex);
     _imp->_appInstances.insert( std::make_pair(app->getAppID(),ref) );
 }
 
@@ -919,163 +1014,54 @@ AppManager::onAllPluginsLoaded()
     }
 }
 
+template <typename PLUGIN>
+void
+AppManager::registerBuiltInPlugin(const QString& iconPath, bool isDeprecated, bool internalUseOnly)
+{
+    boost::shared_ptr<EffectInstance> node( PLUGIN::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
+    std::map<std::string,void(*)()> functions;
+    functions.insert( std::make_pair("BuildEffect", (void(*)())&PLUGIN::BuildEffect) );
+    LibraryBinary *binary = new LibraryBinary(functions);
+    assert(binary);
+    
+    std::list<std::string> grouping;
+    node->getPluginGrouping(&grouping);
+    QStringList qgrouping;
+    
+    for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
+        qgrouping.push_back( it->c_str() );
+    }
+    Natron::Plugin* p = registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
+                                       iconPath, QStringList(), node->isReader(), node->isWriter(), binary, node->renderThreadSafety() == Natron::eRenderSafetyUnsafe, node->getMajorVersion(), node->getMinorVersion(), isDeprecated);
+    if (internalUseOnly) {
+        p->setForInternalUseOnly(true);
+    }
+}
+
 void
 AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* /*readersMap*/,
                                    std::map<std::string,std::vector< std::pair<std::string,double> > >* /*writersMap*/)
 {
-    {
-        boost::shared_ptr<EffectInstance> node( BackDrop::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&BackDrop::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        node->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "backdrop_icon.png", QStringList(), false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
+    registerBuiltInPlugin<BackDrop>(NATRON_IMAGES_PATH "backdrop_icon.png", false, false);
+    registerBuiltInPlugin<GroupOutput>(NATRON_IMAGES_PATH "output_icon.png", false, false);
+    registerBuiltInPlugin<GroupInput>(NATRON_IMAGES_PATH "input_icon.png", false, false);
+    registerBuiltInPlugin<NodeGroup>(NATRON_IMAGES_PATH "group_icon.png", false, false);
+    registerBuiltInPlugin<Dot>(NATRON_IMAGES_PATH "dot_icon.png", false, false);
+    registerBuiltInPlugin<DiskCacheNode>(NATRON_IMAGES_PATH "diskcache_icon.png", false, false);
+    registerBuiltInPlugin<RotoPaint>(NATRON_IMAGES_PATH "GroupingIcons/Set2/paint_grouping_2.png", false, false);
+    registerBuiltInPlugin<RotoNode>(NATRON_IMAGES_PATH "rotoNodeIcon.png", false, false);
+    registerBuiltInPlugin<RotoSmear>("", false, true);
+    registerBuiltInPlugin<PrecompNode>(NATRON_IMAGES_PATH "precompNodeIcon.png", false, false);
+    if (!isBackground()) {
+        registerBuiltInPlugin<ViewerInstance>(NATRON_IMAGES_PATH "viewer_icon.png", false, false);
     }
-    {
-        boost::shared_ptr<EffectInstance> node( GroupOutput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&GroupOutput::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        node->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "output_icon.png", QStringList(), false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
-    }
-    {
-        boost::shared_ptr<EffectInstance> node( GroupInput::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&GroupInput::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        node->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "input_icon.png", QStringList(), false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
-    }
-    {
-        boost::shared_ptr<EffectInstance> groupNode( NodeGroup::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&NodeGroup::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        groupNode->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, groupNode->getPluginID().c_str(), groupNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "group_icon.png", QStringList(), false, false, binary, false, groupNode->getMajorVersion(), groupNode->getMinorVersion(), false);
-    }
-    {
-        boost::shared_ptr<EffectInstance> dotNode( Dot::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&Dot::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-
-        std::list<std::string> grouping;
-        dotNode->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, dotNode->getPluginID().c_str(), dotNode->getPluginLabel().c_str(), NATRON_IMAGES_PATH "dot_icon.png", QStringList(), false, false, binary, false, dotNode->getMajorVersion(), dotNode->getMinorVersion(), false);
-    }
-    {
-        boost::shared_ptr<EffectInstance> node( DiskCacheNode::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&DiskCacheNode::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        node->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(), NATRON_IMAGES_PATH "diskcache_icon.png", QStringList(), false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
-    }
-    {
-        boost::shared_ptr<EffectInstance> node( RotoPaint::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&RotoPaint::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        node->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
-                       NATRON_IMAGES_PATH "GroupingIcons/Set2/paint_grouping_2.png", QStringList(), false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
-    }
-    {
-        boost::shared_ptr<EffectInstance> node( RotoNode::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&RotoNode::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        node->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
-                       NATRON_IMAGES_PATH "rotoNodeIcon.png", QStringList(), false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
-    }
-    {
-        boost::shared_ptr<EffectInstance> node( RotoSmear::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        std::map<std::string,void(*)()> functions;
-        functions.insert( std::make_pair("BuildEffect", (void(*)())&RotoSmear::BuildEffect) );
-        LibraryBinary *binary = new LibraryBinary(functions);
-        assert(binary);
-        
-        std::list<std::string> grouping;
-        node->getPluginGrouping(&grouping);
-        QStringList qgrouping;
-        
-        for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
-            qgrouping.push_back( it->c_str() );
-        }
-        Natron::Plugin* p = registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
-                        "", QStringList(), false, false, binary, false, node->getMajorVersion(), node->getMinorVersion(), false);
-        p->setForInternalUseOnly(true);
-    }
-
 }
 
 static bool findAndRunScriptFile(const QString& path,const QStringList& files,const QString& script)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+    return false;
+#endif
     for (QStringList::const_iterator it = files.begin(); it != files.end(); ++it) {
         if (*it == script) {
             QFile file(path + *it);
@@ -1454,6 +1440,7 @@ AppManager::findExistingFormat(int w,
 void
 AppManager::setAsTopLevelInstance(int appID)
 {
+    QMutexLocker k(&_imp->_appInstancesMutex);
     if (_imp->_topLevelInstanceID == appID) {
         return;
     }
@@ -1720,11 +1707,11 @@ AppManager::removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheE
 }
 
 void
-AppManager::removeAllCacheEntriesForHolder(const CacheEntryHolder* holder)
+AppManager::removeAllCacheEntriesForHolder(const CacheEntryHolder* holder,bool blocking)
 {
-    _imp->_nodeCache->removeAllEntriesForHolderPublic(holder);
-    _imp->_diskCache->removeAllEntriesForHolderPublic(holder);
-    _imp->_viewerCache->removeAllEntriesForHolderPublic(holder);
+    _imp->_nodeCache->removeAllEntriesForHolderPublic(holder,blocking);
+    _imp->_diskCache->removeAllEntriesForHolderPublic(holder,blocking);
+    _imp->_viewerCache->removeAllEntriesForHolderPublic(holder,blocking);
 }
 
 const QString &
@@ -1923,7 +1910,12 @@ AppManager::decreaseNCacheFilesOpened()
 void
 AppManager::onMaxPanelsOpenedChanged(int maxPanels)
 {
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
         it->second.app->onMaxPanelsOpenedChanged(maxPanels);
     }
 }
@@ -2104,7 +2096,14 @@ void
 AppManager::onOCIOConfigPathChanged(const std::string& path)
 {
     _imp->currentOCIOConfigPath = path;
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin() ; it != _imp->_appInstances.end(); ++it) {
+    
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
+    
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin() ; it != copy.end(); ++it) {
         it->second.app->onOCIOConfigPathChanged(path);
     }
 }
@@ -2188,12 +2187,12 @@ AppManager::onOFXDialogOnMainThreadReceived(Natron::OfxImageEffectInstance* inst
     assert(QThread::currentThread() == qApp->thread());
     if (instance == NULL) {
         // instance may be NULL if using OfxDialogSuiteV1
-        GlobalOFXTLS& tls = _imp->ofxHost->getCurrentThreadTLS();
-        instance = tls.lastEffectCallingMainEntry;
+        Natron::OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
+        instance = tls->lastEffectCallingMainEntry;
     } else {
 #ifdef DEBUG
-        GlobalOFXTLS& tls = _imp->ofxHost->getCurrentThreadTLS();
-        assert(instance == tls.lastEffectCallingMainEntry);
+        Natron::OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
+        assert(instance == tls->lastEffectCallingMainEntry);
 #endif
     }
 #ifdef OFX_SUPPORTS_DIALOG
@@ -2428,7 +2427,7 @@ AppManager::initPython(int argc,char* argv[])
     static const std::wstring pythonHome(Natron::s2ws("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"));
 #endif
     Py_SetPythonHome(const_cast<wchar_t*>(pythonHome.c_str()));
-    PySys_SetArgv(argc,_imp->args.data()); /// relative module import
+    PySys_SetArgv(argc, &_imp->args.front()); /// relative module import
 #else
 #ifdef __NATRON_WIN32__
     static const std::string pythonHome(".");
@@ -2438,7 +2437,7 @@ AppManager::initPython(int argc,char* argv[])
     static const std::string pythonHome("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib");
 #endif
     Py_SetPythonHome(const_cast<char*>(pythonHome.c_str()));
-    PySys_SetArgv(argc,_imp->args.data()); /// relative module import
+    PySys_SetArgv(argc, &_imp->args.front()); /// relative module import
 #endif
     
     _imp->mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
@@ -2575,7 +2574,12 @@ AppManager::wasProjectCreatedDuringRC2Or3() const
 void
 AppManager::toggleAutoHideGraphInputs()
 {
-    for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
         it->second.app->toggleAutoHideGraphInputs();
     }
 }
@@ -2600,6 +2604,7 @@ AppManager::launchPythonInterpreter()
 int
 AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
 {
+    QMutexLocker k(&_imp->_appInstancesMutex);
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
         boost::shared_ptr<Natron::Project> proj = it->second.app->getProject();
         if (proj) {
@@ -2668,11 +2673,6 @@ AppManager::setOnProjectCreatedCallback(const std::string& pythonFunc)
     _imp->_settings->setOnProjectCreatedCB(pythonFunc);
 }
 
-GlobalOFXTLS&
-AppManager::getCurrentThreadTLS()
-{
-    return _imp->ofxHost->getCurrentThreadTLS();
-}
 
 OFX::Host::ImageEffect::Descriptor*
 AppManager::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
@@ -2737,7 +2737,6 @@ AppManager::mapUNCPathToPathWithDriveLetter(const QString& uncPath) const
 std::string
 AppManager::isImageFileSupportedByNatron(const std::string& ext)
 {
-    //*.264 *.265 *.302 *.3fr *.3g2 *.3gp *.669 *.722 *.aa3 *.aac *.abc *.ac3 *.adf *.adp *.adx *.aea *.afc *.al *.alaw *.amf *.ams *.ans *.ape *.apl *.aqt *.aqtitle *.art *.arw *.asc *.ast *.avc *.avi *.avr *.bay *.bin *.bit *.bmp *.bmq *.bmv *.brstm *.bw *.cap *.cdata *.cdg *.cdxl *.cgi *.cif *.cin *.cine *.cr2 *.crw *.cs1 *.daud *.dbm *.dc2 *.dcr *.dds *.dif *.diz *.dmf *.dng *.dpx *.drf *.dsc *.dsm *.dss *.dtk *.dts *.dtshd *.dv *.ea_cdata *.eac3 *.env *.epaf *.erf *.exr *.fap *.far *.fff *.filmstrip *.fits *.flac *.flm *.flv *.g722 *.g723_1 *.g729 *.gif *.gsm *.h261 *.h264 *.h265 *.h26l *.hdr *.hevc *.ia *.ice *.ico *.idf *.idx *.iff *.iiq *.ingenient *.int *.inta *.ircam *.it *.itgz *.itr *.itz *.jfi *.jfif *.jif *.jpe *.jpeg *.jpg *.k25 *.kc2 *.kdc *.latm *.libmodplug *.live_flv *.lvf *.m2a *.m2ts *.m4a *.m4v *.mac *.matroska *.mdc *.mdgz *.mdl *.mdr *.mdz *.med *.mef *.mid *.mj2 *.mjpeg *.mjpg *.mk3d *.mka *.mks *.mkv *.mlp *.mng *.mod *.mos *.mov *.mp2 *.mp3 *.mp4 *.mpa *.mpc *.mpg *.mpjpeg *.mpl2 *.mpo *.mpsub *.mrw *.mt2 *.mtm *.mulaw *.mvi *.mxf *.mxg *.mxr *.nc *.nef *.nfo *.nist *.nistsphere *.nrw *.nut *.ogg *.okt *.oma *.omg *.orf *.paf *.pbm *.pdd *.pef *.pfm *.pgm *.pic *.pjs *.png *.pnm *.ppm *.psb *.psd *.psm *.ptex *.ptm *.ptx *.pvf *.pxn *.qcif *.qtk *.raf *.raw *.rawvideo *.rco *.rdc *.realtext *.redspark *.rgb *.rgba *.rgbe *.rla *.rsd *.rso *.rt *.rw2 *.rwl *.rwz *.s16le *.s3gz *.s3m *.s3r *.s3z *.s8 *.sami *.sb *.sbg *.sdr2 *.sf *.sgi *.shn *.siff *.sln *.sm *.smi *.smjpeg *.socket *.son *.sph *.sr2 *.srf *.srw *.sti *.stl *.stm *.sub *.subviewer *.subviewer1 *.sup *.svg *.svgz *.sw *.sxr *.tak *.tco *.tga *.thd *.tif *.tiff *.tpic *.truehd *.tta *.tty *.tx *.txt *.u16le *.u8 *.ub *.ul *.ult *.umx *.uw *.v *.vb *.vc1 *.viv *.vivo *.vobsub *.vplayer *.vqe *.vqf *.vql *.vsm *.vt *.vtt *.webm *.webp *.webvtt *.x3f *.xbm *.xcf *.xl *.xm *.xmgz *.xmr *.xmz *.xpm *.y4m *.yop *.yuv *.yuv4mpegpipe *.z *.zfile
     std::string readId;
     try {
         readId = appPTR->getCurrentSettings()->getReaderPluginIDForFileType(ext);
@@ -2745,6 +2744,34 @@ AppManager::isImageFileSupportedByNatron(const std::string& ext)
         return std::string();
     }
     return readId;
+}
+
+AppTLS*
+AppManager::getAppTLS() const
+{
+    return &_imp->globalTLS;
+}
+
+bool
+AppManager::hasThreadsRendering() const
+{
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
+    for (std::map<int,AppInstanceRef>::const_iterator it = copy.begin(); it!=copy.end(); ++it) {
+        if (it->second.app->getProject()->hasNodeRendering()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+const Natron::OfxHost*
+AppManager::getOFXHost() const
+{
+    return _imp->ofxHost.get();
 }
 
 namespace Natron {
@@ -3071,6 +3098,9 @@ static bool getGroupInfosInternal(const std::string& modulePath,
                                   std::string* description,
                                   unsigned int* version)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+    return false;
+#endif
     Natron::PythonGILLocker pgl;
     
     QString script("import sys\n"
@@ -3268,6 +3298,9 @@ getGroupInfos(const std::string& modulePath,
     
 void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+    return;
+#endif
     std::stringstream ss;
     ss << "import inspect\n";
     ss << "args_spec = inspect.getargspec(" << pyFunc << ")\n";
@@ -3320,6 +3353,9 @@ void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vect
 PyObject*
 getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+    return 0;
+#endif
     std::size_t foundDot = fullyQualifiedName.find(".");
     std::string attrName = foundDot == std::string::npos ? fullyQualifiedName : fullyQualifiedName.substr(0, foundDot);
     PyObject* obj = 0;
@@ -3346,6 +3382,70 @@ getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool*
         }
     }
     
+}
+
+
+bool checkIfNatronProcessIsRunning(Q_PID /*pid*/)
+{
+    return true;
+#if 0
+#ifdef __NATRON_WIN32__
+    DWORD dwExitCode = 9999;
+    //See https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=12&checkda=1&ct=1451385015&rver=6.0.5276.0&wp=MCMBI&wlcxt=msdn%24msdn%24msdn&wreply=https%3a%2f%2fmsdn.microsoft.com%2fen-us%2flibrary%2fwindows%2fdesktop%2fms683189%2528v%3dvs.85%2529.aspx&lc=1033&id=254354&mkt=en-US
+    if (GetExitCodeProcess(pid, &dwExitCode)) {
+        if (dwExitCode == STILL_ACTIVE) {
+            return true;
+        }
+        return false;
+    } else {
+        qDebug() << "Call to GetExitCodeProcess failed.";
+        return false;
+    }
+#elif defined(__NATRON_LINUX__)
+    FILE *fp = 0;
+    char buf[512];
+    snprintf(buf, sizeof(buf), "/proc/%ld/stat", (long)pid);
+    fp = fopen(buf, "r");
+    if (!fp) {
+        return false;
+    }
+    
+    char pname[512] = {0,};
+    char state;
+    //See http://man7.org/linux/man-pages/man5/proc.5.html
+    if ( (fscanf(fp, "%ld (%[^)]) %c", &pid, pname, &state)) != 3 ){
+        qDebug() << "checkIfProcessIsRunning(): fscanf call on" << buf << "failed";
+        fclose(fp);
+        return false;
+    }
+    //If the process is called Natron and it is running, return true
+    if (!strcmp(pname, NATRON_APPLICATION_NAME) && state == 'R') {
+        fclose(fp);
+        closedir(dir);
+        return true;
+    }
+    fclose(fp);
+    return false;
+#elif defined(__NATRON_OSX__)
+    //See https://developer.apple.com/legacy/library/qa/qa2001/qa1123.html
+    static const int    name[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)pid };
+    // Declaring name as const requires us to cast it when passing it to
+    // sysctl because the prototype doesn't include the const modifier.
+    
+    struct kinfo_proc process;
+    size_t procBufferSize = sizeof(process);
+    int err = sysctl( (int *)name, 4,NULL, &procBufferSize, NULL, 0);
+    if (err == 0 && procBufferSize != 0) {
+        if (process.kp_proc.p_pid != (pid_t)pid) {
+            return false;
+        }
+        if (process.kp_proc.p_stat == SRUN) {
+            return true;
+        }
+    }
+    return false;
+#endif
+#endif
 }
 
 } //Namespace Natron

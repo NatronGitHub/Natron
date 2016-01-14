@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,24 @@
 
 #include "NodeGraph.h"
 #include "NodeGraphPrivate.h"
+
+#include <sstream>
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+GCC_DIAG_OFF(unused-parameter)
+// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+// /usr/local/include/boost/serialization/shared_ptr.hpp:112:5: warning: unused typedef 'boost_static_assert_typedef_112' [-Wunused-local-typedef]
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/version.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+GCC_DIAG_ON(unused-parameter)
+#endif
+
+#include <QApplication>
+#include <QClipboard>
+#include <QMimeData>
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -97,7 +115,24 @@ NodeGraph::copySelectedNodes()
         return;
     }
 
-    _imp->copyNodesInternal(_imp->_selection,appPTR->getNodeClipBoard());
+    NodeClipBoard& cb = appPTR->getNodeClipBoard();
+    _imp->copyNodesInternal(_imp->_selection,cb);
+    
+    std::ostringstream ss;
+    try {
+        boost::archive::xml_oarchive oArchive(ss);
+        oArchive << boost::serialization::make_nvp("Clipboard",cb);
+    } catch (...) {
+        qDebug() << "Failed to copy selection to system clipboard";
+    }
+    QMimeData* mimedata = new QMimeData;
+    QByteArray data(ss.str().c_str());
+    mimedata->setData("text/natron-nodes", data);
+    QClipboard* clipboard = QApplication::clipboard();
+    
+    //ownership is transferred to the clipboard
+    clipboard->setMimeData(mimedata);
+    
 }
 
 
@@ -123,8 +158,29 @@ NodeGraph::pasteCliboard(const NodeClipBoard& clipboard,std::list<std::pair<std:
 void
 NodeGraph::pasteNodeClipBoards(const QPointF& pos)
 {
+    QClipboard* clipboard = QApplication::clipboard();
+    const QMimeData* mimedata = clipboard->mimeData();
+    if (!mimedata->hasFormat("text/natron-nodes")) {
+        return;
+    }
+    QByteArray data = mimedata->data("text/natron-nodes");
+    
     std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
-    _imp->pasteNodesInternal(appPTR->getNodeClipBoard(),pos, true, &newNodes);
+    
+    
+    
+    NodeClipBoard& cb = appPTR->getNodeClipBoard();
+    
+    std::string s = QString(data).toStdString();
+    try {
+        std::stringstream ss(s);
+        boost::archive::xml_iarchive iArchive(ss);
+        iArchive >> boost::serialization::make_nvp("Clipboard",cb);
+    } catch (...) {
+        qDebug() << "Failed to load clipboard";
+        return;
+    }
+    _imp->pasteNodesInternal(cb,pos, true, &newNodes);
 }
 
 void
@@ -233,29 +289,26 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     
     std::list <boost::shared_ptr<NodeGui> > newNodesList;
     
+    std::map<std::string,std::string> oldNewScriptNameMapping;
     for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         boost::shared_ptr<NodeSerialization>  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
         NodeGuiSerialization guiSerialization;
         (*it)->serialize(&guiSerialization);
         boost::shared_ptr<NodeGui> clone = _imp->pasteNode( *internalSerialization, guiSerialization, offset,
-                                                           _imp->group.lock(),std::string(),true );
+                                                           _imp->group.lock(),std::string(),true, &oldNewScriptNameMapping );
         
         newNodes.push_back(std::make_pair(internalSerialization->getNodeScriptName(),clone));
         newNodesList.push_back(clone);
         serializations.push_back(internalSerialization);
         
-        ///The script-name of the copy node is different than the one of the original one, update all input connections in the serialization
-        for (std::list<boost::shared_ptr<NodeSerialization> >::iterator it2 = serializations.begin(); it2!=serializations.end(); ++it2) {
-            (*it2)->switchInput(internalSerialization->getNodeScriptName(), clone->getNode()->getScriptName());
-        }
-        
+        oldNewScriptNameMapping[internalSerialization->getNodeScriptName()] = clone->getNode()->getScriptName();
         
     }
     
     
     assert( serializations.size() == newNodes.size() );
     ///restore connections
-    _imp->restoreConnections(serializations, newNodes);
+    _imp->restoreConnections(serializations, newNodes, oldNewScriptNameMapping);
     
     
     pushUndoCommand( new AddMultipleNodesCommand(this,newNodesList) );

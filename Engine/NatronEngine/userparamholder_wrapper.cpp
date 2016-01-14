@@ -1050,6 +1050,67 @@ static PyObject* Sbk_UserParamHolderFunc_createPathParam(PyObject* self, PyObjec
         return 0;
 }
 
+static PyObject* Sbk_UserParamHolderFunc_createSeparatorParam(PyObject* self, PyObject* args)
+{
+    ::UserParamHolder* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::UserParamHolder*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_USERPARAMHOLDER_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "createSeparatorParam", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: createSeparatorParam(std::string,std::string)
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArgs[1])))) {
+        overloadId = 0; // createSeparatorParam(std::string,std::string)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_UserParamHolderFunc_createSeparatorParam_TypeError;
+
+    // Call function/method
+    {
+        ::std::string cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::string cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // createSeparatorParam(std::string,std::string)
+            SeparatorParam * cppResult = cppSelf->createSeparatorParam(cppArg0, cppArg1);
+            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_SEPARATORPARAM_IDX], cppResult);
+
+            // Ownership transferences.
+            Shiboken::Object::getOwnership(pyResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_UserParamHolderFunc_createSeparatorParam_TypeError:
+        const char* overloads[] = {"std::string, std::string", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.UserParamHolder.createSeparatorParam", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_UserParamHolderFunc_createStringParam(PyObject* self, PyObject* args)
 {
     ::UserParamHolder* cppSelf = 0;
@@ -1204,6 +1265,7 @@ static PyMethodDef Sbk_UserParamHolder_methods[] = {
     {"createPageParam", (PyCFunction)Sbk_UserParamHolderFunc_createPageParam, METH_VARARGS},
     {"createParametricParam", (PyCFunction)Sbk_UserParamHolderFunc_createParametricParam, METH_VARARGS},
     {"createPathParam", (PyCFunction)Sbk_UserParamHolderFunc_createPathParam, METH_VARARGS},
+    {"createSeparatorParam", (PyCFunction)Sbk_UserParamHolderFunc_createSeparatorParam, METH_VARARGS},
     {"createStringParam", (PyCFunction)Sbk_UserParamHolderFunc_createStringParam, METH_VARARGS},
     {"refreshUserParamsGUI", (PyCFunction)Sbk_UserParamHolderFunc_refreshUserParamsGUI, METH_NOARGS},
     {"removeParam", (PyCFunction)Sbk_UserParamHolderFunc_removeParam, METH_O},

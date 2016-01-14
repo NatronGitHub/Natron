@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -244,6 +244,10 @@ public Q_SLOTS:
     void onAutoScrollTimerTriggered();
     
 private:
+    
+    void checkForHints(bool shiftdown, bool controlDown, const boost::shared_ptr<NodeGui>& selectedNode,const QRectF& visibleSceneR);
+    
+    void moveSelectedNodesBy(bool shiftdown, bool controlDown, const QPointF& lastMousePosScene, const QPointF& newPos, const QRectF& visibleSceneR, bool userEdit);
     
     void scrollViewIfNeeded(const QPointF& scenePos);
     

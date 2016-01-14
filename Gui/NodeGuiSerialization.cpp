@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,18 +33,23 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGui.h"
 
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
 
+using namespace Natron;
 
 void
 NodeGuiSerialization::initialize(const NodeGui*  n)
 {
     ////All this code is MT-safe
-    _nodeName = n->getNode()->getFullyQualifiedName();
+    boost::shared_ptr<Natron::Node> node = n->getNode();
+    
+    
+    _nodeName = node->getFullyQualifiedName();
     QPointF pos = n->getPos_mt_safe();
     _posX = pos.x();
     _posY = pos.y();
     n->getSize(&_width, &_height);
-    _previewEnabled = n->getNode()->isPreviewEnabled();
+    _previewEnabled = node->isPreviewEnabled();
     QColor color = n->getCurrentColor();
     _r = color.redF();
     _g = color.greenF();
@@ -52,6 +57,29 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
     _selected = n->isSelected();
     
     _hasOverlayColor = n->getOverlayColor(&_overlayR, &_overlayG, &_overlayB);
+    
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+    if (isGrp) {
+        std::list<boost::shared_ptr<Node> > nodes;
+        isGrp->getActiveNodes(&nodes);
+        
+        _children.clear();
+        
+        for (std::list<boost::shared_ptr<Node> >::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
+            boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
+            if (!gui_i) {
+                continue;
+            }
+            NodeGui* childGui = dynamic_cast<NodeGui*>(gui_i.get());
+            if (!childGui) {
+                continue;
+            }
+            boost::shared_ptr<NodeGuiSerialization> state(new NodeGuiSerialization());
+            state->initialize(childGui);
+            _children.push_back(state);
+        }
+        
+    }
     
 }
 

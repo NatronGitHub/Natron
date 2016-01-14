@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -247,10 +247,9 @@ PickKnobDialog::onNodeComboEditingFinished()
     const std::vector< boost::shared_ptr<KnobI> > & knobs = selectedNode->getKnobs();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if (!knobs[j]->getIsSecret()) {
-            KnobButton* isButton = dynamic_cast<KnobButton*>( knobs[j].get() );
             KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[j].get() );
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[j].get() );
-            if (!isButton && !isPage && !isGroup) {
+            if (!isPage && !isGroup) {
                 QString name( knobs[j]->getName().c_str() );
                 
                 bool canInsertKnob = true;
@@ -279,21 +278,21 @@ PickKnobDialog::onPageComboIndexChanged(int index)
     _imp->groupCombo->addItem("-");
     
     std::string selectedPage = _imp->destPageCombo->itemText(index).toStdString();
-    KnobPage* parentPage = 0;
+    boost::shared_ptr<KnobPage> parentPage ;
     
     if (selectedPage == NATRON_USER_MANAGED_KNOBS_PAGE) {
-        parentPage = _imp->panel->getUserPageKnob().get();
+        parentPage = _imp->panel->getUserPageKnob();
     } else {
         for (std::vector<boost::shared_ptr<KnobPage> >::iterator it = _imp->pages.begin(); it != _imp->pages.end(); ++it) {
             if ((*it)->getName() == selectedPage) {
-                parentPage = it->get();
+                parentPage = *it;
                 break;
             }
         }
     }
     
     for (std::vector<boost::shared_ptr<KnobGroup> >::iterator it = _imp->groups.begin(); it != _imp->groups.end(); ++it) {
-        KnobPage* page = (*it)->getTopLevelPage();
+        boost::shared_ptr<KnobPage> page = (*it)->getTopLevelPage();
         assert(page);
         
         ///add only grps whose parent page is the selected page

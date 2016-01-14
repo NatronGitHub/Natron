@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -98,6 +98,9 @@ public:
         if (data) {
             free(data);
             data = 0;
+        }
+        if (count == 0) {
+            return;
         }
         data = (T*)malloc(size * sizeof(T));
         if (!data) {
@@ -505,9 +508,10 @@ public:
     , _params()
     , _data()
     , _cache()
-    , _removeBackingFileBeforeDestruction(false)
-    , _requestedStorage(eStorageModeNone)
+    , _requestedPath()
     , _entryLock(QReadWriteLock::Recursive)
+    , _requestedStorage(eStorageModeNone)
+    , _removeBackingFileBeforeDestruction(false)
     {
     }
 
@@ -526,10 +530,10 @@ public:
     , _params(params)
     , _data()
     , _cache(cache)
-    , _removeBackingFileBeforeDestruction(false)
     , _requestedPath(path)
-    , _requestedStorage(storage)
     , _entryLock(QReadWriteLock::Recursive)
+    , _requestedStorage(storage)
+    , _removeBackingFileBeforeDestruction(false)
     {
     }
 
@@ -888,10 +892,10 @@ protected:
     boost::shared_ptr<ParamsType> _params;
     Buffer<DataType> _data;
     const CacheAPI* _cache;
-    bool _removeBackingFileBeforeDestruction;
     std::string _requestedPath;
-    Natron::StorageModeEnum _requestedStorage;
     mutable QReadWriteLock _entryLock;
+    Natron::StorageModeEnum _requestedStorage;
+    bool _removeBackingFileBeforeDestruction;
 };
 }
 

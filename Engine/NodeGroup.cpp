@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,13 +49,14 @@
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
+#include "Engine/PrecompNode.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_PYPLUG_EXPORTER_VERSION 3
+#define NATRON_PYPLUG_EXPORTER_VERSION 5
 
 using namespace Natron;
 
@@ -171,7 +172,7 @@ NodePtr
 NodeCollection::getLastNode(const std::string& pluginID) const
 {
     QMutexLocker k(&_imp->nodesMutex);
-    for (NodeList::const_reverse_iterator it = _imp->nodes.rbegin(); it != _imp->nodes.rend(); ++it ) {
+    for (NodeList::reverse_iterator it = _imp->nodes.rbegin(); it != _imp->nodes.rend(); ++it ) {
         if ((*it)->getPluginID() == pluginID) {
             return *it;
         }
@@ -246,6 +247,24 @@ NodeCollection::getWriters(std::list<Natron::OutputEffectInstance*>* writers) co
 
 }
 
+void
+NodeCollection::notifyRenderBeingAborted()
+{
+    QMutexLocker k(&_imp->nodesMutex);
+    for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
+        (*it)->notifyRenderBeingAborted();
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+        if (isGrp) {
+            isGrp->notifyRenderBeingAborted();
+        }
+        PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>((*it)->getLiveInstance());
+        if (isPrecomp) {
+            isPrecomp->getPrecompApp()->getProject()->notifyRenderBeingAborted();
+        }
+        
+    }
+}
+
 static void setMustQuitProcessingRecursive(bool mustQuit, NodeCollection* grp)
 {
     NodeList nodes = grp->getNodes();
@@ -255,6 +274,11 @@ static void setMustQuitProcessingRecursive(bool mustQuit, NodeCollection* grp)
         if (isGrp) {
             setMustQuitProcessingRecursive(mustQuit,isGrp);
         }
+        PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>((*it)->getLiveInstance());
+        if (isPrecomp) {
+            setMustQuitProcessingRecursive(mustQuit,isPrecomp->getPrecompApp()->getProject().get());
+        }
+
     }
 }
 
@@ -265,6 +289,10 @@ static void quitAnyProcessingInternal(NodeCollection* grp) {
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
             quitAnyProcessingInternal(isGrp);
+        }
+        PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>((*it)->getLiveInstance());
+        if (isPrecomp) {
+            quitAnyProcessingInternal(isPrecomp->getPrecompApp()->getProject().get());
         }
     }
 }
@@ -309,19 +337,24 @@ NodeCollection::hasNodeRendering() const
     QMutexLocker k(&_imp->nodesMutex);
     for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         if ( (*it)->isOutputNode() ) {
-            Natron::OutputEffectInstance* effect = dynamic_cast<Natron::OutputEffectInstance*>( (*it)->getLiveInstance() );
-            assert(effect);
-            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(effect);
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+            PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>((*it)->getLiveInstance());
             if (isGrp) {
                 if (isGrp->hasNodeRendering()) {
                     return true;
                 }
-            } else {
-                if ( effect->getRenderEngine()->hasThreadsWorking() ) {
+            } else if (isPrecomp) {
+                if (isPrecomp->getPrecompApp()->getProject()->hasNodeRendering()) {
                     return true;
-                    break;
                 }
+            } else {
+                OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>((*it)->getLiveInstance());
+                if (effect && effect->getRenderEngine()->hasThreadsWorking()) {
+                    return true;
+                }
+                
             }
+            
         }
     }
     return false;
@@ -332,7 +365,7 @@ NodeCollection::refreshViewersAndPreviews()
 {
     assert(QThread::currentThread() == qApp->thread());
     
-    if ( !appPTR->isBackground() ) {
+    if ( !getApplication()->isBackground() ) {
         double time = _imp->app->getTimeLine()->currentFrame();
         
         NodeList nodes = getNodes();
@@ -355,6 +388,9 @@ NodeCollection::refreshViewersAndPreviews()
 void
 NodeCollection::refreshPreviews()
 {
+    if (getApplication()->isBackground()) {
+        return;
+    }
     double time = _imp->app->getTimeLine()->currentFrame();
     NodeList nodes;
     getActiveNodes(&nodes);
@@ -372,6 +408,9 @@ NodeCollection::refreshPreviews()
 void
 NodeCollection::forceRefreshPreviews()
 {
+    if (getApplication()->isBackground()) {
+        return;
+    }
     double time = _imp->app->getTimeLine()->currentFrame();
     NodeList nodes;
     getActiveNodes(&nodes);
@@ -399,16 +438,16 @@ NodeCollection::clearNodes(bool emitSignal)
     
     ///First quit any processing
     for (NodeList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
+        (*it)->quitAnyProcessing();
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
         if (isGrp) {
             isGrp->clearNodes(emitSignal);
         }
-        (*it)->quitAnyProcessing();
+        PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>((*it)->getLiveInstance());
+        if (isPrecomp) {
+            isPrecomp->getPrecompApp()->getProject()->clearNodes(emitSignal);
+        }
     }
-    
-    ///Kill thread pool so threads are killed before killing thread storage
-    QThreadPool::globalInstance()->waitForDone();
-    
     
     ///Kill effects
     for (NodeList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
@@ -416,7 +455,7 @@ NodeCollection::clearNodes(bool emitSignal)
     }
     
     for (NodeList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-        (*it)->removeReferences(false);
+        (*it)->removeReferences();
     }
     
     
@@ -436,7 +475,7 @@ NodeCollection::clearNodes(bool emitSignal)
 
 
 void
-NodeCollection::setNodeName(const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName)
+NodeCollection::checkNodeName(const Natron::Node* node, const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName)
 {
     if (baseName.empty()) {
         throw std::runtime_error(QObject::tr("Invalid script-name").toStdString());
@@ -480,7 +519,7 @@ NodeCollection::setNodeName(const std::string& baseName,bool appendDigit,bool er
         foundNodeWithName = false;
         QMutexLocker l(&_imp->nodesMutex);
         for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-            if ((*it)->getScriptName_mt_safe() == *nodeName) {
+            if (it->get() != node && (*it)->getScriptName_mt_safe() == *nodeName) {
                 foundNodeWithName = true;
                 break;
             }
@@ -515,7 +554,7 @@ NodeCollection::initNodeName(const std::string& pluginLabel,std::string* nodeNam
         baseName = baseName.substr(0,baseName.size() - 3);
     }
 
-    setNodeName(baseName,true, false, nodeName);
+    checkNodeName(0, baseName,true, false, nodeName);
     
 }
 
@@ -793,18 +832,7 @@ NodeCollection::getNodeByFullySpecifiedName(const std::string& fullySpecifiedNam
 }
 
 
-void
-NodeCollection::notifyRenderBeingAborted()
-{
-    QMutexLocker k(&_imp->nodesMutex);
-    for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        (*it)->notifyRenderBeingAborted();
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
-        if (isGrp) {
-            isGrp->notifyRenderBeingAborted();
-        }
-    }
-}
+
 
 
 void
@@ -1005,7 +1033,11 @@ NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,P
         if (isGrp) {
             isGrp->getParallelRenderArgs(argsMap);
         }
-
+        
+        const PrecompNode* isPrecomp = dynamic_cast<const PrecompNode*>((*it)->getLiveInstance());
+        if (isPrecomp) {
+            isPrecomp->getPrecompApp()->getProject()->getParallelRenderArgs(argsMap);
+        }
     }
 }
 
@@ -1388,22 +1420,36 @@ NodeGroup::getRealInputForInput(bool useGuiConnexions,const boost::shared_ptr<Na
 }
 
 void
-NodeGroup::getInputsOutputs(std::list<Natron::Node* >* nodes) const
+NodeGroup::getInputsOutputs(std::list<Natron::Node* >* nodes, bool useGuiConnexions) const
 {
     QMutexLocker k(&_imp->nodesLock);
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        std::list<Natron::Node*> outputs;
-        _imp->inputs[i].lock()->getOutputs_mt_safe(outputs);
-        nodes->insert(nodes->end(), outputs.begin(),outputs.end());
+    if (!useGuiConnexions) {
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            std::list<Natron::Node*> outputs;
+            _imp->inputs[i].lock()->getOutputs_mt_safe(outputs);
+            nodes->insert(nodes->end(), outputs.begin(),outputs.end());
+        }
+    } else {
+        for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
+            std::list<Natron::Node*> outputs;
+            _imp->guiInputs[i].lock()->getOutputs_mt_safe(outputs);
+            nodes->insert(nodes->end(), outputs.begin(),outputs.end());
+        }
     }
 }
 
 void
-NodeGroup::getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs) const
+NodeGroup::getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs,bool useGuiConnexions) const
 {
     QMutexLocker k(&_imp->nodesLock);
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        inputs->push_back(_imp->inputs[i].lock());
+    if (!useGuiConnexions) {
+        for (U32 i = 0; i < _imp->inputs.size(); ++i) {
+            inputs->push_back(_imp->inputs[i].lock());
+        }
+    } else {
+        for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
+            inputs->push_back(_imp->guiInputs[i].lock());
+        }
     }
 }
 
@@ -1418,7 +1464,7 @@ NodeGroup::knobChanged(KnobI* k,Natron::ValueChangedReasonEnum /*reason*/,
         if (gui_i) {
             gui_i->exportGroupAsPythonScript();
         }
-    }
+    } 
 }
 
 void
@@ -1733,6 +1779,7 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     KnobPath* isPath = dynamic_cast<KnobPath*>(knob.get());
     KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob.get());
     KnobButton* isButton = dynamic_cast<KnobButton*>(knob.get());
+    KnobSeparator* isSep = dynamic_cast<KnobSeparator*>(knob.get());
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
     
     
@@ -1935,6 +1982,11 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
                                       ESC(isButton->getName()) +
                                       ", " + ESC(isButton->getLabel()) + ")");
 
+    } else if (isSep) {
+        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createSeparatorParam(" +
+                                                ESC(isSep->getName()) +
+                                                ", " + ESC(isSep->getLabel()) + ")");
+        
     } else if (isStr) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param = " + fullyQualifiedNodeName + ".createStringParam(" +
                                       ESC(isStr->getName()) +
@@ -2041,7 +2093,25 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     if (!aliasedParam || aliasedParam->getHintToolTip() != knob->getHintToolTip()) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setHelp(" + ESC(help) + ")");
     }
-    if (knob->isNewLineActivated()) {
+    
+    
+    bool previousHasNewLineActivated = true;
+    std::vector<boost::shared_ptr<KnobI> > children;
+    if (group) {
+        children = group->getChildren();
+    } else if (page) {
+        children = page->getChildren();
+    }
+    for (U32 i = 0; i < children.size(); ++i) {
+        if (children[i] == knob) {
+            if (i > 0) {
+                previousHasNewLineActivated = children[i - 1]->isNewLineActivated();
+            }
+            break;
+        }
+    }
+    
+    if (previousHasNewLineActivated) {
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setAddNewLine(True)");
     } else {
         WRITE_INDENT(indentLevel); WRITE_STRING("param.setAddNewLine(False)");

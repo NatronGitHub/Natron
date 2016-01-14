@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!-- ***** BEGIN LICENSE BLOCK *****
   - This file is part of Natron <http://www.natron.fr/>,
-  - Copyright (C) 2015 INRIA and Alexandre Gauthier
+  - Copyright (C) 2016 INRIA and Alexandre Gauthier
   -
   - Natron is free software: you can redistribute it and/or modify
   - it under the terms of the GNU General Public License as published by
@@ -500,6 +500,11 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
+        <modify-function signature="createSeparatorParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
         <modify-function signature="createGroupParam(std::string,std::string)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
@@ -959,6 +964,7 @@
     <object-type name="ChoiceParam">
     </object-type>
     <object-type name="ButtonParam"/>
+    <object-type name="SeparatorParam"/>
     <object-type name="StringParamBase">
     </object-type>
     <object-type name="StringParam">

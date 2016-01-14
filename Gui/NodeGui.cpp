@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QLayout>
 #include <QAction>
-#include <QtConcurrentRun>
+#include <QThread>
 #include <QFontMetrics>
 #include <QTextBlockFormat>
 #include <QTextCursor>
@@ -50,6 +50,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Knob.h"
 #include "Engine/MergingEnum.h"
 #include "Engine/Node.h"
+#include "Engine/NodeGroup.h"
+#include "Engine/GroupInput.h"
+#include "Engine/GroupOutput.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
@@ -80,6 +83,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGuiSerialization.h"
 #include "Gui/NodeGraphTextItem.h"
 #include "Gui/NodeSettingsPanel.h"
+#include "Gui/PreviewThread.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/SpinBox.h"
@@ -97,8 +101,6 @@ CLANG_DIAG_ON(uninitialized)
 
 #define NATRON_ELLIPSE_WARN_DIAMETER 10
 
-#define NODE_WIDTH 80
-#define NODE_HEIGHT 30
 
 #define DOT_GUI_DIAMETER 15
 
@@ -128,7 +130,7 @@ static void getPixmapForMergeOperator(const QString& op,QPixmap* pix)
         std::string opStr = Natron::getNatronOperationString((Natron::MergingFunctionEnum)i);
         if (opStr == opstd) {
             Natron::PixmapEnum pixEnum = Natron::getPixmapForMergingOperator((Natron::MergingFunctionEnum)i);
-            appPTR->getIcon(pixEnum, NATRON_PLUGIN_ICON_SIZE, pix);
+            appPTR->getIcon(pixEnum, TO_DPIX(NATRON_PLUGIN_ICON_SIZE), pix);
             return;
         }
     }
@@ -151,6 +153,10 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _boundingBox(NULL)
 , _channelsPixmap(NULL)
 , _previewPixmap(NULL)
+, _previewDataMutex()
+, _previewData(NATRON_PREVIEW_HEIGHT * NATRON_PREVIEW_WIDTH * sizeof(unsigned int))
+, _previewW(NATRON_PREVIEW_WIDTH)
+, _previewH(NATRON_PREVIEW_HEIGHT)
 , _persistentMessage(NULL)
 , _stateIndicator(NULL)
 , _mergeHintActive(false)
@@ -230,10 +236,10 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL( bitDepthWarningToggled(bool,QString) ),this,SLOT( toggleBitDepthIndicator(bool,QString) ) );
     QObject::connect( internalNode.get(), SIGNAL( nodeExtraLabelChanged(QString) ),this,SLOT( onNodeExtraLabelChanged(QString) ) );
     QObject::connect( internalNode.get(), SIGNAL( outputLayerChanged() ),this,SLOT( onOutputLayerChanged() ) );
-    QObject::connect( internalNode.get(), SIGNAL( identityChanged(int) ),this,SLOT( onIdentityStateChanged(int) ) );
     QObject::connect( internalNode.get(), SIGNAL( hideInputsKnobChanged(bool) ),this,SLOT( onHideInputsKnobValueChanged(bool) ) );
     QObject::connect( internalNode.get(), SIGNAL( availableViewsChanged() ),this,SLOT( onAvailableViewsChanged() ) );
     
+    QObject::connect(this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()));
     setCacheMode(DeviceCoordinateCache);
 
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(internalNode->getLiveInstance());
@@ -359,7 +365,9 @@ NodeGui::restoreStateAfterCreation()
 {
     NodePtr internalNode = getNode();
     ///Refresh the disabled knob
-    if ( internalNode->isNodeDisabled() ) {
+    
+    boost::shared_ptr<KnobBool> disabledknob = internalNode->getDisabledKnob();
+    if (disabledknob && disabledknob->getValue()) {
         onDisabledKnobToggled(true);
     }
     if ( !internalNode->isMultiInstance() ) {
@@ -492,8 +500,8 @@ void
 NodeGui::getSizeWithPreview(int *w, int *h) const
 {
     getInitialSize(w,h);
-    *w = *w -  (NODE_WIDTH / 2.) + NATRON_PREVIEW_WIDTH;
-    *h = *h + NATRON_PREVIEW_HEIGHT;
+    *w = *w -  (TO_DPIX(NODE_WIDTH) / 2.) + TO_DPIX(NATRON_PREVIEW_WIDTH);
+    *h = *h + TO_DPIY(NATRON_PREVIEW_HEIGHT) + 10;
 }
 
 void
@@ -501,11 +509,11 @@ NodeGui::getInitialSize(int *w, int *h) const
 {
     const QString& iconFilePath = getNode()->getPlugin()->getIconFilePath();
     if (!iconFilePath.isEmpty() && QFile::exists(iconFilePath) && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
-        *w = NODE_WIDTH + NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2;
+        *w = TO_DPIX(NODE_WIDTH) + TO_DPIX(NATRON_PLUGIN_ICON_SIZE) + TO_DPIX(PLUGIN_ICON_OFFSET)* 2;
     } else {
-        *w = NODE_WIDTH;
+        *w = TO_DPIX(NODE_WIDTH);
     }
-    *h = NODE_HEIGHT;
+    *h = TO_DPIY(NODE_HEIGHT);
 }
 
 void
@@ -525,8 +533,10 @@ NodeGui::createGui()
         _resizeHandle = new QGraphicsPolygonItem(this);
         _resizeHandle->setZValue(depth + 1);
     }
+    
+    NodePtr node = getNode();
 
-    const QString& iconFilePath = getNode()->getPlugin()->getIconFilePath();
+    const QString& iconFilePath = node->getPlugin()->getIconFilePath();
 
     BackDropGui* isBd = dynamic_cast<BackDropGui*>(this);
 
@@ -539,7 +549,7 @@ NodeGui::createGui()
             _pluginIconFrame = new QGraphicsRectItem(this);
             _pluginIconFrame->setZValue(depth);
             _pluginIconFrame->setBrush(QColor(50,50,50));
-            int size = NATRON_PLUGIN_ICON_SIZE;
+            int size = TO_DPIX(NATRON_PLUGIN_ICON_SIZE);
             if (std::max(pix.width(), pix.height()) != size) {
                 pix = pix.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
             }
@@ -547,13 +557,13 @@ NodeGui::createGui()
         }
     }
 
-    if (getNode()->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
+    if (node->getPlugin()->getPluginID() == QString(PLUGINID_OFX_MERGE)) {
         _mergeIcon = new NodeGraphPixmapItem(getDagGui(),this);
         _mergeIcon->setZValue(depth + 1);
     }
 
     _nameItem = new NodeGraphTextItem(getDagGui(),this,false);
-    _nameItem->setPlainText(getNode()->getLabel().c_str());
+    _nameItem->setPlainText(node->getLabel().c_str());
     _nameItem->setDefaultTextColor( QColor(0,0,0,255) );
     //_nameItem->setFont( QFont(appFont,appFontSize) );
     _nameItem->setZValue(depth+ 1);
@@ -598,13 +608,17 @@ NodeGui::createGui()
     
     onAvailableViewsChanged();
     
-    QGradientStops ptGrad;
-    ptGrad.push_back(qMakePair(0., QColor(0,0,255)));
-    ptGrad.push_back(qMakePair(0.5, QColor(0,50,200)));
-    ptGrad.push_back(qMakePair(1., QColor(0,100,150)));
-    _passThroughIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "P", bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,ptGrad, QColor(255,255,255), this));
-    _passThroughIndicator->setActive(false);
-
+    GroupInput* isGroupInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
+    GroupOutput* isGroupOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
+    
+    if (!isGroupInput && !isGroupOutput) {
+        QGradientStops ptGrad;
+        ptGrad.push_back(qMakePair(0., QColor(0,0,255)));
+        ptGrad.push_back(qMakePair(0.5, QColor(0,50,200)));
+        ptGrad.push_back(qMakePair(1., QColor(0,100,150)));
+        _passThroughIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "P", bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,ptGrad, QColor(255,255,255), this));
+        _passThroughIndicator->setActive(false);
+    }
 
     _disabledBtmLeftTopRight = new QGraphicsLineItem(this);
     _disabledBtmLeftTopRight->setZValue(depth + 1);
@@ -660,6 +674,9 @@ NodeGui::ensurePreviewCreated()
         prev.fill(Qt::black);
         QPixmap prev_pixmap = QPixmap::fromImage(prev);
         _previewPixmap = new NodeGraphPixmapItem(getDagGui(),this);
+        //Scale the widget according to the DPI of the screen otherwise the pixmap will cover exactly as many pixels
+        //as there are in the image
+        _previewPixmap->scale(appPTR->getLogicalDPIXRATIO(),appPTR->getLogicalDPIYRATIO());
         _previewPixmap->setPixmap(prev_pixmap);
         _previewPixmap->setZValue(getBaseDepth() + 1);
 
@@ -770,6 +787,62 @@ NodeGui::adjustSizeToContent(int* /*w*/,int *h,bool adjustToTextSize)
     }
 }
 
+int
+NodeGui::getPluginIconWidth() const
+{
+    return _pluginIcon ? TO_DPIX(NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2) : 0;
+}
+
+double
+NodeGui::refreshPreviewAndLabelPosition(const QRectF& bbox)
+{
+    const QRectF labelBbox = _nameItem->boundingRect();
+    const double labelHeight = labelBbox.height();
+    
+    int prevW,prevH;
+    {
+        QMutexLocker k(&_previewDataMutex);
+        prevW = _previewW;
+        prevH = _previewH;
+    }
+    const double textPlusPixHeight = std::min((double)prevH + 5. + labelHeight, bbox.height() - 5);
+    const int iconWidth = getPluginIconWidth();
+
+    if (_previewPixmap) {
+        double pixX = bbox.x() + iconWidth;
+        double remainingSpace = bbox.width() - pixX;
+        pixX = pixX + remainingSpace / 2. - prevW / 2.;
+        double pixY = bbox.y() + bbox.height() / 2 - textPlusPixHeight / 2;
+        _previewPixmap->setPos(pixX ,pixY);
+    }
+    
+    double height = bbox.height();
+    
+    {
+        int nameWidth = labelBbox.width();
+        double textX = bbox.x() + iconWidth +  ((bbox.width() - iconWidth) / 2) - (nameWidth / 2);
+        //double textY = topLeft.y() + labelHeight * 0.1;
+        
+        double textY;
+        if (mustFrameName()) {
+            double frameHeight = 1.5 * labelHeight;
+            QRectF nameFrameBox(bbox.x(),bbox.y(), bbox.width(), frameHeight);
+            _nameFrame->setRect(nameFrameBox);
+            height = std::max((double)bbox.height(), nameFrameBox.height());
+            textY = bbox.y() + frameHeight / 2 -  labelHeight / 2;
+        } else {
+            if (_previewPixmap) {
+                textY = bbox.y() + height / 2 - textPlusPixHeight / 2 + prevH;
+            } else {
+                textY = bbox.y() + height / 2 - labelHeight / 2;
+            }
+        }
+        
+        _nameItem->setPos(textX, textY);
+    }
+    return height;
+}
+
 void
 NodeGui::resize(int width,
                 int height,
@@ -780,12 +853,13 @@ NodeGui::resize(int width,
         return;
     }
 
-    QPointF topLeft = mapFromParent( pos() );
-    QRectF labelBbox = _nameItem->boundingRect();
-
+    const QPointF topLeft = mapFromParent(pos());
+    const QPointF bottomRight(topLeft.x() + width,topLeft.y() + height);
+    
+    const bool hasPluginIcon = _pluginIcon != NULL;
+    const int iconWidth = getPluginIconWidth();
     adjustSizeToContent(&width,&height,adjustToTextSize);
 
-    bool hasPluginIcon = _pluginIcon != NULL;
 
     {
         QMutexLocker k(&_mtSafeSizeMutex);
@@ -794,42 +868,32 @@ NodeGui::resize(int width,
         
     }
 
-    int iconWidth = hasPluginIcon ? NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2 : 0;
 
     QRectF bbox(topLeft.x(),topLeft.y(),width,height);
 
     _boundingBox->setRect(bbox);
 
+    int iconSize = TO_DPIY(NATRON_PLUGIN_ICON_SIZE);
+    int iconOffsetX = TO_DPIX(PLUGIN_ICON_OFFSET);
     if (hasPluginIcon) {
-        _pluginIcon->setX(topLeft.x() + PLUGIN_ICON_OFFSET);
-        int iconsOffset = _mergeIcon  && _mergeIcon->isVisible() ? (height - 2 * NATRON_PLUGIN_ICON_SIZE) / 3. : (height - NATRON_PLUGIN_ICON_SIZE) /2.;
+        _pluginIcon->setX(topLeft.x() + iconOffsetX);
+        int iconsOffset = _mergeIcon  && _mergeIcon->isVisible() ? (height - 2 * iconSize) / 3. : (height - iconSize) /2.;
         _pluginIcon->setY(topLeft.y() + iconsOffset);
-        _pluginIconFrame->setRect(topLeft.x(),topLeft.y(),iconWidth, height);
+        _pluginIconFrame->setRect(topLeft.x(),topLeft.y(), iconWidth, height);
     }
 
     if (_mergeIcon && _mergeIcon->isVisible()) {
-        int iconsOffset =  (height - 2 * NATRON_PLUGIN_ICON_SIZE) / 3.;
-        _mergeIcon->setX(topLeft.x() + PLUGIN_ICON_OFFSET);
-        _mergeIcon->setY(topLeft.y() + iconsOffset * 2 + NATRON_PLUGIN_ICON_SIZE);
+        int iconsOffset =  (height - 2 * iconSize) / 3.;
+        _mergeIcon->setX(topLeft.x() + iconOffsetX);
+        _mergeIcon->setY(topLeft.y() + iconsOffset * 2 + iconSize);
     }
 
     QFont f(appFont,appFontSize);
-    QFontMetrics metrics(f);
+    QFontMetrics metrics(f,0);
     
-    int nameWidth = labelBbox.width();
-    double textX = topLeft.x() + iconWidth +  ((width - iconWidth) / 2) - (nameWidth / 2);
-    _nameItem->setX(textX);
+    height = refreshPreviewAndLabelPosition(bbox);
 
-    double mh = labelBbox.height();
-    _nameItem->setY(topLeft.y() + mh * 0.1);
 
-    if (mustFrameName()) {
-        QRectF nameFrameBox(topLeft.x(),topLeft.y(), width, 1.5 * mh);
-        _nameFrame->setRect(nameFrameBox);
-        height = std::max((double)height, nameFrameBox.height());
-    }
-
-    QPointF bottomRight(topLeft.x() + width,topLeft.y() + height);
     if (mustAddResizeHandle()) {
         QPolygonF poly;
         poly.push_back( QPointF( bottomRight.x() - 20,bottomRight.y() ) );
@@ -841,23 +905,26 @@ NodeGui::resize(int width,
 
     QString persistentMessage = _persistentMessage->text();
     f.setPixelSize(25);
-    metrics = QFontMetrics(f);
+    metrics = QFontMetrics(f,0);
     int pMWidth = metrics.width(persistentMessage);
     QPointF bitDepthPos(topLeft.x() + iconWidth + (width - iconWidth) / 2,0);
     _bitDepthWarning->refreshPosition(bitDepthPos);
 
-    _expressionIndicator->refreshPosition( topLeft + QPointF(width,0) );
-    _availableViewsIndicator->refreshPosition(topLeft);
-    _passThroughIndicator->refreshPosition(bottomRight );
-    
-    _persistentMessage->setPos(topLeft.x() + (width / 2) - (pMWidth / 2), topLeft.y() + height / 2 - metrics.height() / 2);
-    _stateIndicator->setRect(topLeft.x() - NATRON_STATE_INDICATOR_OFFSET,topLeft.y() - NATRON_STATE_INDICATOR_OFFSET,
-                             width + NATRON_STATE_INDICATOR_OFFSET * 2,height + NATRON_STATE_INDICATOR_OFFSET * 2);
-    if (_previewPixmap) {
-        _previewPixmap->setPos(topLeft.x() + iconWidth + NODE_WIDTH / 4. ,
-                               topLeft.y() + height / 2 - NATRON_PREVIEW_HEIGHT / 2 + 10);
+    if (_expressionIndicator) {
+        _expressionIndicator->refreshPosition( topLeft + QPointF(width,0) );
     }
-
+    if (_availableViewsIndicator) {
+        _availableViewsIndicator->refreshPosition(topLeft);
+    }
+    if (_passThroughIndicator) {
+        _passThroughIndicator->refreshPosition(bottomRight );
+    }
+    
+    int indicatorOffset = TO_DPIX(NATRON_STATE_INDICATOR_OFFSET);
+    _persistentMessage->setPos(topLeft.x() + (width / 2) - (pMWidth / 2), topLeft.y() + height / 2 - metrics.height() / 2);
+    _stateIndicator->setRect(topLeft.x() - indicatorOffset,topLeft.y() - indicatorOffset,
+                             width + indicatorOffset * 2,height + indicatorOffset * 2);
+   
     _disabledBtmLeftTopRight->setLine( QLineF( bbox.bottomLeft(),bbox.topRight() ) );
     _disabledTopLeftBtmRight->setLine( QLineF( bbox.topLeft(),bbox.bottomRight() ) );
 
@@ -1146,7 +1213,9 @@ NodeGui::updatePreviewImage(double time)
 
         ensurePreviewCreated();
 
-        QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
+        boost::shared_ptr<NodeGui> thisShared = shared_from_this();
+        assert(thisShared);
+        appPTR->appendTaskToPreviewThread(thisShared, time);
     }
 }
 
@@ -1165,48 +1234,49 @@ NodeGui::forceComputePreview(double time)
         }
 
         ensurePreviewCreated();
-
-        QtConcurrent::run(this,&NodeGui::computePreviewImage,time);
+        boost::shared_ptr<NodeGui> thisShared = shared_from_this();
+        assert(thisShared);
+        appPTR->appendTaskToPreviewThread(thisShared, time);
     }
 }
 
 void
-NodeGui::computePreviewImage(double time)
+NodeGui::onPreviewImageComputed()
 {
-    NodePtr node = getNode();
-    if ( node->isRenderingPreview() ) {
-        return;
-    }
-
-
-    int w = NATRON_PREVIEW_WIDTH;
-    int h = NATRON_PREVIEW_HEIGHT;
-    size_t dataSize = 4 * w * h;
+    assert(QThread::currentThread() == qApp->thread());
+    assert(_previewPixmap);
+    
     {
-#ifndef __NATRON_WIN32__
-        unsigned int* buf = (unsigned int*)calloc(dataSize,1);
-#else
-        unsigned int* buf = (unsigned int*)malloc(dataSize);
-        for (int i = 0; i < w * h; ++i) {
-            buf[i] = qRgba(0,0,0,255);
-        }
-#endif
-        bool success = node->makePreviewImage(time, &w, &h, buf);
-
-        if (success) {
-            QImage img(reinterpret_cast<const uchar*>(buf), w, h, QImage::Format_ARGB32_Premultiplied);
-            QPixmap prev_pixmap = QPixmap::fromImage(img);
-            _previewPixmap->setPixmap(prev_pixmap);
-            QPointF topLeft = mapFromParent( pos() );
-            QRectF bbox = boundingRect();
-
-            int iconWidth = _pluginIcon ? NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2 : 0;
-            _previewPixmap->setPos(topLeft.x() + iconWidth + NODE_WIDTH / 4. ,
-                                   topLeft.y() + bbox.height() / 2 - NATRON_PREVIEW_HEIGHT / 2 + 10);
-        }
-        free(buf);
+        QMutexLocker k(&_previewDataMutex);
+        QImage img(reinterpret_cast<const uchar*>(_previewData.data()), _previewW, _previewH, QImage::Format_ARGB32_Premultiplied);
+        QPixmap pix = QPixmap::fromImage(img);
+        _previewPixmap->setPixmap(pix);
     }
+    const QPointF topLeft = mapFromParent(pos());
+    int width,height;
+    {
+        QMutexLocker k(&_mtSafeSizeMutex);
+        height = _mtSafeHeight;
+        width = _mtSafeWidth;
+    }
+    QRectF bbox(topLeft.x(), topLeft.y(), width, height);
+    refreshPreviewAndLabelPosition(bbox);
+
 }
+
+void
+NodeGui::copyPreviewImageBuffer(const std::vector<unsigned int>& data, int width, int height)
+{
+    {
+        QMutexLocker k(&_previewDataMutex);
+        assert(_previewData.size() == data.size());
+        memcpy(_previewData.data(), data.data(), data.size() * sizeof(unsigned int));
+        _previewW = width;
+        _previewH = height;
+    }
+    Q_EMIT previewImageComputed();
+}
+
 
 bool
 NodeGui::getOverlayColor(double* r, double* g, double* b) const
@@ -1443,7 +1513,9 @@ NodeGui::refreshEdgesVisibilityInternal(bool hovered)
                     inputAsideDisplayed = true;
                 }
             } else {
-                _inputEdges[i]->setVisible(false);
+                if (!_inputEdges[i]->getSource()) {
+                    _inputEdges[i]->setVisible(false);
+                }
             }
         }
     }
@@ -2691,9 +2763,10 @@ NodeGui::onOutputLayerChanged()
     if (!foundLayer) {
         return;
     }
-    if (selectedLayer != ImageComponents::getRGBAComponents().getComponentsGlobalName() &&
-        selectedLayer != ImageComponents::getRGBComponents().getComponentsGlobalName() &&
-        selectedLayer != ImageComponents::getAlphaComponents().getComponentsGlobalName() &&
+
+    bool isCurLayerColorComp = selectedLayer == kNatronAlphaPlaneUserName || selectedLayer == kNatronRGBPlaneUserName || selectedLayer == kNatronRGBAPlaneUserName;
+    
+    if (!isCurLayerColorComp &&
         selectedLayer != "None" &&
         selectedLayer != "All") {
         extraLayerStr.append("<br>");
@@ -3156,120 +3229,90 @@ NodeGui::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
 }
 
 void
-NodeGui::drawHostOverlay(double time, double scaleX,double scaleY)
+NodeGui::drawHostOverlay(double time, const RenderScale & renderScale)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         NatronOverlayInteractSupport::OGLContextSaver s(_hostOverlay->getLastCallingViewport());
-        _hostOverlay->draw(time , rs);
+        _hostOverlay->draw(time , renderScale);
     }
 }
 
 bool
-NodeGui::onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure)
+NodeGui::onOverlayPenDownDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
-
-       return _hostOverlay->penDown(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
+       return _hostOverlay->penDown(getNode()->getLiveInstance()->getCurrentTime(), renderScale, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayPenMotionDefault(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure)
+NodeGui::onOverlayPenMotionDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
-        
-        return _hostOverlay->penMotion(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
+        return _hostOverlay->penMotion(getNode()->getLiveInstance()->getCurrentTime(), renderScale, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure)
+NodeGui::onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
-        
-        return _hostOverlay->penUp(getNode()->getLiveInstance()->getCurrentTime(), rs, pos, viewportPos.toPoint(), pressure);
+        return _hostOverlay->penUp(getNode()->getLiveInstance()->getCurrentTime(), renderScale, pos, viewportPos.toPoint(), pressure);
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         QByteArray keyStr;
-        return _hostOverlay->keyDown(getNode()->getLiveInstance()->getCurrentTime(), rs,(int)key,keyStr.data());
+        return _hostOverlay->keyDown(getNode()->getLiveInstance()->getCurrentTime(), renderScale, (int)key,keyStr.data());
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayKeyUpDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         QByteArray keyStr;
-        return _hostOverlay->keyUp(getNode()->getLiveInstance()->getCurrentTime(), rs,(int)key,keyStr.data());
-
-    }
-    return false;
-}
-
-bool
-NodeGui::onOverlayKeyRepeatDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
-{
-    if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
-        QByteArray keyStr;
-        return _hostOverlay->keyRepeat(getNode()->getLiveInstance()->getCurrentTime(), rs,(int)key,keyStr.data());
+        return _hostOverlay->keyUp(getNode()->getLiveInstance()->getCurrentTime(), renderScale, (int)key,keyStr.data());
 
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayFocusGainedDefault(double scaleX,double scaleY)
+NodeGui::onOverlayKeyRepeatDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         QByteArray keyStr;
-        return _hostOverlay->gainFocus(getNode()->getLiveInstance()->getCurrentTime(), rs);
+        return _hostOverlay->keyRepeat(getNode()->getLiveInstance()->getCurrentTime(), renderScale, (int)key,keyStr.data());
 
     }
     return false;
 }
 
 bool
-NodeGui::onOverlayFocusLostDefault(double scaleX,double scaleY)
+NodeGui::onOverlayFocusGainedDefault(const RenderScale & renderScale)
 {
     if (_hostOverlay) {
-        RenderScale rs;
-        rs.x = scaleX;
-        rs.y = scaleY;
         QByteArray keyStr;
-        return _hostOverlay->loseFocus(getNode()->getLiveInstance()->getCurrentTime(), rs);
+        return _hostOverlay->gainFocus(getNode()->getLiveInstance()->getCurrentTime(), renderScale);
+
+    }
+    return false;
+}
+
+bool
+NodeGui::onOverlayFocusLostDefault(const RenderScale & renderScale)
+{
+    if (_hostOverlay) {
+        QByteArray keyStr;
+        return _hostOverlay->loseFocus(getNode()->getLiveInstance()->getCurrentTime(), renderScale);
     }
     return false;
 }
@@ -3303,7 +3346,7 @@ NodeGui::setPluginIconFilePath(const std::string& filePath)
     if (p.isNull() || !currentSettings->isPluginIconActivatedOnNodeGraph()) {
         return;
     }
-    int size = NATRON_PLUGIN_ICON_SIZE;
+    int size = TO_DPIX(NATRON_PLUGIN_ICON_SIZE);
     if (std::max(p.width(), p.height()) != size) {
         p = p.scaled(size, size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
     }
@@ -3332,12 +3375,12 @@ NodeGui::setPluginIconFilePath(const std::string& filePath)
         }
         double w,h;
         getSize(&w, &h);
-        w = NODE_WIDTH + NATRON_PLUGIN_ICON_SIZE + PLUGIN_ICON_OFFSET * 2;
+        w = TO_DPIX(NODE_WIDTH) + TO_DPIX(NATRON_PLUGIN_ICON_SIZE) + TO_DPIX(PLUGIN_ICON_OFFSET) * 2;
         resize(w,h);
 
         double x,y;
         getPosition(&x, &y);
-        x -= (NATRON_PLUGIN_ICON_SIZE) / 2. + PLUGIN_ICON_OFFSET;
+        x -= TO_DPIX(NATRON_PLUGIN_ICON_SIZE) / 2. + TO_DPIX(PLUGIN_ICON_OFFSET);
         setPosition(x, y);
 
     }

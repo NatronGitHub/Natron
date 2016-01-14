@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include <string>
 #include <map>
 #include <list>
+#include <bitset>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
@@ -70,8 +71,8 @@ CLANG_DIAG_ON(deprecated)
 #define kWriteParamFrameStep "frameIncr"
 #define kWriteParamFrameStepLabel "Frame Increment"
 #define kWriteParamFrameStepHint "The number of frames the timeline should step before rendering the new frame. " \
-"If 1, all frames will be rendered, if 2 only 1 frame out of 2" \
-" etc...This number cannot be inferior to 1."
+"If 1, all frames will be rendered, if 2 only 1 frame out of 2, " \
+"etc. This number cannot be less than 1."
 
 
 
@@ -106,6 +107,9 @@ public:
      **/
     void switchInternalPlugin(Natron::Plugin* plugin);
     
+    void setPrecompNode(const boost::shared_ptr<PrecompNode>& precomp);
+    boost::shared_ptr<PrecompNode> isPartOfPrecomp() const;
+    
     /**
      * @brief Creates the EffectInstance that will be embedded into this node and set it up.
      * This function also loads all parameters. Node connections will not be setup in this method.
@@ -129,6 +133,7 @@ public:
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization & serialization,bool updateKnobGui = false);
 
+
 private:
     void loadKnob(const boost::shared_ptr<KnobI> & knob,const std::list< boost::shared_ptr<KnobSerialization> > & serialization,
                   bool updateKnobGui = false);
@@ -146,7 +151,7 @@ public:
     void createRotoContextConditionnally();
 
     ///called by Project::removeNode, never call this
-    void removeReferences(bool ensureThreadsFinished);
+    void removeReferences();
 
     ///function called by EffectInstance to create a knob
     template <class K>
@@ -159,7 +164,9 @@ public:
 
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
-    void restoreKnobsLinks(const NodeSerialization & serialization,const std::list<boost::shared_ptr<Natron::Node> > & allNodes);
+    void restoreKnobsLinks(const NodeSerialization & serialization,
+                           const std::list<boost::shared_ptr<Natron::Node> > & allNodes,
+                           const std::map<std::string,std::string>& oldNewScriptNamesMapping);
     
     void restoreUserKnobs(const NodeSerialization& serialization);
     
@@ -173,10 +180,17 @@ public:
        This is called when the effect is about to be deleted pluginsly
      */
     void setMustQuitProcessing(bool mustQuit);
+    
+    /**
+     * @brief Quits any processing on going on this node and waits until done
+     * After this call all threads launched by this node are stopped.
+     * This is called when clearing all nodes of the project (see Project::reset) or when calling
+     * AppManager::abortAnyProcessing()
+     **/
     void quitAnyProcessing();
 
-    /*@brief Similar to quitAnyProcessing except that the threads aren't destroyed
-
+    /* @brief Similar to quitAnyProcessing except that the threads aren't destroyed
+     * This is called when a node is deleted by the user
      */
     void abortAnyProcessing();
 
@@ -303,6 +317,10 @@ public:
     static Natron::ImageComponents findClosestInList(const Natron::ImageComponents& comp,
                                                      const std::list<Natron::ImageComponents> &components,
                                                      bool multiPlanar);
+    
+    Natron::ImageBitDepthEnum getBestSupportedBitDepth() const;
+    bool isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const;
+    Natron::ImageBitDepthEnum getClosestSupportedBitDepth(Natron::ImageBitDepthEnum depth);
 
     /**
      * @brief Returns the components and index of the channel to use to produce the mask.
@@ -411,6 +429,9 @@ public:
     
     void setCurrentSequentialRenderSupport(Natron::SequentialPreferenceEnum support);
     Natron::SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
+    
+    void setCurrentCanTransform(bool support);
+    bool getCurrentCanTransform() const;
     
     void setCurrentSupportTiles(bool support);
     bool getCurrentSupportTiles() const;
@@ -531,6 +552,13 @@ public:
     boost::shared_ptr<NodeGuiI> getNodeGui() const;
     
     bool isSettingsPanelOpened() const;
+    
+private:
+    
+    
+    bool isSettingsPanelOpenedInternal(std::set<const Node*>& recursionList) const;
+    
+public:
     
     bool isUserSelected() const;
     
@@ -729,6 +757,15 @@ public:
      * This function will also be called on all inputs
      **/
     void clearPersistentMessage(bool recurse);
+    
+private:
+    
+    void clearPersistentMessageRecursive(std::list<Node*>& markedNodes);
+    
+    void clearPersistentMessageInternal();
+    
+public:
+    
 
     void purgeAllInstancesCaches();
 
@@ -762,9 +799,9 @@ public:
 
     void incrementKnobsAge();
     
-private:
-    
     void incrementKnobsAge_internal();
+
+    
     
 public:
     
@@ -806,10 +843,8 @@ public:
     bool isNodeDisabled() const;
 
     void setNodeDisabled(bool disabled);
-
-    Natron::ImageBitDepthEnum getBitDepth() const;
-
-    bool isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const;
+    
+    boost::shared_ptr<KnobBool> getDisabledKnob() const;
 
     void toggleBitDepthWarning(bool on,
                                const QString & tooltip)
@@ -875,11 +910,11 @@ public:
         KnobI* slave;
         KnobI* master;
 
-        ///The dimension being slaved, -1 if irrelevant
-        int dimension;
-
         ///The master node to which the knob is slaved to
         boost::shared_ptr<Node> masterNode;
+
+        ///The dimension being slaved, -1 if irrelevant
+        int dimension;
     };
 
     void getKnobsLinks(std::list<KnobLink> & links) const;
@@ -913,7 +948,7 @@ public:
     
     bool hasPersistentMessage() const;
     
-    void getPersistentMessage(QString* message,int* type) const;
+    void getPersistentMessage(QString* message,int* type, bool prefixLabelAndType = true) const;
 
     
     /**
@@ -974,23 +1009,23 @@ public:
     bool shouldDrawOverlay() const;
     
     
-    void drawHostOverlay(double time, double scaleX,double scaleY);
+    void drawHostOverlay(double time, const RenderScale & renderScale);
     
-    bool onOverlayPenDownDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenDownDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayPenMotionDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenMotionDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayPenUpDefault(double scaleX,double scaleY,const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyDownDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyUpDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyRepeatDefault(double scaleX,double scaleY,Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyRepeatDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayFocusGainedDefault(double scaleX,double scaleY) WARN_UNUSED_RETURN;
+    bool onOverlayFocusGainedDefault(const RenderScale & renderScale) WARN_UNUSED_RETURN;
     
-    bool onOverlayFocusLostDefault(double scaleX,double scaleY) WARN_UNUSED_RETURN;
+    bool onOverlayFocusLostDefault(const RenderScale & renderScale) WARN_UNUSED_RETURN;
     
     void addDefaultPositionOverlay(const boost::shared_ptr<KnobDouble>& position);
     
@@ -1029,13 +1064,13 @@ public:
     unsigned int getPluginPythonModuleVersion() const;
   
     //Returns true if changed
-    bool refreshChannelSelectors(bool setValues);
+    bool refreshChannelSelectors();
     
     bool getProcessChannel(int channelIndex) const;
     
     boost::shared_ptr<KnobChoice> getChannelSelectorKnob(int inputNb) const;
     
-    bool getSelectedLayer(int inputNb,bool* processChannels,bool* isAll,Natron::ImageComponents *layer) const;
+    bool getSelectedLayer(int inputNb, std::bitset<4> *processChannels, bool* isAll, Natron::ImageComponents *layer) const;
     
     bool addUserComponents(const Natron::ImageComponents& comps);
     
@@ -1048,7 +1083,7 @@ public:
     double getHostMixingValue(double time) const;
     
     void removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey);
-    void removeAllImagesFromCache();
+    void removeAllImagesFromCache(bool blocking);
     
     bool isDraftModeUsed() const;
     bool isInputRelatedDataDirty() const;
@@ -1071,6 +1106,14 @@ public:
     int getFrameStepKnobValue() const;
     
 private:
+    
+    void computeHashRecursive(std::list<Natron::Node*>& marked);
+    
+    /**
+     * @brief Refreshes the node hash depending on its context (knobs age, inputs etc...)
+     * @return True if the hash has changed, false otherwise
+     **/
+    bool computeHashInternal() WARN_UNUSED_RETURN;
     
     void refreshEnabledKnobsLabel(const Natron::ImageComponents& layer);
     
@@ -1096,14 +1139,17 @@ private:
     
     bool refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
     
-    void setNameInternal(const std::string& name, bool throwErrors);
+    void setNameInternal(const std::string& name, bool throwErrors, bool declareToPython);
     
     std::string getFullyQualifiedNameInternal(const std::string& scriptName) const;
     
     void s_outputLayerChanged() { Q_EMIT outputLayerChanged(); }
 
+
+    
 public Q_SLOTS:
 
+    void onRefreshIdentityStateRequestReceived();
 
     void setKnobsAge(U64 newAge);
 
@@ -1144,7 +1190,7 @@ Q_SIGNALS:
     
     void hideInputsKnobChanged(bool hidden);
     
-    void identityChanged(int inputNb);
+    void refreshIdentityStateRequested();
     
     void availableViewsChanged();
     
@@ -1229,7 +1275,6 @@ protected:
 
 private:
     
-    void computeHashInternal(std::list<Natron::Node*>& marked);
     
     void declareRotoPythonField();
 

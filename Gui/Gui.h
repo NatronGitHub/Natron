@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -547,7 +547,8 @@ public:
     PanelWidget* getCurrentPanelFocus() const;
     
     void setLastKeyPressVisitedClickFocus(bool visited);
-
+    void setLastKeyUpVisitedClickFocus(bool visited);
+    
     void setApplicationConsoleActionVisible(bool visible);
 
 protected:
@@ -578,6 +579,9 @@ public Q_SLOTS:
 
     ///Close the project instance, asking questions to the user and leaving the main window intact
     void closeProject();
+    
+    //Same as close + open same project to discard unsaved changes
+    void reloadProject();
     void toggleFullScreen();
     void closeEvent(QCloseEvent* e) OVERRIDE;
     void newProject();
@@ -687,11 +691,17 @@ public Q_SLOTS:
     
     void onShowApplicationConsoleActionTriggered();
 
+    void openHelpWebsite();
+    void openHelpForum();
+    void openHelpIssues();
+    void openHelpPython();
+    void openHelpWiki();
+
 private:
 
     void setCurrentPanelFocus(PanelWidget* widget);
     
-    AppInstance* openProjectInternal(const std::string & absoluteFileName) WARN_UNUSED_RETURN;
+    AppInstance* openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave) WARN_UNUSED_RETURN;
 
     void setupUi();
 
@@ -705,7 +715,8 @@ private:
     //virtual bool event(QEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
     boost::scoped_ptr<GuiPrivate> _imp;
 };
 #endif // Gui_Gui_h

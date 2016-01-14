@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
+#ifdef NATRON_ENABLE_QT_IO_NODES
 
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/EngineFwd.h"
@@ -101,5 +103,7 @@ private:
     boost::shared_ptr<KnobInt> _lastFrameKnob;
     boost::shared_ptr<KnobButton> _renderKnob;
 };
+
+#endif // NATRON_ENABLE_QT_IO_NODES
 
 #endif /* defined(NATRON_WRITERS_WRITEQT_H_) */

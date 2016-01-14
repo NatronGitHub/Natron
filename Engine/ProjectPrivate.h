@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,8 +43,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobFactory.h"
-#include "Engine/ThreadStorage.h"
+#include "Engine/TLSHolder.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/Project.h"
+
 
 namespace Natron {
 
@@ -144,7 +146,7 @@ struct ProjectPrivate
     mutable QMutex projectClosingMutex;
     bool projectClosing;
     
-    ThreadStorage<std::vector<std::string> > viewNamesTLS;
+    boost::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
     
     ProjectPrivate(Natron::Project* project);
 

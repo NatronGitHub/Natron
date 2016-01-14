@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,7 +47,14 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiDefines.h"
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/SplashScreen.h"
+#include "Gui/PreviewThread.h"
 
+//All fixed sizes were calculated for a 96 dpi screen
+#ifndef Q_OS_MAC
+#define NATRON_PIXELS_FOR_DPI_DEFAULT 96.
+#else
+#define NATRON_PIXELS_FOR_DPI_DEFAULT 72.
+#endif
 
 using namespace Natron;
 
@@ -66,6 +73,7 @@ GuiApplicationManager::~GuiApplicationManager()
             delete it2->second;
         }
     }
+    _imp->previewRenderThread.quitThread();
 }
 
 void
@@ -997,4 +1005,30 @@ GuiApplicationManager::getKnobClipBoard(bool* copyAnimation,
     *appID = _imp->_knobsClipBoard->appID;
     *nodeFullyQualifiedName = _imp->_knobsClipBoard->nodeFullyQualifiedName;
     *paramName = _imp->_knobsClipBoard->paramName;
+}
+
+void
+GuiApplicationManager::appendTaskToPreviewThread(const boost::shared_ptr<NodeGui>& node, double time)
+{
+    _imp->previewRenderThread.appendToQueue(node, time);
+}
+
+double
+GuiApplicationManager::getLogicalDPIXRATIO() const
+{
+    return _imp->dpiX / NATRON_PIXELS_FOR_DPI_DEFAULT;
+}
+
+double
+GuiApplicationManager::getLogicalDPIYRATIO() const
+{
+   return _imp->dpiY / NATRON_PIXELS_FOR_DPI_DEFAULT;
+}
+
+
+void
+GuiApplicationManager::setCurrentLogicalDPI(double dpiX,double dpiY)
+{
+    _imp->dpiX = dpiX;
+    _imp->dpiY = dpiY;
 }

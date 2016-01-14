@@ -1,7 +1,7 @@
 #!/bin/sh
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -85,6 +85,9 @@ if [ -f $CWD/repo.sh ]; then
 else
     REPO_DEST=localhost
     REPO_URL=http://localhost
+    REPO_SYM_URL=root@betelgeuse.inrialpes.fr #for internal testing
+    REPO_SYM_PORT=-P2121
+    REPO_SYM_PATH=/home/uploads
 fi
 
 #Dist repo is expected to be layout as such:
@@ -130,10 +133,10 @@ ILM_TAR=ilmbase-2.2.0.tar.gz
 EXR_TAR=openexr-2.2.0.tar.gz
 GLEW_TAR=glew-1.12.0.tgz
 BOOST_TAR=boost_1_55_0.tar.bz2
-CAIRO_TAR=cairo-1.14.4.tar.xz
-FFMPEG_TAR=ffmpeg-2.8.2.tar.xz
+CAIRO_TAR=cairo-1.14.6.tar.xz
+FFMPEG_TAR=ffmpeg-2.8.4.tar.xz
 OCIO_TAR=OpenColorIO-1.0.9.tar.gz
-OIIO_TAR=oiio-Release-1.5.21.tar.gz
+OIIO_TAR=oiio-Release-1.6.9.tar.gz
 PYSIDE_TAR=pyside-qt4.8+1.2.2.tar.bz2 #TODO bump to 1.2.4
 PYSIDE2_TAR=#
 SHIBOK_TAR=shiboken-1.2.2.tar.bz2 #TODO bump to 1.2.4
@@ -144,7 +147,7 @@ SEE_TAR=SeExpr-rel-1.0.1.tar.gz
 LIBRAW_TAR=LibRaw-0.16.0.tar.gz
 PIX_TAR=pixman-0.32.8.tar.gz
 LCMS_TAR=lcms2-2.6.tar.gz
-MAGICK_TAR=ImageMagick-6.9.1-10.tar.gz
+MAGICK_TAR=ImageMagick-6.9.2-10.tar.xz
 SSL_TAR=openssl-1.0.0s.tar.gz
 JASP_TAR=jasper-1.900.1.zip
 NATRON_API_DOC=https://media.readthedocs.org/pdf/natron/workshop/natron.pdf
@@ -174,6 +177,7 @@ CROCO_TAR=libcroco-0.6.8.tar.xz
 SVG_TAR=librsvg-2.40.10.tar.xz
 GDK_TAR=gdk-pixbuf-2.32.1.tar.xz
 ELF_TAR=patchelf-0.8.tar.bz2
+ZIP_TAR=libzip-1.0.1.tar.xz
 
 TC_GCC=4.8.5
 TC_MPC=1.0.1

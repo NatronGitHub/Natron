@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+# Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -144,6 +144,7 @@ SOURCES += \
     ParallelRenderArgs.cpp \
     Plugin.cpp \
     PluginMemory.cpp \
+    PrecompNode.cpp \
     ProcessHandler.cpp \
     Project.cpp \
     ProjectPrivate.cpp \
@@ -167,6 +168,7 @@ SOURCES += \
     TextureRect.cpp \
     TimeLine.cpp \
     Timer.cpp \
+    TLSHolder.cpp \
     Transform.cpp \
     ViewerInstance.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
@@ -209,7 +211,8 @@ SOURCES += \
     NatronEngine/pycoreapplication_wrapper.cpp \
     NatronEngine/userparamholder_wrapper.cpp \
     NatronEngine/rectd_wrapper.cpp \
-    NatronEngine/recti_wrapper.cpp
+    NatronEngine/recti_wrapper.cpp \
+    NatronEngine/separatorparam_wrapper.cpp
 
 HEADERS += \
     AppInstance.h \
@@ -303,6 +306,7 @@ HEADERS += \
     ParallelRenderArgs.h \
     Plugin.h \
     PluginMemory.h \
+    PrecompNode.h \
     ProcessHandler.h \
     Project.h \
     ProjectPrivate.h \
@@ -337,7 +341,10 @@ HEADERS += \
     TextureRectSerialization.h \
     ThreadStorage.h \
     TimeLine.h \
+    TimeLineKeyFrames.h \
     Timer.h \
+    TLSHolder.h \
+    TLSHolderImpl.h \
     Transform.h \
     Variant.h \
     VariantSerialization.h \
@@ -413,7 +420,8 @@ HEADERS += \
     NatronEngine/pycoreapplication_wrapper.h \
     NatronEngine/userparamholder_wrapper.h \
     NatronEngine/rectd_wrapper.h \
-    NatronEngine/recti_wrapper.h
+    NatronEngine/recti_wrapper.h \
+    NatronEngine/separatorparam_wrapper.h
 
 
 OTHER_FILES += \

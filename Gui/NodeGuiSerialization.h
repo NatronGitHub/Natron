@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,7 +48,8 @@ GCC_DIAG_ON(unused-parameter)
 #define NODE_GUI_INTRODUCES_SELECTED 3
 #define NODE_GUI_MERGE_BACKDROP 4
 #define NODE_GUI_INTRODUCES_OVERLAY_COLOR 5
-#define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_OVERLAY_COLOR
+#define NODE_GUI_INTRODUCES_CHILDREN 6
+#define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_CHILDREN
 
 
 class NodeGuiSerialization
@@ -130,6 +131,11 @@ public:
         return true;
     }
     
+    const std::list< boost::shared_ptr<NodeGuiSerialization> >& getChildren() const
+    {
+        return _children;
+    }
+    
 private:
 
     std::string _nodeName;
@@ -142,6 +148,9 @@ private:
 
     double _overlayR,_overlayG,_overlayB;
     bool _hasOverlayColor;
+    
+    ///If this node is a group, this is the children
+    std::list< boost::shared_ptr<NodeGuiSerialization> > _children;
     
     friend class boost::serialization::access;
     template<class Archive>
@@ -169,6 +178,16 @@ private:
             ar & boost::serialization::make_nvp("oG",_overlayG);
             ar & boost::serialization::make_nvp("oB",_overlayB);
         }
+        
+        int nodesCount = (int)_children.size();
+        ar & boost::serialization::make_nvp("Children",nodesCount);
+        
+        for (std::list< boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = _children.begin();
+             it != _children.end();
+             ++it) {
+            ar & boost::serialization::make_nvp("item",**it);
+        }
+
     }
     
     template<class Archive>
@@ -206,6 +225,17 @@ private:
             }
         } else {
             _hasOverlayColor = false;
+        }
+        
+        if (version >= NODE_GUI_INTRODUCES_CHILDREN) {
+            int nodesCount ;
+            ar & boost::serialization::make_nvp("Children",nodesCount);
+            
+            for (int i = 0; i < nodesCount; ++i) {
+                boost::shared_ptr<NodeGuiSerialization> s(new NodeGuiSerialization);
+                ar & boost::serialization::make_nvp("item",*s);
+                _children.push_back(s);
+            }
         }
     }
 

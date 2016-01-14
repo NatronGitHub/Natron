@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,8 +56,7 @@ bool
 NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::shared_ptr<NodeSerialization> > & serializedNodes,
                                                       const boost::shared_ptr<NodeCollection>& group,
                                                       bool createNodes,
-                                                      std::map<std::string,bool>* moduleUpdatesProcessed,
-                                                      bool* hasProjectAWriter)
+                                                      std::map<std::string,bool>* moduleUpdatesProcessed)
 {
     
 
@@ -268,9 +267,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             }
         }
         assert(n);
-        if ( n->isOutputNode() ) {
-            *hasProjectAWriter = true;
-        }
+
         createdNodes[n] = *it;
         
         const std::list<boost::shared_ptr<NodeSerialization> >& children = (*it)->getNodesCollection();
@@ -279,7 +276,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             if (isGrp) {
                 boost::shared_ptr<Natron::EffectInstance> sharedEffect = isGrp->shared_from_this();
                 boost::shared_ptr<NodeGroup> sharedGrp = boost::dynamic_pointer_cast<NodeGroup>(sharedEffect);
-                NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp ,!usingPythonModule, moduleUpdatesProcessed, hasProjectAWriter);
+                NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp ,!usingPythonModule, moduleUpdatesProcessed);
                 
             } else {
                 ///For multi-instances, wait for the group to be entirely created then load the sub-tracks in a separate loop.
@@ -290,7 +287,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     } // for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
     
     for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = multiInstancesToRecurse.begin(); it != multiInstancesToRecurse.end(); ++it) {
-        NodeCollectionSerialization::restoreFromSerialization((*it)->getNodesCollection(), group, true, moduleUpdatesProcessed,  hasProjectAWriter);
+        NodeCollectionSerialization::restoreFromSerialization((*it)->getNodesCollection(), group, true, moduleUpdatesProcessed);
     }
     
     
@@ -368,13 +365,17 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     if (isNodeGroup) {
         nodes.push_back(isNodeGroup->getNode());
     }
-    for (std::map<NodePtr, boost::shared_ptr<NodeSerialization> >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
-        if ( appPTR->isBackground() && (dynamic_cast<ViewerInstance*>((it->first)->getLiveInstance()))) {
-            //ignore viewers on background mode
-            continue;
+    
+    {
+        std::map<std::string,std::string> oldNewScriptNamesMapping;
+        for (std::map<NodePtr, boost::shared_ptr<NodeSerialization> >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
+            if ( appPTR->isBackground() && (dynamic_cast<ViewerInstance*>((it->first)->getLiveInstance()))) {
+                //ignore viewers on background mode
+                continue;
+            }
+            it->first->restoreKnobsLinks(*it->second,nodes,oldNewScriptNamesMapping);
+            
         }
-        it->first->restoreKnobsLinks(*it->second,nodes);
-        
     }
     
     ///Also reconnect parents of multiinstance nodes that were created on the fly

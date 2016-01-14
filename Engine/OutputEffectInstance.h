@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,9 +26,12 @@
 // ***** END PYTHON BLOCK *****
 
 #include <list>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
+
+#include <QtCore/QMutex>
 
 #include "Global/Macros.h"
 
@@ -48,25 +51,25 @@ class OutputEffectInstance
     struct RenderSequenceArgs
     {
         BlockingBackgroundRender* renderController;
+        std::vector<int> viewsToRender;
         int firstFrame;
         int lastFrame;
         int frameStep;
         bool useStats;
         bool blocking;
-        std::vector<int> viewsToRender;
     };
 
     
-    SequenceTime _writerCurrentFrame; /*!< for writers only: indicates the current frame
-                                         It avoids snchronizing all viewers in the app to the render*/
-    SequenceTime _writerFirstFrame;
-    SequenceTime _writerLastFrame;
-    mutable QMutex* _outputEffectDataLock;
+    mutable QMutex _outputEffectDataLock;
     std::list<RenderSequenceArgs> _renderSequenceRequests;
     RenderEngine* _engine;
     std::list<double> _timeSpentPerFrameRendered;
-    
-    
+    SequenceTime _writerCurrentFrame; /*!< for writers only: indicates the current frame
+                                       It avoids snchronizing all viewers in the app to the render*/
+    SequenceTime _writerFirstFrame;
+    SequenceTime _writerLastFrame;
+
+
 public:
 
     OutputEffectInstance(boost::shared_ptr<Node> node);

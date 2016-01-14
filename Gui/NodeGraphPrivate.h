@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -236,7 +236,8 @@ public:
                                          const QPointF & offset,
                                          const boost::shared_ptr<NodeCollection>& group,
                                          const std::string& parentName,
-                                         bool clone);
+                                         bool clone,
+                                         std::map<std::string,std::string>* oldNewScriptNameMapping);
 
 
     /**
@@ -245,7 +246,8 @@ public:
      * list. We're not using 2 lists to avoid a copy from the paste function.
      **/
     void restoreConnections(const std::list<boost::shared_ptr<NodeSerialization> > & serializations,
-                            const std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > & newNodes);
+                            const std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > & newNodes,
+                            const std::map<std::string,std::string>& oldNewScriptNamesMap);
 
     void editSelectionFromSelectionRectangle(bool addToSelection);
 

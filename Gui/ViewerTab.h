@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -80,34 +80,34 @@ public:
      *@brief Tells all the nodes in the grpah to draw their overlays
      **/
     /*All the overlay methods are forwarding calls to the default node instance*/
-    void drawOverlays(double time,double scaleX, double scaleY) const;
+    void drawOverlays(double time, const RenderScale & renderScale) const;
 
-    bool notifyOverlaysPenDown(double scaleX, double scaleY, Natron::PenType pen, bool isTabletEvent,const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool notifyOverlaysPenDown(const RenderScale & renderScale, Natron::PenType pen, bool isTabletEvent,const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
-    bool notifyOverlaysPenDoubleClick(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenDoubleClick(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool notifyOverlaysPenMotion(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
+    bool notifyOverlaysPenMotion(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
 
-    bool notifyOverlaysPenUp(double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool notifyOverlaysPenUp(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
-    bool notifyOverlaysKeyDown(double scaleX, double scaleY, QKeyEvent* e);
+    bool notifyOverlaysKeyDown(const RenderScale & renderScale, QKeyEvent* e);
 
-    bool notifyOverlaysKeyUp(double scaleX, double scaleY, QKeyEvent* e);
+    bool notifyOverlaysKeyUp(const RenderScale & renderScale, QKeyEvent* e);
 
-    bool notifyOverlaysKeyRepeat(double scaleX, double scaleY, QKeyEvent* e);
+    bool notifyOverlaysKeyRepeat(const RenderScale & renderScale, QKeyEvent* e);
 
-    bool notifyOverlaysFocusGained(double scaleX, double scaleY);
+    bool notifyOverlaysFocusGained(const RenderScale & renderScale);
 
-    bool notifyOverlaysFocusLost(double scaleX, double scaleY);
+    bool notifyOverlaysFocusLost(const RenderScale & renderScale);
     
 private:
     
-    bool notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, Natron::PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, const RenderScale & renderScale, Natron::PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
     
-    bool notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
-    bool notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX, double scaleY, QKeyEvent* e, Natron::Key k,
+    bool notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
+    bool notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>& node, const RenderScale & renderScale, QKeyEvent* e, Natron::Key k,
                                         Natron::KeyboardModifiers km);
-    bool notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node, double scaleX,double scaleY, QKeyEvent* e, Natron::Key k,
+    bool notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node, const RenderScale & renderScale, QKeyEvent* e, Natron::Key k,
                                           Natron::KeyboardModifiers km);
 public:
     
@@ -271,6 +271,8 @@ public:
     void onMousePressCalledInViewer();
     
     void updateViewsMenu(const std::vector<std::string>& viewNames);
+    
+    void getActiveInputs(int* a, int* b) const;
 
 public Q_SLOTS:
 

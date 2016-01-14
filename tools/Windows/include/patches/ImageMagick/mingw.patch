@@ -1,0 +1,51 @@
+--- origsrc/coders/emf.c	2015-10-10 05:45:02.000000000 -0500
++++ src/coders/emf.c	2015-10-27 11:12:19.815161000 -0500
+@@ -42,7 +42,7 @@
+ #include "magick/studio.h"
+ #if defined(MAGICKCORE_WINGDI32_DELEGATE)
+ #  if !defined(_MSC_VER)
+-#    if defined(__CYGWIN__)
++#    if defined(__CYGWIN__) || defined(__MINGW32__) || defined(__MINGW64__)
+ #      include <windows.h>
+ #    else
+ #      include <wingdi.h>
+--- origsrc/magick/distribute-cache.c	2015-10-10 05:45:02.000000000 -0500
++++ src/magick/distribute-cache.c	2015-10-27 15:14:19.466422600 -0500
+@@ -87,6 +87,7 @@
+ #define LENGTH_TYPE size_t
+ #define MAGICKCORE_HAVE_DISTRIBUTE_CACHE
+ #elif defined(MAGICKCORE_WINDOWS_SUPPORT)
++#include <ws2tcpip.h>
+ #define CHAR_TYPE_CAST (char *)
+ #define CLOSE_SOCKET(socket) (void) closesocket(socket)
+ #define HANDLER_RETURN_TYPE DWORD WINAPI
+--- origsrc/magick/locale.c	2015-10-10 05:45:02.000000000 -0500
++++ src/magick/locale.c	2015-10-27 15:58:53.558489200 -0500
+@@ -127,7 +127,7 @@ static locale_t AcquireCLocale(void)
+ #if defined(MAGICKCORE_HAVE_NEWLOCALE)
+   if (c_locale == (locale_t) NULL)
+     c_locale=newlocale(LC_ALL_MASK,"C",(locale_t) 0);
+-#elif defined(MAGICKCORE_WINDOWS_SUPPORT)
++#elif defined(MAGICKCORE_WINDOWS_SUPPORT) && _MSC_VER + 0 >= 1500
+   if (c_locale == (locale_t) NULL)
+     c_locale=_create_locale(LC_ALL,"C");
+ #endif
+@@ -257,7 +257,7 @@ static void DestroyCLocale(void)
+ #if defined(MAGICKCORE_HAVE_NEWLOCALE)
+   if (c_locale != (locale_t) NULL)
+     freelocale(c_locale);
+-#elif defined(MAGICKCORE_WINDOWS_SUPPORT)
++#elif defined(MAGICKCORE_WINDOWS_SUPPORT) && _MSC_VER + 0 >= 1500
+   if (c_locale != (locale_t) NULL)
+     _free_locale(c_locale);
+ #endif
+--- origsrc/magick/nt-base.c	2015-10-10 05:45:02.000000000 -0500
++++ src/magick/nt-base.c	2015-10-27 15:21:16.162836300 -0500
+@@ -58,6 +58,7 @@
+ #if defined(MAGICKCORE_LTDL_DELEGATE)
+ #  include "ltdl.h"
+ #endif
++#include <winsock2.h>
+ #if defined(MAGICKCORE_CIPHER_SUPPORT)
+ #include <ntsecapi.h>
+ #include <wincrypt.h>

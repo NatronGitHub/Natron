@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -82,6 +82,7 @@ class SequenceFromFiles;
 
 class AppInstance;
 class AppSettings;
+class AppTLS;
 class Bezier;
 class BezierCP;
 class BlockingBackgroundRender;
@@ -101,7 +102,6 @@ class DoubleParam;
 class Effect;
 class FileParam;
 class Format;
-class GlobalOFXTLS;
 class GroupParam;
 class Hash64;
 class Int2DParam;
@@ -134,6 +134,8 @@ class NodeSettingsPanel;
 class OfxClipInstance;
 class OfxEffectInstance;
 class OfxImage;
+class OfxStringInstance;
+class OfxParamToKnob;
 class OpenGLViewerI;
 class OutputFileParam;
 class OverlaySupport;
@@ -144,6 +146,7 @@ class ParametricParam;
 class PathParam;
 class PluginGroupNode;
 class PluginMemory;
+class PrecompNode;
 class ProcessHandler;
 class ProcessInputChannel;
 class ProjectSerialization;
@@ -162,11 +165,13 @@ class RotoItemSerialization;
 class RotoLayer;
 class RotoPoint;
 class RotoStrokeItem;
+class SeparatorParam;
 class Settings;
 class StringAnimationManager;
 class StringParam;
 class TextureRect;
 class TimeLine;
+class TLSHolderBase;
 class ViewerInstance;
 
 namespace Natron {

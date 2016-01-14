@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1886,10 +1886,8 @@ Image::scaleBoxForDepth(const RectI & roi,
     }
    
 
-    RenderScale scale;
     // FIXME: should use the RoD instead of RoI/bounds !
-    scale.x = (double) srcRoi.width() / dstBounds.width();
-    scale.y = (double) srcRoi.height() / dstBounds.height();
+    RenderScale scale((double) srcRoi.width() / dstBounds.width(), (double) srcRoi.height() / dstBounds.height());
 
     int convx_int = std::floor(scale.x);
     int convy_int = std::floor(scale.y);

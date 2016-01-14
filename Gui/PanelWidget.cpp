@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -136,6 +136,20 @@ PanelWidget::leaveEventBase()
     TabWidget* parentPane = getParentPane();
     if (parentPane) {
         parentPane->setWidgetMouseOverFocus(this, false);
+    }
+}
+
+void
+PanelWidget::handleUnCaughtKeyUpEvent(QKeyEvent* e)
+{
+    if (!_gui) {
+        return;
+    }
+    _gui->setLastKeyUpVisitedClickFocus(_gui->getCurrentPanelFocus() == this);
+    TabWidget* parentPane = getParentPane();
+    if (parentPane && parentPane->isFloatingWindowChild()) {
+        //We have to send the event to the Gui object, because it won't receive it as they are part from different windows
+        qApp->sendEvent(_gui, e);
     }
 }
 

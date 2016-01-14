@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -163,12 +163,11 @@ ViewerTabPrivate::getOverlayTransform(double time,
     if (currentNode == target->getLiveInstance()) {
         return true;
     }
-    RenderScale s;
-    s.x = s.y = 1.;
+    RenderScale s(1.);
     Natron::EffectInstance* input = 0;
     Natron::StatusEnum stat = eStatusReplyDefault;
     Transform::Matrix3x3 mat;
-    if (!currentNode->getNode()->isNodeDisabled() && currentNode->getCanTransform()) {
+    if (!currentNode->getNode()->isNodeDisabled() && currentNode->getNode()->getCurrentCanTransform()) {
         stat = currentNode->getTransform_public(time, s, view, &input, &mat);
     }
     if (stat == eStatusFailed) {
@@ -333,7 +332,7 @@ ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
         activeInput[i] = viewerNode->getInput(activeInputIdx[i]);
         if (activeInput[i]) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
-            activeInput[i]->getComponentsAvailable(true, publicInterface->getGui()->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
+            activeInput[i]->getComponentsAvailable(true, true, publicInterface->getGui()->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
             for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
                 if (it->second.lock()) {
                     comps->insert(it->first);

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -97,7 +97,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/StandardPaths.h"
-#include "Engine/ThreadStorage.h"
+#include "Engine/TLSHolder.h"
 
 // see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
 static
@@ -127,18 +127,13 @@ string_format(const std::string fmt, ...)
 
 using namespace Natron;
 
-/**
- * @brief A application-wide TLS struct containing all stuff needed to workaround OFX poor specs:
- * missing image effect handles etc...
- **/
-
 
 
 struct Natron::OfxHostPrivate
 {
     
     boost::shared_ptr<OFX::Host::ImageEffect::PluginCache> imageEffectPluginCache;
-    ThreadStorage<GlobalOFXTLS> globalTLS;
+    boost::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
     
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
     std::list<QMutex*> pluginsMutexes;
@@ -150,7 +145,7 @@ struct Natron::OfxHostPrivate
 
     OfxHostPrivate()
     : imageEffectPluginCache()
-    , globalTLS()
+    , tlsData(new TLSHolder<OfxHost::OfxHostTLSData>())
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
     , pluginsMutexes()
     , pluginsMutexesLock(0)
@@ -181,6 +176,12 @@ Natron::OfxHost::~OfxHost()
 #endif
 }
 
+Natron::OfxHost::OfxHostDataTLSPtr
+Natron::OfxHost::getTLSData() const
+{
+    return _imp->tlsData->getOrCreateTLSData();
+}
+
 void
 Natron::OfxHost::setOfxHostOSHandle(void* handle)
 {
@@ -190,6 +191,7 @@ Natron::OfxHost::setOfxHostOSHandle(void* handle)
 void
 Natron::OfxHost::setProperties()
 {
+        
     /* Known OpenFX host names:
        uk.co.thefoundry.nuke
        com.eyeonline.Fusion
@@ -364,12 +366,13 @@ Natron::OfxHost::getStringProperty(const std::string &name, int n) const OFX_EXC
             pluginID = _imp->loadingPluginID;
             pluginVersionMajor = _imp->loadingPluginVersionMajor;
             pluginVersionMinor = _imp->loadingPluginVersionMinor;
-        } else if (_imp->globalTLS.hasLocalData()) {
-            const GlobalOFXTLS& tls = _imp->globalTLS.localData();
-            if (tls.lastEffectCallingMainEntry) {
-                pluginID = tls.lastEffectCallingMainEntry->getPlugin()->getIdentifier();
-                pluginVersionMajor = tls.lastEffectCallingMainEntry->getPlugin()->getVersionMajor();
-                pluginVersionMinor = tls.lastEffectCallingMainEntry->getPlugin()->getVersionMinor();
+        } else {
+            
+            OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+            if (tls && tls->lastEffectCallingMainEntry) {
+                pluginID = tls->lastEffectCallingMainEntry->getPlugin()->getIdentifier();
+                pluginVersionMajor = tls->lastEffectCallingMainEntry->getPlugin()->getVersionMajor();
+                pluginVersionMinor = tls->lastEffectCallingMainEntry->getPlugin()->getVersionMinor();
             }
         }
         
@@ -967,13 +970,13 @@ Natron::OfxHost::newMemoryInstance(size_t nBytes)
 void
 Natron::OfxHost::setThreadAsActionCaller(Natron::OfxImageEffectInstance* instance, bool actionCaller)
 {
-    GlobalOFXTLS& local = _imp->globalTLS.localData();
-    local.lastEffectCallingMainEntry = instance;
+    OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    tls->lastEffectCallingMainEntry = instance;
     if (actionCaller) {
-        local.threadIndexes.push_back(-1);
+        tls->threadIndexes.push_back(-1);
     } else {
-        assert(!local.threadIndexes.empty());
-        local.threadIndexes.pop_back();
+        assert(!tls->threadIndexes.empty());
+        tls->threadIndexes.pop_back();
     }
 }
 
@@ -988,17 +991,16 @@ static OfxStatus
 threadFunctionWrapper(OfxThreadFunctionV1 func,
                       unsigned int threadIndex,
                       unsigned int threadMax,
-                      const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& tlsCopy,
+                      const QThread* spawnerThread,
                       void *customArg)
 {
     assert(threadIndex < threadMax);
-    GlobalOFXTLS& local = appPTR->getCurrentThreadTLS();
-    local.threadIndexes.push_back((int)threadIndex);
+    Natron::OfxHost::OfxHostDataTLSPtr tls = appPTR->getOFXHost()->getTLSData();
+    tls->threadIndexes.push_back((int)threadIndex);
     
-    boost::shared_ptr<ParallelRenderArgsSetter> tlsRaii;
-    //Set the TLS if not NULL
-    if (!tlsCopy.empty()) {
-        tlsRaii.reset(new ParallelRenderArgsSetter(tlsCopy));
+    QThread* spawnedThread = QThread::currentThread();
+    if (spawnedThread != spawnerThread) {
+        appPTR->getAppTLS()->softCopy(spawnerThread, spawnedThread);
     }
 
     OfxStatus ret = kOfxStatOK;
@@ -1011,7 +1013,11 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
     }
 
     ///reset back the index otherwise it could mess up the indexes if the same thread is re-used
-    local.threadIndexes.pop_back();
+    tls->threadIndexes.pop_back();
+    
+    if (spawnedThread != spawnerThread) {
+        appPTR->getAppTLS()->cleanupTLSForThread();
+    }
 
     return ret;
 }
@@ -1026,13 +1032,13 @@ public:
     OfxThread(OfxThreadFunctionV1 func,
               unsigned int threadIndex,
               unsigned int threadMax,
-              const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& tlsCopy,
+              const QThread* spawnerThread,
               void *customArg,
               OfxStatus *stat)
     : _func(func)
     , _threadIndex(threadIndex)
     , _threadMax(threadMax)
-    , _tlsCopy(tlsCopy)
+    , _spawnerThread(spawnerThread)
     , _customArg(customArg)
     , _stat(stat)
     {
@@ -1042,14 +1048,10 @@ public:
     void run() OVERRIDE
     {
         assert(_threadIndex < _threadMax);
-        GlobalOFXTLS& local = appPTR->getCurrentThreadTLS();
-        local.threadIndexes.push_back((int)_threadIndex);
+        Natron::OfxHost::OfxHostDataTLSPtr tls = appPTR->getOFXHost()->getTLSData();
+        tls->threadIndexes.push_back((int)_threadIndex);
         
-        //Copy the TLS of the caller thread to the newly spawned thread
-        boost::shared_ptr<ParallelRenderArgsSetter> tlsRaii;
-        if (!_tlsCopy.empty()) {
-            tlsRaii.reset(new ParallelRenderArgsSetter(_tlsCopy));
-        }
+        appPTR->getAppTLS()->softCopy(_spawnerThread, this);
         
         assert(*_stat == kOfxStatFailed);
         try {
@@ -1061,14 +1063,16 @@ public:
         }
 
         ///reset back the index otherwise it could mess up the indexes if the same thread is re-used
-        local.threadIndexes.pop_back();
+        tls->threadIndexes.pop_back();
+        
+        appPTR->getAppTLS()->cleanupTLSForThread();
     }
 
 private:
     OfxThreadFunctionV1 *_func;
     unsigned int _threadIndex;
     unsigned int _threadMax;
-    std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > _tlsCopy;
+    const QThread* _spawnerThread;
     void *_customArg;
     OfxStatus *_stat;
 };
@@ -1115,18 +1119,7 @@ Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,
         }
     }
     
-    //Retrieve a handle to the thread calling this action if possible so we can copy the TLS
-    std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > tlsCopy;
-    QVariant imageEffectPointerProperty = QThread::currentThread()->property(kNatronTLSEffectPointerProperty);
-    if (!imageEffectPointerProperty.isNull()) {
-        QObject* pointerqobject = imageEffectPointerProperty.value<QObject*>();
-        if (pointerqobject) {
-            Natron::EffectInstance* instance = dynamic_cast<Natron::EffectInstance*>(pointerqobject);
-            if (instance) {
-                instance->getApp()->getProject()->getParallelRenderArgs(tlsCopy);
-            }
-        }
-    }
+    QThread* spawnerThread = QThread::currentThread();
 
     bool useThreadPool = appPTR->getUseThreadPool();
     
@@ -1139,7 +1132,7 @@ Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,
         
         /// DON'T set the maximum thread count, this is a global application setting, and see the documentation excerpt above
         //QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
-        QFuture<OfxStatus> future = QtConcurrent::mapped( threadIndexes, boost::bind(::threadFunctionWrapper,func, _1, nThreads, tlsCopy, customArg) );
+        QFuture<OfxStatus> future = QtConcurrent::mapped( threadIndexes, boost::bind(::threadFunctionWrapper,func, _1, nThreads, spawnerThread, customArg) );
         future.waitForFinished();
         ///DON'T reset back to the original value the maximum thread count
         //QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
@@ -1158,7 +1151,7 @@ Natron::OfxHost::multiThread(OfxThreadFunctionV1 func,
             // at most maxConcurrentThread should be running at the same time
             QVector<OfxThread*> threads(nThreads);
             for (unsigned int i = 0; i < nThreads; ++i) {
-                threads[i] = new OfxThread(func, i, nThreads, tlsCopy, customArg, &status[i]);
+                threads[i] = new OfxThread(func, i, nThreads, spawnerThread, customArg, &status[i]);
             }
             unsigned int i = 0; // index of next thread to launch
             unsigned int running = 0; // number of running threads
@@ -1265,10 +1258,10 @@ Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
     if (!threadIndex) {
         return kOfxStatFailed;
     }
-    GlobalOFXTLS& local = appPTR->getCurrentThreadTLS();
+    OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     
-    if (!local.threadIndexes.empty() && local.threadIndexes.back() != -1) {
-        *threadIndex = local.threadIndexes.back();
+    if (!tls->threadIndexes.empty() && tls->threadIndexes.back() != -1) {
+        *threadIndex = tls->threadIndexes.back();
     } else {
         *threadIndex = 0;
     }
@@ -1283,8 +1276,8 @@ Natron::OfxHost::multiThreadIndex(unsigned int *threadIndex) const
 int
 Natron::OfxHost::multiThreadIsSpawnedThread() const
 {
-    GlobalOFXTLS& local = appPTR->getCurrentThreadTLS();
-    return !local.threadIndexes.empty() && local.threadIndexes.back() != -1;
+    OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    return !tls->threadIndexes.empty() && tls->threadIndexes.back() != -1;
     
 }
 
@@ -1495,8 +1488,3 @@ OfxStatus Natron::OfxHost::flushOpenGLResources() const
 #endif
 
 
-GlobalOFXTLS&
-Natron::OfxHost::getCurrentThreadTLS()
-{
-    return _imp->globalTLS.localData();
-}

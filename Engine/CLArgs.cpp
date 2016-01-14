@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -182,7 +182,7 @@ void
 CLArgs::printBackGroundWelcomeMessage()
 {
     QString msg = QObject::tr("%1 Version %2\n"
-                             "Copyright (C) 2015 the %1 developers\n"
+                             "Copyright (C) 2016 the %1 developers\n"
                               ">>>Use the --help or -h option to print usage.<<<").arg(NATRON_APPLICATION_NAME).arg(NATRON_VERSION_STRING);
     std::cout << msg.toStdString() << std::endl;
 }
@@ -363,16 +363,23 @@ CLArgs::getScriptFilename() const
 const QString&
 CLArgs::getImageFilename() const
 {
-    if (_imp->imageFilename.isEmpty()) {
+    if (_imp->imageFilename.isEmpty() && !_imp->args.empty()) {
         ///Check for image file passed to command line
-        for (QStringList::iterator it = _imp->args.begin(); it!=_imp->args.end(); ++it) {
-            QString fileCopy = *it;
-            QString ext = Natron::removeFileExtension(fileCopy);
-            std::string readerId = appPTR->isImageFileSupportedByNatron(ext.toStdString());
-            if (!readerId.empty()) {
-                _imp->imageFilename = *it;
-                _imp->args.erase(it);
-                break;
+        QStringList::iterator it = _imp->args.begin();
+        // first argument is the program name, skip it
+        ++it;
+        for (; it!=_imp->args.end(); ++it) {
+            if (!it->startsWith("-")) {
+                QString fileCopy = *it;
+                QString ext = Natron::removeFileExtension(fileCopy);
+                if (!ext.isEmpty()) {
+                    std::string readerId = appPTR->isImageFileSupportedByNatron(ext.toStdString());
+                    if (!readerId.empty()) {
+                        _imp->imageFilename = *it;
+                        _imp->args.erase(it);
+                        break;
+                    }
+                }
             }
         }
     }

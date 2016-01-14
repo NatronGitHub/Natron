@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -161,7 +161,8 @@ public:
 bool
 Project::loadProject(const QString & path,
                      const QString & name,
-                     bool isUntitledAutosave)
+                     bool isUntitledAutosave,
+                     bool attemptToLoadAutosave)
 {
 
     reset(false);
@@ -174,17 +175,21 @@ Project::loadProject(const QString & path,
         QString realName = name;
         
         bool isAutoSave = isUntitledAutosave;
-        if (!appPTR->isBackground() && !isUntitledAutosave) {
+        if (!getApp()->isBackground() && !isUntitledAutosave) {
             // In Gui mode, attempt to load an auto-save for this project if there's one.
             QString autosaveFileName;
             bool hasAutoSave = findAutoSaveForProject(realPath, name,&autosaveFileName);
             if (hasAutoSave) {
-                QString text = tr("A recent auto-save of %1 was found.\n"
-                                  "Would you like to use it instead? "
-                                  "Clicking No will remove this auto-save.").arg(name);
-                Natron::StandardButtonEnum ret = Natron::questionDialog(tr("Auto-save").toStdString(),
-                                                                        text.toStdString(),false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                                                        Natron::eStandardButtonYes);
+                
+                Natron::StandardButtonEnum ret = Natron::eStandardButtonNo;
+                if (attemptToLoadAutosave) {
+                    QString text = tr("A recent auto-save of %1 was found.\n"
+                                      "Would you like to use it instead? "
+                                      "Clicking No will remove this auto-save.").arg(name);
+                    ret = Natron::questionDialog(tr("Auto-save").toStdString(),
+                                                 text.toStdString(),false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
+                                                 Natron::eStandardButtonYes);
+                }
                 if ( (ret == Natron::eStandardButtonNo) || (ret == Natron::eStandardButtonEscape) ) {
                     QFile::remove(realPath + autosaveFileName);
                 } else {
@@ -206,7 +211,7 @@ Project::loadProject(const QString & path,
         }
     } catch (const std::exception & e) {
         Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what() );
-        if ( !appPTR->isBackground() ) {
+        if ( !getApp()->isBackground() ) {
             getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                   "",
                                                   -1,-1,
@@ -224,7 +229,7 @@ Project::loadProject(const QString & path,
     } catch (...) {
 
         Natron::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Unkown error while loading project").toStdString() );
-        if ( !appPTR->isBackground() ) {
+        if ( !getApp()->isBackground() ) {
             getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                   "",
                                                   -1,-1,
@@ -551,7 +556,7 @@ Project::saveProjectInternal(const QString & path,
     
     try {
         boost::archive::xml_oarchive oArchive(ofile);
-        bool bgProject = appPTR->isBackground();
+        bool bgProject = getApp()->isBackground();
         oArchive << boost::serialization::make_nvp("Background_project",bgProject);
         ProjectSerialization projectSerializationObj( getApp() );
         save(&projectSerializationObj);
@@ -619,7 +624,7 @@ void
 Project::autoSave()
 {
     ///don't autosave in background mode...
-    if ( appPTR->isBackground() ) {
+    if ( getApp()->isBackground() ) {
         return;
     }
     
@@ -634,7 +639,7 @@ Project::triggerAutoSave()
     ///Should only be called in the main-thread, that is upon user interaction.
     assert( QThread::currentThread() == qApp->thread() );
 
-    if ( appPTR->isBackground() || !appPTR->isLoaded() || isProjectClosing() ) {
+    if ( getApp()->isBackground() || !appPTR->isLoaded() || isProjectClosing() ) {
         return;
     }
     {
@@ -650,7 +655,7 @@ Project::triggerAutoSave()
 void
 Project::onAutoSaveTimerTriggered()
 {
-    assert( !appPTR->isBackground() );
+    assert( !getApp()->isBackground() );
 
     if (!getApp()) {
         return;
@@ -1053,13 +1058,6 @@ Project::getProjectDefaultFormat(Format *f) const
 }
 
 
-    
-void
-Project::ensureAllProcessingThreadsFinished()
-{
-    quitAnyProcessingForAllNodes();
-    QThreadPool::globalInstance()->waitForDone();
-}
 int
 Project::currentFrame() const
 {
@@ -1127,7 +1125,7 @@ Project::getProjectViewNames() const
 {
 
     ///Tls is needed to implement getViewName in the multi-plane suite
-    std::vector<std::string>& tls = _imp->viewNamesTLS.localData();
+    std::vector<std::string>& tls = _imp->tlsData->getOrCreateTLSData()->viewNames;
     tls.clear();
     
     std::list<std::pair<std::string,std::string> > pairs;
@@ -1406,7 +1404,7 @@ Project::createLockFile()
     QString curDateStr = now.toString();
     ts << curDateStr << '\n'
     << lastAuthor << '\n'
-    << QCoreApplication::applicationPid() << '\n'
+    << (qint64)QCoreApplication::applicationPid() << '\n'
     << QHostInfo::localHostName();
 }
     
@@ -1527,7 +1525,7 @@ void
 Project::resetProject()
 {
     reset(false);
-    if (!appPTR->isBackground()) {
+    if (!getApp()->isBackground()) {
         createViewer();
     }
 }
@@ -1572,7 +1570,7 @@ Project::reset(bool aboutToQuit)
             _imp->autoSaveTimer->stop();
             _imp->additionalFormats.clear();
         }
-        _imp->timeline->removeAllKeyframesIndicators();
+        getApp()->removeAllKeyframesIndicators();
         
         Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED, false);
         
@@ -2173,7 +2171,7 @@ Project::recomputeFrameRangeFromReaders()
 void
 Project::createViewer()
 {
-    if (appPTR->isBackground()) {
+    if (getApp()->isBackground()) {
         return;
     }
     getApp()->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
@@ -2298,6 +2296,12 @@ bool Project::addFormat(const std::string& formatSpec)
     } else {
         return false;
     }
+}
+    
+void
+Project::setTimeLine(const boost::shared_ptr<TimeLine>& timeline)
+{
+    _imp->timeline = timeline;
 }
     
 } //namespace Natron

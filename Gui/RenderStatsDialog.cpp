@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#include <bitset>
 
 #include "RenderStatsDialog.h"
 
@@ -444,18 +446,17 @@ public:
             assert(item);
             QString str;
             
-            bool r,g,b,a;
-            stats.getChannelsRendered(&r, &g, &b, &a);
-            if (r) {
+            std::bitset<4> processChannels = stats.getChannelsRendered();
+            if (processChannels[0]) {
                 str.append("R ");
             }
-            if (g) {
+            if (processChannels[1]) {
                 str.append("G ");
             }
-            if (b) {
+            if (processChannels[2]) {
                 str.append("B ");
             }
-            if (a) {
+            if (processChannels[3]) {
                 str.append("A");
             }
             item->setText(str);

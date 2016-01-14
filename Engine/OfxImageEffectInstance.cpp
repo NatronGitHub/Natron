@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -555,7 +555,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         OfxPushButtonInstance *ret = new OfxPushButtonInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-        paramShouldBePersistant = false;
+        //paramShouldBePersistant = false;
     } else if (descriptor.getType() == kOfxParamTypeParametric) {
         OfxParametricInstance* ret = new OfxParametricInstance(getOfxEffectInstance(), descriptor);
         OfxStatus stat = ret->defaultInitializeAllCurves(descriptor);
@@ -587,6 +587,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     if (!paramShouldBePersistant) {
         persistant = false;
     }
+    knob->setIsClipPreferencesSlave(isClipPreferencesSlaveParam(paramName));
     knob->setIsPersistant(persistant);
     knob->setAnimationEnabled( descriptor.getCanAnimate() );
     knob->setSecretByDefault( descriptor.getSecret() );
@@ -667,7 +668,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                 grp->addKnob( knobHolder->getKnob() );
             } else {
                 // coverity[dead_error_line]
-                qDebug() << "Warning: attempting to set a parent which is not a group to parameter " << (*it)->getName().c_str();
+                std::cerr << "Warning: attempting to set a parent which is not a group to parameter " << (*it)->getName() << std::endl;;
                 continue;
             }
             
@@ -702,7 +703,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                 }
             }
             if (!child) {
-                qDebug() << "Warning: " << childName.c_str() << " is in the children list of " << (*it)->getName().c_str() << " but does not seem to be a valid parameter.";
+                std::cerr << "Warning: " << childName << " is in the children list of " << (*it)->getName() << " but does not seem to be a valid parameter." << std::endl;
                 continue;
             }
             if (child && !child->getParentKnob()) {
@@ -866,86 +867,6 @@ OfxImageEffectInstance::newMemoryInstance(size_t nBytes)
     return ret;
 }
 
-void
-OfxImageEffectInstance::setClipsView(int view)
-{
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-        assert(clip);
-        if (clip) {
-            clip->setRenderedView(view);
-        }
-    }
-}
-
-
-void
-OfxImageEffectInstance::discardClipsView()
-{
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-        assert(clip);
-        if (clip) {
-            clip->discardView();
-        }
-    }
-}
-
-void
-OfxImageEffectInstance::setClipsMipMapLevel(unsigned int mipMapLevel)
-{
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-        assert(clip);
-        if (clip) {
-            clip->setMipMapLevel(mipMapLevel);
-        }
-    }
-}
-
-void
-OfxImageEffectInstance::discardClipsMipMapLevel()
-{
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-        assert(clip);
-        if (clip) {
-            clip->discardMipMapLevel();
-        }
-    }
-}
-
-void
-OfxImageEffectInstance::setInputClipPlane(int inputNb,bool hasImage, const Natron::ImageComponents& comp)
-{
-    OfxClipInstance* clip = getOfxEffectInstance()->getClipCorrespondingToInput(inputNb);
-    assert(clip);
-    clip->setClipComponentTLS(hasImage, comp);
-}
-
-void
-OfxImageEffectInstance::setClipsPlaneBeingRendered(const Natron::ImageComponents& comp)
-{
-    OFX::Host::ImageEffect::ClipInstance* ofxClip = getClip(kOfxImageEffectOutputClipName);
-    assert(ofxClip);
-    OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ofxClip);
-    assert(clip);
-    if (clip) {
-        clip->setClipComponentTLS(true, comp);
-    }
-}
-
-void
-OfxImageEffectInstance::discardClipsPlaneBeingRendered()
-{
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-        assert(clip);
-        if (clip) {
-            clip->clearClipComponentsTLS();
-        }
-    }
-}
 
 
 bool

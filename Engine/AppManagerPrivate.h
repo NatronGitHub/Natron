@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/TLSHolder.h"
 
 class QProcess;
 class QLocalServer;
@@ -53,7 +54,12 @@ class QLocalSocket;
 
 struct AppManagerPrivate
 {
+  
+    AppTLS globalTLS;
+
     AppManager::AppTypeEnum _appType; //< the type of app
+    
+    mutable QMutex _appInstancesMutex;
     std::map<int,AppInstanceRef> _appInstances; //< the instances mapped against their ID
     int _availableID; //< the ID for the next instance
     int _topLevelInstanceID; //< the top level app ID

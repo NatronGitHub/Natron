@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -209,6 +209,8 @@ struct AddKnobDialogPrivate
     }
     void setVisibleLabel(bool visible);
     
+    void setVisibleToolTipEdit(bool visible);
+    
     void setVisibleMinMax(bool visible);
     
     void setVisibleMenuItems(bool visible);
@@ -266,7 +268,8 @@ enum ParamDataTypeEnum {
     eParamDataTypeGroup, // 15
     eParamDataTypePage, // 16
     eParamDataTypeButton, // 17
-    eParamDataTypeCount // 18
+    eParamDataTypeSeparator, // 18
+    eParamDataTypeCount // 19
 };
 
 static const char* dataTypeString(ParamDataTypeEnum t)
@@ -308,6 +311,8 @@ static const char* dataTypeString(ParamDataTypeEnum t)
             return "Page";
         case eParamDataTypeButton:
             return "Button";
+        case eParamDataTypeSeparator:
+            return "Separator";
         default:
             return NULL;
     }
@@ -342,6 +347,7 @@ static int dataTypeDim(ParamDataTypeEnum t)
         case eParamDataTypeGroup:
         case eParamDataTypePage:
         case eParamDataTypeButton:
+        case eParamDataTypeSeparator:
         default:
             return 1;
     }
@@ -364,7 +370,7 @@ static ParamDataTypeEnum getChoiceIndexFromKnobType(KnobI* knob)
     KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob);
     KnobPage* isPage = dynamic_cast<KnobPage*>(knob);
     KnobButton* isBtn = dynamic_cast<KnobButton*>(knob);
-    
+    KnobSeparator* isSep = dynamic_cast<KnobSeparator*>(knob);
     if (isInt) {
         if (dim == 1) {
             return eParamDataTypeInteger;
@@ -409,12 +415,16 @@ static ParamDataTypeEnum getChoiceIndexFromKnobType(KnobI* knob)
         return eParamDataTypePage;
     } else if (isBtn) {
         return eParamDataTypeButton;
+    } else if (isSep) {
+        return eParamDataTypeSeparator;
     }
     return eParamDataTypeCount;
 }
 
 AddKnobDialog::AddKnobDialog(DockablePanel* panel,
                              const boost::shared_ptr<KnobI>& knob,
+                             const std::string& selectedPageName,
+                             const std::string& selectedGroupName,
                              QWidget* parent)
 : QDialog(parent)
 , _imp(new AddKnobDialogPrivate(panel))
@@ -928,16 +938,19 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     optLayout->setContentsMargins(0, 0, 15, 0);
     _imp->parentPageLabel = new Natron::Label(tr("Page:"),optContainer);
     _imp->parentPage = new ComboBox(optContainer);
-    _imp->parentPage->addItem(NATRON_USER_MANAGED_KNOBS_PAGE);
+    
     QObject::connect(_imp->parentPage,SIGNAL(currentIndexChanged(int)),this,SLOT(onPageCurrentIndexChanged(int)));
     const std::vector<boost::shared_ptr<KnobI> >& internalKnobs = _imp->panel->getHolder()->getKnobs();
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = internalKnobs.begin() ; it != internalKnobs.end(); ++it) {
         if ((*it)->isUserKnob()) {
             boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
-            if (isPage && isPage->getName() != NATRON_USER_MANAGED_KNOBS_PAGE) {
+            if (isPage) {
                 _imp->userPages.push_back(isPage);
             }
         }
+    }
+    if (_imp->userPages.empty()) {
+        _imp->parentPage->addItem(NATRON_USER_MANAGED_KNOBS_PAGE);
     }
     
     for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
@@ -946,41 +959,50 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     _imp->parentPage->setToolTip(Natron::convertFromPlainText(tr("The tab under which this parameter will appear."), Qt::WhiteSpaceNormal));
     optLayout->addWidget(_imp->parentPage);
     
-    bool pageIndexLoaded = false;
+    int pageIndexLoaded = -1;
     if (knob) {
         ////find in which page the knob should be
-        KnobPage* isTopLevelParentAPage = knob->getTopLevelPage();
-        assert(isTopLevelParentAPage);
-        if (isTopLevelParentAPage->getName() != NATRON_USER_MANAGED_KNOBS_PAGE) {
-            int index = 1; // 1 because of the "User" item
+        boost::shared_ptr<KnobPage> isTopLevelParentAPage = knob->getTopLevelPage();
+        if (isTopLevelParentAPage && isTopLevelParentAPage->getName() != NATRON_USER_MANAGED_KNOBS_PAGE) {
+            int index = 0; // 1 because of the "User" item
             bool found = false;
             for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
-                if (it->get() == isTopLevelParentAPage) {
+                if (*it == isTopLevelParentAPage) {
                     found = true;
                     break;
                 }
             }
             if (found) {
-                _imp->parentPage->setCurrentIndex(index);
-                pageIndexLoaded = true;
+                _imp->parentPage->setCurrentIndex_no_emit(index);
+                pageIndexLoaded = index;
             }
         }
-        
-        
+    } else {
+        ///If the selected page name in the manage user params dialog is valid, set the page accordingly
+        if (_imp->parentPage && !selectedPageName.empty()) {
+            int index = 0;
+            for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it, ++index) {
+                if ((*it)->getName() == selectedPageName) {
+                    _imp->parentPage->setCurrentIndex_no_emit(index);
+                    pageIndexLoaded = index;
+                    break;
+                }
+            }
+        }
     }
     
     _imp->mainLayout->addRow(_imp->parentPageLabel, optContainer);
-    if (!pageIndexLoaded) {
-        onPageCurrentIndexChanged(0);
-    }
+
+    onPageCurrentIndexChanged(pageIndexLoaded == -1 ? 0 : pageIndexLoaded);
+    
     if (_imp->parentGroup && knob) {
-        KnobPage* topLvlPage = knob->getTopLevelPage();
+        boost::shared_ptr<KnobPage> topLvlPage = knob->getTopLevelPage();
         assert(topLvlPage);
         boost::shared_ptr<KnobI> parent = knob->getParentKnob();
         KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
         if (isParentGrp) {
             for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
-                KnobPage* page = (*it)->getTopLevelPage();
+                boost::shared_ptr<KnobPage> page = (*it)->getTopLevelPage();
                 assert(page);
                 
                 ///add only grps whose parent page is the selected page
@@ -994,6 +1016,16 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
                     break;
                 }
                 
+            }
+        }
+    } else {
+        ///If the selected group name in the manage user params dialog is valid, set the group accordingly
+        if (_imp->parentGroup) {
+            for (int i = 0; i < _imp->parentGroup->count(); ++i) {
+                if (_imp->parentGroup->itemText(i) == QString(selectedGroupName.c_str())) {
+                    _imp->parentGroup->setCurrentIndex(i);
+                    break;
+                }
             }
         }
     }
@@ -1029,21 +1061,21 @@ AddKnobDialog::onPageCurrentIndexChanged(int index)
     _imp->parentGroup->addItem("-");
     
     std::string selectedPage = _imp->parentPage->itemText(index).toStdString();
-    KnobPage* parentPage = 0;
+    boost::shared_ptr<KnobPage> parentPage ;
     
     if (selectedPage == NATRON_USER_MANAGED_KNOBS_PAGE) {
-        parentPage = _imp->panel->getUserPageKnob().get();
+        parentPage = _imp->panel->getUserPageKnob();
     } else {
         for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
             if ((*it)->getName() == selectedPage) {
-                parentPage = it->get();
+                parentPage = *it;
                 break;
             }
         }
     }
     
     for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
-        KnobPage* page = (*it)->getTopLevelPage();
+        boost::shared_ptr<KnobPage> page = (*it)->getTopLevelPage();
         assert(page);
         
         ///add only grps whose parent page is the selected page
@@ -1065,6 +1097,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         case eParamDataTypeInteger: // int
         case eParamDataTypeInteger2D: // int 2D
         case eParamDataTypeInteger3D: // int 3D
+            _imp->setVisibleToolTipEdit(true);
             _imp->setVisibleAnimates(true);
             _imp->setVisibleEvaluate(true);
             _imp->setVisibleHide(true);
@@ -1085,6 +1118,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         case eParamDataTypeFloatingPoint3D: // fp 3D
         case eParamDataTypeColorRGB: // RGB
         case eParamDataTypeColorRGBA: // RGBA
+            _imp->setVisibleToolTipEdit(true);
             _imp->setVisibleAnimates(true);
             _imp->setVisibleEvaluate(true);
             _imp->setVisibleHide(true);
@@ -1101,6 +1135,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             break;
 
         case eParamDataTypeChoice: // choice
+            _imp->setVisibleToolTipEdit(true);
             _imp->setVisibleAnimates(true);
             _imp->setVisibleEvaluate(true);
             _imp->setVisibleHide(true);
@@ -1116,6 +1151,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeString, d);
             break;
         case eParamDataTypeCheckbox: // bool
+            _imp->setVisibleToolTipEdit(true);
             _imp->setVisibleAnimates(true);
             _imp->setVisibleEvaluate(true);
             _imp->setVisibleHide(true);
@@ -1131,6 +1167,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeBool, d);
             break;
         case eParamDataTypeLabel: // label
+            _imp->setVisibleToolTipEdit(true);
             _imp->setVisibleAnimates(false);
             _imp->setVisibleEvaluate(false);
             _imp->setVisibleHide(true);
@@ -1146,6 +1183,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeString, d);
             break;
         case eParamDataTypeTextInput: // text input
+            _imp->setVisibleToolTipEdit(true);
             _imp->setVisibleAnimates(true);
             _imp->setVisibleEvaluate(true);
             _imp->setVisibleHide(true);
@@ -1162,6 +1200,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             break;
         case eParamDataTypeInputFile: // input file
         case eParamDataTypeOutputFile: // output file
+            _imp->setVisibleToolTipEdit(true);
             _imp->setVisibleAnimates(false);
             _imp->setVisibleEvaluate(true);
             _imp->setVisibleHide(true);
@@ -1177,6 +1216,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeString, d);
             break;
         case eParamDataTypeDirectory: // path
+            _imp->setVisibleToolTipEdit(true);
             _imp->setVisibleAnimates(false);
             _imp->setVisibleEvaluate(true);
             _imp->setVisibleHide(true);
@@ -1192,6 +1232,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleDefaultValues(true, AddKnobDialogPrivate::eDefaultValueTypeString, d);
             break;
         case eParamDataTypeGroup: // grp
+            _imp->setVisibleToolTipEdit(true);
             _imp->setVisibleAnimates(false);
             _imp->setVisibleEvaluate(false);
             _imp->setVisibleHide(true);
@@ -1207,6 +1248,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, d);
             break;
         case eParamDataTypePage: // page
+            _imp->setVisibleToolTipEdit(false);
             _imp->setVisibleAnimates(false);
             _imp->setVisibleEvaluate(false);
             _imp->setVisibleHide(false);
@@ -1222,6 +1264,7 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, d);
             break;
         case eParamDataTypeButton: // button
+            _imp->setVisibleToolTipEdit(true);
             _imp->setVisibleAnimates(false);
             _imp->setVisibleEvaluate(false);
             _imp->setVisibleHide(false);
@@ -1236,11 +1279,28 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
             _imp->setVisibleParent(true);
             _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, d);
             break;
+        case eParamDataTypeSeparator: // separator
+            _imp->setVisibleToolTipEdit(true);
+            _imp->setVisibleAnimates(false);
+            _imp->setVisibleEvaluate(false);
+            _imp->setVisibleHide(false);
+            _imp->setVisibleMenuItems(false);
+            _imp->setVisibleMinMax(false);
+            _imp->setVisibleStartNewLine(false);
+            _imp->setVisibleMultiLine(false);
+            _imp->setVisibleMultiPath(false);
+            _imp->setVisibleRichText(false);
+            _imp->setVisibleSequence(false);
+            _imp->setVisibleGrpAsTab(false);
+            _imp->setVisibleParent(true);
+            _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, d);
+            break;
         default:
             break;
     }
     
     if (_imp->isKnobAlias) {
+        _imp->setVisibleToolTipEdit(true);
         _imp->setVisibleAnimates(false);
         _imp->setVisibleEvaluate(false);
         _imp->setVisibleHide(false);
@@ -1280,7 +1340,7 @@ AddKnobDialogPrivate::setKnobMinMax(KnobI* knob)
     
     std::vector<T> mins(dim),dmins(dim);
     std::vector<T> maxs(dim),dmaxs(dim);
-    for (int i = 0; i < dim; ++i) {
+    for (std::size_t i = 0; i < (std::size_t)dim; ++i) {
         mins[i] = minBox->value();
         dmins[i] = dminBox->value();
         maxs[i] = maxBox->value();
@@ -1462,6 +1522,10 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
             boost::shared_ptr<KnobButton> k = Natron::createKnob<KnobButton>(panel->getHolder(), label, 1, false);
             knob = k;
         } break;
+        case eParamDataTypeSeparator: {
+            boost::shared_ptr<KnobSeparator> k = Natron::createKnob<KnobSeparator>(panel->getHolder(), label, 1, false);
+            knob = k;
+        } break;
         default:
             break;
     }
@@ -1522,7 +1586,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
 KnobGroup*
 AddKnobDialogPrivate::getSelectedGroup() const
 {
-    if (parentGroup) {
+    if (parentGroup && parentGroup->isVisible()) {
         std::string selectedItem = parentGroup->getCurrentIndexText().toStdString();
         if (selectedItem != "-") {
             for (std::list<KnobGroup*>::const_iterator it = userGroups.begin(); it != userGroups.end(); ++it) {
@@ -1538,7 +1602,7 @@ AddKnobDialogPrivate::getSelectedGroup() const
 boost::shared_ptr<KnobPage>
 AddKnobDialogPrivate::getSelectedPage() const
 {
-    if (parentPage) {
+    if (parentPage && parentPage->isVisible()) {
         std::string selectedItem = parentPage->getCurrentIndexText().toStdString();
         if (selectedItem == NATRON_USER_MANAGED_KNOBS_PAGE) {
             return panel->getUserPageKnob();
@@ -1627,7 +1691,7 @@ AddKnobDialog::onOkClicked()
     ParamDataTypeEnum t;
     
     ///Remember the old page in which to insert the knob
-    KnobPage* oldParentPage = 0;
+    boost::shared_ptr<KnobPage> oldParentPage ;
     
     ///If the knob was in a group, we need to place it at the same index
     int oldIndexInParent = -1;
@@ -1636,15 +1700,17 @@ AddKnobDialog::onOkClicked()
     std::vector<std::pair<std::string,bool> > expressions;
     std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > > listenersExpressions;
     
-
-    
+    boost::shared_ptr<KnobPage> oldKnobIsPage ;
+    bool wasNewLineActivated = true;
     if (!_imp->knob) {
         assert(_imp->typeChoice);
         t = (ParamDataTypeEnum)_imp->typeChoice->activeIndex();
     } else {
+        oldKnobIsPage = boost::dynamic_pointer_cast<KnobPage>(_imp->knob);
         oldKnobScriptName = _imp->knob->getName();
         effect = dynamic_cast<Natron::EffectInstance*>(_imp->knob->getHolder());
         oldParentPage = _imp->knob->getTopLevelPage();
+        wasNewLineActivated = _imp->knob->isNewLineActivated();
         t = getChoiceIndexFromKnobType(_imp->knob.get());
         boost::shared_ptr<KnobI> parent = _imp->knob->getParentKnob();
         KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
@@ -1658,7 +1724,7 @@ AddKnobDialog::onOkClicked()
             }
         } else {
             std::vector<boost::shared_ptr<KnobI> > children;
-            if (oldParentPage && oldParentPage == _imp->getSelectedPage().get()) {
+            if (oldParentPage && oldParentPage == _imp->getSelectedPage()) {
                 children = oldParentPage->getChildren();
             }
             for (U32 i = 0; i < children.size(); ++i) {
@@ -1690,17 +1756,26 @@ AddKnobDialog::onOkClicked()
             listenersExpressions[*it] = exprs;
         }
         
-        _imp->panel->getHolder()->removeDynamicKnob(_imp->knob.get());
-
-        if (!_imp->isKnobAlias) {
+        if (!oldKnobIsPage) {
+            _imp->panel->getHolder()->removeDynamicKnob(_imp->knob.get());
             
-            _imp->knob.reset();
+            if (!_imp->isKnobAlias) {
+                
+                _imp->knob.reset();
+            }
         }
     } //if (!_imp->knob) {
     
     
-    
-    if (!_imp->isKnobAlias) {
+    if (oldKnobIsPage) {
+        try {
+            oldKnobIsPage->setName(_imp->nameLineEdit->text().toStdString());
+            oldKnobIsPage->setLabel(_imp->labelLineEdit->text().toStdString());
+        } catch (const std::exception& e) {
+            Natron::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
+            return;
+        }
+    } else if (!_imp->isKnobAlias) {
         try {
             _imp->createKnobFromSelection((int)t, oldIndexInParent);
         }   catch (const std::exception& e) {
@@ -1712,6 +1787,13 @@ AddKnobDialog::onOkClicked()
         
         if (_imp->originalKnobSerialization) {
             _imp->knob->clone(_imp->originalKnobSerialization->getKnob().get());
+        }
+        
+        KnobString* isLabelKnob = dynamic_cast<KnobString*>(_imp->knob.get());
+        if (isLabelKnob && isLabelKnob->isLabel()) {
+            ///Label knob only has a default value, but the "clone" function call above will keep the previous value,
+            ///so we have to force a reset to the default value.
+            isLabelKnob->resetToDefaultValue(0);
         }
         
         //Recover expressions
@@ -1783,10 +1865,11 @@ AddKnobDialog::onOkClicked()
             }
             if (defIndex == -1) {
                 std::stringstream ss;
-                ss << '"';
+                ss << QObject::tr("The default value").toStdString();
+                ss << " \"";
                 ss << defValue;
-                ss << '"';
-                ss << " does not exist in the defined menu items";
+                ss << "\" ";
+                ss << QObject::tr("does not exist in the defined menu items").toStdString();
                 Natron::errorDialog(tr("Error while creating parameter").toStdString(), ss.str());
                 return;
             }
@@ -1822,6 +1905,10 @@ AddKnobDialog::onOkClicked()
             }
         }
     }
+    //also refresh the new line flag for this knob if it was set
+    if (_imp->knob && !wasNewLineActivated) {
+        _imp->knob->setAddNewLine(false);
+    }
     
     //Recover listeners expressions
     for (std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > >::iterator it = listenersExpressions.begin();it != listenersExpressions.end(); ++it) {
@@ -1852,6 +1939,14 @@ void
 AddKnobDialogPrivate::setVisibleLabel(bool visible)
 {
     labelLineEdit->setVisible(visible);
+    labelLabel->setVisible(visible);
+}
+
+void
+AddKnobDialogPrivate::setVisibleToolTipEdit(bool visible)
+{
+    tooltipArea->setVisible(visible);
+    tooltipLabel->setVisible(visible);
 }
 
 void

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -865,6 +865,13 @@ ViewerTab::setInputB(int index)
     _imp->viewerNode->setInputB(index);
     _imp->viewerNode->renderCurrentFrame(true);
 }
+
+void
+ViewerTab::getActiveInputs(int* a, int* b) const
+{
+    _imp->viewerNode->getActiveInputs(*a, *b);
+}
+
 
 void
 ViewerTab::switchInputAAndB()

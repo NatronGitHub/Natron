@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,6 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h" // PythonUserCommand
 #include "Gui/NodeClipBoard.h"
 #include "Gui/GuiFwd.h"
+#include "Gui/PreviewThread.h"
 
 
 struct KnobsClipBoard
@@ -98,7 +99,12 @@ struct GuiApplicationManagerPrivate
     boost::shared_ptr<QFutureWatcher<void> > fontconfigUpdateWatcher;
     QTimer updateSplashscreenTimer;
     int fontconfigMessageDots;
+        
+    PreviewThread previewRenderThread;
     
+    int dpiX,dpiY;
+
+
     GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface);
 
     void createColorPickerCursor();
@@ -107,7 +113,8 @@ struct GuiApplicationManagerPrivate
     void removePluginToolButton(const QStringList& grouping);
 
     void addStandardKeybind(const QString & grouping,const QString & id,
-                            const QString & description,QKeySequence::StandardKey key);
+                            const QString & description,QKeySequence::StandardKey key,
+                            const Qt::KeyboardModifiers & fallbackmodifiers,Qt::Key fallbacksymbol);
 
     void addKeybind(const QString & grouping,const QString & id,
                     const QString & description,

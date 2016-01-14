@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -843,12 +843,15 @@ public:
     /**
      * @brief This function cannot be called until all knobs of the project have been created.
      **/
-    void restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,const std::list<boost::shared_ptr<Natron::Node> > & allNodes);
+    void restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
+                          const std::list<boost::shared_ptr<Natron::Node> > & allNodes,
+                          const std::map<std::string,std::string>& oldNewScriptNamesMapping);
     
     /**
      * @brief This function cannot be called until all knobs of the project have been created.
      **/
-    void restoreExpressions(const boost::shared_ptr<KnobI> & knob);
+    void restoreExpressions(const boost::shared_ptr<KnobI> & knob,
+                            const std::map<std::string,std::string>& oldNewScriptNamesMapping);
 
     virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL
     {

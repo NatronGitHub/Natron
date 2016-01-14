@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -76,10 +76,10 @@ class DeleterThread
     mutable QMutex _entriesQueueMutex;
     std::list<boost::shared_ptr<T> >_entriesQueue;
     QWaitCondition _entriesQueueNotEmptyCond;
-    bool mustQuit;
+    CacheAPI* cache;
     QMutex mustQuitMutex;
     QWaitCondition mustQuitCond;
-    CacheAPI* cache;
+    bool mustQuit;
 
 public:
 
@@ -88,10 +88,10 @@ public:
         , _entriesQueueMutex()
         , _entriesQueue()
         , _entriesQueueNotEmptyCond()
-        , mustQuit(false)
+        , cache(cache)
         , mustQuitMutex()
         , mustQuitCond()
-        , cache(cache)
+        , mustQuit(false)
     {
         setObjectName("CacheDeleter");
     }
@@ -201,10 +201,10 @@ class CacheCleanerThread
 
     std::list<CleanRequest> _requestsQueues;
     QWaitCondition _requestsQueueNotEmptyCond;
-    bool mustQuit;
+    CacheAPI* cache;
     QMutex mustQuitMutex;
     QWaitCondition mustQuitCond;
-    CacheAPI* cache;
+    bool mustQuit;
 
 public:
 
@@ -213,10 +213,10 @@ public:
         , _requestQueueMutex()
         , _requestsQueues()
         , _requestsQueueNotEmptyCond()
-        , mustQuit(false)
+        , cache(cache)
         , mustQuitMutex()
         , mustQuitCond()
-        , cache(cache)
+        , mustQuit(false)
     {
         setObjectName("CacheCleaner");
     }
@@ -1278,9 +1278,13 @@ public:
         _cleanerThread.appendToQueue(holder->getCacheID(), nodeHash, false);
     }
 
-    void removeAllEntriesForHolderPublic(const CacheEntryHolder* holder)
+    void removeAllEntriesForHolderPublic(const CacheEntryHolder* holder, bool blocking)
     {
-        _cleanerThread.appendToQueue(holder->getCacheID(), 0, true);
+        if (blocking) {
+            removeAllEntriesWithDifferentNodeHashForHolderPrivate(holder->getCacheID(), 0, true);
+        } else {
+            _cleanerThread.appendToQueue(holder->getCacheID(), 0, true);
+        }
     }
     
     void getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,

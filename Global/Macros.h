@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,13 +34,16 @@
 #endif
 
 #define NATRON_APPLICATION_DESCRIPTION "Open-source, cross-platform, nodal compositing software."
-#define NATRON_COPYRIGHT "Copyright (C) 2015 the Natron developers."
+#define NATRON_COPYRIGHT "Copyright (C) 2016 the Natron developers."
 #define NATRON_ORGANIZATION_NAME "INRIA"
 #define NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "fr"
 #define NATRON_ORGANIZATION_DOMAIN_SUB "inria"
 #define NATRON_ORGANIZATION_DOMAIN NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_ORGANIZATION_DOMAIN_TOPLEVEL
 #define NATRON_APPLICATION_NAME "Natron"
 #define NATRON_WEBSITE_URL "http://www.natron.fr"
+#define NATRON_FORUM_URL "https://forum.natron.fr"
+#define NATRON_PYTHON_URL "https://natron.readthedocs.org/en/workshop/"
+#define NATRON_WIKI_URL "https://github.com/MrKepzie/Natron/wiki"
 #define NATRON_ISSUE_TRACKER_URL "https://github.com/MrKepzie/Natron/issues"
 // The MIME types for Natron documents are:
 // *.ntp: application/vnd.natron.project
@@ -189,6 +192,9 @@ NATRON_VERSION_REVISION)
 //When enabled the value of 2 is a code for a pixel being rendered but not yet available.
 //In this context, the reader of the bitmap should then wait for the pixel to be available.
 #define NATRON_ENABLE_TRIMAP 1
+
+//Uncomment to get access to ReadQt and WriteQt nodes. Note that they are no longer maintained and probably buggy.
+//#define NATRON_ENABLE_QT_IO_NODES
 
 // compiler_warning.h
 #define STRINGISE_IMPL(x) # x

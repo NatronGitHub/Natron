@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include "ProjectPrivate.h"
 
 #include <stdexcept>
+#include <list>
 
 #include <QtCore/QDebug>
 #include <QtCore/QTimer>
@@ -45,6 +46,7 @@
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
+
 
 namespace Natron {
 ProjectPrivate::ProjectPrivate(Natron::Project* project)
@@ -85,6 +87,7 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , isSavingProject(false)
     , autoSaveTimer( new QTimer() )
     , projectClosing(false)
+    , tlsData(new TLSHolder<Project::ProjectTLSData>())
     
 {
     
@@ -177,22 +180,15 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         
         
         /// 3) Restore the nodes
-        
-        bool hasProjectAWriter = false;
-        
+                
         std::map<std::string,bool> processedModules;
         ok = NodeCollectionSerialization::restoreFromSerialization(obj.getNodesSerialization().getNodesSerialization(),
-                                                                        _publicInterface->shared_from_this(),true, &processedModules, &hasProjectAWriter);
+                                                                        _publicInterface->shared_from_this(),true, &processedModules);
         for (std::map<std::string,bool>::iterator it = processedModules.begin(); it!=processedModules.end(); ++it) {
             if (it->second) {
                 *mustSave = true;
                 break;
             }
-        }
-        
-        if ( !hasProjectAWriter && appPTR->isBackground() ) {
-            _publicInterface->clearNodes(true);
-            throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
         }
         
         

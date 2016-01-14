@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -308,6 +308,7 @@ Effect::createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
     boost::shared_ptr<KnobGroup> isGroup = boost::dynamic_pointer_cast<KnobGroup>(knob);
     boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
     boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+    boost::shared_ptr<KnobSeparator> isSep = boost::dynamic_pointer_cast<KnobSeparator>(knob);
     
     if (isInt) {
         switch (dims) {
@@ -353,6 +354,8 @@ Effect::createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
         return new ParametricParam(isParametric);
     } else if (isButton) {
         return new ButtonParam(isButton);
+    } else if (isSep) {
+        return new SeparatorParam(isSep);
     }
     return NULL;
 }
@@ -601,6 +604,17 @@ UserParamHolder::createButtonParam(const std::string& name, const std::string& l
     }
 }
 
+SeparatorParam*
+UserParamHolder::createSeparatorParam(const std::string& name, const std::string& label)
+{
+    boost::shared_ptr<KnobSeparator> knob = _holder->createSeparatorKnob(name, label);
+    if (knob) {
+        return new SeparatorParam(knob);
+    } else {
+        return 0;
+    }
+}
+
 GroupParam*
 UserParamHolder::createGroupParam(const std::string& name, const std::string& label)
 {
@@ -615,6 +629,10 @@ UserParamHolder::createGroupParam(const std::string& name, const std::string& la
 PageParam*
 UserParamHolder::createPageParam(const std::string& name, const std::string& label)
 {
+    if (!_holder) {
+        assert(false);
+        return 0;
+    }
     boost::shared_ptr<KnobPage> knob = _holder->createPageKnob(name, label);
     if (knob) {
         return new PageParam(knob);
@@ -708,8 +726,7 @@ Effect::getRegionOfDefinition(double time,int view) const
         return rod;
     }
     U64 hash = _node->getHashValue();
-    RenderScale s;
-    s.x = s.y = 1.;
+    RenderScale s(1.);
     bool isProject;
     Natron::StatusEnum stat = _node->getLiveInstance()->getRegionOfDefinition_public(hash, time, s, view, &rod, &isProject);
     if (stat != Natron::eStatusOK) {
@@ -754,7 +771,7 @@ Effect::getAvailableLayers() const
         return ret;
     }
     Natron::EffectInstance::ComponentsAvailableMap availComps;
-    _node->getLiveInstance()->getComponentsAvailable(true, _node->getLiveInstance()->getCurrentTime(), &availComps);
+    _node->getLiveInstance()->getComponentsAvailable(true, true, _node->getLiveInstance()->getCurrentTime(), &availComps);
     for (Natron::EffectInstance::ComponentsAvailableMap::iterator it = availComps.begin(); it != availComps.end(); ++it) {
         NodePtr node = it->second.lock();
         if (node) {

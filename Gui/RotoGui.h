@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -172,21 +172,21 @@ public:
      **/
     RotoGui::RotoRoleEnum getCurrentRole() const;
 
-    void drawOverlays(double time, double scaleX, double scaleY) const;
+    void drawOverlays(double time, const RenderScale & renderScale) const;
 
-    bool penDown(double time, double scaleX, double scaleY, Natron::PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool penDown(double time, const RenderScale & renderScale, Natron::PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
-    bool penDoubleClicked(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penDoubleClicked(double time, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool penMotion(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
+    bool penMotion(double time, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
 
-    bool penUp(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool penUp(double time, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
-    bool keyDown(double time, double scaleX, double scaleY, QKeyEvent* e);
+    bool keyDown(double time, const RenderScale & renderScale, QKeyEvent* e);
 
-    bool keyUp(double time, double scaleX, double scaleY, QKeyEvent* e);
+    bool keyUp(double time, const RenderScale & renderScale, QKeyEvent* e);
 
-    bool keyRepeat(double time, double scaleX, double scaleY, QKeyEvent* e);
+    bool keyRepeat(double time, const RenderScale & renderScale, QKeyEvent* e);
     
     void focusOut(double time);
 

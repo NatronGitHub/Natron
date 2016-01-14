@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QTextStream>
 #include <QDialogButtonBox>
 #include <QGridLayout>
+#include <QTextEdit>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -47,6 +48,58 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Utils.h" // convertFromPlainText
 #include "Gui/GuiDefines.h"
+
+
+class PlaceHolderTextEdit: public QTextEdit
+{
+    QString placeHolder;
+public:
+    
+    
+    PlaceHolderTextEdit(QWidget* parent)
+    : QTextEdit(parent)
+    , placeHolder()
+    {
+        
+    }
+    
+    void setPlaceHolderText(const QString& ph)
+    {
+        placeHolder = ph;
+    }
+    
+    QString getText() const
+    {
+        QString ret = toPlainText();
+        if (ret == placeHolder) {
+            return QString();
+        }
+        return ret;
+    }
+    
+private:
+    
+    virtual void focusInEvent(QFocusEvent *e){
+        if (!placeHolder.isNull()){
+            QString t = toPlainText();
+            if (t.isEmpty() || t == placeHolder) {
+                clear();
+            }
+        }
+        QTextEdit::focusInEvent(e);
+    }
+    
+    virtual void focusOutEvent(QFocusEvent *e) {
+        if (!placeHolder.isEmpty()){
+            if (toPlainText().isEmpty()) {
+                setText(placeHolder);
+            }
+        }
+        QTextEdit::focusOutEvent(e);
+    }
+    
+};
+
 
 struct ExportGroupTemplateDialogPrivate
 {
@@ -71,7 +124,7 @@ struct ExportGroupTemplateDialogPrivate
     LineEdit* iconPath;
 
     Natron::Label* descriptionLabel;
-    LineEdit* descriptionEdit;
+    PlaceHolderTextEdit* descriptionEdit;
 
     QDialogButtonBox *buttons;
 
@@ -146,9 +199,9 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->descriptionLabel = new Natron::Label(tr("Description"),this);
     QString descTt =  Natron::convertFromPlainText(tr("Set here the (optional) plug-in description that the user will see when clicking the "
                                                   " \"?\" button on the settings panel of the node."), Qt::WhiteSpaceNormal);
-    _imp->descriptionEdit = new LineEdit(this);
+    _imp->descriptionEdit = new PlaceHolderTextEdit(this);
     _imp->descriptionEdit->setToolTip(descTt);
-    _imp->descriptionEdit->setPlaceholderText(tr("This plug-in can be used to produce XXX effect..."));
+    _imp->descriptionEdit->setPlaceHolderText(tr("This plug-in can be used to produce XXX effect..."));
 
     _imp->fileLabel = new Natron::Label(tr("Directory"),this);
     QString fileTt  = Natron::convertFromPlainText(tr("Specify here the directory where to export the Python script."), Qt::WhiteSpaceNormal);
@@ -250,7 +303,7 @@ ExportGroupTemplateDialog::onOkClicked()
 
     QString iconPath = _imp->iconPath->text();
     QString grouping = _imp->groupingEdit->text();
-    QString description = _imp->descriptionEdit->text();
+    QString description = _imp->descriptionEdit->getText();
 
     QString filePath = d.absolutePath() + "/" + pluginLabel + ".py";
 

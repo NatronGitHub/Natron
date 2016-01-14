@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -774,8 +774,8 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
     QIcon toolButtonIcon,menuIcon;
     if ( !plugin->getIconPath().isEmpty() && QFile::exists( plugin->getIconPath() ) ) {
         QPixmap pix(plugin->getIconPath());
-        int menuSize = NATRON_MEDIUM_BUTTON_ICON_SIZE;
-        int toolButtonSize = !plugin->hasParent() ? NATRON_TOOL_BUTTON_ICON_SIZE : NATRON_MEDIUM_BUTTON_ICON_SIZE;
+        int menuSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+        int toolButtonSize = !plugin->hasParent() ? TO_DPIX(NATRON_TOOL_BUTTON_ICON_SIZE) : TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
         
         QPixmap menuPix = pix,toolbuttonPix = pix;
         if (std::max(menuPix.width(), menuPix.height()) != menuSize) {
@@ -790,9 +790,9 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         //add the default group icon only if it has no parent
         if ( !plugin->hasParent() ) {
             QPixmap toolbuttonPix,menuPix;
-            getPixmapForGrouping( &toolbuttonPix, NATRON_TOOL_BUTTON_ICON_SIZE, plugin->getLabel() );
+            getPixmapForGrouping( &toolbuttonPix, TO_DPIX(NATRON_TOOL_BUTTON_ICON_SIZE), plugin->getLabel() );
             toolButtonIcon.addPixmap(toolbuttonPix);
-            getPixmapForGrouping( &menuPix, NATRON_TOOL_BUTTON_ICON_SIZE, plugin->getLabel() );
+            getPixmapForGrouping( &menuPix, TO_DPIX(NATRON_TOOL_BUTTON_ICON_SIZE), plugin->getLabel() );
             menuIcon.addPixmap(menuPix);
 
         }
@@ -854,7 +854,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         QObject::connect( createReaderAction, SIGNAL( triggered() ), this, SLOT( createReader() ) );
         createReaderAction->setText( tr("Read") );
         QPixmap readImagePix;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_READ_IMAGE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &readImagePix);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_READ_IMAGE, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &readImagePix);
         createReaderAction->setIcon( QIcon(readImagePix) );
         createReaderAction->setShortcutContext(Qt::WidgetShortcut);
         createReaderAction->setShortcut( QKeySequence(Qt::Key_R) );
@@ -864,7 +864,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         QObject::connect( createWriterAction, SIGNAL( triggered() ), this, SLOT( createWriter() ) );
         createWriterAction->setText( tr("Write") );
         QPixmap writeImagePix;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_WRITE_IMAGE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &writeImagePix);
+        appPTR->getIcon(Natron::NATRON_PIXMAP_WRITE_IMAGE, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &writeImagePix);
         createWriterAction->setIcon( QIcon(writeImagePix) );
         createWriterAction->setShortcutContext(Qt::WidgetShortcut);
         createWriterAction->setShortcut( QKeySequence(Qt::Key_W) );
@@ -944,7 +944,7 @@ AppInstance*
 Gui::createNewProject()
 {
     CLArgs cl;
-    AppInstance* app = appPTR->newAppInstance(cl);
+    AppInstance* app = appPTR->newAppInstance(cl, false);
     
     app->execOnProjectCreatedCallback();
     return app;
@@ -969,7 +969,7 @@ Gui::openProject()
         std::string patternCpy = selectedFile;
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadProjectOpenedDir = path.c_str();
-        AppInstance* app = openProjectInternal(selectedFile);
+        AppInstance* app = openProjectInternal(selectedFile, true);
         if (!app) {
             throw std::runtime_error(tr("Failed to open project").toStdString() + ' ' + selectedFile);
         }
@@ -979,11 +979,11 @@ Gui::openProject()
 AppInstance*
 Gui::openProject(const std::string & filename)
 {
-    return openProjectInternal(filename);
+    return openProjectInternal(filename, true);
 }
 
 AppInstance*
-Gui::openProjectInternal(const std::string & absoluteFileName)
+Gui::openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave)
 {
     QFileInfo file(absoluteFileName.c_str());
     if (!file.exists()) {
@@ -997,7 +997,6 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
         AppInstance* instance = appPTR->getAppInstance(openedProject);
         if (instance) {
             GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(instance);
-            assert(guiApp);
             if (guiApp) {
                 guiApp->getGui()->activateWindow();
                 return instance;
@@ -1008,14 +1007,14 @@ Gui::openProjectInternal(const std::string & absoluteFileName)
     AppInstance* ret = 0;
     ///if the current graph has no value, just load the project in the same window
     if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
-      bool ok = _imp->_appInstance->getProject()->loadProject( path, fileUnPathed);
+      bool ok = _imp->_appInstance->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
         if (ok) {
             ret = _imp->_appInstance;
         }
     } else {
         CLArgs cl;
-        AppInstance* newApp = appPTR->newAppInstance(cl);
-        bool ok  = newApp->getProject()->loadProject( path, fileUnPathed);
+        AppInstance* newApp = appPTR->newAppInstance(cl, false);
+        bool ok  = newApp->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
         if (ok) {
             ret = newApp;
         }

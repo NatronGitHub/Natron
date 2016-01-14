@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 #include <fstream>
+#include <bitset>
 
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QReadWriteLock>
@@ -66,7 +67,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/Settings.h"
-#include "Engine/ThreadStorage.h"
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
@@ -80,16 +80,6 @@ using namespace Natron;
 class KnobFile;
 class KnobOutputFile;
 
-
-EffectPointerThreadProperty_RAII::EffectPointerThreadProperty_RAII(EffectInstance* effect)
-{
-    QThread::currentThread()->setProperty(kNatronTLSEffectPointerProperty, QVariant::fromValue((QObject*)effect));
-}
-
-EffectPointerThreadProperty_RAII::~EffectPointerThreadProperty_RAII()
-{
-    QThread::currentThread()->setProperty(kNatronTLSEffectPointerProperty, QVariant::fromValue((void*)0));
-}
 
 void
 EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,
@@ -160,6 +150,37 @@ EffectInstance::clearPluginMemoryChunks()
     }
 }
 
+#ifdef DEBUG
+void
+EffectInstance::setCanSetValue(bool can)
+{
+    _imp->tlsData->getOrCreateTLSData()->canSetValue.push_back(can);
+}
+
+void
+EffectInstance::invalidateCanSetValueFlag()
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    assert(tls);
+    assert(!tls->canSetValue.empty());
+    tls->canSetValue.pop_back();
+}
+
+
+bool
+EffectInstance::isDuringActionThatCanSetValue() const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls) {
+        return true;
+    }
+    if (tls->canSetValue.empty()) {
+        return true;
+    }
+    return tls->canSetValue.back();
+}
+#endif //DEBUG
+
 void
 EffectInstance::setParallelRenderArgsTLS(double time,
                                          int view,
@@ -181,7 +202,8 @@ EffectInstance::setParallelRenderArgsTLS(double time,
                                          bool viewerProgressReportEnabled,
                                          const boost::shared_ptr<RenderStats> & stats)
 {
-    ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
+    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    ParallelRenderArgs& args = tls->frameArgs;
 
     args.time = time;
     args.timeline = timeline;
@@ -213,75 +235,68 @@ EffectInstance::setParallelRenderArgsTLS(double time,
 bool
 EffectInstance::getThreadLocalRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const
 {
-    if ( !_imp->frameRenderArgs.hasLocalData() ) {
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls) {
         return false;
     }
-    const ParallelRenderArgs & tls = _imp->frameRenderArgs.localData();
-    if (!tls.validArgs) {
+    if (!tls->frameArgs.validArgs) {
         return false;
     }
-    *nodes = tls.rotoPaintNodes;
-
+    *nodes = tls->frameArgs.rotoPaintNodes;
     return true;
 }
 
 void
 EffectInstance::setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke)
 {
-    ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
-
-    args.isDuringPaintStrokeCreation = duringPaintStroke;
+    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    tls->frameArgs.isDuringPaintStrokeCreation = duringPaintStroke;
 }
 
 void
 EffectInstance::setParallelRenderArgsTLS(const ParallelRenderArgs & args)
 {
     assert(args.validArgs);
-    ParallelRenderArgs & tls = _imp->frameRenderArgs.localData();
-    int curValid = tls.validArgs;
-    tls = args;
-    tls.validArgs = curValid + 1;
+    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    int curValid = tls->frameArgs.validArgs;
+    tls->frameArgs = args;
+    tls->frameArgs.validArgs = curValid + 1;
 }
 
 void
 EffectInstance::invalidateParallelRenderArgsTLS()
 {
-    if ( _imp->frameRenderArgs.hasLocalData() ) {
-        ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
-        --args.validArgs;
-        if (args.validArgs < 0) {
-            args.validArgs = 0;
-            return;
-        }
-        for (NodeList::iterator it = args.rotoPaintNodes.begin(); it != args.rotoPaintNodes.end(); ++it) {
-            (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
-        }
-    } else {
-        //qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls) {
+        return;
+    }
+    --tls->frameArgs.validArgs;
+    if (tls->frameArgs.validArgs < 0) {
+        tls->frameArgs.validArgs = 0;
+    }
+    for (NodeList::iterator it = tls->frameArgs.rotoPaintNodes.begin(); it != tls->frameArgs.rotoPaintNodes.end(); ++it) {
+        (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
     }
 }
 
 const ParallelRenderArgs*
 EffectInstance::getParallelRenderArgsTLS() const
 {
-    if ( _imp->frameRenderArgs.hasLocalData() ) {
-        return &_imp->frameRenderArgs.localData();
-    } else {
-        //qDebug() << "Frame render args thread storage not set, this is probably because the graph changed while rendering.";
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls) {
         return 0;
     }
+    return &tls->frameArgs;
 }
 
 bool
 EffectInstance::isCurrentRenderInAnalysis() const
 {
-    if ( _imp->frameRenderArgs.hasLocalData() ) {
-        const ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
-
-        return args.validArgs && args.isAnalysis;
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls) {
+        return false;
     }
-
-    return false;
+    return tls->frameArgs.validArgs && tls->frameArgs.isAnalysis;
 }
 
 U64
@@ -296,80 +311,88 @@ EffectInstance::getHash() const
 U64
 EffectInstance::getRenderHash() const
 {
-    if ( !_imp->frameRenderArgs.hasLocalData() ) {
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls) {
+        //No tls: get the GUI hash
         return getHash();
-    } else {
-        const ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
-        if (!args.validArgs) {
-            return getHash();
-        } else {
-            if (args.request) {
-                return args.request->nodeHash;
-            }
+    }
+    if (!tls->frameArgs.validArgs) {
+        //No valid tls: get the GUI hash
+        return getHash();
+    }
+    if (tls->frameArgs.request) {
+        //A request pass was made, Hash for this thread was already computed, use it
+        return tls->frameArgs.request->nodeHash;
+    }
+    //Use the hash that was computed when we set the ParallelRenderArgs TLS
+    return tls->frameArgs.nodeHash;
+}
 
-            return args.nodeHash;
+bool
+EffectInstance::Implementation::aborted(const EffectDataTLSPtr& tls) const
+{
+    const ParallelRenderArgs & args = tls->frameArgs;
+    if (!args.validArgs) {
+        ///No valid args, probably not rendering
+        return false;
+    } else {
+        if (args.isRenderResponseToUserInteraction) {
+            //Don't allow the plug-in to abort while in analysis.
+            //Need to work on this for the tracker in order to be abortable.
+            if (args.isAnalysis) {
+                return false;
+            }
+            ViewerInstance* isViewer  = 0;
+            if (args.treeRoot) {
+                isViewer = dynamic_cast<ViewerInstance*>( args.treeRoot->getLiveInstance() );
+                //If the viewer is already doing a sequential render, abort
+                if ( isViewer && isViewer->isDoingSequentialRender() ) {
+                    return true;
+                }
+            }
+            
+            if (args.canAbort) {
+                if ( isViewer && isViewer->isRenderAbortable(args.textureIndex, args.renderAge) ) {
+                    return true;
+                }
+                
+                if (args.draftMode && args.timeline && args.time != args.timeline->currentFrame()) {
+                    return true;
+                }
+                
+                ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
+                bool ret = !_publicInterface->getNode()->isActivated();
+                
+                return ret;
+            } else {
+                bool deactivated = !_publicInterface->getNode()->isActivated();
+                
+                return deactivated;
+            }
+        } else {
+            ///Rendering is playback or render on disk, we rely on the flag set on the node that requested the render
+            if (args.treeRoot) {
+                Natron::OutputEffectInstance* effect = dynamic_cast<Natron::OutputEffectInstance*>( args.treeRoot->getLiveInstance() );
+                assert(effect);
+                
+                return effect->isSequentialRenderBeingAborted();
+            } else {
+                return false;
+            }
         }
     }
+
 }
 
 bool
 EffectInstance::aborted() const
 {
-    if ( !_imp->frameRenderArgs.hasLocalData() ) {
-        ///No local data, we're either not rendering or calling this from a thread not controlled by Natron
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls) {
         return false;
-    } else {
-        const ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
-        if (!args.validArgs) {
-            ///No valid args, probably not rendering
-            return false;
-        } else {
-            if (args.isRenderResponseToUserInteraction) {
-                //Don't allow the plug-in to abort while in analysis.
-                //Need to work on this for the tracker in order to be abortable.
-                if (args.isAnalysis) {
-                    return false;
-                }
-                ViewerInstance* isViewer  = 0;
-                if (args.treeRoot) {
-                    isViewer = dynamic_cast<ViewerInstance*>( args.treeRoot->getLiveInstance() );
-                    //If the viewer is already doing a sequential render, abort
-                    if ( isViewer && isViewer->isDoingSequentialRender() ) {
-                        return true;
-                    }
-                }
-
-                if (args.canAbort) {
-                    if ( isViewer && isViewer->isRenderAbortable(args.textureIndex, args.renderAge) ) {
-                        return true;
-                    }
-                    
-                    if (args.draftMode && args.timeline && args.time != args.timeline->currentFrame()) {
-                        return true;
-                    }
-
-                    ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
-                    bool ret = !getNode()->isActivated();
-                    
-                    return ret;
-                } else {
-                    bool deactivated = !getNode()->isActivated();
-
-                    return deactivated;
-                }
-            } else {
-                ///Rendering is playback or render on disk, we rely on the flag set on the node that requested the render
-                if (args.treeRoot) {
-                    Natron::OutputEffectInstance* effect = dynamic_cast<Natron::OutputEffectInstance*>( args.treeRoot->getLiveInstance() );
-                    assert(effect);
-
-                    return effect->isSequentialRenderBeingAborted();
-                } else {
-                    return false;
-                }
-            }
-        }
     }
+    return _imp->aborted(tls);
+    
 } // EffectInstance::aborted
 
 bool
@@ -453,7 +476,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
                                                 U64* nodeHash_p,
                                                 bool* isIdentity_p,
                                                 double* identityTime,
-                                                int* identityInputNb_p,
+                                                Natron::EffectInstance** identityInput_p,
                                                 bool* duringPaintStroke_p,
                                                 RectD* rod_p,
                                                 RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
@@ -512,7 +535,15 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
     RectI pixelRod;
     rod.toPixelEnclosing(scale, getPreferredAspectRatio(), &pixelRod);
     try {
-        *isIdentity_p = isIdentity_public(true, nodeHash, time, scale, pixelRod, view, identityTime, identityInputNb_p);
+        int identityInputNb;
+        *isIdentity_p = isIdentity_public(true, nodeHash, time, scale, pixelRod, view, identityTime, &identityInputNb);
+        if (*isIdentity_p) {
+            if (identityInputNb >= 0) {
+                *identityInput_p = getInput(identityInputNb);
+            } else if (identityInputNb == -2) {
+                *identityInput_p = this;
+            }
+        }
     } catch (...) {
         return false;
     }
@@ -521,25 +552,23 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
 } // EffectInstance::retrieveGetImageDataUponFailure
 
 void
-EffectInstance::getThreadLocalInputImages(EffectInstance::InputImagesMap* images) const
+EffectInstance::getThreadLocalInputImages(InputImagesMap* images) const
 {
-    if ( _imp->inputImages.hasLocalData() ) {
-        *images = _imp->inputImages.localData();
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls) {
+        return;
     }
+    *images = tls->currentRenderArgs.inputImages;
 }
 
 bool
 EffectInstance::getThreadLocalRegionsOfInterests(RoIMap & roiMap) const
 {
-    if ( !_imp->renderArgs.hasLocalData() ) {
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls) {
         return false;
     }
-    RenderArgs & renderArgs = _imp->renderArgs.localData();
-    if (!renderArgs._validArgs) {
-        return false;
-    }
-    roiMap = renderArgs._regionOfInterestResults;
-
+    roiMap = tls->currentRenderArgs.regionOfInterestResults;
     return true;
 }
 
@@ -553,15 +582,37 @@ EffectInstance::getImage(int inputNb,
                          const Natron::ImageBitDepthEnum depth,
                          const double par,
                          const bool dontUpscale,
-                         RectI* roiPixel)
+                         const bool mapImageToPreferredComps,
+                         RectI* roiPixel,
+                         boost::shared_ptr<Transform::Matrix3x3>* transform)
 {
     if (time != time) {
         // time is NaN
-
         return ImagePtr();
     }
+    
     ///The input we want the image from
-    EffectInstance* n = getInput(inputNb);
+    EffectInstance* inputEffect = 0;
+    
+    //Check for transform redirections
+    boost::shared_ptr<InputMatrixMap> transformRedirections;
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (tls && tls->currentRenderArgs.validArgs) {
+        transformRedirections = tls->currentRenderArgs.transformRedirections;
+        if (transformRedirections) {
+            InputMatrixMap::const_iterator foundRedirection = transformRedirections->find(inputNb);
+            if (foundRedirection != transformRedirections->end() && foundRedirection->second.newInputEffect) {
+                inputEffect = foundRedirection->second.newInputEffect->getInput(foundRedirection->second.newInputNbToFetchFrom);
+                if (transform) {
+                    *transform = foundRedirection->second.cat;
+                }
+            }
+        }
+    }
+
+    if (!inputEffect) {
+        inputEffect = getInput(inputNb);
+    }
 
     ///Is this input a mask or not
     bool isMask = isInputMask(inputNb);
@@ -581,36 +632,29 @@ EffectInstance::getImage(int inputNb,
         useRotoInput = isMask || isInputRotoBrush(inputNb);
     }
 
-    ///This is the actual layer that we are fetching in input, note that it is different than "comp" which is pointing to Alpha
+    ///This is the actual layer that we are fetching in input
     ImageComponents maskComps;
-    //if (isMask) {
-    if ( !isMaskEnabled(inputNb) ) {
-        ///This is last resort, the plug-in should've checked getConnected() before, which would have returned false.
+    if (!isMaskEnabled(inputNb)) {
         return ImagePtr();
     }
+    
+    ///If this is a mask, fetch the image from the effect indicated by the mask channel
     NodePtr maskInput;
     channelForMask = getMaskChannel(inputNb, &maskComps, &maskInput);
-    if ( maskInput && ( channelForMask != -1) ) {
-        n = maskInput->getLiveInstance();
+    if (maskInput && ( channelForMask != -1) ) {
+        inputEffect = maskInput->getLiveInstance();
     }
 
     //Invalid mask
-    if ( isMask && ( ( channelForMask == -1) || ( maskComps.getNumComponents() == 0) ) ) {
+    if (isMask && ((channelForMask == -1) || (maskComps.getNumComponents() == 0))) {
         return ImagePtr();
     }
-    //}
 
 
-    if ( ( !roto || (roto && !useRotoInput) ) && !n ) {
+    if ((!roto || (roto && !useRotoInput)) && !inputEffect) {
         //Disconnected input
         return ImagePtr();
     }
-
-    /*std::list<ImageComponents> outputClipPrefComps;
-    ImageBitDepthEnum outputDepth;
-    getPreferredDepthAndComponents(inputNb, &outputClipPrefComps, &outputDepth);
-    assert(outputClipPrefComps.size() >= 1);
-    const ImageComponents & prefComps = outputClipPrefComps.front();*/
 
     ///If optionalBounds have been set, use this for the RoI instead of the data int the TLS
     RectD optionalBounds;
@@ -625,7 +669,7 @@ EffectInstance::getImage(int inputNb,
     RoIMap inputsRoI;
     RectD rod;
     bool isIdentity = false;
-    int inputNbIdentity = -1;
+    Natron::EffectInstance* identityInput = 0;
     double inputIdentityTime = 0.;
     U64 nodeHash;
     bool duringPaintStroke;
@@ -642,41 +686,40 @@ EffectInstance::getImage(int inputNb,
     //    in the kOfxActionInstanceChanged and kOfxActionEndInstanceChanged actions with a kOfxPropChangeReason of kOfxChangeUserEdited
     RectD roi;
     bool roiWasInRequestPass = false;
-
-    if ( !_imp->renderArgs.hasLocalData() || !_imp->frameRenderArgs.hasLocalData() ) {
-        if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &inputNbIdentity, &duringPaintStroke, &rod, &inputsRoI, &optionalBounds) ) {
+    
+    ///Try to find in the input images thread local storage if we already pre-computed the image
+    EffectInstance::InputImagesMap inputImagesThreadLocal;
+    
+    if (!tls || !tls->currentRenderArgs.validArgs || !tls->frameArgs.validArgs) {
+        if (!retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &identityInput, &duringPaintStroke, &rod, &inputsRoI, &optionalBounds)) {
             return ImagePtr();
         }
     } else {
-        RenderArgs & renderArgs = _imp->renderArgs.localData();
-        const ParallelRenderArgs & frameRenderArgs = _imp->frameRenderArgs.localData();
-
-        if (!renderArgs._validArgs || !frameRenderArgs.validArgs) {
-            if ( !retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &inputNbIdentity, &duringPaintStroke, &rod, &inputsRoI, &optionalBounds) ) {
-                return ImagePtr();
+        const RenderArgs& renderArgs = tls->currentRenderArgs;
+        const ParallelRenderArgs& frameRenderArgs = tls->frameArgs;
+        
+        if (inputEffect) {
+            const ParallelRenderArgs* inputFrameArgs = inputEffect->getParallelRenderArgsTLS();
+            const FrameViewRequest* request = 0;
+            if (inputFrameArgs && inputFrameArgs->request) {
+                request = inputFrameArgs->request->getFrameViewRequest(time, view);
             }
-        } else {
-            if (n) {
-                const ParallelRenderArgs* inputFrameArgs = n->getParallelRenderArgsTLS();
-                const FrameViewRequest* request = 0;
-                if (inputFrameArgs && inputFrameArgs->request) {
-                    request = inputFrameArgs->request->getFrameViewRequest(time, view);
-                }
-                if (request) {
-                    roiWasInRequestPass = true;
-                    roi = request->finalData.finalRoi;
-                }
+            if (request) {
+                roiWasInRequestPass = true;
+                roi = request->finalData.finalRoi;
             }
-            if (!roiWasInRequestPass) {
-                inputsRoI = renderArgs._regionOfInterestResults;
-            }
-            rod = renderArgs._rod;
-            isIdentity = renderArgs._isIdentity;
-            inputIdentityTime = renderArgs._identityTime;
-            inputNbIdentity = renderArgs._identityInputNb;
-            nodeHash = frameRenderArgs.nodeHash;
-            duringPaintStroke = frameRenderArgs.isDuringPaintStrokeCreation;
         }
+        if (!roiWasInRequestPass) {
+            inputsRoI = renderArgs.regionOfInterestResults;
+        }
+        rod = renderArgs.rod;
+        isIdentity = renderArgs.isIdentity;
+        inputIdentityTime = renderArgs.identityTime;
+        identityInput = renderArgs.identityInput;
+        inputImagesThreadLocal = renderArgs.inputImages;
+        
+        nodeHash = frameRenderArgs.nodeHash;
+        duringPaintStroke = frameRenderArgs.isDuringPaintStrokeCreation;
     }
 
     if (optionalBoundsParam) {
@@ -684,40 +727,40 @@ EffectInstance::getImage(int inputNb,
     } else if (!roiWasInRequestPass) {
         EffectInstance* inputToFind = 0;
         if (useRotoInput) {
-            if ( getNode()->getRotoContext() ) {
+            if (getNode()->getRotoContext()) {
                 inputToFind = this;
             } else {
                 assert(attachedStroke);
                 inputToFind = attachedStroke->getContext()->getNode()->getLiveInstance();
             }
         } else {
-            inputToFind = n;
+            inputToFind = inputEffect;
         }
         RoIMap::iterator found = inputsRoI.find(inputToFind);
-        if ( found != inputsRoI.end() ) {
+        if (found != inputsRoI.end()) {
             ///RoI is in canonical coordinates since the results of getRegionsOfInterest is in canonical coords.
             roi = found->second;
         } else {
             ///Oops, we didn't find the roi in the thread-storage... use  the RoD instead...
-            if (n) {
-                qDebug() << getScriptName_mt_safe().c_str() << "[Bug] RoI not found in TLS...falling back on RoD when calling getImage() on" <<
-                n->getScriptName_mt_safe().c_str();
+            if (inputEffect) {
+                qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "[Bug] RoI not found in TLS...falling back on RoD when calling getImage() on" <<
+                inputEffect->getScriptName_mt_safe().c_str();
             }
             roi = rod;
         }
     }
 
-    if ( roi.isNull() ) {
+    if (roi.isNull()) {
         return ImagePtr();
     }
 
 
     if (isIdentity) {
-        assert(inputNbIdentity != -2);
+        assert(identityInput != this);
         ///If the effect is an identity but it didn't ask for the effect's image of which it is identity
         ///return a null image
-        if (inputNbIdentity != inputNb) {
-            ImagePtr();
+        if (identityInput != inputEffect) {
+            return ImagePtr();
         }
     }
 
@@ -739,13 +782,6 @@ EffectInstance::getImage(int inputNb,
     ///Convert to pixel coordinates
     RectI pixelRoI;
     roi.toPixelEnclosing(renderScaleOneUpstreamIfRenderScaleSupportDisabled ? 0 : mipMapLevel, par, &pixelRoI);
-  
-    
-    ///Try to find in the input images thread local storage if we already pre-computed the image
-    InputImagesMap inputImagesThreadLocal;
-    if ( _imp->inputImages.hasLocalData() ) {
-        inputImagesThreadLocal = _imp->inputImages.localData();
-    }
 
     ImagePtr inputImg;
 
@@ -779,9 +815,9 @@ EffectInstance::getImage(int inputNb,
             return ImagePtr();
         }
 
-        if ( inputImg && inputImagesThreadLocal.empty() ) {
+        if (inputImg && inputImagesThreadLocal.empty()) {
             ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
-            _imp->addInputImageTempPointer(inputNb, inputImg);
+            tls->currentRenderArgs.inputImages[inputNb].push_back(inputImg);
         }
 
         return inputImg;
@@ -789,35 +825,35 @@ EffectInstance::getImage(int inputNb,
 
 
     /// The node is connected.
-    assert(n);
+    assert(inputEffect);
 
     std::list<ImageComponents> requestedComps;
     requestedComps.push_back(isMask ? maskComps : requestComps);
     ImageList inputImages;
-    RenderRoIRetCode retCode = n->renderRoI(RenderRoIArgs(time,
-                                                          scale,
-                                                          renderMappedMipMapLevel,
-                                                          view,
-                                                          byPassCache,
-                                                          pixelRoI,
-                                                          RectD(),
-                                                          requestedComps,
-                                                          depth,
-                                                          true,
-                                                          this,
-                                                          inputImagesThreadLocal), &inputImages);
-
-    if ( inputImages.empty() || (retCode != eRenderRoIRetCodeOk) ) {
+    RenderRoIRetCode retCode = inputEffect->renderRoI(RenderRoIArgs(time,
+                                                                    scale,
+                                                                    renderMappedMipMapLevel,
+                                                                    view,
+                                                                    byPassCache,
+                                                                    pixelRoI,
+                                                                    RectD(),
+                                                                    requestedComps,
+                                                                    depth,
+                                                                    true,
+                                                                    this,
+                                                                    inputImagesThreadLocal), &inputImages);
+    
+    if (inputImages.empty() || (retCode != eRenderRoIRetCodeOk)) {
         return ImagePtr();
     }
     assert(inputImages.size() == 1);
 
     inputImg = inputImages.front();
 
-    if ( !pixelRoI.intersects( inputImg->getBounds() ) ) {
+    if (!pixelRoI.intersects( inputImg->getBounds())) {
         //The RoI requested does not intersect with the bounds of the input image, return a NULL image.
 #ifdef DEBUG
-        qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": The RoI requested to" << n->getScriptName_mt_safe().c_str() << "does not intersect with the bounds of the input image";
+        qDebug() << getNode()->getScriptName_mt_safe().c_str() << ": The RoI requested to" << inputEffect->getScriptName_mt_safe().c_str() << "does not intersect with the bounds of the input image";
 #endif
 
         return ImagePtr();
@@ -838,13 +874,13 @@ EffectInstance::getImage(int inputNb,
         } else {
             cc = requestComps;
         }
-        qDebug() << "WARNING:"<< getNode()->getScriptName_mt_safe().c_str() << "requested" << cc.getComponentsGlobalName().c_str() << "but" << n->getScriptName_mt_safe().c_str() << "returned an image with"
+        qDebug() << "WARNING:"<< getNode()->getScriptName_mt_safe().c_str() << "requested" << cc.getComponentsGlobalName().c_str() << "but" << inputEffect->getScriptName_mt_safe().c_str() << "returned an image with"
         << inputImg->getComponents().getComponentsGlobalName().c_str();
         std::list<Natron::ImageComponents> prefComps;
         ImageBitDepthEnum depth;
-        n->getPreferredDepthAndComponents(-1, &prefComps, &depth);
+        inputEffect->getPreferredDepthAndComponents(-1, &prefComps, &depth);
         assert(!prefComps.empty());
-        qDebug() << n->getScriptName_mt_safe().c_str() << "output clip preference is" << prefComps.front().getComponentsGlobalName().c_str();
+        qDebug() << inputEffect->getScriptName_mt_safe().c_str() << "output clip preference is" << prefComps.front().getComponentsGlobalName().c_str();
     }
 
 #endif
@@ -879,21 +915,25 @@ EffectInstance::getImage(int inputNb,
     //Remap if needed
     ImagePremultiplicationEnum outputPremult;
     if (requestComps.isColorPlane()) {
-        outputPremult = n->getOutputPremultiplication();
+        outputPremult = inputEffect->getOutputPremultiplication();
     } else {
         outputPremult = eImagePremultiplicationOpaque;
     }
     
 
-    std::list<Natron::ImageComponents> prefComps;
-    ImageBitDepthEnum prefDepth;
-    getPreferredDepthAndComponents(inputNb, &prefComps, &prefDepth);
-    assert(!prefComps.empty());
     
-    inputImg = convertPlanesFormatsIfNeeded(getApp(), isMultiPlanar(), inputImg, pixelRoI, prefComps.front(), prefDepth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult, channelForMask);
+    if (mapImageToPreferredComps) {
+        std::list<Natron::ImageComponents> prefComps;
+        ImageBitDepthEnum prefDepth;
+        getPreferredDepthAndComponents(inputNb, &prefComps, &prefDepth);
+        assert(!prefComps.empty());
+        
+        inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, prefComps.front(), prefDepth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult, channelForMask);
+    }
+    
     if (inputImagesThreadLocal.empty()) {
         ///If the effect is analysis (e.g: Tracker) there's no input images in the tread local storage, hence add it
-        _imp->addInputImageTempPointer(inputNb, inputImg);
+        tls->currentRenderArgs.inputImages[inputNb].push_back(inputImg);
     }
 
     return inputImg;
@@ -902,8 +942,8 @@ EffectInstance::getImage(int inputNb,
 void
 EffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
                                               double /*time*/,
-                                              int /*view*/,
                                               const RenderScale & /*scale*/,
+                                              int /*view*/,
                                               RectD *rod)
 {
     Format projectDefault;
@@ -981,7 +1021,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
     ///Do the following only if one coordinate is infinite otherwise we wont need the RoD of the input
     if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
         // initialize with the effect's default RoD, because inputs may not be connected to other effects (e.g. Roto)
-        calcDefaultRegionOfDefinition(hash, time, view, scale, &inputsUnion);
+        calcDefaultRegionOfDefinition(hash, time, scale, view, &inputsUnion);
         bool firstInput = true;
         for (int i = 0; i < getMaxInputCount(); ++i) {
             Natron::EffectInstance* input = getInput(i);
@@ -1071,12 +1111,7 @@ EffectInstance::getRegionsOfInterest(double time,
                 //Tiles not supported: get the RoD as RoI
                 RectD rod;
                 bool isPF;
-                RenderScale inpScale;
-                if (input->supportsRenderScale()) {
-                    inpScale.x = inpScale.y = scale.x;
-                } else {
-                    inpScale.x = inpScale.y = 1.;
-                }
+                RenderScale inpScale(input->supportsRenderScale() ? scale.x : 1.);
                 Natron::StatusEnum stat = input->getRegionOfDefinition_public(input->getRenderHash(), time, inpScale, view, &rod, &isPF);
                 if (stat == eStatusFailed) {
                     return;
@@ -1227,7 +1262,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
 
     ///Find first something in the input images list
     if ( !inputImages.empty() ) {
-        for (EffectInstance::InputImagesMap::const_iterator it = inputImages.begin(); it != inputImages.end(); ++it) {
+        for (InputImagesMap::const_iterator it = inputImages.begin(); it != inputImages.end(); ++it) {
             for (ImageList::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
                 if ( !it2->get() ) {
                     continue;
@@ -1312,23 +1347,28 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 boost::shared_ptr<ImageParams> oldParams = imageToConvert->getParams();
 
                 assert(imageToConvert->getMipMapLevel() < mipMapLevel);
-
+                
+                //This is the bounds of the upscaled image
                 RectI imgToConvertBounds = imageToConvert->getBounds();
+                
+                //The rodParam might be different of oldParams->getRoD() simply because the RoD is dependent on the mipmap level
                 const RectD & rod = rodParam ? *rodParam : oldParams->getRoD();
-                RectD imgToConvertCanonical;
-                imgToConvertBounds.toCanonical(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), rod, &imgToConvertCanonical);
+                
+                
+                //RectD imgToConvertCanonical;
+                //imgToConvertBounds.toCanonical(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), rod, &imgToConvertCanonical);
                 RectI downscaledBounds;
-
-                imgToConvertCanonical.toPixelEnclosing(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), &imgToConvertBounds);
-                imgToConvertCanonical.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
+                rod.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
+                //imgToConvertCanonical.toPixelEnclosing(imageToConvert->getMipMapLevel(), imageToConvert->getPixelAspectRatio(), &imgToConvertBounds);
+                //imgToConvertCanonical.toPixelEnclosing(mipMapLevel, imageToConvert->getPixelAspectRatio(), &downscaledBounds);
 
                 if (boundsParam) {
                     downscaledBounds.merge(*boundsParam);
                 }
 
-                RectI pixelRoD;
-                rod.toPixelEnclosing(mipMapLevel, oldParams->getPixelAspectRatio(), &pixelRoD);
-                downscaledBounds.intersect(pixelRoD, &downscaledBounds);
+                //RectI pixelRoD;
+                //rod.toPixelEnclosing(mipMapLevel, oldParams->getPixelAspectRatio(), &pixelRoD);
+                //downscaledBounds.intersect(pixelRoD, &downscaledBounds);
 
                 boost::shared_ptr<ImageParams> imageParams = Image::makeParams( oldParams->getCost(),
                                                                                 rod,
@@ -1350,9 +1390,22 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                     return;
                 }
 
+                
+                /*
+                 Since the RoDs of the 2 mipmaplevels are different, their bounds do not match exactly as po2
+                 To determine which portion we downscale, we downscale the initial image bounds to the mipmap level
+                 of the downscale image, clip it against the bounds of the downscale image, re-upscale it to the
+                 original mipmap level and ensure that it lies into the original image bounds
+                 */
+                int downscaleLevels = img->getMipMapLevel() - imageToConvert->getMipMapLevel();
+                RectI dstRoi = imgToConvertBounds.downscalePowerOfTwoSmallestEnclosing(downscaleLevels);
+                dstRoi.intersect(downscaledBounds, &dstRoi);
+                dstRoi = dstRoi.upscalePowerOfTwo(downscaleLevels);
+                dstRoi.intersect(imgToConvertBounds, &dstRoi);
+                
                 if (imgToConvertBounds.area() > 1) {
                     imageToConvert->downscaleMipMap( rod,
-                                                     imgToConvertBounds,
+                                                     dstRoi,
                                                      imageToConvert->getMipMapLevel(), img->getMipMapLevel(),
                                                      useCache && imageToConvert->usesBitMap(),
                                                      img.get() );
@@ -1389,7 +1442,7 @@ EffectInstance::tryConcatenateTransforms(double time,
                                          const RenderScale & scale,
                                          InputMatrixMap* inputTransforms)
 {
-    bool canTransform = getCanTransform();
+    bool canTransform = getNode()->getCurrentCanTransform();
 
     //An effect might not be able to concatenate transforms but can still apply a transform (e.g CornerPinMasked)
     std::list<int> inputHoldingTransforms;
@@ -1429,7 +1482,7 @@ EffectInstance::tryConcatenateTransforms(double time,
             bool inputIsDisabled  =  input->getNode()->isNodeDisabled();
 
             if (!inputIsDisabled) {
-                inputCanTransform = input->getCanTransform();
+                inputCanTransform = input->getNode()->getCurrentCanTransform();
             }
 
 
@@ -1468,7 +1521,7 @@ EffectInstance::tryConcatenateTransforms(double time,
                 if (input) {
                     inputIsDisabled = input->getNode()->isNodeDisabled();
                     if (!inputIsDisabled) {
-                        inputCanTransform = input->getCanTransform();
+                        inputCanTransform = input->getNode()->getCurrentCanTransform();
                     }
                 }
             }
@@ -1567,14 +1620,17 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
 
 void
 EffectInstance::transformInputRois(Natron::EffectInstance* self,
-                                   const InputMatrixMap & inputTransforms,
+                                   const boost::shared_ptr<InputMatrixMap> & inputTransforms,
                                    double par,
                                    const RenderScale & scale,
                                    RoIMap* inputsRoi,
                                    std::map<int, EffectInstance*>* reroutesMap)
 {
+    if (!inputTransforms) {
+        return;
+    }
     //Transform the RoIs by the inverse of the transform matrix (which is in pixel coordinates)
-    for (InputMatrixMap::const_iterator it = inputTransforms.begin(); it != inputTransforms.end(); ++it) {
+    for (InputMatrixMap::const_iterator it = inputTransforms->begin(); it != inputTransforms->end(); ++it) {
         RectD transformedRenderWindow;
         Natron::EffectInstance* effectInTransformInput = self->getInput(it->first);
         assert(effectInTransformInput);
@@ -1613,18 +1669,16 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
                                         bool useTransforms,
                                         double time,
                                         int view,
-                                        double par,
                                         const RectD & rod,
                                         const RectD & canonicalRenderWindow,
-                                        const InputMatrixMap & inputTransforms,
+                                        const boost::shared_ptr<InputMatrixMap>& inputTransforms,
                                         unsigned int mipMapLevel,
-                                        const RenderScale & scale,
                                         const RenderScale & renderMappedScale,
                                         bool useScaleOneInputImages,
                                         bool byPassCache,
                                         const FramesNeededMap & framesNeeded,
-                                        const ComponentsNeededMap & neededComps,
-                                        InputImagesMap *inputImages,
+                                        const EffectInstance::ComponentsNeededMap & neededComps,
+                                        EffectInstance::InputImagesMap *inputImages,
                                         RoIMap* inputsRoi)
 {
     if (!request) {
@@ -1637,18 +1691,12 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
     }
 #endif
 
-    std::map<int, EffectInstance*> reroutesMap;
-    if (!request) {
-        transformInputRois(this, inputTransforms, par, scale, inputsRoi, &reroutesMap);
-    } else {
-        reroutesMap = request->globalData.reroutesMap;
-    }
 
     return treeRecurseFunctor(true,
                               getNode(),
                               framesNeeded,
                               *inputsRoi,
-                              reroutesMap,
+                              inputTransforms,
                               useTransforms,
                               mipMapLevel,
                               time,
@@ -1663,14 +1711,24 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
 
 
 EffectInstance::RenderingFunctorRetEnum
-EffectInstance::tiledRenderingFunctor( TiledRenderingFunctorArgs & args,
+EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementation::TiledRenderingFunctorArgs & args,
                                        const RectToRender & specificData,
                                        const QThread* callingThread)
 {
-    return tiledRenderingFunctor(callingThread,
-                                 args.frameArgs,
-                                 specificData,
-                                 args.frameTLS,
+    
+    
+    ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
+    QThread* curThread = QThread::currentThread();
+    if (callingThread != curThread) {
+        ///We are in the case of host frame threading, see kOfxImageEffectPluginPropHostFrameThreading
+        ///We know that in the renderAction, TLS will be needed, so we do a deep copy of the TLS from the caller thread
+        ///to this thread
+        appPTR->getAppTLS()->copyTLS(callingThread, curThread);
+    }
+    
+    
+    
+    return tiledRenderingFunctor(specificData,
                                  args.renderFullScaleThenDownscale,
                                  args.isSequentialRender,
                                  args.isRenderResponseToUserInteraction,
@@ -1689,45 +1747,43 @@ EffectInstance::tiledRenderingFunctor( TiledRenderingFunctorArgs & args,
                                  args.compsNeeded,
                                  args.processChannels,
                                  args.planes);
+    
+    //Exit of the host frame threading thread
+    appPTR->getAppTLS()->cleanupTLSForThread();
 }
 
 EffectInstance::RenderingFunctorRetEnum
-EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
-                                      const ParallelRenderArgs & frameArgs,
-                                      const RectToRender & rectToRender,
-                                      const std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > & frameTLS,
-                                      const bool renderFullScaleThenDownscale,
-                                      const bool isSequentialRender,
-                                      const bool isRenderResponseToUserInteraction,
-                                      const int firstFrame,
-                                      const int lastFrame,
-                                      const int preferredInput,
-                                      const unsigned int mipMapLevel,
-                                      const unsigned int renderMappedMipMapLevel,
-                                      const RectD & rod,
-                                      const double time,
-                                      const int view,
-                                      const double par,
-                                      const bool byPassCache,
-                                      const Natron::ImageBitDepthEnum outputClipPrefDepth,
-                                      const std::list<Natron::ImageComponents> & outputClipPrefsComps,
-                                      const ComponentsNeededMap & compsNeeded,
-                                      bool* processChannels,
-                                      ImagePlanesToRender & planes) // when MT, planes is a copy so there's is no data race
+EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectToRender,
+                                                      const bool renderFullScaleThenDownscale,
+                                                      const bool isSequentialRender,
+                                                      const bool isRenderResponseToUserInteraction,
+                                                      const int firstFrame,
+                                                      const int lastFrame,
+                                                      const int preferredInput,
+                                                      const unsigned int mipMapLevel,
+                                                      const unsigned int renderMappedMipMapLevel,
+                                                      const RectD & rod,
+                                                      const double time,
+                                                      const int view,
+                                                      const double par,
+                                                      const bool byPassCache,
+                                                      const Natron::ImageBitDepthEnum outputClipPrefDepth,
+                                                      const std::list<Natron::ImageComponents> & outputClipPrefsComps,
+                                                      const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                                      const std::bitset<4>& processChannels,
+                                                      const boost::shared_ptr<ImagePlanesToRender> & planes) // when MT, planes is a copy so there's is no data race
 {
-    assert( !rectToRender.rect.isNull() );
 
-    ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
-    boost::shared_ptr<ParallelRenderArgsSetter> scopedFrameArgs;
-    if ( !frameTLS.empty() && ( callingThread != QThread::currentThread() ) ) {
-        scopedFrameArgs.reset( new ParallelRenderArgsSetter(frameTLS) );
+    ///There cannot be the same thread running 2 concurrent instances of renderRoI on the same effect.
+#ifdef DEBUG
+    {
+        EffectDataTLSPtr tls = tlsData->getTLSData();
+        assert(!tls || !tls->currentRenderArgs.validArgs);
     }
-
-    ///We hold our input images in thread-storage, so that the getImage function can find them afterwards, even if the node doesn't cache its output.
-    boost::shared_ptr<InputImagesHolder_RAII> inputImagesHolder;
-    if ( !rectToRender.imgs.empty() ) {
-        inputImagesHolder.reset( new InputImagesHolder_RAII(rectToRender.imgs, &_imp->inputImages) );
-    }
+#endif
+    EffectDataTLSPtr tls = tlsData->getOrCreateTLSData();
+    
+    assert(!rectToRender.rect.isNull());
 
     /*
      * renderMappedRectToRender is in the mapped mipmap level, i.e the expected mipmap level of the render action of the plug-in
@@ -1748,7 +1804,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
         canonicalRectToRender.toPixelEnclosing(mipMapLevel, par, &downscaledRectToRender);
     }
 
-    const PlaneToRender & firstPlaneToRender = planes.planes.begin()->second;
+    const EffectInstance::PlaneToRender & firstPlaneToRender = planes->planes.begin()->second;
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
 # ifndef NDEBUG
     RectI renderBounds = firstPlaneToRender.renderMappedImage->getBounds();
@@ -1765,13 +1821,13 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     // check the bitmap!
     
     bool bitmapMarkedForRendering = false;
-    if (frameArgs.tilesSupported) {
+    if (tls->frameArgs.tilesSupported) {
         if (renderFullScaleThenDownscale) {
            
             RectI initialRenderRect = renderMappedRectToRender;
 
 #if NATRON_ENABLE_TRIMAP
-            if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+            if (!tls->frameArgs.canAbort && tls->frameArgs.isRenderResponseToUserInteraction) {
                 bitmapMarkedForRendering = true;
                 renderMappedRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRectAndMarkForRendering_trimap(renderMappedRectToRender, &isBeingRenderedElseWhere);
             } else {
@@ -1798,7 +1854,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
             //The downscaled image is cached, read bitmap from it
 #if NATRON_ENABLE_TRIMAP
             RectI rectToRenderMinimal;
-            if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+            if (!tls->frameArgs.canAbort && tls->frameArgs.isRenderResponseToUserInteraction) {
                 bitmapMarkedForRendering = true;
                 rectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRectAndMarkForRendering_trimap(renderMappedRectToRender, &isBeingRenderedElseWhere);
             } else {
@@ -1825,40 +1881,35 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
         return isBeingRenderedElseWhere ? eRenderingFunctorRetTakeImageLock : eRenderingFunctorRetOK;
     }
 
-    ///There cannot be the same thread running 2 concurrent instances of renderRoI on the same effect.
-    assert(!_imp->renderArgs.hasLocalData() || !_imp->renderArgs.localData()._validArgs);
+  
+
+    ///This RAII struct controls the lifetime of the validArgs Flag in tls->currentRenderArgs
+    Implementation::ScopedRenderArgs scopedArgs(tls,
+                                                rod,
+                                                renderMappedRectToRender,
+                                                time,
+                                                view,
+                                                rectToRender.isIdentity,
+                                                rectToRender.identityTime,
+                                                rectToRender.identityInput,
+                                                compsNeeded,
+                                                rectToRender.imgs,
+                                                rectToRender.inputRois, firstFrame, lastFrame);
 
 
-    Implementation::ScopedRenderArgs scopedArgs(&_imp->renderArgs);
-    scopedArgs.setArgs_firstPass(rod,
-                                 renderMappedRectToRender,
-                                 time,
-                                 view,
-                                 false, //< if we reached here the node is not an identity!
-                                 0.,
-                                 -1,
-                                 compsNeeded);
-
-
-    ///The scoped args will maintain the args set for this thread during the
-    ///whole time the render action is called, so they can be fetched in the
-    ///getImage() call.
-    /// @see EffectInstance::getImage
-    scopedArgs.setArgs_secondPass(rectToRender.inputRois, firstFrame, lastFrame);
-    RenderArgs & args = scopedArgs.getLocalData();
     ImagePtr originalInputImage, maskImage;
     Natron::ImagePremultiplicationEnum originalImagePremultiplication;
-    InputImagesMap::const_iterator foundPrefInput = rectToRender.imgs.find(preferredInput);
-    InputImagesMap::const_iterator foundMaskInput = rectToRender.imgs.end();
+    EffectInstance::InputImagesMap::const_iterator foundPrefInput = rectToRender.imgs.find(preferredInput);
+    EffectInstance::InputImagesMap::const_iterator foundMaskInput = rectToRender.imgs.end();
 
-    if ( isHostMaskingEnabled() ) {
-        foundMaskInput = rectToRender.imgs.find(getMaxInputCount() - 1);
+    if ( _publicInterface->isHostMaskingEnabled() ) {
+        foundMaskInput = rectToRender.imgs.find(_publicInterface->getMaxInputCount() - 1);
     }
     if ( ( foundPrefInput != rectToRender.imgs.end() ) && !foundPrefInput->second.empty() ) {
         originalInputImage = foundPrefInput->second.front();
     }
-    std::map<int, Natron::ImagePremultiplicationEnum>::const_iterator foundPrefPremult = planes.inputPremult.find(preferredInput);
-    if ( ( foundPrefPremult != planes.inputPremult.end() ) && originalInputImage ) {
+    std::map<int, Natron::ImagePremultiplicationEnum>::const_iterator foundPrefPremult = planes->inputPremult.find(preferredInput);
+    if ( ( foundPrefPremult != planes->inputPremult.end() ) && originalInputImage ) {
         originalImagePremultiplication = foundPrefPremult->second;
     } else {
         originalImagePremultiplication = Natron::eImagePremultiplicationOpaque;
@@ -1870,15 +1921,13 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
     }
 
 #ifndef NDEBUG
-    RenderScale scale;
-    scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
-    scale.y = scale.x;
+    RenderScale scale(Image::getScaleFromMipMapLevel(mipMapLevel));
     // check the dimensions of all input and output images
     const RectD & dstRodCanonical = firstPlaneToRender.renderMappedImage->getRoD();
     RectI dstBounds;
     dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipMapLevel(), par, &dstBounds); // compute dstRod at level 0
     RectI dstRealBounds = firstPlaneToRender.renderMappedImage->getBounds();
-    if (!frameArgs.tilesSupported) {
+    if (!tls->frameArgs.tilesSupported) {
         assert(dstRealBounds.x1 == dstBounds.x1);
         assert(dstRealBounds.x2 == dstBounds.x2);
         assert(dstRealBounds.y1 == dstBounds.y1);
@@ -1893,7 +1942,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
             RectI srcBounds;
             srcRodCanonical.toPixelEnclosing( (*it2)->getMipMapLevel(), (*it2)->getPixelAspectRatio(), &srcBounds ); // compute srcRod at level 0
 
-            if (!frameArgs.tilesSupported) {
+            if (!tls->frameArgs.tilesSupported) {
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
                 //  If a clip or plugin does not support tiled images, then the host should supply full RoD images to the effect whenever it fetches one.
 
@@ -1918,7 +1967,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                 assert(srcRealBounds.y2 == srcBounds.y2);*/
  
             }
-            if ( !supportsMultiResolution() ) {
+            if ( !_publicInterface->supportsMultiResolution() ) {
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
                 //   Multiple resolution images mean...
                 //    input and output images can be of any size
@@ -1933,18 +1982,13 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
         } // end for
     } //end for
 
-    if (supportsRenderScaleMaybe() == eSupportsNo) {
+    if (_publicInterface->supportsRenderScaleMaybe() == eSupportsNo) {
         assert(firstPlaneToRender.renderMappedImage->getMipMapLevel() == 0);
         assert(renderMappedMipMapLevel == 0);
     }
 #     endif // DEBUG
 
-    RenderingFunctorRetEnum handlerRet =  renderHandler(args,
-                                                        frameArgs,
-                                                        rectToRender.imgs,
-                                                        rectToRender.isIdentity,
-                                                        rectToRender.identityTime,
-                                                        rectToRender.identityInput,
+    RenderingFunctorRetEnum handlerRet =  renderHandler(tls,
                                                         mipMapLevel,
                                                         renderFullScaleThenDownscale,
                                                         isSequentialRender,
@@ -1959,7 +2003,7 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
                                                         originalInputImage,
                                                         maskImage,
                                                         originalImagePremultiplication,
-                                                        planes);
+                                                        *planes);
     if (handlerRet == eRenderingFunctorRetOK) {
         if (isBeingRenderedElseWhere) {
             return eRenderingFunctorRetTakeImageLock;
@@ -1972,37 +2016,32 @@ EffectInstance::tiledRenderingFunctor(const QThread* callingThread,
 } // EffectInstance::tiledRenderingFunctor
 
 EffectInstance::RenderingFunctorRetEnum
-EffectInstance::renderHandler(RenderArgs & args,
-                              const ParallelRenderArgs & frameArgs,
-                              const InputImagesMap & inputImages,
-                              const bool identity,
-                              const double identityTime,
-                              Natron::EffectInstance* identityInput,
-                              const unsigned int mipMapLevel,
-                              const bool renderFullScaleThenDownscale,
-                              const bool isSequentialRender,
-                              const bool isRenderResponseToUserInteraction,
-                              const RectI & renderMappedRectToRender,
-                              const RectI & downscaledRectToRender,
-                              const bool byPassCache,
-                              const bool bitmapMarkedForRendering,
-                              const Natron::ImageBitDepthEnum outputClipPrefDepth,
-                              const std::list<Natron::ImageComponents> & outputClipPrefsComps,
-                              bool* processChannels,
-                              const boost::shared_ptr<Natron::Image> & originalInputImage,
-                              const boost::shared_ptr<Natron::Image> & maskImage,
-                              const Natron::ImagePremultiplicationEnum originalImagePremultiplication,
-                              ImagePlanesToRender & planes)
+EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
+                                              const unsigned int mipMapLevel,
+                                              const bool renderFullScaleThenDownscale,
+                                              const bool isSequentialRender,
+                                              const bool isRenderResponseToUserInteraction,
+                                              const RectI & renderMappedRectToRender,
+                                              const RectI & downscaledRectToRender,
+                                              const bool byPassCache,
+                                              const bool bitmapMarkedForRendering,
+                                              const Natron::ImageBitDepthEnum outputClipPrefDepth,
+                                              const std::list<Natron::ImageComponents> & outputClipPrefsComps,
+                                              const std::bitset<4>& processChannels,
+                                              const boost::shared_ptr<Natron::Image> & originalInputImage,
+                                              const boost::shared_ptr<Natron::Image> & maskImage,
+                                              const Natron::ImagePremultiplicationEnum originalImagePremultiplication,
+                                              ImagePlanesToRender & planes)
 {
     boost::shared_ptr<TimeLapse> timeRecorder;
 
-    if (frameArgs.stats) {
+    if (tls->frameArgs.stats) {
         timeRecorder.reset( new TimeLapse() );
     }
 
-    const PlaneToRender & firstPlane = planes.planes.begin()->second;
-    const double time = args._time;
-    const int view = args._view;
+    const EffectInstance::PlaneToRender & firstPlane = planes.planes.begin()->second;
+    const double time = tls->currentRenderArgs.time;
+    const int view = tls->currentRenderArgs.view;
 
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
 # ifndef NDEBUG
@@ -2013,64 +2052,72 @@ EffectInstance::renderHandler(RenderArgs & args,
 
     RenderActionArgs actionArgs;
     actionArgs.byPassCache = byPassCache;
-    for (int i = 0; i < 4; ++i) {
-        actionArgs.processChannels[i] = processChannels[i];
-    }
+    actionArgs.processChannels = processChannels;
     actionArgs.mappedScale.x = actionArgs.mappedScale.y = Image::getScaleFromMipMapLevel( firstPlane.renderMappedImage->getMipMapLevel() );
-    assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(actionArgs.mappedScale.x == 1. && actionArgs.mappedScale.y == 1.) ) );
+    assert( !( (_publicInterface->supportsRenderScaleMaybe() == eSupportsNo) && !(actionArgs.mappedScale.x == 1. && actionArgs.mappedScale.y == 1.) ) );
     actionArgs.originalScale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     actionArgs.originalScale.y = actionArgs.originalScale.x;
-    actionArgs.draftMode = frameArgs.draftMode;
+    actionArgs.draftMode = tls->frameArgs.draftMode;
 
     std::list<std::pair<ImageComponents, ImagePtr> > tmpPlanes;
-    bool multiPlanar = isMultiPlanar();
+    bool multiPlanar = _publicInterface->isMultiPlanar();
 
     actionArgs.roi = renderMappedRectToRender;
 
     assert( !outputClipPrefsComps.empty() );
 
-    if (identity) {
+    if (tls->currentRenderArgs.isIdentity) {
         std::list<Natron::ImageComponents> comps;
-        for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
-            comps.push_back( it->second.renderMappedImage->getComponents() );
+        
+        for (std::map<Natron::ImageComponents, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
+            //If color plane, request the preferred comp of the identity input
+            if (tls->currentRenderArgs.identityInput && it->second.renderMappedImage->getComponents().isColorPlane()) {
+                std::list<ImageComponents> prefInputComps;
+                ImageBitDepthEnum prefInputDepth;
+                tls->currentRenderArgs.identityInput->getPreferredDepthAndComponents(-1, &prefInputComps, &prefInputDepth);
+                assert(!prefInputComps.empty());
+                comps.push_back(prefInputComps.front());
+            } else {
+                comps.push_back( it->second.renderMappedImage->getComponents() );
+            }
         }
         assert( !comps.empty() );
         ImageList identityPlanes;
-        RenderRoIArgs renderArgs(identityTime,
-                                 actionArgs.originalScale,
-                                 mipMapLevel,
-                                 view,
-                                 false,
-                                 downscaledRectToRender,
-                                 RectD(),
-                                 comps,
-                                 outputClipPrefDepth,
-                                 false,
-                                 this);
-        if (!identityInput) {
-            for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
+        EffectInstance::RenderRoIArgs renderArgs(tls->currentRenderArgs.identityTime,
+                                                 actionArgs.originalScale,
+                                                 mipMapLevel,
+                                                 view,
+                                                 false,
+                                                 downscaledRectToRender,
+                                                 RectD(),
+                                                 comps,
+                                                 outputClipPrefDepth,
+                                                 false,
+                                                 _publicInterface);
+        if (!tls->currentRenderArgs.identityInput) {
+            for (std::map<Natron::ImageComponents, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                 it->second.renderMappedImage->fillZero(renderMappedRectToRender);
                 it->second.renderMappedImage->markForRendered(renderMappedRectToRender);
                 
-                if ( frameArgs.stats && frameArgs.stats->isInDepthProfilingEnabled() ) {
-                    frameArgs.stats->addRenderInfosForNode( getNode(),  NodePtr(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
+                if ( tls->frameArgs.stats && tls->frameArgs.stats->isInDepthProfilingEnabled() ) {
+                    tls->frameArgs.stats->addRenderInfosForNode( _publicInterface->getNode(),  NodePtr(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
                 }
             }
 
             return eRenderingFunctorRetOK;
         } else {
-            EffectInstance::RenderRoIRetCode renderOk = identityInput->renderRoI(renderArgs, &identityPlanes);
+            EffectInstance::RenderRoIRetCode renderOk = tls->currentRenderArgs.identityInput->renderRoI(renderArgs, &identityPlanes);
             if (renderOk == eRenderRoIRetCodeAborted) {
                 return eRenderingFunctorRetAborted;
             } else if (renderOk == eRenderRoIRetCodeFailed) {
                 return eRenderingFunctorRetFailed;
             } else if ( identityPlanes.empty() ) {
-                for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
+                for (std::map<Natron::ImageComponents, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                     it->second.renderMappedImage->fillZero(renderMappedRectToRender);
                     it->second.renderMappedImage->markForRendered(renderMappedRectToRender);
                     
-                    if ( frameArgs.stats && frameArgs.stats->isInDepthProfilingEnabled() ) {
-                        frameArgs.stats->addRenderInfosForNode( getNode(),  identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
+                    if ( tls->frameArgs.stats && tls->frameArgs.stats->isInDepthProfilingEnabled() ) {
+                        tls->frameArgs.stats->addRenderInfosForNode( _publicInterface->getNode(),  tls->currentRenderArgs.identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
                     }
                 }
 
@@ -2079,7 +2126,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                 assert( identityPlanes.size() == planes.planes.size() );
 
                 ImageList::iterator idIt = identityPlanes.begin();
-                for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it, ++idIt) {
+                for (std::map<Natron::ImageComponents, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it, ++idIt) {
                     if ( renderFullScaleThenDownscale && ( (*idIt)->getMipMapLevel() > it->second.fullscaleImage->getMipMapLevel() ) ) {
                         if ( !(*idIt)->getBounds().contains(renderMappedRectToRender) ) {
                             ///Fill the RoI with 0's as the identity input image might have bounds contained into the RoI
@@ -2091,8 +2138,8 @@ EffectInstance::renderHandler(RenderArgs & args,
                         if ( ( it->second.fullscaleImage->getComponents() != (*idIt)->getComponents() ) || ( it->second.fullscaleImage->getBitDepth() != (*idIt)->getBitDepth() ) ) {
                             sourceImage.reset( new Image(it->second.fullscaleImage->getComponents(), (*idIt)->getRoD(), (*idIt)->getBounds(),
                                                          (*idIt)->getMipMapLevel(), (*idIt)->getPixelAspectRatio(), it->second.fullscaleImage->getBitDepth(), false) );
-                            Natron::ViewerColorSpaceEnum colorspace = getApp()->getDefaultColorSpaceForBitDepth( (*idIt)->getBitDepth() );
-                            Natron::ViewerColorSpaceEnum dstColorspace = getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() );
+                            Natron::ViewerColorSpaceEnum colorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( (*idIt)->getBitDepth() );
+                            Natron::ViewerColorSpaceEnum dstColorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() );
                             (*idIt)->convertToFormat( (*idIt)->getBounds(), colorspace, dstColorspace, 3, false, false, sourceImage.get() );
                         } else {
                             sourceImage = *idIt;
@@ -2115,8 +2162,8 @@ EffectInstance::renderHandler(RenderArgs & args,
 
                         ///Convert format if needed or copy
                         if ( ( it->second.downscaleImage->getComponents() != (*idIt)->getComponents() ) || ( it->second.downscaleImage->getBitDepth() != (*idIt)->getBitDepth() ) ) {
-                            Natron::ViewerColorSpaceEnum colorspace = getApp()->getDefaultColorSpaceForBitDepth( (*idIt)->getBitDepth() );
-                            Natron::ViewerColorSpaceEnum dstColorspace = getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() );
+                            Natron::ViewerColorSpaceEnum colorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( (*idIt)->getBitDepth() );
+                            Natron::ViewerColorSpaceEnum dstColorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() );
                             RectI convertWindow;
                             (*idIt)->getBounds().intersect(downscaledRectToRender, &convertWindow);
                             (*idIt)->convertToFormat( convertWindow, colorspace, dstColorspace, 3, false, false, it->second.downscaleImage.get() );
@@ -2126,8 +2173,8 @@ EffectInstance::renderHandler(RenderArgs & args,
                         it->second.downscaleImage->markForRendered(downscaledRectToRender);
                     }
 
-                    if ( frameArgs.stats && frameArgs.stats->isInDepthProfilingEnabled() ) {
-                        frameArgs.stats->addRenderInfosForNode( getNode(),  identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
+                    if ( tls->frameArgs.stats && tls->frameArgs.stats->isInDepthProfilingEnabled() ) {
+                        tls->frameArgs.stats->addRenderInfosForNode( _publicInterface->getNode(),  tls->currentRenderArgs.identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
                     }
                 }
 
@@ -2136,8 +2183,8 @@ EffectInstance::renderHandler(RenderArgs & args,
         }  //  if (!identityInput) {
     } // if (identity) {
 
-    args._outputPlanes = planes.planes;
-    for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = args._outputPlanes.begin(); it != args._outputPlanes.end(); ++it) {
+    tls->currentRenderArgs.outputPlanes = planes.planes;
+    for (std::map<Natron::ImageComponents, EffectInstance::PlaneToRender>::iterator it = tls->currentRenderArgs.outputPlanes.begin(); it != tls->currentRenderArgs.outputPlanes.end(); ++it) {
         /*
          * When using the cache, allocate a local temporary buffer onto which the plug-in will render, and then safely
          * copy this buffer to the shared (among threads) image.
@@ -2145,13 +2192,13 @@ EffectInstance::renderHandler(RenderArgs & args,
          */
         Natron::ImageComponents prefComp;
         if (multiPlanar) {
-            prefComp = getNode()->findClosestSupportedComponents( -1, it->second.renderMappedImage->getComponents() );
+            prefComp = _publicInterface->getNode()->findClosestSupportedComponents( -1, it->second.renderMappedImage->getComponents() );
         } else {
             prefComp = Node::findClosestInList(it->second.renderMappedImage->getComponents(), outputClipPrefsComps, multiPlanar);
         }
 
         if ( ( it->second.renderMappedImage->usesBitMap() || ( prefComp != it->second.renderMappedImage->getComponents() ) ||
-               ( outputClipPrefDepth != it->second.renderMappedImage->getBitDepth() ) ) && !isPaintingOverItselfEnabled() ) {
+               ( outputClipPrefDepth != it->second.renderMappedImage->getBitDepth() ) ) && !_publicInterface->isPaintingOverItselfEnabled() ) {
             it->second.tmpImage.reset( new Image(prefComp,
                                                  it->second.renderMappedImage->getRoD(),
                                                  actionArgs.roi,
@@ -2167,8 +2214,8 @@ EffectInstance::renderHandler(RenderArgs & args,
 
 
 #if NATRON_ENABLE_TRIMAP
-    if (!bitmapMarkedForRendering && !frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
-        for (std::map<Natron::ImageComponents, PlaneToRender>::iterator it = args._outputPlanes.begin(); it != args._outputPlanes.end(); ++it) {
+    if (!bitmapMarkedForRendering && !tls->frameArgs.canAbort && tls->frameArgs.isRenderResponseToUserInteraction) {
+        for (std::map<Natron::ImageComponents, EffectInstance::PlaneToRender>::iterator it = tls->currentRenderArgs.outputPlanes.begin(); it != tls->currentRenderArgs.outputPlanes.end(); ++it) {
             it->second.renderMappedImage->markForRendering(renderMappedRectToRender);
         }
     }
@@ -2182,7 +2229,7 @@ EffectInstance::renderHandler(RenderArgs & args,
     actionArgs.view = view;
     actionArgs.isSequentialRender = isSequentialRender;
     actionArgs.isRenderResponseToUserInteraction = isRenderResponseToUserInteraction;
-    actionArgs.inputImages = inputImages;
+    actionArgs.inputImages = tls->currentRenderArgs.inputImages;
 
     std::list< std::list<std::pair<ImageComponents, ImagePtr> > > planesLists;
     if (!multiPlanar) {
@@ -2196,35 +2243,35 @@ EffectInstance::renderHandler(RenderArgs & args,
     }
 
     bool renderAborted = false;
-    std::map<Natron::ImageComponents, PlaneToRender> outputPlanes;
+    std::map<Natron::ImageComponents, EffectInstance::PlaneToRender> outputPlanes;
     for (std::list<std::list<std::pair<ImageComponents, ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it) {
         if (!multiPlanar) {
             assert( !it->empty() );
-            args._outputPlaneBeingRendered = it->front().first;
+            tls->currentRenderArgs.outputPlaneBeingRendered = it->front().first;
         }
         actionArgs.outputPlanes = *it;
 
-        Natron::StatusEnum st = render_public(actionArgs);
+        Natron::StatusEnum st = _publicInterface->render_public(actionArgs);
 
-        renderAborted = aborted();
+        renderAborted = aborted(tls);
 
         /*
          * Since new planes can have been allocated on the fly by allocateImagePlaneAndSetInThreadLocalStorage(), refresh
          * the planes map from the thread local storage once the render action is finished
          */
         if ( it == planesLists.begin() ) {
-            outputPlanes = args._outputPlanes;
+            outputPlanes = tls->currentRenderArgs.outputPlanes;
             assert( !outputPlanes.empty() );
         }
 
         if ( (st != eStatusOK) || renderAborted ) {
 #if NATRON_ENABLE_TRIMAP
-            if (!frameArgs.canAbort && frameArgs.isRenderResponseToUserInteraction) {
+            if (!tls->frameArgs.canAbort && tls->frameArgs.isRenderResponseToUserInteraction) {
                 /*
                    At this point, another thread might have already gotten this image from the cache and could end-up
                    using it while it has still pixels marked to PIXEL_UNAVAILABLE, hence clear the bitmap
                  */
-                for (std::map<ImageComponents, PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
+                for (std::map<ImageComponents, EffectInstance::PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
                     it->second.renderMappedImage->clearBitmap(renderMappedRectToRender);
                 }
             }
@@ -2237,17 +2284,17 @@ EffectInstance::renderHandler(RenderArgs & args,
     assert(!renderAborted);
 
     bool unPremultIfNeeded = planes.outputPremult == eImagePremultiplicationPremultiplied;
-    bool useMaskMix = isHostMaskingEnabled() || isHostMixingEnabled();
-    double mix = useMaskMix ? getNode()->getHostMixingValue(time) : 1.;
-    bool doMask = useMaskMix ? getNode()->isMaskEnabled(getMaxInputCount() - 1) : false;
+    bool useMaskMix = _publicInterface->isHostMaskingEnabled() || _publicInterface->isHostMixingEnabled();
+    double mix = useMaskMix ? _publicInterface->getNode()->getHostMixingValue(time) : 1.;
+    bool doMask = useMaskMix ? _publicInterface->getNode()->isMaskEnabled(_publicInterface->getMaxInputCount() - 1) : false;
 
     
     //Check for NaNs, copy to output image and mark for rendered
-    for (std::map<ImageComponents, PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
+    for (std::map<ImageComponents, EffectInstance::PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
         bool unPremultRequired = unPremultIfNeeded && it->second.tmpImage->getComponentsCount() == 4 && it->second.renderMappedImage->getComponentsCount() == 3;
 
-        if ( frameArgs.doNansHandling && it->second.tmpImage->checkForNaNs(actionArgs.roi) ) {
-            QString warning( getNode()->getScriptName_mt_safe().c_str() );
+        if ( tls->frameArgs.doNansHandling && it->second.tmpImage->checkForNaNs(actionArgs.roi) ) {
+            QString warning( _publicInterface->getNode()->getScriptName_mt_safe().c_str() );
             warning.append(": ");
             warning.append( tr("rendered rectangle (") );
             warning.append( QString::number(actionArgs.roi.x1) );
@@ -2259,7 +2306,7 @@ EffectInstance::renderHandler(RenderArgs & args,
             warning.append( QString::number(actionArgs.roi.y2) );
             warning.append(") ");
             warning.append( tr("contains NaN values. They have been converted to 1.") );
-            setPersistentMessage( Natron::eMessageTypeWarning, warning.toStdString() );
+            _publicInterface->setPersistentMessage( Natron::eMessageTypeWarning, warning.toStdString() );
         }
         if (it->second.isAllocatedOnTheFly) {
             ///Plane allocated on the fly only have a temp image if using the cache and it is defined over the render window only
@@ -2269,8 +2316,8 @@ EffectInstance::renderHandler(RenderArgs & args,
                 if ( ( it->second.renderMappedImage->getComponents() != it->second.tmpImage->getComponents() ) ||
                      ( it->second.renderMappedImage->getBitDepth() != it->second.tmpImage->getBitDepth() ) ) {
                     it->second.tmpImage->convertToFormat( it->second.tmpImage->getBounds(),
-                                                          getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
-                                                          getApp()->getDefaultColorSpaceForBitDepth( it->second.renderMappedImage->getBitDepth() ),
+                                                          _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
+                                                          _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.renderMappedImage->getBitDepth() ),
                                                           -1, false, unPremultRequired, it->second.renderMappedImage.get() );
                 } else {
                     it->second.renderMappedImage->pasteFrom(*(it->second.tmpImage), it->second.tmpImage->getBounds(), false);
@@ -2288,7 +2335,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                 
                 if (originalInputImage && originalInputImage->getMipMapLevel() != 0) {
                     
-                    bool mustCopyUnprocessedChannels = it->second.tmpImage->canCallCopyUnPorcessedChannels(processChannels);
+                    bool mustCopyUnprocessedChannels = it->second.tmpImage->canCallCopyUnProcessedChannels(processChannels);
                     if (mustCopyUnprocessedChannels || useMaskMix) {
                         ///there is some processing to be done by copyUnProcessedChannels or applyMaskMix
                         ///but originalInputImage is not in the correct mipMapLevel, upscale it
@@ -2301,7 +2348,7 @@ EffectInstance::renderHandler(RenderArgs & args,
                 }
                 
                 if (mappedOriginalInputImage) {
-                    it->second.tmpImage->copyUnProcessedChannels(renderMappedRectToRender, planes.outputPremult, originalImagePremultiplication,  processChannels, mappedOriginalInputImage);
+                    it->second.tmpImage->copyUnProcessedChannels(renderMappedRectToRender, planes.outputPremult, originalImagePremultiplication, processChannels, mappedOriginalInputImage);
                     if (useMaskMix) {
                         it->second.tmpImage->applyMaskMix(renderMappedRectToRender, maskImage.get(), mappedOriginalInputImage.get(), doMask, false, mix);
                     }
@@ -2314,8 +2361,8 @@ EffectInstance::renderHandler(RenderArgs & args,
                     ImagePtr tmp( new Image(it->second.fullscaleImage->getComponents(), it->second.tmpImage->getRoD(), renderMappedRectToRender, mipMapLevel, it->second.tmpImage->getPixelAspectRatio(), it->second.fullscaleImage->getBitDepth(), false) );
                     
                     it->second.tmpImage->convertToFormat( renderMappedRectToRender,
-                                                         getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
-                                                         getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() ),
+                                                         _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
+                                                         _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() ),
                                                          -1, false, unPremultRequired, tmp.get() );
                     tmp->downscaleMipMap( it->second.tmpImage->getRoD(),
                                          renderMappedRectToRender, 0, mipMapLevel, false, it->second.downscaleImage.get() );
@@ -2333,6 +2380,8 @@ EffectInstance::renderHandler(RenderArgs & args,
                 it->second.fullscaleImage->markForRendered(renderMappedRectToRender);
                 
             } else { // if (renderFullScaleThenDownscale) {
+                
+                
                 ///Copy the rectangle rendered in the downscaled image
                 if (it->second.tmpImage != it->second.downscaleImage) {
                     if ( ( it->second.downscaleImage->getComponents() != it->second.tmpImage->getComponents() ) ||
@@ -2343,8 +2392,8 @@ EffectInstance::renderHandler(RenderArgs & args,
 
 
                         it->second.tmpImage->convertToFormat( it->second.tmpImage->getBounds(),
-                                                              getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
-                                                              getApp()->getDefaultColorSpaceForBitDepth( it->second.downscaleImage->getBitDepth() ),
+                                                              _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
+                                                              _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.downscaleImage->getBitDepth() ),
                                                               -1, false, unPremultRequired, it->second.downscaleImage.get() );
                     } else {
                         /*
@@ -2360,11 +2409,13 @@ EffectInstance::renderHandler(RenderArgs & args,
                     it->second.downscaleImage->applyMaskMix(actionArgs.roi, maskImage.get(), originalInputImage.get(), doMask, false, mix);
                 }
                 it->second.downscaleImage->markForRendered(downscaledRectToRender);
+                
+                
             } // if (renderFullScaleThenDownscale) {
         } // if (it->second.isAllocatedOnTheFly) {
 
-        if ( frameArgs.stats && frameArgs.stats->isInDepthProfilingEnabled() ) {
-            frameArgs.stats->addRenderInfosForNode( getNode(),  NodePtr(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
+        if ( tls->frameArgs.stats && tls->frameArgs.stats->isInDepthProfilingEnabled() ) {
+            tls->frameArgs.stats->addRenderInfosForNode( _publicInterface->getNode(),  NodePtr(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
         }
     } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
 
@@ -2386,52 +2437,49 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const Natron::Image
      * to render and mark that we're a plane allocated on the fly so that the tiledRenderingFunctor can know this is a plane
      * to handle specifically.
      */
-
-    if ( _imp->renderArgs.hasLocalData() ) {
-        RenderArgs & args = _imp->renderArgs.localData();
-        if (args._validArgs) {
-            assert( !args._outputPlanes.empty() );
-
-            const PlaneToRender & firstPlane = args._outputPlanes.begin()->second;
-            bool useCache = firstPlane.fullscaleImage->usesBitMap() || firstPlane.downscaleImage->usesBitMap();
-            if (getNode()->getPluginID().find("uk.co.thefoundry.furnace") != std::string::npos) {
-                //Furnace plug-ins are bugged and do not render properly both planes, just wipe the image.
-                useCache = false;
-            }
-            const ImagePtr & img = firstPlane.fullscaleImage->usesBitMap() ? firstPlane.fullscaleImage : firstPlane.downscaleImage;
-            boost::shared_ptr<ImageParams> params = img->getParams();
-            PlaneToRender p;
-            bool ok = allocateImagePlane(img->getKey(), args._rod, args._renderWindowPixel, args._renderWindowPixel, false, params->getFramesNeeded(), plane, img->getBitDepth(), img->getPixelAspectRatio(), img->getMipMapLevel(), false, false, useCache, &p.fullscaleImage, &p.downscaleImage);
-            if (!ok) {
-                return ImagePtr();
-            } else {
-                p.renderMappedImage = p.downscaleImage;
-                p.isAllocatedOnTheFly = true;
-
-                /*
-                 * Allocate a temporary image for rendering only if using cache
-                 */
-                if (useCache) {
-                    p.tmpImage.reset( new Image(p.renderMappedImage->getComponents(),
-                                                p.renderMappedImage->getRoD(),
-                                                args._renderWindowPixel,
-                                                p.renderMappedImage->getMipMapLevel(),
-                                                p.renderMappedImage->getPixelAspectRatio(),
-                                                p.renderMappedImage->getBitDepth(),
-                                                false) );
-                } else {
-                    p.tmpImage = p.renderMappedImage;
-                }
-                args._outputPlanes.insert( std::make_pair(plane, p) );
-
-                return p.downscaleImage;
-            }
-        } else {
-            return ImagePtr();
-        }
-    } else {
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls || !tls->currentRenderArgs.validArgs) {
         return ImagePtr();
     }
+    
+    assert( !tls->currentRenderArgs.outputPlanes.empty() );
+    
+    const EffectInstance::PlaneToRender & firstPlane = tls->currentRenderArgs.outputPlanes.begin()->second;
+    bool useCache = firstPlane.fullscaleImage->usesBitMap() || firstPlane.downscaleImage->usesBitMap();
+    if (getNode()->getPluginID().find("uk.co.thefoundry.furnace") != std::string::npos) {
+        //Furnace plug-ins are bugged and do not render properly both planes, just wipe the image.
+        useCache = false;
+    }
+    const ImagePtr & img = firstPlane.fullscaleImage->usesBitMap() ? firstPlane.fullscaleImage : firstPlane.downscaleImage;
+    boost::shared_ptr<ImageParams> params = img->getParams();
+    EffectInstance::PlaneToRender p;
+    bool ok = allocateImagePlane(img->getKey(), tls->currentRenderArgs.rod, tls->currentRenderArgs.renderWindowPixel, tls->currentRenderArgs.renderWindowPixel, false, params->getFramesNeeded(), plane, img->getBitDepth(), img->getPixelAspectRatio(), img->getMipMapLevel(), false, false, useCache, &p.fullscaleImage, &p.downscaleImage);
+    if (!ok) {
+        return ImagePtr();
+    } else {
+        p.renderMappedImage = p.downscaleImage;
+        p.isAllocatedOnTheFly = true;
+        
+        /*
+         * Allocate a temporary image for rendering only if using cache
+         */
+        if (useCache) {
+            p.tmpImage.reset( new Image(p.renderMappedImage->getComponents(),
+                                        p.renderMappedImage->getRoD(),
+                                        tls->currentRenderArgs.renderWindowPixel,
+                                        p.renderMappedImage->getMipMapLevel(),
+                                        p.renderMappedImage->getPixelAspectRatio(),
+                                        p.renderMappedImage->getBitDepth(),
+                                        false) );
+        } else {
+            p.tmpImage = p.renderMappedImage;
+        }
+        tls->currentRenderArgs.outputPlanes.insert( std::make_pair(plane, p) );
+        
+        return p.downscaleImage;
+    }
+
+  
 } // allocateImagePlaneAndSetInThreadLocalStorage
 
 void
@@ -2517,6 +2565,9 @@ EffectInstance::evaluate(KnobI* knob,
         abortAnyEvaluation();
         node->incrementKnobsAge();
         node->refreshIdentityState();
+        
+        //Clear any persitent message, the user might have unlocked the situation 
+        //node->clearPersistentMessage(false);
     }
 
     
@@ -2713,8 +2764,8 @@ EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
 
 void
 EffectInstance::drawOverlay_public(double time,
-                                   double scaleX,
-                                   double scaleY)
+                                   const RenderScale & renderScale,
+                                   int view)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2725,15 +2776,15 @@ EffectInstance::drawOverlay_public(double time,
     RECURSIVE_ACTION();
 
     _imp->setDuringInteractAction(true);
-    drawOverlay(time, scaleX, scaleY);
-    getNode()->drawHostOverlay(time, scaleX, scaleY);
+    drawOverlay(time, renderScale, view);
+    getNode()->drawHostOverlay(time, renderScale);
     _imp->setDuringInteractAction(false);
 }
 
 bool
 EffectInstance::onOverlayPenDown_public(double time,
-                                        double scaleX,
-                                        double scaleY,
+                                        const RenderScale & renderScale,
+                                        int view,
                                         const QPointF & viewportPos,
                                         const QPointF & pos,
                                         double pressure)
@@ -2748,9 +2799,9 @@ EffectInstance::onOverlayPenDown_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenDown(time, scaleX, scaleY, viewportPos, pos, pressure);
+        ret = onOverlayPenDown(time, renderScale, view, viewportPos, pos, pressure);
         if (!ret) {
-            ret |= getNode()->onOverlayPenDownDefault(scaleX, scaleY, viewportPos, pos, pressure);
+            ret |= getNode()->onOverlayPenDownDefault(renderScale, viewportPos, pos, pressure);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2761,8 +2812,8 @@ EffectInstance::onOverlayPenDown_public(double time,
 
 bool
 EffectInstance::onOverlayPenMotion_public(double time,
-                                          double scaleX,
-                                          double scaleY,
+                                          const RenderScale & renderScale,
+                                          int view,
                                           const QPointF & viewportPos,
                                           const QPointF & pos,
                                           double pressure)
@@ -2776,9 +2827,9 @@ EffectInstance::onOverlayPenMotion_public(double time,
 
     NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayPenMotion(time, scaleX, scaleY, viewportPos, pos, pressure);
+    bool ret = onOverlayPenMotion(time, renderScale, view, viewportPos, pos, pressure);
     if (!ret) {
-        ret |= getNode()->onOverlayPenMotionDefault(scaleX, scaleY, viewportPos, pos, pressure);
+        ret |= getNode()->onOverlayPenMotionDefault(renderScale, viewportPos, pos, pressure);
     }
     _imp->setDuringInteractAction(false);
     //Don't chek if render is needed on pen motion, wait for the pen up
@@ -2789,8 +2840,8 @@ EffectInstance::onOverlayPenMotion_public(double time,
 
 bool
 EffectInstance::onOverlayPenUp_public(double time,
-                                      double scaleX,
-                                      double scaleY,
+                                      const RenderScale & renderScale,
+                                      int view,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
                                       double pressure)
@@ -2804,9 +2855,9 @@ EffectInstance::onOverlayPenUp_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenUp(time, scaleX, scaleY, viewportPos, pos, pressure);
+        ret = onOverlayPenUp(time, renderScale, view, viewportPos, pos, pressure);
         if (!ret) {
-            ret |= getNode()->onOverlayPenUpDefault(scaleX, scaleY, viewportPos, pos, pressure);
+            ret |= getNode()->onOverlayPenUpDefault(renderScale, viewportPos, pos, pressure);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2817,8 +2868,8 @@ EffectInstance::onOverlayPenUp_public(double time,
 
 bool
 EffectInstance::onOverlayKeyDown_public(double time,
-                                        double scaleX,
-                                        double scaleY,
+                                        const RenderScale & renderScale,
+                                        int view,
                                         Natron::Key key,
                                         Natron::KeyboardModifiers modifiers)
 {
@@ -2832,9 +2883,9 @@ EffectInstance::onOverlayKeyDown_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyDown(time, scaleX, scaleY, key, modifiers);
+        ret = onOverlayKeyDown(time, renderScale, view, key, modifiers);
         if (!ret) {
-            ret |= getNode()->onOverlayKeyDownDefault(scaleX, scaleY, key, modifiers);
+            ret |= getNode()->onOverlayKeyDownDefault(renderScale, key, modifiers);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2845,8 +2896,8 @@ EffectInstance::onOverlayKeyDown_public(double time,
 
 bool
 EffectInstance::onOverlayKeyUp_public(double time,
-                                      double scaleX,
-                                      double scaleY,
+                                      const RenderScale & renderScale,
+                                      int view,
                                       Natron::Key key,
                                       Natron::KeyboardModifiers modifiers)
 {
@@ -2861,9 +2912,9 @@ EffectInstance::onOverlayKeyUp_public(double time,
         NON_RECURSIVE_ACTION();
 
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyUp(time, scaleX, scaleY, key, modifiers);
+        ret = onOverlayKeyUp(time, renderScale, view, key, modifiers);
         if (!ret) {
-            ret |= getNode()->onOverlayKeyUpDefault(scaleX, scaleY, key, modifiers);
+            ret |= getNode()->onOverlayKeyUpDefault(renderScale, key, modifiers);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2874,8 +2925,8 @@ EffectInstance::onOverlayKeyUp_public(double time,
 
 bool
 EffectInstance::onOverlayKeyRepeat_public(double time,
-                                          double scaleX,
-                                          double scaleY,
+                                          const RenderScale & renderScale,
+                                          int view,
                                           Natron::Key key,
                                           Natron::KeyboardModifiers modifiers)
 {
@@ -2889,9 +2940,9 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayKeyRepeat(time, scaleX, scaleY, key, modifiers);
+        ret = onOverlayKeyRepeat(time, renderScale, view, key, modifiers);
         if (!ret) {
-            ret |= getNode()->onOverlayKeyRepeatDefault(scaleX, scaleY, key, modifiers);
+            ret |= getNode()->onOverlayKeyRepeatDefault(renderScale, key, modifiers);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2902,8 +2953,8 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
 
 bool
 EffectInstance::onOverlayFocusGained_public(double time,
-                                            double scaleX,
-                                            double scaleY)
+                                            const RenderScale & renderScale,
+                                            int view)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2915,9 +2966,9 @@ EffectInstance::onOverlayFocusGained_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayFocusGained(time, scaleX, scaleY);
+        ret = onOverlayFocusGained(time, renderScale, view);
         if (!ret) {
-            ret |= getNode()->onOverlayFocusGainedDefault(scaleX, scaleY);
+            ret |= getNode()->onOverlayFocusGainedDefault(renderScale);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2928,8 +2979,8 @@ EffectInstance::onOverlayFocusGained_public(double time,
 
 bool
 EffectInstance::onOverlayFocusLost_public(double time,
-                                          double scaleX,
-                                          double scaleY)
+                                          const RenderScale & renderScale,
+                                          int view)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2940,9 +2991,9 @@ EffectInstance::onOverlayFocusLost_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayFocusLost(time, scaleX, scaleY);
+        ret = onOverlayFocusLost(time, renderScale, view);
         if (!ret) {
-            ret |= getNode()->onOverlayFocusLostDefault(scaleX, scaleY);
+            ret |= getNode()->onOverlayFocusLostDefault(renderScale);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2963,8 +3014,6 @@ Natron::StatusEnum
 EffectInstance::render_public(const RenderActionArgs & args)
 {
     NON_RECURSIVE_ACTION();
-    EffectPointerThreadProperty_RAII propHolder_raii(this);
-
     return render(args);
 }
 
@@ -2976,7 +3025,7 @@ EffectInstance::getTransform_public(double time,
                                     Transform::Matrix3x3* transform)
 {
     RECURSIVE_ACTION();
-    assert( getCanTransform() );
+    assert( getNode()->getCurrentCanTransform() );
 
     return getTransform(time, renderScale, view, inputToTransform, transform);
 }
@@ -3004,16 +3053,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             return *inputNb >= 0 || *inputNb == -2;
         }
     }
-    ///If this is running on a render thread, attempt to find the info in the thread local storage.
-    if ( ( QThread::currentThread() != qApp->thread() ) && _imp->renderArgs.hasLocalData() ) {
-        const RenderArgs & args = _imp->renderArgs.localData();
-        if (args._validArgs) {
-            *inputNb = args._identityInputNb;
-            *inputTime = args._identityTime;
-
-            return *inputNb != -1;
-        }
-    }
+   
 
     ///EDIT: We now allow isIdentity to be called recursively.
     RECURSIVE_ACTION();
@@ -3101,19 +3141,19 @@ EffectInstance::getRegionOfDefinition_publicInternal(U64 hash,
         return Natron::eStatusOK;
     } else {
         ///If this is running on a render thread, attempt to find the RoD in the thread local storage.
-        if ( ( QThread::currentThread() != qApp->thread() ) && _imp->renderArgs.hasLocalData() ) {
-            const RenderArgs & args = _imp->renderArgs.localData();
-            if (args._validArgs) {
-                *rod = args._rod;
+        
+        if (QThread::currentThread() != qApp->thread()) {
+            
+            EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+            if (tls && tls->currentRenderArgs.validArgs) {
+                *rod = tls->currentRenderArgs.rod;
                 *isProjectFormat = false;
-
                 return Natron::eStatusOK;
             }
         }
 
         Natron::StatusEnum ret;
-        RenderScale scaleOne;
-        scaleOne.x = scaleOne.y = 1.;
+        RenderScale scaleOne(1.);
         {
             RECURSIVE_ACTION();
 
@@ -3232,11 +3272,11 @@ EffectInstance::getFrameRange_public(U64 hash,
         *last = std::floor(fLast + 0.5);
     } else {
         ///If this is running on a render thread, attempt to find the info in the thread local storage.
-        if ( ( QThread::currentThread() != qApp->thread() ) && _imp->renderArgs.hasLocalData() ) {
-            const RenderArgs & args = _imp->renderArgs.localData();
-            if (args._validArgs) {
-                *first = args._firstFrame;
-                *last = args._lastFrame;
+        if (QThread::currentThread() != qApp->thread()) {
+            EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+            if (tls && tls->currentRenderArgs.validArgs) {
+                *first = tls->currentRenderArgs.firstFrame;
+                *last = tls->currentRenderArgs.lastFrame;
 
                 return;
             }
@@ -3260,14 +3300,9 @@ EffectInstance::beginSequenceRender_public(double first,
                                            int view)
 {
     NON_RECURSIVE_ACTION();
-    {
-        if ( !_imp->beginEndRenderCount.hasLocalData() ) {
-            _imp->beginEndRenderCount.localData() = 1;
-        } else {
-            ++_imp->beginEndRenderCount.localData();
-        }
-    }
-
+    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    assert(tls);
+    ++tls->beginEndRenderCount;
     return beginSequenceRender(first, last, step, interactive, scale,
                                isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
 }
@@ -3284,12 +3319,10 @@ EffectInstance::endSequenceRender_public(double first,
                                          int view)
 {
     NON_RECURSIVE_ACTION();
-    {
-        assert( _imp->beginEndRenderCount.hasLocalData() );
-        --_imp->beginEndRenderCount.localData();
-        assert(_imp->beginEndRenderCount.localData() >= 0);
-    }
-
+    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    assert(tls);
+    --tls->beginEndRenderCount;
+    assert(tls->beginEndRenderCount >= 0);
     return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
 }
 
@@ -3301,9 +3334,9 @@ EffectInstance::isSupportedComponent(int inputNb,
 }
 
 Natron::ImageBitDepthEnum
-EffectInstance::getBitDepth() const
+EffectInstance::getBestSupportedBitDepth() const
 {
-    return getNode()->getBitDepth();
+    return getNode()->getBestSupportedBitDepth();
 }
 
 bool
@@ -3319,41 +3352,7 @@ EffectInstance::findClosestSupportedComponents(int inputNb,
     return getNode()->findClosestSupportedComponents(inputNb, comp);
 }
 
-void
-EffectInstance::getPreferredDepthAndComponents(int inputNb,
-                                               std::list<Natron::ImageComponents>* comp,
-                                               Natron::ImageBitDepthEnum* depth) const
-{
-    EffectInstance* inp = 0;
-    std::list<Natron::ImageComponents> inputComps;
 
-    if (inputNb != -1) {
-        inp = getInput(inputNb);
-        if (inp) {
-            Natron::ImageBitDepthEnum depth;
-            inp->getPreferredDepthAndComponents(-1, &inputComps, &depth);
-        }
-    } else {
-        int index = getNode()->getPreferredInput();
-        if (index != -1) {
-            Natron::EffectInstance* input = getInput(index);
-            if (input) {
-                Natron::ImageBitDepthEnum inputDepth;
-                input->getPreferredDepthAndComponents(-1, &inputComps, &inputDepth);
-            }
-        }
-    }
-    if ( inputComps.empty() ) {
-        inputComps.push_back( ImageComponents::getNoneComponents() );
-    }
-    for (std::list<Natron::ImageComponents>::iterator it = inputComps.begin(); it != inputComps.end(); ++it) {
-        comp->push_back( findClosestSupportedComponents(inputNb, *it) );
-    }
-
-
-    ///find deepest bitdepth
-    *depth = getBitDepth();
-}
 
 void
 EffectInstance::clearActionsCache()
@@ -3369,59 +3368,10 @@ EffectInstance::setComponentsAvailableDirty(bool dirty)
     _imp->componentsAvailableDirty = dirty;
 }
 
-void
-EffectInstance::getNonMaskInputsAvailableComponents(double time,
-                                                    int view,
-                                                    bool preferExistingComponents,
-                                                    ComponentsAvailableMap* comps,
-                                                    std::list<Natron::EffectInstance*>* markedNodes)
-{
-    NodePtr node  = getNode();
-
-    if (!node) {
-        return;
-    }
-    int preferredInput = node->getPreferredInput();
-
-    //Call recursively on all inputs which are not masks
-    int maxInputs = getMaxInputCount();
-    for (int i = 0; i < maxInputs; ++i) {
-        if ( !isInputMask(i) && !isInputRotoBrush(i) ) {
-            EffectInstance* input = getInput(i);
-            if (input) {
-                ComponentsAvailableMap inputAvailComps;
-                input->getComponentsAvailableRecursive(true, time, view, &inputAvailComps, markedNodes);
-                for (ComponentsAvailableMap::iterator it = inputAvailComps.begin(); it != inputAvailComps.end(); ++it) {
-                    //If the component is already present in the 'comps' map, only add it if we are the preferred input
-                    ComponentsAvailableMap::iterator colorMatch = comps->end();
-                    bool found = false;
-                    for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
-                        if (it2->first == it->first) {
-                            if ( (i == preferredInput) && !preferExistingComponents ) {
-                                it2->second = node;
-                            }
-                            found = true;
-                            break;
-                        } else if ( it2->first.isColorPlane() ) {
-                            colorMatch = it2;
-                        }
-                    }
-                    if (!found) {
-                        if ( ( colorMatch != comps->end() ) && it->first.isColorPlane() ) {
-                            //we found another color components type, skip
-                            continue;
-                        } else {
-                            comps->insert(*it);
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
 void
-EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice, 
+EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
+                                                bool useThisNodeComponentsNeeded,
                                                 double time,
                                                 int view,
                                                 ComponentsAvailableMap* comps,
@@ -3431,7 +3381,7 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
         return;
     }
 
-    if (useLayerChoice) {
+    if (useLayerChoice && useThisNodeComponentsNeeded) {
         QMutexLocker k(&_imp->componentsAvailableMutex);
         if (!_imp->componentsAvailableDirty) {
             comps->insert( _imp->outputComponentsAvailable.begin(), _imp->outputComponentsAvailable.end() );
@@ -3444,36 +3394,28 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
     if (!node) {
         return;
     }
-    ComponentsNeededMap neededComps;
+    EffectInstance::ComponentsNeededMap neededComps;
     SequenceTime ptTime;
     int ptView;
     NodePtr ptInput;
     bool processAll;
-    bool processChannels[4];
-    getComponentsNeededAndProduced_public(useLayerChoice, time, view, &neededComps, &processAll, &ptTime, &ptView, processChannels, &ptInput);
+    std::bitset<4> processChannels;
+    getComponentsNeededAndProduced_public(useLayerChoice, useThisNodeComponentsNeeded, time, view, &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
+
 
     ///If the plug-in is not pass-through, only consider the components processed by the plug-in in output,
     ///so we do not need to recurse.
     PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
-    if ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) || (passThrough == ePassThroughRenderAllRequestedPlanes) ) {
-        bool doHeuristicForPassThrough = false;
-        if ( isMultiPlanar() ) {
-            if (!ptInput) {
-                doHeuristicForPassThrough = true;
-            }
-        } else {
-            doHeuristicForPassThrough = true;
+    if (passThrough == ePassThroughPassThroughNonRenderedPlanes ||
+        passThrough == ePassThroughRenderAllRequestedPlanes) {
+
+        if (!isMultiPlanar() || !ptInput) {
+            ptInput = node->getInput(node->getPreferredInput());
         }
 
-        if (doHeuristicForPassThrough) {
-            ptInput = node->getInput(node->getPreferredInput());
-            //getNonMaskInputsAvailableComponents(time, view, false, comps, markedNodes);
-        }
-        //else {
         if (ptInput) {
-            ptInput->getLiveInstance()->getComponentsAvailableRecursive(useLayerChoice, time, view, comps, markedNodes);
+            ptInput->getLiveInstance()->getComponentsAvailableRecursive(useLayerChoice, true, time, view, comps, markedNodes);
         }
-        //}
     }
     if (processAll) {
         //The node makes available everything available upstream
@@ -3485,7 +3427,7 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
     }
 
 
-    ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
+   EffectInstance::ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
     if ( foundOutput != neededComps.end() ) {
         ///Foreach component produced by the node at the given (view,time),  try
         ///to add it to the components available. Since we already handled upstream nodes, it is probably
@@ -3526,16 +3468,20 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
                 alreadyExisting->second = node;
             }
         }
+    }
 
-
-        ///If the user has selected "All", do not add created components as they will not be available
-        if (!processAll) {
-            std::list<ImageComponents> userComps;
-            node->getUserCreatedComponents(&userComps);
-            ///Foreach user component, add it as an available component, but use this node only if it is also
-            ///in the "needed components" list
-            for (std::list<ImageComponents>::iterator it = userComps.begin(); it != userComps.end(); ++it) {
-                bool found = false;
+    ///If the user has selected "All", do not add created components as they will not be available
+    if (!processAll) {
+        std::list<ImageComponents> userComps;
+        node->getUserCreatedComponents(&userComps);
+        ///Foreach user component, add it as an available component, but use this node only if it is also
+        ///in the "needed components" list
+        for (std::list<ImageComponents>::iterator it = userComps.begin(); it != userComps.end(); ++it) {
+            
+            
+            ///If this is a user comp and used by the node it will be in the needed output components
+            bool found = false;
+            if (foundOutput != neededComps.end()) {
                 for (std::vector<Natron::ImageComponents>::iterator it2 = foundOutput->second.begin();
                      it2 != foundOutput->second.end(); ++it2) {
                     if (*it2 == *it) {
@@ -3543,42 +3489,48 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
                         break;
                     }
                 }
+            }
+            
+            
+            ComponentsAvailableMap::iterator alreadyExisting = comps->end();
+            
+            if ( it->isColorPlane() ) {
+                ComponentsAvailableMap::iterator colorMatch = comps->end();
                 
-                
-                ComponentsAvailableMap::iterator alreadyExisting = comps->end();
-                
-                if ( it->isColorPlane() ) {
-                    ComponentsAvailableMap::iterator colorMatch = comps->end();
-                    
-                    for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
-                        if (it2->first == *it) {
-                            alreadyExisting = it2;
-                            break;
-                        } else if ( it2->first.isColorPlane() ) {
-                            colorMatch = it2;
-                        }
+                for (ComponentsAvailableMap::iterator it2 = comps->begin(); it2 != comps->end(); ++it2) {
+                    if (it2->first == *it) {
+                        alreadyExisting = it2;
+                        break;
+                    } else if ( it2->first.isColorPlane() ) {
+                        colorMatch = it2;
                     }
-                    
-                    if ( ( alreadyExisting == comps->end() ) && ( colorMatch != comps->end() ) ) {
-                        comps->erase(colorMatch);
-                    }
-                } else {
-                    alreadyExisting = comps->find(*it);
                 }
                 
-                //If the component already exists from above in the tree, do not add it
-                if ( alreadyExisting == comps->end() ) {
-                    comps->insert( std::make_pair( *it, (found) ? node : NodePtr() ) );
-                } else {
+                if ( ( alreadyExisting == comps->end() ) && ( colorMatch != comps->end() ) ) {
+                    comps->erase(colorMatch);
+                }
+            } else {
+                alreadyExisting = comps->find(*it);
+            }
+            
+            ///If the component already exists from above in the tree, do not add it
+            if ( alreadyExisting == comps->end() ) {
+                comps->insert( std::make_pair( *it, (found) ? node : NodePtr() ) );
+            } else {
+                ///The user component may very well have been created on a node upstream
+                ///Set the component as available only if the node uses it actively,i.e if
+                ///it was found in the needed output components
+                if (found) {
                     alreadyExisting->second = node;
                 }
             }
         }
     }
+    
     markedNodes->push_back(this);
 
     
-    if (useLayerChoice) {
+    if (useLayerChoice && useThisNodeComponentsNeeded) {
         QMutexLocker k(&_imp->componentsAvailableMutex);
         _imp->componentsAvailableDirty = false;
         _imp->outputComponentsAvailable = *comps;
@@ -3587,15 +3539,17 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
 
 void
 EffectInstance::getComponentsAvailable(bool useLayerChoice,
+                                       bool useThisNodeComponentsNeeded,
                                        double time,
                                        ComponentsAvailableMap* comps,
                                        std::list<Natron::EffectInstance*>* markedNodes)
 {
-    getComponentsAvailableRecursive(useLayerChoice, time, 0, comps, markedNodes);
+    getComponentsAvailableRecursive(useLayerChoice, useThisNodeComponentsNeeded, time, 0, comps, markedNodes);
 }
 
 void
 EffectInstance::getComponentsAvailable(bool useLayerChoice,
+                                       bool useThisNodeComponentsNeeded,
                                        double time,
                                        ComponentsAvailableMap* comps)
 {
@@ -3606,7 +3560,7 @@ EffectInstance::getComponentsAvailable(bool useLayerChoice,
     ///Edit: Just call for 1 view, it should not matter as this should be view agnostic.
     std::list<Natron::EffectInstance*> marks;
 
-    getComponentsAvailableRecursive(useLayerChoice, time, 0, comps, &marks);
+    getComponentsAvailableRecursive(useLayerChoice, useThisNodeComponentsNeeded, time, 0, comps, &marks);
 
     //}
 }
@@ -3614,7 +3568,7 @@ EffectInstance::getComponentsAvailable(bool useLayerChoice,
 void
 EffectInstance::getComponentsNeededAndProduced(double time,
                                                int view,
-                                               ComponentsNeededMap* comps,
+                                              EffectInstance::ComponentsNeededMap* comps,
                                                SequenceTime* passThroughTime,
                                                int* passThroughView,
                                                boost::shared_ptr<Natron::Node>* passThroughInput)
@@ -3667,93 +3621,91 @@ EffectInstance::getComponentsNeededAndProduced(double time,
 
 void
 EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
+                                                      bool useThisNodeComponentsNeeded,
                                                       double time,
                                                       int view,
-                                                      ComponentsNeededMap* comps,
+                                                      EffectInstance::ComponentsNeededMap* comps,
                                                       bool* processAllRequested,
                                                       SequenceTime* passThroughTime,
                                                       int* passThroughView,
-                                                      bool* processChannels,
+                                                      std::bitset<4> *processChannels,
                                                       boost::shared_ptr<Natron::Node>* passThroughInput)
 
 {
     RECURSIVE_ACTION();
 
     if ( isMultiPlanar() ) {
-        processChannels[0] = processChannels[1] = processChannels[2] = processChannels[3] = true;
-        getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInput);
+        (*processChannels)[0] = (*processChannels)[1] = (*processChannels)[2] = (*processChannels)[3] = true;
+        if (useThisNodeComponentsNeeded) {
+            getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInput);
+        }
         *processAllRequested = false;
-    } else {
-        *passThroughTime = time;
-        *passThroughView = view;
-        int idx = getNode()->getPreferredInput();
-        *passThroughInput = getNode()->getInput(idx);
-
-        {
-            ImageComponents layer;
-            std::vector<ImageComponents> compVec;
-            bool ok = false;
-            if (useLayerChoice) {
-                ok = getNode()->getSelectedLayer(-1, processChannels, processAllRequested, &layer);
-            }
-            ImageBitDepthEnum depth;
-            std::list<ImageComponents> clipPrefsComps;
-            getPreferredDepthAndComponents(-1, &clipPrefsComps, &depth);
-
-            if (ok && layer.getNumComponents() != 0 && !layer.isColorPlane()) {
-                
-                compVec.push_back(layer);
-                
-                for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
-                    if (!(*it).isColorPlane()) {
-                        compVec.push_back(*it);
-                    }
-                }
-                
-            } else {
-                for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
+        return;
+    }
+    
+    
+    *passThroughTime = time;
+    *passThroughView = view;
+    int idx = getNode()->getPreferredInput();
+    *passThroughInput = getNode()->getInput(idx);
+    
+    if (!useThisNodeComponentsNeeded) {
+        return;
+    }
+        
+    ///Get the output needed components
+    {
+        ImageComponents layer;
+        std::vector<ImageComponents> compVec;
+        bool ok = false;
+        if (useLayerChoice) {
+            ok = getNode()->getSelectedLayer(-1, processChannels, processAllRequested, &layer);
+        }
+        ImageBitDepthEnum depth;
+        std::list<ImageComponents> clipPrefsComps;
+        getPreferredDepthAndComponents(-1, &clipPrefsComps, &depth);
+        
+        if (ok && layer.getNumComponents() != 0 && !layer.isColorPlane()) {
+            
+            compVec.push_back(layer);
+            
+            for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
+                if (!(*it).isColorPlane()) {
                     compVec.push_back(*it);
                 }
-            } 
-           
-            comps->insert( std::make_pair(-1, compVec) );
+            }
+            
+        } else {
+            for (std::list<ImageComponents>::iterator it = clipPrefsComps.begin(); it != clipPrefsComps.end(); ++it) {
+                compVec.push_back(*it);
+            }
         }
-
-        int maxInput = getMaxInputCount();
-        for (int i = 0; i < maxInput; ++i) {
-            EffectInstance* input = getInput(i);
-            bool isRotoInput = isInputRotoBrush(i);
-            if (isRotoInput) {
-                ///Copy for the roto input the output needed comps
-                comps->insert(std::make_pair(i, comps->at(-1)));
-            } else if (input) {
-                std::vector<ImageComponents> compVec;
-                bool inputProcChannels[4];
-                ImageComponents layer;
-                bool isAll;
-                bool ok = getNode()->getSelectedLayer(i, inputProcChannels, &isAll, &layer);
-                ImageComponents maskComp;
-                NodePtr maskInput;
-                int channelMask = getNode()->getMaskChannel(i, &maskComp, &maskInput);
-
-                if (ok && !isAll) {
-                    if ( !layer.isColorPlane() ) {
-                        compVec.push_back(layer);
-                    } else {
-                        //Use regular clip preferences
-                        ImageBitDepthEnum depth;
-                        std::list<ImageComponents> components;
-                        getPreferredDepthAndComponents(i, &components, &depth);
-                        for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
-                            //if (it->isColorPlane()) {
-                            compVec.push_back(*it);
-                            //}
-                        }
-                    }
-                } else if ( (channelMask != -1) && (maskComp.getNumComponents() > 0) ) {
-                    std::vector<ImageComponents> compVec;
-                    compVec.push_back(maskComp);
-                    comps->insert( std::make_pair(i, compVec) );
+        
+        comps->insert( std::make_pair(-1, compVec) );
+    }
+    
+    ///For each input get their needed components
+    int maxInput = getMaxInputCount();
+    for (int i = 0; i < maxInput; ++i) {
+        EffectInstance* input = getInput(i);
+        bool isRotoInput = isInputRotoBrush(i);
+        if (isRotoInput) {
+            ///Copy for the roto input the output needed comps
+            assert(comps->find(-1) != comps->end());
+            comps->insert(std::make_pair(i, (*comps)[-1])); // note: map::at() does not exist in C++98
+        } else if (input) {
+            std::vector<ImageComponents> compVec;
+            std::bitset<4> inputProcChannels;
+            ImageComponents layer;
+            bool isAll;
+            bool ok = getNode()->getSelectedLayer(i, &inputProcChannels, &isAll, &layer);
+            ImageComponents maskComp;
+            NodePtr maskInput;
+            int channelMask = getNode()->getMaskChannel(i, &maskComp, &maskInput);
+            
+            if (ok && !isAll) {
+                if ( !layer.isColorPlane() ) {
+                    compVec.push_back(layer);
                 } else {
                     //Use regular clip preferences
                     ImageBitDepthEnum depth;
@@ -3765,10 +3717,25 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
                         //}
                     }
                 }
+            } else if ( (channelMask != -1) && (maskComp.getNumComponents() > 0) ) {
+                std::vector<ImageComponents> compVec;
+                compVec.push_back(maskComp);
                 comps->insert( std::make_pair(i, compVec) );
+            } else {
+                //Use regular clip preferences
+                ImageBitDepthEnum depth;
+                std::list<ImageComponents> components;
+                getPreferredDepthAndComponents(i, &components, &depth);
+                for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
+                    //if (it->isColorPlane()) {
+                    compVec.push_back(*it);
+                    //}
+                }
             }
+            comps->insert( std::make_pair(i, compVec) );
         }
     }
+    
 } // EffectInstance::getComponentsNeededAndProduced_public
 
 int
@@ -3795,35 +3762,31 @@ EffectInstance::onKnobValueChanged(KnobI* /*k*/,
 
 
 bool
-EffectInstance::getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents, PlaneToRender> *outputPlanes,
+EffectInstance::getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents, EffectInstance::PlaneToRender> *outputPlanes,
                                              Natron::ImageComponents* planeBeingRendered,
                                              RectI* renderWindow) const
 {
-    if ( _imp->renderArgs.hasLocalData() ) {
-        const RenderArgs & args = _imp->renderArgs.localData();
-        if (args._validArgs) {
-            assert( !args._outputPlanes.empty() );
-            *planeBeingRendered = args._outputPlaneBeingRendered;
-            *outputPlanes = args._outputPlanes;
-            *renderWindow = args._renderWindowPixel;
-
-            return true;
-        }
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (tls && tls->currentRenderArgs.validArgs) {
+        assert( !tls->currentRenderArgs.outputPlanes.empty() );
+        *planeBeingRendered = tls->currentRenderArgs.outputPlaneBeingRendered;
+        *outputPlanes = tls->currentRenderArgs.outputPlanes;
+        *renderWindow = tls->currentRenderArgs.renderWindowPixel;
+        
+        return true;
     }
 
     return false;
 }
 
 bool
-EffectInstance::getThreadLocalNeededComponents(EffectInstance::ComponentsNeededMap* neededComps) const
+EffectInstance::getThreadLocalNeededComponents(boost::shared_ptr<ComponentsNeededMap>* neededComps) const
 {
-    if ( _imp->renderArgs.hasLocalData() ) {
-        const RenderArgs & args = _imp->renderArgs.localData();
-        if (args._validArgs) {
-            assert( !args._outputPlanes.empty() );
-            *neededComps = args._compsNeeded;
-            return true;
-        }
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (tls && tls->currentRenderArgs.validArgs) {
+        assert( !tls->currentRenderArgs.outputPlanes.empty() );
+        *neededComps = tls->currentRenderArgs.compsNeeded;
+        return true;
     }
     
     return false;
@@ -3832,10 +3795,10 @@ EffectInstance::getThreadLocalNeededComponents(EffectInstance::ComponentsNeededM
 void
 EffectInstance::updateThreadLocalRenderTime(double time)
 {
-    if ( ( QThread::currentThread() != qApp->thread() ) && _imp->renderArgs.hasLocalData() ) {
-        RenderArgs & args = _imp->renderArgs.localData();
-        if (args._validArgs) {
-            args._time = time;
+    if (QThread::currentThread() != qApp->thread()) {
+        EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+        if (tls && tls->currentRenderArgs.validArgs) {
+            tls->currentRenderArgs.time = time;
         }
     }
 }
@@ -3843,27 +3806,30 @@ EffectInstance::updateThreadLocalRenderTime(double time)
 bool
 EffectInstance::isDuringPaintStrokeCreationThreadLocal() const
 {
-    if ( _imp->frameRenderArgs.hasLocalData() ) {
-        const ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
-        if (args.validArgs) {
-            return args.isDuringPaintStrokeCreation;
-        }
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (tls && tls->frameArgs.validArgs) {
+        return tls->frameArgs.isDuringPaintStrokeCreation;
     }
 
     return getNode()->isDuringPaintStrokeCreation();
 }
 
-Natron::RenderSafetyEnum
-EffectInstance::getCurrentThreadSafetyThreadLocal() const
+void
+EffectInstance::redrawOverlayInteract()
 {
-    if ( _imp->frameRenderArgs.hasLocalData() ) {
-        const ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
-        if (args.validArgs) {
-            return args.currentThreadSafety;
-        }
+    if (isDoingInteractAction()) {
+        getApp()->queueRedrawForAllViewers();
+    } else {
+        getApp()->redrawAllViewers();
     }
+    
+}
 
-    return getNode()->getCurrentRenderThreadSafety();
+RenderScale
+EffectInstance::getOverlayInteractRenderScale() const
+{
+    RenderScale r(1.);
+    return r;
 }
 
 void
@@ -3874,45 +3840,73 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
 {
     NodePtr node = getNode();
 
-//    if (!node->isNodeCreated()) {
-//        return;
-//    }
+    ///If the param changed is a button and the node is disabled don't do anything which might
+    ///trigger an analysis
+    if ((reason == eValueChangedReasonUserEdited) && dynamic_cast<KnobButton*>(k) && node->isNodeDisabled()) {
+        return;
+    }
 
-    if ( isReader() && (k->getName() == kOfxImageEffectFileParamName) ) {
+    if ( reason != Natron::eValueChangedReasonTimeChanged && isReader() && (k->getName() == kOfxImageEffectFileParamName) ) {
         node->computeFrameRangeForReader(k);
     }
 
 
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
     assert(kh);
-    if ( kh && kh->isDeclaredByPlugin() ) {
+    if (kh && kh->isDeclaredByPlugin()) {
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
-
-
-        ParallelRenderArgsSetter frameRenderArgs(time,
-                                                 0, /*view*/
-                                                 true,
-                                                 false,
-                                                 false,
-                                                 0,
-                                                 node,
-                                                 0, // request
-                                                 0, //texture index
-                                                 getApp()->getTimeLine().get(),
-                                                 NodePtr(),
-                                                 true,
-                                                 false,
-                                                 false,
-                                                 boost::shared_ptr<RenderStats>() );
-
-        RECURSIVE_ACTION();
-        EffectPointerThreadProperty_RAII propHolder_raii(this);
-        knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);
+        boost::shared_ptr<ParallelRenderArgsSetter> setter;
+        if (reason != Natron::eValueChangedReasonTimeChanged) {
+            setter.reset(new ParallelRenderArgsSetter(time,
+                                                      0, /*view*/
+                                                      true,
+                                                      false,
+                                                      false,
+                                                      0,
+                                                      node,
+                                                      0, // request
+                                                      0, //texture index
+                                                      getApp()->getTimeLine().get(),
+                                                      NodePtr(),
+                                                      true,
+                                                      false,
+                                                      false,
+                                                      boost::shared_ptr<RenderStats>()));
+        }
+        {
+            RECURSIVE_ACTION();
+            knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);
+        }
+        
+        
+    }
+    
+    if (kh && QThread::currentThread() == qApp->thread() &&
+        originatedFromMainThread && reason != eValueChangedReasonTimeChanged) {
+        
+        ///Run the following only in the main-thread
+        if (k->getIsClipPreferencesSlave()) {
+            refreshClipPreferences_public(time, getOverlayInteractRenderScale(), reason,true, true);
+        }
+        if (hasOverlay() && node->shouldDrawOverlay() && !node->hasHostOverlayForParam(k)) {
+            // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
+            // Most hosts trigger a redraw if the plugin has an active overlay.
+            incrementRedrawNeededCounter();
+            
+            if (!isDequeueingValuesSet() && getRecursionLevel() == 0 && checkIfOverlayRedrawNeeded()) {
+                redrawOverlayInteract();
+            }
+        }
     }
 
     node->onEffectKnobValueChanged(k, reason);
 
+    //Don't call the python callback if the reason is time changed
+    if (reason == eValueChangedReasonTimeChanged) {
+        return;
+    }
+    
     ///If there's a knobChanged Python callback, run it
     std::string pythonCB = getNode()->getKnobChangedCallback();
 
@@ -4040,7 +4034,7 @@ EffectInstance::getNearestNonDisabled() const
         }
 
         ///We didn't find anything upstream, return
-        return NULL;
+        return node->getLiveInstance();
     }
 } // EffectInstance::getNearestNonDisabled
 
@@ -4148,9 +4142,7 @@ Natron::EffectInstance*
 EffectInstance::getNearestNonIdentity(double time)
 {
     U64 hash = getRenderHash();
-    RenderScale scale;
-
-    scale.x = scale.y = 1.;
+    RenderScale scale(1.);
 
     RectD rod;
     bool isProjectFormat;
@@ -4210,7 +4202,7 @@ EffectInstance::abortAnyEvaluation()
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
     if (isGroup) {
         std::list<Node*> inputOutputs;
-        isGroup->getInputsOutputs(&inputOutputs);
+        isGroup->getInputsOutputs(&inputOutputs, false);
         for (std::list<Node*>::iterator it = inputOutputs.begin(); it!=inputOutputs.end();++it) {
             (*it)->hasOutputNodesConnected(&outputNodes);
         }
@@ -4224,10 +4216,6 @@ EffectInstance::abortAnyEvaluation()
         }
     }
     for (std::list<Natron::OutputEffectInstance*>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
-        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(*it);
-        if (isViewer) {
-            isViewer->markAllOnRendersAsAborted();
-        }
         (*it)->getRenderEngine()->abortRendering(true,false);
     }
 }
@@ -4235,60 +4223,52 @@ EffectInstance::abortAnyEvaluation()
 double
 EffectInstance::getCurrentTime() const
 {
-    if ( _imp->renderArgs.hasLocalData() ) {
-        const RenderArgs & args = _imp->renderArgs.localData();
-        if (args._validArgs) {
-            return args._time;
-        }
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls) {
+        return getApp()->getTimeLine()->currentFrame();
+    }
+    if (tls->currentRenderArgs.validArgs) {
+        return tls->currentRenderArgs.time;
     }
     
-    if ( _imp->frameRenderArgs.hasLocalData() ) {
-        const ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
-        if (args.validArgs) {
-            return args.time;
-        }
+
+    if (tls->frameArgs.validArgs) {
+        return tls->frameArgs.time;
     }
-    
     return getApp()->getTimeLine()->currentFrame();
 }
 
 int
 EffectInstance::getCurrentView() const
 {
-    if ( _imp->renderArgs.hasLocalData() ) {
-        const RenderArgs & args = _imp->renderArgs.localData();
-        if (args._validArgs) {
-            return args._view;
-        }
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls || !tls->currentRenderArgs.validArgs) {
+        return 0;
     }
-
-    return 0;
+    return tls->currentRenderArgs.view;
+    
 }
 
 SequenceTime
 EffectInstance::getFrameRenderArgsCurrentTime() const
 {
-    if ( _imp->frameRenderArgs.hasLocalData() ) {
-        const ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
-        if (args.validArgs) {
-            return args.time;
-        }
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls || !tls->frameArgs.validArgs) {
+        return getApp()->getTimeLine()->currentFrame();
     }
 
-    return getApp()->getTimeLine()->currentFrame();
+    return tls->frameArgs.time;
 }
 
 int
 EffectInstance::getFrameRenderArgsCurrentView() const
 {
-    if ( _imp->frameRenderArgs.hasLocalData() ) {
-        const ParallelRenderArgs & args = _imp->frameRenderArgs.localData();
-        if (args.validArgs) {
-            return args.view;
-        }
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls || !tls->frameArgs.validArgs) {
+        return 0;
     }
-
-    return 0;
+    
+    return tls->frameArgs.view;
 }
 
 #ifdef DEBUG
@@ -4339,16 +4319,53 @@ EffectInstance::isPaintingOverItselfEnabled() const
     return isDuringPaintStrokeCreationThreadLocal();
 }
 
+void
+EffectInstance::getPreferredDepthAndComponents(int inputNb,
+                                               std::list<Natron::ImageComponents>* comp,
+                                               Natron::ImageBitDepthEnum* depth) const
+{
+
+    if (inputNb != -1) {
+        EffectInstance* inp = getInput(inputNb);
+        if (inp) {
+            inp->getPreferredDepthAndComponents(-1, comp, depth);
+        }
+    } else {
+        QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
+        *comp = _imp->clipPrefsData.comps;
+        *depth = _imp->clipPrefsData.bitdepth;
+    }
+    if ( comp->empty() ) {
+        comp->push_back( ImageComponents::getNoneComponents() );
+    }
+   
+}
+
 double
 EffectInstance::getPreferredFrameRate() const
 {
-    return getApp()->getProjectFrameRate();
+    QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
+    return _imp->clipPrefsData.frameRate;
+}
+
+double
+EffectInstance::getPreferredAspectRatio() const
+{
+    QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
+    return _imp->clipPrefsData.pixelAspectRatio;
+}
+
+Natron::ImagePremultiplicationEnum
+EffectInstance::getOutputPremultiplication() const
+{
+    QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
+    return _imp->clipPrefsData.outputPremult;
 }
 
 void
-EffectInstance::checkOFXClipPreferences_recursive(double time,
+EffectInstance::refreshClipPreferences_recursive(double time,
                                                   const RenderScale & scale,
-                                                  const std::string & reason,
+                                                 Natron::ValueChangedReasonEnum reason,
                                                   bool forceGetClipPrefAction,
                                                   std::list<Natron::Node*> & markedNodes)
 {
@@ -4360,12 +4377,12 @@ EffectInstance::checkOFXClipPreferences_recursive(double time,
     }
 
 
-    checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
+    refreshClipPreferences(time, scale, reason, forceGetClipPrefAction);
     node->refreshIdentityState();
 
     if ( !node->duringInputChangedAction() ) {
         ///The channels selector refreshing is already taken care of in the inputChanged action
-        node->refreshChannelSelectors(false);
+        node->refreshChannelSelectors();
     }
 
     markedNodes.push_back( node.get() );
@@ -4373,7 +4390,7 @@ EffectInstance::checkOFXClipPreferences_recursive(double time,
     std::list<Natron::Node*>  outputs;
     node->getOutputsWithGroupRedirection(outputs);
     for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        (*it)->getLiveInstance()->checkOFXClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
+        (*it)->getLiveInstance()->refreshClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
     }
 }
 
@@ -4399,9 +4416,9 @@ static void setComponentsDirty_recursive(const Node* node, std::list<const Natro
 }
 
 void
-EffectInstance::checkOFXClipPreferences_public(double time,
+EffectInstance::refreshClipPreferences_public(double time,
                                                const RenderScale & scale,
-                                               const std::string & reason,
+                                                Natron::ValueChangedReasonEnum reason,
                                                bool forceGetClipPrefAction,
                                                bool recurse)
 {
@@ -4414,11 +4431,58 @@ EffectInstance::checkOFXClipPreferences_public(double time,
         }
         {
             std::list<Natron::Node*> markedNodes;
-            checkOFXClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
+            refreshClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
         }
     } else {
-        checkOFXClipPreferences(time, scale, reason, forceGetClipPrefAction);
+        refreshClipPreferences(time, scale, reason, forceGetClipPrefAction);
     }
+}
+
+bool
+EffectInstance::refreshClipPreferences(double /*time*/,
+                                        const RenderScale & /*scale*/,
+                                       Natron::ValueChangedReasonEnum /*reason*/,
+                                        bool forceGetClipPrefAction)
+{
+
+    if (forceGetClipPrefAction) {
+        EffectInstance* input = getNearestNonDisabled();
+        if (input == this) {
+            int prefInput = getNode()->getPreferredInput();
+            if (prefInput != -1) {
+                input = getInput(prefInput);
+            }
+        }
+        if (!input) {
+            QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
+            _imp->clipPrefsData.outputPremult = Natron::eImagePremultiplicationPremultiplied;
+            _imp->clipPrefsData.frameRate = getApp()->getProjectFrameRate();
+            _imp->clipPrefsData.pixelAspectRatio = 1.;
+            _imp->clipPrefsData.comps.clear();
+            _imp->clipPrefsData.bitdepth = getBestSupportedBitDepth();
+        } else {
+            EffectInstance::DefaultClipPreferencesData data;
+            data.outputPremult = input->getOutputPremultiplication();
+            data.frameRate = input->getPreferredFrameRate();
+            data.pixelAspectRatio = input->getPreferredAspectRatio();
+            input->getPreferredDepthAndComponents(-1, &data.comps, &data.bitdepth);
+            
+            for (std::list<Natron::ImageComponents>::iterator it = data.comps.begin(); it != data.comps.end(); ++it) {
+                *it = findClosestSupportedComponents(-1, *it);
+            }
+            
+            
+            ///find deepest bitdepth
+            data.bitdepth = getNode()->getClosestSupportedBitDepth(data.bitdepth);
+            
+            {
+                QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
+                _imp->clipPrefsData = data;
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 void
@@ -4427,3 +4491,49 @@ EffectInstance::refreshExtraStateAfterTimeChanged(double time)
     KnobHolder::refreshExtraStateAfterTimeChanged(time);
     getNode()->refreshIdentityState();
 }
+
+
+void
+EffectInstance::assertActionIsNotRecursive() const
+{
+# ifdef DEBUG
+    ///Only check recursions which are on a render threads, because we do authorize recursions in getRegionOfDefinition and such
+    if (QThread::currentThread() != qApp->thread()) {
+        int recursionLvl = getRecursionLevel();
+        if ( getApp() && getApp()->isShowingDialog() ) {
+            return;
+        }
+        if (recursionLvl != 0) {
+            qDebug() << "A non-recursive action has been called recursively.";
+        }
+    }
+# endif // DEBUG
+}
+
+
+void
+EffectInstance::incrementRecursionLevel()
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    assert(tls);
+    ++tls->actionRecursionLevel;
+}
+
+void
+EffectInstance::decrementRecursionLevel()
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    assert(tls);
+    --tls->actionRecursionLevel;
+}
+
+int
+EffectInstance::getRecursionLevel() const
+{
+    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls) {
+        return 0;
+    }
+    return tls->actionRecursionLevel;
+}
+

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -105,7 +105,7 @@ public:
      * @param errorIfExists If a node with the same script-name exists, error
      * This function throws a runtime exception with the error message in case of error.
      **/
-    void setNodeName(const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName);
+    void checkNodeName(const Natron::Node* node,const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName);
     
     /**
      * @brief Returns true if there is one or more nodes in the collection.
@@ -223,6 +223,7 @@ public:
     
     /**
      * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup
+     * This is called only when calling AppManager::abortAnyProcessing()
      **/
     void quitAnyProcessingForAllNodes();
     
@@ -376,9 +377,9 @@ public:
     
     boost::shared_ptr<Natron::Node> getRealInputForInput(bool useGuiConnexions,const boost::shared_ptr<Natron::Node>& input) const;
     
-    void getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs) const;
+    void getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs, bool useGuiConnexions) const;
     
-    void getInputsOutputs(std::list<Natron::Node* >* nodes) const;
+    void getInputsOutputs(std::list<Natron::Node* >* nodes, bool useGuiConnexions) const;
     
     void dequeueConnexions();
     

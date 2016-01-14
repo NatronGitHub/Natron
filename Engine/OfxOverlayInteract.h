@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -141,7 +141,9 @@ public:
     //
     //    time              - the effect time at which changed occured
     //    renderScale       - the render scale
-    virtual OfxStatus drawAction(OfxTime time, const OfxPointD &renderScale) OVERRIDE FINAL;
+    virtual OfxStatus drawAction(OfxTime time,
+                                 const OfxPointD &renderScale,
+                                 int view) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionPenMotion
     //
@@ -154,6 +156,7 @@ public:
     //    pressure          - the pen pressue 0 to 1
     virtual OfxStatus penMotionAction(OfxTime time,
                                       const OfxPointD &renderScale,
+                                      int view,
                                       const OfxPointD &penPos,
                                       const OfxPointI &penPosViewport,
                                       double pressure) OVERRIDE FINAL;
@@ -169,6 +172,7 @@ public:
     //    pressure          - the pen pressue 0 to 1
     virtual OfxStatus penUpAction(OfxTime time,
                                   const OfxPointD &renderScale,
+                                  int view,
                                   const OfxPointD &penPos,
                                   const OfxPointI &penPosViewport,
                                   double  pressure) OVERRIDE FINAL;
@@ -184,6 +188,7 @@ public:
     //    pressure          - the pen pressue 0 to 1
     virtual OfxStatus penDownAction(OfxTime time,
                                     const OfxPointD &renderScale,
+                                    int view,
                                     const OfxPointD &penPos,
                                     const OfxPointI &penPosViewport,
                                     double  pressure) OVERRIDE FINAL;
@@ -198,6 +203,7 @@ public:
     //    keyString         - the pressed key string
     virtual OfxStatus keyDownAction(OfxTime time,
                                     const OfxPointD &renderScale,
+                                    int view,
                                     int     key,
                                     char*   keyString) OVERRIDE FINAL;
 
@@ -211,6 +217,7 @@ public:
     //    keyString         - the pressed key string
     virtual OfxStatus keyUpAction(OfxTime time,
                                   const OfxPointD &renderScale,
+                                  int view,
                                   int     key,
                                   char*   keyString) OVERRIDE FINAL;
 
@@ -224,6 +231,7 @@ public:
     //    keyString         - the pressed key string
     virtual OfxStatus keyRepeatAction(OfxTime time,
                                       const OfxPointD &renderScale,
+                                      int view,
                                       int     key,
                                       char*   keyString) OVERRIDE FINAL;
 
@@ -234,7 +242,8 @@ public:
     //    time              - the effect time at which changed occured
     //    renderScale       - the render scale
     virtual OfxStatus gainFocusAction(OfxTime time,
-                                      const OfxPointD &renderScale) OVERRIDE FINAL;
+                                      const OfxPointD &renderScale,
+                                      int view) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionLoseFocus
     //
@@ -243,7 +252,8 @@ public:
     //    time              - the effect time at which changed occured
     //    renderScale       - the render scale
     virtual OfxStatus loseFocusAction(OfxTime  time,
-                                      const OfxPointD &renderScale) OVERRIDE FINAL;
+                                      const OfxPointD &renderScale,
+                                      int view) OVERRIDE FINAL;
 
 };
 

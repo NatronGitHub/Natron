@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -763,7 +763,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     ///
     ///Note that we can't yet use the texture cache because we would need the TextureRect identifyin
     ///the texture in order to retrieve from the cache, but to make the TextureRect we need the RoD!
-    RenderScale scale;
+    RenderScale scale(1.);
     int mipMapLevel;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
@@ -805,8 +805,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
     // this after the first call to getRegionOfDefinition().
-    RenderScale scaleOne;
-    scaleOne.x = scaleOne.y = 1.;
+    RenderScale scaleOne(1.);
     EffectInstance::SupportsEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
     scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(originalMipMapLevel);
     
@@ -948,7 +947,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         outArgs->params->alphaChannelName = _imp->viewerParamsAlphaChannelName;
     }
     {
-        QMutexLocker k(&_imp->gammaLookupMutex);
+        QWriteLocker k(&_imp->gammaLookupMutex);
         if (_imp->gammaLookup.empty()) {
             _imp->fillGammaLut(1. / outArgs->params->gamma);
         }
@@ -1270,6 +1269,10 @@ ViewerInstance::renderViewer_internal(int view,
     }
     assert(inArgs.params->ramBuffer);
     
+    //We are going to render a non cached frame and not in playback, clear persistent messages
+    if (!inArgs.params->isSequential) {
+        clearPersistentMessage(true);
+    }
     
     std::list<ImageComponents> components;
     ImageBitDepthEnum imageDepth;
@@ -1345,7 +1348,7 @@ ViewerInstance::renderViewer_internal(int view,
     }
     
     if (stats && stats->isInDepthProfilingEnabled()) {
-        bool channelsRendered[4];
+        std::bitset<4> channelsRendered;
         switch (inArgs.channels) {
             case Natron::eDisplayChannelsMatte:
             case Natron::eDisplayChannelsRGB:
@@ -1490,7 +1493,7 @@ ViewerInstance::renderViewer_internal(int view,
         ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
         
         assert((inArgs.channels != Natron::eDisplayChannelsMatte && alphaChannelIndex < (int)colorImage->getComponentsCount()) ||
-               (inArgs.channels == Natron::eDisplayChannelsMatte && (alphaImage && alphaChannelIndex < (int)alphaImage->getComponentsCount() || !alphaImage)));
+               (inArgs.channels == Natron::eDisplayChannelsMatte && ((alphaImage && alphaChannelIndex < (int)alphaImage->getComponentsCount()) || !alphaImage)));
         
         //Make sure the viewer does not render something outside the bounds
         RectI viewerRenderRoI;
@@ -1535,7 +1538,7 @@ ViewerInstance::renderViewer_internal(int view,
                                         lutFromColorspace(inArgs.params->lut),
                                         alphaChannelIndex);
             
-            QMutexLocker k(&_imp->gammaLookupMutex);
+            QReadLocker k(&_imp->gammaLookupMutex);
             renderFunctor(viewerRenderRoI,
                           args,
                           this,
@@ -1607,11 +1610,11 @@ ViewerInstance::renderViewer_internal(int view,
                                         lutFromColorspace(inArgs.params->lut),
                                         alphaChannelIndex);
             if (runInCurrentThread) {
-                QMutexLocker k(&_imp->gammaLookupMutex);
+                QReadLocker k(&_imp->gammaLookupMutex);
                 renderFunctor(viewerRenderRoI,
                               args, this, inArgs.params->ramBuffer);
             } else {
-                QMutexLocker k(&_imp->gammaLookupMutex);
+                QReadLocker k(&_imp->gammaLookupMutex);
                 QtConcurrent::map( splitRects,
                                   boost::bind(&renderFunctor,
                                               _1,
@@ -2673,11 +2676,15 @@ ViewerInstance::onGammaChanged(double value)
     bool changed = false;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
+        
         if (_imp->viewerParamsGamma != value) {
             _imp->viewerParamsGamma = value;
-            _imp->fillGammaLut(1. / value);
             changed = true;
         }
+    }
+    if (changed) {
+        QWriteLocker k(&_imp->gammaLookupMutex);
+        _imp->fillGammaLut(1. / value);
     }
     assert(_imp->uiContext);
     if (changed) {
@@ -3011,10 +3018,10 @@ ViewerInstance::onInputChanged(int /*inputNb*/)
 }
 
 bool
-ViewerInstance::checkOFXClipPreferences(double /*time*/,
-                             const RenderScale & /*scale*/,
-                             const std::string & /*reason*/,
-                             bool /*forceGetClipPrefAction*/)
+ViewerInstance::refreshClipPreferences(double /*time*/,
+                                       const RenderScale & /*scale*/,
+                                       Natron::ValueChangedReasonEnum /*reason*/,
+                                       bool /*forceGetClipPrefAction*/)
 {
     Q_EMIT clipPreferencesChanged();
     return false;

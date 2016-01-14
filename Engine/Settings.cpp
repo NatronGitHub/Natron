@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,8 +68,8 @@
 using namespace Natron;
 
 
-Settings::Settings(AppInstance* appInstance)
-    : KnobHolder(appInstance)
+Settings::Settings()
+    : KnobHolder(0)
     , _restoringSettings(false)
     , _ocioRestored(false)
     , _settingsExisted(false)
@@ -279,6 +279,13 @@ Settings::initializeKnobsGeneral()
                                                                             "from the Layout menu. If empty, the default application layout is used.");
     _defaultLayoutFile->setAnimationEnabled(false);
     _generalTab->addKnob(_defaultLayoutFile);
+    
+    _loadProjectsWorkspace = Natron::createKnob<KnobBool>(this, "Load workspace embedded within projects");
+    _loadProjectsWorkspace->setName("loadProjectWorkspace");
+    _loadProjectsWorkspace->setHintToolTip("When checked, when loading a project, the workspace (windows layout) will also be loaded, otherwise it "
+                                           "will use your current layout.");
+    _loadProjectsWorkspace->setAnimationEnabled(false);
+    _generalTab->addKnob(_loadProjectsWorkspace);
 
     _renderOnEditingFinished = Natron::createKnob<KnobBool>(this, "Refresh viewer only when editing is finished");
     _renderOnEditingFinished->setName("renderOnEditingFinished");
@@ -1319,7 +1326,7 @@ Settings::setCachingLabels()
 void
 Settings::setDefaultValues()
 {
-    beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
+    beginChanges();
     _hostName->setDefaultValue(0);
     _customHostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
     _natronSettingsExist->setDefaultValue(false);
@@ -1333,6 +1340,7 @@ Settings::setDefaultValues()
     _convertNaNValues->setDefaultValue(true);
     _snapNodesToConnections->setDefaultValue(true);
     _useBWIcons->setDefaultValue(false);
+    _loadProjectsWorkspace->setDefaultValue(false);
     _useNodeGraphHints->setDefaultValue(true);
     _numberOfThreads->setDefaultValue(0,0);
     _numberOfParallelRenders->setDefaultValue(0,0);
@@ -1571,7 +1579,7 @@ Settings::setDefaultValues()
     _curLineColor->setDefaultValue(0.35,1);
     _curLineColor->setDefaultValue(0.35,2);
 
-    endKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
+    endChanges();
 } // setDefaultValues
 
 void
@@ -2541,7 +2549,7 @@ Settings::restoreDefault()
         qDebug() << "Failed to remove settings ( " << settings.fileName() << " ).";
     }
 
-    beginKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
+    beginChanges();
     const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
@@ -2549,7 +2557,7 @@ Settings::restoreDefault()
         }
     }
     setCachingLabels();
-    endKnobsValuesChanged(Natron::eValueChangedReasonPluginEdited);
+    endChanges();
 }
 
 bool
@@ -2819,6 +2827,12 @@ std::string
 Settings::getDefaultLayoutFile() const
 {
     return _defaultLayoutFile->getValue();
+}
+
+bool
+Settings::getLoadProjectWorkspce() const
+{
+    return _loadProjectsWorkspace->getValue();
 }
 
 bool

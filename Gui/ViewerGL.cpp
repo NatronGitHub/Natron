@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -324,6 +324,7 @@ ViewerGL::paintGL()
         if ( (activeInputs[0] == activeInputs[1]) && (compOp != eViewerCompositingOperatorMinus) ) {
             drawTexture[1] = false;
         }
+                
         double wipeMix;
         {
             QMutexLocker l(&_imp->wipeControlsMutex);
@@ -353,7 +354,7 @@ ViewerGL::paintGL()
 
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, _imp->activeTextures[1] ? eDrawPolygonModeWhole : eDrawPolygonModeWipeLeft);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
@@ -364,7 +365,7 @@ ViewerGL::paintGL()
             } else if (compOp == eViewerCompositingOperatorMinus) {
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, _imp->activeTextures[1] ? eDrawPolygonModeWhole : eDrawPolygonModeWipeLeft);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
@@ -376,7 +377,7 @@ ViewerGL::paintGL()
             } else if (compOp == eViewerCompositingOperatorUnder) {
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, _imp->activeTextures[1] ? eDrawPolygonModeWhole : eDrawPolygonModeWipeLeft);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
@@ -614,7 +615,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
          Draw the overlays corresponding to the image displayed on the viewer, not the current timeline's time
          */
         double time = getCurrentlyDisplayedTime();
-        _imp->viewerTab->drawOverlays(time,scale,scale);
+        _imp->viewerTab->drawOverlays(time, RenderScale(scale));
         
         glCheckErrorIgnoreOSXBug();
 
@@ -1700,7 +1701,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->overlay ) {
         unsigned int mipMapLevel = getCurrentRenderScale();
         double scale = 1. / (1 << mipMapLevel);
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(scale, scale, _imp->pointerTypeOnPress, _imp->subsequentMousePressIsTablet, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e), e);
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(RenderScale(scale), _imp->pointerTypeOnPress, _imp->subsequentMousePressIsTablet, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e), e);
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -1728,6 +1729,12 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         mustRedraw = true;
         overlaysCaught = true;
     }
+    
+    if (hasPickers && _imp->pickerState == ePickerStateInactive) {
+        _imp->viewerTab->getGui()->clearColorPickers();
+        unsetCursor();
+    }
+    
     if (!overlaysCaught &&
         buttonDownIsLeft(e) &&
         userRoIEnabled &&
@@ -1876,7 +1883,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
     }
     unsigned int mipMapLevel = getCurrentRenderScale();
     double scale = 1. / (1 << mipMapLevel);
-    if ( _imp->viewerTab->notifyOverlaysPenUp(scale, scale, QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease, e) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale(scale), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease, e) ) {
         mustRedraw = true;
     }
     if (mustRedraw) {
@@ -2294,7 +2301,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
             unsigned int mipMapLevel = getCurrentRenderScale();
             double scale = 1. / (1 << mipMapLevel);
             if ( _imp->overlay &&
-                _imp->viewerTab->notifyOverlaysPenMotion(scale, scale, localPos, zoomPos, pressure, timestamp, e) ) {
+                _imp->viewerTab->notifyOverlaysPenMotion(RenderScale(scale), localPos, zoomPos, pressure, timestamp, e) ) {
                 mustRedraw = true;
                 overlaysCaughtByPlugin = true;
             }
@@ -2326,7 +2333,7 @@ ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
         pos_opengl = _imp->zoomCtx.toZoomCoordinates( e->x(),e->y() );
     }
     double scale = 1. / (1 << mipMapLevel);
-    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(scale, scale, QMouseEventLocalPos(e), pos_opengl, e) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(RenderScale(scale), QMouseEventLocalPos(e), pos_opengl, e) ) {
         update();
     }
     QGLWidget::mouseDoubleClickEvent(e);
@@ -2757,6 +2764,9 @@ ViewerGL::onProjectFormatChangedInternal(const Format & format,bool triggerRende
     for (int i = 0; i < 2; ++i) {
         if (_imp->infoViewer[i]) {
             _imp->infoViewer[i]->setResolution(format);
+            if (!_imp->activeTextures[i]) {
+                _imp->currentViewerInfo[i].setRoD(canonicalFormat);
+            }
         }
     }
     {
@@ -2845,7 +2855,7 @@ ViewerGL::focusInEvent(QFocusEvent* e)
         return;
     }
     double scale = 1. / (1 << getCurrentRenderScale());
-    if ( _imp->viewerTab->notifyOverlaysFocusGained(scale,scale) ) {
+    if ( _imp->viewerTab->notifyOverlaysFocusGained(RenderScale(scale)) ) {
         update();
     }
     QGLWidget::focusInEvent(e);
@@ -2862,7 +2872,7 @@ ViewerGL::focusOutEvent(QFocusEvent* e)
     }
 
     double scale = 1. / (1 << getCurrentRenderScale());
-    if ( _imp->viewerTab->notifyOverlaysFocusLost(scale,scale) ) {
+    if ( _imp->viewerTab->notifyOverlaysFocusLost(RenderScale(scale)) ) {
         update();
     }
     QGLWidget::focusOutEvent(e);
@@ -3897,10 +3907,7 @@ getColorAtInternal(const ImageList& tiles,
                 *b = 1.;
                 *a = 1.;
             } else {
-                *r = 0.;
-                *g = 0.;
-                *b = 0.;
-                *a = pix[0] / (float)maxValue;
+                *r = *g = *b = *a = pix[0] / (float)maxValue;
             }
             
             

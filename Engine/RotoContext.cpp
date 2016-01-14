@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -2040,16 +2040,26 @@ RotoContext::notifyRenderFinished()
     setIsDoingNeatRender(false);
 }
 
+bool
+RotoContext::mustDoNeatRender() const
+{
+    QMutexLocker k(&_imp->doingNeatRenderMutex);
+    return _imp->mustDoNeatRender;
+}
+
 void
 RotoContext::setIsDoingNeatRender(bool doing)
 {
     
     QMutexLocker k(&_imp->doingNeatRenderMutex);
-    _imp->doingNeatRender = doing;
+    bool wasDoingNeatRender = _imp->doingNeatRender;
     if (doing && _imp->mustDoNeatRender) {
+        _imp->doingNeatRender = true;
         _imp->mustDoNeatRender = false;
+    } else {
+        _imp->doingNeatRender = false;
     }
-    if (!doing) {
+    if (!doing && wasDoingNeatRender) {
         _imp->doingNeatRenderCond.wakeAll();
     }
 }
@@ -2532,9 +2542,9 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         std::size_t stride = cairo_format_stride_for_width(cairoImgFormat, pixelPointsBbox.width());
         std::size_t memSize = stride * pixelPointsBbox.height();
         buf.resize(memSize);
-        memset(buf.data(), 0, sizeof(unsigned char) * memSize);
-        convertNatronImageToCairoImage<float, 1>(buf.data(), srcNComps, stride, source.get(), pixelPointsBbox, pixelPointsBbox, shapeColor);
-        cairoImg = cairo_image_surface_create_for_data(buf.data(), cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height(),
+        memset(&buf.front(), 0, sizeof(unsigned char) * memSize);
+        convertNatronImageToCairoImage<float, 1>(&buf.front(), srcNComps, stride, source.get(), pixelPointsBbox, pixelPointsBbox, shapeColor);
+        cairoImg = cairo_image_surface_create_for_data(&buf.front(), cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height(),
                                                        stride);
        
     } else {
@@ -2645,7 +2655,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     
     {
         QMutexLocker k(&_imp->cacheAccessMutex);
-        node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(true, false, key, mipmapLevel, NULL, NULL, depth, components, depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
+        node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(true, false, key, mipmapLevel, NULL, NULL, depth, components, depth, components,EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
     }
     if (image) {
         return image;
@@ -3942,6 +3952,9 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
         return mergeNode;
     }
     mergeNode->setUseAlpha0ToConvertFromRGBToRGBA(true);
+    if (getNode()->isDuringPaintStrokeCreation()) {
+        mergeNode->setWhileCreatingPaintStroke(true);
+    }
     *availableInputIndex = 1;
     
     QMutexLocker k(&_imp->rotoContextMutex);

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -512,7 +512,7 @@ KnobButton::KnobButton(KnobHolder*  holder,
 : Knob<bool>(holder, label, dimension, declaredByPlugin)
 , _renderButton(false)
 {
-    setIsPersistant(false);
+    //setIsPersistant(false);
 }
 
 bool
@@ -596,14 +596,19 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
                              const std::vector<std::string> &entriesHelp)
 {
     assert( entriesHelp.empty() || entriesHelp.size() == entries.size() );
-    std::vector<std::string> curEntries;
+    //std::vector<std::string> curEntries;
     {
         QMutexLocker l(&_entriesMutex);
-        curEntries = _entries;
+      //  curEntries = _entries;
         _entriesHelp = entriesHelp;
         _entries = entries;
     }
-    int cur_i = getValue();
+    
+    /*
+     Try to restore the last choice. 
+     This has been commented-out because it will loose the user choice in case of alias knobs
+     */
+    /*int cur_i = getValue();
     std::string curEntry;
     if (cur_i >= 0 && cur_i < (int)curEntries.size()) {
         curEntry = curEntries[cur_i];
@@ -617,7 +622,7 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
                 break;
             }
         }
-    }
+    }*/
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();
     }

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -262,15 +262,16 @@ RotoSmear::render(const RenderActionArgs& args)
     }
     
     
-    ComponentsNeededMap neededComps;
+    EffectInstance::ComponentsNeededMap neededComps;
     bool processAll;
-    bool processComponents[4];
+    std::bitset<4> processChannels;
     SequenceTime ptTime;
     int ptView;
     boost::shared_ptr<Node> ptInput;
-    getComponentsNeededAndProduced_public(true, args.time, args.view, &neededComps, &processAll, &ptTime, &ptView, processComponents, &ptInput);
+    getComponentsNeededAndProduced_public(true, true, args.time, args.view, &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
+
     
-    ComponentsNeededMap::iterator foundBg = neededComps.find(0);
+    EffectInstance::ComponentsNeededMap::iterator foundBg = neededComps.find(0);
     assert(foundBg != neededComps.end() && !foundBg->second.empty());
     
     double par = getPreferredAspectRatio();
@@ -322,7 +323,7 @@ RotoSmear::render(const RenderActionArgs& args)
         
         if (strokeIndex == 0) {
             ///For the first multi-stroke, init background
-            bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), Natron::eImageBitDepthFloat, par, false, &bgImgRoI);
+            bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), Natron::eImageBitDepthFloat, par, false, true, &bgImgRoI);
         }
 
         

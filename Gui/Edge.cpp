@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphTextItem.h"
-
+#include "Gui/GuiApplicationManager.h"
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
@@ -561,9 +561,9 @@ Edge::initLine()
 
     qreal arrowSize;
     if (source && dest) {
-        arrowSize = ARROW_SIZE_CONNECTED * sc;
+        arrowSize = TO_DPIX(ARROW_SIZE_CONNECTED) * sc;
     } else {
-        arrowSize = ARROW_SIZE_DISCONNECTED * sc;
+        arrowSize = TO_DPIX(ARROW_SIZE_DISCONNECTED) * sc;
     }
     QPointF arrowP1 = arrowIntersect + QPointF(std::cos(a + ARROW_HEAD_ANGLE/2) * arrowSize,
                                                std::sin(a + ARROW_HEAD_ANGLE/2) * arrowSize);
@@ -643,7 +643,7 @@ Edge::dragSource(const QPointF & src)
         a = 2 * M_PI - a;
     }
 
-    double arrowSize = ARROW_SIZE_DISCONNECTED;
+    double arrowSize = TO_DPIX(ARROW_SIZE_DISCONNECTED);
     QPointF arrowP1 = line().p1() + QPointF(std::cos(a + ARROW_HEAD_ANGLE/2) * arrowSize,
                                             std::sin(a + ARROW_HEAD_ANGLE/2) * arrowSize);
     QPointF arrowP2 = line().p1() + QPointF(std::cos(a - ARROW_HEAD_ANGLE/2) * arrowSize,
@@ -667,7 +667,7 @@ Edge::dragDest(const QPointF & dst)
         a = 2 * M_PI - a;
     }
 
-    double arrowSize = ARROW_SIZE_DISCONNECTED;
+    double arrowSize = TO_DPIX(ARROW_SIZE_DISCONNECTED);
     QPointF arrowP1 = line().p1() + QPointF(std::cos(a + ARROW_HEAD_ANGLE/2) * arrowSize,
                                             std::sin(a + ARROW_HEAD_ANGLE/2) * arrowSize);
     QPointF arrowP2 = line().p1() + QPointF(std::cos(a - ARROW_HEAD_ANGLE/2) * arrowSize,

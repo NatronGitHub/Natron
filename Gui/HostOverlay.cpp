@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1009,7 +1009,7 @@ HostOverlayPrivate::drawTransform(const TransformInteract& p,
 }
 
 void
-HostOverlay::draw(double time,const RenderScale& /*renderScale*/)
+HostOverlay::draw(double time,const RenderScale & /*renderScale*/)
 {
     OfxRGBColourD color;
     if (!getNode()->getOverlayColor(&color.r, &color.g, &color.b)) {

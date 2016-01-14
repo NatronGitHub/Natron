@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,45 @@ static const char* alphaComps[1] = {"Alpha"};
 static const char* motionComps[2] = {"U","V"};
 static const char* disparityComps[2] = {"X","Y"};
 static const char* xyComps[2] = {"X","Y"};
+
+
+const char* ImageComponents::defaultComponents[][2] =
+{
+    {kNatronRGBAComponentsName, kNatronRGBAPlaneUserName},
+    {kNatronRGBComponentsName, kNatronRGBPlaneUserName},
+    {kNatronAlphaComponentsName, kNatronAlphaPlaneUserName},
+    {kNatronDisparityLeftPlaneName, kNatronDisparityLeftPlaneUserName},
+    {kNatronDisparityRightPlaneName, kNatronDisparityRightPlaneUserName},
+    {kNatronBackwardMotionVectorsPlaneName, kNatronBackwardMotionVectorsPlaneUserName},
+    {kNatronForwardMotionVectorsPlaneName, kNatronForwardMotionVectorsPlaneUserName},
+    {0, 0}
+};
+
+std::string
+ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(const std::string& userfriendlyPlaneName)
+{
+    int i = 0;
+    while (defaultComponents[i][0] != 0) {
+        if (userfriendlyPlaneName == std::string(defaultComponents[i][1])) {
+            return std::string(defaultComponents[i][0]);
+        }
+        ++i;
+    }
+    return userfriendlyPlaneName;
+}
+
+std::string
+ImageComponents::mapNatronInternalPlaneNameToUserFriendlyPlaneName(const std::string& planeName)
+{
+    int i = 0;
+    while (defaultComponents[i][0] != 0) {
+        if (planeName == std::string(defaultComponents[i][0])) {
+            return std::string(defaultComponents[i][1]);
+        }
+        ++i;
+    }
+    return planeName;
+}
 
 ImageComponents::ImageComponents()
 : _layerName("none")
@@ -68,6 +107,12 @@ ImageComponents::ImageComponents(const std::string& layerName,
 ImageComponents::~ImageComponents()
 {
     
+}
+
+bool
+ImageComponents::isColorPlane(const std::string& layerName)
+{
+    return layerName == kNatronColorPlaneName;
 }
 
 bool

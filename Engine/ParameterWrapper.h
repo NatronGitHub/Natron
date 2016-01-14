@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1047,6 +1047,19 @@ public:
     void setIconFilePath(const std::string& icon);
     
     void trigger();
+};
+
+
+class SeparatorParam : public Param
+{
+    
+protected:
+    boost::weak_ptr<KnobSeparator> _separatorKnob;
+public:
+    
+    SeparatorParam(const boost::shared_ptr<KnobSeparator>& knob);
+    
+    virtual ~SeparatorParam();
 };
 
 class GroupParam : public Param

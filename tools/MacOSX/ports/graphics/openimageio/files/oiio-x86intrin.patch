@@ -1,0 +1,13 @@
+diff --git a/src/include/OpenImageIO/simd.h b/src/include/OpenImageIO/simd.h
+index b5e3b91..83e7f7c 100644
+--- a/src/include/OpenImageIO/simd.h
++++ b/src/include/OpenImageIO/simd.h
+@@ -61,7 +61,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #  if (defined(__SSE4_1__) || defined(__SSE4_2__))
+ #    include <smmintrin.h>
+ #  endif
+-#  if defined(__GNUC__)
++#  if defined(__GNUC__) && ((__GNUC__ >= 5) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
+ #    include <x86intrin.h>
+ #  endif
+ #  if (defined(__SSE4_1__) || defined(__SSE4_2__))

@@ -45,8 +45,10 @@ fi
 
 if [ "$1" = "32" ]; then
     BIT=32
+    INSTALL_PATH=$INSTALL32_PATH
 else
     BIT=64
+    INSTALL_PATH=$INSTALL64_PATH
 fi
 
 if [ "$2" = "workshop" ]; then
@@ -119,6 +121,7 @@ if [ "$NOBUILD" != "1" ]; then
             echo OK
         else
             echo ERROR
+            echo "BUILD__ERROR" >> $LOGS/natron.$PKGOS$BIT.$TAG.log
             sleep 2
             cat $LOGS/natron.$PKGOS$BIT.$TAG.log
         fi
@@ -130,6 +133,7 @@ if [ "$NOBUILD" != "1" ]; then
             echo OK
         else
             echo ERROR
+            echo "BUILD__ERROR" >> $LOGS/plugins.$PKGOS$BIT.$TAG.log
             sleep 2
             cat $LOGS/plugins.$PKGOS$BIT.$TAG.log
         fi  
@@ -143,6 +147,7 @@ if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
         echo OK
     else
         echo ERROR
+        echo "BUILD__ERROR" >> $LOGS/installer.$PKGOS$BIT.$TAG.log
         sleep 2
         cat $LOGS/installer.$PKGOS$BIT.$TAG.log
     fi 
@@ -164,6 +169,7 @@ if [ "$SYNC" = "1" ]; then
 			 rsync -avz --progress  --verbose -e ssh $REPO_DIR/archive/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files 
 		fi
     fi
+    rsync -avz --progress --verbose -e ssh "$INSTALL_PATH/symbols/" "${REPO_DEST}/symbols/"
     rsync -avz --progress --delete --verbose -e ssh $LOGS/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs
 fi
 

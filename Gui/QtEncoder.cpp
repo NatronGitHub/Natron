@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,8 @@
 // ***** END PYTHON BLOCK *****
 
 #include "QtEncoder.h"
+
+#ifdef NATRON_ENABLE_QT_IO_NODES
 
 #include <string>
 #include <vector>
@@ -293,4 +295,6 @@ QtWriter::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) con
 {
     depths->push_back(eImageBitDepthFloat);
 }
+
+#endif //NATRON_ENABLE_QT_IO_NODES
 

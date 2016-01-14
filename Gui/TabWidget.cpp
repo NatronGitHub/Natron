@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -263,10 +263,12 @@ TabWidget::TabWidget(Gui* gui,
     appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET,&pixM);
     appPTR->getIcon(NATRON_PIXMAP_TAB_WIDGET_LAYOUT_BUTTON,&pixL);
 
+    const QSize smallButtonSize(TO_DPIX(NATRON_SMALL_BUTTON_SIZE),TO_DPIY(NATRON_SMALL_BUTTON_SIZE));
+    const QSize smallButtonIconSize(TO_DPIX(NATRON_SMALL_BUTTON_ICON_SIZE),TO_DPIY(NATRON_SMALL_BUTTON_ICON_SIZE));
 
     _imp->leftCornerButton = new Button(QIcon(pixL),"", _imp->header);
-    _imp->leftCornerButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
-    _imp->leftCornerButton->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
+    _imp->leftCornerButton->setFixedSize(smallButtonSize);
+    _imp->leftCornerButton->setIconSize(smallButtonIconSize);
     _imp->leftCornerButton->setToolTip( Natron::convertFromPlainText(tr(LEFT_HAND_CORNER_BUTTON_TT), Qt::WhiteSpaceNormal) );
     _imp->leftCornerButton->setFocusPolicy(Qt::NoFocus);
     _imp->headerLayout->addWidget(_imp->leftCornerButton);
@@ -280,8 +282,8 @@ TabWidget::TabWidget(Gui* gui,
     _imp->headerLayout->addWidget(_imp->tabBar);
     _imp->headerLayout->addStretch();
     _imp->floatButton = new Button(QIcon(pixM),"",_imp->header);
-    _imp->floatButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
-    _imp->floatButton->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
+    _imp->floatButton->setFixedSize(smallButtonSize);
+    _imp->floatButton->setIconSize(smallButtonIconSize);
     _imp->floatButton->setToolTip( Natron::convertFromPlainText(tr("Float pane"), Qt::WhiteSpaceNormal) );
     _imp->floatButton->setEnabled(true);
     _imp->floatButton->setFocusPolicy(Qt::NoFocus);
@@ -289,8 +291,8 @@ TabWidget::TabWidget(Gui* gui,
     _imp->headerLayout->addWidget(_imp->floatButton);
 
     _imp->closeButton = new Button(QIcon(pixC),"",_imp->header);
-    _imp->closeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
-    _imp->closeButton->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
+    _imp->closeButton->setFixedSize(smallButtonSize);
+    _imp->closeButton->setIconSize(smallButtonIconSize);
     _imp->closeButton->setToolTip( Natron::convertFromPlainText(tr("Close pane"), Qt::WhiteSpaceNormal) );
     _imp->closeButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _imp->closeButton, SIGNAL( clicked() ), this, SLOT( closePane() ) );
@@ -2137,6 +2139,9 @@ TabWidgetPrivate::declareTabToPython(PanelWidget* widget,const std::string& tabN
 void
 TabWidgetPrivate::removeTabToPython(PanelWidget* widget,const std::string& tabName)
 {
+    if (!gui) {
+        return;
+    }
     ViewerTab* isViewer = dynamic_cast<ViewerTab*>(widget);
     PyPanel* isPanel = dynamic_cast<PyPanel*>(widget);
     

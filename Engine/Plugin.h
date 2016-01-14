@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -158,16 +158,16 @@ class Plugin
     QStringList _groupIconFilePath;
     QStringList _grouping;
     QString _labelWithoutSuffix;
-    QMutex* _lock;
-    int _majorVersion;
-    int _minorVersion;
-    mutable bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
-    bool _isReader,_isWriter;
     QString _pythonModule;
     OFX::Host::ImageEffect::ImageEffectPlugin* _ofxPlugin;
     OFX::Host::ImageEffect::Descriptor* _ofxDescriptor;
+    QMutex* _lock;
+    int _majorVersion;
+    int _minorVersion;
     ContextEnum _ofxContext;
-    
+    mutable bool _hasShortcutSet; //< to speed up the keypress event of Nodegraph, this is used to find out quickly whether it has a shortcut or not.
+    bool _isReader,_isWriter;
+
     //Deprecated are by default Disabled in the Preferences.
     bool _isDeprecated;
     
@@ -187,16 +187,16 @@ public:
     , _groupIconFilePath()
     , _grouping()
     , _labelWithoutSuffix()
-    , _lock()
-    , _majorVersion(0)
-    , _minorVersion(0)
-    , _hasShortcutSet(false)
-    , _isReader(false)
-    , _isWriter(false)
     , _pythonModule()
     , _ofxPlugin(0)
     , _ofxDescriptor(0)
+    , _lock()
+    , _majorVersion(0)
+    , _minorVersion(0)
     , _ofxContext(eContextNone)
+    , _hasShortcutSet(false)
+    , _isReader(false)
+    , _isWriter(false)
     , _isDeprecated(false)
     , _isInternalOnly(false)
     , _activatedSet(false)
@@ -223,15 +223,16 @@ public:
     , _groupIconFilePath(groupIconFilePath)
     , _grouping(grouping)
     , _labelWithoutSuffix()
+    , _pythonModule()
+    , _ofxPlugin(0)
+    , _ofxDescriptor(0)
     , _lock(lock)
     , _majorVersion(majorVersion)
     , _minorVersion(minorVersion)
+    , _ofxContext(eContextNone)
     , _hasShortcutSet(false)
     , _isReader(isReader)
     , _isWriter(isWriter)
-    , _ofxPlugin(0)
-    , _ofxDescriptor(0)
-    , _ofxContext(eContextNone)
     , _isDeprecated(isDeprecated)
     , _isInternalOnly(false)
     , _activatedSet(false)

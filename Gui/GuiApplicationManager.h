@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,9 @@
  **/
 #define getKeybind(group,action) ( appPTR->getKeySequenceForAction(group,action) )
 
-
+#define TO_DPI(x,y) ( appPTR->adjustSizeToDPI(x,y) )
+#define TO_DPIX(x) ( appPTR->adjustSizeToDPIX(x) )
+#define TO_DPIY(y) ( appPTR->adjustSizeToDPIY(y) )
 
 struct PythonUserCommand {
     QString grouping;
@@ -190,6 +192,29 @@ public:
     
     bool handleImageFileOpenRequest(const std::string& imageFile);
     
+    void appendTaskToPreviewThread(const boost::shared_ptr<NodeGui>& node, double time);
+    
+
+    void setCurrentLogicalDPI(double dpiX,double dpiY);
+    double getLogicalDPIXRATIO() const;
+    double getLogicalDPIYRATIO() const;
+
+    template <typename T>
+    void adjustSizeToDPI(T &x, T &y) const {
+        x *= getLogicalDPIXRATIO();
+        y *= getLogicalDPIYRATIO();
+    }
+
+    template <typename T>
+    T adjustSizeToDPIX(T x) const {
+        return x * getLogicalDPIXRATIO();
+    }
+
+    template <typename T>
+    T adjustSizeToDPIY(T y) const {
+        return y * getLogicalDPIYRATIO();
+    }
+
 public Q_SLOTS:
 
 

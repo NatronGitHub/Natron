@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -420,9 +420,11 @@ KnobGuiString::restoreTextInfoFromString()
                 KnobString* strKnob = dynamic_cast<KnobString*>( knob.get() );
                 if (strKnob) {
                     QString sublabel = strKnob->getValue(0).c_str();
-                    text.append(NATRON_CUSTOM_HTML_TAG_START);
-                    text.append('(' + sublabel + ')');
-                    text.append(NATRON_CUSTOM_HTML_TAG_END);
+                    if (!sublabel.isEmpty()) {
+                        text.append(NATRON_CUSTOM_HTML_TAG_START);
+                        text.append('(' + sublabel + ')');
+                        text.append(NATRON_CUSTOM_HTML_TAG_END);
+                    }
                 }
             }
         }

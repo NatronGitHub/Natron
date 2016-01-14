@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -369,7 +369,7 @@ KnobGui::setKeyframe(double time,
     Q_EMIT keyFrameSet();
     
     if ( !knob->getIsSecret() && keyAdded && knob->isDeclaredByPlugin()) {
-        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+        knob->getHolder()->getApp()->addKeyframeIndicator(time);
     }
 }
 
@@ -384,7 +384,7 @@ KnobGui::setKeyframe(double time,const KeyFrame& key,int dimension)
     
     Q_EMIT keyFrameSet();
     if ( !knob->getIsSecret() && keyAdded && knob->isDeclaredByPlugin() ) {
-        knob->getHolder()->getApp()->getTimeLine()->addKeyframeIndicator(time);
+        knob->getHolder()->getApp()->addKeyframeIndicator(time);
     }
 }
 
@@ -449,7 +449,7 @@ KnobGui::removeKeyFrame(double time,
 
     assert( knob->getHolder()->getApp() );
     if ( !knob->getIsSecret() ) {
-        knob->getHolder()->getApp()->getTimeLine()->removeKeyFrameIndicator(time);
+        knob->getHolder()->getApp()->removeKeyFrameIndicator(time);
     }
     updateGUI(dimension);
 }
@@ -470,7 +470,7 @@ KnobGui::setKeyframes(const std::vector<KeyFrame>& keys, int dimension)
     }
     Q_EMIT keyFrameSet();
     if ( !knob->getIsSecret() && knob->isDeclaredByPlugin() ) {
-        knob->getHolder()->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(times, true);
+        knob->getHolder()->getApp()->addMultipleKeyframeIndicatorsAdded(times, true);
     }
 }
 

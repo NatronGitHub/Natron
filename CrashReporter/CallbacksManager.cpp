@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@
 #include <QNetworkRequest>
 #include <QHttpMultiPart>
 
-#define UPLOAD_URL "http://betelgeuse.inrialpes.fr:8181/submit"//"http://breakpad.natron.fr/submit"
-#define FALLBACK_FORM_URL "http://breakpad.natron.fr/submit-form.html"
+#define UPLOAD_URL "http://breakpad.natron.fr/submit"
+#define FALLBACK_FORM_URL "http://breakpad.natron.fr/form/"
 
 CallbacksManager* CallbacksManager::_instance = 0;
 
@@ -66,7 +66,7 @@ using namespace google_breakpad;
 
 CallbacksManager::CallbacksManager(bool autoUpload)
 : QObject()
-#ifdef DEBUG
+#ifdef TRACE_CRASH_RERPORTER
 , _dFileMutex()
 , _dFile(0)
 #endif
@@ -84,15 +84,15 @@ CallbacksManager::CallbacksManager(bool autoUpload)
     _instance = this;
     QObject::connect(this, SIGNAL(doDumpCallBackOnMainThread(QString)), this, SLOT(onDoDumpOnMainThread(QString)));
 
-#ifdef DEBUG
-    _dFile = new QFile("debug.txt");
+#ifdef TRACE_CRASH_RERPORTER
+    _dFile = new QFile("debugCrashReporter.txt");
     _dFile->open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text);
 #endif
 }
 
 
 CallbacksManager::~CallbacksManager() {
-#ifdef DEBUG
+#ifdef TRACE_CRASH_RERPORTER
     delete _dFile;
 #endif
 
@@ -407,14 +407,14 @@ CallbacksManager::s_emitDoCallBackOnMainThread(const QString& filePath)
     writeDebugMessage("Dump request received, file located at: " + filePath);
     if (QFile::exists(filePath)) {
 
-        emit doDumpCallBackOnMainThread(filePath);
+        Q_EMIT doDumpCallBackOnMainThread(filePath);
 
     } else {
         writeDebugMessage("Dump file does not seem to exist...exiting crash reporter now.");
     }
 }
 
-#ifdef DEBUG
+#ifdef TRACE_CRASH_RERPORTER
 void
 CallbacksManager::writeDebugMessage(const QString& str)
 {
@@ -522,6 +522,7 @@ CallbacksManager::startCrashGenerationServer()
                                           true, // auto-generate dumps
                                           &stdDumpPath); // path to dump to
 #elif defined(Q_OS_WIN32)
+    _pipePath.replace("/","\\");
     std::string pipeName = _pipePath.toStdString();
     std::wstring wpipeName = s2ws(pipeName);
     std::string stdDumPath = _dumpDirPath.toStdString();

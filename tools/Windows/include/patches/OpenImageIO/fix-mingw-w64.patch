@@ -1,14 +1,3 @@
---- a/src/cmake/externalpackages.cmake
-+++ b/src/cmake/externalpackages.cmake
-@@ -149,6 +149,8 @@ else ()
-     endif ()
- endif ()
- 
-+add_definitions("-DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB")
-+
- if (VERBOSE)
-     message (STATUS "Boost found ${Boost_FOUND} ")
-     message (STATUS "Boost version      ${Boost_VERSION}")
 --- a/src/include/OpenImageIO/missing_math.h
 +++ b/src/include/OpenImageIO/missing_math.h
 @@ -106,7 +106,7 @@
@@ -32,15 +21,6 @@
  # include <windows.h>
  #endif
  
---- a/src/include/OpenImageIO/thread.h
-+++ b/src/include/OpenImageIO/thread.h
-@@ -98,6 +98,7 @@
- #endif
- 
- #if defined(__GNUC__) && (defined(_GLIBCXX_ATOMIC_BUILTINS) || (__GNUC__ * 100 + __GNUC_MINOR__ >= 401))
-+#include <sched.h>
- #define USE_GCC_ATOMICS
- #endif
  
 --- a/src/libOpenImageIO/CMakeLists.txt
 +++ b/src/libOpenImageIO/CMakeLists.txt
@@ -53,16 +33,6 @@
  endif ()
  link_ilmbase (OpenImageIO)
  add_dependencies (OpenImageIO "${CMAKE_CURRENT_SOURCE_DIR}/libOpenImageIO.map")
---- a/src/libOpenImageIO/exif.cpp
-+++ b/src/libOpenImageIO/exif.cpp
-@@ -36,6 +36,7 @@
- #include <map>
- #include <set>
- #include <algorithm>
-+#include <malloc.h>
- 
- #include <boost/foreach.hpp>
- 
 --- a/src/libOpenImageIO/imageinput.cpp
 +++ b/src/libOpenImageIO/imageinput.cpp
 @@ -32,6 +32,7 @@
@@ -83,16 +53,6 @@
  #include <cstring>
  
  #include <OpenEXR/ImathMatrix.h>
---- a/src/libtexture/texoptions.cpp
-+++ b/src/libtexture/texoptions.cpp
-@@ -29,6 +29,7 @@
- */
- 
- #include <string>
-+#include <malloc.h>
- #include <boost/scoped_ptr.hpp>
- #include <boost/tr1/memory.hpp>
- using namespace std::tr1;
 --- a/src/libtexture/texturesys.cpp
 +++ b/src/libtexture/texturesys.cpp
 @@ -30,6 +30,7 @@
@@ -153,6 +113,7 @@
  }
  
  
+ 
 --- a/src/libutil/sysutil.cpp
 +++ b/src/libutil/sysutil.cpp
 @@ -137,7 +137,7 @@ Sysutil::get_local_time (const time_t *time, struct tm *converted_time)
@@ -163,6 +124,7 @@
 +    *converted_time = *localtime(time);
  #endif
  }
+ 
  
 --- a/src/ptex.imageio/ptex/PtexCache.cpp
 +++ b/src/ptex.imageio/ptex/PtexCache.cpp
@@ -193,6 +155,7 @@
 +
  	free(buff);
      }
+ 
  
 --- a/src/ptex.imageio/ptex/PtexPlatform.h
 +++ b/src/ptex.imageio/ptex/PtexPlatform.h
@@ -238,23 +201,4 @@
  endif()
  
  
---- a/CMakeLists.txt	2013-12-30 01:06:13.042400000 +0400
-+++ b/CMakeLists.txt	2013-12-30 01:06:22.293200000 +0400
-@@ -70,7 +70,7 @@
-     # include_directories(SYSTEM...) when using clang or gcc.
-     set (CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem ")
-     # Ensure this macro is set for stdint.h
--    add_definitions ("-D__STDC_LIMIT_MACROS")
-+    add_definitions ("-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS")
-     # this allows native instructions to be used for sqrtf instead of a function call
-     add_definitions ("-fno-math-errno")
- endif ()
-@@ -423,7 +423,7 @@
-     set (CPACK_GENERATOR "TGZ;STGZ;PackageMaker")
-     set (CPACK_SOURCE_GENERATOR "TGZ")
- endif ()
--if (WIN32)
-+if (WIN32 AND NOT MINGW)
-     set (CPACK_GENERATOR "NSIS")
-     set(CPACK_PACKAGE_EXECUTABLES "iv" "iv - Image Viewer")
- #    set(CPACK_CREATE_DESCTOP_LINKS "iv" "iv - Image Viewer")
+

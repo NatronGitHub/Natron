@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,12 +44,27 @@
 #define kNatronDisparityComponentsName "Disparity"
 #define kNatronMotionComponentsName "Motion"
 
+#define kNatronAlphaPlaneUserName kNatronColorPlaneName "." kNatronAlphaComponentsName
+#define kNatronRGBAPlaneUserName kNatronColorPlaneName "." kNatronRGBAComponentsName
+#define kNatronRGBPlaneUserName kNatronColorPlaneName "." kNatronRGBComponentsName
+#define kNatronDisparityLeftPlaneUserName kNatronDisparityLeftPlaneName "." kNatronDisparityComponentsName
+#define kNatronDisparityRightPlaneUserName kNatronDisparityRightPlaneName "." kNatronDisparityComponentsName
+#define kNatronBackwardMotionVectorsPlaneUserName kNatronBackwardMotionVectorsPlaneName "." kNatronMotionComponentsName
+#define kNatronForwardMotionVectorsPlaneUserName kNatronForwardMotionVectorsPlaneName "." kNatronMotionComponentsName
 
 namespace Natron {
 
 class ImageComponents
 {
 public:
+    
+    /**
+     * @brief The default components registered in Natron, you can iterate until {0,0}
+     **/
+    static const char* defaultComponents[][2];
+    
+    static std::string mapUserFriendlyPlaneNameToNatronInternalPlaneName(const std::string& userfriendlyPlaneName);
+    static std::string mapNatronInternalPlaneNameToUserFriendlyPlaneName(const std::string& planeName);
     
     ImageComponents();
     
@@ -66,6 +81,8 @@ public:
     
     // Is it Alpha, RGB or RGBA
     bool isColorPlane() const;
+    
+    static bool isColorPlane(const std::string& layerName);
     
     // Only color plane (isColorPlane()) can be convertible
     bool isConvertibleTo(const ImageComponents& other) const;

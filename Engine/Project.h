@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,11 +65,17 @@ public:
     Project(AppInstance* appInstance);
 
     virtual ~Project();
+    
+    //these are per project thread-local data
+    struct ProjectTLSData {
+        std::vector<std::string> viewNames;
+    };
+    typedef boost::shared_ptr<ProjectTLSData> ProjectDataTLSPtr;
 
     /**
      * @brief Loads the project with the given path and name corresponding to a file on disk.
      **/
-    bool loadProject(const QString & path,const QString & name, bool isUntitledAutosave = false);
+    bool loadProject(const QString & path,const QString & name, bool isUntitledAutosave = false, bool attemptToLoadAutosave = true);
 
     
     
@@ -153,7 +159,6 @@ public:
 
     int currentFrame() const WARN_UNUSED_RETURN;
 
-    void ensureAllProcessingThreadsFinished();
 
     /**
      * @brief Returns true if the project is considered as irrelevant and shouldn't be autosaved anyway.
@@ -302,6 +307,8 @@ public:
     }
     
     bool addFormat(const std::string& formatSpec);
+    
+    void setTimeLine(const boost::shared_ptr<TimeLine>& timeline);
     
 public Q_SLOTS:
 

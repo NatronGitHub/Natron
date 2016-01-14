@@ -1,7 +1,7 @@
 #!/bin/sh
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -101,6 +101,10 @@ if [ -d $TMP_PATH ]; then
     rm -rf $TMP_PATH || exit 1
 fi
 mkdir -p $TMP_PATH || exit 1
+if [ -d "$INSTALL_PATH/symbols" ]; then
+  rm -rf $INSTALL_PATH/symbols || exit 1
+fi
+mkdir -p $INSTALL_PATH/symbols || exit 1
 
 # SETUP
 INSTALLER=$TMP_PATH/Natron-installer
@@ -130,6 +134,9 @@ cp $INSTALL_PATH/ffmpeg-$FFLIC/bin/{ffmpeg,ffprobe} $OFX_IO_PATH/data/ || exit 1
 strip -s $OFX_IO_PATH/data/ffmpeg
 strip -s $OFX_IO_PATH/data/ffprobe
 cp -a $INSTALL_PATH/Plugins/IO.ofx.bundle $OFX_IO_PATH/data/Plugins/OFX/Natron/ || exit 1
+if [ "${BREAKPAD}" != "0" ]; then
+  $INSTALL_PATH/bin/dump_syms $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/IO.ofx > $INSTALL_PATH/symbols/IO.ofx-${TAG}-${PKGOS}.sym || exit 1
+fi
 strip -s $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/*
 IO_LIBS=$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Libraries
 mkdir -p $IO_LIBS || exit 1
@@ -170,6 +177,10 @@ mkdir -p $OFX_MISC_PATH/data $OFX_MISC_PATH/meta $OFX_MISC_PATH/data/Plugins/OFX
 cat $XML/openfx-misc.xml | sed "s/_VERSION_/${OFX_MISC_VERSION}/;s/_DATE_/${DATE}/" > $OFX_MISC_PATH/meta/package.xml || exit 1
 cat $QS/openfx-misc.qs > $OFX_MISC_PATH/meta/installscript.qs || exit 1
 cp -a $INSTALL_PATH/Plugins/{CImg,Misc}.ofx.bundle $OFX_MISC_PATH/data/Plugins/OFX/Natron/ || exit 1
+if [ "${BREAKPAD}" != "0" ]; then
+  $INSTALL_PATH/bin/dump_syms $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/CImg.ofx > $INSTALL_PATH/symbols/CImg.ofx-${TAG}-${PKGOS}.sym || exit 1
+  $INSTALL_PATH/bin/dump_syms $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/Misc.ofx > $INSTALL_PATH/symbols/Misc.ofx-${TAG}-${PKGOS}.sym || exit 1
+fi
 strip -s $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/*
 CIMG_LIBS=$OFX_MISC_PATH/data/Plugins/OFX/Natron/CImg.ofx.bundle/Libraries
 mkdir -p $CIMG_LIBS || exit 1
@@ -201,6 +212,10 @@ cp -a $INSTALL_PATH/docs/natron/* $NATRON_PATH/data/docs/ || exit 1
 cp $INSTALL_PATH/share/stylesheets/mainstyle.qss $NATRON_PATH/data/share/ || exit 1
 cat $INSTALL_PATH/docs/natron/LICENSE.txt > $NATRON_PATH/meta/natron-license.txt || exit 1
 cp $INSTALL_PATH/bin/Natron* $NATRON_PATH/data/bin/ || exit 1
+if [ "${BREAKPAD}" != "0" ]; then
+  $INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/Natron > $INSTALL_PATH/symbols/Natron-${TAG}-${PKGOS}.sym || exit 1
+  $INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/NatronRenderer > $INSTALL_PATH/symbols/NatronRenderer-${TAG}-${PKGOS}.sym || exit 1
+fi
 strip -s $NATRON_PATH/data/bin/Natron $NATRON_PATH/data/bin/NatronRenderer
 if [ -f "$NATRON_PATH/data/bin/NatronCrashReporter" ]; then
     strip -s $NATRON_PATH/data/bin/NatronCrashReporter $NATRON_PATH/data/bin/NatronRendererCrashReporter
@@ -372,8 +387,8 @@ tar xvf $SRC_PATH/strings$BIT.tgz -C $CLIBS_PATH/data/bin/ || exit 1
     done;
   )
 )
-patchelf --set-rpath "\$ORIGIN/Plugins/IO.ofx.bundle/Libraries" $OFX_IO_PATH/data/ffmpeg || exit 1
-patchelf --set-rpath "\$ORIGIN/Plugins/IO.ofx.bundle/Libraries" $OFX_IO_PATH/data/ffprobe || exit 1
+patchelf --set-rpath "\$ORIGIN/Plugins/OFX/Natron/IO.ofx.bundle/Libraries" $OFX_IO_PATH/data/ffmpeg || exit 1
+patchelf --set-rpath "\$ORIGIN/Plugins/OFX/Natron/IO.ofx.bundle/Libraries" $OFX_IO_PATH/data/ffprobe || exit 1
 
 # OFX ARENA
 OFX_ARENA_VERSION=$TAG
@@ -382,6 +397,9 @@ mkdir -p $OFX_ARENA_PATH/meta $OFX_ARENA_PATH/data/Plugins/OFX/Natron || exit 1
 cat $XML/openfx-arena.xml | sed "s/_VERSION_/${OFX_ARENA_VERSION}/;s/_DATE_/${DATE}/" > $OFX_ARENA_PATH/meta/package.xml || exit 1
 cat $QS/openfx-arena.qs > $OFX_ARENA_PATH/meta/installscript.qs || exit 1
 cp -av $INSTALL_PATH/Plugins/Arena.ofx.bundle $OFX_ARENA_PATH/data/Plugins/OFX/Natron/ || exit 1
+if [ "${BREAKPAD}" != "0" ]; then
+  $INSTALL_PATH/bin/dump_syms $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/Arena.ofx > $INSTALL_PATH/symbols/Arena.ofx-${TAG}-${PKGOS}.sym || exit 1
+fi
 strip -s $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/*
 
 ARENA_LIBS=$OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Libraries

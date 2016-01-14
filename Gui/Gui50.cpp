@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -437,6 +437,12 @@ Gui::setLastKeyPressVisitedClickFocus(bool visited)
 }
 
 void
+Gui::setLastKeyUpVisitedClickFocus(bool visited)
+{
+    _imp->keyUpEventHasVisitedFocusWidget = visited;
+}
+
+void
 Gui::keyPressEvent(QKeyEvent* e)
 {
     if (_imp->currentPanelFocusEventRecursion > 0) {
@@ -492,9 +498,9 @@ Gui::keyPressEvent(QKeyEvent* e)
             getNodeGraph()->getLastSelectedViewer()->nextIncrement();
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
-        getApp()->getTimeLine()->goToPreviousKeyframe();
+        getApp()->goToPreviousKeyframe();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
-        getApp()->getTimeLine()->goToNextKeyframe();
+        getApp()->goToNextKeyframe();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key) ) {
         _imp->_nodeGraphArea->toggleSelectedNodesEnabled();
     } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
@@ -520,8 +526,35 @@ Gui::keyPressEvent(QKeyEvent* e)
     } else if (isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
         connectInput(9);
     } else {
+        
+        /*
+         * Modifiers are always uncaught by child implementations so that we can forward them to 1 ViewerTab so that
+         * plug-ins overlay interacts always get the keyDown/keyUp events to track modifiers state.
+         */
+        bool isModifier = key == Qt::Key_Control || key == Qt::Key_Shift || key == Qt::Key_Alt || key == Qt::Key_Meta;
+        if (isModifier) {
+            const std::list<ViewerTab*>& viewers = getViewersList();
+            bool viewerTabHasFocus = false;
+            for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+                if ((*it)->hasFocus() || (_imp->currentPanelFocus == *it && !_imp->keyPressEventHasVisitedFocusWidget)) {
+                    viewerTabHasFocus = true;
+                    break;
+                }
+            }
+            //Plug-ins did not yet receive a keyDown event for this modifier, send it
+            if (!viewers.empty() && !viewerTabHasFocus) {
+                //Increment a recursion counter because the handler of the focus widget might toss it back to us
+                ++_imp->currentPanelFocusEventRecursion;
+                //If a panel as the click focus, try to send the event to it
+                QKeyEvent* ev = new QKeyEvent(QEvent::KeyPress, key, modifiers);
+                qApp->notify(viewers.front(),ev);
+                --_imp->currentPanelFocusEventRecursion;
+            }
+        }
+        
         if (_imp->currentPanelFocus && !_imp->keyPressEventHasVisitedFocusWidget) {
             
+            //Increment a recursion counter because the handler of the focus widget might toss it back to us
             ++_imp->currentPanelFocusEventRecursion;
             //If a panel as the click focus, try to send the event to it
             QWidget* curFocusWidget = _imp->currentPanelFocus->getWidget();
@@ -532,6 +565,56 @@ Gui::keyPressEvent(QKeyEvent* e)
         } else {
             QMainWindow::keyPressEvent(e);
         }
+    }
+}
+
+void
+Gui::keyReleaseEvent(QKeyEvent* e)
+{
+    if (_imp->currentPanelFocusEventRecursion > 0) {
+        return;
+    }
+    
+    Qt::Key key = (Qt::Key)e->key();
+    Qt::KeyboardModifiers modifiers = e->modifiers();
+
+    /*
+     * Modifiers are always uncaught by child implementations so that we can forward them to 1 ViewerTab so that
+     * plug-ins overlay interacts always get the keyDown/keyUp events to track modifiers state.
+     */
+    bool isModifier = key == Qt::Key_Control || key == Qt::Key_Shift || key == Qt::Key_Alt || key == Qt::Key_Meta;
+    if (isModifier) {
+        const std::list<ViewerTab*>& viewers = getViewersList();
+        bool viewerTabHasFocus = false;
+        for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            if ((*it)->hasFocus() || (_imp->currentPanelFocus == *it && !_imp->keyUpEventHasVisitedFocusWidget)) {
+                viewerTabHasFocus = true;
+                break;
+            }
+        }
+        //Plug-ins did not yet receive a keyUp event for this modifier, send it
+        if (!viewers.empty() && !viewerTabHasFocus) {
+            //Increment a recursion counter because the handler of the focus widget might toss it back to us
+            ++_imp->currentPanelFocusEventRecursion;
+            //If a panel as the click focus, try to send the event to it
+            QKeyEvent* ev = new QKeyEvent(QEvent::KeyRelease, key, modifiers);
+            qApp->notify(viewers.front(),ev);
+            --_imp->currentPanelFocusEventRecursion;
+        }
+    }
+    
+    if (_imp->currentPanelFocus && !_imp->keyUpEventHasVisitedFocusWidget) {
+        
+        //Increment a recursion counter because the handler of the focus widget might toss it back to us
+        ++_imp->currentPanelFocusEventRecursion;
+        //If a panel as the click focus, try to send the event to it
+        QWidget* curFocusWidget = _imp->currentPanelFocus->getWidget();
+        assert(curFocusWidget);
+        QKeyEvent* ev = new QKeyEvent(QEvent::KeyRelease, key, modifiers);
+        qApp->notify(curFocusWidget,ev);
+        --_imp->currentPanelFocusEventRecursion;
+    } else {
+        QMainWindow::keyPressEvent(e);
     }
 }
 

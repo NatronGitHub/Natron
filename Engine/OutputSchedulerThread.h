@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -728,6 +728,8 @@ public Q_SLOTS:
     void abortRendering_Blocking() { abortRendering(true,true); }
 
     
+    void onCurrentFrameRenderRequestPosted();
+    
 Q_SIGNALS:
     
     /**
@@ -761,6 +763,8 @@ Q_SIGNALS:
     * @brief Emitted when gui is frozen and rendering is finished to update all knobs
      **/
     void refreshAllKnobs();
+    
+    void currentFrameRenderRequestPosted();
 
 protected:
     
@@ -771,6 +775,9 @@ protected:
     virtual OutputSchedulerThread* createScheduler(Natron::OutputEffectInstance* effect) ;
     
 private:
+    
+    void renderCurrentFrameInternal(bool enableRenderStats,bool canAbort);
+
     
     /**
      * The following functions are called by the OutputThreadScheduler to Q_EMIT the corresponding signals

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -278,6 +278,154 @@ ProjectGui::save<boost::archive::xml_oarchive>(boost::archive::xml_oarchive & ar
     archive << boost::serialization::make_nvp("ProjectGui",projectGuiSerializationObj);
 }
 
+
+static
+void loadNodeGuiSerialization(Gui* gui,
+                              const std::map<std::string, ViewerData > & viewersProjections,
+                              const boost::shared_ptr<Settings>& settings,
+                              double leftBound, double rightBound,
+                              const NodeGuiSerialization& serialization)
+{
+    const std::string & name = serialization.getFullySpecifiedName();
+    boost::shared_ptr<Natron::Node> internalNode = gui->getApp()->getProject()->getNodeByFullySpecifiedName(name);
+    if (!internalNode) {
+        return;
+    }
+    
+    boost::shared_ptr<NodeGuiI> nGui_i = internalNode->getNodeGui();
+    assert(nGui_i);
+    boost::shared_ptr<NodeGui> nGui = boost::dynamic_pointer_cast<NodeGui>(nGui_i);
+    
+    nGui->refreshPosition( serialization.getX(),serialization.getY(), true );
+    
+    if ( ( serialization.isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled() ) ||
+        ( !serialization.isPreviewEnabled() && nGui->getNode()->isPreviewEnabled() ) ) {
+        nGui->togglePreview();
+    }
+    
+    Natron::EffectInstance* iseffect = nGui->getNode()->getLiveInstance();
+    
+    if ( serialization.colorWasFound() ) {
+        std::list<std::string> grouping;
+        iseffect->getPluginGrouping(&grouping);
+        std::string majGroup = grouping.empty() ? "" : grouping.front();
+        
+        BackDropGui* isBd = dynamic_cast<BackDropGui*>(nGui.get());
+        float defR,defG,defB;
+
+        if ( iseffect->isReader() ) {
+            settings->getReaderColor(&defR, &defG, &defB);
+        } else if ( iseffect->isWriter() ) {
+            settings->getWriterColor(&defR, &defG, &defB);
+        } else if ( iseffect->isGenerator() ) {
+            settings->getGeneratorColor(&defR, &defG, &defB);
+        } else if (majGroup == PLUGIN_GROUP_COLOR) {
+            settings->getColorGroupColor(&defR, &defG, &defB);
+        } else if (majGroup == PLUGIN_GROUP_FILTER) {
+            settings->getFilterGroupColor(&defR, &defG, &defB);
+        } else if (majGroup == PLUGIN_GROUP_CHANNEL) {
+            settings->getChannelGroupColor(&defR, &defG, &defB);
+        } else if (majGroup == PLUGIN_GROUP_KEYER) {
+            settings->getKeyerGroupColor(&defR, &defG, &defB);
+        } else if (majGroup == PLUGIN_GROUP_MERGE) {
+            settings->getMergeGroupColor(&defR, &defG, &defB);
+        } else if (majGroup == PLUGIN_GROUP_PAINT) {
+            settings->getDrawGroupColor(&defR, &defG, &defB);
+        } else if (majGroup == PLUGIN_GROUP_TIME) {
+            settings->getTimeGroupColor(&defR, &defG, &defB);
+        } else if (majGroup == PLUGIN_GROUP_TRANSFORM) {
+            settings->getTransformGroupColor(&defR, &defG, &defB);
+        } else if (majGroup == PLUGIN_GROUP_MULTIVIEW) {
+            settings->getViewsGroupColor(&defR, &defG, &defB);
+        } else if (majGroup == PLUGIN_GROUP_DEEP) {
+            settings->getDeepGroupColor(&defR, &defG, &defB);
+        } else if (isBd) {
+            settings->getDefaultBackDropColor(&defR, &defG, &defB);
+        } else {
+            settings->getDefaultNodeColor(&defR, &defG, &defB);
+        }
+        
+        
+        float r,g,b;
+        serialization.getColor(&r, &g, &b);
+        ///restore color only if different from default.
+        if ( (std::abs(r - defR) > 0.05) || (std::abs(g - defG) > 0.05) || (std::abs(b - defB) > 0.05) ) {
+            QColor color;
+            color.setRgbF(r, g, b);
+            nGui->setCurrentColor(color);
+        }
+        
+        double ovR,ovG,ovB;
+        bool hasOverlayColor = serialization.getOverlayColor(&ovR,&ovG,&ovB);
+        if (hasOverlayColor) {
+            QColor c;
+            c.setRgbF(ovR, ovG, ovB);
+            nGui->setOverlayColor(c);
+        }
+        
+        if (isBd) {
+            double w,h;
+            serialization.getSize(&w, &h);
+            isBd->resize(w, h, true);
+        }
+    }
+    
+    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( nGui->getNode()->getLiveInstance() );
+    if (viewer) {
+        std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
+        if ( found != viewersProjections.end() ) {
+            ViewerTab* tab = gui->getApp()->getGui()->getViewerTabForInstance(viewer);
+            tab->setProjection(found->second.zoomLeft, found->second.zoomBottom, found->second.zoomFactor, 1.);
+            tab->setChannels(found->second.channels);
+            tab->setColorSpace(found->second.colorSpace);
+            tab->setGain(found->second.gain);
+            tab->setGamma(found->second.gamma);
+            tab->setUserRoIEnabled(found->second.userRoIenabled);
+            tab->setAutoContrastEnabled(found->second.autoContrastEnabled);
+            tab->setUserRoI(found->second.userRoI);
+            tab->setClipToProject(found->second.isClippedToProject);
+            tab->setRenderScaleActivated(found->second.renderScaleActivated);
+            tab->setMipMapLevel(found->second.mipMapLevel);
+            tab->setCompositingOperator( (Natron::ViewerCompositingOperatorEnum)found->second.wipeCompositingOp );
+            tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
+            tab->setTopToolbarVisible(found->second.topToolbarVisible);
+            tab->setLeftToolbarVisible(found->second.leftToolbarVisible);
+            tab->setRightToolbarVisible(found->second.rightToolbarVisible);
+            tab->setPlayerVisible(found->second.playerVisible);
+            tab->setInfobarVisible(found->second.infobarVisible);
+            tab->setTimelineVisible(found->second.timelineVisible);
+            tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
+            if (found->second.aChoice >= 0) {
+                tab->setInputA(found->second.aChoice);
+            }
+            if (found->second.bChoice >= 0) {
+                tab->setInputB(found->second.bChoice);
+            }
+            if (found->second.version >= VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
+                tab->setFrameRange(found->second.leftBound, found->second.rightBound);
+                tab->setFrameRangeEdited(leftBound != found->second.leftBound || rightBound != found->second.rightBound);
+            } else {
+                tab->setFrameRange(leftBound, rightBound);
+                tab->setFrameRangeEdited(false);
+            }
+            if (!found->second.fpsLocked) {
+                tab->setDesiredFps(found->second.fps);
+            }
+            tab->setFPSLocked(found->second.fpsLocked);
+        }
+    }
+    
+    if ( serialization.isSelected() ) {
+        gui->getNodeGraph()->selectNode(nGui, true);
+    }
+    
+    const std::list<boost::shared_ptr<NodeGuiSerialization> > & nodesGuiSerialization = serialization.getChildren();
+    for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = nodesGuiSerialization.begin(); it != nodesGuiSerialization.end(); ++it) {
+        loadNodeGuiSerialization(gui, viewersProjections, settings, leftBound, rightBound, **it);
+    }
+
+}
+
 template<>
 void
 ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & archive/*,
@@ -294,135 +442,10 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
 
     
     ///default color for nodes
-    float defR,defG,defB;
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
     const std::list<NodeGuiSerialization> & nodesGuiSerialization = obj.getSerializedNodesGui();
     for (std::list<NodeGuiSerialization>::const_iterator it = nodesGuiSerialization.begin(); it != nodesGuiSerialization.end(); ++it) {
-        const std::string & name = it->getFullySpecifiedName();
-        boost::shared_ptr<Natron::Node> internalNode = _gui->getApp()->getProject()->getNodeByFullySpecifiedName(name);
-        if (!internalNode) {
-            continue;
-        }
-        
-        boost::shared_ptr<NodeGuiI> nGui_i = internalNode->getNodeGui();
-        assert(nGui_i);
-        boost::shared_ptr<NodeGui> nGui = boost::dynamic_pointer_cast<NodeGui>(nGui_i);
-        
-        nGui->refreshPosition( it->getX(),it->getY(), true );
-
-        if ( ( it->isPreviewEnabled() && !nGui->getNode()->isPreviewEnabled() ) ||
-             ( !it->isPreviewEnabled() && nGui->getNode()->isPreviewEnabled() ) ) {
-            nGui->togglePreview();
-        }
-
-        Natron::EffectInstance* iseffect = nGui->getNode()->getLiveInstance();
-
-        if ( it->colorWasFound() ) {
-            std::list<std::string> grouping;
-            iseffect->getPluginGrouping(&grouping);
-            std::string majGroup = grouping.empty() ? "" : grouping.front();
-
-            BackDropGui* isBd = dynamic_cast<BackDropGui*>(nGui.get());
-
-            if ( iseffect->isReader() ) {
-                settings->getReaderColor(&defR, &defG, &defB);
-            } else if ( iseffect->isWriter() ) {
-                settings->getWriterColor(&defR, &defG, &defB);
-            } else if ( iseffect->isGenerator() ) {
-                settings->getGeneratorColor(&defR, &defG, &defB);
-            } else if (majGroup == PLUGIN_GROUP_COLOR) {
-                settings->getColorGroupColor(&defR, &defG, &defB);
-            } else if (majGroup == PLUGIN_GROUP_FILTER) {
-                settings->getFilterGroupColor(&defR, &defG, &defB);
-            } else if (majGroup == PLUGIN_GROUP_CHANNEL) {
-                settings->getChannelGroupColor(&defR, &defG, &defB);
-            } else if (majGroup == PLUGIN_GROUP_KEYER) {
-                settings->getKeyerGroupColor(&defR, &defG, &defB);
-            } else if (majGroup == PLUGIN_GROUP_MERGE) {
-                settings->getMergeGroupColor(&defR, &defG, &defB);
-            } else if (majGroup == PLUGIN_GROUP_PAINT) {
-                settings->getDrawGroupColor(&defR, &defG, &defB);
-            } else if (majGroup == PLUGIN_GROUP_TIME) {
-                settings->getTimeGroupColor(&defR, &defG, &defB);
-            } else if (majGroup == PLUGIN_GROUP_TRANSFORM) {
-                settings->getTransformGroupColor(&defR, &defG, &defB);
-            } else if (majGroup == PLUGIN_GROUP_MULTIVIEW) {
-                settings->getViewsGroupColor(&defR, &defG, &defB);
-            } else if (majGroup == PLUGIN_GROUP_DEEP) {
-                settings->getDeepGroupColor(&defR, &defG, &defB);
-            } else if (isBd) {
-                settings->getDefaultBackDropColor(&defR, &defG, &defB);
-            } else {
-                settings->getDefaultNodeColor(&defR, &defG, &defB);
-            }
-
-
-            float r,g,b;
-            it->getColor(&r, &g, &b);
-            ///restore color only if different from default.
-            if ( (std::abs(r - defR) > 0.05) || (std::abs(g - defG) > 0.05) || (std::abs(b - defB) > 0.05) ) {
-                QColor color;
-                color.setRgbF(r, g, b);
-                nGui->setCurrentColor(color);
-            }
-            
-            double ovR,ovG,ovB;
-            bool hasOverlayColor = it->getOverlayColor(&ovR,&ovG,&ovB);
-            if (hasOverlayColor) {
-                QColor c;
-                c.setRgbF(ovR, ovG, ovB);
-                nGui->setOverlayColor(c);
-            }
-            
-            if (isBd) {
-                double w,h;
-                it->getSize(&w, &h);
-                isBd->resize(w, h, true);
-            }
-        }
-        
-        ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( nGui->getNode()->getLiveInstance() );
-        if (viewer) {
-            std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
-            if ( found != viewersProjections.end() ) {
-                ViewerTab* tab = _gui->getApp()->getGui()->getViewerTabForInstance(viewer);
-                tab->setProjection(found->second.zoomLeft, found->second.zoomBottom, found->second.zoomFactor, 1.);
-                tab->setChannels(found->second.channels);
-                tab->setColorSpace(found->second.colorSpace);
-                tab->setGain(found->second.gain);
-                tab->setGamma(found->second.gamma);
-                tab->setUserRoIEnabled(found->second.userRoIenabled);
-                tab->setAutoContrastEnabled(found->second.autoContrastEnabled);
-                tab->setUserRoI(found->second.userRoI);
-                tab->setClipToProject(found->second.isClippedToProject);
-                tab->setRenderScaleActivated(found->second.renderScaleActivated);
-                tab->setMipMapLevel(found->second.mipMapLevel);
-                tab->setCompositingOperator( (Natron::ViewerCompositingOperatorEnum)found->second.wipeCompositingOp );
-                tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
-                tab->setTopToolbarVisible(found->second.topToolbarVisible);
-                tab->setLeftToolbarVisible(found->second.leftToolbarVisible);
-                tab->setRightToolbarVisible(found->second.rightToolbarVisible);
-                tab->setPlayerVisible(found->second.playerVisible);
-                tab->setInfobarVisible(found->second.infobarVisible);
-                tab->setTimelineVisible(found->second.timelineVisible);
-                tab->setCheckerboardEnabled(found->second.checkerboardEnabled);
-                if (found->second.version >= VIEWER_DATA_REMOVES_FRAME_RANGE_LOCK) {
-                    tab->setFrameRange(found->second.leftBound, found->second.rightBound);
-                    tab->setFrameRangeEdited(leftBound != found->second.leftBound || rightBound != found->second.rightBound);
-                } else {
-                    tab->setFrameRange(leftBound, rightBound);
-                    tab->setFrameRangeEdited(false);
-                }
-                if (!found->second.fpsLocked) {
-                    tab->setDesiredFps(found->second.fps);
-                }
-                tab->setFPSLocked(found->second.fpsLocked);
-            }
-        }
-
-        if ( it->isSelected() ) {
-            _gui->getNodeGraph()->selectNode(nGui, true);
-        }
+        loadNodeGuiSerialization(_gui, viewersProjections, settings,leftBound, rightBound,  *it);
     }
 
 
@@ -545,7 +568,10 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
     
     _gui->getApp()->updateProjectLoadStatus(QObject::tr("Restoring layout"));
     
-    _gui->restoreLayout( true,obj.getVersion() < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL,obj.getGuiLayout() );
+    bool loadWorkspace = appPTR->getCurrentSettings()->getLoadProjectWorkspce();
+    if (loadWorkspace) {
+        _gui->restoreLayout( true,obj.getVersion() < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL,obj.getGuiLayout() );
+    }
 
     ///restore the histograms
     const std::list<std::string> & histograms = obj.getHistograms();

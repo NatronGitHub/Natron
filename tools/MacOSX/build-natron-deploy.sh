@@ -1,7 +1,7 @@
 #!/bin/bash
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,10 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
+# TAG=...: Date to timestamp symbols
+# DUMP_SYMS=...: Absolute path to binary of dump_syms
+# SYMBOLS_PATH=...: Absolute path to the dst symbols
+# DISABLE_BREAKPAD=1: When set, automatic crash reporting (google-breakpad support) will be disabled
 if [ $# -ne 1 ]; then
     echo "$0: Make a Natron.app that doesn't depend on MacPorts (can be used out of the build system too)"
     echo "Usage: $0 App/Natron.app"
@@ -412,9 +416,26 @@ done
 
 find $pkglib -type f -exec sed -e "s@$MACPORTS@$MACRAND@g" -e "s@$HOMEBREW@$HOMEBREWRAND@g" -e "s@$LOCAL@$LOCALRAND@g" -i "" {} \;
 
+for bin in Natron NatronRenderer; do
+
+    binary="$package/Contents/MacOS/$bin";
+    #Dump symbols for breakpad before stripping
+    if [ "$DISABLE_BREAKPAD" != "1" ]; then
+		DSYM_64=${bin}x86_64.dSYM
+		DSYM_32=${bin}i386.dSYM
+        dsymutil -arch x86_64 -o $DSYM_64 "$binary"
+        dsymutil -arch i386 -o $DSYM_32 "$binary"
+        $DUMP_SYMS -a x86_64 -g $DSYM_64 "$binary"  > "$SYMBOLS_PATH/Natron-${TAG}-Mac-x86_64.sym"
+        $DUMP_SYMS -a i386 -g $DSYM_32 "$binary"  > "$SYMBOLS_PATH/Natron-${TAG}-Mac-i386.sym"
+		rm -rf $DSYM_64;
+		rm -rf $DSYM_32;
+    fi
+done
+
 if [ "$STRIP" = 1 ]; then
     for bin in Natron NatronRenderer NatronCrashReporter NatronRendererCrashReporter; do
         binary="$package/Contents/MacOS/$bin";
+
         if [ -x "$binary" ]; then
             echo "* stripping $binary";
             # Retain the original binary for QA and use with the util 'atos'

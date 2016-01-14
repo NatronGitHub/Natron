@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -301,10 +301,11 @@ Q_SIGNALS:
 
 struct KnobChange
 {
+    KnobI* knob;
     Natron::ValueChangedReasonEnum reason;
     bool originatedFromMainThread;
-    KnobI* knob;
 };
+
 typedef std::list<KnobChange> ChangesList;
 
 
@@ -532,7 +533,7 @@ public:
     virtual void deleteAnimationAfterTime(double time,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
 
     /**
-     * @brief Calls removeAnimation with a reason of Natron::eValueChangedReasonPluginEdited.
+     * @brief Calls removeAnimation with a reason of Natron::eValueChangedReasonNatronInternalEdited.
      **/
     void removeAnimation(int dimension);
 
@@ -859,6 +860,13 @@ public:
      * @brief Can the knob use undo/redo actions ?
      **/
     virtual bool getCanUndo() const = 0;
+    
+    /**
+     * @brief When a knob is clip preferences slaves, when its value changes, checkOFXClipPreferences will be called on the 
+     * holder effect
+     **/
+    virtual void setIsClipPreferencesSlave(bool slave) = 0;
+    virtual bool getIsClipPreferencesSlave() const = 0;
 
     /**
      * @brief Set the text displayed by the tooltip when
@@ -930,7 +938,7 @@ public:
      **/
     virtual void addListener(bool isExpression,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) = 0;
     
-    virtual void getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const = 0;
+    virtual void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const = 0;
     
 private:
     virtual void removeListener(KnobI* knob) = 0;
@@ -960,7 +968,7 @@ protected:
 public:
 
     /**
-     * @brief Calls slaveTo with a value changed reason of Natron::eValueChangedReasonPluginEdited.
+     * @brief Calls slaveTo with a value changed reason of Natron::eValueChangedReasonNatronInternalEdited.
      * @param ignoreMasterPersistence If true the master will not be serialized.
      **/
     bool slaveTo(int dimension,const boost::shared_ptr<KnobI> & other,int otherDimension,bool ignoreMasterPersistence = false);
@@ -990,7 +998,7 @@ public:
 
 
     /**
-     * @brief Calls unSlave with a value changed reason of Natron::eValueChangedReasonPluginEdited.
+     * @brief Calls unSlave with a value changed reason of Natron::eValueChangedReasonNatronInternalEdited.
      **/
     void unSlave(int dimension,bool copyState);
 
@@ -1046,7 +1054,7 @@ public:
      **/
     virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const = 0;
 
-    KnobPage* getTopLevelPage();
+    boost::shared_ptr<KnobPage> getTopLevelPage();
 };
 
 
@@ -1084,6 +1092,18 @@ public:
 private:
     virtual void deleteKnob() OVERRIDE FINAL;
 public:
+    
+    struct KnobTLSData
+    {
+        int expressionRecursionLevel;
+        
+        KnobTLSData()
+        : expressionRecursionLevel(0)
+        {
+            
+        }
+    };
+    typedef boost::shared_ptr<KnobTLSData> KnobDataTLSPtr;
     
     virtual void setKnobGuiPointer(KnobGuiI* ptr) OVERRIDE FINAL;
     virtual KnobGuiI* getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1128,7 +1148,10 @@ public:
     virtual double random(double min = 0., double max = 1.) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int randomInt(double time,unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int randomInt(int min = 0,int max = INT_MAX) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
 protected:
+    
+    virtual bool evaluateValueChangeOnTimeChange() const { return false; }
     
     void randomSeed(double time, unsigned int seed) const;
     
@@ -1219,6 +1242,8 @@ public:
     virtual void setIsPersistant(bool b) OVERRIDE FINAL;
     virtual void setCanUndo(bool val) OVERRIDE FINAL;
     virtual bool getCanUndo() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setIsClipPreferencesSlave(bool slave) OVERRIDE FINAL;
+    virtual bool getIsClipPreferencesSlave() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setHintToolTip(const std::string & hint) OVERRIDE FINAL;
     virtual const std::string & getHintToolTip() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setCustomInteract(const boost::shared_ptr<Natron::OfxParamOverlayInteract> & interactDesc) OVERRIDE FINAL;
@@ -1291,7 +1316,7 @@ public:
     virtual void addListener(bool isFromExpr,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) OVERRIDE FINAL;
     virtual void removeListener(KnobI* knob) OVERRIDE FINAL;
     
-    virtual void getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const OVERRIDE FINAL;
+    virtual void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const OVERRIDE FINAL;
 
     virtual void getListeners(std::list<boost::shared_ptr<KnobI> >& listeners) const OVERRIDE FINAL;
     
@@ -1783,12 +1808,13 @@ private:
     mutable QReadWriteLock _minMaxMutex;
     std::vector<T>  _minimums,_maximums,_displayMins,_displayMaxs;
     
-    ///this flag is to avoid recursive setValue calls
-    int _setValueRecursionLevel;
-    mutable QMutex _setValueRecursionLevelMutex;
-    
+
     mutable QMutex _setValuesQueueMutex;
     std::list< boost::shared_ptr<QueuedSetValue> > _setValuesQueue;
+
+    ///this flag is to avoid recursive setValue calls
+    mutable QMutex _setValueRecursionLevelMutex;
+    int _setValueRecursionLevel;
 };
 
 
@@ -1852,10 +1878,14 @@ private:
  **/
 class KnobHolder : public QObject
 {
-    struct KnobHolderPrivate;
-    boost::scoped_ptr<KnobHolderPrivate> _imp;
+    
 
     Q_OBJECT
+    
+    friend class RecursionLevelRAII;
+    
+    struct KnobHolderPrivate;
+    boost::scoped_ptr<KnobHolderPrivate> _imp;
     
 public:
 
@@ -1934,12 +1964,19 @@ public:
     
     bool areKnobsFrozen() const;
 
+    /**
+     * @brief Makes all output nodes connected downstream to this node abort any rendering.
+     * Should be called prior to changing the state of the user interface that could impact the
+     * final image.
+     **/
     virtual void abortAnyEvaluation() {}
     
     /**
      * @brief Dequeues all values set in the queues for all knobs
      **/
     bool dequeueValuesSet();
+    
+    bool isDequeueingValuesSet() const;
     
     void discardAppPointer();
     
@@ -1979,6 +2016,8 @@ public:
     
     boost::shared_ptr<KnobButton> createButtonKnob(const std::string& name, const std::string& label);
     
+    boost::shared_ptr<KnobSeparator> createSeparatorKnob(const std::string& name, const std::string& label);
+    
     //Type corresponds to the Type enum defined in StringParamBase in ParameterWrapper.h
     boost::shared_ptr<KnobString> createStringKnob(const std::string& name, const std::string& label);
     
@@ -2006,7 +2045,7 @@ public:
     
     bool isSetValueCurrentlyPossible() const;
     
-    void getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const;
+    void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const;
     
 protected:
     
@@ -2020,9 +2059,6 @@ protected:
     virtual bool canSetValue() const { return true; }
     
     
-protected:
-
-
     /**
      * @brief Equivalent to assert(actionsRecursionLevel == 0).
      * In release mode an exception is thrown instead.
@@ -2033,50 +2069,27 @@ protected:
      * kOfxActionEndInstanceChanged
      * kOfxImageEffectActionGetClipPreferences
      * kOfxInteractActionDraw
+     *
+     * We also allow recursion in some other actions such as getRegionOfDefinition or isIdentity
      **/
-    void assertActionIsNotRecursive() const;
-
+    virtual void assertActionIsNotRecursive() const {}
+    
     /**
      * @brief Should be called in the begining of an action.
      * Right after assertActionIsNotRecursive() for non recursive actions.
      **/
-    void incrementRecursionLevel();
-
+    virtual void incrementRecursionLevel() {}
+    
     /**
      * @brief Should be called at the end of an action.
      **/
-    void decrementRecursionLevel();
-
-        
-    /**
-     * @brief A small class to help managing the recursion level
-     * that can also that an action is not recursive.
-     **/
-    class RecursionLevelManager
-    {
-        KnobHolder* _holder;
-
+    virtual void decrementRecursionLevel() {}
+    
 public:
+    
+    virtual int getRecursionLevel() const { return 0; }
+    
 
-        RecursionLevelManager(KnobHolder* holder,
-                              bool assertNotRecursive)
-            : _holder(holder)
-        {
-            if (assertNotRecursive) {
-                _holder->assertActionIsNotRecursive();
-            }
-            _holder->incrementRecursionLevel();
-        }
-
-        ~RecursionLevelManager()
-        {
-            _holder->decrementRecursionLevel();
-        }
-    };
-
-public:
-
-    int getRecursionLevel() const;
 
     /**
      * @brief Use this to bracket setValue() calls, this will actually trigger the evaluate() and instanceChanged()
@@ -2167,6 +2180,8 @@ public:
     virtual int getCurrentView() const {
         return 0;
     }
+    
+    int getPageIndex(const KnobPage* page) const;
     
 protected:
 
@@ -2259,13 +2274,40 @@ private:
     virtual void initializeKnobs() = 0;
 };
 
+
+/**
+ * @brief A small class to help managing the recursion level
+ * that can also that an action is not recursive.
+ **/
+class RecursionLevelRAII
+{
+    KnobHolder* effect;
+    
+public:
+    
+    RecursionLevelRAII(KnobHolder* effect,
+                       bool assertNotRecursive)
+    : effect(effect)
+    {
+        if (assertNotRecursive) {
+            effect->assertActionIsNotRecursive();
+        }
+        effect->incrementRecursionLevel();
+    }
+    
+    ~RecursionLevelRAII()
+    {
+        effect->decrementRecursionLevel();
+    }
+};
+
 /**
  * @macro This special macro creates an object that will increment the recursion level in the constructor and decrement it in the
  * destructor.
  * @param assertNonRecursive If true then it will check that the recursion level is 0 and otherwise print a warning indicating that
  * this action was called recursively.
  **/
-#define MANAGE_RECURSION(assertNonRecursive) KnobHolder::RecursionLevelManager actionRecursionManager(this,assertNonRecursive)
+#define MANAGE_RECURSION(assertNonRecursive) RecursionLevelRAII actionRecursionManager(this,assertNonRecursive)
 
 /**
  * @brief Should be called in the begining of any action that cannot be called recursively.

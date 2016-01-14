@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -216,10 +216,15 @@ KnobGui::createAnimationButton(QHBoxLayout* layout)
     _imp->animationMenu = new Natron::Menu( layout->parentWidget() );
     //_imp->animationMenu->setFont( QFont(appFont,appFontSize) );
     QPixmap pix;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
+
+    int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+    QSize buttonSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    QSize buttonIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+
+    appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, iconSize, &pix);
     _imp->animationButton = new AnimationButton( this,QIcon(pix),"",layout->parentWidget() );
-    _imp->animationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->animationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->animationButton->setFixedSize(buttonSize);
+    _imp->animationButton->setIconSize(buttonIconSize);
     _imp->animationButton->setToolTip( Natron::convertFromPlainText(tr("Animation menu."), Qt::WhiteSpaceNormal) );
     QObject::connect( _imp->animationButton,SIGNAL( animationMenuRequested() ),this,SLOT( showAnimationMenu() ) );
     layout->addWidget(_imp->animationButton);
@@ -257,7 +262,8 @@ bool
 KnobGui::isLabelVisible() const
 {
     boost::shared_ptr<KnobI> knob = getKnob();
-    return !knob->getLabel().empty() && knob->isLabelVisible();
+    KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
+    return isStringKnob || (!knob->getLabel().empty() && knob->isLabelVisible());
 }
 
 void

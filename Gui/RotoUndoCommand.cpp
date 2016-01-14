@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -193,14 +193,14 @@ MoveControlPointsUndoCommand::mergeWith(const QUndoCommand *other)
         return false;
     }
 
-    if ( ( mvCmd->_selectedPoints.size() != _selectedPoints.size() ) || (mvCmd->_time != _time) || (mvCmd->_selectedTool != _selectedTool)
+    if ( ( mvCmd->_pointsToDrag.size() != _pointsToDrag.size() ) || (mvCmd->_time != _time) || (mvCmd->_selectedTool != _selectedTool)
          || ( mvCmd->_rippleEditEnabled != _rippleEditEnabled) || ( mvCmd->_featherLinkEnabled != _featherLinkEnabled) ) {
         return false;
     }
 
-    SelectedCpList::const_iterator it = _selectedPoints.begin();
-    SelectedCpList::const_iterator oIt = mvCmd->_selectedPoints.begin();
-    for (; it != _selectedPoints.end(); ++it, ++oIt) {
+    std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >::const_iterator it = _pointsToDrag.begin();
+    std::list< std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > >::const_iterator oIt = mvCmd->_pointsToDrag.begin();
+    for (; it != _pointsToDrag.end(); ++it, ++oIt) {
         if ( (it->first != oIt->first) || (it->second != oIt->second) ) {
             return false;
         }
@@ -624,11 +624,7 @@ AddStrokeUndoCommand::AddStrokeUndoCommand(RotoGui* roto,const boost::shared_ptr
 
 AddStrokeUndoCommand::~AddStrokeUndoCommand()
 {
-    /*
-     * At this point, the stroke might get deleted, deleting the attached nodes in the meantime, hence we must ensure that all threads
-     * are deleted so that the ThreadLocalStorage used is correctly cleared.
-     */
-    _item->getContext()->getNode()->getApp()->getProject()->ensureAllProcessingThreadsFinished();
+
 }
 
 void
@@ -667,11 +663,7 @@ AddMultiStrokeUndoCommand::AddMultiStrokeUndoCommand(RotoGui* roto,const boost::
 
 AddMultiStrokeUndoCommand::~AddMultiStrokeUndoCommand()
 {
-    /*
-     * At this point, the stroke might get deleted, deleting the attached nodes in the meantime, hence we must ensure that all threads
-     * are deleted so that the ThreadLocalStorage used is correctly cleared.
-     */
-    _item->getContext()->getNode()->getApp()->getProject()->ensureAllProcessingThreadsFinished();
+
 }
 
 void

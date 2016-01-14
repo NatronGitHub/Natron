@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -105,7 +105,7 @@ struct AppInstancePrivate
     bool _creatingNode;
     
     //When a node tree is created
-    bool _creatingTree;
+    int _creatingTree;
     
     AppInstancePrivate(int appID,
                        AppInstance* app)
@@ -115,7 +115,7 @@ struct AppInstancePrivate
     , creatingGroupMutex()
     , _creatingGroup(false)
     , _creatingNode(false)
-    , _creatingTree(false)
+    , _creatingTree(0)
     {
     }
     
@@ -167,7 +167,15 @@ void
 AppInstance::setIsCreatingNodeTree(bool b)
 {
     QMutexLocker k(&_imp->creatingGroupMutex);
-    _imp->_creatingTree = b;
+    if (b) {
+        ++_imp->_creatingTree;
+    } else {
+        if (_imp->_creatingTree >= 1) {
+            --_imp->_creatingTree;
+        } else {
+            _imp->_creatingTree = 0;
+        }
+    }
 }
 
 void
@@ -414,7 +422,7 @@ AppInstance::createWriter(const std::string& filename,
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
     
     QString fileCpy(filename.c_str());
-    std::string ext = Natron::removeFileExtension(fileCpy).toStdString();
+    std::string ext = Natron::removeFileExtension(fileCpy).toLower().toStdString();
     std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
     if ( found == writersForFormat.end() ) {
         Natron::errorDialog( tr("Writer").toStdString(),
@@ -447,11 +455,15 @@ AppInstance::createWriter(const std::string& filename,
 }
 
 void
-AppInstance::load(const CLArgs& cl)
+AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
 {
     
     declareCurrentAppVariable_Python();
 
+    if (makeEmptyInstance) {
+        return;
+    }
+    
     const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
     
     ///if the app is a background project autorun and the project name is empty just throw an exception.
@@ -503,8 +515,15 @@ AppInstance::load(const CLArgs& cl)
         
     } else if (appPTR->getAppType() == AppManager::eAppTypeInterpreter) {
         QFileInfo info(cl.getScriptFilename());
-        if (info.exists() && info.suffix() == "py") {
-            loadPythonScript(info);
+        if (info.exists()) {
+            
+            if (info.suffix() == "py") {
+                loadPythonScript(info);
+            } else if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
+                if ( !_imp->_currentProject->loadProject(info.path(),info.fileName()) ) {
+                    throw std::invalid_argument(tr("Project file loading failed.").toStdString());
+                }
+            }
         }
         
         if (!extraOnProjectCreatedScript.isEmpty()) {
@@ -689,6 +708,7 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
             try {
                 group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
                 containerNode->setScriptName(containerName);
+                containerNode->setLabel(containerName);
             } catch (...) {
                 
             }
@@ -1241,6 +1261,11 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
         }
     }
     
+    
+    if (renderers.empty()) {
+        throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
+    }
+    
     startWritersRendering(enableRenderStats, doBlockingRender, renderers);
 }
 
@@ -1546,16 +1571,16 @@ AppInstance::loadProject(const std::string& filename)
     QString fileUnPathed = file.fileName();
     QString path = file.path() + "/";
     
-    CLArgs cl;
-    AppInstance* app = appPTR->newAppInstance(cl);
-    
-    bool ok  = app->getProject()->loadProject( path, fileUnPathed);
+    //We are in background mode, there can only be 1 instance active, wipe the current project
+    boost::shared_ptr<Project> project = getProject();
+    project->resetProject();
+ 
+    bool ok  = project->loadProject( path, fileUnPathed);
     if (ok) {
-        return app;
+        return this;
     }
     
-    app->getProject()->closeProject(true);
-    app->quit();
+    project->resetProject();
     
     return 0;
 }
@@ -1582,6 +1607,6 @@ AppInstance*
 AppInstance::newProject()
 {
     CLArgs cl;
-    AppInstance* app = appPTR->newAppInstance(cl);
+    AppInstance* app = appPTR->newAppInstance(cl, false);
     return app;
 }

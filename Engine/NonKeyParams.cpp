@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,21 +28,21 @@ using namespace Natron;
 
 
 NonKeyParams::NonKeyParams()
-    : _cost(0)
-      , _elementsCount(0)
+    : _elementsCount(0)
+    , _cost(0)
 {
 }
 
 NonKeyParams::NonKeyParams(int cost,
                            U64 elementsCount)
-    : _cost(cost)
-      , _elementsCount(elementsCount)
+    : _elementsCount(elementsCount)
+    , _cost(cost)
 {
 }
 
 NonKeyParams::NonKeyParams(const NonKeyParams & other)
-    : _cost(other._cost)
-      , _elementsCount(other._elementsCount)
+    : _elementsCount(other._elementsCount)
+    , _cost(other._cost)
 {
 }
 

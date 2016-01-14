@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -207,13 +207,13 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
         QObject::disconnect( _imp->timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
 
         //connect the gui to the internal timeline
-        QObject::disconnect( _imp->timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
+        QObject::disconnect( _imp->gui->getApp(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
     }
 
     //connect the internal timeline to the gui
     QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
     
-    QObject::connect( timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
+    QObject::connect( _imp->gui->getApp(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
 
     _imp->timeline = timeline;
 
@@ -488,8 +488,17 @@ TimeLineGui::paintGL()
                                                            rightBoundWidgetCoord.y() );
         QPointF rightBoundTop = toTimeLineCoordinates(rightBoundWidgetCoord.x(),
                                                       rightBoundWidgetCoord.y() - CURSOR_HEIGHT);
-        std::list<SequenceTime> keyframes;
-        _imp->timeline->getKeyframes(&keyframes);
+        
+        std::set<SequenceTime> keyframes;
+        {
+            
+            ///THere may be duplicates in this list
+            std::list<SequenceTime> keyframesList;
+            _imp->gui->getApp()->getKeyframes(&keyframesList);
+            for (std::list<SequenceTime>::iterator it = keyframesList.begin(); it!=keyframesList.end(); ++it) {
+                keyframes.insert(*it);
+            }
+        }
 
         //draw an alpha cursor if the mouse is hovering the timeline
         glEnable(GL_POLYGON_SMOOTH);
@@ -508,7 +517,7 @@ TimeLineGui::paintGL()
             QPoint mouseNumberWidgetCoord(currentPosBtmWidgetCoordX - fontM.width(mouseNumber) / 2,
                                           currentPosBtmWidgetCoordY - CURSOR_HEIGHT - 2);
             QPointF mouseNumberPos = toTimeLineCoordinates( mouseNumberWidgetCoord.x(),mouseNumberWidgetCoord.y() );
-            std::list<SequenceTime>::iterator foundHoveredAsKeyframe = std::find(keyframes.begin(),keyframes.end(),hoveredTime);
+            std::set<SequenceTime>::iterator foundHoveredAsKeyframe = keyframes.find(hoveredTime);
             QColor currentColor;
             if ( foundHoveredAsKeyframe != keyframes.end() ) {
                 glColor4f(kfR, kfG, kfB, 0.4);
@@ -535,7 +544,7 @@ TimeLineGui::paintGL()
         }
 
         //draw the bounds and the current time cursor
-        std::list<SequenceTime>::iterator isCurrentTimeAKeyframe = std::find( keyframes.begin(),keyframes.end(),_imp->timeline->currentFrame() );
+        std::set<SequenceTime>::iterator isCurrentTimeAKeyframe = keyframes.find(_imp->timeline->currentFrame());
         QColor actualCursorColor;
         if ( isCurrentTimeAKeyframe != keyframes.end() ) {
             glColor4f(kfR, kfG, kfB, 1.);
@@ -618,14 +627,10 @@ TimeLineGui::paintGL()
         
         ///now draw keyframes
         glColor4f(kfR,kfG,kfB,1.);
-        std::set<SequenceTime> alreadyDrawnKeyframes;
         glBegin(GL_LINES);
-        for (std::list<SequenceTime>::const_iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
-            std::pair<std::set<SequenceTime>::iterator,bool> success = alreadyDrawnKeyframes.insert(*i);
-            if (success.second) {
-                glVertex2f(*i,lineYpos);
-                glVertex2f(*i+1,lineYpos);
-            }
+        for (std::set<SequenceTime>::const_iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
+            glVertex2f(*i,lineYpos);
+            glVertex2f(*i+1,lineYpos);
         }
         glEnd();
         glCheckErrorIgnoreOSXBug();

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -206,7 +206,15 @@ RotoPaint::getPreferredDepthAndComponents(int inputNb,std::list<Natron::ImageCom
 {
 
     if (inputNb != ROTOPAINT_MASK_INPUT_INDEX) {
-        comp->push_back(ImageComponents::getRGBAComponents());
+        Natron::EffectInstance* input = getInput(inputNb);
+        if (input) {
+            std::list<Natron::ImageComponents> ic;
+            Natron::ImageBitDepthEnum id;
+            input->getPreferredDepthAndComponents(-1, &ic, &id);
+            *comp = ic;
+        } else {
+            comp->push_back(ImageComponents::getRGBAComponents());
+        }
     } else {
         comp->push_back(ImageComponents::getAlphaComponents());
     }
@@ -368,7 +376,7 @@ RotoPaint::render(const RenderActionArgs& args)
     if (items.empty()) {
         
         RectI bgImgRoI;
-        ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, &bgImgRoI);
+        ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, true, &bgImgRoI);
         
         for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
@@ -443,7 +451,7 @@ RotoPaint::render(const RenderActionArgs& args)
             if (!(*rotoImagesIt)->getBounds().contains(args.roi)) {
                 if (!bgImg) {
                     if (!triedGetImage) {
-                        bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, &bgImgRoI);
+                        bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, true, &bgImgRoI);
                         triedGetImage = true;
                     }
                 }
@@ -493,8 +501,18 @@ RotoPaint::render(const RenderActionArgs& args)
                     plane->second->fillZero(bRect);
                     plane->second->fillZero(cRect);
                     plane->second->fillZero(dRect);
-
-                    plane->second->pasteFrom(*bgImg, args.roi, false);
+                    
+                    if (bgImg->getComponents() != plane->second->getComponents()) {
+                        RectI intersection;
+                        args.roi.intersect(bgImg->getBounds(), &intersection);
+                        bgImg->convertToFormat(intersection,
+                                               getApp()->getDefaultColorSpaceForBitDepth((*rotoImagesIt)->getBitDepth()),
+                                               getApp()->getDefaultColorSpaceForBitDepth(plane->second->getBitDepth()), 3
+                                               , false, false, plane->second.get());
+                    } else {
+                        plane->second->pasteFrom(*bgImg, args.roi, false);
+                    }
+                    
                 } else {
                     plane->second->fillZero(args.roi);
                 }
@@ -515,7 +533,7 @@ RotoPaint::render(const RenderActionArgs& args)
                 plane->second->premultImage(args.roi);
             }
         }
-    }
+    } // RenderingFlagSetter flagIsRendering(bottomMerge.get());
     
     return Natron::eStatusOK;
 }

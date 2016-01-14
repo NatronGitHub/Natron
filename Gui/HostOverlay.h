@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@ public:
                               const boost::shared_ptr<KnobChoice>& skewOrder,
                               const boost::shared_ptr<KnobDouble>& center);
     
-    void draw(double time,const RenderScale& renderScale);
+    void draw(double time,const RenderScale & renderScale);
     
     
 

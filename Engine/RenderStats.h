@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <bitset>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -89,8 +90,8 @@ public:
     void setRenderScaleSupported(bool rsSupported);
     bool isRenderScaleSupportEnabled() const;
     
-    void setChannelsRendered(bool r, bool g, bool b, bool a);
-    void getChannelsRendered(bool* r, bool* g, bool* b, bool* a) const;
+    void setChannelsRendered(std::bitset<4> channelsRendered);
+    std::bitset<4> getChannelsRendered() const;
     
     void setOutputPremult(Natron::ImagePremultiplicationEnum premult);
     Natron::ImagePremultiplicationEnum getOutputPremult() const;
@@ -123,7 +124,7 @@ public:
     void setGlobalRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
                                      const RectD& rod,
                                      Natron::ImagePremultiplicationEnum outputPremult,
-                                     bool channelsRendered[4],
+                                     std::bitset<4> channelsRendered,
                                      bool tilesSupported,
                                      bool renderScaleSupported,
                                      unsigned int mipmapLevel);

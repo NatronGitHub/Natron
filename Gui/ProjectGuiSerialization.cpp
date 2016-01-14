@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,9 +70,15 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
         boost::shared_ptr<NodeGui> nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
         
         if (nodegui->isVisible()) {
-            NodeGuiSerialization state;
-            nodegui->serialize(&state);
-            _serializedNodes.push_back(state);
+            
+            boost::shared_ptr<NodeCollection> isInCollection = (*it)->getGroup();
+            NodeGroup* isCollectionAGroup = dynamic_cast<NodeGroup*>(isInCollection.get());
+            if (!isCollectionAGroup) {
+                ///Nodes within a group will be serialized recursively in the node group serialization
+                NodeGuiSerialization state;
+                nodegui->serialize(&state);
+                _serializedNodes.push_back(state);
+            }
             ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( (*it)->getLiveInstance() );
             if (viewer) {
                 ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
@@ -102,6 +108,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 viewerData.fps = tab->getDesiredFps();
                 viewerData.fpsLocked = tab->isFPSLocked();
                 tab->getTimelineBounds(&viewerData.leftBound, &viewerData.rightBound);
+                tab->getActiveInputs(&viewerData.aChoice, &viewerData.bChoice);
                 viewerData.version = VIEWER_DATA_SERIALIZATION_VERSION;
                 _viewersData.insert( std::make_pair(viewer->getNode()->getScriptName_mt_safe(),viewerData) );
             }

@@ -1,7 +1,7 @@
 #!/bin/sh
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
+# MKJOBS: Number of threads
+# CONFIG=(debug,release,relwithdebinfo): the build type
+# DISABLE_BREAKPAD=1: When set, automatic crash reporting (google-breakpad support) will be disabled
 #Usage MKJOBS=4 BUILD_CONFIG=SNAPSHOT CONFIG=relwithdebinfo BRANCH=workshop PLUGINDIR="..."  ./build-natron.sh
 
 source `pwd`/common.sh || exit 1
@@ -117,10 +120,14 @@ else
     SPEC=macx-g++
 fi
 
-$QTDIR/bin/qmake -r -spec "$SPEC" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" ${EXTRA_QMAKE_FLAG} CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions CONFIG+=silent $QMAKEEXTRAFLAGS || exit 1
+if [ "$DISABLE_BREAKPAD" != "1" ]; then
+    QMAKE_BREAKPAD="CONFIG+=gbreakpad"
+fi
+
+$QTDIR/bin/qmake -r -spec "$SPEC" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" ${EXTRA_QMAKE_FLAG} CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions CONFIG+=silent CONFIG+=$CONFIG $QMAKEEXTRAFLAGS $QMAKE_BREAKPAD || exit 1
 make -j${MKJOBS} || exit 1
 
-${CWD}/build-natron-deploy.sh "App/Natron.app" || exit 1
+env TAG=$TAG DISABLE_BREAKPAD="$DISABLE_BREAKPAD" DUMP_SYMS="$DUMP_SYMS" SYMBOLS_PATH="$CWD/build/symbols" ${CWD}/build-natron-deploy.sh "App/Natron.app" || exit 1
 
 package="$CWD/build/Natron/App/Natron.app"
 if [ "$PLUGINDIR" = "${package}/Contents/Plugins" ]; then

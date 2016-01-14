@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1528,7 +1528,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
         } else {
             cp = cpParam;
         }
-        if (useFeatherPoints()) {
+        if (useFeatherPoints() && !cpParam) {
             BezierCPs::iterator fpIt = _imp->featherPoints.begin();
             std::advance(fpIt, index);
             assert(fpIt != _imp->featherPoints.end());

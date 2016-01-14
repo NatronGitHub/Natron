@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,7 +66,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/Settings.h"
-#include "Engine/ThreadStorage.h"
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
@@ -83,13 +82,13 @@ class KnobOutputFile;
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
     : Natron::EffectInstance(node)
-    , _writerCurrentFrame(0)
-    , _writerFirstFrame(0)
-    , _writerLastFrame(0)
-    , _outputEffectDataLock(new QMutex)
+    , _outputEffectDataLock()
     , _renderSequenceRequests()
     , _engine(0)
     , _timeSpentPerFrameRendered()
+    , _writerCurrentFrame(0)
+    , _writerFirstFrame(0)
+    , _writerLastFrame(0)
 {
 }
 
@@ -100,7 +99,6 @@ OutputEffectInstance::~OutputEffectInstance()
         assert( !_engine->hasThreadsAlive() );
     }
     delete _engine;
-    delete _outputEffectDataLock;
 }
 
 void
@@ -268,7 +266,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
     
     RenderSequenceArgs args;
     {
-        QMutexLocker k(_outputEffectDataLock);
+        QMutexLocker k(&_outputEffectDataLock);
         args.firstFrame = first;
         args.lastFrame = last;
         args.frameStep = frameStep;
@@ -329,7 +327,7 @@ OutputEffectInstance::notifyRenderFinished()
     RenderSequenceArgs newArgs;
     
     {
-        QMutexLocker k(_outputEffectDataLock);
+        QMutexLocker k(&_outputEffectDataLock);
         if (!_renderSequenceRequests.empty()) {
             const RenderSequenceArgs& args = _renderSequenceRequests.front();
             if (args.renderController) {
@@ -348,7 +346,7 @@ OutputEffectInstance::notifyRenderFinished()
 int
 OutputEffectInstance::getCurrentFrame() const
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     return _writerCurrentFrame;
 }
@@ -356,7 +354,7 @@ OutputEffectInstance::getCurrentFrame() const
 void
 OutputEffectInstance::setCurrentFrame(int f)
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     _writerCurrentFrame = f;
 }
@@ -364,7 +362,7 @@ OutputEffectInstance::setCurrentFrame(int f)
 void
 OutputEffectInstance::incrementCurrentFrame()
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     ++_writerCurrentFrame;
 }
@@ -372,7 +370,7 @@ OutputEffectInstance::incrementCurrentFrame()
 void
 OutputEffectInstance::decrementCurrentFrame()
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     --_writerCurrentFrame;
 }
@@ -380,7 +378,7 @@ OutputEffectInstance::decrementCurrentFrame()
 int
 OutputEffectInstance::getFirstFrame() const
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     return _writerFirstFrame;
 }
@@ -400,7 +398,7 @@ OutputEffectInstance::isDoingSequentialRender() const
 void
 OutputEffectInstance::setFirstFrame(int f)
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     _writerFirstFrame = f;
 }
@@ -408,7 +406,7 @@ OutputEffectInstance::setFirstFrame(int f)
 int
 OutputEffectInstance::getLastFrame() const
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     return _writerLastFrame;
 }
@@ -416,7 +414,7 @@ OutputEffectInstance::getLastFrame() const
 void
 OutputEffectInstance::setLastFrame(int f)
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     _writerLastFrame = f;
 }
@@ -442,7 +440,7 @@ OutputEffectInstance::updateRenderTimeInfos(double lastTimeSpent,
 
     *totalTimeSpent = 0;
 
-    QMutexLocker k(_outputEffectDataLock);
+    QMutexLocker k(&_outputEffectDataLock);
     _timeSpentPerFrameRendered.push_back(lastTimeSpent);
 
     for (std::list<double>::iterator it = _timeSpentPerFrameRendered.begin(); it != _timeSpentPerFrameRendered.end(); ++it) {
@@ -455,7 +453,7 @@ OutputEffectInstance::updateRenderTimeInfos(double lastTimeSpent,
 void
 OutputEffectInstance::resetTimeSpentRenderingInfos()
 {
-    QMutexLocker k(_outputEffectDataLock);
+    QMutexLocker k(&_outputEffectDataLock);
 
     _timeSpentPerFrameRendered.clear();
 }
@@ -532,18 +530,17 @@ OutputEffectInstance::reportStats(int time,
         ofile << std::endl;
         ofile << "Channels processed: ";
 
-        bool r, g, b, a;
-        it->second.getChannelsRendered(&r, &g, &b, &a);
-        if (r) {
+        std::bitset<4> processChannels = it->second.getChannelsRendered();
+        if (processChannels[0]) {
             ofile << "red ";
         }
-        if (g) {
+        if (processChannels[1]) {
             ofile << "green ";
         }
-        if (b) {
+        if (processChannels[2]) {
             ofile << "blue ";
         }
-        if (a) {
+        if (processChannels[3]) {
             ofile << "alpha";
         }
         ofile << std::endl;

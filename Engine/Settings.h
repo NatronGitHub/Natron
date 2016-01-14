@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@ public:
         eKnownHostNameNone,
     };
 
-    Settings(AppInstance* appInstance);
+    Settings();
 
     virtual ~Settings()
     {
@@ -212,6 +212,8 @@ public:
         return _knownHostNames[(int)e];
     }
     std::string getDefaultLayoutFile() const;
+    
+    bool getLoadProjectWorkspce() const;
 
     bool useCursorPositionIncrements() const;
 
@@ -382,6 +384,7 @@ private:
     boost::shared_ptr<KnobInt> _maxPanelsOpened;
     boost::shared_ptr<KnobBool> _useCursorPositionIncrements;
     boost::shared_ptr<KnobFile> _defaultLayoutFile;
+    boost::shared_ptr<KnobBool> _loadProjectsWorkspace;
     boost::shared_ptr<KnobBool> _renderOnEditingFinished;
     boost::shared_ptr<KnobBool> _activateRGBSupport;
     boost::shared_ptr<KnobBool> _activateTransformConcatenationSupport;
@@ -547,11 +550,11 @@ private:
     };
 
     std::map<const Natron::Plugin*,PerPluginKnobs> _pluginsMap;
+    std::vector<std::string> _knownHostNames;
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;
     bool _defaultAppearanceOutdated;
-    std::vector<std::string> _knownHostNames;
 };
 
 #endif // NATRON_ENGINE_SETTINGS_H

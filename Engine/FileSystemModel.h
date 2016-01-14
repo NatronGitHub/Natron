@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,6 +52,7 @@ public:
     
     FileSystemItem(bool isDir,
                    const QString& filename,
+                   const QString& userFriendlySequenceName,
                    const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
                    const QDateTime& dateModified,
                    quint64 size,
@@ -83,6 +84,8 @@ public:
      * If this is a directory this function returns an empty string.
      **/
     const QString& fileName() const;
+    
+    const QString& getUserFriendlyFilename() const;
     
     const QString& fileExtension() const;
     

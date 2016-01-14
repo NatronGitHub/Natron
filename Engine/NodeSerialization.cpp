@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -64,8 +64,6 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
         for (U32 i  = 0; i < knobs.size(); ++i) {
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[i].get() );
             KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[i].get() );
-            KnobButton* isButton = dynamic_cast<KnobButton*>( knobs[i].get() );
-            //KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knobs[i].get() );
             
             if (isPage) {
                 _pagesIndexes.push_back(knobs[i]->getName());
@@ -76,7 +74,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
             
             if (!knobs[i]->isUserKnob() &&
                 knobs[i]->getIsPersistant() &&
-                !isGroup && !isPage && !isButton
+                !isGroup && !isPage
                 && knobs[i]->hasModificationsForSerialization()) {
                 
                 ///For choice do a deepclone because we need entries

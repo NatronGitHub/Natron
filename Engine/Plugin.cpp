@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,8 +83,8 @@ Plugin::getLabelVersionMajorMinorEncoded() const
 QString
 Plugin::makeLabelWithoutSuffix(const QString& label)
 {
-    if (label.endsWith("OIIOOFX")) {
-        return label.mid(0,label.size() - 7);
+    if (label.startsWith("Read") || label.startsWith("Write")) {
+        return label;
     } else if (label.endsWith("OFX")) {
         return label.mid(0,label.size() - 3);
     } else if (label.endsWith("CImg")) {

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 #include <QtCore/QString>
+#include <QtCore/QProcess>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
@@ -133,7 +134,16 @@ public:
 
     bool isLoaded() const;
 
-    AppInstance* newAppInstance(const CLArgs& cl);
+    AppInstance* newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
+    AppInstance* newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
+    
+private:
+    
+    AppInstance* newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool makeEmptyInstance);
+    
+public:
+    
+    
     virtual void hideSplashScreen()
     {
     }
@@ -217,7 +227,7 @@ public:
     void  removeAllImagesFromDiskCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
     void  removeAllTexturesFromCacheWithMatchingIDAndDifferentKey(const CacheEntryHolder* holder, U64 treeVersion);
     
-    void removeAllCacheEntriesForHolder(const CacheEntryHolder* holder);
+    void removeAllCacheEntriesForHolder(const CacheEntryHolder* holder, bool blocking);
 
     boost::shared_ptr<Settings> getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;
@@ -228,6 +238,11 @@ public:
      **/
     bool writeToOutputPipe(const QString & longMessage,const QString & shortMessage);
 
+    /**
+     * @brief Abort any processing on all AppInstance. It is called in some very rare cases
+     * such as when changing the number of threads used by the application or when a background render
+     * receives a message from the GUI application.
+     **/
     void abortAnyProcessing();
 
     virtual void setLoadingStatus(const QString & str);
@@ -408,6 +423,12 @@ public:
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                                     Natron::ContextEnum* ctx);
     
+    AppTLS* getAppTLS() const;
+    
+    const Natron::OfxHost* getOFXHost() const;
+    
+    bool hasThreadsRendering() const;
+    
 public Q_SLOTS:
     
     void onNewCrashReporterConnectionPending();
@@ -460,9 +481,7 @@ public Q_SLOTS:
     
     void setOnProjectLoadedCallback(const std::string& pythonFunc);
     void setOnProjectCreatedCallback(const std::string& pythonFunc);
-    
-    GlobalOFXTLS& getCurrentThreadTLS();
-    
+        
     void requestOFXDIalogOnMainThread(Natron::OfxImageEffectInstance* instance, void* instanceData);
     
 public Q_SLOTS:
@@ -482,6 +501,10 @@ protected:
 
     virtual void loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                         std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap);
+    
+    template <typename PLUGIN>
+    void registerBuiltInPlugin(const QString& iconPath, bool isDeprecated, bool internalUseOnly);
+    
     virtual AppInstance* makeNewInstance(int appID) const;
     virtual void registerGuiMetaTypes() const
     {
@@ -524,7 +547,8 @@ private:
 
     static AppManager *_instance;
     boost::scoped_ptr<AppManagerPrivate> _imp;
-};
+}; // AppManager
+
 
 namespace Natron {
     
@@ -688,6 +712,14 @@ public:
     
     ~PythonGILLocker();
 };
+    
+/**
+ * @brief Check if there is currently a running Natron process on this computer with the given PID. Note that this function might
+ * return true even if the process is not actually Natron because the operating system recycles PIDs. This function should be used
+ * only for non-vital GUI elements.
+ **/
+bool checkIfNatronProcessIsRunning(Q_PID pid);
+    
 } // namespace Natron
 
 

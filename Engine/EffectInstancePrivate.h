@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Image.h"
-#include "Engine/ThreadStorage.h"
+#include "Engine/TLSHolder.h"
 #include "Engine/EngineFwd.h"
 
 namespace Natron {
@@ -139,31 +139,26 @@ private:
     ActionsCacheInstance & getOrCreateActionCache(U64 newHash);
 };
 
-/**
- * @brief These args are local to a renderRoI call and used to retrieve this info
- * in a thread-safe and thread-local manner in getImage
- **/
-struct EffectInstance::RenderArgs
+    
+struct EffectInstance::DefaultClipPreferencesData
 {
-    RectD _rod; //!< the effect's RoD in CANONICAL coordinates
-    RoIMap _regionOfInterestResults; //< the input RoI's in CANONICAL coordinates
-    RectI _renderWindowPixel; //< the current renderWindow in PIXEL coordinates
-    double _time; //< the time to render
-    int _view; //< the view to render
-    bool _validArgs; //< are the args valid ?
-    bool _isIdentity;
-    double _identityTime;
-    int _identityInputNb;
-    std::map<ImageComponents, PlaneToRender> _outputPlanes;
-
-    //This is set only when the plug-in has set ePassThroughRenderAllRequestedPlanes
-    ImageComponents _outputPlaneBeingRendered;
-    EffectInstance::ComponentsNeededMap  _compsNeeded;
-    double _firstFrame, _lastFrame;
-
-    RenderArgs();
-
-    RenderArgs(const RenderArgs & o);
+    //These datas are stored for plug-ins that do not implement clip preference functions, i.e:
+    // getPreferredDepthAndComponents, getPreferredPAR, getPreferredFrameRate, getPreferredOutputPremult, etc...
+    Natron::ImagePremultiplicationEnum outputPremult;
+    double pixelAspectRatio;
+    double frameRate;
+    std::list<Natron::ImageComponents> comps;
+    Natron::ImageBitDepthEnum bitdepth;
+    
+    DefaultClipPreferencesData()
+    : outputPremult(Natron::eImagePremultiplicationPremultiplied)
+    , pixelAspectRatio(1.)
+    , frameRate(24.)
+    , comps()
+    , bitdepth(Natron::eImageBitDepthFloat)
+    {
+        
+    }
 };
 
 struct EffectInstance::Implementation
@@ -173,18 +168,7 @@ struct EffectInstance::Implementation
     EffectInstance* _publicInterface;
 
     ///Thread-local storage living through the render_public action and used by getImage to retrieve all parameters
-    ThreadStorage<RenderArgs> renderArgs;
-
-    ///Thread-local storage living through the whole rendering of a frame
-    ThreadStorage<ParallelRenderArgs> frameRenderArgs;
-
-    ///Keep track of begin/end sequence render calls to make sure they are called in the right order even when
-    ///recursive renders are called
-    ThreadStorage<int> beginEndRenderCount;
-
-    ///Whenever a render thread is running, it stores here a temp copy used in getImage
-    ///to make sure these images aren't cleared from the cache.
-    ThreadStorage< InputImagesMap > inputImages;
+    boost::shared_ptr<TLSHolder<EffectInstance::EffectTLSData> > tlsData;
 
     mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
     bool duringInteractAction; //< true when we're running inside an interact action
@@ -224,6 +208,12 @@ struct EffectInstance::Implementation
     mutable QMutex componentsAvailableMutex;
     bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
     EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
+    
+    mutable QMutex defaultClipPreferencesDataMutex;
+    EffectInstance::DefaultClipPreferencesData clipPrefsData;
+    
+    
+
 
     void runChangedParamCallback(KnobI* k, bool userEdited, const std::string & callback);
 
@@ -270,56 +260,125 @@ struct EffectInstance::Implementation
      **/
     class ScopedRenderArgs
     {
-        RenderArgs* localData;
-        ThreadStorage<RenderArgs>* _dst;
-
-public:
-
-
-        ScopedRenderArgs(ThreadStorage<RenderArgs>* dst);
+        EffectDataTLSPtr tlsData;
+        
+    public:
 
 
-        ScopedRenderArgs(ThreadStorage<RenderArgs>* dst,
-                         const RenderArgs & a);
+        ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
+                         const RectD & rod,
+                         const RectI & renderWindow,
+                         double time,
+                         int view,
+                         bool isIdentity,
+                         double identityTime,
+                         Natron::EffectInstance* identityInput,
+                         const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
+                         const EffectInstance::InputImagesMap& inputImages,
+                         const RoIMap & roiMap,
+                         int firstFrame,
+                         int lastFrame);
+
+
+        ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
+                         const EffectDataTLSPtr& otherThreadData);
 
         ~ScopedRenderArgs();
 
-        RenderArgs & getLocalData();
-
-        ///Setup the first pass on thread-local storage.
-        ///RoIMap and frame range are separated because those actions might need
-        ///the thread-storage set up in the first pass to work
-        void setArgs_firstPass(const RectD & rod,
-                               const RectI & renderWindow,
-                               double time,
-                               int view,
-                               bool isIdentity,
-                               double identityTime,
-                               int inputNbIdentity,
-                               const EffectInstance::ComponentsNeededMap & compsNeeded);
-
-        void setArgs_secondPass(const RoIMap & roiMap,
-                                int firstFrame,
-                                int lastFrame);
     };
 
     void addInputImageTempPointer(int inputNb, const boost::shared_ptr<Image> & img);
 
     void clearInputImagePointers();
+    
+    
+    struct TiledRenderingFunctorArgs
+    {
+        bool renderFullScaleThenDownscale;
+        bool isSequentialRender;
+        bool isRenderResponseToUserInteraction;
+        int firstFrame;
+        int lastFrame;
+        int preferredInput;
+        unsigned int mipMapLevel;
+        unsigned int renderMappedMipMapLevel;
+        RectD rod;
+        double time;
+        int view;
+        double par;
+        Natron::ImageBitDepthEnum outputClipPrefDepth;
+        boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
+        std::list<Natron::ImageComponents> outputClipPrefsComps;
+        bool byPassCache;
+        std::bitset<4> processChannels;
+        boost::shared_ptr<ImagePlanesToRender> planes;
+    };
+    
+    RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,  const RectToRender & specificData,
+                                                  const QThread* callingThread);
+    
+    RenderingFunctorRetEnum tiledRenderingFunctor(const RectToRender & rectToRender,
+                                                  const bool renderFullScaleThenDownscale,
+                                                  const bool isSequentialRender,
+                                                  const bool isRenderResponseToUserInteraction,
+                                                  const int firstFrame, const int lastFrame,
+                                                  const int preferredInput,
+                                                  const unsigned int mipMapLevel,
+                                                  const unsigned int renderMappedMipMapLevel,
+                                                  const RectD & rod,
+                                                  const double time,
+                                                  const int view,
+                                                  const double par,
+                                                  const bool byPassCache,
+                                                  const Natron::ImageBitDepthEnum outputClipPrefDepth,
+                                                  const std::list<Natron::ImageComponents> & outputClipPrefsComps,
+                                                  const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                                  const std::bitset<4>& processChannels,
+                                                  const boost::shared_ptr<ImagePlanesToRender> & planes);
+    
+    
+    ///These are the image passed to the plug-in to render
+    /// - fullscaleMappedImage is the fullscale image remapped to what the plugin can support (components/bitdepth)
+    /// - downscaledMappedImage is the downscaled image remapped to what the plugin can support (components/bitdepth wise)
+    /// - fullscaleMappedImage is pointing to "image" if the plug-in does support the renderscale, meaning we don't use it.
+    /// - Similarily downscaledMappedImage is pointing to "downscaledImage" if the plug-in doesn't support the render scale.
+    ///
+    /// - renderMappedImage is what is given to the plug-in to render the image into,it is mapped to an image that the plug-in
+    ///can render onto (good scale, good components, good bitdepth)
+    ///
+    /// These are the possible scenarios:
+    /// - 1) Plugin doesn't need remapping and doesn't need downscaling
+    ///    * We render in downscaledImage always, all image pointers point to it.
+    /// - 2) Plugin doesn't need remapping but needs downscaling (doesn't support the renderscale)
+    ///    * We render in fullScaleImage, fullscaleMappedImage points to it and then we downscale into downscaledImage.
+    ///    * renderMappedImage points to fullScaleImage
+    /// - 3) Plugin needs remapping (doesn't support requested components or bitdepth) but doesn't need downscaling
+    ///    * renderMappedImage points to downscaledMappedImage
+    ///    * We render in downscaledMappedImage and then convert back to downscaledImage with requested comps/bitdepth
+    /// - 4) Plugin needs remapping and downscaling
+    ///    * renderMappedImage points to fullScaleMappedImage
+    ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
+    RenderingFunctorRetEnum renderHandler(const EffectDataTLSPtr& tls,
+                                          const unsigned int mipMapLevel,
+                                          const bool renderFullScaleThenDownscale,
+                                          const bool isSequentialRender,
+                                          const bool isRenderResponseToUserInteraction,
+                                          const RectI & renderMappedRectToRender,
+                                          const RectI & downscaledRectToRender,
+                                          const bool byPassCache,
+                                          const bool bitmapMarkedForRendering,
+                                          const Natron::ImageBitDepthEnum outputClipPrefDepth,
+                                          const std::list<Natron::ImageComponents> & outputClipPrefsComps,
+                                          const std::bitset<4>& processChannels,
+                                          const boost::shared_ptr<Natron::Image> & originalInputImage,
+                                          const boost::shared_ptr<Natron::Image> & maskImage,
+                                          const Natron::ImagePremultiplicationEnum originalImagePremultiplication,
+                                          ImagePlanesToRender & planes);
+    
+    bool aborted(const EffectDataTLSPtr& tls) const WARN_UNUSED_RETURN;
 };
 
 
-class InputImagesHolder_RAII
-{
-    ThreadStorage< EffectInstance::InputImagesMap > *storage;
-    EffectInstance::InputImagesMap* localData;
-
-public:
-
-    InputImagesHolder_RAII(const EffectInstance::InputImagesMap & imgs, ThreadStorage< EffectInstance::InputImagesMap>* storage);
-
-    ~InputImagesHolder_RAII();
-};
 
 } // Namespace Natron
 

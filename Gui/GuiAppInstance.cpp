@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@
 #include "Engine/Settings.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
+#include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Global/QtCompat.h"
@@ -133,6 +134,8 @@ struct GuiAppInstancePrivate
     mutable QMutex rotoDataMutex;
     RotoPaintData rotoData;
     
+    std::list<SequenceTime> timelineKeyframes;
+    
     GuiAppInstancePrivate()
     : _gui(NULL)
     , _activeBgProcesses()
@@ -148,6 +151,7 @@ struct GuiAppInstancePrivate
     , overlayRedrawRequests(0)
     , rotoDataMutex()
     , rotoData()
+    , timelineKeyframes()
     {
         rotoData.turboAlreadyActiveBeforePainting = false;
     }
@@ -184,7 +188,7 @@ GuiAppInstance::deletePreviewProvider()
                 if (liveInstance) {
                     node->deactivate(std::list< Natron::Node* > (),false,false,true,false);
                     liveInstance->invalidateUiContext();
-                    node->removeReferences(false);
+                    node->removeReferences();
                     _imp->_previewProvider->viewerNode->deleteReferences();
                     _imp->_previewProvider->viewerNodeInternal.reset();
                 }
@@ -195,7 +199,7 @@ GuiAppInstance::deletePreviewProvider()
         for (std::map<std::string,std::pair< boost::shared_ptr<Natron::Node>, boost::shared_ptr<NodeGui> > >::iterator it =
              _imp->_previewProvider->readerNodes.begin();
              it != _imp->_previewProvider->readerNodes.end(); ++it) {
-            it->second.second->getNode()->removeReferences(false);
+            it->second.second->getNode()->removeReferences();
             it->second.second->deleteReferences();
         }
         _imp->_previewProvider->readerNodes.clear();
@@ -244,7 +248,7 @@ GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const boost::shared_ptr<P
 }
 
 void
-GuiAppInstance::load(const CLArgs& cl)
+GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
 {
 
     if (getAppID() == 0) {
@@ -322,6 +326,10 @@ GuiAppInstance::load(const CLArgs& cl)
             }
         }
     }
+    
+    if (makeEmptyInstance) {
+        return;
+    }
 
     /// If this is the first instance of the software, try to load an autosave
     if ( (getAppID() == 0) && cl.getScriptFilename().isEmpty() ) {
@@ -331,6 +339,8 @@ GuiAppInstance::load(const CLArgs& cl)
         }
     }
 
+    
+    
 
     QFileInfo info(cl.getScriptFilename());
 
@@ -430,7 +440,7 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
             }
         } else {
             CLArgs cl;
-            AppInstance* newApp = appPTR->newAppInstance(cl);
+            AppInstance* newApp = appPTR->newAppInstance(cl, false);
             if (!newApp->getProject()->loadProject(savesDir.path() + '/', autoSaveFileName, true)) {
                 return false;
             }
@@ -592,7 +602,7 @@ GuiAppInstance::deleteNode(const boost::shared_ptr<NodeGui> & n)
         boost::shared_ptr<Natron::Node> internalNode = n->getNode();
         if (internalNode) {
             getProject()->removeNode(internalNode);
-            internalNode->removeReferences(true);
+            internalNode->removeReferences();
         }
     }
 }
@@ -1357,4 +1367,181 @@ GuiAppInstance::getLastPaintStrokeBbox() const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
     return _imp->rotoData.lastStrokeMovementBbox;
+}
+
+RectD
+GuiAppInstance::getPaintStrokeWholeBbox() const
+{
+    QMutexLocker k(&_imp->rotoDataMutex);
+    if (!_imp->rotoData.stroke) {
+        return RectD();
+    }
+    return _imp->rotoData.stroke->getWholeStrokeRoDWhilePainting();
+}
+
+
+
+void
+GuiAppInstance::removeAllKeyframesIndicators()
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    bool wasEmpty = _imp->timelineKeyframes.empty();
+    _imp->timelineKeyframes.clear();
+    if (!wasEmpty) {
+        Q_EMIT keyframeIndicatorsChanged();
+    }
+}
+
+void
+GuiAppInstance::addKeyframeIndicator(SequenceTime time)
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    _imp->timelineKeyframes.push_back(time);
+    Q_EMIT keyframeIndicatorsChanged();
+}
+
+void
+GuiAppInstance::addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys,
+                                             bool emitSignal)
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    _imp->timelineKeyframes.insert( _imp->timelineKeyframes.begin(),keys.begin(),keys.end() );
+    if (!keys.empty() && emitSignal) {
+        Q_EMIT keyframeIndicatorsChanged();
+    }
+}
+
+void
+GuiAppInstance::removeKeyFrameIndicator(SequenceTime time)
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    std::list<SequenceTime>::iterator it = std::find(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), time);
+    if ( it != _imp->timelineKeyframes.end() ) {
+        _imp->timelineKeyframes.erase(it);
+        Q_EMIT keyframeIndicatorsChanged();
+    }
+}
+
+void
+GuiAppInstance::removeMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,
+                                          bool emitSignal)
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    for (std::list<SequenceTime>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        std::list<SequenceTime>::iterator it2 = std::find(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), *it);
+        if ( it2 != _imp->timelineKeyframes.end() ) {
+            _imp->timelineKeyframes.erase(it2);
+        }
+    }
+    if (!keys.empty() && emitSignal) {
+        Q_EMIT keyframeIndicatorsChanged();
+    }
+}
+
+void
+GuiAppInstance::addNodesKeyframesToTimeline(const std::list<Natron::Node*> & nodes)
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    std::list<Natron::Node*>::const_iterator next = nodes.begin();
+    if (next != nodes.end()) {
+        ++next;
+    }
+    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        (*it)->showKeyframesOnTimeline( next == nodes.end() );
+        
+        // increment for next iteration
+        if (next != nodes.end()) {
+            ++next;
+        }
+    } // for()
+}
+
+void
+GuiAppInstance::addNodeKeyframesToTimeline(Natron::Node* node)
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    node->showKeyframesOnTimeline(true);
+}
+
+void
+GuiAppInstance::removeNodesKeyframesFromTimeline(const std::list<Natron::Node*> & nodes)
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    std::list<Natron::Node*>::const_iterator next = nodes.begin();
+    if (next != nodes.end()) {
+        ++next;
+    }
+    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        (*it)->hideKeyframesFromTimeline( next == nodes.end() );
+        
+        // increment for next iteration
+        if (next != nodes.end()) {
+            ++next;
+        }
+    } // for(it)
+}
+
+void
+GuiAppInstance::removeNodeKeyframesFromTimeline(Natron::Node* node)
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    node->hideKeyframesFromTimeline(true);
+}
+
+void
+GuiAppInstance::getKeyframes(std::list<SequenceTime>* keys) const
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    *keys = _imp->timelineKeyframes;
+}
+
+void
+GuiAppInstance::goToPreviousKeyframe()
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    _imp->timelineKeyframes.sort();
+    boost::shared_ptr<TimeLine> timeline = getProject()->getTimeLine();
+    SequenceTime currentFrame = timeline->currentFrame();
+    std::list<SequenceTime>::iterator lowerBound = std::lower_bound(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), currentFrame);
+    if ( lowerBound != _imp->timelineKeyframes.begin() ) {
+        --lowerBound;
+        timeline->seekFrame(*lowerBound, true, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+    }
+}
+
+void
+GuiAppInstance::goToNextKeyframe()
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    _imp->timelineKeyframes.sort();
+    boost::shared_ptr<TimeLine> timeline = getProject()->getTimeLine();
+    SequenceTime currentFrame = timeline->currentFrame();
+    std::list<SequenceTime>::iterator upperBound = std::upper_bound(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), currentFrame);
+    if ( upperBound != _imp->timelineKeyframes.end() ) {
+        timeline->seekFrame(*upperBound, true, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+    }
 }

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1191,7 +1191,7 @@ LoadNodePresetsCommand::redo()
                 newNode->loadKnobs(**it);
                 std::list<SequenceTime> keys;
                 newNode->getAllKnobsKeyframes(&keys);
-                newNode->getApp()->getTimeLine()->addMultipleKeyframeIndicatorsAdded(keys, true);
+                newNode->getApp()->addMultipleKeyframeIndicatorsAdded(keys, true);
                 _newChildren.push_back(newNode);
             }
         }
@@ -1214,7 +1214,8 @@ LoadNodePresetsCommand::redo()
     if (isGroup) {
         isGroup->getActiveNodes(&allNodes);
     }
-    internalNode->restoreKnobsLinks(*_newSerializations.front(), allNodes);
+    std::map<std::string,std::string> oldNewScriptNames;
+    internalNode->restoreKnobsLinks(*_newSerializations.front(), allNodes,oldNewScriptNames);
     internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;
@@ -1503,9 +1504,21 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
 , _isRedone(false)
 {
     
+    assert(!nodes.empty());
+    
+    QPointF groupPosition;
     for (NodeGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _originalNodes.push_back(*it);
+        
+        QPointF nodePos = (*it)->getPos_mt_safe();
+        groupPosition += nodePos;
     }
+    
+    if (!nodes.empty()) {
+        groupPosition.rx() /= nodes.size();
+        groupPosition.ry() /= nodes.size();
+    }
+    
     CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
                              "",
                              -1,-1,
@@ -1524,9 +1537,12 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
     assert(container_i);
     _group = boost::dynamic_pointer_cast<NodeGui>(container_i);
     assert(_group.lock());
+    container_i->setPosition(groupPosition.x(), groupPosition.y());
     
     std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
     _graph->copyNodesAndCreateInGroup(nodes,isGrp,newNodes);
+    
+    
     
     NodeList internalNewNodes;
     for (std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >::iterator it = newNodes.begin(); it!=newNodes.end(); ++it) {
@@ -1740,7 +1756,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,const std::list<boost::s
         std::vector<NodePtr> groupInputs;
         
         NodePtr groupOutput = group->getOutputNode(true);
-        group->getInputs(&groupInputs);
+        group->getInputs(&groupInputs, true);
         
         std::list<boost::shared_ptr<NodeGui> > nodesToCopy;
         for (NodeList::iterator it2 = nodes.begin(); it2!=nodes.end(); ++it2) {

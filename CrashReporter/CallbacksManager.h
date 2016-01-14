@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,8 @@ class QLocalSocket;
 class QLocalServer;
 class QNetworkReply;
 
-#ifdef DEBUG
+//#define TRACE_CRASH_RERPORTER
+#ifdef TRACE_CRASH_RERPORTER
 class QTextStream;
 class QFile;
 #endif
@@ -58,7 +59,7 @@ public:
         return _instance;
     }
 
-#ifdef DEBUG
+#ifdef TRACE_CRASH_RERPORTER
     void writeDebugMessage(const QString& str);
 #else
     void writeDebugMessage(const QString& /*str*/) {}
@@ -71,7 +72,7 @@ public:
 
     void writeToOutputPipe(const QString& str);
 
-public slots:
+public Q_SLOTS:
 
     void replyFinished();
 
@@ -87,7 +88,7 @@ public slots:
     
     void onProgressDialogCanceled();
     
-signals:
+Q_SIGNALS:
 
     void doDumpCallBackOnMainThread(QString);
 
@@ -99,7 +100,7 @@ private:
 
     static CallbacksManager *_instance;
 
-#ifdef DEBUG
+#ifdef TRACE_CRASH_RERPORTER
     QMutex _dFileMutex;
     QFile* _dFile;
 #endif

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,48 +68,12 @@ public:
 
     void decrementCurrentFrame();
 
-    /*
-     * @brief Timeline keyframes indicators are integers 
-     */
-    void removeAllKeyframesIndicators();
-    void addKeyframeIndicator(SequenceTime time);
-    void addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys,bool emitSignal);
-    void removeKeyFrameIndicator(SequenceTime time);
-    void removeMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,bool emitSignal);
-
-    /**
-     * @brief Show keyframe markers for the given nodes on the timeline. The signal to refresh the gui
-     * will be emitted only once.
-     **/
-    void addNodesKeyframesToTimeline(const std::list<Natron::Node*> & nodes);
-
-    /**
-     * @brief Provided for convenience for a single node
-     **/
-    void addNodeKeyframesToTimeline(Natron::Node* node);
-
-    /**
-     * @brief Hide keyframe markers for the given nodes on the timeline. The signal to refresh the gui
-     * will be emitted only once.
-     **/
-    void removeNodesKeyframesFromTimeline(const std::list<Natron::Node*> & nodes);
-
-    /**
-     * @brief Provided for convenience for a single node
-     **/
-    void removeNodeKeyframesFromTimeline(Natron::Node* node);
-
-    void getKeyframes(std::list<SequenceTime>* keys) const;
 
 public Q_SLOTS:
 
 
     void onFrameChanged(SequenceTime frame);
 
-
-    void goToPreviousKeyframe();
-
-    void goToNextKeyframe();
 
 Q_SIGNALS:
     
@@ -118,16 +82,11 @@ Q_SIGNALS:
     //reason being a Natron::TimelineChangeReasonEnum
     void frameChanged(SequenceTime,int reason);
 
-    void keyframeIndicatorsChanged();
-
 private:
     
     mutable QMutex _lock; // protects the following SequenceTime members
-    SequenceTime _currentFrame;
-    
-    // not MT-safe
-    std::list<SequenceTime> _keyframes;
     Natron::Project* _project;
+    SequenceTime _currentFrame;
 };
 
 #endif /* defined(NATRON_ENGINE_TIMELINE_H_) */

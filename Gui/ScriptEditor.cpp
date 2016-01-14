@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -539,14 +539,21 @@ ScriptEditor::keyPressEvent(QKeyEvent* e)
         onShowHideOutputClicked(!_imp->showHideOutputB->isChecked());
     } else {
         accept = false;
-        QWidget::keyPressEvent(e);
     }
     if (accept) {
         takeClickFocus();
         e->accept();
     } else {
         handleUnCaughtKeyPressEvent(e);
+        QWidget::keyPressEvent(e);
     }
+}
+
+void
+ScriptEditor::keyReleaseEvent(QKeyEvent* e)
+{
+    handleUnCaughtKeyPressEvent(e);
+    QWidget::keyReleaseEvent(e);
 }
 
 void

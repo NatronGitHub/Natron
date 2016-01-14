@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -109,10 +109,10 @@ Knob<T>::Knob(KnobHolder*  holder,
       , _maximums(dimension)
       , _displayMins(dimension)
       , _displayMaxs(dimension)
-      , _setValueRecursionLevel(0)
-      , _setValueRecursionLevelMutex(QMutex::Recursive)
       , _setValuesQueueMutex()
       , _setValuesQueue()
+      , _setValueRecursionLevelMutex(QMutex::Recursive)
+      , _setValueRecursionLevel(0)
 {
     initMinMax();
 }
@@ -1688,9 +1688,6 @@ Knob<T>::onKeyFrameSet(double time,
     
     if (!useGuiCurve) {
         assert(holder);
-        /*if (holder && getEvaluateOnChange()) {
-            holder->abortAnyEvaluation();
-        }*/
         curve = getCurve(dimension);
     } else {
         curve = getGuiCurve(dimension);
@@ -1711,9 +1708,6 @@ Knob<T>::setKeyFrame(const KeyFrame& key,int dimension,Natron::ValueChangedReaso
     
     if (!useGuiCurve) {
         assert(holder);
-        /*if (holder && getEvaluateOnChange()) {
-            holder->abortAnyEvaluation();
-        }*/
         curve = getCurve(dimension);
     } else {
         curve = getGuiCurve(dimension);
@@ -1738,7 +1732,7 @@ Knob<T>::onKeyFrameSet(double /*time*/,const KeyFrame& key,int dimension)
 
 template<typename T>
 void
-Knob<T>::onTimeChanged(double /*time*/)
+Knob<T>::onTimeChanged(double time)
 {
     int dims = getDimension();
 
@@ -1747,7 +1741,6 @@ Knob<T>::onTimeChanged(double /*time*/)
     }
     bool shouldRefresh = false;
     for (int i = 0; i < dims; ++i) {
-        
         if (getKnobGuiPointer() && _signalSlotHandler && (isAnimated(i) || !getExpression(i).empty())) {
             shouldRefresh = true;
         }
@@ -1755,6 +1748,10 @@ Knob<T>::onTimeChanged(double /*time*/)
     }
     if (shouldRefresh) {
         _signalSlotHandler->s_valueChanged(-1, Natron::eValueChangedReasonTimeChanged);
+    }
+    if (evaluateValueChangeOnTimeChange()) {
+        //Some knobs like KnobFile do not animate but the plug-in may need to know the time has changed
+        evaluateValueChange(0, time, Natron::eValueChangedReasonTimeChanged);
     }
 }
 
@@ -2311,7 +2308,7 @@ Knob<T>::clone(KnobI* other,
         }
     }
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonPluginEdited);
+        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonNatronInternalEdited);
         refreshListenersAfterValueChange(dimension);
     }
     cloneExtraData(other,dimension);
@@ -2353,7 +2350,7 @@ Knob<T>::cloneAndCheckIfChanged(KnobI* other,int dimension)
     }
     if (hasChanged) {
         if (_signalSlotHandler) {
-            _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonPluginEdited);
+            _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonNatronInternalEdited);
             refreshListenersAfterValueChange(dimension);
         }
     }
@@ -2396,7 +2393,7 @@ Knob<T>::clone(KnobI* other,
         }
     }
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonPluginEdited);
+        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonNatronInternalEdited);
         refreshListenersAfterValueChange(dimension);
     }
     cloneExtraData(other,offset,range,dimension);
@@ -2448,7 +2445,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
         }
     }
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonPluginEdited);
+        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonNatronInternalEdited);
     }
     refreshListenersAfterValueChange(dimension);
     cloneExtraData(other,dimension);

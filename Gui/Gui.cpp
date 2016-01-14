@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QApplication> // qApp
 #include <QMenuBar>
 #include <QUndoGroup>
+#include <QDesktopServices>
+#include <QUrl>
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -158,6 +160,29 @@ Gui::closeProject()
     appPTR->clearPlaybackCache();
     //_imp->_appInstance->getProject()->createViewer();
     //_imp->_appInstance->execOnProjectCreatedCallback();
+}
+
+void
+Gui::reloadProject()
+{
+    
+    boost::shared_ptr<Project> proj = getApp()->getProject();
+    if (!proj->hasProjectBeenSavedByUser()) {
+        Natron::errorDialog(tr("Reload project").toStdString(), tr("This project has not been saved yet").toStdString());
+        return;
+    }
+    QString filename = proj->getProjectFilename();
+    QString projectPath = proj->getProjectPath();
+    if (!projectPath.endsWith("/")) {
+        projectPath.append('/');
+    }
+    projectPath.append(filename);
+    
+    if (!abortProject(false)) {
+        return;
+    }
+   
+    (void)openProjectInternal(projectPath.toStdString(), false);
 }
 
 void
@@ -385,6 +410,7 @@ Gui::createMenuActions()
     _imp->viewerInputsMenu = new Menu(QObject::tr("Connect Current Viewer"), _imp->viewersMenu);
     _imp->viewersViewMenu = new Menu(QObject::tr("Display View Number"), _imp->viewersMenu);
     _imp->cacheMenu = new Menu(QObject::tr("Cache"), _imp->menubar);
+    _imp->menuHelp = new Menu(QObject::tr("Help"), _imp->menubar);
 
 
     _imp->actionNew_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionNewProject, kShortcutDescActionNewProject, this);
@@ -399,6 +425,10 @@ Gui::createMenuActions()
     _imp->actionClose_project->setIcon( get_icon("document-close") );
     QObject::connect( _imp->actionClose_project, SIGNAL( triggered() ), this, SLOT( closeProject() ) );
 
+    _imp->actionReload_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionReloadProject, kShortcutDescActionReloadProject, this);
+    _imp->actionReload_project->setIcon( get_icon("document-open") );
+    QObject::connect( _imp->actionReload_project, SIGNAL( triggered() ), this, SLOT( reloadProject() ) );
+    
     _imp->actionSave_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionSaveProject, kShortcutDescActionSaveProject, this);
     _imp->actionSave_project->setIcon( get_icon("document-save") );
     QObject::connect( _imp->actionSave_project, SIGNAL( triggered() ), this, SLOT( saveProject() ) );
@@ -541,7 +571,12 @@ Gui::createMenuActions()
     _imp->menubar->addAction( _imp->menuDisplay->menuAction() );
     _imp->menubar->addAction( _imp->menuRender->menuAction() );
     _imp->menubar->addAction( _imp->cacheMenu->menuAction() );
+    _imp->menubar->addAction( _imp->menuHelp->menuAction() );
+
+#ifdef __APPLE__
     _imp->menuFile->addAction(_imp->actionShowAboutWindow);
+#endif
+
     _imp->menuFile->addAction(_imp->actionNew_project);
     _imp->menuFile->addAction(_imp->actionOpen_project);
     _imp->menuFile->addAction( _imp->menuRecentFiles->menuAction() );
@@ -550,6 +585,7 @@ Gui::createMenuActions()
         _imp->menuRecentFiles->addAction(_imp->actionsOpenRecentFile[c]);
     }
 
+    _imp->menuFile->addAction(_imp->actionReload_project);
     _imp->menuFile->addSeparator();
     _imp->menuFile->addAction(_imp->actionClose_project);
     _imp->menuFile->addAction(_imp->actionSave_project);
@@ -597,9 +633,71 @@ Gui::createMenuActions()
     _imp->cacheMenu->addSeparator();
     _imp->cacheMenu->addAction(_imp->actionClearPluginsLoadingCache);
 
+    // Help menu
+    _imp->actionHelpWebsite = new QAction(this);
+    _imp->actionHelpWebsite->setText(QObject::tr("Website"));
+    _imp->menuHelp->addAction(_imp->actionHelpWebsite);
+    QObject::connect( _imp->actionHelpWebsite, SIGNAL( triggered() ), this, SLOT( openHelpWebsite() ) );
+
+    _imp->actionHelpForum = new QAction(this);
+    _imp->actionHelpForum->setText(QObject::tr("Forum"));
+    _imp->menuHelp->addAction(_imp->actionHelpForum);
+    QObject::connect( _imp->actionHelpForum, SIGNAL( triggered() ), this, SLOT( openHelpForum() ) );
+
+    _imp->actionHelpIssues = new QAction(this);
+    _imp->actionHelpIssues->setText(QObject::tr("Issues"));
+    _imp->menuHelp->addAction(_imp->actionHelpIssues);
+    QObject::connect( _imp->actionHelpIssues, SIGNAL( triggered() ), this, SLOT( openHelpIssues() ) );
+
+    _imp->actionHelpWiki = new QAction(this);
+    _imp->actionHelpWiki->setText(QObject::tr("Wiki"));
+    _imp->menuHelp->addAction(_imp->actionHelpWiki);
+    QObject::connect( _imp->actionHelpWiki, SIGNAL( triggered() ), this, SLOT( openHelpWiki() ) );
+
+    _imp->actionHelpPython = new QAction(this);
+    _imp->actionHelpPython->setText(QObject::tr("Python API"));
+    _imp->menuHelp->addAction(_imp->actionHelpPython);
+    QObject::connect( _imp->actionHelpPython, SIGNAL( triggered() ), this, SLOT( openHelpPython() ) );
+
+#ifndef __APPLE__
+    _imp->menuHelp->addSeparator();
+    _imp->menuHelp->addAction(_imp->actionShowAboutWindow);
+#endif
+
     ///Create custom menu
     const std::list<PythonUserCommand> & commands = appPTR->getUserPythonCommands();
     for (std::list<PythonUserCommand>::const_iterator it = commands.begin(); it != commands.end(); ++it) {
         addMenuEntry(it->grouping, it->pythonFunction, it->key, it->modifiers);
     }
 } // createMenuActions
+
+void
+Gui::openHelpWebsite()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_WEBSITE_URL));
+}
+
+void
+Gui::openHelpForum()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_FORUM_URL));
+}
+
+void
+Gui::openHelpIssues()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_ISSUE_TRACKER_URL));
+}
+
+void
+Gui::openHelpWiki()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_WIKI_URL));
+}
+
+void
+Gui::openHelpPython()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_PYTHON_URL));
+}
+

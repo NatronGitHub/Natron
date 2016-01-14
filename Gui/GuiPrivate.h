@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -86,6 +86,7 @@ struct GuiPrivate
     ActionWithShortcut *actionNew_project;
     ActionWithShortcut *actionOpen_project;
     ActionWithShortcut *actionClose_project;
+    ActionWithShortcut *actionReload_project;
     ActionWithShortcut *actionSave_project;
     ActionWithShortcut *actionSaveAs_project;
     ActionWithShortcut *actionExportAsGroup;
@@ -117,6 +118,12 @@ struct GuiPrivate
     ActionWithShortcut* actionNextTab;
     ActionWithShortcut* actionPrevTab;
     ActionWithShortcut* actionCloseTab;
+
+    QAction* actionHelpWebsite;
+    QAction* actionHelpForum;
+    QAction* actionHelpIssues;
+    QAction* actionHelpPython;
+    QAction* actionHelpWiki;
 
     ///the main "central" widget
     QWidget *_centralWidget;
@@ -192,6 +199,7 @@ struct GuiPrivate
     Natron::Menu *viewerInputsMenu;
     Natron::Menu *viewersViewMenu;
     Natron::Menu *cacheMenu;
+    Natron::Menu *menuHelp;
 
 
     ///all TabWidget's : used to know what to hide/show for fullscreen mode
@@ -240,6 +248,7 @@ struct GuiPrivate
     //To prevent recursion when we forward an uncaught event to the click focus widget
     int currentPanelFocusEventRecursion;
     bool keyPressEventHasVisitedFocusWidget;
+    bool keyUpEventHasVisitedFocusWidget;
     
     bool wasLaskUserSeekDuringPlayback;
     

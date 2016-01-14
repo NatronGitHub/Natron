@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -274,15 +274,23 @@ ScaleSliderQWidget::leaveEvent(QEvent* e)
 void
 ScaleSliderQWidget::keyPressEvent(QKeyEvent* e)
 {
+    
+    bool accepted = true;
     if (e->key() == Qt::Key_Control) {
         _imp->ctrlDown = true;
         zoomRange();
+        accepted = false;
     } else if (e->key() == Qt::Key_Shift) {
         _imp->shiftDown = true;
         zoomRange();
+        accepted = false;
     } else {
+        accepted = false;
+    }
+    if (!accepted) {
         QWidget::keyPressEvent(e);
     }
+
 }
 
 double
@@ -307,13 +315,19 @@ ScaleSliderQWidget::getAltered() const
 void
 ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
 {
+    bool accepted = true;
     if (e->key() == Qt::Key_Control) {
         _imp->ctrlDown = false;
         zoomRange();
+        accepted = false;
     } else if (e->key() == Qt::Key_Shift) {
         _imp->shiftDown = false;
         zoomRange();
+        accepted = false;
     } else {
+        accepted = false;
+    }
+    if (!accepted) {
         QWidget::keyReleaseEvent(e);
     }
 }
@@ -425,7 +439,7 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     QColor scaleColor;
     scaleColor.setRgbF(textColor.redF() / 2., textColor.greenF() / 2., textColor.blueF() / 2.);
     
-    QFontMetrics fontM(_imp->font);
+    QFontMetrics fontM(_imp->font, 0);
     
     if (!_imp->useLineColor) {
         p.setPen(scaleColor);
