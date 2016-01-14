@@ -52,6 +52,7 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ShortCutEditor.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerTab.h"
