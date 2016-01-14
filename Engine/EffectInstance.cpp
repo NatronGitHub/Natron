@@ -3691,7 +3691,8 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
         bool isRotoInput = isInputRotoBrush(i);
         if (isRotoInput) {
             ///Copy for the roto input the output needed comps
-            comps->insert(std::make_pair(i, comps->at(-1)));
+            assert(comps->find(-1) != comps->end());
+            comps->insert(std::make_pair(i, (*comps)[-1])); // note: map::at() does not exist in C++98
         } else if (input) {
             std::vector<ImageComponents> compVec;
             std::bitset<4> inputProcChannels;

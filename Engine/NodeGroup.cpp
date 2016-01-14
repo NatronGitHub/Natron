@@ -172,7 +172,7 @@ NodePtr
 NodeCollection::getLastNode(const std::string& pluginID) const
 {
     QMutexLocker k(&_imp->nodesMutex);
-    for (NodeList::const_reverse_iterator it = _imp->nodes.rbegin(); it != _imp->nodes.rend(); ++it ) {
+    for (NodeList::reverse_iterator it = _imp->nodes.rbegin(); it != _imp->nodes.rend(); ++it ) {
         if ((*it)->getPluginID() == pluginID) {
             return *it;
         }
