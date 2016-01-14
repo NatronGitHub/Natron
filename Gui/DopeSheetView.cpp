@@ -1415,7 +1415,8 @@ void DopeSheetViewPrivate::drawGroupOverlay(const boost::shared_ptr<DSNode> &dsN
     int height = hierarchyView->getHeightForItemAndChildren(dsNode->getTreeItem()) ;
     QRectF nameItemRect = hierarchyView->visualItemRect(dsNode->getTreeItem());
 
-    FrameRange groupRange = nodeRanges.at(group.get());
+    assert(nodeRanges.find(group.get()) != nodeRanges.end());
+    FrameRange groupRange = nodeRanges.find(group.get())->second; // map::at() is C++11
 
     RectD overlayRect;
     overlayRect.x1 = groupRange.first;
