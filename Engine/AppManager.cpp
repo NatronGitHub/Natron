@@ -198,9 +198,9 @@ AppManager::AppManager()
     assert(!_instance);
     _instance = this;
     
+#if defined(__NATRON_LINUX__) && !defined(NATRON_USE_BREAKPAD)
     setShutDownSignal(SIGINT);   // shut down on ctrl-c
     setShutDownSignal(SIGTERM);   // shut down on killall
-#if defined(__NATRON_LINUX__) && !defined(NATRON_USE_BREAKPAD)
     //Catch SIGSEGV only when google-breakpad is not active
     setSigSegvSignal();
 #endif
