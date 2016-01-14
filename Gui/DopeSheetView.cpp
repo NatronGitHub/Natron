@@ -1930,7 +1930,8 @@ void DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)
     {
         boost::shared_ptr<DSNode> nearestReader = model->findDSNode(model->getNearestReader(timeOffset));
         if (nearestReader) {
-            FrameRange nearestReaderRange = nodeRanges.at(nearestReader.get());
+            assert(nodeRanges.find(nearestReader.get()) != nodeRanges.end());
+            FrameRange nearestReaderRange = nodeRanges.find(nearestReader.get())->second; // map::at() is C++11
 
             // Retrieve the time offset values
             Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(timeOffset->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get());
