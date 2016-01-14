@@ -162,8 +162,8 @@ struct TableModelPrivate
     
     TableModelPrivate(int rows,
                       int columns)
-    : tableItems(rows * columns,0)
-    , horizontalHeaderItems(columns,0)
+    : tableItems(rows * columns,(TableItem*)0)
+    , horizontalHeaderItems(columns,(TableItem*)0)
     , rowCount(rows)
     {
     }
