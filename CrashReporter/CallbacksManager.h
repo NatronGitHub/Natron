@@ -23,6 +23,10 @@
 #include <QObject>
 #include <QNetworkReply>
 
+#ifndef REPORTER_CLI_ONLY
+#include <QDialog>
+#endif
+
 class QLocalSocket;
 class QLocalServer;
 class QNetworkReply;
@@ -33,15 +37,38 @@ class QTextStream;
 class QFile;
 #endif
 
+class QString;
+
 #ifndef REPORTER_CLI_ONLY
 class CrashDialog;
 class QProgressDialog;
+class QVBoxLayout;
+class QTextEdit;
+class QDialogButtonBox;
 #endif
 
 namespace google_breakpad {
 class CrashGenerationServer;
 }
 
+
+#ifndef REPORTER_CLI_ONLY
+class NetworkErrorDialog : public QDialog
+{
+    
+    QVBoxLayout* mainLayout;
+    QTextEdit* textArea;
+    QDialogButtonBox* buttons;
+    
+public:
+    
+    NetworkErrorDialog(const QString& errorMessage, QWidget* parent);
+    
+    virtual ~NetworkErrorDialog();
+    
+
+};
+#endif
 
 class CallbacksManager : public QObject
 {
