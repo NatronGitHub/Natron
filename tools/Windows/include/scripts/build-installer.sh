@@ -442,10 +442,6 @@ if [ "$NO_INSTALLER" != "1" ]; then
     fi
     cd $REPO_DIR/installers || exit 1
     $INSTALL_PATH/bin/binarycreator -v -n -p $INSTALLER/packages -c $INSTALLER/config/config.xml $ONLINE_INSTALL || exit 1
-    cp $INC_PATH/natron/setup.manifest . || exit 1
-    mt -manifest setup.manifest -outputresource:"${ONLINE_INSTALL};1"
-    mt -manifest setup.manifest -outputresource:"${BUNDLED_INSTALL};1" 
-    rm -f setup.manifest   
 fi
 
 if [ "$NO_ZIP" != "1" ]; then
