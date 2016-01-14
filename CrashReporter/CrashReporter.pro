@@ -16,93 +16,40 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-TARGET = NatronCrashReporter
+#The binary name needs to be Natron as this is what the user lauches
+TARGET = Natron
+VERSION = 2.0.0
 QT       += core network gui
 
-CONFIG += console
-CONFIG -= app_bundle
+CONFIG += app
 CONFIG += moc
 CONFIG += qt
 
 TEMPLATE = app
 
-INCLUDEPATH += $$PWD/..
-
-include(../global.pri)
-
-gbreakpad {
-
-*g++* | *clang* {
-#See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
-# QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO
-# QMAKE_CXXFLAGS_RELEASE_WITH_DEBUGINFO
-# QMAKE_OBJECTIVE_CFLAGS_RELEASE_WITH_DEBUGINFO
-# QMAKE_LFLAGS_RELEASE_WITH_DEBUGINFO
-
-    CONFIG(relwithdebinfo) {
-        CONFIG += release
-        DEFINES *= NDEBUG
-        QMAKE_CXXFLAGS += -O2 -g
-        QMAKE_CXXFLAGS -= -O3
-    }
-}
-
-win32-msvc* {
-    CONFIG(relwithdebinfo) {
-        CONFIG += release
-        DEFINES *= NDEBUG
-        QMAKE_CXXFLAGS_RELEASE += -Zi
-        QMAKE_LFLAGS_RELEASE += /DEBUG /OPT:REF
-    }
-}
-
-isEmpty(BUILD_NUMBER) {
-        DEFINES += NATRON_BUILD_NUMBER=0
-} else {
-        DEFINES += NATRON_BUILD_NUMBER=$$BUILD_NUMBER
-}
-
-CONFIG(debug, debug|release){
-    DEFINES *= DEBUG
-} else {
-    DEFINES *= NDEBUG
+win32 {
+        RC_FILE += ../Natron.rc
 }
 
 macx {
-  # Set the pbuilder version to 46, which corresponds to Xcode >= 3.x
-  # (else qmake generates an old pbproj on Snow Leopard)
-  QMAKE_PBUILDER_VERSION = 46
-
-  QMAKE_MACOSX_DEPLOYMENT_VERSION = $$split(QMAKE_MACOSX_DEPLOYMENT_TARGET, ".")
-  QMAKE_MACOSX_DEPLOYMENT_MAJOR_VERSION = $$first(QMAKE_MACOSX_DEPLOYMENT_VERSION)
-  QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION = $$last(QMAKE_MACOSX_DEPLOYMENT_VERSION)
-  universal {
-    message("Compiling for universal OSX $${QMAKE_MACOSX_DEPLOYMENT_MAJOR_VERSION}.$$QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION")
-    contains(QMAKE_MACOSX_DEPLOYMENT_MAJOR_VERSION, 10) {
-      contains(QMAKE_MACOSX_DEPLOYMENT_TARGET, 4)|contains(QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION, 5) {
-        # OSX 10.4 (Tiger) and 10.5 (Leopard) are x86/ppc
-        message("Compiling for universal ppc/i386")
-        CONFIG += x86 ppc
-      }
-      contains(QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION, 6) {
-        message("Compiling for universal i386/x86_64")
-        # OSX 10.6 (Snow Leopard) may run on Intel 32 or 64 bits architectures
-        CONFIG += x86 x86_64
-      }
-      # later OSX instances only run on x86_64, universal builds are useless
-      # (unless a later OSX supports ARM)
-    }
-  }
-
-  #link against the CoreFoundation framework for the StandardPaths functionnality
-  LIBS += -framework CoreServices
+  ### custom variables for the Info.plist file
+  # use a custom Info.plist template
+  QMAKE_INFO_PLIST = NatronInfo.plist
+  # Set the application icon
+  ICON = ../Gui/Resources/Images/natronIcon256_osx.icns
+  # replace com.yourcompany with something more meaningful
+  QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
+  QMAKE_PKGINFO_TYPEINFO = Ntrn
 }
 
+INCLUDEPATH += $$PWD/..
 
+#used by breakpad internals
 unix:!mac {
     DEFINES += N_UNDF=0
 }
 
+#google-breakpad use this to determine if build is debug
 win32:Debug: DEFINES *= _DEBUG 
 
 SOURCES += \
@@ -152,10 +99,48 @@ win32-msvc*{
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../BreakpadClient/libBreakpadClient.a
 }
 
+include(../global.pri)
+
+
 RESOURCES += \
     ../Gui/GuiResources.qrc
 
 INSTALLS += target
 
-}
 
+OCIO.files = \
+$$PWD/../OpenColorIO-Configs/ChangeLog \
+$$PWD/../OpenColorIO-Configs/README \
+$$PWD/../OpenColorIO-Configs/aces_0.1.1 \
+$$PWD/../OpenColorIO-Configs/aces_0.7.1 \
+$$PWD/../OpenColorIO-Configs/blender \
+$$PWD/../OpenColorIO-Configs/nuke-default \
+$$PWD/../OpenColorIO-Configs/spi-anim \
+$$PWD/../OpenColorIO-Configs/spi-vfx
+
+# ACES 1.0.1 also has baked luts and python files which we don't want to bundle
+OCIO_aces_101.files = \
+$$PWD/../OpenColorIO-Configs/aces_1.0.1/config.ocio \
+$$PWD/../OpenColorIO-Configs/aces_1.0.1/luts
+
+
+macx {
+    Resources.files += $$PWD/../Gui/Resources/Images/natronProjectIcon_osx.icns
+    Resources.path = Contents/Resources
+    QMAKE_BUNDLE_DATA += Resources
+    Fontconfig.files = $$PWD/../Gui/Resources/etc/fonts
+    Fontconfig.path = Contents/Resources/etc
+    QMAKE_BUNDLE_DATA += Fontconfig
+    OCIO.path = Contents/Resources/OpenColorIO-Configs
+    QMAKE_BUNDLE_DATA += OCIO
+    OCIO_aces_101.path = Contents/Resources/OpenColorIO-Configs/aces_1.0.1
+    QMAKE_BUNDLE_DATA += OCIO_aces_101
+}
+!macx {
+    Resources.path = $$OUT_PWD
+    INSTALLS += Resources
+    OCIO.path = $$OUT_PWD/OpenColorIO-Configs
+    INSTALLS += OCIO
+    OCIO_aces_101.path = $$OUT_PWD/OpenColorIO-Configs/aces_1.0.1
+    INSTALLS += OCIO_aces_101
+}

@@ -21,7 +21,7 @@ TEMPLATE = subdirs
 # build things in the order we give
 CONFIG += ordered
 
-gbreakpad: SUBDIRS += BreakpadClient CrashReporter CrashReporterCLI
+SUBDIRS += BreakpadClient CrashReporter CrashReporterCLI
 
 SUBDIRS += \
     HostSupport \

@@ -65,6 +65,12 @@ struct CLArgsPrivate
     
     mutable QString imageFilename;
     
+    QString breakpadPipeFilePath;
+    
+    int breakpadPipeClientID;
+    
+    bool wasSpawnedFromBreakpadProcess;
+    
     CLArgsPrivate()
     : args()
     , filename()
@@ -80,6 +86,9 @@ struct CLArgsPrivate
     , enableRenderStats(false)
     , isEmpty(true)
     , imageFilename()
+    , breakpadPipeFilePath()
+    , breakpadPipeClientID(-1)
+    , wasSpawnedFromBreakpadProcess(false)
     {
         
     }
@@ -410,6 +419,24 @@ CLArgs::isPythonScript() const
     return _imp->isPythonScript;
 }
 
+int
+CLArgs::getBreakpadClientFD() const
+{
+    return _imp->breakpadPipeClientID;
+}
+
+QString
+CLArgs::getBreakpadPipeFilePath() const
+{
+    return _imp->breakpadPipeFilePath;
+}
+
+bool
+CLArgs::canEnableBreakpadHandler() const
+{
+    return _imp->wasSpawnedFromBreakpadProcess;
+}
+
 QStringList::iterator
 CLArgsPrivate::findFileNameWithExtension(const QString& extension)
 {
@@ -609,6 +636,45 @@ CLArgsPrivate::parse()
             args.erase(it);
         }
     }
+    
+    {
+        QStringList::iterator it = hasToken(NATRON_BREAKPAD_ENABLED_ARG, "");
+        if (it != args.end()) {
+            wasSpawnedFromBreakpadProcess = true;
+            args.erase(it);
+        }
+    }
+    
+    {
+        QStringList::iterator it = hasToken(NATRON_BREAKPAD_CLIENT_FD_ARG, "");
+        if (it != args.end()) {
+            ++it;
+            if (it != args.end()) {
+                breakpadPipeClientID = it->toInt();
+                args.erase(it);
+            } else {
+                std::cout << QObject::tr("You must specify the breakpad pipe client FD").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
+        }
+    }
+    
+    {
+        QStringList::iterator it = hasToken(NATRON_BREAKPAD_PIPE_ARG, "");
+        if (it != args.end()) {
+            ++it;
+            if (it != args.end()) {
+                breakpadPipeFilePath = *it;
+                args.erase(it);
+            } else {
+                std::cout << QObject::tr("You must specify the breakpad pipe path").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
+        }
+    }
+
     
     {
         QStringList::iterator it = hasToken("IPCpipe", "");

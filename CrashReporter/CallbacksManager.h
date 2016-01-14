@@ -31,13 +31,8 @@ class QLocalSocket;
 class QLocalServer;
 class QNetworkReply;
 
-//#define TRACE_CRASH_RERPORTER
-#ifdef TRACE_CRASH_RERPORTER
-class QTextStream;
-class QFile;
-#endif
-
 class QString;
+class QProcess;
 
 #ifndef REPORTER_CLI_ONLY
 class CrashDialog;
@@ -76,36 +71,32 @@ class CallbacksManager : public QObject
 
 public:
 
-    CallbacksManager(bool autoUpload);
+    CallbacksManager();
+    
     ~CallbacksManager();
 
-    void s_emitDoCallBackOnMainThread(const QString& filePath);
 
     static CallbacksManager* instance()
     {
         return _instance;
     }
 
-#ifdef TRACE_CRASH_RERPORTER
-    void writeDebugMessage(const QString& str);
-#else
-    void writeDebugMessage(const QString& /*str*/) {}
-#endif
-
-    void initOuptutPipe(const QString& comPipeName,
-                        const QString& pipeName,
-                        const QString& dumpPath,
-                        int server_fd);
-
-    void writeToOutputPipe(const QString& str);
+    /**
+     * @brief To be called to start breakpad generation server right away
+     * after the constructor
+     * This throws a runtime exception upon error
+     **/
+    void initCrashGenerationServer(int* client_fd, QString* pipePath);
+    
+    void setProcess(QProcess* natronProcess);
+    
+    void s_emitDoCallBackOnMainThread(const QString& filePath);
 
 public Q_SLOTS:
 
     void replyFinished();
 
     void onDoDumpOnMainThread(const QString& filePath);
-
-    void onOutputPipeConnectionMade();
 
     void onCrashDialogFinished();
     
@@ -114,6 +105,9 @@ public Q_SLOTS:
     void onUploadProgress(qint64 bytesSent, qint64 bytesTotal);
     
     void onProgressDialogCanceled();
+        
+    void onNatronProcessStdOutWrittenTo();
+    void onNatronProcessStdErrWrittenTo();
     
 Q_SIGNALS:
 
@@ -127,13 +121,14 @@ private:
 
     static CallbacksManager *_instance;
 
-#ifdef TRACE_CRASH_RERPORTER
-    QMutex _dFileMutex;
-    QFile* _dFile;
+    
+#ifndef Q_OS_LINUX
+    //On Windows & OSX breakpad expects us to manage the pipe
+    QLocalServer* _breakpadPipeServer;
+    
+    //The Natron process has no way to print to stdout/stderr, so connect signals
+    QProcess* _natronProcess;
 #endif
-
-    //This is the pipe used for our own IPC between Natron & this program, mainly for the handshake on startup
-    QLocalSocket* _outputPipe;
 
     QNetworkReply* _uploadReply;
     bool _autoUpload;
@@ -146,7 +141,11 @@ private:
     QString _dumpDirPath;
     QString _pipePath;
     google_breakpad::CrashGenerationServer* _crashServer;
+    
+#ifdef Q_OS_LINUX
+    //On Linux this is the pipe FD of crash generation server on the server side
     int _serverFD;
+#endif
     
 };
 

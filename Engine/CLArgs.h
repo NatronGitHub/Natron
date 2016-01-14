@@ -106,6 +106,12 @@ public:
     
     bool areRenderStatsEnabled() const;
     
+    bool canEnableBreakpadHandler() const;
+    
+    int getBreakpadClientFD() const;
+    
+    QString getBreakpadPipeFilePath() const;
+    
 private:
     
     boost::scoped_ptr<CLArgsPrivate> _imp;

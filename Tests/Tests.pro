@@ -166,7 +166,7 @@ win32-msvc*{
 
 ################
 # BreakpadClient
-gbreakpad {
+
 win32-msvc*{
         CONFIG(64bit) {
                 CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../BreakpadClient/x64/release/ -lBreakpadClient
@@ -205,7 +205,6 @@ win32-msvc*{
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../BreakpadClient/libBreakpadClient.a
 }
 
-} #gbreakpad
 include(../global.pri)
 include(../config.pri)
 

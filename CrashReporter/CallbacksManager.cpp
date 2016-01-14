@@ -29,10 +29,8 @@ CallbacksManager* CallbacksManager::_instance = 0;
 
 #include <cassert>
 #include <iostream>
-#include <QLocalSocket>
-#include <QLocalServer>
+#include <sstream>
 
-#include <QThread>
 #ifndef REPORTER_CLI_ONLY
 #include <QApplication>
 #include <QProgressDialog>
@@ -42,15 +40,22 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QTextEdit>
-#else
+#else //!REPORTER_CLI_ONLY
 #include <QCoreApplication>
 #endif
+
+#include <QLocalSocket>
+#include <QLocalServer>
+#include <QThread>
+#include <QFile>
+#include <QDir>
+#include <QTemporaryFile>
+#include <QFileInfo>
+#include <QProcess>
+
 #ifdef DEBUG
 #include <QTextStream>
 #endif
-
-#include <QFile>
-#include <QFileInfo>
 
 
 #if defined(Q_OS_MAC)
@@ -58,6 +63,7 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #elif defined(Q_OS_LINUX)
 #include "client/linux/crash_generation/crash_generation_server.h"
 #elif defined(Q_OS_WIN32)
+#include <windows.h>
 #include "client/windows/crash_generation/crash_generation_server.h"
 #endif
 
@@ -69,30 +75,30 @@ CallbacksManager* CallbacksManager::_instance = 0;
 
 using namespace google_breakpad;
 
-CallbacksManager::CallbacksManager(bool autoUpload)
+CallbacksManager::CallbacksManager()
 : QObject()
-#ifdef TRACE_CRASH_RERPORTER
-, _dFileMutex()
-, _dFile(0)
+#ifndef Q_OS_LINUX
+, _breakpadPipeServer(0)
+, _natronProcess(0)
 #endif
-, _outputPipe(0)
 , _uploadReply(0)
-, _autoUpload(autoUpload)
-#ifndef REPORTER_CLI_ONLY
+#ifdef REPORTER_CLI_ONLY
+, _autoUpload(true)
+#else
+, _autoUpload(false)
 , _dialog(0)
 , _progressDialog(0)
 #endif
 , _didError(false)
 , _dumpFilePath()
+, _pipePath()
 , _crashServer(0)
+#ifdef Q_OS_LINUX
+, _serverFD(-1)
+#endif
 {
     _instance = this;
-    QObject::connect(this, SIGNAL(doDumpCallBackOnMainThread(QString)), this, SLOT(onDoDumpOnMainThread(QString)));
-
-#ifdef TRACE_CRASH_RERPORTER
-    _dFile = new QFile("debugCrashReporter.txt");
-    _dFile->open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text);
-#endif
+   
 }
 
 
@@ -101,11 +107,24 @@ CallbacksManager::~CallbacksManager() {
     delete _dFile;
 #endif
 
-    delete _outputPipe;
-    _instance = 0;
+#ifndef Q_OS_LINUX
+    delete _breakpadPipeServer;
+#endif
+    
     delete _crashServer;
+    _instance = 0;
 
 
+}
+
+void
+CallbacksManager::setProcess(QProcess* natronProcess)
+{
+#ifndef Q_OS_LINUX
+    _natronProcess = natronProcess;
+#else
+    (void)natronProcess;
+#endif
 }
 
 static void addTextHttpPart(QHttpMultiPart* multiPart, const QString& name, const QString& value)
@@ -122,7 +141,7 @@ static void addFileHttpPart(QHttpMultiPart* multiPart, const QString& name, cons
     QFile *file = new QFile(filePath);
     file->setParent(multiPart);
     if (!file->open(QIODevice::ReadOnly)) {
-        CallbacksManager::instance()->writeDebugMessage("Failed to open the following file for uploading: " + filePath);
+        std::cerr << "Failed to open the following file for uploading: " + filePath.toStdString() << std::endl;
         return;
     }
     
@@ -155,7 +174,6 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     QString versionStr = getVersionString();
     
 
-    writeDebugMessage("Attempt to upload crash report...");
 #ifndef REPORTER_CLI_ONLY
     assert(_dialog);
     _progressDialog = new QProgressDialog(_dialog);
@@ -167,7 +185,7 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     
     QFileInfo finfo(filepath);
     if (!finfo.exists()) {
-        writeDebugMessage("Dump file (" + filepath + ") does not exist");
+        std::cerr << "Dump File (" << filepath.toStdString() << ") does not exist" << std::endl;
         return;
     }
     
@@ -231,7 +249,6 @@ CallbacksManager::replyFinished() {
     
     QByteArray reply = _uploadReply->readAll();
     QString successStr("File uploaded successfully!\n" + QString(reply));
-    writeDebugMessage(successStr);
     
 #ifndef REPORTER_CLI_ONLY
     QMessageBox info(QMessageBox::Information, "Dump Uploading", successStr, QMessageBox::NoButton, _dialog, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint| Qt::WindowStaysOnTopHint);
@@ -340,7 +357,7 @@ CallbacksManager::replyError(QNetworkReply::NetworkError errCode)
     
     QFileInfo finfo(_dumpFilePath);
     if (!finfo.exists()) {
-        writeDebugMessage("Dump file (" + _dumpFilePath + ") does not exist");
+        std::cerr << "Dump file (" <<  _dumpFilePath.toStdString() << ") does not exist";
     }
     
     QString guidStr = finfo.fileName();
@@ -355,8 +372,6 @@ CallbacksManager::replyError(QNetworkReply::NetworkError errCode)
                    _dumpFilePath + "\nYou can submit it directly to the developers by filling out the form at " + QString(FALLBACK_FORM_URL) +
                    " with the following informations:\nProductName: " + NATRON_APPLICATION_NAME + "\nVersion: " + getVersionString() +
                    "\nguid: " + guidStr + "\n\nPlease add any comment describing the issue and the state of the application at the moment it crashed.");
-    writeDebugMessage(errStr);
-    
     
     _didError = true;
 
@@ -369,7 +384,7 @@ CallbacksManager::replyError(QNetworkReply::NetworkError errCode)
         _dialog->deleteLater();
     }
 #else
-    
+    std::cerr << errStr.toStdString() << std::endl;
 #endif
     _uploadReply->deleteLater();
     _uploadReply = 0;
@@ -426,8 +441,6 @@ CallbacksManager::onCrashDialogFinished()
             break;
     }
     
-    writeDebugMessage("Dialog finished with ret code "+ QString::number((int)ret));
-
     if (doUpload) {
         uploadFileToRepository(_dialog->getOriginalDumpFilePath(),_dialog->getDescription());
     } else {
@@ -441,25 +454,10 @@ CallbacksManager::onCrashDialogFinished()
 void
 CallbacksManager::s_emitDoCallBackOnMainThread(const QString& filePath)
 {
-    writeDebugMessage("Dump request received, file located at: " + filePath);
     if (QFile::exists(filePath)) {
-
         Q_EMIT doDumpCallBackOnMainThread(filePath);
-
-    } else {
-        writeDebugMessage("Dump file does not seem to exist...exiting crash reporter now.");
     }
 }
-
-#ifdef TRACE_CRASH_RERPORTER
-void
-CallbacksManager::writeDebugMessage(const QString& str)
-{
-    QMutexLocker k(&_dFileMutex);
-    QTextStream ts(_dFile);
-    ts << str << '\n';
-}
-#endif
 
 
 
@@ -534,7 +532,6 @@ void OnClientDumpRequest(void* /*context*/,
 void
 CallbacksManager::startCrashGenerationServer()
 {
-     writeDebugMessage("Starting crash generation server and notifying Natron...");
 
     /*
      * We initialize the CrashGenerationServer now that the connection is made between Natron & the Crash reporter
@@ -578,57 +575,137 @@ CallbacksManager::startCrashGenerationServer()
                                           &stdWDumpPath); // path to dump to
 #endif
     if (!_crashServer->Start()) {
-        writeDebugMessage("Failure to start breakpad server, crash generation will fail.");
-        qApp->exit();
-        return;
-    } else {
-        writeDebugMessage("Crash generation server started successfully.");
+        std::stringstream ss;
+        ss << "Failure to start breakpad server, crash generation will fail." << std::endl;
+        ss << "Dump path is: " << _dumpDirPath.toStdString() << std::endl;
+        ss << "Pipe name is: " << _pipePath.toStdString() << std::endl;
+        throw std::runtime_error(ss.str());
     }
+}
 
-    //Notify Natron that the server is started
-    QString message("-i");
-    writeToOutputPipe(message);
+
+
+void
+CallbacksManager::onNatronProcessStdOutWrittenTo()
+{
+#ifndef Q_OS_LINUX
+    QString str(_natronProcess->readAllStandardOutput().data());
+    std::cout << str.toStdString() << std::endl;
+#endif
 }
 
 void
-CallbacksManager::onOutputPipeConnectionMade()
+CallbacksManager::onNatronProcessStdErrWrittenTo()
 {
-    writeDebugMessage("IPC pipe with Natron successfully connected.");
+#ifndef Q_OS_LINUX
+    QString str(_natronProcess->readAllStandardError().data());
+    std::cerr << str.toStdString() << std::endl;
+#endif
+}
 
-    //At this point we're sure that the server is created, so we notify Natron about it so it can create its ExceptionHandler
+
+static QString getTempDirPath()
+{
+#ifdef Q_OS_UNIX
+
+    QString temp = QString(qgetenv("TMPDIR"));
+    if (temp.isEmpty()) {
+        temp = QLatin1String("/tmp/");
+    }
+    return QDir::cleanPath(temp);
+#else
+    QString ret;
+    wchar_t tempPath[MAX_PATH];
+    DWORD len = GetTempPath(MAX_PATH, tempPath);
+    if (len)
+        ret = QString::fromWCharArray(tempPath, len);
+    if (!ret.isEmpty()) {
+        while (ret.endsWith(QLatin1Char('\\')))
+            ret.chop(1);
+        ret = QDir::fromNativeSeparators(ret);
+    }
+    if (ret.isEmpty()) {
+#if !defined(Q_OS_WINCE)
+        ret = QLatin1String("C:/tmp");
+#else
+        ret = QLatin1String("/Temp");
+#endif
+    } else if (ret.length() >= 2 && ret[1] == QLatin1Char(':')) {
+        ret[0] = ret.at(0).toUpper(); // Force uppercase drive letters.
+    }
+    return ret;
+#endif
+}
+
+
+void
+CallbacksManager::initCrashGenerationServer(int* client_fd, QString* pipePath)
+{
+    
+#ifndef Q_OS_LINUX
+    assert(!_breakpadPipeServer);
+    Q_UNUSED(client_fd);
+#endif
+    
+    QObject::connect(this, SIGNAL(doDumpCallBackOnMainThread(QString)), this, SLOT(onDoDumpOnMainThread(QString)));
+
+#ifdef Q_OS_LINUX
+    if (!google_breakpad::CrashGenerationServer::CreateReportChannel(&_serverFD, client_fd)) {
+        throw std::runtime_error("breakpad: Failure to create named pipe for the CrashGenerationServer (CreateReportChannel).");
+        return;
+    }
+#endif
+    
+    /*
+     Use a temporary file to get a random file name for the pipes.
+     We use 2 different pipe: 1 for the CrashReporter to notify to Natron that it has started correctly, and another
+     one that is used by the google_breakpad server itself.
+     */
+
+    _dumpDirPath = getTempDirPath();
+    {
+        QString tmpFileName;
+#ifdef Q_OS_WIN32
+        tmpFileName += "//./pipe/";
+#elif defined(Q_OS_UNIX)
+        tmpFileName	= _dumpDirPath;
+        tmpFileName += '/';
+        tmpFileName += NATRON_APPLICATION_NAME;
+#endif
+        tmpFileName += "_CRASH_PIPE_";
+        {
+            QString tmpTemplate;
+#ifndef Q_OS_WIN32
+            tmpTemplate.append(tmpFileName);
+#endif
+            QTemporaryFile tmpf(tmpTemplate);
+            tmpf.open(); // this will append a random unique string  to the passed template (tmpFileName)
+            tmpFileName = tmpf.fileName();
+            tmpf.remove();
+        }
+        
+#ifndef Q_OS_WIN32
+        _pipePath = tmpFileName;
+#else
+        int foundLastSlash = tmpFileName.lastIndexOf('/');
+        if (foundLastSlash !=1) {
+            _pipePath = "//./pipe/";
+            if (foundLastSlash < tmpFileName.size() - 1) {
+                _pipePath.append(tmpFileName.mid(foundLastSlash + 1));
+            }
+        }
+#endif
+        
+        *pipePath = _pipePath;
+    }
+    
+    
+#ifndef Q_OS_LINUX
+    //Create the crash generation pipe ourselves
+    _breakpadPipeServer = new QLocalServer;
+    _breakpadPipeServer->listen(_pipePath);
+#endif
+
     startCrashGenerationServer();
-
-
-
-}
-
-void
-CallbacksManager::writeToOutputPipe(const QString& str)
-{
-    assert(_outputPipe);
-    if (!_outputPipe) {
-        return;
-    }
-    _outputPipe->write( (str + '\n').toUtf8() );
-    _outputPipe->flush();
-}
-
-
-void
-CallbacksManager::initOuptutPipe(const QString& comPipeName,
-                                 const QString& pipeName,
-                                 const QString& dumpPath, int server_fd)
-{
-    assert(!_outputPipe);
-    _dumpDirPath = dumpPath;
-    _pipePath = pipeName;
-    _serverFD = server_fd;
-
-    //Request a connection to the socket opened by Natron for our own IPC. We use it to notify Natron that our crash generation server has been created
-    _outputPipe = new QLocalSocket;
-    QObject::connect( _outputPipe, SIGNAL( connected() ), this, SLOT( onOutputPipeConnectionMade() ) );
-    _outputPipe->connectToServer(comPipeName,QLocalSocket::ReadWrite);
-
-
     
 }

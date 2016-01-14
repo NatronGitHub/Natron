@@ -123,6 +123,9 @@
 ///For example RC 1, RC 2 etc... This is to be defined from withing the qmake call, passing BUILD_NUMBER=X to the command line
 //#define NATRON_BUILD_NUMBER 0
 
+#define NATRON_BREAKPAD_ENABLED_ARG "breakpad_enabled"
+#define NATRON_BREAKPAD_CLIENT_FD_ARG "breakpad_client_fd"
+#define NATRON_BREAKPAD_PIPE_ARG "breakpad_pipe_path"
 
 ///If set the version of Natron will no longer be displayed in the splashscreen but the name of the user
 ///Set this from qmake

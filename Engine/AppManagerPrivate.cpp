@@ -125,16 +125,8 @@ AppManagerPrivate::AppManagerPrivate()
 #ifdef NATRON_USE_BREAKPAD
 ,breakpadHandler()
 #ifndef Q_OS_LINUX
-,crashReporter()
-#else
-,crashReporterPID(-1)
+,breakpadPipeConnection()
 #endif
-,crashReporterBreakpadPipe()
-,crashClientServer()
-#ifdef Q_OS_LINUX
-,client_fd(0)
-#endif
-,crashServerConnection(0)
 #endif
 ,natronPythonGIL(QMutex::Recursive)
 {
@@ -173,108 +165,30 @@ static char* qstringToMallocCharArray(const QString& str)
 #endif
 
 void
-AppManagerPrivate::initBreakpad()
+AppManagerPrivate::initBreakpad(const QString& breakpadPipePath,int breakpad_client_fd)
 {
-    if (appPTR->isBackground()) {
-        return;
-    }
-
-
-    int server_fd = 0;
-#ifdef Q_OS_LINUX
-    if (!google_breakpad::CrashGenerationServer::CreateReportChannel(&server_fd, &client_fd)) {
-        qDebug() << "Failure to create breakpad pipe";
-        return;
-    }
-#endif
-    
+ 
     assert(!breakpadHandler);
-    std::srand(2000);
     
-    /*
-     Use a temporary file to get a random file name for the pipes.
-     We use 2 different pipe: 1 for the CrashReporter to notify to Natron that it has started correctly, and another
-     one that is used by the google_breakpad server itself.
-     */
-    QString tmpFileName;
-#ifndef Q_OS_WIN32
-	tmpFileName	= QDir::tempPath();
-    tmpFileName += '/';
-    tmpFileName += NATRON_APPLICATION_NAME;
-#else
-	tmpFileName += "//./pipe/";
-#endif
-    tmpFileName += "_CRASH_PIPE_";
-    {
-		QString tmpTemplate;
-#ifndef Q_OS_WIN32
-		tmpTemplate.append(tmpFileName);
-#endif
-        QTemporaryFile tmpf(tmpTemplate);
-        tmpf.open(); // this will append a random unique string  to the passed template (tmpFileName)
-        tmpFileName = tmpf.fileName();
-        tmpf.remove();
-    }
-
-	QString breakpadPipeName;
-    QString natronCrashReporterPipeFilename;
-#ifndef Q_OS_WIN32
-	breakpadPipeName = tmpFileName;
-#else
-	int foundLastSlash = tmpFileName.lastIndexOf('/');
-	if (foundLastSlash !=1) {
-		breakpadPipeName = "//./pipe/";
-		if (foundLastSlash < tmpFileName.size() - 1) {
-			breakpadPipeName.append(tmpFileName.mid(foundLastSlash + 1));
-		}
-	}
-#endif
-	natronCrashReporterPipeFilename	= breakpadPipeName + "_COM_PIPE_";
-
-    crashClientServer.reset(new QLocalServer());
-    QObject::connect(crashClientServer.get(),SIGNAL( newConnection() ),appPTR,SLOT( onNewCrashReporterConnectionPending() ) );
-    crashClientServer->listen(natronCrashReporterPipeFilename);
     
-    crashReporterBreakpadPipe = breakpadPipeName;
-    QString crashReporterBinaryPath = qApp->applicationDirPath() + "/NatronCrashReporter";
 
 #ifdef Q_OS_LINUX
-    //On Linux we have to fork this process to create the crash reporter so that it inherits the file descriptors gotten from
-    //CreateReportChannel. This is specific to Linux, on OS X and Windows we do not need that.
-    crashReporterPID = fork();
-    if (crashReporterPID == 0) {
-        //We are in the child, i.e: the NatronCrashReporter.
-        //Just exec the crash reporter
-        char pipe_fd_string[8];
-        sprintf(pipe_fd_string, "%d", server_fd);
-        char* const argv[] = {
-            qstringToMallocCharArray(crashReporterBinaryPath),
-            qstringToMallocCharArray(breakpadPipeName),
-            pipe_fd_string,
-            qstringToMallocCharArray(natronCrashReporterPipeFilename),
-            0
-        };
-        //This call returns only upon errors
-        execv(crashReporterBinaryPath.toStdString().c_str(),argv);
-
-        qDebug() << "Child process failed to execute NatronCrashReporter";
-    }
+    createBreakpadHandler(breakpad_client_fd);
 #else
-    QStringList args;
-    args << breakpadPipeName;
-    args << QString::number(server_fd);
-    args << natronCrashReporterPipeFilename;
-    crashReporter.reset(new QProcess);
-    crashReporter->start(crashReporterBinaryPath, args);
-#endif
+    (void)breakpad_client_fd;
+    //on Windows & OSX we handle the breakpad pipe ourselves
+    breakpadPipeConnection.reset(new QLocalSocket);
+    QObject::connect(breakpadPipeConnection.get(), SIGNAL(connected()), appPTR, SLOT(onBreakpadPipeConnectionMade()));
+    breakpadPipeConnection->connectToServer(breakpadPipePath,QLocalSocket::ReadWrite);
     
+#endif
 }
 
 void
-AppManagerPrivate::createBreakpadHandler()
+AppManagerPrivate::createBreakpadHandler(int breakpad_client_fd)
 {
     QString dumpPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
-
+    (void)breakpad_client_fd;
     try {
 #if defined(Q_OS_MAC)
         breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdString(),
@@ -282,14 +196,14 @@ AppManagerPrivate::createBreakpadHandler()
                                                                      0/*dmpcb*/,
                                                                      0,
                                                                      true,
-                                                                     crashReporterBreakpadPipe.toStdString().c_str()));
+                                                                     breakpadPipeConnection->serverName().toStdString().c_str()));
 #elif defined(Q_OS_LINUX)
         breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(dumpPath.toStdString()),
                                                                      0,
                                                                      0/*dmpCb*/,
                                                                      0,
                                                                      true,
-                                                                     client_fd));
+                                                                     breakpad_client_fd));
 #elif defined(Q_OS_WIN32)
         breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
                                                                      0, //filter callback
@@ -297,7 +211,7 @@ AppManagerPrivate::createBreakpadHandler()
 																	 0, //context
                                                                      google_breakpad::ExceptionHandler::HANDLER_ALL,
                                                                      MiniDumpNormal,
-                                                                     crashReporterBreakpadPipe.toStdWString().c_str(),
+                                                                     breakpadPipeConnection->serverName().toStdWString().c_str(),
                                                                      0));
 #endif
     } catch (const std::exception& e) {

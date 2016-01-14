@@ -124,22 +124,10 @@ struct AppManagerPrivate
     
 #ifdef NATRON_USE_BREAKPAD
     boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
-
-#ifdef Q_OS_LINUX
-    pid_t crashReporterPID;
-#else
-    boost::shared_ptr<QProcess> crashReporter;
+#ifndef Q_OS_LINUX
+    //On Windows & OSX the breakpad pipe is handled ourselves
+    boost::shared_ptr<QLocalSocket> breakpadPipeConnection;
 #endif
-
-    QString crashReporterBreakpadPipe;
-    boost::shared_ptr<QLocalServer> crashClientServer;
-
-#ifdef Q_OS_LINUX
-    int client_fd;
-#endif
-
-    //Will be deleted by crashClientServer as the connection socket is a qt child of the server
-    QLocalSocket* crashServerConnection;
 #endif
     
     QMutex natronPythonGIL;
@@ -176,9 +164,9 @@ struct AppManagerPrivate
     void declareSettingsToPython();
     
 #ifdef NATRON_USE_BREAKPAD
-    void initBreakpad();
+    void initBreakpad(const QString& breakpadPipePath, int breakpad_client_fd);
 
-    void createBreakpadHandler();
+    void createBreakpadHandler(int breakpad_client_fd);
 #endif
 };
 

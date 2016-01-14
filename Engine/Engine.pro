@@ -55,7 +55,7 @@ INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../Global
 INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
-gbreakpad: INCLUDEPATH += $$PWD/../google-breakpad/src
+INCLUDEPATH += $$PWD/../google-breakpad/src
 
 #To overcome wrongly generated #include <...> by shiboken
 INCLUDEPATH += $$PWD

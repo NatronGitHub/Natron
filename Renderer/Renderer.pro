@@ -20,7 +20,7 @@ QT       += core network
 QT       -= gui
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
-TARGET = NatronRenderer
+TARGET = NatronRenderer-bin
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG += moc
@@ -123,7 +123,6 @@ win32-msvc*{
 ################
 # BreakpadClient
 
-gbreakpad {
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -162,8 +161,6 @@ win32-msvc*{
         else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../BreakpadClient/build/Debug/libBreakpadClient.a
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../BreakpadClient/libBreakpadClient.a
 }
-
-} # gbreakpad
 
 include(../global.pri)
 include(../config.pri)

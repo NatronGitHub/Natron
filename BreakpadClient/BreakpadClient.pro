@@ -24,8 +24,6 @@ CONFIG -= qt
 include(../global.pri)
 include(../config.pri)
 
-gbreakpad {
-
 # disable warnings, since this is an external library
 QMAKE_CFLAGS_WARN_ON=-Wno-deprecated
 QMAKE_CXXFLAGS_WARN_ON=-Wno-deprecated
@@ -137,4 +135,3 @@ win32 {
                 $$BREAKPAD_PATH/common/windows/string_utils.cc
 }
 
-}

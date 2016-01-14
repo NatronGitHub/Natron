@@ -1,0 +1,816 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+		D7BA7D76DAB5DD13389D6332 = {
+			buildActionMask = 2147483647;
+			files = (
+				);
+			generatedFileNames = (
+				);
+			isa = PBXShellScriptBuildPhase;
+			name = "Qt Qmake";
+			neededFileNames = (
+				);
+			shellPath = "/bin/sh";
+			shellScript = "make\ -C\ /Users/alexandre/development/Natron/App\ -f\ \'Natron-bin.xcodeproj/qt_makeqmake.mak\'";
+		};
+		1FC5C503B4C5F8D7063A364E = {
+			isa = PBXFileReference;
+			name = "NatronApp_main.cpp";
+			path = "NatronApp_main.cpp";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+			lastKnownFileType = "sourcecode.cpp.cpp";
+		};
+		B496D910ABB8BDEBA7CD9E8A = {
+			fileRef = "1FC5C503B4C5F8D7063A364E";
+			isa = PBXBuildFile;
+			settings = {
+				ATTRIBUTES = (
+					);
+			};
+		};
+		EACD37631BCA0F73481EE2B4 = {
+			isa = PBXFileReference;
+			name = "App.pro";
+			path = "App.pro";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		FB61758D0F0FDA4BA867C3D5 = {
+			isa = PBXGroup;
+			children = (
+				"1FC5C503B4C5F8D7063A364E");
+			name = "Sources";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		7CABE3C80E79AD2B307756D2 = {
+			isa = PBXGroup;
+			children = (
+				"EACD37631BCA0F73481EE2B4");
+			name = "Sources [qmake]";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		A0A52A2ADF7A1E2A99738674 = {
+			buildActionMask = 2147483647;
+			files = (
+				);
+			generatedFileNames = (
+				"B496D910ABB8BDEBA7CD9E8A");
+			isa = PBXShellScriptBuildPhase;
+			name = "Qt Preprocessors";
+			neededFileNames = (
+				"B496D910ABB8BDEBA7CD9E8A");
+			shellPath = "/bin/sh";
+			shellScript = "make\ -C\ /Users/alexandre/development/Natron/App\ -f\ \'Natron-bin.xcodeproj/qt_preprocess.mak\'";
+		};
+		C29B8785722055ED95EF7B57 = {
+			buildActionMask = 2147483647;
+			files = (
+				"B496D910ABB8BDEBA7CD9E8A");
+			isa = PBXSourcesBuildPhase;
+			name = "Build Sources";
+		};
+		8677DF1FEEED309A9B20F35B = {
+			isa = PBXFileReference;
+			name = "Gui";
+			path = "../Gui/build/Debug/libGui.a";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		9539401B0DD420A676F1CBD1 = {
+			fileRef = "8677DF1FEEED309A9B20F35B";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		74489810E6C17DC0FC613821 = {
+			isa = PBXFileReference;
+			name = "Engine";
+			path = "../Engine/build/Debug/libEngine.a";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		221FCAAF735DEA609EF512AF = {
+			fileRef = "74489810E6C17DC0FC613821";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		A69DD5547B8D4C67D78037C8 = {
+			isa = PBXFileReference;
+			name = "HostSupport";
+			path = "../HostSupport/build/Debug/libHostSupport.a";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		8DD25B1641AFEFD018DC8429 = {
+			fileRef = "A69DD5547B8D4C67D78037C8";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		B5C3EBA34682F66763FAFE97 = {
+			isa = PBXFileReference;
+			name = "BreakpadClient";
+			path = "../BreakpadClient/build/Debug/libBreakpadClient.a";
+			refType = 4;
+			sourceTree = "SOURCE_ROOT";
+		};
+		364414B04C26E97D2041624F = {
+			fileRef = "B5C3EBA34682F66763FAFE97";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		D0A1AADFEA73F78641C682A5 = {
+			isa = PBXFileReference;
+			name = "CoreServices.framework";
+			path = "/System/Library/Frameworks/CoreServices.framework";
+			refType = 0;
+			sourceTree = "<absolute>";
+			lastKnownFileType = "wrapper.framework";
+		};
+		9C3DD8DCBC0821F151F42E8D = {
+			fileRef = "D0A1AADFEA73F78641C682A5";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		8D02019D6DCFA44A4B4FFE2C = {
+			isa = PBXFileReference;
+			name = "python2.7";
+			path = "/opt/local/Library/Frameworks/Python.framework/Versions/2.7/Python";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		321734D6862B8813BF300FCE = {
+			fileRef = "8D02019D6DCFA44A4B4FFE2C";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		2B9F5257240B5626E8434A44 = {
+			isa = PBXFileReference;
+			name = "CoreFoundation.framework";
+			path = "/System/Library/Frameworks/CoreFoundation.framework";
+			refType = 0;
+			sourceTree = "<absolute>";
+			lastKnownFileType = "wrapper.framework";
+		};
+		AFC8D705CF8FF7878AA3265A = {
+			fileRef = "2B9F5257240B5626E8434A44";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		1E4287304DA625FD4F7A8F48 = {
+			isa = PBXFileReference;
+			name = "pyside-python2.7";
+			path = "/opt/local/lib/libpyside-python2.7.1.2.2.dylib";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		757CB3C92A8B88FCAEC2C5E9 = {
+			fileRef = "1E4287304DA625FD4F7A8F48";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		486200F15E03031BDFBC47F6 = {
+			isa = PBXFileReference;
+			name = "shiboken-python2.7";
+			path = "/opt/local/lib/libshiboken-python2.7.1.2.2.dylib";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		A3A960FDEFA0C93C92BFC7DE = {
+			fileRef = "486200F15E03031BDFBC47F6";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		08165872A633F1FDA187808B = {
+			isa = PBXFileReference;
+			name = "boost_serialization-mt";
+			path = "/opt/local/lib/libboost_serialization-mt.dylib";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		CB4D9253CE19B47D82985D22 = {
+			fileRef = "08165872A633F1FDA187808B";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		486200F15E03031BDFBC47F6 = {
+			isa = PBXFileReference;
+			name = "shiboken-python2.7.1.2";
+			path = "/opt/local/lib/libshiboken-python2.7.1.2.2.dylib";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		A3A960FDEFA0C93C92BFC7DE = {
+			fileRef = "486200F15E03031BDFBC47F6";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DECE730D5E63955176EDD7C6 = {
+			isa = PBXFileReference;
+			name = "GLEW";
+			path = "/opt/local/lib/libGLEW.1.13.0.dylib";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		0EF03A4DB0231EECBED67875 = {
+			fileRef = "DECE730D5E63955176EDD7C6";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		51AC7138AE59E200E74173AA = {
+			isa = PBXFileReference;
+			name = "expat";
+			path = "/opt/local/lib/libexpat.1.dylib";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		CFC0B9F2AF15F2A103D250EF = {
+			fileRef = "51AC7138AE59E200E74173AA";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		BCBC6617F4DF332D5C4B2D4D = {
+			isa = PBXFileReference;
+			name = "cairo";
+			path = "/opt/local/lib/libcairo.2.dylib";
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		1F050DF63D4777648ACAFEAB = {
+			fileRef = "BCBC6617F4DF332D5C4B2D4D";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		9DD7A0ABEFC325531B64DB9B = {
+			isa = PBXFileReference;
+			name = "QtGui.framework";
+			path = "/opt/local/libexec/qt4/Library/Frameworks/QtGui.framework";
+			refType = 0;
+			sourceTree = "<absolute>";
+			lastKnownFileType = "wrapper.framework";
+		};
+		8792CF1F65F2BBC646F05C15 = {
+			fileRef = "9DD7A0ABEFC325531B64DB9B";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		AA8A248CDC75E576B5E3EE3A = {
+			isa = PBXFileReference;
+			name = "QtCore.framework";
+			path = "/opt/local/libexec/qt4/Library/Frameworks/QtCore.framework";
+			refType = 0;
+			sourceTree = "<absolute>";
+			lastKnownFileType = "wrapper.framework";
+		};
+		BF0900FD291E2D2BAC2BEEAA = {
+			fileRef = "AA8A248CDC75E576B5E3EE3A";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		DA18A6831232F53228631AD1 = {
+			isa = PBXFileReference;
+			name = "OpenGL.framework";
+			path = "/System/Library/Frameworks/OpenGL.framework";
+			refType = 0;
+			sourceTree = "<absolute>";
+			lastKnownFileType = "wrapper.framework";
+		};
+		BCEF71E1EDFB18DA77DC750B = {
+			fileRef = "DA18A6831232F53228631AD1";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		C6766F86E49E9C8701C8E637 = {
+			isa = PBXFileReference;
+			name = "AGL.framework";
+			path = "/System/Library/Frameworks/AGL.framework";
+			refType = 0;
+			sourceTree = "<absolute>";
+			lastKnownFileType = "wrapper.framework";
+		};
+		0C6D4628EE0B0D1479A20551 = {
+			fileRef = "C6766F86E49E9C8701C8E637";
+			isa = PBXBuildFile;
+			settings = {
+			};
+		};
+		ED1E82605DD74B483AF3C982 = {
+			children = (
+				"8677DF1FEEED309A9B20F35B",
+				"74489810E6C17DC0FC613821",
+				"A69DD5547B8D4C67D78037C8",
+				"B5C3EBA34682F66763FAFE97",
+				"D0A1AADFEA73F78641C682A5",
+				"8D02019D6DCFA44A4B4FFE2C",
+				"2B9F5257240B5626E8434A44",
+				"1E4287304DA625FD4F7A8F48",
+				"486200F15E03031BDFBC47F6",
+				"08165872A633F1FDA187808B",
+				"486200F15E03031BDFBC47F6",
+				"DECE730D5E63955176EDD7C6",
+				"51AC7138AE59E200E74173AA",
+				"BCBC6617F4DF332D5C4B2D4D",
+				"9DD7A0ABEFC325531B64DB9B",
+				"AA8A248CDC75E576B5E3EE3A",
+				"DA18A6831232F53228631AD1",
+				"C6766F86E49E9C8701C8E637");
+			isa = PBXGroup;
+			name = "External Frameworks and Libraries";
+			path = "";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		2A1043669E6E5A7426EA502A = {
+			buildActionMask = 2147483647;
+			files = (
+				"9539401B0DD420A676F1CBD1",
+				"221FCAAF735DEA609EF512AF",
+				"8DD25B1641AFEFD018DC8429",
+				"364414B04C26E97D2041624F",
+				"9C3DD8DCBC0821F151F42E8D",
+				"321734D6862B8813BF300FCE",
+				"AFC8D705CF8FF7878AA3265A",
+				"757CB3C92A8B88FCAEC2C5E9",
+				"A3A960FDEFA0C93C92BFC7DE",
+				"CB4D9253CE19B47D82985D22",
+				"A3A960FDEFA0C93C92BFC7DE",
+				"0EF03A4DB0231EECBED67875",
+				"CFC0B9F2AF15F2A103D250EF",
+				"1F050DF63D4777648ACAFEAB",
+				"8792CF1F65F2BBC646F05C15",
+				"BF0900FD291E2D2BAC2BEEAA",
+				"BCEF71E1EDFB18DA77DC750B",
+				"0C6D4628EE0B0D1479A20551");
+			isa = PBXFrameworksBuildPhase;
+			name = "Frameworks & Libraries";
+		};
+		05596AB53D8D521C69802C27 = {
+			children = (
+				"FB61758D0F0FDA4BA867C3D5",
+				"7CABE3C80E79AD2B307756D2",
+				"ED1E82605DD74B483AF3C982");
+			isa = PBXGroup;
+			name = "Natron-bin";
+			path = "";
+			refType = 4;
+			sourceTree = "<Group>";
+		};
+		7BA23128BCBAB388587F558A = {
+			isa = PBXFileReference;
+			explicitFileType = "wrapper.executable";
+			path = "Natron-bin";
+			refType = 3;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		068F80C7519D0528FB08E821 = {
+			children = (
+				"7BA23128BCBAB388587F558A");
+			isa = PBXGroup;
+			name = "Products";
+			refType = 4;
+		};
+		B9DDFFD3052C758168EA2224 = {
+			buildPhases = (
+				"D7BA7D76DAB5DD13389D6332",
+				"A0A52A2ADF7A1E2A99738674",
+				"C29B8785722055ED95EF7B57",
+				"2A1043669E6E5A7426EA502A");
+			buildSettings = {
+				CC = "/usr/bin/clang";
+				CPLUSPLUS = "/usr/bin/clang++";
+				LEXFLAGS = "";
+				YACCFLAGS = "-d";
+				OTHER_REZFLAGS = "";
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = "";
+				PREBINDING = NO;
+				BUILD_ROOT = "/Users/alexandre/development/Natron/App";
+				OTHER_LDFLAGS = (
+						"-headerpad_max_install_names",
+						"-Wl,-rpath,\'@loader_path/../Frameworks\'",
+						"-F/opt/local/libexec/qt4/Library/Frameworks",
+						"-F/opt/local/libexec/qt4/lib",
+						"-L/Users/alexandre/development/Natron/App/../Gui/build/Debug/",
+						"-L/Users/alexandre/development/Natron/App/../Engine/build/Debug/",
+						"-L/Users/alexandre/development/Natron/App/../HostSupport/build/Debug/",
+						"-L/Users/alexandre/development/Natron/App/../BreakpadClient/build/Debug/",
+						"-L/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
+						"-ldl",
+						"-L/opt/local/lib",
+						"-undefined",
+						"dynamic_lookup",
+						"-F/opt/local/libexec/qt4/Library/Frameworks",
+						"-F/opt/local/libexec/qt4/lib",
+						"-L/opt/local/libexec/qt4/lib",
+						"-framework",
+						"QtOpenGL,_debug",
+						"-F/opt/local/Library/Frameworks",
+						"-framework",
+						"QtGui,_debug",
+						"-framework",
+						"QtNetwork,_debug",
+						"-framework",
+						"QtCore,_debug");
+				DYLIB_CURRENT_VERSION = "2.0.0";
+				DYLIB_COMPATIBILITY_VERSION = "2.0";
+				MACOSX_DEPLOYMENT_TARGET = "10.11";
+				PRODUCT_NAME = "Natron-bin";
+			};
+			conditionalBuildSettings = {
+			};
+			dependencies = (
+				);
+			productReference = "7BA23128BCBAB388587F558A";
+			shouldUseHeadermap = 1;
+			buildConfigurationList = 17B3380A4D6A7D415E7F2E1E;
+			isa = PBXNativeTarget;
+			productType = "com.apple.product-type.tool";
+			name = "Natron-bin";
+			productName = "Natron-bin";
+			startupPath = "<<ProjectDirectory>>";
+		};
+		4B72B24813252891014BCF61 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = "NO";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "YES";
+				GCC_OPTIMIZATION_LEVEL = "0";
+				PRODUCT_NAME = "Natron-bin";
+				HEADER_SEARCH_PATHS = (
+					".",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtCore.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtNetwork.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtGui.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtOpenGL.framework/Versions/4/Headers",
+					"../libs/OpenFX/include",
+					"../libs/OpenFX_extensions",
+					"../libs/OpenFX/HostSupport/include",
+					"../../Natron",
+					"../Gui",
+					"../Engine",
+					"../HostSupport",
+					"../google-breakpad/src",
+					"/opt/local/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7",
+					"/opt/local/include/shiboken-2.7",
+					"/opt/local/include/PySide-2.7",
+					"/opt/local/include/PySide-2.7/QtCore",
+					"/opt/local/include/PySide-2.7/QtGui",
+					"/opt/local/include",
+					"/opt/local/include/shiboken-2.7",
+					"/opt/local/include/cairo",
+					"/opt/local/include/glib-2.0",
+					"/opt/local/lib/glib-2.0/include",
+					"/opt/local/include/pixman-1",
+					"/opt/local/include/freetype2",
+					"/opt/local/include/libpng16",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtOpenGL.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtGui.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtNetwork.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtCore.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/include",
+					"/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers",
+					"/System/Library/Frameworks/AGL.framework/Headers",
+					"/usr/local/include",
+					"/System/Library/Frameworks/CarbonCore.framework/Headers",
+					"/opt/local/libexec/qt4/share/mkspecs/macx-xcode");
+				LIBRARY_SEARCH_PATHS = (
+					"/Users/alexandre/development/Natron/App/../Gui/build/Debug/",
+					"/Users/alexandre/development/Natron/Gui/build/Debug/",
+					"/Users/alexandre/development/Natron/App/../Engine/build/Debug/",
+					"/Users/alexandre/development/Natron/Engine/build/Debug/",
+					"/Users/alexandre/development/Natron/App/../HostSupport/build/Debug/",
+					"/Users/alexandre/development/Natron/HostSupport/build/Debug/",
+					"/Users/alexandre/development/Natron/App/../BreakpadClient/build/Debug/",
+					"/Users/alexandre/development/Natron/BreakpadClient/build/Debug/",
+					"/System/Library/Frameworks/",
+					"/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
+					"/opt/local/lib",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/libexec/qt4/Library/Frameworks");
+				FRAMEWORK_SEARCH_PATHS = (
+					"/opt/local/libexec/qt4/Library/Frameworks",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/libexec/qt4/Library/Frameworks",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/libexec/qt4/Library/Frameworks",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/Library/Frameworks");
+				INFOPLIST_FILE = "Info.plist";
+				OTHER_CFLAGS = (
+					"-pipe",
+					"-g",
+					"-Wall",
+					"-W",
+					"-DOFX_EXTENSIONS_NUKE",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_VEGAS",
+					"-DOFX_SUPPORTS_PARAMETRIC",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_NATRON",
+					"-DOFX_SUPPORTS_OPENGLRENDER",
+					"-DOFX_SUPPORTS_MULTITHREAD",
+					"-DOFX_SUPPORTS_DIALOG",
+					"-DDEBUG",
+					"-DNATRON_USE_BREAKPAD",
+					"-DNATRON_BUILD_NUMBER=0",
+					"-DQT_NO_KEYWORDS",
+					"-DQT_OPENGL_LIB",
+					"-DQT_GUI_LIB",
+					"-DQT_NETWORK_LIB",
+					"-DQT_CORE_LIB",
+					"-DQT_SHARED");
+				OTHER_CPLUSPLUSFLAGS = (
+					"-pipe",
+					"-ftemplate-depth-1024",
+					"-g",
+					"-Wall",
+					"-W",
+					"-DOFX_EXTENSIONS_NUKE",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_VEGAS",
+					"-DOFX_SUPPORTS_PARAMETRIC",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_NATRON",
+					"-DOFX_SUPPORTS_OPENGLRENDER",
+					"-DOFX_SUPPORTS_MULTITHREAD",
+					"-DOFX_SUPPORTS_DIALOG",
+					"-DDEBUG",
+					"-DNATRON_USE_BREAKPAD",
+					"-DNATRON_BUILD_NUMBER=0",
+					"-DQT_NO_KEYWORDS",
+					"-DQT_OPENGL_LIB",
+					"-DQT_GUI_LIB",
+					"-DQT_NETWORK_LIB",
+					"-DQT_CORE_LIB",
+					"-DQT_SHARED");
+				OTHER_LDFLAGS = (
+						"-headerpad_max_install_names",
+						"-Wl,-rpath,\'@loader_path/../Frameworks\'",
+						"-F/opt/local/libexec/qt4/Library/Frameworks",
+						"-F/opt/local/libexec/qt4/lib",
+						"-L/Users/alexandre/development/Natron/App/../Gui/build/Debug/",
+						"-L/Users/alexandre/development/Natron/App/../Engine/build/Debug/",
+						"-L/Users/alexandre/development/Natron/App/../HostSupport/build/Debug/",
+						"-L/Users/alexandre/development/Natron/App/../BreakpadClient/build/Debug/",
+						"-L/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
+						"-ldl",
+						"-L/opt/local/lib",
+						"-undefined",
+						"dynamic_lookup",
+						"-F/opt/local/libexec/qt4/Library/Frameworks",
+						"-F/opt/local/libexec/qt4/lib",
+						"-L/opt/local/libexec/qt4/lib",
+						"-framework",
+						"QtOpenGL,_debug",
+						"-F/opt/local/Library/Frameworks",
+						"-framework",
+						"QtGui,_debug",
+						"-framework",
+						"QtNetwork,_debug",
+						"-framework",
+						"QtCore,_debug");
+				ARCHS = "x86_64";
+			};
+			name = "Debug";
+		};
+		BEC09A62E69C3553534FF35E = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = "NO";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "YES";
+				GCC_OPTIMIZATION_LEVEL = "0";
+				PRODUCT_NAME = "Natron-bin";
+				PRODUCT_NAME = "Natron-bin";
+			};
+			name = "Debug";
+		};
+		2C641C3335766025DD51B7BD = {
+			buildRules = (
+				);
+			buildSettings = {
+				COPY_PHASE_STRIP = "NO";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "YES";
+				GCC_OPTIMIZATION_LEVEL = "0";
+				PRODUCT_NAME = "Natron-bin";
+			};
+			isa = "PBXBuildStyle";
+			name = "Debug";
+		};
+		D70590BEB531B51029F711BB = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = "YES";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "NO";
+				PRODUCT_NAME = "Natron-bin";
+				HEADER_SEARCH_PATHS = (
+					".",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtCore.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtNetwork.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtGui.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtOpenGL.framework/Versions/4/Headers",
+					"../libs/OpenFX/include",
+					"../libs/OpenFX_extensions",
+					"../libs/OpenFX/HostSupport/include",
+					"../../Natron",
+					"../Gui",
+					"../Engine",
+					"../HostSupport",
+					"../google-breakpad/src",
+					"/opt/local/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7",
+					"/opt/local/include/shiboken-2.7",
+					"/opt/local/include/PySide-2.7",
+					"/opt/local/include/PySide-2.7/QtCore",
+					"/opt/local/include/PySide-2.7/QtGui",
+					"/opt/local/include",
+					"/opt/local/include/shiboken-2.7",
+					"/opt/local/include/cairo",
+					"/opt/local/include/glib-2.0",
+					"/opt/local/lib/glib-2.0/include",
+					"/opt/local/include/pixman-1",
+					"/opt/local/include/freetype2",
+					"/opt/local/include/libpng16",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtOpenGL.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtGui.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtNetwork.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/Library/Frameworks/QtCore.framework/Versions/4/Headers",
+					"/opt/local/libexec/qt4/include",
+					"/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers",
+					"/System/Library/Frameworks/AGL.framework/Headers",
+					"/usr/local/include",
+					"/System/Library/Frameworks/CarbonCore.framework/Headers",
+					"/opt/local/libexec/qt4/share/mkspecs/macx-xcode");
+				LIBRARY_SEARCH_PATHS = (
+					"/Users/alexandre/development/Natron/App/../Gui/build/Debug/",
+					"/Users/alexandre/development/Natron/Gui/build/Debug/",
+					"/Users/alexandre/development/Natron/App/../Engine/build/Debug/",
+					"/Users/alexandre/development/Natron/Engine/build/Debug/",
+					"/Users/alexandre/development/Natron/App/../HostSupport/build/Debug/",
+					"/Users/alexandre/development/Natron/HostSupport/build/Debug/",
+					"/Users/alexandre/development/Natron/App/../BreakpadClient/build/Debug/",
+					"/Users/alexandre/development/Natron/BreakpadClient/build/Debug/",
+					"/System/Library/Frameworks/",
+					"/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
+					"/opt/local/lib",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/libexec/qt4/Library/Frameworks");
+				FRAMEWORK_SEARCH_PATHS = (
+					"/opt/local/libexec/qt4/Library/Frameworks",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/libexec/qt4/Library/Frameworks",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/libexec/qt4/Library/Frameworks",
+					"/opt/local/libexec/qt4/lib",
+					"/opt/local/Library/Frameworks");
+				INFOPLIST_FILE = "Info.plist";
+				OTHER_CFLAGS = (
+					"-pipe",
+					"-g",
+					"-Wall",
+					"-W",
+					"-DOFX_EXTENSIONS_NUKE",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_VEGAS",
+					"-DOFX_SUPPORTS_PARAMETRIC",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_NATRON",
+					"-DOFX_SUPPORTS_OPENGLRENDER",
+					"-DOFX_SUPPORTS_MULTITHREAD",
+					"-DOFX_SUPPORTS_DIALOG",
+					"-DDEBUG",
+					"-DNATRON_USE_BREAKPAD",
+					"-DNATRON_BUILD_NUMBER=0",
+					"-DQT_NO_KEYWORDS",
+					"-DQT_OPENGL_LIB",
+					"-DQT_GUI_LIB",
+					"-DQT_NETWORK_LIB",
+					"-DQT_CORE_LIB",
+					"-DQT_SHARED");
+				OTHER_CPLUSPLUSFLAGS = (
+					"-pipe",
+					"-ftemplate-depth-1024",
+					"-g",
+					"-Wall",
+					"-W",
+					"-DOFX_EXTENSIONS_NUKE",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_VEGAS",
+					"-DOFX_SUPPORTS_PARAMETRIC",
+					"-DOFX_EXTENSIONS_TUTTLE",
+					"-DOFX_EXTENSIONS_NATRON",
+					"-DOFX_SUPPORTS_OPENGLRENDER",
+					"-DOFX_SUPPORTS_MULTITHREAD",
+					"-DOFX_SUPPORTS_DIALOG",
+					"-DDEBUG",
+					"-DNATRON_USE_BREAKPAD",
+					"-DNATRON_BUILD_NUMBER=0",
+					"-DQT_NO_KEYWORDS",
+					"-DQT_OPENGL_LIB",
+					"-DQT_GUI_LIB",
+					"-DQT_NETWORK_LIB",
+					"-DQT_CORE_LIB",
+					"-DQT_SHARED");
+				OTHER_LDFLAGS = (
+						"-headerpad_max_install_names",
+						"-Wl,-rpath,\'@loader_path/../Frameworks\'",
+						"-F/opt/local/libexec/qt4/Library/Frameworks",
+						"-F/opt/local/libexec/qt4/lib",
+						"-L/Users/alexandre/development/Natron/App/../Gui/build/Debug/",
+						"-L/Users/alexandre/development/Natron/App/../Engine/build/Debug/",
+						"-L/Users/alexandre/development/Natron/App/../HostSupport/build/Debug/",
+						"-L/Users/alexandre/development/Natron/App/../BreakpadClient/build/Debug/",
+						"-L/opt/local/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/config",
+						"-ldl",
+						"-L/opt/local/lib",
+						"-undefined",
+						"dynamic_lookup",
+						"-F/opt/local/libexec/qt4/Library/Frameworks",
+						"-F/opt/local/libexec/qt4/lib",
+						"-L/opt/local/libexec/qt4/lib",
+						"-framework",
+						"QtOpenGL,_debug",
+						"-F/opt/local/Library/Frameworks",
+						"-framework",
+						"QtGui,_debug",
+						"-framework",
+						"QtNetwork,_debug",
+						"-framework",
+						"QtCore,_debug");
+				ARCHS = "x86_64";
+			};
+			name = "Release";
+		};
+		8C7174830A1E4DCBA0332EC1 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = "YES";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "NO";
+				PRODUCT_NAME = "Natron-bin";
+				PRODUCT_NAME = "Natron-bin";
+			};
+			name = "Release";
+		};
+		26DE8D2AEA4B3714B41E931F = {
+			buildRules = (
+				);
+			buildSettings = {
+				COPY_PHASE_STRIP = "YES";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = "NO";
+				PRODUCT_NAME = "Natron-bin";
+			};
+			isa = "PBXBuildStyle";
+			name = "Release";
+		};
+		CC82A9286117DFED018F418F = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				"4B72B24813252891014BCF61",
+				"D70590BEB531B51029F711BB");
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationIsName = "Debug";
+		};
+		17B3380A4D6A7D415E7F2E1E = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				"BEC09A62E69C3553534FF35E",
+				"8C7174830A1E4DCBA0332EC1");
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationIsName = "Debug";
+		};
+		91B15E841AA80083484172DE = {
+			buildStyles = (
+				"2C641C3335766025DD51B7BD",
+				"26DE8D2AEA4B3714B41E931F");
+			hasScannedForEncodings = 1;
+			isa = PBXProject;
+			mainGroup = "05596AB53D8D521C69802C27";
+			buildConfigurationList = "CC82A9286117DFED018F418F";
+			projectDirPath = "";
+			targets = (
+				"B9DDFFD3052C758168EA2224");
+		};
+	};
+	rootObject = "91B15E841AA80083484172DE";
+}

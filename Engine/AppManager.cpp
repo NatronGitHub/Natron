@@ -89,6 +89,7 @@ AppManager* AppManager::_instance = 0;
 
 
 
+#ifdef NATRON_LINUX
 
 //namespace  {
 static void
@@ -115,8 +116,8 @@ setShutDownSignal(int signalId)
 #else
     std::signal(signalId, handleShutDownSignal);
 #endif
-    
 }
+#endif
 
 
 #if defined(__NATRON_LINUX__)
@@ -206,13 +207,6 @@ AppManager::AppManager()
 {
     assert(!_instance);
     _instance = this;
-    
-#if defined(__NATRON_LINUX__) && !defined(NATRON_USE_BREAKPAD)
-    setShutDownSignal(SIGINT);   // shut down on ctrl-c
-    setShutDownSignal(SIGTERM);   // shut down on killall
-    //Catch SIGSEGV only when google-breakpad is not active
-    setSigSegvSignal();
-#endif
 
     QObject::connect(this, SIGNAL(s_requestOFXDialogOnMainThread(Natron::OfxImageEffectInstance*, void*)), this, SLOT(onOFXDialogOnMainThreadReceived(Natron::OfxImageEffectInstance*, void*)));
 }
@@ -350,15 +344,6 @@ AppManager::~AppManager()
     
     tearDownPython();
     
-#ifdef NATRON_USE_BREAKPAD
-#ifndef Q_OS_LINUX
-    if (_imp->crashReporter) {
-        _imp->crashReporter->terminate();
-        _imp->crashReporter->waitForFinished();
-    }
-#endif
-#endif
-    
     _instance = 0;
 
     delete qApp;
@@ -494,9 +479,27 @@ AppManager::loadInternal(const CLArgs& cl)
 
     Natron::Log::instance(); //< enable logging
     
+    
+    bool mustSetSignalsHandlers = true;
 #ifdef NATRON_USE_BREAKPAD
-    _imp->initBreakpad();
+    //Enabled breakpad only if the process was spawned from the crash reporter
+    if (cl.canEnableBreakpadHandler()) {
+        const QString& breakpadPipePath = cl.getBreakpadPipeFilePath();
+        int breakpad_client_fd = cl.getBreakpadClientFD();
+        _imp->initBreakpad(breakpadPipePath, breakpad_client_fd);
+        mustSetSignalsHandlers = false;
+    }
 #endif
+    
+#if defined(__NATRON_LINUX__)
+    if (mustSetSignalsHandlers) {
+        setShutDownSignal(SIGINT);   // shut down on ctrl-c
+        setShutDownSignal(SIGTERM);   // shut down on killall
+        //Catch SIGSEGV only when google-breakpad is not active
+        setSigSegvSignal();
+    }
+#endif
+    (void)mustSetSignalsHandlers;
     
     _imp->_settings.reset(new Settings());
     _imp->_settings->initializeKnobsPublic();
@@ -2620,45 +2623,13 @@ AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
 }
 
 void
-AppManager::onCrashReporterOutputWritten()
+AppManager::onBreakpadPipeConnectionMade()
 {
 #ifdef NATRON_USE_BREAKPAD
-    
-    ///always running in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-    
-    QString str = _imp->crashServerConnection->readLine();
-    while ( str.endsWith('\n') ) {
-        str.chop(1);
-    }
-
-    if (str.startsWith("-i")) {
-        //At this point, the CrashReporter just notified us it is ready, so we can create our exception handler safely
-        //because we know the pipe is opened on the other side.
-        _imp->createBreakpadHandler();
-
-    } else {
-        qDebug() << "Error: Unable to interpret message.";
-        throw std::runtime_error("AppManager::onCrashReporterOutputWritten() received erroneous message");
-    }
-
+    assert(_imp->breakpadPipeConnection);
+    _imp->createBreakpadHandler(-1);
 #endif
 
-}
-
-void
-AppManager::onNewCrashReporterConnectionPending()
-{
-#ifdef NATRON_USE_BREAKPAD
-    ///accept only 1 connection!
-    if (_imp->crashServerConnection) {
-        return;
-    }
-    
-    _imp->crashServerConnection = _imp->crashClientServer->nextPendingConnection();
-    
-    QObject::connect( _imp->crashServerConnection, SIGNAL( readyRead() ), this, SLOT( onCrashReporterOutputWritten() ) );
-#endif
 }
 
 void

@@ -16,7 +16,8 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-TARGET = NatronRendererCrashReporter
+#The binary name needs to be NatronRender as this is what the user lauches
+TARGET = NatronRenderer
 QT       += core network
 QT       -= gui
 
@@ -27,84 +28,15 @@ CONFIG += qt
 
 TEMPLATE = app
 
-include(../global.pri)
-
-gbreakpad {
-
-*g++* | *clang* {
-#See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
-# QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO
-# QMAKE_CXXFLAGS_RELEASE_WITH_DEBUGINFO
-# QMAKE_OBJECTIVE_CFLAGS_RELEASE_WITH_DEBUGINFO
-# QMAKE_LFLAGS_RELEASE_WITH_DEBUGINFO
-
-    CONFIG(relwithdebinfo) {
-        CONFIG += release
-        DEFINES *= NDEBUG
-        QMAKE_CXXFLAGS += -O2 -g
-        QMAKE_CXXFLAGS -= -O3
-    }
-}
-
-win32-msvc* {
-    CONFIG(relwithdebinfo) {
-        CONFIG += release
-        DEFINES *= NDEBUG
-        QMAKE_CXXFLAGS_RELEASE += -Zi
-        QMAKE_LFLAGS_RELEASE += /DEBUG /OPT:REF
-    }
-}
-
-isEmpty(BUILD_NUMBER) {
-        DEFINES += NATRON_BUILD_NUMBER=0
-} else {
-        DEFINES += NATRON_BUILD_NUMBER=$$BUILD_NUMBER
-}
-
 
 DEFINES *= REPORTER_CLI_ONLY
 
-CONFIG(debug, debug|release){
-    DEFINES *= DEBUG
-} else {
-    DEFINES *= NDEBUG
-}
-
-macx {
-  # Set the pbuilder version to 46, which corresponds to Xcode >= 3.x
-  # (else qmake generates an old pbproj on Snow Leopard)
-  QMAKE_PBUILDER_VERSION = 46
-
-  QMAKE_MACOSX_DEPLOYMENT_VERSION = $$split(QMAKE_MACOSX_DEPLOYMENT_TARGET, ".")
-  QMAKE_MACOSX_DEPLOYMENT_MAJOR_VERSION = $$first(QMAKE_MACOSX_DEPLOYMENT_VERSION)
-  QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION = $$last(QMAKE_MACOSX_DEPLOYMENT_VERSION)
-  universal {
-    message("Compiling for universal OSX $${QMAKE_MACOSX_DEPLOYMENT_MAJOR_VERSION}.$$QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION")
-    contains(QMAKE_MACOSX_DEPLOYMENT_MAJOR_VERSION, 10) {
-      contains(QMAKE_MACOSX_DEPLOYMENT_TARGET, 4)|contains(QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION, 5) {
-        # OSX 10.4 (Tiger) and 10.5 (Leopard) are x86/ppc
-        message("Compiling for universal ppc/i386")
-        CONFIG += x86 ppc
-      }
-      contains(QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION, 6) {
-        message("Compiling for universal i386/x86_64")
-        # OSX 10.6 (Snow Leopard) may run on Intel 32 or 64 bits architectures
-        CONFIG += x86 x86_64
-      }
-      # later OSX instances only run on x86_64, universal builds are useless
-      # (unless a later OSX supports ARM)
-    }
-  }
-
-  #link against the CoreFoundation framework for the StandardPaths functionnality
-  LIBS += -framework CoreServices
-}
-
-
+#used by breakpad internals
 unix:!mac {
     DEFINES += N_UNDF=0
 }
 
+#google-breakpad use this to determine if build is debug
 win32:Debug: DEFINES *= _DEBUG 
 
 
@@ -152,6 +84,7 @@ win32-msvc*{
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../BreakpadClient/libBreakpadClient.a
 }
 
+include(../global.pri)
+
 INSTALLS += target
 
-}
