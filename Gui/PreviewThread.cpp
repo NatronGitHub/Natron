@@ -178,7 +178,7 @@ PreviewThread::run()
 #endif
             boost::shared_ptr<Natron::Node> internalNode = front.node->getNode();
             if (internalNode) {
-                bool success = internalNode->makePreviewImage(front.time, &w, &h, _imp->data.data());
+                bool success = internalNode->makePreviewImage(front.time, &w, &h, &_imp->data.front());
                 if (success) {
                     front.node->copyPreviewImageBuffer(_imp->data, w, h);
                 }
