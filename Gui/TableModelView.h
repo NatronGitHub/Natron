@@ -27,9 +27,12 @@
 
 #include "Global/Macros.h"
 
+#include <vector>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
+
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -345,7 +348,7 @@ public:
     virtual bool removeRows( int row, int count = 1, const QModelIndex &parent = QModelIndex() ) OVERRIDE FINAL;
     virtual bool removeColumns( int column, int count = 1, const QModelIndex &parent = QModelIndex() ) OVERRIDE FINAL;
 
-    void setTable(const QVector<TableItem*>& items);
+    void setTable(const std::vector<TableItem*>& items);
     void setItem(int row, int column, TableItem *item);
     TableItem * takeItem(int row, int column);
     TableItem * item(int row, int column) const;

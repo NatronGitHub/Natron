@@ -75,150 +75,37 @@ enum ItemsRoleEnum
     eItemsRoleRenderedTilesInfo = 104,
 };
 
+struct RowInfo
+{
+    boost::weak_ptr<Natron::Node> node;
+    int rowIndex;
+    TableItem* item;
+    
+    RowInfo() : node(), rowIndex(-1), item(0) {}
+};
 
-template <int COL>
 struct StatRowsCompare
 {
-    TableView* _view;
+    int _col;
     
-    StatRowsCompare(TableView* view)
-    : _view(view)
+    StatRowsCompare(int col)
+    : _col(col)
     {
         
     }
     
-    bool operator() (const std::pair<boost::weak_ptr<Natron::Node>,int>& lhs,
-                     const std::pair<boost::weak_ptr<Natron::Node>,int>& rhs) const
+    bool operator() (const RowInfo& lhs,
+                     const RowInfo& rhs) const
     {
-        switch (COL) {
-            case COL_NAME:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_NAME);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_NAME);
-                assert(rightItem);
-                return leftItem->text() < rightItem->text();
-            } break;
-            case COL_PLUGIN_ID:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_PLUGIN_ID);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_PLUGIN_ID);
-                assert(rightItem);
-                return leftItem->text() < rightItem->text();
-            } break;
-            case COL_TIME:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_TIME);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_TIME);
-                assert(rightItem);
-                return leftItem->data((int)eItemsRoleTime).toDouble() < rightItem->data((int)eItemsRoleTime).toDouble();
-            } break;
-            case COL_SUPPORT_TILES:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_SUPPORT_TILES);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_SUPPORT_TILES);
-                assert(rightItem);
-                return leftItem->text() < rightItem->text();
-            } break;
-            case COL_SUPPORT_RS:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_SUPPORT_RS);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_SUPPORT_RS);
-                assert(rightItem);
-                return leftItem->text() < rightItem->text();
-            } break;
-            case COL_MIPMAP_LEVEL:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_MIPMAP_LEVEL);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_MIPMAP_LEVEL);
-                assert(rightItem);
-                return leftItem->text() < rightItem->text();
-            } break;
-            case COL_CHANNELS:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_CHANNELS);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_CHANNELS);
-                assert(rightItem);
-                return leftItem->text() < rightItem->text();
-            } break;
-            case COL_PREMULT:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_PREMULT);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_PREMULT);
-                assert(rightItem);
-                return leftItem->text() < rightItem->text();
-            } break;
-            case COL_ROD:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_ROD);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_ROD);
-                assert(rightItem);
-                return leftItem->text() < rightItem->text();
-            } break;
-            case COL_IDENTITY:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_IDENTITY);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_IDENTITY);
-                assert(rightItem);
-                return leftItem->text() < rightItem->text();
-            } break;
+        switch (_col) {
             case COL_IDENTITY_TILES:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_IDENTITY_TILES);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_IDENTITY_TILES);
-                assert(rightItem);
-                return leftItem->data((int)eItemsRoleIdentityTilesNb).toInt() < rightItem->data((int)eItemsRoleIdentityTilesNb).toInt();
-            } break;
+                return lhs.item->data((int)eItemsRoleIdentityTilesNb).toInt() < rhs.item->data((int)eItemsRoleIdentityTilesNb).toInt();
             case COL_RENDERED_TILES:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_RENDERED_TILES);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_RENDERED_TILES);
-                assert(rightItem);
-                return leftItem->data((int)eItemsRoleIdentityTilesNb).toInt() < rightItem->data((int)eItemsRoleIdentityTilesNb).toInt();
-            } break;
-            case COL_RENDERED_PLANES:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_RENDERED_PLANES);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_RENDERED_PLANES);
-                assert(rightItem);
-                return leftItem->text() < rightItem->text();
-            } break;
-            case COL_NB_CACHE_HIT:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_NB_CACHE_HIT);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_NB_CACHE_HIT);
-                assert(rightItem);
-                return leftItem->text() < rightItem->text();
-            } break;
-            case COL_NB_CACHE_HIT_DOWNSCALED:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_NB_CACHE_HIT_DOWNSCALED);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_NB_CACHE_HIT_DOWNSCALED);
-                assert(rightItem);
-                return leftItem->text() < rightItem->text();
-            } break;
-            case COL_NB_CACHE_MISS:
-            {
-                TableItem* leftItem = _view->item(lhs.second, COL_NB_CACHE_MISS);
-                assert(leftItem);
-                TableItem* rightItem = _view->item(rhs.second, COL_NB_CACHE_MISS);
-                assert(rightItem);
-                return leftItem->text() < rightItem->text();
-            } break;
+                return lhs.item->data((int)eItemsRoleRenderedTilesNb).toInt() < rhs.item->data((int)eItemsRoleRenderedTilesNb).toInt();
+            case COL_TIME:
+                return lhs.item->data((int)eItemsRoleTime).toDouble() < rhs.item->data((int)eItemsRoleTime).toDouble();
+            default:
+                return lhs.item->text() < rhs.item->text();
         }
     }
 };
@@ -282,7 +169,7 @@ public:
         }
         
         {
-            TableItem* item;
+            TableItem* item = 0;
             if (exists) {
                 item = view->item(row, COL_NAME);
             } else {
@@ -306,7 +193,7 @@ public:
         
         
         {
-            TableItem* item;
+            TableItem* item = 0;
             if (exists) {
                 item = view->item(row, COL_PLUGIN_ID);
             } else {
@@ -327,7 +214,7 @@ public:
         }
         
         {
-            TableItem* item;
+            TableItem* item = 0;
             double timeSoFar;
             if (exists) {
                 item = view->item(row, COL_TIME);
@@ -353,7 +240,7 @@ public:
             }
         }
         {
-            TableItem* item;
+            TableItem* item = 0;
             if (exists) {
                 item = view->item(row, COL_SUPPORT_TILES);
             } else {
@@ -379,7 +266,7 @@ public:
             }
         }
         {
-            TableItem* item;
+            TableItem* item = 0;
             if (exists) {
                 item = view->item(row, COL_SUPPORT_RS);
             } else {
@@ -407,7 +294,7 @@ public:
             }
         }
         {
-            TableItem* item;
+            TableItem* item = 0;
             QString str;
             if (exists) {
                 item = view->item(row, COL_MIPMAP_LEVEL);
@@ -434,7 +321,7 @@ public:
             }
         }
         {
-            TableItem* item;
+            TableItem* item = 0;
             if (exists) {
                 item = view->item(row, COL_CHANNELS);
             } else {
@@ -469,7 +356,7 @@ public:
             }
         }
         {
-            TableItem* item;
+            TableItem* item = 0;
             QString str;
             if (exists) {
                 item = view->item(row, COL_PREMULT);
@@ -502,7 +389,7 @@ public:
             }
         }
         {
-            TableItem* item;
+            TableItem* item = 0;
             QString str;
             if (exists) {
                 item = view->item(row, COL_ROD);
@@ -525,7 +412,7 @@ public:
             }
         }
         {
-            TableItem* item;
+            TableItem* item = 0;
             if (exists) {
                 item = view->item(row, COL_IDENTITY);
             } else {
@@ -553,7 +440,7 @@ public:
             }
         }
         {
-            TableItem* item;
+            TableItem* item = 0;
             
             int nbIdentityTiles = 0;
             QString tilesInfo;
@@ -592,7 +479,7 @@ public:
             }
         }
         {
-            TableItem* item;
+            TableItem* item = 0;
             
             int nbTiles = 0;
             QString tilesInfo;
@@ -631,7 +518,7 @@ public:
             }
         }
         {
-            TableItem* item;
+            TableItem* item = 0;
             
             QString planesInfo;
             if (exists) {
@@ -661,7 +548,7 @@ public:
             }
         }
         {
-            TableItem* item;
+            TableItem* item = 0;
             
             int nb = 0;
             if (exists) {
@@ -689,7 +576,7 @@ public:
             }
         }
         {
-            TableItem* item;
+            TableItem* item = 0;
             
             int nb = 0;
             if (exists) {
@@ -720,7 +607,7 @@ public:
             }
         }
         {
-            TableItem* item;
+            TableItem* item = 0;
             
             int nb = 0;
             if (exists) {
@@ -760,90 +647,30 @@ public:
         if (column < 0 || column >= NUM_COLS) {
             return;
         }
-        std::vector<std::pair<boost::weak_ptr<Natron::Node>,int> > vect;
+        std::vector<RowInfo> vect(rows.size());
         for (std::size_t i = 0; i < rows.size(); ++i) {
-            vect.push_back(std::make_pair(rows[i], i));
+            vect[i].node = rows[i];
+            vect[i].rowIndex = i;
+            vect[i].item = view->item(vect[i].rowIndex, column);
+            assert(vect[i].item);
         }
         Q_EMIT layoutAboutToBeChanged();
-        switch (column) {
-            case COL_NAME: {
-                StatRowsCompare<COL_NAME> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_PLUGIN_ID: {
-                StatRowsCompare<COL_PLUGIN_ID> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_TIME: {
-                StatRowsCompare<COL_TIME> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_SUPPORT_TILES: {
-                StatRowsCompare<COL_SUPPORT_TILES> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_SUPPORT_RS: {
-                StatRowsCompare<COL_SUPPORT_RS> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_MIPMAP_LEVEL: {
-                StatRowsCompare<COL_MIPMAP_LEVEL> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_CHANNELS: {
-                StatRowsCompare<COL_CHANNELS> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_PREMULT: {
-                StatRowsCompare<COL_PREMULT> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_ROD: {
-                StatRowsCompare<COL_ROD> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_IDENTITY: {
-                StatRowsCompare<COL_IDENTITY> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_IDENTITY_TILES: {
-                StatRowsCompare<COL_IDENTITY_TILES> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_RENDERED_TILES: {
-                StatRowsCompare<COL_RENDERED_TILES> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_RENDERED_PLANES: {
-                StatRowsCompare<COL_RENDERED_PLANES> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_NB_CACHE_HIT: {
-                StatRowsCompare<COL_NB_CACHE_HIT> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_NB_CACHE_HIT_DOWNSCALED: {
-                StatRowsCompare<COL_NB_CACHE_HIT_DOWNSCALED> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            case COL_NB_CACHE_MISS: {
-                StatRowsCompare<COL_NB_CACHE_MISS> o(view);
-                std::sort(vect.begin(), vect.end(), o);
-            }   break;
-            default:
-                break;
+        {
+            StatRowsCompare o(column);
+            std::sort(vect.begin(), vect.end(), o);
         }
+       
         if (order == Qt::DescendingOrder) {
-            std::vector<std::pair<boost::weak_ptr<Natron::Node>,int> > copy = vect;
+            std::vector<RowInfo> copy = vect;
             for (std::size_t i = 0; i < copy.size(); ++i) {
                 vect[vect.size() - i - 1] = copy[i];
             }
         }
-        QVector<TableItem*> newTable(vect.size() * NUM_COLS);
+        std::vector<TableItem*> newTable(vect.size() * NUM_COLS);
         for (std::size_t i = 0; i < vect.size(); ++i) {
-            rows[i] = vect[i].first;
+            rows[i] = vect[i].node;
             for (int j = 0; j < NUM_COLS; ++j) {
-                TableItem* item = takeItem(vect[i].second, j);
+                TableItem* item = takeItem(vect[i].rowIndex, j);
                 assert(item);
                 newTable[(i * NUM_COLS) + j] = item;
             }
