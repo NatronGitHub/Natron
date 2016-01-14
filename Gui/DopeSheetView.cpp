@@ -1415,7 +1415,8 @@ void DopeSheetViewPrivate::drawGroupOverlay(const boost::shared_ptr<DSNode> &dsN
     int height = hierarchyView->getHeightForItemAndChildren(dsNode->getTreeItem()) ;
     QRectF nameItemRect = hierarchyView->visualItemRect(dsNode->getTreeItem());
 
-    FrameRange groupRange = nodeRanges.at(group.get());
+    assert(nodeRanges.find(group.get()) != nodeRanges.end());
+    FrameRange groupRange = nodeRanges.find(group.get())->second; // map::at() is C++11
 
     RectD overlayRect;
     overlayRect.x1 = groupRange.first;
@@ -1929,7 +1930,8 @@ void DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)
     {
         boost::shared_ptr<DSNode> nearestReader = model->findDSNode(model->getNearestReader(timeOffset));
         if (nearestReader) {
-            FrameRange nearestReaderRange = nodeRanges.at(nearestReader.get());
+            assert(nodeRanges.find(nearestReader.get()) != nodeRanges.end());
+            FrameRange nearestReaderRange = nodeRanges.find(nearestReader.get())->second; // map::at() is C++11
 
             // Retrieve the time offset values
             Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(timeOffset->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get());

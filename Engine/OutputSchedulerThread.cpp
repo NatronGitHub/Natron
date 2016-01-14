@@ -2994,7 +2994,72 @@ ViewerRenderEngine::createScheduler(Natron::OutputEffectInstance* effect)
 }
 
 ////////////////////////ViewerCurrentFrameRequestScheduler////////////////////////
-
+struct CurrentFrameFunctorArgs
+{
+    int view;
+    int time;
+    RenderStatsPtr stats;
+    ViewerInstance* viewer;
+    U64 viewerHash;
+    boost::shared_ptr<RequestedFrame> request;
+    ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
+    bool canAbort;
+    boost::shared_ptr<Natron::Node> isRotoPaintRequest;
+    boost::shared_ptr<RotoStrokeItem> strokeItem;
+    boost::shared_ptr<ViewerArgs> args[2];
+    bool isRotoNeatRender;
+    
+    CurrentFrameFunctorArgs()
+    : view(0)
+    , time(0)
+    , stats()
+    , viewer(0)
+    , viewerHash(0)
+    , request()
+    , scheduler(0)
+    , canAbort(true)
+    , isRotoPaintRequest()
+    , strokeItem()
+    , args()
+    , isRotoNeatRender(false)
+    {
+    }
+    
+    CurrentFrameFunctorArgs(int view,
+                            int time,
+                            const RenderStatsPtr& stats,
+                            ViewerInstance* viewer,
+                            U64 viewerHash,
+                            ViewerCurrentFrameRequestSchedulerPrivate* scheduler,
+                            bool canAbort,
+                            const boost::shared_ptr<Natron::Node>& isRotoPaintRequest,
+                            const boost::shared_ptr<RotoStrokeItem>& strokeItem,
+                            bool isRotoNeatRender)
+    : view(view)
+    , time(time)
+    , stats(stats)
+    , viewer(viewer)
+    , viewerHash(viewerHash)
+    , request()
+    , scheduler(scheduler)
+    , canAbort(canAbort)
+    , isRotoPaintRequest(isRotoPaintRequest)
+    , strokeItem(strokeItem)
+    , args()
+    , isRotoNeatRender(isRotoNeatRender)
+    {
+        if (isRotoPaintRequest && isRotoNeatRender) {
+            isRotoPaintRequest->getRotoContext()->setIsDoingNeatRender(true);
+        }
+    }
+    
+    ~CurrentFrameFunctorArgs()
+    {
+        if (isRotoPaintRequest && isRotoNeatRender) {
+            isRotoPaintRequest->getRotoContext()->setIsDoingNeatRender(false);
+        }
+    }
+};
 
 
 struct ViewerCurrentFrameRequestSchedulerPrivate
@@ -3088,7 +3153,7 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
 };
 
 
-static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs args)
+static void renderCurrentFrameFunctor(const boost::shared_ptr<CurrentFrameFunctorArgs>& args)
 {
     
     ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
@@ -3097,11 +3162,11 @@ static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs args)
     
     BufferableObjectList ret;
     try {
-        if (!args.isRotoPaintRequest) {
-            stat = args.viewer->renderViewer(args.view,QThread::currentThread() == qApp->thread(),false,args.viewerHash,args.canAbort,
-                                             NodePtr(), true,args.args, args.request, args.stats);
+        if (!args->isRotoPaintRequest || args->isRotoNeatRender) {
+            stat = args->viewer->renderViewer(args->view,QThread::currentThread() == qApp->thread(),false,args->viewerHash,args->canAbort,
+                                             NodePtr(), true,args->args, args->request, args->stats);
         } else {
-            stat = args.viewer->getViewerArgsAndRenderViewer(args.time, args.canAbort, args.view, args.viewerHash, args.isRotoPaintRequest, args.strokeItem, args.stats,&args.args[0],&args.args[1]);
+            stat = args->viewer->getViewerArgsAndRenderViewer(args->time, args->canAbort, args->view, args->viewerHash, args->isRotoPaintRequest, args->strokeItem, args->stats,&args->args[0],&args->args[1]);
         }
     } catch (...) {
         stat = eStatusFailed;
@@ -3110,22 +3175,22 @@ static void renderCurrentFrameFunctor(CurrentFrameFunctorArgs args)
     if (stat == eStatusFailed) {
         ///Don't report any error message otherwise we will flood the viewer with irrelevant messages such as
         ///"Render failed", instead we let the plug-in that failed post an error message which will be more helpful.
-        args.viewer->disconnectViewer();
+        args->viewer->disconnectViewer();
         ret.clear();
     } else {
         for (int i = 0; i < 2; ++i) {
-            if (args.args[i] && args.args[i]->params && args.args[i]->params->ramBuffer) {
-                ret.push_back(args.args[i]->params);
+            if (args->args[i] && args->args[i]->params && args->args[i]->params->ramBuffer) {
+                ret.push_back(args->args[i]->params);
             }
         }
     }
     
-    if (args.request) {
-        args.scheduler->notifyFrameProduced(ret, args.stats, args.request, true);
+    if (args->request) {
+        args->scheduler->notifyFrameProduced(ret, args->stats, args->request, true);
     } else {
         
         assert(QThread::currentThread() == qApp->thread());
-        args.scheduler->processProducedFrame(args.stats, ret);
+        args->scheduler->processProducedFrame(args->stats, ret);
     }
     
     ///This thread is done, clean-up its TLS
@@ -3393,19 +3458,22 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
     _imp->viewer->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke,&isDrawing);
     
     bool rotoUse1Thread = false;
+    bool isRotoNeatRender = false;
     if (!isDrawing) {
-        if (rotoPaintNode && rotoPaintNode->getRotoContext()->mustDoNeatRender()) {
+        isRotoNeatRender = rotoPaintNode ? rotoPaintNode->getRotoContext()->mustDoNeatRender() : false;
+        if (rotoPaintNode && isRotoNeatRender) {
             rotoUse1Thread = true;
+        } else {
+            rotoPaintNode.reset();
+            curStroke.reset();
         }
-        rotoPaintNode.reset();
-        curStroke.reset();
     } else {
         assert(rotoPaintNode);
         rotoUse1Thread = true;
     }
     
     boost::shared_ptr<ViewerArgs> args[2];
-    if (!rotoPaintNode) {
+    if (!rotoPaintNode || isRotoNeatRender) {
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
             status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public(frame, false, canAbort, view, i, viewerHash,rotoPaintNode, true, stats, args[i].get());
@@ -3437,18 +3505,18 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
             return;
         }
     }
-    CurrentFrameFunctorArgs functorArgs;
-    functorArgs.viewer = _imp->viewer;
-    functorArgs.time = frame;
-    functorArgs.view = view;
-    functorArgs.args[0] = args[0];
-    functorArgs.args[1] = args[1];
-    functorArgs.viewerHash = viewerHash;
-    functorArgs.scheduler = _imp.get();
-    functorArgs.canAbort = canAbort;
-    functorArgs.isRotoPaintRequest = rotoPaintNode;
-    functorArgs.strokeItem = curStroke;
-    functorArgs.stats = stats;
+    boost::shared_ptr<CurrentFrameFunctorArgs> functorArgs(new CurrentFrameFunctorArgs(view,
+                                                                                       frame,
+                                                                                       stats,
+                                                                                       _imp->viewer,
+                                                                                       viewerHash,
+                                                                                       _imp.get(),
+                                                                                       canAbort,
+                                                                                       rotoPaintNode,
+                                                                                       curStroke,
+                                                                                       isRotoNeatRender));
+    functorArgs->args[0] = args[0];
+    functorArgs->args[1] = args[1];
     
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
         renderCurrentFrameFunctor(functorArgs);
@@ -3465,7 +3533,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
                 start();
             }
         }
-        functorArgs.request = request;
+        functorArgs->request = request;
         
         /*
          * Let at least 1 free thread in the thread-pool to allow the renderer to use the thread pool if we use the thread-pool
@@ -3489,7 +3557,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
 struct ViewerCurrentFrameRequestRendererBackupPrivate
 {
     QMutex requestsQueueMutex;
-    std::list<CurrentFrameFunctorArgs> requestsQueue;
+    std::list<boost::shared_ptr<CurrentFrameFunctorArgs> > requestsQueue;
     QWaitCondition requestsQueueNotEmpty;
     
     bool mustQuit;
@@ -3533,18 +3601,18 @@ ViewerCurrentFrameRequestRendererBackup::~ViewerCurrentFrameRequestRendererBacku
 }
 
 void
-ViewerCurrentFrameRequestRendererBackup::renderCurrentFrame(const CurrentFrameFunctorArgs& args)
+ViewerCurrentFrameRequestRendererBackup::renderCurrentFrame(const boost::shared_ptr<CurrentFrameFunctorArgs>& args)
 {
     {
         QMutexLocker k(&_imp->requestsQueueMutex);
         _imp->requestsQueue.push_back(args);
         
         if (isRunning()) {
-            _imp->requestsQueueNotEmpty.wakeOne();
-        } else {
-            start();
+                _imp->requestsQueueNotEmpty.wakeOne();
+            } else {
+                start();
+            }
         }
-    }
 }
 
 void
@@ -3555,13 +3623,13 @@ ViewerCurrentFrameRequestRendererBackup::run()
         
         bool hasRequest = false;
         {
-            CurrentFrameFunctorArgs firstRequest;
+            boost::shared_ptr<CurrentFrameFunctorArgs> firstRequest;
             {
                 QMutexLocker k(&_imp->requestsQueueMutex);
                 if (!_imp->requestsQueue.empty()) {
                     hasRequest = true;
                     firstRequest = _imp->requestsQueue.front();
-                    if (!firstRequest.viewer) {
+                    if (!firstRequest->viewer) {
                         hasRequest = false;
                     }
                     _imp->requestsQueue.pop_front();
@@ -3576,7 +3644,7 @@ ViewerCurrentFrameRequestRendererBackup::run()
             if (hasRequest) {
                 renderCurrentFrameFunctor(firstRequest);
             }
-        }
+        } // firstRequest
         
         {
             QMutexLocker k(&_imp->requestsQueueMutex);
@@ -3601,7 +3669,7 @@ ViewerCurrentFrameRequestRendererBackup::quitThread()
         ///Push a fake request
         {
             QMutexLocker k(&_imp->requestsQueueMutex);
-            _imp->requestsQueue.push_back(CurrentFrameFunctorArgs());
+            _imp->requestsQueue.push_back(boost::shared_ptr<CurrentFrameFunctorArgs>());
             _imp->requestsQueueNotEmpty.wakeOne();
         }
         

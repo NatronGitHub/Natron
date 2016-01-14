@@ -1341,6 +1341,14 @@ GuiAppInstance::getStrokeLastIndex() const
 }
 
 void
+GuiAppInstance::getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* stroke, int* strokeIndex) const
+{
+    QMutexLocker k(&_imp->rotoDataMutex);
+    *stroke = _imp->rotoData.stroke;
+    *strokeIndex = _imp->rotoData.multiStrokeIndex;
+}
+
+void
 GuiAppInstance::getRenderStrokeData(RectD* lastStrokeMovementBbox, std::list<std::pair<Natron::Point,double> >* lastStrokeMovementPoints,
                          double *distNextIn, boost::shared_ptr<Natron::Image>* strokeImage) const
 {

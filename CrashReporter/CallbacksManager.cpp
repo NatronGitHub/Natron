@@ -37,6 +37,11 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include <QApplication>
 #include <QProgressDialog>
 #include <QMessageBox>
+#include <QDialogButtonBox>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QLabel>
+#include <QTextEdit>
 #else
 #include <QCoreApplication>
 #endif
@@ -297,6 +302,34 @@ static QString getNetworkErrorString(QNetworkReply::NetworkError e)
     }
 }
 
+#ifndef REPORTER_CLI_ONLY
+
+
+NetworkErrorDialog::NetworkErrorDialog(const QString& errorMessage, QWidget* parent)
+: QDialog(parent)
+, mainLayout(0)
+, textArea(0)
+, buttons(0)
+{
+    mainLayout = new QVBoxLayout(this);
+    textArea = new QTextEdit(this);
+    textArea->setTextInteractionFlags(Qt::TextBrowserInteraction);
+    textArea->setPlainText(errorMessage);
+    
+    buttons = new QDialogButtonBox(QDialogButtonBox::Ok, Qt::Horizontal, this);
+    QObject::connect(buttons, SIGNAL(accepted()), this, SLOT(accept()));
+    QObject::connect(buttons, SIGNAL(rejected()), this, SLOT(reject()));
+    
+    mainLayout->addWidget(textArea);
+    mainLayout->addWidget(buttons);
+}
+
+NetworkErrorDialog::~NetworkErrorDialog()
+{
+    
+}
+#endif
+
 void
 CallbacksManager::replyError(QNetworkReply::NetworkError errCode)
 {
@@ -321,18 +354,22 @@ CallbacksManager::replyError(QNetworkReply::NetworkError errCode)
     QString errStr("Network error: " + getNetworkErrorString(errCode) + "\nDump file is located at " +
                    _dumpFilePath + "\nYou can submit it directly to the developers by filling out the form at " + QString(FALLBACK_FORM_URL) +
                    " with the following informations:\nProductName: " + NATRON_APPLICATION_NAME + "\nVersion: " + getVersionString() +
-                   "\nguid: " + guidStr + "\nPlease add any comment describing the issue and the state of the application at the moment it crashed.");
+                   "\nguid: " + guidStr + "\n\nPlease add any comment describing the issue and the state of the application at the moment it crashed.");
     writeDebugMessage(errStr);
     
     
     _didError = true;
 
 #ifndef REPORTER_CLI_ONLY
-    QMessageBox info(QMessageBox::Critical, "Dump Uploading", errStr, QMessageBox::NoButton, _dialog, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint| Qt::WindowStaysOnTopHint);
+    NetworkErrorDialog info(errStr,_dialog);
+    info.setWindowTitle("Dump Uploading");
     info.exec();
+    
     if (_dialog) {
         _dialog->deleteLater();
     }
+#else
+    
 #endif
     _uploadReply->deleteLater();
     _uploadReply = 0;
@@ -348,7 +385,7 @@ CallbacksManager::onDoDumpOnMainThread(const QString& filePath)
 
 #ifdef REPORTER_CLI_ONLY
     if (_autoUpload) {
-        uploadFileToRepository(filePath,"");
+        uploadFileToRepository(filePath,"Crash auto-uploaded from NatronRenderer");
     }
     ///@todo We must notify the user the log is available at filePath but we don't have access to the terminal with this process
 #else

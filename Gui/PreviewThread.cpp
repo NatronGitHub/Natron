@@ -170,7 +170,7 @@ PreviewThread::run()
             
             //set buffer to 0
 #ifndef __NATRON_WIN32__
-            memset(_imp->data.data(), 0, _imp->data.size() * sizeof(unsigned int));
+            memset(&_imp->data.front(), 0, _imp->data.size() * sizeof(unsigned int));
 #else
             for (std::size_t i = 0; i < _imp->data.size(); ++i) {
                 _imp->data[i] = qRgba(0,0,0,255);
@@ -178,7 +178,7 @@ PreviewThread::run()
 #endif
             boost::shared_ptr<Natron::Node> internalNode = front.node->getNode();
             if (internalNode) {
-                bool success = internalNode->makePreviewImage(front.time, &w, &h, _imp->data.data());
+                bool success = internalNode->makePreviewImage(front.time, &w, &h, &_imp->data.front());
                 if (success) {
                     front.node->copyPreviewImageBuffer(_imp->data, w, h);
                 }

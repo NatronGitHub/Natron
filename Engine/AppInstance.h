@@ -416,6 +416,8 @@ public:
 
     virtual int getStrokeLastIndex() const { return -1; }
     
+    virtual void getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* stroke, int* strokeIndex) const {}
+    
     virtual void getRenderStrokeData(RectD* /*lastStrokeMovementBbox*/, std::list<std::pair<Natron::Point,double> >* /*lastStrokeMovementPoints*/,
                                      double */*distNextIn*/, boost::shared_ptr<Natron::Image>* /*strokeImage*/) const {}
     

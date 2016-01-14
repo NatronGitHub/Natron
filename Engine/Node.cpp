@@ -7299,9 +7299,6 @@ Node::setNodeIsRenderingInternal(std::list<Natron::Node*>& markedNodes)
         ++_imp->nodeIsRendering;
     }
     
-    if (_imp->rotoContext) {
-        _imp->rotoContext->setIsDoingNeatRender(true);
-    }
     
     ///mark this
     markedNodes.push_back(this);
@@ -7350,11 +7347,6 @@ Node::setNodeIsNoLongerRenderingInternal(std::list<Natron::Node*>& markedNodes)
         
         Q_EMIT mustDequeueActions();
     }
-    
-    if (_imp->rotoContext) {
-        _imp->rotoContext->notifyRenderFinished();
-    }
-
     
     
     ///mark this

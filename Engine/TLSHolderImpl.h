@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef TLSHOLDERIMPL_H
-#define TLSHOLDERIMPL_H
+#ifndef Engine_TLSHolderImpl_h
+#define Engine_TLSHolderImpl_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -47,7 +47,7 @@ boost::shared_ptr<Natron::EffectInstance::EffectTLSData>
 TLSHolder<Natron::EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fromThread, const QThread* toThread) const
 {
     QWriteLocker k(&perThreadDataMutex);
-    typename ThreadDataMap::iterator found = perThreadData.find(fromThread);
+    ThreadDataMap::iterator found = perThreadData.find(fromThread);
     if (found == perThreadData.end()) {
         ///No TLS for fromThread
         return boost::shared_ptr<Natron::EffectInstance::EffectTLSData>();
@@ -227,4 +227,4 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const boost::shared_ptr<const TLSHolder
 }
 
 
-#endif // TLSHOLDERIMPL_H
+#endif // Engine_TLSHolderImpl_h

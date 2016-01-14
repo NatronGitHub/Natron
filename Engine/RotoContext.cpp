@@ -2034,11 +2034,6 @@ RotoContext::isDoingNeatRender() const
     return _imp->doingNeatRender;
 }
 
-void
-RotoContext::notifyRenderFinished()
-{
-    setIsDoingNeatRender(false);
-}
 
 bool
 RotoContext::mustDoNeatRender() const
@@ -2542,9 +2537,9 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
         std::size_t stride = cairo_format_stride_for_width(cairoImgFormat, pixelPointsBbox.width());
         std::size_t memSize = stride * pixelPointsBbox.height();
         buf.resize(memSize);
-        memset(buf.data(), 0, sizeof(unsigned char) * memSize);
-        convertNatronImageToCairoImage<float, 1>(buf.data(), srcNComps, stride, source.get(), pixelPointsBbox, pixelPointsBbox, shapeColor);
-        cairoImg = cairo_image_surface_create_for_data(buf.data(), cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height(),
+        memset(&buf.front(), 0, sizeof(unsigned char) * memSize);
+        convertNatronImageToCairoImage<float, 1>(&buf.front(), srcNComps, stride, source.get(), pixelPointsBbox, pixelPointsBbox, shapeColor);
+        cairoImg = cairo_image_surface_create_for_data(&buf.front(), cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height(),
                                                        stride);
        
     } else {

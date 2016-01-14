@@ -1248,7 +1248,7 @@ NodeGui::onPreviewImageComputed()
     
     {
         QMutexLocker k(&_previewDataMutex);
-        QImage img(reinterpret_cast<const uchar*>(_previewData.data()), _previewW, _previewH, QImage::Format_ARGB32_Premultiplied);
+        QImage img(reinterpret_cast<const uchar*>(&_previewData.front()), _previewW, _previewH, QImage::Format_ARGB32_Premultiplied);
         QPixmap pix = QPixmap::fromImage(img);
         _previewPixmap->setPixmap(pix);
     }
@@ -1269,8 +1269,7 @@ NodeGui::copyPreviewImageBuffer(const std::vector<unsigned int>& data, int width
 {
     {
         QMutexLocker k(&_previewDataMutex);
-        assert(_previewData.size() == data.size());
-        memcpy(_previewData.data(), data.data(), data.size() * sizeof(unsigned int));
+        _previewData = data;
         _previewW = width;
         _previewH = height;
     }

@@ -207,9 +207,9 @@ AppManager::AppManager()
     assert(!_instance);
     _instance = this;
     
+#if defined(__NATRON_LINUX__) && !defined(NATRON_USE_BREAKPAD)
     setShutDownSignal(SIGINT);   // shut down on ctrl-c
     setShutDownSignal(SIGTERM);   // shut down on killall
-#if defined(__NATRON_LINUX__) && !defined(NATRON_USE_BREAKPAD)
     //Catch SIGSEGV only when google-breakpad is not active
     setSigSegvSignal();
 #endif
@@ -2427,7 +2427,7 @@ AppManager::initPython(int argc,char* argv[])
     static const std::wstring pythonHome(Natron::s2ws("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"));
 #endif
     Py_SetPythonHome(const_cast<wchar_t*>(pythonHome.c_str()));
-    PySys_SetArgv(argc,_imp->args.data()); /// relative module import
+    PySys_SetArgv(argc, &_imp->args.front()); /// relative module import
 #else
 #ifdef __NATRON_WIN32__
     static const std::string pythonHome(".");
@@ -2437,7 +2437,7 @@ AppManager::initPython(int argc,char* argv[])
     static const std::string pythonHome("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib");
 #endif
     Py_SetPythonHome(const_cast<char*>(pythonHome.c_str()));
-    PySys_SetArgv(argc,_imp->args.data()); /// relative module import
+    PySys_SetArgv(argc, &_imp->args.front()); /// relative module import
 #endif
     
     _imp->mainModule = PyImport_ImportModule("__main__"); //create main module , new ref
