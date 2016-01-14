@@ -580,21 +580,7 @@ private:
 };
 
 struct ViewerArgs;
-struct CurrentFrameFunctorArgs
-{
-    int view;
-    int time;
-    RenderStatsPtr stats;
-    ViewerInstance* viewer;
-    U64 viewerHash;
-    boost::shared_ptr<RequestedFrame> request;
-    ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
-    bool canAbort;
-    boost::shared_ptr<Natron::Node> isRotoPaintRequest;
-    boost::shared_ptr<RotoStrokeItem> strokeItem;
-    boost::shared_ptr<ViewerArgs> args[2];
-};
-
+struct CurrentFrameFunctorArgs;
 
 /**
  * @brief Single thread used by the ViewerCurrentFrameRequestScheduler when the global thread pool has reached its maximum
@@ -609,7 +595,7 @@ public:
     
     virtual ~ViewerCurrentFrameRequestRendererBackup();
     
-    void renderCurrentFrame(const CurrentFrameFunctorArgs& args);
+    void renderCurrentFrame(const boost::shared_ptr<CurrentFrameFunctorArgs>& args);
     
     void quitThread();
     

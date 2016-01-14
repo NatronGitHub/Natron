@@ -520,7 +520,14 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                 lastAge = getApp()->getStrokeLastIndex();
                 int strokeIndex;
                 if (activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod ,&newAge,&strokeIndex)) {
+#ifdef DEBUG
+                    boost::shared_ptr<RotoStrokeItem> currentlyPaintedStroke;
+                    int currentlyPaintedStrokeMultiIndex;
+                    getApp()->getStrokeAndMultiStrokeIndex(&currentlyPaintedStroke, &currentlyPaintedStrokeMultiIndex);
                     
+                    //If this crashes here that means the user could start a new stroke while this one is not done rendering.
+                    assert(currentlyPaintedStrokeMultiIndex == strokeIndex && currentlyPaintedStroke == activeStroke);
+#endif
                     getApp()->updateLastPaintStrokeData(newAge, lastStrokePoints, lastStrokeBbox, strokeIndex);
                     for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
                         (*it)->prepareForNextPaintStrokeRender();

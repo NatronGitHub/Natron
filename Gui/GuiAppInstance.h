@@ -242,6 +242,8 @@ public:
     
     virtual int getStrokeLastIndex() const OVERRIDE FINAL;
     
+    virtual void getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* stroke, int* strokeIndex) const OVERRIDE FINAL;
+    
     virtual void updateStrokeImage(const boost::shared_ptr<Natron::Image>& image, double distNextOut, bool setDistNextOut) OVERRIDE FINAL;
 
     virtual RectD getLastPaintStrokeBbox() const OVERRIDE FINAL;

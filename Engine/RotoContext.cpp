@@ -2034,11 +2034,6 @@ RotoContext::isDoingNeatRender() const
     return _imp->doingNeatRender;
 }
 
-void
-RotoContext::notifyRenderFinished()
-{
-    setIsDoingNeatRender(false);
-}
 
 bool
 RotoContext::mustDoNeatRender() const

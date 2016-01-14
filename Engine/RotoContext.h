@@ -407,11 +407,6 @@ public:
      **/
     void evaluateNeatStrokeRender();
     
-    /**
-     * @brief Called when a render is finished to wake-up the main-thread if it was waiting in 
-     * evaluateNeatStrokeRender()
-     **/
-    void notifyRenderFinished();
     
     bool mustDoNeatRender() const;
     
