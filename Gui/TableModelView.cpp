@@ -237,9 +237,9 @@ TableModel::insertRows(int row,
         int idx = tableIndex(row, 0);
         if (idx < (int)_imp->tableItems.size()) {
             std::advance(pos, idx);
-            _imp->tableItems.insert(pos, cc * count,0);
+            _imp->tableItems.insert(pos, cc * count,(TableItem*)0);
         } else {
-            _imp->tableItems.insert(_imp->tableItems.end(), cc * count,0);
+            _imp->tableItems.insert(_imp->tableItems.end(), cc * count,(TableItem*)0);
         }
         
     }
@@ -264,9 +264,9 @@ TableModel::insertColumns(int column,
         std::vector<TableItem*>::iterator pos = _imp->horizontalHeaderItems.begin();
         if (column < (int)_imp->horizontalHeaderItems.size()) {
             std::advance(pos, column);
-            _imp->horizontalHeaderItems.insert(pos, count,0);
+            _imp->horizontalHeaderItems.insert(pos, count,(TableItem*)0);
         } else {
-            _imp->horizontalHeaderItems.insert(_imp->horizontalHeaderItems.end(), count,0);
+            _imp->horizontalHeaderItems.insert(_imp->horizontalHeaderItems.end(), count,(TableItem*)0);
         }
     }
     if (cc == 0) {
@@ -277,9 +277,9 @@ TableModel::insertColumns(int column,
             int idx = tableIndex(row, column);
             if (idx < (int)_imp->tableItems.size()) {
                 std::advance(pos, idx);
-                _imp->tableItems.insert(pos, count,0);
+                _imp->tableItems.insert(pos, count,(TableItem*)0);
             } else {
-                _imp->tableItems.insert(_imp->tableItems.end(), count,0);
+                _imp->tableItems.insert(_imp->tableItems.end(), count,(TableItem*)0);
             }
         }
     }
