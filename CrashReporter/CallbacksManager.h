@@ -114,6 +114,10 @@ public Q_SLOTS:
     void onSpawnedProcessFinished(int exitCode, QProcess::ExitStatus status);
     void onSpawnedProcessError(QProcess::ProcessError error);
     
+    void onComPipeConnectionPending();
+    
+    void onComPipeDataWrittenTo();
+    
 Q_SIGNALS:
 
     void doDumpCallBackOnMainThread(QString);
@@ -143,6 +147,14 @@ private:
     //The Natron process has no way to print to stdout/stderr, so connect signals
     QProcess* _natronProcess;
 #endif
+    
+    /*
+     Pipe between the 2 applications to check one another if they are still alive
+     */
+    QLocalServer* _comServer;
+    
+    //owned by _comServer
+    QLocalSocket* _comPipeConnection;
 
     QNetworkReply* _uploadReply;
     bool _autoUpload;
@@ -153,7 +165,7 @@ private:
     bool _didError;
     QString _dumpFilePath;
     QString _dumpDirPath;
-    QString _pipePath;
+    QString _pipePath,_comPipePath;
     google_breakpad::CrashGenerationServer* _crashServer;
     
 #ifdef Q_OS_LINUX

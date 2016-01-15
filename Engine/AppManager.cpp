@@ -61,6 +61,7 @@
 
 
 #include "Global/ProcInfo.h"
+#include "Global/ExistenceCheckThread.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/BackDrop.h"
@@ -292,6 +293,13 @@ AppManager::load(int &argc,
 
 AppManager::~AppManager()
 {
+    
+#ifdef NATRON_USE_BREAKPAD
+    if (_imp->breakpadAliveThread) {
+        _imp->breakpadAliveThread->quitThread();
+    }
+#endif
+    
     bool appsEmpty;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
@@ -490,8 +498,9 @@ AppManager::loadInternal(const CLArgs& cl)
         _imp->breakpadProcessExecutableFilePath = breakpadProcessExec;
         _imp->breakpadProcessPID = (Q_PID)cl.getBreakpadProcessPID();
         const QString& breakpadPipePath = cl.getBreakpadPipeFilePath();
+        const QString& breakpadComPipePath = cl.getBreakpadComPipeFilePath();
         int breakpad_client_fd = cl.getBreakpadClientFD();
-        _imp->initBreakpad(breakpadPipePath, breakpad_client_fd);
+        _imp->initBreakpad(breakpadPipePath, breakpadComPipePath, breakpad_client_fd);
         mustSetSignalsHandlers = false;
     }
 #endif
@@ -2638,19 +2647,27 @@ AppManager::onBreakpadPipeConnectionMade()
 }
 
 void
-AppManager::onBreakpadProcessExistenceCheckTimerTriggered()
+AppManager::onBreakpadComPipeConnectionMade()
 {
 #ifdef NATRON_USE_BREAKPAD
-    assert(!_imp->breakpadProcessExecutableFilePath.isEmpty() && _imp->breakpadPipeConnection);
-    bool crashReporterStillExist = Natron::checkIfProcessIsRunning(_imp->breakpadProcessExecutableFilePath.toStdString().c_str(), _imp->breakpadProcessPID);
-    qDebug() << "Checking if" << _imp->breakpadProcessExecutableFilePath << "is running..." << crashReporterStillExist;
-    if (!crashReporterStillExist) {
-        //The process that spawned us is dead quit!
-        exitApp();
-    }
-   // _imp->breakpadPipeConnection->write(<#const char *data#>, <#qint64 len#>)
+    assert(_imp->crashReporterComPipeConnection);
+    _imp->breakpadAliveThread.reset(new ExistenceCheckerThread(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK,
+                                                         NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK,
+                                                         _imp->crashReporterComPipeConnection));
+    QObject::connect(_imp->breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), this, SLOT(onCrashReporterNoLongerResponding()));
+    _imp->breakpadAliveThread->start();
 #endif
 }
+
+void
+AppManager::onCrashReporterNoLongerResponding()
+{
+#ifdef NATRON_USE_BREAKPAD
+    //Crash reporter seems to no longer exist, quit
+    exitApp();
+#endif
+}
+
 
 void
 AppManager::setOnProjectLoadedCallback(const std::string& pythonFunc)

@@ -86,8 +86,36 @@ namespace {
         std::string stdStr = str.toStdString();
         return strndup(stdStr.c_str(), stdStr.size() + 1);
     }
+
+
+static void
+handleChildDeadSignal( int /*signalId*/ )
+{
+    if (appPTR) {
+        qDebug() << "Child process terminated!";
+        qApp->quit();
+    }
+}
+
+static void
+setChildDeadSignal()
+{
+#if defined(__NATRON_UNIX__)
+    struct sigaction sa;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = handleChildDeadSignal;
+    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+        std::perror("setting up termination signal");
+        std::exit(1);
+    }
+#else
+    std::signal(SIGCHLD, handleChildDeadSignal);
+#endif
+}
 #endif
 } // anon namespace
+
 
 
 using namespace google_breakpad;
@@ -98,6 +126,8 @@ CallbacksManager::CallbacksManager()
 , _breakpadPipeServer(0)
 , _natronProcess(0)
 #endif
+, _comServer(0)
+, _comPipeConnection(0)
 , _uploadReply(0)
 #ifdef REPORTER_CLI_ONLY
 , _autoUpload(true)
@@ -109,6 +139,7 @@ CallbacksManager::CallbacksManager()
 , _didError(false)
 , _dumpFilePath()
 , _pipePath()
+, _comPipePath()
 , _crashServer(0)
 #ifdef Q_OS_LINUX
 , _serverFD(-1)
@@ -130,7 +161,10 @@ CallbacksManager::~CallbacksManager() {
     delete _breakpadPipeServer;
 #endif
     
+    delete _comServer;
+    
     delete _crashServer;
+    
     
     if (_natronProcess) {
         //Wait at most 5sec then exit
@@ -266,6 +300,8 @@ CallbacksManager::init(int& argc, char** argv)
     processArgs.push_back(QString::number(-1));
     processArgs.push_back(QString("--" NATRON_BREAKPAD_PIPE_ARG));
     processArgs.push_back(_pipePath);
+    processArgs.push_back(QString("--" NATRON_BREAKPAD_COM_PIPE_ARG));
+    processArgs.push_back(_comPipePath);
     
     _natronProcess->start(natronBinaryPath, processArgs);
     
@@ -287,6 +323,8 @@ CallbacksManager::init(int& argc, char** argv)
     
     natronBinaryPath = getNatronBinaryFilePathFromCrashReporterDirPath(natronBinaryPath);
     
+    
+    setChildDeadSignal();
     
     /*
      Directly fork this process so that we have no variable yet allocated.
@@ -324,6 +362,8 @@ CallbacksManager::init(int& argc, char** argv)
         }
         argvChild.push_back(strdup("--" NATRON_BREAKPAD_PIPE_ARG));
         argvChild.push_back(qstringToMallocCharArray(_pipePath));
+        argvChild.push_back(strdup("--" NATRON_BREAKPAD_COM_PIPE_ARG));
+        argvChild.push_back(qstringToMallocCharArray(_comPipePath));
         
         execv(natronBinaryPath.toStdString().c_str(),&argvChild.front());
         execOK = false;
@@ -965,13 +1005,38 @@ CallbacksManager::initCrashGenerationServer()
         
     }
     
+    _comPipePath = _pipePath + "IPC_COM";
     
 #ifndef Q_OS_LINUX
     //Create the crash generation pipe ourselves
     _breakpadPipeServer = new QLocalServer;
     _breakpadPipeServer->listen(_pipePath);
 #endif
+    
+    _comServer = new QLocalServer;
+    _comServer->listen(_comPipePath);
+    QObject::connect(_comServer, SIGNAL(newConnection()), this, SLOT(onComPipeConnectionPending()));
 
     createCrashGenerationServer();
     
+}
+
+void
+CallbacksManager::onComPipeConnectionPending()
+{
+    _comPipeConnection = _comServer->nextPendingConnection();
+    QObject::connect(_comPipeConnection, SIGNAL(readyRead()), this, SLOT(onComPipeDataWrittenTo()));
+}
+
+void
+CallbacksManager::onComPipeDataWrittenTo()
+{
+    QString str = _comServer->readLine();
+    while (str.endsWith('\n')) {
+        str.chop(1);
+    }
+    if (str == NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK) {
+        _comPipeConnection->write(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK "\n");
+        _comPipeConnection->flush();
+    }
 }

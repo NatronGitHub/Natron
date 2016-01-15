@@ -28,7 +28,7 @@
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QAtomicInt>
-#include <QtCore/QTimer>
+
 
 #ifdef NATRON_USE_BREAKPAD
 #if defined(Q_OS_MAC)
@@ -49,9 +49,15 @@
 #include "Engine/EngineFwd.h"
 #include "Engine/TLSHolder.h"
 
+
+
+
+
 class QProcess;
 class QLocalServer;
 class QLocalSocket;
+
+
 
 struct AppManagerPrivate
 {
@@ -125,13 +131,14 @@ struct AppManagerPrivate
     
 #ifdef NATRON_USE_BREAKPAD
     QString breakpadProcessExecutableFilePath;
-    QTimer breakpadProcessExistenceTimer;
     Q_PID breakpadProcessPID;
     boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
 #ifndef Q_OS_LINUX
     //On Windows & OSX the breakpad pipe is handled ourselves
     boost::shared_ptr<QLocalSocket> breakpadPipeConnection;
 #endif
+    boost::shared_ptr<QLocalSocket> crashReporterComPipeConnection;
+    boost::shared_ptr<ExistenceCheckerThread> breakpadAliveThread;
 #endif
     
     QMutex natronPythonGIL;
@@ -168,7 +175,7 @@ struct AppManagerPrivate
     void declareSettingsToPython();
     
 #ifdef NATRON_USE_BREAKPAD
-    void initBreakpad(const QString& breakpadPipePath, int breakpad_client_fd);
+    void initBreakpad(const QString& breakpadPipePath, const QString& breakpadComPipePath, int breakpad_client_fd);
 
     void createBreakpadHandler(int breakpad_client_fd);
 #endif

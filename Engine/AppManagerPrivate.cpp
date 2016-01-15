@@ -64,9 +64,6 @@ BOOST_CLASS_EXPORT(Natron::FrameParams)
 BOOST_CLASS_EXPORT(Natron::ImageParams)
 
 
-//This will check every X ms whether the crash reporter process still exist when
-//Natron was spawned from the crash reporter process
-#define NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS 30000
 
 
 #if defined(NATRON_USE_BREAKPAD) || defined(Q_OS_LINUX)
@@ -134,6 +131,8 @@ AppManagerPrivate::AppManagerPrivate()
 #ifndef Q_OS_LINUX
 ,breakpadPipeConnection()
 #endif
+,crashReporterComPipeConnection()
+,breakpadAliveThread()
 #endif
 ,natronPythonGIL(QMutex::Recursive)
 {
@@ -154,7 +153,7 @@ AppManagerPrivate::~AppManagerPrivate()
 
 #ifdef NATRON_USE_BREAKPAD
 void
-AppManagerPrivate::initBreakpad(const QString& breakpadPipePath,int breakpad_client_fd)
+AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& breakpadComPipePath, int breakpad_client_fd)
 {
  
     assert(!breakpadHandler);
@@ -172,12 +171,17 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath,int breakpad_cli
     breakpadPipeConnection->connectToServer(breakpadPipePath,QLocalSocket::ReadWrite);
     
 #endif
+    
+    if (appPTR->isBackground()) {
+        crashReporterComPipeConnection.reset(new QLocalSocket);
+        crashReporterComPipeConnection->connectToServer(breakpadComPipePath, QLocalSocket::ReadWrite);
+        QObject::connect(crashReporterComPipeConnection.get(), SIGNAL(connected()), appPTR, SLOT(onBreakpadComPipeConnectionMade()));
+    }
 }
 
 void
 AppManagerPrivate::createBreakpadHandler(int breakpad_client_fd)
 {
-    QObject::connect(&breakpadProcessExistenceTimer, SIGNAL(timeout()), appPTR, SLOT(onBreakpadProcessExistenceCheckTimerTriggered()));
     
     QString dumpPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
     (void)breakpad_client_fd;
@@ -210,15 +214,6 @@ AppManagerPrivate::createBreakpadHandler(int breakpad_client_fd)
         qDebug() << e.what();
         return;
     }
-    
-    
-    //if (appPTR->isBackground()) {
-        /*
-         In background mode we check every now and then that the crash reporter process still exist
-         otherwise we kill Natron
-         */
-        breakpadProcessExistenceTimer.start(NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS);
-    //}
     
  /*#pragma message WARN("USING CRASH APPLICATION HERE, COMMENT OUT BEFORE COMMITING")
     crash_application();

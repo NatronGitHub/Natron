@@ -66,6 +66,7 @@ struct CLArgsPrivate
     mutable QString imageFilename;
     
     QString breakpadPipeFilePath;
+    QString breakpadComPipeFilePath;
     
     int breakpadPipeClientID;
     
@@ -89,6 +90,7 @@ struct CLArgsPrivate
     , isEmpty(true)
     , imageFilename()
     , breakpadPipeFilePath()
+    , breakpadComPipeFilePath()
     , breakpadPipeClientID(-1)
     , breakpadProcessFilePath()
     , breakpadProcessPID(-1)
@@ -446,6 +448,11 @@ CLArgs::getBreakpadPipeFilePath() const
     return _imp->breakpadPipeFilePath;
 }
 
+const QString&
+CLArgs::getBreakpadComPipeFilePath() const
+{
+    return _imp->breakpadComPipeFilePath;
+}
 
 QStringList::iterator
 CLArgsPrivate::findFileNameWithExtension(const QString& extension)
@@ -701,6 +708,21 @@ CLArgsPrivate::parse()
                 args.erase(it);
             } else {
                 std::cout << QObject::tr("You must specify the breakpad pipe path").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
+        }
+    }
+    
+    {
+        QStringList::iterator it = hasToken(NATRON_BREAKPAD_COM_PIPE_ARG, "");
+        if (it != args.end()) {
+            ++it;
+            if (it != args.end()) {
+                breakpadComPipeFilePath = *it;
+                args.erase(it);
+            } else {
+                std::cout << QObject::tr("You must specify the breakpad communication pipe path").toStdString() << std::endl;
                 error = 1;
                 return;
             }

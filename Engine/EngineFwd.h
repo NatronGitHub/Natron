@@ -100,6 +100,7 @@ class Double2DParam;
 class Double3DParam;
 class DoubleParam;
 class Effect;
+class ExistenceCheckerThread;
 class FileParam;
 class Format;
 class GroupParam;

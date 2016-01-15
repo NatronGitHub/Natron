@@ -44,11 +44,13 @@ win32:Debug: DEFINES *= _DEBUG
 SOURCES += \
         ../CrashReporter/main.cpp \
         ../CrashReporter/CallbacksManager.cpp \
-        ../Global/ProcInfo.cpp
+        ../Global/ProcInfo.cpp \
+        ../Global/ExistenceCheckThread.cpp
 
 HEADERS += ../CrashReporter/CallbacksManager.h \
            ../Global/ProcInfo.h \
-           ../Global/Macros.h
+           ../Global/Macros.h \
+            ../Global/ExistenceCheckThread.h
 
 INCLUDEPATH += $$PWD/..
 INCLUDEPATH += $$PWD/../Global
