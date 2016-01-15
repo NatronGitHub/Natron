@@ -114,6 +114,8 @@ public:
     
     const QString& getBreakpadPipeFilePath() const;
     
+    const QString& getBreakpadComPipeFilePath() const;
+    
 private:
     
     boost::scoped_ptr<CLArgsPrivate> _imp;

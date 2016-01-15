@@ -127,6 +127,10 @@
 #define NATRON_BREAKPAD_PROCESS_PID "breakpad_process_pid"
 #define NATRON_BREAKPAD_CLIENT_FD_ARG "breakpad_client_fd"
 #define NATRON_BREAKPAD_PIPE_ARG "breakpad_pipe_path"
+#define NATRON_BREAKPAD_COM_PIPE_ARG "breakpad_com_pipe_path"
+
+#define NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK "-e"
+#define NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK "-eack"
 
 ///If set the version of Natron will no longer be displayed in the splashscreen but the name of the user
 ///Set this from qmake

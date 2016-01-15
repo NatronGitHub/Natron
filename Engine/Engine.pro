@@ -166,6 +166,7 @@ SOURCES += \
     Transform.cpp \
     ViewerInstance.cpp \
     ../Global/ProcInfo.cpp \
+    ../Global/ExistenceCheckThread.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
     NatronEngine/natronengine_module_wrapper.cpp \
     NatronEngine/natron_wrapper.cpp \
@@ -346,6 +347,7 @@ HEADERS += \
     ViewerInstance.h \
     ViewerInstancePrivate.h \
     ../Global/Enums.h \
+    ../Global/ExistenceCheckThread.h \
     ../Global/GitVersion.h \
     ../Global/GLIncludes.h \
     ../Global/GlobalDefines.h \
