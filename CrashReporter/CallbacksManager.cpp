@@ -52,7 +52,11 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include <QDir>
 #include <QTemporaryFile>
 #include <QFileInfo>
+#include <QFile>
 #include <QProcess>
+#include <QStringList>
+#include <QString>
+#include <QVarLengthArray>
 
 #ifdef DEBUG
 #include <QTextStream>
@@ -72,7 +76,19 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include "CrashDialog.h"
 #endif
 
-#include "Global/Macros.h"
+#include "Global/ProcInfo.h"
+
+
+namespace {
+#ifdef Q_OS_LINUX
+    static char* qstringToMallocCharArray(const QString& str)
+    {
+        std::string stdStr = str.toStdString();
+        return strndup(stdStr.c_str(), stdStr.size() + 1);
+    }
+#endif
+} // anon namespace
+
 
 using namespace google_breakpad;
 
@@ -96,7 +112,9 @@ CallbacksManager::CallbacksManager()
 , _crashServer(0)
 #ifdef Q_OS_LINUX
 , _serverFD(-1)
+, _clientFD(-1)
 #endif
+, _app(0)
 {
     _instance = this;
    
@@ -113,19 +131,265 @@ CallbacksManager::~CallbacksManager() {
 #endif
     
     delete _crashServer;
+    
+    if (_natronProcess) {
+        //Wait at most 5sec then exit
+        _natronProcess->waitForFinished(5000);
+        delete _natronProcess;
+    }
+    
+    delete _app;
+    
     _instance = 0;
 
 
 }
 
 void
-CallbacksManager::setProcess(QProcess* natronProcess)
+CallbacksManager::initQApplication(int &argc, char** argv)
 {
-#ifndef Q_OS_LINUX
-    _natronProcess = natronProcess;
+#ifdef REPORTER_CLI_ONLY
+    _app = new QCoreApplication(argc,argv);
 #else
-    (void)natronProcess;
+    _app = new QApplication(argc,argv);
+    _app->setQuitOnLastWindowClosed(false);
 #endif
+    
+}
+
+int
+CallbacksManager::exec()
+{
+    assert(_app);
+    return _app->exec();
+}
+
+static QString getNatronBinaryFilePathFromCrashReporterDirPath(const QString& crashReporterDirPath)
+{
+    QString ret = crashReporterDirPath;
+    if (!ret.endsWith('/')) {
+        ret.append('/');
+    }
+    
+#ifndef REPORTER_CLI_ONLY
+#ifdef Q_OS_UNIX
+    ret.append("Natron-bin");
+#elif defined(Q_OS_WIN)
+    ret.append("Natron-bin.exe");
+#endif
+#else //REPORTER_CLI_ONLY
+#ifdef Q_OS_UNIX
+    ret.append("NatronRenderer-bin");
+#elif defined(Q_OS_WIN)
+    ret.append("NatronRenderer-bin.exe");
+#endif
+#endif // REPORTER_CLI_ONLY
+    return ret;
+}
+
+void
+CallbacksManager::init(int& argc, char** argv)
+{
+#ifdef NATRON_USE_BREAKPAD
+    const bool enableBreakpad = true;
+#else
+    const bool enableBreakpad = false;
+#endif
+    
+#ifndef Q_OS_LINUX
+#if !defined(Q_OS_MAC) && !defined(Q_OS_WIN)
+#error "Unsupported architecture"
+#endif
+    /*
+     On Windows & OS X initCrashGenerationServer() will use a QLocalServer which requires QApplication declared
+     On Linux, the pipe is created by google-breakpad in CreateReportChannel() and the file descriptors need to be shared
+     with the forked process. Since we use fork() we make sure not to declare the QApplication singleton before the fork
+     otherwise it will make 2 QApplication.
+     */
+    initQApplication(argc, argv);
+#endif
+    
+    if (enableBreakpad) {
+        //This will throw an exception if it fails to start the crash generation server
+        initCrashGenerationServer();
+        assert(_crashServer);
+    }
+
+    /*
+     At this point the crash generation server is created
+     */
+
+    
+    QString crashReporterBinaryFilePath;
+    QString natronBinaryPath;
+#ifndef Q_OS_LINUX
+#if !defined(Q_OS_MAC) && !defined(Q_OS_WIN)
+#error "Unsupported architecture"
+#endif
+    /*
+     qApp has been defined so far since we do not fork and we need QLocalServer
+     */
+    assert(_app);
+    
+    
+    /*Use the binary path returned by qApp*/
+    crashReporterBinaryFilePath = qApp->applicationFilePath();
+    natronBinaryPath = qApp->applicationDirPath();
+    natronBinaryPath = getNatronBinaryFilePathFromCrashReporterDirPath(natronBinaryPath);
+    
+    if (!QFile::exists(natronBinaryPath)) {
+        std::stringstream ss;
+        ss << natronBinaryPath.toStdString() << ": no such file or directory.";
+        throw std::runtime_error(ss.str());
+        return;
+    }
+    
+    _natronProcess = new QProcess();
+    QObject::connect(_natronProcess,SIGNAL(readyReadStandardOutput()), this, SLOT(onNatronProcessStdOutWrittenTo()));
+    QObject::connect(_natronProcess,SIGNAL(readyReadStandardError()), this, SLOT(onNatronProcessStdErrWrittenTo()));
+    
+    QObject::connect(_natronProcess,SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(onSpawnedProcessFinished(int,QProcess::ExitStatus)));
+    QObject::connect(_natronProcess,SIGNAL(error(QProcess::ProcessError)), this, SLOT(onSpawnedProcessError(QProcess::ProcessError)));
+    
+
+    QStringList processArgs;
+    for (int i = 0; i < argc; ++i) {
+        processArgs.push_back(QString(argv[i]));
+    }
+    processArgs.push_back(QString("--" NATRON_BREAKPAD_PROCESS_EXEC));
+    processArgs.push_back(crashReporterBinaryFilePath);
+    processArgs.push_back(QString("--" NATRON_BREAKPAD_PROCESS_PID));
+    qint64 crashReporterPid = _app->applicationPid();
+    QString pidStr = QString::number(crashReporterPid);
+    processArgs.push_back(pidStr);
+    processArgs.push_back(QString("--" NATRON_BREAKPAD_CLIENT_FD_ARG));
+    processArgs.push_back(QString::number(-1));
+    processArgs.push_back(QString("--" NATRON_BREAKPAD_PIPE_ARG));
+    processArgs.push_back(_pipePath);
+    
+    _natronProcess->start(natronBinaryPath, processArgs);
+    
+    //_natronProcess = natronProcess;
+#else // Q_OS_LINUX
+
+    Q_UNUSED(natronProcess);
+
+    /*
+     qApp has not been defined yet since we did not fork, get the binary path ourselves
+     */
+    crashReporterBinaryFilePath = Natron::applicationFilePath(argv[0]);
+    {
+        int foundSlash = crashReporterBinaryFilePath.lastIndexOf('/');
+        if (foundSlash != -1) {
+            natronBinaryPath = crashReporterBinaryFilePath.mid(0, foundSlash);
+        }
+    }
+    
+    natronBinaryPath = getNatronBinaryFilePathFromCrashReporterDirPath(natronBinaryPath);
+    
+    
+    /*
+     Directly fork this process so that we have no variable yet allocated.
+     The child process will exec the actual Natron process. We have to do this in order
+     for google-breakpad to correctly work:
+     This process will use ptrace to inspect the crashing thread of Natron, but it can only
+     do so on some Linux distro if Natron is a child process.
+     Also the crash reporter and Natron must share the same file descriptors for the crash generation
+     server to work.
+     */
+    pid_t natronPID = fork();
+    
+    if (natronPID == 0) {
+        /*
+         We are the child process (i.e: Natron)
+         */
+        std::vector<char*> argvChild(argc);
+        for (int i = 0; i < argc; ++i) {
+            argvChild[i] = strdup(argv[i]);
+        }
+        
+        
+        argvChild.push_back(strdup("--" NATRON_BREAKPAD_PROCESS_EXEC));
+        argvChild.push_back(qstringToMallocCharArray(crashReporterBinaryFilePath));
+        
+        argvChild.push_back(QString("--" NATRON_BREAKPAD_PROCESS_PID));
+        QString pidStr = QString::number((qint64)getpid());
+        argvChild.push_back(pidStr);
+        
+        argvChild.push_back(strdup("--" NATRON_BREAKPAD_CLIENT_FD_ARG));
+        {
+            char pipe_fd_string[8];
+            sprintf(pipe_fd_string, "%d", _clientFD);
+            argvChild.push_back(pipe_fd_string);
+        }
+        argvChild.push_back(strdup("--" NATRON_BREAKPAD_PIPE_ARG));
+        argvChild.push_back(qstringToMallocCharArray(_pipePath));
+        
+        execv(natronBinaryPath.toStdString().c_str(),&argvChild.front());
+        execOK = false;
+        
+        std::stringstream ss;
+        ss << "Forked process failed to execute " << natronBinaryPath.toStdString() << " make sure it exists.";
+        throw std::runtime_error(ss.str());
+        return;
+    }
+
+    /*
+     Finally, now that we are in the crash reporter process, create the qApp object
+     */
+    initQApplication(argc, argv);
+#endif
+}
+
+void
+CallbacksManager::onSpawnedProcessFinished(int exitCode, QProcess::ExitStatus status)
+{
+    
+    int retCode = 0;
+    QString code;
+    if (status == QProcess::CrashExit) {
+        code =  "crashed";
+        retCode = 1;
+    } else if (status == QProcess::NormalExit) {
+        code =  "finished";
+    }
+    qDebug() << "Spawned process" << code << "with exit code:" << exitCode;
+    
+    //Exit the event loop, which will eventually kill us and finish this program
+    _app->exit(retCode);
+}
+
+void
+CallbacksManager::onSpawnedProcessError(QProcess::ProcessError error)
+{
+    
+    bool mustExit = false;
+    switch (error) {
+        case QProcess::FailedToStart:
+            std::cerr << "Spawned process executable does not exist or the system lacks necessary resources, exiting." << std::endl;
+            mustExit = true;
+            break;
+        case QProcess::Crashed:
+            std::cerr << "Spawned process crashed, exiting." << std::endl;
+            mustExit = true;
+            break;
+        case QProcess::Timedout:
+            std::cerr << "Spawned process timedout, exiting." << std::endl;
+            mustExit = true;
+            break;
+        case QProcess::ReadError:
+            break;
+        case QProcess::WriteError:
+            break;
+        case QProcess::UnknownError:
+            break;
+    }
+  
+    if (mustExit) {
+        //Exit the event loop, which will eventually kill us and finish this program
+        _app->exit(1);
+    }
+
 }
 
 static void addTextHttpPart(QHttpMultiPart* multiPart, const QString& name, const QString& value)
@@ -534,7 +798,7 @@ void OnClientDumpRequest(void* /*context*/,
 #endif
 
 void
-CallbacksManager::startCrashGenerationServer()
+CallbacksManager::createCrashGenerationServer()
 {
 
     /*
@@ -643,18 +907,17 @@ static QString getTempDirPath()
 
 
 void
-CallbacksManager::initCrashGenerationServer(int* client_fd, QString* pipePath)
+CallbacksManager::initCrashGenerationServer()
 {
     
 #ifndef Q_OS_LINUX
     assert(!_breakpadPipeServer);
-    Q_UNUSED(client_fd);
 #endif
     
     QObject::connect(this, SIGNAL(doDumpCallBackOnMainThread(QString)), this, SLOT(onDoDumpOnMainThread(QString)));
 
 #ifdef Q_OS_LINUX
-    if (!google_breakpad::CrashGenerationServer::CreateReportChannel(&_serverFD, client_fd)) {
+    if (!google_breakpad::CrashGenerationServer::CreateReportChannel(&_serverFD, _clientFD)) {
         throw std::runtime_error("breakpad: Failure to create named pipe for the CrashGenerationServer (CreateReportChannel).");
         return;
     }
@@ -700,7 +963,6 @@ CallbacksManager::initCrashGenerationServer(int* client_fd, QString* pipePath)
         }
 #endif
         
-        *pipePath = _pipePath;
     }
     
     
@@ -710,6 +972,6 @@ CallbacksManager::initCrashGenerationServer(int* client_fd, QString* pipePath)
     _breakpadPipeServer->listen(_pipePath);
 #endif
 
-    startCrashGenerationServer();
+    createCrashGenerationServer();
     
 }

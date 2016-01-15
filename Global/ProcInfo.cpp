@@ -20,6 +20,7 @@
 
 #include <cassert>
 #include <sstream>
+#include <iostream>
 
 #include <QDir>
 #include <QStringList>
@@ -370,20 +371,19 @@ bool checkIfProcessIsRunning(const char* processAbsoluteFilePath, Q_PID pid)
     size_t procBufferSize = sizeof(process);
     int err = sysctl( (int *)name, 4,NULL, &procBufferSize, NULL, 0);
     if (err == 0 && procBufferSize != 0) {
-        if (process.kp_proc.p_pid != (pid_t)pid) {
-            //pid is not the same...
-            return false;
-        }
-        if (process.kp_proc.p_stat != SRUN) {
-            //Process is not running
-            return false;
-        }
-
+ 
         //Process exist and is running, now check that it's actual path is the given one
         char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
         if (proc_pidpath (pid, pathbuf, sizeof(pathbuf) > 0)) {
             return !strcmp(pathbuf, processAbsoluteFilePath);
         }
+        
+        if (process.kp_proc.p_stat != SRUN && process.kp_proc.p_stat != SIDL) {
+            //Process is not running
+            return false;
+        }
+        return true;
+        
     }
     return false;
 #endif

@@ -2641,12 +2641,14 @@ void
 AppManager::onBreakpadProcessExistenceCheckTimerTriggered()
 {
 #ifdef NATRON_USE_BREAKPAD
-    assert(!_imp->breakpadProcessExecutableFilePath.isEmpty());
+    assert(!_imp->breakpadProcessExecutableFilePath.isEmpty() && _imp->breakpadPipeConnection);
     bool crashReporterStillExist = Natron::checkIfProcessIsRunning(_imp->breakpadProcessExecutableFilePath.toStdString().c_str(), _imp->breakpadProcessPID);
+    qDebug() << "Checking if" << _imp->breakpadProcessExecutableFilePath << "is running..." << crashReporterStillExist;
     if (!crashReporterStillExist) {
         //The process that spawned us is dead quit!
         exitApp();
     }
+   // _imp->breakpadPipeConnection->write(<#const char *data#>, <#qint64 len#>)
 #endif
 }
 

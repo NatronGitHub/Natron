@@ -22,6 +22,7 @@
 #include <QMutex>
 #include <QObject>
 #include <QNetworkReply>
+#include <QProcess>
 
 #ifndef REPORTER_CLI_ONLY
 #include <QDialog>
@@ -32,7 +33,6 @@ class QLocalServer;
 class QNetworkReply;
 
 class QString;
-class QProcess;
 
 #ifndef REPORTER_CLI_ONLY
 class CrashDialog;
@@ -40,6 +40,9 @@ class QProgressDialog;
 class QVBoxLayout;
 class QTextEdit;
 class QDialogButtonBox;
+class QApplication;
+#else
+class QCoreApplication;
 #endif
 
 namespace google_breakpad {
@@ -73,7 +76,7 @@ public:
 
     CallbacksManager();
     
-    ~CallbacksManager();
+    virtual ~CallbacksManager();
 
 
     static CallbacksManager* instance()
@@ -82,15 +85,14 @@ public:
     }
 
     /**
-     * @brief To be called to start breakpad generation server right away
-     * after the constructor
-     * This throws a runtime exception upon error
+     * @brief Creates the crash generation server and spawns the actual Natron proces.
+     * This function throws an exception in case of error.
      **/
-    void initCrashGenerationServer(int* client_fd, QString* pipePath);
-    
-    void setProcess(QProcess* natronProcess);
+    void init(int& argc, char** argv);
     
     void s_emitDoCallBackOnMainThread(const QString& filePath);
+    
+    int exec();
 
 public Q_SLOTS:
 
@@ -109,14 +111,26 @@ public Q_SLOTS:
     void onNatronProcessStdOutWrittenTo();
     void onNatronProcessStdErrWrittenTo();
     
+    void onSpawnedProcessFinished(int exitCode, QProcess::ExitStatus status);
+    void onSpawnedProcessError(QProcess::ProcessError error);
+    
 Q_SIGNALS:
 
     void doDumpCallBackOnMainThread(QString);
 
 private:
+    
+    /**
+     * @brief To be called to start breakpad generation server right away
+     * after the constructor
+     * This throws a runtime exception upon error
+     **/
+    void initCrashGenerationServer();
 
-    void startCrashGenerationServer();
+    void createCrashGenerationServer();
 
+    void initQApplication(int& argc, char** argv);
+    
     void uploadFileToRepository(const QString& filepath, const QString& comments);
 
     static CallbacksManager *_instance;
@@ -145,6 +159,13 @@ private:
 #ifdef Q_OS_LINUX
     //On Linux this is the pipe FD of crash generation server on the server side
     int _serverFD;
+    int _clientFD;
+#endif
+    
+#ifdef REPORTER_CLI_ONLY
+    QCoreApplication* _app;
+#else
+    QApplication* _app;
 #endif
     
 };

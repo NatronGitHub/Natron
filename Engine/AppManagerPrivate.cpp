@@ -211,10 +211,18 @@ AppManagerPrivate::createBreakpadHandler(int breakpad_client_fd)
         return;
     }
     
-    breakpadProcessExistenceTimer.start(NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS);
     
-#pragma message WARN("USING CRASH APPLICATION HERE, COMMENT OUT BEFORE COMMITING")
+    //if (appPTR->isBackground()) {
+        /*
+         In background mode we check every now and then that the crash reporter process still exist
+         otherwise we kill Natron
+         */
+        breakpadProcessExistenceTimer.start(NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS);
+    //}
+    
+ /*#pragma message WARN("USING CRASH APPLICATION HERE, COMMENT OUT BEFORE COMMITING")
     crash_application();
+  */
 }
 #endif // NATRON_USE_BREAKPAD
 
