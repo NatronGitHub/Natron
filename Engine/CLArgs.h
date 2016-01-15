@@ -106,11 +106,13 @@ public:
     
     bool areRenderStatsEnabled() const;
     
-    bool canEnableBreakpadHandler() const;
+    const QString& getBreakpadProcessExecutableFilePath() const;
+    
+    qint64 getBreakpadProcessPID() const;
     
     int getBreakpadClientFD() const;
     
-    QString getBreakpadPipeFilePath() const;
+    const QString& getBreakpadPipeFilePath() const;
     
 private:
     

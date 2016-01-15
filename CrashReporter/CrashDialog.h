@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _CrashReporter_CrashDialog_h_
-#define _CrashReporter_CrashDialog_h_
+#ifndef Natron_CrashReporter_CrashDialog_h_
+#define Natron_CrashReporter_CrashDialog_h_
 
 #include "Global/Macros.h"
 

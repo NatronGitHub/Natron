@@ -64,6 +64,10 @@ BOOST_CLASS_EXPORT(Natron::FrameParams)
 BOOST_CLASS_EXPORT(Natron::ImageParams)
 
 
+//This will check every X ms whether the crash reporter process still exist when
+//Natron was spawned from the crash reporter process
+#define NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS 30000
+
 
 #if defined(NATRON_USE_BREAKPAD) || defined(Q_OS_LINUX)
 #ifdef DEBUG
@@ -123,6 +127,9 @@ AppManagerPrivate::AppManagerPrivate()
 ,mainModule(0)
 ,mainThreadState(0)
 #ifdef NATRON_USE_BREAKPAD
+,breakpadProcessExecutableFilePath()
+,breakpadProcessExistenceTimer()
+,breakpadProcessPID(0)
 ,breakpadHandler()
 #ifndef Q_OS_LINUX
 ,breakpadPipeConnection()
@@ -142,39 +149,22 @@ AppManagerPrivate::~AppManagerPrivate()
         free(args[i]);
     }
     args.clear();
-
-#ifdef Q_OS_LINUX
-#ifdef NATRON_USE_BREAKPAD
-    if (crashReporterPID != -1) {
-        kill(crashReporterPID, SIGKILL);
-    }
-#endif
-#endif
 }
 
 
-
-
 #ifdef NATRON_USE_BREAKPAD
-#ifdef Q_OS_LINUX
-static char* qstringToMallocCharArray(const QString& str)
-{
-    std::string stdStr = str.toStdString();
-    return strndup(stdStr.c_str(), stdStr.size() + 1);
-}
-#endif
-
 void
 AppManagerPrivate::initBreakpad(const QString& breakpadPipePath,int breakpad_client_fd)
 {
  
     assert(!breakpadHandler);
     
-    
-
 #ifdef Q_OS_LINUX
+    //On linux the pipe is already created so create the handler now
     createBreakpadHandler(breakpad_client_fd);
 #else
+    //on Windows & OSX connect to the pipe opened from the crash reporter process and wait until the connection is made to create
+    //the exception handler
     (void)breakpad_client_fd;
     //on Windows & OSX we handle the breakpad pipe ourselves
     breakpadPipeConnection.reset(new QLocalSocket);
@@ -187,6 +177,8 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath,int breakpad_cli
 void
 AppManagerPrivate::createBreakpadHandler(int breakpad_client_fd)
 {
+    QObject::connect(&breakpadProcessExistenceTimer, SIGNAL(timeout()), appPTR, SLOT(onBreakpadProcessExistenceCheckTimerTriggered()));
+    
     QString dumpPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
     (void)breakpad_client_fd;
     try {
@@ -218,7 +210,11 @@ AppManagerPrivate::createBreakpadHandler(int breakpad_client_fd)
         qDebug() << e.what();
         return;
     }
-   // crash_application();
+    
+    breakpadProcessExistenceTimer.start(NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS);
+    
+#pragma message WARN("USING CRASH APPLICATION HERE, COMMENT OUT BEFORE COMMITING")
+    crash_application();
 }
 #endif // NATRON_USE_BREAKPAD
 

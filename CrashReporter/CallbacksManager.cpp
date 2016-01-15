@@ -30,6 +30,7 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include <cassert>
 #include <iostream>
 #include <sstream>
+#include <exception>
 
 #ifndef REPORTER_CLI_ONLY
 #include <QApplication>
@@ -71,7 +72,7 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include "CrashDialog.h"
 #endif
 
-#include "../Global/Macros.h"
+#include "Global/Macros.h"
 
 using namespace google_breakpad;
 
@@ -238,6 +239,9 @@ CallbacksManager::onUploadProgress(qint64 bytesSent, qint64 bytesTotal)
     assert(_progressDialog);
     double percent = (double)bytesSent / bytesTotal;
     _progressDialog->setValue(percent * 100);
+#else
+    Q_UNUSED(bytesSent);
+    Q_UNUSED(bytesTotal);
 #endif
 }
 

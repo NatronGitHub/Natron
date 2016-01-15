@@ -74,6 +74,8 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 
+#include "Global/ProcInfo.h"
+
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobSerialization.h"
@@ -586,20 +588,24 @@ GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,const QString& pr
     QString lockHost;
     qint64 lockPID;
     if (project->getLockFileInfos(projectPath, projectName, &author, &lockCreationDate, &lockHost, &lockPID)) {
-        if (lockPID != QCoreApplication::applicationPid() && Natron::checkIfNatronProcessIsRunning((Q_PID)lockPID)) {
-            Natron::StandardButtonEnum rep = Natron::questionDialog(QObject::tr("Project").toStdString(),
-                                                                    QObject::tr("This project may be open in another instance of Natron "
-                                                                                "running on %1 as process ID %2, "
-                                                                                "and was opened by %3 on %4.\nContinue anyway?").arg(lockHost,
-                                                                                                                                     QString::number(lockPID),
-                                                                                                                                     author,
-                                                                                                                                     lockCreationDate).toStdString(),
-                                                                    false,
-                                                                    Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo));
-            if (rep == Natron::eStandardButtonYes) {
-                return true;
-            } else {
-                return false;
+        qint64 curPid = (qint64)QCoreApplication::applicationPid();
+        if (lockPID != curPid) {
+            QString appFilePath = QCoreApplication::applicationFilePath();
+            if (Natron::checkIfProcessIsRunning(appFilePath.toStdString().c_str(),(Q_PID)lockPID)) {
+                Natron::StandardButtonEnum rep = Natron::questionDialog(QObject::tr("Project").toStdString(),
+                                                                        QObject::tr("This project may be open in another instance of Natron "
+                                                                                    "running on %1 as process ID %2, "
+                                                                                    "and was opened by %3 on %4.\nContinue anyway?").arg(lockHost,
+                                                                                                                                         QString::number(lockPID),
+                                                                                                                                         author,
+                                                                                                                                         lockCreationDate).toStdString(),
+                                                                        false,
+                                                                        Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo));
+                if (rep == Natron::eStandardButtonYes) {
+                    return true;
+                } else {
+                    return false;
+                }
             }
         }
     }

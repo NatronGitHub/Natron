@@ -227,7 +227,7 @@
 		AC4AA6141C480DDE00C92E12 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				AC4AA61A1C480DDE00C92E12 /* Natron-bin.app */,
+				AC4AA61A1C480DDE00C92E12 /* Natron-bin */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -243,7 +243,7 @@
 		AC4AA6241C480DFE00C92E12 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				AC4AA62A1C480DFE00C92E12 /* Natron */,
+				AC4AA62A1C480DFE00C92E12 /* Natron.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -363,7 +363,7 @@
 			remoteRef = 1EADE5DA18AA403700EF3180 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		AC4AA61A1C480DDE00C92E12 /* Natron-bin.app */ = {
+		AC4AA61A1C480DDE00C92E12 /* Natron-bin */ = {
 			isa = PBXReferenceProxy;
 			fileType = "compiled.mach-o.executable";
 			path = "Natron-bin";
@@ -377,7 +377,7 @@
 			remoteRef = AC4AA6211C480DE700C92E12 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		AC4AA62A1C480DFE00C92E12 /* Natron */ = {
+		AC4AA62A1C480DFE00C92E12 /* Natron.app */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.application;
 			path = Natron.app;

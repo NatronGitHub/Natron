@@ -19,17 +19,22 @@
 #The binary name needs to be Natron as this is what the user lauches
 TARGET = Natron
 VERSION = 2.0.0
+TEMPLATE = app
+
 QT       += core network gui
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += app
 CONFIG += moc
 CONFIG += qt
 
-TEMPLATE = app
 
 win32 {
-        RC_FILE += ../Natron.rc
+    RC_FILE += ../Natron.rc
 }
+
+include(../global.pri)
+
 
 macx {
   ### custom variables for the Info.plist file
@@ -42,24 +47,37 @@ macx {
   QMAKE_PKGINFO_TYPEINFO = Ntrn
 }
 
-INCLUDEPATH += $$PWD/..
 
-#used by breakpad internals
-unix:!mac {
-    DEFINES += N_UNDF=0
-}
 
-#google-breakpad use this to determine if build is debug
+#used by breakpad internals on Linux
+unix:!mac: DEFINES += N_UNDF=0
+
+#Windows: google-breakpad use this to determine if build is debug
 win32:Debug: DEFINES *= _DEBUG 
+
+INCLUDEPATH += $$PWD/..
+INCLUDEPATH += $$PWD/../Global
+DEPENDPATH += $$PWD/../Global
+
+
+BREAKPAD_PATH = $$PWD/../google-breakpad/src
+INCLUDEPATH += $$BREAKPAD_PATH
+DEPENDPATH += $$BREAKPAD_PATH
 
 SOURCES += \
     CrashDialog.cpp \
     main.cpp \
-    CallbacksManager.cpp
+    CallbacksManager.cpp \
+    ../Global/ProcInfo.cpp
 
 HEADERS += \
     CrashDialog.h \
-    CallbacksManager.h
+    CallbacksManager.h \
+    ../Global/Macros.h \
+    ../Global/ProcInfo.h
+
+
+
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -77,9 +95,7 @@ win32-msvc*{
         else:unix: LIBS += -L$$OUT_PWD/../BreakpadClient/ -lBreakpadClient
 }
 
-BREAKPAD_PATH = $$PWD/../google-breakpad/src
-INCLUDEPATH += $$BREAKPAD_PATH
-DEPENDPATH += $$BREAKPAD_PATH
+
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -99,7 +115,6 @@ win32-msvc*{
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../BreakpadClient/libBreakpadClient.a
 }
 
-include(../global.pri)
 
 
 RESOURCES += \

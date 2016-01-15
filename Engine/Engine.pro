@@ -71,12 +71,6 @@ win32-msvc* {
 	}
 }
 
-# XCode clang 3.5 without optimization generates code that crashes
-#(Natron on OSX, XCode 6, Spaceship_Natron.ntp)
-*-xcode {
-  #QMAKE_CXXFLAGS += -O1
-}
-
 SOURCES += \
     AppInstance.cpp \
     AppInstanceWrapper.cpp \
@@ -171,6 +165,7 @@ SOURCES += \
     TLSHolder.cpp \
     Transform.cpp \
     ViewerInstance.cpp \
+    ../Global/ProcInfo.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
     NatronEngine/natronengine_module_wrapper.cpp \
     NatronEngine/natron_wrapper.cpp \
@@ -357,6 +352,7 @@ HEADERS += \
     ../Global/KeySymbols.h \
     ../Global/Macros.h \
     ../Global/MemoryInfo.h \
+    ../Global/ProcInfo.h \
     ../Global/QtCompat.h \
     ../libs/SequenceParsing/SequenceParsing.h \
     ../libs/OpenFX/include/ofxCore.h \

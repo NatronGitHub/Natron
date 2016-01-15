@@ -485,6 +485,8 @@ public Q_SLOTS:
     
     void onOFXDialogOnMainThreadReceived(Natron::OfxImageEffectInstance* instance, void* instanceData);
     
+    void onBreakpadProcessExistenceCheckTimerTriggered();
+    
 Q_SIGNALS:
 
 
@@ -709,13 +711,6 @@ public:
     
     ~PythonGILLocker();
 };
-    
-/**
- * @brief Check if there is currently a running Natron process on this computer with the given PID. Note that this function might
- * return true even if the process is not actually Natron because the operating system recycles PIDs. This function should be used
- * only for non-vital GUI elements.
- **/
-bool checkIfNatronProcessIsRunning(Q_PID pid);
     
 } // namespace Natron
 

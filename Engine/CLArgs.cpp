@@ -69,7 +69,9 @@ struct CLArgsPrivate
     
     int breakpadPipeClientID;
     
-    bool wasSpawnedFromBreakpadProcess;
+    QString breakpadProcessFilePath;
+    
+    qint64 breakpadProcessPID;
     
     CLArgsPrivate()
     : args()
@@ -88,7 +90,8 @@ struct CLArgsPrivate
     , imageFilename()
     , breakpadPipeFilePath()
     , breakpadPipeClientID(-1)
-    , wasSpawnedFromBreakpadProcess(false)
+    , breakpadProcessFilePath()
+    , breakpadProcessPID(-1)
     {
         
     }
@@ -419,23 +422,30 @@ CLArgs::isPythonScript() const
     return _imp->isPythonScript;
 }
 
+const QString&
+CLArgs::getBreakpadProcessExecutableFilePath() const
+{
+    return _imp->breakpadProcessFilePath;
+}
+
+qint64
+CLArgs::getBreakpadProcessPID() const
+{
+    return _imp->breakpadProcessPID;
+}
+
 int
 CLArgs::getBreakpadClientFD() const
 {
     return _imp->breakpadPipeClientID;
 }
 
-QString
+const QString&
 CLArgs::getBreakpadPipeFilePath() const
 {
     return _imp->breakpadPipeFilePath;
 }
 
-bool
-CLArgs::canEnableBreakpadHandler() const
-{
-    return _imp->wasSpawnedFromBreakpadProcess;
-}
 
 QStringList::iterator
 CLArgsPrivate::findFileNameWithExtension(const QString& extension)
@@ -638,10 +648,32 @@ CLArgsPrivate::parse()
     }
     
     {
-        QStringList::iterator it = hasToken(NATRON_BREAKPAD_ENABLED_ARG, "");
+        QStringList::iterator it = hasToken(NATRON_BREAKPAD_PROCESS_PID, "");
         if (it != args.end()) {
-            wasSpawnedFromBreakpadProcess = true;
-            args.erase(it);
+            ++it;
+            if (it != args.end()) {
+                breakpadProcessPID = it->toLongLong();
+                args.erase(it);
+            } else {
+                std::cout << QObject::tr("You must specify the breakpad process executable file path").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
+        }
+    }
+    
+    {
+        QStringList::iterator it = hasToken(NATRON_BREAKPAD_PROCESS_EXEC, "");
+        if (it != args.end()) {
+            ++it;
+            if (it != args.end()) {
+                breakpadProcessFilePath = *it;
+                args.erase(it);
+            } else {
+                std::cout << QObject::tr("You must specify the breakpad process executable file path").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
         }
     }
     

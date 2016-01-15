@@ -28,6 +28,7 @@ CONFIG += qt
 
 TEMPLATE = app
 
+include(../global.pri)
 
 DEFINES *= REPORTER_CLI_ONLY
 
@@ -42,9 +43,21 @@ win32:Debug: DEFINES *= _DEBUG
 
 SOURCES += \
         ../CrashReporter/main.cpp \
-        ../CrashReporter/CallbacksManager.cpp
+        ../CrashReporter/CallbacksManager.cpp \
+        ../Global/ProcInfo.cpp
 
-HEADERS += ../CrashReporter/CallbacksManager.h
+HEADERS += ../CrashReporter/CallbacksManager.h \
+           ../Global/ProcInfo.h \
+           ../Global/Macros.h
+
+INCLUDEPATH += $$PWD/..
+INCLUDEPATH += $$PWD/../Global
+DEPENDPATH += $$PWD/../Global
+
+
+BREAKPAD_PATH = $$PWD/../google-breakpad/src
+INCLUDEPATH += $$BREAKPAD_PATH
+DEPENDPATH += $$BREAKPAD_PATH
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -62,9 +75,6 @@ win32-msvc*{
         else:unix: LIBS += -L$$OUT_PWD/../BreakpadClient/ -lBreakpadClient
 }
 
-BREAKPAD_PATH = $$PWD/../google-breakpad/src
-INCLUDEPATH += $$BREAKPAD_PATH
-DEPENDPATH += $$BREAKPAD_PATH
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -84,7 +94,6 @@ win32-msvc*{
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../BreakpadClient/libBreakpadClient.a
 }
 
-include(../global.pri)
 
 INSTALLS += target
 

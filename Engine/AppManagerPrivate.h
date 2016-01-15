@@ -28,6 +28,7 @@
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QAtomicInt>
+#include <QtCore/QTimer>
 
 #ifdef NATRON_USE_BREAKPAD
 #if defined(Q_OS_MAC)
@@ -123,6 +124,9 @@ struct AppManagerPrivate
     PyThreadState* mainThreadState;
     
 #ifdef NATRON_USE_BREAKPAD
+    QString breakpadProcessExecutableFilePath;
+    QTimer breakpadProcessExistenceTimer;
+    Q_PID breakpadProcessPID;
     boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
 #ifndef Q_OS_LINUX
     //On Windows & OSX the breakpad pipe is handled ourselves

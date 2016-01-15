@@ -38,6 +38,7 @@ OTHER_FILES += \
     Global/KeySymbols.h \
     Global/Macros.h \
     Global/MemoryInfo.h \
+    Global/ProcInfo.h \
     Global/QtCompat.h \
     global.pri \
     config.pri
