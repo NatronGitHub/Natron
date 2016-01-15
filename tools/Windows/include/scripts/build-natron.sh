@@ -132,20 +132,14 @@ elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
 	fi
 	EXTRA_QMAKE_FLAG="CONFIG+=stable BUILD_USER_NAME=$CUSTOM_BUILD_USER_NAME"
 fi
-if [ "${BREAKPAD}" != "0" ]; then
-  EXTRA_QMAKE_FLAG="CONFIG+=gbreakpad" 
-fi
 
-$INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo CONFIG+=silent ${EXTRA_QMAKE_FLAG} CONFIG+=${BIT}bit DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
+$INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo CONFIG+=gbreakpad CONFIG+=silent CONFIG+=${BIT}bit DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
 make -j${MKJOBS} || exit 1
 
-cp App/release/Natron.exe $INSTALL_PATH/bin/ || exit 1
-cp Renderer/release/NatronRenderer.exe $INSTALL_PATH/bin/ || exit 1
-if [ -f CrashReporter/release/NatronCrashReporter.exe ]; then
-    cp CrashReporter/release/NatronCrashReporter.exe $INSTALL_PATH/bin/ || exit 1
-    cp CrashReporterCLI/release/NatronRendererCrashReporter.exe $INSTALL_PATH/bin/ || exit 1
-fi
-
+cp App/release/Natron-bin.exe $INSTALL_PATH/bin/ || exit 1
+cp Renderer/release/NatronRenderer-bin.exe $INSTALL_PATH/bin/ || exit 1
+cp CrashReporter/release/Natron.exe $INSTALL_PATH/bin/ || exit 1
+cp CrashReporterCLI/release/NatronRenderer.exe $INSTALL_PATH/bin/ || exit 1
 
 #If OpenColorIO-Configs do not exist, download them
 if [ ! -d "$SRC_PATH/OpenColorIO-Configs" ]; then

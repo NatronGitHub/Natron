@@ -7,9 +7,6 @@
 <RequiresAdminRights>true</RequiresAdminRights>
     <Name>fr.inria.openfx.opencv</Name>
     <Dependencies>fr.inria.natron.libs</Dependencies>
-	<Licenses>
-		<License name="openfx-opencv" file="ofx-cv-license.txt" />
-	</Licenses>
     <!--<SortingPriority>1234</SortingPriority>-->
     <Default>script</Default>
     <Script>installscript.qs</Script>
