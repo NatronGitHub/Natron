@@ -365,8 +365,8 @@
 		};
 		AC4AA61A1C480DDE00C92E12 /* Natron-bin.app */ = {
 			isa = PBXReferenceProxy;
-			fileType = wrapper.application;
-			path = "Natron-bin.app";
+			fileType = "compiled.mach-o.executable";
+			path = "Natron-bin";
 			remoteRef = AC4AA6191C480DDE00C92E12 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
@@ -379,8 +379,8 @@
 		};
 		AC4AA62A1C480DFE00C92E12 /* Natron */ = {
 			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = Natron;
+			fileType = wrapper.application;
+			path = Natron.app;
 			remoteRef = AC4AA6291C480DFE00C92E12 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
@@ -569,6 +569,7 @@
 				AC4AA6361C480E7F00C92E12 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

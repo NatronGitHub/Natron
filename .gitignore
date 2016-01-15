@@ -14,6 +14,8 @@ sed*
 *latex*
 DerivedData
 Natron.xcodeproj
+Natron-bin.xcodeproj
+NatronRenderer-bin.xcodeproj
 NatronRenderer.xcodeproj
 NatronCrashReporter.xcodeproj
 BreakpadClient.xcodeproj

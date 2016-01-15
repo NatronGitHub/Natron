@@ -333,11 +333,13 @@ static QString applicationDirPath(const char* argv0Param)
 }
 
 
+#ifdef Q_OS_LINUX
 static char* qstringToMallocCharArray(const QString& str)
 {
     std::string stdStr = str.toStdString();
     return strndup(stdStr.c_str(), stdStr.size() + 1);
 }
+#endif
     
 } // anon namespace
 
