@@ -1035,7 +1035,7 @@ CallbacksManager::onComPipeConnectionPending()
 void
 CallbacksManager::onComPipeDataWrittenTo()
 {
-    QString str = _comServer->readLine();
+    QString str = _comPipeConnection->readLine();
     while (str.endsWith('\n')) {
         str.chop(1);
     }
