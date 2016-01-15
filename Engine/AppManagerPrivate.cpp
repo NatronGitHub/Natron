@@ -125,7 +125,6 @@ AppManagerPrivate::AppManagerPrivate()
 ,mainThreadState(0)
 #ifdef NATRON_USE_BREAKPAD
 ,breakpadProcessExecutableFilePath()
-,breakpadProcessExistenceTimer()
 ,breakpadProcessPID(0)
 ,breakpadHandler()
 #ifndef Q_OS_LINUX
