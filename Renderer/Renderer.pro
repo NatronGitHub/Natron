@@ -20,7 +20,7 @@ QT       += core network
 QT       -= gui
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
-TARGET = NatronRenderer-bin
+TARGET = NatronRenderer
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG += moc
@@ -123,6 +123,7 @@ win32-msvc*{
 ################
 # BreakpadClient
 
+!disable-breakpad {
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -162,6 +163,8 @@ win32-msvc*{
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../BreakpadClient/libBreakpadClient.a
 }
 
+} # !disable-breakpad
+        
 include(../global.pri)
 include(../config.pri)
 

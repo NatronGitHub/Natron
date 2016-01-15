@@ -167,6 +167,8 @@ win32-msvc*{
 ################
 # BreakpadClient
 
+!disable-breakpad {
+
 win32-msvc*{
         CONFIG(64bit) {
                 CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../BreakpadClient/x64/release/ -lBreakpadClient
@@ -204,6 +206,8 @@ win32-msvc*{
         else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../BreakpadClient/build/Debug/libBreakpadClient.a
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../BreakpadClient/libBreakpadClient.a
 }
+
+} # !disable-breakpad
 
 include(../global.pri)
 include(../config.pri)

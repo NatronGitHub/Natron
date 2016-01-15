@@ -16,12 +16,15 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-TARGET = Natron-bin
+TARGET = Natron
 VERSION = 2.0.0
 TEMPLATE = app
-
-CONFIG += console
-CONFIG -= app_bundle
+win32 {
+	CONFIG += console
+	RC_FILE += ../Natron.rc
+} else {
+	CONFIG += app
+}
 CONFIG += moc
 CONFIG += boost glew opengl qt cairo python shiboken pyside
 QT += gui core opengl network
@@ -29,7 +32,16 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
 !noexpat: CONFIG += expat
 
-
+macx {
+  ### custom variables for the Info.plist file
+  # use a custom Info.plist template
+  QMAKE_INFO_PLIST = NatronInfo.plist
+  # Set the application icon
+  ICON = ../Gui/Resources/Images/natronIcon256_osx.icns
+  # replace com.yourcompany with something more meaningful
+  QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
+  QMAKE_PKGINFO_TYPEINFO = Ntrn
+}
 
 #OpenFX C api includes and OpenFX c++ layer includes that are located in the submodule under /libs/OpenFX
 INCLUDEPATH += $$PWD/../libs/OpenFX/include
@@ -179,6 +191,8 @@ win32-msvc*{
 ################
 # BreakpadClient
 
+!disable-breakpad {
+
 win32-msvc*{
         CONFIG(64bit) {
                 CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../BreakpadClient/x64/release/ -lBreakpadClient
@@ -215,6 +229,22 @@ win32-msvc*{
         else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../BreakpadClient/build/Release/libBreakpadClient.a
         else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../BreakpadClient/build/Debug/libBreakpadClient.a
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../BreakpadClient/libBreakpadClient.a
+}
+
+}
+
+include(../OpenColorIO-Configs.pri)
+macx {
+    Resources.files += $$PWD/../Gui/Resources/Images/natronProjectIcon_osx.icns
+    Resources.path = Contents/Resources
+    QMAKE_BUNDLE_DATA += Resources
+    Fontconfig.files = $$PWD/../Gui/Resources/etc/fonts
+    Fontconfig.path = Contents/Resources/etc
+    QMAKE_BUNDLE_DATA += Fontconfig
+}
+!macx {
+    Resources.path = $$OUT_PWD
+    INSTALLS += Resources
 }
 
 include(../global.pri)

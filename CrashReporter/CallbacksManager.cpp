@@ -18,6 +18,10 @@
 
 #include "CallbacksManager.h"
 
+#include <stdexcept>
+
+#include <QtCore/QDebug>
+
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QHttpMultiPart>

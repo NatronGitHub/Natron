@@ -16,38 +16,29 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
-#The binary name needs to be Natron as this is what the user lauches
-TARGET = Natron
+# The binary name needs to be Natron as this is what the user lauches
+# It is renamed during deployment
+TARGET = NatronCrashReporter
 VERSION = 2.0.0
 TEMPLATE = app
 
-QT       += core network gui
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+# NatronCrashReporter is built as an app to make debugging easier:
+# - on Linux and OSX, make a symbolic link to the Natron binary
+#  (which is inside Natron.app on OSX) next to the NatronCrashReporter binary
+#  example on OSX:
+#  $ cd build/Debug/NatronCrashReporter.app/Contents/MacOS
+#  $ ln -s ../../../../../../App/build/Debug/Natron.app/Contents/MacOS/Natron Natron-bin
 
+#CONFIG += console
+#CONFIG -= app_bundle
+#CONFIG -= app
 CONFIG += app
 CONFIG += moc
 CONFIG += qt
-
-
-win32 {
-    RC_FILE += ../Natron.rc
-}
+QT       += core network gui
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 include(../global.pri)
-
-
-macx {
-  ### custom variables for the Info.plist file
-  # use a custom Info.plist template
-  QMAKE_INFO_PLIST = NatronInfo.plist
-  # Set the application icon
-  ICON = ../Gui/Resources/Images/natronIcon256_osx.icns
-  # replace com.yourcompany with something more meaningful
-  QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
-  QMAKE_PKGINFO_TYPEINFO = Ntrn
-}
-
-
 
 #used by breakpad internals on Linux
 unix:!mac: DEFINES += N_UNDF=0
@@ -123,41 +114,3 @@ RESOURCES += \
     ../Gui/GuiResources.qrc
 
 INSTALLS += target
-
-
-OCIO.files = \
-$$PWD/../OpenColorIO-Configs/ChangeLog \
-$$PWD/../OpenColorIO-Configs/README \
-$$PWD/../OpenColorIO-Configs/aces_0.1.1 \
-$$PWD/../OpenColorIO-Configs/aces_0.7.1 \
-$$PWD/../OpenColorIO-Configs/blender \
-$$PWD/../OpenColorIO-Configs/nuke-default \
-$$PWD/../OpenColorIO-Configs/spi-anim \
-$$PWD/../OpenColorIO-Configs/spi-vfx
-
-# ACES 1.0.1 also has baked luts and python files which we don't want to bundle
-OCIO_aces_101.files = \
-$$PWD/../OpenColorIO-Configs/aces_1.0.1/config.ocio \
-$$PWD/../OpenColorIO-Configs/aces_1.0.1/luts
-
-
-macx {
-    Resources.files += $$PWD/../Gui/Resources/Images/natronProjectIcon_osx.icns
-    Resources.path = Contents/Resources
-    QMAKE_BUNDLE_DATA += Resources
-    Fontconfig.files = $$PWD/../Gui/Resources/etc/fonts
-    Fontconfig.path = Contents/Resources/etc
-    QMAKE_BUNDLE_DATA += Fontconfig
-    OCIO.path = Contents/Resources/OpenColorIO-Configs
-    QMAKE_BUNDLE_DATA += OCIO
-    OCIO_aces_101.path = Contents/Resources/OpenColorIO-Configs/aces_1.0.1
-    QMAKE_BUNDLE_DATA += OCIO_aces_101
-}
-!macx {
-    Resources.path = $$OUT_PWD
-    INSTALLS += Resources
-    OCIO.path = $$OUT_PWD/OpenColorIO-Configs
-    INSTALLS += OCIO
-    OCIO_aces_101.path = $$OUT_PWD/OpenColorIO-Configs/aces_1.0.1
-    INSTALLS += OCIO_aces_101
-}
