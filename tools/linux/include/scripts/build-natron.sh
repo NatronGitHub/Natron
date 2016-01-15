@@ -171,32 +171,13 @@ if [ "$PYV" = "3" ]; then
     PYO="PYTHON_CONFIG=python3.4m-config"
 fi
 
-if [ "${BREAKPAD}" != "0" ]; then
-  WITH_BPAD="CONFIG+=gbreakpad"
-fi
-
-env CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${WITH_BPAD} CONFIG+=silent ${EXTRA_QMAKE_FLAG} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
+env CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo CONFIG+=gbreakpad CONFIG+=silent ${EXTRA_QMAKE_FLAG} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
 make -j${MKJOBS} || exit 1
 
-cp App/Natron $INSTALL_PATH/bin/ || exit 1
-cp Renderer/NatronRenderer $INSTALL_PATH/bin/ || exit 1
-if [ -f CrashReporter/NatronCrashReporter ]; then
-    cp CrashReporter/NatronCrashReporter $INSTALL_PATH/bin/ || exit 1
-    cp CrashReporterCLI/NatronRendererCrashReporter $INSTALL_PATH/bin/ || exit 1
-fi
-
-#For breakpad to work, we must use exactly the symbols from the release build, so we build with CONFIG+=relwithdebinfo
-#if [ -z "$NODEBUG" ]; then
-#  CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=debug CONDIF+=silent ../Project.pro || exit 1
-#  make -j${MKJOBS} || exit 1
-#  cp App/Natron $INSTALL_PATH/bin/Natron.debug || exit 1
-#  cp Renderer/NatronRenderer $INSTALL_PATH/bin/NatronRenderer.debug || exit 1
-#  if [ -f CrashReporter/NatronCrashReporter ]; then
-#    cp CrashReporter/NatronCrashReporter $INSTALL_PATH/bin/NatronCrashReporter.debug || exit 1
-#  else
-#    echo "CrashReporter missing!!! Something broken?"
-#  fi
-#fi
+cp App/Natron-bin $INSTALL_PATH/bin/ || exit 1
+cp Renderer/NatronRenderer-bin $INSTALL_PATH/bin/ || exit 1
+cp CrashReporter/Natron $INSTALL_PATH/bin/ || exit 1
+cp CrashReporterCLI/NatronRenderer $INSTALL_PATH/bin/ || exit 1
 
 #If OpenColorIO-Configs do not exist, download them
 if [ ! -d "$SRC_PATH/OpenColorIO-Configs" ]; then
