@@ -24,8 +24,9 @@
 #include <QLocalSocket>
 #include <QMutex>
 #include <QWaitCondition>
+#include <QDebug>
 
-
+#include "Engine/AppManager.h"
 
 //This will check every X ms whether the crash reporter process still exist when
 //Natron was spawned from the crash reporter process
@@ -125,9 +126,11 @@ ExistenceCheckerThread::run()
         }
         
         if (!receivedAcknowledgement) {
+            qDebug() << "Crash reporter process does not seem to be responding anymore...exiting";
             /*
              We did not receive te acknowledgement, hence quit
              */
+            appPTR->abortAnyProcessing();
             Q_EMIT otherProcessUnreachable();
             return;
         }

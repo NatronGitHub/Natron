@@ -902,6 +902,9 @@ CallbacksManager::onNatronProcessStdOutWrittenTo()
 {
 #ifndef Q_OS_LINUX
     QString str(_natronProcess->readAllStandardOutput().data());
+    while (str.endsWith('\n')) {
+        str.chop(1);
+    }
     std::cout << str.toStdString() << std::endl;
 #endif
 }
@@ -911,6 +914,9 @@ CallbacksManager::onNatronProcessStdErrWrittenTo()
 {
 #ifndef Q_OS_LINUX
     QString str(_natronProcess->readAllStandardError().data());
+    while (str.endsWith('\n')) {
+        str.chop(1);
+    }
     std::cerr << str.toStdString() << std::endl;
 #endif
 }
