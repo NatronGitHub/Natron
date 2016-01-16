@@ -2641,8 +2641,10 @@ void
 AppManager::onBreakpadPipeConnectionMade()
 {
 #ifdef NATRON_USE_BREAKPAD
+#ifndef Q_OS_LINUX
     assert(_imp->breakpadPipeConnection);
     _imp->createBreakpadHandler(-1);
+#endif
 #endif
 
 }
