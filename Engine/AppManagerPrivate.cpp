@@ -170,11 +170,15 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& 
     breakpadPipeConnection->connectToServer(breakpadPipePath,QLocalSocket::ReadWrite);
     
 #endif
-    
+
+    /*
+     In background mode, if the crash reporter dies, we want the process to automatically.
+     In GUI mode, we let the process live but it will no longer have a crash handler
+     */
     if (appPTR->isBackground()) {
         crashReporterComPipeConnection.reset(new QLocalSocket);
-        crashReporterComPipeConnection->connectToServer(breakpadComPipePath, QLocalSocket::ReadWrite);
         QObject::connect(crashReporterComPipeConnection.get(), SIGNAL(connected()), appPTR, SLOT(onBreakpadComPipeConnectionMade()));
+        crashReporterComPipeConnection->connectToServer(breakpadComPipePath, QLocalSocket::ReadWrite);
     }
 }
 

@@ -21,14 +21,6 @@
 
 #ifdef NATRON_USE_BREAKPAD
 
-
-//This will check every X ms whether the crash reporter process still exist when
-//Natron was spawned from the crash reporter process
-#define NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS 30000
-
-//After this time, we consider that the crash reporter is dead
-#define NATRON_BREAKPAD_WAIT_FOR_CRASH_REPORTER_ACK_MS 5000
-
 #include "Global/Macros.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)

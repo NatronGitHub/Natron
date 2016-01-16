@@ -25,6 +25,16 @@
 #include <QMutex>
 #include <QWaitCondition>
 
+
+
+//This will check every X ms whether the crash reporter process still exist when
+//Natron was spawned from the crash reporter process
+#define NATRON_BREAKPAD_CHECK_FOR_CRASH_REPORTER_EXISTENCE_MS 30000
+
+//After this time, we consider that the crash reporter is dead
+#define NATRON_BREAKPAD_WAIT_FOR_CRASH_REPORTER_ACK_MS 5000
+
+
 struct ExistenceCheckerThreadPrivate
 {
     boost::shared_ptr<QLocalSocket> socket;
@@ -54,7 +64,7 @@ ExistenceCheckerThread::ExistenceCheckerThread(const QString& checkMessage,
 : QThread()
 , _imp(new ExistenceCheckerThreadPrivate(checkMessage, acknowledgementMessage, socket))
 {
-    
+    setObjectName("CrashReporterAliveThread");
 }
 
 ExistenceCheckerThread::~ExistenceCheckerThread()
@@ -102,7 +112,7 @@ ExistenceCheckerThread::run()
         
         bool receivedAcknowledgement = false;
         while (_imp->socket->waitForReadyRead(NATRON_BREAKPAD_WAIT_FOR_CRASH_REPORTER_ACK_MS)) {
-            
+
             //we received something, if it's not the ackknowledgement packet, recheck
             QString str = _imp->socket->readLine();
             while (str.endsWith('\n')) {
