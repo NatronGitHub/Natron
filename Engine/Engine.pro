@@ -89,6 +89,7 @@ SOURCES += \
     EffectInstance.cpp \
     EffectInstancePrivate.cpp \
     EffectInstanceRenderRoI.cpp \
+    ExistenceCheckThread.cpp \
     FileDownloader.cpp \
     FileSystemModel.cpp \
     FitCurve.cpp \
@@ -166,7 +167,6 @@ SOURCES += \
     Transform.cpp \
     ViewerInstance.cpp \
     ../Global/ProcInfo.cpp \
-    ../Global/ExistenceCheckThread.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
     NatronEngine/natronengine_module_wrapper.cpp \
     NatronEngine/natron_wrapper.cpp \
@@ -236,6 +236,7 @@ HEADERS += \
     DiskCacheNode.h \
     EffectInstance.h \
     EffectInstancePrivate.h \
+    ExistenceCheckThread.h \
     EngineFwd.h \
     FeatherPoint.h \
     FileDownloader.h \
@@ -347,7 +348,6 @@ HEADERS += \
     ViewerInstance.h \
     ViewerInstancePrivate.h \
     ../Global/Enums.h \
-    ../Global/ExistenceCheckThread.h \
     ../Global/GitVersion.h \
     ../Global/GLIncludes.h \
     ../Global/GlobalDefines.h \
