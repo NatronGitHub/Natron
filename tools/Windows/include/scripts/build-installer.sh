@@ -7,6 +7,7 @@
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
+# DISABLE_BREAKPAD=1: Disable automatic crash report
 # NO_ZIP=1: Do not produce a zip self-contained archive with Natron distribution.
 # OFFLINE=1 : Make the offline installer too
 # NO_INSTALLER: Do not make any installer, only zip if NO_ZIP!=1
@@ -127,7 +128,10 @@ if [ "$BUNDLE_IO" = "1" ]; then
         cp "$INSTALL_PATH/bin/$depend" "$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
     done
     cp $INSTALL_PATH/lib/{LIBOPENCOLORIO.DLL,LIBSEEXPR.DLL} "$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
-    $INSTALL_PATH/bin/dump_syms.exe $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/IO.ofx > $INSTALL_PATH/symbols/IO.ofx-${TAG}-${PKGOS}.sym || exit 1
+
+    if [ "$DISABLE_BREAKPAD" != "1" ]; then
+        $INSTALL_PATH/bin/dump_syms.exe $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/IO.ofx > $INSTALL_PATH/symbols/IO.ofx-${TAG}-${PKGOS}.sym || exit 1
+    fi
     strip -s $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/*
 	
 fi
@@ -148,8 +152,11 @@ if [ "$BUNDLE_MISC" = "1" ]; then
     for depend in $CIMG_DLL; do
         cp $INSTALL_PATH/bin/$depend  $OFX_MISC_PATH/data/Plugins/OFX/Natron/CImg.ofx.bundle/Contents/Win$BIT/ || exit 1
     done
-    $INSTALL_PATH/bin/dump_syms.exe $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/CImg.ofx > $INSTALL_PATH/symbols/CImg.ofx-${TAG}-${PKGOS}.sym || exit 1
-    $INSTALL_PATH/bin/dump_syms.exe $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/Misc.ofx > $INSTALL_PATH/symbols/Misc.ofx-${TAG}-${PKGOS}.sym || exit 1
+
+    if [ "$DISABLE_BREAKPAD" != "1" ]; then
+        $INSTALL_PATH/bin/dump_syms.exe $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/CImg.ofx > $INSTALL_PATH/symbols/CImg.ofx-${TAG}-${PKGOS}.sym || exit 1
+        $INSTALL_PATH/bin/dump_syms.exe $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/Misc.ofx > $INSTALL_PATH/symbols/Misc.ofx-${TAG}-${PKGOS}.sym || exit 1
+    fi
     strip -s $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/*
 	
 fi
@@ -161,18 +168,29 @@ cat $XML/natron.xml | sed "s/_VERSION_/${TAG}/;s/_DATE_/${DATE}/" > $NATRON_PATH
 cat $QS/natron.qs > $NATRON_PATH/meta/installscript.qs || exit 1
 cp -a $INSTALL_PATH/docs/natron/* $NATRON_PATH/data/docs/ || exit 1
 cat $INSTALL_PATH/docs/natron/LICENSE.txt > $NATRON_PATH/meta/natron-license.txt || exit 1
-cp $INSTALL_PATH/bin/Natron.exe $NATRON_PATH/data/bin/ || exit 1
-cp $INSTALL_PATH/bin/NatronRenderer.exe $NATRON_PATH/data/bin/ || exit 1
-cp $INSTALL_PATH/bin/Natron-bin.exe $NATRON_PATH/data/bin/ || exit 1
-cp $INSTALL_PATH/bin/NatronRenderer-bin.exe $NATRON_PATH/data/bin/ || exit 1
+
+if [ "$DISABLE_BREAKPAD" != "1" ]; then
+    cp $INSTALL_PATH/bin/Natron.exe $NATRON_PATH/data/bin/Natron-bin.exe || exit 1
+    cp $INSTALL_PATH/bin/NatronRenderer.exe $NATRON_PATH/data/bin/NatronRenderer-bin.exe || exit 1
+    cp $INSTALL_PATH/bin/NatronCrashReporter.exe $NATRON_PATH/data/bin/Natron.exe || exit 1
+    cp $INSTALL_PATH/bin/NatronRendererCrashReporter.exe $NATRON_PATH/data/bin/NatronRenderer.exe || exit 1
+else
+    cp $INSTALL_PATH/bin/Natron.exe $NATRON_PATH/data/bin/Natron.exe || exit 1
+    cp $INSTALL_PATH/bin/NatronRenderer.exe $NATRON_PATH/data/bin/NatronRenderer.exe || exit 1
+fi
+
 wget --no-check-certificate $NATRON_API_DOC || exit 1
 mv natron.pdf $NATRON_PATH/data/docs/Natron_Python_API_Reference.pdf || exit 1
 rm $NATRON_PATH/data/docs/TuttleOFX-README.txt || exit 1
 mkdir -p $NATRON_PATH/data/share/pixmaps || exit 1
 cp $CWD/include/config/natronProjectIcon_windows.ico $NATRON_PATH/data/share/pixmaps/ || exit 1
 cp $INSTALL_PATH/share/stylesheets/mainstyle.qss $NATRON_PATH/data/share/ || exit 1
-$INSTALL_PATH/bin/dump_syms.exe $NATRON_PATH/data/bin/Natron-bin.exe > $INSTALL_PATH/symbols/Natron-${TAG}-${PKGOS}.sym || exit 1
-$INSTALL_PATH/bin/dump_syms.exe $NATRON_PATH/data/bin/NatronRenderer-bin.exe > $INSTALL_PATH/symbols/NatronRenderer-${TAG}-${PKGOS}.sym || exit 1
+
+if [ "$DISABLE_BREAKPAD" != "1" ]; then
+    $INSTALL_PATH/bin/dump_syms.exe $NATRON_PATH/data/bin/Natron-bin.exe > $INSTALL_PATH/symbols/Natron-${TAG}-${PKGOS}.sym || exit 1
+    $INSTALL_PATH/bin/dump_syms.exe $NATRON_PATH/data/bin/NatronRenderer-bin.exe > $INSTALL_PATH/symbols/NatronRenderer-${TAG}-${PKGOS}.sym || exit 1
+fi
+
 strip -s $NATRON_PATH/data/bin/*
 
 if [ "$NO_ZIP" != "1" ]; then
@@ -283,7 +301,10 @@ if [ "$BUNDLE_ARENA" = "1" ]; then
         cp $INSTALL_PATH/bin/$depend  $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT/ || exit 1
     done
     cp $INSTALL_PATH/lib/LIBOPENCOLORIO.DLL $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT/ || exit 1
-    $INSTALL_PATH/bin/dump_syms.exe $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/Arena.ofx > $INSTALL_PATH/symbols/Arena.ofx-${TAG}-${PKGOS}.sym || exit 1
+
+    if [ "$DISABLE_BREAKPAD" != "1" ]; then
+        $INSTALL_PATH/bin/dump_syms.exe $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/Arena.ofx > $INSTALL_PATH/symbols/Arena.ofx-${TAG}-${PKGOS}.sym || exit 1
+    fi
     strip -s $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/*
     #echo "ImageMagick License:" >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
     #cat $INSTALL_PATH/docs/imagemagick/LICENSE >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
