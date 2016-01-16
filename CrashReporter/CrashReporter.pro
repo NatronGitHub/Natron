@@ -59,15 +59,13 @@ SOURCES += \
     CrashDialog.cpp \
     main.cpp \
     CallbacksManager.cpp \
-    ../Global/ProcInfo.cpp \
-    ../Global/ExistenceCheckThread.cpp
+    ../Global/ProcInfo.cpp
 
 HEADERS += \
     CrashDialog.h \
     CallbacksManager.h \
     ../Global/Macros.h \
-    ../Global/ProcInfo.h \
-    ../Global/ExistenceCheckThread.h
+    ../Global/ProcInfo.h
 
 
 
