@@ -31,7 +31,7 @@
 
 #include <QThread>
 
-class QString;
+#include "Engine/EngineFwd.h"
 
 struct ExistenceCheckerThreadPrivate;
 class ExistenceCheckerThread : public QThread
