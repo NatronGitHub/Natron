@@ -120,8 +120,8 @@ else
     SPEC=macx-g++
 fi
 
-if [ "$DISABLE_BREAKPAD" != "1" ]; then
-    QMAKE_BREAKPAD="CONFIG+=gbreakpad"
+if [ "$DISABLE_BREAKPAD" = "1" ]; then
+    QMAKE_BREAKPAD="CONFIG+=disable-breakpad"
 fi
 
 $QTDIR/bin/qmake -r -spec "$SPEC" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" ${EXTRA_QMAKE_FLAG} CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions CONFIG+=silent CONFIG+=$CONFIG $QMAKEEXTRAFLAGS $QMAKE_BREAKPAD || exit 1

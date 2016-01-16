@@ -461,3 +461,10 @@ if [ "$STRIP" = 1 ]; then
         fi
     done
 fi
+
+if [ "$DISABLE_BREAKPAD" != "1" ]; then
+    mv "$package/Contents/MacOS/Natron" "$package/Contents/MacOS/Natron-bin" || exit 1
+    mv "$package/Contents/MacOS/NatronCrashReporter" "$package/Contents/MacOS/Natron" || exit 1
+    mv "$package/Contents/MacOS/NatronRenderer" "$package/Contents/MacOS/NatronRenderer-bin" || exit 1
+    mv "$package/Contents/MacOS/NatronRendererCrashReporter" "$package/Contents/MacOS/NatronRenderer" || exit 1
+fi
