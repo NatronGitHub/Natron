@@ -61,6 +61,7 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include <QStringList>
 #include <QString>
 #include <QVarLengthArray>
+#include <QSettings>
 
 #ifdef DEBUG
 #include <QTextStream>
@@ -133,10 +134,8 @@ CallbacksManager::CallbacksManager()
 , _comServer(0)
 , _comPipeConnection(0)
 , _uploadReply(0)
-#ifdef REPORTER_CLI_ONLY
-, _autoUpload(true)
-#else
-, _autoUpload(false)
+, _dumpReceived(false)
+#ifndef REPORTER_CLI_ONLY
 , _dialog(0)
 , _progressDialog(0)
 #endif
@@ -229,10 +228,21 @@ void
 CallbacksManager::init(int& argc, char** argv)
 {
 #ifdef NATRON_USE_BREAKPAD
-    const bool enableBreakpad = true;
+    bool enableBreakpad = true;
 #else
-    const bool enableBreakpad = false;
+    bool enableBreakpad = false;
 #endif
+    
+    /*
+     Check the value of the "Enable crash reports" parameter of the preferences of Natron
+     */
+    QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
+    if (settings.contains("enableCrashReports")) {
+        bool userEnableCrashReports = settings.value("enableCrashReports").toBool();
+        if (!userEnableCrashReports) {
+            enableBreakpad = false;
+        }
+    }
     
 #ifndef Q_OS_LINUX
 #if !defined(Q_OS_MAC) && !defined(Q_OS_WIN)
@@ -294,18 +304,20 @@ CallbacksManager::init(int& argc, char** argv)
     for (int i = 0; i < argc; ++i) {
         processArgs.push_back(QString(argv[i]));
     }
-    processArgs.push_back(QString("--" NATRON_BREAKPAD_PROCESS_EXEC));
-    processArgs.push_back(crashReporterBinaryFilePath);
-    processArgs.push_back(QString("--" NATRON_BREAKPAD_PROCESS_PID));
-    qint64 crashReporterPid = _app->applicationPid();
-    QString pidStr = QString::number(crashReporterPid);
-    processArgs.push_back(pidStr);
-    processArgs.push_back(QString("--" NATRON_BREAKPAD_CLIENT_FD_ARG));
-    processArgs.push_back(QString::number(-1));
-    processArgs.push_back(QString("--" NATRON_BREAKPAD_PIPE_ARG));
-    processArgs.push_back(_pipePath);
-    processArgs.push_back(QString("--" NATRON_BREAKPAD_COM_PIPE_ARG));
-    processArgs.push_back(_comPipePath);
+    if (enableBreakpad) {
+        processArgs.push_back(QString("--" NATRON_BREAKPAD_PROCESS_EXEC));
+        processArgs.push_back(crashReporterBinaryFilePath);
+        processArgs.push_back(QString("--" NATRON_BREAKPAD_PROCESS_PID));
+        qint64 crashReporterPid = _app->applicationPid();
+        QString pidStr = QString::number(crashReporterPid);
+        processArgs.push_back(pidStr);
+        processArgs.push_back(QString("--" NATRON_BREAKPAD_CLIENT_FD_ARG));
+        processArgs.push_back(QString::number(-1));
+        processArgs.push_back(QString("--" NATRON_BREAKPAD_PIPE_ARG));
+        processArgs.push_back(_pipePath);
+        processArgs.push_back(QString("--" NATRON_BREAKPAD_COM_PIPE_ARG));
+        processArgs.push_back(_comPipePath);
+    }
     
     _natronProcess->start(natronBinaryPath, processArgs);
     
@@ -350,24 +362,25 @@ CallbacksManager::init(int& argc, char** argv)
             argvChild[i] = strdup(argv[i]);
         }
         
-        
-        argvChild.push_back(strdup("--" NATRON_BREAKPAD_PROCESS_EXEC));
-        argvChild.push_back(qstringToMallocCharArray(crashReporterBinaryFilePath));
-        
-        argvChild.push_back(QString("--" NATRON_BREAKPAD_PROCESS_PID));
-        QString pidStr = QString::number((qint64)getpid());
-        argvChild.push_back(pidStr);
-        
-        argvChild.push_back(strdup("--" NATRON_BREAKPAD_CLIENT_FD_ARG));
-        {
-            char pipe_fd_string[8];
-            sprintf(pipe_fd_string, "%d", _clientFD);
-            argvChild.push_back(pipe_fd_string);
+        if (enableBreakpad) {
+            argvChild.push_back(strdup("--" NATRON_BREAKPAD_PROCESS_EXEC));
+            argvChild.push_back(qstringToMallocCharArray(crashReporterBinaryFilePath));
+            
+            argvChild.push_back(QString("--" NATRON_BREAKPAD_PROCESS_PID));
+            QString pidStr = QString::number((qint64)getpid());
+            argvChild.push_back(pidStr);
+            
+            argvChild.push_back(strdup("--" NATRON_BREAKPAD_CLIENT_FD_ARG));
+            {
+                char pipe_fd_string[8];
+                sprintf(pipe_fd_string, "%d", _clientFD);
+                argvChild.push_back(pipe_fd_string);
+            }
+            argvChild.push_back(strdup("--" NATRON_BREAKPAD_PIPE_ARG));
+            argvChild.push_back(qstringToMallocCharArray(_pipePath));
+            argvChild.push_back(strdup("--" NATRON_BREAKPAD_COM_PIPE_ARG));
+            argvChild.push_back(qstringToMallocCharArray(_comPipePath));
         }
-        argvChild.push_back(strdup("--" NATRON_BREAKPAD_PIPE_ARG));
-        argvChild.push_back(qstringToMallocCharArray(_pipePath));
-        argvChild.push_back(strdup("--" NATRON_BREAKPAD_COM_PIPE_ARG));
-        argvChild.push_back(qstringToMallocCharArray(_comPipePath));
         
         execv(natronBinaryPath.toStdString().c_str(),&argvChild.front());
         execOK = false;
@@ -376,7 +389,7 @@ CallbacksManager::init(int& argc, char** argv)
         ss << "Forked process failed to execute " << natronBinaryPath.toStdString() << " make sure it exists.";
         throw std::runtime_error(ss.str());
         return;
-    }
+    } // child process
 
     /*
      Finally, now that we are in the crash reporter process, create the qApp object
@@ -399,8 +412,10 @@ CallbacksManager::onSpawnedProcessFinished(int exitCode, QProcess::ExitStatus st
     }
     qDebug() << "Spawned process" << code << "with exit code:" << exitCode;
     
-    //Exit the event loop, which will eventually kill us and finish this program
-    _app->exit(retCode);
+    if (!_dumpReceived) {
+        //Exit the event loop, which will eventually kill us and finish this program
+        _app->exit(retCode);
+    }
 }
 
 void
@@ -429,7 +444,7 @@ CallbacksManager::onSpawnedProcessError(QProcess::ProcessError error)
             break;
     }
   
-    if (mustExit) {
+    if (mustExit && !_dumpReceived) {
         //Exit the event loop, which will eventually kill us and finish this program
         _app->exit(1);
     }
@@ -490,11 +505,15 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     _progressDialog->setMinimumDuration(100);
     _progressDialog->setLabelText(tr("Uploading crash report..."));
     QObject::connect(_progressDialog, SIGNAL(canceled()), this, SLOT(onProgressDialogCanceled()));
+#else
+    std::cerr << tr("Crash report received and located in: ").toStdString() << std::endl;
+    std::cerr << filepath.toStdString() << std::endl;
+    std::cerr << tr("Uploading crash report...").toStdString() << std::endl;
 #endif
     
     QFileInfo finfo(filepath);
     if (!finfo.exists()) {
-        std::cerr << "Dump File (" << filepath.toStdString() << ") does not exist" << std::endl;
+        std::cerr << tr("Dump File (").toStdString() << filepath.toStdString() << tr(") does not exist").toStdString() << std::endl;
         return;
     }
     
@@ -560,6 +579,9 @@ CallbacksManager::replyFinished() {
     }
     
     QByteArray reply = _uploadReply->readAll();
+    while (reply.endsWith('\n')) {
+        reply.chop(1);
+    }
     QString successStr("File uploaded successfully!\n" + QString(reply));
     
 #ifndef REPORTER_CLI_ONLY
@@ -710,10 +732,11 @@ CallbacksManager::onDoDumpOnMainThread(const QString& filePath)
 
     assert(QThread::currentThread() == qApp->thread());
 
+    _dumpReceived = true;
+    
 #ifdef REPORTER_CLI_ONLY
-    if (_autoUpload) {
-        uploadFileToRepository(filePath,"Crash auto-uploaded from NatronRenderer");
-    }
+    uploadFileToRepository(filePath,"Crash auto-uploaded from NatronRenderer");
+    
     ///@todo We must notify the user the log is available at filePath but we don't have access to the terminal with this process
 #else
     assert(!_dialog);

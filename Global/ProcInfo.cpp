@@ -24,6 +24,7 @@
 
 #include <QDir>
 #include <QStringList>
+#include <QDebug>
 
 namespace {
 
@@ -309,9 +310,11 @@ QString applicationDirPath(const char* argv0Param)
     return filePath.mid(0, foundSlash);
 }
     
-bool checkIfProcessIsRunning(const char* processAbsoluteFilePath, Q_PID pid)
+bool checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/, Q_PID /*pid*/)
 {
-
+    //Not working yet
+    return true;
+#if 0
 #ifdef __NATRON_WIN32__
     DWORD dwExitCode = 9999;
     //See https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=12&checkda=1&ct=1451385015&rver=6.0.5276.0&wp=MCMBI&wlcxt=msdn%24msdn%24msdn&wreply=https%3a%2f%2fmsdn.microsoft.com%2fen-us%2flibrary%2fwindows%2fdesktop%2fms683189%2528v%3dvs.85%2529.aspx&lc=1033&id=254354&mkt=en-US
@@ -386,6 +389,7 @@ bool checkIfProcessIsRunning(const char* processAbsoluteFilePath, Q_PID pid)
         
     }
     return false;
+#endif
 #endif
 } // checkIfProcessIsRunning
 

@@ -157,7 +157,7 @@ private:
     QLocalSocket* _comPipeConnection;
 
     QNetworkReply* _uploadReply;
-    bool _autoUpload;
+    bool _dumpReceived;
 #ifndef REPORTER_CLI_ONLY
     CrashDialog* _dialog;
     QProgressDialog* _progressDialog;

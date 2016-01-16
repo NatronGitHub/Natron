@@ -169,6 +169,8 @@ public:
     bool isCheckForUpdatesEnabled() const;
 
     void setCheckUpdatesEnabled(bool enabled);
+    
+    bool isCrashReportingEnabled() const;
 
     int getMaxPanelsOpened() const;
 
@@ -369,6 +371,7 @@ private:
     boost::shared_ptr<KnobBool> _natronSettingsExist;
   
     boost::shared_ptr<KnobBool> _checkForUpdates;
+    boost::shared_ptr<KnobBool> _enableCrashReports;
     boost::shared_ptr<KnobBool> _notifyOnFileChange;
     boost::shared_ptr<KnobInt> _autoSaveDelay;
     boost::shared_ptr<KnobBool> _linearPickers;

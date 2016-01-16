@@ -133,6 +133,17 @@ Settings::initializeKnobsGeneral()
     _checkForUpdates->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " will check for new updates on start-up of the application.");
     _generalTab->addKnob(_checkForUpdates);
     
+    _enableCrashReports = Natron::createKnob<KnobBool>(this, "Enable crash reporting");
+    _enableCrashReports->setName("enableCrashReports");
+    _enableCrashReports->setAnimationEnabled(false);
+    _enableCrashReports->setHintToolTip("When checked, if " NATRON_APPLICATION_NAME "crashes a window will pop-up asking you "
+                                        "whether you want to upload the crash dump to the developers or not. "
+                                        "This can help them track down the bug.\n"
+                                        "If you need to turn the crash reporting system off, uncheck this.\n"
+                                        "Note that when using the application in command-line mode, if crash reports are "
+                                        "enabled, they will be automatically uploaded.\n"
+                                        "Changing this requires a restart of the application to take effect.");
+    
     _notifyOnFileChange = Natron::createKnob<KnobBool>(this, "Warn when a file changes externally");
     _notifyOnFileChange->setName("warnOnExternalChange");
     _notifyOnFileChange->setAnimationEnabled(false);
@@ -1333,6 +1344,7 @@ Settings::setDefaultValues()
     _systemFontChoice->setDefaultValue(0);
     _fontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
     _checkForUpdates->setDefaultValue(false);
+    _enableCrashReports->setDefaultValue(true);
     _notifyOnFileChange->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
@@ -2590,11 +2602,18 @@ Settings::isCheckForUpdatesEnabled() const
     return _checkForUpdates->getValue();
 }
 
+
 void
 Settings::setCheckUpdatesEnabled(bool enabled)
 {
     _checkForUpdates->setValue(enabled, 0);
     saveSetting(_checkForUpdates.get());
+}
+
+bool
+Settings::isCrashReportingEnabled() const
+{
+    return _enableCrashReports->getValue();
 }
 
 int
