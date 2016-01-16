@@ -34,6 +34,7 @@
 # MISC=1 : Enable misc plug
 # ARENA=1 : Enable arena plug
 # CV=1 : Enable cv plug
+# DISABLE_BREAKPAD=1: Disable automatic crash report
 # OFFLINE_INSTALLER=1: Build offline installer in addition to the online installer
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
@@ -139,7 +140,7 @@ if [ "$NOBUILD" != "1" ]; then
     if [ "$ONLY_PLUGINS" != "1" ]; then
         log="$LOGS/natron.$PKGOS$BIT.$TAG.log"
         echo -n "Building Natron (log in $log)..."
-        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER sh "$INC_PATH/scripts/build-natron.sh" $BRANCH >& "$log" || FAIL=1
+        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh "$INC_PATH/scripts/build-natron.sh" $BRANCH >& "$log" || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else
@@ -165,7 +166,7 @@ fi
 if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
     log="$LOGS/installer.$PKGOS$BIT.$TAG.log"
     echo -n "Building Packages (log in $log)... "
-    env OFFLINE=${OFFLINE_INSTALLER} NOTGZ=1 sh "$INC_PATH/scripts/build-installer.sh" $BRANCH >& "$log" || FAIL=1
+    env OFFLINE=${OFFLINE_INSTALLER} DISABLE_BREAKPAD=$DISABLE_BREAKPAD NOTGZ=1 sh "$INC_PATH/scripts/build-installer.sh" $BRANCH >& "$log" || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
     else

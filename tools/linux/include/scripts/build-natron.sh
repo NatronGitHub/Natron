@@ -25,6 +25,7 @@
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
+# DISABLE_BREAKPAD=1: Disable automatic crash report
 #Usage MKJOBS=4 BUILD_CONFIG=SNAPSHOT build-natron.sh workshop
 
 source `pwd`/common.sh || exit 1
@@ -171,13 +172,20 @@ if [ "$PYV" = "3" ]; then
     PYO="PYTHON_CONFIG=python3.4m-config"
 fi
 
-env CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo CONFIG+=gbreakpad CONFIG+=silent ${EXTRA_QMAKE_FLAG} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
+if [ "$DISABLE_BREAKPAD" = "1" ]; then
+    CONFIG_BREAKPAD_FLAG="CONFIG+=disable-breakpad"
+fi
+
+env CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${CONFIG_BREAKPAD_FLAG} CONFIG+=silent ${EXTRA_QMAKE_FLAG} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
 make -j${MKJOBS} || exit 1
 
-cp App/Natron-bin $INSTALL_PATH/bin/ || exit 1
-cp Renderer/NatronRenderer-bin $INSTALL_PATH/bin/ || exit 1
-cp CrashReporter/Natron $INSTALL_PATH/bin/ || exit 1
-cp CrashReporterCLI/NatronRenderer $INSTALL_PATH/bin/ || exit 1
+cp App/Natron $INSTALL_PATH/bin/ || exit 1
+cp Renderer/NatronRenderer $INSTALL_PATH/bin/ || exit 1
+
+if [ "$DISABLE_BREAKPAD" != "1" ]; then
+    cp CrashReporter/NatronCrashReporter $INSTALL_PATH/bin/ || exit 1
+    cp CrashReporterCLI/NatronRendererCrashReporter $INSTALL_PATH/bin/ || exit 1
+fi
 
 #If OpenColorIO-Configs do not exist, download them
 if [ ! -d "$SRC_PATH/OpenColorIO-Configs" ]; then
