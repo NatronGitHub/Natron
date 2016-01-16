@@ -93,7 +93,7 @@ AppManager* AppManager::_instance = 0;
 
 
 
-#ifdef NATRON_LINUX
+#ifdef __NATRON_LINUX__
 
 //namespace  {
 static void
