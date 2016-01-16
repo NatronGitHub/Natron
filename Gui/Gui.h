@@ -436,7 +436,7 @@ public:
     void disconnectViewersFromViewerCache();
 
     ///Close the application instance, asking questions to the user
-    bool closeInstance();
+    bool closeInstance(bool warnUserIfSaveNeeded);
 
     void checkNumberOfNonFloatingPanes();
 
@@ -532,7 +532,7 @@ public:
      * @brief Close project right away, without any user interaction.
      * @param quitApp If true, the application will exit, otherwise the main window will stay active.
      **/
-    bool abortProject(bool quitApp);
+    bool abortProject(bool quitApp, bool warnUserIfSaveNeeded);
     
     void setGuiAboutToClose(bool about);
     

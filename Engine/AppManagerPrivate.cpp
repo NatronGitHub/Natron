@@ -172,14 +172,13 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& 
 #endif
 
     /*
-     In background mode, if the crash reporter dies, we want the process to automatically.
-     In GUI mode, we let the process live but it will no longer have a crash handler
+     We check periodically that the crash reporter process is still alive. If the user killed it somehow, then we want
+     the Natron process to terminate
      */
-    if (appPTR->isBackground()) {
-        crashReporterComPipeConnection.reset(new QLocalSocket);
-        QObject::connect(crashReporterComPipeConnection.get(), SIGNAL(connected()), appPTR, SLOT(onBreakpadComPipeConnectionMade()));
-        crashReporterComPipeConnection->connectToServer(breakpadComPipePath, QLocalSocket::ReadWrite);
-    }
+    crashReporterComPipeConnection.reset(new QLocalSocket);
+    QObject::connect(crashReporterComPipeConnection.get(), SIGNAL(connected()), appPTR, SLOT(onBreakpadComPipeConnectionMade()));
+    crashReporterComPipeConnection->connectToServer(breakpadComPipePath, QLocalSocket::ReadWrite);
+    
 }
 
 void

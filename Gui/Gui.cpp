@@ -145,15 +145,15 @@ Gui::setLeftToolBarVisible(bool visible)
 
 
 bool
-Gui::closeInstance()
+Gui::closeInstance(bool warnUserIfSaveNeeded)
 {
-    return abortProject(true);
+    return abortProject(true, warnUserIfSaveNeeded);
 }
 
 void
 Gui::closeProject()
 {
-    closeInstance();
+    closeInstance(true);
 
     ///When closing a project we can remove the ViewerCache from memory and put it on disk
     ///since we're not sure it will be used right away
@@ -178,7 +178,7 @@ Gui::reloadProject()
     }
     projectPath.append(filename);
     
-    if (!abortProject(false)) {
+    if (!abortProject(false, true)) {
         return;
     }
    
@@ -204,9 +204,9 @@ Gui::notifyGuiClosing()
 }
 
 bool
-Gui::abortProject(bool quitApp)
+Gui::abortProject(bool quitApp, bool warnUserIfSaveNeeded)
 {
-    if ( getApp()->getProject()->hasNodes() ) {
+    if (getApp()->getProject()->hasNodes() && warnUserIfSaveNeeded) {
         int ret = saveWarning();
         if (ret == 0) {
             if ( !saveProject() ) {
@@ -261,7 +261,7 @@ Gui::closeEvent(QCloseEvent* e)
     if ( _imp->_appInstance->isClosing() ) {
         e->ignore();
     } else {
-        if ( !closeInstance() ) {
+        if ( !closeInstance(true) ) {
             e->ignore();
 
             return;
@@ -451,7 +451,7 @@ Gui::createMenuActions()
     _imp->actionExit = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionQuit, kShortcutDescActionQuit, this);
     _imp->actionExit->setMenuRole(QAction::QuitRole);
     _imp->actionExit->setIcon( get_icon("application-exit") );
-    QObject::connect( _imp->actionExit, SIGNAL( triggered() ), appPTR, SLOT( exitApp() ) );
+    QObject::connect( _imp->actionExit, SIGNAL( triggered() ), appPTR, SLOT( exitAppWithSaveWarning() ) );
 
     _imp->actionProject_settings = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionProjectSettings, kShortcutDescActionProjectSettings, this);
     _imp->actionProject_settings->setIcon( get_icon("document-properties") );

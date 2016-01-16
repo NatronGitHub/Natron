@@ -440,7 +440,7 @@ GuiApplicationManager::onLoadCompleted()
 }
 
 void
-GuiApplicationManager::exitApp()
+GuiApplicationManager::exitApp(bool warnUserForSave)
 {
     ///make a copy of the map because it will be modified when closing projects
     std::map<int,AppInstanceRef> instances = getAppInstances();
@@ -458,7 +458,7 @@ GuiApplicationManager::exitApp()
         GuiAppInstance* app = guiApps.front();
         if (app) {
             triedInstances.insert(app);
-            app->getGui()->closeInstance();
+            app->getGui()->closeInstance(warnUserForSave);
         }
         
         //refreshg ui instances

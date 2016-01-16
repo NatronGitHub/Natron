@@ -1265,14 +1265,14 @@ GuiAppInstance::loadProject(const std::string& filename)
 bool
 GuiAppInstance::resetProject()
 {
-    return _imp->_gui->abortProject(false);
+    return _imp->_gui->abortProject(false, true);
 }
 
 ///Reset + close window, quit if last window
 bool
 GuiAppInstance::closeProject()
 {
-    return _imp->_gui->abortProject(true);
+    return _imp->_gui->abortProject(true, true);
 }
 
 ///Opens a new window

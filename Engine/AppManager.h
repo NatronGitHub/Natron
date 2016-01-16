@@ -453,13 +453,17 @@ public:
     void requestOFXDIalogOnMainThread(Natron::OfxImageEffectInstance* instance, void* instanceData);
     
     
+    ///Closes the application not saving any projects.
+    virtual void exitApp(bool warnUserForSave);
+    
 public Q_SLOTS:
     
-
+    void exitAppWithSaveWarning()
+    {
+        exitApp(true);
+    }
+    
     void toggleAutoHideGraphInputs();
-
-    ///Closes the application not saving any projects.
-    virtual void exitApp();
 
     void clearPlaybackCache();
 

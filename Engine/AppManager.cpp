@@ -1992,7 +1992,7 @@ AppManager::clearOfxLog_mt_safe()
 }
 
 void
-AppManager::exitApp()
+AppManager::exitApp(bool /*warnUserForSave*/)
 {
     const std::map<int,AppInstanceRef> & instances = getAppInstances();
 
@@ -2665,7 +2665,7 @@ AppManager::onCrashReporterNoLongerResponding()
 {
 #ifdef NATRON_USE_BREAKPAD
     //Crash reporter seems to no longer exist, quit
-    exitApp();
+    exitApp(false);
 #endif
 }
 

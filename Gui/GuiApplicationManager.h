@@ -178,6 +178,9 @@ public:
     
     virtual int getAppFontSize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
+    ///Closes the application, asking the user to save each opened project that has unsaved changes
+    virtual void exitApp(bool warnUserForSave) OVERRIDE FINAL;
+    
     bool isNodeClipBoardEmpty() const;
     
     NodeClipBoard& getNodeClipBoard();
@@ -216,10 +219,6 @@ public:
     }
 
 public Q_SLOTS:
-
-
-    ///Closes the application, asking the user to save each opened project that has unsaved changes
-    virtual void exitApp() OVERRIDE FINAL;
     
     void onFontconfigCacheUpdateFinished();
 
