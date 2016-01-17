@@ -629,6 +629,9 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             case NATRON_PIXMAP_LINK_CURSOR:
                 path = NATRON_IMAGES_PATH "linkCursor.png";
                 break;
+            case NATRON_PIXMAP_LINK_MULT_CURSOR:
+                path = NATRON_IMAGES_PATH "linkMultCursor.png";
+                break;
             case NATRON_PIXMAP_ENTER_GROUP:
                 path = NATRON_IMAGES_PATH "enter_group.png";
                 break;

@@ -39,6 +39,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QDrag>
 #include <QPainter>
 #include <QMimeData>
+#include <QKeyEvent>
 CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Project.h"
@@ -58,7 +59,32 @@ AnimationButton::mousePressEvent(QMouseEvent* e)
         _dragPos = e->pos();
         _dragging = true;
     }
+
     QPushButton::mousePressEvent(e);
+}
+
+void
+AnimationButton::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Control) {
+        QPixmap p;
+        appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
+        QCursor c(p);
+        setCursor(c);
+    }
+    QPushButton::keyPressEvent(e);
+}
+
+void
+AnimationButton::keyReleaseEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Control) {
+        QPixmap p;
+        appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_CURSOR, &p);
+        QCursor c(p);
+        setCursor(c);
+    }
+    QPushButton::keyReleaseEvent(e);
 }
 
 void
@@ -81,6 +107,7 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
         boost::shared_ptr<NodeCollection> group = effect->getNode()->getGroup();
         NodeGroup* isGroup = dynamic_cast<NodeGroup*>(group.get());
         
+        
         std::stringstream expr;
         if (isGroup) {
             expr << "thisGroup.";
@@ -88,11 +115,13 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
             expr << effect->getApp()->getAppIDString() << ".";
         }
         expr << effect->getNode()->getScriptName_mt_safe() << "." << _knob->getKnob()->getName()
-        << ".get()";
-        if (_knob->getKnob()->getDimension() > 1) {
-            expr << "[dimension]";
-        }
+        << ".getValue(dimension)";
 
+        Qt::KeyboardModifiers modifiers = qApp->keyboardModifiers();
+        bool useMult = modifiers.testFlag(Qt::ControlModifier);
+        if (useMult) {
+            expr << " * curve(frame,dimension)";
+        }
 
         // initiate Drag
 
@@ -177,7 +206,12 @@ AnimationButton::enterEvent(QEvent* /*e*/)
 {
     if (cursor().shape() != Qt::OpenHandCursor) {
         QPixmap p;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_CURSOR, &p);
+        Qt::KeyboardModifiers modifiers = qApp->keyboardModifiers();
+        if (modifiers.testFlag(Qt::ControlModifier)) {
+            appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
+        } else {
+            appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_CURSOR, &p);
+        }
         QCursor c(p);
         setCursor(c);
     }

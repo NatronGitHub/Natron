@@ -1545,7 +1545,11 @@ static void extractParameters(std::size_t startParenthesis, std::size_t endParen
             if (str.at(i) == '(') {
                 ++insideParenthesis;
             } else if (str.at(i) == ')') {
-                --insideParenthesis;
+                if (insideParenthesis > 0) {
+                    --insideParenthesis;
+                } else {
+                    break;
+                }
             }
         }
         params->push_back(curParam);

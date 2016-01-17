@@ -89,6 +89,8 @@ private:
     virtual void dropEvent(QDropEvent* e);
     virtual void enterEvent(QEvent* e);
     virtual void leaveEvent(QEvent* e);
+    virtual void keyPressEvent(QKeyEvent* e);
+    virtual void keyReleaseEvent(QKeyEvent* e);
     QPoint _dragPos;
     bool _dragging;
     KnobGui* _knob;
