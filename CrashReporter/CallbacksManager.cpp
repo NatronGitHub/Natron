@@ -957,7 +957,7 @@ static QString getTempDirPath()
 #else
     QString ret;
     wchar_t tempPath[MAX_PATH];
-    DWORD len = GetTempPath(MAX_PATH, tempPath);
+    DWORD len = GetTempPathW(MAX_PATH, tempPath);
     if (len)
         ret = QString::fromWCharArray(tempPath, len);
     if (!ret.isEmpty()) {

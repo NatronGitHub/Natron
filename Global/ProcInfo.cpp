@@ -155,7 +155,7 @@ static QString applicationFileName()
     // file path limit, and we handle it normally, if the result is MAX_PATH + 1, we use
     // heap (even if the result _might_ be exactly MAX_PATH + 1, but that's ok).
     wchar_t buffer[MAX_PATH + 2];
-    DWORD v = GetModuleFileName(0, buffer, MAX_PATH + 1);
+    DWORD v = GetModuleFileNameW(0, buffer, MAX_PATH + 1);
     buffer[MAX_PATH + 1] = 0;
 
     if (v == 0)
@@ -172,7 +172,7 @@ static QString applicationFileName()
         size = MAX_PATH * i;
         b = reinterpret_cast<wchar_t *>(realloc(b, (size + 1) * sizeof(wchar_t)));
         if (b)
-            v = GetModuleFileName(NULL, b, size);
+            v = GetModuleFileNameW(NULL, b, size);
     } while (b && v == size);
 
     if (b)
