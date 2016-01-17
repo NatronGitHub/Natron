@@ -2454,6 +2454,60 @@ Node::setScriptName_no_error_check(const std::string & name)
 }
 
 
+struct KnobDimension
+{
+    KnobI* knob;
+    int dim;
+};
+struct KnobDimensionCompare
+{
+    bool operator() (const KnobDimension & lhs,
+                     const KnobDimension & rhs) const
+    {
+        if (lhs.knob < rhs.knob) {
+            return true;
+        } else if (lhs.knob > rhs.knob) {
+            return false;
+        } else {
+            if (lhs.dim < rhs.dim) {
+                return true;
+            } else if (lhs.dim > rhs.dim) {
+                return false;
+            } else {
+                return false;
+            }
+        }
+    }
+};
+
+typedef std::set<KnobDimension, KnobDimensionCompare> KnobDimSet;
+
+
+static void insertDependenciesRecursive(Node* node, KnobDimSet* dependencies)
+{
+    const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getKnobs();
+    for (std::size_t i = 0; i < knobs.size(); ++i) {
+        for (int d = 0; d < knobs[i]->getDimension(); ++d) {
+            std::list<std::pair<KnobI*,int> > dimDeps;
+            knobs[i]->getExpressionDependencies(d, dimDeps);
+            for (std::list<std::pair<KnobI*,int> >::iterator it = dimDeps.begin(); it!=dimDeps.end();++it) {
+                KnobDimension kd;
+                kd.knob = it->first;
+                kd.dim = it->second;
+                dependencies->insert(kd);
+            }
+        }
+    }
+    
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+    if (isGroup) {
+        NodeList nodes = isGroup->getNodes();
+        for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+            insertDependenciesRecursive(it->get(), dependencies);
+        }
+    }
+}
+
 void
 Node::setNameInternal(const std::string& name, bool throwErrors, bool declareToPython)
 {
@@ -2545,40 +2599,10 @@ Node::setNameInternal(const std::string& name, bool throwErrors, bool declareToP
         
         
         ///For all knobs that have listeners, change in the expressions of listeners this knob script-name
-        const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
-        for (U32 i = 0; i < knobs.size(); ++i) {
-            std::list<boost::shared_ptr<KnobI> > listeners;
-            knobs[i]->getListeners(listeners);
-            for (std::list<boost::shared_ptr<KnobI> >::iterator it = listeners.begin(); it != listeners.end(); ++it) {
-                KnobHolder* holder = (*it)->getHolder();
-                if (!holder) {
-                    continue;
-                }
-                Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
-                if (!isEffect) {
-                    continue;
-                }
-                
-                isEffect->beginChanges();
-                for (int dim = 0; dim < (*it)->getDimension(); ++dim) {
-                    std::string hasExpr = (*it)->getExpression(dim);
-                    if (hasExpr.empty()) {
-                        continue;
-                    }
-                    bool hasRetVar = (*it)->isExpressionUsingRetVariable(dim);
-                    try {
-                        //Change in expressions the script-name
-                        QString estr(hasExpr.c_str());
-                        estr.replace(oldName.c_str(), newName.c_str());
-                        hasExpr = estr.toStdString();
-                        
-                        (*it)->setExpression(dim, hasExpr, hasRetVar);
-                    } catch (...) {
-                        
-                    }
-                }
-                isEffect->endChanges(true);
-            }
+        KnobDimSet dependencies;
+        insertDependenciesRecursive(this, &dependencies);
+        for (KnobDimSet::iterator it = dependencies.begin(); it!=dependencies.end(); ++it) {
+            it->knob->replaceNodeNameInExpression(it->dim,oldName,newName);
         }
     }
     

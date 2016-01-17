@@ -1638,6 +1638,11 @@ static bool parseTokenFrom(int fromDim,
     }
     
     std::stringstream ss;
+    /*
+     When replacing the getValue() (or similar function) call by addAsDepdendencyOf
+     the parameter prefixing the addAsDepdendencyOf will register itself its dimension params[dimensionParamPos] as a dependency of the expression
+     at the "fromDim" dimension of thisParam
+     */
     ss << ".addAsDependencyOf(" << fromDim << ",thisParam," <<  params[dimensionParamPos] << ")\n";
     std::string toInsert = ss.str();
     
@@ -1720,12 +1725,28 @@ KnobHelperPrivate::declarePythonVariables(bool addTab, int dim)
     if (appID != "app") {
         ss << tabStr << "app = " << appID << "\n";
     }
+    
+    
+    //Define all nodes reachable through expressions in the scope
+    
+    
+    
+    //Define all nodes in the same group reachable by their bare script-name
+    NodeList siblings = collection->getNodes();
+    for (NodeList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
+        if ((*it)->isActivated() && !(*it)->getParentMultiInstance()) {
+            std::string scriptName = (*it)->getScriptName_mt_safe();
+            std::string fullName = (*it)->getFullyQualifiedName();
+            ss << tabStr << scriptName << " = " << appID << "." << fullName << "\n";
+        }
+    }
+    
     if (isParentGrp) {
         ss << tabStr << "thisGroup = " << appID << "." << isParentGrp->getNode()->getFullyQualifiedName() << "\n";
     } else {
         ss << tabStr << "thisGroup = " << appID << "\n";
     }
-    ss << tabStr << "thisNode = " << appID << "." << node->getFullyQualifiedName() <<  "\n";
+    ss << tabStr << "thisNode = " << node->getScriptName_mt_safe() <<  "\n";
     
     ///Now define the variables in the scope
     ss << tabStr << "thisParam = thisNode." << name << "\n";
@@ -1736,31 +1757,21 @@ KnobHelperPrivate::declarePythonVariables(bool addTab, int dim)
         ss << tabStr << "dimension = " << dim << "\n";
     }
     
-    //Define all nodes reachable through expressions in the scope
-    std::string mustDeleteContainer;
-    if (isParentGrp) {
-        std::string containerName = isParentGrp->getNode()->getFullyQualifiedName();
-        ss << tabStr << containerName  << " = " << appID << "." <<  containerName  << "\n";
-    }
-    
-    NodeList siblings = collection->getNodes();
-    for (NodeList::iterator it = siblings.begin(); it != siblings.end(); ++it) {
-        if ((*it)->isActivated() && !(*it)->getParentMultiInstance()) {
-            std::string fullName = (*it)->getFullyQualifiedName();
-            ss << tabStr << fullName << " = " << appID << "." << fullName << "\n";
-        }
-    }
-    
+    //If this node is a group, also define all nodes inside the group, though they will be referencable via
+    //thisNode.childname but also with <NodeName.childname>
     NodeGroup* isHolderGrp = dynamic_cast<NodeGroup*>(effect);
     if (isHolderGrp) {
         NodeList children = isHolderGrp->getNodes();
         for (NodeList::iterator it = children.begin(); it != children.end(); ++it) {
             if ((*it)->isActivated() && !(*it)->getParentMultiInstance()) {
-                std::string name = (*it)->getFullyQualifiedName();
-                ss << tabStr << name << " = " << appID << "." << name << "\n";
+                std::string scriptName = (*it)->getScriptName_mt_safe();
+                std::string fullName = (*it)->getFullyQualifiedName();
+                ss << tabStr << node->getScriptName_mt_safe() << "." << scriptName << " = " << appID << "." << fullName << "\n";
             }
         }
     }
+    
+    
     return ss.str();
 }
 
@@ -1985,6 +1996,43 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
     
     //Notify the expr. has changed
     expressionChanged(dimension);
+}
+
+
+void
+KnobHelper::replaceNodeNameInExpression(int dimension,
+                                         const std::string& oldName,
+                                        const std::string& newName)
+{
+
+    assert(dimension >= 0 && dimension < _imp->dimension);
+    KnobHolder* holder = getHolder();
+    if (!holder) {
+        return;
+    }
+    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
+    if (!isEffect) {
+        return;
+    }
+    
+    isEffect->beginChanges();
+    std::string hasExpr = getExpression(dimension);
+    if (hasExpr.empty()) {
+        return;
+    }
+    bool hasRetVar = isExpressionUsingRetVariable(dimension);
+    try {
+        //Change in expressions the script-name
+        QString estr(hasExpr.c_str());
+        estr.replace(oldName.c_str(), newName.c_str());
+        hasExpr = estr.toStdString();
+        setExpression(dimension, hasExpr, hasRetVar);
+    } catch (...) {
+        
+    }
+    
+    isEffect->endChanges(true);
+    
 }
 
 bool
@@ -2527,19 +2575,22 @@ KnobHelper::slaveTo(int dimension,
         _imp->masters[dimension].first = otherDimension;
     }
     
-    KnobHelper* helper = dynamic_cast<KnobHelper*>( other.get() );
-    assert(helper);
+    KnobHelper* masterKnob = dynamic_cast<KnobHelper*>( other.get() );
+    assert(masterKnob);
+    if (!masterKnob) {
+        return false;
+    }
 
-    if (helper && helper->_signalSlotHandler && _signalSlotHandler) {
+    if (masterKnob->_signalSlotHandler && _signalSlotHandler) {
 
-        QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameSet(double,int,int,bool) ),
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameSet(double,int,int,bool) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double,int,int,bool) ), Qt::UniqueConnection );
-        QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameRemoved(double,int,int) ),
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameRemoved(double,int,int) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(double,int,int)),Qt::UniqueConnection );
         
-        QObject::connect( helper->_signalSlotHandler.get(), SIGNAL( keyFrameMoved(int,double,double) ),
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameMoved(int,double,double) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(int,double,double) ),Qt::UniqueConnection );
-        QObject::connect( helper->_signalSlotHandler.get(), SIGNAL(animationRemoved(int) ),
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(animationRemoved(int) ),
                          _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(int)),Qt::UniqueConnection );
         
     }
@@ -2570,8 +2621,8 @@ KnobHelper::slaveTo(int dimension,
     }
 
     ///Register this as a listener of the master
-    if (helper) {
-        helper->addListener(false,dimension, otherDimension, shared_from_this());
+    if (masterKnob) {
+        masterKnob->addListener(false,dimension, otherDimension, shared_from_this());
     }
     
     return true;
@@ -2959,36 +3010,46 @@ KnobHelper::cloneExpressionsAndCheckIfChanged(KnobI* other,int dimension)
 
 //The knob in parameter will "listen" to this knob. Hence this knob is a dependency of the knob in parameter.
 void
-KnobHelper::addListener(bool isExpression,int fromExprDimension,int thisDimension, const boost::shared_ptr<KnobI>& knob)
+KnobHelper::addListener(const bool isExpression,
+                        const int listenerDimension,
+                        const int listenedToDimension,
+                        const boost::shared_ptr<KnobI>& listener)
 {
-    assert(fromExprDimension != -1);
-    KnobHelper* slave = dynamic_cast<KnobHelper*>(knob.get());
-    assert(slave);
-
-    if ( slave && slave->getHolder() && slave->getSignalSlotHandler() && getSignalSlotHandler() ) {
-        slave->getHolder()->onKnobSlaved(slave, this,fromExprDimension,true );
+    assert(listenedToDimension >= 0 && listenedToDimension < _imp->dimension);
+    KnobHelper* listenerIsHelper = dynamic_cast<KnobHelper*>(listener.get());
+    assert(listenerIsHelper);
+    if (!listenerIsHelper) {
+        return;
     }
     
     bool alreadyListening = false;
-    if (slave && slave->_signalSlotHandler && _signalSlotHandler) {
+    if (listenerIsHelper->_signalSlotHandler && _signalSlotHandler) {
+        
+        
+        //Notify the holder one of its knob is now slaved
+        if (listenerIsHelper->getHolder()) {
+            listenerIsHelper->getHolder()->onKnobSlaved(listenerIsHelper, this,listenerDimension,true );
+        }
+        
+        
         // If this knob is already a dependency of the knob, don't reconnec
         for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->listeners.begin(); it!=_imp->listeners.end(); ++it) {
-            if (it->lock() == knob) {
+            if (it->lock() == listener) {
                 alreadyListening = true;
                 break;
             }
         }
         
         if (isExpression) {
-            
-            QMutexLocker k(&slave->_imp->expressionMutex);
-            slave->_imp->expressions[fromExprDimension].dependencies.push_back(std::make_pair(this,thisDimension));
+            QMutexLocker k(&listenerIsHelper->_imp->expressionMutex);
+            assert(listenerDimension >= 0 && listenerDimension < listenerIsHelper->_imp->dimension);
+            listenerIsHelper->_imp->expressions[listenerDimension].dependencies.push_back(std::make_pair(this,listenedToDimension));
         }
     }
-    if (knob.get() != this && !alreadyListening) {
+    if (listener.get() != this && !alreadyListening) {
         QWriteLocker l(&_imp->mastersMutex);
         
-        _imp->listeners.push_back(knob);
+        _imp->listeners.push_back(listener);
         
     }
     

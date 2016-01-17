@@ -352,12 +352,23 @@ AnimatedParam::getCurrentTime() const
 void
 Param::_addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension)
 {
-    boost::shared_ptr<KnobI> otherKnob = param->_knob.lock();
-    boost::shared_ptr<KnobI> thisKnob = _knob.lock();
-    if (otherKnob == thisKnob) {
+    
+    //from expr is in the dimension of expressionKnob
+    //thisDimension is in the dimesnion of getValueCallerKnob
+    
+    boost::shared_ptr<KnobI> expressionKnob = param->_knob.lock();
+    boost::shared_ptr<KnobI> getValueCallerKnob = _knob.lock();
+    if (fromExprDimension < 0 || fromExprDimension >= expressionKnob->getDimension()) {
         return;
     }
-    thisKnob->addListener(true,fromExprDimension, thisDimension, otherKnob);
+    if (thisDimension < 0 || thisDimension >= getValueCallerKnob->getDimension()) {
+        return;
+    }
+    if (getValueCallerKnob == expressionKnob) {
+        return;
+    }
+    
+    getValueCallerKnob->addListener(true,fromExprDimension, thisDimension, expressionKnob);
 }
 
 bool

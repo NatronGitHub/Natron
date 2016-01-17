@@ -566,6 +566,14 @@ public:
         setExpressionInternal(dimension, expression, hasRetVariable, true);
     }
     
+    /**
+     * @brief For each dimension, try to find in the expression, if set, the node name "oldName" and replace
+     * it by "newName"
+     **/
+    virtual void replaceNodeNameInExpression(int dimension,
+                                             const std::string& oldName,
+                                              const std::string& newName) = 0;
+    
     virtual void clearExpressionsResults(int dimension) = 0;
     
     virtual void clearExpression(int dimension,bool clearResults) = 0;
@@ -934,9 +942,15 @@ public:
     
     /**
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
-     * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
+     * is now listening to the values/keyframes of "this" either via a hard-link (slave/master) or via its expressions
+     * @param isExpression Is this listener listening through expressions or via a slave/master link
+     * @param listenerDimension The dimension of the listener that is listening to this knob
+     * @param listenedDimension The dimension of this knob that is listened to by the listener
      **/
-    virtual void addListener(bool isExpression,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) = 0;
+    virtual void addListener(const bool isExpression,
+                             const int listenerDimension,
+                             const int listenedToDimension,
+                             const boost::shared_ptr<KnobI>& listener) = 0;
     
     virtual void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const = 0;
     
@@ -1006,7 +1020,7 @@ public:
      * @brief Returns a list of all the knobs whose value depends upon this knob.
      **/
     virtual void getListeners(std::list<boost::shared_ptr<KnobI> > & listeners) const = 0;
-
+    
     /**
      * @brief Calls unSlave with a value changed reason of Natron::eValueChangedReasonUserEdited.
      **/
@@ -1190,6 +1204,9 @@ public:
     virtual bool isAnimated(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults) OVERRIDE FINAL;
+    virtual void replaceNodeNameInExpression(int dimension,
+                                            const std::string& oldName,
+                                            const std::string& newName) OVERRIDE FINAL;
     virtual void clearExpression(int dimension,bool clearResults) OVERRIDE FINAL;
     virtual std::string validateExpression(const std::string& expression,int dimension,bool hasRetVariable,
                                            std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
