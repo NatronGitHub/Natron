@@ -234,9 +234,9 @@ fi
 
 
 #Do the same for crash reporter
-if [ -f "CrashReporter/NatronCrashReporter" ]; then
+if [ -f "CrashReporter/NatronCrashReporter.app/Contents/MacOS/NatronCrashReporter" ]; then
     binary="${package}/Contents/MacOS/NatronCrashReporter"
-    cp "CrashReporter/NatronCrashReporter" "$binary"
+    cp "CrashReporter/NatronCrashReporter.app/Contents/MacOS/NatronCrashReporter" "$binary"
     for f in $QT_LIBS; do
         install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
     done
