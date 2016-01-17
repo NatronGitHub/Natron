@@ -1204,7 +1204,7 @@ struct RotoStrokeItemPrivate
     /**
      * @brief A list of all storkes contained in this item. Basically each time penUp() is called it makes a new stroke
      **/
-    std::list<StrokeCurves> strokes;
+    std::vector<StrokeCurves> strokes;
     double curveT0; // timestamp of the first point in curve
     double lastTimestamp;
     RectD bbox;

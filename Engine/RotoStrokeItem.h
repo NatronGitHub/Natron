@@ -106,7 +106,10 @@ public:
 
     
     
-    bool getMostRecentStrokeChangesSinceAge(double time,int lastAge, std::list<std::pair<Natron::Point,double> >* points,
+    bool getMostRecentStrokeChangesSinceAge(double time,
+                                            int lastAge,
+                                            int lastMultiStrokeIndex,
+                                            std::list<std::pair<Natron::Point,double> >* points,
                                             RectD* pointsBbox,
                                             RectD* wholeStrokeBbox,
                                             int* newAge,
@@ -147,6 +150,7 @@ private:
     
     RectD computeBoundingBox(double time) const;
     
+    RectD computeBoundingBoxInternal(double time) const;
     
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };

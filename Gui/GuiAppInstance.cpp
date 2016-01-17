@@ -1202,8 +1202,8 @@ GuiAppInstance::setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopai
     {
         QMutexLocker k(&_imp->rotoDataMutex);
         
-        if (isPainting && (rotopaintNode != _imp->rotoData.rotoPaintNode ||
-            stroke != _imp->rotoData.stroke)) {
+        bool newStroke = stroke != _imp->rotoData.stroke;
+        if (isPainting && (rotopaintNode != _imp->rotoData.rotoPaintNode || newStroke)) {
             _imp->rotoData.strokeImage.reset();
         }
         
@@ -1213,9 +1213,12 @@ GuiAppInstance::setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopai
             _imp->rotoData.stroke = stroke;
         }
         
-        
-        //Reset the index
-        _imp->rotoData.lastStrokeIndex = -1;
+        //Reset the index if the stroke is different
+        if (newStroke) {
+            _imp->rotoData.lastStrokeIndex = -1;
+            _imp->rotoData.multiStrokeIndex = 0;
+        }
+
         if (rotopaintNode) {
             _imp->rotoData.turboAlreadyActiveBeforePainting = _imp->_gui->isGUIFrozen();
         }

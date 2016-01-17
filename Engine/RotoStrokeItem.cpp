@@ -567,7 +567,9 @@ RotoStrokeItem::getWholeStrokeRoDWhilePainting() const
 }
 
 bool
-RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,int lastAge,
+RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
+                                                   int lastAge,
+                                                   int lastMultiStrokeIndex,
                                                    std::list<std::pair<Natron::Point,double> >* points,
                                                    RectD* pointsBbox,
                                                    RectD* wholeStrokeBbox,
@@ -588,15 +590,34 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,int lastAge,
     
     QMutexLocker k(&itemMutex);
     assert(!_imp->strokes.empty());
-    RotoStrokeItemPrivate::StrokeCurves& stroke = _imp->strokes.back();
-    *strokeIndex = (int)_imp->strokes.size() - 1;
-    assert(stroke.xCurve->getKeyFramesCount() == stroke.yCurve->getKeyFramesCount() && stroke.xCurve->getKeyFramesCount() == stroke.pressureCurve->getKeyFramesCount());
+    assert(lastMultiStrokeIndex >= 0 && lastMultiStrokeIndex < (int)_imp->strokes.size());
     
-  
+    RotoStrokeItemPrivate::StrokeCurves* stroke = 0;
     
-    KeyFrameSet xCurve = stroke.xCurve->getKeyFrames_mt_safe();
-    KeyFrameSet yCurve = stroke.yCurve->getKeyFrames_mt_safe();
-    KeyFrameSet pCurve = stroke.pressureCurve->getKeyFrames_mt_safe();
+    if (lastAge == _imp->strokes[lastMultiStrokeIndex].xCurve->getKeyFramesCount() - 1) {
+        //We rendered completly that stroke so far, pick the next one if there is
+        if (lastMultiStrokeIndex == _imp->strokes.size() - 1) {
+            //nothing to do
+            return false;
+        } else {
+            stroke = &_imp->strokes[lastMultiStrokeIndex + 1];
+            *strokeIndex = lastMultiStrokeIndex + 1;
+        }
+    } else {
+        stroke = &_imp->strokes[lastMultiStrokeIndex];
+        *strokeIndex = lastMultiStrokeIndex;
+    }
+    assert(stroke && stroke->xCurve->getKeyFramesCount() == stroke->yCurve->getKeyFramesCount() && stroke->xCurve->getKeyFramesCount() == stroke->pressureCurve->getKeyFramesCount());
+    
+    //We changed stroke index so far, reset the age
+    if (*strokeIndex != lastMultiStrokeIndex && lastAge != -1) {
+        lastAge = -1;
+        *wholeStrokeBbox = computeBoundingBoxInternal(time);
+    }
+    
+    KeyFrameSet xCurve = stroke->xCurve->getKeyFrames_mt_safe();
+    KeyFrameSet yCurve = stroke->yCurve->getKeyFrames_mt_safe();
+    KeyFrameSet pCurve = stroke->pressureCurve->getKeyFrames_mt_safe();
     
     if (xCurve.empty()) {
         return false;
@@ -653,7 +674,7 @@ RotoStrokeItem::clone(const RotoItem* other)
     {
         QMutexLocker k(&itemMutex);
         _imp->strokes.clear();
-        for (std::list<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = otherStroke->_imp->strokes.begin();
+        for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = otherStroke->_imp->strokes.begin();
              it!=otherStroke->_imp->strokes.end(); ++it) {
             RotoStrokeItemPrivate::StrokeCurves s;
             s.xCurve.reset(new Curve);
@@ -683,7 +704,7 @@ RotoStrokeItem::save(RotoItemSerialization* obj) const
     {
         QMutexLocker k(&itemMutex);
         s->_brushType = (int)_imp->type;
-        for (std::list<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin();
+        for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin();
              it!=_imp->strokes.end(); ++it) {
             boost::shared_ptr<Curve> xCurve(new Curve);
             boost::shared_ptr<Curve> yCurve(new Curve);
@@ -733,9 +754,8 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
     
 }
 
-
 RectD
-RotoStrokeItem::computeBoundingBox(double time) const
+RotoStrokeItem::computeBoundingBoxInternal(double time) const
 {
     RectD bbox;
     
@@ -743,12 +763,11 @@ RotoStrokeItem::computeBoundingBox(double time) const
     getTransformAtTime(time, &transform);
     bool pressureAffectsSize = getPressureSizeKnob()->getValueAtTime(time);
     
-    QMutexLocker k(&itemMutex);
     bool bboxSet = false;
     
     double halfBrushSize = getBrushSizeKnob()->getValueAtTime(time) / 2. + 1;
     
-    for (std::list<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
+    for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
         KeyFrameSet xCurve = it->xCurve->getKeyFrames_mt_safe();
         KeyFrameSet yCurve = it->yCurve->getKeyFrames_mt_safe();
         KeyFrameSet pCurve = it->pressureCurve->getKeyFrames_mt_safe();
@@ -838,9 +857,16 @@ RotoStrokeItem::computeBoundingBox(double time) const
                 bbox.merge(subBox);
             }
         }
-
+        
     }
     return bbox;
+}
+
+RectD
+RotoStrokeItem::computeBoundingBox(double time) const
+{
+    QMutexLocker k(&itemMutex);
+    return computeBoundingBoxInternal(time);
 }
 
 RectD
@@ -863,7 +889,7 @@ RotoStrokeItem::getXControlPoints() const
     assert(QThread::currentThread() == qApp->thread());
     std::list<boost::shared_ptr<Curve> > ret;
     QMutexLocker k(&itemMutex);
-    for (std::list<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin() ;it!=_imp->strokes.end(); ++it) {
+    for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin() ;it!=_imp->strokes.end(); ++it) {
         ret.push_back(it->xCurve);
     }
     return ret;
@@ -875,7 +901,7 @@ RotoStrokeItem::getYControlPoints() const
     assert(QThread::currentThread() == qApp->thread());
     std::list<boost::shared_ptr<Curve> > ret;
     QMutexLocker k(&itemMutex);
-    for (std::list<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin() ;it!=_imp->strokes.end(); ++it) {
+    for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin() ;it!=_imp->strokes.end(); ++it) {
         ret.push_back(it->xCurve);
     }
     return ret;
@@ -892,7 +918,7 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel, double time, std::list<
     getTransformAtTime(time, &transform);
     
     bool bboxSet = false;
-    for (std::list<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin() ;it != _imp->strokes.end(); ++it) {
+    for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin() ;it != _imp->strokes.end(); ++it) {
         KeyFrameSet xSet,ySet,pSet;
         {
             QMutexLocker k(&itemMutex);

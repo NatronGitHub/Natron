@@ -512,22 +512,42 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                     throw std::logic_error("ViewerParallelRenderArgsSetter(): getThreadLocalRotoPaintTreeNodes() failed");
                 }
                 
+                /*
+                 Take from the stroke all the points that were input by the user so far on the main thread and set them globally to the
+                 application. These data are the ones that are going to be used by any Roto related tool. We ensure that they all access
+                 the same data so we only access the real Roto datas now.
+                 */
+                
+                //The last points input by the user
                 std::list<std::pair<Natron::Point,double> > lastStrokePoints;
+                
+                //The stroke RoD so far
                 RectD wholeStrokeRod;
+                
+                //The bbox of the lastStrokePoints
                 RectD lastStrokeBbox;
+                
+                //The index in the stroke of the last point we have rendered and up to the new point we have rendered
                 int lastAge,newAge;
-                NodePtr mergeNode = activeStroke->getMergeNode();
+                
+                //get on the app object the last point index we have rendered on this stroke
                 lastAge = getApp()->getStrokeLastIndex();
+                
+                //Get the active paint stroke so far and its multi-stroke index
+                boost::shared_ptr<RotoStrokeItem> currentlyPaintedStroke;
+                int currentlyPaintedStrokeMultiIndex;
+                getApp()->getStrokeAndMultiStrokeIndex(&currentlyPaintedStroke, &currentlyPaintedStrokeMultiIndex);
+
+                
+                //If this crashes here that means the user could start a new stroke while this one is not done rendering.
+                assert(currentlyPaintedStroke == activeStroke);
+                
+                //the multi-stroke index in case of a stroke containing multiple strokes from the user
                 int strokeIndex;
-                if (activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod ,&newAge,&strokeIndex)) {
-#ifdef DEBUG
-                    boost::shared_ptr<RotoStrokeItem> currentlyPaintedStroke;
-                    int currentlyPaintedStrokeMultiIndex;
-                    getApp()->getStrokeAndMultiStrokeIndex(&currentlyPaintedStroke, &currentlyPaintedStrokeMultiIndex);
+                if (activeStroke->getMostRecentStrokeChangesSinceAge(time, lastAge, currentlyPaintedStrokeMultiIndex, &lastStrokePoints, &lastStrokeBbox, &wholeStrokeRod ,&newAge,&strokeIndex)) {
+                
+
                     
-                    //If this crashes here that means the user could start a new stroke while this one is not done rendering.
-                    assert(currentlyPaintedStrokeMultiIndex == strokeIndex && currentlyPaintedStroke == activeStroke);
-#endif
                     getApp()->updateLastPaintStrokeData(newAge, lastStrokePoints, lastStrokeBbox, strokeIndex);
                     for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
                         (*it)->prepareForNextPaintStrokeRender();

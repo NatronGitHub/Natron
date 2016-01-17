@@ -604,15 +604,55 @@ Image::printUnrenderedPixels(const RectI& roi) const
     int roiw = roi.x2 - roi.x1;
     int boundsW = _bitmap.getBounds().width();
     
+    RectD bboxUnrendered;
+    bboxUnrendered.setupInfinity();
+    RectD bboxUnavailable;
+    bboxUnavailable.setupInfinity();
+    
+    bool hasUnrendered = false;
+    bool hasUnavailable = false;
+    
     for (int y = roi.y1; y < roi.y2; ++y,
          bm += (boundsW - roiw)) {
         for (int x = roi.x1; x < roi.x2; ++x,++bm) {
             if (*bm == 0) {
-                qDebug() << '(' << x << ',' << y << ") = 0";
+                if (x < bboxUnrendered.x1) {
+                    bboxUnrendered.x1 = x;
+                }
+                if (x > bboxUnrendered.x2) {
+                    bboxUnrendered.x2 = x;
+                }
+                if (y < bboxUnrendered.y1) {
+                    bboxUnrendered.y1 = y;
+                }
+                if (y > bboxUnrendered.y2) {
+                    bboxUnrendered.y2 = y;
+                }
+                hasUnrendered = true;
             } else if (*bm == PIXEL_UNAVAILABLE) {
-                qDebug() << '(' << x << ',' << y << ") = PIXEL_UNAVAILABLE";
+                if (x < bboxUnavailable.x1) {
+                    bboxUnavailable.x1 = x;
+                }
+                if (x > bboxUnavailable.x2) {
+                    bboxUnavailable.x2 = x;
+                }
+                if (y < bboxUnavailable.y1) {
+                    bboxUnavailable.y1 = y;
+                }
+                if (y > bboxUnavailable.y2) {
+                    bboxUnavailable.y2 = y;
+                }
+                hasUnavailable = true;
             }
-        }
+        } // for x
+    } // for y
+    if (hasUnrendered) {
+        qDebug() << "Unrenderer pixels in the following region:";
+        bboxUnrendered.debug();
+    }
+    if (hasUnavailable) {
+        qDebug() << "Unavailable pixels in the following region:";
+        bboxUnavailable.debug();
     }
 }
 #endif
