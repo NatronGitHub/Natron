@@ -340,12 +340,11 @@ RotoPaint::isIdentity(double time,
     
     std::list<boost::shared_ptr<RotoDrawableItem> > items = node->getRotoContext()->getCurvesByRenderOrder();
     if (items.empty()) {
-        NodePtr input = node->getInput(0);
-        if (input) {
-            *inputNb = 0;
-            *inputTime = time;
-            return true;
-        }
+        
+        *inputNb = 0;
+        *inputTime = time;
+        return true;
+
     }
     return false;
 }
@@ -382,7 +381,19 @@ RotoPaint::render(const RenderActionArgs& args)
              plane != args.outputPlanes.end(); ++plane) {
             
             if (bgImg) {
-                plane->second->pasteFrom(*bgImg, args.roi, false);
+                
+                
+                if (bgImg->getComponents() != plane->second->getComponents()) {
+                    
+                    bgImg->convertToFormat(args.roi,
+                                           getApp()->getDefaultColorSpaceForBitDepth(bgImg->getBitDepth()),
+                                           getApp()->getDefaultColorSpaceForBitDepth(plane->second->getBitDepth()), 3
+                                           , false, false, plane->second.get());
+                } else {
+                    plane->second->pasteFrom(*bgImg, args.roi, false);
+                }
+                
+                
                 if (premultiply && plane->second->getComponents() == Natron::ImageComponents::getRGBAComponents()) {
                     plane->second->premultImage(args.roi);
                 }

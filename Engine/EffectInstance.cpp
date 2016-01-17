@@ -640,8 +640,16 @@ EffectInstance::getImage(int inputNb,
     
     ///If this is a mask, fetch the image from the effect indicated by the mask channel
     NodePtr maskInput;
-    channelForMask = getMaskChannel(inputNb, &maskComps, &maskInput);
-    if (maskInput && ( channelForMask != -1) ) {
+    if (isMask) {
+        if (!useRotoInput) {
+            channelForMask = getMaskChannel(inputNb, &maskComps, &maskInput);
+        } else {
+            channelForMask = 3; // default to alpha channel
+            maskInput = roto->getNode(); // set it to the RotoPaint node
+            maskComps = ImageComponents::getAlphaComponents();
+        }
+    }
+    if (maskInput && (channelForMask != -1)) {
         inputEffect = maskInput->getLiveInstance();
     }
 
