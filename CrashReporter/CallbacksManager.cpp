@@ -990,7 +990,7 @@ CallbacksManager::initCrashGenerationServer()
     QObject::connect(this, SIGNAL(doDumpCallBackOnMainThread(QString)), this, SLOT(onDoDumpOnMainThread(QString)));
 
 #ifdef Q_OS_LINUX
-    if (!google_breakpad::CrashGenerationServer::CreateReportChannel(&_serverFD, _clientFD)) {
+    if (!google_breakpad::CrashGenerationServer::CreateReportChannel(&_serverFD, &_clientFD)) {
         throw std::runtime_error("breakpad: Failure to create named pipe for the CrashGenerationServer (CreateReportChannel).");
         return;
     }
