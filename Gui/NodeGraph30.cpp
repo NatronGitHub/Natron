@@ -238,12 +238,16 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
 
     
     for (U32 i = 0; i < knobs.size(); ++i) {
-        std::list<boost::shared_ptr<KnobI> > listeners;
+        KnobI::ListenerDimsMap listeners;
         knobs[i]->getListeners(listeners);
         ///For all listeners make sure they belong to a node
         bool foundEffect = false;
-        for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
-            EffectInstance* isEffect = dynamic_cast<EffectInstance*>( (*it2)->getHolder() );
+        for (KnobI::ListenerDimsMap::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
+            boost::shared_ptr<KnobI> listener = it2->first.lock();
+            if (!listener) {
+                continue;
+            }
+            EffectInstance* isEffect = dynamic_cast<EffectInstance*>(listener->getHolder());
             if (!isEffect) {
                 continue;
             }
@@ -305,13 +309,17 @@ NodeGraph::deleteSelection()
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getNode()->getLiveInstance());
             
             for (U32 i = 0; i < knobs.size(); ++i) {
-                std::list<boost::shared_ptr<KnobI> > listeners;
+                KnobI::ListenerDimsMap listeners;
                 knobs[i]->getListeners(listeners);
 
                 ///For all listeners make sure they belong to a node
                 bool foundEffect = false;
-                for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
-                    EffectInstance* isEffect = dynamic_cast<EffectInstance*>( (*it2)->getHolder() );
+                for (KnobI::ListenerDimsMap::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
+                    boost::shared_ptr<KnobI> listener = it2->first.lock();
+                    if (!listener) {
+                        continue;
+                    }
+                    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(listener->getHolder() );
                     
                     if (!isEffect) {
                         continue;

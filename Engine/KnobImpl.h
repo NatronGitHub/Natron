@@ -1392,17 +1392,17 @@ Knob<T>::unSlave(int dimension,
         return;
     }
     std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
-    boost::shared_ptr<KnobHelper> helper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
+    boost::shared_ptr<KnobHelper> masterHelper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
 
-    if (helper->getSignalSlotHandler() && _signalSlotHandler) {
-        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double,int,int,bool) ),
+    if (masterHelper->getSignalSlotHandler() && _signalSlotHandler) {
+        QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double,int,int,bool) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double,int,int,bool) ) );
-        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(double,int,int) ),
+        QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(double,int,int) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(double,int,int)) );
         
-        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL( keyFrameMoved(int,double,double) ),
+        QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameMoved(int,double,double) ),
                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(int,double,double) ) );
-        QObject::disconnect( helper->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int) ),
+        QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int) ),
                          _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(int)) );
     }
 
@@ -1411,7 +1411,7 @@ Knob<T>::unSlave(int dimension,
     setEnabled(dimension, true);
     if (copyState) {
         ///clone the master
-        hasChanged |= cloneAndCheckIfChanged( master.second.get() );
+        hasChanged |= cloneAndCheckIfChanged(master.second.get());
     }
 
     if (_signalSlotHandler) {
@@ -1422,8 +1422,8 @@ Knob<T>::unSlave(int dimension,
     if (getHolder() && _signalSlotHandler) {
         getHolder()->onKnobSlaved( this, master.second.get(),dimension,false );
     }
-    if (helper) {
-        helper->removeListener(this);
+    if (masterHelper) {
+        masterHelper->removeListener(this, dimension);
     }
     if (hasChanged) {
         evaluateValueChange(dimension, getCurrentTime(), reason);

@@ -56,13 +56,15 @@ void
 KnobGui::onRemoveAliasLinkActionTriggered()
 {
     boost::shared_ptr<KnobI> thisKnob = getKnob();
-    std::list<boost::shared_ptr<KnobI> > listeners;
+    KnobI::ListenerDimsMap listeners;
     thisKnob->getListeners(listeners);
     boost::shared_ptr<KnobI> aliasMaster;
     boost::shared_ptr<KnobI> listener;
     if (!listeners.empty()) {
-        listener = listeners.front();
-        aliasMaster = listener->getAliasMaster();
+        listener = listeners.begin()->first.lock();
+        if (listener) {
+            aliasMaster = listener->getAliasMaster();
+        }
         if (aliasMaster != thisKnob) {
             aliasMaster.reset();
         }

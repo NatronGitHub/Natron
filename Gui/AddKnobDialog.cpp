@@ -472,11 +472,13 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         boost::shared_ptr<KnobI> isAlias;
         boost::shared_ptr<KnobI> listener;
         if (knob) {
-            std::list<boost::shared_ptr<KnobI> > listeners;
+            KnobI::ListenerDimsMap listeners;
             knob->getListeners(listeners);
             if (!listeners.empty()) {
-                listener = listeners.front();
-                isAlias = listener->getAliasMaster();
+                listener = listeners.begin()->first.lock();
+                if (listener) {
+                    isAlias = listener->getAliasMaster();
+                }
                 if (isAlias != knob) {
                     listener.reset();
                 }
@@ -1743,17 +1745,21 @@ AddKnobDialog::onOkClicked()
         
         //Since removing this knob will also remove all expressions from listeners, conserve them and try
         //to recover them afterwards
-        std::list<boost::shared_ptr<KnobI> > listeners;
+        KnobI::ListenerDimsMap listeners;
         _imp->knob->getListeners(listeners);
-        for (std::list<boost::shared_ptr<KnobI> >::iterator it = listeners.begin(); it != listeners.end(); ++it) {
+        for (KnobI::ListenerDimsMap::iterator it = listeners.begin(); it != listeners.end(); ++it) {
+            boost::shared_ptr<KnobI> listener = it->first.lock();
+            if (!listener) {
+                continue;
+            }
             std::vector<std::pair<std::string,bool> > exprs;
-            for (int i = 0; i < (*it)->getDimension(); ++i) {
+            for (std::size_t i = 0; i < it->second.size(); ++i) {
                 std::pair<std::string,bool> e;
-                e.first = (*it)->getExpression(i);
-                e.second = (*it)->isExpressionUsingRetVariable(i);
+                e.first = listener->getExpression(i);
+                e.second = listener->isExpressionUsingRetVariable(i);
                 exprs.push_back(e);
             }
-            listenersExpressions[*it] = exprs;
+            listenersExpressions[listener] = exprs;
         }
         
         if (!oldKnobIsPage) {

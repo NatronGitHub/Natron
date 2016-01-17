@@ -334,6 +334,15 @@ protected:
     
 public:
     
+    struct ListenerDim {
+        bool isExpr;
+        bool isListening;
+        int targetDim;
+        ListenerDim() : isExpr(false), isListening(false), targetDim(-1) {}
+    };
+    
+    typedef std::map<boost::weak_ptr<KnobI>, std::vector<ListenerDim> > ListenerDimsMap;
+    
     /**
      * @brief Do not call this. It is called right away after the constructor by the factory
      * to initialize curves and values. This is separated from the constructor as we need RTTI
@@ -955,7 +964,7 @@ public:
     virtual void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const = 0;
     
 private:
-    virtual void removeListener(KnobI* knob) = 0;
+    virtual void removeListener(KnobI* listener, int listenerDimension) = 0;
 public:
 
     virtual bool useHostOverlayHandle() const { return false; }
@@ -1019,7 +1028,7 @@ public:
     /**
      * @brief Returns a list of all the knobs whose value depends upon this knob.
      **/
-    virtual void getListeners(std::list<boost::shared_ptr<KnobI> > & listeners) const = 0;
+    virtual void getListeners(ListenerDimsMap & listeners) const = 0;
     
     /**
      * @brief Calls unSlave with a value changed reason of Natron::eValueChangedReasonUserEdited.
@@ -1331,11 +1340,11 @@ public:
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
     virtual void addListener(bool isFromExpr,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) OVERRIDE FINAL;
-    virtual void removeListener(KnobI* knob) OVERRIDE FINAL;
+    virtual void removeListener(KnobI* listener, int listenerDimension) OVERRIDE FINAL;
     
     virtual void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const OVERRIDE FINAL;
 
-    virtual void getListeners(std::list<boost::shared_ptr<KnobI> >& listeners) const OVERRIDE FINAL;
+    virtual void getListeners(KnobI::ListenerDimsMap& listeners) const OVERRIDE FINAL;
     
     virtual void clearExpressionsResults(int /*dimension*/) OVERRIDE {}
     

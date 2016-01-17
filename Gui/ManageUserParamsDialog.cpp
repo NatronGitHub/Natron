@@ -268,11 +268,11 @@ ManageUserParamsDialog::~ManageUserParamsDialog()
 static QString createTextForKnob(const boost::shared_ptr<KnobI>& knob)
 {
     QString text = knob->getName().c_str();
-    std::list<boost::shared_ptr<KnobI> > listeners;
+    KnobI::ListenerDimsMap listeners;
     knob->getListeners(listeners);
     if (!listeners.empty()) {
-        boost::shared_ptr<KnobI> listener = listeners.front();
-        if (listener->getAliasMaster() == knob) {
+        boost::shared_ptr<KnobI> listener = listeners.begin()->first.lock();
+        if (listener && listener->getAliasMaster() == knob) {
             text += " (alias of ";
             Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(listener->getHolder());
             if (effect) {

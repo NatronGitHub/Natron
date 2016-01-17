@@ -1785,10 +1785,13 @@ static void exportUserKnob(int indentLevel,const boost::shared_ptr<KnobI>& knob,
     
     boost::shared_ptr<KnobI > aliasedParam;
     {
-        std::list<boost::shared_ptr<KnobI> > listeners;
+        KnobI::ListenerDimsMap listeners;
         knob->getListeners(listeners);
-        if (!listeners.empty() && listeners.front()->getAliasMaster() == knob) {
-            aliasedParam = listeners.front();
+        if (!listeners.empty()) {
+            boost::shared_ptr<KnobI> listener = listeners.begin()->first.lock();
+            if (listener && listener->getAliasMaster() == knob) {
+                aliasedParam = listener;
+            }
         }
     }
     

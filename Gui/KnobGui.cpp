@@ -614,10 +614,11 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
             QObject::connect( unlinkAction,SIGNAL( triggered() ),this,SLOT( onUnlinkActionTriggered() ) );
             menu->addAction(unlinkAction);
         }
-        std::list<boost::shared_ptr<KnobI> > listeners;
+        KnobI::ListenerDimsMap listeners;
         knob->getListeners(listeners);
         if (!listeners.empty()) {
-            if (listeners.front()->getAliasMaster() == knob) {
+            boost::shared_ptr<KnobI> listener = listeners.begin()->first.lock();
+            if (listener && listener->getAliasMaster() == knob) {
                 QAction* removeAliasLink = new QAction(tr("Remove alias link"),menu);
                 QObject::connect( removeAliasLink,SIGNAL( triggered() ),this,SLOT( onRemoveAliasLinkActionTriggered() ) );
                 menu->addAction(removeAliasLink);
