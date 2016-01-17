@@ -28,11 +28,14 @@ TEMPLATE = app
 #  example on OSX:
 #  $ cd build/Debug/NatronCrashReporter.app/Contents/MacOS
 #  $ ln -s ../../../../../../App/build/Debug/Natron.app/Contents/MacOS/Natron Natron-bin
-
-#CONFIG += console
-#CONFIG -= app_bundle
-#CONFIG -= app
+macx {
 CONFIG += app
+} else {
+CONFIG += console
+CONFIG -= app_bundle
+CONFIG -= app
+}
+
 CONFIG += moc
 CONFIG += qt
 QT       += core network gui
