@@ -106,6 +106,8 @@ handleChildDeadSignal( int /*signalId*/ )
     if (qApp) {
         qDebug() << "Child process terminated!";
         qApp->quit();
+    } else {
+        std::exit(1);
     }
 }
 
@@ -158,7 +160,6 @@ CallbacksManager::CallbacksManager()
 , _app(0)
 {
     _instance = this;
-   
 }
 
 
