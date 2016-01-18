@@ -8774,7 +8774,6 @@ Node::refreshChannelSelectors()
         
         std::vector<std::string> choices;
         choices.push_back("None");
-        bool gotColor = false;
         int alphaIndex = 0;
         
         //Get the mask input components
@@ -8858,7 +8857,6 @@ Node::refreshChannelSelectors()
                 } else {
                     alphaIndex = 0;
                 }
-                gotColor = true;
             }
         }
         

@@ -72,6 +72,13 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include "client/mac/crash_generation/crash_generation_server.h"
 #elif defined(Q_OS_LINUX)
 #include "client/linux/crash_generation/crash_generation_server.h"
+#include <sys/signal.h>
+#ifndef __USE_GNU
+#define __USE_GNU
+#endif
+#include <ucontext.h>
+#include <execinfo.h>
+#include <cstdio>
 #elif defined(Q_OS_WIN32)
 #include <windows.h>
 #include "client/windows/crash_generation/crash_generation_server.h"
@@ -96,7 +103,7 @@ namespace {
 static void
 handleChildDeadSignal( int /*signalId*/ )
 {
-    if (appPTR) {
+    if (qApp) {
         qDebug() << "Child process terminated!";
         qApp->quit();
     }
@@ -168,12 +175,13 @@ CallbacksManager::~CallbacksManager() {
     
     delete _crashServer;
     
-    
+#ifndef Q_OS_LINUX
     if (_natronProcess) {
         //Wait at most 5sec then exit
         _natronProcess->waitForFinished(5000);
         delete _natronProcess;
     }
+#endif
     
     delete _app;
     
@@ -324,8 +332,6 @@ CallbacksManager::init(int& argc, char** argv)
     //_natronProcess = natronProcess;
 #else // Q_OS_LINUX
 
-    Q_UNUSED(natronProcess);
-
     /*
      qApp has not been defined yet since we did not fork, get the binary path ourselves
      */
@@ -366,9 +372,9 @@ CallbacksManager::init(int& argc, char** argv)
             argvChild.push_back(strdup("--" NATRON_BREAKPAD_PROCESS_EXEC));
             argvChild.push_back(qstringToMallocCharArray(crashReporterBinaryFilePath));
             
-            argvChild.push_back(QString("--" NATRON_BREAKPAD_PROCESS_PID));
+            argvChild.push_back(strdup("--" NATRON_BREAKPAD_PROCESS_PID));
             QString pidStr = QString::number((qint64)getpid());
-            argvChild.push_back(pidStr);
+            argvChild.push_back(qstringToMallocCharArray(pidStr));
             
             argvChild.push_back(strdup("--" NATRON_BREAKPAD_CLIENT_FD_ARG));
             {
@@ -383,7 +389,6 @@ CallbacksManager::init(int& argc, char** argv)
         }
         
         execv(natronBinaryPath.toStdString().c_str(),&argvChild.front());
-        execOK = false;
         
         std::stringstream ss;
         ss << "Forked process failed to execute " << natronBinaryPath.toStdString() << " make sure it exists.";

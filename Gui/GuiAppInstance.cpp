@@ -1198,7 +1198,6 @@ GuiAppInstance::setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopai
                                   const boost::shared_ptr<RotoStrokeItem>& stroke,
                                   bool isPainting)
 {
-    bool wasTurboActive;
     {
         QMutexLocker k(&_imp->rotoDataMutex);
         
@@ -1222,10 +1221,7 @@ GuiAppInstance::setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopai
         if (rotopaintNode) {
             _imp->rotoData.turboAlreadyActiveBeforePainting = _imp->_gui->isGUIFrozen();
         }
-        wasTurboActive = _imp->rotoData.turboAlreadyActiveBeforePainting;
     }
-    //bool isPainting = rotopaintNode.get() != 0;
-   // _imp->_gui->onFreezeUIButtonClicked(isPainting || wasTurboActive);
 }
 
 void

@@ -158,6 +158,7 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& 
     assert(!breakpadHandler);
     
 #ifdef Q_OS_LINUX
+    Q_UNUSED(breakpadPipePath);
     //On linux the pipe is already created so create the handler now
     createBreakpadHandler(breakpad_client_fd);
 #else

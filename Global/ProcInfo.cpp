@@ -289,7 +289,7 @@ QString applicationFilePath(const char* argv0Param)
     std::string filename = ss.str();
 
     char buf[2048] = {0};
-    std::size_t sizeofbuf = sizeof(char) * 2048;
+    ssize_t sizeofbuf = sizeof(char) * 2048;
     ssize_t size = readlink(filename.c_str(), buf, sizeofbuf);
     if (size != 0 && size != sizeofbuf) {
         //detected symlink
