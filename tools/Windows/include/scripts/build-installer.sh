@@ -112,9 +112,12 @@ mkdir -p "$INSTALLER/config" "$INSTALLER/packages" || exit 1
 cat "$INC_PATH/config/config.xml" | sed -e "s/_VERSION_/${NATRON_VERSION_NUMBER}/;s#_OS_BRANCH_BIT_#${REPO_OS}#g;s#_URL_#${REPO_URL}#g;s#_APP_INSTALL_SUFFIX_#${APP_INSTALL_SUFFIX}#g" > "$INSTALLER/config/config.xml" || exit 1
 cp "$INC_PATH/config/"*.png "$INSTALLER/config/" || exit 1
 
+FFMPEG_DLLS="SWSCALE-3.DLL  AVCODEC-56.DLL SWRESAMPLE-1.DLL AVFORMAT-56.DLL AVUTIL-54.DLL AVDEVICE-56.DLL AVFILTER-5.DLL AVRESAMPLE-2.DLL POSTPROC-53.DLL"
+
+
 # OFX IO
 if [ "$BUNDLE_IO" = "1" ]; then         
-    IO_DLL="LIBICUDT55.DLL LIBICUUC55.DLL LIBLCMS2-2.DLL LIBJASPER-1.DLL LIBLZMA-5.DLL LIBOPENJPEG-5.DLL LIBHALF-2_2.DLL LIBILMIMF-2_2.DLL LIBIEX-2_2.DLL LIBILMTHREAD-2_2.DLL LIBIMATH-2_2.DLL LIBOPENIMAGEIO.DLL LIBRAW_R-10.DLL LIBWEBP-5.DLL LIBBOOST_THREAD-MT.DLL LIBBOOST_SYSTEM-MT.DLL LIBBOOST_REGEX-MT.DLL LIBBOOST_FILESYSTEM-MT.DLL"
+    IO_DLL="LIBICUDT55.DLL LIBICUUC55.DLL LIBLCMS2-2.DLL LIBJASPER-1.DLL LIBLZMA-5.DLL LIBOPENJPEG-5.DLL LIBHALF-2_2.DLL LIBILMIMF-2_2.DLL LIBIEX-2_2.DLL LIBILMTHREAD-2_2.DLL LIBIMATH-2_2.DLL LIBOPENIMAGEIO.DLL LIBRAW_R-10.DLL LIBWEBP-5.DLL LIBBOOST_THREAD-MT.DLL LIBBOOST_SYSTEM-MT.DLL LIBBOOST_REGEX-MT.DLL LIBBOOST_FILESYSTEM-MT.DLL LIBOPENCOLORIO.DLL LIBSEEXPR.DLL"
     OFX_IO_VERSION="$TAG"
     OFX_IO_PATH="$INSTALLER/packages/$IOPLUG_PKG"
     mkdir -p "$OFX_IO_PATH/data" "$OFX_IO_PATH/meta" "$OFX_IO_PATH/data/Plugins/OFX/Natron" || exit 1
@@ -127,7 +130,9 @@ if [ "$BUNDLE_IO" = "1" ]; then
     for depend in $IO_DLL; do
         cp "$INSTALL_PATH/bin/$depend" "$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
     done
-    cp $INSTALL_PATH/lib/{LIBOPENCOLORIO.DLL,LIBSEEXPR.DLL} "$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
+	for depend in $FFMPEG_DLLS; do 
+		cp $FFMPEG_BIN_PATH/bin/$depend "$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
+	done
 
     if [ "$DISABLE_BREAKPAD" != "1" ]; then
         $INSTALL_PATH/bin/dump_syms.exe $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/IO.ofx > $INSTALL_PATH/symbols/IO.ofx-${TAG}-${PKGOS}.sym || exit 1
@@ -241,10 +246,9 @@ rm $CLIBS_PATH/data/bin/*d4.dll
 rm $CLIBS_PATH/data/bin/sqldrivers/{*mysql*,*psql*}
 
 #Copy ffmpeg binaries
-FFMPEG_DLLS="SWSCALE-3.DLL  AVCODEC-56.DLL SWRESAMPLE-1.DLL AVFORMAT-56.DLL AVUTIL-54.DLL AVDEVICE-56.DLL AVFILTER-5.DLL AVRESAMPLE-2.DLL POSTPROC-53.DLL"
-for depend in $FFMPEG_DLLS; do 
-    cp $FFMPEG_BIN_PATH/bin/$depend $CLIBS_PATH/data/bin || exit 1
-done
+#for depend in $FFMPEG_DLLS; do 
+#    cp $FFMPEG_BIN_PATH/bin/$depend $CLIBS_PATH/data/bin || exit 1
+#done
 #Also embbed ffmpeg.exe and ffprobe.exe
 #cp $FFMPEG_BIN_PATH/bin/ffmpeg.exe $CLIBS_PATH/data/bin || exit 1
 #cp $FFMPEG_BIN_PATH/bin/ffprobe.exe $CLIBS_PATH/data/bin || exit 1
@@ -287,7 +291,7 @@ fi
 
 # OFX ARENA
 if [ "$BUNDLE_ARENA" = "1" ]; then 
-    ARENA_DLL="LIBZIP-4.DLL LIBCROCO-0.6-3.DLL LIBGOMP-1.DLL LIBGMODULE-2.0-0.DLL LIBGDK_PIXBUF-2.0-0.DLL LIBGOBJECT-2.0-0.DLL LIBGIO-2.0-0.DLL LIBLCMS2-2.DLL LIBPANGO-1.0-0.DLL LIBPANGOCAIRO-1.0-0.DLL LIBPANGOWIN32-1.0-0.DLL LIBPANGOFT2-1.0-0.DLL LIBRSVG-2-2.DLL LIBXML2-2.DLL"
+    ARENA_DLL="LIBZIP-4.DLL LIBCROCO-0.6-3.DLL LIBGOMP-1.DLL LIBGMODULE-2.0-0.DLL LIBGDK_PIXBUF-2.0-0.DLL LIBGOBJECT-2.0-0.DLL LIBGIO-2.0-0.DLL LIBLCMS2-2.DLL LIBPANGO-1.0-0.DLL LIBPANGOCAIRO-1.0-0.DLL LIBPANGOWIN32-1.0-0.DLL LIBPANGOFT2-1.0-0.DLL LIBRSVG-2-2.DLL LIBXML2-2.DLL LIBOPENCOLORIO.DLL"
     OFX_ARENA_VERSION=$TAG
     OFX_ARENA_PATH=$INSTALLER/packages/$ARENAPLUG_PKG
     mkdir -p $OFX_ARENA_PATH/meta $OFX_ARENA_PATH/data/Plugins/OFX/Natron || exit 1
@@ -300,7 +304,6 @@ if [ "$BUNDLE_ARENA" = "1" ]; then
     for depend in $ARENA_DLL; do
         cp $INSTALL_PATH/bin/$depend  $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT/ || exit 1
     done
-    cp $INSTALL_PATH/lib/LIBOPENCOLORIO.DLL $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT/ || exit 1
 
     if [ "$DISABLE_BREAKPAD" != "1" ]; then
         $INSTALL_PATH/bin/dump_syms.exe $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/Arena.ofx > $INSTALL_PATH/symbols/Arena.ofx-${TAG}-${PKGOS}.sym || exit 1
@@ -366,8 +369,6 @@ if [ "$BUNDLE_IO" = "1" ]; then
     for depend in $IO_DLL; do
         echo "<file name=\"${depend}\"></file>" >> $IO_MANIFEST || exit 1
     done
-    echo "<file name=\"LIBOPENCOLORIO.DLL\"></file>" >> $IO_MANIFEST || exit 1
-    echo "<file name=\"LIBSEEXPR.DLL\"></file>" >> $IO_MANIFEST || exit 1
     echo "</assembly>" >> $IO_MANIFEST || exit 1
     cd $OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT || exit 1
     mt -manifest manifest -outputresource:"IO.ofx;2"
@@ -387,7 +388,6 @@ if [ "$BUNDLE_ARENA" = "1" ]; then
     for depend in $ARENA_DLL; do
         echo "<file name=\"${depend}\"></file>" >> $ARENA_MANIFEST || exit 1
     done
-    echo "<file name=\"LIBOPENCOLORIO.DLL\"></file>" >> $ARENA_MANIFEST || exit 1
     echo "</assembly>" >> $ARENA_MANIFEST || exit 1
     cd $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT || exit 1
     mt -manifest manifest -outputresource:"Arena.ofx;2"
