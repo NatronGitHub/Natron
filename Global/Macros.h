@@ -123,6 +123,17 @@
 ///For example RC 1, RC 2 etc... This is to be defined from withing the qmake call, passing BUILD_NUMBER=X to the command line
 //#define NATRON_BUILD_NUMBER 0
 
+
+#if defined(__NATRON_LINUX__) || defined(__NATRON_OSX__)
+/*
+ On Linux crash reporter MUST use fork() to spawn the Natron process because it needs to duplicate file descriptors for the pipe.
+ On Windows, fork() doesn't exist so we use QProcess.
+ OS X can use both because it doesn't require a file descriptor to be passed to Natron for the breakpad pipe.
+ */
+#define NATRON_CRASH_REPORTER_USE_FORK 1
+#endif
+
+
 #define NATRON_BREAKPAD_PROCESS_EXEC "breakpad_process_exec"
 #define NATRON_BREAKPAD_PROCESS_PID "breakpad_process_pid"
 #define NATRON_BREAKPAD_CLIENT_FD_ARG "breakpad_client_fd"

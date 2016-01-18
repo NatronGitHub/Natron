@@ -28,6 +28,8 @@
 #include <QDialog>
 #endif
 
+#include "Global/Macros.h"
+
 class QLocalSocket;
 class QLocalServer;
 class QNetworkReply;
@@ -143,7 +145,9 @@ private:
 #ifndef Q_OS_LINUX
     //On Windows & OSX breakpad expects us to manage the pipe
     QLocalServer* _breakpadPipeServer;
+#endif
     
+#ifndef NATRON_CRASH_REPORTER_USE_FORK
     //The Natron process has no way to print to stdout/stderr, so connect signals
     QProcess* _natronProcess;
 #endif
