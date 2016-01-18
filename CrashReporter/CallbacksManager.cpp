@@ -345,6 +345,13 @@ CallbacksManager::init(int& argc, char** argv)
     
     natronBinaryPath = getNatronBinaryFilePathFromCrashReporterDirPath(natronBinaryPath);
     
+    if (!QFile::exists(natronBinaryPath)) {
+        std::stringstream ss;
+        ss << natronBinaryPath.toStdString() << ": no such file or directory.";
+        throw std::runtime_error(ss.str());
+        return;
+    }
+
     
     setChildDeadSignal();
     
@@ -359,7 +366,12 @@ CallbacksManager::init(int& argc, char** argv)
      */
     pid_t natronPID = fork();
     
-    if (natronPID == 0) {
+    if (natronPID == -1) {
+        std::stringstream ss;
+        ss << "Fork failed";
+        throw std::runtime_error(ss.str());
+        return;
+    } else if (natronPID == 0) {
         /*
          We are the child process (i.e: Natron)
          */
