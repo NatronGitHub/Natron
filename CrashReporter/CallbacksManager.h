@@ -91,6 +91,8 @@ public:
      * This function throws an exception in case of error.
      **/
     void init(int& argc, char** argv);
+
+    bool hasReceivedDump() const;
     
     void s_emitDoCallBackOnMainThread(const QString& filePath);
     
@@ -112,9 +114,6 @@ public Q_SLOTS:
         
     void onNatronProcessStdOutWrittenTo();
     void onNatronProcessStdErrWrittenTo();
-    
-    void onSpawnedProcessFinished(int exitCode, QProcess::ExitStatus status);
-    void onSpawnedProcessError(QProcess::ProcessError error);
     
     void onComPipeConnectionPending();
     

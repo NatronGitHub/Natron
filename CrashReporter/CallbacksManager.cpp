@@ -74,6 +74,7 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include <cstdio>
 #include <sys/errno.h>
 #include <sys/signal.h>
+#include <sys/wait.h>
 #elif defined(Q_OS_LINUX)
 #include "client/linux/crash_generation/crash_generation_server.h"
 
@@ -84,6 +85,7 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include <execinfo.h>
 #include <cstdio>
 #include <errno.h>
+#include <sys/wait.h>
 #elif defined(Q_OS_WIN32)
 #include <windows.h>
 #include "client/windows/crash_generation/crash_generation_server.h"
@@ -104,31 +106,6 @@ namespace {
         std::string stdStr = str.toStdString();
         return strndup(stdStr.c_str(), stdStr.size() + 1);
     }
-
-
-static void
-handleChildDeadSignal( int /*signalId*/ )
-{
-    if (qApp) {
-        qDebug() << "Child process terminated!";
-        qApp->quit();
-    } else {
-        std::exit(1);
-    }
-}
-
-static void
-setChildDeadSignal()
-{
-    struct sigaction sa;
-    sa.sa_flags = 0;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_handler = handleChildDeadSignal;
-    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-        std::perror("setting up termination signal");
-        std::exit(1);
-    }
-}
 #endif // NATRON_CRASH_REPORTER_USE_FORK
 } // anon namespace
 
@@ -237,6 +214,12 @@ static QString getNatronBinaryFilePathFromCrashReporterDirPath(const QString& cr
     return ret;
 }
 
+bool
+CallbacksManager::hasReceivedDump() const
+{
+    return _dumpReceived;
+}
+
 void
 CallbacksManager::init(int& argc, char** argv)
 {
@@ -290,9 +273,6 @@ CallbacksManager::init(int& argc, char** argv)
     QObject::connect(_natronProcess,SIGNAL(readyReadStandardOutput()), this, SLOT(onNatronProcessStdOutWrittenTo()));
     QObject::connect(_natronProcess,SIGNAL(readyReadStandardError()), this, SLOT(onNatronProcessStdErrWrittenTo()));
     
-    QObject::connect(_natronProcess,SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(onSpawnedProcessFinished(int,QProcess::ExitStatus)));
-    QObject::connect(_natronProcess,SIGNAL(error(QProcess::ProcessError)), this, SLOT(onSpawnedProcessError(QProcess::ProcessError)));
-    
 
     QStringList processArgs;
     for (int i = 0; i < argc; ++i) {
@@ -318,7 +298,6 @@ CallbacksManager::init(int& argc, char** argv)
     //_natronProcess = natronProcess;
 #else // NATRON_CRASH_REPORTER_USE_FORK
 
-    setChildDeadSignal();
     
     std::vector<char*> argvChild(argc);
     for (int i = 0; i < argc; ++i) {
@@ -388,59 +367,6 @@ CallbacksManager::init(int& argc, char** argv)
     } // child process
 
 #endif // NATRON_CRASH_REPORTER_USE_FORK
-}
-
-void
-CallbacksManager::onSpawnedProcessFinished(int exitCode, QProcess::ExitStatus status)
-{
-    
-    int retCode = 0;
-    QString code;
-    if (status == QProcess::CrashExit) {
-        code =  "crashed";
-        retCode = 1;
-    } else if (status == QProcess::NormalExit) {
-        code =  "finished";
-    }
-    qDebug() << "Spawned process" << code << "with exit code:" << exitCode;
-    
-    if (!_dumpReceived) {
-        //Exit the event loop, which will eventually kill us and finish this program
-        _app->exit(retCode);
-    }
-}
-
-void
-CallbacksManager::onSpawnedProcessError(QProcess::ProcessError error)
-{
-    
-    bool mustExit = false;
-    switch (error) {
-        case QProcess::FailedToStart:
-            std::cerr << "Spawned process executable does not exist or the system lacks necessary resources, exiting." << std::endl;
-            mustExit = true;
-            break;
-        case QProcess::Crashed:
-            std::cerr << "Spawned process crashed, exiting." << std::endl;
-            mustExit = true;
-            break;
-        case QProcess::Timedout:
-            std::cerr << "Spawned process timedout, exiting." << std::endl;
-            mustExit = true;
-            break;
-        case QProcess::ReadError:
-            break;
-        case QProcess::WriteError:
-            break;
-        case QProcess::UnknownError:
-            break;
-    }
-  
-    if (mustExit && !_dumpReceived) {
-        //Exit the event loop, which will eventually kill us and finish this program
-        _app->exit(1);
-    }
-
 }
 
 static void addTextHttpPart(QHttpMultiPart* multiPart, const QString& name, const QString& value)
@@ -833,12 +759,23 @@ void dumpRequest_xPlatform(const QString& filePath)
     CallbacksManager::instance()->s_emitDoCallBackOnMainThread(filePath);
 }
 
+void exitRequest_xPlatform()
+{
+    qApp->exit();
+}
+
+
 #if defined(Q_OS_MAC)
 void OnClientDumpRequest(void */*context*/,
                          const ClientInfo &/*client_info*/,
                          const std::string &file_path) {
     
     dumpRequest_xPlatform(file_path.c_str());
+}
+void onClientExitRequest(void* /*context*/,
+                          const ClientInfo& /*client_info*/)
+{
+    exitRequest_xPlatform();
 }
 #elif defined(Q_OS_LINUX)
 void OnClientDumpRequest(void* /*context*/,
@@ -847,6 +784,12 @@ void OnClientDumpRequest(void* /*context*/,
     
     dumpRequest_xPlatform(file_path->c_str());
 }
+void onClientExitRequest(void* /*context*/,
+                          const ClientInfo* /*client_info*/)
+{
+    exitRequest_xPlatform();
+}
+
 #elif defined(Q_OS_WIN32)
 void OnClientDumpRequest(void* /*context*/,
                          const google_breakpad::ClientInfo* /*client_info*/,
@@ -854,6 +797,11 @@ void OnClientDumpRequest(void* /*context*/,
     
     QString str = QString::fromWCharArray(file_path->c_str());
     dumpRequest_xPlatform(str);
+}
+void onClientExitRequest(void* /*context*/,
+                          const ClientInfo* /*client_info*/)
+{
+    exitRequest_xPlatform();
 }
 #endif
 
@@ -870,7 +818,7 @@ CallbacksManager::createCrashGenerationServer()
                                              0, // filter ctx
                                              OnClientDumpRequest, // dump cb
                                              0, // dump ctx
-                                             0, // exit cb
+                                             onClientExitRequest, // exit cb
                                              0, // exit ctx
                                              true, // auto-generate dumps
                                              _dumpDirPath.toStdString()); // path to dump to
@@ -879,7 +827,7 @@ CallbacksManager::createCrashGenerationServer()
     _crashServer = new CrashGenerationServer(_serverFD,
                                           OnClientDumpRequest, // dump cb
                                           0, // dump ctx
-                                          0, // exit cb
+                                          onClientExitRequest, // exit cb
                                           0, // exit ctx
                                           true, // auto-generate dumps
                                           &stdDumpPath); // path to dump to
@@ -895,7 +843,7 @@ CallbacksManager::createCrashGenerationServer()
                                           0, // on client connected ctx
                                           OnClientDumpRequest, // dump cb
                                           0, // dump ctx
-                                          0, // exit cb
+                                          onClientExitRequest, // exit cb
                                           0, // exit ctx
                                           0, // upload request cb
                                           0, //  upload request ctx
