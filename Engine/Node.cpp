@@ -8889,7 +8889,7 @@ Node::refreshChannelSelectors()
             channelKnob->setValue(alphaIndex,0);
             channelNameKnob->setValue(choices[alphaIndex], 0);
         } else {*/
-            if (foundLastLayerChoice != -1) {
+            if (foundLastLayerChoice != -1 && foundLastLayerChoice != 0) {
                 channelKnob->blockValueChanges();
                 _imp->liveInstance->beginChanges();
                 channelKnob->setValue(foundLastLayerChoice, 0);

@@ -9,6 +9,15 @@ else
     PKG_PREFIX=$PKG_PREFIX64
 fi
 
+# Remove stuff
+
+if [ "$REMOVE_PYTHON" = "1" ]; then
+PY_PKGS=`pacman -Q|grep py | awk '{print $1}'`
+for i in $PY_PKGS; do
+  pacman -R $i
+done
+fi
+
 #Update database
 pacman --noconfirm  -Syu
 

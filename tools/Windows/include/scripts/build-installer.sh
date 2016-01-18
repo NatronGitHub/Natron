@@ -112,9 +112,10 @@ mkdir -p "$INSTALLER/config" "$INSTALLER/packages" || exit 1
 cat "$INC_PATH/config/config.xml" | sed -e "s/_VERSION_/${NATRON_VERSION_NUMBER}/;s#_OS_BRANCH_BIT_#${REPO_OS}#g;s#_URL_#${REPO_URL}#g;s#_APP_INSTALL_SUFFIX_#${APP_INSTALL_SUFFIX}#g" > "$INSTALLER/config/config.xml" || exit 1
 cp "$INC_PATH/config/"*.png "$INSTALLER/config/" || exit 1
 
+
 # OFX IO
 if [ "$BUNDLE_IO" = "1" ]; then         
-    IO_DLL="LIBICUDT55.DLL LIBICUUC55.DLL LIBLCMS2-2.DLL LIBJASPER-1.DLL LIBLZMA-5.DLL LIBOPENJPEG-5.DLL LIBHALF-2_2.DLL LIBILMIMF-2_2.DLL LIBIEX-2_2.DLL LIBILMTHREAD-2_2.DLL LIBIMATH-2_2.DLL LIBOPENIMAGEIO.DLL LIBRAW_R-10.DLL LIBWEBP-5.DLL LIBBOOST_THREAD-MT.DLL LIBBOOST_SYSTEM-MT.DLL LIBBOOST_REGEX-MT.DLL LIBBOOST_FILESYSTEM-MT.DLL"
+    IO_DLL="LIBICUDT56.DLL LIBICUUC56.DLL LIBLCMS2-2.DLL LIBJASPER-1.DLL LIBLZMA-5.DLL LIBOPENJPEG-5.DLL LIBHALF-2_2.DLL LIBILMIMF-2_2.DLL LIBIEX-2_2.DLL LIBILMTHREAD-2_2.DLL LIBIMATH-2_2.DLL LIBOPENIMAGEIO.DLL LIBRAW_R-10.DLL LIBWEBP-6.DLL LIBBOOST_THREAD-MT.DLL LIBBOOST_SYSTEM-MT.DLL LIBBOOST_REGEX-MT.DLL LIBBOOST_FILESYSTEM-MT.DLL"
     OFX_IO_VERSION="$TAG"
     OFX_IO_PATH="$INSTALLER/packages/$IOPLUG_PKG"
     mkdir -p "$OFX_IO_PATH/data" "$OFX_IO_PATH/meta" "$OFX_IO_PATH/data/Plugins/OFX/Natron" || exit 1
@@ -127,7 +128,9 @@ if [ "$BUNDLE_IO" = "1" ]; then
     for depend in $IO_DLL; do
         cp "$INSTALL_PATH/bin/$depend" "$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
     done
-    cp $INSTALL_PATH/lib/{LIBOPENCOLORIO.DLL,LIBSEEXPR.DLL} "$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
+	#OpenColorIO and SeExpr are located in $INSTALL_PATH/lib and not bin
+	cp $INSTALL_PATH/lib/{LIBOPENCOLORIO.DLL,LIBSEEXPR.DLL} "$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
+	
 
     if [ "$DISABLE_BREAKPAD" != "1" ]; then
         $INSTALL_PATH/bin/dump_syms.exe $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/IO.ofx > $INSTALL_PATH/symbols/IO.ofx-${TAG}-${PKGOS}.sym || exit 1
@@ -300,8 +303,9 @@ if [ "$BUNDLE_ARENA" = "1" ]; then
     for depend in $ARENA_DLL; do
         cp $INSTALL_PATH/bin/$depend  $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT/ || exit 1
     done
-    cp $INSTALL_PATH/lib/LIBOPENCOLORIO.DLL $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT/ || exit 1
-
+	
+	#OpenColorIO is located in $INSTALL_PATH/lib and not bin
+	cp $INSTALL_PATH/lib/LIBOPENCOLORIO.DLL $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT/ || exit 1
     if [ "$DISABLE_BREAKPAD" != "1" ]; then
         $INSTALL_PATH/bin/dump_syms.exe $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/Arena.ofx > $INSTALL_PATH/symbols/Arena.ofx-${TAG}-${PKGOS}.sym || exit 1
     fi
@@ -366,7 +370,8 @@ if [ "$BUNDLE_IO" = "1" ]; then
     for depend in $IO_DLL; do
         echo "<file name=\"${depend}\"></file>" >> $IO_MANIFEST || exit 1
     done
-    echo "<file name=\"LIBOPENCOLORIO.DLL\"></file>" >> $IO_MANIFEST || exit 1
+	#OpenColorIO and SeExpr are located in /lib and not /bin thats why they are not in $IO_DLL
+	echo "<file name=\"LIBOPENCOLORIO.DLL\"></file>" >> $IO_MANIFEST || exit 1
     echo "<file name=\"LIBSEEXPR.DLL\"></file>" >> $IO_MANIFEST || exit 1
     echo "</assembly>" >> $IO_MANIFEST || exit 1
     cd $OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT || exit 1
@@ -387,7 +392,8 @@ if [ "$BUNDLE_ARENA" = "1" ]; then
     for depend in $ARENA_DLL; do
         echo "<file name=\"${depend}\"></file>" >> $ARENA_MANIFEST || exit 1
     done
-    echo "<file name=\"LIBOPENCOLORIO.DLL\"></file>" >> $ARENA_MANIFEST || exit 1
+	#OpenColorIO is located in /lib and not /bin thats why they are not in $IO_DLL
+	echo "<file name=\"LIBOPENCOLORIO.DLL\"></file>" >> $ARENA_MANIFEST || exit 1
     echo "</assembly>" >> $ARENA_MANIFEST || exit 1
     cd $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT || exit 1
     mt -manifest manifest -outputresource:"Arena.ofx;2"
