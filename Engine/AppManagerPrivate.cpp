@@ -50,6 +50,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Global/QtCompat.h" // for removeRecursively
 
 #include "Engine/CacheSerialization.h"
+#include "Engine/ExistenceCheckThread.h"
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
@@ -130,7 +131,6 @@ AppManagerPrivate::AppManagerPrivate()
 #ifndef Q_OS_LINUX
 ,breakpadPipeConnection()
 #endif
-,crashReporterComPipeConnection()
 ,breakpadAliveThread()
 #endif
 ,natronPythonGIL(QMutex::Recursive)
@@ -176,9 +176,12 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& 
      We check periodically that the crash reporter process is still alive. If the user killed it somehow, then we want
      the Natron process to terminate
      */
-    crashReporterComPipeConnection.reset(new QLocalSocket);
-    QObject::connect(crashReporterComPipeConnection.get(), SIGNAL(connected()), appPTR, SLOT(onBreakpadComPipeConnectionMade()));
-    crashReporterComPipeConnection->connectToServer(breakpadComPipePath, QLocalSocket::ReadWrite);
+    breakpadAliveThread.reset(new ExistenceCheckerThread(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK,
+                                                         NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK,
+                                                         breakpadComPipePath));
+    QObject::connect(breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), appPTR, SLOT(onCrashReporterNoLongerResponding()));
+    breakpadAliveThread->start();
+
     
 }
 

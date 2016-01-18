@@ -2649,18 +2649,7 @@ AppManager::onBreakpadPipeConnectionMade()
 
 }
 
-void
-AppManager::onBreakpadComPipeConnectionMade()
-{
-#ifdef NATRON_USE_BREAKPAD
-    assert(_imp->crashReporterComPipeConnection);
-    _imp->breakpadAliveThread.reset(new ExistenceCheckerThread(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK,
-                                                         NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK,
-                                                         _imp->crashReporterComPipeConnection));
-    QObject::connect(_imp->breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), this, SLOT(onCrashReporterNoLongerResponding()));
-    _imp->breakpadAliveThread->start();
-#endif
-}
+
 
 void
 AppManager::onCrashReporterNoLongerResponding()

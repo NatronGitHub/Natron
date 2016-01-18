@@ -137,7 +137,6 @@ struct AppManagerPrivate
     //On Windows & OSX the breakpad pipe is handled ourselves
     boost::shared_ptr<QLocalSocket> breakpadPipeConnection;
 #endif
-    boost::shared_ptr<QLocalSocket> crashReporterComPipeConnection;
     boost::shared_ptr<ExistenceCheckerThread> breakpadAliveThread;
 #endif
     

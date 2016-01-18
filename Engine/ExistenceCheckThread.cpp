@@ -39,6 +39,7 @@
 struct ExistenceCheckerThreadPrivate
 {
     boost::shared_ptr<QLocalSocket> socket;
+    QString comServerPipePath;
     QString checkMessage;
     QString acknowledgementMessage;
     mutable QMutex mustQuitMutex;
@@ -47,23 +48,24 @@ struct ExistenceCheckerThreadPrivate
     
     ExistenceCheckerThreadPrivate(const QString& checkMessage,
                                   const QString& acknowledgementMessage,
-                                  const boost::shared_ptr<QLocalSocket>& socket)
-    : socket(socket)
+                                  const QString &comServerPipePath)
+    : socket()
+    , comServerPipePath(comServerPipePath)
     , checkMessage(checkMessage)
     , acknowledgementMessage(acknowledgementMessage)
     , mustQuitMutex()
     , mustQuit(false)
     , mustQuitCond()
     {
-        
+
     }
 };
 
 ExistenceCheckerThread::ExistenceCheckerThread(const QString& checkMessage,
                                                const QString& acknowledgementMessage,
-                                               const boost::shared_ptr<QLocalSocket>& socket)
+                                               const QString &comServerPipePath)
 : QThread()
-, _imp(new ExistenceCheckerThreadPrivate(checkMessage, acknowledgementMessage, socket))
+, _imp(new ExistenceCheckerThreadPrivate(checkMessage, acknowledgementMessage,comServerPipePath))
 {
     setObjectName("CrashReporterAliveThread");
 }
@@ -72,6 +74,7 @@ ExistenceCheckerThread::~ExistenceCheckerThread()
 {
     
 }
+
 
 void
 ExistenceCheckerThread::quitThread()
@@ -93,6 +96,14 @@ ExistenceCheckerThread::quitThread()
 void
 ExistenceCheckerThread::run() 
 {
+    _imp->socket.reset(new QLocalSocket());
+    _imp->socket->connectToServer(_imp->comServerPipePath, QLocalSocket::ReadWrite);
+
+    if (!_imp->socket->waitForConnected()) {
+        qDebug() << "Failed to connect local socket to " << _imp->comServerPipePath;
+        return;
+    }
+
     for (;;) {
         
         {
@@ -103,7 +114,7 @@ ExistenceCheckerThread::run()
                 return;
             }
         }
-        
+
         {
             QString tosend(_imp->checkMessage);
             tosend.push_back('\n');

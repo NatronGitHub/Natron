@@ -45,7 +45,7 @@ public:
     
     ExistenceCheckerThread(const QString& checkMessage,
                            const QString& acknowledgementMessage,
-                           const boost::shared_ptr<QLocalSocket>& socket);
+                           const QString& comServerPipePath);
     
     virtual ~ExistenceCheckerThread();
     
@@ -57,7 +57,7 @@ Q_SIGNALS:
      * @brief Emitted whenever the other process do no longer seem to exist
      **/
     void otherProcessUnreachable();
-    
+
 private:
     
     virtual void run() OVERRIDE FINAL;

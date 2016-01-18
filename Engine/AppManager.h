@@ -487,8 +487,6 @@ public Q_SLOTS:
 
     void onBreakpadPipeConnectionMade();
     
-    void onBreakpadComPipeConnectionMade();
-
     void onCrashReporterNoLongerResponding();
     
     void onOFXDialogOnMainThreadReceived(Natron::OfxImageEffectInstance* instance, void* instanceData);
