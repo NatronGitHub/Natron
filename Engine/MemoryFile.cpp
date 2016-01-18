@@ -37,6 +37,7 @@
 #include <cerrno>
 #include <cstdio>
 #endif
+#include <sstream>
 #include <iostream>
 #include <stdexcept>
 
@@ -151,9 +152,9 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
     *********************************************************/
     file_handle = ::open(path.c_str(), posix_open_mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (file_handle == -1) {
-        std::string str("MemoryFile EXC : Failed to open ");
-        str.append(path);
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to open \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
 
     /*********************************************************
@@ -164,9 +165,9 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
     *********************************************************/
     struct stat sbuf;
     if (::fstat(file_handle, &sbuf) == -1) {
-        std::string str("MemoryFile EXC : Failed to get file info: ");
-        str.append(path);
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to get file info \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
 
     /*********************************************************
@@ -180,9 +181,9 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
                                        0, sbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, file_handle, 0) );
         if (data == MAP_FAILED) {
             data = 0;
-            std::string str("MemoryFile EXC : Failed to create mapping: ");
-            str.append(path);
-            throw std::runtime_error(str);
+            std::stringstream ss;
+            ss << "MemoryFile EXC : Failed to create mapping for \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
+            throw std::runtime_error(ss.str());
         } else {
             size = sbuf.st_size;
         }
@@ -296,23 +297,23 @@ MemoryFile::resize(size_t new_size)
 #if defined(__NATRON_UNIX__)
     if (_imp->data) {
         if (::munmap(_imp->data, _imp->size) < 0) {
-            std::string str("MemoryFile EXC : Failed to unmap the mapped file: ");
-            str.append( std::strerror(errno) );
-            throw std::runtime_error(str);
+            std::stringstream ss;
+            ss << "MemoryFile EXC : Failed to unmap \"" << _imp->path << "\": " << std::strerror(errno) << " (" << errno << ")";
+            throw std::runtime_error(ss.str());
         }
     }
     if (::ftruncate(_imp->file_handle, new_size) < 0) {
-        std::string str("MemoryFile EXC : Failed to resize the mapped file: ");
-        str.append( std::strerror(errno) );
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to truncate the file \"" << _imp->path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
     _imp->data = static_cast<char*>( ::mmap(
                                          0, new_size, PROT_READ | PROT_WRITE, MAP_SHARED, _imp->file_handle, 0) );
     if (_imp->data == MAP_FAILED) {
         _imp->data = 0;
-        std::string str("MemoryFile EXC : Failed to create mapping: ");
-        str.append(_imp->path);
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to create mapping of \"" << _imp->path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
 
 #elif defined(__NATRON_WIN32__)
@@ -335,9 +336,9 @@ MemoryFilePrivate::closeMapping()
 {
 #if defined(__NATRON_UNIX__)
     if (::munmap(data,size) != 0) {
-        std::string str("MemoryFile EXC : Failed to unmap the mapped file: ");
-        str.append( std::strerror(errno) );
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to unmap \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
     ::close(file_handle);
 #elif defined(__NATRON_WIN32__)
