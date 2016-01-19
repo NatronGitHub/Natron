@@ -125,6 +125,9 @@ if [ "$DISABLE_BREAKPAD" = "1" ]; then
 fi
 
 $QTDIR/bin/qmake -r -spec "$SPEC" QMAKE_CC="$CC" QMAKE_CXX="$CXX" QMAKE_LINK="$CXX" ${EXTRA_QMAKE_FLAG} CONFIG+=`echo $BITS| awk '{print tolower($0)}'` CONFIG+=noassertions CONFIG+=silent CONFIG+=$CONFIG $QMAKEEXTRAFLAGS $QMAKE_BREAKPAD || exit 1
+make -j${MKJOBS} -C Engine mocables || exit 1
+make -j${MKJOBS} -C Gui mocables || exit 1
+make -j${MKJOBS} -C App mocables || exit 1
 make -j${MKJOBS} || exit 1
 
 env TAG=$TAG DISABLE_BREAKPAD="$DISABLE_BREAKPAD" DUMP_SYMS="$DUMP_SYMS" SYMBOLS_PATH="$CWD/build/symbols" ${CWD}/build-natron-deploy.sh "App/Natron.app" || exit 1

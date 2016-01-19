@@ -139,6 +139,9 @@ if [ "$DISABLE_BREAKPAD" = "1" ]; then
 fi
 
 $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${CONFIG_BREAKPAD_FLAG} CONFIG+=silent CONFIG+=${BIT}bit DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
+make -j${MKJOBS} -C Engine mocables || exit 1
+make -j${MKJOBS} -C Gui mocables || exit 1
+make -j${MKJOBS} -C App mocables || exit 1
 make -j${MKJOBS} || exit 1
 
 cp App/release/Natron.exe $INSTALL_PATH/bin/ || exit 1
