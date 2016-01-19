@@ -34,6 +34,8 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include <cassert>
 #include <iostream>
 #include <sstream>
+#include <string>
+#include <cstring>
 #include <exception>
 
 #ifndef REPORTER_CLI_ONLY
