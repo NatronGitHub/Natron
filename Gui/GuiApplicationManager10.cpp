@@ -36,6 +36,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QSettings>
 #include <QApplication>
 #include <QDesktopWidget>
+#include <QFileOpenEvent>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -55,6 +56,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/QtDecoder.h"
 #include "Gui/QtEncoder.h"
 #include "Gui/SplashScreen.h"
+
+Q_INIT_RESOURCE_EXTERN(GuiResources);
 
 /**
  * @macro Registers a keybind to the application.
@@ -290,8 +293,12 @@ GuiApplicationManager::initializeQApp(int &argc,
     setCurrentLogicalDPI(dpiX,dpiY);
 
     app->setQuitOnLastWindowClosed(true);
-    Q_INIT_RESOURCE(GuiResources);
-    
+
+    //Q_INIT_RESOURCE(GuiResources);
+    // Q_INIT_RESOURCES expanded, and fixed for use from inside a namespace:
+    // (requires using Q_INIT_RESOURCES_EXTERN(GuiResources) before entering the namespace)
+    ::qInitResources_GuiResources();
+
     ///Register all the shortcuts.
     populateShortcuts();
 }
