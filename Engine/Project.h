@@ -54,7 +54,7 @@ NATRON_NAMESPACE_ENTER;
 struct ProjectPrivate;
 
 class Project
-    :  public KnobHolder, public NodeCollection,  public boost::noncopyable, public boost::enable_shared_from_this<Natron::Project>
+    :  public KnobHolder, public NodeCollection,  public boost::noncopyable, public boost::enable_shared_from_this<Project>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -400,6 +400,7 @@ private:
 
     boost::scoped_ptr<ProjectPrivate> _imp;
 };
-} // Natron
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_PROJECT_H

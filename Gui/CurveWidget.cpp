@@ -106,7 +106,7 @@ CurveWidget::CurveWidget(Gui* gui,
     setMouseTracking(true);
 
     if (timeline) {
-        boost::shared_ptr<Natron::Project> project = gui->getApp()->getProject();
+        boost::shared_ptr<Project> project = gui->getApp()->getProject();
         assert(project);
         QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ),this,SLOT( onTimeLineFrameChanged(SequenceTime,int) ) );
         QObject::connect( project.get(),SIGNAL( frameRangeChanged(int,int) ),this,SLOT( onTimeLineBoundariesChanged(int,int) ) );

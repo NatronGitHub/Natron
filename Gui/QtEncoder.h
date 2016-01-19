@@ -32,6 +32,7 @@
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class QtWriter
     : public Natron::OutputEffectInstance

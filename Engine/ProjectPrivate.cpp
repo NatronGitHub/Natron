@@ -50,7 +50,7 @@
 
 NATRON_NAMESPACE_USING
 
-ProjectPrivate::ProjectPrivate(Natron::Project* project)
+ProjectPrivate::ProjectPrivate(Project* project)
     : _publicInterface(project)
     , projectLock()
     , hasProjectBeenSavedByUser(false)

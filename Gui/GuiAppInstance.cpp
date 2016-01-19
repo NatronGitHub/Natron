@@ -305,7 +305,7 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     }
 
     /// Create auto-save dir if it does not exists
-    QDir dir = Natron::Project::autoSavesDir();
+    QDir dir = Project::autoSavesDir();
     dir.mkpath(".");
 
 

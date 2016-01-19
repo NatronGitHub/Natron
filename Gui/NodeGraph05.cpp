@@ -140,7 +140,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
     }
     
    
-    boost::shared_ptr<Natron::Project> proj = getGui()->getApp()->getProject();
+    boost::shared_ptr<Project> proj = getGui()->getApp()->getProject();
 
 
     ///default

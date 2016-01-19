@@ -253,7 +253,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         assert(getGui());
         GuiAppInstance* guiApp = getGui()->getApp();
         assert(guiApp);
-        boost::shared_ptr<Natron::Project> project = guiApp->getProject();
+        boost::shared_ptr<Project> project = guiApp->getProject();
         assert(project);
         bool ok = project->disconnectNodes(inputNode.get(), outputNode.get());
         if (!ok) {

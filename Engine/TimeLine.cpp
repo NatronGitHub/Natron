@@ -37,7 +37,7 @@
 
 NATRON_NAMESPACE_USING
 
-TimeLine::TimeLine(Natron::Project* project)
+TimeLine::TimeLine(Project* project)
 : _project(project)
 , _currentFrame(1)
 {

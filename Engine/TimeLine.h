@@ -53,7 +53,7 @@ class TimeLine
 
 public:
 
-    TimeLine(Natron::Project* project);
+    TimeLine(Project* project);
 
     virtual ~TimeLine()
     {
@@ -87,7 +87,7 @@ Q_SIGNALS:
 private:
     
     mutable QMutex _lock; // protects the following SequenceTime members
-    Natron::Project* _project;
+    Project* _project;
     SequenceTime _currentFrame;
 };
 

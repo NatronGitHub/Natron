@@ -53,7 +53,7 @@ NonKeyParams::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("ElementsCount",_elementsCount);
 }
 
-}
+NATRON_NAMESPACE_EXIT;
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(Natron::NonKeyParams);
 

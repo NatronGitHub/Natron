@@ -92,7 +92,7 @@ FlagSetter::~FlagSetter()
 
 struct NATRON_NAMESPACE::AppInstancePrivate
 {
-    boost::shared_ptr<Natron::Project> _currentProject; //< ptr to the project
+    boost::shared_ptr<Project> _currentProject; //< ptr to the project
     int _appID; //< the unique ID of this instance (or window)
     bool _projectCreatedWithLowerCaseIDs;
     
@@ -109,7 +109,7 @@ struct NATRON_NAMESPACE::AppInstancePrivate
     
     AppInstancePrivate(int appID,
                        AppInstance* app)
-    : _currentProject( new Natron::Project(app) )
+    : _currentProject( new Project(app) )
     , _appID(appID)
     , _projectCreatedWithLowerCaseIDs(false)
     , creatingGroupMutex()
@@ -1123,7 +1123,7 @@ AppInstance::getNodeByFullySpecifiedName(const std::string & name) const
     return _imp->_currentProject->getNodeByFullySpecifiedName(name);
 }
 
-boost::shared_ptr<Natron::Project>
+boost::shared_ptr<Project>
 AppInstance::getProject() const
 {
     return _imp->_currentProject;
@@ -1535,14 +1535,14 @@ AppInstance::saveTemp(const std::string& filename)
 {
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
-    boost::shared_ptr<Natron::Project> project= getProject();
+    boost::shared_ptr<Project> project= getProject();
     return project->saveProject_imp(path.c_str(), outFile.c_str(), false, false,0);
 }
 
 bool
 AppInstance::save(const std::string& filename)
 {
-    boost::shared_ptr<Natron::Project> project= getProject();
+    boost::shared_ptr<Project> project= getProject();
     if (project->hasProjectBeenSavedByUser()) {
         QString projectFilename = project->getProjectFilename();
         QString projectPath = project->getProjectPath();

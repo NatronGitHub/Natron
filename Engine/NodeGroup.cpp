@@ -840,7 +840,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,const st
 {
     NodeList nodes = getNodes();
     
-    boost::shared_ptr<Natron::Project> project = _imp->app->getProject();
+    boost::shared_ptr<Project> project = _imp->app->getProject();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ((*it)->isActivated()) {
             (*it)->getLiveInstance()->beginChanges();
@@ -879,7 +879,7 @@ void
 NodeCollection::fixPathName(const std::string& oldName,const std::string& newName)
 {
     NodeList nodes = getNodes();
-    boost::shared_ptr<Natron::Project> project = _imp->app->getProject();
+    boost::shared_ptr<Project> project = _imp->app->getProject();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ((*it)->isActivated()) {
             const std::vector<boost::shared_ptr<KnobI> >& knobs = (*it)->getKnobs();

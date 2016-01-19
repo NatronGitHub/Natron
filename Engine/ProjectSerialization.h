@@ -95,7 +95,7 @@ public:
         return _version;
     }
     
-    void initialize(const Natron::Project* project);
+    void initialize(const Project* project);
 
     SequenceTime getCurrentTime() const
     {

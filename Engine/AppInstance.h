@@ -202,7 +202,7 @@ public:
   
     boost::shared_ptr<Natron::Node> getNodeByFullySpecifiedName(const std::string & name) const;
     
-    boost::shared_ptr<Natron::Project> getProject() const;
+    boost::shared_ptr<Project> getProject() const;
     
     boost::shared_ptr<TimeLine> getTimeLine() const;
 

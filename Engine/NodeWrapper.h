@@ -363,6 +363,6 @@ public:
     void setPagesOrder(const std::list<std::string>& pages);
 };
 
-}
+NATRON_NAMESPACE_EXIT;
 
 #endif // NODEWRAPPER_H

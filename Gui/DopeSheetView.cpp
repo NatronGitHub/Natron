@@ -2442,7 +2442,7 @@ DopeSheetView::DopeSheetView(DopeSheet *model, HierarchyView *hierarchyView,
     setMouseTracking(true);
 
     if (timeline) {
-        boost::shared_ptr<Natron::Project> project = gui->getApp()->getProject();
+        boost::shared_ptr<Project> project = gui->getApp()->getProject();
         assert(project);
 
         connect(timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimeLineFrameChanged(SequenceTime,int)));

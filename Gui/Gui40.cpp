@@ -870,7 +870,7 @@ Gui::onTimeChanged(SequenceTime time,
 {
     assert(QThread::currentThread() == qApp->thread());
     
-    boost::shared_ptr<Natron::Project> project = getApp()->getProject();
+    boost::shared_ptr<Project> project = getApp()->getProject();
     
     ///Refresh all visible knobs at the current time
     if (!getApp()->isGuiFrozen()) {

@@ -1507,5 +1507,5 @@ rgb_to_hsv( float r,
     }
 }
 }     // namespace Color {
-} // NATRON_NAMESPACE_ENTER;
+NATRON_NAMESPACE_EXIT;
 

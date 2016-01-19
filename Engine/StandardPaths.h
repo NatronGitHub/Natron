@@ -33,6 +33,7 @@
 
 
 NATRON_NAMESPACE_ENTER;
+
 class StandardPaths
 {
 public:
@@ -63,6 +64,7 @@ private:
 
     StandardPaths();
 };
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // STANDARDPATHS_H

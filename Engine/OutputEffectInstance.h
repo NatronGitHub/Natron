@@ -149,5 +149,7 @@ protected:
     virtual RenderEngine* createRenderEngine();
     virtual void resetTimeSpentRenderingInfos() OVERRIDE FINAL;
 };
-} // Natron
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // Engine_OutputEffectInstance_h

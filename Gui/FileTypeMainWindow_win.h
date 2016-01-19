@@ -45,6 +45,8 @@
 #include <windows.h>
 #include <QMainWindow>
 
+NATRON_NAMESPACE_ENTER;
+
 // —— local includes —————————————————————————-
 // —— pre defines ——————————————————————————-
 

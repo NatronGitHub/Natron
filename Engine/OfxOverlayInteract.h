@@ -36,6 +36,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 
 NATRON_NAMESPACE_ENTER;
+
 class NatronOverlayInteractSupport
 {
     
@@ -322,6 +323,7 @@ public:
 
     void getPixelAspectRatio(double & par) const;
 };
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_OFXOVERLAYINTERACT_H

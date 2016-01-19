@@ -327,7 +327,7 @@ void KnobGuiFile::onTextEdited()
 //    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
 //        std::map<std::string,std::string> envvar;
 //        _knob->getHolder()->getApp()->getProject()->getEnvironmentVariables(envvar);
-//        Natron::Project::findReplaceVariable(envvar,str);
+//        Project::findReplaceVariable(envvar,str);
 //    }
     
     
@@ -574,7 +574,7 @@ KnobGuiOutputFile::onTextEdited()
 //    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
 //        std::map<std::string,std::string> envvar;
 //        _knob->getHolder()->getApp()->getProject()->getEnvironmentVariables(envvar);
-//        Natron::Project::findReplaceVariable(envvar,newPattern);
+//        Project::findReplaceVariable(envvar,newPattern);
 //    }
 //
 //    
@@ -1071,7 +1071,7 @@ KnobGuiPath::onTextEdited()
 //    if (allowSimplification && _knob->getHolder() && _knob->getHolder()->getApp()) {
 //        std::map<std::string,std::string> envvar;
 //        _knob->getHolder()->getApp()->getProject()->getEnvironmentVariables(envvar);
-//        Natron::Project::findReplaceVariable(envvar,dirPath);
+//        Project::findReplaceVariable(envvar,dirPath);
 //    }
 
     
@@ -1097,7 +1097,7 @@ KnobGuiPath::updateGUI(int /*dimension*/)
     
     if (_knob.lock()->isMultiPath()) {
         std::vector<std::pair<std::string,std::string> > variables;
-        Natron::Project::makeEnvMapUnordered(path.toStdString(), variables);
+        Project::makeEnvMapUnordered(path.toStdString(), variables);
         
         
         _model->clear();
@@ -1245,8 +1245,8 @@ KnobGuiPath::onItemDataChanged(TableItem* /*item*/)
             appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
             std::map<std::string,std::string> oldEnv,newEnv;
             
-            Natron::Project::makeEnvMap(oldPath,oldEnv);
-            Natron::Project::makeEnvMap(newPath, newEnv);
+            Project::makeEnvMap(oldPath,oldEnv);
+            Project::makeEnvMap(newPath, newEnv);
             
             ///Compare the 2 maps to find-out if a path has changed or just a name
             if (oldEnv.size() == newEnv.size()) {

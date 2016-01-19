@@ -57,7 +57,7 @@ public:
     ProjectGui(Gui* gui);
     virtual ~ProjectGui() OVERRIDE;
 
-    void create(boost::shared_ptr<Natron::Project> projectInternal,QVBoxLayout* container,QWidget* parent = NULL);
+    void create(boost::shared_ptr<Project> projectInternal,QVBoxLayout* container,QWidget* parent = NULL);
 
 
     bool isVisible() const;
@@ -67,7 +67,7 @@ public:
         return _panel;
     }
 
-    boost::shared_ptr<Natron::Project> getInternalProject() const
+    boost::shared_ptr<Project> getInternalProject() const
     {
         return _project.lock();
     }
@@ -115,7 +115,7 @@ private:
 
 
     Gui* _gui;
-    boost::weak_ptr<Natron::Project> _project;
+    boost::weak_ptr<Project> _project;
     DockablePanel* _panel;
     bool _created;
     std::vector<boost::shared_ptr<KnobColor> > _colorPickersEnabled;
@@ -129,7 +129,7 @@ class AddFormatDialog
 
 public:
 
-    AddFormatDialog(Natron::Project* project,
+    AddFormatDialog(Project* project,
                     Gui* gui);
 
     virtual ~AddFormatDialog()
@@ -145,7 +145,7 @@ public Q_SLOTS:
 private:
 
     Gui* _gui;
-    Natron::Project* _project;
+    Project* _project;
     
     std::list<ViewerInstance*> _viewers;
     

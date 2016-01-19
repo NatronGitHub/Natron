@@ -1549,14 +1549,14 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
         internalNewNodes.push_back(it->second->getNode());
     }
     
-    std::list<Natron::Project::NodesTree> trees;
-    Natron::Project::extractTreesFromNodes(internalNewNodes, trees);
+    std::list<Project::NodesTree> trees;
+    Project::extractTreesFromNodes(internalNewNodes, trees);
     
     bool hasCreatedOutput = false;
     
     int inputNb = 0;
-    for (std::list<Natron::Project::NodesTree>::iterator it = trees.begin(); it!= trees.end(); ++it) {
-        for (std::list<Natron::Project::TreeInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {
+    for (std::list<Project::NodesTree>::iterator it = trees.begin(); it!= trees.end(); ++it) {
+        for (std::list<Project::TreeInput>::iterator it2 = it->inputs.begin(); it2 != it->inputs.end(); ++it2) {
             
             ///Find the equivalent node in the original nodes and see which inputs we need to create
 

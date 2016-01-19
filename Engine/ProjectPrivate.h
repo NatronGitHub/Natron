@@ -92,7 +92,7 @@ generateFormatFromString(const QString& spec, Format* f)
 
 struct ProjectPrivate
 {
-    Natron::Project* _publicInterface;
+    Project* _publicInterface;
     mutable QMutex projectLock; //< protects the whole project
     QString lastAutoSaveFilePath; //< absolute file path of the last auto-save file
     bool hasProjectBeenSavedByUser; //< has this project ever been saved by the user?
@@ -148,7 +148,7 @@ struct ProjectPrivate
     
     boost::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
     
-    ProjectPrivate(Natron::Project* project);
+    ProjectPrivate(Project* project);
 
     bool restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path, bool* mustSave);
 
@@ -172,6 +172,7 @@ struct ProjectPrivate
     std::string getProjectPath() const;
     
 };
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PROJECTPRIVATE_H

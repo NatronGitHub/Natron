@@ -135,7 +135,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
             assert(holder);
             
             Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
-            Natron::Project* isProject = dynamic_cast<Natron::Project*>(holder);
+            Project* isProject = dynamic_cast<Project*>(holder);
 
             if (isProject) {
                 _openedPanelsOrdered.push_back(kNatronProjectSettingsPanelSerializationName);

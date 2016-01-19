@@ -2622,7 +2622,7 @@ AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
 {
     QMutexLocker k(&_imp->_appInstancesMutex);
     for (std::map<int,AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
-        boost::shared_ptr<Natron::Project> proj = it->second.app->getProject();
+        boost::shared_ptr<Project> proj = it->second.app->getProject();
         if (proj) {
             QString path = proj->getProjectPath();
             QString name = proj->getProjectFilename();
@@ -2772,9 +2772,8 @@ AppManager::getOFXHost() const
     return _imp->ofxHost.get();
 }
 
-static
 void
-errorDialog(const std::string & title,
+NATRON_NAMESPACE::errorDialog(const std::string & title,
             const std::string & message,
             bool useHtml)
 {
@@ -2787,9 +2786,8 @@ errorDialog(const std::string & title,
     }
 }
 
-static
 void
-errorDialog(const std::string & title,
+NATRON_NAMESPACE::errorDialog(const std::string & title,
             const std::string & message,
             bool* stopAsking,
             bool useHtml)
@@ -2803,9 +2801,8 @@ errorDialog(const std::string & title,
     }
 }
 
-static
 void
-warningDialog(const std::string & title,
+NATRON_NAMESPACE::warningDialog(const std::string & title,
               const std::string & message,
               bool useHtml)
 {
@@ -2818,9 +2815,8 @@ warningDialog(const std::string & title,
     }
 }
 
-static
 void
-warningDialog(const std::string & title,
+NATRON_NAMESPACE::warningDialog(const std::string & title,
               const std::string & message,
               bool* stopAsking,
               bool useHtml)
@@ -2834,9 +2830,8 @@ warningDialog(const std::string & title,
     }
 }
 
-static
 void
-informationDialog(const std::string & title,
+NATRON_NAMESPACE::informationDialog(const std::string & title,
                   const std::string & message,
                   bool useHtml)
 {
@@ -2849,9 +2844,8 @@ informationDialog(const std::string & title,
     }
 }
 
-static
 void
-informationDialog(const std::string & title,
+NATRON_NAMESPACE::informationDialog(const std::string & title,
                   const std::string & message,
                   bool* stopAsking,
                   bool useHtml)
@@ -2865,9 +2859,8 @@ informationDialog(const std::string & title,
     }
 }
 
-static
 StandardButtonEnum
-questionDialog(const std::string & title,
+NATRON_NAMESPACE::questionDialog(const std::string & title,
                const std::string & message,
                bool useHtml,
                Natron::StandardButtons buttons,
@@ -2885,9 +2878,8 @@ questionDialog(const std::string & title,
     }
 }
 
-static
 StandardButtonEnum
-questionDialog(const std::string & title,
+NATRON_NAMESPACE::questionDialog(const std::string & title,
                const std::string & message,
                bool useHtml,
                Natron::StandardButtons buttons,
@@ -2906,7 +2898,8 @@ questionDialog(const std::string & title,
     }
 }
     
-std::size_t NATRON_NAMESPACE::findNewLineStartAfterImports(std::string& script)
+std::size_t
+NATRON_NAMESPACE::findNewLineStartAfterImports(std::string& script)
 {
     ///Find position of the last import
     size_t foundImport = script.find("import ");
@@ -2939,19 +2932,22 @@ std::size_t NATRON_NAMESPACE::findNewLineStartAfterImports(std::string& script)
 
 }
     
-PyObject* NATRON_NAMESPACE::getMainModule()
+PyObject*
+NATRON_NAMESPACE::getMainModule()
 {
     return appPTR->getMainModule();
 }
 
-std::size_t NATRON_NAMESPACE::ensureScriptHasModuleImport(const std::string& moduleName,std::string& script)
+std::size_t
+NATRON_NAMESPACE::ensureScriptHasModuleImport(const std::string& moduleName,std::string& script)
 {
     /// import module
     script = "from " + moduleName + " import * \n" + script;
     return findNewLineStartAfterImports(script);
 }
     
-bool NATRON_NAMESPACE::interpretPythonScript(const std::string& script,std::string* error,std::string* output)
+bool
+NATRON_NAMESPACE::interpretPythonScript(const std::string& script,std::string* error,std::string* output)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return true;
@@ -3020,7 +3016,8 @@ bool NATRON_NAMESPACE::interpretPythonScript(const std::string& script,std::stri
 }
 
     
-void NATRON_NAMESPACE::compilePyScript(const std::string& script,PyObject** code)
+void
+NATRON_NAMESPACE::compilePyScript(const std::string& script,PyObject** code)
 {
     ///Must be locked
     assert(PyThreadState_Get());

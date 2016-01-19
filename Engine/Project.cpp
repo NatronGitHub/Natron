@@ -2017,7 +2017,7 @@ Project::simplifyPath(std::string& str)
     std::map<std::string,std::string> envvar;
     getEnvironmentVariables(envvar);
     
-    Natron::Project::findReplaceVariable(envvar,str);
+    Project::findReplaceVariable(envvar,str);
 }
     
     

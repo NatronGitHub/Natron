@@ -126,7 +126,7 @@ AppTLS::cleanupTLSForThread()
 template class TLSHolder<Natron::EffectInstance::EffectTLSData>;
 template class TLSHolder<Natron::OfxHost::OfxHostTLSData>;
 template class TLSHolder<KnobHelper::KnobTLSData>;
-template class TLSHolder<Natron::Project::ProjectTLSData>;
+template class TLSHolder<Project::ProjectTLSData>;
 template class TLSHolder<OfxClipInstance::ClipTLSData>;
 template class TLSHolder<OfxParamToKnob::OfxParamTLSData>;
 

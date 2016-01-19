@@ -60,8 +60,9 @@ CLANG_DIAG_ON(deprecated)
 #define M_PI 3.14159265358979323846264338327950288419717
 #endif
 
+NATRON_NAMESPACE_USING
 
-NATRON_NAMESPACE_ENTER;
+namespace {
 
 enum PositionInteractState
 {
@@ -70,11 +71,8 @@ enum PositionInteractState
     ePositionInteractStatePicked
 };
 
-NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING
-
-struct NATRON_NAMESPACE::PositionInteract
+struct PositionInteract
 {
     boost::weak_ptr<KnobDouble> param;
     QPointF dragPos;
@@ -93,8 +91,6 @@ struct NATRON_NAMESPACE::PositionInteract
     
     
 };
-
-namespace {
 
 
 struct TransformInteract

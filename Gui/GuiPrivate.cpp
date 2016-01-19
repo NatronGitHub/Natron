@@ -582,7 +582,7 @@ GuiPrivate::setUndoRedoActions(QAction* undoAction,
 bool
 GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,const QString& projectName)
 {
-    boost::shared_ptr<Natron::Project> project= _appInstance->getProject();
+    boost::shared_ptr<Project> project= _appInstance->getProject();
     QString author;
     QString lockCreationDate;
     QString lockHost;

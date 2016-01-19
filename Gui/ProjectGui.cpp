@@ -100,7 +100,7 @@ ProjectGui::initializeKnobsGui()
 }
 
 void
-ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,
+ProjectGui::create(boost::shared_ptr<Project> projectInternal,
                    QVBoxLayout* container,
                    QWidget* parent)
 
@@ -141,7 +141,7 @@ ProjectGui::setVisible(bool visible)
 void
 ProjectGui::createNewFormat()
 {
-    boost::shared_ptr<Natron::Project> project = _project.lock();
+    boost::shared_ptr<Project> project = _project.lock();
     AddFormatDialog dialog( project.get(),_gui->getApp()->getGui() );
 
     if ( dialog.exec() ) {
@@ -149,7 +149,7 @@ ProjectGui::createNewFormat()
     }
 }
 
-AddFormatDialog::AddFormatDialog(Natron::Project *project,
+AddFormatDialog::AddFormatDialog(Project *project,
                                  Gui* gui)
     : QDialog(gui),
       _gui(gui),

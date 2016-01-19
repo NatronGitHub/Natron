@@ -725,7 +725,7 @@ SequenceFileDialog::restoreState(const QByteArray & state, bool restoreDirectory
         QString var(it->second.c_str());
         if (it->first != NATRON_OCIO_ENV_VAR_NAME && !var.isEmpty()) {
             ///The variable may be nested
-            Natron::Project::expandVariable(envVar, it->second);
+            Project::expandVariable(envVar, it->second);
             expandedVars.push_back(var);
             QUrl url = QUrl::fromLocalFile(var);
             
@@ -1066,7 +1066,7 @@ SequenceFileDialog::proxyAndSetLineEditText(const QString& text)
         std::string varName,varPath;
         bool relative = getRelativeChoiceProjectPath(varName, varPath);
         if (relative) {
-            Natron::Project::makeRelativeToVariable(varName, varPath, stdText);
+            Project::makeRelativeToVariable(varName, varPath, stdText);
         }
     }
     _selectionLineEdit->setText(stdText.c_str());
@@ -1868,7 +1868,7 @@ SequenceFileDialog::selectedFiles()
         std::string varName,varPath;
         bool relative = getRelativeChoiceProjectPath(varName, varPath);
         if (relative) {
-            Natron::Project::makeRelativeToVariable(varName, varPath, selection);
+            Project::makeRelativeToVariable(varName, varPath, selection);
         }
     }
 
@@ -1921,7 +1921,7 @@ SequenceFileDialog::selectedDirectory() const
         std::string pathName,pathValue;
         bool relative = getRelativeChoiceProjectPath(pathName, pathValue);
         if (relative) {
-            Natron::Project::makeRelativeToVariable(pathName, pathValue, path);
+            Project::makeRelativeToVariable(pathName, pathValue, path);
         }
     }
 
@@ -2360,7 +2360,7 @@ UrlModel::mapUrlToDisplayName(const QString& originalName)
 	for (std::map<std::string,std::string>::const_iterator it = envVars.begin(); it != envVars.end(); ++it) {
 		///if it->second ends with '/' remove it
 		std::string stdVar = it->second;
-		Natron::Project::expandVariable(envVars, stdVar);
+		Project::expandVariable(envVars, stdVar);
 		QString var(stdVar.c_str());
 		if (var.size() > 1 && (var.endsWith('/') || var.endsWith('\\'))) {
 			var = var.remove(var.size() - 1, 1);

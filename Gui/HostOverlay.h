@@ -42,7 +42,6 @@
 NATRON_NAMESPACE_ENTER;
 
 // defined below:
-struct PositionInteract;
 struct HostOverlayPrivate;
 
 class HostOverlay : public Natron::NatronOverlayInteractSupport

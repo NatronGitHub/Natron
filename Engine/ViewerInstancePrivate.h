@@ -60,7 +60,6 @@ struct OnGoingRenderInfo
 
 typedef std::map<U64,OnGoingRenderInfo> OnGoingRenders;
 
-//NATRON_NAMESPACE_ENTER;
 
 struct RenderViewerArgs
 {

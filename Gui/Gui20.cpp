@@ -1050,7 +1050,7 @@ updateRecentFiles(const QString & filename)
 bool
 Gui::saveProject()
 {
-    boost::shared_ptr<Natron::Project> project= _imp->_appInstance->getProject();
+    boost::shared_ptr<Project> project= _imp->_appInstance->getProject();
     if (project->hasProjectBeenSavedByUser()) {
         
         

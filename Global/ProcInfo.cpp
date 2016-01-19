@@ -26,6 +26,8 @@
 #include <QStringList>
 #include <QDebug>
 
+NATRON_NAMESPACE_USING
+
 namespace {
 
 #ifdef __NATRON_OSX__
@@ -265,9 +267,7 @@ static QString applicationFilePath_fromArgv(const char* argv0Param)
 
 } // anon namespace
 
-NATRON_NAMESPACE_ENTER;
-
-QString applicationFilePath(const char* argv0Param)
+QString NATRON_NAMESPACE::applicationFilePath(const char* argv0Param)
 {
 
 #if defined(Q_WS_WIN)
@@ -300,7 +300,7 @@ QString applicationFilePath(const char* argv0Param)
 #endif
 }
 
-QString applicationDirPath(const char* argv0Param)
+QString NATRON_NAMESPACE::applicationDirPath(const char* argv0Param)
 {
     QString filePath = applicationFilePath(argv0Param);
     int foundSlash = filePath.lastIndexOf('/');
@@ -310,7 +310,7 @@ QString applicationDirPath(const char* argv0Param)
     return filePath.mid(0, foundSlash);
 }
     
-bool checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/, Q_PID /*pid*/)
+bool NATRON_NAMESPACE::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/, Q_PID /*pid*/)
 {
     //Not working yet
     return true;
@@ -392,5 +392,3 @@ bool checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/, Q_PID /*pi
 #endif
 #endif
 } // checkIfProcessIsRunning
-
-} // Natron

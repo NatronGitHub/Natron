@@ -32,7 +32,7 @@
 NATRON_NAMESPACE_USING
 
 void
-ProjectSerialization::initialize(const Natron::Project* project)
+ProjectSerialization::initialize(const Project* project)
 {
     ///All the code in this function is MT-safe
 
