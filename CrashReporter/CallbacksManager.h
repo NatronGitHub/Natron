@@ -120,6 +120,9 @@ public Q_SLOTS:
     
     void onComPipeDataWrittenTo();
     
+    void onSpawnedProcessFinished(int exitCode, QProcess::ExitStatus status);
+    void onSpawnedProcessError(QProcess::ProcessError error);
+    
 Q_SIGNALS:
 
     void doExitCallbackOnMainThread(int exitCode, bool exitEvenIfDumpedReceived);
