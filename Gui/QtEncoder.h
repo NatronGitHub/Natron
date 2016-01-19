@@ -78,11 +78,11 @@ public:
         return 1;
     }
 
-    void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, double time,
+    void knobChanged(KnobI* k, ValueChangedReasonEnum reason, int view, double time,
                      bool originatedFromMainThread) OVERRIDE FINAL;
-    virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE;
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
 protected:
 
@@ -103,6 +103,8 @@ private:
     boost::shared_ptr<KnobInt> _lastFrameKnob;
     boost::shared_ptr<KnobButton> _renderKnob;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENABLE_QT_IO_NODES
 

@@ -38,6 +38,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER
 
 class BaseTest
     : public testing::Test
@@ -84,5 +85,7 @@ protected:
     std::vector<QString> _allTestPluginIDs;
     AppInstance* _app;
 };
+
+NATRON_NAMESPACE_EXIT
 
 #endif // BASETEST_H

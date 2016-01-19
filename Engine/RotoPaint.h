@@ -30,6 +30,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct RotoPaintPrivate;
 class RotoPaint : public Natron::EffectInstance
@@ -86,8 +87,8 @@ public:
         return true;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
     virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -112,9 +113,9 @@ public:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 
-    virtual void getPreferredDepthAndComponents(int inputNb,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;
+    virtual void getPreferredDepthAndComponents(int inputNb,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const OVERRIDE FINAL;
 
-    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
+    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
 
     virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
 
@@ -131,12 +132,12 @@ public:
 private:
     
     virtual void knobChanged(KnobI* k,
-                             Natron::ValueChangedReasonEnum reason,
+                             ValueChangedReasonEnum reason,
                              int view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
 
-    virtual Natron::StatusEnum
+    virtual StatusEnum
     getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
     
     virtual void getRegionsOfInterest(double time,
@@ -157,7 +158,7 @@ private:
         
 
 
-    virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
+    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
     boost::scoped_ptr<RotoPaintPrivate> _imp;
 
@@ -187,5 +188,7 @@ public:
     
     virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // ROTOPAINT_H

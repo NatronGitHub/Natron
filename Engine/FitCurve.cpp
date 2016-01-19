@@ -30,8 +30,8 @@
 #define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
 #endif
 
-using namespace FitCurve;
-using namespace Natron;
+NATRON_NAMESPACE_USING
+using namespace NATRON_NAMESPACE::FitCurve;
 
 /*
  * This implementation is based on Graphic Gems I

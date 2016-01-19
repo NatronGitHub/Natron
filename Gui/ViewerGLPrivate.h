@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #define WIPE_ROTATE_HANDLE_LENGTH 100.
 #define WIPE_ROTATE_OFFSET 30
 
+NATRON_NAMESPACE_ENTER;
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
    Everything related to OpenGL will (almost always) be in this class */
@@ -124,9 +125,9 @@ struct ViewerGL::Implementation
     double displayingImageGamma[2];
     double displayingImageOffset[2];
     unsigned int displayingImageMipMapLevel[2];
-    Natron::ImagePremultiplicationEnum displayingImagePremult[2];
+    ImagePremultiplicationEnum displayingImagePremult[2];
     int displayingImageTime[2];
-    Natron::ViewerColorSpaceEnum displayingImageLut;
+    ViewerColorSpaceEnum displayingImageLut;
     MouseStateEnum ms; /*!< Holds the mouse state*/
     HoverStateEnum hs;
     const QColor textRenderingColor;
@@ -272,5 +273,6 @@ private:
     void initAndCheckGlExtensions ();
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif //_Gui_ViewerGLPrivate_h_

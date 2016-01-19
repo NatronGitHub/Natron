@@ -79,7 +79,7 @@ CLANG_DIAG_ON(deprecated)
 
 #define TAB_DRAG_WIDGET_PERCENT_FOR_SPLITTING 0.13
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 class TransparantDropRect: public QWidget
@@ -183,7 +183,7 @@ private:
     }
 };
 
-struct TabWidgetPrivate
+struct NATRON_NAMESPACE::TabWidgetPrivate
 {
     TabWidget* _publicInterface;
     Gui* gui;
@@ -2164,3 +2164,5 @@ TabWidgetPrivate::removeTabToPython(PanelWidget* widget,const std::string& tabNa
     }
 }
 
+
+#include "moc_TabWidget.cpp"

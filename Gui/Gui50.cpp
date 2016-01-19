@@ -87,7 +87,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/Histogram.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 void

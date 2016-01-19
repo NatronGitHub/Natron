@@ -52,6 +52,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct OfxClipInstancePrivate;
 class OfxClipInstance
@@ -198,7 +199,7 @@ public:
 
     void setClipTLS(int view,
                     unsigned int mipmapLevel,
-                    const Natron::ImageComponents& components);
+                    const ImageComponents& components);
     void invalidateClipTLS();
 
     //returns the index of this clip if it is an input clip, otherwise -1.
@@ -206,12 +207,12 @@ public:
 
     Natron::EffectInstance* getAssociatedNode() const WARN_UNUSED_RETURN;
     
-    Natron::ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
-    static std::string natronsPlaneToOfxPlane(const Natron::ImageComponents& plane);
-    static std::string natronsComponentsToOfxComponents(const Natron::ImageComponents& comp);
-    static std::list<Natron::ImageComponents> ofxComponentsToNatronComponents(const std::string & comp);
-    static Natron::ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
-    static std::string natronsDepthToOfxDepth(Natron::ImageBitDepthEnum depth);
+    ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
+    static std::string natronsPlaneToOfxPlane(const ImageComponents& plane);
+    static std::string natronsComponentsToOfxComponents(const ImageComponents& comp);
+    static std::list<ImageComponents> ofxComponentsToNatronComponents(const std::string & comp);
+    static ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
+    static std::string natronsDepthToOfxDepth(ImageBitDepthEnum depth);
 
 
 
@@ -223,7 +224,7 @@ public:
         std::list<OfxImage*> imagesBeingRendered;
         
         //Used to determine the plane to render in a call to getOutputImageInternal()
-        Natron::ImageComponents clipComponents;
+        ImageComponents clipComponents;
         
         RenderActionData()
         : imagesBeingRendered()
@@ -331,5 +332,7 @@ private:
     boost::scoped_ptr<OfxImagePrivate> _imp;
 
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_OFXCLIPINSTANCE_H

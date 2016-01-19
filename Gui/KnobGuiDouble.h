@@ -51,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class KnobGuiDouble
     : public KnobGui
@@ -130,4 +131,7 @@ private:
     Button *_dimensionSwitchButton;
     boost::weak_ptr<KnobDouble> _knob;
 };
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // Gui_KnobGuiDouble_h

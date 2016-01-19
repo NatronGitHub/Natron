@@ -44,6 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct EditScriptDialogPrivate;
 class EditScriptDialog : public QDialog
@@ -107,5 +108,6 @@ private:
     boost::scoped_ptr<EditScriptDialogPrivate> _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_EditScriptDialog_h

@@ -53,7 +53,7 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Gui/Utils.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 /*
@@ -1042,3 +1042,5 @@ ComboBox::getAltered() const
 {
     return _altered;
 }
+
+#include "moc_ComboBox.cpp"

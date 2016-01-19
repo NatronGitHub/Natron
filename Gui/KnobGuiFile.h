@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGui.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 //================================
 class KnobGuiFile
@@ -280,6 +281,8 @@ private:
     Variables _items;
     bool _dragAndDropping;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_KnobGuiFile_h
 

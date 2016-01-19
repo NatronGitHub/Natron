@@ -92,7 +92,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 ////////////////////////////////////Stroke//////////////////////////////////
 
@@ -550,8 +550,8 @@ RotoStrokeItem::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stro
                           const std::list<std::pair<Natron::Point,double> >& points,
                           unsigned int mipmapLevel,
                           double par,
-                          const Natron::ImageComponents& components,
-                          Natron::ImageBitDepthEnum depth,
+                          const ImageComponents& components,
+                          ImageBitDepthEnum depth,
                           double distToNext,
                           boost::shared_ptr<Natron::Image> *wholeStrokeImage)
 {

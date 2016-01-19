@@ -32,7 +32,7 @@
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 class StandardPaths
 {
 public:

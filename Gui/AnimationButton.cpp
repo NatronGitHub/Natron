@@ -52,6 +52,9 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/GuiApplicationManager.h"
+
+NATRON_NAMESPACE_USING
+
 void
 AnimationButton::mousePressEvent(QMouseEvent* e)
 {
@@ -225,3 +228,5 @@ AnimationButton::leaveEvent(QEvent* /*e*/)
     }
 }
 
+
+#include "moc_AnimationButton.cpp"

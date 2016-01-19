@@ -62,7 +62,7 @@
 #endif
 #endif
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 void
 Gui::createDefaultLayout1()
@@ -142,7 +142,7 @@ restoreSplitterRecursive(Gui* gui,
                          const SplitterSerialization & serialization)
 {
     Qt::Orientation qO;
-    Natron::OrientationEnum nO = (Natron::OrientationEnum)serialization.orientation;
+    OrientationEnum nO = (OrientationEnum)serialization.orientation;
 
     switch (nO) {
     case Natron::eOrientationHorizontal:

@@ -16,102 +16,13 @@ GCC_DIAG_OFF(missing-declarations)
 #include "appsettings_wrapper.h"
 
 // Extra includes
-#include <ParameterWrapper.h>
-#include <list>
+NATRON_NAMESPACE_USING
 
 
 
 // Target ---------------------------------------------------------
 
 extern "C" {
-static PyObject* Sbk_AppSettingsFunc_getParam(PyObject* self, PyObject* pyArg)
-{
-    ::AppSettings* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::AppSettings*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APPSETTINGS_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: getParam(std::string)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), (pyArg)))) {
-        overloadId = 0; // getParam(std::string)const
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_AppSettingsFunc_getParam_TypeError;
-
-    // Call function/method
-    {
-        ::std::string cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // getParam(std::string)const
-            Param * cppResult = const_cast<const ::AppSettings*>(cppSelf)->getParam(cppArg0);
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    Sbk_AppSettingsFunc_getParam_TypeError:
-        const char* overloads[] = {"std::string", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.AppSettings.getParam", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_AppSettingsFunc_getParams(PyObject* self)
-{
-    ::AppSettings* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::AppSettings*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APPSETTINGS_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getParams()const
-            // Begin code injection
-
-            std::list<Param*> params = cppSelf->getParams();
-            PyObject* ret = PyList_New((int) params.size());
-            int idx = 0;
-            for (std::list<Param*>::iterator it = params.begin(); it!=params.end(); ++it,++idx) {
-            PyObject* item = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], *it);
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(item);
-            PyList_SET_ITEM(ret, idx, item);
-            }
-            return ret;
-
-            // End of code injection
-
-
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
 static PyObject* Sbk_AppSettingsFunc_restoreDefaultSettings(PyObject* self)
 {
     ::AppSettings* cppSelf = 0;
@@ -159,8 +70,6 @@ static PyObject* Sbk_AppSettingsFunc_saveSettings(PyObject* self)
 }
 
 static PyMethodDef Sbk_AppSettings_methods[] = {
-    {"getParam", (PyCFunction)Sbk_AppSettingsFunc_getParam, METH_O},
-    {"getParams", (PyCFunction)Sbk_AppSettingsFunc_getParams, METH_NOARGS},
     {"restoreDefaultSettings", (PyCFunction)Sbk_AppSettingsFunc_restoreDefaultSettings, METH_NOARGS},
     {"saveSettings", (PyCFunction)Sbk_AppSettingsFunc_saveSettings, METH_NOARGS},
 

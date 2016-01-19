@@ -43,6 +43,8 @@
 GCC_DIAG_OFF(strict-overflow)
 #endif
 
+NATRON_NAMESPACE_ENTER;
+
 class RectD
 {
 public:
@@ -339,8 +341,9 @@ operator!=(const RectD & b1,
            b1.right() != b2.right() ||
            b1.top() != b2.top();
 }
+NATRON_NAMESPACE_EXIT;
 
-Q_DECLARE_METATYPE(RectD)
+Q_DECLARE_METATYPE(Natron::RectD)
 
 
 #endif // Engine_RectD_h

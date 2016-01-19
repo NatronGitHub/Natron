@@ -35,6 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class LogWindow
     : public QDialog
@@ -54,5 +55,7 @@ public Q_SLOTS:
     
     void onClearButtonClicked();
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_LogWindow_h

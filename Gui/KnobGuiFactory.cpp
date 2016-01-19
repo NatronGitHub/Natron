@@ -46,7 +46,7 @@
 #include "Gui/KnobGuiParametric.h"
 #include "Gui/DockablePanel.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 using std::make_pair;
 using std::pair;
 

@@ -43,6 +43,7 @@
 #include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief Holds render infos for one frame for one node. Not MT-safe: MT-safety is handled by RenderStats.
@@ -93,8 +94,8 @@ public:
     void setChannelsRendered(std::bitset<4> channelsRendered);
     std::bitset<4> getChannelsRendered() const;
     
-    void setOutputPremult(Natron::ImagePremultiplicationEnum premult);
-    Natron::ImagePremultiplicationEnum getOutputPremult() const;
+    void setOutputPremult(ImagePremultiplicationEnum premult);
+    ImagePremultiplicationEnum getOutputPremult() const;
     
 private:
     
@@ -123,7 +124,7 @@ public:
     
     void setGlobalRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
                                      const RectD& rod,
-                                     Natron::ImagePremultiplicationEnum outputPremult,
+                                     ImagePremultiplicationEnum outputPremult,
                                      std::bitset<4> channelsRendered,
                                      bool tilesSupported,
                                      bool renderScaleSupported,
@@ -145,5 +146,8 @@ private:
     
     boost::scoped_ptr<RenderStatsPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
+
 
 #endif // RENDERSTATS_H

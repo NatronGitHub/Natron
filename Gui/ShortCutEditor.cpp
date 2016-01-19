@@ -47,6 +47,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/Utils.h"
 
+NATRON_NAMESPACE_USING
+
 struct GuiBoundAction
 {
     QTreeWidgetItem* item;
@@ -114,7 +116,7 @@ public:
     }
 };
 
-struct ShortCutEditorPrivate
+struct NATRON_NAMESPACE::ShortCutEditorPrivate
 {
     QVBoxLayout* mainLayout;
     HackedTreeWidget* tree;
@@ -702,7 +704,7 @@ ShortCutEditor::onResetButtonClicked()
 void
 ShortCutEditor::onRestoreDefaultsButtonClicked()
 {
-    Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Restore defaults").toStdString(), tr("Restoring default shortcuts "
+    StandardButtonEnum reply = Natron::questionDialog( tr("Restore defaults").toStdString(), tr("Restoring default shortcuts "
                                                                                                     "will wipe all the current configuration "
                                                                                                     "are you sure you want to do this?").toStdString(), false );
 
@@ -835,3 +837,5 @@ KeybindRecorder::keyPressEvent(QKeyEvent* e)
     setText(txt);
 }
 
+
+#include "moc_ShortCutEditor.cpp"

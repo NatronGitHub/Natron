@@ -32,7 +32,7 @@
 
 #include "Engine/Node.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 void
 Hash64::computeHash()

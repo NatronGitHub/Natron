@@ -59,7 +59,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 /*****************************CURVE WIDGET***********************************************/
 
@@ -2026,3 +2026,5 @@ CurveWidget::importCurveFromAscii()
         update();
     }
 } // importCurveFromAscii
+
+#include "moc_CurveWidget.cpp"

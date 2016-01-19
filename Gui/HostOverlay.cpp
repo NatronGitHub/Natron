@@ -60,6 +60,9 @@ CLANG_DIAG_ON(deprecated)
 #define M_PI 3.14159265358979323846264338327950288419717
 #endif
 
+
+NATRON_NAMESPACE_ENTER;
+
 enum PositionInteractState
 {
     ePositionInteractStateInactive,
@@ -67,7 +70,11 @@ enum PositionInteractState
     ePositionInteractStatePicked
 };
 
-struct PositionInteract
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING
+
+struct NATRON_NAMESPACE::PositionInteract
 {
     boost::weak_ptr<KnobDouble> param;
     QPointF dragPos;
@@ -86,6 +93,9 @@ struct PositionInteract
     
     
 };
+
+namespace {
+
 
 struct TransformInteract
 {
@@ -246,8 +256,6 @@ struct TransformInteract
 
 };
 
-namespace {
-
 // round to the closest int, 1/10 int, etc
 // this make parameter editing easier
 // pscale is args.pixelScale.x / args.renderScale.x;
@@ -265,7 +273,7 @@ typedef std::list<TransformInteract> TransformInteracts;
     
 }
 
-struct HostOverlayPrivate
+struct NATRON_NAMESPACE::HostOverlayPrivate
 {
     HostOverlay* _publicInterface;
     PositionInteracts positions;

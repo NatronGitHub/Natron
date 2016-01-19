@@ -27,6 +27,8 @@
 #include <QApplication>
 #include "Gui/GuiApplicationManager.h"
 
+NATRON_NAMESPACE_USING
+
 Button::Button(QWidget* parent)
     : QPushButton(parent)
 {

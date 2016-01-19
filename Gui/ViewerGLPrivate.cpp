@@ -59,7 +59,7 @@ GCC_DIAG_OFF(deprecated-declarations)
 
 #define MAX_MIP_MAP_LEVELS 20
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
    Everything related to OpenGL will (almost always) be in this class */

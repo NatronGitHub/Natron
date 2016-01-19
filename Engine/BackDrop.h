@@ -28,7 +28,10 @@
 #include "Engine/NoOpBase.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 struct BackDropPrivate;
+
 class BackDrop : public NoOpBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -75,7 +78,7 @@ Q_SIGNALS:
 private:
     
     virtual void knobChanged(KnobI* k,
-                             Natron::ValueChangedReasonEnum /*reason*/,
+                             ValueChangedReasonEnum /*reason*/,
                              int /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
@@ -84,5 +87,7 @@ private:
     
     boost::scoped_ptr<BackDropPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // BACKDROP_H

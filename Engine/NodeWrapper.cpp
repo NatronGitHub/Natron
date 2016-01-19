@@ -33,6 +33,8 @@
 #include "Engine/RotoWrapper.h"
 #include "Engine/Hash64.h"
 
+NATRON_NAMESPACE_USING
+
 ImageLayer::ImageLayer(const std::string& layerName,
            const std::string& componentsPrettyName,
            const std::vector<std::string>& componentsName)
@@ -41,7 +43,7 @@ ImageLayer::ImageLayer(const std::string& layerName,
     
 }
 
-ImageLayer::ImageLayer(const Natron::ImageComponents& internalComps)
+ImageLayer::ImageLayer(const ImageComponents& internalComps)
 : _comps(internalComps)
 {
     
@@ -106,42 +108,42 @@ ImageLayer::operator<(const ImageLayer& other) const
  */
 ImageLayer ImageLayer::getNoneComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getNoneComponents());
+    return ImageLayer(ImageComponents::getNoneComponents());
 }
 
 ImageLayer ImageLayer::getRGBAComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getRGBAComponents());
+    return ImageLayer(ImageComponents::getRGBAComponents());
 }
 
 ImageLayer ImageLayer::getRGBComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getRGBComponents());
+    return ImageLayer(ImageComponents::getRGBComponents());
 }
 
 ImageLayer ImageLayer::getAlphaComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getAlphaComponents());
+    return ImageLayer(ImageComponents::getAlphaComponents());
 }
 
 ImageLayer ImageLayer::getBackwardMotionComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getBackwardMotionComponents());
+    return ImageLayer(ImageComponents::getBackwardMotionComponents());
 }
 
 ImageLayer ImageLayer::getForwardMotionComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getForwardMotionComponents());
+    return ImageLayer(ImageComponents::getForwardMotionComponents());
 }
 
 ImageLayer ImageLayer::getDisparityLeftComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getDisparityLeftComponents());
+    return ImageLayer(ImageComponents::getDisparityLeftComponents());
 }
 
 ImageLayer ImageLayer::getDisparityRightComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getDisparityRightComponents());
+    return ImageLayer(ImageComponents::getDisparityRightComponents());
 }
 
 UserParamHolder::UserParamHolder()
@@ -728,7 +730,7 @@ Effect::getRegionOfDefinition(double time,int view) const
     U64 hash = _node->getHashValue();
     RenderScale s(1.);
     bool isProject;
-    Natron::StatusEnum stat = _node->getLiveInstance()->getRegionOfDefinition_public(hash, time, s, view, &rod, &isProject);
+    StatusEnum stat = _node->getLiveInstance()->getRegionOfDefinition_public(hash, time, s, view, &rod, &isProject);
     if (stat != Natron::eStatusOK) {
         return RectD();
     }
@@ -759,7 +761,7 @@ Effect::addUserPlane(const std::string& planeName, const std::vector<std::string
     for (std::size_t i = 0; i < channels.size(); ++i) {
         compsGlobal.append(channels[i]);
     }
-    Natron::ImageComponents comp(planeName,compsGlobal,channels);
+    ImageComponents comp(planeName,compsGlobal,channels);
     return _node->addUserComponents(comp);
 }
 

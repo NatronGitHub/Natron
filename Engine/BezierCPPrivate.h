@@ -36,6 +36,7 @@
 #include "Engine/Curve.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct BezierCPPrivate
 {
@@ -92,5 +93,7 @@ struct BezierCPPrivate
     {
     }
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_BezierCPPrivate_h_

@@ -47,6 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  *@class ViewerGL
@@ -104,7 +105,7 @@ public:
     virtual bool isClippingImageToProjectWindow() const OVERRIDE FINAL;
 
 
-    virtual Natron::ImageBitDepthEnum getBitDepth() const OVERRIDE FINAL;
+    virtual ImageBitDepthEnum getBitDepth() const OVERRIDE FINAL;
 
     /**
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
@@ -169,12 +170,12 @@ public:
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             const std::list<boost::shared_ptr<Natron::Image> >& tiles,
-                                            Natron::ImageBitDepthEnum depth,
+                                            ImageBitDepthEnum depth,
                                             int time,
                                             const RectD& rod,
                                             size_t bytesCount, const TextureRect & region,
                                             double gain, double gamma, double offset, int lut, int pboIndex,
-                                            unsigned int mipMapLevel,Natron::ImagePremultiplicationEnum premult,
+                                            unsigned int mipMapLevel,ImagePremultiplicationEnum premult,
                                             int textureIndex,
                                             const RectI& roi,
                                             bool updateOnlyRoi) OVERRIDE FINAL;
@@ -324,8 +325,8 @@ public:
 
     bool getZoomOrPannedSinceLastFit() const;
 
-    virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const OVERRIDE FINAL;
-    virtual void setCompositingOperator(Natron::ViewerCompositingOperatorEnum op) OVERRIDE FINAL;
+    virtual ViewerCompositingOperatorEnum getCompositingOperator() const OVERRIDE FINAL;
+    virtual void setCompositingOperator(ViewerCompositingOperatorEnum op) OVERRIDE FINAL;
 
     ///Not MT-Safe
     void getSelectionRectangle(double &left,double &right,double &bottom,double &top) const;
@@ -540,5 +541,6 @@ private:
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // GLVIEWER_H

@@ -53,11 +53,14 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphUndoRedo.h"
 
+NATRON_NAMESPACE_USING
 
 typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
 typedef std::pair<QTreeWidgetItem *, boost::shared_ptr<DSNode> > TreeItemAndDSNode;
 typedef std::pair<QTreeWidgetItem *, DSKnob *> TreeItemAndDSKnob;
 
+
+#pragma message WARN("NO_DIM huh?")
 const int NO_DIM = -5;
 
 
@@ -132,7 +135,7 @@ QTreeWidgetItem *createKnobNameItem(const QString &text,
 
 ////////////////////////// DopeSheet //////////////////////////
 
-class DopeSheetPrivate
+class NATRON_NAMESPACE::DopeSheetPrivate
 {
 public:
     DopeSheetPrivate(DopeSheetEditor* editor,DopeSheet *qq);
@@ -858,7 +861,7 @@ DopeSheet::pasteKeys(const std::vector<DopeSheetKey>& keys)
     
 }
 
-void DopeSheet::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType)
+void DopeSheet::setSelectedKeysInterpolation(KeyframeTypeEnum keyType)
 {
 
     if (_imp->selectionModel->isEmpty()) {
@@ -950,7 +953,7 @@ void DopeSheet::onKeyframeSetOrRemoved()
 
 ////////////////////////// DSKnob //////////////////////////
 
-class DSKnobPrivate
+class NATRON_NAMESPACE::DSKnobPrivate
 {
 public:
     DSKnobPrivate();
@@ -1069,7 +1072,7 @@ int DSKnob::getDimension() const
 
 ////////////////////////// DopeSheetSelectionModel //////////////////////////
 
-class DopeSheetSelectionModelPrivate
+class NATRON_NAMESPACE::DopeSheetSelectionModelPrivate
 {
 public:
     DopeSheetSelectionModelPrivate()
@@ -1351,7 +1354,7 @@ void DopeSheetSelectionModel::onNodeAboutToBeRemoved(const boost::shared_ptr<DSN
 
 ////////////////////////// DSNode //////////////////////////
 
-class DSNodePrivate
+class NATRON_NAMESPACE::DSNodePrivate
 {
 public:
     DSNodePrivate();
@@ -1568,3 +1571,5 @@ bool DSNode::containsNodeContext() const
 
     return false;
 }
+
+#include "moc_DopeSheet.cpp"

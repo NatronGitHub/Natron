@@ -47,7 +47,7 @@
 #include "Gui/SequenceFileDialog.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 void

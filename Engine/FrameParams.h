@@ -34,7 +34,7 @@
 #include "Engine/NonKeyParams.h"
 #include "Engine/EngineFwd.h"
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 class FrameParams
         : public NonKeyParams
@@ -107,7 +107,7 @@ private:
     RectI _rod;
 };
 
-}
+NATRON_NAMESPACE_EXIT;
 
 #endif // FRAMEPARAMS_H
 

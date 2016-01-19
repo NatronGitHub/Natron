@@ -38,6 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A thread-safe wrapper over QSplitter
@@ -80,5 +81,7 @@ private:
 
     mutable QMutex _lock;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // SPLITTER_H

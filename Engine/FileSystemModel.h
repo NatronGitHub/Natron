@@ -36,12 +36,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
-namespace SequenceParsing
-{
-class SequenceFromFiles;
-}
-
-class QFileInfo;
+NATRON_NAMESPACE_ENTER;
 
 struct FileSystemItemPrivate;
 class FileSystemItem
@@ -324,5 +319,7 @@ private:
     
     boost::scoped_ptr<FileSystemModelPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // FILESYSTEMMODEL_H

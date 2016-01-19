@@ -57,7 +57,7 @@
 
 #include <SequenceParsing.h>
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 //===========================FILE_KNOB_GUI=====================================
@@ -1399,3 +1399,4 @@ KnobGuiPath::updateToolTip()
         }
     }
 }
+#include "moc_KnobGuiFile.cpp"

@@ -16,6 +16,7 @@ GCC_DIAG_OFF(missing-declarations)
 #include "layer_wrapper.h"
 
 // Extra includes
+NATRON_NAMESPACE_USING
 #include <ParameterWrapper.h>
 #include <RotoWrapper.h>
 #include <list>

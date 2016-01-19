@@ -32,7 +32,7 @@
 
 
 using std::make_pair;
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 TabGroup::TabGroup(QWidget* parent)

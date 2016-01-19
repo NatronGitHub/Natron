@@ -76,7 +76,7 @@ public:
     virtual std::string getPluginLabel() const OVERRIDE;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
     virtual std::string getPluginDescription() const OVERRIDE;
-    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash,double time,
+    virtual StatusEnum getRegionOfDefinition(U64 hash,double time,
                                                  const RenderScale & scale,
                                                  int view,
                                                  RectD* rod) OVERRIDE; //!< rod is in canonical coordinates
@@ -101,16 +101,16 @@ public:
         return false;
     }
 
-    virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE;
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, double time,
+    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE;
+    virtual void knobChanged(KnobI* k, ValueChangedReasonEnum reason, int view, double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
     virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {
         return Natron::eRenderSafetyInstanceSafe;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     virtual bool isFrameVarying() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
 private:
@@ -141,6 +141,8 @@ private:
     boost::shared_ptr<KnobInt> _timeOffset;
     bool _settingFrameRange;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENABLE_QT_IO_NODES
 

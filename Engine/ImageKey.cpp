@@ -24,7 +24,7 @@
 
 #include "ImageKey.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 ImageKey::ImageKey()
 : KeyHelper<U64>()

@@ -32,9 +32,9 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
-struct DiskCacheNodePrivate
+struct NATRON_NAMESPACE::DiskCacheNodePrivate
 {
     boost::weak_ptr<KnobChoice> frameRange;
     boost::weak_ptr<KnobInt> firstFrame;
@@ -56,14 +56,14 @@ DiskCacheNode::DiskCacheNode(boost::shared_ptr<Node> node)
 
 
 void
-DiskCacheNode::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
+DiskCacheNode::addAcceptedComponents(int /*inputNb*/,std::list<ImageComponents>* comps)
 {
     comps->push_back(ImageComponents::getRGBAComponents());
     comps->push_back(ImageComponents::getRGBComponents());
     comps->push_back(ImageComponents::getAlphaComponents());
 }
 void
-DiskCacheNode::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     depths->push_back(Natron::eImageBitDepthFloat);
 }
@@ -124,7 +124,7 @@ DiskCacheNode::initializeKnobs()
 }
 
 void
-DiskCacheNode::knobChanged(KnobI* k, Natron::ValueChangedReasonEnum /*reason*/, int /*view*/, double /*time*/,
+DiskCacheNode::knobChanged(KnobI* k, ValueChangedReasonEnum /*reason*/, int /*view*/, double /*time*/,
                            bool /*originatedFromMainThread*/)
 {
     if (_imp->frameRange.lock().get() == k) {
@@ -178,7 +178,7 @@ DiskCacheNode::getFrameRange(double *first,double *last)
 }
 
 void
-DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const
+DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const
 {
     EffectInstance* input = getInput(0);
     if (input) {
@@ -190,7 +190,7 @@ DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::
 }
 
 
-Natron::ImagePremultiplicationEnum
+ImagePremultiplicationEnum
 DiskCacheNode::getOutputPremultiplication() const
 {
     EffectInstance* input = getInput(0);
@@ -214,7 +214,7 @@ DiskCacheNode::getPreferredAspectRatio() const
 
 }
 
-Natron::StatusEnum
+StatusEnum
 DiskCacheNode::render(const RenderActionArgs& args)
 {
     

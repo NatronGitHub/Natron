@@ -28,6 +28,8 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 /**
  * @brief An interface to implement to manage keyframes that are to be displayed on the timeline
  * Timeline keyframes indicators are integers
@@ -108,5 +110,7 @@ public:
      **/
     virtual void goToNextKeyframe() {}
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // TIMELINEKEYFRAMES_H

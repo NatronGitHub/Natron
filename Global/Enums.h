@@ -26,7 +26,8 @@ CLANG_DIAG_OFF(deprecated)
 #include <QMetaType>
 CLANG_DIAG_ON(deprecated)
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 enum ScaleTypeEnum
 {
     eScaleTypeLinear,
@@ -83,7 +84,7 @@ enum StandardButtonEnum
     eStandardButtonRestoreDefaults    = 0x08000000
 };
 
-typedef QFlags<Natron::StandardButtonEnum> StandardButtons;
+typedef QFlags<StandardButtonEnum> StandardButtons;
 
 enum MessageTypeEnum
 {
@@ -529,7 +530,8 @@ enum DopeSheetItemType
     eDopeSheetItemTypeKnobDim
 };
     
-}
+NATRON_NAMESPACE_EXIT;
+
 Q_DECLARE_METATYPE(Natron::StandardButtons)
 
 

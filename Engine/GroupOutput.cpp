@@ -24,6 +24,8 @@
 
 #include "GroupOutput.h"
 
+NATRON_NAMESPACE_USING
+
 std::string
 GroupOutput::getPluginDescription() const
 {

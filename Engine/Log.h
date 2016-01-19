@@ -32,7 +32,7 @@
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 class LogPrivate;
 class Log
     : public Singleton<Natron::Log>
@@ -84,7 +84,7 @@ public:
 #else
 #include <string>
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 // no-op class
 class Log
 {

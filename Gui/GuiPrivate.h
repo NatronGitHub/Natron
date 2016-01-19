@@ -49,6 +49,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kPropertiesBinName "properties"
 
+NATRON_NAMESPACE_ENTER;
+
 struct GuiPrivate
 {
     Gui* _gui; //< ptr to the public interface
@@ -60,7 +62,7 @@ struct GuiPrivate
     QWaitCondition _uiUsingMainThreadCond; //< used with _uiUsingMainThread
     bool _uiUsingMainThread; //< true when the Gui is showing a dialog in the main thread
     mutable QMutex _uiUsingMainThreadMutex; //< protects _uiUsingMainThread
-    Natron::StandardButtonEnum _lastQuestionDialogAnswer; //< stores the last question answer
+    StandardButtonEnum _lastQuestionDialogAnswer; //< stores the last question answer
     bool _lastStopAskingAnswer;
 
     ///ptrs to the undo/redo actions from the active stack.
@@ -289,5 +291,7 @@ struct GuiPrivate
     ///True= yes overwrite
     bool checkProjectLockAndWarn(const QString& projectPath,const QString& projectName);
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_GuiPrivate_h

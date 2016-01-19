@@ -52,7 +52,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #define NATRON_AUTO_SCROLL_TIMEOUT_MS 50
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 static bool handleConnectionError(const boost::shared_ptr<NodeGui>& outputNode, const boost::shared_ptr<NodeGui>& inputNode, int inputNb)
 {

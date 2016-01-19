@@ -40,6 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct RenderingProgressDialogPrivate;
 
@@ -90,5 +91,7 @@ private:
 
     boost::scoped_ptr<RenderingProgressDialogPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_RenderingProgressDialog_h

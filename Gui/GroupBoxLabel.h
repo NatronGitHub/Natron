@@ -31,7 +31,8 @@
 #include "Gui/GuiFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 class GroupBoxLabel
     : public Label
 {
@@ -70,5 +71,7 @@ Q_SIGNALS:
 private:
     bool _checked;
 };
-} // namespace Natron
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // ifndef NATRON_GUI_GROUPBOXLABEL_H

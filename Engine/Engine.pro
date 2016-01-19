@@ -80,6 +80,7 @@ SOURCES += \
     Bezier.cpp \
     BezierCP.cpp \
     BlockingBackgroundRender.cpp \
+    Cache.cpp \
     CLArgs.cpp \
     CoonsRegularization.cpp \
     Curve.cpp \
@@ -169,7 +170,6 @@ SOURCES += \
     ../Global/ProcInfo.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
     NatronEngine/natronengine_module_wrapper.cpp \
-    NatronEngine/natron_wrapper.cpp \
     NatronEngine/app_wrapper.cpp \
     NatronEngine/effect_wrapper.cpp \
     NatronEngine/intparam_wrapper.cpp \
@@ -380,7 +380,6 @@ HEADERS += \
     ../libs/OpenFX/include/tuttle/ofxReadWrite.h \
     ../libs/OpenFX_extensions/ofxhParametricParam.h \
     NatronEngine/natronengine_python.h \
-    NatronEngine/natron_wrapper.h \
     NatronEngine/app_wrapper.h \
     NatronEngine/effect_wrapper.h \
     NatronEngine/intparam_wrapper.h \

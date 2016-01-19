@@ -39,6 +39,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 
+NATRON_NAMESPACE_USING
+
 namespace {
 struct KeyFrameCloner
 {
@@ -81,7 +83,7 @@ KeyFrame::KeyFrame(double time,
                    double initialValue,
                    double leftDerivative,
                    double rightDerivative,
-                   Natron::KeyframeTypeEnum interpolation)
+                   KeyframeTypeEnum interpolation)
     : _time(time)
       , _value(initialValue)
       , _leftDerivative(leftDerivative)
@@ -154,12 +156,12 @@ KeyFrame::setTime(double time)
 }
 
 void
-KeyFrame::setInterpolation(Natron::KeyframeTypeEnum interp)
+KeyFrame::setInterpolation(KeyframeTypeEnum interp)
 {
     _interpolation = interp;
 }
 
-Natron::KeyframeTypeEnum
+KeyframeTypeEnum
 KeyFrame::getInterpolation() const
 {
     return _interpolation;
@@ -731,11 +733,11 @@ interParams(const KeyFrameSet &keyFrames,
             double *tcur,
             double *vcur,
             double *vcurDerivRight,
-            Natron::KeyframeTypeEnum *interp,
+            KeyframeTypeEnum *interp,
             double *tnext,
             double *vnext,
             double *vnextDerivLeft,
-            Natron::KeyframeTypeEnum *interpNext)
+            KeyframeTypeEnum *interpNext)
 {
 //#pragma message WARN("Unused parameter 't'") //the parameter is good enough for asserts
     Q_UNUSED(t);
@@ -802,7 +804,7 @@ Curve::getValueAt(double t,bool doClamp) const
         //}
         double tcur,tnext;
         double vcurDerivRight,vnextDerivLeft,vcur,vnext;
-        Natron::KeyframeTypeEnum interp,interpNext;
+        KeyframeTypeEnum interp,interpNext;
         KeyFrame k(t,0.);
         // find the first keyframe with time greater than t
         KeyFrameSet::const_iterator itup;
@@ -867,7 +869,7 @@ Curve::getDerivativeAt(double t) const
     //}
     double tcur,tnext;
     double vcurDerivRight,vnextDerivLeft,vcur,vnext;
-    Natron::KeyframeTypeEnum interp,interpNext;
+    KeyframeTypeEnum interp,interpNext;
     KeyFrame k(t,0.);
     // find the first keyframe with time greater than t
     KeyFrameSet::const_iterator itup;
@@ -934,7 +936,7 @@ Curve::getIntegrateFromTo(double t1,
     //}
     double tcur,tnext;
     double vcurDerivRight,vnextDerivLeft,vcur,vnext;
-    Natron::KeyframeTypeEnum interp,interpNext;
+    KeyframeTypeEnum interp,interpNext;
     KeyFrame k(t1,0.);
     // find the first keyframe with time strictly greater than t1
     KeyFrameSet::const_iterator itup;
@@ -1228,7 +1230,7 @@ Curve::setKeyFrameDerivatives(double left,
 }
 
 KeyFrame
-Curve::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,
+Curve::setKeyFrameInterpolation(KeyframeTypeEnum interp,
                                 int index,
                                 int* newIndex)
 {
@@ -1259,7 +1261,7 @@ Curve::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,
 }
 
 void
-Curve::setCurveInterpolation(Natron::KeyframeTypeEnum interp)
+Curve::setCurveInterpolation(KeyframeTypeEnum interp)
 {
 
     {
@@ -1282,7 +1284,7 @@ Curve::setCurveInterpolation(Natron::KeyframeTypeEnum interp)
 
 KeyFrameSet::iterator
 Curve::setKeyframeInterpolation_internal(KeyFrameSet::iterator it,
-                                         Natron::KeyframeTypeEnum interp)
+                                         KeyframeTypeEnum interp)
 {
     ///private should not be locked
     assert( it != _imp->keyFrames.end() );
@@ -1302,7 +1304,7 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
     double tcur = key->getTime();
     double vcur = key->getValue();
     double tprev, vprev, tnext, vnext, vprevDerivRight, vnextDerivLeft;
-    Natron::KeyframeTypeEnum prevType, nextType;
+    KeyframeTypeEnum prevType, nextType;
 
     assert(key != _imp->keyFrames.end());
     if ( key == _imp->keyFrames.begin() ) {

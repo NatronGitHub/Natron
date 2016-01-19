@@ -49,6 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief An abstract class that defines a dockable properties panel that can be found in the Property bin pane.
@@ -286,5 +287,7 @@ private:
 
     boost::scoped_ptr<DockablePanelPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_DockablePanel_h

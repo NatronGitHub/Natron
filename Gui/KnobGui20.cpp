@@ -29,13 +29,13 @@
 
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 void
 KnobGui::onInternalValueChanged(int dimension,
                                 int reason)
 {
-    if (_imp->widgetCreated && (Natron::ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
+    if (_imp->widgetCreated && (ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
         updateGuiInternal(dimension);
     }
 }
@@ -50,7 +50,7 @@ void
 KnobGui::onMultipleKeySet(const std::list<double>& keys,int /*dimension*/, int reason)
 {
     
-    if ((Natron::ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
+    if ((ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
         boost::shared_ptr<KnobI> knob = getKnob();
         if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
             std::list<SequenceTime> intKeys;
@@ -71,7 +71,7 @@ KnobGui::onInternalKeySet(double time,
                           int reason,
                           bool added )
 {
-    if ((Natron::ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
+    if ((ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
         if (added) {
             boost::shared_ptr<KnobI> knob = getKnob();
             if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
@@ -664,7 +664,7 @@ KnobGui::onAppendParamEditChanged(int reason,
                                   bool createNewCommand,
                                   bool setKeyFrame)
 {
-    pushUndoCommand( new MultipleKnobEditsUndoCommand(this,(Natron::ValueChangedReasonEnum)reason, createNewCommand,setKeyFrame,v,dim,time) );
+    pushUndoCommand( new MultipleKnobEditsUndoCommand(this,(ValueChangedReasonEnum)reason, createNewCommand,setKeyFrame,v,dim,time) );
 }
 
 void

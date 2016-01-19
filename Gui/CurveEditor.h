@@ -48,6 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * All nodes are tracked in the CurveEditor and they all have a NodeCurveEditorContext.
@@ -402,6 +403,6 @@ private:
     boost::scoped_ptr<CurveEditorPrivate> _imp;
 };
 
-
+NATRON_NAMESPACE_EXIT;
 
 #endif // CURVEEDITOR_H

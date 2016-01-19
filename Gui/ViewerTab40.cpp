@@ -59,7 +59,7 @@
 #include "Gui/ViewerGL.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 void
 ViewerTab::onInputChanged(int inputNb)
@@ -153,7 +153,7 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
 }
 
 void
-ViewerTab::setImageFormat(int textureIndex,const Natron::ImageComponents& components,Natron::ImageBitDepthEnum depth)
+ViewerTab::setImageFormat(int textureIndex,const ImageComponents& components,ImageBitDepthEnum depth)
 {
     _imp->infoWidget[textureIndex]->setImageFormat(components,depth);
 }

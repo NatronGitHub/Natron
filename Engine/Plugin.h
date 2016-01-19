@@ -39,6 +39,7 @@
 #include "Global/Enums.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class PluginGroupNode
 {
@@ -148,7 +149,6 @@ public:
     }
 };
 
-namespace Natron {
 class Plugin
 {
     Natron::LibraryBinary* _binary;
@@ -321,6 +321,7 @@ struct Plugin_compare_major
     
 typedef std::set<Plugin*,Plugin_compare_major> PluginMajorsOrdered;
 typedef std::map<std::string,PluginMajorsOrdered> PluginsMap;
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PLUGIN_H

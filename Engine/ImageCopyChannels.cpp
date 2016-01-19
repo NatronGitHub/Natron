@@ -28,7 +28,7 @@
 
 //#define NATRON_COPY_CHANNELS_UNPREMULT
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult>
 void
@@ -519,8 +519,8 @@ Image::canCallCopyUnProcessedChannels(const std::bitset<4> processChannels) cons
 
 void
 Image::copyUnProcessedChannels(const RectI& roi,
-                               const Natron::ImagePremultiplicationEnum outputPremult,
-                               const Natron::ImagePremultiplicationEnum originalImagePremult,
+                               const ImagePremultiplicationEnum outputPremult,
+                               const ImagePremultiplicationEnum originalImagePremult,
                                const std::bitset<4> processChannels,
                                const ImagePtr& originalImage)
 {

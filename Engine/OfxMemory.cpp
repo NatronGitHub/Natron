@@ -31,6 +31,8 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/PluginMemory.h"
 
+NATRON_NAMESPACE_USING
+
 OfxMemory::OfxMemory(Natron::EffectInstance* effect)
     : OFX::Host::Memory::Instance()
       , _memory( new PluginMemory(effect) )

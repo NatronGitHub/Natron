@@ -30,6 +30,8 @@
 #include "Gui/TabWidget.h"
 #include "Gui/Gui.h"
 
+NATRON_NAMESPACE_USING
+
 PanelWidget::PanelWidget(QWidget* thisWidget,
                          Gui* gui)
 : ScriptObject()

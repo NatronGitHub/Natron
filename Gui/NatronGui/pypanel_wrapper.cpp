@@ -20,6 +20,7 @@ CLANG_DIAG_OFF(header-guard)
 #include "pypanel_wrapper.h"
 
 // Extra includes
+NATRON_NAMESPACE_USING
 #include <GuiAppWrapper.h>
 #include <ParameterWrapper.h>
 #include <QList>

@@ -53,46 +53,47 @@ void
 Natron::FrameKey::serialize(Archive & ar,
                             const unsigned int version)
 {
-    ar & boost::serialization::make_nvp("Time", _time);
-    ar & boost::serialization::make_nvp("TreeVersion", _treeVersion);
-    ar & boost::serialization::make_nvp("Gain", _gain);
+    ar & ::boost::serialization::make_nvp("Time", _time);
+    ar & ::boost::serialization::make_nvp("TreeVersion", _treeVersion);
+    ar & ::boost::serialization::make_nvp("Gain", _gain);
     if (version >= FRAME_KEY_INTRODUCES_GAMMA) {
-        ar & boost::serialization::make_nvp("Gamma", _gamma);
+        ar & ::boost::serialization::make_nvp("Gamma", _gamma);
     }
-    ar & boost::serialization::make_nvp("Lut", _lut);
-    ar & boost::serialization::make_nvp("BitDepth", _bitDepth);
+    ar & ::boost::serialization::make_nvp("Lut", _lut);
+    ar & ::boost::serialization::make_nvp("BitDepth", _bitDepth);
     if (version < FRAME_KEY_CHANGES_BITDEPTH_ENUM) {
         _bitDepth += 1;
     }
-    ar & boost::serialization::make_nvp("Channels", _channels);
-    ar & boost::serialization::make_nvp("View", _view);
-    ar & boost::serialization::make_nvp("TextureRect", _textureRect);
-    ar & boost::serialization::make_nvp("ScaleX", _scale.x);
-    ar & boost::serialization::make_nvp("ScaleY", _scale.y);
+    ar & ::boost::serialization::make_nvp("Channels", _channels);
+    ar & ::boost::serialization::make_nvp("View", _view);
+    ar & ::boost::serialization::make_nvp("TextureRect", _textureRect);
+    ar & ::boost::serialization::make_nvp("ScaleX", _scale.x);
+    ar & ::boost::serialization::make_nvp("ScaleY", _scale.y);
 
     if (version >= FRAME_KEY_VERSION) {
-        ar & boost::serialization::make_nvp("InputName", _inputName);
+        ar & ::boost::serialization::make_nvp("InputName", _inputName);
     }
     
     if (version >= FRAME_KEY_INTRODUCES_LAYERS) {
-        ar & boost::serialization::make_nvp("Layer", _layer);
-        ar & boost::serialization::make_nvp("Alpha", _alphaChannelFullName);
+        ar & ::boost::serialization::make_nvp("Layer", _layer);
+        ar & ::boost::serialization::make_nvp("Alpha", _alphaChannelFullName);
     }
     if (version >= FRAME_KEY_HANDLE_FP_CORRECTLY) {
-        ar & boost::serialization::make_nvp("UserShader", _useShaders);
+        ar & ::boost::serialization::make_nvp("UserShader", _useShaders);
     } else {
         _useShaders = false;
     }
     if (version >= FRAME_KEY_INTRODUCES_DRAFT) {
-        ar & boost::serialization::make_nvp("Draft", _draftMode);
+        ar & ::boost::serialization::make_nvp("Draft", _draftMode);
     } else {
         _draftMode = false;
     }
     
     if (version >= FRAME_KEY_INTRODUCES_CACHE_HOLDER_ID) {
-        ar & boost::serialization::make_nvp("HolderID",_holderID);
+        ar & ::boost::serialization::make_nvp("HolderID",_holderID);
     }
 }
 
-BOOST_CLASS_VERSION(Natron::FrameKey, FRAME_KEY_VERSION)
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::FrameKey, FRAME_KEY_VERSION)
+
 #endif // FRAMEENTRYSERIALIZATION_H

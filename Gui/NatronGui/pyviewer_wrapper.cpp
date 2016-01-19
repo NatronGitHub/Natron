@@ -16,6 +16,7 @@ GCC_DIAG_OFF(missing-declarations)
 #include "pyviewer_wrapper.h"
 
 // Extra includes
+NATRON_NAMESPACE_USING
 
 
 
@@ -88,8 +89,8 @@ static PyObject* Sbk_PyViewerFunc_getChannels(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getChannels()const
-            Natron::DisplayChannelsEnum cppResult = const_cast<const ::PyViewer*>(cppSelf)->getChannels();
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX]), &cppResult);
+            DisplayChannelsEnum cppResult = const_cast<const ::PyViewer*>(cppSelf)->getChannels();
+            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_DISPLAYCHANNELSENUM_IDX]), &cppResult);
         }
     }
 
@@ -114,8 +115,8 @@ static PyObject* Sbk_PyViewerFunc_getCompositingOperator(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getCompositingOperator()const
-            Natron::ViewerCompositingOperatorEnum cppResult = const_cast<const ::PyViewer*>(cppSelf)->getCompositingOperator();
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_VIEWERCOMPOSITINGOPERATORENUM_IDX]), &cppResult);
+            ViewerCompositingOperatorEnum cppResult = const_cast<const ::PyViewer*>(cppSelf)->getCompositingOperator();
+            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_VIEWERCOMPOSITINGOPERATORENUM_IDX]), &cppResult);
         }
     }
 
@@ -228,8 +229,8 @@ static PyObject* Sbk_PyViewerFunc_getPlaybackMode(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getPlaybackMode()const
-            Natron::PlaybackModeEnum cppResult = const_cast<const ::PyViewer*>(cppSelf)->getPlaybackMode();
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_PLAYBACKMODEENUM_IDX]), &cppResult);
+            PlaybackModeEnum cppResult = const_cast<const ::PyViewer*>(cppSelf)->getPlaybackMode();
+            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_PLAYBACKMODEENUM_IDX]), &cppResult);
         }
     }
 
@@ -544,9 +545,9 @@ static PyObject* Sbk_PyViewerFunc_setChannels(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setChannels(Natron::DisplayChannelsEnum)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_DISPLAYCHANNELSENUM_IDX]), (pyArg)))) {
-        overloadId = 0; // setChannels(Natron::DisplayChannelsEnum)
+    // 0: setChannels(DisplayChannelsEnum)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_DISPLAYCHANNELSENUM_IDX]), (pyArg)))) {
+        overloadId = 0; // setChannels(DisplayChannelsEnum)
     }
 
     // Function signature not found.
@@ -554,11 +555,11 @@ static PyObject* Sbk_PyViewerFunc_setChannels(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::Natron::DisplayChannelsEnum cppArg0 = ((::Natron::DisplayChannelsEnum)0);
+        ::DisplayChannelsEnum cppArg0 = ((::DisplayChannelsEnum)0);
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setChannels(Natron::DisplayChannelsEnum)
+            // setChannels(DisplayChannelsEnum)
             cppSelf->setChannels(cppArg0);
         }
     }
@@ -569,7 +570,7 @@ static PyObject* Sbk_PyViewerFunc_setChannels(PyObject* self, PyObject* pyArg)
     Py_RETURN_NONE;
 
     Sbk_PyViewerFunc_setChannels_TypeError:
-        const char* overloads[] = {"NatronEngine.Natron.DisplayChannelsEnum", 0};
+        const char* overloads[] = {"NatronEngine.DisplayChannelsEnum", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setChannels", overloads);
         return 0;
 }
@@ -586,9 +587,9 @@ static PyObject* Sbk_PyViewerFunc_setCompositingOperator(PyObject* self, PyObjec
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setCompositingOperator(Natron::ViewerCompositingOperatorEnum)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_VIEWERCOMPOSITINGOPERATORENUM_IDX]), (pyArg)))) {
-        overloadId = 0; // setCompositingOperator(Natron::ViewerCompositingOperatorEnum)
+    // 0: setCompositingOperator(ViewerCompositingOperatorEnum)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_VIEWERCOMPOSITINGOPERATORENUM_IDX]), (pyArg)))) {
+        overloadId = 0; // setCompositingOperator(ViewerCompositingOperatorEnum)
     }
 
     // Function signature not found.
@@ -596,11 +597,11 @@ static PyObject* Sbk_PyViewerFunc_setCompositingOperator(PyObject* self, PyObjec
 
     // Call function/method
     {
-        ::Natron::ViewerCompositingOperatorEnum cppArg0 = ((::Natron::ViewerCompositingOperatorEnum)0);
+        ::ViewerCompositingOperatorEnum cppArg0 = ((::ViewerCompositingOperatorEnum)0);
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setCompositingOperator(Natron::ViewerCompositingOperatorEnum)
+            // setCompositingOperator(ViewerCompositingOperatorEnum)
             cppSelf->setCompositingOperator(cppArg0);
         }
     }
@@ -611,7 +612,7 @@ static PyObject* Sbk_PyViewerFunc_setCompositingOperator(PyObject* self, PyObjec
     Py_RETURN_NONE;
 
     Sbk_PyViewerFunc_setCompositingOperator_TypeError:
-        const char* overloads[] = {"NatronEngine.Natron.ViewerCompositingOperatorEnum", 0};
+        const char* overloads[] = {"NatronEngine.ViewerCompositingOperatorEnum", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setCompositingOperator", overloads);
         return 0;
 }
@@ -725,9 +726,9 @@ static PyObject* Sbk_PyViewerFunc_setPlaybackMode(PyObject* self, PyObject* pyAr
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setPlaybackMode(Natron::PlaybackModeEnum)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_PLAYBACKMODEENUM_IDX]), (pyArg)))) {
-        overloadId = 0; // setPlaybackMode(Natron::PlaybackModeEnum)
+    // 0: setPlaybackMode(PlaybackModeEnum)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_PLAYBACKMODEENUM_IDX]), (pyArg)))) {
+        overloadId = 0; // setPlaybackMode(PlaybackModeEnum)
     }
 
     // Function signature not found.
@@ -735,11 +736,11 @@ static PyObject* Sbk_PyViewerFunc_setPlaybackMode(PyObject* self, PyObject* pyAr
 
     // Call function/method
     {
-        ::Natron::PlaybackModeEnum cppArg0 = ((::Natron::PlaybackModeEnum)0);
+        ::PlaybackModeEnum cppArg0 = ((::PlaybackModeEnum)0);
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setPlaybackMode(Natron::PlaybackModeEnum)
+            // setPlaybackMode(PlaybackModeEnum)
             cppSelf->setPlaybackMode(cppArg0);
         }
     }
@@ -750,7 +751,7 @@ static PyObject* Sbk_PyViewerFunc_setPlaybackMode(PyObject* self, PyObject* pyAr
     Py_RETURN_NONE;
 
     Sbk_PyViewerFunc_setPlaybackMode_TypeError:
-        const char* overloads[] = {"NatronEngine.Natron.PlaybackModeEnum", 0};
+        const char* overloads[] = {"NatronEngine.PlaybackModeEnum", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setPlaybackMode", overloads);
         return 0;
 }

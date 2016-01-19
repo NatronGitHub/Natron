@@ -32,6 +32,8 @@
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 class UpdateViewerParams; // ViewerInstancePrivate
 
 typedef std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > RenderStatsMap;
@@ -47,7 +49,7 @@ struct ViewerArgs
     boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
     bool draftModeEnabled;
     bool autoContrast;
-    Natron::DisplayChannelsEnum channels;
+    DisplayChannelsEnum channels;
     bool userRoIEnabled;
 };
 
@@ -80,7 +82,7 @@ public:
 
     
     
-    Natron::StatusEnum getRenderViewerArgsAndCheckCache_public(SequenceTime time,
+    StatusEnum getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                         bool isSequential,
                                                         bool canAbort,
                                                         int view,
@@ -96,7 +98,7 @@ private:
     /**
      * @brief Look-up the cache and try to find a matching texture for the portion to render.
      **/
-    Natron::StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time,
+    StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                         bool isSequential,
                                                         bool canAbort,
                                                         int view,
@@ -121,7 +123,7 @@ public:
      * Otherwise it just calls renderRoi(...) on the active input
      * and then render to the PBO.
      **/
-    Natron::StatusEnum renderViewer(int view,bool singleThreaded,bool isSequentialRender,
+    StatusEnum renderViewer(int view,bool singleThreaded,bool isSequentialRender,
                                     U64 viewerHash,
                                     bool canAbort,
                                     const boost::shared_ptr<Natron::Node>& rotoPaintNode,
@@ -130,7 +132,7 @@ public:
                                     const boost::shared_ptr<RequestedFrame>& request,
                                     const boost::shared_ptr<RenderStats>& stats) WARN_UNUSED_RETURN;
     
-    Natron::StatusEnum getViewerArgsAndRenderViewer(SequenceTime time,
+    StatusEnum getViewerArgsAndRenderViewer(SequenceTime time,
                                                     bool canAbort,
                                                     int view,
                                                     U64 viewerHash,
@@ -160,7 +162,7 @@ public:
 
     int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
-    Natron::DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
+    DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
 
     /**
      * @brief This is a short-cut, this is primarily used when the user switch the
@@ -177,11 +179,11 @@ public:
     bool isRenderAbortable(int textureIndex, U64 renderAge) const;
 
 
-    void setDisplayChannels(Natron::DisplayChannelsEnum channels, bool bothInputs);
+    void setDisplayChannels(DisplayChannelsEnum channels, bool bothInputs);
     
-    void setActiveLayer(const Natron::ImageComponents& layer, bool doRender);
+    void setActiveLayer(const ImageComponents& layer, bool doRender);
     
-    void setAlphaChannel(const Natron::ImageComponents& layer, const std::string& channelName, bool doRender);
+    void setAlphaChannel(const ImageComponents& layer, const std::string& channelName, bool doRender);
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
 
@@ -198,7 +200,7 @@ public:
     
     double getGamma() const WARN_UNUSED_RETURN;
 
-    void onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace);
+    void onColorSpaceChanged(ViewerColorSpaceEnum colorspace);
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
     
@@ -220,11 +222,11 @@ public:
     
     void getTimelineBounds(int* first,int* last) const;
     
-    static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
+    static const Natron::Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
     virtual bool refreshClipPreferences(double time,
                                          const RenderScale & scale,
-                                        Natron::ValueChangedReasonEnum reason,
+                                        ValueChangedReasonEnum reason,
                                          bool forceGetClipPrefAction) OVERRIDE FINAL;
     
     virtual void onChannelsSelectorRefreshed() OVERRIDE FINAL;
@@ -335,12 +337,12 @@ private:
         return Natron::eRenderSafetyFullySafe;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     /*******************************************/
     
     
-    Natron::StatusEnum renderViewer_internal(int view,
+    StatusEnum renderViewer_internal(int view,
                                              bool singleThreaded,
                                              bool isSequentialRender,
                                              U64 viewerHash,
@@ -362,5 +364,6 @@ private:
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
 };
 
-//} // namespace Natron
+NATRON_NAMESPACE_EXIT;
+
 #endif // NATRON_ENGINE_VIEWERNODE_H

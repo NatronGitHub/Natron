@@ -87,7 +87,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kItalicStartTag "<i>"
 #define kItalicEndTag "</i>"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 using std::make_pair;
 
 
@@ -1112,3 +1112,5 @@ KnobGuiString::reflectModificationsState()
         _lineEdit->setAltered(!hasModif);
     }
 }
+
+#include "moc_KnobGuiString.cpp"

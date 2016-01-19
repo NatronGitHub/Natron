@@ -35,7 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 void
 NodeGuiSerialization::initialize(const NodeGui*  n)

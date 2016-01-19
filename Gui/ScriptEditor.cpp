@@ -51,7 +51,9 @@
 
 #include "Engine/Settings.h"
 
-struct ScriptEditorPrivate
+NATRON_NAMESPACE_USING
+
+struct NATRON_NAMESPACE::ScriptEditorPrivate
 {
     
     QVBoxLayout* mainLayout;
@@ -640,3 +642,5 @@ ScriptEditor::onShowAutoDeclVarsClicked(bool clicked)
     _imp->showAutoDeclVarsB->setChecked(clicked);
     appPTR->getCurrentSettings()->setAutoDeclaredVariablePrintEnabled(clicked);
 }
+
+#include "moc_ScriptEditor.cpp"

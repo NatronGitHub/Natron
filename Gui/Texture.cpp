@@ -32,6 +32,8 @@
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
+NATRON_NAMESPACE_USING
+
 Texture::Texture(U32 target,
                  int minFilter,
                  int magFilter,

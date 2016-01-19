@@ -26,6 +26,8 @@
 
 #include <cassert>
 
+NATRON_NAMESPACE_USING
+
 Splitter::Splitter(QWidget* parent)
     : QSplitter(parent)
       , _lock()

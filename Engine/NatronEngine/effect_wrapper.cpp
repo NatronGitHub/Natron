@@ -17,6 +17,7 @@ GCC_DIAG_OFF(missing-declarations)
 #include "effect_wrapper.h"
 
 // Extra includes
+NATRON_NAMESPACE_USING
 #include <NodeWrapper.h>
 #include <ParameterWrapper.h>
 #include <RectD.h>

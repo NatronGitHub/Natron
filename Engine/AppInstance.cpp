@@ -59,7 +59,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 FlagSetter::FlagSetter(bool initialValue,bool* p)
 : p(p)
@@ -90,7 +90,7 @@ FlagSetter::~FlagSetter()
 
 
 
-struct AppInstancePrivate
+struct NATRON_NAMESPACE::AppInstancePrivate
 {
     boost::shared_ptr<Natron::Project> _currentProject; //< ptr to the project
     int _appID; //< the unique ID of this instance (or window)
@@ -925,7 +925,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
         boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
         if (foundPluginID.find("uk.co.thefoundry.furnace") != std::string::npos &&
             (settings->useGlobalThreadPool() || settings->getNumberOfParallelRenders() != 1)) {
-            Natron::StandardButtonEnum reply = Natron::questionDialog(tr("Warning").toStdString(),
+            StandardButtonEnum reply = Natron::questionDialog(tr("Warning").toStdString(),
                                                                   tr("The settings of the application are currently set to use "
                                                                      "the global thread-pool for rendering effects. The Foundry Furnace "
                                                                      "is known not to work well when this setting is checked. "
@@ -942,7 +942,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
             if (!grouping.isEmpty() && grouping[0] == PLUGIN_GROUP_MULTIVIEW) {
                 int nbViews = getProject()->getProjectViewsCount();
                 if (nbViews < 2) {
-                    Natron::StandardButtonEnum reply = Natron::questionDialog(tr("Multi-View").toStdString(),
+                    StandardButtonEnum reply = Natron::questionDialog(tr("Multi-View").toStdString(),
                                                                               tr("Using a multi-view node requires the project settings to be setup "
                                                                                  "for multi-view. Would you like to setup the project for stereo?").toStdString(), false);
                     if (reply == Natron::eStandardButtonYes) {
@@ -1184,12 +1184,12 @@ AppInstance::informationDialog(const std::string & title,const std::string & mes
 }
 
 
-Natron::StandardButtonEnum
+StandardButtonEnum
 AppInstance::questionDialog(const std::string & title,
                             const std::string & message,
                             bool /*useHtml*/,
                             Natron::StandardButtons /*buttons*/,
-                            Natron::StandardButtonEnum /*defaultButton*/) const
+                            StandardButtonEnum /*defaultButton*/) const
 {
     std::cout << "QUESTION: " << title + ": " << message << std::endl;
     return Natron::eStandardButtonYes;
@@ -1375,8 +1375,8 @@ AppInstance::quit()
     appPTR->quit(this);
 }
 
-Natron::ViewerColorSpaceEnum
-AppInstance::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const
+ViewerColorSpaceEnum
+AppInstance::getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const
 {
     return _imp->_currentProject->getDefaultColorSpaceForBitDepth(bitdepth);
 }
@@ -1610,3 +1610,6 @@ AppInstance::newProject()
     AppInstance* app = appPTR->newAppInstance(cl, false);
     return app;
 }
+
+#include "moc_AppInstance.cpp"
+

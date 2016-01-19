@@ -30,7 +30,7 @@
 #include "Global/Enums.h"
 #include "Engine/EngineFwd.h"
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 
 ///Keep this in sync with @openfx-supportext/ofxsMerging.h
@@ -335,7 +335,7 @@ getNatronOperationHelpString(Natron::MergingFunctionEnum operation)
 } // getOperationHelpString
     
 inline
-Natron::PixmapEnum
+PixmapEnum
 getPixmapForMergingOperator(Natron::MergingFunctionEnum operation)
 {
     switch (operation) {
@@ -433,6 +433,6 @@ getNatronCompositingOperators(std::vector<std::string>* operators,
     
 }
 
-} // namespace Natron
+NATRON_NAMESPACE_EXIT;
     
 #endif // MERGINGENUM_H

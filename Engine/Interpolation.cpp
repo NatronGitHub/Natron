@@ -42,7 +42,7 @@ GCC_DIAG_ON(unused-parameter)
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 using boost::math::cbrt;
 using std::sqrt;
@@ -415,8 +415,8 @@ Natron::interpolate(double tcur,
                     double tnext,
                     const double vnext,                      //end control point
                     double currentTime,
-                    Natron::KeyframeTypeEnum interp,
-                    Natron::KeyframeTypeEnum interpNext)
+                    KeyframeTypeEnum interp,
+                    KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -464,8 +464,8 @@ Natron::derive(double tcur,
                double tnext,
                const double vnext,                           //end control point
                double currentTime,
-               Natron::KeyframeTypeEnum interp,
-               Natron::KeyframeTypeEnum interpNext)
+               KeyframeTypeEnum interp,
+               KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -567,8 +567,8 @@ Natron::integrate(double tcur,
                   const double vnext,                      //end control point
                   double time1,
                   double time2,
-                  Natron::KeyframeTypeEnum interp,
-                  Natron::KeyframeTypeEnum interpNext)
+                  KeyframeTypeEnum interp,
+                  KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -706,8 +706,8 @@ Natron::integrate_clamp(double tcur,
                         double time2,
                         double vmin,
                         double vmax,
-                        Natron::KeyframeTypeEnum interp,
-                        Natron::KeyframeTypeEnum interpNext)
+                        KeyframeTypeEnum interp,
+                        KeyframeTypeEnum interpNext)
 {
     double P0 = vcur;
     double P3 = vnext;
@@ -914,9 +914,9 @@ Natron::integrate_clamp(double tcur,
 
  */
 void
-Natron::autoComputeDerivatives(Natron::KeyframeTypeEnum interpPrev,
-                               Natron::KeyframeTypeEnum interp,
-                               Natron::KeyframeTypeEnum interpNext,
+Natron::autoComputeDerivatives(KeyframeTypeEnum interpPrev,
+                               KeyframeTypeEnum interp,
+                               KeyframeTypeEnum interpNext,
                                double tprev,
                                const double vprev,                    // vprev = Q0
                                double tcur,

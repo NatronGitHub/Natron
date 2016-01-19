@@ -90,8 +90,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
-using namespace Natron;
-
+NATRON_NAMESPACE_USING
 
 
 static inline double
@@ -2850,7 +2849,7 @@ Bezier::getKeyframeTimes(std::set<double> *times) const
 }
 
 void
-Bezier::getKeyframeTimesAndInterpolation(std::list<std::pair<double,Natron::KeyframeTypeEnum> > *keys) const
+Bezier::getKeyframeTimesAndInterpolation(std::list<std::pair<double,KeyframeTypeEnum> > *keys) const
 {
     QMutexLocker l(&itemMutex);
     if ( _imp->points.empty() ) {
@@ -2902,7 +2901,7 @@ Bezier::getKeyFrameIndex(double time) const
 }
 
 void
-Bezier::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
+Bezier::setKeyFrameInterpolation(KeyframeTypeEnum interp,int index)
 {
     QMutexLocker l(&itemMutex);
     bool useFeather = useFeatherPoints();
@@ -3175,3 +3174,4 @@ Bezier::expandToFeatherDistance(bool useGuiCurve,
 } // expandToFeatherDistance
 
 
+#include "moc_Bezier.cpp"

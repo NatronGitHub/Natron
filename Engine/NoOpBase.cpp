@@ -26,7 +26,7 @@
 
 #include "Engine/Transform.h" // Matrix3x3
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 NoOpBase::NoOpBase(boost::shared_ptr<Natron::Node> n)
     : Natron::OutputEffectInstance(n)
@@ -37,7 +37,7 @@ NoOpBase::NoOpBase(boost::shared_ptr<Natron::Node> n)
 
 void
 NoOpBase::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponents>* comps)
+                                std::list<ImageComponents>* comps)
 {
     comps->push_back(ImageComponents::getRGBComponents());
     comps->push_back(ImageComponents::getRGBAComponents());
@@ -46,7 +46,7 @@ NoOpBase::addAcceptedComponents(int /*inputNb*/,
 
 
 void
-NoOpBase::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+NoOpBase::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     depths->push_back(Natron::eImageBitDepthByte);
     depths->push_back(Natron::eImageBitDepthShort);
@@ -76,7 +76,7 @@ NoOpBase::isHostChannelSelectorSupported(bool* /*defaultR*/,bool* /*defaultG*/, 
 }
 
 
-Natron::StatusEnum
+StatusEnum
 NoOpBase::getTransform(double /*time*/,
                        const RenderScale & /*renderScale*/,
                        int /*view*/,

@@ -44,6 +44,7 @@
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 #ifdef _WIN32
 int gettimeofday (struct timeval *tv, void *tz);
@@ -156,5 +157,7 @@ public:
     
     ~TimeLapseReporter();
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // ifndef NATRON_ENGINE_TIMER_H

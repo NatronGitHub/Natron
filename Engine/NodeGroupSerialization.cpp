@@ -34,7 +34,7 @@
 #include "Engine/ViewerInstance.h"
 #include <SequenceParsing.h>
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 void
 NodeCollectionSerialization::initialize(const NodeCollection& group)
@@ -193,7 +193,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                             }
                         } else {
                             
-                            Natron::StandardButtonEnum rep = Natron::questionDialog(QObject::tr("New PyPlug version").toStdString()
+                            StandardButtonEnum rep = Natron::questionDialog(QObject::tr("New PyPlug version").toStdString()
                                                                                     , QObject::tr("A different version of ").toStdString() +
                                                                                     stdModuleName + " (" +
                                                                                     QString::number(pyVersion).toStdString() + ") " +

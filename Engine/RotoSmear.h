@@ -30,6 +30,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct RotoSmearPrivate;
 class RotoSmear : public Natron::EffectInstance
@@ -88,8 +89,8 @@ public:
         return false;
     }
     
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
     virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -118,15 +119,15 @@ public:
         return true;
     }
     
-    virtual void getPreferredDepthAndComponents(int inputNb,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;
+    virtual void getPreferredDepthAndComponents(int inputNb,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const OVERRIDE FINAL;
     
-    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
+    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
     
     virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
 
 private:
 
-    virtual Natron::StatusEnum
+    virtual StatusEnum
     getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     virtual bool isIdentity(double time,
@@ -136,9 +137,11 @@ private:
                         double* inputTime,
                         int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
+    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
     boost::scoped_ptr<RotoSmearPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // ROTOSMEAR_H

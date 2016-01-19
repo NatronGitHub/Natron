@@ -16,6 +16,7 @@ GCC_DIAG_OFF(missing-declarations)
 #include "app_wrapper.h"
 
 // Extra includes
+NATRON_NAMESPACE_USING
 #include <AppInstanceWrapper.h>
 #include <NodeGroupWrapper.h>
 #include <NodeWrapper.h>

@@ -34,6 +34,7 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class PyViewer
 {
@@ -65,13 +66,13 @@ public:
     
     void getFrameRange(int* firstFrame,int* lastFrame) const;
     
-    void setPlaybackMode(Natron::PlaybackModeEnum mode);
+    void setPlaybackMode(PlaybackModeEnum mode);
     
-    Natron::PlaybackModeEnum getPlaybackMode() const;
+    PlaybackModeEnum getPlaybackMode() const;
     
-    Natron::ViewerCompositingOperatorEnum getCompositingOperator() const;
+    ViewerCompositingOperatorEnum getCompositingOperator() const;
     
-    void setCompositingOperator(Natron::ViewerCompositingOperatorEnum op);
+    void setCompositingOperator(ViewerCompositingOperatorEnum op);
     
     int getAInput() const;
 
@@ -81,9 +82,9 @@ public:
     
     void setBInput(int index);
     
-    void setChannels(Natron::DisplayChannelsEnum channels);
+    void setChannels(DisplayChannelsEnum channels);
     
-    Natron::DisplayChannelsEnum getChannels() const;
+    DisplayChannelsEnum getChannels() const;
     
     void setProxyModeEnabled(bool enabled);
     
@@ -148,5 +149,7 @@ public:
     void renderBlocking(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames,const std::list<int>& frameSteps);
 
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // GUIAPPWRAPPER_H

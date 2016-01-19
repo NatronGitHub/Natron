@@ -74,7 +74,8 @@ CLANG_DIAG_ON(deprecated)
 
 #define NATRON_TIME_ELASPED_BEFORE_PROGRESS_REPORT 0.4
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
+
 using std::make_pair;
 using boost::shared_ptr;
 
@@ -88,7 +89,7 @@ static void scaleToTexture32bits(const RectI& roi,
                                  float *output);
 static std::pair<double, double>
 findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
-                         Natron::DisplayChannelsEnum channels,
+                         DisplayChannelsEnum channels,
                          const RectI & rect);
 static void renderFunctor(const RectI& roi,
                           const RenderViewerArgs & args,
@@ -110,7 +111,7 @@ toBGRA(unsigned char r,
 }
 
 const Natron::Color::Lut*
-ViewerInstance::lutFromColorspace(Natron::ViewerColorSpaceEnum cs)
+ViewerInstance::lutFromColorspace(ViewerColorSpaceEnum cs)
 {
     const Natron::Color::Lut* lut;
 
@@ -433,7 +434,7 @@ public:
 
 
 
-Natron::StatusEnum
+StatusEnum
 ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                              bool canAbort,
                                              int view,
@@ -452,7 +453,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
     }
     rotoPaintNode->getLiveInstance()->clearActionsCache();
     
-    Natron::StatusEnum status[2] = {
+    StatusEnum status[2] = {
         eStatusFailed, eStatusFailed
     };
 
@@ -587,7 +588,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
     
 }
 
-Natron::StatusEnum
+StatusEnum
 ViewerInstance::renderViewer(int view,
                              bool singleThreaded,
                              bool isSequentialRender,
@@ -602,7 +603,7 @@ ViewerInstance::renderViewer(int view,
     if (!_imp->uiContext) {
         return eStatusFailed;
     }
-    Natron::StatusEnum ret[2] = {
+    StatusEnum ret[2] = {
         eStatusReplyDefault, eStatusReplyDefault
     };
     for (int i = 0; i < 2; ++i) {
@@ -685,7 +686,7 @@ static unsigned char* getTexPixel(int x,int y,const TextureRect& bounds, std::si
 static bool copyAndSwap(const TextureRect& srcRect,
                         const TextureRect& dstRect,
                         std::size_t dstBytesCount,
-                        Natron::ImageBitDepthEnum bitdepth,
+                        ImageBitDepthEnum bitdepth,
                         unsigned char* srcBuf,
                         unsigned char** dstBuf)
 {
@@ -724,7 +725,7 @@ static bool copyAndSwap(const TextureRect& srcRect,
     return true;
 }
 
-Natron::StatusEnum
+StatusEnum
 ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                            bool isSequential,
                                                            bool canAbort,
@@ -740,7 +741,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
     return getRenderViewerArgsAndCheckCache(time, isSequential, canAbort, view, textureIndex, viewerHash, rotoPaintNode, useTLS, renderAge, stats, outArgs);
 }
 
-Natron::StatusEnum
+StatusEnum
 ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  bool isSequential,
                                                  bool canAbort,
@@ -1103,7 +1104,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                 return eStatusReplyDefault; \
                             }
 
-Natron::StatusEnum
+StatusEnum
 ViewerInstance::renderViewer_internal(int view,
                                       bool singleThreaded,
                                       bool isSequentialRender,
@@ -1170,7 +1171,7 @@ ViewerInstance::renderViewer_internal(int view,
         roi.toCanonical(inArgs.params->mipMapLevel, inArgs.activeInputToRender->getPreferredAspectRatio(), inArgs.params->rod, &canonicalRoi);
         
         FrameRequestMap request;
-        Natron::StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipMapLevel, canonicalRoi, getNode(), request);
+        StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipMapLevel, canonicalRoi, getNode(), request);
         if (stat == eStatusFailed) {
             if (!isSequentialRender) {
                 _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
@@ -1763,7 +1764,7 @@ inline
 std::pair<double, double>
 findAutoContrastVminVmax_generic(boost::shared_ptr<const Natron::Image> inputImage,
                                  int nComps,
-                                 Natron::DisplayChannelsEnum channels,
+                                 DisplayChannelsEnum channels,
                                  const RectI & rect)
 {
     double localVmin = std::numeric_limits<double>::infinity();
@@ -1855,7 +1856,7 @@ findAutoContrastVminVmax_generic(boost::shared_ptr<const Natron::Image> inputIma
 template <int nComps>
 std::pair<double, double>
 findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputImage,
-                                  Natron::DisplayChannelsEnum channels,
+                                  DisplayChannelsEnum channels,
                                   const RectI & rect)
 {
     return findAutoContrastVminVmax_generic(inputImage, nComps, channels, rect);
@@ -1863,7 +1864,7 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputIm
 
 std::pair<double, double>
 findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
-                         Natron::DisplayChannelsEnum channels,
+                         DisplayChannelsEnum channels,
                          const RectI & rect)
 {
     int nComps = inputImage->getComponents().getNumComponents();
@@ -2638,11 +2639,11 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
             tiles = params->tiles;
         }
 
-        Natron::ImageBitDepthEnum depth;
+        ImageBitDepthEnum depth;
         if (!tiles.empty()) {
             depth = tiles.front()->getBitDepth();
         } else {
-            depth = (Natron::ImageBitDepthEnum)params->cachedFrame->getKey().getBitDepth();
+            depth = (ImageBitDepthEnum)params->cachedFrame->getKey().getBitDepth();
         }
         
         uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
@@ -2802,7 +2803,7 @@ ViewerInstance::isAutoContrastEnabled() const
 }
 
 void
-ViewerInstance::onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace)
+ViewerInstance::onColorSpaceChanged(ViewerColorSpaceEnum colorspace)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -2854,7 +2855,7 @@ ViewerInstance::setDisplayChannels(DisplayChannelsEnum channels, bool bothInputs
 }
 
 void
-ViewerInstance::setActiveLayer(const Natron::ImageComponents& layer, bool doRender)
+ViewerInstance::setActiveLayer(const ImageComponents& layer, bool doRender)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -2872,7 +2873,7 @@ ViewerInstance::setActiveLayer(const Natron::ImageComponents& layer, bool doRend
 }
 
 void
-ViewerInstance::setAlphaChannel(const Natron::ImageComponents& layer, const std::string& channelName, bool doRender)
+ViewerInstance::setAlphaChannel(const ImageComponents& layer, const std::string& channelName, bool doRender)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -2966,7 +2967,7 @@ ViewerInstance::getMipMapLevel() const
 }
 
 
-Natron::DisplayChannelsEnum
+DisplayChannelsEnum
 ViewerInstance::getChannels(int texIndex) const
 {
     // MT-SAFE: called from main thread and Serialization (pooled) thread
@@ -2978,7 +2979,7 @@ ViewerInstance::getChannels(int texIndex) const
 
 void
 ViewerInstance::addAcceptedComponents(int /*inputNb*/,
-                                      std::list<Natron::ImageComponents>* comps)
+                                      std::list<ImageComponents>* comps)
 {
     ///Viewer only supports RGBA for now.
     comps->push_back(ImageComponents::getRGBAComponents());
@@ -3022,7 +3023,7 @@ ViewerInstance::refreshActiveInputs(int inputNbChanged)
             }
         } else {
             if (_imp->activeInputs[0] != -1 && _imp->activateInputChangedFromViewer) {
-                Natron::ViewerCompositingOperatorEnum op = _imp->uiContext->getCompositingOperator();
+                ViewerCompositingOperatorEnum op = _imp->uiContext->getCompositingOperator();
                 if (op == Natron::eViewerCompositingOperatorNone) {
                     _imp->uiContext->setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
                 }
@@ -3047,7 +3048,7 @@ ViewerInstance::onInputChanged(int /*inputNb*/)
 bool
 ViewerInstance::refreshClipPreferences(double /*time*/,
                                        const RenderScale & /*scale*/,
-                                       Natron::ValueChangedReasonEnum /*reason*/,
+                                       ValueChangedReasonEnum /*reason*/,
                                        bool /*forceGetClipPrefAction*/)
 {
     Q_EMIT clipPreferencesChanged();
@@ -3061,7 +3062,7 @@ ViewerInstance::onChannelsSelectorRefreshed()
 }
 
 void
-ViewerInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+ViewerInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     depths->push_back(eImageBitDepthFloat);
     depths->push_back(eImageBitDepthShort);
@@ -3155,3 +3156,6 @@ ViewerInstance::reportStats(int time, int view, double wallTime, const RenderSta
 {
     Q_EMIT renderStatsAvailable(time, view, wallTime, stats);
 }
+
+#include "moc_ViewerInstance.cpp"
+#include "moc_ViewerInstancePrivate.cpp"

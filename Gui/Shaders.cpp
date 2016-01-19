@@ -22,6 +22,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
+NATRON_NAMESPACE_USING
+
 const char* fragRGB =
     "uniform sampler2D Tex;\n"
     "uniform float gain;\n"

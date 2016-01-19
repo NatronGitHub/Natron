@@ -86,7 +86,7 @@ CLANG_DIAG_ON(uninitialized)
 #define MAX_COLS 7
 #endif
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 class TreeWidget
@@ -168,7 +168,7 @@ enum ColorDialogEditingEnum
     eColorDialogEditingShapeColor
 };
 
-struct RotoPanelPrivate
+struct NATRON_NAMESPACE::RotoPanelPrivate
 {
     RotoPanel* publicInterface;
     boost::weak_ptr<NodeGui> node;
@@ -1238,7 +1238,7 @@ void
 RotoPanel::onRotoItemCompOperatorChanged(int /*dim*/,
                                          int reason)
 {
-    if ( (Natron::ValueChangedReasonEnum)reason == Natron::eValueChangedReasonSlaveRefresh ) {
+    if ( (ValueChangedReasonEnum)reason == Natron::eValueChangedReasonSlaveRefresh ) {
         return;
     }
     RotoDrawableItem* i = qobject_cast<RotoDrawableItem*>( sender() );
@@ -2327,3 +2327,5 @@ RotoPanel::onOperatorColMinimumSizeChanged(const QSize& size)
     _imp->tree->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 #endif
 }
+
+#include "moc_RotoPanel.cpp"

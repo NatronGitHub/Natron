@@ -24,8 +24,10 @@
 
 #include <cstring>
 #include <gtest/gtest.h>
+
 #include "Engine/Image.h"
 
+NATRON_NAMESPACE_USING
 
 TEST(BitmapTest,SimpleRect) {
     RectI rod(0,0,100,100);

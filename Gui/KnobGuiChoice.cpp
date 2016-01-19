@@ -78,7 +78,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "ofxNatron.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 using std::make_pair;
 
 
@@ -185,8 +185,8 @@ KnobGuiChoice::onItemNewSelected()
 {
     NewLayerDialog dialog(getGui());
     if (dialog.exec()) {
-        Natron::ImageComponents comps = dialog.getComponents();
-        if (comps == Natron::ImageComponents::getNoneComponents()) {
+        ImageComponents comps = dialog.getComponents();
+        if (comps == ImageComponents::getNoneComponents()) {
             Natron::errorDialog(tr("Layer").toStdString(), tr("Invalid layer").toStdString());
             return;
         }
@@ -298,3 +298,5 @@ KnobGuiChoice::reflectModificationsState()
     _comboBox->setAltered(!hasModif);
 }
 
+
+#include "moc_KnobGuiChoice.cpp"

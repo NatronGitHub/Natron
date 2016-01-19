@@ -44,7 +44,8 @@
  */
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 namespace Color {
 // compile-time endianness checking found on:
 // http://stackoverflow.com/questions/2100331/c-macro-definition-to-determine-big-endian-or-little-endian-machine
@@ -1506,5 +1507,5 @@ rgb_to_hsv( float r,
     }
 }
 }     // namespace Color {
-} // namespace Natron {
+} // NATRON_NAMESPACE_ENTER;
 

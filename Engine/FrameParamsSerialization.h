@@ -40,16 +40,13 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/FrameParams.h"
 #include "Engine/EngineFwd.h"
 
-namespace Natron {
-
 template<class Archive>
 void
-FrameParams::serialize(Archive & ar,
+Natron::FrameParams::serialize(Archive & ar,
                        const unsigned int /*version*/)
 {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Natron::NonKeyParams);
-    ar & boost::serialization::make_nvp("Rod",_rod);
+    ar & ::boost::serialization::make_nvp("Rod",_rod);
 }
 
-}
 #endif // Engine_FrameParamsSerialization_h

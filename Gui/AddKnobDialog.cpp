@@ -51,10 +51,10 @@
 #include "Gui/Utils.h" // convertFromPlainText
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
-struct AddKnobDialogPrivate
+struct NATRON_NAMESPACE::AddKnobDialogPrivate
 {
     boost::shared_ptr<KnobI> knob;
     boost::shared_ptr<KnobSerialization> originalKnobSerialization;
@@ -2171,3 +2171,5 @@ AddKnobDialogPrivate::setVisibleDefaultValues(bool visible,
     }
 }
 
+
+#include "moc_AddKnobDialog.cpp"

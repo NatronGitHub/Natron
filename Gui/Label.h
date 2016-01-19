@@ -36,7 +36,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 class Label
     : public QLabel
@@ -67,6 +67,6 @@ private:
     bool altered;
 };
 
-} // namespace Natron
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_GUI_-LABEL_H

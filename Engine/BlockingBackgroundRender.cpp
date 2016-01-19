@@ -34,6 +34,9 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/Settings.h"
 
+NATRON_NAMESPACE_USING
+
+
 BlockingBackgroundRender::BlockingBackgroundRender(Natron::OutputEffectInstance* writer)
     : _running(false)
       ,_writer(writer)

@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief This class represents a multi-instance settings panel.
@@ -157,9 +158,9 @@ private:
 
     void removeInstancesInternal();
 
-    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReasonEnum reason) OVERRIDE;
+    virtual void evaluate(KnobI* knob,bool isSignificant,ValueChangedReasonEnum reason) OVERRIDE;
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,double time,
+    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time,
                                     bool originatedFromMainThread) OVERRIDE;
     boost::scoped_ptr<MultiInstancePanelPrivate> _imp;
 };
@@ -264,5 +265,6 @@ private:
     
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // MULTIINSTANCEPANEL_H

@@ -28,6 +28,7 @@
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class NodeGraphI
 {
@@ -40,5 +41,7 @@ public:
     virtual void onNodesCleared() = 0;
     
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NODEGRAPHI_H

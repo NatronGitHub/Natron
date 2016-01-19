@@ -52,7 +52,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 using std::make_pair;
 using std::pair;
 
@@ -1504,7 +1504,7 @@ boost::shared_ptr<Curve> KnobParametric::getParametricCurve(int dimension) const
     }
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::addControlPoint(int dimension,
                                  double key,
                                  double value)
@@ -1526,7 +1526,7 @@ KnobParametric::addControlPoint(int dimension,
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::addHorizontalControlPoint(int dimension,double key,double value)
 {
     ///Mt-safe as Curve is MT-safe
@@ -1549,7 +1549,7 @@ KnobParametric::addHorizontalControlPoint(int dimension,double key,double value)
  
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::getValue(int dimension,
                           double parametricPosition,
                           double *returnValue) const
@@ -1567,7 +1567,7 @@ KnobParametric::getValue(int dimension,
     return Natron::eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::getNControlPoints(int dimension,
                                    int *returnValue) const
 {
@@ -1580,7 +1580,7 @@ KnobParametric::getNControlPoints(int dimension,
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::getNthControlPoint(int dimension,
                                     int nthCtl,
                                     double *key,
@@ -1601,7 +1601,7 @@ KnobParametric::getNthControlPoint(int dimension,
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::getNthControlPoint(int dimension,
                                       int nthCtl,
                                       double *key,
@@ -1626,7 +1626,7 @@ KnobParametric::getNthControlPoint(int dimension,
 
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::setNthControlPoint(int dimension,
                                     int nthCtl,
                                     double key,
@@ -1646,7 +1646,7 @@ KnobParametric::setNthControlPoint(int dimension,
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::setNthControlPoint(int dimension,
                                       int nthCtl,
                                       double key,
@@ -1671,7 +1671,7 @@ KnobParametric::setNthControlPoint(int dimension,
 
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::deleteControlPoint(int dimension,
                                     int nthCtl)
 {
@@ -1686,7 +1686,7 @@ KnobParametric::deleteControlPoint(int dimension,
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::deleteAllControlPoints(int dimension)
 {
     ///Mt-safe as Curve is MT-safe
@@ -1770,7 +1770,7 @@ KnobParametric::loadParametricCurves(const std::list< Curve > & curves)
 void
 KnobParametric::resetExtraToDefaultValue(int dimension)
 {
-    Natron::StatusEnum s = deleteAllControlPoints(dimension);
+    StatusEnum s = deleteAllControlPoints(dimension);
     Q_UNUSED(s);
     _curves[dimension]->clone(*_defaultCurves[dimension]);
     Q_EMIT curveChanged(dimension);
@@ -1803,3 +1803,5 @@ KnobParametric::hasModificationsVirtual(int dimension) const
     }
     return false;
 }
+
+#include "moc_KnobTypes.cpp"

@@ -96,7 +96,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kTransformArrowOffsetFromPoint 15
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 namespace {
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
@@ -153,7 +153,7 @@ enum SelectedCpsTransformModeEnum
 
 
 ///A small structure of all the data shared by all the viewers watching the same Roto
-class RotoGuiSharedData
+class NATRON_NAMESPACE::RotoGuiSharedData
 {
 public:
     SelectedItems selectedItems;
@@ -4926,3 +4926,5 @@ RotoGui::onResetCloneTransformClicked()
     _imp->rotoData->cloneOffset.first = _imp->rotoData->cloneOffset.second = 0;
     onBreakMultiStrokeTriggered();
 }
+
+#include "moc_RotoGui.cpp"

@@ -98,7 +98,7 @@ GCC_DIAG_OFF(deprecated-declarations)
 
 //using namespace Imf;
 //using namespace Imath;
-using namespace Natron;
+NATRON_NAMESPACE_USING
 using std::cout; using std::endl;
 
 
@@ -1356,7 +1356,7 @@ ViewerGL::initShaderGLSL()
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      const std::list<boost::shared_ptr<Natron::Image> >& tiles,
-                                     Natron::ImageBitDepthEnum depth,
+                                     ImageBitDepthEnum depth,
                                      int time,
                                      const RectD& rod,
                                      size_t bytesCount,
@@ -1367,7 +1367,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      int lut,
                                      int pboIndex,
                                      unsigned int mipMapLevel,
-                                     Natron::ImagePremultiplicationEnum premult,
+                                     ImagePremultiplicationEnum premult,
                                      int textureIndex,
                                      const RectI& roi,
                                      bool updateOnlyRoi)
@@ -1387,7 +1387,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     
     GLuint pboId = getPboID(pboIndex);
     
-    Natron::ImageBitDepthEnum bd = getBitDepth();
+    ImageBitDepthEnum bd = getBitDepth();
     assert(textureIndex == 0 || textureIndex == 1);
     
     if (updateOnlyRoi) {
@@ -1459,7 +1459,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     _imp->displayingImageGamma[textureIndex] = gamma;
     _imp->displayingImageOffset[textureIndex] = offset;
     _imp->displayingImageMipMapLevel[textureIndex] = mipMapLevel;
-    _imp->displayingImageLut = (Natron::ViewerColorSpaceEnum)lut;
+    _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
     _imp->displayingImagePremult[textureIndex] = premult;
     _imp->displayingImageTime[textureIndex] = time;
     ViewerInstance* internalNode = getInternalNode();
@@ -1555,7 +1555,7 @@ ViewerGL::setLut(int lut)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    _imp->displayingImageLut = (Natron::ViewerColorSpaceEnum)lut;
+    _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
 }
 
 /**
@@ -2898,7 +2898,7 @@ ViewerGL::resizeEvent(QResizeEvent* e)
 }
 
 
-Natron::ImageBitDepthEnum
+ImageBitDepthEnum
 ViewerGL::getBitDepth() const
 {
     // MT-SAFE
@@ -3622,14 +3622,14 @@ ViewerGL::getZoomOrPannedSinceLastFit() const
     return _imp->zoomOrPannedSinceLastFit;
 }
 
-Natron::ViewerCompositingOperatorEnum
+ViewerCompositingOperatorEnum
 ViewerGL::getCompositingOperator() const
 {
     return _imp->viewerTab->getCompositingOperator();
 }
 
 void
-ViewerGL::setCompositingOperator(Natron::ViewerCompositingOperatorEnum op)
+ViewerGL::setCompositingOperator(ViewerCompositingOperatorEnum op)
 {
     _imp->viewerTab->setCompositingOperator(op);
 }
@@ -3981,7 +3981,7 @@ ViewerGL::getColorAt(double x,
     
     const ImagePtr& firstTile = tiles.front();
     
-    Natron::ImageBitDepthEnum depth = firstTile->getBitDepth();
+    ImageBitDepthEnum depth = firstTile->getBitDepth();
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(depth);
     const Natron::Color::Lut* dstColorSpace;
     const Natron::Color::Lut* srcColorSpace;
@@ -4164,7 +4164,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     }
     
     
-    Natron::ImageBitDepthEnum depth = tiles.front()->getBitDepth();
+    ImageBitDepthEnum depth = tiles.front()->getBitDepth();
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(depth);
     const Natron::Color::Lut* dstColorSpace;
     const Natron::Color::Lut* srcColorSpace;
@@ -4270,3 +4270,5 @@ ViewerGL::currentTimeForEvent(QInputEvent* e)
 }
 
 
+
+#include "moc_ViewerGL.cpp"

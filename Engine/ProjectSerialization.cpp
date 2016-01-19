@@ -29,6 +29,7 @@
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
 
+NATRON_NAMESPACE_USING
 
 void
 ProjectSerialization::initialize(const Natron::Project* project)

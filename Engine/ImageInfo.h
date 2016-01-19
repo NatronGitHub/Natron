@@ -28,6 +28,8 @@
 #include "Engine/Format.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 class ImageInfo
 {
 public:
@@ -80,5 +82,7 @@ private:
     RectD _rod;  // the image RoD in canonical coordinates (not the same as the OFX::Image rod, which is in pixel coordinates)
     Format _displayWindow; // display window of the data
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_IMAGEINFO_H

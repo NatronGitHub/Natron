@@ -94,7 +94,7 @@ CLANG_DIAG_ON(uninitialized)
 //in a way. This way the user will get prompted to restore default shortcuts on next launch
 #define NATRON_SHORTCUTS_DEFAULT_VERSION 7
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 void

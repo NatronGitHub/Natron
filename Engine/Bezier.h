@@ -44,6 +44,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 
 /**
@@ -551,7 +552,7 @@ public:
 
     void getKeyframeTimes(std::set<double> *times) const;
     
-    void getKeyframeTimesAndInterpolation(std::list<std::pair<double,Natron::KeyframeTypeEnum> > *keys) const;
+    void getKeyframeTimesAndInterpolation(std::list<std::pair<double,KeyframeTypeEnum> > *keys) const;
 
     /**
      * @brief Get the nearest previous keyframe from the given time.
@@ -567,7 +568,7 @@ public:
     
     int getKeyFrameIndex(double time) const;
     
-    void setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index);
+    void setKeyFrameInterpolation(KeyframeTypeEnum interp,int index);
 
 
 Q_SIGNALS:
@@ -589,6 +590,7 @@ private:
     boost::scoped_ptr<BezierPrivate> _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 
 #endif // Engine_Bezier_h

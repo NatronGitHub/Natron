@@ -49,15 +49,7 @@
 #include "Engine/EngineFwd.h"
 #include "Engine/TLSHolder.h"
 
-
-
-
-
-class QProcess;
-class QLocalServer;
-class QLocalSocket;
-
-
+NATRON_NAMESPACE_ENTER;
 
 struct AppManagerPrivate
 {
@@ -180,6 +172,7 @@ struct AppManagerPrivate
 #endif
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_AppManagerPrivate_h
 

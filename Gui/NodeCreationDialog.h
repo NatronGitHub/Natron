@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/LineEdit.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct CompleterLineEditPrivate;
 
@@ -108,5 +109,7 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     boost::scoped_ptr<NodeCreationDialogPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NODECREATIONDIALOG_H

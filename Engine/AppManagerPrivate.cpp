@@ -61,10 +61,10 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/StandardPaths.h"
 
 
-BOOST_CLASS_EXPORT(Natron::FrameParams)
-BOOST_CLASS_EXPORT(Natron::ImageParams)
+BOOST_CLASS_EXPORT(NATRON_NAMESPACE::FrameParams)
+BOOST_CLASS_EXPORT(NATRON_NAMESPACE::ImageParams)
 
-
+NATRON_NAMESPACE_USING
 
 
 #if defined(NATRON_USE_BREAKPAD) || defined(Q_OS_LINUX)
@@ -86,7 +86,6 @@ void crash_application()
 #endif // DEBUG
 #endif // NATRON_USE_BREAKPAD
 
-using namespace Natron;
 
 AppManagerPrivate::AppManagerPrivate()
 : globalTLS()

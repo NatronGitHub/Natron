@@ -34,6 +34,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 typedef boost::shared_ptr<RenderStats> RenderStatsPtr;
 
@@ -225,7 +226,7 @@ public:
                              int viewIndex,
                              const std::vector<int>& viewsToRender,
                              const RenderStatsPtr& stats,
-                             Natron::SchedulingPolicyEnum policy);
+                             SchedulingPolicyEnum policy);
 
     /**
      * @brief To be called by concurrent worker threads in case of failure, all renders will be aborted
@@ -390,7 +391,7 @@ protected:
     /**
      * @brief Must return the scheduling policy that the output device will have
      **/
-    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const = 0;
+    virtual SchedulingPolicyEnum getSchedulingPolicy() const = 0;
     
     /**
      * @brief Returns the last successful render time.
@@ -453,9 +454,7 @@ private:
     
 };
 
-namespace Natron {
-class OutputEffectInstance;
-}
+
 class DefaultScheduler : public OutputSchedulerThread
 {
 public:
@@ -481,7 +480,7 @@ private:
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
-    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
+    virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
     
     virtual void aboutToStartRender() OVERRIDE FINAL;
     
@@ -658,7 +657,7 @@ public:
     /**
      * @brief Returns the playback mode of the internal scheduler
      **/
-    Natron::PlaybackModeEnum getPlaybackMode() const;
+    PlaybackModeEnum getPlaybackMode() const;
     
     /**
      * @brief Returns the desired user FPS that the internal scheduler should stick to
@@ -696,7 +695,7 @@ public Q_SLOTS:
     
     /**
      * @brief Set the playback mode
-     * @param mode Corresponds to the Natron::PlaybackModeEnum enum
+     * @param mode Corresponds to the PlaybackModeEnum enum
      **/
     void setPlaybackMode(int mode);
     
@@ -799,5 +798,7 @@ private:
     
     virtual OutputSchedulerThread* createScheduler(Natron::OutputEffectInstance* effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // OUTPUTSCHEDULERTHREAD_H

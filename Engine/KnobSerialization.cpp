@@ -36,6 +36,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
 
+NATRON_NAMESPACE_USING
 
 ValueSerialization::ValueSerialization(KnobSerializationBase* serialization,
                                        const boost::shared_ptr<KnobI> & knob,

@@ -7,6 +7,7 @@
 
 namespace PySide { class DynamicQMetaObject; }
 
+NATRON_NAMESPACE_ENTER;
 class PyPanelWrapper : public PyPanel
 {
 public:
@@ -108,6 +109,7 @@ public:
     virtual void* qt_metacast(const char* _clname);
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_PYPANELWRAPPER_H
 

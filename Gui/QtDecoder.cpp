@@ -45,7 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 using std::cout; using std::endl;
 
 QtReader::QtReader(boost::shared_ptr<Natron::Node> node)
@@ -165,7 +165,7 @@ QtReader::initializeKnobs()
 
 void
 QtReader::knobChanged(KnobI* k,
-                      Natron::ValueChangedReasonEnum /*reason*/,
+                      ValueChangedReasonEnum /*reason*/,
                       int /*view*/,
                       double /*time*/,
                       bool /*originatedFromMainThread*/)
@@ -421,7 +421,7 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
     }
 }
 
-Natron::StatusEnum
+StatusEnum
 QtReader::getRegionOfDefinition(U64 /*hash*/,double time,
                                 const RenderScale & /*scale*/,
                                 int /*view*/,
@@ -463,12 +463,12 @@ QtReader::getRegionOfDefinition(U64 /*hash*/,double time,
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 QtReader::render(const RenderActionArgs& args)
 {
     assert(args.outputPlanes.size() == 1);
     
-    const std::pair<Natron::ImageComponents,ImagePtr>& output = args.outputPlanes.front();
+    const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
     
     int missingFrameChoice = _missingFrameChoice->getValue();
 
@@ -532,14 +532,14 @@ QtReader::render(const RenderActionArgs& args)
 
 void
 QtReader::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponents>* comps)
+                                std::list<ImageComponents>* comps)
 {
     ///QtReader only supports RGBA for now.
     comps->push_back(ImageComponents::getRGBAComponents());
 }
 
 void
-QtReader::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+QtReader::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     depths->push_back(eImageBitDepthFloat);
 }

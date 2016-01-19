@@ -65,7 +65,7 @@ GCC_DIAG_ON(unused-parameter)
 #define NODE_SERIALIZATION_SERIALIZE_PAGE_INDEX 14
 #define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_SERIALIZE_PAGE_INDEX
 
-
+NATRON_NAMESPACE_ENTER;
 
 class NodeSerialization
 {
@@ -215,7 +215,7 @@ public:
         return _children;
     }
     
-    const std::list<Natron::ImageComponents>& getUserCreatedComponents() const
+    const std::list<ImageComponents>& getUserCreatedComponents() const
     {
         return _userComponents;
     }
@@ -246,59 +246,59 @@ private:
     std::string _pythonModule;
     unsigned int _pythonModuleVersion;
     
-    std::list<Natron::ImageComponents> _userComponents;
+    std::list<ImageComponents> _userComponents;
     
-    friend class boost::serialization::access;
+    friend class ::boost::serialization::access;
     template<class Archive>
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        ar & boost::serialization::make_nvp("Plugin_label",_nodeLabel);
-        ar & boost::serialization::make_nvp("Plugin_script_name",_nodeScriptName);
-        ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
-        ar & boost::serialization::make_nvp("PythonModule",_pythonModule);
-        ar & boost::serialization::make_nvp("PythonModuleVersion",_pythonModuleVersion);
+        ar & ::boost::serialization::make_nvp("Plugin_label",_nodeLabel);
+        ar & ::boost::serialization::make_nvp("Plugin_script_name",_nodeScriptName);
+        ar & ::boost::serialization::make_nvp("Plugin_id",_pluginID);
+        ar & ::boost::serialization::make_nvp("PythonModule",_pythonModule);
+        ar & ::boost::serialization::make_nvp("PythonModuleVersion",_pythonModuleVersion);
         
-        ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
-        ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
-        ar & boost::serialization::make_nvp("KnobsCount", _nbKnobs);
+        ar & ::boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
+        ar & ::boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
+        ar & ::boost::serialization::make_nvp("KnobsCount", _nbKnobs);
         
         for (KnobValues::const_iterator it = _knobsValues.begin(); it != _knobsValues.end(); ++it) {
-            ar & boost::serialization::make_nvp( "item",*(*it) );
+            ar & ::boost::serialization::make_nvp( "item",*(*it) );
         }
-        ar & boost::serialization::make_nvp("Inputs_map",_inputs);
-        ar & boost::serialization::make_nvp("KnobsAge",_knobsAge);
-        ar & boost::serialization::make_nvp("MasterNode",_masterNodeName);
-        ar & boost::serialization::make_nvp("HasRotoContext",_hasRotoContext);
+        ar & ::boost::serialization::make_nvp("Inputs_map",_inputs);
+        ar & ::boost::serialization::make_nvp("KnobsAge",_knobsAge);
+        ar & ::boost::serialization::make_nvp("MasterNode",_masterNodeName);
+        ar & ::boost::serialization::make_nvp("HasRotoContext",_hasRotoContext);
         if (_hasRotoContext) {
-            ar & boost::serialization::make_nvp("RotoContext",_rotoContext);
+            ar & ::boost::serialization::make_nvp("RotoContext",_rotoContext);
         }
         
-        ar & boost::serialization::make_nvp("MultiInstanceParent",_multiInstanceParentName);
+        ar & ::boost::serialization::make_nvp("MultiInstanceParent",_multiInstanceParentName);
         
         int userPagesCount = (int)_userPages.size();
-        ar & boost::serialization::make_nvp("UserPagesCount",userPagesCount);
+        ar & ::boost::serialization::make_nvp("UserPagesCount",userPagesCount);
         for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = _userPages.begin(); it != _userPages.end() ; ++it ) {
-            ar & boost::serialization::make_nvp("item",**it);
+            ar & ::boost::serialization::make_nvp("item",**it);
         }
        
         int pageSizes = (int)_pagesIndexes.size();
-        ar & boost::serialization::make_nvp("PagesCount",pageSizes);
+        ar & ::boost::serialization::make_nvp("PagesCount",pageSizes);
         for (std::list<std::string>::const_iterator it = _pagesIndexes.begin(); it!= _pagesIndexes.end(); ++it) {
-            ar & boost::serialization::make_nvp("name",*it);
+            ar & ::boost::serialization::make_nvp("name",*it);
         }
         
         int nodesCount = (int)_children.size();
-        ar & boost::serialization::make_nvp("Children",nodesCount);
+        ar & ::boost::serialization::make_nvp("Children",nodesCount);
         
         for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = _children.begin();
              it != _children.end();
              ++it) {
-            ar & boost::serialization::make_nvp("item",**it);
+            ar & ::boost::serialization::make_nvp("item",**it);
         }
         
-        ar & boost::serialization::make_nvp("UserComponents",_userComponents);
-        ar & boost::serialization::make_nvp("CacheID",_cacheID);
+        ar & ::boost::serialization::make_nvp("UserComponents",_userComponents);
+        ar & ::boost::serialization::make_nvp("CacheID",_cacheID);
         
     }
     
@@ -311,61 +311,61 @@ private:
                                         "version of Natron, which makes it unreadable");
         }
         
-        ar & boost::serialization::make_nvp("Plugin_label",_nodeLabel);
+        ar & ::boost::serialization::make_nvp("Plugin_label",_nodeLabel);
         if (version >= NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
-            ar & boost::serialization::make_nvp("Plugin_script_name",_nodeScriptName);
+            ar & ::boost::serialization::make_nvp("Plugin_script_name",_nodeScriptName);
         } else {
             _nodeScriptName = Natron::makeNameScriptFriendly(_nodeLabel);
         }
-        ar & boost::serialization::make_nvp("Plugin_id",_pluginID);
+        ar & ::boost::serialization::make_nvp("Plugin_id",_pluginID);
         
         if (version >= NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE) {
             
             if (version >= NODE_SERIALIZATION_SERIALIZE_PYTHON_MODULE_ALWAYS || _pluginID == PLUGINID_NATRON_GROUP) {
-                ar & boost::serialization::make_nvp("PythonModule",_pythonModule);
+                ar & ::boost::serialization::make_nvp("PythonModule",_pythonModule);
                 if (version >= NODE_SERIALIZATION_INTRODUCES_PYTHON_MODULE_VERSION) {
-                    ar & boost::serialization::make_nvp("PythonModuleVersion",_pythonModuleVersion);
+                    ar & ::boost::serialization::make_nvp("PythonModuleVersion",_pythonModuleVersion);
                 } else {
                     _pythonModuleVersion = 1;
                 }
             }
         }
         
-        ar & boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
-        ar & boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
-        ar & boost::serialization::make_nvp("KnobsCount", _nbKnobs);
+        ar & ::boost::serialization::make_nvp("Plugin_major_version",_pluginMajorVersion);
+        ar & ::boost::serialization::make_nvp("Plugin_minor_version",_pluginMinorVersion);
+        ar & ::boost::serialization::make_nvp("KnobsCount", _nbKnobs);
         for (int i = 0; i < _nbKnobs; ++i) {
             boost::shared_ptr<KnobSerialization> ks(new KnobSerialization);
-            ar & boost::serialization::make_nvp("item",*ks);
+            ar & ::boost::serialization::make_nvp("item",*ks);
             _knobsValues.push_back(ks);
         }
         
         if (version < NODE_SERIALIZATION_CHANGE_INPUTS_SERIALIZATION) {
-            ar & boost::serialization::make_nvp("Inputs_map",_oldInputs);
+            ar & ::boost::serialization::make_nvp("Inputs_map",_oldInputs);
             if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
                 for (U32 i = 0; i < _oldInputs.size(); ++i) {
                     _oldInputs[i] = Natron::makeNameScriptFriendly(_oldInputs[i]);
                 }
             }
         } else {
-            ar & boost::serialization::make_nvp("Inputs_map",_inputs);
+            ar & ::boost::serialization::make_nvp("Inputs_map",_inputs);
         }
         
-        ar & boost::serialization::make_nvp("KnobsAge",_knobsAge);
-        ar & boost::serialization::make_nvp("MasterNode",_masterNodeName);
+        ar & ::boost::serialization::make_nvp("KnobsAge",_knobsAge);
+        ar & ::boost::serialization::make_nvp("MasterNode",_masterNodeName);
         if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
             _masterNodeName = Natron::makeNameScriptFriendly(_masterNodeName);
         }
         _isNull = false;
         
         if (version >= NODE_SERIALIZATION_V_INTRODUCES_ROTO) {
-            ar & boost::serialization::make_nvp("HasRotoContext",_hasRotoContext);
+            ar & ::boost::serialization::make_nvp("HasRotoContext",_hasRotoContext);
             if (_hasRotoContext) {
-                ar & boost::serialization::make_nvp("RotoContext",_rotoContext);
+                ar & ::boost::serialization::make_nvp("RotoContext",_rotoContext);
             }
         }
         if (version >= NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE) {
-            ar & boost::serialization::make_nvp("MultiInstanceParent",_multiInstanceParentName);
+            ar & ::boost::serialization::make_nvp("MultiInstanceParent",_multiInstanceParentName);
             if (version < NODE_SERIALIZATION_INTRODUCES_SCRIPT_NAME) {
                  _multiInstanceParentName = Natron::makeNameScriptFriendly(_multiInstanceParentName);
             }
@@ -373,18 +373,18 @@ private:
         
         if (version >= NODE_SERIALIZATION_INTRODUCES_USER_KNOBS) {
             int userPagesCount;
-            ar & boost::serialization::make_nvp("UserPagesCount",userPagesCount);
+            ar & ::boost::serialization::make_nvp("UserPagesCount",userPagesCount);
             for (int i = 0; i < userPagesCount; ++i) {
                 boost::shared_ptr<GroupKnobSerialization> s(new GroupKnobSerialization());
-                ar & boost::serialization::make_nvp("item",*s);
+                ar & ::boost::serialization::make_nvp("item",*s);
                 _userPages.push_back(s);
             }
             if (version >= NODE_SERIALIZATION_SERIALIZE_PAGE_INDEX) {
                 int count;
-                ar & boost::serialization::make_nvp("PagesCount",count);
+                ar & ::boost::serialization::make_nvp("PagesCount",count);
                 for (int i = 0; i < count; ++i) {
                     std::string name;
-                    ar & boost::serialization::make_nvp("name",name);
+                    ar & ::boost::serialization::make_nvp("name",name);
                     _pagesIndexes.push_back(name);
                 }
             } else {
@@ -394,19 +394,19 @@ private:
         
         if (version >= NODE_SERIALIZATION_INTRODUCES_GROUPS) {
             int nodesCount ;
-            ar & boost::serialization::make_nvp("Children",nodesCount);
+            ar & ::boost::serialization::make_nvp("Children",nodesCount);
             
             for (int i = 0; i < nodesCount; ++i) {
                 boost::shared_ptr<NodeSerialization> s(new NodeSerialization);
-                ar & boost::serialization::make_nvp("item",*s);
+                ar & ::boost::serialization::make_nvp("item",*s);
                 _children.push_back(s);
             }
         }
         if (version >= NODE_SERIALIZATION_INTRODUCES_USER_COMPONENTS)  {
-            ar & boost::serialization::make_nvp("UserComponents",_userComponents);
+            ar & ::boost::serialization::make_nvp("UserComponents",_userComponents);
         }
         if (version >= NODE_SERIALIZATION_INTRODUCES_CACHE_ID) {
-            ar & boost::serialization::make_nvp("CacheID",_cacheID);
+            ar & ::boost::serialization::make_nvp("CacheID",_cacheID);
         }
 
     }
@@ -414,8 +414,9 @@ private:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
+NATRON_NAMESPACE_EXIT;
 
-BOOST_CLASS_VERSION(NodeSerialization, NODE_SERIALIZATION_CURRENT_VERSION)
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::NodeSerialization, NODE_SERIALIZATION_CURRENT_VERSION)
 
 
 #endif // NODESERIALIZATION_H

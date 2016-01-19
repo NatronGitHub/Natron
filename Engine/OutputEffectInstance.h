@@ -42,7 +42,7 @@
 class QThread;
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 class OutputEffectInstance
     : public Natron::EffectInstance

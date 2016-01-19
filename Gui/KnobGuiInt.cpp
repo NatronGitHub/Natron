@@ -80,7 +80,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "ofxNatron.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 using std::make_pair;
 
 
@@ -707,3 +707,5 @@ KnobGuiInt::reflectModificationsState()
         _slider->setAltered(!hasModif);
     }
 }
+
+#include "moc_KnobGuiInt.cpp"

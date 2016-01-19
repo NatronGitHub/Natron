@@ -37,7 +37,7 @@
 
 #include "Gui/GuiApplicationManager.h"
 
-
+NATRON_NAMESPACE_USING
 
 int
 main(int argc,

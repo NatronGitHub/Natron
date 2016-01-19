@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class QtEnumConvert
 {
@@ -49,11 +50,11 @@ public:
     static Natron::Key fromQtKey(Qt::Key k);
     static Natron::KeyboardModifier fromQtModifier(Qt::KeyboardModifier m);
     static Natron::KeyboardModifiers fromQtModifiers(Qt::KeyboardModifiers m);
-    static Natron::StandardButtonEnum fromQtStandardButton(QMessageBox::StandardButton b);
-    static QMessageBox::StandardButton toQtStandardButton(Natron::StandardButtonEnum b);
+    static StandardButtonEnum fromQtStandardButton(QMessageBox::StandardButton b);
+    static QMessageBox::StandardButton toQtStandardButton(StandardButtonEnum b);
     static QMessageBox::StandardButtons toQtStandarButtons(Natron::StandardButtons buttons);
 };
 
-//namespace Natron
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_QtEnumConvert_h

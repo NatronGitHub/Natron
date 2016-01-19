@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveGui.h" // Curves
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class CurveGui
     : public QObject
@@ -133,7 +134,7 @@ public:
     virtual bool isYComponentMovable() const;
     virtual KeyFrameSet getKeyFrames() const;
     virtual int getKeyFrameIndex(double time) const = 0;
-    virtual KeyFrame setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) = 0;
+    virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp,int index) = 0;
     
 Q_SIGNALS:
 
@@ -207,7 +208,7 @@ public:
     }
     
     virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual KeyFrame setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
+    virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
 
     
 private:
@@ -245,7 +246,7 @@ public:
     virtual KeyFrameSet getKeyFrames() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual KeyFrame setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
+    virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
 
 private:
     
@@ -254,5 +255,6 @@ private:
     boost::shared_ptr<RotoContext> _rotoContext;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_CurveGui_h

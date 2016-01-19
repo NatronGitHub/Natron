@@ -47,6 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 typedef boost::shared_ptr<DopeSheetKey> DSKeyPtr;
 typedef std::list<DSKeyPtr> DSKeyPtrList;
@@ -312,16 +313,16 @@ private:
  */
 struct DSKeyInterpolationChange
 {
-    DSKeyInterpolationChange(Natron::KeyframeTypeEnum oldInterpType,
-                             Natron::KeyframeTypeEnum newInterpType,
+    DSKeyInterpolationChange(KeyframeTypeEnum oldInterpType,
+                             KeyframeTypeEnum newInterpType,
                              const DSKeyPtr & key)
         : _oldInterpType(oldInterpType),
           _newInterpType(newInterpType),
           _key(key)
     {}
 
-    Natron::KeyframeTypeEnum _oldInterpType;
-    Natron::KeyframeTypeEnum _newInterpType;
+    KeyframeTypeEnum _oldInterpType;
+    KeyframeTypeEnum _newInterpType;
     DSKeyPtr _key;
 };
 
@@ -384,5 +385,7 @@ private:
     std::vector<DopeSheetKey> _keys;
     DopeSheetEditor *_model;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // DOPESHEETEDITORUNDOREDO_H

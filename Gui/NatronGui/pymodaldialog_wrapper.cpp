@@ -20,6 +20,7 @@ CLANG_DIAG_OFF(header-guard)
 #include "pymodaldialog_wrapper.h"
 
 // Extra includes
+NATRON_NAMESPACE_USING
 #include <ParameterWrapper.h>
 #include <QList>
 #include <qaction.h>

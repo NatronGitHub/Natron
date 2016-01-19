@@ -40,6 +40,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Knob.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /******************************KnobInt**************************************/
 
@@ -843,26 +844,26 @@ public:
     std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
     boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
     boost::shared_ptr<Curve> getDefaultParametricCurve(int dimension) const;
-    Natron::StatusEnum addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
-    Natron::StatusEnum addHorizontalControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
-    Natron::StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) const WARN_UNUSED_RETURN;
-    Natron::StatusEnum getNControlPoints(int dimension,int *returnValue) const WARN_UNUSED_RETURN;
-    Natron::StatusEnum getNthControlPoint(int dimension,
+    StatusEnum addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
+    StatusEnum addHorizontalControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
+    StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum getNControlPoints(int dimension,int *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum getNthControlPoint(int dimension,
                                       int nthCtl,
                                       double *key,
                                       double *value) const WARN_UNUSED_RETURN;
-    Natron::StatusEnum getNthControlPoint(int dimension,
+    StatusEnum getNthControlPoint(int dimension,
                                           int nthCtl,
                                           double *key,
                                           double *value,
                                           double *leftDerivative,
                                           double *rightDerivative) const WARN_UNUSED_RETURN;
-    Natron::StatusEnum setNthControlPoint(int dimension,
+    StatusEnum setNthControlPoint(int dimension,
                                       int nthCtl,
                                       double key,
                                       double value) WARN_UNUSED_RETURN;
     
-    Natron::StatusEnum setNthControlPoint(int dimension,
+    StatusEnum setNthControlPoint(int dimension,
                                           int nthCtl,
                                           double key,
                                           double value,
@@ -870,8 +871,8 @@ public:
                                           double rightDerivative) WARN_UNUSED_RETURN;
 
     
-    Natron::StatusEnum deleteControlPoint(int dimension, int nthCtl) WARN_UNUSED_RETURN;
-    Natron::StatusEnum deleteAllControlPoints(int dimension) WARN_UNUSED_RETURN;
+    StatusEnum deleteControlPoint(int dimension, int nthCtl) WARN_UNUSED_RETURN;
+    StatusEnum deleteAllControlPoints(int dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
     void saveParametricCurves(std::list< Curve >* curves) const;
@@ -914,5 +915,7 @@ private:
     virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
     static const std::string _typeNameStr;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_KNOBTYPES_H

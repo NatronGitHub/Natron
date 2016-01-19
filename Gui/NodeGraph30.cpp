@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 void
@@ -261,7 +261,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
             }
         }
         if (foundEffect) {
-            Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Delete").toStdString(), tr("This node has one or several "
+            StandardButtonEnum reply = Natron::questionDialog( tr("Delete").toStdString(), tr("This node has one or several "
                                                                                                   "parameters from which other parameters "
                                                                                                   "of the project rely on through expressions "
                                                                                                   "or links. Deleting this node will "
@@ -334,7 +334,7 @@ NodeGraph::deleteSelection()
                     }
                 }
                 if (foundEffect) {
-                    Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Delete").toStdString(),
+                    StandardButtonEnum reply = Natron::questionDialog( tr("Delete").toStdString(),
                                                                            tr("This node has one or several "
                                                                               "parameters from which other parameters "
                                                                               "of the project rely on through expressions "

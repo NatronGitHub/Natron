@@ -54,7 +54,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerGL.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 //OpenGL is column-major for matrixes

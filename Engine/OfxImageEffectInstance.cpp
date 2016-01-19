@@ -60,7 +60,7 @@
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/Project.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 // see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
 static

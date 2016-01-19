@@ -43,6 +43,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Transform.h"
 
+NATRON_NAMESPACE_USING
 
 //////////////////////////////ADD MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 AddKeysCommand::AddKeysCommand(CurveWidget *editor,
@@ -89,7 +90,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
         if (add && isSetKeyCommand) {
             if (isKnobCurve) {
                 if (isParametric) {
-                    Natron::StatusEnum st = isParametric->deleteAllControlPoints(isKnobCurve->getDimension());
+                    StatusEnum st = isParametric->deleteAllControlPoints(isKnobCurve->getDimension());
                     assert(st == Natron::eStatusOK);
                     if (st != Natron::eStatusOK) {
                         throw std::logic_error("addOrRemoveKeyframe");
@@ -123,7 +124,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                         int time = it->second[i].getTime();
                         if (isParametric) {
                             
-                            Natron::StatusEnum st = isParametric->addControlPoint( isKnobCurve->getDimension(), it->second[i].getTime(),it->second[i].getValue() );
+                            StatusEnum st = isParametric->addControlPoint( isKnobCurve->getDimension(), it->second[i].getTime(),it->second[i].getValue() );
                             assert(st == Natron::eStatusOK);
                             Q_UNUSED(st);
                         } else {
@@ -146,7 +147,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                         boost::shared_ptr<KnobParametric> knob = boost::dynamic_pointer_cast<KnobParametric>( isKnobCurve->getInternalKnob() );
                         
                         if (knob) {
-                            Natron::StatusEnum st = knob->deleteControlPoint( isKnobCurve->getDimension(),
+                            StatusEnum st = knob->deleteControlPoint( isKnobCurve->getDimension(),
                                                                              it->first->getInternalCurve()->keyFrameIndex( it->second[i].getTime() ) );
                             assert(st == Natron::eStatusOK);
                             Q_UNUSED(st);
@@ -282,7 +283,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                         
                         if (isParametric) {
                             
-                            Natron::StatusEnum st = isParametric->addControlPoint( isKnobCurve->getDimension(), it->second[i].getTime(),it->second[i].getValue() );
+                            StatusEnum st = isParametric->addControlPoint( isKnobCurve->getDimension(), it->second[i].getTime(),it->second[i].getValue() );
                             assert(st == Natron::eStatusOK);
                             Q_UNUSED(st);
                         } else {
@@ -305,7 +306,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                         boost::shared_ptr<KnobParametric> knob = boost::dynamic_pointer_cast<KnobParametric>( isKnobCurve->getInternalKnob() );
                         
                         if (knob) {
-                            Natron::StatusEnum st = knob->deleteControlPoint( isKnobCurve->getDimension(),
+                            StatusEnum st = knob->deleteControlPoint( isKnobCurve->getDimension(),
                                                                              it->first->getInternalCurve()->keyFrameIndex( it->second[i].getTime() ) );
                             assert(st == Natron::eStatusOK);
                             Q_UNUSED(st);
@@ -552,7 +553,7 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
 
     for (std::list< KeyInterpolationChange >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         
-        Natron::KeyframeTypeEnum interp = undo ? it->oldInterp : it->newInterp;
+        KeyframeTypeEnum interp = undo ? it->oldInterp : it->newInterp;
         
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->key->curve.get());
         if (isKnobCurve) {
@@ -642,7 +643,7 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
     // handle first and last keyframe correctly:
     // - if their interpolation was eKeyframeTypeCatmullRom or eKeyframeTypeCubic, then it becomes eKeyframeTypeFree
     // - in all other cases it becomes eKeyframeTypeBroken
-    Natron::KeyframeTypeEnum interp = key->key.getInterpolation();
+    KeyframeTypeEnum interp = key->key.getInterpolation();
     bool keyframeIsFirstOrLast = ( prev == keys.end() || next == keys.end() );
     bool interpIsNotBroken = (interp != Natron::eKeyframeTypeBroken);
     bool interpIsCatmullRomOrCubicOrFree = (interp == Natron::eKeyframeTypeCatmullRom ||
@@ -735,7 +736,7 @@ MoveTangentCommand::setNewDerivatives(bool undo)
         
         double left = undo ? _oldLeft : _newLeft;
         double right = undo ? _oldRight : _newRight;
-        Natron::KeyframeTypeEnum interp = undo ? _oldInterp : _newInterp;
+        KeyframeTypeEnum interp = undo ? _oldInterp : _newInterp;
         
         if (!isParametric) {
             attachedKnob->beginChanges();

@@ -76,6 +76,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RectISerialization.h"
 #include "Engine/RectDSerialization.h"
 
+NATRON_NAMESPACE_USING
+
 ProjectGui::ProjectGui(Gui* gui)
     : _gui(gui)
       , _project()
@@ -386,7 +388,7 @@ void loadNodeGuiSerialization(Gui* gui,
             tab->setClipToProject(found->second.isClippedToProject);
             tab->setRenderScaleActivated(found->second.renderScaleActivated);
             tab->setMipMapLevel(found->second.mipMapLevel);
-            tab->setCompositingOperator( (Natron::ViewerCompositingOperatorEnum)found->second.wipeCompositingOp );
+            tab->setCompositingOperator( (ViewerCompositingOperatorEnum)found->second.wipeCompositingOp );
             tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
             tab->setTopToolbarVisible(found->second.topToolbarVisible);
             tab->setLeftToolbarVisible(found->second.leftToolbarVisible);
@@ -643,3 +645,5 @@ ProjectGui::setPickersColor(double r,double g, double b,double a)
     }
 }
 
+
+#include "moc_ProjectGui.cpp"

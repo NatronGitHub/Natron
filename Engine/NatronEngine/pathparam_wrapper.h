@@ -5,6 +5,7 @@
 
 #include <ParameterWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class PathParamWrapper : public PathParam
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~PathParamWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_PATHPARAMWRAPPER_H
 

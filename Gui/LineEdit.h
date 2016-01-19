@@ -35,6 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class LineEdit
     : public QLineEdit
@@ -103,5 +104,6 @@ private:
     bool altered;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // ifndef NATRON_GUI_LINEEDIT_H

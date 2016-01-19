@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_KNOBFACTORY_H
-#define NATRON_ENGINE_KNOBFACTORY_H
+#ifndef Engine_KnobFactory_h
+#define Engine_KnobFactory_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -35,6 +35,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /******************************KNOB_FACTORY**************************************/
 
@@ -73,5 +74,6 @@ private:
     std::map<std::string, Natron::LibraryBinary *> _loadedKnobs;
 };
 
+NATRON_NAMESPACE_EXIT;
 
-#endif // NATRON_ENGINE_KNOBFACTORY_H
+#endif // Engine_KnobFactory_h

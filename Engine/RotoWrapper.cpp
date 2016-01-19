@@ -34,6 +34,8 @@
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 
+NATRON_NAMESPACE_USING
+
 ItemBase::ItemBase(const boost::shared_ptr<RotoItem>& item)
 : _item(item)
 {

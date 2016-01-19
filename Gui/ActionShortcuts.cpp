@@ -26,6 +26,8 @@
 #include <QWidget>
 #include "Gui/GuiApplicationManager.h"
 
+NATRON_NAMESPACE_USING
+
 ActionWithShortcut::ActionWithShortcut(const QString & group,
                                        const QString & actionID,
                                        const QString & actionDescription,
@@ -165,3 +167,5 @@ TooltipActionShortcut::setShortcutWrapper(const QString& actionID, const QKeySeq
     }
     setTooltipFromOriginalTooltip();
 }
+
+#include "moc_ActionShortcuts.cpp"

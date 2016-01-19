@@ -30,7 +30,7 @@
 
 #include "Gui/GuiApplicationManager.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 ClickableLabel::ClickableLabel(const QString &text,
                                QWidget *parent)
@@ -119,3 +119,5 @@ ClickableLabel::setSunken(bool s)
     }
 }
 
+
+#include "moc_ClickableLabel.cpp"

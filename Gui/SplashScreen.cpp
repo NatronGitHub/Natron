@@ -34,6 +34,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QDesktopWidget>
 CLANG_DIAG_ON(deprecated)
 
+NATRON_NAMESPACE_USING
 
 SplashScreen::SplashScreen(const QString & filePath)
     : QWidget(0,Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)

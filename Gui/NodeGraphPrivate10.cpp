@@ -41,7 +41,7 @@
 #include "Gui/NodeGuiSerialization.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 void

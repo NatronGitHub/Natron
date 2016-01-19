@@ -31,6 +31,7 @@
 #include "Engine/CacheEntryHolder.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /** @brief Helper class that represents a Key in the cache. A key is a set
  * of 1 or more parameters that represent a "unique" element in the cache.
@@ -138,5 +139,6 @@ private:
     mutable bool _hashComputed;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // KEYHELPER_H

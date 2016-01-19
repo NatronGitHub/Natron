@@ -45,6 +45,9 @@ GCC_DIAG_OFF(deprecated-declarations)
 
 #define CURVEWIDGET_DERIVATIVE_ROUND_PRECISION 3.
 
+NATRON_NAMESPACE_ENTER;
+
+
 /*****************************CURVE WIDGET***********************************************/
 
 enum EventStateEnum
@@ -132,7 +135,7 @@ public:
 
     void refreshSelectionRectangle(double x,double y);
 
-    void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type);
+    void setSelectedKeysInterpolation(KeyframeTypeEnum type);
 
     void createMenu();
 
@@ -190,5 +193,7 @@ public:
     
     CurveSelection* _selectionModel;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_CurveWidgetPrivate_h

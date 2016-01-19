@@ -92,7 +92,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 ////////////////////////////////////RotoContext////////////////////////////////////
 
@@ -704,7 +704,7 @@ RotoContext::isNearbyBezier(double x,
 void
 RotoContext::onLifeTimeKnobValueChanged(int /*dim*/, int reason)
 {
-    if ((Natron::ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
+    if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         return;
     }
     int lifetime_i = _imp->lifeTime.lock()->getValue();
@@ -1483,7 +1483,7 @@ RotoContext::resetCloneTransform()
 
 void
 RotoContext::knobChanged(KnobI* k,
-                 Natron::ValueChangedReasonEnum /*reason*/,
+                 ValueChangedReasonEnum /*reason*/,
                  int /*view*/,
                  double /*time*/,
                  bool /*originatedFromMainThread*/)
@@ -2430,8 +2430,8 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
                                 const std::list<std::pair<Natron::Point,double> >& points,
                                 unsigned int mipmapLevel,
                                 double par,
-                                const Natron::ImageComponents& components,
-                                Natron::ImageBitDepthEnum depth,
+                                const ImageComponents& components,
+                                ImageBitDepthEnum depth,
                                 double distToNext,
                                 boost::shared_ptr<Natron::Image> *image)
 {
@@ -2622,10 +2622,10 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
 boost::shared_ptr<Natron::Image>
 RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                   const RectI& /*roi*/,
-                                  const Natron::ImageComponents& components,
+                                  const ImageComponents& components,
                                   const double time,
                                   const int view,
-                                  const Natron::ImageBitDepthEnum depth,
+                                  const ImageBitDepthEnum depth,
                                   const unsigned int mipmapLevel)
 {
     boost::shared_ptr<Node> node = getNode();
@@ -2747,12 +2747,12 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
 boost::shared_ptr<Natron::Image>
 RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                 const RectI & roi,
-                                const Natron::ImageComponents& components,
+                                const ImageComponents& components,
                                 const double startTime,
                                 const double endTime,
                                 const double timeStep,
                                 const double time,
-                                const Natron::ImageBitDepthEnum depth,
+                                const ImageBitDepthEnum depth,
                                 const unsigned int mipmapLevel,
                                 const std::list<std::list<std::pair<Natron::Point,double> > >& strokes,
                                 const boost::shared_ptr<Natron::Image> &image)
@@ -4065,3 +4065,5 @@ RotoContext::declarePythonFields()
         declareItemAsPythonField(*it);
     }
 }
+
+#include "moc_RotoContext.cpp"

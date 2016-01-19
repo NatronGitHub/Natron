@@ -76,7 +76,7 @@ CLANG_DIAG_ON(deprecated)
 
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 class Node
     : public QObject, public boost::enable_shared_from_this<Natron::Node>
@@ -307,20 +307,20 @@ public:
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
      * then this function will check whether the effect can produce the given components.
      **/
-    bool isSupportedComponent(int inputNb,const Natron::ImageComponents& comp) const;
+    bool isSupportedComponent(int inputNb,const ImageComponents& comp) const;
 
     /**
      * @brief Returns the most appropriate components that can be supported by the inputNb.
      * If inputNb equals -1 then this function will check the output components.
      **/
-    Natron::ImageComponents findClosestSupportedComponents(int inputNb,const Natron::ImageComponents& comp) const;
-    static Natron::ImageComponents findClosestInList(const Natron::ImageComponents& comp,
-                                                     const std::list<Natron::ImageComponents> &components,
+    ImageComponents findClosestSupportedComponents(int inputNb,const ImageComponents& comp) const;
+    static ImageComponents findClosestInList(const ImageComponents& comp,
+                                                     const std::list<ImageComponents> &components,
                                                      bool multiPlanar);
     
-    Natron::ImageBitDepthEnum getBestSupportedBitDepth() const;
-    bool isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const;
-    Natron::ImageBitDepthEnum getClosestSupportedBitDepth(Natron::ImageBitDepthEnum depth);
+    ImageBitDepthEnum getBestSupportedBitDepth() const;
+    bool isSupportedBitDepth(ImageBitDepthEnum depth) const;
+    ImageBitDepthEnum getClosestSupportedBitDepth(ImageBitDepthEnum depth);
 
     /**
      * @brief Returns the components and index of the channel to use to produce the mask.
@@ -330,7 +330,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb,Natron::ImageComponents* comps, boost::shared_ptr<Natron::Node>* maskInput) const;
+    int getMaskChannel(int inputNb,ImageComponents* comps, boost::shared_ptr<Natron::Node>* maskInput) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -456,8 +456,8 @@ public:
     boost::shared_ptr<Natron::Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                                                 const RectI& roi,
                                                                 double par,
-                                                                const Natron::ImageComponents& components,
-                                                                Natron::ImageBitDepthEnum depth) const;
+                                                                const ImageComponents& components,
+                                                                ImageBitDepthEnum depth) const;
     
     void setWhileCreatingPaintStroke(bool creating);
     bool isDuringPaintStrokeCreation() const;
@@ -838,7 +838,7 @@ public:
 
     void onInputChanged(int inputNb);
 
-    void onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReasonEnum reason);
+    void onEffectKnobValueChanged(KnobI* what,ValueChangedReasonEnum reason);
 
     bool isNodeDisabled() const;
 
@@ -1070,11 +1070,11 @@ public:
     
     boost::shared_ptr<KnobChoice> getChannelSelectorKnob(int inputNb) const;
     
-    bool getSelectedLayer(int inputNb, std::bitset<4> *processChannels, bool* isAll, Natron::ImageComponents *layer) const;
+    bool getSelectedLayer(int inputNb, std::bitset<4> *processChannels, bool* isAll, ImageComponents *layer) const;
     
-    bool addUserComponents(const Natron::ImageComponents& comps);
+    bool addUserComponents(const ImageComponents& comps);
     
-    void getUserCreatedComponents(std::list<Natron::ImageComponents>* comps);
+    void getUserCreatedComponents(std::list<ImageComponents>* comps);
     
     bool hasAtLeastOneChannelToProcess() const;
     
@@ -1115,7 +1115,7 @@ private:
      **/
     bool computeHashInternal() WARN_UNUSED_RETURN;
     
-    void refreshEnabledKnobsLabel(const Natron::ImageComponents& layer);
+    void refreshEnabledKnobsLabel(const ImageComponents& layer);
     
     void refreshCreatedViews(KnobI* knob);
     
@@ -1300,7 +1300,6 @@ private:
 
     boost::scoped_ptr<Implementation> _imp;
 };
-} //namespace Natron
 
 /**
  * @brief An InspectorNode is a type of node that is able to have a dynamic number of inputs.
@@ -1371,5 +1370,6 @@ public:
     }
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_NODE_H

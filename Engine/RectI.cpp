@@ -33,6 +33,8 @@
 #define MINAREA256 65536
 #define MINAREA MINAREA128 // minimum rectangle area
 
+NATRON_NAMESPACE_USING
+
 /// if splitCount is zero, this function returns a set of less than area()/MINAREA rects which are no smaller than MINAREA
 std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
 {

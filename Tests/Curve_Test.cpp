@@ -29,6 +29,8 @@
 
 #include "Engine/Curve.h"
 
+NATRON_NAMESPACE_USING
+
 TEST(KeyFrame,Basic)
 {
     KeyFrame k;

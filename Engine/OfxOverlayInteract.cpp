@@ -34,7 +34,7 @@
 #include "Engine/AppInstance.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 NatronOverlayInteractSupport::OGLContextSaver::OGLContextSaver(OverlaySupport* viewport)
 : _viewport(viewport)

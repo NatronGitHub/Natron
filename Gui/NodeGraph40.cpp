@@ -60,7 +60,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 void

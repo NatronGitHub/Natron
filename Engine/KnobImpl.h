@@ -60,6 +60,8 @@ GCC_DIAG_ON(unused-parameter)
 
 #define EXPR_RECURSION_LEVEL() KnobHelper::ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
 
+NATRON_NAMESPACE_ENTER;
+
 ///template specializations
 
 template <typename T>
@@ -799,9 +801,9 @@ struct Knob<T>::QueuedSetValuePrivate
     T value;
     KeyFrame key;
     bool useKey;
-    Natron::ValueChangedReasonEnum reason;
+    ValueChangedReasonEnum reason;
     
-    QueuedSetValuePrivate(int dimension,const T& value,const KeyFrame& key_,bool useKey,Natron::ValueChangedReasonEnum reason_)
+    QueuedSetValuePrivate(int dimension,const T& value,const KeyFrame& key_,bool useKey,ValueChangedReasonEnum reason_)
     : dimension(dimension)
     , value(value)
     , key(key_)
@@ -815,7 +817,7 @@ struct Knob<T>::QueuedSetValuePrivate
 
 
 template<typename T>
-Knob<T>::QueuedSetValue::QueuedSetValue(int dimension,const T& value,const KeyFrame& key,bool useKey,Natron::ValueChangedReasonEnum reason_)
+Knob<T>::QueuedSetValue::QueuedSetValue(int dimension,const T& value,const KeyFrame& key,bool useKey,ValueChangedReasonEnum reason_)
 : _imp(new QueuedSetValuePrivate(dimension,value,key,useKey,reason_))
 {
     
@@ -831,7 +833,7 @@ template <typename T>
 KnobHelper::ValueChangedReturnCodeEnum
 Knob<T>::setValue(const T & v,
                   int dimension,
-                  Natron::ValueChangedReasonEnum reason,
+                  ValueChangedReasonEnum reason,
                   KeyFrame* newKey)
 {
     if ( (0 > dimension) || ( dimension > (int)_values.size() ) ) {
@@ -1033,7 +1035,7 @@ Knob<T>::setValue(const T & v,
 
 template <typename T>
 void
-Knob<T>::setValues(const T& value0, const T& value1, Natron::ValueChangedReasonEnum reason)
+Knob<T>::setValues(const T& value0, const T& value1, ValueChangedReasonEnum reason)
 {
     KnobHolder* holder = getHolder();
     Natron::EffectInstance* effect = 0;
@@ -1062,7 +1064,7 @@ Knob<T>::setValues(const T& value0, const T& value1, Natron::ValueChangedReasonE
 
 template <typename T>
 void
-Knob<T>::setValues(const T& value0, const T& value1, const T& value2, Natron::ValueChangedReasonEnum reason)
+Knob<T>::setValues(const T& value0, const T& value1, const T& value2, ValueChangedReasonEnum reason)
 {
     KnobHolder* holder = getHolder();
     Natron::EffectInstance* effect = 0;
@@ -1093,7 +1095,7 @@ Knob<T>::setValues(const T& value0, const T& value1, const T& value2, Natron::Va
 
 template <typename T>
 void
-Knob<T>::setValues(const T& value0, const T& value1, const T& value2, const T& value3, Natron::ValueChangedReasonEnum reason)
+Knob<T>::setValues(const T& value0, const T& value1, const T& value2, const T& value3, ValueChangedReasonEnum reason)
 {
     KnobHolder* holder = getHolder();
     Natron::EffectInstance* effect = 0;
@@ -1161,7 +1163,7 @@ bool
 Knob<T>::setValueAtTime(double time,
                         const T & v,
                         int dimension,
-                        Natron::ValueChangedReasonEnum reason,
+                        ValueChangedReasonEnum reason,
                         KeyFrame* newKey)
 {
     assert(dimension >= 0 && dimension < getDimension());
@@ -1292,7 +1294,7 @@ Knob<T>::setValueAtTime(double time,
 
 template<typename T>
 void
-Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, Natron::ValueChangedReasonEnum reason)
+Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, ValueChangedReasonEnum reason)
 {
     
     KnobHolder* holder = getHolder();
@@ -1322,7 +1324,7 @@ Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, Natron::V
 
 template<typename T>
 void
-Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, const T& value2, Natron::ValueChangedReasonEnum reason)
+Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, const T& value2, ValueChangedReasonEnum reason)
 {
     KnobHolder* holder = getHolder();
     Natron::EffectInstance* effect = 0;
@@ -1353,7 +1355,7 @@ Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, const T& 
 
 template<typename T>
 void
-Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, const T& value2, const T& value3, Natron::ValueChangedReasonEnum reason)
+Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, const T& value2, const T& value3, ValueChangedReasonEnum reason)
 {
     KnobHolder* holder = getHolder();
     Natron::EffectInstance* effect = 0;
@@ -1385,7 +1387,7 @@ Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, const T& 
 template<typename T>
 void
 Knob<T>::unSlave(int dimension,
-                 Natron::ValueChangedReasonEnum reason,
+                 ValueChangedReasonEnum reason,
                  bool copyState)
 {
     if ( !isSlave(dimension) ) {
@@ -1450,7 +1452,7 @@ template<typename T>
 KnobHelper::ValueChangedReturnCodeEnum
 Knob<T>::onValueChanged(const T & value,
                         int dimension,
-                        Natron::ValueChangedReasonEnum reason,
+                        ValueChangedReasonEnum reason,
                         KeyFrame* newKey)
 {
     assert(reason == Natron::eValueChangedReasonNatronGuiEdited || reason == Natron::eValueChangedReasonUserEdited);
@@ -1700,7 +1702,7 @@ Knob<T>::onKeyFrameSet(double time,
 
 template<typename T>
 bool
-Knob<T>::setKeyFrame(const KeyFrame& key,int dimension,Natron::ValueChangedReasonEnum reason)
+Knob<T>::setKeyFrame(const KeyFrame& key,int dimension,ValueChangedReasonEnum reason)
 {
     boost::shared_ptr<Curve> curve;
     KnobHolder* holder = getHolder();
@@ -2479,7 +2481,7 @@ bool
 Knob<T>::dequeueValuesSet(bool disableEvaluation)
 {
     
-    std::map<int,Natron::ValueChangedReasonEnum> dimensionChanged;
+    std::map<int,ValueChangedReasonEnum> dimensionChanged;
     bool ret = false;
     cloneGuiCurvesIfNeeded(dimensionChanged);
     {
@@ -2539,7 +2541,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
     if (!disableEvaluation && !dimensionChanged.empty()) {
         beginChanges();
         double time = getCurrentTime();
-        for (std::map<int,Natron::ValueChangedReasonEnum>::iterator it = dimensionChanged.begin(); it != dimensionChanged.end(); ++it) {
+        for (std::map<int,ValueChangedReasonEnum>::iterator it = dimensionChanged.begin(); it != dimensionChanged.end(); ++it) {
             evaluateValueChange(it->first, time, it->second);
         }
         endChanges();
@@ -2592,5 +2594,7 @@ void Knob<T>::computeHasModifications()
         _signalSlotHandler->s_hasModificationsChanged();
     }
 }
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // KNOBIMPL_H

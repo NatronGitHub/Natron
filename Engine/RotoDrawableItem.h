@@ -49,6 +49,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/RotoItem.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A base class for all items made by the roto context
@@ -217,7 +218,7 @@ public Q_SLOTS:
     
 protected:
     
-    void rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, Natron::ValueChangedReasonEnum reason);
+    void rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, ValueChangedReasonEnum reason);
     
     virtual void onTransformSet(double /*time*/) {}
     
@@ -232,6 +233,6 @@ private:
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
 };
 
-
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_RotoDrawableItem_h

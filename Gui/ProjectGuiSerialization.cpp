@@ -55,6 +55,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
+NATRON_NAMESPACE_USING
+
 void
 ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 {
@@ -170,7 +172,7 @@ void
 SplitterSerialization::initialize(Splitter* splitter)
 {
     sizes = splitter->serializeNatron().toStdString();
-    Natron::OrientationEnum nO = Natron::eOrientationHorizontal;
+    OrientationEnum nO = Natron::eOrientationHorizontal;
     Qt::Orientation qO = splitter->orientation();
     switch (qO) {
     case Qt::Horizontal:

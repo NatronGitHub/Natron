@@ -33,8 +33,9 @@
 #include "Engine/RectI.h"
 #include "Engine/RectD.h"
 
+NATRON_NAMESPACE_USING
 
-struct NodeRenderStatsPrivate
+struct NATRON_NAMESPACE::NodeRenderStatsPrivate
 {
     //The accumulated time spent in the EffectInstance::renderHandler function
     double totalTimeSpentRendering;
@@ -72,7 +73,7 @@ struct NodeRenderStatsPrivate
     std::bitset<4> channelsEnabled;
     
     //Premultiplication of the output imge
-    Natron::ImagePremultiplicationEnum outputPremult;
+    ImagePremultiplicationEnum outputPremult;
     
     NodeRenderStatsPrivate()
     : totalTimeSpentRendering(0)
@@ -284,18 +285,18 @@ NodeRenderStats::getChannelsRendered() const
 }
 
 void
-NodeRenderStats::setOutputPremult(Natron::ImagePremultiplicationEnum premult)
+NodeRenderStats::setOutputPremult(ImagePremultiplicationEnum premult)
 {
     _imp->outputPremult = premult;
 }
 
-Natron::ImagePremultiplicationEnum
+ImagePremultiplicationEnum
 NodeRenderStats::getOutputPremult() const
 {
     return _imp->outputPremult;
 }
 
-struct RenderStatsPrivate
+struct NATRON_NAMESPACE::RenderStatsPrivate
 {
     mutable QMutex lock;
     
@@ -377,7 +378,7 @@ RenderStats::setNodeIdentity(const boost::shared_ptr<Natron::Node>& node, const 
 void
 RenderStats::setGlobalRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
                                          const RectD& rod,
-                                         Natron::ImagePremultiplicationEnum outputPremult,
+                                         ImagePremultiplicationEnum outputPremult,
                                          std::bitset<4> channelsRendered,
                                          bool tilesSupported,
                                          bool renderScaleSupported,

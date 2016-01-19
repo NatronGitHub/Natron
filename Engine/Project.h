@@ -49,7 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 struct ProjectPrivate;
 
@@ -177,7 +177,7 @@ public:
      * @brief Called exclusively by the Node class when it needs to retrieve the shared ptr
      * from the "this" pointer.
      **/
-    Natron::ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const;
+    ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const;
 
 
     /**
@@ -369,28 +369,28 @@ private:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void evaluate(KnobI* knob,bool isSignificant,ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void beginKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason)  OVERRIDE FINAL;
+    virtual void endKnobsValuesChanged(ValueChangedReasonEnum reason)  OVERRIDE FINAL;
 
     /**
      * @brief Called whenever a param changes. It calls the virtual
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,double time,
+    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time,
                                     bool originatedFromMainThread)  OVERRIDE FINAL;
 
     void save(ProjectSerialization* serializationObject) const;

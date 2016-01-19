@@ -78,7 +78,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerTab.h"
 
 using std::make_pair;
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 namespace {
@@ -103,7 +103,7 @@ private:
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL
     {
         if (triggerButtonIsRight(e)) {
-            Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Warning").toStdString(),
+            StandardButtonEnum rep = Natron::questionDialog(tr("Warning").toStdString(),
                                                                     tr("Are you sure you want to reset the overlay color ?").toStdString(),
                                                                     false);
             if (rep == Natron::eStandardButtonYes) {
@@ -1823,3 +1823,5 @@ DockablePanel::getUserPages(std::list<KnobPage*>& userPages) const
     }
 }
 
+
+#include "moc_DockablePanel.cpp"

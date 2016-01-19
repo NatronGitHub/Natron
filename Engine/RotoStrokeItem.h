@@ -48,6 +48,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A base class for all items made by the roto context
@@ -99,8 +100,8 @@ public:
                               const std::list<std::pair<Natron::Point,double> >& points,
                               unsigned int mipmapLevel,
                               double par,
-                              const Natron::ImageComponents& components,
-                              Natron::ImageBitDepthEnum depth,
+                              const ImageComponents& components,
+                              ImageBitDepthEnum depth,
                               double distToNext,
                               boost::shared_ptr<Natron::Image> *wholeStrokeImage);
 
@@ -155,6 +156,6 @@ private:
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };
 
-
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_RotoStrokeItem_h

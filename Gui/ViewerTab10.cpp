@@ -60,13 +60,13 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerGL.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 void
 ViewerTab::onColorSpaceComboBoxChanged(int v)
 {
-    Natron::ViewerColorSpaceEnum colorspace = Natron::eViewerColorSpaceSRGB;
+    ViewerColorSpaceEnum colorspace = Natron::eViewerColorSpaceSRGB;
 
     if (v == 0) {
         colorspace = Natron::eViewerColorSpaceLinear;
@@ -151,7 +151,7 @@ ViewerTab::getCurrentView() const
 }
 
 void
-ViewerTab::setPlaybackMode(Natron::PlaybackModeEnum mode)
+ViewerTab::setPlaybackMode(PlaybackModeEnum mode)
 {
     QPixmap pix;
     switch (mode) {
@@ -176,7 +176,7 @@ ViewerTab::setPlaybackMode(Natron::PlaybackModeEnum mode)
 
 }
 
-Natron::PlaybackModeEnum
+PlaybackModeEnum
 ViewerTab::getPlaybackMode() const
 {
     QMutexLocker k(&_imp->playbackModeMutex);
@@ -186,8 +186,8 @@ ViewerTab::getPlaybackMode() const
 void
 ViewerTab::togglePlaybackMode()
 {
-    Natron::PlaybackModeEnum mode = _imp->viewerNode->getRenderEngine()->getPlaybackMode();
-    mode = (Natron::PlaybackModeEnum)(((int)mode + 1) % 3);
+    PlaybackModeEnum mode = _imp->viewerNode->getRenderEngine()->getPlaybackMode();
+    mode = (PlaybackModeEnum)(((int)mode + 1) % 3);
     QPixmap pix;
     switch (mode) {
         case Natron::ePlaybackModeLoop:
@@ -789,7 +789,7 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
 void
 ViewerTab::setDisplayChannels(int i, bool setBothInputs)
 {
-    Natron::DisplayChannelsEnum channels;
+    DisplayChannelsEnum channels;
     
     switch (i) {
         case 0:

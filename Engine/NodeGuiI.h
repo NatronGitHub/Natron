@@ -29,8 +29,7 @@
 #include "Global/Enums.h"
 #include "Engine/EngineFwd.h"
 
-class QPointF;
-
+NATRON_NAMESPACE_ENTER;
 
 class NodeGuiI
 {
@@ -144,5 +143,7 @@ public :
     
     virtual void onIdentityStateChanged(int inputNb) = 0;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NODEGUII_H

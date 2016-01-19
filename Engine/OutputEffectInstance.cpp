@@ -69,15 +69,12 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/EngineFwd.h"
 
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
 
 
-using namespace Natron;
-
-
-class KnobFile;
-class KnobOutputFile;
+NATRON_NAMESPACE_USING
 
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
@@ -221,7 +218,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
                             if (!renderController) {
                                 message.append(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n");
                                 message = message + QObject::tr("Would you like to continue?");
-                                Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel), Natron::eStandardButtonOk);
+                                StandardButtonEnum rep = Natron::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel), Natron::eStandardButtonOk);
                                 if (rep != Natron::eStandardButtonOk) {
                                     return;
                                 }
@@ -252,7 +249,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
             if (!renderController) {
                 message.append(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n");
                 message = message + QObject::tr("Would you like to continue?");
-                Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel), Natron::eStandardButtonOk);
+                StandardButtonEnum rep = Natron::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel), Natron::eStandardButtonOk);
                 if (rep != Natron::eStandardButtonOk) {
                     return;
                 }

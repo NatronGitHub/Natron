@@ -35,7 +35,7 @@
 #include <QThread>
 #include <QDebug>
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 AppTLS::AppTLS()

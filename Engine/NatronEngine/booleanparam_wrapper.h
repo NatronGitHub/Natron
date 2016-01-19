@@ -5,6 +5,7 @@
 
 #include <ParameterWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class BooleanParamWrapper : public BooleanParam
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~BooleanParamWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_BOOLEANPARAMWRAPPER_H
 

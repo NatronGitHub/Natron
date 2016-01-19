@@ -48,7 +48,7 @@ namespace serialization {
 template<class Archive>
 void
 serialize(Archive & ar,
-          TextureRect &t,
+          Natron::TextureRect &t,
           const unsigned int version)
 {
 
@@ -60,6 +60,6 @@ serialize(Archive & ar,
 }
 }
 
-BOOST_CLASS_VERSION(TextureRect, TEXTURE_RECT_VERSION);
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::TextureRect, TEXTURE_RECT_VERSION);
 
 #endif // NATRON_ENGINE_TEXTURERECTSERIALIZATION_H

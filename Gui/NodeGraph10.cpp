@@ -50,7 +50,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 void

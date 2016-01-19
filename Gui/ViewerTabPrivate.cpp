@@ -42,7 +42,7 @@
 #include "Gui/ViewerTab.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* node)
@@ -165,7 +165,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
     }
     RenderScale s(1.);
     Natron::EffectInstance* input = 0;
-    Natron::StatusEnum stat = eStatusReplyDefault;
+    StatusEnum stat = eStatusReplyDefault;
     Transform::Matrix3x3 mat;
     if (!currentNode->getNode()->isNodeDisabled() && currentNode->getNode()->getCurrentCanTransform()) {
         stat = currentNode->getTransform_public(time, s, view, &input, &mat);

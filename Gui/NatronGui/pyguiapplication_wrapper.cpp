@@ -16,6 +16,7 @@ GCC_DIAG_OFF(missing-declarations)
 #include "pyguiapplication_wrapper.h"
 
 // Extra includes
+NATRON_NAMESPACE_USING
 #include <AppInstanceWrapper.h>
 #include <GuiAppWrapper.h>
 #include <list>
@@ -271,9 +272,9 @@ static PyObject* Sbk_PyGuiApplicationFunc_getIcon(PyObject* self, PyObject* pyAr
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getIcon(Natron::PixmapEnum)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_PIXMAPENUM_IDX]), (pyArg)))) {
-        overloadId = 0; // getIcon(Natron::PixmapEnum)const
+    // 0: getIcon(PixmapEnum)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_PIXMAPENUM_IDX]), (pyArg)))) {
+        overloadId = 0; // getIcon(PixmapEnum)const
     }
 
     // Function signature not found.
@@ -281,11 +282,11 @@ static PyObject* Sbk_PyGuiApplicationFunc_getIcon(PyObject* self, PyObject* pyAr
 
     // Call function/method
     {
-        ::Natron::PixmapEnum cppArg0 = ((::Natron::PixmapEnum)0);
+        ::PixmapEnum cppArg0 = ((::PixmapEnum)0);
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getIcon(Natron::PixmapEnum)const
+            // getIcon(PixmapEnum)const
             QPixmap cppResult = const_cast<const ::PyGuiApplication*>(cppSelf)->getIcon(cppArg0);
             pyResult = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QPIXMAP_IDX], &cppResult);
         }
@@ -298,7 +299,7 @@ static PyObject* Sbk_PyGuiApplicationFunc_getIcon(PyObject* self, PyObject* pyAr
     return pyResult;
 
     Sbk_PyGuiApplicationFunc_getIcon_TypeError:
-        const char* overloads[] = {"NatronEngine.Natron.PixmapEnum", 0};
+        const char* overloads[] = {"NatronEngine.PixmapEnum", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyGuiApplication.getIcon", overloads);
         return 0;
 }
@@ -399,8 +400,8 @@ static PyObject* Sbk_PyGuiApplicationFunc_questionDialog(PyObject* self, PyObjec
 
         if (!PyErr_Occurred()) {
             // questionDialog(std::string,std::string)
-            Natron::StandardButtonEnum cppResult = cppSelf->questionDialog(cppArg0, cppArg1);
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_STANDARDBUTTONENUM_IDX]), &cppResult);
+            StandardButtonEnum cppResult = cppSelf->questionDialog(cppArg0, cppArg1);
+            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_STANDARDBUTTONENUM_IDX]), &cppResult);
         }
     }
 

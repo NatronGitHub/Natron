@@ -39,6 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct NewLayerDialogPrivate;
 class NewLayerDialog : public QDialog
@@ -50,7 +51,7 @@ public:
     
     virtual ~NewLayerDialog();
     
-    Natron::ImageComponents getComponents() const;
+    ImageComponents getComponents() const;
     
 public Q_SLOTS:
     void onNumCompsChanged(double value);
@@ -60,5 +61,7 @@ public Q_SLOTS:
 private:
     boost::scoped_ptr<NewLayerDialogPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_NewLayerDialog_h

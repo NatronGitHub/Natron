@@ -83,7 +83,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define COL_SCRIPT_NAME 1
 #define COL_FIRST_KNOB 2
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 namespace {
 typedef std::list < std::pair<boost::weak_ptr<Node>,bool> > Nodes;
@@ -101,7 +101,7 @@ getCenterKnobForTracker(Node* node)
 }
 }
 
-struct MultiInstancePanelPrivate
+struct NATRON_NAMESPACE::MultiInstancePanelPrivate
 {
     MultiInstancePanel* publicInterface;
     bool guiCreated;
@@ -1427,7 +1427,7 @@ void
 MultiInstancePanel::onInstanceKnobValueChanged(int dim,
                                                int reason)
 {
-    if ( (Natron::ValueChangedReasonEnum)reason == Natron::eValueChangedReasonSlaveRefresh ) {
+    if ( (ValueChangedReasonEnum)reason == Natron::eValueChangedReasonSlaveRefresh ) {
         return;
     }
 
@@ -1624,7 +1624,7 @@ MultiInstancePanel::resetInstances(const std::list<Natron::Node*> & instances)
 void
 MultiInstancePanel::evaluate(KnobI* /*knob*/,
                              bool /*isSignificant*/,
-                             Natron::ValueChangedReasonEnum /*reason*/)
+                             ValueChangedReasonEnum /*reason*/)
 {
 }
 
@@ -1646,7 +1646,7 @@ MultiInstancePanel::onButtonTriggered(KnobButton* button)
 
 void
 MultiInstancePanel::onKnobValueChanged(KnobI* k,
-                                       Natron::ValueChangedReasonEnum reason,
+                                       ValueChangedReasonEnum reason,
                                        double time,
                                        bool /*originatedFromMainThread*/)
 {
@@ -1702,7 +1702,7 @@ namespace  {
 }
 
 /////////////// Tracker panel
-struct TrackerPanelPrivate
+struct NATRON_NAMESPACE::TrackerPanelPrivate
 {
     TrackerPanel* publicInterface;
     Button* averageTracksButton;
@@ -1989,7 +1989,7 @@ handleTrackNextAndPrevious(KnobButton* selectedInstance,
 {
 //        ///When a reason of eValueChangedReasonUserEdited is given, the tracker plug-in will move the timeline so just send it
 //        ///upon the last track if we want to update the viewer
-//        Natron::ValueChangedReasonEnum reason;
+//        ValueChangedReasonEnum reason;
 //        if (updateViewer) {
 //            reason = next == selectedInstances.end() ? eValueChangedReasonNatronGuiEdited : eValueChangedReasonNatronInternalEdited;
 //        } else {
@@ -2431,7 +2431,7 @@ struct TrackArgs
     std::list<KnobButton*> instances;
 };
 
-struct TrackSchedulerPrivate
+struct NATRON_NAMESPACE::TrackSchedulerPrivate
 {
     const TrackerPanel* panel;
     
@@ -2683,3 +2683,5 @@ TrackScheduler::quitThread()
     wait();
     
 }
+
+#include "moc_MultiInstancePanel.cpp"

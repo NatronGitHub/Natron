@@ -33,7 +33,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 using std::make_pair;
 using std::pair;
 

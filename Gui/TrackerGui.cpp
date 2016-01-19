@@ -53,9 +53,9 @@ CLANG_DIAG_ON(uninitialized)
 #define CROSS_SIZE 6
 #define ADDTRACK_SIZE 5
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
-struct TrackerGuiPrivate
+struct NATRON_NAMESPACE::TrackerGuiPrivate
 {
     boost::shared_ptr<TrackerPanel> panel;
     ViewerTab* viewer;
@@ -765,3 +765,5 @@ TrackerGui::onClearFwAnimationClicked()
     _imp->panel->clearForwardAnimationForSelection();
 }
 
+
+#include "moc_TrackerGui.cpp"

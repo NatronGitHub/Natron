@@ -26,7 +26,9 @@
 #include "Engine/Transform.h"
 #include "Engine/KnobTypes.h"
 
-struct BackDropPrivate
+NATRON_NAMESPACE_USING
+
+struct NATRON_NAMESPACE::BackDropPrivate
 {
     
     boost::weak_ptr<KnobString> knobLabel;
@@ -76,7 +78,7 @@ BackDrop::initializeKnobs()
 
 void
 BackDrop::knobChanged(KnobI* k,
-                      Natron::ValueChangedReasonEnum /*reason*/,
+                      ValueChangedReasonEnum /*reason*/,
                       int /*view*/,
                       double /*time*/,
                       bool /*originatedFromMainThread*/)
@@ -86,3 +88,5 @@ BackDrop::knobChanged(KnobI* k,
         Q_EMIT labelChanged(text);
     } 
 }
+
+#include "moc_Backdrop.cpp"

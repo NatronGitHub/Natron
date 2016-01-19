@@ -33,6 +33,7 @@
 
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 
+NATRON_NAMESPACE_USING
 
 #ifdef _WIN32
 int
@@ -295,3 +296,5 @@ TimeLapseReporter::~TimeLapseReporter()
     (now.tv_usec - prev.tv_usec) * 1e-6f;
     std::cout << message << ' ' << dt << std::endl;
 }
+
+#include "moc_Timer.cpp"

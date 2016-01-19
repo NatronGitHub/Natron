@@ -24,6 +24,8 @@
 
 #include "Dot.h"
 
+NATRON_NAMESPACE_USING
+
 std::string
 Dot::getPluginDescription() const
 {

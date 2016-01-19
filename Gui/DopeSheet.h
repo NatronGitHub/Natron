@@ -58,6 +58,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kTimeOffsetParamNameTimeOffset "timeOffset"
 
 
+NATRON_NAMESPACE_ENTER;
 
 class DopeSheetPrivate;
 class DopeSheetSelectionModel;
@@ -380,7 +381,7 @@ public:
     
     void pasteKeys(const std::vector<DopeSheetKey>& keys);
     
-    void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType);
+    void setSelectedKeysInterpolation(KeyframeTypeEnum keyType);
     
     void transformSelectedKeys(const Transform::Matrix3x3& transform);
 
@@ -477,6 +478,8 @@ private:
     boost::scoped_ptr<DopeSheetSelectionModelPrivate> _imp;
 };
 
-Q_DECLARE_OPERATORS_FOR_FLAGS(DopeSheetSelectionModel::SelectionTypeFlags)
+NATRON_NAMESPACE_EXIT;
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::DopeSheetSelectionModel::SelectionTypeFlags)
 
 #endif // DOPESHEET_H

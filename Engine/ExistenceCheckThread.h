@@ -28,10 +28,11 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-
 #include <QThread>
 
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 struct ExistenceCheckerThreadPrivate;
 class ExistenceCheckerThread : public QThread
@@ -64,6 +65,8 @@ private:
     
     boost::scoped_ptr<ExistenceCheckerThreadPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_USE_BREAKPAD
 

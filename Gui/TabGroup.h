@@ -49,6 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief Used when group are using the kFnOfxParamPropGroupIsTab extension
@@ -71,5 +72,7 @@ public:
         return _tabs.empty();
     }
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_TabGroup_h

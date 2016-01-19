@@ -107,7 +107,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_PLUGIN_ICON_SIZE 20
 #define PLUGIN_ICON_OFFSET 2
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 using std::make_pair;
 
@@ -129,7 +129,7 @@ static void getPixmapForMergeOperator(const QString& op,QPixmap* pix)
     for (int i = 0; i <= (int)Natron::eMergeXOR; ++i) {
         std::string opStr = Natron::getNatronOperationString((Natron::MergingFunctionEnum)i);
         if (opStr == opstd) {
-            Natron::PixmapEnum pixEnum = Natron::getPixmapForMergingOperator((Natron::MergingFunctionEnum)i);
+            PixmapEnum pixEnum = Natron::getPixmapForMergingOperator((Natron::MergingFunctionEnum)i);
             appPTR->getIcon(pixEnum, TO_DPIX(NATRON_PLUGIN_ICON_SIZE), pix);
             return;
         }
@@ -2506,7 +2506,7 @@ NodeGui::toggleBitDepthIndicator(bool on,
 
 ////////////////////////////////////////// NodeGuiIndicator ////////////////////////////////////////////////////////
 
-struct NodeGuiIndicatorPrivate
+struct NATRON_NAMESPACE::NodeGuiIndicatorPrivate
 {
     QGraphicsEllipseItem* ellipse;
     QGraphicsSimpleTextItem* textItem;
@@ -3472,3 +3472,5 @@ NodeGui::onHideInputsKnobValueChanged(bool /*hidden*/)
     refreshEdgesVisility();
 }
 
+
+#include "moc_NodeGui.cpp"

@@ -65,7 +65,8 @@ CLANG_DIAG_ON(deprecated)
 
 #endif
 
-namespace Natron {
+NATRON_NAMESPACE_USING
+
 StandardPaths::StandardPaths()
 {
 }
@@ -653,4 +654,3 @@ StandardPaths::writableLocation(StandardLocationEnum type)
     return QStandardPaths::writableLocation(path);
 #endif // QT_VERSION >= 0x050000
 } // writableLocation
-} //namespace Natron

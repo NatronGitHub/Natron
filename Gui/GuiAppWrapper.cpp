@@ -51,6 +51,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
+NATRON_NAMESPACE_USING
+
 GuiApp::GuiApp(AppInstance* app)
 : App(app)
 , _app(dynamic_cast<GuiAppInstance*>(app))
@@ -576,7 +578,7 @@ PyViewer::getFrameRange(int* firstFrame,int* lastFrame) const
 }
 
 void
-PyViewer::setPlaybackMode(Natron::PlaybackModeEnum mode)
+PyViewer::setPlaybackMode(PlaybackModeEnum mode)
 {
     if (!_node->isActivated()) {
         return;
@@ -584,7 +586,7 @@ PyViewer::setPlaybackMode(Natron::PlaybackModeEnum mode)
     _viewer->setPlaybackMode(mode);
 }
 
-Natron::PlaybackModeEnum
+PlaybackModeEnum
 PyViewer::getPlaybackMode() const
 {
     if (!_node->isActivated()) {
@@ -593,7 +595,7 @@ PyViewer::getPlaybackMode() const
     return _viewer->getPlaybackMode();
 }
 
-Natron::ViewerCompositingOperatorEnum
+ViewerCompositingOperatorEnum
 PyViewer::getCompositingOperator() const
 {
     if (!_node->isActivated()) {
@@ -603,7 +605,7 @@ PyViewer::getCompositingOperator() const
 }
 
 void
-PyViewer::setCompositingOperator(Natron::ViewerCompositingOperatorEnum op)
+PyViewer::setCompositingOperator(ViewerCompositingOperatorEnum op)
 {
     if (!_node->isActivated()) {
         return;
@@ -661,7 +663,7 @@ PyViewer::setBInput(int index)
 }
 
 void
-PyViewer::setChannels(Natron::DisplayChannelsEnum channels)
+PyViewer::setChannels(DisplayChannelsEnum channels)
 {
     if (!_node->isActivated()) {
         return;
@@ -670,7 +672,7 @@ PyViewer::setChannels(Natron::DisplayChannelsEnum channels)
     _viewer->setChannels(c);
 }
 
-Natron::DisplayChannelsEnum
+DisplayChannelsEnum
 PyViewer::getChannels() const
 {
     if (!_node->isActivated()) {

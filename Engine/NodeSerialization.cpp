@@ -32,6 +32,8 @@
 #include "Engine/NodeGroupSerialization.h"
 #include "Engine/RotoContext.h"
 
+NATRON_NAMESPACE_USING
+
 NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs)
     : _isNull(true)
     , _nbKnobs(0)

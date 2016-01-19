@@ -58,9 +58,9 @@
 
 #define NATRON_PYPLUG_EXPORTER_VERSION 5
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
-struct NodeCollectionPrivate
+struct NATRON_NAMESPACE::NodeCollectionPrivate
 {
     AppInstance* app;
     
@@ -1042,7 +1042,7 @@ NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,P
 }
 
 
-struct NodeGroupPrivate
+struct NATRON_NAMESPACE::NodeGroupPrivate
 {
     mutable QMutex nodesLock; // protects inputs & outputs
     std::vector<boost::weak_ptr<Node> > inputs,guiInputs;
@@ -1120,7 +1120,7 @@ NodeGroup::getPluginDescription() const
 
 void
 NodeGroup::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponents>* comps)
+                                std::list<ImageComponents>* comps)
 {
     comps->push_back(ImageComponents::getRGBAComponents());
     comps->push_back(ImageComponents::getRGBComponents());
@@ -1128,7 +1128,7 @@ NodeGroup::addAcceptedComponents(int /*inputNb*/,
 }
 
 void
-NodeGroup::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+NodeGroup::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     depths->push_back(Natron::eImageBitDepthByte);
     depths->push_back(Natron::eImageBitDepthShort);
@@ -1454,7 +1454,7 @@ NodeGroup::getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs,bool 
 }
 
 void
-NodeGroup::knobChanged(KnobI* k,Natron::ValueChangedReasonEnum /*reason*/,
+NodeGroup::knobChanged(KnobI* k,ValueChangedReasonEnum /*reason*/,
                  int /*view*/,
                  double /*time*/,
                  bool /*originatedFromMainThread*/)
@@ -2493,9 +2493,9 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
         // a precision of 3 digits is enough for the node coloe
         WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setColor(" + NUM_COLOR(r) + ", " + NUM_COLOR(g) + ", " + NUM_COLOR(b) +  ")");
         
-        std::list<Natron::ImageComponents> userComps;
+        std::list<ImageComponents> userComps;
         (*it)->getUserCreatedComponents(&userComps);
-        for (std::list<Natron::ImageComponents>::iterator it2 = userComps.begin(); it2 != userComps.end(); ++it2) {
+        for (std::list<ImageComponents>::iterator it2 = userComps.begin(); it2 != userComps.end(); ++it2) {
             
             const std::vector<std::string>& channels = it2->getComponentsNames();
             QString compStr("[");
@@ -2671,3 +2671,5 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     WRITE_INDENT(1);WRITE_STRING(testAttr);
     WRITE_INDENT(2);WRITE_STRING("extModule.createInstanceExt(app,group)");
 }
+
+#include "moc_NodeGroup.cpp"

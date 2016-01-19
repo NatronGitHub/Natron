@@ -50,7 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 typedef boost::shared_ptr<BezierCP> CpPtr;
 typedef std::pair<CpPtr,CpPtr> SelectedCp;

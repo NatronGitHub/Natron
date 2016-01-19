@@ -43,8 +43,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Label.h"
 
-namespace Natron {
-struct MessageBoxPrivate
+NATRON_NAMESPACE_USING
+
+struct NATRON_NAMESPACE::MessageBoxPrivate
 {
     MessageBox::MessageBoxTypeEnum type;
     
@@ -87,7 +88,7 @@ MessageBox::MessageBox(const QString & title,
                        const QString & message,
                        MessageBoxTypeEnum type,
                        const Natron::StandardButtons& buttons,
-                       Natron::StandardButtonEnum defaultButton,
+                       StandardButtonEnum defaultButton,
                        QWidget* parent)
 : QDialog(parent,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint)
 , _imp(new MessageBoxPrivate(type))
@@ -99,7 +100,7 @@ void
 MessageBox::init(const QString & title,
                  const QString & message,
                  const Natron::StandardButtons& buttons,
-                 Natron::StandardButtonEnum defaultButton)
+                 StandardButtonEnum defaultButton)
 {
     _imp->mainLayout = new QHBoxLayout(this);
     
@@ -245,7 +246,7 @@ void MessageBox::updateSize()
 //    QCoreApplication::removePostedEvents(this, QEvent::LayoutRequest);
 }
 
-Natron::StandardButtonEnum
+StandardButtonEnum
 MessageBox::getReply() const
 {
     return _imp->clickedButton ?
@@ -291,4 +292,4 @@ MessageBox::event(QEvent* e)
     return result;
 }
 
-}
+#include "moc_MessageBox.cpp"

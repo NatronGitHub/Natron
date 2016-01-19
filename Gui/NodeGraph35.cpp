@@ -55,7 +55,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 QImage

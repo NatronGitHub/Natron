@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct CustomParamInteractPrivate;
 class CustomParamInteract
@@ -104,5 +105,7 @@ private:
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     boost::scoped_ptr<CustomParamInteractPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // CUSTOMPARAMINTERACT_H

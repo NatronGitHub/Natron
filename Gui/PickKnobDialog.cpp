@@ -49,7 +49,9 @@
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/Utils.h" // convertFromPlainText
 
-struct PickKnobDialogPrivate
+NATRON_NAMESPACE_USING
+
+struct NATRON_NAMESPACE::PickKnobDialogPrivate
 {
     
     DockablePanel* panel;
@@ -365,3 +367,5 @@ PickKnobDialog::getSelectedKnob(bool* makeAlias,boost::shared_ptr<KnobPage>* pag
     
     return 0;
 }
+
+#include "moc_PickKnobDialog.cpp"

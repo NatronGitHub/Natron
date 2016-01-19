@@ -30,6 +30,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct BackDropGuiPrivate;
 class BackDropGui : public NodeGui
@@ -84,5 +85,7 @@ private:
 
     boost::scoped_ptr<BackDropGuiPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_BackDropGui_h

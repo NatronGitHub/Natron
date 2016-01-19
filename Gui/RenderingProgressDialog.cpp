@@ -49,7 +49,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/LogWindow.h"
 
-struct RenderingProgressDialogPrivate
+NATRON_NAMESPACE_USING
+
+struct NATRON_NAMESPACE::RenderingProgressDialogPrivate
 {
     Gui* _gui;
     QVBoxLayout* _mainLayout;
@@ -162,7 +164,7 @@ RenderingProgressDialog::onProcessFinished(int retCode)
         bool showLog = false;
         if (retCode == 0) {
             if (_imp->_process) {
-                Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Render").toStdString(),tr("The render ended successfully.\n"
+                StandardButtonEnum reply = Natron::questionDialog( tr("Render").toStdString(),tr("The render ended successfully.\n"
                                                                                                      "Would you like to see the log ?").toStdString(), false );
                 if (reply == Natron::eStandardButtonYes) {
                     showLog = true;
@@ -172,7 +174,7 @@ RenderingProgressDialog::onProcessFinished(int retCode)
             }
         } else if (retCode == 1) {
             if (_imp->_process) {
-                Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Render").toStdString(),
+                StandardButtonEnum reply = Natron::questionDialog( tr("Render").toStdString(),
                                                                        tr("The render ended with a return code of 1, a problem occured.\n"
                                                                           "Would you like to see the log ?").toStdString(), false );
                 if (reply == Natron::eStandardButtonYes) {
@@ -183,7 +185,7 @@ RenderingProgressDialog::onProcessFinished(int retCode)
             }
         } else {
             if (_imp->_process) {
-                Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Render").toStdString(),tr("The render crashed.\n"
+                StandardButtonEnum reply = Natron::questionDialog( tr("Render").toStdString(),tr("The render crashed.\n"
                                                                                                          "Would you like to see the log ?").toStdString() , false);
                 if (reply == Natron::eStandardButtonYes) {
                     showLog = true;
@@ -321,3 +323,5 @@ RenderingProgressDialog::onProcessDeleted()
     QObject::disconnect( _imp->_process.get(),SIGNAL( processFinished(int) ),this,SLOT( onProcessFinished(int) ) );
     QObject::disconnect( _imp->_process.get(),SIGNAL( deleted() ),this,SLOT( onProcessDeleted() ) );
 }
+
+#include "moc_RenderingProgressDialog.cpp"

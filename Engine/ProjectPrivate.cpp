@@ -48,7 +48,8 @@
 #include "Engine/ViewerInstance.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_USING
+
 ProjectPrivate::ProjectPrivate(Natron::Project* project)
     : _publicInterface(project)
     , projectLock()
@@ -495,5 +496,3 @@ ProjectPrivate::getProjectPath() const
 {
     return projectPath->getValue();
 }
-    
-} // namespace Natron

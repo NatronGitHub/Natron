@@ -52,7 +52,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
                                                  const std::vector<boost::shared_ptr<CurveGui> > & curves,
@@ -327,7 +327,7 @@ ImportExportCurveDialog::getCurveColumns(std::map<int,boost::shared_ptr<CurveGui
     }
 }
 
-struct EditKeyFrameDialogPrivate
+struct NATRON_NAMESPACE::EditKeyFrameDialogPrivate
 {
     
     CurveWidget* curveWidget;
@@ -568,3 +568,5 @@ EditKeyFrameDialog::changeEvent(QEvent* e)
     QDialog::changeEvent(e);
 }
 
+
+#include "moc_CurveWidgetDialogs.cpp"

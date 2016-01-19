@@ -24,6 +24,8 @@
 
 #include "Utils.h"
 
+NATRON_NAMESPACE_USING
+
 /*!
  \fn QString Natron::convertFromPlainText(const QString &plain, WhiteSpaceMode mode)
 

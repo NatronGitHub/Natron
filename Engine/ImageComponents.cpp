@@ -19,7 +19,7 @@
 #include "ImageComponents.h"
 #include "ofxNatron.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 static const char* rgbaComps[4] = {"R","G","B","A"};
 static const char* rgbComps[3] = {"R","G","B"};

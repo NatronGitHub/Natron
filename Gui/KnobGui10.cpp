@@ -31,8 +31,7 @@
 
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 
-using namespace Natron;
-
+NATRON_NAMESPACE_USING
 
 
 void
@@ -262,7 +261,7 @@ KnobGui::onRemoveAnimationActionTriggered()
 
 void
 KnobGui::setInterpolationForDimensions(const std::vector<int> & dimensions,
-                                       Natron::KeyframeTypeEnum interp)
+                                       KeyframeTypeEnum interp)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
     

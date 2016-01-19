@@ -54,6 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kMainSplitterObjectName "ToolbarSplitter"
 
+NATRON_NAMESPACE_ENTER;
 
 struct GuiPrivate;
 
@@ -189,17 +190,17 @@ public:
                            bool* stopAsking,
                            bool useHtml);
 
-    Natron::StandardButtonEnum questionDialog(const std::string & title,
+    StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
                                               bool useHtml,
                                               Natron::StandardButtons buttons = Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                              Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
+                                              StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
 
-    Natron::StandardButtonEnum questionDialog(const std::string & title,
+    StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
                                               bool useHtml,
                                               Natron::StandardButtons buttons,
-                                              Natron::StandardButtonEnum defaultButton,
+                                              StandardButtonEnum defaultButton,
                                               bool* stopAsking);
 
 
@@ -719,4 +720,7 @@ private:
     
     boost::scoped_ptr<GuiPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // Gui_Gui_h

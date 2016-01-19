@@ -93,9 +93,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Utils.h"
 #include "Gui/ViewerTab.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
-struct LinkToKnobDialogPrivate
+struct NATRON_NAMESPACE::LinkToKnobDialogPrivate
 {
     KnobGui* fromKnob;
     QVBoxLayout* mainLayout;
@@ -238,3 +238,5 @@ boost::shared_ptr<KnobI> LinkToKnobDialog::getSelectedKnobs() const
     }
 }
 
+
+#include "moc_LinkToKnobDialog.cpp"

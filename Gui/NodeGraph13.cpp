@@ -36,7 +36,7 @@
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 //using std::cout; using std::endl;
 
 

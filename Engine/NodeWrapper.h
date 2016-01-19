@@ -41,17 +41,18 @@
 #include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class ImageLayer
 {
-    Natron::ImageComponents _comps;
+    ImageComponents _comps;
 public:
     
     ImageLayer(const std::string& layerName,
                const std::string& componentsPrettyName,
                const std::vector<std::string>& componentsName);
     
-    ImageLayer(const Natron::ImageComponents& internalComps);
+    ImageLayer(const ImageComponents& internalComps);
     
     
     ~ImageLayer() {}
@@ -361,5 +362,7 @@ public:
     
     void setPagesOrder(const std::list<std::string>& pages);
 };
+
+}
 
 #endif // NODEWRAPPER_H

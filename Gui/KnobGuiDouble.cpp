@@ -79,7 +79,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "ofxNatron.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 using std::make_pair;
 
 
@@ -809,3 +809,5 @@ KnobGuiDouble::reflectModificationsState() {
 }
 
 
+
+#include "moc_KnobGuiDouble.cpp"

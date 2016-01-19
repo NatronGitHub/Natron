@@ -48,6 +48,7 @@
 #include <QFileInfo>
 #include <QRegExp>
 
+NATRON_NAMESPACE_USING
 
 // —— construction ——————————————————————————
 DocumentWindow::DocumentWindow(QWidget* parent, Qt::WindowFlags flags) :

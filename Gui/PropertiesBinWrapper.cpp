@@ -28,6 +28,8 @@
 
 #include "Gui/Gui.h"
 
+NATRON_NAMESPACE_USING
+
 PropertiesBinWrapper::PropertiesBinWrapper(Gui* parent)
 : QWidget(parent)
 , PanelWidget(this,parent)

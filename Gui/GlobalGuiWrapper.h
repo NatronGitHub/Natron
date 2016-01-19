@@ -41,6 +41,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 class PyGuiApplication : public PyCoreApplication
 {
 public:
@@ -56,7 +58,7 @@ public:
         
     }
     
-    QPixmap getIcon(Natron::PixmapEnum val) const
+    QPixmap getIcon(PixmapEnum val) const
     {
         QPixmap ret;
         appPTR->getIcon(val,&ret);
@@ -91,7 +93,7 @@ public:
         Natron::errorDialog(title,message);
     }
     
-    Natron::StandardButtonEnum questionDialog(const std::string& title,const std::string& message)
+    StandardButtonEnum questionDialog(const std::string& title,const std::string& message)
     {
         return Natron::questionDialog(title, message, false);
     }
@@ -110,6 +112,6 @@ public:
     
 };
 
-
+NATRON_NAMESPACE_EXIT;
 
 #endif // GLOBAL_GUI_WRAPPER_H

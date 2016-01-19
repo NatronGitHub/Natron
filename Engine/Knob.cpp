@@ -52,10 +52,10 @@
 #include "Engine/Hash64.h"
 #include "Engine/StringAnimationManager.h"
 #include "Engine/DockablePanelI.h"
+#include "Engine/EngineFwd.h"
 
-class KnobPage;
+NATRON_NAMESPACE_USING
 
-using namespace Natron;
 using std::make_pair; using std::pair;
 
 KnobSignalSlotHandler::KnobSignalSlotHandler(const boost::shared_ptr<KnobI>& knob)
@@ -210,7 +210,7 @@ struct Expr
 };
 
 
-struct KnobHelperPrivate
+struct NATRON_NAMESPACE::KnobHelperPrivate
 {
     KnobHelper* publicInterface;
     KnobHolder* holder;
@@ -673,7 +673,7 @@ KnobHelper::deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,
     }
 
 
-    Natron::ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited;
+    ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited;
     
     if (!useGuiCurve) {
         
@@ -901,7 +901,7 @@ KnobHelper::cloneCurve(int dimension,const Curve& curve)
 }
 
 bool
-KnobHelper::setInterpolationAtTime(Natron::CurveChangeReason reason,int dimension,double time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey)
+KnobHelper::setInterpolationAtTime(Natron::CurveChangeReason reason,int dimension,double time,KeyframeTypeEnum interpolation,KeyFrame* newKey)
 {
     assert(QThread::currentThread() == qApp->thread());
     assert(dimension >= 0 && dimension < (int)_imp->curves.size());
@@ -1045,7 +1045,7 @@ KnobHelper::moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,
 
 void
 KnobHelper::removeAnimation(int dimension,
-                            Natron::ValueChangedReasonEnum reason)
+                            ValueChangedReasonEnum reason)
 {
     assert(QThread::currentThread() == qApp->thread());
     assert(0 <= dimension);
@@ -1103,7 +1103,7 @@ KnobHelper::removeAnimation(int dimension,
 }
 
 void
-KnobHelper::clearExpressionsResultsIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions)
+KnobHelper::clearExpressionsResultsIfNeeded(std::map<int,ValueChangedReasonEnum>& modifiedDimensions)
 {
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
     for (int i = 0; i < getDimension(); ++i) {
@@ -1116,7 +1116,7 @@ KnobHelper::clearExpressionsResultsIfNeeded(std::map<int,Natron::ValueChangedRea
 }
 
 void
-KnobHelper::cloneInternalCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions)
+KnobHelper::cloneInternalCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& modifiedDimensions)
 {
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
     for (int i = 0; i < getDimension(); ++i) {
@@ -1136,7 +1136,7 @@ KnobHelper::setInternalCurveHasChanged(int dimension, bool changed)
 }
 
 void
-KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions)
+KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& modifiedDimensions)
 {
     if (!canAnimate()) {
         return;
@@ -1163,7 +1163,7 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>&
 }
 
 void
-KnobHelper::guiCurveCloneInternalCurve(Natron::CurveChangeReason curveChangeReason,int dimension,Natron::ValueChangedReasonEnum reason)
+KnobHelper::guiCurveCloneInternalCurve(Natron::CurveChangeReason curveChangeReason,int dimension,ValueChangedReasonEnum reason)
 {
     if (!canAnimate()) {
         return;
@@ -1284,7 +1284,7 @@ KnobHelper::isValueChangesBlocked() const
 void
 KnobHelper::evaluateValueChange(int dimension,
                                 double time,
-                                Natron::ValueChangedReasonEnum reason)
+                                ValueChangedReasonEnum reason)
 {
     
 
@@ -2567,7 +2567,7 @@ bool
 KnobHelper::slaveTo(int dimension,
                     const boost::shared_ptr<KnobI> & other,
                     int otherDimension,
-                    Natron::ValueChangedReasonEnum reason,
+                    ValueChangedReasonEnum reason,
                     bool ignoreMasterPersistence)
 {
     assert(other.get() != this);
@@ -2737,7 +2737,7 @@ KnobHelper::getAnimationLevel(int dimension) const
 }
 
 void
-KnobHelper::deleteAnimationConditional(double time,int dimension,Natron::ValueChangedReasonEnum reason,bool before)
+KnobHelper::deleteAnimationConditional(double time,int dimension,ValueChangedReasonEnum reason,bool before)
 {
     if (!_imp->curves[dimension]) {
         return;
@@ -2782,7 +2782,7 @@ KnobHelper::deleteAnimationConditional(double time,int dimension,Natron::ValueCh
 void
 KnobHelper::deleteAnimationBeforeTime(double time,
                                       int dimension,
-                                      Natron::ValueChangedReasonEnum reason)
+                                      ValueChangedReasonEnum reason)
 {
     deleteAnimationConditional(time, dimension, reason, true);
 }
@@ -2790,7 +2790,7 @@ KnobHelper::deleteAnimationBeforeTime(double time,
 void
 KnobHelper::deleteAnimationAfterTime(double time,
                                      int dimension,
-                                     Natron::ValueChangedReasonEnum reason)
+                                     ValueChangedReasonEnum reason)
 {
     deleteAnimationConditional(time, dimension, reason, false);
 }
@@ -4136,7 +4136,7 @@ void
 KnobHolder::onDoEvaluateOnMainThread(KnobI* knob,bool significant,int reason)
 {
     assert(QThread::currentThread() == qApp->thread());
-    evaluate_public(knob, significant, (Natron::ValueChangedReasonEnum)reason);
+    evaluate_public(knob, significant, (ValueChangedReasonEnum)reason);
 }
 
 void
@@ -4191,7 +4191,7 @@ KnobHolder::endChanges(bool discardEverything)
     
     if (!knobChanged.empty() && !discardEverything && evaluate && significant) {
         ChangesList::iterator first = knobChanged.begin();
-        Natron::ValueChangedReasonEnum reason = first->reason;
+        ValueChangedReasonEnum reason = first->reason;
         KnobI* knob = first->knob;
         if (!isMT) {
             Q_EMIT doEvaluateOnMainThread(knob, significant, reason);
@@ -4205,11 +4205,11 @@ void
 KnobHolder::onDoValueChangeOnMainThread(KnobI* knob, int reason, double time, bool originatedFromMT)
 {
     assert(QThread::currentThread() == qApp->thread());
-    onKnobValueChanged_public(knob, (Natron::ValueChangedReasonEnum)reason, time, originatedFromMT);
+    onKnobValueChanged_public(knob, (ValueChangedReasonEnum)reason, time, originatedFromMT);
 }
 
 void
-KnobHolder::appendValueChange(KnobI* knob,double time,  Natron::ValueChangedReasonEnum reason)
+KnobHolder::appendValueChange(KnobI* knob,double time,  ValueChangedReasonEnum reason)
 {
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
@@ -4477,7 +4477,7 @@ KnobHolder::unslaveAllKnobs()
 }
 
 void
-KnobHolder::beginKnobsValuesChanged_public(Natron::ValueChangedReasonEnum reason)
+KnobHolder::beginKnobsValuesChanged_public(ValueChangedReasonEnum reason)
 {
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
@@ -4487,7 +4487,7 @@ KnobHolder::beginKnobsValuesChanged_public(Natron::ValueChangedReasonEnum reason
 }
 
 void
-KnobHolder::endKnobsValuesChanged_public(Natron::ValueChangedReasonEnum reason)
+KnobHolder::endKnobsValuesChanged_public(ValueChangedReasonEnum reason)
 {
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
@@ -4498,7 +4498,7 @@ KnobHolder::endKnobsValuesChanged_public(Natron::ValueChangedReasonEnum reason)
 
 void
 KnobHolder::onKnobValueChanged_public(KnobI* k,
-                                      Natron::ValueChangedReasonEnum reason,
+                                      ValueChangedReasonEnum reason,
                                       double time,
                                       bool originatedFromMainThread)
 {
@@ -4514,7 +4514,7 @@ KnobHolder::onKnobValueChanged_public(KnobI* k,
 void
 KnobHolder::evaluate_public(KnobI* knob,
                             bool isSignificant,
-                            Natron::ValueChangedReasonEnum reason)
+                            ValueChangedReasonEnum reason)
 {
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
@@ -4834,3 +4834,4 @@ template class Knob<double>;
 template class Knob<bool>;
 template class Knob<std::string>;
 
+#include "moc_Knob.cpp"

@@ -71,6 +71,7 @@ using std::cout;
 using std::endl;
 using Natron::Label;
 
+NATRON_NAMESPACE_USING
 
 class CurveEditorTreeWidget : public QTreeWidget
 {
@@ -102,7 +103,7 @@ private:
     }
 };
 
-struct CurveEditorPrivate
+struct NATRON_NAMESPACE::CurveEditorPrivate
 {
     
     std::list<NodeCurveEditorContext*> nodes;
@@ -1074,7 +1075,7 @@ CurveEditor::getCurveWidget() const
 
 ////RotoItemContext
 
-struct RotoItemEditorContextPrivate {
+struct NATRON_NAMESPACE::RotoItemEditorContextPrivate {
     
     CurveEditor* widget;
     RotoCurveEditorContext* context;
@@ -1270,7 +1271,7 @@ RotoItemEditorContext::findElement(KnobGui* knob,int dimension) const
     return 0;
 }
 
-struct BezierEditorContextPrivate {
+struct NATRON_NAMESPACE::BezierEditorContextPrivate {
     
   
     QTreeWidgetItem* curveItem;
@@ -1351,7 +1352,7 @@ struct StrokeEditorContextPrivate {
 };
 ////////RotoContext
 
-struct RotoCurveEditorContextPrivate
+struct NATRON_NAMESPACE::RotoCurveEditorContextPrivate
 {
     CurveEditor* widget;
     QTreeWidget* tree;
@@ -1695,3 +1696,4 @@ CurveEditor::onExprLineEditFinished()
 {
     setSelectedCurveExpression(_imp->knobLineEdit->text());
 }
+#include "moc_CurveEditor.cpp"

@@ -26,6 +26,8 @@
 
 #include <QMutex>
 
+NATRON_NAMESPACE_USING
+
 SerializableWindow::SerializableWindow()
     : _lock(new QMutex)
       , _w(0), _h(0), _x(0), _y(0)

@@ -51,6 +51,7 @@ GCC_DIAG_ON(unused-parameter)
 #define NODE_GUI_INTRODUCES_CHILDREN 6
 #define NODE_GUI_SERIALIZATION_VERSION NODE_GUI_INTRODUCES_CHILDREN
 
+NATRON_NAMESPACE_ENTER;
 
 class NodeGuiSerialization
 {
@@ -152,40 +153,40 @@ private:
     ///If this node is a group, this is the children
     std::list< boost::shared_ptr<NodeGuiSerialization> > _children;
     
-    friend class boost::serialization::access;
+    friend class ::boost::serialization::access;
     template<class Archive>
     void save(Archive & ar,
                    const unsigned int /*version*/) const
     {
-        ar & boost::serialization::make_nvp("Name",_nodeName);
-        ar & boost::serialization::make_nvp("X_position",_posX);
-        ar & boost::serialization::make_nvp("Y_position",_posY);
-        ar & boost::serialization::make_nvp("Preview_enabled",_previewEnabled);
+        ar & ::boost::serialization::make_nvp("Name",_nodeName);
+        ar & ::boost::serialization::make_nvp("X_position",_posX);
+        ar & ::boost::serialization::make_nvp("Y_position",_posY);
+        ar & ::boost::serialization::make_nvp("Preview_enabled",_previewEnabled);
         
-        ar & boost::serialization::make_nvp("r",_r);
-        ar & boost::serialization::make_nvp("g",_g);
-        ar & boost::serialization::make_nvp("b",_b);
+        ar & ::boost::serialization::make_nvp("r",_r);
+        ar & ::boost::serialization::make_nvp("g",_g);
+        ar & ::boost::serialization::make_nvp("b",_b);
         
-        ar & boost::serialization::make_nvp("Selected",_selected);
+        ar & ::boost::serialization::make_nvp("Selected",_selected);
         
         
-        ar & boost::serialization::make_nvp("Width",_width);
-        ar & boost::serialization::make_nvp("Height",_height);
+        ar & ::boost::serialization::make_nvp("Width",_width);
+        ar & ::boost::serialization::make_nvp("Height",_height);
         
-        ar & boost::serialization::make_nvp("HasOverlayColor",_hasOverlayColor);
+        ar & ::boost::serialization::make_nvp("HasOverlayColor",_hasOverlayColor);
         if (_hasOverlayColor) {
-            ar & boost::serialization::make_nvp("oR",_overlayR);
-            ar & boost::serialization::make_nvp("oG",_overlayG);
-            ar & boost::serialization::make_nvp("oB",_overlayB);
+            ar & ::boost::serialization::make_nvp("oR",_overlayR);
+            ar & ::boost::serialization::make_nvp("oG",_overlayG);
+            ar & ::boost::serialization::make_nvp("oB",_overlayB);
         }
         
         int nodesCount = (int)_children.size();
-        ar & boost::serialization::make_nvp("Children",nodesCount);
+        ar & ::boost::serialization::make_nvp("Children",nodesCount);
         
         for (std::list< boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = _children.begin();
              it != _children.end();
              ++it) {
-            ar & boost::serialization::make_nvp("item",**it);
+            ar & ::boost::serialization::make_nvp("item",**it);
         }
 
     }
@@ -194,34 +195,34 @@ private:
     void load(Archive & ar,
               const unsigned int version)
     {
-        ar & boost::serialization::make_nvp("Name",_nodeName);
-        ar & boost::serialization::make_nvp("X_position",_posX);
-        ar & boost::serialization::make_nvp("Y_position",_posY);
-        ar & boost::serialization::make_nvp("Preview_enabled",_previewEnabled);
+        ar & ::boost::serialization::make_nvp("Name",_nodeName);
+        ar & ::boost::serialization::make_nvp("X_position",_posX);
+        ar & ::boost::serialization::make_nvp("Y_position",_posY);
+        ar & ::boost::serialization::make_nvp("Preview_enabled",_previewEnabled);
         
         if (version >= NODE_GUI_INTRODUCES_COLOR) {
-            ar & boost::serialization::make_nvp("r",_r);
-            ar & boost::serialization::make_nvp("g",_g);
-            ar & boost::serialization::make_nvp("b",_b);
+            ar & ::boost::serialization::make_nvp("r",_r);
+            ar & ::boost::serialization::make_nvp("g",_g);
+            ar & ::boost::serialization::make_nvp("b",_b);
             _colorWasFound = true;
         }
         if (version >= NODE_GUI_INTRODUCES_SELECTED) {
-            ar & boost::serialization::make_nvp("Selected",_selected);
+            ar & ::boost::serialization::make_nvp("Selected",_selected);
         }
         
         if (version >= NODE_GUI_MERGE_BACKDROP) {
-            ar & boost::serialization::make_nvp("Width",_width);
-            ar & boost::serialization::make_nvp("Height",_height);
+            ar & ::boost::serialization::make_nvp("Width",_width);
+            ar & ::boost::serialization::make_nvp("Height",_height);
         } else {
             _nodeName = Natron::makeNameScriptFriendly(_nodeName);
         }
         
         if (version >= NODE_GUI_INTRODUCES_OVERLAY_COLOR) {
-            ar & boost::serialization::make_nvp("HasOverlayColor",_hasOverlayColor);
+            ar & ::boost::serialization::make_nvp("HasOverlayColor",_hasOverlayColor);
             if (_hasOverlayColor) {
-                ar & boost::serialization::make_nvp("oR",_overlayR);
-                ar & boost::serialization::make_nvp("oG",_overlayG);
-                ar & boost::serialization::make_nvp("oB",_overlayB);
+                ar & ::boost::serialization::make_nvp("oR",_overlayR);
+                ar & ::boost::serialization::make_nvp("oG",_overlayG);
+                ar & ::boost::serialization::make_nvp("oB",_overlayB);
             }
         } else {
             _hasOverlayColor = false;
@@ -229,11 +230,11 @@ private:
         
         if (version >= NODE_GUI_INTRODUCES_CHILDREN) {
             int nodesCount ;
-            ar & boost::serialization::make_nvp("Children",nodesCount);
+            ar & ::boost::serialization::make_nvp("Children",nodesCount);
             
             for (int i = 0; i < nodesCount; ++i) {
                 boost::shared_ptr<NodeGuiSerialization> s(new NodeGuiSerialization);
-                ar & boost::serialization::make_nvp("item",*s);
+                ar & ::boost::serialization::make_nvp("item",*s);
                 _children.push_back(s);
             }
         }
@@ -243,7 +244,9 @@ private:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
-BOOST_CLASS_VERSION(NodeGuiSerialization, NODE_GUI_SERIALIZATION_VERSION)
+NATRON_NAMESPACE_EXIT;
+
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::NodeGuiSerialization, NODE_GUI_SERIALIZATION_VERSION)
 
 
 #endif // NODEGUISERIALIZATION_H

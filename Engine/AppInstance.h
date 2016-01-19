@@ -40,6 +40,8 @@
 #include "Engine/TimeLineKeyFrames.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 struct AppInstancePrivate;
 
 struct CreateNodeArgs
@@ -127,8 +129,6 @@ struct LoadNodeArgs
     }
 };
 
-namespace Natron {
-    
 class FlagSetter {
     
     bool* p;
@@ -142,8 +142,6 @@ public:
     
     ~FlagSetter();
 };
-    
-}
 
 class AppInstance
     : public QObject, public boost::noncopyable, public TimeLineKeyFrames
@@ -229,22 +227,22 @@ public:
     virtual void informationDialog(const std::string & title,const std::string & message,bool useHtml) const;
     virtual void informationDialog(const std::string & title,const std::string & message,bool* stopAsking,bool useHtml) const;
     
-    virtual Natron::StandardButtonEnum questionDialog(const std::string & title,
+    virtual StandardButtonEnum questionDialog(const std::string & title,
                                                       const std::string & message,
                                                       bool useHtml,
                                                       Natron::StandardButtons buttons =
                                                       Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                                  Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton) const WARN_UNUSED_RETURN;
+                                                  StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton) const WARN_UNUSED_RETURN;
     
     /**
      * @brief Asks a question to the user and returns the reply.
      * @param stopAsking Set to true if the user do not want Natron to ask the question again.
      **/
-    virtual Natron::StandardButtonEnum questionDialog(const std::string & /*title*/,
+    virtual StandardButtonEnum questionDialog(const std::string & /*title*/,
                                                       const std::string & /*message*/,
                                                       bool /*useHtml*/,
                                                       Natron::StandardButtons /*buttons*/,
-                                                      Natron::StandardButtonEnum /*defaultButton*/,
+                                                      StandardButtonEnum /*defaultButton*/,
                                                       bool* /*stopAsking*/)
     {
         return Natron::eStandardButtonYes;
@@ -307,7 +305,7 @@ public:
     {
     }
 
-    Natron::ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const;
+    ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const;
     
     double getProjectFrameRate() const;
 
@@ -508,5 +506,7 @@ public:
         _app->setIsCreatingNodeTree(false);
     }
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // APPINSTANCE_H

@@ -50,19 +50,18 @@ CLANG_DIAG_ON(deprecated)
 #define appPTR AppManager::instance()
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 enum AppInstanceStatusEnum
 {
     eAppInstanceStatusInactive = 0,     //< the app has not been loaded yet or has been closed already
     eAppInstanceStatusActive     //< the app is active and can be used
 };
-}
-
 
 struct AppInstanceRef
 {
     AppInstance* app;
-    Natron::AppInstanceStatusEnum status;
+    AppInstanceStatusEnum status;
 };
 
 
@@ -554,8 +553,6 @@ private:
 }; // AppManager
 
 
-namespace Natron {
-    
 struct PyCallback
 {
     std::string expression; //< the one modified by Natron
@@ -575,14 +572,14 @@ void warningDialog(const std::string & title,const std::string & message,bool* s
 void informationDialog(const std::string & title,const std::string & message, bool useHtml = false);
 void informationDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
 
-Natron::StandardButtonEnum questionDialog(const std::string & title,const std::string & message, bool useHtml,
+StandardButtonEnum questionDialog(const std::string & title,const std::string & message, bool useHtml,
                                           Natron::StandardButtons buttons =
                                           Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                      Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
+                                      StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
     
-Natron::StandardButtonEnum questionDialog(const std::string & title,const std::string & message, bool useHtml,
+StandardButtonEnum questionDialog(const std::string & title,const std::string & message, bool useHtml,
                                           Natron::StandardButtons buttons,
-                                          Natron::StandardButtonEnum defaultButton,
+                                          StandardButtonEnum defaultButton,
                                           bool* stopAsking);
 
 template <class K>
@@ -717,7 +714,7 @@ public:
     ~PythonGILLocker();
 };
     
-} // namespace Natron
+NATRON_NAMESPACE_EXIT;
 
 
 #endif // Engine_AppManager_h

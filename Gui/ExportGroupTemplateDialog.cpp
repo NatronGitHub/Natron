@@ -49,6 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Utils.h" // convertFromPlainText
 #include "Gui/GuiDefines.h"
 
+NATRON_NAMESPACE_USING
 
 class PlaceHolderTextEdit: public QTextEdit
 {
@@ -101,7 +102,7 @@ private:
 };
 
 
-struct ExportGroupTemplateDialogPrivate
+struct NATRON_NAMESPACE::ExportGroupTemplateDialogPrivate
 {
     Gui* gui;
     NodeCollection* group;
@@ -310,7 +311,7 @@ ExportGroupTemplateDialog::onOkClicked()
     QStringList filters;
     filters.push_back(QString(pluginLabel + ".py"));
     if (!d.entryList(filters,QDir::Files | QDir::NoDotAndDotDot).isEmpty()) {
-        Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Existing plug-in").toStdString(),
+        StandardButtonEnum rep = Natron::questionDialog(tr("Existing plug-in").toStdString(),
                                                                 tr("A group plug-in with the same name already exists "
                                                                    "would you like to "
                                                                    "override it?").toStdString(), false);
@@ -333,7 +334,7 @@ ExportGroupTemplateDialog::onOkClicked()
     if (!foundInPath) {
 
         QString message = dirPath + tr(" does not exist in the group plug-in search path, would you like to add it?");
-        Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Plug-in path").toStdString(),
+        StandardButtonEnum rep = Natron::questionDialog(tr("Plug-in path").toStdString(),
                                                                 message.toStdString(), false);
 
         if  (rep == Natron::eStandardButtonYes) {
@@ -355,3 +356,5 @@ ExportGroupTemplateDialog::onOkClicked()
 
     accept();
 }
+
+#include "moc_ExportGroupTemplateDialog.cpp"

@@ -64,7 +64,8 @@ GCC_DIAG_ON(deprecated)
 ///When defined, number of opened files, memory size and disk size of the cache are printed whenever there's activity.
 //#define NATRON_DEBUG_CACHE
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 /**
  * @brief The point of this thread is to delete the content of the list in a separate thread so the thread calling
  * get() doesn't wait for all the entries to be deleted (which can be expensive for large images)
@@ -1587,7 +1588,8 @@ private:
         return true;
     } // tryEvictEntry
 };
-} // namespace Natron
+
+NATRON_NAMESPACE_EXIT;
 
 
 #endif /*NATRON_ENGINE_ABSTRACTCACHE_H_ */

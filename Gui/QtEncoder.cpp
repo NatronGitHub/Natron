@@ -47,7 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TimeLine.h"
 #include "Engine/Node.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 QtWriter::QtWriter(boost::shared_ptr<Natron::Node> node)
     : Natron::OutputEffectInstance(node)
@@ -166,7 +166,7 @@ QtWriter::initializeKnobs()
 
 void
 QtWriter::knobChanged(KnobI* k,
-                      Natron::ValueChangedReasonEnum /*reason*/,
+                      ValueChangedReasonEnum /*reason*/,
                       int /*view*/,
                       double /*time*/,
                       bool/* originatedFromMainThread*/)
@@ -245,11 +245,11 @@ filenameFromPattern(const std::string & pattern,
     return ret;
 }
 
-Natron::StatusEnum
+StatusEnum
 QtWriter::render(const RenderActionArgs& args)
 {
     assert(args.outputPlanes.size() == 1);
-    const std::pair<Natron::ImageComponents,ImagePtr>& output = args.outputPlanes.front();
+    const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
     
     boost::shared_ptr<Natron::Image> src = getImage(0, args.time, args.mappedScale, args.view, NULL, output.second->getComponents(), output.second->getBitDepth(),1, false,NULL);
 
@@ -284,14 +284,14 @@ QtWriter::render(const RenderActionArgs& args)
 
 void
 QtWriter::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponents>* comps)
+                                std::list<ImageComponents>* comps)
 {
     ///QtWriter only supports RGBA for now.
     comps->push_back(ImageComponents::getRGBAComponents());
 }
 
 void
-QtWriter::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+QtWriter::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     depths->push_back(eImageBitDepthFloat);
 }

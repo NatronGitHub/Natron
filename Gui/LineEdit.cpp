@@ -43,7 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-class QPaintEvent;
+NATRON_NAMESPACE_USING
 
 LineEdit::LineEdit(QWidget* parent)
     : QLineEdit(parent)
@@ -148,3 +148,5 @@ LineEdit::keyPressEvent(QKeyEvent* e)
         Q_EMIT textPasted();
     }
 }
+
+#include "moc_LineEdit.cpp"

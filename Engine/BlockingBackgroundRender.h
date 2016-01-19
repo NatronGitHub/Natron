@@ -30,6 +30,7 @@
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class BlockingBackgroundRender
 {
@@ -55,5 +56,7 @@ public:
 
     void blockingRender(bool enableRenderStats,int first,int last, int frameStep);
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // BLOCKINGBACKGROUNDRENDER_H

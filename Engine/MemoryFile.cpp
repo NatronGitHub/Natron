@@ -46,7 +46,9 @@
 
 #define MIN_FILE_SIZE 4096
 
-struct MemoryFilePrivate
+NATRON_NAMESPACE_USING
+
+struct NATRON_NAMESPACE::MemoryFilePrivate
 {
     std::string path; //< filepath of the backing file
     char* data; //< pointer to the begining of the mapped file

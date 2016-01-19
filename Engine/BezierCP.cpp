@@ -39,7 +39,8 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Transform.h" // Point3D
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
+
 
 ////////////////////////////////////ControlPoint////////////////////////////////////
 
@@ -479,7 +480,7 @@ BezierCP::getKeyframeTimes(bool useGuiCurves,std::set<double>* times) const
 }
 
 void
-BezierCP::getKeyFrames(bool useGuiCurves,std::list<std::pair<double,Natron::KeyframeTypeEnum> >* keys) const
+BezierCP::getKeyFrames(bool useGuiCurves,std::list<std::pair<double,KeyframeTypeEnum> >* keys) const
 {
     KeyFrameSet set;
     if (!useGuiCurves) {
@@ -503,7 +504,7 @@ BezierCP::getKeyFrameIndex(bool useGuiCurves,double time) const
 }
 
 void
-BezierCP::setKeyFrameInterpolation(bool useGuiCurves,Natron::KeyframeTypeEnum interp,int index)
+BezierCP::setKeyFrameInterpolation(bool useGuiCurves,KeyframeTypeEnum interp,int index)
 {
     if (!useGuiCurves) {
         _imp->curveX->setKeyFrameInterpolation(interp, index);

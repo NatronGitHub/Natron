@@ -271,7 +271,9 @@ private:
     // —— not allowed members ——————————————————————-
 };
 
-Q_DECLARE_OPERATORS_FOR_FLAGS(DocumentWindow::DdeCommands)
+NATRON_NAMESPACE_EXIT;
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::DocumentWindow::DdeCommands)
 
 #endif // __NATRON_WIN32__
 #endif // FILETYPEMAINWINDOW_WIN_H

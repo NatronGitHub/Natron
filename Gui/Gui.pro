@@ -99,6 +99,7 @@ SOURCES += \
     ExportGroupTemplateDialog.cpp \
     FloatingWidget.cpp \
     QtEnumConvert.cpp \
+    GroupBoxLabel.cpp \
     Gui.cpp \
     Gui05.cpp \
     Gui10.cpp \

@@ -28,6 +28,8 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeWrapper.h"
 
+NATRON_NAMESPACE_USING
+
 Group::Group()
 : _collection()
 {

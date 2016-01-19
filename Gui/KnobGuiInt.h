@@ -51,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 //================================
 
@@ -131,5 +132,6 @@ private:
     boost::weak_ptr<KnobInt> _knob;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_KnobGuiInt_h

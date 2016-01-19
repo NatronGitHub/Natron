@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #define NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
+NATRON_NAMESPACE_ENTER;
 
 struct ViewerTabPrivate
 {
@@ -134,7 +135,7 @@ struct ViewerTabPrivate
     Button* playbackMode_Button;
     
     mutable QMutex playbackModeMutex;
-    Natron::PlaybackModeEnum playbackMode;
+    PlaybackModeEnum playbackMode;
     
     LineEdit* frameRangeEdit;
 
@@ -157,7 +158,7 @@ struct ViewerTabPrivate
     std::pair<NodeGui*,TrackerGui*> currentTracker;
     InputNamesMap inputNamesMap;
     mutable QMutex compOperatorMutex;
-    Natron::ViewerCompositingOperatorEnum compOperator;
+    ViewerCompositingOperatorEnum compOperator;
     ViewerInstance* viewerNode; // < pointer to the internal node
     
     mutable QMutex visibleToolbarsMutex; //< protects the 4 bool below
@@ -199,7 +200,10 @@ struct ViewerTabPrivate
 
 #endif
 
-    void getComponentsAvailabel(std::set<Natron::ImageComponents>* comps) const;
+    void getComponentsAvailabel(std::set<ImageComponents>* comps) const;
 
 };
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // Gui_ViewerTabPrivate_h

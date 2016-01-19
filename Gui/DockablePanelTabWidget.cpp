@@ -38,7 +38,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGraph.h"
 #include "Gui/ViewerTab.h"
 
-//using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 namespace {

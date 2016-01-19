@@ -59,7 +59,7 @@
 #endif
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 bool
 ViewerTab::isClippedToProject() const
@@ -70,7 +70,7 @@ ViewerTab::isClippedToProject() const
 std::string
 ViewerTab::getColorSpace() const
 {
-    Natron::ViewerColorSpaceEnum lut = (Natron::ViewerColorSpaceEnum)_imp->viewerNode->getLutType();
+    ViewerColorSpaceEnum lut = (ViewerColorSpaceEnum)_imp->viewerNode->getLutType();
 
     switch (lut) {
     case Natron::eViewerColorSpaceLinear:
@@ -217,14 +217,14 @@ ViewerTab::getZoomOrPannedSinceLastFit() const
     return _imp->viewer->getZoomOrPannedSinceLastFit();
 }
 
-Natron::DisplayChannelsEnum
+DisplayChannelsEnum
 ViewerTab::getChannels() const
 {
     return _imp->viewerNode->getChannels(0);
 }
 
 std::string
-ViewerTab::getChannelsString(Natron::DisplayChannelsEnum c)
+ViewerTab::getChannelsString(DisplayChannelsEnum c)
 {
     switch (c) {
         case Natron::eDisplayChannelsRGB:
@@ -255,7 +255,7 @@ ViewerTab::getChannelsString(Natron::DisplayChannelsEnum c)
 std::string
 ViewerTab::getChannelsString() const
 {
-    Natron::DisplayChannelsEnum c = _imp->viewerNode->getChannels(0);
+    DisplayChannelsEnum c = _imp->viewerNode->getChannels(0);
     return getChannelsString(c);
 }
 
@@ -726,7 +726,7 @@ ViewerTab::notifyGuiClosing()
 }
 
 void
-ViewerTab::onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp)
+ViewerTab::onCompositingOperatorChangedInternal(ViewerCompositingOperatorEnum oldOp,ViewerCompositingOperatorEnum newOp)
 {
     if ( (oldOp == eViewerCompositingOperatorNone) && (newOp != eViewerCompositingOperatorNone) ) {
         _imp->viewer->resetWipeControls();
@@ -785,7 +785,7 @@ ViewerTab::onCompositingOperatorIndexChanged(int index)
 }
 
 void
-ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperatorEnum op)
+ViewerTab::setCompositingOperator(ViewerCompositingOperatorEnum op)
 {
     int comboIndex;
 
@@ -809,7 +809,7 @@ ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperatorEnum op)
         throw std::logic_error("ViewerTab::setCompositingOperator(): unknown operator");
         break;
     }
-    Natron::ViewerCompositingOperatorEnum oldOp;
+    ViewerCompositingOperatorEnum oldOp;
     {
         QMutexLocker l(&_imp->compOperatorMutex);
         oldOp = _imp->compOperator;
@@ -959,7 +959,7 @@ ViewerTab::onActiveInputsChanged()
         _imp->firstInputImage->setCurrentIndex_no_emit(0);
     }
 
-    Natron::ViewerCompositingOperatorEnum op = getCompositingOperator();
+    ViewerCompositingOperatorEnum op = getCompositingOperator();
     _imp->secondInputImage->setEnabled_natron(op != Natron::eViewerCompositingOperatorNone);
 
     ViewerTabPrivate::InputNamesMap::iterator foundB = _imp->inputNamesMap.find(activeInputs[1]);

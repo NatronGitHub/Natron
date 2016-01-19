@@ -53,7 +53,7 @@
 
 
 using std::make_pair;
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 
@@ -288,3 +288,5 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
  
 }
 
+
+#include "moc_NodeSettingsPanel.cpp"

@@ -30,6 +30,7 @@
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class PropertiesBinWrapper : public QWidget, public PanelWidget
 {
@@ -48,5 +49,7 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_PropertiesBinWrapper_h

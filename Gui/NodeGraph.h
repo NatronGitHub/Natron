@@ -48,6 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class NodeGraphPrivate;
 
@@ -341,5 +342,7 @@ private:
     
     boost::scoped_ptr<EditNodeNameDialogPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_NodeGraph_h

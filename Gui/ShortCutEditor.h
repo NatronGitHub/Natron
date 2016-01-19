@@ -45,6 +45,7 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Gui/LineEdit.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct ShortCutEditorPrivate;
 
@@ -100,5 +101,7 @@ private:
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // SHORTCUTEDITOR_H

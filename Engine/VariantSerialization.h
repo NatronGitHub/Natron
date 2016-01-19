@@ -58,52 +58,52 @@ Variant::save(Archive & ar,
         case QVariant::Bool: {
             bool v = toBool();
             typeStr = "bool";
-            ar & boost::serialization::make_nvp("Type",typeStr);
-            ar & boost::serialization::make_nvp("Value",v);
+            ar & ::boost::serialization::make_nvp("Type",typeStr);
+            ar & ::boost::serialization::make_nvp("Value",v);
             break;
         }
         case QVariant::Int: {
             int v = toInt();
             typeStr = "int";
-            ar & boost::serialization::make_nvp("Type",typeStr);
-            ar & boost::serialization::make_nvp("Value",v);
+            ar & ::boost::serialization::make_nvp("Type",typeStr);
+            ar & ::boost::serialization::make_nvp("Value",v);
             break;
         }
         case QVariant::UInt: {
             int v = toUInt();
             typeStr = "uint";
-            ar & boost::serialization::make_nvp("Type",typeStr);
-            ar & boost::serialization::make_nvp("Value",v);
+            ar & ::boost::serialization::make_nvp("Type",typeStr);
+            ar & ::boost::serialization::make_nvp("Value",v);
             break;
         }
         case QVariant::Double: {
             double v = toDouble();
             typeStr = "double";
-            ar & boost::serialization::make_nvp("Type",typeStr);
-            ar & boost::serialization::make_nvp("Value",v);
+            ar & ::boost::serialization::make_nvp("Type",typeStr);
+            ar & ::boost::serialization::make_nvp("Value",v);
             break;
         }
         case QVariant::String: {
             typeStr = "string";
-            ar & boost::serialization::make_nvp("Type",typeStr);
+            ar & ::boost::serialization::make_nvp("Type",typeStr);
             std::string str = toString().toStdString();
-            ar & boost::serialization::make_nvp("Value",str);
+            ar & ::boost::serialization::make_nvp("Value",str);
             break;
         }
         case QVariant::StringList: {
             typeStr = "stringlist";
-            ar & boost::serialization::make_nvp("Type",typeStr);
+            ar & ::boost::serialization::make_nvp("Type",typeStr);
             std::list<std::string> list;
             QStringList strList = toStringList();
             for (int i = 0; i < strList.size(); ++i) {
                 list.push_back( strList.at(i).toStdString() );
             }
-            ar & boost::serialization::make_nvp("Value",list);
+            ar & ::boost::serialization::make_nvp("Value",list);
             break;
         }
         default:
             typeStr = "null";
-            ar & boost::serialization::make_nvp("Type",typeStr);
+            ar & ::boost::serialization::make_nvp("Type",typeStr);
             break;
     } // switch
 } // save
@@ -115,30 +115,30 @@ Variant::load(Archive & ar,
 {
     Q_UNUSED(version);
     std::string typeStr;
-    ar & boost::serialization::make_nvp("Type",typeStr);
+    ar & ::boost::serialization::make_nvp("Type",typeStr);
     if (typeStr == "bool") {
         bool v;
-        ar & boost::serialization::make_nvp("Value",v);
+        ar & ::boost::serialization::make_nvp("Value",v);
         setValue<bool>(v);
     } else if (typeStr == "int") {
         int v;
-        ar & boost::serialization::make_nvp("Value",v);
+        ar & ::boost::serialization::make_nvp("Value",v);
         setValue<int>(v);
     } else if (typeStr == "uint") {
         int v;
-        ar & boost::serialization::make_nvp("Value",v);
+        ar & ::boost::serialization::make_nvp("Value",v);
         setValue<unsigned int>(v);
     } else if (typeStr == "double") {
         double v;
-        ar & boost::serialization::make_nvp("Value",v);
+        ar & ::boost::serialization::make_nvp("Value",v);
         setValue<double>(v);
     } else if (typeStr == "string") {
         std::string str;
-        ar & boost::serialization::make_nvp("Value",str);
+        ar & ::boost::serialization::make_nvp("Value",str);
         setValue<QString>( QString( str.c_str() ) );
     } else if (typeStr == "stringlist") {
         std::list<std::string> list;
-        ar & boost::serialization::make_nvp("Value",list);
+        ar & ::boost::serialization::make_nvp("Value",list);
         QStringList strList;
         for (std::list<std::string>::iterator it = list.begin(); it != list.end(); ++it) {
             strList.push_back( (*it).c_str() );

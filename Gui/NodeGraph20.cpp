@@ -50,7 +50,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 void
 NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_ptr<NodeGui>& selectedNode, const QRectF& visibleSceneR)

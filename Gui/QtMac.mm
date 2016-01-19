@@ -82,7 +82,7 @@ static NSString* const NSBackingPropertyOldScaleFactorKey =
 
 #endif  // MAC_OS_X_VERSION_10_7
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 bool 
 isHighDPIInternal(const QWidget* w) {
     NSView* view = reinterpret_cast<NSView*>(w->winId());

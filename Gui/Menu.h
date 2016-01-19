@@ -36,18 +36,17 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 
-namespace Natron
+NATRON_NAMESPACE_ENTER;
+
+class Menu : public QMenu
 {
-    class Menu : public QMenu
-    {
-    public:
-        
-        explicit Menu(const QString &title, QWidget *parent = 0);
-        explicit Menu(QWidget* parent);
-        
-        virtual ~Menu() {}
-    };
-}
+public:
+
+    explicit Menu(const QString &title, QWidget *parent = 0);
+    explicit Menu(QWidget* parent);
+
+    virtual ~Menu() {}
+};
 
 class MenuWithToolTips: public Natron::Menu
 
@@ -57,5 +56,7 @@ public:
 
     bool event(QEvent* e);
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_GUI_MENUWITHTOOLTIPS_H

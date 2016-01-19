@@ -21,8 +21,8 @@
 * Engine module.
 **/
 
-#ifndef PARAMETERWRAPPER_H
-#define PARAMETERWRAPPER_H
+#ifndef Engine_ParameterWrapper_h
+#define Engine_ParameterWrapper_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -38,6 +38,8 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 class Param
 {
@@ -1123,31 +1125,32 @@ public:
     
     void getCurveColor(int dimension, ColorTuple& ret) const;
     
-    Natron::StatusEnum addControlPoint(int dimension,double key,double value);
+    StatusEnum addControlPoint(int dimension,double key,double value);
     
     double getValue(int dimension,double parametricPosition) const;
     
     int getNControlPoints(int dimension) const ;
     
-    Natron::StatusEnum getNthControlPoint(int dimension,
+    StatusEnum getNthControlPoint(int dimension,
                                           int nthCtl,
                                           double *key,
                                           double *value,
                                           double *leftDerivative,
                                           double *rightDerivative) const;
     
-    Natron::StatusEnum setNthControlPoint(int dimension,
+    StatusEnum setNthControlPoint(int dimension,
                                           int nthCtl,
                                           double key,
                                           double value,
                                           double leftDerivative,
                                           double rightDerivative) ;
     
-    Natron::StatusEnum deleteControlPoint(int dimension, int nthCtl) ;
+    StatusEnum deleteControlPoint(int dimension, int nthCtl) ;
     
-    Natron::StatusEnum deleteAllControlPoints(int dimension) ;
+    StatusEnum deleteAllControlPoints(int dimension) ;
     
 };
 
+NATRON_NAMESPACE_EXIT;
 
-#endif // PARAMETERWRAPPER_H
+#endif // Engine_ParameterWrapper_h

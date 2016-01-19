@@ -51,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class AnimatingTextEdit
     : public QTextEdit
@@ -111,7 +112,6 @@ private:
 };
 
 /*****************************/
-class QTextCharFormat;
 class KnobGuiString
     : public KnobGui
 {
@@ -223,5 +223,6 @@ private:
     boost::weak_ptr<KnobString> _knob;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_KnobGuiString_h

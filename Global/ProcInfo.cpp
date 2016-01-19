@@ -265,7 +265,7 @@ static QString applicationFilePath_fromArgv(const char* argv0Param)
 
 } // anon namespace
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 QString applicationFilePath(const char* argv0Param)
 {

@@ -49,7 +49,8 @@
 #include <SequenceParsing.h> // for removePath
 #include "Engine/EngineFwd.h"
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////BUFFER////////////////////////////////////////////////////
 
@@ -897,6 +898,7 @@ protected:
     Natron::StorageModeEnum _requestedStorage;
     bool _removeBackingFileBeforeDestruction;
 };
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // CACHEENTRY_H

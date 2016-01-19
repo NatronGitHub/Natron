@@ -51,6 +51,8 @@
 #include "Gui/PickKnobDialog.h"
 #include "Gui/Utils.h" // convertFromPlainText
 
+NATRON_NAMESPACE_USING
+
 namespace {
 struct TreeItem
 {
@@ -76,7 +78,7 @@ public:
     }
 };
 
-struct ManageUserParamsDialogPrivate
+struct NATRON_NAMESPACE::ManageUserParamsDialogPrivate
 {
     DockablePanel* panel;
     
@@ -495,7 +497,7 @@ ManageUserParamsDialog::onDeleteClicked()
                     question += it->knob->getName().c_str();
                     question += ' ';
                     question += tr("cannot be undone. Are you sure you want to continue?");
-                    Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Remove parameter").toStdString(), question.toStdString(), false,
+                    StandardButtonEnum rep = Natron::questionDialog(tr("Remove parameter").toStdString(), question.toStdString(), false,
                                                                              Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo), Natron::eStandardButtonYes);
                     if (rep != Natron::eStandardButtonYes) {
                         return;
@@ -786,3 +788,5 @@ ManageUserParamsDialog::onSelectionChanged()
     _imp->upButton->setEnabled(selection.size() == 1);
     _imp->downButton->setEnabled(selection.size() == 1);
 }
+
+#include "moc_ManageUserParamsDialog.cpp"

@@ -53,6 +53,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 //#define NATRON_ROTO_ENABLE_MOTION_BLUR
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A base class for all items made by the roto context
@@ -202,10 +203,10 @@ public:
    
     boost::shared_ptr<Natron::Image> renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                                           const RectI& roi,
-                                                          const Natron::ImageComponents& components,
+                                                          const ImageComponents& components,
                                                           const double time,
                                                           const int view,
-                                                          const Natron::ImageBitDepthEnum depth,
+                                                          const ImageBitDepthEnum depth,
                                                           const unsigned int mipmapLevel);
     
     double renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
@@ -213,8 +214,8 @@ public:
                             const std::list<std::pair<Natron::Point,double> >& points,
                             unsigned int mipmapLevel,
                             double par,
-                            const Natron::ImageComponents& components,
-                            Natron::ImageBitDepthEnum depth,
+                            const ImageComponents& components,
+                            ImageBitDepthEnum depth,
                             double distToNext,
                             boost::shared_ptr<Natron::Image> *wholeStrokeImage);
     
@@ -222,12 +223,12 @@ private:
     
     boost::shared_ptr<Natron::Image> renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                                         const RectI & roi,
-                                                        const Natron::ImageComponents& components,
+                                                        const ImageComponents& components,
                                                         const double startTime,
                                                         const double endTime,
                                                         const double timeStep,
                                                         const double time,
-                                                        const Natron::ImageBitDepthEnum depth,
+                                                        const ImageBitDepthEnum depth,
                                                         const unsigned int mipmapLevel,
                                                         const std::list<std::list<std::pair<Natron::Point,double> > >& strokes,
                                                         const boost::shared_ptr<Natron::Image> &image);
@@ -417,7 +418,7 @@ public:
     void s_breakMultiStroke() { Q_EMIT breakMultiStroke(); }
     
     void knobChanged(KnobI* k,
-                     Natron::ValueChangedReasonEnum reason,
+                     ValueChangedReasonEnum reason,
                      int view,
                      double time,
                      bool originatedFromMainThread);
@@ -473,5 +474,7 @@ private:
    
     boost::scoped_ptr<RotoContextPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_RotoContext_h

@@ -40,6 +40,8 @@
 #include "Gui/DopeSheet.h"
 #include "Gui/DopeSheetView.h"
 
+NATRON_NAMESPACE_USING
+
 typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
 
 
@@ -818,7 +820,7 @@ void DSSetSelectedKeysInterpolationCommand::redo()
 void DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
 {
     for (std::list<DSKeyInterpolationChange>::iterator it = _changes.begin(); it != _changes.end(); ++it) {
-        Natron::KeyframeTypeEnum interp = undo ? it->_oldInterpType : it->_newInterpType;
+        KeyframeTypeEnum interp = undo ? it->_oldInterpType : it->_newInterpType;
 
         boost::shared_ptr<DSKnob> knobContext = it->_key->context.lock();
         if (!knobContext) {

@@ -42,6 +42,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Utils.h"
 
+NATRON_NAMESPACE_USING
+
 PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
                                    Gui *parent)
     : QWidget(parent)
@@ -100,7 +102,7 @@ PreferencesPanel::onSettingChanged(KnobI* knob)
 void
 PreferencesPanel::restoreDefaults()
 {
-    Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Preferences").toStdString(),
+    StandardButtonEnum reply = Natron::questionDialog( tr("Preferences").toStdString(),
                                                            tr("Restoring the settings will delete any custom configuration, are you sure you want to do this?").toStdString(), false );
 
     if (reply == Natron::eStandardButtonYes) {
@@ -159,3 +161,5 @@ PreferencesPanel::keyPressEvent(QKeyEvent* e)
     }
 }
 
+
+#include "moc_PreferencesPanel.cpp"

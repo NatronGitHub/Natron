@@ -28,6 +28,8 @@
 #include <string>
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 /**
  * @brief Public interface for all elements that can own something in the cache
  **/
@@ -55,6 +57,7 @@ public:
     
 };
 
+NATRON_NAMESPACE_EXIT;
 
 
 #endif // CACHEENTRYHOLDER_H

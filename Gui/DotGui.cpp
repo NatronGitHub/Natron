@@ -101,7 +101,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_PLUGIN_ICON_SIZE 20
 #define PLUGIN_ICON_OFFSET 2
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 using std::make_pair;
 
@@ -196,3 +196,5 @@ DotGui::shape() const
 {
     return diskShape->shape();
 }
+
+#include "moc_DotGui.cpp"

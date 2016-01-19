@@ -64,6 +64,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief The UrlModel class is the model used by the favorite view in the file dialog. It serves as a connexion between
@@ -678,5 +679,7 @@ public Q_SLOTS:
 
     void openDir();
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif /* defined(NATRON_GUI_SEQUENCEFILEDIALOG_H_) */

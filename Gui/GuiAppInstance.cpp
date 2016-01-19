@@ -57,7 +57,7 @@
 #include "Gui/SplashScreen.h"
 #include "Gui/ViewerGL.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 struct RotoPaintData
 {
@@ -102,7 +102,7 @@ struct RotoPaintData
     
 };
 
-struct GuiAppInstancePrivate
+struct NATRON_NAMESPACE::GuiAppInstancePrivate
 {
     Gui* _gui; //< ptr to the Gui interface
 
@@ -282,7 +282,7 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     {
         QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
         if ( !settings.contains("checkForUpdates") ) {
-            Natron::StandardButtonEnum reply = Natron::questionDialog(tr("Updates").toStdString(),
+            StandardButtonEnum reply = Natron::questionDialog(tr("Updates").toStdString(),
                                                                       tr("Do you want " NATRON_APPLICATION_NAME " to check for updates "
                                                                       "on launch of the application ?").toStdString(), false);
             bool checkForUpdates = reply == Natron::eStandardButtonYes;
@@ -296,7 +296,7 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     }
     
     if (nSettings->isDefaultAppearanceOutdated()) {
-        Natron::StandardButtonEnum reply = Natron::questionDialog(tr("Appearance").toStdString(),
+        StandardButtonEnum reply = Natron::questionDialog(tr("Appearance").toStdString(),
                                                                   tr(NATRON_APPLICATION_NAME " default appearance changed since last version.\n"
                                                                      "Would you like to set the new default appearance?").toStdString(), false);
         if (reply == Natron::eStandardButtonYes) {
@@ -313,7 +313,7 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
         appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();
 
         if (!appPTR->isShorcutVersionUpToDate()) {
-            Natron::StandardButtonEnum reply = questionDialog(tr("Shortcuts").toStdString(),
+            StandardButtonEnum reply = questionDialog(tr("Shortcuts").toStdString(),
                                                               tr("Default shortcuts for " NATRON_APPLICATION_NAME " have changed, "
                                                                  "would you like to set them to their defaults ? "
                                                                  "Clicking no will keep the old shortcuts hence if a new shortcut has been "
@@ -423,7 +423,7 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
     
     appPTR->hideSplashScreen();
     
-    Natron::StandardButtonEnum ret = Natron::questionDialog(tr("Auto-save").toStdString(),
+    StandardButtonEnum ret = Natron::questionDialog(tr("Auto-save").toStdString(),
                                                             text.toStdString(),false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                                             Natron::eStandardButtonYes);
     if ( (ret == Natron::eStandardButtonNo) || (ret == Natron::eStandardButtonEscape) ) {
@@ -721,12 +721,12 @@ GuiAppInstance::informationDialog(const std::string & title,
     }
 }
 
-Natron::StandardButtonEnum
+StandardButtonEnum
 GuiAppInstance::questionDialog(const std::string & title,
                                const std::string & message,
                                bool useHtml,
                                Natron::StandardButtons buttons,
-                               Natron::StandardButtonEnum defaultButton) const
+                               StandardButtonEnum defaultButton) const
 {
     if (appPTR->isSplashcreenVisible()) {
         appPTR->hideSplashScreen();
@@ -735,7 +735,7 @@ GuiAppInstance::questionDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
-    Natron::StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,useHtml, buttons,defaultButton);
+    StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,useHtml, buttons,defaultButton);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
@@ -744,12 +744,12 @@ GuiAppInstance::questionDialog(const std::string & title,
     return ret;
 }
 
-Natron::StandardButtonEnum
+StandardButtonEnum
 GuiAppInstance::questionDialog(const std::string & title,
                                const std::string & message,
                                bool useHtml,
                                Natron::StandardButtons buttons,
-                               Natron::StandardButtonEnum defaultButton,
+                               StandardButtonEnum defaultButton,
                                bool* stopAsking)
 {
     if (appPTR->isSplashcreenVisible()) {
@@ -759,7 +759,7 @@ GuiAppInstance::questionDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
-    Natron::StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,useHtml, buttons,defaultButton,stopAsking);
+    StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,useHtml, buttons,defaultButton,stopAsking);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = false;
@@ -1552,3 +1552,5 @@ GuiAppInstance::goToNextKeyframe()
         timeline->seekFrame(*upperBound, true, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
     }
 }
+
+#include "moc_GuiAppInstance.cpp"

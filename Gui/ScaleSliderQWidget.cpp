@@ -51,8 +51,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #define SLIDER_WIDTH 4
 #define SLIDER_HEIGHT 15
 
+NATRON_NAMESPACE_USING
 
-struct ScaleSliderQWidgetPrivate
+struct NATRON_NAMESPACE::ScaleSliderQWidgetPrivate
 {
     Gui* gui;
     ZoomContext zoomCtx;
@@ -576,3 +577,5 @@ ScaleSliderQWidget::setUseLineColor(bool use, const QColor& color)
     update();
 }
 
+
+#include "moc_ScaleSliderQWidget.cpp"

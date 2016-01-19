@@ -34,6 +34,7 @@
 #include "Global/Macros.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct HistogramCPUPrivate;
 
@@ -87,5 +88,7 @@ private:
     virtual void run() OVERRIDE FINAL;
     boost::scoped_ptr<HistogramCPUPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // HISTOGRAMCPU_H

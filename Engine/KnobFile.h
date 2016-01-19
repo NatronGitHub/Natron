@@ -40,9 +40,8 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/Macros.h"
 #include "Engine/EngineFwd.h"
 
-namespace SequenceParsing {
-class SequenceFromFiles;
-}
+NATRON_NAMESPACE_ENTER;
+
 /******************************KnobFile**************************************/
 
 class KnobFile
@@ -258,5 +257,7 @@ private:
     bool _isMultiPath;
     bool _isStringList;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_KNOBFILE_H

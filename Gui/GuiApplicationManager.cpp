@@ -56,7 +56,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_PIXELS_FOR_DPI_DEFAULT 72.
 #endif
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 GuiApplicationManager::GuiApplicationManager()
@@ -77,7 +77,7 @@ GuiApplicationManager::~GuiApplicationManager()
 }
 
 void
-GuiApplicationManager::getIcon(Natron::PixmapEnum e,
+GuiApplicationManager::getIcon(PixmapEnum e,
                                QPixmap* pix) const
 {
     int iconSet = appPTR->getCurrentSettings()->getIconsBlackAndWhite() ? 2 : 3;
@@ -721,7 +721,7 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
 } // getIcon
 
 void
-GuiApplicationManager::getIcon(Natron::PixmapEnum e,
+GuiApplicationManager::getIcon(PixmapEnum e,
                                int size,
                                QPixmap* pix) const
 {
@@ -1035,3 +1035,5 @@ GuiApplicationManager::setCurrentLogicalDPI(double dpiX,double dpiY)
     _imp->dpiX = dpiX;
     _imp->dpiY = dpiY;
 }
+
+#include "moc_GuiApplicationManager.cpp"

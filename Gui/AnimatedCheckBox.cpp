@@ -38,6 +38,8 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Gui/GuiApplicationManager.h"
 #include "Engine/Settings.h"
 
+NATRON_NAMESPACE_USING
+
 AnimatedCheckBox::AnimatedCheckBox(QWidget *parent)
 : QFrame(parent), animation(0), readOnly(false), dirty(false), altered(false) ,checked(false)
 {
@@ -205,3 +207,5 @@ AnimatedCheckBox::paintEvent(QPaintEvent* e)
     }
 }
 
+
+#include "moc_AnimatedCheckBox.cpp"

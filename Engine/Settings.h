@@ -38,6 +38,8 @@
 
 #define kQSettingsSoftwareMajorVersionSettingName "SoftwareVersionMajor"
 
+NATRON_NAMESPACE_ENTER;
+
 /*The current settings in the preferences menu.
    @todo Move this class to QSettings instead*/
 
@@ -83,14 +85,14 @@ public:
 
     virtual void evaluate(KnobI* /*knob*/,
                           bool /*isSignificant*/,
-                          Natron::ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL
+                          ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL
     {
     }
 
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,double time,
+    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
 
-    Natron::ImageBitDepthEnum getViewersBitDepth() const;
+    ImageBitDepthEnum getViewersBitDepth() const;
 
     int getViewerTilesPowerOf2() const;
 
@@ -559,5 +561,7 @@ private:
     bool _settingsExisted;
     bool _defaultAppearanceOutdated;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_SETTINGS_H

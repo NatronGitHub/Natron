@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class ProjectGui
     : public QObject
@@ -170,6 +171,8 @@ private:
     Button* _cancelButton;
     Button* _okButton;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 
 #endif // PROJECTGUI_H

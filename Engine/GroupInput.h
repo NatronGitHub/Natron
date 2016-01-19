@@ -32,6 +32,8 @@
 #include "Engine/NoOpBase.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 class GroupInput
 : public NoOpBase
 {
@@ -80,14 +82,16 @@ public:
     virtual void initializeKnobs() OVERRIDE FINAL;
     
     virtual void knobChanged(KnobI* k,
-                             Natron::ValueChangedReasonEnum /*reason*/,
+                             ValueChangedReasonEnum /*reason*/,
                              int /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
     
-    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NOOP_H

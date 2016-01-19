@@ -58,7 +58,7 @@
 #include "Gui/ViewerTab.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 void

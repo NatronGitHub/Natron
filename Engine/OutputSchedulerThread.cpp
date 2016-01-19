@@ -64,8 +64,7 @@
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 
 
-using namespace Natron;
-
+NATRON_NAMESPACE_USING
 
 
 ///Sort the frames by time and then by view
@@ -140,7 +139,7 @@ typedef std::list<RenderThread> RenderThreads;
 
 // Struct used in a queue when rendering the current frame with a viewer, the id is meaningless just to have a member
 // in the structure. We then compare the pointer of this struct
-class RequestedFrame
+class NATRON_NAMESPACE::RequestedFrame
 {
 public:
     int id;
@@ -160,7 +159,7 @@ static bool isBufferFull(int nbBufferedElement, int hardwardIdealThreadCount)
     return nbBufferedElement >= hardwardIdealThreadCount * 3;
 }
 
-struct OutputSchedulerThreadPrivate
+struct NATRON_NAMESPACE::OutputSchedulerThreadPrivate
 {
     
     FrameBuffer buf; //the frames rendered by the worker threads that needs to be rendered in order by the output device
@@ -1070,7 +1069,7 @@ OutputSchedulerThread::run()
                     ///////////
                     ///Determine if we finished rendering or if we should just increment/decrement the timeline
                     ///or just loop/bounce
-                    Natron::PlaybackModeEnum pMode = _imp->engine->getPlaybackMode();
+                    PlaybackModeEnum pMode = _imp->engine->getPlaybackMode();
                     RenderDirectionEnum newDirection;
                     if (firstFrame == lastFrame && pMode == ePlaybackModeOnce) {
                         renderFinished = true;
@@ -1899,7 +1898,7 @@ OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
 ////////////////////////////////////////////////////////////
 //////////////////////// RenderThreadTask ////////////
 
-struct RenderThreadTaskPrivate
+struct NATRON_NAMESPACE::RenderThreadTaskPrivate
 {
     OutputSchedulerThread* scheduler;
     
@@ -2262,8 +2261,8 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     RectD rod;
     RectI roi;
     
-    std::list<Natron::ImageComponents> components;
-    Natron::ImageBitDepthEnum imageDepth;
+    std::list<ImageComponents> components;
+    ImageBitDepthEnum imageDepth;
     _effect->getPreferredDepthAndComponents(-1, &components, &imageDepth);
     
     const double par = _effect->getPreferredAspectRatio();
@@ -2613,7 +2612,7 @@ private:
         U64 viewerHash = _viewer->getHash();
         boost::shared_ptr<ViewerArgs> args[2];
         
-        Natron::StatusEnum status[2] = {
+        StatusEnum status[2] = {
             eStatusFailed, eStatusFailed
         };
         
@@ -2700,7 +2699,7 @@ ViewerDisplayScheduler::getLastRenderedTime() const
 
 ////////////////////////// RenderEngine
 
-struct RenderEnginePrivate
+struct NATRON_NAMESPACE::RenderEnginePrivate
 {
     QMutex schedulerCreationLock;
     OutputSchedulerThread* scheduler;
@@ -2708,7 +2707,7 @@ struct RenderEnginePrivate
     Natron::OutputEffectInstance* output;
     
     mutable QMutex pbModeMutex;
-    Natron::PlaybackModeEnum pbMode;
+    PlaybackModeEnum pbMode;
     
     ViewerCurrentFrameRequestScheduler* currentFrameScheduler;
     
@@ -2951,10 +2950,10 @@ void
 RenderEngine::setPlaybackMode(int mode)
 {
     QMutexLocker l(&_imp->pbModeMutex);
-    _imp->pbMode = (Natron::PlaybackModeEnum)mode;
+    _imp->pbMode = (PlaybackModeEnum)mode;
 }
 
-Natron::PlaybackModeEnum
+PlaybackModeEnum
 RenderEngine::getPlaybackMode() const
 {
     QMutexLocker l(&_imp->pbModeMutex);
@@ -2994,7 +2993,7 @@ ViewerRenderEngine::createScheduler(Natron::OutputEffectInstance* effect)
 }
 
 ////////////////////////ViewerCurrentFrameRequestScheduler////////////////////////
-struct CurrentFrameFunctorArgs
+struct NATRON_NAMESPACE::CurrentFrameFunctorArgs
 {
     int view;
     int time;
@@ -3062,7 +3061,7 @@ struct CurrentFrameFunctorArgs
 };
 
 
-struct ViewerCurrentFrameRequestSchedulerPrivate
+struct NATRON_NAMESPACE::ViewerCurrentFrameRequestSchedulerPrivate
 {
     
     ViewerInstance* viewer;
@@ -3440,7 +3439,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
     int view = viewsCount > 0 ? _imp->viewer->getViewerCurrentView() : 0;
     U64 viewerHash = _imp->viewer->getHash();
     
-    Natron::StatusEnum status[2] = {
+    StatusEnum status[2] = {
         eStatusFailed, eStatusFailed
     };
     if (!_imp->viewer->getUiContext() || _imp->viewer->getApp()->isCreatingNode()) {
@@ -3554,7 +3553,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
     
 }
 
-struct ViewerCurrentFrameRequestRendererBackupPrivate
+struct NATRON_NAMESPACE::ViewerCurrentFrameRequestRendererBackupPrivate
 {
     QMutex requestsQueueMutex;
     std::list<boost::shared_ptr<CurrentFrameFunctorArgs> > requestsQueue;
@@ -3684,3 +3683,5 @@ ViewerCurrentFrameRequestRendererBackup::quitThread()
         _imp->requestsQueue.clear();
     }
 }
+
+#include "moc_OutputSchedulerThread.cpp"

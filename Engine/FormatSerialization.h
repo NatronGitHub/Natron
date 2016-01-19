@@ -44,13 +44,15 @@ GCC_DIAG_ON(unused-parameter)
 #define FORMAT_SERIALIZATION_CHANGES_TO_RECTI 3
 #define FORMAT_SERIALIZATION_VERSION FORMAT_SERIALIZATION_CHANGES_TO_RECTI
 
+NATRON_NAMESPACE_ENTER;
+
 template<class Archive>
 void Format::serialize(Archive & ar,
                        const unsigned int version)
 {
     if (version < FORMAT_SERIALIZATION_CHANGES_TO_RECTD) {
         RectI r;
-        ar & boost::serialization::make_nvp("RectI",r);
+        ar & ::boost::serialization::make_nvp("RectI",r);
         x1 = r.x1;
         x2 = r.x2;
         y1 = r.y1;
@@ -58,7 +60,7 @@ void Format::serialize(Archive & ar,
     } else if (version < FORMAT_SERIALIZATION_CHANGES_TO_RECTI) {
 
         RectD r;
-        ar & boost::serialization::make_nvp("RectD",r);
+        ar & ::boost::serialization::make_nvp("RectD",r);
         x1 = r.x1;
         x2 = r.x2;
         y1 = r.y1;
@@ -69,11 +71,12 @@ void Format::serialize(Archive & ar,
                                                                static_cast<RectI *>(NULL) );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RectI);
     }
-    ar & boost::serialization::make_nvp("Pixel_aspect_ratio",_par);
-    ar & boost::serialization::make_nvp("Name",_name);
+    ar & ::boost::serialization::make_nvp("Pixel_aspect_ratio",_par);
+    ar & ::boost::serialization::make_nvp("Name",_name);
 }
 
-BOOST_CLASS_VERSION(Format, FORMAT_SERIALIZATION_VERSION)
+NATRON_NAMESPACE_EXIT;
 
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::Format, FORMAT_SERIALIZATION_VERSION)
 
 #endif // Engine_FormatSerialization_h

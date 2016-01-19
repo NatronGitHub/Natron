@@ -59,7 +59,7 @@
 #include "Gui/ViewerGL.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 static void makeFullyQualifiedLabel(Natron::Node* node,std::string* ret)
@@ -1007,3 +1007,5 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     }
 
 }
+
+#include "moc_ViewerTab.cpp"

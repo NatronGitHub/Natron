@@ -48,7 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 inline QString
 generateStringFromFormat(const Format & f)

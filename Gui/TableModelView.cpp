@@ -34,6 +34,8 @@
 #include <QScrollBar>
 #include "Gui/GuiMacros.h"
 
+NATRON_NAMESPACE_USING
+
 //////////////TableItem
 
 namespace {
@@ -154,7 +156,7 @@ TableItem::operator=(const TableItem &other)
 }
 
 ///////////////TableModel
-struct TableModelPrivate
+struct NATRON_NAMESPACE::TableModelPrivate
 {
     std::vector<TableItem*> tableItems;
     std::vector<TableItem*> horizontalHeaderItems;
@@ -845,7 +847,7 @@ TableModel::flags(const QModelIndex &index) const
 
 ////////////////TableViewPrivae
 
-struct TableViewPrivate
+struct NATRON_NAMESPACE::TableViewPrivate
 {
     TableModel* model;
     std::list<TableItem*> draggedItems;
@@ -1269,3 +1271,5 @@ TableView::dropEvent(QDropEvent* e)
     
     Q_EMIT itemDropped();
 }
+
+#include "moc_TableModelView.cpp"

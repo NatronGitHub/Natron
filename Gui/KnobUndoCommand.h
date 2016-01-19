@@ -52,6 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 //================================================================
 
@@ -301,7 +302,7 @@ class MultipleKnobEditsUndoCommand
     ParamsMap knobs;
     bool createNew;
     bool firstRedoCalled;
-    Natron::ValueChangedReasonEnum _reason;
+    ValueChangedReasonEnum _reason;
 public:
 
     /**
@@ -310,7 +311,7 @@ public:
      * @param setKeyFrame if true, the command will use setValueAtTime instead of setValue in the redo() command.
      **/
     MultipleKnobEditsUndoCommand(KnobGui* knob,
-                                 Natron::ValueChangedReasonEnum reason,
+                                 ValueChangedReasonEnum reason,
                                  bool createNew,
                                  bool setKeyFrame,
                                  const Variant & value,
@@ -391,5 +392,7 @@ private:
     bool _hasRetVar;
     int _dimension;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_GUI_KNOBUNDOCOMMAND_H

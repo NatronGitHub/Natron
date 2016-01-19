@@ -77,10 +77,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "ofxNatron.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
+
 using std::make_pair;
 
-struct NewLayerDialogPrivate
+struct NATRON_NAMESPACE::NewLayerDialogPrivate
 {
     QGridLayout* mainLayout;
     Natron::Label* layerLabel;
@@ -227,7 +228,7 @@ NewLayerDialog::onNumCompsChanged(double value)
     }
 }
 
-Natron::ImageComponents
+ImageComponents
 NewLayerDialog::getComponents() const
 {
     QString layer = _imp->layerEdit->text();
@@ -238,21 +239,21 @@ NewLayerDialog::getComponents() const
     QString a = _imp->aEdit->text();
     std::string layerFixed = Natron::makeNameScriptFriendly(layer.toStdString());
     if (layerFixed.empty()) {
-        return Natron::ImageComponents::getNoneComponents();
+        return ImageComponents::getNoneComponents();
     }
     
     if (nComps == 1) {
         if (a.isEmpty()) {
-            return Natron::ImageComponents::getNoneComponents();
+            return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
         std::string compsGlobal;
         comps.push_back(a.toStdString());
         compsGlobal.append(a.toStdString());
-        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+        return ImageComponents(layerFixed,compsGlobal,comps);
     } else if (nComps == 2) {
         if (r.isEmpty() || g.isEmpty()) {
-            return Natron::ImageComponents::getNoneComponents();
+            return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
         std::string compsGlobal;
@@ -260,10 +261,10 @@ NewLayerDialog::getComponents() const
         compsGlobal.append(r.toStdString());
         comps.push_back(g.toStdString());
         compsGlobal.append(g.toStdString());
-        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+        return ImageComponents(layerFixed,compsGlobal,comps);
     } else if (nComps == 3) {
         if (r.isEmpty() || g.isEmpty() || b.isEmpty()) {
-            return Natron::ImageComponents::getNoneComponents();
+            return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
         std::string compsGlobal;
@@ -273,10 +274,10 @@ NewLayerDialog::getComponents() const
         compsGlobal.append(g.toStdString());
         comps.push_back(b.toStdString());
         compsGlobal.append(b.toStdString());
-        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+        return ImageComponents(layerFixed,compsGlobal,comps);
     } else if (nComps == 4) {
         if (r.isEmpty() || g.isEmpty() || b.isEmpty() | a.isEmpty())  {
-            return Natron::ImageComponents::getNoneComponents();
+            return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
         std::string compsGlobal;
@@ -288,9 +289,9 @@ NewLayerDialog::getComponents() const
         compsGlobal.append(b.toStdString());
         comps.push_back(a.toStdString());
         compsGlobal.append(a.toStdString());
-        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+        return ImageComponents(layerFixed,compsGlobal,comps);
     }
-    return Natron::ImageComponents::getNoneComponents();
+    return ImageComponents::getNoneComponents();
 }
 
 void
@@ -311,3 +312,5 @@ NewLayerDialog::onRGBAButtonClicked()
     _imp->aEdit->setVisible(true);
 
 }
+
+#include "moc_NewLayerDialog.cpp"

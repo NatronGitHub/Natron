@@ -30,7 +30,7 @@
 #include "Engine/LibraryBinary.h"
 #include "Engine/Settings.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 Plugin::~Plugin()
 {

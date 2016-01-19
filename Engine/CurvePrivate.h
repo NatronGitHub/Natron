@@ -36,6 +36,7 @@
 #include "Engine/KnobFile.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct CurvePrivate
 {
@@ -99,5 +100,6 @@ struct CurvePrivate
     
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_CURVEPRIVATE_H

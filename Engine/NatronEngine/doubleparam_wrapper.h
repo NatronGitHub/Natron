@@ -5,6 +5,7 @@
 
 #include <ParameterWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class DoubleParamWrapper : public DoubleParam
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~DoubleParamWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_DOUBLEPARAMWRAPPER_H
 

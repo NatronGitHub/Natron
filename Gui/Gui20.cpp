@@ -73,6 +73,10 @@
 
 #define NAMED_PLUGIN_GROUP_NO 15
 
+#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/other_grouping_" NATRON_ICON_SET_NUMBER ".png"
+
+NATRON_NAMESPACE_USING
+
 static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_IMAGE,
     PLUGIN_GROUP_COLOR,
@@ -91,19 +95,13 @@ static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_DEFAULT
 };
 
-#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/other_grouping_" NATRON_ICON_SET_NUMBER ".png"
-
-
-using namespace Natron;
-
-
 namespace {
 static void
 getPixmapForGrouping(QPixmap* pixmap,
                      int size,
                      const QString & grouping)
 {
-    Natron::PixmapEnum e = Natron::NATRON_PIXMAP_OTHER_PLUGINS;
+    PixmapEnum e = Natron::NATRON_PIXMAP_OTHER_PLUGINS;
     if (grouping == PLUGIN_GROUP_COLOR) {
         e = Natron::NATRON_PIXMAP_COLOR_GROUPING;
     } else if (grouping == PLUGIN_GROUP_FILTER) {
@@ -1361,7 +1359,7 @@ int
 Gui::saveWarning()
 {
     if ( !_imp->_appInstance->getProject()->isSaveUpToDate() ) {
-        Natron::StandardButtonEnum ret =  Natron::questionDialog(NATRON_APPLICATION_NAME, tr("Save changes to ").toStdString() +
+        StandardButtonEnum ret =  Natron::questionDialog(NATRON_APPLICATION_NAME, tr("Save changes to ").toStdString() +
                                                                  _imp->_appInstance->getProject()->getProjectFilename().toStdString() + " ?",
                                                                  false,
                                                                  Natron::StandardButtons(Natron::eStandardButtonSave | Natron::eStandardButtonDiscard | Natron::eStandardButtonCancel), Natron::eStandardButtonSave);

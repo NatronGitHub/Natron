@@ -41,7 +41,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 class OfxImageEffectInstance
     : public OFX::Host::ImageEffect::Instance
@@ -298,6 +298,6 @@ public:
     
 };
 
-} // namespace Natron
+NATRON_NAMESPACE_EXIT;
 
 #endif // ifndef NATRON_ENGINE_OFXIMAGEEFFECTINSTANCE_H

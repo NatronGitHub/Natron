@@ -29,6 +29,8 @@
 
 #define NATRON_FILE_DOWNLOAD_HEARBEAT_TIMEOUT_MS 5000
 
+NATRON_NAMESPACE_USING
+
 FileDownloader::FileDownloader(const QUrl& imageUrl,
                                bool useNetworkCache,
                                QObject *parent)
@@ -98,3 +100,4 @@ FileDownloader::downloadedData() const
     return m_DownloadedData;
 }
 
+#include "moc_FileDownloader.cpp"

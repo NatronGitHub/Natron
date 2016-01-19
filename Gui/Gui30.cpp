@@ -57,7 +57,7 @@
 #include "Gui/Utils.h" // convertFromPlainText
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 void
@@ -295,7 +295,7 @@ Gui::onDoDialog(int type,
         assert(type == 3);
         QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
                          this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
-        ques.setDefaultButton( QtEnumConvert::toQtStandardButton( (Natron::StandardButtonEnum)defaultB ) );
+        ques.setDefaultButton( QtEnumConvert::toQtStandardButton( (StandardButtonEnum)defaultB ) );
         ques.setWindowFlags(ques.windowFlags() | Qt::WindowStaysOnTopHint);
         if ( ques.exec() ) {
             _imp->_lastQuestionDialogAnswer = QtEnumConvert::fromQtStandardButton( ques.standardButton( ques.clickedButton() ) );
@@ -312,12 +312,12 @@ Gui::onDoDialog(int type,
     }
 }
 
-Natron::StandardButtonEnum
+StandardButtonEnum
 Gui::questionDialog(const std::string & title,
                     const std::string & message,
                     bool useHtml,
                     Natron::StandardButtons buttons,
-                    Natron::StandardButtonEnum defaultButton)
+                    StandardButtonEnum defaultButton)
 {
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
     {
@@ -343,12 +343,12 @@ Gui::questionDialog(const std::string & title,
     return _imp->_lastQuestionDialogAnswer;
 }
 
-Natron::StandardButtonEnum
+StandardButtonEnum
 Gui::questionDialog(const std::string & title,
                     const std::string & message,
                     bool useHtml,
                     Natron::StandardButtons buttons,
-                    Natron::StandardButtonEnum defaultButton,
+                    StandardButtonEnum defaultButton,
                     bool* stopAsking)
 {
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
@@ -388,7 +388,7 @@ Gui::onDoDialogWithStopAskingCheckbox(int type,
                                       int defaultB)
 {
     QString message = useHtml ? content : Natron::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
-    Natron::MessageBox dialog(title, content, (Natron::MessageBox::MessageBoxTypeEnum)type, buttons, (Natron::StandardButtonEnum)defaultB, this);
+    Natron::MessageBox dialog(title, content, (Natron::MessageBox::MessageBoxTypeEnum)type, buttons, (StandardButtonEnum)defaultB, this);
     QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do Not Show This Again"), &dialog);
 
     dialog.setCheckBox(stopAskingCheckbox);

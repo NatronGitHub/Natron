@@ -44,7 +44,6 @@
 #include "Gui/TableModelView.h"
 #include "Gui/Utils.h"
 
-using namespace Natron;
 
 #define COL_NAME 0
 #define COL_PLUGIN_ID 1
@@ -65,6 +64,7 @@ using namespace Natron;
 
 #define NUM_COLS 16
 
+NATRON_NAMESPACE_USING
 
 enum ItemsRoleEnum
 {
@@ -367,7 +367,7 @@ public:
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
-            Natron::ImagePremultiplicationEnum premult = stats.getOutputPremult();
+            ImagePremultiplicationEnum premult = stats.getOutputPremult();
             switch (premult) {
                 case Natron::eImagePremultiplicationOpaque:
                     str = "Opaque";
@@ -680,7 +680,7 @@ public:
     }
 };
 
-struct RenderStatsDialogPrivate
+struct NATRON_NAMESPACE::RenderStatsDialogPrivate
 {
     Gui* gui;
     
@@ -1096,3 +1096,5 @@ RenderStatsDialog::onIDLineEditChanged(const QString& filter)
 {
     _imp->updateVisibleRowsInternal(_imp->nameFilterEdit->text(), filter);
 }
+
+#include "moc_RenderStatsDialog.cpp"

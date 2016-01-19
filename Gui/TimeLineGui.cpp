@@ -60,7 +60,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 #define TICK_HEIGHT 7
 #define CURSOR_WIDTH 15
@@ -110,7 +110,7 @@ struct CachedFrame_compare_time
 typedef std::set<CachedFrame,CachedFrame_compare_time> CachedFrames;
 }
 
-struct TimelineGuiPrivate
+struct NATRON_NAMESPACE::TimelineGuiPrivate
 {
     TimeLineGui *parent;
     ViewerInstance* viewer;
@@ -1178,3 +1178,5 @@ TimeLineGui::onProjectFrameRangeChanged(int left,int right)
     }
     update();
 }
+
+#include "moc_TimeLineGui.cpp"

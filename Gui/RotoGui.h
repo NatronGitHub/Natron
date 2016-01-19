@@ -45,6 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class RotoToolButton
     : public QToolButton
@@ -334,5 +335,7 @@ private:
     struct RotoGuiPrivate;
     boost::scoped_ptr<RotoGuiPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // ROTOGUI_H

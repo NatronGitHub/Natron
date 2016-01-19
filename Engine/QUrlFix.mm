@@ -53,7 +53,7 @@ NSURL *toNSURL(const QUrl &url)
     return [NSURL URLWithString:toNSString(url.toEncoded())];
 }
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 QUrl toLocalFileUrlFixed(const QUrl& url)
 {
 #if QT_VERSION >= 0x050000

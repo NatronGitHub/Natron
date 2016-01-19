@@ -55,7 +55,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #define SPINBOX_MAX_WIDTH 50
 #define SPINBOX_MIN_WIDTH 35
 
-struct SpinBoxPrivate
+NATRON_NAMESPACE_USING
+
+struct NATRON_NAMESPACE::SpinBoxPrivate
 {
     SpinBox::SpinBoxTypeEnum type;
     
@@ -888,3 +890,5 @@ SpinBox::setUseLineColor(bool use, const QColor& color)
     _imp->lineColor = color;
     update();
 }
+
+#include "moc_SpinBox.cpp"

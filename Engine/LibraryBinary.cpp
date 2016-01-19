@@ -32,7 +32,7 @@
 #include <dlfcn.h>
 #endif
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 LibraryBinary::LibraryBinary(LibraryBinary::LibraryTypeEnum type)
     : _type(type)

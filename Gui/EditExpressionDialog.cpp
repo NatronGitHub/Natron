@@ -93,7 +93,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Utils.h"
 #include "Gui/ViewerTab.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* parent)
 : EditScriptDialog(parent)

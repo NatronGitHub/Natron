@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef OVERLAYSUPPORT_H
-#define OVERLAYSUPPORT_H
+#ifndef Engine_OverlaySupport_h
+#define Engine_OverlaySupport_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -26,6 +26,8 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @class An abstract interface for overlay holders. Any OpenGL widget capable of drawing overlays should
@@ -85,4 +87,6 @@ public:
     virtual unsigned int getCurrentRenderScale() const = 0;
 };
 
-#endif // OVERLAYSUPPORT_H
+NATRON_NAMESPACE_EXIT;
+
+#endif // Engine_OverlaySupport_h

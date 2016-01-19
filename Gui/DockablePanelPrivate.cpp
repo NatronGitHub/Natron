@@ -50,7 +50,7 @@
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
 
 using std::make_pair;
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 

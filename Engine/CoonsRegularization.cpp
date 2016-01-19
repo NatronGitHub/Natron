@@ -60,11 +60,13 @@
 #include "Engine/RectD.h"
 #include "Engine/Transform.h"
 
-using namespace Natron;
 
 #ifndef M_PI_2
 #define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
 #endif
+
+
+NATRON_NAMESPACE_USING
 
 
 static Point getPointAt(const BezierCPs& cps, double time, double t)

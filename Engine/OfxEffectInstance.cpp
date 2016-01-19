@@ -78,7 +78,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #define READER_INPUT_NAME "Sync"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
+
 using std::cout; using std::endl;
 
 
@@ -108,7 +109,7 @@ public:
             OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
             assert(clip);
             if (clip) {
-                clip->setClipTLS(view, mipmapLevel, Natron::ImageComponents::getNoneComponents());
+                clip->setClipTLS(view, mipmapLevel, ImageComponents::getNoneComponents());
             }
         }
     }
@@ -137,7 +138,7 @@ public:
     RenderThreadStorageSetter(OfxImageEffectInstance* effect,
                               int view,
                               unsigned int mipmapLevel,
-                              const Natron::ImageComponents& currentPlane,
+                              const ImageComponents& currentPlane,
                               const EffectInstance::InputImagesMap& inputImages)
     : effect(effect)
     {
@@ -185,7 +186,7 @@ private:
 };
 } // anon namespace
 
-struct OfxEffectInstancePrivate
+struct NATRON_NAMESPACE::OfxEffectInstancePrivate
 {
     
     
@@ -1075,7 +1076,7 @@ clipPrefsProxy(OfxEffectInstance* self,
     if (outputClipDepth.empty()) {
         outputClipDepth = self->effectInstance()->bestSupportedDepth(kOfxBitDepthFloat);
     }
-    Natron::ImageBitDepthEnum outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
+    ImageBitDepthEnum outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
     
     ///Set a warning on the node if the bitdepth conversion from one of the input clip to the output clip is lossy
     QString bitDepthWarning("This nodes converts higher bit depths images from its inputs to work. As "
@@ -1143,7 +1144,7 @@ clipPrefsProxy(OfxEffectInstance* self,
 
             ///Try to remap the clip's bitdepth to be the same as
             const std::string & input_outputDepth = inputOutputClip->getPixelDepth();
-            Natron::ImageBitDepthEnum input_outputNatronDepth = OfxClipInstance::ofxDepthToNatronDepth(input_outputDepth);
+            ImageBitDepthEnum input_outputNatronDepth = OfxClipInstance::ofxDepthToNatronDepth(input_outputDepth);
             
             ///If supported, set the clip's bitdepth to be the same as the output depth of the input node
             if ( self->isSupportedBitDepth(input_outputNatronDepth) ) {
@@ -1189,7 +1190,7 @@ clipPrefsProxy(OfxEffectInstance* self,
 bool
 OfxEffectInstance::refreshClipPreferences(double time,
                                            const RenderScale & scale,
-                                          Natron::ValueChangedReasonEnum reason,
+                                          ValueChangedReasonEnum reason,
                                            bool forceGetClipPrefAction)
 {
     
@@ -1307,7 +1308,7 @@ OfxEffectInstance::supportedFileFormats() const
     return formats;
 }
 
-Natron::StatusEnum
+StatusEnum
 OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
                                          double time,
                                          const RenderScale & scale,
@@ -1815,7 +1816,7 @@ OfxEffectInstance::isIdentity(double time,
     //throw std::runtime_error("isIdentity failed");
 } // isIdentity
 
-Natron::StatusEnum
+StatusEnum
 OfxEffectInstance::beginSequenceRender(double first,
                                        double last,
                                        double step,
@@ -1858,7 +1859,7 @@ OfxEffectInstance::beginSequenceRender(double first,
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 OfxEffectInstance::endSequenceRender(double first,
                                      double last,
                                      double step,
@@ -1900,7 +1901,7 @@ OfxEffectInstance::endSequenceRender(double first,
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 OfxEffectInstance::render(const RenderActionArgs& args)
 {
     if (!_imp->initialized) {
@@ -2354,7 +2355,7 @@ OfxEffectInstance::getOverlayInteractRenderScale() const
 }
 
 std::string
-OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReasonEnum reason)
+OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason)
 {
     switch (reason) {
         case Natron::eValueChangedReasonUserEdited:
@@ -2375,7 +2376,7 @@ OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::Value
 
 void
 OfxEffectInstance::knobChanged(KnobI* k,
-                               Natron::ValueChangedReasonEnum reason,
+                               ValueChangedReasonEnum reason,
                                int view,
                                double time,
                                bool /*originatedFromMainThread*/)
@@ -2418,7 +2419,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 } // knobChanged
 
 void
-OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason)
+OfxEffectInstance::beginKnobsValuesChanged(ValueChangedReasonEnum reason)
 {
     if (!_imp->initialized) {
         return;
@@ -2433,7 +2434,7 @@ OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason
 }
 
 void
-OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason)
+OfxEffectInstance::endKnobsValuesChanged(ValueChangedReasonEnum reason)
 {
     if (!_imp->initialized) {
         return;
@@ -2564,7 +2565,7 @@ OfxEffectInstance::onSyncPrivateDataRequested()
 
 void
 OfxEffectInstance::addAcceptedComponents(int inputNb,
-                                         std::list<Natron::ImageComponents>* comps)
+                                         std::list<ImageComponents>* comps)
 {
     if (inputNb >= 0) {
         OfxClipInstance* clip = getClipCorrespondingToInput(inputNb);
@@ -2572,7 +2573,7 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
         const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
             try {
-                std::list<Natron::ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
+                std::list<ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
                 comps->insert(comps->end(), ofxComp.begin(), ofxComp.end());
             } catch (const std::runtime_error &e) {
                 // ignore unsupported components
@@ -2585,7 +2586,7 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
         const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
             try {
-                std::list<Natron::ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
+                std::list<ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
                 comps->insert(comps->end(), ofxComp.begin(), ofxComp.end());
             } catch (const std::runtime_error &e) {
                 // ignore unsupported components
@@ -2595,7 +2596,7 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
 }
 
 void
-OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+OfxEffectInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     const OFX::Host::Property::Set & prop = effectInstance()->getPlugin()->getDescriptor().getParamSetProps();
     int dim = prop.getDimension(kOfxImageEffectPropSupportedPixelDepths);
@@ -2613,8 +2614,8 @@ OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* de
 
 void
 OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,
-                                                  std::list<Natron::ImageComponents>* comp,
-                                                  Natron::ImageBitDepthEnum* depth) const
+                                                  std::list<ImageComponents>* comp,
+                                                  ImageBitDepthEnum* depth) const
 {
     OfxClipInstance* clip;
 
@@ -2676,9 +2677,9 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time, int view,
                 assert(clip);
                 int index = clip->getInputNb();
                 
-                std::vector<Natron::ImageComponents> compNeeded;
+                std::vector<ImageComponents> compNeeded;
                 for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                    std::list<Natron::ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(*it2);
+                    std::list<ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(*it2);
                     compNeeded.insert(compNeeded.end(), ofxComp.begin(), ofxComp.end());
                 }
                 comps->insert(std::make_pair(index, compNeeded));
@@ -2753,7 +2754,7 @@ OfxEffectInstance::getSequentialPreference() const
     }
 }
 
-Natron::ImagePremultiplicationEnum
+ImagePremultiplicationEnum
 OfxEffectInstance::getOutputPremultiplication() const
 {
     const std::string & str = ofxGetOutputPremultiplication();
@@ -2840,7 +2841,7 @@ OfxEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
     return effectInstance()->getInputsHoldingTransform(inputs);
 }
 
-Natron::StatusEnum
+StatusEnum
 OfxEffectInstance::getTransform(double time,
                                 const RenderScale & renderScale, //< the plug-in accepted scale
                                 int view,
@@ -2957,3 +2958,5 @@ OfxEffectInstance::getClipInputNumber(const OfxClipInstance* clip) const
     }
     return 0;
 }
+
+#include "moc_OfxEffectInstance.cpp"

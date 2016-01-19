@@ -38,6 +38,8 @@ CLANG_DIAG_ON(deprecated)
 #endif
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 struct CLArgsPrivate;
 class CLArgs //: boost::noncopyable // GCC 4.2 requires the copy constructor
 {
@@ -121,6 +123,7 @@ private:
     boost::scoped_ptr<CLArgsPrivate> _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_CLArgs_h
 

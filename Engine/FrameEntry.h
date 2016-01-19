@@ -41,7 +41,7 @@
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 class FrameEntry
     : public CacheEntryHelper<U8,Natron::FrameKey,Natron::FrameParams>
@@ -112,7 +112,7 @@ private:
     mutable QMutex _abortedMutex;
     bool _aborted;
 };
-}
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_FRAMEENTRY_H

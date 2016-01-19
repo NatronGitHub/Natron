@@ -90,7 +90,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define ROTO_PRESSURE_LEVELS 512
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 ////////////////////////////////////RotoDrawableItem////////////////////////////////////
@@ -510,13 +510,13 @@ RotoDrawableItem::onRotoKnobChanged(int /*dimension*/, int reason)
     
     boost::shared_ptr<KnobI> triggerKnob = handler->getKnob();
     assert(triggerKnob);
-    rotoKnobChanged(triggerKnob, (Natron::ValueChangedReasonEnum)reason);
+    rotoKnobChanged(triggerKnob, (ValueChangedReasonEnum)reason);
     
     
 }
 
 void
-RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, Natron::ValueChangedReasonEnum reason)
+RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, ValueChangedReasonEnum reason)
 {
     boost::shared_ptr<KnobChoice> compKnob = getOperatorKnob();
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
@@ -1454,3 +1454,4 @@ RotoDrawableItem::setTransform(double time, double tx, double ty, double sx, dou
     onTransformSet(time);
 }
 
+#include "moc_RotoDrawableItem.cpp"

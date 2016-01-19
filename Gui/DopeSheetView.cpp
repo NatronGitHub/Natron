@@ -74,6 +74,8 @@
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
+NATRON_NAMESPACE_USING
+
 namespace {
 //Protect declarations in an anonymous namespace
 
@@ -114,7 +116,7 @@ void running_in_main_thread_and_context(const QGLWidget *glWidget) {
 
 ////////////////////////// DopeSheetView //////////////////////////
 
-class DopeSheetViewPrivate
+class NATRON_NAMESPACE::DopeSheetViewPrivate
 {
 public:
     enum KeyframeTexture {
@@ -189,7 +191,7 @@ public:
 
     // Textures
     void generateKeyframeTextures();
-    DopeSheetViewPrivate::KeyframeTexture kfTextureFromKeyframeType(Natron::KeyframeTypeEnum kfType, bool selected) const;
+    DopeSheetViewPrivate::KeyframeTexture kfTextureFromKeyframeType(KeyframeTypeEnum kfType, bool selected) const;
 
     // Drawing
     void drawScale() const;
@@ -753,7 +755,7 @@ void DopeSheetViewPrivate::generateKeyframeTextures()
     glDisable(GL_TEXTURE_2D);
 }
 
-DopeSheetViewPrivate::KeyframeTexture DopeSheetViewPrivate::kfTextureFromKeyframeType(Natron::KeyframeTypeEnum kfType, bool selected) const
+DopeSheetViewPrivate::KeyframeTexture DopeSheetViewPrivate::kfTextureFromKeyframeType(KeyframeTypeEnum kfType, bool selected) const
 {
     DopeSheetViewPrivate::KeyframeTexture ret = DopeSheetViewPrivate::kfTextureNone;
 
@@ -3490,3 +3492,5 @@ void DopeSheetView::focusInEvent(QFocusEvent *e)
     _imp->model->setUndoStackActive();
 }
 
+
+#include "moc_DopeSheetView.cpp"

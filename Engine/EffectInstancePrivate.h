@@ -40,7 +40,7 @@
 #include "Engine/TLSHolder.h"
 #include "Engine/EngineFwd.h"
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 struct ActionKey
 {
@@ -144,11 +144,11 @@ struct EffectInstance::DefaultClipPreferencesData
 {
     //These datas are stored for plug-ins that do not implement clip preference functions, i.e:
     // getPreferredDepthAndComponents, getPreferredPAR, getPreferredFrameRate, getPreferredOutputPremult, etc...
-    Natron::ImagePremultiplicationEnum outputPremult;
+    ImagePremultiplicationEnum outputPremult;
     double pixelAspectRatio;
     double frameRate;
-    std::list<Natron::ImageComponents> comps;
-    Natron::ImageBitDepthEnum bitdepth;
+    std::list<ImageComponents> comps;
+    ImageBitDepthEnum bitdepth;
     
     DefaultClipPreferencesData()
     : outputPremult(Natron::eImagePremultiplicationPremultiplied)
@@ -306,9 +306,9 @@ struct EffectInstance::Implementation
         double time;
         int view;
         double par;
-        Natron::ImageBitDepthEnum outputClipPrefDepth;
+        ImageBitDepthEnum outputClipPrefDepth;
         boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
-        std::list<Natron::ImageComponents> outputClipPrefsComps;
+        std::list<ImageComponents> outputClipPrefsComps;
         bool byPassCache;
         std::bitset<4> processChannels;
         boost::shared_ptr<ImagePlanesToRender> planes;
@@ -330,8 +330,8 @@ struct EffectInstance::Implementation
                                                   const int view,
                                                   const double par,
                                                   const bool byPassCache,
-                                                  const Natron::ImageBitDepthEnum outputClipPrefDepth,
-                                                  const std::list<Natron::ImageComponents> & outputClipPrefsComps,
+                                                  const ImageBitDepthEnum outputClipPrefDepth,
+                                                  const std::list<ImageComponents> & outputClipPrefsComps,
                                                   const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                                   const std::bitset<4>& processChannels,
                                                   const boost::shared_ptr<ImagePlanesToRender> & planes);
@@ -367,12 +367,12 @@ struct EffectInstance::Implementation
                                           const RectI & downscaledRectToRender,
                                           const bool byPassCache,
                                           const bool bitmapMarkedForRendering,
-                                          const Natron::ImageBitDepthEnum outputClipPrefDepth,
-                                          const std::list<Natron::ImageComponents> & outputClipPrefsComps,
+                                          const ImageBitDepthEnum outputClipPrefDepth,
+                                          const std::list<ImageComponents> & outputClipPrefsComps,
                                           const std::bitset<4>& processChannels,
                                           const boost::shared_ptr<Natron::Image> & originalInputImage,
                                           const boost::shared_ptr<Natron::Image> & maskImage,
-                                          const Natron::ImagePremultiplicationEnum originalImagePremultiplication,
+                                          const ImagePremultiplicationEnum originalImagePremultiplication,
                                           ImagePlanesToRender & planes);
     
     bool aborted(const EffectDataTLSPtr& tls) const WARN_UNUSED_RETURN;
@@ -380,6 +380,6 @@ struct EffectInstance::Implementation
 
 
 
-} // Namespace Natron
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_EffectInstancePrivate_h

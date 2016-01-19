@@ -65,7 +65,7 @@
 
 #define NATRON_CUSTOM_HOST_NAME_ENTRY "Custom..."
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 Settings::Settings()
@@ -1951,7 +1951,7 @@ Settings::tryLoadOpenColorIOConfig()
 
 void
 Settings::onKnobValueChanged(KnobI* k,
-                             Natron::ValueChangedReasonEnum reason,
+                             ValueChangedReasonEnum reason,
                              double /*time*/,
                              bool /*originatedFromMainThread*/)
 {
@@ -2075,7 +2075,7 @@ Settings::onKnobValueChanged(KnobI* k,
     }
 } // onKnobValueChanged
 
-Natron::ImageBitDepthEnum
+ImageBitDepthEnum
 Settings::getViewersBitDepth() const
 {
     int v = _texturesMode->getValue();
@@ -2967,7 +2967,7 @@ Settings::doOCIOStartupCheckIfNeeded()
         }
         
         bool stopAsking = false;
-        Natron::StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", QObject::tr(warnText.c_str()).toStdString(),false,
+        StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", QObject::tr(warnText.c_str()).toStdString(),false,
                                                                         Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
                                                                         Natron::eStandardButtonYes,
                                                                         &stopAsking);
@@ -3456,3 +3456,5 @@ Settings::isAutoWipeEnabled() const
 {
     return _autoWipe->getValue();
 }
+
+#include "moc_Settings.cpp"

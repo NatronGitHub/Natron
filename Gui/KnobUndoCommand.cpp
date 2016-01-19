@@ -31,6 +31,8 @@
 #include "Engine/AppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 
+NATRON_NAMESPACE_USING
+
 PasteUndoCommand::PasteUndoCommand(KnobGui* knob,
                                    bool copyAnimation,
                                    const std::list<Variant> & values,
@@ -237,7 +239,7 @@ PasteUndoCommand::redo()
 } // redo
 
 MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
-                                                           Natron::ValueChangedReasonEnum reason,
+                                                           ValueChangedReasonEnum reason,
                                                            bool createNew,
                                                            bool setKeyFrame,
                                                            const Variant & value,

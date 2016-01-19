@@ -21,7 +21,7 @@
 
 #include <ofxKeySyms.h>
 #include <QFlags>
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 enum Key
 {
     Key_Unknown =  kOfxKey_Unknown,
@@ -420,6 +420,7 @@ enum KeyboardModifier
 };
 
 typedef QFlags<Natron::KeyboardModifier> KeyboardModifiers;
-} //namespace NAtron
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // KEYSYMBOLS_H

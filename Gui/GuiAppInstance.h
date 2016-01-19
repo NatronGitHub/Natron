@@ -33,6 +33,7 @@
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief This little struct contains what enables file dialogs to show previews.
@@ -107,17 +108,17 @@ public:
     virtual void warningDialog(const std::string & title,const std::string & message,bool* stopAsking,bool useHtml) const OVERRIDE FINAL;
     virtual void informationDialog(const std::string & title,const std::string & message,bool useHtml) const OVERRIDE FINAL;
     virtual void informationDialog(const std::string & title,const std::string & message,bool* stopAsking,bool useHtml) const OVERRIDE FINAL;
-    virtual Natron::StandardButtonEnum questionDialog(const std::string & title,
+    virtual StandardButtonEnum questionDialog(const std::string & title,
                                                       const std::string & message,
                                                       bool useHtml,
                                                       Natron::StandardButtons buttons = Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                                      Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                                      StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual Natron::StandardButtonEnum questionDialog(const std::string & title,
+    virtual StandardButtonEnum questionDialog(const std::string & title,
                                                       const std::string & message,
                                                       bool useHtml,
                                                       Natron::StandardButtons buttons,
-                                                      Natron::StandardButtonEnum defaultButton,
+                                                      StandardButtonEnum defaultButton,
                                                       bool* stopAsking) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void loadProjectGui(boost::archive::xml_iarchive & archive) const OVERRIDE FINAL;
@@ -297,5 +298,7 @@ private:
 
     boost::scoped_ptr<GuiAppInstancePrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // GUIAPPINSTANCE_H

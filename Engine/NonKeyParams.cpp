@@ -24,7 +24,7 @@
 
 #include "NonKeyParams.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 NonKeyParams::NonKeyParams()

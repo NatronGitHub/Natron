@@ -207,9 +207,8 @@
             </target-to-native>
         </conversion-rule>
     </container-type>
-    
+
      <!--Natron global enums-->
-    <namespace-type name="Natron">
     <enum-type name="StatusEnum"/>
     <enum-type name="StandardButtonEnum" flags="StandardButtons"/>
     <enum-type name="KeyframeTypeEnum"/>
@@ -224,7 +223,6 @@
     <enum-type name="OrientationEnum"/>
     <enum-type name="PlaybackModeEnum"/>
     <enum-type name="DisplayChannelsEnum"/>
-    </namespace-type>
     
    
    <object-type name="RectI">
@@ -994,7 +992,7 @@
                 double key,value,left,right;
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1, %2,&amp;key,&amp;value, &amp;left, &amp;right);
                 %PYARG_0 = PyTuple_New(5);
-                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[Natron::StatusEnum](%0));
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[StatusEnum](%0));
                 PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](key));
                 PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](value));
                 PyTuple_SET_ITEM(%PYARG_0, 3, %CONVERTTOPYTHON[double](left));
@@ -1180,8 +1178,7 @@
             </modify-argument>
         </modify-function>
     </object-type>
-   
-    
+
 
 </typesystem>
 

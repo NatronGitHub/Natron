@@ -50,7 +50,6 @@
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-using namespace Natron;
 
 #define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click
 // (in widget pixels)
@@ -63,6 +62,7 @@ using namespace Natron;
 #define AXIS_MAX 100000.
 #define AXIS_MIN -100000.
 
+NATRON_NAMESPACE_USING
 
 
 CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
@@ -1425,7 +1425,7 @@ CurveWidgetPrivate::refreshSelectionRectangle(double x,
 
 
 void
-CurveWidgetPrivate::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type)
+CurveWidgetPrivate::setSelectedKeysInterpolation(KeyframeTypeEnum type)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );

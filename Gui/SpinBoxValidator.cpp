@@ -32,7 +32,9 @@
 #include "Gui/KnobGuiColor.h"
 #include "Gui/SpinBox.h"
 
-struct NumericKnobValidatorPrivate
+NATRON_NAMESPACE_USING
+
+struct NATRON_NAMESPACE::NumericKnobValidatorPrivate
 {
     
     const SpinBox* spinbox;

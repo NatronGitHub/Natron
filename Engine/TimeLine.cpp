@@ -35,6 +35,8 @@
 #include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
 
+NATRON_NAMESPACE_USING
+
 TimeLine::TimeLine(Natron::Project* project)
 : _project(project)
 , _currentFrame(1)
@@ -125,4 +127,4 @@ TimeLine::onFrameChanged(SequenceTime frame)
     }
 }
 
-
+#include "moc_TimeLine.cpp"

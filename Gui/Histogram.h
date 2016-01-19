@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @class An histogram view in the histograms gui.
@@ -112,5 +113,7 @@ private:
     virtual QSize sizeHint() const OVERRIDE FINAL;
     boost::scoped_ptr<HistogramPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // HISTOGRAM_H

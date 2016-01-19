@@ -56,6 +56,8 @@ CLANG_DIAG_ON(uninitialized)
 //Define this if you want the spinbox to clamp to the plugin defined range
 //#define SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
 
+NATRON_NAMESPACE_ENTER;
+
 struct KnobGuiPrivate;
 
 class KnobGui
@@ -167,7 +169,7 @@ public:
                  const T & v,
                  KeyFrame* newKey,
                  bool refreshGui,
-                 Natron::ValueChangedReasonEnum reason)
+                 ValueChangedReasonEnum reason)
     {
         KnobHelper::ValueChangedReturnCodeEnum ret = KnobHelper::eValueChangedReturnCodeNothingChanged;
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
@@ -197,7 +199,7 @@ public:
                         double time,
                         KeyFrame* newKey,
                         bool refreshGui,
-                        Natron::ValueChangedReasonEnum reason)
+                        ValueChangedReasonEnum reason)
     {
         
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
@@ -449,12 +451,13 @@ private:
     void createAnimationButton(QHBoxLayout* layout);
 
 
-    void setInterpolationForDimensions(const std::vector<int> & dimensions,Natron::KeyframeTypeEnum interp);
+    void setInterpolationForDimensions(const std::vector<int> & dimensions,KeyframeTypeEnum interp);
 
 private:
 
     boost::scoped_ptr<KnobGuiPrivate> _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_GUI_KNOBGUI_H

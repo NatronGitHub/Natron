@@ -78,7 +78,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "ofxNatron.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 using std::make_pair;
 
 //=============================BUTTON_KNOB_GUI===================================
@@ -178,3 +178,5 @@ boost::shared_ptr<KnobI> KnobGuiButton::getKnob() const
     return _knob.lock();
 }
 
+
+#include "moc_KnobGuiButton.cpp"

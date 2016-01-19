@@ -40,6 +40,8 @@
 #define kNatronGroupInputIsMaskParamName "isMask"
 #define kNatronGroupInputIsOptionalParamName "optional"
 
+NATRON_NAMESPACE_ENTER;
+
 typedef boost::shared_ptr<Natron::Node> NodePtr;
 
 typedef std::list<NodePtr> NodeList;
@@ -362,8 +364,8 @@ public:
 
     virtual int getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     virtual void notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
     virtual void notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
@@ -400,7 +402,7 @@ private:
     
     virtual void initializeKnobs() OVERRIDE FINAL;
     
-    virtual void knobChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,
+    virtual void knobChanged(KnobI* k,ValueChangedReasonEnum reason,
                              int /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
@@ -408,5 +410,6 @@ private:
     boost::scoped_ptr<NodeGroupPrivate> _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NODEGROUP_H

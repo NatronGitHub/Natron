@@ -24,7 +24,7 @@
 
 #include "Image.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked, bool maskInvert>
 void
@@ -141,7 +141,7 @@ Image::applyMaskMixForDstComponents(const RectI& roi,
                                     bool maskInvert,
                                     float mix)
 {
-    Natron::ImageBitDepthEnum depth = getBitDepth();
+    ImageBitDepthEnum depth = getBitDepth();
     switch (depth) {
         case eImageBitDepthByte:
             applyMaskMixForDepth<srcNComps,dstNComps, unsigned char , 255>(roi, maskImg, originalImg, masked, maskInvert, mix);

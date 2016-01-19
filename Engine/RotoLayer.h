@@ -48,6 +48,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/RotoItem.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A base class for all items made by the roto context
@@ -117,5 +118,6 @@ private:
     boost::scoped_ptr<RotoLayerPrivate> _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_RotoLayer_h

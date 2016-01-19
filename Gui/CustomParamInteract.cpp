@@ -38,9 +38,9 @@
 #include "Engine/TimeLine.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
-struct CustomParamInteractPrivate
+struct NATRON_NAMESPACE::CustomParamInteractPrivate
 {
     KnobGui* knob;
     OFX::Host::Param::Instance* ofxParam;

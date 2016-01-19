@@ -16,10 +16,9 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#include "ExistenceCheckThread.h"
-
-
 #ifdef NATRON_USE_BREAKPAD
+
+#include "ExistenceCheckThread.h"
 
 #include <QLocalSocket>
 #include <QMutex>
@@ -151,5 +150,7 @@ ExistenceCheckerThread::run()
         
     } // for(;;)
 }
+
+#include "moc_ExistenceCheckThread.cpp"
 
 #endif // NATRON_USE_BREAKPAD

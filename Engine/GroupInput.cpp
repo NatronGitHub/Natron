@@ -28,6 +28,8 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // kNatronGroupInputIsOptionalParamName, kNatronGroupInputIsMaskParamName
 
+NATRON_NAMESPACE_USING
+
 std::string
 GroupInput::getPluginDescription() const
 {
@@ -59,7 +61,7 @@ GroupInput::initializeKnobs()
 
 void
 GroupInput::knobChanged(KnobI* k,
-                 Natron::ValueChangedReasonEnum /*reason*/,
+                 ValueChangedReasonEnum /*reason*/,
                  int /*view*/,
                  double /*time*/,
                  bool /*originatedFromMainThread*/)
@@ -80,7 +82,7 @@ GroupInput::knobChanged(KnobI* k,
     }
 }
 
-Natron::ImagePremultiplicationEnum
+ImagePremultiplicationEnum
 GroupInput::getOutputPremultiplication() const
 {
     NodePtr thisNode = getNode();

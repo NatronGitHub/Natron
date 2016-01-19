@@ -93,10 +93,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Utils.h"
 #include "Gui/ViewerTab.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
-struct EditScriptDialogPrivate
+struct NATRON_NAMESPACE::EditScriptDialogPrivate
 {
     QVBoxLayout* mainLayout;
     
@@ -353,3 +353,5 @@ EditScriptDialog::keyPressEvent(QKeyEvent* e)
     }
     
 }
+
+#include "moc_EditScriptDialog.cpp"

@@ -31,6 +31,8 @@
 #include "Global/Enums.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 struct MemoryFilePrivate;
 
 /**
@@ -149,5 +151,6 @@ private:
     MemoryFilePrivate* _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif /* defined(NATRON_ENGINE_MEMORYFILE_H_) */

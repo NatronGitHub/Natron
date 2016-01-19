@@ -33,8 +33,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
-
-class QString;
+NATRON_NAMESPACE_ENTER;
 
 /*The hash of a Node is the checksum of the vector of data containing:
     - the values of the current knob for this node + the name of the node
@@ -117,6 +116,8 @@ private:
 };
 
 void Hash64_appendQString(Hash64* hash, const QString & str);
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_Hash64_H
 

@@ -30,7 +30,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/EffectInstance.h"
 
-
+NATRON_NAMESPACE_ENTER;
 
 //Template specialization for Natron::EffectInstance::EffectTLSData:
 //We do this  for the following reasons:
@@ -226,5 +226,6 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const boost::shared_ptr<const TLSHolder
 
 }
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_TLSHolderImpl_h

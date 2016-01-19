@@ -39,6 +39,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief This class represents a background render process. It starts a render and reports progress via a
@@ -255,5 +256,7 @@ private:
     QWaitCondition _mustQuitCond;
     bool _mustQuit;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PROCESSHANDLER_H

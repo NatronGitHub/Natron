@@ -27,7 +27,9 @@
 #include <string>
 #include <QMutex>
 
-struct ScriptObjectPrivate
+NATRON_NAMESPACE_USING
+
+struct NATRON_NAMESPACE::ScriptObjectPrivate
 {
     mutable QMutex nameMutex;
     std::string name,label;

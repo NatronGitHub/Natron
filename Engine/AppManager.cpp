@@ -86,11 +86,9 @@
 #include "Engine/ViewerInstance.h" // RenderStatsMap
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 AppManager* AppManager::_instance = 0;
-
-
 
 
 #ifdef __NATRON_LINUX__
@@ -2774,7 +2772,7 @@ AppManager::getOFXHost() const
     return _imp->ofxHost.get();
 }
 
-namespace Natron {
+static
 void
 errorDialog(const std::string & title,
             const std::string & message,
@@ -2789,6 +2787,7 @@ errorDialog(const std::string & title,
     }
 }
 
+static
 void
 errorDialog(const std::string & title,
             const std::string & message,
@@ -2804,6 +2803,7 @@ errorDialog(const std::string & title,
     }
 }
 
+static
 void
 warningDialog(const std::string & title,
               const std::string & message,
@@ -2817,6 +2817,8 @@ warningDialog(const std::string & title,
         std::cerr << "WARNING: " << title << ": " << message << std::endl;
     }
 }
+
+static
 void
 warningDialog(const std::string & title,
               const std::string & message,
@@ -2832,7 +2834,7 @@ warningDialog(const std::string & title,
     }
 }
 
-
+static
 void
 informationDialog(const std::string & title,
                   const std::string & message,
@@ -2847,6 +2849,7 @@ informationDialog(const std::string & title,
     }
 }
 
+static
 void
 informationDialog(const std::string & title,
                   const std::string & message,
@@ -2862,13 +2865,13 @@ informationDialog(const std::string & title,
     }
 }
 
-
-Natron::StandardButtonEnum
+static
+StandardButtonEnum
 questionDialog(const std::string & title,
                const std::string & message,
                bool useHtml,
                Natron::StandardButtons buttons,
-               Natron::StandardButtonEnum defaultButton)
+               StandardButtonEnum defaultButton)
 {
     appPTR->hideSplashScreen();
     AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
@@ -2882,12 +2885,13 @@ questionDialog(const std::string & title,
     }
 }
 
-Natron::StandardButtonEnum
+static
+StandardButtonEnum
 questionDialog(const std::string & title,
                const std::string & message,
                bool useHtml,
                Natron::StandardButtons buttons,
-               Natron::StandardButtonEnum defaultButton,
+               StandardButtonEnum defaultButton,
                bool* stopAsking)
 {
     appPTR->hideSplashScreen();
@@ -2902,7 +2906,7 @@ questionDialog(const std::string & title,
     }
 }
     
-std::size_t findNewLineStartAfterImports(std::string& script)
+std::size_t NATRON_NAMESPACE::findNewLineStartAfterImports(std::string& script)
 {
     ///Find position of the last import
     size_t foundImport = script.find("import ");
@@ -2935,19 +2939,19 @@ std::size_t findNewLineStartAfterImports(std::string& script)
 
 }
     
-PyObject* getMainModule()
+PyObject* NATRON_NAMESPACE::getMainModule()
 {
     return appPTR->getMainModule();
 }
 
-std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::string& script)
+std::size_t NATRON_NAMESPACE::ensureScriptHasModuleImport(const std::string& moduleName,std::string& script)
 {
     /// import module
     script = "from " + moduleName + " import * \n" + script;
     return findNewLineStartAfterImports(script);
 }
     
-bool interpretPythonScript(const std::string& script,std::string* error,std::string* output)
+bool NATRON_NAMESPACE::interpretPythonScript(const std::string& script,std::string* error,std::string* output)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return true;
@@ -3016,7 +3020,7 @@ bool interpretPythonScript(const std::string& script,std::string* error,std::str
 }
 
     
-void compilePyScript(const std::string& script,PyObject** code)
+void NATRON_NAMESPACE::compilePyScript(const std::string& script,PyObject** code)
 {
     ///Must be locked
     assert(PyThreadState_Get());
@@ -3033,7 +3037,7 @@ void compilePyScript(const std::string& script,PyObject** code)
 
     
 std::string
-makeNameScriptFriendly(const std::string& str)
+NATRON_NAMESPACE::makeNameScriptFriendly(const std::string& str)
 {
     if (str == "from") {
         return "pFrom";
@@ -3235,7 +3239,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
   
     
 bool
-getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
+NATRON_NAMESPACE::getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
                                 const std::string& modulePath,
                                 const std::string& pythonModule,
                                 std::string* pluginID,
@@ -3269,7 +3273,7 @@ getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
 }
     
 bool
-getGroupInfos(const std::string& modulePath,
+NATRON_NAMESPACE::getGroupInfos(const std::string& modulePath,
               const std::string& pythonModule,
               std::string* pluginID,
               std::string* pluginLabel,
@@ -3296,7 +3300,7 @@ getGroupInfos(const std::string& modulePath,
 
 
     
-void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args)
+void NATRON_NAMESPACE::getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return;
@@ -3351,7 +3355,7 @@ void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vect
  * If app1 or Group1 does not exist at this point, this is a failure.
  **/
 PyObject*
-getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined)
+NATRON_NAMESPACE::getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return 0;
@@ -3384,5 +3388,4 @@ getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool*
     
 }
 
-
-} //Namespace Natron
+#include "moc_AppManager.cpp"

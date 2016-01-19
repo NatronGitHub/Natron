@@ -43,6 +43,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 
+NATRON_NAMESPACE_USING
 
 typedef std::list<boost::shared_ptr<DSKnob> > DSKnobPtrList;
 
@@ -276,7 +277,7 @@ void HierarchyViewItemDelegate::paint(QPainter *painter, const QStyleOptionViewI
 
 ////////////////////////// HierarchyView //////////////////////////
 
-class HierarchyViewPrivate
+class NATRON_NAMESPACE::HierarchyViewPrivate
 {
 public:
     HierarchyViewPrivate(HierarchyView *qq);
@@ -1068,3 +1069,5 @@ void HierarchyView::onSelectionChanged()
 {
     _imp->selectKeyframes(selectedItems());
 }
+
+#include "moc_DopeSheetHierarchyView.cpp"

@@ -21,8 +21,8 @@
 * Engine module.
 **/
 
-#ifndef APPINSTANCEWRAPPER_H
-#define APPINSTANCEWRAPPER_H
+#ifndef Engine_AppInstanceWrapper_h
+#define Engine_AppInstanceWrapper_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -33,6 +33,8 @@
 #include "Engine/NodeWrapper.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 class AppSettings
 {
     
@@ -40,9 +42,9 @@ public:
     
     AppSettings(const boost::shared_ptr<Settings>& settings);
     
-    Param* getParam(const std::string& scriptName) const;
+    Natron::Param* getParam(const std::string& scriptName) const;
     
-    std::list<Param*> getParams() const;
+    std::list<Natron::Param*> getParams() const;
     
     void saveSettings();
     
@@ -117,5 +119,6 @@ protected:
     
 };
 
+NATRON_NAMESPACE_EXIT;
 
-#endif // APPINSTANCEWRAPPER_H
+#endif // Engine_AppInstanceWrapper_h

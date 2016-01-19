@@ -24,7 +24,7 @@
 
 #include "Gui/KnobGuiPrivate.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 KnobGuiPrivate::KnobGuiPrivate(DockablePanel* container)

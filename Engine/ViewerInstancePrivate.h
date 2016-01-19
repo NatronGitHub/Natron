@@ -50,6 +50,7 @@
 
 #define GAMMA_LUT_NB_VALUES 1023
 
+NATRON_NAMESPACE_ENTER;
 
 struct OnGoingRenderInfo
 {
@@ -59,15 +60,15 @@ struct OnGoingRenderInfo
 
 typedef std::map<U64,OnGoingRenderInfo> OnGoingRenders;
 
-//namespace Natron {
+//NATRON_NAMESPACE_ENTER;
 
 struct RenderViewerArgs
 {
     RenderViewerArgs(const boost::shared_ptr<const Natron::Image> &inputImage_,
                      const boost::shared_ptr<const Natron::Image> &matteImage_,
                      const TextureRect & texRect_,
-                     Natron::DisplayChannelsEnum channels_,
-                     Natron::ImagePremultiplicationEnum srcPremult_,
+                     DisplayChannelsEnum channels_,
+                     ImagePremultiplicationEnum srcPremult_,
                      int bitDepth_,
                      double gain_,
                      double gamma_,
@@ -93,8 +94,8 @@ struct RenderViewerArgs
     boost::shared_ptr<const Natron::Image> inputImage;
     boost::shared_ptr<const Natron::Image> matteImage;
     TextureRect texRect;
-    Natron::DisplayChannelsEnum channels;
-    Natron::ImagePremultiplicationEnum srcPremult;
+    DisplayChannelsEnum channels;
+    ImagePremultiplicationEnum srcPremult;
     int bitDepth;
     double gain;
     double gamma;
@@ -154,17 +155,17 @@ public:
     int textureIndex;
     int time;
     TextureRect textureRect;
-    Natron::ImagePremultiplicationEnum srcPremult;
+    ImagePremultiplicationEnum srcPremult;
     size_t bytesCount;
-    Natron::ImageBitDepthEnum depth;
+    ImageBitDepthEnum depth;
     double gain;
     double gamma;
     double offset;
     unsigned int mipMapLevel;
-    Natron::ImagePremultiplicationEnum premult;
-    Natron::ViewerColorSpaceEnum lut;
-    Natron::ImageComponents layer;
-    Natron::ImageComponents alphaLayer;
+    ImagePremultiplicationEnum premult;
+    ViewerColorSpaceEnum lut;
+    ImageComponents layer;
+    ImageComponents alphaLayer;
     std::string alphaChannelName;
     
     // put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
@@ -198,8 +199,8 @@ public:
     , viewerParamsLut(Natron::eViewerColorSpaceSRGB)
     , viewerParamsAutoContrast(false)
     , viewerParamsChannels()
-    , viewerParamsLayer(Natron::ImageComponents::getRGBAComponents())
-    , viewerParamsAlphaLayer(Natron::ImageComponents::getRGBAComponents())
+    , viewerParamsLayer(ImageComponents::getRGBAComponents())
+    , viewerParamsAlphaLayer(ImageComponents::getRGBAComponents())
     , viewerParamsAlphaChannelName("a")
     , viewerMipMapLevel(0)
     , activeInputsMutex(QMutex::Recursive)
@@ -435,12 +436,12 @@ public:
     mutable QMutex viewerParamsMutex;   //< protects viewerParamsGain, viewerParamsLut, viewerParamsAutoContrast, viewerParamsChannels
     double viewerParamsGain;           /*!< Current gain setting in the GUI. Not affected by autoContrast. */
     double viewerParamsGamma;          /*!< Current gamma setting in the GUI. Not affected by autoContrast. */
-    Natron::ViewerColorSpaceEnum viewerParamsLut; /*!< a value coding the current color-space used to render.
+    ViewerColorSpaceEnum viewerParamsLut; /*!< a value coding the current color-space used to render.
                                                  0 = sRGB ,  1 = linear , 2 = Rec 709*/
     bool viewerParamsAutoContrast;
-    Natron::DisplayChannelsEnum viewerParamsChannels[2];
-    Natron::ImageComponents viewerParamsLayer;
-    Natron::ImageComponents viewerParamsAlphaLayer;
+    DisplayChannelsEnum viewerParamsChannels[2];
+    ImageComponents viewerParamsLayer;
+    ImageComponents viewerParamsAlphaLayer;
     std::string viewerParamsAlphaChannelName;
     unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
 
@@ -475,8 +476,7 @@ public:
     
 };
 
-
-//} // namespace Natron
+NATRON_NAMESPACE_EXIT;
 
 
 #endif // ifndef Natron_Engine_ViewerInstancePrivate_h

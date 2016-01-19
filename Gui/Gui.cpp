@@ -55,7 +55,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ToolButton.h"
 #include "Gui/RenderStatsDialog.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -701,3 +701,5 @@ Gui::openHelpPython()
     QDesktopServices::openUrl(QUrl(NATRON_PYTHON_URL));
 }
 
+
+#include "moc_Gui.cpp"

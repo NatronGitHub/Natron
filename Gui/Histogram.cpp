@@ -68,6 +68,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
+NATRON_NAMESPACE_USING
+
 namespace { // protext local classes in anonymous namespace
 enum EventStateEnum
 {
@@ -78,7 +80,7 @@ enum EventStateEnum
 }
 
 
-struct HistogramPrivate
+struct NATRON_NAMESPACE::HistogramPrivate
 {
     HistogramPrivate(Histogram* widget)
     : mainLayout(NULL)
@@ -482,8 +484,8 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
         RectI bounds;
         unsigned int mipMapLevel = 0;
         double par = 1.;
-        Natron::ImageBitDepthEnum depth = Natron::eImageBitDepthFloat;
-        Natron::ImageComponents comps;
+        ImageBitDepthEnum depth = Natron::eImageBitDepthFloat;
+        ImageComponents comps;
         for (std::list<boost::shared_ptr<Natron::Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
             if (bounds.isNull()) {
                 bounds = (*it)->getBounds();
@@ -1942,3 +1944,5 @@ Histogram::renderText(double x,
     glCheckError();
 }
 
+
+#include "moc_Histogram.cpp"

@@ -39,7 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/GuiAppInstance.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 GuiApplicationManagerPrivate::GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface)

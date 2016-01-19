@@ -16,6 +16,7 @@ GCC_DIAG_OFF(missing-declarations)
 #include "fileparam_wrapper.h"
 
 // Extra includes
+NATRON_NAMESPACE_USING
 #include <ParameterWrapper.h>
 
 

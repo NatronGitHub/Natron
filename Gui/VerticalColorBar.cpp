@@ -29,6 +29,8 @@
 
 #define NATRON_VERTICAL_BAR_WIDTH 2
 
+NATRON_NAMESPACE_USING
+
 VerticalColorBar::VerticalColorBar(QWidget* parent)
 : QWidget(parent)
 , _color(Qt::black)
@@ -63,3 +65,5 @@ VerticalColorBar::paintEvent(QPaintEvent* /*e*/)
 }
 
 
+
+#include "moc_VerticalColorBar.cpp"

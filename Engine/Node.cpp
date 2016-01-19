@@ -82,7 +82,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 1
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
+
 using std::make_pair;
 using std::cout; using std::endl;
 using boost::shared_ptr;
@@ -375,8 +376,8 @@ struct Node::Implementation
     boost::shared_ptr<Natron::EffectInstance>  liveInstance; //< the effect hosted by this node
     
     ///These two are also protected by inputsMutex
-    std::vector< std::list<Natron::ImageComponents> > inputsComponents;
-    std::list<Natron::ImageComponents> outputComponents;
+    std::vector< std::list<ImageComponents> > inputsComponents;
+    std::list<ImageComponents> outputComponents;
     
     mutable QMutex nameMutex;
     mutable QMutex inputsLabelsMutex;
@@ -456,7 +457,7 @@ struct Node::Implementation
     QWaitCondition imageBeingRenderedCond;
     std::list< boost::shared_ptr<Image> > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
     
-    std::list <Natron::ImageBitDepthEnum> supportedDepths;
+    std::list <ImageBitDepthEnum> supportedDepths;
     
     ///True when several effect instances are represented under the same node.
     bool isMultiInstance;
@@ -504,7 +505,7 @@ struct Node::Implementation
     bool nodeCreated;
     
     mutable QMutex createdComponentsMutex;
-    std::list<Natron::ImageComponents> createdComponents; // comps created by the user
+    std::list<ImageComponents> createdComponents; // comps created by the user
     
     boost::weak_ptr<RotoDrawableItem> paintStroke;
     
@@ -1053,8 +1054,8 @@ boost::shared_ptr<Natron::Image>
 Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                  const RectI& /*roi*/,
                                  double par,
-                                 const Natron::ImageComponents& components,
-                                 Natron::ImageBitDepthEnum depth) const
+                                 const ImageComponents& components,
+                                 ImageBitDepthEnum depth) const
 {
     
     QMutexLocker k(&_imp->lastStrokeMovementMutex);
@@ -2665,9 +2666,9 @@ Node::makeInfoForInput(int inputNumber) const
         return "";
     }
     
-    std::list<Natron::ImageComponents> comps;
-    Natron::ImageBitDepthEnum depth;
-    Natron::ImagePremultiplicationEnum premult;
+    std::list<ImageComponents> comps;
+    ImageBitDepthEnum depth;
+    ImagePremultiplicationEnum premult;
 
     Natron::EffectInstance* input = inputNode->getLiveInstance();
     double par = input->getPreferredAspectRatio();
@@ -3900,7 +3901,7 @@ static Node::CanConnectInputReturnValue checkCanConnectNoMultiRes(const Node* ou
     RenderScale scale(1.);
     RectD rod;
     bool isProjectFormat;
-    Natron::StatusEnum stat = input->getLiveInstance()->getRegionOfDefinition_public(input->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &rod, &isProjectFormat);
+    StatusEnum stat = input->getLiveInstance()->getRegionOfDefinition_public(input->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &rod, &isProjectFormat);
     if (stat == eStatusFailed && !rod.isNull()) {
         return Node::eCanConnectInput_givenNodeNotConnectable;
     }
@@ -5026,7 +5027,7 @@ Node::makePreviewImage(SequenceTime time,
         return false;
     }
     
-    Natron::StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash,time, scale, 0, &rod, &isProjectFormat);
+    StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash,time, scale, 0, &rod, &isProjectFormat);
     if ( (stat == eStatusFailed) || rod.isNull() ) {
         return false;
     }
@@ -5075,7 +5076,7 @@ Node::makePreviewImage(SequenceTime time,
                                                  boost::shared_ptr<RenderStats>());
         
         std::list<ImageComponents> requestedComps;
-        Natron::ImageBitDepthEnum depth;
+        ImageBitDepthEnum depth;
         getLiveInstance()->getPreferredDepthAndComponents(-1, &requestedComps, &depth);
         
         
@@ -5754,35 +5755,35 @@ Node::getMasterNode() const
 
 bool
 Node::isSupportedComponent(int inputNb,
-                           const Natron::ImageComponents& comp) const
+                           const ImageComponents& comp) const
 {
     QMutexLocker l(&_imp->inputsMutex);
     
     if (inputNb >= 0) {
         assert( inputNb < (int)_imp->inputsComponents.size() );
-        std::list<Natron::ImageComponents>::const_iterator found =
+        std::list<ImageComponents>::const_iterator found =
         std::find(_imp->inputsComponents[inputNb].begin(),_imp->inputsComponents[inputNb].end(),comp);
         
         return found != _imp->inputsComponents[inputNb].end();
     } else {
         assert(inputNb == -1);
-        std::list<Natron::ImageComponents>::const_iterator found =
+        std::list<ImageComponents>::const_iterator found =
         std::find(_imp->outputComponents.begin(),_imp->outputComponents.end(),comp);
         
         return found != _imp->outputComponents.end();
     }
 }
 
-Natron::ImageComponents
-Node::findClosestInList(const Natron::ImageComponents& comp,
-                        const std::list<Natron::ImageComponents> &components,
+ImageComponents
+Node::findClosestInList(const ImageComponents& comp,
+                        const std::list<ImageComponents> &components,
                         bool multiPlanar)
 {
     if ( components.empty() ) {
         return ImageComponents::getNoneComponents();
     }
-    std::list<Natron::ImageComponents>::const_iterator closestComp = components.end();
-    for (std::list<Natron::ImageComponents>::const_iterator it = components.begin(); it != components.end(); ++it) {
+    std::list<ImageComponents>::const_iterator closestComp = components.end();
+    for (std::list<ImageComponents>::const_iterator it = components.begin(); it != components.end(); ++it) {
         if ( closestComp == components.end() ) {
             if (multiPlanar && it->getNumComponents() == comp.getNumComponents()) {
                 return comp;
@@ -5812,11 +5813,11 @@ Node::findClosestInList(const Natron::ImageComponents& comp,
 
 }
 
-Natron::ImageComponents
+ImageComponents
 Node::findClosestSupportedComponents(int inputNb,
-                                     const Natron::ImageComponents& comp) const
+                                     const ImageComponents& comp) const
 {
-    std::list<Natron::ImageComponents> comps;
+    std::list<ImageComponents> comps;
     {
         QMutexLocker l(&_imp->inputsMutex);
         
@@ -5834,7 +5835,7 @@ Node::findClosestSupportedComponents(int inputNb,
 
 
 int
-Node::getMaskChannel(int inputNb,Natron::ImageComponents* comps,boost::shared_ptr<Natron::Node>* maskInput) const
+Node::getMaskChannel(int inputNb,ImageComponents* comps,boost::shared_ptr<Natron::Node>* maskInput) const
 {
     std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
     if ( it != _imp->maskSelectors.end() ) {
@@ -6494,7 +6495,7 @@ Node::refreshCreatedViews(KnobI* knob)
             << QObject::tr("but do not exist in the project.").toStdString() << std::endl;
             ss << QObject::tr("Would you like to create them?").toStdString();
             std::string question  = ss.str();
-            Natron::StandardButtonEnum rep = Natron::questionDialog("Views available", question, false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo), Natron::eStandardButtonYes);
+            StandardButtonEnum rep = Natron::questionDialog("Views available", question, false, Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo), Natron::eStandardButtonYes);
             if (rep == Natron::eStandardButtonYes) {
                 std::vector<std::string> viewsToCreate;
                 for (QStringList::Iterator it = missingViews.begin(); it!=missingViews.end(); ++it) {
@@ -6556,7 +6557,7 @@ Node::onRefreshIdentityStateRequestReceived()
     for (int i = 0; i < nViews; ++i) {
         RectD rod;
         bool isProj;
-        Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(hash, time, scale, i, &rod, &isProj);
+        StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(hash, time, scale, i, &rod, &isProj);
         RectI pixelRod;
         rod.toPixelEnclosing(scale, _imp->liveInstance->getPreferredAspectRatio(), &pixelRod);
         if (!pixelRod.isNull() && stat != Natron::eStatusFailed) {
@@ -6605,7 +6606,7 @@ Node::refreshIdentityState()
  */
 void
 Node::onEffectKnobValueChanged(KnobI* what,
-                               Natron::ValueChangedReasonEnum reason)
+                               ValueChangedReasonEnum reason)
 {
     if (!what) {
         return;
@@ -6849,7 +6850,7 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
         return;
     }
     
-    Natron::ImageComponents comp ;
+    ImageComponents comp ;
     if (!getSelectedLayerInternal(inputNb, selector, &comp)) {
         for (int i = 0; i < 4; ++i) {
             enabledChan[i].lock()->setSecret(true);
@@ -6865,7 +6866,7 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
 }
 
 void
-Node::refreshEnabledKnobsLabel(const Natron::ImageComponents& comp)
+Node::refreshEnabledKnobsLabel(const ImageComponents& comp)
 {
     const std::vector<std::string>& channels = comp.getComponentsNames();
     for (int i = 0; i < 4; ++i) {
@@ -6930,7 +6931,7 @@ bool
 Node::getSelectedLayer(int inputNb,
                        std::bitset<4> *processChannels,
                        bool* isAll,
-                       Natron::ImageComponents* layer) const
+                       ImageComponents* layer) const
 {
     //If the effect is multi-planar, it is expected to handle itself all the planes
     assert(!_imp->liveInstance->isMultiPlanar());
@@ -7123,8 +7124,8 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
     }
 }
 
-Natron::ImageBitDepthEnum
-Node::getClosestSupportedBitDepth(Natron::ImageBitDepthEnum depth)
+ImageBitDepthEnum
+Node::getClosestSupportedBitDepth(ImageBitDepthEnum depth)
 {
     bool foundShort = false;
     bool foundByte = false;
@@ -7151,7 +7152,7 @@ Node::getClosestSupportedBitDepth(Natron::ImageBitDepthEnum depth)
     }
 }
 
-Natron::ImageBitDepthEnum
+ImageBitDepthEnum
 Node::getBestSupportedBitDepth() const
 {
     bool foundShort = false;
@@ -7191,7 +7192,7 @@ Node::getBestSupportedBitDepth() const
 }
 
 bool
-Node::isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const
+Node::isSupportedBitDepth(ImageBitDepthEnum depth) const
 {
     return std::find(_imp->supportedDepths.begin(), _imp->supportedDepths.end(), depth) != _imp->supportedDepths.end();
 }
@@ -7500,7 +7501,7 @@ static void addIdentityNodesRecursively(const Node* caller,
             
             RectD rod;
             bool isProj;
-            Natron::StatusEnum stat = node->getLiveInstance()->getRegionOfDefinition_public(renderHash, time, scale, view, &rod, &isProj);
+            StatusEnum stat = node->getLiveInstance()->getRegionOfDefinition_public(renderHash, time, scale, view, &rod, &isProj);
             if (stat == eStatusFailed) {
                 isIdentity = false;
             } else {
@@ -7752,7 +7753,7 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,const std::vector<boos
         if (_imp->liveInstance->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
             RectD rod;
             
-            Natron::StatusEnum stat = _imp->liveInstance->getRegionOfDefinition(getHashValue(), time, scaleOne, 0, &rod);
+            StatusEnum stat = _imp->liveInstance->getRegionOfDefinition(getHashValue(), time, scaleOne, 0, &rod);
             if (stat != eStatusFailed) {
                 RenderScale scale(0.5);
                 stat = _imp->liveInstance->getRegionOfDefinition(getHashValue(), time, scale, 0, &rod);
@@ -8576,7 +8577,7 @@ Node::refreshChannelSelectors()
         }
         int gotColor = -1;
 
-        Natron::ImageComponents colorComp,selectedComp;
+        ImageComponents colorComp,selectedComp;
 
         /*
          These are default layers that we always display in the layer selector.
@@ -8913,7 +8914,7 @@ Node::refreshChannelSelectors()
 } // Node::refreshChannelSelectors()
 
 bool
-Node::addUserComponents(const Natron::ImageComponents& comps)
+Node::addUserComponents(const ImageComponents& comps)
 {
     ///The node has node channel selector, don't allow adding a custom plane.
     boost::shared_ptr<KnobI> outputLayerKnob = getKnobByName(kNatronOfxParamOutputChannels);
@@ -8959,7 +8960,7 @@ Node::addUserComponents(const Natron::ImageComponents& comps)
 }
 
 void
-Node::getUserCreatedComponents(std::list<Natron::ImageComponents>* comps)
+Node::getUserCreatedComponents(std::list<ImageComponents>* comps)
 {
     QMutexLocker k(&_imp->createdComponentsMutex);
     *comps = _imp->createdComponents;
@@ -9127,3 +9128,4 @@ InspectorNode::getPreferredInputForConnection() const
     return getPreferredInputInternal(false);
 }
 
+#include "moc_Node.cpp"

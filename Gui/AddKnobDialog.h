@@ -38,6 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct AddKnobDialogPrivate;
 class AddKnobDialog : public QDialog
@@ -66,4 +67,7 @@ private:
     
     boost::scoped_ptr<AddKnobDialogPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // Gui_AddKnobDialog_h

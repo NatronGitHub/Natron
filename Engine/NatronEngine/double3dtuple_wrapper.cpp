@@ -16,6 +16,7 @@ GCC_DIAG_OFF(missing-declarations)
 #include "double3dtuple_wrapper.h"
 
 // Extra includes
+NATRON_NAMESPACE_USING
 
 
 

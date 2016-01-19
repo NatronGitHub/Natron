@@ -28,6 +28,8 @@
 
 #include "Engine/RectI.h"
 
+NATRON_NAMESPACE_USING
+
 void
 RectD::toPixelEnclosing(const RenderScale & scale,
                         double par,

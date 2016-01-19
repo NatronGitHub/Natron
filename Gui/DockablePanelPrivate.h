@@ -51,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DockablePanel.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct Page
 {
@@ -174,5 +175,6 @@ struct DockablePanelPrivate
     void refreshPagesSecretness();
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_DockablePanelPrivate_h

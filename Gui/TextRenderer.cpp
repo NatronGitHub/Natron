@@ -46,7 +46,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 #define TEXTURE_SIZE 256
 

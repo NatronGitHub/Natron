@@ -39,6 +39,7 @@
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 // defined below:
 struct PositionInteract;
@@ -126,5 +127,7 @@ private:
     
     boost::scoped_ptr<HostOverlayPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_HostOverlay_h

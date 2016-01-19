@@ -63,6 +63,8 @@
 #define TO_DPIX(x) ( appPTR->adjustSizeToDPIX(x) )
 #define TO_DPIY(y) ( appPTR->adjustSizeToDPIY(y) )
 
+NATRON_NAMESPACE_ENTER;
+
 struct PythonUserCommand {
     QString grouping;
     Qt::Key key;
@@ -97,8 +99,8 @@ public:
         return false;
     }
 
-    void getIcon(Natron::PixmapEnum e, QPixmap* pix) const;
-    void getIcon(Natron::PixmapEnum e, int size, QPixmap* pix) const;
+    void getIcon(PixmapEnum e, QPixmap* pix) const;
+    void getIcon(PixmapEnum e, int size, QPixmap* pix) const;
 
     void setKnobClipBoard(bool copyAnimation,
                           const std::list<Variant> & values,
@@ -252,5 +254,8 @@ private:
 
     boost::scoped_ptr<GuiApplicationManagerPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
+
 
 #endif // Gui_GuiApplicationManager_h

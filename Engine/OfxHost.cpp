@@ -99,6 +99,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/StandardPaths.h"
 #include "Engine/TLSHolder.h"
 
+NATRON_NAMESPACE_USING
+
 // see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
 static
 std::string
@@ -125,11 +127,7 @@ string_format(const std::string fmt, ...)
 }
 
 
-using namespace Natron;
-
-
-
-struct Natron::OfxHostPrivate
+struct NATRON_NAMESPACE::OfxHostPrivate
 {
     
     boost::shared_ptr<OFX::Host::ImageEffect::PluginCache> imageEffectPluginCache;

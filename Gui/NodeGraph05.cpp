@@ -42,7 +42,7 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGui.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 //using std::cout; using std::endl;
 
 

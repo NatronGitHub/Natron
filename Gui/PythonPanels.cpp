@@ -42,8 +42,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DockablePanel.h"
 #include "Gui/GuiAppWrapper.h"
 
+NATRON_NAMESPACE_USING
 
-struct DialogParamHolderPrivate
+struct NATRON_NAMESPACE::DialogParamHolderPrivate
 {
     std::string uniqueID;
     
@@ -86,7 +87,7 @@ DialogParamHolder::setParamChangedCallback(const std::string& callback)
 
 void
 DialogParamHolder::onKnobValueChanged(KnobI* k,
-                        Natron::ValueChangedReasonEnum reason,
+                        ValueChangedReasonEnum reason,
                         double /*time*/,
                         bool /*originatedFromMainThread*/)
 {
@@ -150,7 +151,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
     }
 }
 
-struct PyModalDialogPrivate
+struct NATRON_NAMESPACE::PyModalDialogPrivate
 {
     Gui* gui;
     DialogParamHolder* holder;
@@ -251,7 +252,7 @@ PyModalDialog::getParam(const std::string& scriptName) const
 
 
 
-struct PyPanelPrivate
+struct NATRON_NAMESPACE::PyPanelPrivate
 {
     
     
@@ -607,3 +608,4 @@ PyTabWidget::getScriptName() const
 {
     return _tab->objectName_mt_safe().toStdString();
 }
+#include "moc_PythonPanels.cpp"

@@ -44,9 +44,9 @@
 #include "Engine/TimeLine.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
-struct PrecompNodePrivate
+struct NATRON_NAMESPACE::PrecompNodePrivate
 {
     PrecompNode* _publicInterface;
     
@@ -178,7 +178,7 @@ PrecompNode::getPluginGrouping(std::list<std::string>* grouping) const
 
 void
 PrecompNode::addAcceptedComponents(int /*inputNb*/,
-                                 std::list<Natron::ImageComponents>* comps)
+                                 std::list<ImageComponents>* comps)
 {
     comps->push_back(ImageComponents::getRGBAComponents());
     comps->push_back(ImageComponents::getRGBComponents());
@@ -186,14 +186,14 @@ PrecompNode::addAcceptedComponents(int /*inputNb*/,
 }
 
 void
-PrecompNode::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+PrecompNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     depths->push_back(Natron::eImageBitDepthByte);
     depths->push_back(Natron::eImageBitDepthShort);
     depths->push_back(Natron::eImageBitDepthFloat);
 }
 
-Natron::ImagePremultiplicationEnum
+ImagePremultiplicationEnum
 PrecompNode::getOutputPremultiplication() const
 {
     NodePtr output = getOutputNode();
@@ -206,8 +206,8 @@ PrecompNode::getOutputPremultiplication() const
 
 void
 PrecompNode::getPreferredDepthAndComponents(int inputNb,
-                                            std::list<Natron::ImageComponents>* comp,
-                                            Natron::ImageBitDepthEnum* depth) const
+                                            std::list<ImageComponents>* comp,
+                                            ImageBitDepthEnum* depth) const
 {
     NodePtr output = getOutputNode();
     if (output) {
@@ -377,7 +377,7 @@ PrecompNode::onKnobsLoaded()
 }
 
 void
-PrecompNode::knobChanged(KnobI* k,Natron::ValueChangedReasonEnum /*reason*/,
+PrecompNode::knobChanged(KnobI* k,ValueChangedReasonEnum /*reason*/,
                  int /*view*/,
                  double /*time*/,
                  bool /*originatedFromMainThread*/)
@@ -779,3 +779,5 @@ PrecompNode::getPrecompApp() const
 {
     return _imp->app;
 }
+
+#include "moc_PrecompNode.cpp"

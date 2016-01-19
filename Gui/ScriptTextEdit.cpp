@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 
+NATRON_NAMESPACE_USING
 
 
 struct PyHighLightRule
@@ -60,7 +61,7 @@ struct PyHighLightRule
     QTextCharFormat format;
 };
 
-struct PySyntaxHighlighterPrivate
+struct NATRON_NAMESPACE::PySyntaxHighlighterPrivate
 {
     PySyntaxHighlighter* publicInterface;
     QStringList keywords;
@@ -535,3 +536,5 @@ OutputScriptTextEdit::scrollContentsBy(int dx, int dy)
     int max = sb->maximum();
     Q_EMIT userScrollChanged(v == max);
 }
+
+#include "moc_ScriptTextEdit.cpp"

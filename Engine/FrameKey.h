@@ -30,7 +30,8 @@
 #include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 class FrameKey
         : public KeyHelper<U64>
 {
@@ -133,6 +134,7 @@ private:
     bool _useShaders;
     bool _draftMode;
 };
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // FRAMEKEY_H

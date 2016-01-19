@@ -112,7 +112,7 @@ CLANG_DIAG_ON(uninitialized)
 #define FILE_DIALOG_DISABLE_ICONS
 
 using std::make_pair;
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 #if 0
 static inline bool
@@ -3098,3 +3098,5 @@ SequenceFileDialog::done(int r)
     teardownPreview();
     QDialog::done(r);
 }
+
+#include "moc_SequenceFileDialog.cpp"

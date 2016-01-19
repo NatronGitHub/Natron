@@ -44,7 +44,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 //#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
     
 struct OfxHostPrivate;
 class OfxHost
@@ -188,6 +188,6 @@ private:
 
     boost::scoped_ptr<OfxHostPrivate> _imp;
 };
-} // namespace Natron
+NATRON_NAMESPACE_EXIT;
 
 #endif // ifndef NATRON_ENGINE_OFXHOST_H

@@ -5,6 +5,7 @@
 
 #include <ParameterWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class PageParamWrapper : public PageParam
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~PageParamWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_PAGEPARAMWRAPPER_H
 

@@ -63,7 +63,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 void
@@ -256,7 +256,7 @@ NodeGraph::onFindNodeDialogFinished()
     }
 }
 
-struct FindNodeDialogPrivate
+struct NATRON_NAMESPACE::FindNodeDialogPrivate
 {
     NodeGraph* graph;
     
@@ -479,7 +479,7 @@ FindNodeDialog::changeEvent(QEvent* e)
 }
 
 
-struct EditNodeNameDialogPrivate
+struct NATRON_NAMESPACE::EditNodeNameDialogPrivate
 {
     
     LineEdit* field;

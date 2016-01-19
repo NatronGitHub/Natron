@@ -40,6 +40,8 @@
 
 #include "Global/GlobalDefines.h"
 
+NATRON_NAMESPACE_USING
+
 // see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
 static
 std::string
@@ -66,8 +68,7 @@ string_format(const std::string fmt, ...)
 }
 
 
-namespace Natron {
-class LogPrivate
+class NATRON_NAMESPACE::LogPrivate
 {
 public:
 
@@ -220,5 +221,7 @@ Log::endFunction(const std::string & callerName,
 {
     Log::instance()->_imp->endFunction(callerName,function);
 }
-} //namespace Natron
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // ifdef NATRON_LOG

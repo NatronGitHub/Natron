@@ -37,6 +37,8 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 /**
  * @brief A simple TimeLine representing the time for image sequences.
  * The interval [_firstFrame,_lastFrame] represents where images exist in the time space.
@@ -88,5 +90,7 @@ private:
     Natron::Project* _project;
     SequenceTime _currentFrame;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif /* defined(NATRON_ENGINE_TIMELINE_H_) */

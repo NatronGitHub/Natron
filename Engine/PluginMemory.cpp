@@ -34,6 +34,8 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/EffectInstance.h"
 #include "Engine/CacheEntry.h"
 
+NATRON_NAMESPACE_USING
+
 struct PluginMemory::Implementation
 {
     Implementation(Natron::EffectInstance* effect_)

@@ -42,6 +42,7 @@
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * This file gathers undo/redo command associated to the node graph. Each of them triggers an autosave when redone/undone
@@ -438,5 +439,6 @@ private:
     bool _firstRedoCalled;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NODEGRAPHUNDOREDO_H

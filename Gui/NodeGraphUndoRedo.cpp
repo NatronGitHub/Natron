@@ -52,7 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #define MINIMUM_VERTICAL_SPACE_BETWEEN_NODES 10
 
-
+NATRON_NAMESPACE_USING
 
 MoveMultipleNodesCommand::MoveMultipleNodesCommand(const std::list<NodeGuiPtr> & nodes,
                                                    double dx,

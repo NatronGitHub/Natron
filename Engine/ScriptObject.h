@@ -35,6 +35,7 @@
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct ScriptObjectPrivate;
 class ScriptObject
@@ -57,5 +58,7 @@ private:
     
     boost::scoped_ptr<ScriptObjectPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // SCRIPTOBJECT_H

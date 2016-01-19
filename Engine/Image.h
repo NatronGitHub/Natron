@@ -46,7 +46,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
     
     class GenericAccess
@@ -185,7 +185,7 @@ namespace Natron {
               const RectI & bounds,    //!< bounds in pixel coordinates
               unsigned int mipMapLevel,
               double par,
-              Natron::ImageBitDepthEnum bitdepth,
+              ImageBitDepthEnum bitdepth,
               bool useBitmap = false);
 
         //Same as above but parameters are in the ImageParams object
@@ -212,7 +212,7 @@ namespace Natron {
                                                          unsigned int mipMapLevel,
                                                          bool isRoDProjectFormat,
                                                          const ImageComponents& components,
-                                                         Natron::ImageBitDepthEnum bitdepth,
+                                                         ImageBitDepthEnum bitdepth,
                                                          const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded);
         
         static boost::shared_ptr<ImageParams> makeParams(int cost,
@@ -222,7 +222,7 @@ namespace Natron {
                                                          unsigned int mipMapLevel,
                                                          bool isRoDProjectFormat,
                                                          const ImageComponents& components,
-                                                         Natron::ImageBitDepthEnum bitdepth,
+                                                         ImageBitDepthEnum bitdepth,
                                                          const std::map<int, std::map<int,std::vector<RangeD> > >& framesNeeded);
         
         
@@ -323,11 +323,11 @@ namespace Natron {
      * convert to the 'to' components.
      * e.g: RGBA to RGB would return true , the opposite would return false.
      **/
-        static bool hasEnoughDataToConvert(Natron::ImageComponentsEnum from, Natron::ImageComponentsEnum to);
-        static std::string getFormatString(const Natron::ImageComponents& comps, Natron::ImageBitDepthEnum depth);
-        static std::string getDepthString(Natron::ImageBitDepthEnum depth);
-        static bool isBitDepthConversionLossy(Natron::ImageBitDepthEnum from, Natron::ImageBitDepthEnum to);
-        Natron::ImageBitDepthEnum getBitDepth() const
+        static bool hasEnoughDataToConvert(ImageComponentsEnum from, ImageComponentsEnum to);
+        static std::string getFormatString(const ImageComponents& comps, ImageBitDepthEnum depth);
+        static std::string getDepthString(ImageBitDepthEnum depth);
+        static bool isBitDepthConversionLossy(ImageBitDepthEnum from, ImageBitDepthEnum to);
+        ImageBitDepthEnum getBitDepth() const
         {
             return this->_bitDepth;
         }
@@ -514,8 +514,8 @@ namespace Natron {
         convertToFormatInternal_sameComps(const RectI & renderWindow,
                                           const Image & srcImg,
                                           Image & dstImg,
-                                          Natron::ViewerColorSpaceEnum srcColorSpace,
-                                          Natron::ViewerColorSpaceEnum dstColorSpace,
+                                          ViewerColorSpaceEnum srcColorSpace,
+                                          ViewerColorSpaceEnum dstColorSpace,
                                           bool copyBitmap);
         
         template <typename SRCPIX,typename DSTPIX,int srcMaxValue,int dstMaxValue,int srcNComps,int dstNComps>
@@ -523,8 +523,8 @@ namespace Natron {
         convertToFormatInternal(const RectI & renderWindow,
                                 const Image & srcImg,
                                 Image & dstImg,
-                                Natron::ViewerColorSpaceEnum srcColorSpace,
-                                Natron::ViewerColorSpaceEnum dstColorSpace,
+                                ViewerColorSpaceEnum srcColorSpace,
+                                ViewerColorSpaceEnum dstColorSpace,
                                 int channelForAlpha,
                                 bool useAlpha0,
                                 bool copyBitmap,
@@ -537,8 +537,8 @@ namespace Natron {
         static void convertToFormatInternalForUnpremult(const RectI & renderWindow,
                                                         const Image & srcImg,
                                                         Image & dstImg,
-                                                        Natron::ViewerColorSpaceEnum srcColorSpace,
-                                                        Natron::ViewerColorSpaceEnum dstColorSpace,
+                                                        ViewerColorSpaceEnum srcColorSpace,
+                                                        ViewerColorSpaceEnum dstColorSpace,
                                                         bool useAlpha0,
                                                         bool copyBitmap,
                                                         int channelForAlpha);
@@ -551,8 +551,8 @@ namespace Natron {
                                                          Image & dstImg,
                                                          bool copyBitmap,
                                                          bool useAlpha0,
-                                                         Natron::ViewerColorSpaceEnum srcColorSpace,
-                                                         Natron::ViewerColorSpaceEnum dstColorSpace,
+                                                         ViewerColorSpaceEnum srcColorSpace,
+                                                         ViewerColorSpaceEnum dstColorSpace,
                                                          int channelForAlpha);
         
         
@@ -563,8 +563,8 @@ namespace Natron {
         convertToFormatInternalForDepth(const RectI & renderWindow,
                                         const Image & srcImg,
                                         Image & dstImg,
-                                        Natron::ViewerColorSpaceEnum srcColorSpace,
-                                        Natron::ViewerColorSpaceEnum dstColorSpace,
+                                        ViewerColorSpaceEnum srcColorSpace,
+                                        ViewerColorSpaceEnum dstColorSpace,
                                         int channelForAlpha,
                                         bool useAlpha0,
                                         bool copyBitmap,
@@ -770,16 +770,16 @@ namespace Natron {
          * Implementation should tend to optimize these cases.
          **/
         void convertToFormat(const RectI & renderWindow,
-                             Natron::ViewerColorSpaceEnum srcColorSpace,
-                             Natron::ViewerColorSpaceEnum dstColorSpace,
+                             ViewerColorSpaceEnum srcColorSpace,
+                             ViewerColorSpaceEnum dstColorSpace,
                              int channelForAlpha,
                              bool copyBitMap,
                              bool requiresUnpremult,
                              Natron::Image* dstImg) const;
         
         void convertToFormatAlpha0(const RectI & renderWindow,
-                             Natron::ViewerColorSpaceEnum srcColorSpace,
-                             Natron::ViewerColorSpaceEnum dstColorSpace,
+                             ViewerColorSpaceEnum srcColorSpace,
+                             ViewerColorSpaceEnum dstColorSpace,
                              int channelForAlpha,
                              bool copyBitMap,
                              bool requiresUnpremult,
@@ -789,8 +789,8 @@ namespace Natron {
         
         
         void convertToFormatCommon(const RectI & renderWindow,
-                             Natron::ViewerColorSpaceEnum srcColorSpace,
-                             Natron::ViewerColorSpaceEnum dstColorSpace,
+                             ViewerColorSpaceEnum srcColorSpace,
+                             ViewerColorSpaceEnum dstColorSpace,
                              int channelForAlpha,
                              bool useAlpha0,
                              bool copyBitMap,
@@ -812,8 +812,8 @@ namespace Natron {
         bool canCallCopyUnProcessedChannels(std::bitset<4> processChannels) const;
         
         void copyUnProcessedChannels(const RectI& roi,
-                                     Natron::ImagePremultiplicationEnum outputPremult,
-                                     Natron::ImagePremultiplicationEnum originalImagePremult,
+                                     ImagePremultiplicationEnum outputPremult,
+                                     ImagePremultiplicationEnum originalImagePremult,
                                      std::bitset<4> processChannels,
                                      const boost::shared_ptr<Image>& originalImage);
         
@@ -964,7 +964,7 @@ namespace Natron {
         void scaleBoxForDepth(const RectI & roi, Natron::Image* output) const;
 
     private:
-        Natron::ImageBitDepthEnum _bitDepth;
+        ImageBitDepthEnum _bitDepth;
         Bitmap _bitmap;
         RectD _rod;     // rod in canonical coordinates (not the same as the OFX::Image RoD, which is in pixel coordinates)
         RectI _bounds;
@@ -1003,7 +1003,7 @@ namespace Natron {
     
     typedef boost::shared_ptr<Natron::Image> ImagePtr;
     typedef std::list<ImagePtr> ImageList;
-} //namespace Natron
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_IMAGE_H

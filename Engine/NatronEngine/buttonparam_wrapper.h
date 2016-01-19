@@ -5,6 +5,7 @@
 
 #include <ParameterWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class ButtonParamWrapper : public ButtonParam
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~ButtonParamWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_BUTTONPARAMWRAPPER_H
 

@@ -31,9 +31,9 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoStrokeItem.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
-struct RotoSmearPrivate
+struct NATRON_NAMESPACE::RotoSmearPrivate
 {
     QMutex smearDataMutex;
     std::pair<Point, double> lastTickPoint,lastCur;
@@ -62,7 +62,7 @@ RotoSmear::~RotoSmear()
 }
 
 void
-RotoSmear::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
+RotoSmear::addAcceptedComponents(int /*inputNb*/,std::list<ImageComponents>* comps)
 {
     comps->push_back(ImageComponents::getRGBAComponents());
     comps->push_back(ImageComponents::getRGBComponents());
@@ -71,13 +71,13 @@ RotoSmear::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponen
 }
 
 void
-RotoSmear::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+RotoSmear::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     depths->push_back(Natron::eImageBitDepthFloat);
 }
 
 void
-RotoSmear::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const
+RotoSmear::getPreferredDepthAndComponents(int /*inputNb*/,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const
 {
     EffectInstance* input = getInput(0);
     if (input) {
@@ -89,7 +89,7 @@ RotoSmear::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::Imag
 }
 
 
-Natron::ImagePremultiplicationEnum
+ImagePremultiplicationEnum
 RotoSmear::getOutputPremultiplication() const
 {
     EffectInstance* input = getInput(0);
@@ -101,10 +101,10 @@ RotoSmear::getOutputPremultiplication() const
     
 }
 
-Natron::StatusEnum
+StatusEnum
 RotoSmear::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod)
 {
-    Natron::StatusEnum st = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
+    StatusEnum st = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
     if (st != eStatusOK) {
         rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
     }
@@ -230,7 +230,7 @@ static void renderSmearDot(boost::shared_ptr<RotoStrokeItem>& stroke,
 
 }
 
-Natron::StatusEnum
+StatusEnum
 RotoSmear::render(const RenderActionArgs& args)
 {
     boost::shared_ptr<Node> node = getNode();
@@ -327,7 +327,7 @@ RotoSmear::render(const RenderActionArgs& args)
         }
 
         
-        for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
+        for (std::list<std::pair<ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
             
             distToNext = 0.;
@@ -435,7 +435,7 @@ RotoSmear::render(const RenderActionArgs& args)
                 
             } // while (it!=visiblePortion.end()) {
 
-        } // for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
+        } // for (std::list<std::pair<ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
         
         if (duringPainting && didPaint) {
             QMutexLocker k(&_imp->smearDataMutex);

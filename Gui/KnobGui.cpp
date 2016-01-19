@@ -33,10 +33,7 @@
 #include "Gui/ClickableLabel.h"
 
 
-
-
-using namespace Natron;
-
+NATRON_NAMESPACE_USING
 
 
 /////////////// KnobGui
@@ -647,7 +644,7 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,
         for (int i = 0; i < knob->getDimension(); ++i) {
             std::string expr = knob->getExpression(i);
             if (!expr.empty()) {
-                Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Expression").toStdString(), tr("This operation will create "
+                StandardButtonEnum rep = Natron::questionDialog(tr("Expression").toStdString(), tr("This operation will create "
                                                                                                            "an expression link between this parameter and the new parameter on the group"
                                                                                                            " which will wipe the current expression(s).\n"
                                                                                                            "Continue anyway ?").toStdString(),false,
@@ -689,3 +686,5 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,
     effect->getApp()->triggerAutoSave();
     return ret;
 }
+
+#include "moc_KnobGui.cpp"

@@ -32,6 +32,7 @@
 #include "Engine/NoOpBase.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class Dot
     : public NoOpBase
@@ -65,5 +66,6 @@ public:
     }
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_Dot_h

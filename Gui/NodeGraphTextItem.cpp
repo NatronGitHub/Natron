@@ -38,6 +38,8 @@
 #define NODEGRAPH_SIMPLE_TEXT_ITEM_MIN_HEIGHT_PX 6
 #define NODEGRAPH_PIXMAP_ITEM_MIN_HEIGHT_PX 10
 
+NATRON_NAMESPACE_USING
+
 NodeGraphTextItem::NodeGraphTextItem(NodeGraph* graph,QGraphicsItem* parent,bool alwaysDrawText)
 : QGraphicsTextItem(parent)
 , _graph(graph)

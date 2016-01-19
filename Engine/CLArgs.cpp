@@ -35,8 +35,10 @@
 #include "Global/QtCompat.h"
 #include "Engine/AppManager.h"
 
+NATRON_NAMESPACE_USING
 
-struct CLArgsPrivate
+
+struct NATRON_NAMESPACE::CLArgsPrivate
 {
     QStringList args;
     

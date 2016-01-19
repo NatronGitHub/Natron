@@ -52,6 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct NodeGuiIndicatorPrivate;
 
@@ -668,5 +669,6 @@ private:
     
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Natron_Gui_NodeGui_h

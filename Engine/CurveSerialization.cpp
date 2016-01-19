@@ -26,6 +26,7 @@
 
 // explicit template instantiations
 
+NATRON_NAMESPACE_USING
 
 template void Curve::serialize<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar,
                                                              const unsigned int file_version);

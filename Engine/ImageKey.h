@@ -28,7 +28,8 @@
 #include "Engine/KeyHelper.h"
 #include "Engine/EngineFwd.h"
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 class ImageKey
         :  public KeyHelper<U64>
 {
@@ -74,9 +75,6 @@ public:
     void serialize(Archive & ar, const unsigned int version);
 };
 
-
-
-
-}
+NATRON_NAMESPACE_EXIT;
 
 #endif // IMAGEKEY_H

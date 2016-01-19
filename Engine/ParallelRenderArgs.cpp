@@ -33,7 +33,7 @@
 #include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                                                             const boost::shared_ptr<Natron::Node>& node,
@@ -66,7 +66,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         
         bool inputIsMask = effect->isInputMask(inputNb);
         
-        Natron::ImageComponents maskComps;
+        ImageComponents maskComps;
         int channelForAlphaInput;
         boost::shared_ptr<Node> maskInput;
         // if (inputIsMask) {
@@ -184,7 +184,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         }
         
         ///There cannot be frames needed without components needed.
-        const std::vector<Natron::ImageComponents>* compsNeeded = 0;
+        const std::vector<ImageComponents>* compsNeeded = 0;
         
         if (neededComps) {
            EffectInstance::ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(inputNb);
@@ -224,7 +224,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                              f += 1.) {
                             
                             if (!isRenderFunctor) {
-                                Natron::StatusEnum stat = EffectInstance::getInputsRoIsFunctor(useTransforms,
+                                StatusEnum stat = EffectInstance::getInputsRoIsFunctor(useTransforms,
                                                                                                f,
                                                                                                viewIt->first,
                                                                                                originalMipMapLevel,
@@ -247,8 +247,8 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                 RenderScale scale(Natron::Image::getScaleFromMipMapLevel(originalMipMapLevel));
                                 
                                 ///Render the input image with the bit depth of its preference
-                                std::list<Natron::ImageComponents> inputPrefComps;
-                                Natron::ImageBitDepthEnum inputPrefDepth;
+                                std::list<ImageComponents> inputPrefComps;
+                                ImageBitDepthEnum inputPrefDepth;
                                 inputEffect->getPreferredDepthAndComponents(-1/*it2->first*/, &inputPrefComps, &inputPrefDepth);
                                 std::list<ImageComponents> componentsToRender;
                                 
@@ -321,7 +321,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         return EffectInstance::eRenderRoIRetCodeOk;
 }
 
-Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransforms,
+StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                                 double time,
                                                                 int view,
                                                                 unsigned originalMipMapLevel,
@@ -389,7 +389,7 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
         fvRequest = &nodeRequest->frames[frameView];
         
         ///Get the RoD
-        Natron::StatusEnum stat = effect->getRegionOfDefinition_public(nodeRequest->nodeHash, time, nodeRequest->mappedScale, view, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
+        StatusEnum stat = effect->getRegionOfDefinition_public(nodeRequest->nodeHash, time, nodeRequest->mappedScale, view, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
         //If failed it should have failed earlier
         if (stat == eStatusFailed && !fvRequest->globalData.rod.isNull()) {
             return stat;
@@ -519,7 +519,7 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
 }
 
 
-Natron::StatusEnum
+StatusEnum
 EffectInstance::computeRequestPass(double time,
                                    int view,
                                    unsigned int mipMapLevel,
@@ -528,7 +528,7 @@ EffectInstance::computeRequestPass(double time,
                                    FrameRequestMap& request)
 {
     bool doTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
-    Natron::StatusEnum stat = getInputsRoIsFunctor(doTransforms,
+    StatusEnum stat = getInputsRoIsFunctor(doTransforms,
                                                    time,
                                                    view,
                                                    mipMapLevel,

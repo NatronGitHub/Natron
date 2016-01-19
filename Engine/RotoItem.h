@@ -63,6 +63,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kRotoPaintDodgeBaseName "Dodge"
 #define kRotoPaintBurnBaseName "Burn"
 
+NATRON_NAMESPACE_ENTER;
 
 struct RotoItemPrivate;
 class RotoItem
@@ -180,6 +181,8 @@ private:
     boost::scoped_ptr<RotoItemPrivate> _imp;
 };
 
-Q_DECLARE_METATYPE(RotoItem*);
+NATRON_NAMESPACE_EXIT;
+
+Q_DECLARE_METATYPE(Natron::RotoItem*);
 
 #endif // Engine_RotoItem_h

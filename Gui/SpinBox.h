@@ -34,6 +34,7 @@
 #include "Gui/LineEdit.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct SpinBoxPrivate;
 
@@ -175,5 +176,7 @@ private:
     
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif /* defined(NATRON_GUI_FEEDBACKSPINBOX_H_) */

@@ -48,6 +48,8 @@ CLANG_DIAG_ON(deprecated)
 
 #define THIRD_PARTY_LICENSE_DIR_PATH ":"
 
+NATRON_NAMESPACE_USING
+
 AboutWindow::AboutWindow(Gui* gui,
                          QWidget* parent)
     : QDialog(parent)
@@ -319,3 +321,5 @@ AboutWindow::updateLibrariesVersions()
     _libsText->setText(libsText);
 }
 
+
+#include "moc_AboutWindow.cpp"

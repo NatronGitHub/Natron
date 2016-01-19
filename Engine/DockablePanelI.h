@@ -27,6 +27,8 @@
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 class DockablePanelI
 {
     
@@ -43,4 +45,7 @@ public:
     virtual void deleteKnobGui(const boost::shared_ptr<KnobI>& knob) = 0;
 
 };
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // DOCKABLEPANELI_H

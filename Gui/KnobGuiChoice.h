@@ -51,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class KnobGuiChoice
     : public KnobGui
@@ -104,5 +105,7 @@ private:
     ComboBox *_comboBox;
     boost::weak_ptr<KnobChoice> _knob;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_KnobGuiChoice_h

@@ -36,7 +36,6 @@ namespace serialization {
 class access;
 }
 }
-class AbstractOfxEffectInstance;
 
 
 // Qt
@@ -47,9 +46,11 @@ class QFileInfo;
 class QLocalServer;
 class QLocalSocket;
 class QMutex;
+class QProcess;
 class QSettings;
 class QString;
 class QStringList;
+class QThread;
 class QTimer;
 class QWaitCondition;
 
@@ -80,6 +81,8 @@ class SequenceFromFiles;
 
 // Natron Engine
 
+NATRON_NAMESPACE_ENTER;
+class AbstractOfxEffectInstance;
 class AppInstance;
 class AppSettings;
 class AppTLS;
@@ -91,6 +94,7 @@ class BufferableObject;
 class ButtonParam;
 class CLArgs;
 class CacheEntryHolder;
+class CacheSignalEmitter;
 class ChoiceExtraData;
 class ChoiceParam;
 class ColorParam;
@@ -100,11 +104,21 @@ class Double2DParam;
 class Double3DParam;
 class DoubleParam;
 class Effect;
+class EffectInstance;
 class ExistenceCheckerThread;
 class FileParam;
 class Format;
+class FrameEntry;
+class FrameKey;
+class FrameParams;
+class GenericAccess;
 class GroupParam;
 class Hash64;
+class Image;
+class ImageComponents;
+class ImageKey;
+class ImageLayer;
+class ImageParams;
 class Int2DParam;
 class Int3DParam;
 class IntParam;
@@ -127,6 +141,8 @@ class KnobPath;
 class KnobSeparator;
 class KnobSerialization;
 class KnobString;
+class LibraryBinary;
+class Node;
 class NodeCollection;
 class NodeGraphI;
 class NodeGuiI;
@@ -134,10 +150,15 @@ class NodeSerialization;
 class NodeSettingsPanel;
 class OfxClipInstance;
 class OfxEffectInstance;
+class OfxHost;
 class OfxImage;
-class OfxStringInstance;
+class OfxImageEffectInstance;
+class OfxOverlayInteract;
+class OfxParamOverlayInteract;
 class OfxParamToKnob;
+class OfxStringInstance;
 class OpenGLViewerI;
+class OutputEffectInstance;
 class OutputFileParam;
 class OverlaySupport;
 class PageParam;
@@ -145,11 +166,13 @@ class ParallelRenderArgsSetter;
 class Param;
 class ParametricParam;
 class PathParam;
+class Plugin;
 class PluginGroupNode;
 class PluginMemory;
 class PrecompNode;
 class ProcessHandler;
 class ProcessInputChannel;
+class Project;
 class ProjectSerialization;
 class RectD;
 class RectI;
@@ -170,41 +193,17 @@ class SeparatorParam;
 class Settings;
 class StringAnimationManager;
 class StringParam;
+class TLSHolderBase;
 class TextureRect;
 class TimeLine;
-class TLSHolderBase;
+class UserParamHolder;
 class ViewerInstance;
-
-namespace Natron {
-class CacheSignalEmitter;
-class EffectInstance;
-class FrameEntry;
-class FrameKey;
-class FrameParams;
-class GenericAccess;
-class Image;
-class ImageComponents;
-class ImageKey;
-class ImageParams;
-class LibraryBinary;
-class Node;
-class OfxHost;
-class OfxImageEffectInstance;
-class OfxOverlayInteract;
-class OfxParamOverlayInteract;
-class OutputEffectInstance;
-class Plugin;
-class Project;
 namespace Color {
 class Lut;
 }
-}
-
 namespace Transform {
 struct Matrix3x3;
 }
-
-
-
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_EngineFwd_h

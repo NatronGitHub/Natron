@@ -59,7 +59,9 @@
 // number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 #define kGraphicalContainerOffset 10
 
-struct EdgePrivate
+NATRON_NAMESPACE_USING
+
+struct NATRON_NAMESPACE::EdgePrivate
 {
     Edge* _publicInterface;
     bool isOutputEdge;
@@ -904,3 +906,5 @@ LinkArrow::paint(QPainter *painter,
     painter->fillPath(headPath, _headColor);
 }
 
+
+#include "moc_Edge.cpp"

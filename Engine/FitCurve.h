@@ -29,6 +29,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * Utility functions to fit a bezier curve to a set of points
@@ -48,5 +49,7 @@ namespace FitCurve {
     **/
     void fit_cubic(const std::vector<Natron::Point>& points, double error,std::vector<SimpleBezierCP>* generatedBezier);
 }
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Natron_Engine_FitCurve_h

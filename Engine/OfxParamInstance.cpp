@@ -55,7 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/TLSHolder.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 static std::string
@@ -2678,7 +2678,7 @@ boost::shared_ptr<KnobI> OfxPageInstance::getKnob() const
 
 ////////////////////////// OfxStringInstance /////////////////////////////////////////////////
 
-struct OfxStringInstancePrivate
+struct NATRON_NAMESPACE::OfxStringInstancePrivate
 {
     
     OfxEffectInstance* node;
@@ -3140,7 +3140,7 @@ OfxStringInstance::onKnobAnimationLevelChanged(int,int lvl)
    Custom parameters are mandatory, as they are simply ASCII C strings. However, animation of custom parameters an support for an in editor interact is optional.
  */
 
-struct OfxCustomInstancePrivate
+struct NATRON_NAMESPACE::OfxCustomInstancePrivate
 {
     
     OfxEffectInstance* node;
@@ -3447,7 +3447,7 @@ OfxParametricInstance::getValue(int curveIndex,
                                 double parametricPosition,
                                 double *returnValue)
 {
-    Natron::StatusEnum stat = _knob.lock()->getValue(curveIndex, parametricPosition, returnValue);
+    StatusEnum stat = _knob.lock()->getValue(curveIndex, parametricPosition, returnValue);
 
     if (stat == Natron::eStatusOK) {
         return kOfxStatOK;
@@ -3461,7 +3461,7 @@ OfxParametricInstance::getNControlPoints(int curveIndex,
                                          double /*time*/,
                                          int *returnValue)
 {
-    Natron::StatusEnum stat = _knob.lock()->getNControlPoints(curveIndex, returnValue);
+    StatusEnum stat = _knob.lock()->getNControlPoints(curveIndex, returnValue);
 
     if (stat == Natron::eStatusOK) {
         return kOfxStatOK;
@@ -3477,7 +3477,7 @@ OfxParametricInstance::getNthControlPoint(int curveIndex,
                                           double *key,
                                           double *value)
 {
-    Natron::StatusEnum stat = _knob.lock()->getNthControlPoint(curveIndex, nthCtl, key, value);
+    StatusEnum stat = _knob.lock()->getNthControlPoint(curveIndex, nthCtl, key, value);
 
     if (stat == Natron::eStatusOK) {
         return kOfxStatOK;
@@ -3494,7 +3494,7 @@ OfxParametricInstance::setNthControlPoint(int curveIndex,
                                           double value,
                                           bool /*addAnimationKey*/)
 {
-    Natron::StatusEnum stat = _knob.lock()->setNthControlPoint(curveIndex, nthCtl, key, value);
+    StatusEnum stat = _knob.lock()->setNthControlPoint(curveIndex, nthCtl, key, value);
 
     if (stat == Natron::eStatusOK) {
         return kOfxStatOK;
@@ -3519,7 +3519,7 @@ OfxParametricInstance::addControlPoint(int curveIndex,
         return kOfxStatFailed;
     }
     
-    Natron::StatusEnum stat;
+    StatusEnum stat;
     if (_effect->getPluginID() == PLUGINID_OFX_COLORCORRECT) {
         stat = _knob.lock()->addHorizontalControlPoint(curveIndex, key, value);
     } else {
@@ -3537,7 +3537,7 @@ OfxStatus
 OfxParametricInstance::deleteControlPoint(int curveIndex,
                                           int nthCtl)
 {
-    Natron::StatusEnum stat = _knob.lock()->deleteControlPoint(curveIndex, nthCtl);
+    StatusEnum stat = _knob.lock()->deleteControlPoint(curveIndex, nthCtl);
 
     if (stat == Natron::eStatusOK) {
         return kOfxStatOK;
@@ -3549,7 +3549,7 @@ OfxParametricInstance::deleteControlPoint(int curveIndex,
 OfxStatus
 OfxParametricInstance::deleteAllControlPoints(int curveIndex)
 {
-    Natron::StatusEnum stat = _knob.lock()->deleteAllControlPoints(curveIndex);
+    StatusEnum stat = _knob.lock()->deleteAllControlPoints(curveIndex);
 
     if (stat == Natron::eStatusOK) {
         return kOfxStatOK;
@@ -3578,3 +3578,4 @@ OfxParametricInstance::copyFrom(const OFX::Host::Param::Instance &instance,
     return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }
 
+#include "moc_OfxParamInstance.cpp"

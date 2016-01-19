@@ -33,6 +33,10 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Settings.h"
 
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_USING
+
 App::App(AppInstance* instance)
 : Group()
 , _instance(instance)

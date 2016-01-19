@@ -16,6 +16,7 @@ GCC_DIAG_OFF(missing-declarations)
 #include "parametricparam_wrapper.h"
 
 // Extra includes
+NATRON_NAMESPACE_USING
 #include <ParameterWrapper.h>
 
 
@@ -78,8 +79,8 @@ static PyObject* Sbk_ParametricParamFunc_addControlPoint(PyObject* self, PyObjec
 
         if (!PyErr_Occurred()) {
             // addControlPoint(int,double,double)
-            Natron::StatusEnum cppResult = Natron::StatusEnum(cppSelf->addControlPoint(cppArg0, cppArg1, cppArg2));
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX]), &cppResult);
+            StatusEnum cppResult = StatusEnum(cppSelf->addControlPoint(cppArg0, cppArg1, cppArg2));
+            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_STATUSENUM_IDX]), &cppResult);
         }
     }
 
@@ -123,8 +124,8 @@ static PyObject* Sbk_ParametricParamFunc_deleteAllControlPoints(PyObject* self, 
 
         if (!PyErr_Occurred()) {
             // deleteAllControlPoints(int)
-            Natron::StatusEnum cppResult = Natron::StatusEnum(cppSelf->deleteAllControlPoints(cppArg0));
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX]), &cppResult);
+            StatusEnum cppResult = StatusEnum(cppSelf->deleteAllControlPoints(cppArg0));
+            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_STATUSENUM_IDX]), &cppResult);
         }
     }
 
@@ -181,8 +182,8 @@ static PyObject* Sbk_ParametricParamFunc_deleteControlPoint(PyObject* self, PyOb
 
         if (!PyErr_Occurred()) {
             // deleteControlPoint(int,int)
-            Natron::StatusEnum cppResult = Natron::StatusEnum(cppSelf->deleteControlPoint(cppArg0, cppArg1));
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX]), &cppResult);
+            StatusEnum cppResult = StatusEnum(cppSelf->deleteControlPoint(cppArg0, cppArg1));
+            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_STATUSENUM_IDX]), &cppResult);
         }
     }
 
@@ -340,9 +341,9 @@ static PyObject* Sbk_ParametricParamFunc_getNthControlPoint(PyObject* self, PyOb
             // Begin code injection
 
             double key,value,left,right;
-            Natron::StatusEnum cppResult = cppSelf->getNthControlPoint(cppArg0, cppArg1,&key,&value, &left, &right);
+            StatusEnum cppResult = cppSelf->getNthControlPoint(cppArg0, cppArg1,&key,&value, &left, &right);
             pyResult = PyTuple_New(5);
-            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX]), &cppResult));
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_STATUSENUM_IDX]), &cppResult));
             PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &key));
             PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &value));
             PyTuple_SET_ITEM(pyResult, 3, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &left));
@@ -539,8 +540,8 @@ static PyObject* Sbk_ParametricParamFunc_setNthControlPoint(PyObject* self, PyOb
 
         if (!PyErr_Occurred()) {
             // setNthControlPoint(int,int,double,double,double,double)
-            Natron::StatusEnum cppResult = Natron::StatusEnum(cppSelf->setNthControlPoint(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5));
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_STATUSENUM_IDX]), &cppResult);
+            StatusEnum cppResult = StatusEnum(cppSelf->setNthControlPoint(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5));
+            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_STATUSENUM_IDX]), &cppResult);
         }
     }
 

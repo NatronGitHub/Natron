@@ -40,6 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class InfoViewerWidget
     : public QWidget
@@ -61,7 +62,7 @@ public:
 
     void setDataWindow(const RectI & r); // in canonical coordinates
 
-    void setImageFormat(const Natron::ImageComponents& comp,Natron::ImageBitDepthEnum depth);
+    void setImageFormat(const ImageComponents& comp,ImageBitDepthEnum depth);
 
     void setColor(float r,float g,float b,float a);
 
@@ -101,10 +102,12 @@ private:
     Natron::Label* hvl_lastOption;
     Natron::Label* _fpsLabel;
     ViewerGL* viewer;
-    Natron::ImageComponents _comp;
+    ImageComponents _comp;
     bool _colorValid;
     bool _colorApprox;
     double currentColor[4];
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif /* defined(NATRON_GUI_INFOVIEWERWIDGET_H_) */

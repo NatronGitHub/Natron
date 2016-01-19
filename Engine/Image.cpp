@@ -30,7 +30,7 @@
 
 #include "Engine/AppManager.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 #define BM_GET(i,j) &_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]
 
@@ -694,7 +694,7 @@ Image::Image(const ImageComponents& components,
              const RectI & bounds, //!< bounds in pixel coordinates
              unsigned int mipMapLevel,
              double par,
-             Natron::ImageBitDepthEnum bitdepth,
+             ImageBitDepthEnum bitdepth,
              bool useBitmap)
     : CacheEntryHelper<unsigned char,ImageKey,ImageParams>()
     , _useBitmap(useBitmap)
@@ -774,7 +774,7 @@ Image::makeParams(int cost,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
                   const ImageComponents& components,
-                  Natron::ImageBitDepthEnum bitdepth,
+                  ImageBitDepthEnum bitdepth,
                   const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded)
 {
     RectI bounds;
@@ -800,7 +800,7 @@ Image::makeParams(int cost,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
                   const ImageComponents& components,
-                  Natron::ImageBitDepthEnum bitdepth,
+                  ImageBitDepthEnum bitdepth,
                   const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded)
 {
 #ifdef DEBUG
@@ -919,7 +919,7 @@ Image::resizeInternal(const Image* srcImg,
         outputImage->reset(new Image(srcImg->getKey(), params, srcImg->getCacheAPI(), Natron::eStorageModeRAM,std::string()));
         (*outputImage)->allocateMemory();
     }
-    Natron::ImageBitDepthEnum depth = srcImg->getBitDepth();
+    ImageBitDepthEnum depth = srcImg->getBitDepth();
     
     if (fillWithBlackAndTransparant) {
         
@@ -1102,7 +1102,7 @@ Image::pasteFrom(const Natron::Image & src,
 {
     
     
-    Natron::ImageBitDepthEnum depth = getBitDepth();
+    ImageBitDepthEnum depth = getBitDepth();
 
     switch (depth) {
     case eImageBitDepthByte:
@@ -1334,8 +1334,8 @@ Image::getComponentsCount() const
 }
 
 bool
-Image::hasEnoughDataToConvert(Natron::ImageComponentsEnum from,
-                              Natron::ImageComponentsEnum to)
+Image::hasEnoughDataToConvert(ImageComponentsEnum from,
+                              ImageComponentsEnum to)
 {
     switch (from) {
     case eImageComponentRGBA:
@@ -1383,8 +1383,8 @@ Image::hasEnoughDataToConvert(Natron::ImageComponentsEnum from,
 }
 
 std::string
-Image::getFormatString(const Natron::ImageComponents& comps,
-                       Natron::ImageBitDepthEnum depth)
+Image::getFormatString(const ImageComponents& comps,
+                       ImageBitDepthEnum depth)
 {
     std::string s = comps.getLayerName() + '.' + comps.getComponentsGlobalName();
     s.append( getDepthString(depth) );
@@ -1393,7 +1393,7 @@ Image::getFormatString(const Natron::ImageComponents& comps,
 }
 
 std::string
-Image::getDepthString(Natron::ImageBitDepthEnum depth)
+Image::getDepthString(ImageBitDepthEnum depth)
 {
     std::string s;
 
@@ -1419,8 +1419,8 @@ Image::getDepthString(Natron::ImageBitDepthEnum depth)
 
 
 bool
-Image::isBitDepthConversionLossy(Natron::ImageBitDepthEnum from,
-                                 Natron::ImageBitDepthEnum to)
+Image::isBitDepthConversionLossy(ImageBitDepthEnum from,
+                                 ImageBitDepthEnum to)
 {
     int sizeOfFrom = getSizeOfForBitDepth(from);
     int sizeOfTo = getSizeOfForBitDepth(to);
@@ -2322,7 +2322,7 @@ Image::premultForDepth(const RectI& roi)
     if (getComponentsCount() != 4) {
         return;
     }
-    Natron::ImageBitDepthEnum depth = getBitDepth();
+    ImageBitDepthEnum depth = getBitDepth();
     switch (depth) {
         case Natron::eImageBitDepthByte:
             premultInternal<unsigned char, doPremult>(roi);

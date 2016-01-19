@@ -42,9 +42,11 @@
 #include "Gui/GuiMacros.h"
 #include "Engine/TimeLine.h"
 
+NATRON_NAMESPACE_USING
+
 ////////////////////////// DopeSheetEditor //////////////////////////
 
-class DopeSheetEditorPrivate
+class NATRON_NAMESPACE::DopeSheetEditorPrivate
 {
 public:
     DopeSheetEditorPrivate(DopeSheetEditor *qq);

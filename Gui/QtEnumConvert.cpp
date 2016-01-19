@@ -24,6 +24,8 @@
 
 #include "QtEnumConvert.h"
 
+NATRON_NAMESPACE_USING
+
 ///what a painful mapping!
 Natron::Key
 QtEnumConvert::fromQtKey(Qt::Key k)
@@ -774,7 +776,7 @@ QtEnumConvert::fromQtModifiers(Qt::KeyboardModifiers m)
     return ret;
 }
 
-Natron::StandardButtonEnum
+StandardButtonEnum
 QtEnumConvert::fromQtStandardButton(QMessageBox::StandardButton b)
 {
     switch (b) {
@@ -866,7 +868,7 @@ QtEnumConvert::fromQtStandardButton(QMessageBox::StandardButton b)
 } // fromQtStandardButton
 
 QMessageBox::StandardButton
-QtEnumConvert::toQtStandardButton(Natron::StandardButtonEnum b)
+QtEnumConvert::toQtStandardButton(StandardButtonEnum b)
 {
     switch (b) {
     case Natron::eStandardButtonNoButton:

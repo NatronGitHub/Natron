@@ -35,9 +35,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppManager.h"
 #include "Engine/Lut.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 ///explicit template instantiations
 
 template <>
@@ -107,7 +107,7 @@ convertPixelDepth(float pix)
 }
 
 static const Natron::Color::Lut*
-lutFromColorspace(Natron::ViewerColorSpaceEnum cs)
+lutFromColorspace(ViewerColorSpaceEnum cs)
 {
     const Natron::Color::Lut* lut;
 
@@ -136,8 +136,8 @@ void
 Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
                                   const Image & srcImg,
                                   Image & dstImg,
-                                  Natron::ViewerColorSpaceEnum srcColorSpace,
-                                  Natron::ViewerColorSpaceEnum dstColorSpace,
+                                  ViewerColorSpaceEnum srcColorSpace,
+                                  ViewerColorSpaceEnum dstColorSpace,
                                   bool copyBitmap)
 {
     const RectI & r = srcImg._bounds;
@@ -147,8 +147,8 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
         return;
     }
 
-    Natron::ImageBitDepthEnum dstDepth = dstImg.getBitDepth();
-    Natron::ImageBitDepthEnum srcDepth = srcImg.getBitDepth();
+    ImageBitDepthEnum dstDepth = dstImg.getBitDepth();
+    ImageBitDepthEnum srcDepth = srcImg.getBitDepth();
     int nComp = (int)srcImg.getComponentsCount();
     const Natron::Color::Lut* const srcLut_ = lutFromColorspace(srcColorSpace);
     const Natron::Color::Lut* const dstLut_ = lutFromColorspace(dstColorSpace);
@@ -247,8 +247,8 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                                             Image & dstImg,
                                             bool copyBitmap,
                                             bool useAlpha0,
-                                            Natron::ViewerColorSpaceEnum srcColorSpace,
-                                            Natron::ViewerColorSpaceEnum dstColorSpace,
+                                            ViewerColorSpaceEnum srcColorSpace,
+                                            ViewerColorSpaceEnum dstColorSpace,
                                             int channelForAlpha)
 {
     
@@ -304,8 +304,8 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
         return;
     }
     
-    const Natron::Color::Lut* const srcLut = useColorspaces ? lutFromColorspace((Natron::ViewerColorSpaceEnum)srcColorSpace) : 0;
-    const Natron::Color::Lut* const dstLut = useColorspaces ? lutFromColorspace((Natron::ViewerColorSpaceEnum)dstColorSpace) : 0;
+    const Natron::Color::Lut* const srcLut = useColorspaces ? lutFromColorspace((ViewerColorSpaceEnum)srcColorSpace) : 0;
+    const Natron::Color::Lut* const dstLut = useColorspaces ? lutFromColorspace((ViewerColorSpaceEnum)dstColorSpace) : 0;
     
     for (int y = 0; y < renderWindow.height(); ++y) {
         
@@ -485,8 +485,8 @@ void
 Image::convertToFormatInternalForUnpremult(const RectI & renderWindow,
                                            const Image & srcImg,
                                            Image & dstImg,
-                                           Natron::ViewerColorSpaceEnum srcColorSpace,
-                                           Natron::ViewerColorSpaceEnum dstColorSpace,
+                                           ViewerColorSpaceEnum srcColorSpace,
+                                           ViewerColorSpaceEnum dstColorSpace,
                                            bool useAlpha0,
                                            bool copyBitmap,
                                            int channelForAlpha)
@@ -503,8 +503,8 @@ void
 Image::convertToFormatInternal(const RectI & renderWindow,
                                const Image & srcImg,
                                Image & dstImg,
-                               Natron::ViewerColorSpaceEnum srcColorSpace,
-                               Natron::ViewerColorSpaceEnum dstColorSpace,
+                               ViewerColorSpaceEnum srcColorSpace,
+                               ViewerColorSpaceEnum dstColorSpace,
                                int channelForAlpha,
                                bool useAlpha0,
                                bool copyBitmap,
@@ -528,8 +528,8 @@ void
 Image::convertToFormatInternalForDepth(const RectI & renderWindow,
                                        const Image & srcImg,
                                        Image & dstImg,
-                                       Natron::ViewerColorSpaceEnum srcColorSpace,
-                                       Natron::ViewerColorSpaceEnum dstColorSpace,
+                                       ViewerColorSpaceEnum srcColorSpace,
+                                       ViewerColorSpaceEnum dstColorSpace,
                                        int channelForAlpha,
                                        bool useAlpha0,
                                        bool copyBitmap,
@@ -689,8 +689,8 @@ Image::convertToFormatInternalForDepth(const RectI & renderWindow,
 
 void
 Image::convertToFormatCommon(const RectI & renderWindow,
-                           Natron::ViewerColorSpaceEnum srcColorSpace,
-                           Natron::ViewerColorSpaceEnum dstColorSpace,
+                           ViewerColorSpaceEnum srcColorSpace,
+                           ViewerColorSpaceEnum dstColorSpace,
                            int channelForAlpha,
                            bool useAlpha0,
                            bool copyBitmap,
@@ -906,8 +906,8 @@ Image::convertToFormatCommon(const RectI & renderWindow,
 
 void
 Image::convertToFormat(const RectI & renderWindow,
-                       Natron::ViewerColorSpaceEnum srcColorSpace,
-                       Natron::ViewerColorSpaceEnum dstColorSpace,
+                       ViewerColorSpaceEnum srcColorSpace,
+                       ViewerColorSpaceEnum dstColorSpace,
                        int channelForAlpha,
                        bool copyBitmap,
                        bool requiresUnpremult,
@@ -918,8 +918,8 @@ Image::convertToFormat(const RectI & renderWindow,
 
 void
 Image::convertToFormatAlpha0(const RectI & renderWindow,
-                           Natron::ViewerColorSpaceEnum srcColorSpace,
-                           Natron::ViewerColorSpaceEnum dstColorSpace,
+                           ViewerColorSpaceEnum srcColorSpace,
+                           ViewerColorSpaceEnum dstColorSpace,
                            int channelForAlpha,
                            bool copyBitmap,
                            bool requiresUnpremult,

@@ -47,6 +47,8 @@
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 ///This must be stored as a shared_ptr
 class TLSHolderBase : public boost::enable_shared_from_this<TLSHolderBase>
 {
@@ -203,5 +205,6 @@ private:
     mutable ThreadDataMap perThreadData;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // TLSHOLDER_H

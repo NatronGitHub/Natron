@@ -41,6 +41,8 @@
 #include "Engine/Node.h"
 #include "Engine/OutputEffectInstance.h"
 
+NATRON_NAMESPACE_USING
+
 ProcessHandler::ProcessHandler(AppInstance* app,
                                const QString & projectPath,
                                Natron::OutputEffectInstance* writer)
@@ -387,3 +389,4 @@ ProcessInputChannel::onOutputPipeConnectionMade()
     qDebug() << "The output channel was successfully created and connected.";
 }
 
+#include "moc_ProcessHandler.cpp"

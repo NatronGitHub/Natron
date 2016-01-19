@@ -38,6 +38,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Global/Macros.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class OfxMemory
     : public OFX::Host::Memory::Instance
@@ -56,5 +57,7 @@ public:
     virtual void lock() OVERRIDE FINAL;
     virtual void unlock() OVERRIDE FINAL;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // OFXMEMORY_H

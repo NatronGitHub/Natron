@@ -77,6 +77,8 @@
 #include "Engine/StandardPaths.h"
 #include "Engine/ViewerInstance.h"
 
+NATRON_NAMESPACE_USING
+
 using std::cout; using std::endl;
 using std::make_pair;
 
@@ -119,7 +121,6 @@ static std::string generateUserFriendlyNatronVersionName()
     return ret;
 }
 
-namespace Natron {
 Project::Project(AppInstance* appInstance)
     : KnobHolder(appInstance)
     , NodeCollection(appInstance)
@@ -181,7 +182,7 @@ Project::loadProject(const QString & path,
             bool hasAutoSave = findAutoSaveForProject(realPath, name,&autosaveFileName);
             if (hasAutoSave) {
                 
-                Natron::StandardButtonEnum ret = Natron::eStandardButtonNo;
+                StandardButtonEnum ret = Natron::eStandardButtonNo;
                 if (attemptToLoadAutosave) {
                     QString text = tr("A recent auto-save of %1 was found.\n"
                                       "Would you like to use it instead? "
@@ -1025,7 +1026,7 @@ Project::initializeKnobs()
 void
 Project::evaluate(KnobI* /*knob*/,
                   bool /*isSignificant*/,
-                  Natron::ValueChangedReasonEnum /*reason*/)
+                  ValueChangedReasonEnum /*reason*/)
 {
     assert(QThread::currentThread() == qApp->thread());
 
@@ -1273,19 +1274,19 @@ Project::load(const ProjectSerialization & obj,const QString& name,const QString
 }
 
 void
-Project::beginKnobsValuesChanged(Natron::ValueChangedReasonEnum /*reason*/)
+Project::beginKnobsValuesChanged(ValueChangedReasonEnum /*reason*/)
 {
 }
 
 void
-Project::endKnobsValuesChanged(Natron::ValueChangedReasonEnum /*reason*/)
+Project::endKnobsValuesChanged(ValueChangedReasonEnum /*reason*/)
 {
 }
 
 ///this function is only called on the main thread
 void
 Project::onKnobValueChanged(KnobI* knob,
-                            Natron::ValueChangedReasonEnum reason,
+                            ValueChangedReasonEnum reason,
                             double /*time*/,
                             bool /*originatedFromMainThread*/)
 {
@@ -1661,20 +1662,20 @@ Project::getProjectCreationTime() const
     return _imp->projectCreationTime.toMSecsSinceEpoch();
 }
 
-Natron::ViewerColorSpaceEnum
-Project::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const
+ViewerColorSpaceEnum
+Project::getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const
 {
     switch (bitdepth) {
     case Natron::eImageBitDepthByte:
 
-        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace8u->getValue();
+        return (ViewerColorSpaceEnum)_imp->colorSpace8u->getValue();
     case Natron::eImageBitDepthShort:
 
-        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace16u->getValue();
+        return (ViewerColorSpaceEnum)_imp->colorSpace16u->getValue();
     case Natron::eImageBitDepthHalf: // same colorspace as float
     case Natron::eImageBitDepthFloat:
 
-        return (Natron::ViewerColorSpaceEnum)_imp->colorSpace32f->getValue();
+        return (ViewerColorSpaceEnum)_imp->colorSpace32f->getValue();
     case Natron::eImageBitDepthNone:
         assert(false);
         break;
@@ -2303,7 +2304,5 @@ Project::setTimeLine(const boost::shared_ptr<TimeLine>& timeline)
 {
     _imp->timeline = timeline;
 }
-    
-} //namespace Natron
 
-
+#include "moc_Project.cpp"

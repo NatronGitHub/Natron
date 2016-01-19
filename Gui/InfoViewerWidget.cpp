@@ -41,7 +41,7 @@
 #include "Gui/Label.h"
 
 using std::cout; using std::endl;
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
                                    const QString & description,
@@ -458,8 +458,8 @@ InfoViewerWidget::setDataWindow(const RectI & r)
 }
 
 void
-InfoViewerWidget::setImageFormat(const Natron::ImageComponents& comp,
-                                 Natron::ImageBitDepthEnum depth)
+InfoViewerWidget::setImageFormat(const ImageComponents& comp,
+                                 ImageBitDepthEnum depth)
 {
 
     const QFont& font = imageFormat->font();
@@ -473,3 +473,5 @@ InfoViewerWidget::setImageFormat(const Natron::ImageComponents& comp,
     _comp = comp;
 }
 
+
+#include "moc_InfoViewerWidget.cpp"

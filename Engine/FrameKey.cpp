@@ -24,7 +24,7 @@
 
 #include "FrameKey.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 FrameKey::FrameKey()
 : KeyHelper<U64>()

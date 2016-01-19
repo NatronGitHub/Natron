@@ -29,7 +29,7 @@
 #include "Engine/NodeGroup.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_USING
 
 
 ActionsCache::ActionsCacheInstance::ActionsCacheInstance()
