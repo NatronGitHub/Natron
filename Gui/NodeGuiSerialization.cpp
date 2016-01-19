@@ -35,7 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 void
 NodeGuiSerialization::initialize(const NodeGui*  n)
@@ -83,3 +83,4 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
     
 }
 
+NATRON_NAMESPACE_EXIT;

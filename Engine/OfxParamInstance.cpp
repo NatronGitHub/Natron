@@ -55,7 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/TLSHolder.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 static std::string
@@ -2678,7 +2678,7 @@ boost::shared_ptr<KnobI> OfxPageInstance::getKnob() const
 
 ////////////////////////// OfxStringInstance /////////////////////////////////////////////////
 
-struct NATRON_NAMESPACE::OfxStringInstancePrivate
+struct OfxStringInstancePrivate
 {
     
     OfxEffectInstance* node;
@@ -3140,7 +3140,7 @@ OfxStringInstance::onKnobAnimationLevelChanged(int,int lvl)
    Custom parameters are mandatory, as they are simply ASCII C strings. However, animation of custom parameters an support for an in editor interact is optional.
  */
 
-struct NATRON_NAMESPACE::OfxCustomInstancePrivate
+struct OfxCustomInstancePrivate
 {
     
     OfxEffectInstance* node;
@@ -3578,4 +3578,7 @@ OfxParametricInstance::copyFrom(const OFX::Host::Param::Instance &instance,
     return OfxKeyFrame::copyFrom(other.getKnob(), getKnob(), offset, range);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_OfxParamInstance.cpp"

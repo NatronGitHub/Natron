@@ -26,7 +26,7 @@
 
 #include <cassert>
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 Splitter::Splitter(QWidget* parent)
     : QSplitter(parent)
@@ -141,3 +141,4 @@ Splitter::getChildren_mt_safe(std::list<QWidget*> & children) const
     }
 }
 
+NATRON_NAMESPACE_EXIT;

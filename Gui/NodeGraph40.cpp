@@ -60,7 +60,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Global/QtCompat.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -516,3 +516,5 @@ NodeGraph::centerOnAllNodes()
     _imp->_refreshOverlays = true;
     update();
 }
+
+NATRON_NAMESPACE_EXIT;

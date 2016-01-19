@@ -33,7 +33,7 @@
 #include "Gui/ClickableLabel.h"
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 /////////////// KnobGui
@@ -630,7 +630,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
 } // createAnimationMenu
 
 boost::shared_ptr<KnobI>
-KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,
+KnobGui::createDuplicateOnNode(EffectInstance* effect,
                                bool makeAlias,
                                const boost::shared_ptr<KnobPage>& page,
                                const boost::shared_ptr<KnobGroup>& group,
@@ -656,7 +656,7 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,
         }
     }
     
-    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(knob->getHolder());
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(knob->getHolder());
     if (!isEffect) {
         return boost::shared_ptr<KnobI>();
     }
@@ -687,4 +687,7 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,
     return ret;
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_KnobGui.cpp"

@@ -44,9 +44,9 @@
 #include "Engine/TimeLine.h"
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::PrecompNodePrivate
+struct PrecompNodePrivate
 {
     PrecompNode* _publicInterface;
     
@@ -119,7 +119,7 @@ struct NATRON_NAMESPACE::PrecompNodePrivate
 };
 
 PrecompNode::PrecompNode(boost::shared_ptr<Node> n)
-: Natron::EffectInstance(n)
+: EffectInstance(n)
 , _imp(new PrecompNodePrivate(this))
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
@@ -213,7 +213,7 @@ PrecompNode::getPreferredDepthAndComponents(int inputNb,
     if (output) {
         output->getLiveInstance()->getPreferredDepthAndComponents(inputNb,comp,depth);
     } else {
-        Natron::EffectInstance::getPreferredDepthAndComponents(inputNb, comp, depth);
+        EffectInstance::getPreferredDepthAndComponents(inputNb, comp, depth);
     }
 }
 
@@ -224,7 +224,7 @@ PrecompNode::getPreferredAspectRatio() const
     if (output) {
         return output->getLiveInstance()->getPreferredAspectRatio();
     } else {
-        return Natron::EffectInstance::getPreferredAspectRatio();
+        return EffectInstance::getPreferredAspectRatio();
     }
 }
 
@@ -235,7 +235,7 @@ PrecompNode::getPreferredFrameRate() const
     if (output) {
         return output->getLiveInstance()->getPreferredFrameRate();
     } else {
-        return Natron::EffectInstance::getPreferredFrameRate();
+        return EffectInstance::getPreferredFrameRate();
     }
 }
 
@@ -780,4 +780,7 @@ PrecompNode::getPrecompApp() const
     return _imp->app;
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_PrecompNode.cpp"

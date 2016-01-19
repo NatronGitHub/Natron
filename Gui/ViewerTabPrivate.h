@@ -189,13 +189,13 @@ struct ViewerTabPrivate
     bool getOverlayTransform(double time,
                              int view,
                              const boost::shared_ptr<Node>& target,
-                             Natron::EffectInstance* currentNode,
+                             EffectInstance* currentNode,
                              Transform::Matrix3x3* transform) const;
 
     bool getTimeTransform(double time,
                           int view,
                           const boost::shared_ptr<Node>& target,
-                          Natron::EffectInstance* currentNode,
+                          EffectInstance* currentNode,
                           double *newTime) const;
 
 #endif

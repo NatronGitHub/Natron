@@ -46,7 +46,7 @@ public:
      * On the other hand if the parameter is set to NULL, the memory will not be registered and will live
      * until the plug-in decides to free the memory.
      **/
-    PluginMemory(Natron::EffectInstance* effect);
+    PluginMemory(EffectInstance* effect);
 
     ~PluginMemory();
 

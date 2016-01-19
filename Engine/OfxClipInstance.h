@@ -205,7 +205,7 @@ public:
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
 
-    Natron::EffectInstance* getAssociatedNode() const WARN_UNUSED_RETURN;
+    EffectInstance* getAssociatedNode() const WARN_UNUSED_RETURN;
     
     ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
     static std::string natronsPlaneToOfxPlane(const ImageComponents& plane);
@@ -290,7 +290,7 @@ private:
 
 
     
-    void getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,Natron::EffectInstance* associatedNode,
+    void getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,EffectInstance* associatedNode,
                                        OfxRectD* rod) const;
     
     OFX::Host::ImageEffect::Image* getInputImageInternal(OfxTime time, int view, const OfxRectD *optionalBounds,

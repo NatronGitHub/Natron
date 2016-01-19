@@ -36,7 +36,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 ValueSerialization::ValueSerialization(KnobSerializationBase* serialization,
                                        const boost::shared_ptr<KnobI> & knob,
@@ -246,3 +246,5 @@ KnobSerialization::setChoiceExtraString(const std::string& label)
     assert(cData);
     cData->_choiceString = label;
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -24,7 +24,7 @@
 
 #include "Utils.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 /*!
  \fn QString Natron::convertFromPlainText(const QString &plain, WhiteSpaceMode mode)
@@ -38,7 +38,7 @@ NATRON_NAMESPACE_USING
  (see src/gui/text/qtextdocument.cpp in the Qt sources)
  The difference is that in Qt::WhiteSpaceNormal mode, spaces are preserved at the beginning of the line.
  */
-QString Natron::convertFromPlainText(const QString &plain, Qt::WhiteSpaceMode mode)
+QString convertFromPlainText(const QString &plain, Qt::WhiteSpaceMode mode)
 {
     int col = 0;
     bool bol = true;
@@ -92,3 +92,5 @@ QString Natron::convertFromPlainText(const QString &plain, Qt::WhiteSpaceMode mo
         rich += QLatin1String("</p>");
     return rich;
 }
+
+NATRON_NAMESPACE_EXIT;

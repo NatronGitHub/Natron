@@ -29,7 +29,7 @@
 
 #define NATRON_VERTICAL_BAR_WIDTH 2
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 VerticalColorBar::VerticalColorBar(QWidget* parent)
 : QWidget(parent)
@@ -64,6 +64,7 @@ VerticalColorBar::paintEvent(QPaintEvent* /*e*/)
     p.drawLine( NATRON_VERTICAL_BAR_WIDTH/2, NATRON_VERTICAL_BAR_WIDTH, NATRON_VERTICAL_BAR_WIDTH/2, height() - NATRON_VERTICAL_BAR_WIDTH);
 }
 
+NATRON_NAMESPACE_EXIT;
 
-
+NATRON_NAMESPACE_USING;
 #include "moc_VerticalColorBar.cpp"

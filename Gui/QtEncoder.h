@@ -38,7 +38,7 @@ class QtWriter
     : public OutputEffectInstance
 {
 public:
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new QtWriter(n);
     }
@@ -91,7 +91,7 @@ protected:
     virtual void initializeKnobs() OVERRIDE;
     virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {
-        return Natron::eRenderSafetyInstanceSafe;
+        return eRenderSafetyInstanceSafe;
     }
 
 private:

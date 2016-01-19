@@ -34,7 +34,7 @@
 #include "Engine/ViewerInstance.h"
 #include <SequenceParsing.h>
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 void
 NodeCollectionSerialization::initialize(const NodeCollection& group)
@@ -274,7 +274,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         if (!children.empty()) {
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>(n->getLiveInstance());
             if (isGrp) {
-                boost::shared_ptr<Natron::EffectInstance> sharedEffect = isGrp->shared_from_this();
+                boost::shared_ptr<EffectInstance> sharedEffect = isGrp->shared_from_this();
                 boost::shared_ptr<NodeGroup> sharedGrp = boost::dynamic_pointer_cast<NodeGroup>(sharedEffect);
                 NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp ,!usingPythonModule, moduleUpdatesProcessed);
                 
@@ -419,3 +419,5 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     }
     return !mustShowErrorsLog;
 }
+
+NATRON_NAMESPACE_EXIT;

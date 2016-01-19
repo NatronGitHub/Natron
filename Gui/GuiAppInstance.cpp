@@ -57,7 +57,7 @@
 #include "Gui/SplashScreen.h"
 #include "Gui/ViewerGL.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 struct RotoPaintData
 {
@@ -102,7 +102,7 @@ struct RotoPaintData
     
 };
 
-struct NATRON_NAMESPACE::GuiAppInstancePrivate
+struct GuiAppInstancePrivate
 {
     Gui* _gui; //< ptr to the Gui interface
 
@@ -1553,4 +1553,7 @@ GuiAppInstance::goToNextKeyframe()
     }
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_GuiAppInstance.cpp"

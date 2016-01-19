@@ -38,9 +38,9 @@
 #include "Engine/TimeLine.h"
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::CustomParamInteractPrivate
+struct CustomParamInteractPrivate
 {
     KnobGui* knob;
     OFX::Host::Param::Instance* ofxParam;
@@ -341,3 +341,4 @@ CustomParamInteract::keyReleaseEvent(QKeyEvent* e)
     }
 }
 
+NATRON_NAMESPACE_EXIT;

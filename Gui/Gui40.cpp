@@ -68,7 +68,7 @@
 #include "Gui/NodeSettingsPanel.h"
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -765,7 +765,7 @@ Gui::renderSelectedNode()
 
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin();
              it != selectedNodes.end(); ++it) {
-            Natron::EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+            EffectInstance* effect = (*it)->getNode()->getLiveInstance();
             assert(effect);
             if (effect->isWriter()) {
                 if (!effect->areKnobsFrozen()) {
@@ -899,3 +899,4 @@ Gui::onTimeChanged(SequenceTime time,
     }
 }
 
+NATRON_NAMESPACE_EXIT;

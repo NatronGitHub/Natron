@@ -43,9 +43,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Label.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::MessageBoxPrivate
+struct MessageBoxPrivate
 {
     MessageBox::MessageBoxTypeEnum type;
     
@@ -292,4 +292,7 @@ MessageBox::event(QEvent* e)
     return result;
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_MessageBox.cpp"

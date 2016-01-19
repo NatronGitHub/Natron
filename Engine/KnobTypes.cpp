@@ -52,9 +52,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 
-NATRON_NAMESPACE_USING
-using std::make_pair;
-using std::pair;
+NATRON_NAMESPACE_ENTER;
+
+//using std::make_pair;
+//using std::pair;
 
 /******************************KnobInt**************************************/
 KnobInt::KnobInt(KnobHolder* holder,
@@ -196,7 +197,7 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
 {
     KnobHolder* holder = getHolder();
     if (holder) {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
         if (!effect) {
             return;
         }
@@ -1804,4 +1805,7 @@ KnobParametric::hasModificationsVirtual(int dimension) const
     return false;
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_KnobTypes.cpp"

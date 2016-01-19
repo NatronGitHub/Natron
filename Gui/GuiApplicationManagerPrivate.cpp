@@ -39,7 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/GuiAppInstance.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 GuiApplicationManagerPrivate::GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface)
@@ -410,3 +410,4 @@ GuiApplicationManagerPrivate::updateFontConfigCache()
     FcConfigBuildFonts(fcConfig);
 }
 
+NATRON_NAMESPACE_EXIT;

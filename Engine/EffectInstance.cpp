@@ -74,7 +74,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 class KnobFile;
@@ -476,7 +476,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
                                                 U64* nodeHash_p,
                                                 bool* isIdentity_p,
                                                 double* identityTime,
-                                                Natron::EffectInstance** identityInput_p,
+                                                EffectInstance** identityInput_p,
                                                 bool* duringPaintStroke_p,
                                                 RectD* rod_p,
                                                 RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
@@ -677,7 +677,7 @@ EffectInstance::getImage(int inputNb,
     RoIMap inputsRoI;
     RectD rod;
     bool isIdentity = false;
-    Natron::EffectInstance* identityInput = 0;
+    EffectInstance* identityInput = 0;
     double inputIdentityTime = 0.;
     U64 nodeHash;
     bool duringPaintStroke;
@@ -976,7 +976,7 @@ EffectInstance::getRegionOfDefinition(U64 hash,
         if ( isInputMask(i) ) {
             continue;
         }
-        Natron::EffectInstance* input = getInput(i);
+        EffectInstance* input = getInput(i);
         if (input) {
             RectD inputRod;
             bool isProjectFormat;
@@ -1032,7 +1032,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
         calcDefaultRegionOfDefinition(hash, time, scale, view, &inputsUnion);
         bool firstInput = true;
         for (int i = 0; i < getMaxInputCount(); ++i) {
-            Natron::EffectInstance* input = getInput(i);
+            EffectInstance* input = getInput(i);
             if (input) {
                 RectD inputRod;
                 bool isProjectFormat;
@@ -1111,7 +1111,7 @@ EffectInstance::getRegionsOfInterest(double time,
 {
     bool tilesSupported = supportsTiles();
     for (int i = 0; i < getMaxInputCount(); ++i) {
-        Natron::EffectInstance* input = getInput(i);
+        EffectInstance* input = getInput(i);
         if (input) {
             if (tilesSupported) {
                 ret->insert( std::make_pair(input, renderWindow) );
@@ -1146,7 +1146,7 @@ EffectInstance::getFramesNeeded(double time,
         if ( isInputRotoBrush(i) ) {
             ret.insert( std::make_pair(i, defViewRange) );
         } else {
-            Natron::EffectInstance* input = getInput(i);
+            EffectInstance* input = getInput(i);
             if (input) {
                 ret.insert( std::make_pair(i, defViewRange) );
             }
@@ -1164,7 +1164,7 @@ EffectInstance::getFrameRange(double *first,
     *first = INT_MIN;
     *last = INT_MAX;
     for (int i = 0; i < getMaxInputCount(); ++i) {
-        Natron::EffectInstance* input = getInput(i);
+        EffectInstance* input = getInput(i);
         if (input) {
             double inpFirst, inpLast;
             input->getFrameRange(&inpFirst, &inpLast);
@@ -1459,7 +1459,7 @@ EffectInstance::tryConcatenateTransforms(double time,
     assert(inputHoldingTransforms.empty() || canApplyTransform);
 
     Transform::Matrix3x3 thisNodeTransform;
-    Natron::EffectInstance* inputToTransform = 0;
+    EffectInstance* inputToTransform = 0;
     bool getTransformSucceeded = false;
 
     if (canTransform) {
@@ -1627,7 +1627,7 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
 
 
 void
-EffectInstance::transformInputRois(Natron::EffectInstance* self,
+EffectInstance::transformInputRois(EffectInstance* self,
                                    const boost::shared_ptr<InputMatrixMap> & inputTransforms,
                                    double par,
                                    const RenderScale & scale,
@@ -1640,7 +1640,7 @@ EffectInstance::transformInputRois(Natron::EffectInstance* self,
     //Transform the RoIs by the inverse of the transform matrix (which is in pixel coordinates)
     for (InputMatrixMap::const_iterator it = inputTransforms->begin(); it != inputTransforms->end(); ++it) {
         RectD transformedRenderWindow;
-        Natron::EffectInstance* effectInTransformInput = self->getInput(it->first);
+        EffectInstance* effectInTransformInput = self->getInput(it->first);
         assert(effectInTransformInput);
 
 
@@ -2632,7 +2632,7 @@ EffectInstance::clearPersistentMessage(bool recurse)
 }
 
 int
-EffectInstance::getInputNumber(Natron::EffectInstance* inputEffect) const
+EffectInstance::getInputNumber(EffectInstance* inputEffect) const
 {
     for (int i = 0; i < getMaxInputCount(); ++i) {
         if (getInput(i) == inputEffect) {
@@ -3029,7 +3029,7 @@ StatusEnum
 EffectInstance::getTransform_public(double time,
                                     const RenderScale & renderScale,
                                     int view,
-                                    Natron::EffectInstance** inputToTransform,
+                                    EffectInstance** inputToTransform,
                                     Transform::Matrix3x3* transform)
 {
     RECURSIVE_ACTION();
@@ -3127,7 +3127,7 @@ EffectInstance::getRegionOfDefinition_publicInternal(U64 hash,
         bool isIdentity = isIdentity_public(true, hash, time, scale, renderWindow, view, &inputTimeIdentity, &inputNbIdentity);
         if (isIdentity) {
             if (inputNbIdentity >= 0) {
-                Natron::EffectInstance* input = getInput(inputNbIdentity);
+                EffectInstance* input = getInput(inputNbIdentity);
                 if (input) {
                     return input->getRegionOfDefinition_public(input->getRenderHash(), inputTimeIdentity, scale, view, rod, isProjectFormat);
                 }
@@ -3383,7 +3383,7 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
                                                 double time,
                                                 int view,
                                                 ComponentsAvailableMap* comps,
-                                                std::list<Natron::EffectInstance*>* markedNodes)
+                                                std::list<EffectInstance*>* markedNodes)
 {
     if ( std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end() ) {
         return;
@@ -3550,7 +3550,7 @@ EffectInstance::getComponentsAvailable(bool useLayerChoice,
                                        bool useThisNodeComponentsNeeded,
                                        double time,
                                        ComponentsAvailableMap* comps,
-                                       std::list<Natron::EffectInstance*>* markedNodes)
+                                       std::list<EffectInstance*>* markedNodes)
 {
     getComponentsAvailableRecursive(useLayerChoice, useThisNodeComponentsNeeded, time, 0, comps, markedNodes);
 }
@@ -3566,7 +3566,7 @@ EffectInstance::getComponentsAvailable(bool useLayerChoice,
     ///Union components over all views
     //for (int view = 0; view < nViews; ++view) {
     ///Edit: Just call for 1 view, it should not matter as this should be view agnostic.
-    std::list<Natron::EffectInstance*> marks;
+    std::list<EffectInstance*> marks;
 
     getComponentsAvailableRecursive(useLayerChoice, useThisNodeComponentsNeeded, time, 0, comps, &marks);
 
@@ -3958,7 +3958,7 @@ EffectInstance::aboutToRestoreDefaultValues()
  * When cycling through the tree, we prefer non optional inputs and we span inputs
  * from last to first.
  **/
-Natron::EffectInstance*
+EffectInstance*
 EffectInstance::getNearestNonDisabled() const
 {
     NodePtr node = getNode();
@@ -3967,8 +3967,8 @@ EffectInstance::getNearestNonDisabled() const
         return node->getLiveInstance();
     } else {
         ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-        std::list<Natron::EffectInstance*> nonOptionalInputs;
-        std::list<Natron::EffectInstance*> optionalInputs;
+        std::list<EffectInstance*> nonOptionalInputs;
+        std::list<EffectInstance*> optionalInputs;
         bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
 
         ///Find an input named A
@@ -4003,8 +4003,8 @@ EffectInstance::getNearestNonDisabled() const
         }
 
         ///If we found A or B so far, cycle through them
-        for (std::list<Natron::EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-            Natron::EffectInstance* inputRet = (*it)->getNearestNonDisabled();
+        for (std::list<EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+            EffectInstance* inputRet = (*it)->getNearestNonDisabled();
             if (inputRet) {
                 return inputRet;
             }
@@ -4014,7 +4014,7 @@ EffectInstance::getNearestNonDisabled() const
         ///We cycle in reverse by default. It should be a setting of the application.
         ///In this case it will return input B instead of input A of a merge for example.
         for (int i = 0; i < maxinputs; ++i) {
-            Natron::EffectInstance* inp = getInput(i);
+            EffectInstance* inp = getInput(i);
             bool optional = isInputOptional(i);
             if (inp) {
                 if (optional) {
@@ -4026,16 +4026,16 @@ EffectInstance::getNearestNonDisabled() const
         }
 
         ///Cycle through all non optional inputs first
-        for (std::list<Natron::EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-            Natron::EffectInstance* inputRet = (*it)->getNearestNonDisabled();
+        for (std::list<EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+            EffectInstance* inputRet = (*it)->getNearestNonDisabled();
             if (inputRet) {
                 return inputRet;
             }
         }
 
         ///Cycle through optional inputs...
-        for (std::list<Natron::EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
-            Natron::EffectInstance* inputRet = (*it)->getNearestNonDisabled();
+        for (std::list<EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+            EffectInstance* inputRet = (*it)->getNearestNonDisabled();
             if (inputRet) {
                 return inputRet;
             }
@@ -4046,14 +4046,14 @@ EffectInstance::getNearestNonDisabled() const
     }
 } // EffectInstance::getNearestNonDisabled
 
-Natron::EffectInstance*
+EffectInstance*
 EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
 {
     assert( getNode()->isNodeDisabled() );
 
     ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-    std::list<Natron::EffectInstance*> nonOptionalInputs;
-    std::list<Natron::EffectInstance*> optionalInputs;
+    std::list<EffectInstance*> nonOptionalInputs;
+    std::list<EffectInstance*> optionalInputs;
     int localPreferredInput = -1;
     bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
     ///Find an input named A
@@ -4090,9 +4090,9 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     }
 
     ///If we found A or B so far, cycle through them
-    for (std::list<Natron::EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+    for (std::list<EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
         if ( (*it)->getNode()->isNodeDisabled() ) {
-            Natron::EffectInstance* inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
+            EffectInstance* inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
             if (inputRet) {
                 return inputRet;
             }
@@ -4103,7 +4103,7 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     ///We cycle in reverse by default. It should be a setting of the application.
     ///In this case it will return input B instead of input A of a merge for example.
     for (int i = 0; i < maxinputs; ++i) {
-        Natron::EffectInstance* inp = getInput(i);
+        EffectInstance* inp = getInput(i);
         bool optional = isInputOptional(i);
         if (inp) {
             if (optional) {
@@ -4122,9 +4122,9 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
 
 
     ///Cycle through all non optional inputs first
-    for (std::list<Natron::EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+    for (std::list<EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
         if ( (*it)->getNode()->isNodeDisabled() ) {
-            Natron::EffectInstance* inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
+            EffectInstance* inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
             if (inputRet) {
                 return inputRet;
             }
@@ -4132,9 +4132,9 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     }
 
     ///Cycle through optional inputs...
-    for (std::list<Natron::EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+    for (std::list<EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
         if ( (*it)->getNode()->isNodeDisabled() ) {
-            Natron::EffectInstance* inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
+            EffectInstance* inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
             if (inputRet) {
                 return inputRet;
             }
@@ -4146,7 +4146,7 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     return this;
 } // EffectInstance::getNearestNonDisabledPrevious
 
-Natron::EffectInstance*
+EffectInstance*
 EffectInstance::getNearestNonIdentity(double time)
 {
     U64 hash = getRenderHash();
@@ -4169,7 +4169,7 @@ EffectInstance::getNearestNonIdentity(double time)
         if (inputNbIdentity < 0) {
             return this;
         }
-        Natron::EffectInstance* effect = getInput(inputNbIdentity);
+        EffectInstance* effect = getInput(inputNbIdentity);
 
         return effect ? effect->getNearestNonIdentity(time) : this;
     }
@@ -4292,7 +4292,7 @@ EffectInstance::checkCanSetValueAndWarn() const
 
 static
 void
-isFrameVaryingOrAnimated_impl(const Natron::EffectInstance* node,
+isFrameVaryingOrAnimated_impl(const EffectInstance* node,
                               bool *ret)
 {
     if ( node->isFrameVarying() || node->getHasAnimation() || node->getNode()->getRotoContext() ) {
@@ -4300,7 +4300,7 @@ isFrameVaryingOrAnimated_impl(const Natron::EffectInstance* node,
     } else {
         int maxInputs = node->getMaxInputCount();
         for (int i = 0; i < maxInputs; ++i) {
-            Natron::EffectInstance* input = node->getInput(i);
+            EffectInstance* input = node->getInput(i);
             if (input) {
                 isFrameVaryingOrAnimated_impl(input, ret);
                 if (*ret) {
@@ -4544,4 +4544,6 @@ EffectInstance::getRecursionLevel() const
     }
     return tls->actionRecursionLevel;
 }
+
+NATRON_NAMESPACE_EXIT;
 

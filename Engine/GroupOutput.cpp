@@ -24,10 +24,12 @@
 
 #include "GroupOutput.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 std::string
 GroupOutput::getPluginDescription() const
 {
     return "This node can only be used within a Group. There can only be 1 Output node in the group. It defines the output of the group.";
 }
+
+NATRON_NAMESPACE_EXIT;

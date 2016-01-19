@@ -45,7 +45,7 @@ class KnobHolder;
 
 class KnobGuiFactory
 {
-    std::map<std::string, Natron::LibraryBinary *> _loadedKnobs;
+    std::map<std::string, LibraryBinary *> _loadedKnobs;
 
 public:
     KnobGuiFactory();
@@ -56,7 +56,7 @@ public:
     KnobGui * createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
 
 private:
-    const std::map<std::string, Natron::LibraryBinary *> &getLoadedKnobs() const
+    const std::map<std::string, LibraryBinary *> &getLoadedKnobs() const
     {
         return _loadedKnobs;
     }

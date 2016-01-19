@@ -90,7 +90,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 static inline double
@@ -3173,5 +3173,7 @@ Bezier::expandToFeatherDistance(bool useGuiCurve,
     return ret;
 } // expandToFeatherDistance
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_Bezier.cpp"

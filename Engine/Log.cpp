@@ -40,7 +40,7 @@
 
 #include "Global/GlobalDefines.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 // see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
 static
@@ -68,7 +68,7 @@ string_format(const std::string fmt, ...)
 }
 
 
-class NATRON_NAMESPACE::LogPrivate
+class LogPrivate
 {
 public:
 

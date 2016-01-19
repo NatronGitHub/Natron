@@ -272,7 +272,7 @@ struct EffectInstance::Implementation
                          int view,
                          bool isIdentity,
                          double identityTime,
-                         Natron::EffectInstance* identityInput,
+                         EffectInstance* identityInput,
                          const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
                          const EffectInstance::InputImagesMap& inputImages,
                          const RoIMap & roiMap,

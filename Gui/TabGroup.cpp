@@ -32,7 +32,7 @@
 
 
 using std::make_pair;
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 TabGroup::TabGroup(QWidget* parent)
@@ -85,3 +85,5 @@ TabGroup::removeTab(KnobGroup* group)
         }
     }
 }
+
+NATRON_NAMESPACE_EXIT;

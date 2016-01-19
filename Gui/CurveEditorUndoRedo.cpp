@@ -43,7 +43,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Transform.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 //////////////////////////////ADD MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 AddKeysCommand::AddKeysCommand(CurveWidget *editor,
@@ -1064,8 +1064,7 @@ TransformKeysCommand::transform(const KeyPtr& k)
         k->key.setTime(p.x);
    
         isBezierCurve->getBezier()->moveKeyframe(oldTime, p.x);
-        
     }
-
 }
 
+NATRON_NAMESPACE_EXIT;

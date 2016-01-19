@@ -85,8 +85,11 @@
 #include "Engine/StandardPaths.h"
 #include "Engine/ViewerInstance.h" // RenderStatsMap
 
+#if QT_VERSION < 0x050000
+Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
+#endif
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 AppManager* AppManager::_instance = 0;
 
@@ -1048,7 +1051,7 @@ AppManager::registerBuiltInPlugin(const QString& iconPath, bool isDeprecated, bo
         qgrouping.push_back( it->c_str() );
     }
     Plugin* p = registerPlugin(qgrouping, node->getPluginID().c_str(), node->getPluginLabel().c_str(),
-                                       iconPath, QStringList(), node->isReader(), node->isWriter(), binary, node->renderThreadSafety() == Natron::eRenderSafetyUnsafe, node->getMajorVersion(), node->getMinorVersion(), isDeprecated);
+                                       iconPath, QStringList(), node->isReader(), node->isWriter(), binary, node->renderThreadSafety() == eRenderSafetyUnsafe, node->getMajorVersion(), node->getMinorVersion(), isDeprecated);
     if (internalUseOnly) {
         p->setForInternalUseOnly(true);
     }
@@ -1410,7 +1413,7 @@ AppManager::registerPlugin(const QStringList & groups,
                            const QStringList & groupIconPath,
                            bool isReader,
                            bool isWriter,
-                           Natron::LibraryBinary* binary,
+                           LibraryBinary* binary,
                            bool mustCreateMutex,
                            int major,
                            int minor,
@@ -1637,7 +1640,7 @@ AppManager::getPluginBinary(const QString & pluginId,
     
 }
 
-boost::shared_ptr<Natron::EffectInstance>
+boost::shared_ptr<EffectInstance>
 AppManager::createOFXEffect(boost::shared_ptr<Node> node,
                             const NodeSerialization* serialization,
                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
@@ -1793,7 +1796,7 @@ AppManager::getTexture(const FrameKey & key,
 
 bool
 AppManager::getTextureOrCreate(const FrameKey & key,
-                               const boost::shared_ptr<Natron::FrameParams>& params,
+                               const boost::shared_ptr<FrameParams>& params,
                                boost::shared_ptr<FrameEntry>* returnValue) const
 {
     
@@ -1812,7 +1815,7 @@ AppManager::getCachesTotalMemorySize() const
     return _imp->_viewerCache->getMemoryCacheSize() + _imp->_nodeCache->getMemoryCacheSize();
 }
 
-Natron::CacheSignalEmitter*
+CacheSignalEmitter*
 AppManager::getOrActivateViewerCacheSignalEmitter() const
 {
     return _imp->_viewerCache->activateSignalEmitter();
@@ -1838,9 +1841,6 @@ AppManager::makeNewInstance(int appID) const
     return new AppInstance(appID);
 }
 
-#if QT_VERSION < 0x050000
-Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
-#endif
 
 void
 AppManager::registerEngineMetaTypes() const
@@ -2203,11 +2203,11 @@ AppManager::onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, vo
     assert(QThread::currentThread() == qApp->thread());
     if (instance == NULL) {
         // instance may be NULL if using OfxDialogSuiteV1
-        Natron::OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
+        OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
         instance = tls->lastEffectCallingMainEntry;
     } else {
 #ifdef DEBUG
-        Natron::OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
+        OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
         assert(instance == tls->lastEffectCallingMainEntry);
 #endif
     }
@@ -2357,7 +2357,7 @@ oom:
 
 
 std::string
-Natron::PY3String_asString(PyObject* obj)
+PY3String_asString(PyObject* obj)
 {
     std::string ret;
     if (PyUnicode_Check(obj)) {
@@ -2436,11 +2436,11 @@ AppManager::initPython(int argc,char* argv[])
     
 #ifndef IS_PYTHON_2
 #ifdef __NATRON_WIN32__
-    static const std::wstring pythonHome(Natron::s2ws("."));
+    static const std::wstring pythonHome(natron_s2ws("."));
 #elif defined(__NATRON_LINUX__)
-    static const std::wstring pythonHome(Natron::s2ws("../lib"));
+    static const std::wstring pythonHome(natron_s2ws("../lib"));
 #elif defined(__NATRON_OSX__)
-    static const std::wstring pythonHome(Natron::s2ws("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"));
+    static const std::wstring pythonHome(natron_s2ws("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"));
 #endif
     Py_SetPythonHome(const_cast<wchar_t*>(pythonHome.c_str()));
     PySys_SetArgv(argc, &_imp->args.front()); /// relative module import
@@ -2766,14 +2766,14 @@ AppManager::hasThreadsRendering() const
     return false;
 }
 
-const Natron::OfxHost*
+const NATRON_NAMESPACE::OfxHost*
 AppManager::getOFXHost() const
 {
     return _imp->ofxHost.get();
 }
 
 void
-NATRON_NAMESPACE::natronErrorDialog(const std::string & title,
+natronErrorDialog(const std::string & title,
             const std::string & message,
             bool useHtml)
 {
@@ -2787,7 +2787,7 @@ NATRON_NAMESPACE::natronErrorDialog(const std::string & title,
 }
 
 void
-NATRON_NAMESPACE::natronErrorDialog(const std::string & title,
+natronErrorDialog(const std::string & title,
             const std::string & message,
             bool* stopAsking,
             bool useHtml)
@@ -2802,7 +2802,7 @@ NATRON_NAMESPACE::natronErrorDialog(const std::string & title,
 }
 
 void
-NATRON_NAMESPACE::natronWarningDialog(const std::string & title,
+natronWarningDialog(const std::string & title,
               const std::string & message,
               bool useHtml)
 {
@@ -2816,7 +2816,7 @@ NATRON_NAMESPACE::natronWarningDialog(const std::string & title,
 }
 
 void
-NATRON_NAMESPACE::natronWarningDialog(const std::string & title,
+natronWarningDialog(const std::string & title,
               const std::string & message,
               bool* stopAsking,
               bool useHtml)
@@ -2831,7 +2831,7 @@ NATRON_NAMESPACE::natronWarningDialog(const std::string & title,
 }
 
 void
-NATRON_NAMESPACE::natronInformationDialog(const std::string & title,
+natronInformationDialog(const std::string & title,
                   const std::string & message,
                   bool useHtml)
 {
@@ -2845,7 +2845,7 @@ NATRON_NAMESPACE::natronInformationDialog(const std::string & title,
 }
 
 void
-NATRON_NAMESPACE::natronInformationDialog(const std::string & title,
+natronInformationDialog(const std::string & title,
                   const std::string & message,
                   bool* stopAsking,
                   bool useHtml)
@@ -2860,7 +2860,7 @@ NATRON_NAMESPACE::natronInformationDialog(const std::string & title,
 }
 
 StandardButtonEnum
-NATRON_NAMESPACE::natronQuestionDialog(const std::string & title,
+natronQuestionDialog(const std::string & title,
                const std::string & message,
                bool useHtml,
                StandardButtons buttons,
@@ -2879,7 +2879,7 @@ NATRON_NAMESPACE::natronQuestionDialog(const std::string & title,
 }
 
 StandardButtonEnum
-NATRON_NAMESPACE::natronQuestionDialog(const std::string & title,
+natronQuestionDialog(const std::string & title,
                const std::string & message,
                bool useHtml,
                StandardButtons buttons,
@@ -2899,7 +2899,7 @@ NATRON_NAMESPACE::natronQuestionDialog(const std::string & title,
 }
     
 std::size_t
-NATRON_NAMESPACE::findNewLineStartAfterImports(std::string& script)
+findNewLineStartAfterImports(std::string& script)
 {
     ///Find position of the last import
     size_t foundImport = script.find("import ");
@@ -2933,13 +2933,13 @@ NATRON_NAMESPACE::findNewLineStartAfterImports(std::string& script)
 }
     
 PyObject*
-NATRON_NAMESPACE::getMainModule()
+getMainModule()
 {
     return appPTR->getMainModule();
 }
 
 std::size_t
-NATRON_NAMESPACE::ensureScriptHasModuleImport(const std::string& moduleName,std::string& script)
+ensureScriptHasModuleImport(const std::string& moduleName,std::string& script)
 {
     /// import module
     script = "from " + moduleName + " import * \n" + script;
@@ -2947,7 +2947,7 @@ NATRON_NAMESPACE::ensureScriptHasModuleImport(const std::string& moduleName,std:
 }
     
 bool
-NATRON_NAMESPACE::interpretPythonScript(const std::string& script,std::string* error,std::string* output)
+interpretPythonScript(const std::string& script,std::string* error,std::string* output)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return true;
@@ -3017,7 +3017,7 @@ NATRON_NAMESPACE::interpretPythonScript(const std::string& script,std::string* e
 
     
 void
-NATRON_NAMESPACE::compilePyScript(const std::string& script,PyObject** code)
+compilePyScript(const std::string& script,PyObject** code)
 {
     ///Must be locked
     assert(PyThreadState_Get());
@@ -3034,7 +3034,7 @@ NATRON_NAMESPACE::compilePyScript(const std::string& script,PyObject** code)
 
     
 std::string
-NATRON_NAMESPACE::makeNameScriptFriendly(const std::string& str)
+makeNameScriptFriendly(const std::string& str)
 {
     if (str == "from") {
         return "pFrom";
@@ -3236,7 +3236,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
   
     
 bool
-NATRON_NAMESPACE::getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
+getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
                                 const std::string& modulePath,
                                 const std::string& pythonModule,
                                 std::string* pluginID,
@@ -3270,7 +3270,7 @@ NATRON_NAMESPACE::getGroupInfosFromQtResourceFile(const std::string& resourceFil
 }
     
 bool
-NATRON_NAMESPACE::getGroupInfos(const std::string& modulePath,
+getGroupInfos(const std::string& modulePath,
               const std::string& pythonModule,
               std::string* pluginID,
               std::string* pluginLabel,
@@ -3297,7 +3297,8 @@ NATRON_NAMESPACE::getGroupInfos(const std::string& modulePath,
 
 
     
-void NATRON_NAMESPACE::getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args)
+void
+getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return;
@@ -3352,7 +3353,7 @@ void NATRON_NAMESPACE::getFunctionArguments(const std::string& pyFunc,std::strin
  * If app1 or Group1 does not exist at this point, this is a failure.
  **/
 PyObject*
-NATRON_NAMESPACE::getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined)
+getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return 0;
@@ -3385,4 +3386,7 @@ NATRON_NAMESPACE::getAttrRecursive(const std::string& fullyQualifiedName,PyObjec
     
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_AppManager.cpp"

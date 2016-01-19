@@ -75,7 +75,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 /*
  * @brief Split all rects to render in smaller rects and check if each one of them is identity.
@@ -83,7 +83,7 @@ NATRON_NAMESPACE_USING
  * For non-identity rectangles, compute the bounding box of them and render it
  */
 static void
-optimizeRectsToRender(Natron::EffectInstance* self,
+optimizeRectsToRender(EffectInstance* self,
                       const RectI & inputsRoDIntersection,
                       const std::list<RectI> & rectsToRender,
                       const double time,
@@ -120,14 +120,14 @@ optimizeRectsToRender(Natron::EffectInstance* self,
 
                 //Walk along the identity branch until we find the non identity input, or NULL in we case we will
                 //just render black and transparant
-                Natron::EffectInstance* identityInput = self->getInput(identityInputNb);
+                EffectInstance* identityInput = self->getInput(identityInputNb);
                 if (identityInput) {
                     for (;; ) {
                         identity = identityInput->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &identityInputNb);
                         if ( !identity || (identityInputNb == -2) ) {
                             break;
                         }
-                        Natron::EffectInstance* subIdentityInput = identityInput->getInput(identityInputNb);
+                        EffectInstance* subIdentityInput = identityInput->getInput(identityInputNb);
                         if (subIdentityInput == identityInput) {
                             break;
                         }
@@ -498,7 +498,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
             args.roi.toCanonical_noClipping(args.mipMapLevel, par,  &canonicalRoI);
 
-            Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
+            EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
                 if ( tls->frameArgs.stats && tls->frameArgs.stats->isInDepthProfilingEnabled() ) {
                     tls->frameArgs.stats->setNodeIdentity( getNode(), inputEffectIdentity->getNode() );
@@ -1798,3 +1798,5 @@ EffectInstance::renderRoIInternal(double time,
     
     return retCode;
 } // renderRoIInternal
+
+NATRON_NAMESPACE_EXIT;

@@ -29,7 +29,7 @@
 
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 void
 KnobGui::onInternalValueChanged(int dimension,
@@ -172,7 +172,7 @@ KnobGui::copyToClipBoard(bool copyAnimation) const
     std::string nodeFullyQualifiedName;
     KnobHolder* holder = getKnob()->getHolder();
     if (holder) {
-        Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
+        EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
         if (isEffect) {
             nodeFullyQualifiedName = isEffect->getNode()->getFullyQualifiedName();
         }
@@ -282,7 +282,7 @@ KnobGui::linkTo(int dimension)
     
     boost::shared_ptr<KnobI> thisKnob = getKnob();
     assert(thisKnob);
-    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(thisKnob->getHolder());
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(thisKnob->getHolder());
     if (!isEffect) {
         return;
     }
@@ -326,7 +326,7 @@ KnobGui::linkTo(int dimension)
                 
             }
             
-            Natron::EffectInstance* otherEffect = dynamic_cast<Natron::EffectInstance*>(otherKnob->getHolder());
+            EffectInstance* otherEffect = dynamic_cast<EffectInstance*>(otherKnob->getHolder());
             if (!otherEffect) {
                 return;
             }
@@ -778,3 +778,5 @@ KnobGui::onLabelChanged()
         onLabelChangedInternal();
     }
 }
+
+NATRON_NAMESPACE_EXIT;

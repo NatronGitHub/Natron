@@ -49,7 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Utils.h" // convertFromPlainText
 #include "Gui/GuiDefines.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 class PlaceHolderTextEdit: public QTextEdit
 {
@@ -102,7 +102,7 @@ private:
 };
 
 
-struct NATRON_NAMESPACE::ExportGroupTemplateDialogPrivate
+struct ExportGroupTemplateDialogPrivate
 {
     Gui* gui;
     NodeCollection* group;
@@ -357,4 +357,7 @@ ExportGroupTemplateDialog::onOkClicked()
     accept();
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_ExportGroupTemplateDialog.cpp"

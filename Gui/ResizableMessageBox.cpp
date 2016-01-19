@@ -27,7 +27,7 @@
 #include <QEvent>
 #include <QTextEdit>
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 // resizable message box,
 // see http://www.qtcentre.org/threads/24888-Resizing-a-QMessageBox#post135851
@@ -75,4 +75,5 @@ ResizableMessageBox::event(QEvent *e)
     return result;
 }
 
+NATRON_NAMESPACE_EXIT;
 

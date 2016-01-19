@@ -53,7 +53,7 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphUndoRedo.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
 typedef std::pair<QTreeWidgetItem *, boost::shared_ptr<DSNode> > TreeItemAndDSNode;
@@ -135,7 +135,7 @@ QTreeWidgetItem *createKnobNameItem(const QString &text,
 
 ////////////////////////// DopeSheet //////////////////////////
 
-class NATRON_NAMESPACE::DopeSheetPrivate
+class DopeSheetPrivate
 {
 public:
     DopeSheetPrivate(DopeSheetEditor* editor,DopeSheet *qq);
@@ -298,7 +298,7 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
         return;
     }
     
-    Natron::EffectInstance *effectInstance = node->getLiveInstance();
+    EffectInstance *effectInstance = node->getLiveInstance();
 
 
     std::string pluginID = node->getPluginID();
@@ -953,7 +953,7 @@ void DopeSheet::onKeyframeSetOrRemoved()
 
 ////////////////////////// DSKnob //////////////////////////
 
-class NATRON_NAMESPACE::DSKnobPrivate
+class DSKnobPrivate
 {
 public:
     DSKnobPrivate();
@@ -1072,7 +1072,7 @@ int DSKnob::getDimension() const
 
 ////////////////////////// DopeSheetSelectionModel //////////////////////////
 
-class NATRON_NAMESPACE::DopeSheetSelectionModelPrivate
+class DopeSheetSelectionModelPrivate
 {
 public:
     DopeSheetSelectionModelPrivate()
@@ -1354,7 +1354,7 @@ void DopeSheetSelectionModel::onNodeAboutToBeRemoved(const boost::shared_ptr<DSN
 
 ////////////////////////// DSNode //////////////////////////
 
-class NATRON_NAMESPACE::DSNodePrivate
+class DSNodePrivate
 {
 public:
     DSNodePrivate();
@@ -1572,4 +1572,7 @@ bool DSNode::containsNodeContext() const
     return false;
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_DopeSheet.cpp"

@@ -87,7 +87,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/Histogram.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -1005,3 +1005,5 @@ Gui::onFocusChanged(QWidget* /*old*/, QWidget* newFocus)
         pw->takeClickFocus();
     }
 }
+
+NATRON_NAMESPACE_EXIT;

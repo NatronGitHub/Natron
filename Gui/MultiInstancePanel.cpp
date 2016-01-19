@@ -83,7 +83,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define COL_SCRIPT_NAME 1
 #define COL_FIRST_KNOB 2
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 namespace {
 typedef std::list < std::pair<boost::weak_ptr<Node>,bool> > Nodes;
@@ -101,7 +101,7 @@ getCenterKnobForTracker(Node* node)
 }
 }
 
-struct NATRON_NAMESPACE::MultiInstancePanelPrivate
+struct MultiInstancePanelPrivate
 {
     MultiInstancePanel* publicInterface;
     bool guiCreated;
@@ -1702,7 +1702,7 @@ namespace  {
 }
 
 /////////////// Tracker panel
-struct NATRON_NAMESPACE::TrackerPanelPrivate
+struct TrackerPanelPrivate
 {
     TrackerPanel* publicInterface;
     Button* averageTracksButton;
@@ -2371,7 +2371,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         if (!linked) {
             toPoints[i]->cloneAndUpdateGui(centers[i].get());
         } else {
-            Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(centers[i]->getHolder());
+            EffectInstance* effect = dynamic_cast<EffectInstance*>(centers[i]->getHolder());
             assert(effect);
             
             std::stringstream ss;
@@ -2431,7 +2431,7 @@ struct TrackArgs
     std::list<KnobButton*> instances;
 };
 
-struct NATRON_NAMESPACE::TrackSchedulerPrivate
+struct TrackSchedulerPrivate
 {
     const TrackerPanel* panel;
     
@@ -2684,4 +2684,7 @@ TrackScheduler::quitThread()
     
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_MultiInstancePanel.cpp"

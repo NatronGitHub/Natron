@@ -46,7 +46,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 #define TEXTURE_SIZE 256
 
@@ -68,7 +68,7 @@ struct TextRendererPrivate
 
     ~TextRendererPrivate();
 
-    void newTransparantTexture();
+    void newTransparentTexture();
 
     CharBitmap * createCharacter(QChar c);
 
@@ -131,7 +131,7 @@ TextRendererPrivate::clearBitmapCache()
 }
 
 void
-TextRendererPrivate::newTransparantTexture()
+TextRendererPrivate::newTransparentTexture()
 {
     GLuint savedTexture;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
@@ -167,7 +167,7 @@ TextRendererPrivate::createCharacter(QChar c)
 #endif
 
     if ( _usedTextures.empty() ) {
-        newTransparantTexture();
+        newTransparentTexture();
     }
 
     GLuint texture = _usedTextures.back();
@@ -225,7 +225,7 @@ TextRendererPrivate::createCharacter(QChar c)
         _yOffset += height;
     }
     if (_yOffset + height >= TEXTURE_SIZE) {
-        newTransparantTexture();
+        newTransparentTexture();
         _yOffset = 1;
     }
 
@@ -320,4 +320,6 @@ TextRenderer::renderText(float x,
 
     glCheckError();
 } // renderText
+
+NATRON_NAMESPACE_EXIT;
 

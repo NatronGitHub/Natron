@@ -716,7 +716,7 @@ CallbacksManager::s_emitDoCallBackOnMainThread(const QString& filePath)
 
 
 /*Converts a std::string to wide string*/
-inline std::wstring
+static inline std::wstring
 s2ws(const std::string & s)
 {
     

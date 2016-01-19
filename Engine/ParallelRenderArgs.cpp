@@ -33,9 +33,9 @@
 #include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
+EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                                                             const boost::shared_ptr<Node>& node,
                                                                             const FramesNeededMap& framesNeeded,
                                                                             const RoIMap& inputRois,
@@ -321,7 +321,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         return EffectInstance::eRenderRoIRetCodeOk;
 }
 
-StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransforms,
+StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                                 double time,
                                                                 int view,
                                                                 unsigned originalMipMapLevel,
@@ -336,15 +336,15 @@ StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     EffectInstance* effect = node->getLiveInstance();
     assert(effect);
     
-    if (effect->supportsRenderScaleMaybe() == Natron::EffectInstance::eSupportsMaybe) {
+    if (effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
         /*
          If this flag was not set already that means it probably failed all calls to getRegionOfDefinition.
          We safely fail here
          */
         return eStatusFailed;
     }
-    assert(effect->supportsRenderScaleMaybe() == Natron::EffectInstance::eSupportsNo ||
-           effect->supportsRenderScaleMaybe() == Natron::EffectInstance::eSupportsYes);
+    assert(effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsNo ||
+           effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes);
     bool supportsRs = effect->supportsRenderScale();
     unsigned int mappedLevel = supportsRs ? originalMipMapLevel : 0;
     
@@ -457,7 +457,7 @@ StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         
     } else if (fvRequest->globalData.identityInputNb != -1) {
         
-        Natron::EffectInstance* inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
+        EffectInstance* inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
         if (inputEffectIdentity) {
             fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, FrameViewPerRequestData()));
             StatusEnum stat = getInputsRoIsFunctor(useTransforms,
@@ -484,7 +484,7 @@ StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     ///Transform Rois and get the reroutes map
     if (useTransforms) {
         if (fvRequest->globalData.transforms) {
-            fvRequest->globalData.reroutesMap.reset(new std::map<int, Natron::EffectInstance*>());
+            fvRequest->globalData.reroutesMap.reset(new std::map<int, EffectInstance*>());
             transformInputRois(effect,fvRequest->globalData.transforms,par,nodeRequest->mappedScale,&fvPerRequestData.inputsRoi,fvRequest->globalData.reroutesMap.get());
         }
     }
@@ -710,7 +710,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     for (std::list<boost::shared_ptr<Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         assert(*it);
         
-        Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
+        EffectInstance* liveInstance = (*it)->getLiveInstance();
         assert(liveInstance);
         bool duringPaintStrokeCreation = activeRotoPaintNode && (*it)->isDuringPaintStrokeCreation();
         Natron::RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
@@ -784,7 +784,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                 }
                 
                 assert(*it2);
-                Natron::EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
+                EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
                 assert(childLiveInstance);
                 Natron::RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
                 childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge,treeRoot, childRequest, textureIndex, timeline, isAnalysis, false, std::list<boost::shared_ptr<Node> >(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled,stats);
@@ -845,3 +845,5 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
         }
     }
 }
+
+NATRON_NAMESPACE_EXIT;

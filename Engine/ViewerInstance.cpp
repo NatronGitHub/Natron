@@ -74,7 +74,7 @@ CLANG_DIAG_ON(deprecated)
 
 #define NATRON_TIME_ELASPED_BEFORE_PROGRESS_REPORT 0.4
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 using std::make_pair;
 using boost::shared_ptr;
@@ -160,7 +160,7 @@ public:
 };
 
 
-Natron::EffectInstance*
+EffectInstance*
 ViewerInstance::BuildEffect(boost::shared_ptr<Node> n)
 {
     // always running in the main thread
@@ -505,7 +505,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         NodeList rotoPaintNodes;
         if (rotoPaintNode) {
             if (activeStroke) {
-                Natron::EffectInstance* rotoLive = rotoPaintNode->getLiveInstance();
+                EffectInstance* rotoLive = rotoPaintNode->getLiveInstance();
                 assert(rotoLive);
                 bool ok = rotoLive->getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
                 assert(ok);
@@ -1008,7 +1008,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         ///we never use the texture cache when the user RoI is enabled, otherwise we would have
         ///zillions of textures in the cache, each a few pixels different.
         assert(_imp->uiContext);
-        boost::shared_ptr<Natron::FrameParams> cachedFrameParams;
+        boost::shared_ptr<FrameParams> cachedFrameParams;
         
         if (!outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get()) {
             isCached = Natron::natronGetTextureFromCache(*(outArgs->key), &outArgs->params->cachedFrame);
@@ -1261,7 +1261,7 @@ ViewerInstance::renderViewer_internal(int view,
         inArgs.params->rod.toPixelEnclosing(inArgs.params->mipMapLevel, inArgs.params->textureRect.par, &bounds);
         
         
-        boost::shared_ptr<Natron::FrameParams> cachedFrameParams =
+        boost::shared_ptr<FrameParams> cachedFrameParams =
         FrameEntry::makeParams(bounds,inArgs.key->getBitDepth(), inArgs.params->textureRect.w, inArgs.params->textureRect.h, ImagePtr());
         bool cached = natronGetTextureFromCacheOrCreate(*(inArgs.key), cachedFrameParams,
                                                                    &inArgs.params->cachedFrame);
@@ -3157,5 +3157,8 @@ ViewerInstance::reportStats(int time, int view, double wallTime, const RenderSta
     Q_EMIT renderStatsAvailable(time, view, wallTime, stats);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_ViewerInstance.cpp"
 #include "moc_ViewerInstancePrivate.cpp"

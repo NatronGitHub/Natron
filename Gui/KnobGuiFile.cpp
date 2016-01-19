@@ -57,7 +57,7 @@
 
 #include <SequenceParsing.h>
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 //===========================FILE_KNOB_GUI=====================================
@@ -175,7 +175,7 @@ KnobGuiFile::open_file()
     if ( !knob->isInputImageFile() ) {
         filters.push_back("*");
     } else {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>( knob->getHolder() );
+        EffectInstance* effect = dynamic_cast<EffectInstance*>( knob->getHolder() );
         if (effect) {
             filters = effect->supportedFileFormats();
         }
@@ -534,7 +534,7 @@ KnobGuiOutputFile::open_file(bool openSequence)
     if ( !_knob.lock()->isOutputImageFile() ) {
         filters.push_back("*");
     } else {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>( getKnob()->getHolder() );
+        EffectInstance* effect = dynamic_cast<EffectInstance*>( getKnob()->getHolder() );
         if (effect) {
             filters = effect->supportedFileFormats();
         }
@@ -1399,4 +1399,8 @@ KnobGuiPath::updateToolTip()
         }
     }
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_KnobGuiFile.cpp"

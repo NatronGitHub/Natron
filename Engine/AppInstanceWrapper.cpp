@@ -35,7 +35,7 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 App::App(AppInstance* instance)
 : Group()
@@ -329,3 +329,5 @@ App::newProject()
     return new App(app);
 
 }
+
+NATRON_NAMESPACE_EXIT;

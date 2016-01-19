@@ -41,7 +41,7 @@
 #include "Gui/NodeGuiSerialization.h"
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
@@ -216,3 +216,5 @@ NodeGraphPrivate::copyNodesInternal(const NodeGuiList& selection,NodeClipBoard &
         }
     }
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -66,7 +66,7 @@ BaseTest::registerTestPlugins()
 
     for (unsigned int i = 0; i < _allTestPluginIDs.size(); ++i) {
         ///make sure the generic test plugin is present
-        Natron::LibraryBinary* bin = NULL;
+        LibraryBinary* bin = NULL;
         try {
             Plugin* p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1, false);
             if (p) {

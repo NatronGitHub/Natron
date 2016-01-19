@@ -82,7 +82,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 1
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 using std::make_pair;
 using std::cout; using std::endl;
@@ -285,8 +285,8 @@ struct Node::Implementation
     , createdComponents()
     , paintStroke()
     , pluginsPropMutex()
-    , pluginSafety(Natron::eRenderSafetyInstanceSafe)
-    , currentThreadSafety(Natron::eRenderSafetyInstanceSafe)
+    , pluginSafety(eRenderSafetyInstanceSafe)
+    , currentThreadSafety(eRenderSafetyInstanceSafe)
     , currentSupportTiles(false)
     , currentSupportOpenGLRender(Natron::ePluginOpenGLRenderSupportNone)
     , currentSupportSequentialRender(Natron::eSequentialPreferenceNotSequential)
@@ -373,7 +373,7 @@ struct Node::Implementation
     bool mustCopyGuiInputs;
     
     //to the inputs in a thread-safe manner.
-    boost::shared_ptr<Natron::EffectInstance>  liveInstance; //< the effect hosted by this node
+    boost::shared_ptr<EffectInstance>  liveInstance; //< the effect hosted by this node
     
     ///These two are also protected by inputsMutex
     std::vector< std::list<ImageComponents> > inputsComponents;
@@ -1281,7 +1281,7 @@ Node::computeHashInternal()
         //        }
         
         ///Also append the effect's label to distinguish 2 instances with the same parameters
-        ::Hash64_appendQString( &_imp->hash, QString( getScriptName().c_str() ) );
+        Hash64_appendQString( &_imp->hash, QString( getScriptName().c_str() ) );
         
         ///Also append the project's creation time in the hash because 2 projects openend concurrently
         ///could reproduce the same (especially simple graphs like Viewer-Reader)
@@ -2670,7 +2670,7 @@ Node::makeInfoForInput(int inputNumber) const
     ImageBitDepthEnum depth;
     ImagePremultiplicationEnum premult;
 
-    Natron::EffectInstance* input = inputNode->getLiveInstance();
+    EffectInstance* input = inputNode->getLiveInstance();
     double par = input->getPreferredAspectRatio();
     premult = input->getOutputPremultiplication();
     std::string premultStr;
@@ -3381,7 +3381,7 @@ Node::beginEditKnobs()
 
 
 void
-Node::setLiveInstance(const boost::shared_ptr<Natron::EffectInstance>& liveInstance)
+Node::setLiveInstance(const boost::shared_ptr<EffectInstance>& liveInstance)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3389,7 +3389,7 @@ Node::setLiveInstance(const boost::shared_ptr<Natron::EffectInstance>& liveInsta
     _imp->liveInstance->initializeData();
 }
 
-Natron::EffectInstance*
+EffectInstance*
 Node::getLiveInstance() const
 {
 #pragma message WARN("We should fix it and return a shared_ptr instead, but this is a tedious work since it is used everywhere")
@@ -4593,7 +4593,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
                 continue;
             }
             
-            Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
+            EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
             if (!isEffect) {
                 continue;
             }
@@ -5015,7 +5015,7 @@ Node::makePreviewImage(SequenceTime time,
     RenderScale scale(1.);
     U64 nodeHash = getHashValue();
     
-    Natron::EffectInstance* effect = 0;
+    EffectInstance* effect = 0;
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
     if (isGroup) {
         effect = isGroup->getOutputNode(false)->getLiveInstance();
@@ -5085,7 +5085,7 @@ Node::makePreviewImage(SequenceTime time,
         // but any exception in renderROI is probably fatal.
         ImageList planes;
         try {
-            Natron::EffectInstance::RenderRoIRetCode retCode =
+            EffectInstance::RenderRoIRetCode retCode =
             effect->renderRoI( EffectInstance::RenderRoIArgs( time,
                                                              scale,
                                                              mipMapLevel,
@@ -5095,7 +5095,7 @@ Node::makePreviewImage(SequenceTime time,
                                                              rod,
                                                              requestedComps, //< preview is always rgb...
                                                              depth, false, effect) ,&planes);
-            if (retCode != Natron::EffectInstance::eRenderRoIRetCodeOk) {
+            if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
                 return false;
             }
         } catch (...) {
@@ -5638,7 +5638,7 @@ Node::onAllKnobsSlaved(bool isSlave,
     assert( QThread::currentThread() == qApp->thread() );
     
     if (isSlave) {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(master);
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(master);
         assert(effect);
         boost::shared_ptr<Node> masterNode = effect->getNode();
         {
@@ -9128,4 +9128,7 @@ InspectorNode::getPreferredInputForConnection() const
     return getPreferredInputInternal(false);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_Node.cpp"

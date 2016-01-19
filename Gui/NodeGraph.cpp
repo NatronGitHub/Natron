@@ -52,7 +52,7 @@
 
 #include "Global/QtCompat.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 //using std::cout; using std::endl;
 
 
@@ -449,5 +449,7 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Node> & node,
     return node_ui;
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_NodeGraph.cpp"

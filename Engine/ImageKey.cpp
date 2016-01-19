@@ -24,7 +24,7 @@
 
 #include "ImageKey.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 ImageKey::ImageKey()
 : KeyHelper<U64>()
@@ -89,5 +89,6 @@ ImageKey::operator==(const ImageKey & other) const
         _draftMode == other._draftMode &&
         _fullScaleWithDownscaleInputs == other._fullScaleWithDownscaleInputs;
     }
-    
 }
+
+NATRON_NAMESPACE_EXIT;

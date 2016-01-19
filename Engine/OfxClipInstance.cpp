@@ -53,9 +53,9 @@
 #include <nuke/fnOfxExtensions.h>
 #include <ofxNatron.h>
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::OfxClipInstancePrivate
+struct OfxClipInstancePrivate
 {
     OfxClipInstance* _publicInterface;
     OfxEffectInstance* nodeInstance;
@@ -267,7 +267,7 @@ OfxClipInstancePrivate::getComponentsPresentInternal(const OfxClipInstance::Clip
     tls->componentsPresent.clear();
     
     EffectInstance::ComponentsAvailableMap compsAvailable;
-    Natron::EffectInstance* effect = _publicInterface->getAssociatedNode();
+    EffectInstance* effect = _publicInterface->getAssociatedNode();
     if (!effect) {
         return tls->componentsPresent;
     }
@@ -401,7 +401,7 @@ OfxClipInstance::getConnected() const
         } else {
             int inputNb = getInputNb();
             
-            Natron::EffectInstance* input = 0;
+            EffectInstance* input = 0;
             // if (isMask()) {
             
             if (!_imp->nodeInstance->getNode()->isMaskEnabled(inputNb)) {
@@ -458,7 +458,7 @@ OfxClipInstance::getContinuousSamples() const
 }
 
 void
-OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,Natron::EffectInstance* associatedNode,
+OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,EffectInstance* associatedNode,
                                                OfxRectD* ret) const
 {
     
@@ -523,7 +523,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time, int view) const
 {
     OfxRectD rod;
     unsigned int mipmapLevel;
-    Natron::EffectInstance* associatedNode = getAssociatedNode();
+    EffectInstance* associatedNode = getAssociatedNode();
     
     /// The node might be disabled, hence we navigate upstream to find the first non disabled node.
     if (associatedNode) {
@@ -558,7 +558,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     OfxRectD ret;
     unsigned int mipmapLevel;
     int view;
-    Natron::EffectInstance* associatedNode = getAssociatedNode();
+    EffectInstance* associatedNode = getAssociatedNode();
 
     /// The node might be disabled, hence we navigate upstream to find the first non disabled node.
     if (associatedNode) {
@@ -1121,7 +1121,7 @@ OfxClipInstance::natronsDepthToOfxDepth(ImageBitDepthEnum depth)
 }
 
 
-struct NATRON_NAMESPACE::OfxImagePrivate
+struct OfxImagePrivate
 {
     ImagePtr natronImage;
     boost::shared_ptr<Natron::GenericAccess> access;
@@ -1261,7 +1261,7 @@ OfxClipInstance::getInputNb() const
     return _imp->nodeInstance->getClipInputNumber(this);
 }
 
-Natron::EffectInstance*
+EffectInstance*
 OfxClipInstance::getAssociatedNode() const
 {
     assert(_imp->nodeInstance);
@@ -1409,4 +1409,5 @@ OfxClipInstance::findSupportedComp(const std::string &s) const
 
 }
 
+NATRON_NAMESPACE_EXIT;
 

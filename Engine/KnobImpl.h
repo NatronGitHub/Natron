@@ -841,7 +841,7 @@ Knob<T>::setValue(const T & v,
     }
 
     KnobHelper::ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNoKeyframeAdded;
-    Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>( getHolder() );
+    EffectInstance* holder = dynamic_cast<EffectInstance*>( getHolder() );
     
 #ifdef DEBUG
     if (holder && reason == eValueChangedReasonPluginEdited) {
@@ -1038,10 +1038,10 @@ void
 Knob<T>::setValues(const T& value0, const T& value1, ValueChangedReasonEnum reason)
 {
     KnobHolder* holder = getHolder();
-    Natron::EffectInstance* effect = 0;
+    EffectInstance* effect = 0;
     bool doEditEnd = false;
     if (holder) {
-        effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
             if (effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup()) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1067,10 +1067,10 @@ void
 Knob<T>::setValues(const T& value0, const T& value1, const T& value2, ValueChangedReasonEnum reason)
 {
     KnobHolder* holder = getHolder();
-    Natron::EffectInstance* effect = 0;
+    EffectInstance* effect = 0;
     bool doEditEnd = false;
     if (holder) {
-        effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
             if (effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup()) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1098,10 +1098,10 @@ void
 Knob<T>::setValues(const T& value0, const T& value1, const T& value2, const T& value3, ValueChangedReasonEnum reason)
 {
     KnobHolder* holder = getHolder();
-    Natron::EffectInstance* effect = 0;
+    EffectInstance* effect = 0;
     bool doEditEnd = false;
     if (holder) {
-        effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
             if (effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup()) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1172,7 +1172,7 @@ Knob<T>::setValueAtTime(double time,
         setValue(v, dimension, reason, newKey);
     }
 
-    Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>( getHolder() );
+    EffectInstance* holder = dynamic_cast<EffectInstance*>( getHolder() );
     
 #ifdef DEBUG
     if (holder && reason == eValueChangedReasonPluginEdited) {
@@ -1298,10 +1298,10 @@ Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, ValueChan
 {
     
     KnobHolder* holder = getHolder();
-    Natron::EffectInstance* effect = 0;
+    EffectInstance* effect = 0;
     bool doEditEnd = false;
     if (holder) {
-        effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
             if (effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup()) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1327,10 +1327,10 @@ void
 Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, const T& value2, ValueChangedReasonEnum reason)
 {
     KnobHolder* holder = getHolder();
-    Natron::EffectInstance* effect = 0;
+    EffectInstance* effect = 0;
     bool doEditEnd = false;
     if (holder) {
-        effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
             if (effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup()) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1358,10 +1358,10 @@ void
 Knob<T>::setValuesAtTime(double time,const T& value0, const T& value1, const T& value2, const T& value3, ValueChangedReasonEnum reason)
 {
     KnobHolder* holder = getHolder();
-    Natron::EffectInstance* effect = 0;
+    EffectInstance* effect = 0;
     bool doEditEnd = false;
     if (holder) {
-        effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
             if (effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup()) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);

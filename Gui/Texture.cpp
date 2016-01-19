@@ -32,7 +32,7 @@
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 Texture::Texture(U32 target,
                  int minFilter,
@@ -130,3 +130,4 @@ Texture::~Texture()
     glDeleteTextures(1, &_texID);
 }
 
+NATRON_NAMESPACE_EXIT;

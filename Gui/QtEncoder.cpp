@@ -47,7 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TimeLine.h"
 #include "Engine/Node.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 QtWriter::QtWriter(boost::shared_ptr<Node> node)
     : OutputEffectInstance(node)
@@ -295,6 +295,8 @@ QtWriter::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     depths->push_back(eImageBitDepthFloat);
 }
+
+NATRON_NAMESPACE_EXIT;
 
 #endif //NATRON_ENABLE_QT_IO_NODES
 

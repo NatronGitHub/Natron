@@ -52,7 +52,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #define NATRON_AUTO_SCROLL_TIMEOUT_MS 50
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 static bool handleConnectionError(const boost::shared_ptr<NodeGui>& outputNode, const boost::shared_ptr<NodeGui>& inputNode, int inputNb)
 {
@@ -401,3 +401,5 @@ NodeGraph::onAutoScrollTimerTriggered()
     QPointF cursorPos = mapToScene(mapFromGlobal(QCursor::pos()));
     scrollViewIfNeeded(cursorPos);
 }
+
+NATRON_NAMESPACE_EXIT;

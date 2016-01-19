@@ -42,7 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Utils.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
                                    Gui *parent)
@@ -161,5 +161,7 @@ PreferencesPanel::keyPressEvent(QKeyEvent* e)
     }
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_PreferencesPanel.cpp"

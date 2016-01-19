@@ -107,7 +107,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_PLUGIN_ICON_SIZE 20
 #define PLUGIN_ICON_OFFSET 2
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 using std::make_pair;
 
@@ -290,7 +290,7 @@ NodeGui::initialize(NodeGraph* dag,
     _clonedColor.setRgb(200,70,100);
 
     //QColor defaultColor = getCurrentColor();
-    Natron::EffectInstance* iseffect = internalNode->getLiveInstance();
+    EffectInstance* iseffect = internalNode->getLiveInstance();
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
     float r,g,b;
     BackDrop* isBd = dynamic_cast<BackDrop*>(iseffect);
@@ -2506,7 +2506,7 @@ NodeGui::toggleBitDepthIndicator(bool on,
 
 ////////////////////////////////////////// NodeGuiIndicator ////////////////////////////////////////////////////////
 
-struct NATRON_NAMESPACE::NodeGuiIndicatorPrivate
+struct NodeGuiIndicatorPrivate
 {
     QGraphicsEllipseItem* ellipse;
     QGraphicsSimpleTextItem* textItem;
@@ -3472,5 +3472,7 @@ NodeGui::onHideInputsKnobValueChanged(bool /*hidden*/)
     refreshEdgesVisility();
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_NodeGui.cpp"

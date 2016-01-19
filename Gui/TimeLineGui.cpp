@@ -60,7 +60,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 #define TICK_HEIGHT 7
 #define CURSOR_WIDTH 15
@@ -110,7 +110,7 @@ struct CachedFrame_compare_time
 typedef std::set<CachedFrame,CachedFrame_compare_time> CachedFrames;
 }
 
-struct NATRON_NAMESPACE::TimelineGuiPrivate
+struct TimelineGuiPrivate
 {
     TimeLineGui *parent;
     ViewerInstance* viewer;
@@ -1058,7 +1058,7 @@ TimeLineGui::connectSlotsToViewerCache()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    Natron::CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
+    CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
     QObject::connect( emitter, SIGNAL( addedEntry(SequenceTime) ), this, SLOT( onCachedFrameAdded(SequenceTime) ) );
     QObject::connect( emitter, SIGNAL( removedEntry(SequenceTime,int) ), this, SLOT( onCachedFrameRemoved(SequenceTime,int) ) );
     QObject::connect( emitter, SIGNAL( entryStorageChanged(SequenceTime,int,int) ), this,
@@ -1073,7 +1073,7 @@ TimeLineGui::disconnectSlotsFromViewerCache()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    Natron::CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
+    CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
     QObject::disconnect( emitter, SIGNAL( addedEntry(SequenceTime) ), this, SLOT( onCachedFrameAdded(SequenceTime) ) );
     QObject::disconnect( emitter, SIGNAL( removedEntry(SequenceTime,int) ), this, SLOT( onCachedFrameRemoved(SequenceTime,int) ) );
     QObject::disconnect( emitter, SIGNAL( entryStorageChanged(SequenceTime,int,int) ), this,
@@ -1179,4 +1179,7 @@ TimeLineGui::onProjectFrameRangeChanged(int left,int right)
     update();
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_TimeLineGui.cpp"

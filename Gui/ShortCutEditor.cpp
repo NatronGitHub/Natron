@@ -47,7 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/Utils.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 struct GuiBoundAction
 {
@@ -116,7 +116,7 @@ public:
     }
 };
 
-struct NATRON_NAMESPACE::ShortCutEditorPrivate
+struct ShortCutEditorPrivate
 {
     QVBoxLayout* mainLayout;
     HackedTreeWidget* tree;
@@ -837,5 +837,7 @@ KeybindRecorder::keyPressEvent(QKeyEvent* e)
     setText(txt);
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_ShortCutEditor.cpp"

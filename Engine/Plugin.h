@@ -151,7 +151,7 @@ public:
 
 class Plugin
 {
-    Natron::LibraryBinary* _binary;
+    LibraryBinary* _binary;
     QString _id;
     QString _label;
     QString _iconFilePath;
@@ -204,7 +204,7 @@ public:
     {
     }
 
-    Plugin(Natron::LibraryBinary* binary,
+    Plugin(LibraryBinary* binary,
            const QString & id,
            const QString & label,
            const QString & iconFilePath,
@@ -286,7 +286,7 @@ public:
     
     QMutex* getPluginLock() const;
 
-    Natron::LibraryBinary* getLibraryBinary() const;
+    LibraryBinary* getLibraryBinary() const;
 
     int getMajorVersion() const;
 

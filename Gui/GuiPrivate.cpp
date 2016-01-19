@@ -130,7 +130,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "SequenceParsing.h"
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 GuiPrivate::GuiPrivate(GuiAppInstance* app,
@@ -591,7 +591,7 @@ GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,const QString& pr
         qint64 curPid = (qint64)QCoreApplication::applicationPid();
         if (lockPID != curPid) {
             QString appFilePath = QCoreApplication::applicationFilePath();
-            if (Natron::checkIfProcessIsRunning(appFilePath.toStdString().c_str(),(Q_PID)lockPID)) {
+            if (Natron::natronCheckIfProcessIsRunning(appFilePath.toStdString().c_str(),(Q_PID)lockPID)) {
                 StandardButtonEnum rep = natronQuestionDialog(QObject::tr("Project").toStdString(),
                                                                         QObject::tr("This project may be open in another instance of Natron "
                                                                                     "running on %1 as process ID %2, "
@@ -759,3 +759,5 @@ GuiPrivate::findActionRecursive(int i,
 
     return 0;
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -46,10 +46,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
-struct NATRON_NAMESPACE::CompleterLineEditPrivate
+struct CompleterLineEditPrivate
 {
     QDialog* dialog;
     QListView* listView;
@@ -267,7 +267,7 @@ CompleterLineEdit::showCompleter()
     filterText("");
 }
 
-struct NATRON_NAMESPACE::NodeCreationDialogPrivate
+struct NodeCreationDialogPrivate
 {
     QVBoxLayout* layout;
     CompleterLineEdit* textEdit;
@@ -461,5 +461,7 @@ NodeCreationDialog::changeEvent(QEvent* e)
     QDialog::changeEvent(e);
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_NodeCreationDialog.cpp"

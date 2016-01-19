@@ -26,7 +26,7 @@
 
 #include "Gui/Gui.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 AutoHideToolBar::AutoHideToolBar(Gui* gui,
                                  QWidget* parent)
@@ -44,3 +44,4 @@ void AutoHideToolBar::leaveEvent(QEvent* e)
 }
 
 
+NATRON_NAMESPACE_EXIT;

@@ -28,7 +28,7 @@
 
 #include "Engine/RectI.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 void
 RectD::toPixelEnclosing(const RenderScale & scale,
@@ -53,3 +53,5 @@ RectD::toPixelEnclosing(unsigned int mipMapLevel,
     rect->x2 = std::ceil(x2 * scale / par);
     rect->y2 = std::ceil(y2 * scale);
 }
+
+NATRON_NAMESPACE_EXIT;

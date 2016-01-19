@@ -35,7 +35,7 @@
 #include "Engine/Node.h"
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 struct ComputePreviewRequest
 {
@@ -43,7 +43,7 @@ struct ComputePreviewRequest
     boost::shared_ptr<NodeGui> node;
 };
 
-struct NATRON_NAMESPACE::PreviewThreadPrivate
+struct PreviewThreadPrivate
 {
     mutable QMutex previewQueueMutex;
     std::list<ComputePreviewRequest> previewQueue;
@@ -188,4 +188,6 @@ PreviewThread::run()
         
     } // for(;;)
 }
+
+NATRON_NAMESPACE_EXIT;
 

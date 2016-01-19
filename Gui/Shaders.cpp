@@ -24,7 +24,7 @@
 
 #include "Global/Macros.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 const char* fragRGB =
     "uniform sampler2D Tex;\n"
@@ -207,3 +207,5 @@ const char *histogramMaximum_frag =
     "    gl_FragColor = vec4(max(max(a.r,b.r),max(c.r,d.r)),0.0,0.0,1.0);\n"
     "}\n"
 ;
+
+NATRON_NAMESPACE_EXIT;

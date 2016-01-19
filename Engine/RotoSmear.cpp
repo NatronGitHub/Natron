@@ -31,9 +31,9 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoStrokeItem.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::RotoSmearPrivate
+struct RotoSmearPrivate
 {
     QMutex smearDataMutex;
     std::pair<Point, double> lastTickPoint,lastCur;
@@ -446,3 +446,5 @@ RotoSmear::render(const RenderActionArgs& args)
     } // for (std::list<std::list<std::pair<Point,double> > >::const_iterator itStroke = strokes.begin(); itStroke!=strokes.end(); ++itStroke) {
     return eStatusOK;
 }
+
+NATRON_NAMESPACE_EXIT;

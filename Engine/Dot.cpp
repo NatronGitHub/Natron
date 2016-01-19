@@ -24,7 +24,7 @@
 
 #include "Dot.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 std::string
 Dot::getPluginDescription() const
@@ -33,3 +33,4 @@ Dot::getPluginDescription() const
 }
 
 
+NATRON_NAMESPACE_EXIT;

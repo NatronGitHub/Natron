@@ -78,7 +78,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerTab.h"
 
 using std::make_pair;
-NATRON_NAMESPACE_USING
+
+NATRON_NAMESPACE_ENTER;
 
 
 namespace {
@@ -143,7 +144,7 @@ DockablePanel::DockablePanel(Gui* gui ,
     setFrameShape(QFrame::Box);
     setFocusPolicy(Qt::NoFocus);
     
-    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
     QString pluginLabelVersioned;
     if (isEffect) {
         
@@ -520,7 +521,7 @@ DockablePanel::onPageIndexChanged(int index)
         
     _imp->refreshPagesSecretness();
     
-    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(_imp->_holder);
     if (isEffect && isEffect->getNode()->hasOverlay()) {
         isEffect->getApp()->redrawAllViewers();
     }
@@ -552,7 +553,7 @@ DockablePanel::setPluginIDAndVersion(const std::string& pluginLabel,const std::s
         
         
         
-        Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
+        EffectInstance* iseffect = dynamic_cast<EffectInstance*>(_imp->_holder);
         if (iseffect) {
             _imp->_pluginID = pluginID.c_str();
             _imp->_pluginVersionMajor = version;
@@ -837,7 +838,7 @@ DockablePanel::helpString() const
     //Base help
     QString tt = Natron::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);
 
-    Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
+    EffectInstance* iseffect = dynamic_cast<EffectInstance*>(_imp->_holder);
     if (iseffect) {
         //Prepend the plugin ID
         if (!_imp->_pluginID.isEmpty()) {
@@ -859,7 +860,7 @@ DockablePanel::helpString() const
 void
 DockablePanel::showHelp()
 {
-    Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
+    EffectInstance* iseffect = dynamic_cast<EffectInstance*>(_imp->_holder);
     if (iseffect) {
         const Plugin* plugin = iseffect->getNode()->getPlugin();
         assert(plugin);
@@ -1580,7 +1581,7 @@ DockablePanel::onEnterInGroupClicked()
     if (!node) {
         throw std::logic_error("");
     }
-    Natron::EffectInstance* effect = node->getNode()->getLiveInstance();
+    EffectInstance* effect = node->getNode()->getLiveInstance();
     assert(effect);
     if (!effect) {
         throw std::logic_error("");
@@ -1823,5 +1824,7 @@ DockablePanel::getUserPages(std::list<KnobPage*>& userPages) const
     }
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_DockablePanel.cpp"

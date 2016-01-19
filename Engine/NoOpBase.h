@@ -81,13 +81,13 @@ public:
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
     virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return Natron::eRenderSafetyFullySafeFrame;
+        return eRenderSafetyFullySafeFrame;
     }
 
     virtual StatusEnum getTransform(double time,
                                             const RenderScale & renderScale,
                                             int view,
-                                            Natron::EffectInstance** inputToTransform,
+                                            EffectInstance** inputToTransform,
                                             Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;

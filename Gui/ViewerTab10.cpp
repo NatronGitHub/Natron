@@ -60,7 +60,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerGL.h"
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -878,3 +878,5 @@ ViewerTab::showView(int view)
     abortRendering();
     _imp->viewerNode->renderCurrentFrame(true);
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -32,7 +32,7 @@
 #include <dlfcn.h>
 #endif
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 LibraryBinary::LibraryBinary(LibraryBinary::LibraryTypeEnum type)
     : _type(type)
@@ -90,7 +90,7 @@ LibraryBinary::loadBinary(const std::string & binaryPath)
     _binaryPath = binaryPath;
 #ifdef __NATRON_WIN32__
 #ifdef UNICODE
-    std::wstring ws = Natron::s2ws(binaryPath);
+    std::wstring ws = natron_s2ws(binaryPath);
     _library = LoadLibrary(ws.c_str());
 #else
     _library = LoadLibrary( binaryPath.c_str() );
@@ -162,4 +162,6 @@ LibraryBinary::~LibraryBinary()
     dlclose(_library);
 #endif
 }
+
+NATRON_NAMESPACE_EXIT;
 

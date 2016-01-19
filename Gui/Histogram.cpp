@@ -68,7 +68,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 namespace { // protext local classes in anonymous namespace
 enum EventStateEnum
@@ -80,7 +80,7 @@ enum EventStateEnum
 }
 
 
-struct NATRON_NAMESPACE::HistogramPrivate
+struct HistogramPrivate
 {
     HistogramPrivate(Histogram* widget)
     : mainLayout(NULL)
@@ -1944,5 +1944,7 @@ Histogram::renderText(double x,
     glCheckError();
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_Histogram.cpp"

@@ -33,7 +33,7 @@
 #include "Engine/RotoWrapper.h"
 #include "Engine/Hash64.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 ImageLayer::ImageLayer(const std::string& layerName,
            const std::string& componentsPrettyName,
@@ -772,9 +772,9 @@ Effect::getAvailableLayers() const
     if (!_node) {
         return ret;
     }
-    Natron::EffectInstance::ComponentsAvailableMap availComps;
+    EffectInstance::ComponentsAvailableMap availComps;
     _node->getLiveInstance()->getComponentsAvailable(true, true, _node->getLiveInstance()->getCurrentTime(), &availComps);
-    for (Natron::EffectInstance::ComponentsAvailableMap::iterator it = availComps.begin(); it != availComps.end(); ++it) {
+    for (EffectInstance::ComponentsAvailableMap::iterator it = availComps.begin(); it != availComps.end(); ++it) {
         NodePtr node = it->second.lock();
         if (node) {
             Effect* effect = new Effect(node);
@@ -793,3 +793,5 @@ Effect::setPagesOrder(const std::list<std::string>& pages)
     }
     _node->setPagesOrder(pages);
 }
+
+NATRON_NAMESPACE_EXIT;

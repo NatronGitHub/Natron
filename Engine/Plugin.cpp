@@ -30,7 +30,7 @@
 #include "Engine/LibraryBinary.h"
 #include "Engine/Settings.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 Plugin::~Plugin()
 {
@@ -158,7 +158,7 @@ Plugin::getPluginLock() const
     return _lock;
 }
 
-Natron::LibraryBinary*
+LibraryBinary*
 Plugin::getLibraryBinary() const
 {
     return _binary;
@@ -258,3 +258,4 @@ PluginGroupNode::tryRemoveChild(PluginGroupNode* plugin)
     }
 }
 
+NATRON_NAMESPACE_EXIT;

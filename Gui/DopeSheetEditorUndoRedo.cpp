@@ -40,7 +40,7 @@
 #include "Gui/DopeSheet.h"
 #include "Gui/DopeSheetView.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 typedef std::map<boost::weak_ptr<KnobI>, KnobGui *> KnobsAndGuis;
 
@@ -175,7 +175,7 @@ _model(model)
     for (DSKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobHolder* holder = (*it)->getContext()->getInternalKnob()->getHolder();
         assert(holder);
-        Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
+        EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
         if (isEffect) {
             nodesSet.insert(isEffect->getNode());
         }
@@ -507,7 +507,7 @@ void DSLeftTrimReaderCommand::trimLeft(double firstFrame)
         return;
     }
     KnobHolder *holder = firstFrameKnob->getHolder();
-    Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
+    EffectInstance *effectInstance = dynamic_cast<EffectInstance *>(holder);
     assert(effectInstance);
     if (!effectInstance) {
         return;
@@ -587,7 +587,7 @@ void DSRightTrimReaderCommand::trimRight(double lastFrame)
         return;
     }
     KnobHolder *holder = lastFrameKnob->getHolder();
-    Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
+    EffectInstance *effectInstance = dynamic_cast<EffectInstance *>(holder);
     assert(effectInstance);
     if (!effectInstance) {
         return;
@@ -716,7 +716,7 @@ void DSSlipReaderCommand::slipReader(double dt)
 
     
     KnobHolder *holder = lastFrameKnob->getHolder();
-    Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
+    EffectInstance *effectInstance = dynamic_cast<EffectInstance *>(holder);
     assert(effectInstance);
     if (!effectInstance) {
         return;
@@ -934,3 +934,5 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
 
     _model->refreshSelectionBboxAndRedrawView();
 }
+
+NATRON_NAMESPACE_EXIT;

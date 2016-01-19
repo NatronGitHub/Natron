@@ -45,7 +45,7 @@ class QThread;
 NATRON_NAMESPACE_ENTER;
 
 class OutputEffectInstance
-    : public Natron::EffectInstance
+    : public EffectInstance
 {
     
     struct RenderSequenceArgs

@@ -50,7 +50,7 @@
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
 
 using std::make_pair;
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 
@@ -757,3 +757,4 @@ DockablePanelPrivate::refreshPagesSecretness()
     }
 }
 
+NATRON_NAMESPACE_EXIT;

@@ -59,7 +59,7 @@
 #include "Gui/ViewerGL.h"
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 void
 ViewerTab::onInputChanged(int inputNb)
@@ -1235,3 +1235,5 @@ ViewerTab::toggleTripleSync(bool toggled)
     }
 
 }
+
+NATRON_NAMESPACE_EXIT;

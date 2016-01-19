@@ -96,7 +96,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kTransformArrowOffsetFromPoint 15
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 namespace {
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
@@ -153,7 +153,7 @@ enum SelectedCpsTransformModeEnum
 
 
 ///A small structure of all the data shared by all the viewers watching the same Roto
-class NATRON_NAMESPACE::RotoGuiSharedData
+class RotoGuiSharedData
 {
 public:
     SelectedItems selectedItems;
@@ -4927,4 +4927,7 @@ RotoGui::onResetCloneTransformClicked()
     onBreakMultiStrokeTriggered();
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_RotoGui.cpp"

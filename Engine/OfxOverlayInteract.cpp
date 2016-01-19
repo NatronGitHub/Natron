@@ -34,7 +34,7 @@
 #include "Engine/AppInstance.h"
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 NatronOverlayInteractSupport::OGLContextSaver::OGLContextSaver(OverlaySupport* viewport)
 : _viewport(viewport)
@@ -319,3 +319,4 @@ Natron::OfxParamOverlayInteract::redraw()
     return kOfxStatOK;
 }
 
+NATRON_NAMESPACE_EXIT;

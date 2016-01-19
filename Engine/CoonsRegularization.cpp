@@ -66,7 +66,7 @@
 #endif
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 static Point getPointAt(const BezierCPs& cps, double time, double t)
@@ -1230,7 +1230,8 @@ static int computeWindingNumber(const BezierCPs& patch, double time, const Point
     return count;
 }
 
-void Natron::regularize(const BezierCPs &patch, double time, std::list<BezierCPs> *fixedPatch)
+void
+regularize(const BezierCPs &patch, double time, std::list<BezierCPs> *fixedPatch)
 {
     if (patch.size() < 3) {
         fixedPatch->push_back(patch);
@@ -1413,3 +1414,5 @@ void Natron::regularize(const BezierCPs &patch, double time, std::list<BezierCPs
     // Split arbitrarily to resolve any remaining (internal) degeneracy.
     splitAt(patch, time, 0.5, fixedPatch);
 }
+
+NATRON_NAMESPACE_EXIT;

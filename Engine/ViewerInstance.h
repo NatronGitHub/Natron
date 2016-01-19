@@ -40,7 +40,7 @@ typedef std::map<boost::shared_ptr<Node>,NodeRenderStats > RenderStatsMap;
 
 struct ViewerArgs
 {
-    Natron::EffectInstance* activeInputToRender;
+    EffectInstance* activeInputToRender;
     bool forceRender;
     int activeInputIndex;
     U64 activeInputHash;
@@ -63,7 +63,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     friend class ViewerCurrentFrameRequestScheduler;
     
 public:
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n) WARN_UNUSED_RETURN;
+    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n) WARN_UNUSED_RETURN;
 
     ViewerInstance(boost::shared_ptr<Node> node);
 
@@ -334,7 +334,7 @@ private:
 
     virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
     {
-        return Natron::eRenderSafetyFullySafe;
+        return eRenderSafetyFullySafe;
     }
 
     virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;

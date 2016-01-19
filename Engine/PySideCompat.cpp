@@ -64,8 +64,6 @@ CLANG_DIAG_ON(uninitialized)
 typedef char any_t;
 Q_DECLARE_METATYPE(QSharedPointer<any_t>);
 
-NATRON_NAMESPACE_USING
-
 namespace PySide
 {
 
@@ -108,4 +106,5 @@ namespace PySide
         return pyOut;
     }
 } //namespace PySide
+
 #endif

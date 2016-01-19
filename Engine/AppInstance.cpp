@@ -59,7 +59,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 FlagSetter::FlagSetter(bool initialValue,bool* p)
 : p(p)
@@ -90,7 +90,7 @@ FlagSetter::~FlagSetter()
 
 
 
-struct NATRON_NAMESPACE::AppInstancePrivate
+struct AppInstancePrivate
 {
     boost::shared_ptr<Project> _currentProject; //< ptr to the project
     int _appID; //< the unique ID of this instance (or window)
@@ -1611,5 +1611,7 @@ AppInstance::newProject()
     return app;
 }
 
-#include "moc_AppInstance.cpp"
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
+#include "moc_AppInstance.cpp"

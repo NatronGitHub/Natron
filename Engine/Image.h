@@ -233,20 +233,20 @@ NATRON_NAMESPACE_ENTER;
          * @brief Resizes this image so it contains newBounds, copying all the content of the current bounds of the image into
          * a new buffer. This is not thread-safe and should be called only while under an ImageLocker
          **/
-        bool ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant = false, bool setBitmapTo1 = false);
+        bool ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparent = false, bool setBitmapTo1 = false);
         
         /**
          * @brief Same as ensureBounds() except that if a resize is needed, it will do the resize in the output image instead to avoid taking the
          * write lock from this image.
          **/
-        bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparant, bool setBitmapTo1, boost::shared_ptr<Image>* output);
+        bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, boost::shared_ptr<Image>* output);
         
     private:
         
         static void resizeInternal(const Image* srcImg,
                                    const RectI& srcBounds,
                                    const RectI& merge,
-                                   bool fillWithBlackAndTransparant,
+                                   bool fillWithBlackAndTransparent,
                                    bool setBitmapTo1,
                                    bool createInCache,
                                    boost::shared_ptr<Image>* outputImage);

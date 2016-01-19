@@ -45,7 +45,7 @@
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 CurveGui::CurveGui(const CurveWidget *curveWidget,
                    boost::shared_ptr<Curve> curve,
@@ -696,5 +696,7 @@ BezierCPCurveGui::setKeyFrameInterpolation(KeyframeTypeEnum interp,int index)
     return KeyFrame();
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_CurveGui.cpp"

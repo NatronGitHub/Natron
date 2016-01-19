@@ -1360,7 +1360,7 @@ struct RotoContextPrivate
         }
         
         assert( n && n->getLiveInstance() );
-        Natron::EffectInstance* effect = n->getLiveInstance();
+        EffectInstance* effect = n->getLiveInstance();
         
         boost::shared_ptr<KnobPage> shapePage,strokePage,generalPage,clonePage,transformPage;
         

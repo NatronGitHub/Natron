@@ -59,7 +59,7 @@
 #endif
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 bool
 ViewerTab::isClippedToProject() const
@@ -1047,3 +1047,5 @@ ViewerTab::onClipPreferencesChanged()
         refreshFPSBoxFromClipPreferences();
     }
 }
+
+NATRON_NAMESPACE_EXIT;

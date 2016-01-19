@@ -38,9 +38,9 @@
 
 #define ROTOPAINT_MASK_INPUT_INDEX 10
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::RotoPaintPrivate
+struct RotoPaintPrivate
 {
     bool isPaintByDefault;
     boost::weak_ptr<KnobBool> premultKnob;
@@ -206,7 +206,7 @@ RotoPaint::getPreferredDepthAndComponents(int inputNb,std::list<ImageComponents>
 {
 
     if (inputNb != ROTOPAINT_MASK_INPUT_INDEX) {
-        Natron::EffectInstance* input = getInput(inputNb);
+        EffectInstance* input = getInput(inputNb);
         if (input) {
             std::list<ImageComponents> ic;
             ImageBitDepthEnum id;
@@ -559,3 +559,5 @@ RotoPaint::clearLastRenderedImage()
         (*it)->clearLastRenderedImage();
     }
 }
+
+NATRON_NAMESPACE_EXIT;

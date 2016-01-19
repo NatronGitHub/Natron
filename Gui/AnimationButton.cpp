@@ -53,7 +53,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/GuiMacros.h"
 #include "Gui/GuiApplicationManager.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 void
 AnimationButton::mousePressEvent(QMouseEvent* e)
@@ -103,7 +103,7 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
             return;
         }
         
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_knob->getKnob()->getHolder());
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(_knob->getKnob()->getHolder());
         if (!effect) {
             return;
         }
@@ -228,5 +228,7 @@ AnimationButton::leaveEvent(QEvent* /*e*/)
     }
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_AnimationButton.cpp"

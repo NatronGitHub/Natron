@@ -30,7 +30,7 @@
 
 #include "Engine/Image.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 struct HistogramRequest
 {
@@ -96,7 +96,7 @@ struct FinishedHistogram
     }
 };
 
-struct NATRON_NAMESPACE::HistogramCPUPrivate
+struct HistogramCPUPrivate
 {
     QWaitCondition requestCond;
     QMutex requestMutex;
@@ -569,4 +569,7 @@ HistogramCPU::run()
     }
 } // run
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_HistogramCPU.cpp"

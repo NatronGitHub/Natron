@@ -28,7 +28,7 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeWrapper.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 Group::Group()
 : _collection()
@@ -78,3 +78,5 @@ Group::getChildren() const
     }
     return ret;
 }
+
+NATRON_NAMESPACE_EXIT;

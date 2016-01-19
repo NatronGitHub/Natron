@@ -35,9 +35,9 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/Gui.h"
 #include "Engine/Project.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::ToolButtonPrivate
+struct ToolButtonPrivate
 {
     GuiAppInstance* _app;
     QString _id;
@@ -231,4 +231,7 @@ ToolButton::sortChildren()
 
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_ToolButton.cpp"

@@ -28,7 +28,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // kNatronGroupInputIsOptionalParamName, kNatronGroupInputIsMaskParamName
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 std::string
 GroupInput::getPluginDescription() const
@@ -103,10 +103,12 @@ GroupInput::getOutputPremultiplication() const
     }
     assert(inputNb != -1);
     if (inputNb != -1) {
-        Natron::EffectInstance* input = isGroup->getInput(inputNb);
+        EffectInstance* input = isGroup->getInput(inputNb);
         if (input) {
             return input->getOutputPremultiplication();
         }
     }
     return eImagePremultiplicationPremultiplied;
 }
+
+NATRON_NAMESPACE_EXIT;

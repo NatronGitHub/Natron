@@ -26,7 +26,7 @@
 
 #include "Engine/Transform.h" // Matrix3x3
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 NoOpBase::NoOpBase(boost::shared_ptr<Node> n)
     : OutputEffectInstance(n)
@@ -80,7 +80,7 @@ StatusEnum
 NoOpBase::getTransform(double /*time*/,
                        const RenderScale & /*renderScale*/,
                        int /*view*/,
-                       Natron::EffectInstance** inputToTransform,
+                       EffectInstance** inputToTransform,
                        Transform::Matrix3x3* transform)
 {
     *inputToTransform = getInput(0);
@@ -101,3 +101,4 @@ NoOpBase::getInputsHoldingTransform(std::list<int>* inputs) const
     return true;
 }
 
+NATRON_NAMESPACE_EXIT;

@@ -48,7 +48,7 @@
 #include <QFileInfo>
 #include <QRegExp>
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 // —— construction ——————————————————————————
 DocumentWindow::DocumentWindow(QWidget* parent, Qt::WindowFlags flags) :
@@ -324,4 +324,7 @@ void DocumentWindow::executeDdeCommand(const QString& command, const QString& pa
         executeUnknownDdeCommand(command, params);
     }
 }
-#endif
+
+NATRON_NAMESPACE_EXIT;
+
+#endif //__NATRON_WIN32__

@@ -24,10 +24,11 @@
 
 #include "NodeBackDropSerialization.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 NodeBackDropSerialization::NodeBackDropSerialization()
     : posX(0),posY(0),width(0),height(0),name(),label(),r(0),g(0),b(0),selected(false), _isNull(true)
 {
 }
 
+NATRON_NAMESPACE_EXIT;

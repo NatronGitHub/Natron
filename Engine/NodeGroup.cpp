@@ -58,9 +58,9 @@
 
 #define NATRON_PYPLUG_EXPORTER_VERSION 5
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::NodeCollectionPrivate
+struct NodeCollectionPrivate
 {
     AppInstance* app;
     
@@ -310,7 +310,7 @@ NodeCollection::resetTotalTimeSpentRenderingForAllNodes()
 {
     QMutexLocker k(&_imp->nodesMutex);
     for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        Natron::EffectInstance* effect = (*it)->getLiveInstance();
+        EffectInstance* effect = (*it)->getLiveInstance();
         effect->resetTotalTimeSpentRendering();
         NodeGroup* isGroup = dynamic_cast<NodeGroup*>(effect);
         if (isGroup) {
@@ -1042,7 +1042,7 @@ NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Node>,ParallelR
 }
 
 
-struct NATRON_NAMESPACE::NodeGroupPrivate
+struct NodeGroupPrivate
 {
     mutable QMutex nodesLock; // protects inputs & outputs
     std::vector<boost::weak_ptr<Node> > inputs,guiInputs;
@@ -2247,7 +2247,7 @@ static void exportRotoLayer(int indentLevel,
                 }
                 boost::shared_ptr<KnobDouble> track = (*it2)->isSlaved();
                 if (track) {
-                    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(track->getHolder());
+                    EffectInstance* effect = dynamic_cast<EffectInstance*>(track->getHolder());
                     assert(effect && effect->getNode()->isPointTrackerNode());
                     std::string trackerName = effect->getNode()->getScriptName_mt_safe();
                     int trackTime = (*it2)->getOffsetTime();
@@ -2399,7 +2399,7 @@ static bool exportKnobLinks(int indentLevel,
             }
             hasExportedLink = true;
             
-            Natron::EffectInstance* aliasHolder = dynamic_cast<Natron::EffectInstance*>(alias->getHolder());
+            EffectInstance* aliasHolder = dynamic_cast<EffectInstance*>(alias->getHolder());
             assert(aliasHolder);
             QString aliasName;
             if (aliasHolder == groupNode->getLiveInstance()) {
@@ -2672,4 +2672,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     WRITE_INDENT(2);WRITE_STRING("extModule.createInstanceExt(app,group)");
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_NodeGroup.cpp"

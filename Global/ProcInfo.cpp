@@ -26,7 +26,7 @@
 #include <QStringList>
 #include <QDebug>
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 namespace {
 
@@ -267,7 +267,7 @@ static QString applicationFilePath_fromArgv(const char* argv0Param)
 
 } // anon namespace
 
-QString NATRON_NAMESPACE::applicationFilePath(const char* argv0Param)
+QString natronApplicationFilePath(const char* argv0Param)
 {
 
 #if defined(Q_WS_WIN)
@@ -300,9 +300,9 @@ QString NATRON_NAMESPACE::applicationFilePath(const char* argv0Param)
 #endif
 }
 
-QString NATRON_NAMESPACE::applicationDirPath(const char* argv0Param)
+QString natronApplicationDirPath(const char* argv0Param)
 {
-    QString filePath = applicationFilePath(argv0Param);
+    QString filePath = natronApplicationFilePath(argv0Param);
     int foundSlash = filePath.lastIndexOf('/');
     if (foundSlash == -1) {
         return QString();
@@ -310,7 +310,7 @@ QString NATRON_NAMESPACE::applicationDirPath(const char* argv0Param)
     return filePath.mid(0, foundSlash);
 }
     
-bool NATRON_NAMESPACE::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/, Q_PID /*pid*/)
+bool natronCheckIfProcessIsRunning(const char* /*processAbsoluteFilePath*/, Q_PID /*pid*/)
 {
     //Not working yet
     return true;
@@ -356,7 +356,7 @@ bool NATRON_NAMESPACE::checkIfProcessIsRunning(const char* /*processAbsoluteFile
     char state;
     //See http://man7.org/linux/man-pages/man5/proc.5.html
     if ( (fscanf(fp, "%ld (%[^)]) %c", &pid, pname, &state)) != 3 ){
-        qDebug() << "checkIfProcessIsRunning(): fscanf call on" << procFile << "failed";
+        qDebug() << "natronCheckIfProcessIsRunning(): fscanf call on" << procFile << "failed";
         fclose(fp);
         return false;
     }
@@ -391,4 +391,6 @@ bool NATRON_NAMESPACE::checkIfProcessIsRunning(const char* /*processAbsoluteFile
     return false;
 #endif
 #endif
-} // checkIfProcessIsRunning
+} // natronCheckIfProcessIsRunning
+
+NATRON_NAMESPACE_EXIT;

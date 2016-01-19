@@ -79,10 +79,9 @@ CLANG_DIAG_ON(deprecated)
 
 #define TAB_DRAG_WIDGET_PERCENT_FOR_SPLITTING 0.13
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-
-class TransparantDropRect: public QWidget
+class TransparentDropRect: public QWidget
 {
     
     TabWidget::DropRectType _type;
@@ -91,7 +90,7 @@ class TransparantDropRect: public QWidget
 public:
     
     
-    TransparantDropRect(TabWidget* pane, QWidget* parent = 0)
+    TransparentDropRect(TabWidget* pane, QWidget* parent = 0)
     : QWidget(parent)
     , _type(TabWidget::eDropRectNone)
     , _widget(pane)
@@ -105,7 +104,7 @@ public:
         setObjectName("__tab_widget_transparant_window__");
     }
     
-    virtual ~TransparantDropRect() {}
+    virtual ~TransparentDropRect() {}
     
     TabWidget::DropRectType getDropType() const
     {
@@ -183,7 +182,7 @@ private:
     }
 };
 
-struct NATRON_NAMESPACE::TabWidgetPrivate
+struct TabWidgetPrivate
 {
     TabWidget* _publicInterface;
     Gui* gui;
@@ -203,7 +202,7 @@ struct NATRON_NAMESPACE::TabWidgetPrivate
     bool tabBarVisible;
     
     ///Used to draw drop rects
-    TransparantDropRect* transparantFloatingWidget;
+    TransparentDropRect* transparantFloatingWidget;
     
     ///Protects  currentWidget, fullScreen, isViewerAnchor
     mutable QMutex tabWidgetStateMutex;
@@ -244,7 +243,7 @@ TabWidget::TabWidget(Gui* gui,
     setMouseTracking(true);
     setFrameShape(QFrame::NoFrame);
     
-    _imp->transparantFloatingWidget = new TransparantDropRect(this, 0);
+    _imp->transparantFloatingWidget = new TransparentDropRect(this, 0);
     
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 5, 0, 0);
@@ -1405,11 +1404,11 @@ static TabWidget* findTabWidgetRecursive(QWidget* w)
 {
     assert(w);
     TabWidget* isTab = dynamic_cast<TabWidget*>(w);
-    TransparantDropRect* isTransparant = dynamic_cast<TransparantDropRect*>(w);
+    TransparentDropRect* isTransparent = dynamic_cast<TransparentDropRect*>(w);
     if (isTab) {
         return isTab;
-    } else if (isTransparant) {
-        return isTransparant->getPane();
+    } else if (isTransparent) {
+        return isTransparent->getPane();
     } else {
         if (w->parentWidget()) {
             return findTabWidgetRecursive(w->parentWidget());
@@ -2164,5 +2163,7 @@ TabWidgetPrivate::removeTabToPython(PanelWidget* widget,const std::string& tabNa
     }
 }
 
+        NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_TabWidget.cpp"

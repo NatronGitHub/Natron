@@ -42,7 +42,7 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGui.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 //using std::cout; using std::endl;
 
 
@@ -377,4 +377,6 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
     position = node->mapToParent(position);
     node->setPosition( position.x(), position.y() );
 } // moveNodesForIdealPosition
+
+NATRON_NAMESPACE_EXIT;
 

@@ -39,7 +39,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 namespace {
 struct KeyFrameCloner
@@ -1553,3 +1553,5 @@ Curve::onCurveChanged()
     }
     _imp->resultCache.clear();
 }
+
+NATRON_NAMESPACE_EXIT;

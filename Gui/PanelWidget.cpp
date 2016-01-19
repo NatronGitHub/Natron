@@ -30,7 +30,7 @@
 #include "Gui/TabWidget.h"
 #include "Gui/Gui.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 PanelWidget::PanelWidget(QWidget* thisWidget,
                          Gui* gui)
@@ -167,5 +167,6 @@ PanelWidget::handleUnCaughtKeyPressEvent(QKeyEvent* e)
         //We have to send the event to the Gui object, because it won't receive it as they are part from different windows
         qApp->sendEvent(_gui, e);
     }
-
 }
+
+NATRON_NAMESPACE_EXIT;

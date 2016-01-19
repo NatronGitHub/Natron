@@ -39,7 +39,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Transform.h" // Point3D
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 ////////////////////////////////////ControlPoint////////////////////////////////////
@@ -1019,4 +1019,6 @@ BezierCP::isSlaved() const
 
     return _imp->masterTrack;
 }
+
+NATRON_NAMESPACE_EXIT;
 

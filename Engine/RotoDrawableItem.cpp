@@ -90,7 +90,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define ROTO_PRESSURE_LEVELS 512
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 ////////////////////////////////////RotoDrawableItem////////////////////////////////////
@@ -135,23 +135,23 @@ RotoDrawableItem::setNodesThreadSafetyForRotopainting()
     
     assert(boost::dynamic_pointer_cast<RotoStrokeItem>(boost::dynamic_pointer_cast<RotoDrawableItem>(shared_from_this())));
     
-    getContext()->getNode()->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
+    getContext()->getNode()->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     getContext()->setWhileCreatingPaintStrokeOnMergeNodes(true);
     if (_imp->effectNode) {
         _imp->effectNode->setWhileCreatingPaintStroke(true);
-        _imp->effectNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
+        _imp->effectNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     }
     if (_imp->mergeNode) {
         _imp->mergeNode->setWhileCreatingPaintStroke(true);
-        _imp->mergeNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
+        _imp->mergeNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     }
     if (_imp->timeOffsetNode) {
         _imp->timeOffsetNode->setWhileCreatingPaintStroke(true);
-        _imp->timeOffsetNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
+        _imp->timeOffsetNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     }
     if (_imp->frameHoldNode) {
         _imp->frameHoldNode->setWhileCreatingPaintStroke(true);
-        _imp->frameHoldNode->setRenderThreadSafety(Natron::eRenderSafetyInstanceSafe);
+        _imp->frameHoldNode->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     }
 }
 
@@ -1454,4 +1454,7 @@ RotoDrawableItem::setTransform(double time, double tx, double ty, double sx, dou
     onTransformSet(time);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_RotoDrawableItem.cpp"

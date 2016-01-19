@@ -64,7 +64,7 @@
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 ///Sort the frames by time and then by view
@@ -139,7 +139,7 @@ typedef std::list<RenderThread> RenderThreads;
 
 // Struct used in a queue when rendering the current frame with a viewer, the id is meaningless just to have a member
 // in the structure. We then compare the pointer of this struct
-class NATRON_NAMESPACE::RequestedFrame
+class RequestedFrame
 {
 public:
     int id;
@@ -159,7 +159,7 @@ static bool isBufferFull(int nbBufferedElement, int hardwardIdealThreadCount)
     return nbBufferedElement >= hardwardIdealThreadCount * 3;
 }
 
-struct NATRON_NAMESPACE::OutputSchedulerThreadPrivate
+struct OutputSchedulerThreadPrivate
 {
     
     FrameBuffer buf; //the frames rendered by the worker threads that needs to be rendered in order by the output device
@@ -1898,7 +1898,7 @@ OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
 ////////////////////////////////////////////////////////////
 //////////////////////// RenderThreadTask ////////////
 
-struct NATRON_NAMESPACE::RenderThreadTaskPrivate
+struct RenderThreadTaskPrivate
 {
     OutputSchedulerThread* scheduler;
     
@@ -2297,7 +2297,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         
        EffectInstance::InputImagesMap inputImages;
         inputImages[0].push_back(inputImage);
-        Natron::EffectInstance::RenderRoIArgs args(frame.time,
+        EffectInstance::RenderRoIArgs args(frame.time,
                                                    scale,0,
                                                    it->view,
                                                    true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
@@ -2699,7 +2699,7 @@ ViewerDisplayScheduler::getLastRenderedTime() const
 
 ////////////////////////// RenderEngine
 
-struct NATRON_NAMESPACE::RenderEnginePrivate
+struct RenderEnginePrivate
 {
     QMutex schedulerCreationLock;
     OutputSchedulerThread* scheduler;
@@ -2993,7 +2993,7 @@ ViewerRenderEngine::createScheduler(OutputEffectInstance* effect)
 }
 
 ////////////////////////ViewerCurrentFrameRequestScheduler////////////////////////
-struct NATRON_NAMESPACE::CurrentFrameFunctorArgs
+struct CurrentFrameFunctorArgs
 {
     int view;
     int time;
@@ -3061,7 +3061,7 @@ struct NATRON_NAMESPACE::CurrentFrameFunctorArgs
 };
 
 
-struct NATRON_NAMESPACE::ViewerCurrentFrameRequestSchedulerPrivate
+struct ViewerCurrentFrameRequestSchedulerPrivate
 {
     
     ViewerInstance* viewer;
@@ -3553,7 +3553,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
     
 }
 
-struct NATRON_NAMESPACE::ViewerCurrentFrameRequestRendererBackupPrivate
+struct ViewerCurrentFrameRequestRendererBackupPrivate
 {
     QMutex requestsQueueMutex;
     std::list<boost::shared_ptr<CurrentFrameFunctorArgs> > requestsQueue;
@@ -3684,4 +3684,7 @@ ViewerCurrentFrameRequestRendererBackup::quitThread()
     }
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_OutputSchedulerThread.cpp"

@@ -45,11 +45,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 using std::cout; using std::endl;
 
 QtReader::QtReader(boost::shared_ptr<Node> node)
-    : Natron::EffectInstance(node)
+    : EffectInstance(node)
       , _lut( Color::LutManager::sRGBLut() )
       , _img(0)
       , _fileKnob()
@@ -543,5 +543,7 @@ QtReader::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     depths->push_back(eImageBitDepthFloat);
 }
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENABLE_QT_IO_NODES

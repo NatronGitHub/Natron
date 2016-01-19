@@ -51,10 +51,8 @@
 #include "Gui/Utils.h" // convertFromPlainText
 
 
-
 using std::make_pair;
-NATRON_NAMESPACE_USING
-
+NATRON_NAMESPACE_ENTER;
 
 
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
@@ -288,5 +286,7 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
  
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_NodeSettingsPanel.cpp"

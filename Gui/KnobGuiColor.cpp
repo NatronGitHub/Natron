@@ -81,7 +81,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "ofxNatron.h"
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 
 //=============================RGBA_KNOB_GUI===================================
@@ -1301,5 +1301,7 @@ KnobGuiColor::reflectModificationsState()
     }
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_KnobGuiColor.cpp"

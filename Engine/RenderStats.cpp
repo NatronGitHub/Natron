@@ -33,9 +33,9 @@
 #include "Engine/RectI.h"
 #include "Engine/RectD.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::NodeRenderStatsPrivate
+struct NodeRenderStatsPrivate
 {
     //The accumulated time spent in the EffectInstance::renderHandler function
     double totalTimeSpentRendering;
@@ -296,7 +296,7 @@ NodeRenderStats::getOutputPremult() const
     return _imp->outputPremult;
 }
 
-struct NATRON_NAMESPACE::RenderStatsPrivate
+struct RenderStatsPrivate
 {
     mutable QMutex lock;
     
@@ -445,3 +445,5 @@ RenderStats::getStats(double *totalTimeSpent) const
     
     return ret;
 }
+
+NATRON_NAMESPACE_EXIT;

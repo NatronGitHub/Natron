@@ -243,7 +243,7 @@ public:
      **/
     bool isSecretRecursive() const;
     
-    boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,
+    boost::shared_ptr<KnobI> createDuplicateOnNode(EffectInstance* effect,
                                                    bool makeAlias,
                                                    const boost::shared_ptr<KnobPage>& page,
                                                    const boost::shared_ptr<KnobGroup>& group,

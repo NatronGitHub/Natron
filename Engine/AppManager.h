@@ -147,7 +147,7 @@ public:
     {
     }
 
-    boost::shared_ptr<Natron::EffectInstance> createOFXEffect(boost::shared_ptr<Node> node,
+    boost::shared_ptr<EffectInstance> createOFXEffect(boost::shared_ptr<Node> node,
                                             const NodeSerialization* serialization,
                                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                             bool allowFileDialogs,
@@ -198,12 +198,12 @@ public:
     bool getTexture(const FrameKey & key,
                     boost::shared_ptr<FrameEntry>* returnValue) const;
 
-    bool getTextureOrCreate(const FrameKey & key,const boost::shared_ptr<Natron::FrameParams>& params,
+    bool getTextureOrCreate(const FrameKey & key,const boost::shared_ptr<FrameParams>& params,
                             boost::shared_ptr<FrameEntry>* returnValue) const;
 
     U64 getCachesTotalMemorySize() const;
 
-    Natron::CacheSignalEmitter* getOrActivateViewerCacheSignalEmitter() const;
+    CacheSignalEmitter* getOrActivateViewerCacheSignalEmitter() const;
 
     void setApplicationsCachesMaximumMemoryPercent(double p);
 
@@ -297,7 +297,7 @@ public:
                                    const QStringList & groupIconPath,
                                    bool isReader,
                                    bool isWriter,
-                                   Natron::LibraryBinary* binary,
+                                   LibraryBinary* binary,
                                    bool mustCreateMutex,
                                    int major,
                                    int minor,
@@ -424,7 +424,7 @@ public:
     
     AppTLS* getAppTLS() const;
     
-    const Natron::OfxHost* getOFXHost() const;
+    const OfxHost* getOFXHost() const;
     
     bool hasThreadsRendering() const;
     
@@ -631,7 +631,7 @@ natronGetTextureFromCache(const FrameKey & key,
 
 inline bool
 natronGetTextureFromCacheOrCreate(const FrameKey & key,
-                            const boost::shared_ptr<Natron::FrameParams> &params,
+                            const boost::shared_ptr<FrameParams> &params,
                             boost::shared_ptr<FrameEntry>* returnValue)
 {
     return appPTR->getTextureOrCreate(key,params, returnValue);

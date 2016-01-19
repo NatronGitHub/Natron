@@ -28,7 +28,7 @@
 
 //#define NATRON_COPY_CHANNELS_UNPREMULT
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult>
 void
@@ -568,3 +568,5 @@ Image::copyUnProcessedChannels(const RectI& roi,
             return;
     }
 }
+
+NATRON_NAMESPACE_EXIT;

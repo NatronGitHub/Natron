@@ -43,7 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <SequenceParsing.h>
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 static QStringList getSplitPath(const QString& path)
 {
@@ -94,7 +94,7 @@ static QString generateChildAbsoluteName(FileSystemItem* parent,const QString& n
     return childName;
 }
 
-struct NATRON_NAMESPACE::FileSystemItemPrivate
+struct FileSystemItemPrivate
 {
     
     FileSystemItem* parent;
@@ -341,7 +341,7 @@ FileSystemItem::matchPath(const QStringList& path, int startIndex) const
 
 //////////////FileSystemModel
 
-struct NATRON_NAMESPACE::FileSystemModelPrivate
+struct FileSystemModelPrivate
 {
     SortableViewI* view;
     
@@ -1130,7 +1130,7 @@ FileSystemModelPrivate::getItem(const QModelIndex &index) const
 
 ///////////////////////// FileGathererThread
 
-struct NATRON_NAMESPACE::FileGathererThreadPrivate
+struct FileGathererThreadPrivate
 {
     FileSystemModel* model;
     
@@ -1470,4 +1470,7 @@ FileGathererThread::fetchDirectory(const boost::shared_ptr<FileSystemItem>& item
     }
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_FileSystemModel.cpp"

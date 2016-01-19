@@ -33,11 +33,11 @@
 NATRON_NAMESPACE_ENTER;
 
 struct RotoPaintPrivate;
-class RotoPaint : public Natron::EffectInstance
+class RotoPaint : public EffectInstance
 {
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new RotoPaint(n, true);
     }
@@ -93,7 +93,7 @@ public:
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
     virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return Natron::eRenderSafetyFullySafeFrame;
+        return eRenderSafetyFullySafeFrame;
     }
 
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -172,7 +172,7 @@ class RotoNode : public RotoPaint
     
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new RotoNode(n);
     }

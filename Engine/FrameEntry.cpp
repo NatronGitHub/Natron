@@ -26,7 +26,7 @@
 
 #include "Engine/RectI.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 
@@ -118,5 +118,6 @@ FrameEntry::copy(const FrameEntry& other)
          dstPixels += dstRowSize) {
         memcpy(dstPixels, srcPixels, roiRowSize);
     }
-    
 }
+
+NATRON_NAMESPACE_EXIT;

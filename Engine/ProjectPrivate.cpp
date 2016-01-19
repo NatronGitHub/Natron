@@ -48,7 +48,7 @@
 #include "Engine/ViewerInstance.h"
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 ProjectPrivate::ProjectPrivate(Project* project)
     : _publicInterface(project)
@@ -496,3 +496,5 @@ ProjectPrivate::getProjectPath() const
 {
     return projectPath->getValue();
 }
+
+NATRON_NAMESPACE_EXIT;

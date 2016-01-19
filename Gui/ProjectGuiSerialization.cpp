@@ -55,7 +55,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 void
 ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
@@ -134,7 +134,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
             KnobHolder* holder = (*it)->getHolder();
             assert(holder);
             
-            Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
+            EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
             Project* isProject = dynamic_cast<Project*>(holder);
 
             if (isProject) {
@@ -299,3 +299,4 @@ PythonPanelSerialization::initialize(PyPanel* tab,const std::string& func)
     userData = tab->save_serialization_thread();
 }
 
+NATRON_NAMESPACE_EXIT;

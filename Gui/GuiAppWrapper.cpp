@@ -51,7 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 GuiApp::GuiApp(AppInstance* app)
 : App(app)
@@ -630,7 +630,7 @@ PyViewer::setAInput(int index)
     if (!_node->isActivated()) {
         return;
     }
-    Natron::EffectInstance* input = _viewer->getInternalNode()->getInput(index);
+    EffectInstance* input = _viewer->getInternalNode()->getInput(index);
     if (!input) {
         return;
     }
@@ -654,7 +654,7 @@ PyViewer::setBInput(int index)
     if (!_node->isActivated()) {
         return;
     }
-    Natron::EffectInstance* input = _viewer->getInternalNode()->getInput(index);
+    EffectInstance* input = _viewer->getInternalNode()->getInput(index);
     if (!input) {
         return;
     }
@@ -737,3 +737,5 @@ PyViewer::getCurrentView() const
     }
     return _viewer->getCurrentView();
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -32,9 +32,9 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::DiskCacheNodePrivate
+struct DiskCacheNodePrivate
 {
     boost::weak_ptr<KnobChoice> frameRange;
     boost::weak_ptr<KnobInt> firstFrame;
@@ -256,3 +256,4 @@ DiskCacheNode::render(const RenderActionArgs& args)
     return eStatusOK;
 }
 
+NATRON_NAMESPACE_EXIT;

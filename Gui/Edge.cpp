@@ -59,9 +59,9 @@
 // number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 #define kGraphicalContainerOffset 10
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::EdgePrivate
+struct EdgePrivate
 {
     Edge* _publicInterface;
     bool isOutputEdge;
@@ -291,7 +291,7 @@ Edge::refreshState(bool hovered)
 {
     boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
     
-    Natron::EffectInstance* effect = dst ? dst->getNode()->getLiveInstance() : 0;
+    EffectInstance* effect = dst ? dst->getNode()->getLiveInstance() : 0;
     
     if (effect) {
         
@@ -906,5 +906,7 @@ LinkArrow::paint(QPainter *painter,
     painter->fillPath(headPath, _headColor);
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_Edge.cpp"

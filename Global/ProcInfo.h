@@ -45,20 +45,20 @@ NATRON_NAMESPACE_ENTER;
 * @param argv0Param As a last resort, if system functions fail to return the
 * executable's file path, use the string passed to the command-line.
 **/
-QString applicationFilePath(const char* argv0Param);
+QString natronApplicationFilePath(const char* argv0Param);
 
 
 /**
 * @brief Same as applicationFilePath(const char*) execept that it strips the
 * basename of the executable from its path and return the latest.
 **/
-QString applicationDirPath(const char* argv0Param);
+QString natronApplicationDirPath(const char* argv0Param);
 
 /**
 * @brief Returns true if the process with the given pid and given executable absolute
 * file path exists and is still running.
 **/
-bool checkIfProcessIsRunning(const char* processAbsoluteFilePath, Q_PID pid);
+bool natronCheckIfProcessIsRunning(const char* processAbsoluteFilePath, Q_PID pid);
 
 NATRON_NAMESPACE_EXIT;
 

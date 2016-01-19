@@ -49,9 +49,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/LogWindow.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::RenderingProgressDialogPrivate
+struct RenderingProgressDialogPrivate
 {
     Gui* _gui;
     QVBoxLayout* _mainLayout;
@@ -324,4 +324,7 @@ RenderingProgressDialog::onProcessDeleted()
     QObject::disconnect( _imp->_process.get(),SIGNAL( deleted() ),this,SLOT( onProcessDeleted() ) );
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_RenderingProgressDialog.cpp"

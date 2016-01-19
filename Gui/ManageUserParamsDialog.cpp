@@ -51,7 +51,7 @@
 #include "Gui/PickKnobDialog.h"
 #include "Gui/Utils.h" // convertFromPlainText
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 namespace {
 struct TreeItem
@@ -78,7 +78,7 @@ public:
     }
 };
 
-struct NATRON_NAMESPACE::ManageUserParamsDialogPrivate
+struct ManageUserParamsDialogPrivate
 {
     DockablePanel* panel;
     
@@ -145,7 +145,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel, QWidget* pa
 : QDialog(parent)
 , _imp(new ManageUserParamsDialogPrivate(panel))
 {
-    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(panel->getHolder());
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(panel->getHolder());
     QString title = "User Parameters";
     if (effect) {
         title += " for ";
@@ -276,7 +276,7 @@ static QString createTextForKnob(const boost::shared_ptr<KnobI>& knob)
         boost::shared_ptr<KnobI> listener = listeners.begin()->first.lock();
         if (listener && listener->getAliasMaster() == knob) {
             text += " (alias of ";
-            Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(listener->getHolder());
+            EffectInstance* effect = dynamic_cast<EffectInstance*>(listener->getHolder());
             if (effect) {
                 text += effect->getScriptName_mt_safe().c_str();
                 text += '.';
@@ -789,4 +789,7 @@ ManageUserParamsDialog::onSelectionChanged()
     _imp->downButton->setEnabled(selection.size() == 1);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_ManageUserParamsDialog.cpp"

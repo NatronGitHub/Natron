@@ -42,11 +42,11 @@
 #include "Gui/GuiMacros.h"
 #include "Engine/TimeLine.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 ////////////////////////// DopeSheetEditor //////////////////////////
 
-class NATRON_NAMESPACE::DopeSheetEditorPrivate
+class DopeSheetEditorPrivate
 {
 public:
     DopeSheetEditorPrivate(DopeSheetEditor *qq);
@@ -266,3 +266,5 @@ DopeSheetEditor::onInputEventCalled()
 {
     takeClickFocus();
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -24,7 +24,7 @@
 
 #include "Image.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked, bool maskInvert>
 void
@@ -242,3 +242,5 @@ Image::applyMaskMix(const RectI& roi,
     }
     
 }
+
+NATRON_NAMESPACE_EXIT;

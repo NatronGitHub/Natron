@@ -26,7 +26,7 @@
 
 #include "Engine/RectI.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 bool TextureRect::intersect(const RectI & r,
                             RectI* intersection) const
@@ -46,3 +46,5 @@ bool TextureRect::intersect(const RectI & r,
 
     return true;
 }
+
+NATRON_NAMESPACE_EXIT;

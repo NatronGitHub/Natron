@@ -60,7 +60,7 @@
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/Project.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 // see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
 static
@@ -1150,3 +1150,5 @@ OfxImageEffectInstance::paramChangedByPlugin(OFX::Host::Param::Instance */*param
      To prevent that, Natron already checks the current thread and calls the instanceChanged action in the appropriate thread.
      */
 }
+
+NATRON_NAMESPACE_EXIT;

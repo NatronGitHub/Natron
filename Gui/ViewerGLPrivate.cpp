@@ -59,7 +59,7 @@ GCC_DIAG_OFF(deprecated-declarations)
 
 #define MAX_MIP_MAP_LEVELS 20
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
    Everything related to OpenGL will (almost always) be in this class */
@@ -1124,5 +1124,4 @@ ViewerGL::Implementation::refreshSelectionRectangle(const QPointF & pos)
     selectionRectangle.setRect(xmin,ymin,xmax - xmin,ymax - ymin);
 }
 
-
-
+NATRON_NAMESPACE_EXIT;

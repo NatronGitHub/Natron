@@ -44,7 +44,7 @@
 NATRON_NAMESPACE_ENTER;
 
 class FrameEntry
-    : public CacheEntryHelper<U8,FrameKey,Natron::FrameParams>
+    : public CacheEntryHelper<U8,FrameKey,FrameParams>
 {
 public:
     FrameEntry(const FrameKey & key,

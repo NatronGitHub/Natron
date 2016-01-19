@@ -52,7 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #define MINIMUM_VERTICAL_SPACE_BETWEEN_NODES 10
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 MoveMultipleNodesCommand::MoveMultipleNodesCommand(const std::list<NodeGuiPtr> & nodes,
                                                    double dx,
@@ -2006,3 +2006,5 @@ InlineGroupCommand::redo()
     setText(QObject::tr("Inline group(s)"));
     _firstRedoCalled = true;
 }
+
+NATRON_NAMESPACE_EXIT;

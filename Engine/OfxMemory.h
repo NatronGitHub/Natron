@@ -47,7 +47,7 @@ class OfxMemory
 
 public:
 
-    OfxMemory(Natron::EffectInstance* effect);
+    OfxMemory(EffectInstance* effect);
 
     virtual ~OfxMemory();
 

@@ -46,9 +46,9 @@
 
 #define MIN_FILE_SIZE 4096
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::MemoryFilePrivate
+struct MemoryFilePrivate
 {
     std::string path; //< filepath of the backing file
     char* data; //< pointer to the begining of the mapped file
@@ -231,7 +231,7 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
     ********************************************************
     *********************************************************/
 #ifdef UNICODE
-    std::wstring wpath = Natron::s2ws(path);
+    std::wstring wpath = natron_s2ws(path);
     file_handle = ::CreateFile(wpath.c_str(), GENERIC_READ | GENERIC_WRITE,
                                0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
 
@@ -390,4 +390,6 @@ MemoryFile::remove()
         _imp->data = 0;
     }
 }
+
+NATRON_NAMESPACE_EXIT;
 

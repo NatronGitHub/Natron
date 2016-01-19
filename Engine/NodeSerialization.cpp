@@ -32,7 +32,7 @@
 #include "Engine/NodeGroupSerialization.h"
 #include "Engine/RotoContext.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 NodeSerialization::NodeSerialization(const boost::shared_ptr<Node> & n,bool serializeInputs)
     : _isNull(true)
@@ -165,3 +165,5 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Node> & n,bool seri
         _isNull = false;
     }
 }
+
+NATRON_NAMESPACE_EXIT;

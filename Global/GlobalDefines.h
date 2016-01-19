@@ -154,7 +154,7 @@ PY_VERSION_STRINGIZE_(major,minor)
 
 /*Converts a std::string to wide string*/
 inline std::wstring
-s2ws(const std::string & s)
+natron_s2ws(const std::string & s)
 {
 
 
@@ -188,7 +188,7 @@ s2ws(const std::string & s)
     return dest;
 #endif
 
-} // s2ws
+} // natron_s2ws
 
 #ifdef __NATRON_WIN32__
 

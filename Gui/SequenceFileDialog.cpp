@@ -112,7 +112,7 @@ CLANG_DIAG_ON(uninitialized)
 #define FILE_DIALOG_DISABLE_ICONS
 
 using std::make_pair;
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 #if 0
 static inline bool
@@ -200,7 +200,7 @@ static QString mapPathWithDriveLetterToPathWithNetworkShareName(const QString& p
 		TCHAR szDeviceName[512];
 		DWORD dwResult, cchBuff = sizeof(szDeviceName);
 #ifdef UNICODE
-        dwResult = WNetGetConnection(Natron::s2ws(driveName.toStdString()).c_str(), szDeviceName, &cchBuff);
+        dwResult = WNetGetConnection(natron_s2ws(driveName.toStdString()).c_str(), szDeviceName, &cchBuff);
 #else
 		dwResult = WNetGetConnection(driveName.toStdString().c_str(), szDeviceName, &cchBuff);
 #endif
@@ -3099,4 +3099,7 @@ SequenceFileDialog::done(int r)
     QDialog::done(r);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_SequenceFileDialog.cpp"

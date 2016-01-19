@@ -38,7 +38,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGraph.h"
 #include "Gui/ViewerTab.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 namespace {
@@ -101,4 +101,6 @@ DockablePanelTabWidget::minimumSizeHint() const
 {
     return currentWidget() ? currentWidget()->minimumSizeHint() + QSize(0,20) : QSize(300,100);
 }
+
+NATRON_NAMESPACE_EXIT;
 

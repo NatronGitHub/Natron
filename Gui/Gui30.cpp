@@ -57,7 +57,7 @@
 #include "Gui/Utils.h" // convertFromPlainText
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -559,3 +559,5 @@ Gui::onCurrentUndoStackChanged(QUndoStack* stack)
         _imp->setUndoRedoActions(it->second.first, it->second.second);
     }
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -54,7 +54,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerGL.h"
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 //OpenGL is column-major for matrixes
@@ -139,7 +139,7 @@ ViewerTab::drawOverlays(double time,
             }
         } else {
             
-            Natron::EffectInstance* effect = (*it)->getLiveInstance();
+            EffectInstance* effect = (*it)->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
             effect->drawOverlay_public(time, renderScale, view);
@@ -239,7 +239,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Node>& node,
         }
     } else {
         
-        Natron::EffectInstance* effect = node->getLiveInstance();
+        EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, transformViewportPos, transformPos, pressure);
@@ -472,7 +472,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Node>& node,
             getGui()->setDraftRenderEnabled(true);
         }
         
-        Natron::EffectInstance* effect = node->getLiveInstance();
+        EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayPenMotion_public(time, renderScale, view, transformViewportPos, transformPos, pressure);
@@ -645,7 +645,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
             }
         }
         
-        Natron::EffectInstance* effect = (*it)->getLiveInstance();
+        EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         didSomething |= effect->onOverlayPenUp_public(time, renderScale, view, transformViewportPos, transformPos, pressure);
@@ -715,7 +715,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Node>& node,
         
     } else {
    
-        Natron::EffectInstance* effect = node->getLiveInstance();
+        EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayKeyDown_public(time, renderScale, view, k, km);
@@ -814,7 +814,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
     std::list<boost::shared_ptr<Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     for (std::list<boost::shared_ptr<Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        Natron::EffectInstance* effect = (*it)->getLiveInstance();
+        EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -907,7 +907,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Node>& node,
         //        return true;
         //    }
         //}
-        Natron::EffectInstance* effect = node->getLiveInstance();
+        EffectInstance* effect = node->getLiveInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayKeyRepeat_public(time, renderScale, view, k, km);
@@ -982,7 +982,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
     std::list<boost::shared_ptr<Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     for (std::list<boost::shared_ptr<Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        Natron::EffectInstance* effect = (*it)->getLiveInstance();
+        EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -1045,7 +1045,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
             }
         }
         
-        Natron::EffectInstance* effect = (*it)->getLiveInstance();
+        EffectInstance* effect = (*it)->getLiveInstance();
         assert(effect);
         
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
@@ -1063,3 +1063,5 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
 
     return ret;
 }
+
+NATRON_NAMESPACE_EXIT;

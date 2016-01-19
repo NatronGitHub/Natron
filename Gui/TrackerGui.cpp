@@ -53,9 +53,9 @@ CLANG_DIAG_ON(uninitialized)
 #define CROSS_SIZE 6
 #define ADDTRACK_SIZE 5
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::TrackerGuiPrivate
+struct TrackerGuiPrivate
 {
     boost::shared_ptr<TrackerPanel> panel;
     ViewerTab* viewer;
@@ -278,7 +278,7 @@ TrackerGui::drawOverlays(double time,
             }
             if (it->second) {
                 ///The track is selected, use the plug-ins interact
-                Natron::EffectInstance* effect = instance->getLiveInstance();
+                EffectInstance* effect = instance->getLiveInstance();
                 assert(effect);
                 effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
                 effect->drawOverlay_public(time, renderScale, view);
@@ -382,7 +382,7 @@ TrackerGui::penDown(double time,
         
         boost::shared_ptr<Node> instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = instance->getLiveInstance();
+            EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayPenDown_public(time, renderScale, view, viewportPos, pos, pressure);
@@ -464,7 +464,7 @@ TrackerGui::penMotion(double time,
         
         boost::shared_ptr<Node> instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = instance->getLiveInstance();
+            EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             if ( effect->onOverlayPenMotion_public(time, renderScale, view, viewportPos, pos, pressure) ) {
@@ -498,7 +498,7 @@ TrackerGui::penUp(double time,
         
         boost::shared_ptr<Node> instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = instance->getLiveInstance();
+            EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayPenUp_public(time, renderScale, view, viewportPos, pos, pressure);
@@ -533,7 +533,7 @@ TrackerGui::keyDown(double time,
         
         boost::shared_ptr<Node> instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = instance->getLiveInstance();
+            EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayKeyDown_public(time, renderScale, view, natronKey, natronMod);
@@ -608,7 +608,7 @@ TrackerGui::keyUp(double time,
         
         boost::shared_ptr<Node> instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = instance->getLiveInstance();
+            EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayKeyUp_public(time, renderScale, view, natronKey, natronMod);
@@ -642,7 +642,7 @@ TrackerGui::loseFocus(double time,
         
         boost::shared_ptr<Node> instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = instance->getLiveInstance();
+            EffectInstance* effect = instance->getLiveInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething |= effect->onOverlayFocusLost_public(time, renderScale, view);
@@ -765,5 +765,7 @@ TrackerGui::onClearFwAnimationClicked()
     _imp->panel->clearForwardAnimationForSelection();
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_TrackerGui.cpp"

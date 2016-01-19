@@ -35,7 +35,7 @@
 NATRON_NAMESPACE_ENTER;
 
 struct PrecompNodePrivate;
-class PrecompNode : public Natron::EffectInstance
+class PrecompNode : public EffectInstance
 {
     GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -43,7 +43,7 @@ class PrecompNode : public Natron::EffectInstance
     
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new PrecompNode(n);
     }
@@ -83,7 +83,7 @@ public:
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
     virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return Natron::eRenderSafetyFullySafeFrame;
+        return eRenderSafetyFullySafeFrame;
     }
     
     

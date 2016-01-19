@@ -74,7 +74,7 @@
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 namespace {
 //Protect declarations in an anonymous namespace
@@ -116,7 +116,7 @@ void running_in_main_thread_and_context(const QGLWidget *glWidget) {
 
 ////////////////////////// DopeSheetView //////////////////////////
 
-class NATRON_NAMESPACE::DopeSheetViewPrivate
+class DopeSheetViewPrivate
 {
 public:
     enum KeyframeTexture {
@@ -2919,7 +2919,7 @@ void DopeSheetView::onRangeNodeChanged(int /*dimension*/, int /*reason*/)
         KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(signalSender);
         if (knobHandler) {
             KnobHolder *holder = knobHandler->getKnob()->getHolder();
-            Natron::EffectInstance *effectInstance = dynamic_cast<Natron::EffectInstance *>(holder);
+            EffectInstance *effectInstance = dynamic_cast<EffectInstance *>(holder);
             assert(effectInstance);
             if (!effectInstance) {
                 return;
@@ -3492,5 +3492,7 @@ void DopeSheetView::focusInEvent(QFocusEvent *e)
     _imp->model->setUndoStackActive();
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_DopeSheetView.cpp"

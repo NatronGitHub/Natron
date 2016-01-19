@@ -29,8 +29,7 @@
 #include "Engine/NodeGroup.h"
 
 
-NATRON_NAMESPACE_USING
-
+NATRON_NAMESPACE_ENTER;
 
 ActionsCache::ActionsCacheInstance::ActionsCacheInstance()
     : _hash(0)
@@ -554,7 +553,7 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
                                                                    int view,
                                                                    bool isIdentity,
                                                                    double identityTime,
-                                                                   Natron::EffectInstance* identityInput,
+                                                                   EffectInstance* identityInput,
                                                                    const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
                                                                    const EffectInstance::InputImagesMap& inputImages,
                                                                    const RoIMap & roiMap,
@@ -621,5 +620,6 @@ EffectInstance::Implementation::clearInputImagePointers()
 
 }
 
+NATRON_NAMESPACE_EXIT;
 
 

@@ -993,7 +993,7 @@ public:
     bool slaveTo(int dimension,const boost::shared_ptr<KnobI> & other,int otherDimension,bool ignoreMasterPersistence = false);
     virtual bool isMastersPersistenceIgnored() const = 0;
     
-    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,
+    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(EffectInstance* effect,
                                                            const boost::shared_ptr<KnobPage>& page,
                                                            const boost::shared_ptr<KnobGroup>& group,
                                                            int indexInParent,
@@ -1290,7 +1290,7 @@ public:
     virtual bool hasModifications(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasModificationsForSerialization() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,
+    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(EffectInstance* effect,
                                                            const boost::shared_ptr<KnobPage>& page,
                                                            const boost::shared_ptr<KnobGroup>& group,
                                                            int indexInParent,

@@ -64,7 +64,7 @@ GCC_DIAG_ON(unused-parameter)
 BOOST_CLASS_EXPORT(NATRON_NAMESPACE::FrameParams)
 BOOST_CLASS_EXPORT(NATRON_NAMESPACE::ImageParams)
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 #if defined(NATRON_USE_BREAKPAD) || defined(Q_OS_LINUX)
@@ -97,7 +97,7 @@ AppManagerPrivate::AppManagerPrivate()
 , _settings()
 , _formats()
 , _plugins()
-, ofxHost( new Natron::OfxHost() )
+, ofxHost( new OfxHost() )
 , _knobFactory( new KnobFactory() )
 , _nodeCache()
 , _diskCache()
@@ -598,3 +598,5 @@ AppManagerPrivate::setMaxCacheFiles()
 
     maxCacheFiles = hardMax * 0.9;
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -60,7 +60,7 @@ CLANG_DIAG_ON(deprecated)
 #define M_PI 3.14159265358979323846264338327950288419717
 #endif
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 namespace {
 
@@ -269,7 +269,7 @@ typedef std::list<TransformInteract> TransformInteracts;
     
 }
 
-struct NATRON_NAMESPACE::HostOverlayPrivate
+struct HostOverlayPrivate
 {
     HostOverlay* _publicInterface;
     PositionInteracts positions;
@@ -2249,3 +2249,5 @@ HostOverlay::isEmpty() const
     }
     return false;
 }
+
+NATRON_NAMESPACE_EXIT;

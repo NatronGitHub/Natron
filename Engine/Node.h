@@ -197,9 +197,9 @@ public:
     /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
      * is set earlier.
      */
-    void setLiveInstance(const boost::shared_ptr<Natron::EffectInstance>& liveInstance);
+    void setLiveInstance(const boost::shared_ptr<EffectInstance>& liveInstance);
 
-    Natron::EffectInstance* getLiveInstance() const;
+    EffectInstance* getLiveInstance() const;
 
     /**
      * @brief Returns true if the node is a multi-instance node, that is, holding several other nodes.

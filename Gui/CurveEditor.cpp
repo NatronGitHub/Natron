@@ -71,7 +71,7 @@ using std::cout;
 using std::endl;
 using Natron::Label;
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 class CurveEditorTreeWidget : public QTreeWidget
 {
@@ -103,7 +103,7 @@ private:
     }
 };
 
-struct NATRON_NAMESPACE::CurveEditorPrivate
+struct CurveEditorPrivate
 {
     
     std::list<NodeCurveEditorContext*> nodes;
@@ -945,7 +945,7 @@ CurveEditor::findCurve(KnobGui* knob,
 {
     KnobHolder* holder = knob->getKnob()->getHolder();
     assert(holder);
-    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
     assert(effect);
     
     std::list<boost::shared_ptr<CurveGui> > ret;
@@ -1075,7 +1075,7 @@ CurveEditor::getCurveWidget() const
 
 ////RotoItemContext
 
-struct NATRON_NAMESPACE::RotoItemEditorContextPrivate {
+struct RotoItemEditorContextPrivate {
     
     CurveEditor* widget;
     RotoCurveEditorContext* context;
@@ -1271,7 +1271,7 @@ RotoItemEditorContext::findElement(KnobGui* knob,int dimension) const
     return 0;
 }
 
-struct NATRON_NAMESPACE::BezierEditorContextPrivate {
+struct BezierEditorContextPrivate {
     
   
     QTreeWidgetItem* curveItem;
@@ -1352,7 +1352,7 @@ struct StrokeEditorContextPrivate {
 };
 ////////RotoContext
 
-struct NATRON_NAMESPACE::RotoCurveEditorContextPrivate
+struct RotoCurveEditorContextPrivate
 {
     CurveEditor* widget;
     QTreeWidget* tree;
@@ -1511,7 +1511,7 @@ RotoCurveEditorContext::findElement(KnobGui* knob,int dimension) const
         return ret;
     }
     
-    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
     if (!effect) {
         return ret;
     }
@@ -1610,7 +1610,7 @@ CurveEditor::setSelectedCurve(const boost::shared_ptr<CurveGui>& curve)
         assert(knob);
         KnobHolder* holder = knob->getHolder();
         if (holder) {
-            Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+            EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
             assert(effect);
             ss << effect->getNode()->getFullyQualifiedName();
             ss << '.';
@@ -1696,4 +1696,8 @@ CurveEditor::onExprLineEditFinished()
 {
     setSelectedCurveExpression(_imp->knobLineEdit->text());
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_CurveEditor.cpp"

@@ -51,10 +51,10 @@
 #include "Gui/Utils.h" // convertFromPlainText
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
-struct NATRON_NAMESPACE::AddKnobDialogPrivate
+struct AddKnobDialogPrivate
 {
     boost::shared_ptr<KnobI> knob;
     boost::shared_ptr<KnobSerialization> originalKnobSerialization;
@@ -434,7 +434,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     assert(!knob || knob->isUserKnob());
 
     {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(panel->getHolder());
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(panel->getHolder());
         QString title = "Add Parameter";
         if (!knob) {
             // Add...
@@ -1663,7 +1663,7 @@ AddKnobDialog::onOkClicked()
         
     }
     
-    Natron::EffectInstance* effect = 0;
+    EffectInstance* effect = 0;
     
     
     {
@@ -1710,7 +1710,7 @@ AddKnobDialog::onOkClicked()
     } else {
         oldKnobIsPage = boost::dynamic_pointer_cast<KnobPage>(_imp->knob);
         oldKnobScriptName = _imp->knob->getName();
-        effect = dynamic_cast<Natron::EffectInstance*>(_imp->knob->getHolder());
+        effect = dynamic_cast<EffectInstance*>(_imp->knob->getHolder());
         oldParentPage = _imp->knob->getTopLevelPage();
         wasNewLineActivated = _imp->knob->isNewLineActivated();
         t = getChoiceIndexFromKnobType(_imp->knob.get());
@@ -2171,5 +2171,7 @@ AddKnobDialogPrivate::setVisibleDefaultValues(bool visible,
     }
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_AddKnobDialog.cpp"

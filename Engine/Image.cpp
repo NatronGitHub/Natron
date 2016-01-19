@@ -30,7 +30,7 @@
 
 #include "Engine/AppManager.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 #define BM_GET(i,j) &_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]
 
@@ -899,7 +899,7 @@ void
 Image::resizeInternal(const Image* srcImg,
                       const RectI& srcBounds,
                       const RectI& merge,
-                      bool fillWithBlackAndTransparant,
+                      bool fillWithBlackAndTransparent,
                       bool setBitmapTo1,
                       bool createInCache,
                       boost::shared_ptr<Image>* outputImage)
@@ -921,7 +921,7 @@ Image::resizeInternal(const Image* srcImg,
     }
     ImageBitDepthEnum depth = srcImg->getBitDepth();
     
-    if (fillWithBlackAndTransparant) {
+    if (fillWithBlackAndTransparent) {
         
         /*
          Compute the rectangles (A,B,C,D) where to set the image to 0
@@ -1024,7 +1024,7 @@ Image::resizeInternal(const Image* srcImg,
         }
         
         
-    } // fillWithBlackAndTransparant
+    } // fillWithBlackAndTransparent
     
     
     switch (depth) {
@@ -1048,7 +1048,7 @@ Image::resizeInternal(const Image* srcImg,
 }
 
 bool
-Image::copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparant, bool setBitmapTo1, boost::shared_ptr<Image>* output)
+Image::copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, boost::shared_ptr<Image>* output)
 {
     if (getBounds().contains(newBounds)) {
         return false;
@@ -1060,12 +1060,12 @@ Image::copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransp
     RectI merge = newBounds;
     merge.merge(_bounds);
     
-    resizeInternal(this, _bounds, merge, fillWithBlackAndTransparant, setBitmapTo1, usesBitMap(), output);
+    resizeInternal(this, _bounds, merge, fillWithBlackAndTransparent, setBitmapTo1, usesBitMap(), output);
     return true;
 }
 
 bool
-Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant, bool setBitmapTo1)
+Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1)
 {
     
     
@@ -1079,7 +1079,7 @@ Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant, bo
     merge.merge(_bounds);
     
     ImagePtr tmpImg;
-    resizeInternal(this, _bounds, merge, fillWithBlackAndTransparant, setBitmapTo1, false, &tmpImg);
+    resizeInternal(this, _bounds, merge, fillWithBlackAndTransparent, setBitmapTo1, false, &tmpImg);
     
     
     ///Change the size of the current buffer
@@ -2350,3 +2350,5 @@ Image::unpremultImage(const RectI& roi)
 {
     premultForDepth<false>(roi);
 }
+
+NATRON_NAMESPACE_EXIT;

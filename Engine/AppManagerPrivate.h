@@ -65,7 +65,7 @@ struct AppManagerPrivate
     boost::shared_ptr<Settings> _settings; //< app settings
     std::vector<Format*> _formats; //<a list of the "base" formats available in the application
     PluginsMap _plugins; //< list of the plugins
-    boost::scoped_ptr<Natron::OfxHost> ofxHost; //< OpenFX host
+    boost::scoped_ptr<OfxHost> ofxHost; //< OpenFX host
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
     boost::shared_ptr<Natron::Cache<Image> >  _nodeCache; //< Images cache
     boost::shared_ptr<Natron::Cache<Image> >  _diskCache; //< Images disk cache (used by DiskCache nodes)

@@ -24,7 +24,7 @@
 
 #include "QtEnumConvert.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 ///what a painful mapping!
 Natron::Key
@@ -1026,4 +1026,6 @@ QtEnumConvert::toQtStandarButtons(StandardButtons buttons)
 
     return ret;
 } // toQtStandarButtons
+
+NATRON_NAMESPACE_EXIT;
 

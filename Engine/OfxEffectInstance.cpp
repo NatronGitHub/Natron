@@ -78,7 +78,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #define READER_INPUT_NAME "Sync"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 using std::cout; using std::endl;
 
@@ -186,7 +186,7 @@ private:
 };
 } // anon namespace
 
-struct NATRON_NAMESPACE::OfxEffectInstancePrivate
+struct OfxEffectInstancePrivate
 {
     
     
@@ -224,7 +224,7 @@ struct NATRON_NAMESPACE::OfxEffectInstancePrivate
     , renderButton()
     , preferencesLock(QReadWriteLock::Recursive)
     , renderSafetyLock()
-    , renderSafety(Natron::eRenderSafetyUnsafe)
+    , renderSafety(eRenderSafetyUnsafe)
     , wasRenderSafetySet(false)
     , context(eContextNone)
     , clipsInfos()
@@ -1650,7 +1650,7 @@ OfxEffectInstance::getFramesNeeded(double time, int view)
     
     //Default is already handled by HostSupport
 //    if (stat == kOfxStatReplyDefault) {
-//        return Natron::EffectInstance::getFramesNeeded(time,view);
+//        return EffectInstance::getFramesNeeded(time,view);
 //    }
     return ret;
 }
@@ -2029,18 +2029,18 @@ OfxEffectInstance::renderThreadSafety() const
         QWriteLocker writeL(&_imp->renderSafetyLock);
         const std::string & safety = _imp->effect->getRenderThreadSafety();
         if (safety == kOfxImageEffectRenderUnsafe) {
-            _imp->renderSafety =  Natron::eRenderSafetyUnsafe;
+            _imp->renderSafety =  eRenderSafetyUnsafe;
         } else if (safety == kOfxImageEffectRenderInstanceSafe) {
-            _imp->renderSafety = Natron::eRenderSafetyInstanceSafe;
+            _imp->renderSafety = eRenderSafetyInstanceSafe;
         } else if (safety == kOfxImageEffectRenderFullySafe) {
             if ( _imp->effect->getHostFrameThreading() ) {
-                _imp->renderSafety =  Natron::eRenderSafetyFullySafeFrame;
+                _imp->renderSafety =  eRenderSafetyFullySafeFrame;
             } else {
-                _imp->renderSafety =  Natron::eRenderSafetyFullySafe;
+                _imp->renderSafety =  eRenderSafetyFullySafe;
             }
         } else {
             qDebug() << "Unknown thread safety level: " << safety.c_str();
-            _imp->renderSafety =  Natron::eRenderSafetyUnsafe;
+            _imp->renderSafety =  eRenderSafetyUnsafe;
         }
         _imp->wasRenderSafetySet = true;
 
@@ -2845,7 +2845,7 @@ StatusEnum
 OfxEffectInstance::getTransform(double time,
                                 const RenderScale & renderScale, //< the plug-in accepted scale
                                 int view,
-                                Natron::EffectInstance** inputToTransform,
+                                EffectInstance** inputToTransform,
                                 Transform::Matrix3x3* transform)
 {
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
@@ -2959,4 +2959,7 @@ OfxEffectInstance::getClipInputNumber(const OfxClipInstance* clip) const
     return 0;
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
 #include "moc_OfxEffectInstance.cpp"

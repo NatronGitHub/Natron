@@ -44,10 +44,10 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 class QtReader
-    : public Natron::EffectInstance
+    : public EffectInstance
 {
 public:
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new QtReader(n);
     }
@@ -107,7 +107,7 @@ public:
                              bool originatedFromMainThread) OVERRIDE FINAL;
     virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {
-        return Natron::eRenderSafetyInstanceSafe;
+        return eRenderSafetyInstanceSafe;
     }
 
     virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;

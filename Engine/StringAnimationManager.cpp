@@ -30,7 +30,7 @@
 
 #include "Engine/Knob.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 namespace {
 
@@ -53,7 +53,7 @@ typedef std::set<StringKeyFrame,StringKeyFrame_compare_time> Keyframes;
 
 }
 
-struct NATRON_NAMESPACE::StringAnimationManagerPrivate
+struct StringAnimationManagerPrivate
 {
     StringAnimationManager::customParamInterpolationV1Entry_t customInterpolation;
     void* ofxParamHandle;
@@ -335,3 +335,4 @@ StringAnimationManager::save(std::map<int,std::string>* keyframes) const
     }
 }
 
+NATRON_NAMESPACE_EXIT;

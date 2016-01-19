@@ -46,12 +46,12 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::map<Natron::EffectInstance*,RectD> RoIMap; // RoIs are in canonical coordinates
+typedef std::map<EffectInstance*,RectD> RoIMap; // RoIs are in canonical coordinates
 typedef std::map<int, std::map<int, std::vector<OfxRangeD> > > FramesNeededMap;
 
 struct InputMatrix
 {
-    Natron::EffectInstance* newInputEffect;
+    EffectInstance* newInputEffect;
     boost::shared_ptr<Transform::Matrix3x3> cat;
     int newInputNbToFetchFrom;
 };
@@ -155,7 +155,7 @@ struct ParallelRenderArgs
     , rotoPaintNodes()
     , stats()
     , textureIndex(0)
-    , currentThreadSafety(Natron::eRenderSafetyInstanceSafe)
+    , currentThreadSafety(eRenderSafetyInstanceSafe)
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
     , canAbort(false)
@@ -182,7 +182,7 @@ struct FrameViewRequestGlobalData
 {
     ///The transforms associated to each input branch, set on first request
     boost::shared_ptr<InputMatrixMap> transforms;
-    boost::shared_ptr<std::map<int, Natron::EffectInstance*> > reroutesMap;
+    boost::shared_ptr<std::map<int, EffectInstance*> > reroutesMap;
     
     ///The required frame/views in input, set on first request
     FramesNeededMap frameViewsNeeded;

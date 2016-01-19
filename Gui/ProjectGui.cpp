@@ -76,7 +76,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RectISerialization.h"
 #include "Engine/RectDSerialization.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 ProjectGui::ProjectGui(Gui* gui)
     : _gui(gui)
@@ -305,7 +305,7 @@ void loadNodeGuiSerialization(Gui* gui,
         nGui->togglePreview();
     }
     
-    Natron::EffectInstance* iseffect = nGui->getNode()->getLiveInstance();
+    EffectInstance* iseffect = nGui->getNode()->getLiveInstance();
     
     if ( serialization.colorWasFound() ) {
         std::list<std::string> grouping;
@@ -645,5 +645,7 @@ ProjectGui::setPickersColor(double r,double g, double b,double a)
     }
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_ProjectGui.cpp"

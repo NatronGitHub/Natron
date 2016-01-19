@@ -31,7 +31,7 @@
 #include "Engine/AppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 PasteUndoCommand::PasteUndoCommand(KnobGui* knob,
                                    bool copyAnimation,
@@ -341,7 +341,7 @@ MultipleKnobEditsUndoCommand::undo()
             (*it)->evaluateValueChange(0,time,  _reason);
         }
         holder->endChanges();
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
             holderName = effect->getNode()->getLabel().c_str();
         }
@@ -430,7 +430,7 @@ MultipleKnobEditsUndoCommand::redo()
     assert( !knobs.empty() );
     QString holderName;
     if (holder) {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
             if (!firstRedoCalled) {
                 effect->getApp()->triggerAutoSave();
@@ -666,3 +666,5 @@ SetExpressionCommand::redo()
     _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), eValueChangedReasonNatronGuiEdited);
     setText( QObject::tr("Set expression") );
 }
+
+NATRON_NAMESPACE_EXIT;

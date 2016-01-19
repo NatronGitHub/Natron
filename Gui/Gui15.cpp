@@ -47,7 +47,7 @@
 #include "Gui/SequenceFileDialog.h"
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -446,3 +446,5 @@ Gui::setVisibleProjectSettingsPanel()
         _imp->_projectGui->setVisible(true);
     }
 }
+
+NATRON_NAMESPACE_EXIT;

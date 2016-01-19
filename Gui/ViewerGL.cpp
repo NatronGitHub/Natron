@@ -96,9 +96,7 @@ GCC_DIAG_OFF(deprecated-declarations)
 /*This class is the the core of the viewer : what displays images, overlays, etc...
    Everything related to OpenGL will (almost always) be in this class */
 
-NATRON_NAMESPACE_USING
-using std::cout; using std::endl;
-
+NATRON_NAMESPACE_ENTER;
 
 
 ViewerGL::ViewerGL(ViewerTab* parent,
@@ -1325,25 +1323,25 @@ ViewerGL::initShaderGLSL()
     if (!_imp->shaderLoaded && _imp->supportsGLSL) {
         _imp->shaderBlack = new QGLShaderProgram( context() );
         if ( !_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Vertex, vertRGB) ) {
-            cout << qPrintable( _imp->shaderBlack->log() ) << endl;
+            std::cout << qPrintable( _imp->shaderBlack->log() ) << endl;
         }
         if ( !_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Fragment, blackFrag) ) {
-            cout << qPrintable( _imp->shaderBlack->log() ) << endl;
+            std::cout << qPrintable( _imp->shaderBlack->log() ) << endl;
         }
         if ( !_imp->shaderBlack->link() ) {
-            cout << qPrintable( _imp->shaderBlack->log() ) << endl;
+            std::cout << qPrintable( _imp->shaderBlack->log() ) << endl;
         }
 
         _imp->shaderRGB = new QGLShaderProgram( context() );
         if ( !_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Vertex, vertRGB) ) {
-            cout << qPrintable( _imp->shaderRGB->log() ) << endl;
+            std::cout << qPrintable( _imp->shaderRGB->log() ) << endl;
         }
         if ( !_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Fragment, fragRGB) ) {
-            cout << qPrintable( _imp->shaderRGB->log() ) << endl;
+            std::cout << qPrintable( _imp->shaderRGB->log() ) << endl;
         }
 
         if ( !_imp->shaderRGB->link() ) {
-            cout << qPrintable( _imp->shaderRGB->log() ) << endl;
+            std::cout << qPrintable( _imp->shaderRGB->log() ) << endl;
         }
         _imp->shaderLoaded = true;
     }
@@ -1380,7 +1378,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
     GLenum err = glGetError();
     if ( (err != GL_NO_ERROR) || (currentBoundPBO != 0) ) {
-        qDebug() << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed." << endl;
+        qDebug() << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed.";
     }
     
     GLuint pboId = getPboID(pboIndex);
@@ -4267,6 +4265,7 @@ ViewerGL::currentTimeForEvent(QInputEvent* e)
     return now.tv_sec + now.tv_usec / 1000000.0;
 }
 
+NATRON_NAMESPACE_EXIT;
 
-
+NATRON_NAMESPACE_USING;
 #include "moc_ViewerGL.cpp"

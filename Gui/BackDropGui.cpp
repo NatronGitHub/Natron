@@ -48,9 +48,9 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_BACKDROP_DEFAULT_WIDTH 80
 #define NATRON_BACKDROP_DEFAULT_HEIGHT 80
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
-struct NATRON_NAMESPACE::BackDropGuiPrivate
+struct BackDropGuiPrivate
 {
     BackDropGui* _publicInterface;
     
@@ -108,7 +108,7 @@ BackDropGui::createGui()
     _imp->label->setDefaultTextColor( QColor(0,0,0,255) );
     _imp->label->setZValue(getBaseDepth() + 1);
     
-    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(getNode()->getLiveInstance());
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(getNode()->getLiveInstance());
     assert(effect);
     BackDrop* isBd = dynamic_cast<BackDrop*>(effect);
     assert(isBd);
@@ -192,5 +192,7 @@ BackDropGuiPrivate::refreshLabelText(int nameHeight,const QString &text)
     
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
 #include "moc_BackDropGui.cpp"

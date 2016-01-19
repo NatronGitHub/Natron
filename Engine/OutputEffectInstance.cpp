@@ -74,11 +74,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
 
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
-    : Natron::EffectInstance(node)
+    : EffectInstance(node)
     , _outputEffectDataLock()
     , _renderSequenceRequests()
     , _engine(0)
@@ -590,3 +590,4 @@ OutputEffectInstance::reportStats(int time,
     }
 } // OutputEffectInstance::reportStats
 
+NATRON_NAMESPACE_EXIT;

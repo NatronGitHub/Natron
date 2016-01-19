@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -491,3 +491,5 @@ NodeGraph::areAllNodesVisible()
     }
     return true;
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -98,7 +98,7 @@ NATRON_NAMESPACE_ENTER;
 class EffectInstance
     : public NamedKnobHolder
       , public LockManagerI<Image>
-      , public boost::enable_shared_from_this<Natron::EffectInstance>
+      , public boost::enable_shared_from_this<EffectInstance>
 {
 public:
 
@@ -589,7 +589,7 @@ public:
                                                  FrameRequestMap & request);
 
     // Implem is in ParallelRenderArgs.cpp
-    static Natron::EffectInstance::RenderRoIRetCode treeRecurseFunctor(bool isRenderFunctor,
+    static EffectInstance::RenderRoIRetCode treeRecurseFunctor(bool isRenderFunctor,
                                                                        const boost::shared_ptr<Node> & node,
                                                                        const FramesNeededMap & framesNeeded,
                                                                        const RoIMap & inputRois,
@@ -623,19 +623,19 @@ public:
      * from last to first.
      * If this not is not disabled, it will return a pointer to this.
      **/
-    Natron::EffectInstance* getNearestNonDisabled() const;
+    EffectInstance* getNearestNonDisabled() const;
 
     /**
      * @brief Same as getNearestNonDisabled() except that it returns the *last* disabled node before the nearest non disabled node.
      * @param inputNb[out] The inputNb of the node that is non disabled.
      **/
-    Natron::EffectInstance* getNearestNonDisabledPrevious(int* inputNb);
+    EffectInstance* getNearestNonDisabledPrevious(int* inputNb);
 
     /**
      * @brief Same as getNearestNonDisabled except that it looks for the nearest non identity node.
      * This function calls the action isIdentity and getRegionOfDefinition and can be expensive!
      **/
-    Natron::EffectInstance* getNearestNonIdentity(double time);
+    EffectInstance* getNearestNonIdentity(double time);
 
     /**
      * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
@@ -807,7 +807,7 @@ protected:
     virtual StatusEnum getTransform(double /*time*/,
                                             const RenderScale & /*renderScale*/,
                                             int /*view*/,
-                                            Natron::EffectInstance** /*inputToTransform*/,
+                                            EffectInstance** /*inputToTransform*/,
                                             Transform::Matrix3x3* /*transform*/) WARN_UNUSED_RETURN
     {
         return eStatusReplyDefault;
@@ -820,7 +820,7 @@ public:
     StatusEnum getTransform_public(double time,
                                            const RenderScale & renderScale,
                                            int view,
-                                           Natron::EffectInstance** inputToTransform,
+                                           EffectInstance** inputToTransform,
                                            Transform::Matrix3x3* transform) WARN_UNUSED_RETURN;
 
 protected:
@@ -1232,7 +1232,7 @@ public:
 
     struct RectToRender
     {
-        Natron::EffectInstance* identityInput;
+        EffectInstance* identityInput;
         RectI rect;
         RoIMap inputRois;
         EffectInstance::InputImagesMap imgs;
@@ -1344,7 +1344,7 @@ protected:
     }
 
 
-#define SET_CAN_SET_VALUE(canSetValue) Natron::EffectInstance::CanSetSetValueFlag_RAII canSetValueSetter(this,canSetValue)
+#define SET_CAN_SET_VALUE(canSetValue) EffectInstance::CanSetSetValueFlag_RAII canSetValueSetter(this,canSetValue)
 #else
 #define SET_CAN_SET_VALUE(canSetValue) ( (void)0 )
 #endif // DEBUG
@@ -1443,7 +1443,7 @@ bool onOverlayPenDown_public(double time, const RenderScale & renderScale, int v
      * @brief Returns the components available on each input for this effect at the given time.
      **/
     void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps);
-    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps, std::list<Natron::EffectInstance*>* markedNodes);
+    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps, std::list<EffectInstance*>* markedNodes);
 
     /**
      * @brief Reimplement to control how the host adds the RGBA checkboxes.
@@ -1492,7 +1492,7 @@ private:
                                          double time,
                                          int view,
                                          ComponentsAvailableMap* comps,
-                                         std::list<Natron::EffectInstance*>* markedNodes);
+                                         std::list<EffectInstance*>* markedNodes);
 
 public:
 
@@ -1518,7 +1518,7 @@ public:
                                   InputMatrixMap* inputTransforms);
 
 
-    static void transformInputRois(Natron::EffectInstance* self,
+    static void transformInputRois(EffectInstance* self,
                                    const boost::shared_ptr<InputMatrixMap>& inputTransforms,
                                    double par,
                                    const RenderScale & scale,
@@ -1535,7 +1535,7 @@ public:
         bool validArgs; //< are the args valid ?
         bool isIdentity;
         double identityTime;
-        Natron::EffectInstance* identityInput;
+        EffectInstance* identityInput;
         
         EffectInstance::InputImagesMap inputImages;
         std::map<ImageComponents, PlaneToRender> outputPlanes;
@@ -1851,7 +1851,7 @@ private:
                                          U64* nodeHash_p,
                                          bool* isIdentity_p,
                                          double* identityTime,
-                                         Natron::EffectInstance** identityInput_p,
+                                         EffectInstance** identityInput_p,
                                          bool* duringPaintStroke_p,
                                          RectD* rod_p,
                                          RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
@@ -1898,7 +1898,7 @@ private:
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.
      **/
-    int getInputNumber(Natron::EffectInstance* inputEffect) const;
+    int getInputNumber(EffectInstance* inputEffect) const;
 
 
 };
@@ -1909,7 +1909,7 @@ private:
  * @typedef Any plug-in should have a static function called BuildEffect with the following signature.
  * It is used to build a new instance of an effect. Basically it should just call the constructor.
  **/
-typedef Natron::EffectInstance* (*EffectBuilder)(boost::shared_ptr<Node>);
+typedef EffectInstance* (*EffectBuilder)(boost::shared_ptr<Node>);
 
 NATRON_NAMESPACE_EXIT;
 

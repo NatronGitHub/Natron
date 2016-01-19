@@ -65,7 +65,7 @@ CLANG_DIAG_ON(deprecated)
 
 #endif
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 StandardPaths::StandardPaths()
 {
@@ -232,7 +232,7 @@ load(const wchar_t *libraryName,
         fullPathAttempt.append(fileName);
         
 #ifdef UNICODE
-        std::wstring ws = Natron::s2ws(fullPathAttempt.toStdString());
+        std::wstring ws = natron_s2ws(fullPathAttempt.toStdString());
         HINSTANCE inst = ::LoadLibrary( ws.c_str() );
 #else
         HINSTANCE inst = ::LoadLibrary( fullPathAttempt.toStdString().c_str() );
@@ -654,3 +654,5 @@ StandardPaths::writableLocation(StandardLocationEnum type)
     return QStandardPaths::writableLocation(path);
 #endif // QT_VERSION >= 0x050000
 } // writableLocation
+
+NATRON_NAMESPACE_EXIT;

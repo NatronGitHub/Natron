@@ -55,7 +55,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 QImage
@@ -580,3 +580,5 @@ NodeGraph::dragMoveEvent(QDragMoveEvent* e)
 {
     e->accept();
 }
+
+NATRON_NAMESPACE_EXIT;

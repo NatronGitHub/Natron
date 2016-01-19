@@ -31,7 +31,7 @@
 
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -734,3 +734,5 @@ KnobGui::getFieldContainer() const
 {
     return _imp->field;
 }
+
+NATRON_NAMESPACE_EXIT;

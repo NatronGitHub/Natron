@@ -35,10 +35,10 @@
 #include "Global/QtCompat.h"
 #include "Engine/AppManager.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 
-struct NATRON_NAMESPACE::CLArgsPrivate
+struct CLArgsPrivate
 {
     QStringList args;
     
@@ -915,5 +915,6 @@ CLArgsPrivate::parse()
         error = 1;
         return;
     }
-  
 }
+
+NATRON_NAMESPACE_EXIT;

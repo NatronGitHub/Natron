@@ -26,7 +26,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 
-NATRON_NAMESPACE_USING
+NATRON_NAMESPACE_ENTER;
 
 Param::Param(const boost::shared_ptr<KnobI>& knob)
 : _knob(knob)
@@ -1700,4 +1700,6 @@ ParametricParam::deleteAllControlPoints(int dimension)
 {
     return _parametricKnob.lock()->deleteAllControlPoints(dimension);
 }
+
+NATRON_NAMESPACE_EXIT;
 

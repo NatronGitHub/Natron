@@ -63,7 +63,7 @@ private:
                                              int dimension = 1,
                                              bool declaredByPlugin = true) const WARN_UNUSED_RETURN;
 
-    const std::map<std::string, Natron::LibraryBinary *> &getLoadedKnobs() const
+    const std::map<std::string, LibraryBinary *> &getLoadedKnobs() const
     {
         return _loadedKnobs;
     }
@@ -71,7 +71,7 @@ private:
     void loadBultinKnobs();
 
 private:
-    std::map<std::string, Natron::LibraryBinary *> _loadedKnobs;
+    std::map<std::string, LibraryBinary *> _loadedKnobs;
 };
 
 NATRON_NAMESPACE_EXIT;
