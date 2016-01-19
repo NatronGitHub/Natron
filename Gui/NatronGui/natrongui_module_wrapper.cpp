@@ -33,10 +33,10 @@ static PyMethodDef NatronGui_methods[] = {
 };
 
 // Classes initialization functions ------------------------------------------------------------
-void init_PyViewer(PyObject* module);
-void init_PyTabWidget(PyObject* module);
 void init_PyGuiApplication(PyObject* module);
 void init_GuiApp(PyObject* module);
+void init_PyViewer(PyObject* module);
+void init_PyTabWidget(PyObject* module);
 void init_PyModalDialog(PyObject* module);
 void init_PyPanel(PyObject* module);
 
@@ -46,142 +46,6 @@ SbkConverter** SbkPySide_QtGuiTypeConverters;
 
 // Module initialization ------------------------------------------------------------
 // Container Type converters.
-
-// C++ to Python conversion for type 'QList<QAction * >'.
-static PyObject* _QList_QActionPTR__CppToPython__QList_QActionPTR_(const void* cppIn) {
-    ::QList<QAction * >& cppInRef = *((::QList<QAction * >*)cppIn);
-
-                // TEMPLATE - cpplist_to_pylist_conversion - START
-        PyObject* pyOut = PyList_New((int) cppInRef.size());
-        ::QList<QAction * >::const_iterator it = cppInRef.begin();
-        for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
-            ::QAction* cppItem(*it);
-            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QACTION_IDX], cppItem));
-        }
-        return pyOut;
-        // TEMPLATE - cpplist_to_pylist_conversion - END
-
-}
-static void _QList_QActionPTR__PythonToCpp__QList_QActionPTR_(PyObject* pyIn, void* cppOut) {
-    ::QList<QAction * >& cppOutRef = *((::QList<QAction * >*)cppOut);
-
-                // TEMPLATE - pyseq_to_cpplist_conversion - START
-    for (int i = 0; i < PySequence_Size(pyIn); i++) {
-        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
-        ::QAction* cppItem = ((::QAction*)0);
-        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QACTION_IDX], pyItem, &(cppItem));
-        cppOutRef << cppItem;
-    }
-    // TEMPLATE - pyseq_to_cpplist_conversion - END
-
-}
-static PythonToCppFunc is__QList_QActionPTR__PythonToCpp__QList_QActionPTR__Convertible(PyObject* pyIn) {
-    if (Shiboken::Conversions::checkSequenceTypes(SbkPySide_QtGuiTypes[SBK_QACTION_IDX], pyIn))
-        return _QList_QActionPTR__PythonToCpp__QList_QActionPTR_;
-    return 0;
-}
-
-// C++ to Python conversion for type 'const QList<QObject * > &'.
-static PyObject* _constQList_QObjectPTR_REF_CppToPython__constQList_QObjectPTR_REF(const void* cppIn) {
-    ::QList<QObject * >& cppInRef = *((::QList<QObject * >*)cppIn);
-
-                // TEMPLATE - cpplist_to_pylist_conversion - START
-        PyObject* pyOut = PyList_New((int) cppInRef.size());
-        ::QList<QObject * >::const_iterator it = cppInRef.begin();
-        for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
-            ::QObject* cppItem(*it);
-            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtCoreTypes[SBK_QOBJECT_IDX], cppItem));
-        }
-        return pyOut;
-        // TEMPLATE - cpplist_to_pylist_conversion - END
-
-}
-static void _constQList_QObjectPTR_REF_PythonToCpp__constQList_QObjectPTR_REF(PyObject* pyIn, void* cppOut) {
-    ::QList<QObject * >& cppOutRef = *((::QList<QObject * >*)cppOut);
-
-                // TEMPLATE - pyseq_to_cpplist_conversion - START
-    for (int i = 0; i < PySequence_Size(pyIn); i++) {
-        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
-        ::QObject* cppItem = ((::QObject*)0);
-        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkPySide_QtCoreTypes[SBK_QOBJECT_IDX], pyItem, &(cppItem));
-        cppOutRef << cppItem;
-    }
-    // TEMPLATE - pyseq_to_cpplist_conversion - END
-
-}
-static PythonToCppFunc is__constQList_QObjectPTR_REF_PythonToCpp__constQList_QObjectPTR_REF_Convertible(PyObject* pyIn) {
-    if (Shiboken::Conversions::checkSequenceTypes(SbkPySide_QtCoreTypes[SBK_QOBJECT_IDX], pyIn))
-        return _constQList_QObjectPTR_REF_PythonToCpp__constQList_QObjectPTR_REF;
-    return 0;
-}
-
-// C++ to Python conversion for type 'QList<QByteArray >'.
-static PyObject* _QList_QByteArray__CppToPython__QList_QByteArray_(const void* cppIn) {
-    ::QList<QByteArray >& cppInRef = *((::QList<QByteArray >*)cppIn);
-
-                // TEMPLATE - cpplist_to_pylist_conversion - START
-        PyObject* pyOut = PyList_New((int) cppInRef.size());
-        ::QList<QByteArray >::const_iterator it = cppInRef.begin();
-        for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
-            ::QByteArray cppItem(*it);
-            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::copyToPython((SbkObjectType*)SbkPySide_QtCoreTypes[SBK_QBYTEARRAY_IDX], &cppItem));
-        }
-        return pyOut;
-        // TEMPLATE - cpplist_to_pylist_conversion - END
-
-}
-static void _QList_QByteArray__PythonToCpp__QList_QByteArray_(PyObject* pyIn, void* cppOut) {
-    ::QList<QByteArray >& cppOutRef = *((::QList<QByteArray >*)cppOut);
-
-                // TEMPLATE - pyseq_to_cpplist_conversion - START
-    for (int i = 0; i < PySequence_Size(pyIn); i++) {
-        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
-        ::QByteArray cppItem = ::QByteArray();
-        Shiboken::Conversions::pythonToCppCopy((SbkObjectType*)SbkPySide_QtCoreTypes[SBK_QBYTEARRAY_IDX], pyItem, &(cppItem));
-        cppOutRef << cppItem;
-    }
-    // TEMPLATE - pyseq_to_cpplist_conversion - END
-
-}
-static PythonToCppFunc is__QList_QByteArray__PythonToCpp__QList_QByteArray__Convertible(PyObject* pyIn) {
-    if (Shiboken::Conversions::convertibleSequenceTypes((SbkObjectType*)SbkPySide_QtCoreTypes[SBK_QBYTEARRAY_IDX], pyIn))
-        return _QList_QByteArray__PythonToCpp__QList_QByteArray_;
-    return 0;
-}
-
-// C++ to Python conversion for type 'std::list<Param * >'.
-static PyObject* _std_list_ParamPTR__CppToPython__std_list_ParamPTR_(const void* cppIn) {
-    ::std::list<Param * >& cppInRef = *((::std::list<Param * >*)cppIn);
-
-                    // TEMPLATE - stdListToPyList - START
-            PyObject* pyOut = PyList_New((int) cppInRef.size());
-            ::std::list<Param * >::const_iterator it = cppInRef.begin();
-            for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
-            ::Param* cppItem(*it);
-            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppItem));
-            }
-            return pyOut;
-        // TEMPLATE - stdListToPyList - END
-
-}
-static void _std_list_ParamPTR__PythonToCpp__std_list_ParamPTR_(PyObject* pyIn, void* cppOut) {
-    ::std::list<Param * >& cppOutRef = *((::std::list<Param * >*)cppOut);
-
-                    // TEMPLATE - pyListToStdList - START
-        for (int i = 0; i < PySequence_Size(pyIn); i++) {
-        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
-        ::Param* cppItem = ((::Param*)0);
-        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], pyItem, &(cppItem));
-        cppOutRef.push_back(cppItem);
-        }
-    // TEMPLATE - pyListToStdList - END
-
-}
-static PythonToCppFunc is__std_list_ParamPTR__PythonToCpp__std_list_ParamPTR__Convertible(PyObject* pyIn) {
-    if (Shiboken::Conversions::checkSequenceTypes(SbkNatronEngineTypes[SBK_PARAM_IDX], pyIn))
-        return _std_list_ParamPTR__PythonToCpp__std_list_ParamPTR_;
-    return 0;
-}
 
 // C++ to Python conversion for type 'std::list<Effect * >'.
 static PyObject* _std_list_EffectPTR__CppToPython__std_list_EffectPTR_(const void* cppIn) {
@@ -318,6 +182,142 @@ static void _std_list_std_string__PythonToCpp__std_list_std_string_(PyObject* py
 static PythonToCppFunc is__std_list_std_string__PythonToCpp__std_list_std_string__Convertible(PyObject* pyIn) {
     if (Shiboken::Conversions::convertibleSequenceTypes(Shiboken::Conversions::PrimitiveTypeConverter<std::string>(), pyIn))
         return _std_list_std_string__PythonToCpp__std_list_std_string_;
+    return 0;
+}
+
+// C++ to Python conversion for type 'QList<QAction * >'.
+static PyObject* _QList_QActionPTR__CppToPython__QList_QActionPTR_(const void* cppIn) {
+    ::QList<QAction * >& cppInRef = *((::QList<QAction * >*)cppIn);
+
+                // TEMPLATE - cpplist_to_pylist_conversion - START
+        PyObject* pyOut = PyList_New((int) cppInRef.size());
+        ::QList<QAction * >::const_iterator it = cppInRef.begin();
+        for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
+            ::QAction* cppItem(*it);
+            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QACTION_IDX], cppItem));
+        }
+        return pyOut;
+        // TEMPLATE - cpplist_to_pylist_conversion - END
+
+}
+static void _QList_QActionPTR__PythonToCpp__QList_QActionPTR_(PyObject* pyIn, void* cppOut) {
+    ::QList<QAction * >& cppOutRef = *((::QList<QAction * >*)cppOut);
+
+                // TEMPLATE - pyseq_to_cpplist_conversion - START
+    for (int i = 0; i < PySequence_Size(pyIn); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
+        ::QAction* cppItem = ((::QAction*)0);
+        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QACTION_IDX], pyItem, &(cppItem));
+        cppOutRef << cppItem;
+    }
+    // TEMPLATE - pyseq_to_cpplist_conversion - END
+
+}
+static PythonToCppFunc is__QList_QActionPTR__PythonToCpp__QList_QActionPTR__Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::checkSequenceTypes(SbkPySide_QtGuiTypes[SBK_QACTION_IDX], pyIn))
+        return _QList_QActionPTR__PythonToCpp__QList_QActionPTR_;
+    return 0;
+}
+
+// C++ to Python conversion for type 'const QList<QObject * > &'.
+static PyObject* _constQList_QObjectPTR_REF_CppToPython__constQList_QObjectPTR_REF(const void* cppIn) {
+    ::QList<QObject * >& cppInRef = *((::QList<QObject * >*)cppIn);
+
+                // TEMPLATE - cpplist_to_pylist_conversion - START
+        PyObject* pyOut = PyList_New((int) cppInRef.size());
+        ::QList<QObject * >::const_iterator it = cppInRef.begin();
+        for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
+            ::QObject* cppItem(*it);
+            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkPySide_QtCoreTypes[SBK_QOBJECT_IDX], cppItem));
+        }
+        return pyOut;
+        // TEMPLATE - cpplist_to_pylist_conversion - END
+
+}
+static void _constQList_QObjectPTR_REF_PythonToCpp__constQList_QObjectPTR_REF(PyObject* pyIn, void* cppOut) {
+    ::QList<QObject * >& cppOutRef = *((::QList<QObject * >*)cppOut);
+
+                // TEMPLATE - pyseq_to_cpplist_conversion - START
+    for (int i = 0; i < PySequence_Size(pyIn); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
+        ::QObject* cppItem = ((::QObject*)0);
+        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkPySide_QtCoreTypes[SBK_QOBJECT_IDX], pyItem, &(cppItem));
+        cppOutRef << cppItem;
+    }
+    // TEMPLATE - pyseq_to_cpplist_conversion - END
+
+}
+static PythonToCppFunc is__constQList_QObjectPTR_REF_PythonToCpp__constQList_QObjectPTR_REF_Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::checkSequenceTypes(SbkPySide_QtCoreTypes[SBK_QOBJECT_IDX], pyIn))
+        return _constQList_QObjectPTR_REF_PythonToCpp__constQList_QObjectPTR_REF;
+    return 0;
+}
+
+// C++ to Python conversion for type 'QList<QByteArray >'.
+static PyObject* _QList_QByteArray__CppToPython__QList_QByteArray_(const void* cppIn) {
+    ::QList<QByteArray >& cppInRef = *((::QList<QByteArray >*)cppIn);
+
+                // TEMPLATE - cpplist_to_pylist_conversion - START
+        PyObject* pyOut = PyList_New((int) cppInRef.size());
+        ::QList<QByteArray >::const_iterator it = cppInRef.begin();
+        for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
+            ::QByteArray cppItem(*it);
+            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::copyToPython((SbkObjectType*)SbkPySide_QtCoreTypes[SBK_QBYTEARRAY_IDX], &cppItem));
+        }
+        return pyOut;
+        // TEMPLATE - cpplist_to_pylist_conversion - END
+
+}
+static void _QList_QByteArray__PythonToCpp__QList_QByteArray_(PyObject* pyIn, void* cppOut) {
+    ::QList<QByteArray >& cppOutRef = *((::QList<QByteArray >*)cppOut);
+
+                // TEMPLATE - pyseq_to_cpplist_conversion - START
+    for (int i = 0; i < PySequence_Size(pyIn); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
+        ::QByteArray cppItem = ::QByteArray();
+        Shiboken::Conversions::pythonToCppCopy((SbkObjectType*)SbkPySide_QtCoreTypes[SBK_QBYTEARRAY_IDX], pyItem, &(cppItem));
+        cppOutRef << cppItem;
+    }
+    // TEMPLATE - pyseq_to_cpplist_conversion - END
+
+}
+static PythonToCppFunc is__QList_QByteArray__PythonToCpp__QList_QByteArray__Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::convertibleSequenceTypes((SbkObjectType*)SbkPySide_QtCoreTypes[SBK_QBYTEARRAY_IDX], pyIn))
+        return _QList_QByteArray__PythonToCpp__QList_QByteArray_;
+    return 0;
+}
+
+// C++ to Python conversion for type 'std::list<Param * >'.
+static PyObject* _std_list_ParamPTR__CppToPython__std_list_ParamPTR_(const void* cppIn) {
+    ::std::list<Param * >& cppInRef = *((::std::list<Param * >*)cppIn);
+
+                    // TEMPLATE - stdListToPyList - START
+            PyObject* pyOut = PyList_New((int) cppInRef.size());
+            ::std::list<Param * >::const_iterator it = cppInRef.begin();
+            for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
+            ::Param* cppItem(*it);
+            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], cppItem));
+            }
+            return pyOut;
+        // TEMPLATE - stdListToPyList - END
+
+}
+static void _std_list_ParamPTR__PythonToCpp__std_list_ParamPTR_(PyObject* pyIn, void* cppOut) {
+    ::std::list<Param * >& cppOutRef = *((::std::list<Param * >*)cppOut);
+
+                    // TEMPLATE - pyListToStdList - START
+        for (int i = 0; i < PySequence_Size(pyIn); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
+        ::Param* cppItem = ((::Param*)0);
+        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], pyItem, &(cppItem));
+        cppOutRef.push_back(cppItem);
+        }
+    // TEMPLATE - pyListToStdList - END
+
+}
+static PythonToCppFunc is__std_list_ParamPTR__PythonToCpp__std_list_ParamPTR__Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::checkSequenceTypes(SbkNatronEngineTypes[SBK_PARAM_IDX], pyIn))
+        return _std_list_ParamPTR__PythonToCpp__std_list_ParamPTR_;
     return 0;
 }
 
@@ -495,41 +495,12 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronGui)
 #endif
 
     // Initialize classes in the type system
-    init_PyViewer(module);
-    init_PyTabWidget(module);
     init_PyGuiApplication(module);
     init_GuiApp(module);
+    init_PyViewer(module);
+    init_PyTabWidget(module);
     init_PyModalDialog(module);
     init_PyPanel(module);
-
-    // Register converter for type 'QList<QAction*>'.
-    SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QACTIONPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _QList_QActionPTR__CppToPython__QList_QActionPTR_);
-    Shiboken::Conversions::registerConverterName(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QACTIONPTR_IDX], "QList<QAction*>");
-    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QACTIONPTR_IDX],
-        _QList_QActionPTR__PythonToCpp__QList_QActionPTR_,
-        is__QList_QActionPTR__PythonToCpp__QList_QActionPTR__Convertible);
-
-    // Register converter for type 'const QList<QObject*>&'.
-    SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QOBJECTPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _constQList_QObjectPTR_REF_CppToPython__constQList_QObjectPTR_REF);
-    Shiboken::Conversions::registerConverterName(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QOBJECTPTR_IDX], "const QList<QObject*>&");
-    Shiboken::Conversions::registerConverterName(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QOBJECTPTR_IDX], "QList<QObject*>");
-    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QOBJECTPTR_IDX],
-        _constQList_QObjectPTR_REF_PythonToCpp__constQList_QObjectPTR_REF,
-        is__constQList_QObjectPTR_REF_PythonToCpp__constQList_QObjectPTR_REF_Convertible);
-
-    // Register converter for type 'QList<QByteArray>'.
-    SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QBYTEARRAY_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _QList_QByteArray__CppToPython__QList_QByteArray_);
-    Shiboken::Conversions::registerConverterName(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QBYTEARRAY_IDX], "QList<QByteArray>");
-    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QBYTEARRAY_IDX],
-        _QList_QByteArray__PythonToCpp__QList_QByteArray_,
-        is__QList_QByteArray__PythonToCpp__QList_QByteArray__Convertible);
-
-    // Register converter for type 'std::list<Param*>'.
-    SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_PARAMPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _std_list_ParamPTR__CppToPython__std_list_ParamPTR_);
-    Shiboken::Conversions::registerConverterName(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_PARAMPTR_IDX], "std::list<Param*>");
-    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_PARAMPTR_IDX],
-        _std_list_ParamPTR__PythonToCpp__std_list_ParamPTR_,
-        is__std_list_ParamPTR__PythonToCpp__std_list_ParamPTR__Convertible);
 
     // Register converter for type 'std::list<Effect*>'.
     SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_EFFECTPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _std_list_EffectPTR__CppToPython__std_list_EffectPTR_);
@@ -560,6 +531,35 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronGui)
     Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_STD_STRING_IDX],
         _std_list_std_string__PythonToCpp__std_list_std_string_,
         is__std_list_std_string__PythonToCpp__std_list_std_string__Convertible);
+
+    // Register converter for type 'QList<QAction*>'.
+    SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QACTIONPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _QList_QActionPTR__CppToPython__QList_QActionPTR_);
+    Shiboken::Conversions::registerConverterName(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QACTIONPTR_IDX], "QList<QAction*>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QACTIONPTR_IDX],
+        _QList_QActionPTR__PythonToCpp__QList_QActionPTR_,
+        is__QList_QActionPTR__PythonToCpp__QList_QActionPTR__Convertible);
+
+    // Register converter for type 'const QList<QObject*>&'.
+    SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QOBJECTPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _constQList_QObjectPTR_REF_CppToPython__constQList_QObjectPTR_REF);
+    Shiboken::Conversions::registerConverterName(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QOBJECTPTR_IDX], "const QList<QObject*>&");
+    Shiboken::Conversions::registerConverterName(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QOBJECTPTR_IDX], "QList<QObject*>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QOBJECTPTR_IDX],
+        _constQList_QObjectPTR_REF_PythonToCpp__constQList_QObjectPTR_REF,
+        is__constQList_QObjectPTR_REF_PythonToCpp__constQList_QObjectPTR_REF_Convertible);
+
+    // Register converter for type 'QList<QByteArray>'.
+    SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QBYTEARRAY_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _QList_QByteArray__CppToPython__QList_QByteArray_);
+    Shiboken::Conversions::registerConverterName(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QBYTEARRAY_IDX], "QList<QByteArray>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QBYTEARRAY_IDX],
+        _QList_QByteArray__PythonToCpp__QList_QByteArray_,
+        is__QList_QByteArray__PythonToCpp__QList_QByteArray__Convertible);
+
+    // Register converter for type 'std::list<Param*>'.
+    SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_PARAMPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _std_list_ParamPTR__CppToPython__std_list_ParamPTR_);
+    Shiboken::Conversions::registerConverterName(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_PARAMPTR_IDX], "std::list<Param*>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_PARAMPTR_IDX],
+        _std_list_ParamPTR__PythonToCpp__std_list_ParamPTR_,
+        is__std_list_ParamPTR__PythonToCpp__std_list_ParamPTR__Convertible);
 
     // Register converter for type 'QList<QVariant>'.
     SbkNatronGuiTypeConverters[SBK_NATRONGUI_QLIST_QVARIANT_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _QList_QVariant__CppToPython__QList_QVariant_);

@@ -26,6 +26,7 @@
 #include <gtest/gtest.h>
 #include "Engine/Lut.h"
 
+NATRON_NAMESPACE_USING
 using namespace NATRON_NAMESPACE::Color;
 
 TEST(Lut,IntConversions) {

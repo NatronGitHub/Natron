@@ -170,6 +170,7 @@ SOURCES += \
     ../Global/ProcInfo.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
     NatronEngine/natronengine_module_wrapper.cpp \
+    NatronEngine/natron_namespace_wrapper.cpp \
     NatronEngine/app_wrapper.cpp \
     NatronEngine/effect_wrapper.cpp \
     NatronEngine/intparam_wrapper.cpp \

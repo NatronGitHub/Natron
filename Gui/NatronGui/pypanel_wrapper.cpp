@@ -12,8 +12,7 @@ GCC_DIAG_OFF(missing-declarations)
 #include <typeresolver.h>
 #include <typeinfo>
 #include <signalmanager.h>
-CLANG_DIAG_OFF(header-guard)
-#include <pysidemetafunction.h> // has wrong header guards in pyside 1.2.2
+#include <pysidemetafunction.h>
 #include <set>
 #include "natrongui_python.h"
 
@@ -244,6 +243,36 @@ void PyPanelWrapper::customEvent(QEvent * arg__1)
     }
     if (invalidateArg1)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
+}
+
+int PyPanelWrapper::devType() const
+{
+    Shiboken::GilState gil;
+    if (PyErr_Occurred())
+        return ((int)0);
+    Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "devType"));
+    if (pyOverride.isNull()) {
+        gil.release();
+        return this->::QWidget::devType();
+    }
+
+    Shiboken::AutoDecRef pyArgs(PyTuple_New(0));
+
+    Shiboken::AutoDecRef pyResult(PyObject_Call(pyOverride, pyArgs, NULL));
+    // An error happened in python code!
+    if (pyResult.isNull()) {
+        PyErr_Print();
+        return ((int)0);
+    }
+    // Check return type
+    PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), pyResult);
+    if (!pythonToCpp) {
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.devType", "int", pyResult->ob_type->tp_name);
+        return ((int)0);
+    }
+    int cppResult;
+    pythonToCpp(pyResult, &cppResult);
+    return cppResult;
 }
 
 void PyPanelWrapper::disconnectNotify(const char * signal)
@@ -769,6 +798,38 @@ void PyPanelWrapper::leaveEvent(QEvent * event)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
 }
 
+int PyPanelWrapper::metric(QPaintDevice::PaintDeviceMetric arg__1) const
+{
+    Shiboken::GilState gil;
+    if (PyErr_Occurred())
+        return ((int)0);
+    Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "metric"));
+    if (pyOverride.isNull()) {
+        gil.release();
+        return this->::QWidget::metric(arg__1);
+    }
+
+    Shiboken::AutoDecRef pyArgs(Py_BuildValue("(N)",
+        Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkPySide_QtGuiTypes[SBK_QPAINTDEVICE_PAINTDEVICEMETRIC_IDX]), &arg__1)
+    ));
+
+    Shiboken::AutoDecRef pyResult(PyObject_Call(pyOverride, pyArgs, NULL));
+    // An error happened in python code!
+    if (pyResult.isNull()) {
+        PyErr_Print();
+        return ((int)0);
+    }
+    // Check return type
+    PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), pyResult);
+    if (!pythonToCpp) {
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.metric", "int", pyResult->ob_type->tp_name);
+        return ((int)0);
+    }
+    int cppResult;
+    pythonToCpp(pyResult, &cppResult);
+    return cppResult;
+}
+
 QSize PyPanelWrapper::minimumSizeHint() const
 {
     Shiboken::GilState gil;
@@ -927,6 +988,36 @@ void PyPanelWrapper::moveEvent(QMoveEvent * event)
     }
     if (invalidateArg1)
         Shiboken::Object::invalidate(PyTuple_GET_ITEM(pyArgs, 0));
+}
+
+QPaintEngine * PyPanelWrapper::paintEngine() const
+{
+    Shiboken::GilState gil;
+    if (PyErr_Occurred())
+        return ((::QPaintEngine*)0);
+    Shiboken::AutoDecRef pyOverride(Shiboken::BindingManager::instance().getOverride(this, "paintEngine"));
+    if (pyOverride.isNull()) {
+        gil.release();
+        return this->::QWidget::paintEngine();
+    }
+
+    Shiboken::AutoDecRef pyArgs(PyTuple_New(0));
+
+    Shiboken::AutoDecRef pyResult(PyObject_Call(pyOverride, pyArgs, NULL));
+    // An error happened in python code!
+    if (pyResult.isNull()) {
+        PyErr_Print();
+        return ((::QPaintEngine*)0);
+    }
+    // Check return type
+    PythonToCppFunc pythonToCpp = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkPySide_QtGuiTypes[SBK_QPAINTENGINE_IDX], pyResult);
+    if (!pythonToCpp) {
+        Shiboken::warning(PyExc_RuntimeWarning, 2, "Invalid return value in function %s, expected %s, got %s.", "PyPanel.paintEngine", Shiboken::SbkType< QPaintEngine >()->tp_name, pyResult->ob_type->tp_name);
+        return ((::QPaintEngine*)0);
+    }
+    ::QPaintEngine* cppResult;
+    pythonToCpp(pyResult, &cppResult);
+    return cppResult;
 }
 
 void PyPanelWrapper::paintEvent(QPaintEvent * event)

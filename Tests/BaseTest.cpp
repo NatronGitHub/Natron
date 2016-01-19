@@ -35,6 +35,7 @@
 #include "Engine/Plugin.h"
 #include "Engine/Curve.h"
 #include "Engine/CLArgs.h"
+
 NATRON_NAMESPACE_USING
 
 static AppManager* g_manager = 0;

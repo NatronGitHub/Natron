@@ -30,6 +30,7 @@
 #include "Engine/StandardPaths.h"
 #include <SequenceParsing.h>
 
+NATRON_NAMESPACE_USING
 using namespace SequenceParsing;
 
 TEST(SequenceParsing,TestHashCharacter) {

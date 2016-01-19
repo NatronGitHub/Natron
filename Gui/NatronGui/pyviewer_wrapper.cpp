@@ -75,58 +75,6 @@ static PyObject* Sbk_PyViewerFunc_getBInput(PyObject* self)
     return pyResult;
 }
 
-static PyObject* Sbk_PyViewerFunc_getChannels(PyObject* self)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getChannels()const
-            DisplayChannelsEnum cppResult = const_cast<const ::PyViewer*>(cppSelf)->getChannels();
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_DISPLAYCHANNELSENUM_IDX]), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_PyViewerFunc_getCompositingOperator(PyObject* self)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getCompositingOperator()const
-            ViewerCompositingOperatorEnum cppResult = const_cast<const ::PyViewer*>(cppSelf)->getCompositingOperator();
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_VIEWERCOMPOSITINGOPERATORENUM_IDX]), &cppResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
 static PyObject* Sbk_PyViewerFunc_getCurrentFrame(PyObject* self)
 {
     ::PyViewer* cppSelf = 0;
@@ -205,32 +153,6 @@ static PyObject* Sbk_PyViewerFunc_getFrameRange(PyObject* self)
             // End of code injection
 
 
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
-static PyObject* Sbk_PyViewerFunc_getPlaybackMode(PyObject* self)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // getPlaybackMode()const
-            PlaybackModeEnum cppResult = const_cast<const ::PyViewer*>(cppSelf)->getPlaybackMode();
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_PLAYBACKMODEENUM_IDX]), &cppResult);
         }
     }
 
@@ -533,90 +455,6 @@ static PyObject* Sbk_PyViewerFunc_setBInput(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
-static PyObject* Sbk_PyViewerFunc_setChannels(PyObject* self, PyObject* pyArg)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setChannels(DisplayChannelsEnum)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_DISPLAYCHANNELSENUM_IDX]), (pyArg)))) {
-        overloadId = 0; // setChannels(DisplayChannelsEnum)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyViewerFunc_setChannels_TypeError;
-
-    // Call function/method
-    {
-        ::DisplayChannelsEnum cppArg0 = ((::DisplayChannelsEnum)0);
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setChannels(DisplayChannelsEnum)
-            cppSelf->setChannels(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_PyViewerFunc_setChannels_TypeError:
-        const char* overloads[] = {"NatronEngine.DisplayChannelsEnum", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setChannels", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_PyViewerFunc_setCompositingOperator(PyObject* self, PyObject* pyArg)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setCompositingOperator(ViewerCompositingOperatorEnum)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_VIEWERCOMPOSITINGOPERATORENUM_IDX]), (pyArg)))) {
-        overloadId = 0; // setCompositingOperator(ViewerCompositingOperatorEnum)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyViewerFunc_setCompositingOperator_TypeError;
-
-    // Call function/method
-    {
-        ::ViewerCompositingOperatorEnum cppArg0 = ((::ViewerCompositingOperatorEnum)0);
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setCompositingOperator(ViewerCompositingOperatorEnum)
-            cppSelf->setCompositingOperator(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_PyViewerFunc_setCompositingOperator_TypeError:
-        const char* overloads[] = {"NatronEngine.ViewerCompositingOperatorEnum", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setCompositingOperator", overloads);
-        return 0;
-}
-
 static PyObject* Sbk_PyViewerFunc_setCurrentView(PyObject* self, PyObject* pyArg)
 {
     ::PyViewer* cppSelf = 0;
@@ -711,48 +549,6 @@ static PyObject* Sbk_PyViewerFunc_setFrameRange(PyObject* self, PyObject* args)
     Sbk_PyViewerFunc_setFrameRange_TypeError:
         const char* overloads[] = {"int, int", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronGui.PyViewer.setFrameRange", overloads);
-        return 0;
-}
-
-static PyObject* Sbk_PyViewerFunc_setPlaybackMode(PyObject* self, PyObject* pyArg)
-{
-    ::PyViewer* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::PyViewer*)Shiboken::Conversions::cppPointer(SbkNatronGuiTypes[SBK_PYVIEWER_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: setPlaybackMode(PlaybackModeEnum)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_PLAYBACKMODEENUM_IDX]), (pyArg)))) {
-        overloadId = 0; // setPlaybackMode(PlaybackModeEnum)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_PyViewerFunc_setPlaybackMode_TypeError;
-
-    // Call function/method
-    {
-        ::PlaybackModeEnum cppArg0 = ((::PlaybackModeEnum)0);
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // setPlaybackMode(PlaybackModeEnum)
-            cppSelf->setPlaybackMode(cppArg0);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_PyViewerFunc_setPlaybackMode_TypeError:
-        const char* overloads[] = {"NatronEngine.PlaybackModeEnum", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronGui.PyViewer.setPlaybackMode", overloads);
         return 0;
 }
 
@@ -889,12 +685,9 @@ static PyObject* Sbk_PyViewerFunc_startForward(PyObject* self)
 static PyMethodDef Sbk_PyViewer_methods[] = {
     {"getAInput", (PyCFunction)Sbk_PyViewerFunc_getAInput, METH_NOARGS},
     {"getBInput", (PyCFunction)Sbk_PyViewerFunc_getBInput, METH_NOARGS},
-    {"getChannels", (PyCFunction)Sbk_PyViewerFunc_getChannels, METH_NOARGS},
-    {"getCompositingOperator", (PyCFunction)Sbk_PyViewerFunc_getCompositingOperator, METH_NOARGS},
     {"getCurrentFrame", (PyCFunction)Sbk_PyViewerFunc_getCurrentFrame, METH_NOARGS},
     {"getCurrentView", (PyCFunction)Sbk_PyViewerFunc_getCurrentView, METH_NOARGS},
     {"getFrameRange", (PyCFunction)Sbk_PyViewerFunc_getFrameRange, METH_NOARGS},
-    {"getPlaybackMode", (PyCFunction)Sbk_PyViewerFunc_getPlaybackMode, METH_NOARGS},
     {"getProxyIndex", (PyCFunction)Sbk_PyViewerFunc_getProxyIndex, METH_NOARGS},
     {"isProxyModeEnabled", (PyCFunction)Sbk_PyViewerFunc_isProxyModeEnabled, METH_NOARGS},
     {"pause", (PyCFunction)Sbk_PyViewerFunc_pause, METH_NOARGS},
@@ -903,11 +696,8 @@ static PyMethodDef Sbk_PyViewer_methods[] = {
     {"seek", (PyCFunction)Sbk_PyViewerFunc_seek, METH_O},
     {"setAInput", (PyCFunction)Sbk_PyViewerFunc_setAInput, METH_O},
     {"setBInput", (PyCFunction)Sbk_PyViewerFunc_setBInput, METH_O},
-    {"setChannels", (PyCFunction)Sbk_PyViewerFunc_setChannels, METH_O},
-    {"setCompositingOperator", (PyCFunction)Sbk_PyViewerFunc_setCompositingOperator, METH_O},
     {"setCurrentView", (PyCFunction)Sbk_PyViewerFunc_setCurrentView, METH_O},
     {"setFrameRange", (PyCFunction)Sbk_PyViewerFunc_setFrameRange, METH_VARARGS},
-    {"setPlaybackMode", (PyCFunction)Sbk_PyViewerFunc_setPlaybackMode, METH_O},
     {"setProxyIndex", (PyCFunction)Sbk_PyViewerFunc_setProxyIndex, METH_O},
     {"setProxyModeEnabled", (PyCFunction)Sbk_PyViewerFunc_setProxyModeEnabled, METH_O},
     {"startBackward", (PyCFunction)Sbk_PyViewerFunc_startBackward, METH_NOARGS},

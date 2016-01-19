@@ -209,6 +209,7 @@
     </container-type>
 
      <!--Natron global enums-->
+    <namespace-type name="NATRON_NAMESPACE">
     <enum-type name="StatusEnum"/>
     <enum-type name="StandardButtonEnum" flags="StandardButtons"/>
     <enum-type name="KeyframeTypeEnum"/>
@@ -223,6 +224,7 @@
     <enum-type name="OrientationEnum"/>
     <enum-type name="PlaybackModeEnum"/>
     <enum-type name="DisplayChannelsEnum"/>
+    </namespace-type>
     
    
    <object-type name="RectI">
