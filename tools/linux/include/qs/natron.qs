@@ -60,7 +60,8 @@ Component.prototype.createOperations = function()
     try {
         // call the base create operations function
         component.createOperations();
-	component.addOperation("CreateDesktopEntry","Natron2.desktop","Version=1.0\nType=Application\nTerminal=false\nName=Natron2\nMimeType=application/vnd.natron.project;application/vnd.natron.nodepresets;application/vnd.natron.layout\nExec=@TargetDir@/Natron %U\nGenericName=Compositing software\nComment=Node-graph based compositing software\nIcon=natronIcon256_linux\nCategories=Graphics;2DGraphics;RasterGraphics;\n");
+	component.addOperation("CreateDesktopEntry","Natron2.desktop","Version=1.0\nType=Application\nTerminal=false\nName=Natron2\nMimeType=application/x-natron\nExec=@TargetDir@/Natron %U\nGenericName=Compositing software\nComment=Node-graph based compositing software\nIcon=natronIcon256_linux\nCategories=Graphics;2DGraphics;RasterGraphics;\n");
+        component.addOperation("Execute","@TargetDir@/bin/natron-mime.sh");
     } catch (e) {
         print(e);
     }
