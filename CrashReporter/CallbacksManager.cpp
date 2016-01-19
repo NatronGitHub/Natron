@@ -882,39 +882,6 @@ CallbacksManager::onNatronProcessStdErrWrittenTo()
 }
 
 
-static QString getTempDirPath()
-{
-#ifdef Q_OS_UNIX
-
-    QString temp = QString(qgetenv("TMPDIR"));
-    if (temp.isEmpty()) {
-        temp = QLatin1String("/tmp/");
-    }
-    return QDir::cleanPath(temp);
-#else
-    QString ret;
-    wchar_t tempPath[MAX_PATH];
-    DWORD len = GetTempPathW(MAX_PATH, tempPath);
-    if (len)
-        ret = QString::fromWCharArray(tempPath, len);
-    if (!ret.isEmpty()) {
-        while (ret.endsWith(QLatin1Char('\\')))
-            ret.chop(1);
-        ret = QDir::fromNativeSeparators(ret);
-    }
-    if (ret.isEmpty()) {
-#if !defined(Q_OS_WINCE)
-        ret = QLatin1String("C:/tmp");
-#else
-        ret = QLatin1String("/Temp");
-#endif
-    } else if (ret.length() >= 2 && ret[1] == QLatin1Char(':')) {
-        ret[0] = ret.at(0).toUpper(); // Force uppercase drive letters.
-    }
-    return ret;
-#endif
-}
-
 
 void
 CallbacksManager::initCrashGenerationServer()
@@ -939,8 +906,8 @@ CallbacksManager::initCrashGenerationServer()
      We use 2 different pipe: 1 for the CrashReporter to notify to Natron that it has started correctly, and another
      one that is used by the google_breakpad server itself.
      */
-
-    _dumpDirPath = getTempDirPath();
+    assert(qApp);
+    _dumpDirPath = QDir::tempPath();
     {
         QString tmpFileName;
 #ifdef Q_OS_WIN32
