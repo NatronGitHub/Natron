@@ -501,7 +501,7 @@ if [ ! -f "$INSTALL_PATH/lib/libboost_atomic.so" ]; then
     tar xvf "$SRC_PATH/$BOOST_TAR" || exit 1
     cd boost_* || exit 1
     ./bootstrap.sh || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./b2 --prefix=$INSTALL_PATH cflags="-fPIC" --disable-icu -j${MKJOBS} install || exit 1 # link=static
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./b2 -s NO_BZIP2=1 --prefix=$INSTALL_PATH cflags="-fPIC" --disable-icu -j${MKJOBS} install || exit 1 # link=static
 fi
 
 # Install jpeg
