@@ -180,7 +180,6 @@ CallbacksManager::CallbacksManager()
 , _dialog(0)
 , _progressDialog(0)
 #endif
-, _didError(false)
 , _dumpFilePath()
 , _pipePath()
 , _comPipePath()
@@ -498,8 +497,7 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     }
     
     QNetworkAccessManager *networkMnger = new QNetworkAccessManager(this);
-    QObject::connect(networkMnger, SIGNAL(finished(QNetworkReply*)),
-                     this, SLOT(replyFinished()));
+
     
     //Corresponds to the "multipart/form-data" subtype, meaning the body parts contain form elements, as described in RFC 2388
     // https://www.ietf.org/rfc/rfc2388.txt
@@ -512,11 +510,11 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     addTextHttpPart(multiPart, "Comments", comments);
     addFileHttpPart(multiPart, "upload_file_minidump", filepath);
     
-    QNetworkRequest request(QUrl(UPLOAD_URL));
+    QUrl url = QUrl::fromEncoded(QByteArray(UPLOAD_URL));
+    QNetworkRequest request(url);
     _uploadReply = networkMnger->post(request, multiPart);
     
-    QObject::connect(_uploadReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(replyError(QNetworkReply::NetworkError)));
-    QObject::connect(_uploadReply, SIGNAL(finished()), this, SLOT(replyFinished()));
+    QObject::connect(networkMnger, SIGNAL(finished(QNetworkReply*)), this, SLOT(replyFinished(QNetworkReply*)));
     QObject::connect(_uploadReply, SIGNAL(uploadProgress(qint64,qint64)), this, SLOT(onUploadProgress(qint64,qint64)));
     multiPart->setParent(_uploadReply);
     
@@ -544,86 +542,6 @@ CallbacksManager::onUploadProgress(qint64 bytesSent, qint64 bytesTotal)
 #endif
 }
 
-void
-CallbacksManager::replyFinished() {
-    if (!_uploadReply || _didError) {
-        return;
-    }
-    
-    QByteArray reply = _uploadReply->readAll();
-    while (reply.endsWith('\n')) {
-        reply.chop(1);
-    }
-    QString successStr("File uploaded successfully!\n" + QString(reply));
-    
-#ifndef REPORTER_CLI_ONLY
-    QMessageBox info(QMessageBox::Information, "Dump Uploading", successStr, QMessageBox::NoButton, _dialog, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint| Qt::WindowStaysOnTopHint);
-    info.exec();
-    
-    if (_dialog) {
-        _dialog->deleteLater();
-    }
-#else
-    std::cerr << successStr.toStdString() << std::endl;
-#endif
-    _uploadReply->deleteLater();
-    _uploadReply = 0;
-    EXIT_APP(0, true);
-}
-
-static QString getNetworkErrorString(QNetworkReply::NetworkError e)
-{
-    switch (e) {
-        case QNetworkReply::ConnectionRefusedError:
-            return "The remote server refused the connection (the server is not accepting requests)";
-        case QNetworkReply::RemoteHostClosedError:
-            return "The remote server closed the connection prematurely, before the entire reply was received and processed";
-        case QNetworkReply::HostNotFoundError:
-            return "The remote host name was not found (invalid hostname)";
-        case QNetworkReply::TimeoutError:
-            return "The connection to the remote server timed out";
-        case QNetworkReply::OperationCanceledError:
-            return "The operation was canceled";
-        case QNetworkReply::SslHandshakeFailedError:
-            return "The SSL/TLS handshake failed and the encrypted channel could not be established";
-        case QNetworkReply::TemporaryNetworkFailureError:
-            return "The connection was broken due to disconnection from the network";
-        case QNetworkReply::ProxyConnectionRefusedError:
-            return "the connection to the proxy server was refused (the proxy server is not accepting requests)";
-        case QNetworkReply::ProxyConnectionClosedError:
-            return "The proxy server closed the connection prematurely, before the entire reply was received and processed";
-        case QNetworkReply::ProxyNotFoundError:
-            return "The proxy host name was not found (invalid proxy hostname)";
-        case QNetworkReply::ProxyTimeoutError:
-            return "The connection to the proxy timed out or the proxy did not reply in time to the request sent";
-        case QNetworkReply::ProxyAuthenticationRequiredError:
-            return "The proxy requires authentication in order to honour the request but did not accept any credentials offered (if any)";
-        case QNetworkReply::ContentAccessDenied:
-            return "The access to the remote content was denied (similar to HTTP error 401)";
-        case QNetworkReply::ContentOperationNotPermittedError:
-            return "The operation requested on the remote content is not permitted";
-        case QNetworkReply::ContentNotFoundError:
-            return "The remote content was not found at the server (similar to HTTP error 404)";
-        case QNetworkReply::AuthenticationRequiredError:
-            return "The remote server requires authentication to serve the content but the credentials provided were not accepted (if any)";
-        case QNetworkReply::ContentReSendError:
-            return "The request needed to be sent again, but this failed for example because the upload data could not be read a second time.";
-        case QNetworkReply::ProtocolUnknownError:
-            return "The Network Access API cannot honor the request because the protocol is not known";
-        case QNetworkReply::ProtocolInvalidOperationError:
-            return "The requested operation is invalid for this protocol";
-        case QNetworkReply::UnknownNetworkError:
-            return "An unknown network-related error was detected";
-        case QNetworkReply::UnknownProxyError:
-            return "An unknown proxy-related error was detected";
-        case QNetworkReply::UnknownContentError:
-            return "An unknown error related to the remote content was detected";
-        case QNetworkReply::ProtocolFailure:
-            return "a breakdown in protocol was detected (parsing error, invalid or unexpected responses, etc.)";
-        default:
-            return QString();
-    }
-}
 
 #ifndef REPORTER_CLI_ONLY
 
@@ -654,49 +572,67 @@ NetworkErrorDialog::~NetworkErrorDialog()
 #endif
 
 void
-CallbacksManager::replyError(QNetworkReply::NetworkError errCode)
-{
+CallbacksManager::replyFinished(QNetworkReply* replyParam) {
+    assert(replyParam == _uploadReply);
     if (!_uploadReply) {
         return;
     }
-    if (errCode == QNetworkReply::UnknownContentError) {
-        return;
-    }
     
-    QFileInfo finfo(_dumpFilePath);
-    if (!finfo.exists()) {
-        std::cerr << "Dump file (" <<  _dumpFilePath.toStdString() << ") does not exist";
-    }
-    
-    QString guidStr = finfo.fileName();
-    {
-        int lastDotPos = guidStr.lastIndexOf('.');
-        if (lastDotPos != -1) {
-            guidStr = guidStr.mid(0, lastDotPos);
+    QNetworkReply::NetworkError err = _uploadReply->error();
+    if (err == QNetworkReply::NoError) {
+        
+        QByteArray reply = _uploadReply->readAll();
+        while (reply.endsWith('\n')) {
+            reply.chop(1);
         }
-    }
-    
-    QString errStr("Network error: " + getNetworkErrorString(errCode) + "\nDump file is located at " +
-                   _dumpFilePath + "\nYou can submit it directly to the developers by filling out the form at " + QString(FALLBACK_FORM_URL) +
-                   " with the following informations:\nProductName: " + NATRON_APPLICATION_NAME + "\nVersion: " + getVersionString() +
-                   "\nguid: " + guidStr + "\n\nPlease add any comment describing the issue and the state of the application at the moment it crashed.");
-    
-    _didError = true;
-
+        QString successStr("File uploaded successfully!\n" + QString(reply));
+        
 #ifndef REPORTER_CLI_ONLY
-    NetworkErrorDialog info(errStr,_dialog);
-    info.setWindowTitle("Dump Uploading");
-    info.exec();
-    
-    if (_dialog) {
-        _dialog->deleteLater();
-    }
+        QMessageBox info(QMessageBox::Information, "Dump Uploading", successStr, QMessageBox::NoButton, _dialog, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint| Qt::WindowStaysOnTopHint);
+        info.exec();
+        
+        if (_dialog) {
+            _dialog->deleteLater();
+        }
 #else
-    std::cerr << errStr.toStdString() << std::endl;
+        std::cerr << successStr.toStdString() << std::endl;
 #endif
-    _uploadReply->deleteLater();
-    _uploadReply = 0;
+        
+    } else {
+        QFileInfo finfo(_dumpFilePath);
+        if (!finfo.exists()) {
+            std::cerr << "Dump file (" <<  _dumpFilePath.toStdString() << ") does not exist";
+        }
+        
+        QString guidStr = finfo.fileName();
+        {
+            int lastDotPos = guidStr.lastIndexOf('.');
+            if (lastDotPos != -1) {
+                guidStr = guidStr.mid(0, lastDotPos);
+            }
+        }
+        
+        QString errStr("Network error: (" + QString::number(err) + ") " + _uploadReply->errorString() + "\nDump file is located at " +
+                       _dumpFilePath + "\nYou can submit it directly to the developers by filling out the form at " + QString(FALLBACK_FORM_URL) +
+                       " with the following informations:\nProductName: " + NATRON_APPLICATION_NAME + "\nVersion: " + getVersionString() +
+                       "\nguid: " + guidStr + "\n\nPlease add any comment describing the issue and the state of the application at the moment it crashed.");
+        
+        
+#ifndef REPORTER_CLI_ONLY
+        NetworkErrorDialog info(errStr,_dialog);
+        info.setWindowTitle("Dump Uploading");
+        info.exec();
+        
+        if (_dialog) {
+            _dialog->deleteLater();
+        }
+#else
+        std::cerr << errStr.toStdString() << std::endl;
+#endif
+
+    }
     
+    _uploadReply = 0;
     EXIT_APP(0, true);
 }
 

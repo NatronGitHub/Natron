@@ -101,16 +101,14 @@ public:
 
 public Q_SLOTS:
 
-    void replyFinished();
+    void replyFinished(QNetworkReply* reply);
 
     void onDoDumpOnMainThread(const QString& filePath);
     
     void onDoExitOnMainThread(int exitCode, bool exitEvenIfDumpedReceived);
 
     void onCrashDialogFinished();
-    
-    void replyError(QNetworkReply::NetworkError);
-    
+        
     void onUploadProgress(qint64 bytesSent, qint64 bytesTotal);
     
     void onProgressDialogCanceled();
@@ -170,7 +168,6 @@ private:
     CrashDialog* _dialog;
     QProgressDialog* _progressDialog;
 #endif
-    bool _didError;
     QString _dumpFilePath;
     QString _dumpDirPath;
     QString _pipePath,_comPipePath;
