@@ -138,7 +138,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
     {
         QStringList pgrp = grouping;
         pgrp.push_back("Readers");
-        std::auto_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( boost::shared_ptr<Natron::Node>() ) ) );
+        std::auto_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( boost::shared_ptr<Node>() ) ) );
         assert(reader.get());
         std::map<std::string,void(*)()> readerFunctions;
         readerFunctions.insert( std::make_pair("BuildEffect", (void(*)())&QtReader::BuildEffect) );
@@ -165,7 +165,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
     {
         QStringList pgrp = grouping;
         pgrp.push_back("Writers");
-        std::auto_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( boost::shared_ptr<Natron::Node>() ) ) );
+        std::auto_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( boost::shared_ptr<Node>() ) ) );
         assert(writer.get());
         std::map<std::string,void(*)()> writerFunctions;
         writerFunctions.insert( std::make_pair("BuildEffect", (void(*)())&QtWriter::BuildEffect) );
@@ -331,7 +331,7 @@ GuiApplicationManager::setUndoRedoStackLimit(int limit)
 }
 
 void
-GuiApplicationManager::debugImage(const Natron::Image* image,
+GuiApplicationManager::debugImage(const Image* image,
                                   const RectI& roi,
                                   const QString & filename) const
 {
@@ -351,7 +351,7 @@ bool
 GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
 {
     QString fileCopy(filename.c_str());
-    QString ext = Natron::removeFileExtension(fileCopy);
+    QString ext = removeFileExtension(fileCopy);
     std::string readerFileType = appPTR->isImageFileSupportedByNatron(ext.toStdString());
     AppInstance* mainInstance = appPTR->getTopLevelInstance();
     bool instanceCreated = false;

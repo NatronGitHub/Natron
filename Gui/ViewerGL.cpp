@@ -233,13 +233,13 @@ public:
             glEnable(GL_BLEND);
         }
         switch (premult) {
-            case Natron::eImagePremultiplicationPremultiplied:
+            case eImagePremultiplicationPremultiplied:
                 glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
                 break;
-            case Natron::eImagePremultiplicationUnPremultiplied:
+            case eImagePremultiplicationUnPremultiplied:
                 glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
                 break;
-            case Natron::eImagePremultiplicationOpaque:
+            case eImagePremultiplicationOpaque:
                 break;
         }
 
@@ -344,7 +344,7 @@ ViewerGL::paintGL()
             ///Depending on the premultiplication of the input image we use a different blending func
             ImagePremultiplicationEnum premultA = _imp->displayingImagePremult[0];
             if (!_imp->viewerTab->isCheckerboardEnabled()) {
-                premultA = Natron::eImagePremultiplicationOpaque; ///When no checkerboard, draw opaque
+                premultA = eImagePremultiplicationOpaque; ///When no checkerboard, draw opaque
             }
 
             if (compOp == eViewerCompositingOperatorWipe) {
@@ -394,7 +394,7 @@ ViewerGL::paintGL()
                     ///Depending on the premultiplication of the input image we use a different blending func
                     ImagePremultiplicationEnum premultB = _imp->displayingImagePremult[1];
                     if (!_imp->viewerTab->isCheckerboardEnabled()) {
-                        premultB = Natron::eImagePremultiplicationOpaque; ///When no checkerboard, draw opaque
+                        premultB = eImagePremultiplicationOpaque; ///When no checkerboard, draw opaque
                     }
                     BlendSetter b(premultB);
                     _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
@@ -1353,7 +1353,7 @@ ViewerGL::initShaderGLSL()
 
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                     const std::list<boost::shared_ptr<Natron::Image> >& tiles,
+                                     const std::list<boost::shared_ptr<Image> >& tiles,
                                      ImageBitDepthEnum depth,
                                      int time,
                                      const RectD& rod,
@@ -1392,11 +1392,11 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         //Make sure the texture is allocated on the full portion
         Texture::DataTypeEnum type = Texture::eDataTypeNone;
         switch (bd) {
-            case Natron::eImageBitDepthByte: {
+            case eImageBitDepthByte: {
                 type = Texture::eDataTypeByte;
                 break;
             }
-            case Natron::eImageBitDepthFloat: {
+            case eImageBitDepthFloat: {
                 type = Texture::eDataTypeFloat;
                 //do 32bit fp textures either way, don't bother with half float. We might support it one day.
                 break;
@@ -1443,9 +1443,9 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glCheckError();
 
     
-    if (bd == Natron::eImageBitDepthByte) {
+    if (bd == eImageBitDepthByte) {
         _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeByte, roi, updateOnlyRoi);
-    } else if (bd == Natron::eImageBitDepthFloat) {
+    } else if (bd == eImageBitDepthFloat) {
         //do 32bit fp textures either way, don't bother with half float. We might support it further on.
         _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeFloat, roi, updateOnlyRoi);
     }
@@ -2902,7 +2902,7 @@ ViewerGL::getBitDepth() const
     // MT-SAFE
     ///supportsGLSL is set on the main thread only once on startup, it doesn't need to be protected.
     if (!_imp->supportsGLSL) {
-        return Natron::eImageBitDepthByte;
+        return eImageBitDepthByte;
     } else {
         return appPTR->getCurrentSettings()->getViewersBitDepth();
     }
@@ -3782,7 +3782,7 @@ ViewerGL::clearLastRenderedTexture()
 
 
 void
-ViewerGL::getLastRenderedImage(int textureIndex, std::list<boost::shared_ptr<Natron::Image> >* ret) const
+ViewerGL::getLastRenderedImage(int textureIndex, std::list<boost::shared_ptr<Image> >* ret) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -3800,7 +3800,7 @@ ViewerGL::getLastRenderedImage(int textureIndex, std::list<boost::shared_ptr<Nat
 }
 
 void
-ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel, std::list<boost::shared_ptr<Natron::Image> >* ret) const
+ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel, std::list<boost::shared_ptr<Image> >* ret) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );

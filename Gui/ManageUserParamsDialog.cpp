@@ -497,9 +497,9 @@ ManageUserParamsDialog::onDeleteClicked()
                     question += it->knob->getName().c_str();
                     question += ' ';
                     question += tr("cannot be undone. Are you sure you want to continue?");
-                    StandardButtonEnum rep = Natron::questionDialog(tr("Remove parameter").toStdString(), question.toStdString(), false,
-                                                                             Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo), Natron::eStandardButtonYes);
-                    if (rep != Natron::eStandardButtonYes) {
+                    StandardButtonEnum rep = natronQuestionDialog(tr("Remove parameter").toStdString(), question.toStdString(), false,
+                                                                             StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonYes);
+                    if (rep != eStandardButtonYes) {
                         return;
                     }
                     it->knob->getHolder()->removeDynamicKnob(it->knob.get());

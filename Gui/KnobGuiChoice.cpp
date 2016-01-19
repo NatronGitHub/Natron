@@ -187,7 +187,7 @@ KnobGuiChoice::onItemNewSelected()
     if (dialog.exec()) {
         ImageComponents comps = dialog.getComponents();
         if (comps == ImageComponents::getNoneComponents()) {
-            Natron::errorDialog(tr("Layer").toStdString(), tr("Invalid layer").toStdString());
+            natronErrorDialog(tr("Layer").toStdString(), tr("Invalid layer").toStdString());
             return;
         }
         KnobHolder* holder = _knob.lock()->getHolder();
@@ -196,7 +196,7 @@ KnobGuiChoice::onItemNewSelected()
         assert(effect);
         assert(effect->getNode());
         if (!effect->getNode()->addUserComponents(comps)) {
-            Natron::errorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
+            natronErrorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
         }
     }
 }

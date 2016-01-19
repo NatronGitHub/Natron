@@ -126,7 +126,7 @@ BezierCP::setPositionAtTime(bool useGuiCurves,
 {
     {
         KeyFrame k(time,x);
-        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveX->addKeyFrame(k);
         } else {
@@ -135,7 +135,7 @@ BezierCP::setPositionAtTime(bool useGuiCurves,
     }
     {
         KeyFrame k(time,y);
-        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveY->addKeyFrame(k);
         } else {
@@ -317,7 +317,7 @@ BezierCP::setLeftBezierPointAtTime(bool useGuiCurves,
 {
     {
         KeyFrame k(time,x);
-        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveLeftBezierX->addKeyFrame(k);
         } else {
@@ -326,7 +326,7 @@ BezierCP::setLeftBezierPointAtTime(bool useGuiCurves,
     }
     {
         KeyFrame k(time,y);
-        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveLeftBezierY->addKeyFrame(k);
         } else {
@@ -343,7 +343,7 @@ BezierCP::setRightBezierPointAtTime(bool useGuiCurves,
 {
     {
         KeyFrame k(time,x);
-        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveRightBezierX->addKeyFrame(k);
         } else {
@@ -352,7 +352,7 @@ BezierCP::setRightBezierPointAtTime(bool useGuiCurves,
     }
     {
         KeyFrame k(time,y);
-        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveRightBezierY->addKeyFrame(k);
         } else {

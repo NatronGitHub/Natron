@@ -97,20 +97,20 @@ public:
     
     double renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
                               const RectD& rod,
-                              const std::list<std::pair<Natron::Point,double> >& points,
+                              const std::list<std::pair<Point,double> >& points,
                               unsigned int mipmapLevel,
                               double par,
                               const ImageComponents& components,
                               ImageBitDepthEnum depth,
                               double distToNext,
-                              boost::shared_ptr<Natron::Image> *wholeStrokeImage);
+                              boost::shared_ptr<Image> *wholeStrokeImage);
 
     
     
     bool getMostRecentStrokeChangesSinceAge(double time,
                                             int lastAge,
                                             int lastMultiStrokeIndex,
-                                            std::list<std::pair<Natron::Point,double> >* points,
+                                            std::list<std::pair<Point,double> >* points,
                                             RectD* pointsBbox,
                                             RectD* wholeStrokeBbox,
                                             int* newAge,
@@ -142,7 +142,7 @@ public:
     
     ///bbox is in canonical coords
     void evaluateStroke(unsigned int mipMapLevel, double time,
-                        std::list<std::list<std::pair<Natron::Point,double> > >* strokes,
+                        std::list<std::list<std::pair<Point,double> > >* strokes,
                         RectD* bbox = 0) const;
     
     std::list<boost::shared_ptr<Curve> > getXControlPoints() const;

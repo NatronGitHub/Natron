@@ -40,7 +40,7 @@ struct NATRON_NAMESPACE::BackDropPrivate
     
 };
 
-BackDrop::BackDrop(boost::shared_ptr<Natron::Node> node)
+BackDrop::BackDrop(boost::shared_ptr<Node> node)
 : NoOpBase(node)
 , _imp(new BackDropPrivate())
 {
@@ -61,9 +61,9 @@ BackDrop::getPluginDescription() const
 void
 BackDrop::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = Natron::createKnob<KnobPage>(this, "Controls");
+    boost::shared_ptr<KnobPage> page = natronCreateKnob<KnobPage>(this, "Controls");
     
-    boost::shared_ptr<KnobString> knobLabel = Natron::createKnob<KnobString>( this, "Label");
+    boost::shared_ptr<KnobString> knobLabel = natronCreateKnob<KnobString>( this, "Label");
     knobLabel->setAnimationEnabled(false);
     knobLabel->setAsMultiLine();
     knobLabel->setUsesRichText(true);

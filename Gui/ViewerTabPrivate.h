@@ -53,7 +53,7 @@ struct ViewerTabPrivate
     struct InputName
     {
         QString name;
-        boost::weak_ptr<Natron::Node> input;
+        boost::weak_ptr<Node> input;
     };
 
     typedef std::map<int,InputName> InputNamesMap;
@@ -178,7 +178,7 @@ struct ViewerTabPrivate
     double fps;
     
     //The last node that took the penDown/motion/keyDown/keyRelease etc...
-    boost::weak_ptr<Natron::Node> lastOverlayNode;
+    boost::weak_ptr<Node> lastOverlayNode;
     bool hasPenDown;
     bool hasCaughtPenMotionWhileDragging;
     
@@ -188,13 +188,13 @@ struct ViewerTabPrivate
     // return the tronsform to apply to the overlay as a 3x3 homography in canonical coordinates
     bool getOverlayTransform(double time,
                              int view,
-                             const boost::shared_ptr<Natron::Node>& target,
+                             const boost::shared_ptr<Node>& target,
                              Natron::EffectInstance* currentNode,
                              Transform::Matrix3x3* transform) const;
 
     bool getTimeTransform(double time,
                           int view,
-                          const boost::shared_ptr<Natron::Node>& target,
+                          const boost::shared_ptr<Node>& target,
                           Natron::EffectInstance* currentNode,
                           double *newTime) const;
 

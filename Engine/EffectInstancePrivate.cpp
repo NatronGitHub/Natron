@@ -366,7 +366,7 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
         return;
     }
     try {
-        Natron::getFunctionArguments(callback, &error, &args);
+        getFunctionArguments(callback, &error, &args);
     } catch (const std::exception& e) {
         _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onParamChanged callback: ")
                                                          + e.what());
@@ -429,7 +429,7 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
     std::string script = ss.str();
     std::string err;
     std::string output;
-    if ( !Natron::interpretPythonScript(script, &err, &output) ) {
+    if ( !interpretPythonScript(script, &err, &output) ) {
         _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute onParamChanged callback: ").toStdString() + err);
     } else {
         if ( !output.empty() ) {
@@ -450,7 +450,7 @@ EffectInstance::Implementation::setDuringInteractAction(bool b)
 
 #if NATRON_ENABLE_TRIMAP
 void
-EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr<Natron::Image> & img)
+EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr<Image> & img)
 {
     if ( !img->usesBitMap() ) {
         return;
@@ -469,7 +469,7 @@ EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr
 
 bool
 EffectInstance::Implementation::waitForImageBeingRenderedElsewhereAndUnmark(const RectI & roi,
-                                                                            const boost::shared_ptr<Natron::Image> & img)
+                                                                            const boost::shared_ptr<Image> & img)
 {
     if ( !img->usesBitMap() ) {
         return true;
@@ -521,7 +521,7 @@ EffectInstance::Implementation::waitForImageBeingRenderedElsewhereAndUnmark(cons
 
 
 void
-EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_ptr<Natron::Image> & img,
+EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img,
                                                            bool renderFailed)
 {
     if ( !img->usesBitMap() ) {
@@ -599,7 +599,7 @@ EffectInstance::Implementation::ScopedRenderArgs::~ScopedRenderArgs()
 
 void
 EffectInstance::Implementation::addInputImageTempPointer(int inputNb,
-                                                         const boost::shared_ptr<Natron::Image> & img)
+                                                         const boost::shared_ptr<Image> & img)
 {
     EffectDataTLSPtr tls = tlsData->getTLSData();
     if (!tls) {

@@ -1995,7 +1995,7 @@ TabWidget::setObjectName_mt_safe(const QString & str)
 
     std::string script = ss.str();
     std::string err;
-    bool ok = Natron::interpretPythonScript(script, &err, 0);
+    bool ok = interpretPythonScript(script, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("TabWidget::setObjectName_mt_safe(): interpretPythonScript("+script+") failed!");
@@ -2098,7 +2098,7 @@ TabWidget::onTabScriptNameChanged(PanelWidget* tab,const std::string& oldName,co
     std::string err;
     std::string script = ss.str();
     _imp->gui->printAutoDeclaredVariable(script);
-    bool ok = Natron::interpretPythonScript(script, &err, 0);
+    bool ok = interpretPythonScript(script, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("TabWidget::onTabScriptNameChanged: " + err);
@@ -2129,7 +2129,7 @@ TabWidgetPrivate::declareTabToPython(PanelWidget* widget,const std::string& tabN
     std::string script = ss.str();
     std::string err;
     gui->printAutoDeclaredVariable(script);
-    bool ok = Natron::interpretPythonScript(script, &err, 0);
+    bool ok = interpretPythonScript(script, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("TabWidget::declareTabToPython: " + err);
@@ -2157,7 +2157,7 @@ TabWidgetPrivate::removeTabToPython(PanelWidget* widget,const std::string& tabNa
     std::string err;
     std::string script = ss.str();
     gui->printAutoDeclaredVariable(script);
-    bool ok = Natron::interpretPythonScript(script, &err, 0);
+    bool ok = interpretPythonScript(script, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("TabWidget::removeTabToPython: " + err);

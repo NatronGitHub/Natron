@@ -164,34 +164,34 @@ RenderingProgressDialog::onProcessFinished(int retCode)
         bool showLog = false;
         if (retCode == 0) {
             if (_imp->_process) {
-                StandardButtonEnum reply = Natron::questionDialog( tr("Render").toStdString(),tr("The render ended successfully.\n"
+                StandardButtonEnum reply = natronQuestionDialog( tr("Render").toStdString(),tr("The render ended successfully.\n"
                                                                                                      "Would you like to see the log ?").toStdString(), false );
-                if (reply == Natron::eStandardButtonYes) {
+                if (reply == eStandardButtonYes) {
                     showLog = true;
                 }
             } else {
-                Natron::informationDialog( tr("Render").toStdString(), tr("The render ended successfully.").toStdString() );
+                natronInformationDialog( tr("Render").toStdString(), tr("The render ended successfully.").toStdString() );
             }
         } else if (retCode == 1) {
             if (_imp->_process) {
-                StandardButtonEnum reply = Natron::questionDialog( tr("Render").toStdString(),
+                StandardButtonEnum reply = natronQuestionDialog( tr("Render").toStdString(),
                                                                        tr("The render ended with a return code of 1, a problem occured.\n"
                                                                           "Would you like to see the log ?").toStdString(), false );
-                if (reply == Natron::eStandardButtonYes) {
+                if (reply == eStandardButtonYes) {
                     showLog = true;
                 }
             } else {
-                Natron::errorDialog( tr("Render").toStdString(),tr("The render ended with a return code of 1, a problem occured.").toStdString() );
+                natronErrorDialog( tr("Render").toStdString(),tr("The render ended with a return code of 1, a problem occured.").toStdString() );
             }
         } else {
             if (_imp->_process) {
-                StandardButtonEnum reply = Natron::questionDialog( tr("Render").toStdString(),tr("The render crashed.\n"
+                StandardButtonEnum reply = natronQuestionDialog( tr("Render").toStdString(),tr("The render crashed.\n"
                                                                                                          "Would you like to see the log ?").toStdString() , false);
-                if (reply == Natron::eStandardButtonYes) {
+                if (reply == eStandardButtonYes) {
                     showLog = true;
                 }
             } else {
-                Natron::errorDialog( tr("Render").toStdString(),tr("The render crashed.").toStdString() );
+                natronErrorDialog( tr("Render").toStdString(),tr("The render crashed.").toStdString() );
             }
         }
         if (showLog) {
@@ -230,7 +230,7 @@ RenderingProgressDialog::closeEvent(QCloseEvent* /*e*/)
     if (ret != QDialog::Accepted) {
         Q_EMIT canceled();
         reject();
-        Natron::informationDialog( tr("Render").toStdString(), tr("Render aborted.").toStdString() );
+        natronInformationDialog( tr("Render").toStdString(), tr("Render aborted.").toStdString() );
         
     }
     

@@ -296,7 +296,7 @@ Gui::exportLayout()
     if ( dialog.exec() ) {
         std::string filename = dialog.filesToSave();
         QString filenameCpy( filename.c_str() );
-        QString ext = Natron::removeFileExtension(filenameCpy);
+        QString ext = removeFileExtension(filenameCpy);
         if (ext != NATRON_LAYOUT_FILE_EXT) {
             filename.append("." NATRON_LAYOUT_FILE_EXT);
         }
@@ -306,14 +306,14 @@ Gui::exportLayout()
             ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             ofile.open(filename.c_str(), std::ofstream::out);
         } catch (const std::ofstream::failure & e) {
-            Natron::errorDialog( tr("Error").toStdString()
+            natronErrorDialog( tr("Error").toStdString()
                                  , tr("Exception occured when opening file").toStdString(), false );
 
             return;
         }
 
         if ( !ofile.good() ) {
-            Natron::errorDialog( tr("Error").toStdString()
+            natronErrorDialog( tr("Error").toStdString()
                                  , tr("Failure to open the file").toStdString(), false );
 
             return;
@@ -325,7 +325,7 @@ Gui::exportLayout()
             s.initialize(this);
             oArchive << boost::serialization::make_nvp("Layout", s);
         }catch (...) {
-            Natron::errorDialog( tr("Error").toStdString()
+            natronErrorDialog( tr("Error").toStdString()
                                  , tr("Failure when saving the layout").toStdString(), false );
             ofile.close();
 

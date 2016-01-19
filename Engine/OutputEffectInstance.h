@@ -135,7 +135,7 @@ public:
 
     void updateRenderTimeInfos(double lastTimeSpent, double *averageTimePerFrame, double *totalTimeSpent);
 
-    virtual void reportStats(int time, int view, double wallTime, const std::map<boost::shared_ptr<Natron::Node>, NodeRenderStats > & stats);
+    virtual void reportStats(int time, int view, double wallTime, const std::map<boost::shared_ptr<Node>, NodeRenderStats > & stats);
 
 protected:
     

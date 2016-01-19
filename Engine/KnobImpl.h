@@ -389,7 +389,7 @@ inline unsigned int hashFunction(unsigned int a)
 template <typename T>
 T Knob<T>::evaluateExpression(double time, int dimension) const
 {
-    Natron::PythonGILLocker pgl;
+    PythonGILLocker pgl;
     PyObject *ret;
     
     ///Reset the random state to reproduce the sequence
@@ -409,7 +409,7 @@ template <typename T>
 double
 Knob<T>::evaluateExpression_pod(double time, int dimension) const
 {
-    Natron::PythonGILLocker pgl;
+    PythonGILLocker pgl;
     PyObject *ret;
     
     ///Reset the random state to reproduce the sequence
@@ -844,12 +844,12 @@ Knob<T>::setValue(const T & v,
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>( getHolder() );
     
 #ifdef DEBUG
-    if (holder && reason == Natron::eValueChangedReasonPluginEdited) {
+    if (holder && reason == eValueChangedReasonPluginEdited) {
         holder->checkCanSetValueAndWarn();
     }
 #endif
     
-    if ( holder && (reason == Natron::eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
+    if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
         KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {
         case KnobHolder::eMultipleParamsEditOff:
@@ -906,7 +906,7 @@ Knob<T>::setValue(const T & v,
                 return ret;
             }
         }
-    } // if ( holder && (reason == Natron::eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
+    } // if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
     
     
     
@@ -997,10 +997,10 @@ Knob<T>::setValue(const T & v,
          holder && //< the knob is part of a KnobHolder
          holder->getApp() && //< the app pointer is not NULL
          !holder->getApp()->getProject()->isLoadingProject() && //< we're not loading the project
-         ( reason == Natron::eValueChangedReasonUserEdited ||
-           reason == Natron::eValueChangedReasonPluginEdited ||
-           reason == Natron::eValueChangedReasonNatronGuiEdited ||
-           reason == Natron::eValueChangedReasonNatronInternalEdited ) && //< the change was made by the user or plugin
+         ( reason == eValueChangedReasonUserEdited ||
+           reason == eValueChangedReasonPluginEdited ||
+           reason == eValueChangedReasonNatronGuiEdited ||
+           reason == eValueChangedReasonNatronInternalEdited ) && //< the change was made by the user or plugin
          ( newKey != NULL) ) { //< the keyframe to set is not null
         
         time = getCurrentTime();
@@ -1175,12 +1175,12 @@ Knob<T>::setValueAtTime(double time,
     Natron::EffectInstance* holder = dynamic_cast<Natron::EffectInstance*>( getHolder() );
     
 #ifdef DEBUG
-    if (holder && reason == Natron::eValueChangedReasonPluginEdited) {
+    if (holder && reason == eValueChangedReasonPluginEdited) {
         holder->checkCanSetValueAndWarn();
     }
 #endif
     
-    if ( holder && (reason == Natron::eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
+    if ( holder && (reason == eValueChangedReasonPluginEdited) && getKnobGuiPointer() ) {
         KnobHolder::MultipleParamsEditEnum paramEditLevel = holder->getMultipleParamsEditLevel();
         switch (paramEditLevel) {
         case KnobHolder::eMultipleParamsEditOff:
@@ -1417,7 +1417,7 @@ Knob<T>::unSlave(int dimension,
     }
 
     if (_signalSlotHandler) {
-        if (reason == Natron::eValueChangedReasonPluginEdited) {
+        if (reason == eValueChangedReasonPluginEdited) {
             _signalSlotHandler->s_knobSlaved(dimension, false);
         }
     }
@@ -1440,11 +1440,11 @@ Knob<T>::setValue(const T & value,
                   bool turnOffAutoKeying)
 {
     if (turnOffAutoKeying) {
-        return setValue(value,dimension,Natron::eValueChangedReasonNatronInternalEdited,NULL);
+        return setValue(value,dimension,eValueChangedReasonNatronInternalEdited,NULL);
     } else {
         KeyFrame k;
 
-        return setValue(value,dimension,Natron::eValueChangedReasonNatronInternalEdited,&k);
+        return setValue(value,dimension,eValueChangedReasonNatronInternalEdited,&k);
     }
 }
 
@@ -1455,7 +1455,7 @@ Knob<T>::onValueChanged(const T & value,
                         ValueChangedReasonEnum reason,
                         KeyFrame* newKey)
 {
-    assert(reason == Natron::eValueChangedReasonNatronGuiEdited || reason == Natron::eValueChangedReasonUserEdited);
+    assert(reason == eValueChangedReasonNatronGuiEdited || reason == eValueChangedReasonUserEdited);
     return setValue(value, dimension,reason,newKey);
 }
 
@@ -1464,7 +1464,7 @@ KnobHelper::ValueChangedReturnCodeEnum
 Knob<T>::setValueFromPlugin(const T & value,int dimension)
 {
     KeyFrame newKey;
-    return setValue(value,dimension,Natron::eValueChangedReasonPluginEdited,&newKey);
+    return setValue(value,dimension,eValueChangedReasonPluginEdited,&newKey);
 }
 
 template<typename T>
@@ -1475,7 +1475,7 @@ Knob<T>::setValueAtTime(double time,
 {
     KeyFrame k;
 
-    ignore_result(setValueAtTime(time,v,dimension,Natron::eValueChangedReasonNatronInternalEdited,&k));
+    ignore_result(setValueAtTime(time,v,dimension,eValueChangedReasonNatronInternalEdited,&k));
 }
 
 template<typename T>
@@ -1484,7 +1484,7 @@ Knob<T>::setValueAtTimeFromPlugin(double time,const T & v,int dimension)
 {
     KeyFrame k;
     
-    ignore_result(setValueAtTime(time,v,dimension,Natron::eValueChangedReasonPluginEdited,&k));
+    ignore_result(setValueAtTime(time,v,dimension,eValueChangedReasonPluginEdited,&k));
 
 }
 
@@ -1697,7 +1697,7 @@ Knob<T>::onKeyFrameSet(double time,
     }
     
     makeKeyFrame(curve.get(), time, getValueAtTime(time,dimension), &key);
-    return setKeyFrame(key, dimension, Natron::eValueChangedReasonUserEdited);
+    return setKeyFrame(key, dimension, eValueChangedReasonUserEdited);
 }
 
 template<typename T>
@@ -1729,7 +1729,7 @@ template<typename T>
 bool
 Knob<T>::onKeyFrameSet(double /*time*/,const KeyFrame& key,int dimension)
 {
-    return setKeyFrame(key, dimension, Natron::eValueChangedReasonUserEdited);
+    return setKeyFrame(key, dimension, eValueChangedReasonUserEdited);
 }
 
 template<typename T>
@@ -1749,11 +1749,11 @@ Knob<T>::onTimeChanged(double time)
         checkAnimationLevel(i);
     }
     if (shouldRefresh) {
-        _signalSlotHandler->s_valueChanged(-1, Natron::eValueChangedReasonTimeChanged);
+        _signalSlotHandler->s_valueChanged(-1, eValueChangedReasonTimeChanged);
     }
     if (evaluateValueChangeOnTimeChange()) {
         //Some knobs like KnobFile do not animate but the plug-in may need to know the time has changed
-        evaluateValueChange(0, time, Natron::eValueChangedReasonTimeChanged);
+        evaluateValueChange(0, time, eValueChangedReasonTimeChanged);
     }
 }
 
@@ -1899,9 +1899,9 @@ Knob<T>::resetToDefaultValue(int dimension)
     }
     clearExpression(dimension,true);
     resetExtraToDefaultValue(dimension);
-    ignore_result(setValue(defaultV, dimension,Natron::eValueChangedReasonRestoreDefault,NULL));
+    ignore_result(setValue(defaultV, dimension,eValueChangedReasonRestoreDefault,NULL));
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonRestoreDefault);
+        _signalSlotHandler->s_valueChanged(dimension,eValueChangedReasonRestoreDefault);
     }
     setSecret(getDefaultIsSecret());
     setEnabled(dimension, isDefaultEnabled(dimension));
@@ -1960,9 +1960,9 @@ Knob<double>::resetToDefaultValue(int dimension)
             }
         }
     }
-    ignore_result(setValue(def, dimension, Natron::eValueChangedReasonRestoreDefault, NULL));
+    ignore_result(setValue(def, dimension, eValueChangedReasonRestoreDefault, NULL));
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension, Natron::eValueChangedReasonRestoreDefault);
+        _signalSlotHandler->s_valueChanged(dimension, eValueChangedReasonRestoreDefault);
     }
     setSecret(getDefaultIsSecret());
     setEnabled(dimension, isDefaultEnabled(dimension));
@@ -2310,7 +2310,7 @@ Knob<T>::clone(KnobI* other,
         }
     }
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonNatronInternalEdited);
+        _signalSlotHandler->s_valueChanged(dimension,eValueChangedReasonNatronInternalEdited);
         refreshListenersAfterValueChange(dimension);
     }
     cloneExtraData(other,dimension);
@@ -2352,7 +2352,7 @@ Knob<T>::cloneAndCheckIfChanged(KnobI* other,int dimension)
     }
     if (hasChanged) {
         if (_signalSlotHandler) {
-            _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonNatronInternalEdited);
+            _signalSlotHandler->s_valueChanged(dimension,eValueChangedReasonNatronInternalEdited);
             refreshListenersAfterValueChange(dimension);
         }
     }
@@ -2395,7 +2395,7 @@ Knob<T>::clone(KnobI* other,
         }
     }
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonNatronInternalEdited);
+        _signalSlotHandler->s_valueChanged(dimension,eValueChangedReasonNatronInternalEdited);
         refreshListenersAfterValueChange(dimension);
     }
     cloneExtraData(other,offset,range,dimension);
@@ -2440,14 +2440,14 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
                     keysList.push_back(it->getTime());
                 }
                 if (!keysList.empty()) {
-                    _signalSlotHandler->s_multipleKeyFramesSet(keysList, i, (int)Natron::eValueChangedReasonNatronInternalEdited);
+                    _signalSlotHandler->s_multipleKeyFramesSet(keysList, i, (int)eValueChangedReasonNatronInternalEdited);
                 }
             }
             checkAnimationLevel(i);
         }
     }
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(dimension,Natron::eValueChangedReasonNatronInternalEdited);
+        _signalSlotHandler->s_valueChanged(dimension,eValueChangedReasonNatronInternalEdited);
     }
     refreshListenersAfterValueChange(dimension);
     cloneExtraData(other,dimension);

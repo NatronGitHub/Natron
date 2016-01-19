@@ -100,44 +100,44 @@ OSType
 translateLocation(StandardPaths::StandardLocationEnum type)
 {
     switch (type) {
-    case Natron::StandardPaths::eStandardLocationConfig:
+    case StandardPaths::eStandardLocationConfig:
 
         return kPreferencesFolderType;
-    case Natron::StandardPaths::eStandardLocationDesktop:
+    case StandardPaths::eStandardLocationDesktop:
 
         return kDesktopFolderType;
-    case Natron::StandardPaths::eStandardLocationDownload: // needs NSSearchPathForDirectoriesInDomains with NSDownloadsDirectory
+    case StandardPaths::eStandardLocationDownload: // needs NSSearchPathForDirectoriesInDomains with NSDownloadsDirectory
     // which needs an objective-C *.mm file...
-    case Natron::StandardPaths::eStandardLocationDocuments:
+    case StandardPaths::eStandardLocationDocuments:
 
         return kDocumentsFolderType;
-    case Natron::StandardPaths::eStandardLocationFonts:
+    case StandardPaths::eStandardLocationFonts:
         // There are at least two different font directories on the mac: /Library/Fonts and ~/Library/Fonts.
 
         // To select a specific one we have to specify a different first parameter when calling FSFindFolder.
         return kFontsFolderType;
-    case Natron::StandardPaths::eStandardLocationApplications:
+    case StandardPaths::eStandardLocationApplications:
 
         return kApplicationsFolderType;
-    case Natron::StandardPaths::eStandardLocationMusic:
+    case StandardPaths::eStandardLocationMusic:
 
         return kMusicDocumentsFolderType;
-    case Natron::StandardPaths::eStandardLocationMovies:
+    case StandardPaths::eStandardLocationMovies:
 
         return kMovieDocumentsFolderType;
-    case Natron::StandardPaths::eStandardLocationPictures:
+    case StandardPaths::eStandardLocationPictures:
 
         return kPictureDocumentsFolderType;
-    case Natron::StandardPaths::eStandardLocationTemp:
+    case StandardPaths::eStandardLocationTemp:
 
         return kTemporaryFolderType;
-    case Natron::StandardPaths::eStandardLocationGenericData:
-    case Natron::StandardPaths::eStandardLocationRuntime:
-    case Natron::StandardPaths::eStandardLocationData:
+    case StandardPaths::eStandardLocationGenericData:
+    case StandardPaths::eStandardLocationRuntime:
+    case StandardPaths::eStandardLocationData:
 
         return kApplicationSupportFolderType;
-    case Natron::StandardPaths::eStandardLocationGenericCache:
-    case Natron::StandardPaths::eStandardLocationCache:
+    case StandardPaths::eStandardLocationGenericCache:
+    case StandardPaths::eStandardLocationCache:
 
         return kCachedDataFolderType;
     default:
@@ -175,7 +175,7 @@ macLocation(StandardPaths::StandardLocationEnum type,
 
     QString path = getFullPath(ref);
 
-    if ( (type == Natron::StandardPaths::eStandardLocationData) || (type == Natron::StandardPaths::eStandardLocationCache) ) {
+    if ( (type == StandardPaths::eStandardLocationData) || (type == StandardPaths::eStandardLocationCache) ) {
         appendOrganizationAndApp(path);
     }
     
@@ -342,7 +342,7 @@ StandardPaths::writableLocation(StandardLocationEnum type)
         if ( xdgCacheHome.isEmpty() ) {
             xdgCacheHome = QDir::homePath() + QLatin1String("/.cache");
         }
-        if (type == Natron::StandardPaths::eStandardLocationCache) {
+        if (type == StandardPaths::eStandardLocationCache) {
             appendOrganizationAndApp(xdgCacheHome);
         }
 
@@ -354,7 +354,7 @@ StandardPaths::writableLocation(StandardLocationEnum type)
         if ( xdgDataHome.isEmpty() ) {
             xdgDataHome = QDir::homePath() + QLatin1String("/.local/share");
         }
-        if (type == Natron::StandardPaths::eStandardLocationData) {
+        if (type == StandardPaths::eStandardLocationData) {
             appendOrganizationAndApp(xdgDataHome);
         }
 
@@ -614,37 +614,37 @@ StandardPaths::writableLocation(StandardLocationEnum type)
 #else // QT_VERSION >= 0x050000
     QStandardPaths::StandardLocation path;
     switch (type) {
-    case Natron::StandardPaths::eStandardLocationDesktop:
+    case StandardPaths::eStandardLocationDesktop:
         path = QStandardPaths::DesktopLocation;
         break;
-    case Natron::StandardPaths::eStandardLocationDocuments:
+    case StandardPaths::eStandardLocationDocuments:
         path = QStandardPaths::DocumentsLocation;
         break;
-    case Natron::StandardPaths::eStandardLocationFonts:
+    case StandardPaths::eStandardLocationFonts:
         path = QStandardPaths::FontsLocation;
         break;
-    case Natron::StandardPaths::eStandardLocationApplications:
+    case StandardPaths::eStandardLocationApplications:
         path = QStandardPaths::ApplicationsLocation;
         break;
-    case Natron::StandardPaths::eStandardLocationMusic:
+    case StandardPaths::eStandardLocationMusic:
         path = QStandardPaths::MusicLocation;
         break;
-    case Natron::StandardPaths::eStandardLocationMovies:
+    case StandardPaths::eStandardLocationMovies:
         path = QStandardPaths::MoviesLocation;
         break;
-    case Natron::StandardPaths::eStandardLocationPictures:
+    case StandardPaths::eStandardLocationPictures:
         path = QStandardPaths::PicturesLocation;
         break;
-    case Natron::StandardPaths::eStandardLocationTemp:
+    case StandardPaths::eStandardLocationTemp:
         path = QStandardPaths::TempLocation;
         break;
-    case Natron::StandardPaths::eStandardLocationHome:
+    case StandardPaths::eStandardLocationHome:
         path = QStandardPaths::HomeLocation;
         break;
-    case Natron::StandardPaths::eStandardLocationData:
+    case StandardPaths::eStandardLocationData:
         path = QStandardPaths::DataLocation;
         break;
-    case Natron::StandardPaths::eStandardLocationCache:
+    case StandardPaths::eStandardLocationCache:
         path = QStandardPaths::CacheLocation;
         break;
     default:

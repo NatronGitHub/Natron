@@ -35,7 +35,7 @@ void
 KnobGui::onInternalValueChanged(int dimension,
                                 int reason)
 {
-    if (_imp->widgetCreated && (ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
+    if (_imp->widgetCreated && (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         updateGuiInternal(dimension);
     }
 }
@@ -50,7 +50,7 @@ void
 KnobGui::onMultipleKeySet(const std::list<double>& keys,int /*dimension*/, int reason)
 {
     
-    if ((ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
+    if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         boost::shared_ptr<KnobI> knob = getKnob();
         if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
             std::list<SequenceTime> intKeys;
@@ -71,7 +71,7 @@ KnobGui::onInternalKeySet(double time,
                           int reason,
                           bool added )
 {
-    if ((ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
+    if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         if (added) {
             boost::shared_ptr<KnobI> knob = getKnob();
             if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
@@ -214,28 +214,28 @@ KnobGui::pasteClipBoard()
         if (isInt) {
             if ( !it->canConvert(QVariant::Int) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Integer").arg( it->typeName() );
-                Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
+                natronErrorDialog( tr("Paste").toStdString(),err.toStdString() );
 
                 return;
             }
         } else if (isBool) {
             if ( !it->canConvert(QVariant::Bool) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Boolean").arg( it->typeName() );
-                Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
+                natronErrorDialog( tr("Paste").toStdString(),err.toStdString() );
 
                 return;
             }
         } else if (isDouble) {
             if ( !it->canConvert(QVariant::Double) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Double").arg( it->typeName() );
-                Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
+                natronErrorDialog( tr("Paste").toStdString(),err.toStdString() );
 
                 return;
             }
         } else if (isString) {
             if ( !it->canConvert(QVariant::String) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type String").arg( it->typeName() );
-                Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
+                natronErrorDialog( tr("Paste").toStdString(),err.toStdString() );
 
                 return;
             }
@@ -293,7 +293,7 @@ KnobGui::linkTo(int dimension)
         if (i == dimension || dimension == -1) {
             std::string expr = thisKnob->getExpression(dimension);
             if (!expr.empty()) {
-                errorDialog(tr("Param Link").toStdString(),tr("This parameter already has an expression set, edit or clear it.").toStdString());
+                natronErrorDialog(tr("Param Link").toStdString(),tr("This parameter already has an expression set, edit or clear it.").toStdString());
                 return;
             }
         }
@@ -305,7 +305,7 @@ KnobGui::linkTo(int dimension)
         boost::shared_ptr<KnobI>  otherKnob = dialog.getSelectedKnobs();
         if (otherKnob) {
             if ( !thisKnob->isTypeCompatible(otherKnob) ) {
-                errorDialog( tr("Param Link").toStdString(), tr("Types incompatibles!").toStdString() );
+                natronErrorDialog( tr("Param Link").toStdString(), tr("Types incompatibles!").toStdString() );
 
                 return;
             }
@@ -319,7 +319,7 @@ KnobGui::linkTo(int dimension)
                     err.append( thisKnob->getLabel() );
                     err.append( " \n " + tr("because the knob is already linked to ").toStdString() );
                     err.append( existingLink.second->getLabel() );
-                    errorDialog(tr("Param Link").toStdString(), err);
+                    natronErrorDialog(tr("Param Link").toStdString(), err);
 
                     return;
                 }

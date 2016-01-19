@@ -1381,7 +1381,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
         case eParamDataTypeInteger2D:
         case eParamDataTypeInteger3D: {
             //int
-            boost::shared_ptr<KnobInt> k = Natron::createKnob<KnobInt>(panel->getHolder(), label, dim, false);
+            boost::shared_ptr<KnobInt> k = natronCreateKnob<KnobInt>(panel->getHolder(), label, dim, false);
             setKnobMinMax<int>(k.get());
             knob = k;
             break;
@@ -1391,7 +1391,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
         case eParamDataTypeFloatingPoint3D: {
             //double
             int dim = index - 2;
-            boost::shared_ptr<KnobDouble> k = Natron::createKnob<KnobDouble>(panel->getHolder(), label, dim, false);
+            boost::shared_ptr<KnobDouble> k = natronCreateKnob<KnobDouble>(panel->getHolder(), label, dim, false);
             setKnobMinMax<double>(k.get());
             knob = k;
             break;
@@ -1400,13 +1400,13 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
         case eParamDataTypeColorRGBA: {
             // color
             int dim = index - 3;
-            boost::shared_ptr<KnobColor> k = Natron::createKnob<KnobColor>(panel->getHolder(), label, dim, false);
+            boost::shared_ptr<KnobColor> k = natronCreateKnob<KnobColor>(panel->getHolder(), label, dim, false);
             setKnobMinMax<double>(k.get());
             knob = k;
             break;
         }
         case eParamDataTypeChoice: {
-            boost::shared_ptr<KnobChoice> k = Natron::createKnob<KnobChoice>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobChoice> k = natronCreateKnob<KnobChoice>(panel->getHolder(), label, 1, false);
             QString entriesRaw = menuItemsEdit->toPlainText();
             QTextStream stream(&entriesRaw);
             std::vector<std::string> entries,helps;
@@ -1455,7 +1455,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
             break;
         }
         case eParamDataTypeCheckbox: {
-            boost::shared_ptr<KnobBool> k = Natron::createKnob<KnobBool>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobBool> k = natronCreateKnob<KnobBool>(panel->getHolder(), label, 1, false);
             bool defValue = defaultBool->isChecked();
             k->setDefaultValue(defValue);
             knob = k;
@@ -1463,7 +1463,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
         }
         case eParamDataTypeLabel:
         case eParamDataTypeTextInput: {
-            boost::shared_ptr<KnobString> k = Natron::createKnob<KnobString>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobString> k = natronCreateKnob<KnobString>(panel->getHolder(), label, 1, false);
             if (multiLine->isChecked()) {
                 k->setAsMultiLine();
                 if (richText->isChecked()) {
@@ -1480,7 +1480,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
             break;
         }
         case eParamDataTypeInputFile: {
-            boost::shared_ptr<KnobFile> k = Natron::createKnob<KnobFile>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobFile> k = natronCreateKnob<KnobFile>(panel->getHolder(), label, 1, false);
             if (sequenceDialog->isChecked()) {
                 k->setAsInputImage();
             }
@@ -1490,7 +1490,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
             break;
         }
         case eParamDataTypeOutputFile: {
-            boost::shared_ptr<KnobOutputFile> k = Natron::createKnob<KnobOutputFile>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobOutputFile> k = natronCreateKnob<KnobOutputFile>(panel->getHolder(), label, 1, false);
             if (sequenceDialog->isChecked()) {
                 k->setAsOutputImageFile();
             }
@@ -1500,7 +1500,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
             break;
         }
         case eParamDataTypeDirectory: {
-            boost::shared_ptr<KnobPath> k = Natron::createKnob<KnobPath>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobPath> k = natronCreateKnob<KnobPath>(panel->getHolder(), label, 1, false);
             if (multiPath->isChecked()) {
                 k->setMultiPath(true);
             }
@@ -1509,7 +1509,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
             knob = k;
         } break;
         case eParamDataTypeGroup: {
-            boost::shared_ptr<KnobGroup> k = Natron::createKnob<KnobGroup>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobGroup> k = natronCreateKnob<KnobGroup>(panel->getHolder(), label, 1, false);
             if (groupAsTab->isChecked()) {
                 k->setAsTab();
             }
@@ -1517,15 +1517,15 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
             knob = k;
         } break;
         case eParamDataTypePage: {
-            boost::shared_ptr<KnobPage> k = Natron::createKnob<KnobPage>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobPage> k = natronCreateKnob<KnobPage>(panel->getHolder(), label, 1, false);
             knob = k;
         } break;
         case eParamDataTypeButton: {
-            boost::shared_ptr<KnobButton> k = Natron::createKnob<KnobButton>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobButton> k = natronCreateKnob<KnobButton>(panel->getHolder(), label, 1, false);
             knob = k;
         } break;
         case eParamDataTypeSeparator: {
-            boost::shared_ptr<KnobSeparator> k = Natron::createKnob<KnobSeparator>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobSeparator> k = natronCreateKnob<KnobSeparator>(panel->getHolder(), label, 1, false);
             knob = k;
         } break;
         default:
@@ -1656,7 +1656,7 @@ AddKnobDialog::onOkClicked()
     }
     
     if (badFormat) {
-        Natron::errorDialog(tr("Error").toStdString(), tr("A parameter must have a unique script name composed only of characters from "
+        natronErrorDialog(tr("Error").toStdString(), tr("A parameter must have a unique script name composed only of characters from "
                                                           "[a - z / A- Z] and digits [0 - 9]. This name cannot contain spaces for scripting purposes.")
                             .toStdString());
         return;
@@ -1677,7 +1677,7 @@ AddKnobDialog::onOkClicked()
             NodeList nodes = isHolderGroup->getNodes();
             for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
                 if ((*it)->getScriptName() == stdName) {
-                    Natron::errorDialog(tr("Error").toStdString(), tr("A parameter on a group cannot have the same script-name as a node within "
+                    natronErrorDialog(tr("Error").toStdString(), tr("A parameter on a group cannot have the same script-name as a node within "
                                                                       "the group for scripting purposes.")
                                         .toStdString());
                     return;
@@ -1778,14 +1778,14 @@ AddKnobDialog::onOkClicked()
             oldKnobIsPage->setName(_imp->nameLineEdit->text().toStdString());
             oldKnobIsPage->setLabel(_imp->labelLineEdit->text().toStdString());
         } catch (const std::exception& e) {
-            Natron::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
+            natronErrorDialog(tr("Error while creating parameter").toStdString(), e.what());
             return;
         }
     } else if (!_imp->isKnobAlias) {
         try {
             _imp->createKnobFromSelection((int)t, oldIndexInParent);
         }   catch (const std::exception& e) {
-            Natron::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
+            natronErrorDialog(tr("Error while creating parameter").toStdString(), e.what());
             return;
         }
         assert(_imp->knob);
@@ -1838,7 +1838,7 @@ AddKnobDialog::onOkClicked()
                                                                   _imp->tooltipArea->toPlainText().toStdString(),
                                                                   false);
         } catch (const std::exception& e) {
-            Natron::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
+            natronErrorDialog(tr("Error while creating parameter").toStdString(), e.what());
             return;
         }
         
@@ -1876,7 +1876,7 @@ AddKnobDialog::onOkClicked()
                 ss << defValue;
                 ss << "\" ";
                 ss << QObject::tr("does not exist in the defined menu items").toStdString();
-                Natron::errorDialog(tr("Error while creating parameter").toStdString(), ss.str());
+                natronErrorDialog(tr("Error while creating parameter").toStdString(), ss.str());
                 return;
             }
             if (defIndex < (int)entries.size() && defIndex >= 0) {

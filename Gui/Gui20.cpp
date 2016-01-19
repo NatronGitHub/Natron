@@ -230,7 +230,7 @@ Gui::loadStyleSheet()
                        .arg(altStr)  // %10 = altered text color
                        .arg(lightSelStr)); // %11 = mouse over selection color
     } else {
-        Natron::errorDialog(tr("Stylesheet").toStdString(), tr("Failure to load stylesheet file ").toStdString() + qss.fileName().toStdString());
+        natronErrorDialog(tr("Stylesheet").toStdString(), tr("Failure to load stylesheet file ").toStdString() + qss.fileName().toStdString());
     }
 } // Gui::loadStyleSheet
 
@@ -1200,10 +1200,10 @@ Gui::createNewViewer()
                                                                    graph->getGroup() ) ) );
 }
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 Gui::createReader()
 {
-    boost::shared_ptr<Natron::Node> ret;
+    boost::shared_ptr<Node> ret;
     std::map<std::string, std::string> readersForFormat;
 
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
@@ -1220,7 +1220,7 @@ Gui::createReader()
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadSequenceOpenedDir = path.c_str();
         
-        std::string ext = Natron::removeFileExtension(qpattern).toLower().toStdString();
+        std::string ext = removeFileExtension(qpattern).toLower().toStdString();
         std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
         if ( found == readersForFormat.end() ) {
             errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString(), false);
@@ -1258,10 +1258,10 @@ Gui::createReader()
     return ret;
 }
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 Gui::createWriter()
 {
-    boost::shared_ptr<Natron::Node> ret;
+    boost::shared_ptr<Node> ret;
     std::map<std::string, std::string> writersForFormat;
 
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
@@ -1359,13 +1359,13 @@ int
 Gui::saveWarning()
 {
     if ( !_imp->_appInstance->getProject()->isSaveUpToDate() ) {
-        StandardButtonEnum ret =  Natron::questionDialog(NATRON_APPLICATION_NAME, tr("Save changes to ").toStdString() +
+        StandardButtonEnum ret =  natronQuestionDialog(NATRON_APPLICATION_NAME, tr("Save changes to ").toStdString() +
                                                                  _imp->_appInstance->getProject()->getProjectFilename().toStdString() + " ?",
                                                                  false,
-                                                                 Natron::StandardButtons(Natron::eStandardButtonSave | Natron::eStandardButtonDiscard | Natron::eStandardButtonCancel), Natron::eStandardButtonSave);
-        if ( (ret == Natron::eStandardButtonEscape) || (ret == Natron::eStandardButtonCancel) ) {
+                                                                 StandardButtons(eStandardButtonSave | eStandardButtonDiscard | eStandardButtonCancel), eStandardButtonSave);
+        if ( (ret == eStandardButtonEscape) || (ret == eStandardButtonCancel) ) {
             return 2;
-        } else if (ret == Natron::eStandardButtonDiscard) {
+        } else if (ret == eStandardButtonDiscard) {
             return 1;
         } else {
             return 0;

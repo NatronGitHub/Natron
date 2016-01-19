@@ -147,6 +147,6 @@ private:
 
 NATRON_NAMESPACE_EXIT;
 
-Q_DECLARE_METATYPE(Natron::Format);
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::Format);
 
 #endif // Engine_Format_h

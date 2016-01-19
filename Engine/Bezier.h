@@ -90,31 +90,31 @@ public:
                       double t);
     
     static void
-    bezierFullPoint(const Natron::Point & p0,
-                    const Natron::Point & p1,
-                    const Natron::Point & p2,
-                    const Natron::Point & p3,
+    bezierFullPoint(const Point & p0,
+                    const Point & p1,
+                    const Point & p2,
+                    const Point & p3,
                     double t,
-                    Natron::Point *p0p1,
-                    Natron::Point *p1p2,
-                    Natron::Point *p2p3,
-                    Natron::Point *p0p1_p1p2,
-                    Natron::Point *p1p2_p2p3,
-                    Natron::Point *dest);
+                    Point *p0p1,
+                    Point *p1p2,
+                    Point *p2p3,
+                    Point *p0p1_p1p2,
+                    Point *p1p2_p2p3,
+                    Point *dest);
 
     static void
-    bezierPoint(const Natron::Point & p0,
-                const Natron::Point & p1,
-                const Natron::Point & p2,
-                const Natron::Point & p3,
+    bezierPoint(const Point & p0,
+                const Point & p1,
+                const Point & p2,
+                const Point & p3,
                 double t,
-                Natron::Point *dest);
+                Point *dest);
 
     static void
-    bezierPointBboxUpdate(const Natron::Point & p0,
-                          const Natron::Point & p1,
-                          const Natron::Point & p2,
-                          const Natron::Point & p3,
+    bezierPointBboxUpdate(const Point & p0,
+                          const Point & p1,
+                          const Point & p2,
+                          const Point & p3,
                           RectD *bbox);
 
     bool isOpenBezier() const;
@@ -347,12 +347,12 @@ public:
                             bool finished,
                             int nBPointsPerSegment,
                             const Transform::Matrix3x3& transform,
-                            std::list<Natron::Point>* points,
+                            std::list<Point>* points,
                             RectD* bbox);
     
-    static void point_line_intersection(const Natron::Point &p1,
-                            const Natron::Point &p2,
-                            const Natron::Point &pos,
+    static void point_line_intersection(const Point &p1,
+                            const Point &p2,
+                            const Point &pos,
                             int *winding);
     
     /**
@@ -363,7 +363,7 @@ public:
                                     double time,
                                     unsigned int mipMapLevel,
                                     int nbPointsPerSegment,
-                                    std::list<Natron::Point>* points,
+                                    std::list<Point>* points,
                                     RectD* bbox) const;
     
     /**
@@ -372,7 +372,7 @@ public:
     void evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiCurves,
                                                  double time,
                                                  unsigned int mipMapLevel,
-                                                 std::list<Natron::Point>* points,
+                                                 std::list<Point>* points,
                                                  RectD* bbox) const;
 
     /**
@@ -384,7 +384,7 @@ public:
                                                  unsigned int mipMapLevel,
                                                  int nbPointsPerSegment,
                                                  bool evaluateIfEqual,
-                                                 std::list<Natron::Point >* points,
+                                                 std::list<Point >* points,
                                                  RectD* bbox) const;
 
     /**
@@ -487,11 +487,11 @@ public:
      *
      * Note that the delta will be applied to fp.
      **/
-    static Natron::Point expandToFeatherDistance(bool useGuiCurve,
-                                                 const Natron::Point & cp, //< the point
-                                                 Natron::Point* fp, //< the feather point
+    static Point expandToFeatherDistance(bool useGuiCurve,
+                                                 const Point & cp, //< the point
+                                                 Point* fp, //< the feather point
                                                  double featherDistance, //< feather distance
-                                                 //const std::list<Natron::Point> & featherPolygon, //< the polygon of the bezier
+                                                 //const std::list<Point> & featherPolygon, //< the polygon of the bezier
                                                  double time, //< time
                                                  bool clockWise, //< is the bezier  clockwise oriented or not
                                                  const Transform::Matrix3x3& transform,

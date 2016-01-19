@@ -1186,7 +1186,7 @@ RotoPanel::onCurrentItemCompOperatorChanged(int index)
             assert(drawable);
             boost::shared_ptr<KnobChoice> op = drawable->getOperatorKnob();
             KeyFrame k;
-            op->setValue(index, 0, Natron::eValueChangedReasonUserEdited,&k);
+            op->setValue(index, 0, eValueChangedReasonUserEdited,&k);
             _imp->context->clearSelection(RotoItem::eSelectionReasonOther);
             _imp->context->select(it->rotoItem, RotoItem::eSelectionReasonOther);
             _imp->context->evaluateChange();
@@ -1238,7 +1238,7 @@ void
 RotoPanel::onRotoItemCompOperatorChanged(int /*dim*/,
                                          int reason)
 {
-    if ( (ValueChangedReasonEnum)reason == Natron::eValueChangedReasonSlaveRefresh ) {
+    if ( (ValueChangedReasonEnum)reason == eValueChangedReasonSlaveRefresh ) {
         return;
     }
     RotoDrawableItem* i = qobject_cast<RotoDrawableItem*>( sender() );

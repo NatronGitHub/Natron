@@ -97,14 +97,14 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         callback = _imp->paramChangedCB;
     }
     if (!callback.empty()) {
-        bool userEdited = reason == Natron::eValueChangedReasonNatronGuiEdited ||
-        reason == Natron::eValueChangedReasonUserEdited;
+        bool userEdited = reason == eValueChangedReasonNatronGuiEdited ||
+        reason == eValueChangedReasonUserEdited;
 
         
         std::vector<std::string> args;
         std::string error;
         try {
-            Natron::getFunctionArguments(callback, &error, &args);
+            getFunctionArguments(callback, &error, &args);
         } catch (const std::exception& e) {
             getApp()->appendToScriptEditor(std::string("Failed to run onParamChanged callback: ")
                                                              + e.what());
@@ -142,7 +142,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         std::string script = ss.str();
         std::string err;
         std::string output;
-        if (!Natron::interpretPythonScript(script, &err,&output)) {
+        if (!interpretPythonScript(script, &err,&output)) {
             getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + err);
         } else if (!output.empty()) {
             getApp()->appendToScriptEditor(output);

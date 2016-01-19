@@ -56,10 +56,10 @@ NATRON_NAMESPACE_USING
 
 static bool handleConnectionError(const boost::shared_ptr<NodeGui>& outputNode, const boost::shared_ptr<NodeGui>& inputNode, int inputNb)
 {
-    Natron::Node::CanConnectInputReturnValue linkRetCode = outputNode->getNode()->canConnectInput(inputNode->getNode(), inputNb);
+    Node::CanConnectInputReturnValue linkRetCode = outputNode->getNode()->canConnectInput(inputNode->getNode(), inputNb);
 
-    if (linkRetCode != Natron::Node::eCanConnectInput_ok && linkRetCode != Natron::Node::eCanConnectInput_inputAlreadyConnected) {
-        if (linkRetCode == Natron::Node::eCanConnectInput_differentPars) {
+    if (linkRetCode != Node::eCanConnectInput_ok && linkRetCode != Node::eCanConnectInput_inputAlreadyConnected) {
+        if (linkRetCode == Node::eCanConnectInput_differentPars) {
             
             QString error = QString("%1" + QObject::tr(" and ") + "%2"  + QObject::tr(" don't have the same pixel aspect ratio (")
                                     + "%3 / %4 " +  QObject::tr(") and ") + "%1 " + QObject::tr(" doesn't support inputs with different pixel aspect ratio. This might yield unwanted results."))
@@ -67,42 +67,42 @@ static bool handleConnectionError(const boost::shared_ptr<NodeGui>& outputNode, 
             .arg(inputNode->getNode()->getLabel().c_str())
             .arg(outputNode->getNode()->getLiveInstance()->getPreferredAspectRatio())
             .arg(inputNode->getNode()->getLiveInstance()->getPreferredAspectRatio());
-            Natron::warningDialog(QObject::tr("Different pixel aspect").toStdString(),
+            natronWarningDialog(QObject::tr("Different pixel aspect").toStdString(),
                                 error.toStdString());
             return true;
-        } else if (linkRetCode == Natron::Node::eCanConnectInput_differentFPS) {
+        } else if (linkRetCode == Node::eCanConnectInput_differentFPS) {
             
             QString error = QString("%1" + QObject::tr(" and ") + "%2"  + QObject::tr(" don't have the same frame rate (") + "%3 / %4). " + QObject::tr("This might yield unwanted results. Either change the FPS from the Read node parameters or change the settings of the project."))
             .arg(outputNode->getNode()->getLabel().c_str())
             .arg(inputNode->getNode()->getLabel().c_str())
             .arg(outputNode->getNode()->getLiveInstance()->getPreferredFrameRate())
             .arg(inputNode->getNode()->getLiveInstance()->getPreferredFrameRate());
-            Natron::warningDialog(QObject::tr("Different frame rate").toStdString(),
+            natronWarningDialog(QObject::tr("Different frame rate").toStdString(),
                                 error.toStdString());
             return true;
-        } else if (linkRetCode == Natron::Node::eCanConnectInput_groupHasNoOutput) {
+        } else if (linkRetCode == Node::eCanConnectInput_groupHasNoOutput) {
             QString error = QString(QObject::tr("You cannot connect ") + "%1 " + QObject::tr(" to ") + " %2 " + QObject::tr("because it is a group which does "
                                                                                                  "not have an Output node."))
             .arg(outputNode->getNode()->getLabel().c_str())
             .arg(inputNode->getNode()->getLabel().c_str());
-            Natron::errorDialog(QObject::tr("Different frame rate").toStdString(),
+            natronErrorDialog(QObject::tr("Different frame rate").toStdString(),
                                 error.toStdString());
             
-        } else if (linkRetCode == Natron::Node::eCanConnectInput_multiResNotSupported) {
+        } else if (linkRetCode == Node::eCanConnectInput_multiResNotSupported) {
             QString error = QString(QObject::tr("You cannot connect ") + "%1" + QObject::tr(" to ") + "%2 " + QObject::tr("because multi-resolution is not supported on ") + "%1 "
                                     + QObject::tr("which means that it cannot receive images with a lower left corner different than (0,0) and cannot have "
                                          "multiple inputs/outputs with different image sizes.\n"
                                                   "To overcome this, use a Resize or Crop node upstream to change the image size.")).arg(outputNode->getNode()->getLabel().c_str())
             .arg(inputNode->getNode()->getLabel().c_str());
-            Natron::errorDialog(QObject::tr("Multi-resolution not supported").toStdString(),
+            natronErrorDialog(QObject::tr("Multi-resolution not supported").toStdString(),
                                 error.toStdString());;
         }
         return false;
     }
     
-    if (linkRetCode == Natron::Node::eCanConnectInput_ok && outputNode->getNode()->getLiveInstance()->isReader() &&
+    if (linkRetCode == Node::eCanConnectInput_ok && outputNode->getNode()->getLiveInstance()->isReader() &&
         inputNode->getNode()->getPluginID() != PLUGINID_OFX_RUNSCRIPT) {
-        Natron::warningDialog(QObject::tr("Reader input").toStdString(), QObject::tr("Connecting an input to a Reader node "
+        natronWarningDialog(QObject::tr("Reader input").toStdString(), QObject::tr("Connecting an input to a Reader node "
                                                                    "is only useful when using the RunScript node "
                                                                    "so that the Reader automatically reads an image "
                                                                    "when the render of the RunScript is done.").toStdString());
@@ -286,7 +286,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
 
                 
                     
-                    boost::shared_ptr<Natron::Node> mergeNode = getGui()->getApp()->createNode(args);
+                    boost::shared_ptr<Node> mergeNode = getGui()->getApp()->createNode(args);
                     
                     if (mergeNode) {
                         

@@ -229,7 +229,7 @@ copyFrom(const boost::shared_ptr<KnobI> & from,
         to->clone(from,offset,range);
         int dims = to->getDimension();
         for (int i = 0; i < dims; ++i) {
-            to->evaluateValueChange(i, from->getCurrentTime(), Natron::eValueChangedReasonPluginEdited);
+            to->evaluateValueChange(i, from->getCurrentTime(), eValueChangedReasonPluginEdited);
         }
         to->endChanges();
     }
@@ -372,7 +372,7 @@ OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
                                              OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::PushbuttonInstance( descriptor, node->effectInstance() )
 {
-    boost::shared_ptr<KnobButton> k = Natron::createKnob<KnobButton>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobButton> k = natronCreateKnob<KnobButton>( node, getParamLabel(this) );
     _knob = k;
     const std::string & iconFilePath = descriptor.getProperties().getStringProperty(kOfxPropIcon,1);
     k->setIconFilePath(iconFilePath);
@@ -422,7 +422,7 @@ OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    boost::shared_ptr<KnobInt> k = Natron::createKnob<KnobInt>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobInt> k = natronCreateKnob<KnobInt>( node, getParamLabel(this) );
     _knob = k;
 
     int min = properties.getIntProperty(kOfxParamPropMin);
@@ -598,7 +598,7 @@ OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,
     const OFX::Host::Property::Set &properties = getProperties();
     const std::string & coordSystem = getDefaultCoordinateSystem();
 
-    boost::shared_ptr<KnobDouble> dblKnob = Natron::createKnob<KnobDouble>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobDouble> dblKnob = natronCreateKnob<KnobDouble>( node, getParamLabel(this) );
     _knob = dblKnob;
 
     const std::string & doubleType = getDoubleType();
@@ -825,7 +825,7 @@ OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node,
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    boost::shared_ptr<KnobBool> b = Natron::createKnob<KnobBool>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobBool> b = natronCreateKnob<KnobBool>( node, getParamLabel(this) );
     _knob = b;
     int def = properties.getIntProperty(kOfxParamPropDefault);
     b->blockValueChanges();
@@ -967,7 +967,7 @@ OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node,
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<KnobChoice> choice = Natron::createKnob<KnobChoice>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobChoice> choice = natronCreateKnob<KnobChoice>( node, getParamLabel(this) );
     _knob = choice;
 
     
@@ -1180,7 +1180,7 @@ OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    boost::shared_ptr<KnobColor> color = Natron::createKnob<KnobColor>(node, getParamLabel(this),4);
+    boost::shared_ptr<KnobColor> color = natronCreateKnob<KnobColor>(node, getParamLabel(this),4);
     _knob = color;
 
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
@@ -1252,7 +1252,7 @@ OfxRGBAInstance::set(double r,
                      double b,
                      double a)
 {
-    _knob.lock()->setValues(r, g, b, a, Natron::eValueChangedReasonPluginEdited);
+    _knob.lock()->setValues(r, g, b, a, eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
 }
@@ -1264,7 +1264,7 @@ OfxRGBAInstance::set(OfxTime time,
                      double b,
                      double a)
 {
-    _knob.lock()->setValuesAtTime(std::floor(time + 0.5), r, g, b, a, Natron::eValueChangedReasonPluginEdited);
+    _knob.lock()->setValuesAtTime(std::floor(time + 0.5), r, g, b, a, eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -1412,7 +1412,7 @@ OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    boost::shared_ptr<KnobColor> color  = Natron::createKnob<KnobColor>(node, getParamLabel(this),3);
+    boost::shared_ptr<KnobColor> color  = natronCreateKnob<KnobColor>(node, getParamLabel(this),3);
     _knob = color;
 
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
@@ -1477,7 +1477,7 @@ OfxRGBInstance::set(double r,
                     double g,
                     double b)
 {
-    _knob.lock()->setValues(r, g, b,  Natron::eValueChangedReasonPluginEdited);
+    _knob.lock()->setValues(r, g, b,  eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -1487,7 +1487,7 @@ OfxRGBInstance::set(OfxTime time,
                     double g,
                     double b)
 {
-    _knob.lock()->setValuesAtTime(std::floor(time + 0.5), r, g, b,  Natron::eValueChangedReasonPluginEdited);
+    _knob.lock()->setValuesAtTime(std::floor(time + 0.5), r, g, b,  eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -1631,7 +1631,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
     const std::string & coordSystem = getDefaultCoordinateSystem();
     const int dims = 2;
 
-    boost::shared_ptr<KnobDouble> dblKnob = Natron::createKnob<KnobDouble>(node, getParamLabel(this),dims);
+    boost::shared_ptr<KnobDouble> dblKnob = natronCreateKnob<KnobDouble>(node, getParamLabel(this),dims);
     _knob = dblKnob;
 
     const std::string & doubleType = getDoubleType();
@@ -1731,7 +1731,7 @@ OfxStatus
 OfxDouble2DInstance::set(double x1,
                          double x2)
 {
-    _knob.lock()->setValues(x1, x2, Natron::eValueChangedReasonPluginEdited);
+    _knob.lock()->setValues(x1, x2, eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -1741,7 +1741,7 @@ OfxDouble2DInstance::set(OfxTime time,
                          double x2)
 {
     
-    _knob.lock()->setValuesAtTime(time, x1, x2, Natron::eValueChangedReasonPluginEdited);
+    _knob.lock()->setValuesAtTime(time, x1, x2, eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -1914,7 +1914,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance* node,
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<KnobInt> iKnob = Natron::createKnob<KnobInt>(node, getParamLabel(this), dims);
+    boost::shared_ptr<KnobInt> iKnob = natronCreateKnob<KnobInt>(node, getParamLabel(this), dims);
     _knob = iKnob;
 
     std::vector<int> minimum(dims);
@@ -1971,7 +1971,7 @@ OfxStatus
 OfxInteger2DInstance::set(int x1,
                           int x2)
 {
-    _knob.lock()->setValues(x1, x2 , Natron::eValueChangedReasonPluginEdited);
+    _knob.lock()->setValues(x1, x2 , eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -1980,7 +1980,7 @@ OfxInteger2DInstance::set(OfxTime time,
                           int x1,
                           int x2)
 {
-    _knob.lock()->setValuesAtTime(time, x1, x2 , Natron::eValueChangedReasonPluginEdited);
+    _knob.lock()->setValuesAtTime(time, x1, x2 , eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -2115,7 +2115,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node,
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<KnobDouble> knob = Natron::createKnob<KnobDouble>(node, getParamLabel(this),dims);
+    boost::shared_ptr<KnobDouble> knob = natronCreateKnob<KnobDouble>(node, getParamLabel(this),dims);
     _knob = knob;
 
     std::vector<double> minimum(dims);
@@ -2187,7 +2187,7 @@ OfxDouble3DInstance::set(double x1,
                          double x3)
 {
     
-    _knob.lock()->setValues(x1, x2 , x3, Natron::eValueChangedReasonPluginEdited);
+    _knob.lock()->setValues(x1, x2 , x3, eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -2197,7 +2197,7 @@ OfxDouble3DInstance::set(OfxTime time,
                          double x2,
                          double x3)
 {
-    _knob.lock()->setValuesAtTime(time, x1, x2 , x3, Natron::eValueChangedReasonPluginEdited);
+    _knob.lock()->setValuesAtTime(time, x1, x2 , x3, eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -2378,7 +2378,7 @@ OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance*node,
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<KnobInt> knob = Natron::createKnob<KnobInt>(node, getParamLabel(this), dims);
+    boost::shared_ptr<KnobInt> knob = natronCreateKnob<KnobInt>(node, getParamLabel(this), dims);
     _knob = knob;
 
     std::vector<int> minimum(dims);
@@ -2444,7 +2444,7 @@ OfxInteger3DInstance::set(int x1,
                           int x3)
 {
    
-    _knob.lock()->setValues(x1, x2 , x3, Natron::eValueChangedReasonPluginEdited);
+    _knob.lock()->setValues(x1, x2 , x3, eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -2454,7 +2454,7 @@ OfxInteger3DInstance::set(OfxTime time,
                           int x2,
                           int x3)
 {
-    _knob.lock()->setValuesAtTime(time, x1, x2 , x3, Natron::eValueChangedReasonPluginEdited);
+    _knob.lock()->setValuesAtTime(time, x1, x2 , x3, eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -2592,7 +2592,7 @@ OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,
     const OFX::Host::Property::Set &properties = getProperties();
     int isTab = properties.getIntProperty(kFnOfxParamPropGroupIsTab);
 
-    boost::shared_ptr<KnobGroup> group = Natron::createKnob<KnobGroup>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobGroup> group = natronCreateKnob<KnobGroup>( node, getParamLabel(this) );
     _groupKnob = group;
     int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
     if (isTab) {
@@ -2645,7 +2645,7 @@ OfxPageInstance::OfxPageInstance(OfxEffectInstance* node,
     : OFX::Host::Param::PageInstance( descriptor,node->effectInstance() )
       , _pageKnob()
 {
-    _pageKnob = Natron::createKnob<KnobPage>( node, getParamLabel(this) );
+    _pageKnob = natronCreateKnob<KnobPage>( node, getParamLabel(this) );
 }
 
 // callback which should set enabled state as appropriate
@@ -2719,7 +2719,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
 
 
         if (!fileIsOutput) {
-            _imp->fileKnob = Natron::createKnob<KnobFile>( node, getParamLabel(this) );
+            _imp->fileKnob = natronCreateKnob<KnobFile>( node, getParamLabel(this) );
             if (fileIsImage) {
                 _imp->fileKnob.lock()->setAsInputImage();
             }
@@ -2727,7 +2727,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
                 _imp->fileKnob.lock()->setAnimationEnabled(false);
             }
         } else {
-            _imp->outputFileKnob = Natron::createKnob<KnobOutputFile>( node, getParamLabel(this) );
+            _imp->outputFileKnob = natronCreateKnob<KnobOutputFile>( node, getParamLabel(this) );
             if (fileIsImage) {
                 _imp->outputFileKnob.lock()->setAsOutputImageFile();
             } else {
@@ -2739,11 +2739,11 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
         }
 
     } else if (mode == kOfxParamStringIsDirectoryPath) {
-        _imp->pathKnob = Natron::createKnob<KnobPath>( node, getParamLabel(this) );
+        _imp->pathKnob = natronCreateKnob<KnobPath>( node, getParamLabel(this) );
         _imp->pathKnob.lock()->setMultiPath(false);
         
     } else if ( (mode == kOfxParamStringIsSingleLine) || (mode == kOfxParamStringIsLabel) || (mode == kOfxParamStringIsMultiLine) || richText ) {
-        _imp->stringKnob = Natron::createKnob<KnobString>( node, getParamLabel(this) );
+        _imp->stringKnob = natronCreateKnob<KnobString>( node, getParamLabel(this) );
         if (mode == kOfxParamStringIsLabel) {
             _imp->stringKnob.lock()->setAllDimensionsEnabled(false);
             _imp->stringKnob.lock()->setAsLabel();
@@ -3167,7 +3167,7 @@ OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<KnobString> knob = Natron::createKnob<KnobString>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobString> knob = natronCreateKnob<KnobString>( node, getParamLabel(this) );
     _imp->knob = knob;
 
     knob->setAsCustom();
@@ -3349,7 +3349,7 @@ OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node,
     int parametricDimension = properties.getIntProperty(kOfxParamPropParametricDimension);
 
 
-    boost::shared_ptr<KnobParametric> knob = Natron::createKnob<KnobParametric>(node, getParamLabel(this),parametricDimension);
+    boost::shared_ptr<KnobParametric> knob = natronCreateKnob<KnobParametric>(node, getParamLabel(this),parametricDimension);
     _knob = knob;
 
     setLabel(); //set label on all curves
@@ -3449,7 +3449,7 @@ OfxParametricInstance::getValue(int curveIndex,
 {
     StatusEnum stat = _knob.lock()->getValue(curveIndex, parametricPosition, returnValue);
 
-    if (stat == Natron::eStatusOK) {
+    if (stat == eStatusOK) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -3463,7 +3463,7 @@ OfxParametricInstance::getNControlPoints(int curveIndex,
 {
     StatusEnum stat = _knob.lock()->getNControlPoints(curveIndex, returnValue);
 
-    if (stat == Natron::eStatusOK) {
+    if (stat == eStatusOK) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -3479,7 +3479,7 @@ OfxParametricInstance::getNthControlPoint(int curveIndex,
 {
     StatusEnum stat = _knob.lock()->getNthControlPoint(curveIndex, nthCtl, key, value);
 
-    if (stat == Natron::eStatusOK) {
+    if (stat == eStatusOK) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -3496,7 +3496,7 @@ OfxParametricInstance::setNthControlPoint(int curveIndex,
 {
     StatusEnum stat = _knob.lock()->setNthControlPoint(curveIndex, nthCtl, key, value);
 
-    if (stat == Natron::eStatusOK) {
+    if (stat == eStatusOK) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -3526,7 +3526,7 @@ OfxParametricInstance::addControlPoint(int curveIndex,
         stat = _knob.lock()->addControlPoint(curveIndex, key, value);
     }
 
-    if (stat == Natron::eStatusOK) {
+    if (stat == eStatusOK) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -3539,7 +3539,7 @@ OfxParametricInstance::deleteControlPoint(int curveIndex,
 {
     StatusEnum stat = _knob.lock()->deleteControlPoint(curveIndex, nthCtl);
 
-    if (stat == Natron::eStatusOK) {
+    if (stat == eStatusOK) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -3551,7 +3551,7 @@ OfxParametricInstance::deleteAllControlPoints(int curveIndex)
 {
     StatusEnum stat = _knob.lock()->deleteAllControlPoints(curveIndex);
 
-    if (stat == Natron::eStatusOK) {
+    if (stat == eStatusOK) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;

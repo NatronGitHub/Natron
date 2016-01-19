@@ -40,12 +40,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new BackDrop(n);
     }
     
-    BackDrop(boost::shared_ptr<Natron::Node> node);
+    BackDrop(boost::shared_ptr<Node> node);
     
     virtual ~BackDrop();
   

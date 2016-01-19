@@ -137,7 +137,7 @@ private:
             }
 
             
-            _knob->setValue(dimension,*it,NULL,false,Natron::eValueChangedReasonUserEdited);
+            _knob->setValue(dimension,*it,NULL,false,eValueChangedReasonUserEdited);
             
             if (knob->getHolder()->getApp() ) {
                 if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
@@ -159,7 +159,7 @@ private:
         }
         
         ///This will refresh all dimensions
-        _knob->onInternalValueChanged(-1, Natron::eValueChangedReasonNatronGuiEdited);
+        _knob->onInternalValueChanged(-1, eValueChangedReasonNatronGuiEdited);
         
         knob->endChanges();
         if (modifiedKeyFrame) {
@@ -207,7 +207,7 @@ private:
                 knob->unblockValueChanges();
             }
             
-            _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],false,Natron::eValueChangedReasonUserEdited);
+            _valueChangedReturnCode[i] = _knob->setValue(dimension,*it,&_newKeys[i],false,eValueChangedReasonUserEdited);
             if (_valueChangedReturnCode[i] != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) {
                 modifiedKeyFrames = true;
             }
@@ -226,7 +226,7 @@ private:
         
         ///This will refresh all dimensions
         if (_firstRedoCalled || _refreshGuiFirstTime) {
-            _knob->onInternalValueChanged(-1, Natron::eValueChangedReasonNatronGuiEdited);
+            _knob->onInternalValueChanged(-1, eValueChangedReasonNatronGuiEdited);
         }
 
         

@@ -193,7 +193,7 @@ struct ViewerGL::Implementation
     GLuint prevBoundTexture; // @see bindTextureAndActivateShader/unbindTextureAndReleaseShader
 
     mutable QMutex lastRenderedImageMutex; //protects lastRenderedImage & memoryHeldByLastRenderedImages
-    std::vector<Natron::ImageList> lastRenderedTiles[2]; //<  last image passed to transferRAMBuffer
+    std::vector<ImageList> lastRenderedTiles[2]; //<  last image passed to transferRAMBuffer
     U64 memoryHeldByLastRenderedImages[2];
     
     QSize sizeH;

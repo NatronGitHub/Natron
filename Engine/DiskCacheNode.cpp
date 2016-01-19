@@ -65,7 +65,7 @@ DiskCacheNode::addAcceptedComponents(int /*inputNb*/,std::list<ImageComponents>*
 void
 DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
-    depths->push_back(Natron::eImageBitDepthFloat);
+    depths->push_back(eImageBitDepthFloat);
 }
 
 bool
@@ -77,9 +77,9 @@ DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,double /*time
 void
 DiskCacheNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = Natron::createKnob<KnobPage>(this, "Controls");
+    boost::shared_ptr<KnobPage> page = natronCreateKnob<KnobPage>(this, "Controls");
     
-    boost::shared_ptr<KnobChoice> frameRange = Natron::createKnob<KnobChoice>(this, "Frame range");
+    boost::shared_ptr<KnobChoice> frameRange = natronCreateKnob<KnobChoice>(this, "Frame range");
     frameRange->setName("frameRange");
     frameRange->setAnimationEnabled(false);
     std::vector<std::string> choices;
@@ -92,7 +92,7 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(frameRange);
     _imp->frameRange = frameRange;
     
-    boost::shared_ptr<KnobInt> firstFrame = Natron::createKnob<KnobInt>(this, "First frame");
+    boost::shared_ptr<KnobInt> firstFrame = natronCreateKnob<KnobInt>(this, "First frame");
     firstFrame->setAnimationEnabled(false);
     firstFrame->setName("firstFrame");
     firstFrame->disableSlider();
@@ -103,7 +103,7 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(firstFrame);
     _imp->firstFrame = firstFrame;
     
-    boost::shared_ptr<KnobInt> lastFrame = Natron::createKnob<KnobInt>(this, "Last frame");
+    boost::shared_ptr<KnobInt> lastFrame = natronCreateKnob<KnobInt>(this, "Last frame");
     lastFrame->setAnimationEnabled(false);
     lastFrame->setName("LastFrame");
     lastFrame->disableSlider();
@@ -113,7 +113,7 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(lastFrame);
     _imp->lastFrame = lastFrame;
     
-    boost::shared_ptr<KnobButton> preRender = Natron::createKnob<KnobButton>(this, "Pre-cache");
+    boost::shared_ptr<KnobButton> preRender = natronCreateKnob<KnobButton>(this, "Pre-cache");
     preRender->setName("preRender");
     preRender->setEvaluateOnChange(false);
     preRender->setHintToolTip("Cache the frame range specified by rendering images at zoom-level 100% only.");

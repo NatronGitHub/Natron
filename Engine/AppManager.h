@@ -68,7 +68,7 @@ struct AppInstanceRef
 class GlobalOFXTLS
 {
 public:
-    Natron::OfxImageEffectInstance* lastEffectCallingMainEntry;
+    OfxImageEffectInstance* lastEffectCallingMainEntry;
     
     ///Stored as int, because we need -1; list because we need it recursive for the multiThread func
     std::list<int> threadIndexes;
@@ -147,7 +147,7 @@ public:
     {
     }
 
-    boost::shared_ptr<Natron::EffectInstance> createOFXEffect(boost::shared_ptr<Natron::Node> node,
+    boost::shared_ptr<Natron::EffectInstance> createOFXEffect(boost::shared_ptr<Node> node,
                                             const NodeSerialization* serialization,
                                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                             bool allowFileDialogs,
@@ -166,13 +166,13 @@ public:
 
     const std::map<int,AppInstanceRef> & getAppInstances() const WARN_UNUSED_RETURN;
     AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
-    const Natron::PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
+    const PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
     QMutex* getMutexForPlugin(const QString & pluginId,int major,int minor) const WARN_UNUSED_RETURN;
-    Natron::Plugin* getPluginBinary(const QString & pluginId,
+    Plugin* getPluginBinary(const QString & pluginId,
                                     int majorVersion,
                                     int minorVersion,
                                     bool convertToLowerCase) const WARN_UNUSED_RETURN;
-    Natron::Plugin* getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
+    Plugin* getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,int minorVersion) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format* findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
@@ -181,25 +181,25 @@ public:
     /**
      * @brief Attempts to load an image from cache, returns true if it could find a matching image, false otherwise.
      **/
-    bool getImage(const Natron::ImageKey & key,std::list<boost::shared_ptr<Natron::Image> >* returnValue) const;
+    bool getImage(const ImageKey & key,std::list<boost::shared_ptr<Image> >* returnValue) const;
 
     /**
      * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
      **/
-    bool getImageOrCreate(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
-                          boost::shared_ptr<Natron::Image>* returnValue) const;
+    bool getImageOrCreate(const ImageKey & key,const boost::shared_ptr<ImageParams>& params,
+                          boost::shared_ptr<Image>* returnValue) const;
     
-    bool getImage_diskCache(const Natron::ImageKey & key,std::list<boost::shared_ptr<Natron::Image> >* returnValue) const;
+    bool getImage_diskCache(const ImageKey & key,std::list<boost::shared_ptr<Image> >* returnValue) const;
     
-    bool getImageOrCreate_diskCache(const Natron::ImageKey & key,const boost::shared_ptr<Natron::ImageParams>& params,
-                          boost::shared_ptr<Natron::Image>* returnValue) const;
+    bool getImageOrCreate_diskCache(const ImageKey & key,const boost::shared_ptr<ImageParams>& params,
+                          boost::shared_ptr<Image>* returnValue) const;
     
 
-    bool getTexture(const Natron::FrameKey & key,
-                    boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
+    bool getTexture(const FrameKey & key,
+                    boost::shared_ptr<FrameEntry>* returnValue) const;
 
-    bool getTextureOrCreate(const Natron::FrameKey & key,const boost::shared_ptr<Natron::FrameParams>& params,
-                            boost::shared_ptr<Natron::FrameEntry>* returnValue) const;
+    bool getTextureOrCreate(const FrameKey & key,const boost::shared_ptr<Natron::FrameParams>& params,
+                            boost::shared_ptr<FrameEntry>* returnValue) const;
 
     U64 getCachesTotalMemorySize() const;
 
@@ -213,8 +213,8 @@ public:
 
     void setPlaybackCacheMaximumSize(double p);
 
-    void removeFromNodeCache(const boost::shared_ptr<Natron::Image> & image);
-    void removeFromViewerCache(const boost::shared_ptr<Natron::FrameEntry> & texture);
+    void removeFromNodeCache(const boost::shared_ptr<Image> & image);
+    void removeFromViewerCache(const boost::shared_ptr<FrameEntry> & texture);
     
     void removeFromNodeCache(U64 hash);
     void removeFromViewerCache(U64 hash);
@@ -284,13 +284,13 @@ public:
     
     virtual void showOfxLog() {}
 
-    virtual void debugImage(const Natron::Image* /*image*/,
+    virtual void debugImage(const Image* /*image*/,
                             const RectI& /*roi*/,
                             const QString & /*filename = QString()*/) const
     {
     }
 
-    Natron::Plugin* registerPlugin(const QStringList & groups,
+    Plugin* registerPlugin(const QStringList & groups,
                                    const QString & pluginID,
                                    const QString & pluginLabel,
                                    const QString & pluginIconPath,
@@ -357,7 +357,7 @@ public:
      **/
     int getNRunningThreads() const;
     
-    void setThreadAsActionCaller(Natron::OfxImageEffectInstance* instance, bool actionCaller);
+    void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
 
     /**
      * @brief Returns a list of IDs of all the plug-ins currently loaded.
@@ -449,7 +449,7 @@ public:
     void setOnProjectLoadedCallback(const std::string& pythonFunc);
     void setOnProjectCreatedCallback(const std::string& pythonFunc);
     
-    void requestOFXDIalogOnMainThread(Natron::OfxImageEffectInstance* instance, void* instanceData);
+    void requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
     
     
     ///Closes the application not saving any projects.
@@ -488,7 +488,7 @@ public Q_SLOTS:
     
     void onCrashReporterNoLongerResponding();
     
-    void onOFXDialogOnMainThreadReceived(Natron::OfxImageEffectInstance* instance, void* instanceData);
+    void onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, void* instanceData);
 
     
 Q_SIGNALS:
@@ -496,7 +496,7 @@ Q_SIGNALS:
 
     void checkerboardSettingsChanged();
     
-    void s_requestOFXDialogOnMainThread(Natron::OfxImageEffectInstance* instance, void* instanceData);
+    void s_requestOFXDialogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
     
 protected:
 
@@ -518,12 +518,12 @@ protected:
     {
     }
 
-    virtual void ignorePlugin(Natron::Plugin* /*plugin*/)
+    virtual void ignorePlugin(Plugin* /*plugin*/)
     {
         
     }
     
-    virtual void onPluginLoaded(Natron::Plugin* /*plugin*/) {}
+    virtual void onPluginLoaded(Plugin* /*plugin*/) {}
     
     virtual void onAllPluginsLoaded();
     
@@ -563,27 +563,27 @@ struct PyCallback
     PyCallback() : expression(), originalExpression(),  code(0){}
 };
     
-void errorDialog(const std::string & title,const std::string & message, bool useHtml = false);
-void errorDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
+void natronErrorDialog(const std::string & title,const std::string & message, bool useHtml = false);
+void natronErrorDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
 
-void warningDialog(const std::string & title,const std::string & message, bool useHtml = false);
-void warningDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
+void natronWarningDialog(const std::string & title,const std::string & message, bool useHtml = false);
+void natronWarningDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
 
-void informationDialog(const std::string & title,const std::string & message, bool useHtml = false);
-void informationDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
+void natronInformationDialog(const std::string & title,const std::string & message, bool useHtml = false);
+void natronInformationDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
 
-StandardButtonEnum questionDialog(const std::string & title,const std::string & message, bool useHtml,
-                                          Natron::StandardButtons buttons =
-                                          Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                      StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
+StandardButtonEnum natronQuestionDialog(const std::string & title,const std::string & message, bool useHtml,
+                                          StandardButtons buttons =
+                                          StandardButtons(eStandardButtonYes | eStandardButtonNo),
+                                      StandardButtonEnum defaultButton = eStandardButtonNoButton);
     
-StandardButtonEnum questionDialog(const std::string & title,const std::string & message, bool useHtml,
-                                          Natron::StandardButtons buttons,
+StandardButtonEnum natronQuestionDialog(const std::string & title,const std::string & message, bool useHtml,
+                                          StandardButtons buttons,
                                           StandardButtonEnum defaultButton,
                                           bool* stopAsking);
 
 template <class K>
-boost::shared_ptr<K> createKnob(KnobHolder*  holder,
+boost::shared_ptr<K> natronCreateKnob(KnobHolder*  holder,
                                 const std::string &label,
                                 int dimension = 1,
                                 bool declaredByPlugin = true)
@@ -592,47 +592,47 @@ boost::shared_ptr<K> createKnob(KnobHolder*  holder,
 }
 
 inline bool
-getImageFromCache(const Natron::ImageKey & key,
-                  std::list<boost::shared_ptr<Natron::Image> >* returnValue)
+natronGetImageFromCache(const ImageKey & key,
+                  std::list<boost::shared_ptr<Image> >* returnValue)
 {
     return appPTR->getImage(key, returnValue);
 }
 
 inline bool
-getImageFromCacheOrCreate(const Natron::ImageKey & key,
-                          const boost::shared_ptr<Natron::ImageParams>& params,
-                          boost::shared_ptr<Natron::Image>* returnValue)
+natronGetImageFromCacheOrCreate(const ImageKey & key,
+                          const boost::shared_ptr<ImageParams>& params,
+                          boost::shared_ptr<Image>* returnValue)
 {
     return appPTR->getImageOrCreate(key,params, returnValue);
 }
     
 inline bool
-getImageFromDiskCache(const Natron::ImageKey & key,
-                      std::list<boost::shared_ptr<Natron::Image> >* returnValue)
+natronGetImageFromDiskCache(const ImageKey & key,
+                      std::list<boost::shared_ptr<Image> >* returnValue)
 {
     return appPTR->getImage_diskCache(key, returnValue);
 }
     
 inline bool
-getImageFromDiskCacheOrCreate(const Natron::ImageKey & key,
-                              const boost::shared_ptr<Natron::ImageParams>& params,
-                              boost::shared_ptr<Natron::Image>* returnValue)
+natronGetImageFromDiskCacheOrCreate(const ImageKey & key,
+                              const boost::shared_ptr<ImageParams>& params,
+                              boost::shared_ptr<Image>* returnValue)
 {
     return appPTR->getImageOrCreate_diskCache(key,params, returnValue);
 }
     
 
 inline bool
-getTextureFromCache(const Natron::FrameKey & key,
-                    boost::shared_ptr<Natron::FrameEntry>* returnValue)
+natronGetTextureFromCache(const FrameKey & key,
+                    boost::shared_ptr<FrameEntry>* returnValue)
 {
     return appPTR->getTexture(key,returnValue);
 }
 
 inline bool
-getTextureFromCacheOrCreate(const Natron::FrameKey & key,
+natronGetTextureFromCacheOrCreate(const FrameKey & key,
                             const boost::shared_ptr<Natron::FrameParams> &params,
-                            boost::shared_ptr<Natron::FrameEntry>* returnValue)
+                            boost::shared_ptr<FrameEntry>* returnValue)
 {
     return appPTR->getTextureOrCreate(key,params, returnValue);
 }

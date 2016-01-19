@@ -37,17 +37,17 @@ class BlockingBackgroundRender
     bool _running;
     QWaitCondition _runningCond;
     QMutex _runningMutex;
-    Natron::OutputEffectInstance* _writer;
+    OutputEffectInstance* _writer;
 
 public:
 
-    BlockingBackgroundRender(Natron::OutputEffectInstance* writer);
+    BlockingBackgroundRender(OutputEffectInstance* writer);
 
     virtual ~BlockingBackgroundRender()
     {
     }
 
-    Natron::OutputEffectInstance* getWriter() const
+    OutputEffectInstance* getWriter() const
     {
         return _writer;
     }

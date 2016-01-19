@@ -37,12 +37,12 @@ class RotoPaint : public Natron::EffectInstance
 {
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new RotoPaint(n, true);
     }
     
-    RotoPaint(boost::shared_ptr<Natron::Node> node, bool isPaintByDefault);
+    RotoPaint(boost::shared_ptr<Node> node, bool isPaintByDefault);
     
     virtual ~RotoPaint();
     
@@ -172,13 +172,13 @@ class RotoNode : public RotoPaint
     
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new RotoNode(n);
     }
 
     
-    RotoNode(boost::shared_ptr<Natron::Node> node) : RotoPaint(node, false) {}
+    RotoNode(boost::shared_ptr<Node> node) : RotoPaint(node, false) {}
     
     virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN;
     

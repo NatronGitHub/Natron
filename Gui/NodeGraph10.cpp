@@ -215,10 +215,10 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         _imp->setNodesBendPointsVisible(false);
         
         ///Now connect the node to the edge input
-        boost::shared_ptr<Natron::Node> inputNode = selectedBendPoint->getSource()->getNode();
+        boost::shared_ptr<Node> inputNode = selectedBendPoint->getSource()->getNode();
         assert(inputNode);
         ///disconnect previous connection
-        boost::shared_ptr<Natron::Node> outputNode = selectedBendPoint->getDest()->getNode();
+        boost::shared_ptr<Node> outputNode = selectedBendPoint->getDest()->getNode();
         assert(outputNode);
         int inputNb = outputNode->inputIndex( inputNode.get() );
         if (inputNb == -1) {
@@ -238,7 +238,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                             QString(),
                             CreateNodeArgs::DefaultValuesList(),
                             _imp->group.lock());
-        boost::shared_ptr<Natron::Node> dotNode = getGui()->getApp()->createNode(args);
+        boost::shared_ptr<Node> dotNode = getGui()->getApp()->createNode(args);
         assert(dotNode);
         boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
         boost::shared_ptr<NodeGui> dotNodeGui = boost::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);

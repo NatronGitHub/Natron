@@ -132,7 +132,7 @@ private:
         ///This contains the output nodes whose input should be reconnected to this node afterwards.
         ///This list contains only nodes that are not part of the selection: we restore only the
         ///inputs of the outputs nodes of the graph that were not removed
-        std::list<Natron::Node* > outputsToRestore;
+        std::list<Node* > outputsToRestore;
         boost::weak_ptr<NodeGui> node;
     };
 
@@ -237,7 +237,7 @@ private:
     struct NodeToDeclone
     {
         boost::weak_ptr<NodeGui> node;
-        boost::weak_ptr<Natron::Node> master;
+        boost::weak_ptr<Node> master;
     };
 
   
@@ -315,13 +315,13 @@ public:
 
 private:
     
-    void getListAsShared(const std::list< boost::weak_ptr<Natron::Node> >& original,
-                         std::list< boost::shared_ptr<Natron::Node> >& shared) const;
+    void getListAsShared(const std::list< boost::weak_ptr<Node> >& original,
+                         std::list< boost::shared_ptr<Node> >& shared) const;
     
     bool _firstRedoCalled;
     bool _isUndone;
     boost::weak_ptr<NodeGui> _node;
-    std::list< boost::weak_ptr<Natron::Node> > _oldChildren,_newChildren; //< children if multi-instance
+    std::list< boost::weak_ptr<Node> > _oldChildren,_newChildren; //< children if multi-instance
     std::list<boost::shared_ptr<NodeSerialization> > _newSerializations,_oldSerialization;
 };
 
@@ -347,13 +347,13 @@ private:
 struct ExtractedOutput
 {
     boost::weak_ptr<NodeGui> node;
-    std::list<std::pair<int,Natron::Node*> > outputs;
+    std::list<std::pair<int,Node*> > outputs;
 };
 
 struct ExtractedInput
 {
     boost::weak_ptr<NodeGui> node;
-    std::vector<boost::weak_ptr<Natron::Node> > inputs;
+    std::vector<boost::weak_ptr<Node> > inputs;
 };
 
 struct ExtractedTree

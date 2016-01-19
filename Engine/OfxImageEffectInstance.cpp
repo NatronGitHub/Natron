@@ -331,7 +331,7 @@ OfxImageEffectInstance::getRenderScaleRecursive(double &x,
     if ( !attachedViewers.empty() ) {
         ViewerInstance* first = attachedViewers.front();
         int mipMapLevel = first->getMipMapLevel();
-        x = Natron::Image::getScaleFromMipMapLevel( (unsigned int)mipMapLevel );
+        x = Image::getScaleFromMipMapLevel( (unsigned int)mipMapLevel );
         y = x;
     } else {
         x = 1.;
@@ -675,7 +675,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
             int layoutHint = (*it)->getProperties().getIntProperty(kOfxParamPropLayoutHint);
             if (layoutHint == kOfxParamPropLayoutHintDivider) {
                 
-                boost::shared_ptr<KnobSeparator> sep = Natron::createKnob<KnobSeparator>( getOfxEffectInstance(),"");
+                boost::shared_ptr<KnobSeparator> sep = natronCreateKnob<KnobSeparator>( getOfxEffectInstance(),"");
                 sep->setName((*it)->getName() + "_separator");
                 if (grp) {
                     grp->addKnob(sep);
@@ -720,7 +720,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                         
                             if (child->isSeparatorActivated()) {
                     
-                                boost::shared_ptr<KnobSeparator> sep = Natron::createKnob<KnobSeparator>( getOfxEffectInstance(),"");
+                                boost::shared_ptr<KnobSeparator> sep = natronCreateKnob<KnobSeparator>( getOfxEffectInstance(),"");
                                 sep->setName(child->getName() + "_separator");
                                 pageKnob->addKnob(sep);
                             }
@@ -861,7 +861,7 @@ OfxImageEffectInstance::newMemoryInstance(size_t nBytes)
     bool allocated = ret->alloc(nBytes);
 
     if ((nBytes != 0 && !ret->getPtr()) || !allocated) {
-        Natron::errorDialog(QObject::tr("Out of memory").toStdString(), getOfxEffectInstance()->getNode()->getLabel_mt_safe() + QObject::tr(" failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
+        natronErrorDialog(QObject::tr("Out of memory").toStdString(), getOfxEffectInstance()->getNode()->getLabel_mt_safe() + QObject::tr(" failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
     }
 
     return ret;

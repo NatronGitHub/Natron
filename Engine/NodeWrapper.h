@@ -207,15 +207,15 @@ public:
 
 class Effect : public Group, public UserParamHolder
 {
-    boost::shared_ptr<Natron::Node> _node;
+    boost::shared_ptr<Node> _node;
     
 public:
     
-    Effect(const boost::shared_ptr<Natron::Node>& node);
+    Effect(const boost::shared_ptr<Node>& node);
     
     ~Effect();
     
-    boost::shared_ptr<Natron::Node> getInternalNode() const;
+    boost::shared_ptr<Node> getInternalNode() const;
     
     
     /**

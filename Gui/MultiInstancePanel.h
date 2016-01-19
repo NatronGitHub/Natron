@@ -66,19 +66,19 @@ public:
 
     bool isGuiCreated() const;
 
-    void addRow(const boost::shared_ptr<Natron::Node> & node);
+    void addRow(const boost::shared_ptr<Node> & node);
 
     void removeRow(int index);
 
-    int getNodeIndex(const boost::shared_ptr<Natron::Node> & node) const;
+    int getNodeIndex(const boost::shared_ptr<Node> & node) const;
 
-    const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > > & getInstances() const;
+    const std::list< std::pair<boost::weak_ptr<Node>,bool > > & getInstances() const;
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
-    boost::shared_ptr<Natron::Node> getMainInstance() const;
+    boost::shared_ptr<Node> getMainInstance() const;
     
     boost::shared_ptr<NodeGui> getMainInstanceGui() const;
 
-    void getSelectedInstances(std::list<Natron::Node*>* instances) const;
+    void getSelectedInstances(std::list<Node*>* instances) const;
 
     void resetAllInstances();
 
@@ -88,22 +88,22 @@ public:
     {
     }
 
-    boost::shared_ptr<Natron::Node> createNewInstance(bool useUndoRedoStack);
+    boost::shared_ptr<Node> createNewInstance(bool useUndoRedoStack);
 
-    void selectNode(const boost::shared_ptr<Natron::Node> & node,bool addToSelection);
+    void selectNode(const boost::shared_ptr<Node> & node,bool addToSelection);
 
-    void selectNodes(const std::list<Natron::Node*> & nodes,bool addToSelection);
+    void selectNodes(const std::list<Node*> & nodes,bool addToSelection);
 
-    void removeNodeFromSelection(const boost::shared_ptr<Natron::Node> & node);
+    void removeNodeFromSelection(const boost::shared_ptr<Node> & node);
 
     void clearSelection();
 
     bool isSettingsPanelVisible() const;
         
-    void removeInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances);
-    void addInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances);
+    void removeInstances(const std::list<boost::shared_ptr<Node> >& instances);
+    void addInstances(const std::list<boost::shared_ptr<Node> >& instances);
 
-    void onChildCreated(const boost::shared_ptr<Natron::Node>& node);
+    void onChildCreated(const boost::shared_ptr<Node>& node);
     
     void setRedrawOnSelectionChanged(bool redraw);
     
@@ -141,12 +141,12 @@ protected:
     {
     }
 
-    boost::shared_ptr<Natron::Node> addInstanceInternal(bool useUndoRedoStack);
+    boost::shared_ptr<Node> addInstanceInternal(bool useUndoRedoStack);
     virtual void initializeExtraKnobs()
     {
     }
 
-    virtual void showMenuForInstance(Natron::Node* /*instance*/)
+    virtual void showMenuForInstance(Node* /*instance*/)
     {
     }
 
@@ -154,7 +154,7 @@ private:
 
     virtual void onButtonTriggered(KnobButton* button);
 
-    void resetInstances(const std::list<Natron::Node*> & instances);
+    void resetInstances(const std::list<Node*> & instances);
 
     void removeInstancesInternal();
 
@@ -217,7 +217,7 @@ private:
     virtual void appendButtons(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
     virtual void setIconForButton(KnobButton* knob) OVERRIDE FINAL;
     virtual void onButtonTriggered(KnobButton* button) OVERRIDE FINAL;
-    virtual void showMenuForInstance(Natron::Node* item) OVERRIDE FINAL;
+    virtual void showMenuForInstance(Node* item) OVERRIDE FINAL;
 
     boost::scoped_ptr<TrackerPanelPrivate> _imp;
 };

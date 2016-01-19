@@ -55,19 +55,19 @@ protected:
 
     ///Useful function to create a node for all the tests.
     ///You should not call this function
-    boost::shared_ptr<Natron::Node> createNode(const QString & pluginID,int majorVersion = -1,int minorVersion = -1);
+    boost::shared_ptr<Node> createNode(const QString & pluginID,int majorVersion = -1,int minorVersion = -1);
 
     ///Useful function to connect 2 nodes together. It connects the input number inputNumber of
     ///output to the node input. expectedReturnValue is expected to have the same value as the return
     ///value of the underlying connect call. That means that if expectedReturnValue is true, the
     ///connection is expected to succeed, and vice versa.
-    void connectNodes(boost::shared_ptr<Natron::Node> input,boost::shared_ptr<Natron::Node> output,
+    void connectNodes(boost::shared_ptr<Node> input,boost::shared_ptr<Node> output,
                       int inputNumber,bool expectedReturnValue);
 
     ///Useful function to disconnect 2 nodes together. expectedReturnValue is expected to have the same value as the return
     ///value of the underlying disconnect call. That means that if expectedReturnValue is true, the
     ///disconnection is expected to succeed, and vice versa.
-    void disconnectNodes(boost::shared_ptr<Natron::Node> input,boost::shared_ptr<Natron::Node> output,bool expectedReturnvalue);
+    void disconnectNodes(boost::shared_ptr<Node> input,boost::shared_ptr<Node> output,bool expectedReturnvalue);
 
     void registerTestPlugins();
 

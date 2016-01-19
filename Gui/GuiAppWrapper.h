@@ -39,12 +39,12 @@ NATRON_NAMESPACE_ENTER;
 class PyViewer
 {
     
-    boost::shared_ptr<Natron::Node> _node;
+    boost::shared_ptr<Node> _node;
     ViewerTab* _viewer;
     
 public:
     
-    PyViewer(const boost::shared_ptr<Natron::Node>& node);
+    PyViewer(const boost::shared_ptr<Node>& node);
     
     ~PyViewer();
     

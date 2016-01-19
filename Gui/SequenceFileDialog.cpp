@@ -2899,7 +2899,7 @@ SequenceFileDialog::onSelectionLineEditing(const QString & text)
         return;
     }
     QString textCpy = text;
-    QString extension = Natron::removeFileExtension(textCpy);
+    QString extension = removeFileExtension(textCpy);
     for (int i = 0; i < _fileExtensionCombo->count(); ++i) {
         if (_fileExtensionCombo->itemText(i) == extension) {
             _fileExtensionCombo->setCurrentIndex_no_emit(i);
@@ -2999,7 +2999,7 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
         if ( found == readersForFormat.end() ) {
             return boost::shared_ptr<NodeGui>();
         }
-        std::map<std::string,std::pair< boost::shared_ptr<Natron::Node>, boost::shared_ptr<NodeGui> > >::iterator foundReader = _preview->readerNodes.find(found->second);
+        std::map<std::string,std::pair< boost::shared_ptr<Node>, boost::shared_ptr<NodeGui> > >::iterator foundReader = _preview->readerNodes.find(found->second);
         if (foundReader == _preview->readerNodes.end()) {
             
             CreateNodeArgs args(found->second.c_str(),
@@ -3015,7 +3015,7 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
                                 CreateNodeArgs::DefaultValuesList(),
                                 _gui->getApp()->getProject());
             
-            boost::shared_ptr<Natron::Node> reader = _gui->getApp()->createNode(args);
+            boost::shared_ptr<Node> reader = _gui->getApp()->createNode(args);
             boost::shared_ptr<NodeGuiI> readerGui_i = reader->getNodeGui();
             boost::shared_ptr<NodeGui> readerGui = boost::dynamic_pointer_cast<NodeGui>(readerGui_i);
             assert(readerGui);
@@ -3038,10 +3038,10 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
     
     std::string pattern = selectedFiles();
     QString qpattern( pattern.c_str() );
-    std::string ext = Natron::removeFileExtension(qpattern).toLower().toStdString();
+    std::string ext = removeFileExtension(qpattern).toLower().toStdString();
     assert(_preview->viewerNode);
     
-    boost::shared_ptr<Natron::Node> currentInput = _preview->viewerNode->getNode()->getInput(0);
+    boost::shared_ptr<Node> currentInput = _preview->viewerNode->getNode()->getInput(0);
     if (currentInput) {
         _preview->viewerNode->getNode()->disconnectInput(0);
     }

@@ -532,7 +532,7 @@ enum DopeSheetItemType
     
 NATRON_NAMESPACE_EXIT;
 
-Q_DECLARE_METATYPE(Natron::StandardButtons)
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::StandardButtons)
 
 
 #endif // NATRON_GLOBAL_ENUMS_H

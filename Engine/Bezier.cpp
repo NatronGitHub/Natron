@@ -534,7 +534,7 @@ bezierSegmentMeetsPoint(bool useGuiCurves,
     double incr = length == 0. ? 1. : distance / length;
     
     
-    Natron::Point p02d, p12d, p22d, p32d;
+    Point p02d, p12d, p22d, p32d;
     {
         p02d.x = p0.x; p02d.y = p0.y;
         p12d.x = p1.x; p12d.y = p1.y;
@@ -2201,7 +2201,7 @@ Bezier::deCastelJau(bool useGuiCurves,
                     bool finished,
                     int nBPointsPerSegment,
                     const Transform::Matrix3x3& transform,
-                    std::list<Natron::Point>* points, RectD* bbox)
+                    std::list<Point>* points, RectD* bbox)
 {
     BezierCPs::const_iterator next = cps.begin();
     
@@ -2231,7 +2231,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
                                    double time,
                                    unsigned int mipMapLevel,
                                    int nbPointsPerSegment,
-                                   std::list< Natron::Point >* points,
+                                   std::list< Point >* points,
                                    RectD* bbox) const
 {
     Transform::Matrix3x3 transform;
@@ -2244,7 +2244,7 @@ void
 Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiPoints,
                                                 double time,
                                              unsigned int mipMapLevel,
-                                             std::list<Natron::Point>* points,
+                                             std::list<Point>* points,
                                              RectD* bbox) const
 {
     evaluateAtTime_DeCasteljau(useGuiPoints,time, mipMapLevel, -1, points, bbox);
@@ -2256,7 +2256,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiPoints,
                                                 unsigned int mipMapLevel,
                                                 int nbPointsPerSegment,
                                                 bool evaluateIfEqual, ///< evaluate only if feather points are different from control points
-                                                std::list< Natron::Point >* points, ///< output
+                                                std::list< Point >* points, ///< output
                                                 RectD* bbox) const ///< output
 {
     assert(useFeatherPoints());

@@ -235,7 +235,7 @@ PickKnobDialog::onNodeComboEditingFinished()
     QString index = _imp->nodeSelectionCombo->text();
     _imp->knobSelectionCombo->clear();
     _imp->allKnobs.clear();
-    boost::shared_ptr<Natron::Node> selectedNode;
+    boost::shared_ptr<Node> selectedNode;
     std::string currentNodeName = index.toStdString();
     for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
         if ((*it)->getLabel() == currentNodeName) {
@@ -309,7 +309,7 @@ KnobGui*
 PickKnobDialog::getSelectedKnob(bool* makeAlias,boost::shared_ptr<KnobPage>* page,boost::shared_ptr<KnobGroup>* group) const
 {
     QString index = _imp->nodeSelectionCombo->text();
-    boost::shared_ptr<Natron::Node> selectedNode;
+    boost::shared_ptr<Node> selectedNode;
     std::string currentNodeName = index.toStdString();
     for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
         if ((*it)->getLabel() == currentNodeName) {

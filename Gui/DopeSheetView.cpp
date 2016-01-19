@@ -760,28 +760,28 @@ DopeSheetViewPrivate::KeyframeTexture DopeSheetViewPrivate::kfTextureFromKeyfram
     DopeSheetViewPrivate::KeyframeTexture ret = DopeSheetViewPrivate::kfTextureNone;
 
     switch (kfType) {
-    case Natron::eKeyframeTypeConstant:
+    case eKeyframeTypeConstant:
         ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpConstantSelected : DopeSheetViewPrivate::kfTextureInterpConstant;
         break;
-    case Natron::eKeyframeTypeLinear:
+    case eKeyframeTypeLinear:
         ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpLinearSelected : DopeSheetViewPrivate::kfTextureInterpLinear;
         break;
-    case Natron::eKeyframeTypeBroken:
+    case eKeyframeTypeBroken:
         ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpBreakSelected : DopeSheetViewPrivate::kfTextureInterpBreak;
         break;
-    case Natron::eKeyframeTypeFree:
+    case eKeyframeTypeFree:
         ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpCurveSelected : DopeSheetViewPrivate::kfTextureInterpCurve;
         break;
-    case Natron::eKeyframeTypeSmooth:
+    case eKeyframeTypeSmooth:
         ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpCurveZSelected : DopeSheetViewPrivate::kfTextureInterpCurveZ;
         break;
-    case Natron::eKeyframeTypeCatmullRom:
+    case eKeyframeTypeCatmullRom:
         ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpCurveRSelected : DopeSheetViewPrivate::kfTextureInterpCurveR;
         break;
-    case Natron::eKeyframeTypeCubic:
+    case eKeyframeTypeCubic:
         ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpCurveCSelected : DopeSheetViewPrivate::kfTextureInterpCurveC;
         break;
-    case Natron::eKeyframeTypeHorizontal:
+    case eKeyframeTypeHorizontal:
         ret = (selected) ? DopeSheetViewPrivate::kfTextureInterpCurveHSelected : DopeSheetViewPrivate::kfTextureInterpCurveH;
         break;
     default:
@@ -2238,7 +2238,7 @@ void DopeSheetViewPrivate::createSelectionFromRect(const RectD &zoomCoordsRect, 
 
 void DopeSheetViewPrivate::moveCurrentFrameIndicator(double dt)
 {
-    gui->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Natron::Node>());
+    gui->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Node>());
 
     double toTime = timeline->currentFrame() + dt;
     
@@ -2448,7 +2448,7 @@ DopeSheetView::DopeSheetView(DopeSheet *model, HierarchyView *hierarchyView,
         connect(timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimeLineFrameChanged(SequenceTime,int)));
         connect(project.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(onTimeLineBoundariesChanged(int,int)));
 
-        onTimeLineFrameChanged(timeline->currentFrame(), Natron::eValueChangedReasonNatronGuiEdited);
+        onTimeLineFrameChanged(timeline->currentFrame(), eValueChangedReasonNatronGuiEdited);
 
         double left,right;
         project->getFrameRange(&left, &right);
@@ -2698,49 +2698,49 @@ void DopeSheetView::constantInterpSelectedKeyframes()
 {
     running_in_main_thread();
 
-    _imp->model->setSelectedKeysInterpolation(Natron::eKeyframeTypeConstant);
+    _imp->model->setSelectedKeysInterpolation(eKeyframeTypeConstant);
 }
 
 void DopeSheetView::linearInterpSelectedKeyframes()
 {
     running_in_main_thread();
 
-    _imp->model->setSelectedKeysInterpolation(Natron::eKeyframeTypeLinear);
+    _imp->model->setSelectedKeysInterpolation(eKeyframeTypeLinear);
 }
 
 void DopeSheetView::smoothInterpSelectedKeyframes()
 {
     running_in_main_thread();
 
-    _imp->model->setSelectedKeysInterpolation(Natron::eKeyframeTypeSmooth);
+    _imp->model->setSelectedKeysInterpolation(eKeyframeTypeSmooth);
 }
 
 void DopeSheetView::catmullRomInterpSelectedKeyframes()
 {
     running_in_main_thread();
 
-    _imp->model->setSelectedKeysInterpolation(Natron::eKeyframeTypeCatmullRom);
+    _imp->model->setSelectedKeysInterpolation(eKeyframeTypeCatmullRom);
 }
 
 void DopeSheetView::cubicInterpSelectedKeyframes()
 {
     running_in_main_thread();
 
-    _imp->model->setSelectedKeysInterpolation(Natron::eKeyframeTypeCubic);
+    _imp->model->setSelectedKeysInterpolation(eKeyframeTypeCubic);
 }
 
 void DopeSheetView::horizontalInterpSelectedKeyframes()
 {
     running_in_main_thread();
 
-    _imp->model->setSelectedKeysInterpolation(Natron::eKeyframeTypeHorizontal);
+    _imp->model->setSelectedKeysInterpolation(eKeyframeTypeHorizontal);
 }
 
 void DopeSheetView::breakInterpSelectedKeyframes()
 {
     running_in_main_thread();
 
-    _imp->model->setSelectedKeysInterpolation(Natron::eKeyframeTypeBroken);
+    _imp->model->setSelectedKeysInterpolation(eKeyframeTypeBroken);
 }
 
 void DopeSheetView::copySelectedKeyframes()

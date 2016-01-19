@@ -59,7 +59,7 @@ RotoPaint::getPluginDescription() const
     return "RotoPaint is a vector based free-hand drawing node that helps for tasks such as rotoscoping, matting, etc...";
 }
 
-RotoPaint::RotoPaint(boost::shared_ptr<Natron::Node> node, bool isPaintByDefault)
+RotoPaint::RotoPaint(boost::shared_ptr<Node> node, bool isPaintByDefault)
 : EffectInstance(node)
 , _imp(new RotoPaintPrivate(isPaintByDefault))
 {
@@ -162,7 +162,7 @@ RotoPaint::addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps)
 void
 RotoPaint::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
-    depths->push_back(Natron::eImageBitDepthFloat);
+    depths->push_back(eImageBitDepthFloat);
 }
 
 void
@@ -172,10 +172,10 @@ RotoPaint::initializeKnobs()
     boost::shared_ptr<KnobPage> generalPage = boost::dynamic_pointer_cast<KnobPage>(getKnobByName("General"));
     assert(generalPage);
 
-    boost::shared_ptr<KnobSeparator> sep = Natron::createKnob<KnobSeparator>(this, "Output", 1, false);
+    boost::shared_ptr<KnobSeparator> sep = natronCreateKnob<KnobSeparator>(this, "Output", 1, false);
     generalPage->addKnob(sep);
     
-    boost::shared_ptr<KnobBool> premultKnob = Natron::createKnob<KnobBool>(this, "Premultiply", 1, false);
+    boost::shared_ptr<KnobBool> premultKnob = natronCreateKnob<KnobBool>(this, "Premultiply", 1, false);
     premultKnob->setName("premultiply");
     premultKnob->setHintToolTip("When checked, the red, green and blue channels in output of this node are premultiplied by the alpha channel."
                                 " This will result in the pixels outside of the shapes and paint strokes "
@@ -281,7 +281,7 @@ RotoPaint::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale
     } else {
         rod->merge(maskRod);
     }
-    return Natron::eStatusOK;
+    return eStatusOK;
 }
 
 FramesNeededMap
@@ -363,7 +363,7 @@ RotoPaint::render(const RenderActionArgs& args)
 
     
     std::list<ImageComponents> neededComps;
-    for (std::list<std::pair<ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
+    for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
          plane != args.outputPlanes.end(); ++plane) {
         neededComps.push_back(plane->first);
     }
@@ -377,7 +377,7 @@ RotoPaint::render(const RenderActionArgs& args)
         RectI bgImgRoI;
         ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, true, &bgImgRoI);
         
-        for (std::list<std::pair<ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
+        for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
             
             if (bgImg) {
@@ -432,18 +432,18 @@ RotoPaint::render(const RenderActionArgs& args)
         ImageList rotoPaintImages;
         RenderRoIRetCode code = bottomMerge->getLiveInstance()->renderRoI(rotoPaintArgs, &rotoPaintImages);
         if (code == eRenderRoIRetCodeFailed) {
-            return Natron::eStatusFailed;
+            return eStatusFailed;
         } else if (code == eRenderRoIRetCodeAborted) {
-            return Natron::eStatusOK;
+            return eStatusOK;
         } else if (rotoPaintImages.empty()) {
-            for (std::list<std::pair<ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
+            for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
                  plane != args.outputPlanes.end(); ++plane) {
                 
                 plane->second->fillZero(args.roi);
                 
                 
             }
-            return Natron::eStatusOK;
+            return eStatusOK;
         }
         assert(rotoPaintImages.size() == args.outputPlanes.size());
         
@@ -454,7 +454,7 @@ RotoPaint::render(const RenderActionArgs& args)
         //bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, &bgImgRoI);
         
         ImageList::iterator rotoImagesIt = rotoPaintImages.begin();
-        for (std::list<std::pair<ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
+        for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane, ++rotoImagesIt) {
             
             if (!(*rotoImagesIt)->getBounds().contains(args.roi)) {
@@ -544,7 +544,7 @@ RotoPaint::render(const RenderActionArgs& args)
         }
     } // RenderingFlagSetter flagIsRendering(bottomMerge.get());
     
-    return Natron::eStatusOK;
+    return eStatusOK;
 }
 
 void

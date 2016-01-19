@@ -537,7 +537,7 @@ KnobButton::typeName() const
 void
 KnobButton::trigger()
 {
-    evaluateValueChange(0, getCurrentTime(),  Natron::eValueChangedReasonUserEdited);
+    evaluateValueChange(0, getCurrentTime(),  eValueChangedReasonUserEdited);
 }
 
 /******************************KnobChoice**************************************/
@@ -1519,7 +1519,7 @@ KnobParametric::addControlPoint(int dimension,
     }
     
     KeyFrame k(key,value);
-    k.setInterpolation(Natron::eKeyframeTypeCubic);
+    k.setInterpolation(eKeyframeTypeCubic);
     _curves[dimension]->addKeyFrame(k);
     Q_EMIT curveChanged(dimension);
     
@@ -1539,7 +1539,7 @@ KnobParametric::addHorizontalControlPoint(int dimension,double key,double value)
     }
     
     KeyFrame k(key,value);
-    k.setInterpolation(Natron::eKeyframeTypeBroken);
+    k.setInterpolation(eKeyframeTypeBroken);
     k.setLeftDerivative(0);
     k.setRightDerivative(0);
     _curves[dimension]->addKeyFrame(k);
@@ -1561,10 +1561,10 @@ KnobParametric::getValue(int dimension,
     try {
         *returnValue = getParametricCurve(dimension)->getValueAt(parametricPosition);
     }catch (...) {
-        return Natron::eStatusFailed;
+        return eStatusFailed;
     }
     
-    return Natron::eStatusOK;
+    return eStatusOK;
 }
 
 StatusEnum

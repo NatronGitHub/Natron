@@ -48,7 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_USING
 using std::cout; using std::endl;
 
-QtReader::QtReader(boost::shared_ptr<Natron::Node> node)
+QtReader::QtReader(boost::shared_ptr<Node> node)
     : Natron::EffectInstance(node)
       , _lut( Color::LutManager::sRGBLut() )
       , _img(0)
@@ -97,7 +97,7 @@ QtReader::getPluginDescription() const
 void
 QtReader::initializeKnobs()
 {
-    Natron::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developers team to test %1"
+    natronWarningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developers team to test %1"
                                                   ". You cannot use it when rendering a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 
@@ -480,7 +480,7 @@ QtReader::render(const RenderActionArgs& args)
         return eStatusFailed; // error
     }
 
-    Natron::Image::WriteAccess acc = output.second->getWriteRights();
+    Image::WriteAccess acc = output.second->getWriteRights();
     
     assert(_img);
     switch ( _img->format() ) {

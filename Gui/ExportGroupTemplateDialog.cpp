@@ -285,12 +285,12 @@ ExportGroupTemplateDialog::onOkClicked()
     QDir d(dirPath);
 
     if (!d.exists()) {
-        Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a directory to save the script").toStdString());
+        natronErrorDialog(tr("Error").toStdString(), tr("You must specify a directory to save the script").toStdString());
         return;
     }
     QString pluginLabel = _imp->labelEdit->text();
     if (pluginLabel.isEmpty()) {
-        Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a label to name the script").toStdString());
+        natronErrorDialog(tr("Error").toStdString(), tr("You must specify a label to name the script").toStdString());
         return;
     } else {
         pluginLabel = Natron::makeNameScriptFriendly(pluginLabel.toStdString()).c_str();
@@ -298,7 +298,7 @@ ExportGroupTemplateDialog::onOkClicked()
 
     QString pluginID = _imp->idEdit->text();
     if (pluginID.isEmpty()) {
-        Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a unique ID to identify the script").toStdString());
+        natronErrorDialog(tr("Error").toStdString(), tr("You must specify a unique ID to identify the script").toStdString());
         return;
     }
 
@@ -311,11 +311,11 @@ ExportGroupTemplateDialog::onOkClicked()
     QStringList filters;
     filters.push_back(QString(pluginLabel + ".py"));
     if (!d.entryList(filters,QDir::Files | QDir::NoDotAndDotDot).isEmpty()) {
-        StandardButtonEnum rep = Natron::questionDialog(tr("Existing plug-in").toStdString(),
+        StandardButtonEnum rep = natronQuestionDialog(tr("Existing plug-in").toStdString(),
                                                                 tr("A group plug-in with the same name already exists "
                                                                    "would you like to "
                                                                    "override it?").toStdString(), false);
-        if  (rep == Natron::eStandardButtonNo) {
+        if  (rep == eStandardButtonNo) {
             return;
         }
     }
@@ -334,10 +334,10 @@ ExportGroupTemplateDialog::onOkClicked()
     if (!foundInPath) {
 
         QString message = dirPath + tr(" does not exist in the group plug-in search path, would you like to add it?");
-        StandardButtonEnum rep = Natron::questionDialog(tr("Plug-in path").toStdString(),
+        StandardButtonEnum rep = natronQuestionDialog(tr("Plug-in path").toStdString(),
                                                                 message.toStdString(), false);
 
-        if  (rep == Natron::eStandardButtonYes) {
+        if  (rep == eStandardButtonYes) {
             appPTR->getCurrentSettings()->appendPythonGroupsPath(dirPath.toStdString());
         }
 
@@ -345,7 +345,7 @@ ExportGroupTemplateDialog::onOkClicked()
 
     QFile file(filePath);
     if (!file.open(QIODevice::ReadWrite | QIODevice::Truncate)) {
-        Natron::errorDialog(tr("Error").toStdString(), QString(tr("Cannot open ") + filePath).toStdString());
+        natronErrorDialog(tr("Error").toStdString(), QString(tr("Cannot open ") + filePath).toStdString());
         return;
     }
 

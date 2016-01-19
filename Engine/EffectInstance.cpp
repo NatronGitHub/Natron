@@ -83,7 +83,7 @@ class KnobOutputFile;
 
 void
 EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,
-                                                    const boost::shared_ptr<Natron::Image> & img)
+                                                    const boost::shared_ptr<Image> & img)
 {
     _imp->addInputImageTempPointer(inputNb, img);
 }
@@ -107,7 +107,7 @@ EffectInstance::resetTotalTimeSpentRendering()
 }
 
 void
-EffectInstance::lock(const boost::shared_ptr<Natron::Image> & entry)
+EffectInstance::lock(const boost::shared_ptr<Image> & entry)
 {
     boost::shared_ptr<Node> n = _node.lock();
 
@@ -115,7 +115,7 @@ EffectInstance::lock(const boost::shared_ptr<Natron::Image> & entry)
 }
 
 bool
-EffectInstance::tryLock(const boost::shared_ptr<Natron::Image> & entry)
+EffectInstance::tryLock(const boost::shared_ptr<Image> & entry)
 {
     boost::shared_ptr<Node> n = _node.lock();
 
@@ -123,7 +123,7 @@ EffectInstance::tryLock(const boost::shared_ptr<Natron::Image> & entry)
 }
 
 void
-EffectInstance::unlock(const boost::shared_ptr<Natron::Image> & entry)
+EffectInstance::unlock(const boost::shared_ptr<Image> & entry)
 {
     boost::shared_ptr<Node> n = _node.lock();
 
@@ -189,13 +189,13 @@ EffectInstance::setParallelRenderArgsTLS(double time,
                                          bool canAbort,
                                          U64 nodeHash,
                                          U64 renderAge,
-                                         const boost::shared_ptr<Natron::Node> & treeRoot,
+                                         const boost::shared_ptr<Node> & treeRoot,
                                          const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
                                          int textureIndex,
                                          const TimeLine* timeline,
                                          bool isAnalysis,
                                          bool isDuringPaintStrokeCreation,
-                                         const std::list<boost::shared_ptr<Natron::Node> > & rotoPaintNodes,
+                                         const std::list<boost::shared_ptr<Node> > & rotoPaintNodes,
                                          Natron::RenderSafetyEnum currentThreadSafety,
                                          bool doNanHandling,
                                          bool draftMode,
@@ -233,7 +233,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
 }
 
 bool
-EffectInstance::getThreadLocalRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const
+EffectInstance::getThreadLocalRotoPaintTreeNodes(std::list<boost::shared_ptr<Node> >* nodes) const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
     if (!tls) {
@@ -372,7 +372,7 @@ EffectInstance::Implementation::aborted(const EffectDataTLSPtr& tls) const
         } else {
             ///Rendering is playback or render on disk, we rely on the flag set on the node that requested the render
             if (args.treeRoot) {
-                Natron::OutputEffectInstance* effect = dynamic_cast<Natron::OutputEffectInstance*>( args.treeRoot->getLiveInstance() );
+                OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( args.treeRoot->getLiveInstance() );
                 assert(effect);
                 
                 return effect->isSequentialRenderBeingAborted();
@@ -449,7 +449,7 @@ EffectInstance::hasOutputConnected() const
 EffectInstance*
 EffectInstance::getInput(int n) const
 {
-    boost::shared_ptr<Natron::Node> inputNode = getNode()->getInput(n);
+    boost::shared_ptr<Node> inputNode = getNode()->getInput(n);
 
     if (inputNode) {
         return inputNode->getLiveInstance();
@@ -906,7 +906,7 @@ EffectInstance::getImage(int inputNb,
         ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
         RectI bounds;
         inputImg->getRoD().toPixelEnclosing(0, par, &bounds);
-        ImagePtr rescaledImg( new Natron::Image(inputImg->getComponents(), inputImg->getRoD(),
+        ImagePtr rescaledImg( new Image(inputImg->getComponents(), inputImg->getRoD(),
                                                 bounds, 0, par, bitdepth) );
         inputImg->upscaleMipMap( inputImg->getBounds(), inputImgMipMapLevel, 0, rescaledImg.get() );
         if (roiPixel) {
@@ -1219,14 +1219,14 @@ getOrCreateFromCacheInternal(const ImageKey & key,
                              ImagePtr* image)
 {
     if (useCache) {
-        !useDiskCache ? Natron::getImageFromCacheOrCreate(key, params, image) :
-        Natron::getImageFromDiskCacheOrCreate(key, params, image);
+        !useDiskCache ? natronGetImageFromCacheOrCreate(key, params, image) :
+        natronGetImageFromDiskCacheOrCreate(key, params, image);
 
         if (!*image) {
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
             ss << printAsRAM( params->getElementsCount() * sizeof(Image::data_t) ).toStdString();
-            Natron::errorDialog( QObject::tr("Out of memory").toStdString(), ss.str() );
+            natronErrorDialog( QObject::tr("Out of memory").toStdString(), ss.str() );
 
             return;
         }
@@ -1253,7 +1253,7 @@ getOrCreateFromCacheInternal(const ImageKey & key,
 void
 EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                     bool useDiskCache,
-                                                    const Natron::ImageKey & key,
+                                                    const ImageKey & key,
                                                     unsigned int mipMapLevel,
                                                     const RectI* boundsParam,
                                                     const RectD* rodParam,
@@ -1263,7 +1263,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                     const ImageComponents & nodePrefComps,
                                                     const EffectInstance::InputImagesMap & inputImages,
                                                     const boost::shared_ptr<RenderStats> & stats,
-                                                    boost::shared_ptr<Natron::Image>* image)
+                                                    boost::shared_ptr<Image>* image)
 {
     ImageList cachedImages;
     bool isCached = false;
@@ -1285,7 +1285,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
     }
 
     if (!isCached) {
-        isCached = !useDiskCache ? Natron::getImageFromCache(key, &cachedImages) : Natron::getImageFromDiskCache(key, &cachedImages);
+        isCached = !useDiskCache ? natronGetImageFromCache(key, &cachedImages) : natronGetImageFromDiskCache(key, &cachedImages);
     }
 
     if (stats && stats->isInDepthProfilingEnabled() && !isCached) {
@@ -1568,8 +1568,8 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                    bool renderFullScaleThenDownscale,
                                    bool useDiskCache,
                                    bool createInCache,
-                                   boost::shared_ptr<Natron::Image>* fullScaleImage,
-                                   boost::shared_ptr<Natron::Image>* downscaleImage)
+                                   boost::shared_ptr<Image>* fullScaleImage,
+                                   boost::shared_ptr<Image>* downscaleImage)
 {
     //Controls whether images are stored on disk or in RAM, 0 = RAM, 1 = mmap
     int cost = useDiskCache ? 1 : 0;
@@ -1577,8 +1577,8 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
     //If we're rendering full scale and with input images at full scale, don't cache the downscale image since it is cheap to
     //recreate, instead cache the full-scale image
     if (renderFullScaleThenDownscale) {
-        downscaleImage->reset( new Natron::Image(components, rod, downscaleImageBounds, mipmapLevel, par, depth, true) );
-        boost::shared_ptr<Natron::ImageParams> upscaledImageParams = Natron::Image::makeParams(cost,
+        downscaleImage->reset( new Image(components, rod, downscaleImageBounds, mipmapLevel, par, depth, true) );
+        boost::shared_ptr<ImageParams> upscaledImageParams = Image::makeParams(cost,
                                                                                                rod,
                                                                                                fullScaleImageBounds,
                                                                                                par,
@@ -1600,7 +1600,7 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
     } else {
         
         ///Cache the image with the requested components instead of the remapped ones
-        boost::shared_ptr<Natron::ImageParams> cachedImgParams = Natron::Image::makeParams(cost,
+        boost::shared_ptr<ImageParams> cachedImgParams = Image::makeParams(cost,
                                                                                            rod,
                                                                                            downscaleImageBounds,
                                                                                            par,
@@ -1920,7 +1920,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     if ( ( foundPrefPremult != planes->inputPremult.end() ) && originalInputImage ) {
         originalImagePremultiplication = foundPrefPremult->second;
     } else {
-        originalImagePremultiplication = Natron::eImagePremultiplicationOpaque;
+        originalImagePremultiplication = eImagePremultiplicationOpaque;
     }
 
 
@@ -2036,8 +2036,8 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                               const ImageBitDepthEnum outputClipPrefDepth,
                                               const std::list<ImageComponents> & outputClipPrefsComps,
                                               const std::bitset<4>& processChannels,
-                                              const boost::shared_ptr<Natron::Image> & originalInputImage,
-                                              const boost::shared_ptr<Natron::Image> & maskImage,
+                                              const boost::shared_ptr<Image> & originalInputImage,
+                                              const boost::shared_ptr<Image> & maskImage,
                                               const ImagePremultiplicationEnum originalImagePremultiplication,
                                               ImagePlanesToRender & planes)
 {
@@ -2349,7 +2349,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                         ///but originalInputImage is not in the correct mipMapLevel, upscale it
                         assert(originalInputImage->getMipMapLevel() > it->second.tmpImage->getMipMapLevel() &&
                                originalInputImage->getMipMapLevel() == mipMapLevel);
-                        ImagePtr tmp(new Natron::Image(it->second.tmpImage->getComponents(), it->second.tmpImage->getRoD(), renderMappedRectToRender, mipMapLevel, it->second.tmpImage->getPixelAspectRatio(), it->second.tmpImage->getBitDepth(), false));
+                        ImagePtr tmp(new Image(it->second.tmpImage->getComponents(), it->second.tmpImage->getRoD(), renderMappedRectToRender, mipMapLevel, it->second.tmpImage->getPixelAspectRatio(), it->second.tmpImage->getBitDepth(), false));
                         it->second.tmpImage->upscaleMipMap(downscaledRectToRender, originalInputImage->getMipMapLevel(), 0, tmp.get());
                         mappedOriginalInputImage = tmp;
                     }
@@ -2583,7 +2583,7 @@ EffectInstance::evaluate(KnobI* knob,
      We always have to trigger a render because this might be a tree not connected via a link to the knob who changed
      but just an expression
      
-     if (reason == Natron::eValueChangedReasonSlaveRefresh) {
+     if (reason == eValueChangedReasonSlaveRefresh) {
         //do not trigger a render, the master will do it already
         return;
     }*/
@@ -3143,10 +3143,10 @@ EffectInstance::getRegionOfDefinition_publicInternal(U64 hash,
     if (foundInCache) {
         *isProjectFormat = false;
         if ( rod->isNull() ) {
-            return Natron::eStatusFailed;
+            return eStatusFailed;
         }
 
-        return Natron::eStatusOK;
+        return eStatusOK;
     } else {
         ///If this is running on a render thread, attempt to find the RoD in the thread local storage.
         
@@ -3156,7 +3156,7 @@ EffectInstance::getRegionOfDefinition_publicInternal(U64 hash,
             if (tls && tls->currentRenderArgs.validArgs) {
                 *rod = tls->currentRenderArgs.rod;
                 *isProjectFormat = false;
-                return Natron::eStatusOK;
+                return eStatusOK;
             }
         }
 
@@ -3579,7 +3579,7 @@ EffectInstance::getComponentsNeededAndProduced(double time,
                                               EffectInstance::ComponentsNeededMap* comps,
                                                SequenceTime* passThroughTime,
                                                int* passThroughView,
-                                               boost::shared_ptr<Natron::Node>* passThroughInput)
+                                               boost::shared_ptr<Node>* passThroughInput)
 {
     *passThroughTime = time;
     *passThroughView = view;
@@ -3637,7 +3637,7 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
                                                       SequenceTime* passThroughTime,
                                                       int* passThroughView,
                                                       std::bitset<4> *processChannels,
-                                                      boost::shared_ptr<Natron::Node>* passThroughInput)
+                                                      boost::shared_ptr<Node>* passThroughInput)
 
 {
     RECURSIVE_ACTION();
@@ -3749,7 +3749,7 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
 int
 EffectInstance::getMaskChannel(int inputNb,
                                ImageComponents* comps,
-                               boost::shared_ptr<Natron::Node>* maskInput) const
+                               boost::shared_ptr<Node>* maskInput) const
 {
     return getNode()->getMaskChannel(inputNb, comps, maskInput);
 }
@@ -3854,7 +3854,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         return;
     }
 
-    if ( reason != Natron::eValueChangedReasonTimeChanged && isReader() && (k->getName() == kOfxImageEffectFileParamName) ) {
+    if ( reason != eValueChangedReasonTimeChanged && isReader() && (k->getName() == kOfxImageEffectFileParamName) ) {
         node->computeFrameRangeForReader(k);
     }
 
@@ -3865,7 +3865,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
         boost::shared_ptr<ParallelRenderArgsSetter> setter;
-        if (reason != Natron::eValueChangedReasonTimeChanged) {
+        if (reason != eValueChangedReasonTimeChanged) {
             setter.reset(new ParallelRenderArgsSetter(time,
                                                       0, /*view*/
                                                       true,
@@ -4205,7 +4205,7 @@ EffectInstance::abortAnyEvaluation()
     
     assert(node);
    // node->incrementKnobsAge();
-    std::list<Natron::OutputEffectInstance*> outputNodes;
+    std::list<OutputEffectInstance*> outputNodes;
     
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
     if (isGroup) {
@@ -4223,7 +4223,7 @@ EffectInstance::abortAnyEvaluation()
             node->hasOutputNodesConnected(&outputNodes);
         }
     }
-    for (std::list<Natron::OutputEffectInstance*>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
+    for (std::list<OutputEffectInstance*>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
         (*it)->getRenderEngine()->abortRendering(true,false);
     }
 }
@@ -4375,10 +4375,10 @@ EffectInstance::refreshClipPreferences_recursive(double time,
                                                   const RenderScale & scale,
                                                  ValueChangedReasonEnum reason,
                                                   bool forceGetClipPrefAction,
-                                                  std::list<Natron::Node*> & markedNodes)
+                                                  std::list<Node*> & markedNodes)
 {
     NodePtr node = getNode();
-    std::list<Natron::Node*>::iterator found = std::find( markedNodes.begin(), markedNodes.end(), node.get() );
+    std::list<Node*>::iterator found = std::find( markedNodes.begin(), markedNodes.end(), node.get() );
 
     if ( found != markedNodes.end() ) {
         return;
@@ -4395,16 +4395,16 @@ EffectInstance::refreshClipPreferences_recursive(double time,
 
     markedNodes.push_back( node.get() );
 
-    std::list<Natron::Node*>  outputs;
+    std::list<Node*>  outputs;
     node->getOutputsWithGroupRedirection(outputs);
-    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+    for (std::list<Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         (*it)->getLiveInstance()->refreshClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
     }
 }
 
-static void setComponentsDirty_recursive(const Node* node, std::list<const Natron::Node*> & markedNodes)
+static void setComponentsDirty_recursive(const Node* node, std::list<const Node*> & markedNodes)
 {
-    std::list<const Natron::Node*>::iterator found = std::find( markedNodes.begin(), markedNodes.end(), node );
+    std::list<const Node*>::iterator found = std::find( markedNodes.begin(), markedNodes.end(), node );
     
     if ( found != markedNodes.end() ) {
         return;
@@ -4415,9 +4415,9 @@ static void setComponentsDirty_recursive(const Node* node, std::list<const Natro
     node->getLiveInstance()->setComponentsAvailableDirty(true);
     
     
-    std::list<Natron::Node*>  outputs;
+    std::list<Node*>  outputs;
     node->getOutputsWithGroupRedirection(outputs);
-    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+    for (std::list<Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         setComponentsDirty_recursive(*it,markedNodes);
     }
     
@@ -4434,11 +4434,11 @@ EffectInstance::refreshClipPreferences_public(double time,
 
     if (recurse) {
         {
-            std::list<const Natron::Node*> markedNodes;
+            std::list<const Node*> markedNodes;
             setComponentsDirty_recursive(_node.lock().get(),markedNodes);
         }
         {
-            std::list<Natron::Node*> markedNodes;
+            std::list<Node*> markedNodes;
             refreshClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
         }
     } else {
@@ -4463,7 +4463,7 @@ EffectInstance::refreshClipPreferences(double /*time*/,
         }
         if (!input) {
             QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
-            _imp->clipPrefsData.outputPremult = Natron::eImagePremultiplicationPremultiplied;
+            _imp->clipPrefsData.outputPremult = eImagePremultiplicationPremultiplied;
             _imp->clipPrefsData.frameRate = getApp()->getProjectFrameRate();
             _imp->clipPrefsData.pixelAspectRatio = 1.;
             _imp->clipPrefsData.comps.clear();

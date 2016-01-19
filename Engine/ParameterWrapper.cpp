@@ -1650,7 +1650,7 @@ ParametricParam::getValue(int dimension,double parametricPosition) const
 {
     double ret;
     StatusEnum stat =  _parametricKnob.lock()->getValue(dimension, parametricPosition, &ret);
-    if (stat == Natron::eStatusFailed) {
+    if (stat == eStatusFailed) {
         ret =  0.;
     }
     return ret;
@@ -1661,7 +1661,7 @@ ParametricParam::getNControlPoints(int dimension) const
 {
     int ret;
     StatusEnum stat =  _parametricKnob.lock()->getNControlPoints(dimension, &ret);
-    if (stat == Natron::eStatusFailed) {
+    if (stat == eStatusFailed) {
         ret = 0;
     }
     return ret;

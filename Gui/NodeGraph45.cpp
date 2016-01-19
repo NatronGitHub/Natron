@@ -92,7 +92,7 @@ NodeGraph::toggleHideInputs()
 {
     const NodeGuiList& selectedNodes = getSelectedNodes();
     if (selectedNodes.empty()) {
-        Natron::warningDialog(tr("Hide Inptus").toStdString(), tr("You must select a node first").toStdString());
+        natronWarningDialog(tr("Hide Inptus").toStdString(), tr("You must select a node first").toStdString());
         return;
     }
 
@@ -147,8 +147,8 @@ NodeGraph::refreshAllKnobsGui()
                 if (!knob->getIsSecret()) {
                     for (int i = 0; i < knob->getDimension(); ++i) {
                         if (knob->isAnimated(i)) {
-                            it2->second->onInternalValueChanged(i, Natron::eValueChangedReasonPluginEdited);
-                            it2->second->onAnimationLevelChanged(i, Natron::eValueChangedReasonPluginEdited);
+                            it2->second->onInternalValueChanged(i, eValueChangedReasonPluginEdited);
+                            it2->second->onAnimationLevelChanged(i, eValueChangedReasonPluginEdited);
                         }
                     }
                 }
@@ -590,7 +590,7 @@ NodeGraph::expandSelectedGroups()
     if (!nodes.empty()) {
         pushUndoCommand(new InlineGroupCommand(this,nodes));
     } else {
-        Natron::warningDialog(tr("Expand group").toStdString(), tr("You must select a group to expand first").toStdString());
+        natronWarningDialog(tr("Expand group").toStdString(), tr("You must select a group to expand first").toStdString());
     }
 }
 

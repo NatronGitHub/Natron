@@ -35,7 +35,7 @@
 NATRON_NAMESPACE_ENTER;
 class LogPrivate;
 class Log
-    : public Singleton<Natron::Log>
+    : public Singleton<Log>
 {
     LogPrivate* _imp;
 

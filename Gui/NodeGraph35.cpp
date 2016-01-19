@@ -534,7 +534,7 @@ NodeGraph::dropEvent(QDropEvent* e)
         }
         std::map<std::string,std::string>::iterator found = readersForFormat.find(extLower);
         if ( found == readersForFormat.end() ) {
-            errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
+            natronErrorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
         } else {
             
             std::string pattern = sequence->generateValidSequencePattern();
@@ -553,7 +553,7 @@ NodeGraph::dropEvent(QDropEvent* e)
                                 QString(),
                                 defaultValues,
                                 getGroup());
-            boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(args);
+            boost::shared_ptr<Node>  n = getGui()->getApp()->createNode(args);
             
             //And offset scenePos by the Width of the previous node created if several nodes are created
             double w,h;

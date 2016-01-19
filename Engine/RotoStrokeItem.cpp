@@ -134,7 +134,7 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
                        unsigned int mipMapLevel,
                        double halfBrushSize,
                        bool pressureAffectsSize,
-                       std::list<std::pair<Natron::Point,double> >* points,
+                       std::list<std::pair<Point,double> >* points,
                        RectD* bbox)
 {
     //Increment the half brush size so that the stroke is enclosed in the RoD
@@ -176,7 +176,7 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         
         p = Transform::matApply(transform, p);
         
-        Natron::Point pixelPoint;
+        Point pixelPoint;
         pixelPoint.x = p.x / pot;
         pixelPoint.y = p.y / pot;
         points->push_back(std::make_pair(pixelPoint, pIt->getValue()));
@@ -436,11 +436,11 @@ RotoStrokeItem::appendPoint(bool newStroke, const RotoPoint& p)
                 yn.setValue(yp.getValue()*(1-alpha)+p.pos.y*alpha);
                 pn.setValue(pp.getValue()*(1-alpha)+p.pressure*alpha);
                 _imp->xCurve.addKeyFrame(xn);
-                _imp->xCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk);
+                _imp->xCurve.setKeyFrameInterpolation(eKeyframeTypeCatmullRom, nk);
                 _imp->yCurve.addKeyFrame(yn);
-                _imp->yCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk);
+                _imp->yCurve.setKeyFrameInterpolation(eKeyframeTypeCatmullRom, nk);
                 _imp->pressureCurve.addKeyFrame(pn);
-                _imp->pressureCurve.setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, nk);
+                _imp->pressureCurve.setKeyFrameInterpolation(eKeyframeTypeCatmullRom, nk);
                 ++nk;
             }
         }
@@ -478,9 +478,9 @@ RotoStrokeItem::appendPoint(bool newStroke, const RotoPoint& p)
         }
         // Use CatmullRom interpolation, which means that the tangent may be modified by the next point on the curve.
         // In a previous version, the previous keyframe was set to Free so its tangents don't get overwritten, but this caused oscillations.
-        stroke->xCurve->setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, ki);
-        stroke->yCurve->setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, ki);
-        stroke->pressureCurve->setKeyFrameInterpolation(Natron::eKeyframeTypeCatmullRom, ki);
+        stroke->xCurve->setKeyFrameInterpolation(eKeyframeTypeCatmullRom, ki);
+        stroke->yCurve->setKeyFrameInterpolation(eKeyframeTypeCatmullRom, ki);
+        stroke->pressureCurve->setKeyFrameInterpolation(eKeyframeTypeCatmullRom, ki);
 
 
     } // QMutexLocker k(&itemMutex);
@@ -547,13 +547,13 @@ RotoStrokeItem::updatePatternCache(const std::vector<cairo_pattern_t*>& cache)
 double
 RotoStrokeItem::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
                           const RectD& rod,
-                          const std::list<std::pair<Natron::Point,double> >& points,
+                          const std::list<std::pair<Point,double> >& points,
                           unsigned int mipmapLevel,
                           double par,
                           const ImageComponents& components,
                           ImageBitDepthEnum depth,
                           double distToNext,
-                          boost::shared_ptr<Natron::Image> *wholeStrokeImage)
+                          boost::shared_ptr<Image> *wholeStrokeImage)
 {
     QMutexLocker k(&_imp->strokeDotPatternsMutex);
     return getContext()->renderSingleStroke(stroke, rod, points, mipmapLevel, par, components, depth, distToNext, wholeStrokeImage);
@@ -570,7 +570,7 @@ bool
 RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
                                                    int lastAge,
                                                    int lastMultiStrokeIndex,
-                                                   std::list<std::pair<Natron::Point,double> >* points,
+                                                   std::list<std::pair<Point,double> >* points,
                                                    RectD* pointsBbox,
                                                    RectD* wholeStrokeBbox,
                                                    int* newAge,
@@ -908,7 +908,7 @@ RotoStrokeItem::getYControlPoints() const
 }
 
 void
-RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel, double time, std::list<std::list<std::pair<Natron::Point,double> > >* strokes,
+RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel, double time, std::list<std::list<std::pair<Point,double> > >* strokes,
                                RectD* bbox) const
 {
     double brushSize = getBrushSizeKnob()->getValueAtTime(time) / 2.;
@@ -928,7 +928,7 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel, double time, std::list<
         }
         assert(xSet.size() == ySet.size() && xSet.size() == pSet.size());
         
-        std::list<std::pair<Natron::Point,double> > points;
+        std::list<std::pair<Point,double> > points;
         RectD strokeBbox;
         
         evaluateStrokeInternal(xSet,ySet,pSet, transform, mipMapLevel,brushSize, pressureAffectsSize, &points,&strokeBbox);

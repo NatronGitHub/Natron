@@ -188,7 +188,7 @@ void
 AppManagerPrivate::createBreakpadHandler(int breakpad_client_fd)
 {
     
-    QString dumpPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+    QString dumpPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     (void)breakpad_client_fd;
     try {
 #if defined(Q_OS_MAC)
@@ -303,7 +303,7 @@ AppManagerPrivate::loadBuiltinFormats()
     }
 } // loadBuiltinFormats
 
-Natron::Plugin*
+Plugin*
 AppManagerPrivate::findPluginById(const QString& newId,int major, int minor) const
 {
     for (PluginsMap::const_iterator it = _plugins.begin(); it != _plugins.end(); ++it) {
@@ -372,8 +372,8 @@ void saveCache(Natron::Cache<T>* cache)
 void
 AppManagerPrivate::saveCaches()
 {
-    saveCache<Natron::FrameEntry>(_viewerCache.get());
-    saveCache<Natron::Image>(_diskCache.get());
+    saveCache<FrameEntry>(_viewerCache.get());
+    saveCache<Image>(_diskCache.get());
 } // saveCaches
 
 template <typename T>

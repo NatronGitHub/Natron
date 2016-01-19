@@ -39,12 +39,12 @@ class Dot
 {
 public:
 
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new Dot(n);
     }
 
-    Dot(boost::shared_ptr<Natron::Node> n)
+    Dot(boost::shared_ptr<Node> n)
         : NoOpBase(n)
     {
     }

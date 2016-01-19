@@ -52,7 +52,7 @@ public:
     static Natron::KeyboardModifiers fromQtModifiers(Qt::KeyboardModifiers m);
     static StandardButtonEnum fromQtStandardButton(QMessageBox::StandardButton b);
     static QMessageBox::StandardButton toQtStandardButton(StandardButtonEnum b);
-    static QMessageBox::StandardButtons toQtStandarButtons(Natron::StandardButtons buttons);
+    static QMessageBox::StandardButtons toQtStandarButtons(StandardButtons buttons);
 };
 
 NATRON_NAMESPACE_EXIT;

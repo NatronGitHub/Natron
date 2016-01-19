@@ -156,7 +156,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 bool
 ViewerTabPrivate::getOverlayTransform(double time,
                                       int view,
-                                      const boost::shared_ptr<Natron::Node>& target,
+                                      const boost::shared_ptr<Node>& target,
                                       Natron::EffectInstance* currentNode,
                                       Transform::Matrix3x3* transform) const
 {
@@ -259,7 +259,7 @@ static double transformTimeForNode(Natron::EffectInstance* currentNode, double i
 bool
 ViewerTabPrivate::getTimeTransform(double time,
                                    int view,
-                                   const boost::shared_ptr<Natron::Node>& target,
+                                   const boost::shared_ptr<Node>& target,
                                    Natron::EffectInstance* currentNode,
                                    double *newTime) const
 {

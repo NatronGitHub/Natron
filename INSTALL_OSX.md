@@ -258,6 +258,8 @@ on HomeBrew:
 shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:/usr/local/include:/usr/local/include/PySide  --typesystem-paths=/usr/local/share/PySide/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
 
 shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:/usr/local/include:/usr/local/include/PySide  --typesystem-paths=/usr/local/share/PySide/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+
+tools/utils/runPostShiboken.sh
 ```
 
 **Note**

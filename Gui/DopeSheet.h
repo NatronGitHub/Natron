@@ -146,7 +146,7 @@ public:
     QTreeWidgetItem *getTreeItem() const;
     
     boost::shared_ptr<NodeGui> getNodeGui() const;
-    boost::shared_ptr<Natron::Node> getInternalNode() const;
+    boost::shared_ptr<Node> getInternalNode() const;
     
     const DSTreeItemKnobMap& getItemKnobMap() const;
     
@@ -349,7 +349,7 @@ public:
     boost::shared_ptr<DSKnob> mapNameItemToDSKnob(QTreeWidgetItem *knobTreeItem) const;
 
     boost::shared_ptr<DSNode> findParentDSNode(QTreeWidgetItem *treeItem) const;
-    boost::shared_ptr<DSNode> findDSNode(Natron::Node *node) const;
+    boost::shared_ptr<DSNode> findDSNode(Node *node) const;
     boost::shared_ptr<DSNode> findDSNode(const boost::shared_ptr<KnobI> &knob) const;
 
     boost::shared_ptr<DSKnob> findDSKnob(KnobGui *knobGui) const;
@@ -360,7 +360,7 @@ public:
     std::vector<boost::shared_ptr<DSNode> > getImportantNodes(DSNode *dsNode) const;
 
     boost::shared_ptr<DSNode> getNearestTimeNodeFromOutputs(DSNode *dsNode) const;
-    Natron::Node *getNearestReader(DSNode *timeNode) const;
+    Node *getNearestReader(DSNode *timeNode) const;
 
     DopeSheetSelectionModel *getSelectionModel() const;
     

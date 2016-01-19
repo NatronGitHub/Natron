@@ -42,7 +42,7 @@ TEST(SequenceParsing,TestHashCharacter) {
     QStringList fileNames;
     int sequenceItemsCount = 10;
     ///create temporary files as a sequence and try to read that sequence.
-    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+    QString tempPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
 
     dir.mkpath(".");
@@ -201,7 +201,7 @@ TEST(SequenceParsing,TestHashCharacter) {
 TEST(SequenceParsing,TestPrintfLikeSyntax) {
     int sequenceItemsCount = 10;
     ///create temporary files as a sequence and try to read that sequence.
-    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+    QString tempPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
 
     dir.mkpath(".");
@@ -304,7 +304,7 @@ TEST(SequenceParsing,TestPrintfLikeSyntax) {
 TEST(SequenceParsing,TestViews) {
     int sequenceItemsCount = 11;
     ///create temporary files as a sequence and try to read that sequence.
-    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+    QString tempPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
 
     dir.mkpath(".");

@@ -151,11 +151,11 @@ struct EffectInstance::DefaultClipPreferencesData
     ImageBitDepthEnum bitdepth;
     
     DefaultClipPreferencesData()
-    : outputPremult(Natron::eImagePremultiplicationPremultiplied)
+    : outputPremult(eImagePremultiplicationPremultiplied)
     , pixelAspectRatio(1.)
     , frameRate(24.)
     , comps()
-    , bitdepth(Natron::eImageBitDepthFloat)
+    , bitdepth(eImageBitDepthFloat)
     {
         
     }
@@ -370,8 +370,8 @@ struct EffectInstance::Implementation
                                           const ImageBitDepthEnum outputClipPrefDepth,
                                           const std::list<ImageComponents> & outputClipPrefsComps,
                                           const std::bitset<4>& processChannels,
-                                          const boost::shared_ptr<Natron::Image> & originalInputImage,
-                                          const boost::shared_ptr<Natron::Image> & maskImage,
+                                          const boost::shared_ptr<Image> & originalInputImage,
+                                          const boost::shared_ptr<Image> & maskImage,
                                           const ImagePremultiplicationEnum originalImagePremultiplication,
                                           ImagePlanesToRender & planes);
     

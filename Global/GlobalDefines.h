@@ -220,6 +220,6 @@ std::string GetLastErrorAsString()
 
 NATRON_NAMESPACE_EXIT;
 
-Q_DECLARE_METATYPE(Natron::SequenceTime)
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::SequenceTime)
 
 #endif // ifndef NATRON_GLOBAL_GLOBALDEFINES_H

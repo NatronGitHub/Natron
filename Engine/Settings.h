@@ -254,7 +254,7 @@ public:
      * for the given plug-in.
      * If the plug-in ID is not valid, -1 is returned.
      **/
-    int getRenderScaleSupportPreference(const Natron::Plugin* p) const;
+    int getRenderScaleSupportPreference(const Plugin* p) const;
     
     
     bool notifyOnFileChange() const;
@@ -341,7 +341,7 @@ public:
     
     std::string getUserStyleSheetFilePath() const;
     
-    bool isPluginDeactivated(const Natron::Plugin* p) const;
+    bool isPluginDeactivated(const Plugin* p) const;
     
 Q_SIGNALS:
     
@@ -554,7 +554,7 @@ private:
         }
     };
 
-    std::map<const Natron::Plugin*,PerPluginKnobs> _pluginsMap;
+    std::map<const Plugin*,PerPluginKnobs> _pluginsMap;
     std::vector<std::string> _knownHostNames;
     bool _restoringSettings;
     bool _ocioRestored;

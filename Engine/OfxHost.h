@@ -149,7 +149,7 @@ public:
 
     void clearPluginsLoadedCache();
 
-    void setThreadAsActionCaller(Natron::OfxImageEffectInstance* instance, bool actionCaller);
+    void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
     
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                                     Natron::ContextEnum* ctx);
@@ -161,7 +161,7 @@ public:
      **/
     struct OfxHostTLSData
     {
-        Natron::OfxImageEffectInstance* lastEffectCallingMainEntry;
+        OfxImageEffectInstance* lastEffectCallingMainEntry;
         
         ///Stored as int, because we need -1; list because we need it recursive for the multiThread func
         std::list<int> threadIndexes;

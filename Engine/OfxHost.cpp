@@ -402,7 +402,7 @@ Natron::OfxHost::newInstance(void*,
     assert(plugin);
 
 
-    return new Natron::OfxImageEffectInstance(plugin,desc,context,false);
+    return new OfxImageEffectInstance(plugin,desc,context,false);
 }
 
 /// Override this to create a descriptor, this makes the 'root' descriptor
@@ -456,18 +456,18 @@ Natron::OfxHost::vmessage(const char* msgtype,
         ///It seems that the only errors or warning that passes here are exceptions thrown by plug-ins
         ///(mainly Sapphire) while aborting a render. Instead of spamming the user of meaningless dialogs,
         ///just write to the log instead.
-        //Natron::errorDialog(NATRON_APPLICATION_NAME, message);
+        //natronErrorDialog(NATRON_APPLICATION_NAME, message);
         appPTR->writeToOfxLog_mt_safe( message.c_str() );
     } else if (type == kOfxMessageWarning) {
         ///It seems that the only errors or warning that passes here are exceptions thrown by plug-ins
         ///(mainly Sapphire) while aborting a render. Instead of spamming the user of meaningless dialogs,
         ///just write to the log instead.
-        //        Natron::warningDialog(NATRON_APPLICATION_NAME, message);
+        //        natronWarningDialog(NATRON_APPLICATION_NAME, message);
         appPTR->writeToOfxLog_mt_safe( message.c_str() );
     } else if (type == kOfxMessageMessage) {
-        Natron::informationDialog(NATRON_APPLICATION_NAME, message);
+        natronInformationDialog(NATRON_APPLICATION_NAME, message);
     } else if (type == kOfxMessageQuestion) {
-        if (Natron::questionDialog(NATRON_APPLICATION_NAME, message, false) == Natron::eStandardButtonYes) {
+        if (natronQuestionDialog(NATRON_APPLICATION_NAME, message, false) == eStandardButtonYes) {
             return kOfxStatReplyYes;
         } else {
             return kOfxStatReplyNo;
@@ -639,7 +639,7 @@ Natron::OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffect
 }
 
 boost::shared_ptr<AbstractOfxEffectInstance>
-Natron::OfxHost::createOfxEffect(boost::shared_ptr<Natron::Node> node,
+Natron::OfxHost::createOfxEffect(boost::shared_ptr<Node> node,
                                  const NodeSerialization* serialization,
                                  const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                  bool allowFileDialogs,
@@ -647,7 +647,7 @@ Natron::OfxHost::createOfxEffect(boost::shared_ptr<Natron::Node> node,
                                  bool *hasUsedFileDialog)
 {
     assert(node);
-    const Natron::Plugin* natronPlugin = node->getPlugin();
+    const Plugin* natronPlugin = node->getPlugin();
     assert(natronPlugin);
     ContextEnum ctx;
     OFX::Host::ImageEffect::Descriptor* desc = natronPlugin->getOfxDesc(&ctx);
@@ -668,14 +668,14 @@ Natron::OfxHost::createOfxEffect(boost::shared_ptr<Natron::Node> node,
 ///Return the xml cache file used before Natron 2 RC2
 static QString getOldCacheFilePath()
 {
-    QString cachePath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache) + '/';
+    QString cachePath = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache) + '/';
     QString oldOfxCache = cachePath + "OFXCache.xml";
     return oldOfxCache;
 }
 
 static QString getOFXCacheDirPath()
 {
-    QString cachePath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache) + '/';
+    QString cachePath = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache) + '/';
     QString ofxCachePath = cachePath + "OFXLoadCache";
     return ofxCachePath;
 }
@@ -823,7 +823,7 @@ Natron::OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std:
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         
         
-        Natron::Plugin* natronPlugin = appPTR->registerPlugin( groups,
+        Plugin* natronPlugin = appPTR->registerPlugin( groups,
                                                               openfxId.c_str(),
                                                               pluginLabel.c_str(),
                                                               iconFileName,
@@ -951,7 +951,7 @@ Natron::OfxHost::newMemoryInstance(size_t nBytes)
     bool allocated = ret->alloc(nBytes);
     
     if ((nBytes != 0 && !ret->getPtr()) || !allocated) {
-        Natron::errorDialog(QObject::tr("Out of memory").toStdString(),
+        natronErrorDialog(QObject::tr("Out of memory").toStdString(),
                             QObject::tr("Failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
     }
     
@@ -966,7 +966,7 @@ Natron::OfxHost::newMemoryInstance(size_t nBytes)
 #ifdef OFX_SUPPORTS_MULTITHREAD
 
 void
-Natron::OfxHost::setThreadAsActionCaller(Natron::OfxImageEffectInstance* instance, bool actionCaller)
+Natron::OfxHost::setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller)
 {
     OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     tls->lastEffectCallingMainEntry = instance;
@@ -1461,7 +1461,7 @@ Natron::OfxHost::requestDialog(OfxImageEffectHandle instance, OfxPropertySetHand
 {
     Q_UNUSED(inArgs);
     OFX::Host::ImageEffect::Base *effectBase = reinterpret_cast<OFX::Host::ImageEffect::Base*>(instance);
-    Natron::OfxImageEffectInstance *effectInstance = dynamic_cast<Natron::OfxImageEffectInstance*>(effectBase);
+    OfxImageEffectInstance *effectInstance = dynamic_cast<OfxImageEffectInstance*>(effectBase);
     appPTR->requestOFXDIalogOnMainThread(effectInstance, instanceData);
     return kOfxStatOK;
 }

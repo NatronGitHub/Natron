@@ -64,12 +64,12 @@ struct AppManagerPrivate
     int _topLevelInstanceID; //< the top level app ID
     boost::shared_ptr<Settings> _settings; //< app settings
     std::vector<Format*> _formats; //<a list of the "base" formats available in the application
-    Natron::PluginsMap _plugins; //< list of the plugins
+    PluginsMap _plugins; //< list of the plugins
     boost::scoped_ptr<Natron::OfxHost> ofxHost; //< OpenFX host
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
-    boost::shared_ptr<Natron::Cache<Natron::Image> >  _nodeCache; //< Images cache
-    boost::shared_ptr<Natron::Cache<Natron::Image> >  _diskCache; //< Images disk cache (used by DiskCache nodes)
-    boost::shared_ptr<Natron::Cache<Natron::FrameEntry> > _viewerCache; //< Viewer textures cache
+    boost::shared_ptr<Natron::Cache<Image> >  _nodeCache; //< Images cache
+    boost::shared_ptr<Natron::Cache<Image> >  _diskCache; //< Images disk cache (used by DiskCache nodes)
+    boost::shared_ptr<Natron::Cache<FrameEntry> > _viewerCache; //< Viewer textures cache
     
     mutable QMutex diskCachesLocationMutex;
     QString diskCachesLocation;
@@ -161,7 +161,7 @@ struct AppManagerPrivate
      **/
     void setMaxCacheFiles();
     
-    Natron::Plugin* findPluginById(const QString& oldId,int major, int minor) const;
+    Plugin* findPluginById(const QString& oldId,int major, int minor) const;
     
     void declareSettingsToPython();
     

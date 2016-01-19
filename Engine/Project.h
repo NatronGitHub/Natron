@@ -282,24 +282,24 @@ public:
     
     struct TreeOutput
     {
-        boost::shared_ptr<Natron::Node> node;
-        std::list<std::pair<int,Natron::Node*> > outputs;
+        boost::shared_ptr<Node> node;
+        std::list<std::pair<int,Node*> > outputs;
     };
     
     struct TreeInput
     {
-        boost::shared_ptr<Natron::Node> node;
-        std::vector<boost::shared_ptr<Natron::Node> > inputs;
+        boost::shared_ptr<Node> node;
+        std::vector<boost::shared_ptr<Node> > inputs;
     };
     
     struct NodesTree
     {
         TreeOutput output;
         std::list<TreeInput> inputs;
-        std::list<boost::shared_ptr<Natron::Node> > inbetweenNodes;
+        std::list<boost::shared_ptr<Node> > inbetweenNodes;
     };
     
-    static void extractTreesFromNodes(const std::list<boost::shared_ptr<Natron::Node> >& nodes,std::list<Project::NodesTree>& trees);
+    static void extractTreesFromNodes(const std::list<boost::shared_ptr<Node> >& nodes,std::list<Project::NodesTree>& trees);
     
     void closeProject(bool aboutToQuit)
     {

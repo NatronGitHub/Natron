@@ -279,7 +279,7 @@ KnobGui::setInterpolationForDimensions(const std::vector<int> & dimensions,
         }
     }
     if (knob->getHolder()) {
-        knob->getHolder()->evaluate_public(knob.get(), knob->getEvaluateOnChange(), Natron::eValueChangedReasonNatronGuiEdited);
+        knob->getHolder()->evaluate_public(knob.get(), knob->getEvaluateOnChange(), eValueChangedReasonNatronGuiEdited);
     }
     Q_EMIT keyInterpolationChanged();
 
@@ -294,7 +294,7 @@ KnobGui::onConstantInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims, Natron::eKeyframeTypeConstant);
+    setInterpolationForDimensions(dims, eKeyframeTypeConstant);
 }
 
 void
@@ -306,7 +306,7 @@ KnobGui::onLinearInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims, Natron::eKeyframeTypeLinear);
+    setInterpolationForDimensions(dims, eKeyframeTypeLinear);
 }
 
 void
@@ -318,7 +318,7 @@ KnobGui::onSmoothInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims, Natron::eKeyframeTypeSmooth);
+    setInterpolationForDimensions(dims, eKeyframeTypeSmooth);
 }
 
 void
@@ -330,7 +330,7 @@ KnobGui::onCatmullromInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims, Natron::eKeyframeTypeCatmullRom);
+    setInterpolationForDimensions(dims, eKeyframeTypeCatmullRom);
 }
 
 void
@@ -342,7 +342,7 @@ KnobGui::onCubicInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims, Natron::eKeyframeTypeCubic);
+    setInterpolationForDimensions(dims, eKeyframeTypeCubic);
 }
 
 void
@@ -354,7 +354,7 @@ KnobGui::onHorizontalInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims, Natron::eKeyframeTypeHorizontal);
+    setInterpolationForDimensions(dims, eKeyframeTypeHorizontal);
 }
 
 void

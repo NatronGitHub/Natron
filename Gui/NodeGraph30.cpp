@@ -261,7 +261,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
             }
         }
         if (foundEffect) {
-            StandardButtonEnum reply = Natron::questionDialog( tr("Delete").toStdString(), tr("This node has one or several "
+            StandardButtonEnum reply = natronQuestionDialog( tr("Delete").toStdString(), tr("This node has one or several "
                                                                                                   "parameters from which other parameters "
                                                                                                   "of the project rely on through expressions "
                                                                                                   "or links. Deleting this node will "
@@ -269,7 +269,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
                                                                                                   "and undoing the action will not recover "
                                                                                                   "them. Do you wish to continue ?")
                                                                    .toStdString(), false );
-            if (reply == Natron::eStandardButtonNo) {
+            if (reply == eStandardButtonNo) {
                 return;
             }
             break;
@@ -334,7 +334,7 @@ NodeGraph::deleteSelection()
                     }
                 }
                 if (foundEffect) {
-                    StandardButtonEnum reply = Natron::questionDialog( tr("Delete").toStdString(),
+                    StandardButtonEnum reply = natronQuestionDialog( tr("Delete").toStdString(),
                                                                            tr("This node has one or several "
                                                                               "parameters from which other parameters "
                                                                               "of the project rely on through expressions "
@@ -343,7 +343,7 @@ NodeGraph::deleteSelection()
                                                                               ". Undoing the action will not recover "
                                                                               "them. \nContinue anyway ?")
                                                                            .toStdString(), false );
-                    if (reply == Natron::eStandardButtonNo) {
+                    if (reply == eStandardButtonNo) {
                         return;
                     }
                     mustBreak = true;

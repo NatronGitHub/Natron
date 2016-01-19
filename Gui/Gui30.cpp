@@ -74,19 +74,19 @@ Gui::errorDialog(const std::string & title,
     }
 
 
-    Natron::StandardButtons buttons(Natron::eStandardButtonYes | Natron::eStandardButtonNo);
+    StandardButtons buttons(eStandardButtonYes | eStandardButtonNo);
 
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        Q_EMIT doDialog(0, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(0, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        Q_EMIT doDialog(0, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(0, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
     }
 }
 
@@ -104,20 +104,20 @@ Gui::errorDialog(const std::string & title,
         }
     }
 
-    Natron::StandardButtons buttons(Natron::eStandardButtonOk);
+    StandardButtons buttons(eStandardButtonOk);
 
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeError, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)Natron::eStandardButtonOk );
+        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeError, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
         Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeError,
-                                               QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)Natron::eStandardButtonOk );
+                                               QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
@@ -135,19 +135,19 @@ Gui::warningDialog(const std::string & title,
         }
     }
 
-    Natron::StandardButtons buttons(Natron::eStandardButtonYes | Natron::eStandardButtonNo);
+    StandardButtons buttons(eStandardButtonYes | eStandardButtonNo);
 
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        Q_EMIT doDialog(1, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(1, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        Q_EMIT doDialog(1, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(1, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
     }
 }
 
@@ -165,20 +165,20 @@ Gui::warningDialog(const std::string & title,
         }
     }
 
-    Natron::StandardButtons buttons(Natron::eStandardButtonOk);
+    StandardButtons buttons(eStandardButtonOk);
 
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeWarning, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)Natron::eStandardButtonOk );
+        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeWarning, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
         Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeWarning,
-                                               QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)Natron::eStandardButtonOk );
+                                               QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
@@ -196,19 +196,19 @@ Gui::informationDialog(const std::string & title,
         }
     }
 
-    Natron::StandardButtons buttons(Natron::eStandardButtonYes | Natron::eStandardButtonNo);
+    StandardButtons buttons(eStandardButtonYes | eStandardButtonNo);
 
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        Q_EMIT doDialog(2, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(2, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        Q_EMIT doDialog(2, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)Natron::eStandardButtonYes);
+        Q_EMIT doDialog(2, QString( title.c_str() ), QString( text.c_str() ), useHtml, buttons, (int)eStandardButtonYes);
     }
 }
 
@@ -226,19 +226,19 @@ Gui::informationDialog(const std::string & title,
         }
     }
 
-    Natron::StandardButtons buttons(Natron::eStandardButtonOk);
+    StandardButtons buttons(eStandardButtonOk);
 
     if ( QThread::currentThread() != QCoreApplication::instance()->thread() ) {
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeInformation, QString( title.c_str() ), QString( message.c_str() ), useHtml, buttons, (int)Natron::eStandardButtonOk );
+        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeInformation, QString( title.c_str() ), QString( message.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeInformation, QString( title.c_str() ), QString( message.c_str() ), useHtml, buttons, (int)Natron::eStandardButtonOk );
+        Q_EMIT doDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeInformation, QString( title.c_str() ), QString( message.c_str() ), useHtml, buttons, (int)eStandardButtonOk );
     }
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
@@ -248,7 +248,7 @@ Gui::onDoDialog(int type,
                 const QString & title,
                 const QString & content,
                 bool useHtml,
-                Natron::StandardButtons buttons,
+                StandardButtons buttons,
                 int defaultB)
 {
     QWidget* currentActiveWindow = qApp->activeWindow();
@@ -316,14 +316,14 @@ StandardButtonEnum
 Gui::questionDialog(const std::string & title,
                     const std::string & message,
                     bool useHtml,
-                    Natron::StandardButtons buttons,
+                    StandardButtons buttons,
                     StandardButtonEnum defaultButton)
 {
     ///don't show dialogs when about to close, otherwise we could enter in a deadlock situation
     {
         QMutexLocker l(&_imp->aboutToCloseMutex);
         if (_imp->_aboutToClose) {
-            return Natron::eStandardButtonNo;
+            return eStandardButtonNo;
         }
     }
 
@@ -347,7 +347,7 @@ StandardButtonEnum
 Gui::questionDialog(const std::string & title,
                     const std::string & message,
                     bool useHtml,
-                    Natron::StandardButtons buttons,
+                    StandardButtons buttons,
                     StandardButtonEnum defaultButton,
                     bool* stopAsking)
 {
@@ -355,7 +355,7 @@ Gui::questionDialog(const std::string & title,
     {
         QMutexLocker l(&_imp->aboutToCloseMutex);
         if (_imp->_aboutToClose) {
-            return Natron::eStandardButtonNo;
+            return eStandardButtonNo;
         }
     }
 
@@ -384,7 +384,7 @@ Gui::onDoDialogWithStopAskingCheckbox(int type,
                                       const QString & title,
                                       const QString & content,
                                       bool useHtml,
-                                      Natron::StandardButtons buttons,
+                                      StandardButtons buttons,
                                       int defaultB)
 {
     QString message = useHtml ? content : Natron::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);

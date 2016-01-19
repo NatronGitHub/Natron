@@ -301,7 +301,7 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
         std::vector<std::string> args;
         std::string error;
         try {
-            Natron::getFunctionArguments(onProjectSave, &error, &args);
+            getFunctionArguments(onProjectSave, &error, &args);
         } catch (const std::exception& e) {
             _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectSave callback: ")
                                                              + e.what());
@@ -339,7 +339,7 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
             onProjectSave = ss.str();
             std::string err;
             std::string output;
-            if (!Natron::interpretPythonScript(onProjectSave, &err, &output)) {
+            if (!interpretPythonScript(onProjectSave, &err, &output)) {
                 _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + err);
                 return filename;
             } else {
@@ -353,7 +353,7 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
                 if (ret) {
                     filePath = PY3String_asString(ret);
                     std::string script = "del ret\n";
-                    bool ok = Natron::interpretPythonScript(script, &err, 0);
+                    bool ok = interpretPythonScript(script, &err, 0);
                     assert(ok);
                     if (!ok) {
                         throw std::runtime_error("ProjectPrivate::runOnProjectSaveCallback(): interpretPythonScript("+script+") failed!");
@@ -380,7 +380,7 @@ ProjectPrivate::runOnProjectCloseCallback()
         std::vector<std::string> args;
         std::string error;
         try {
-            Natron::getFunctionArguments(onProjectClose, &error, &args);
+            getFunctionArguments(onProjectClose, &error, &args);
         } catch (const std::exception& e) {
             _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectClose callback: ")
                                                              + e.what());
@@ -410,7 +410,7 @@ ProjectPrivate::runOnProjectCloseCallback()
         script = script + "\n" + onProjectClose + "(" + appID + ")\n";
         std::string err;
         std::string output;
-        if (!Natron::interpretPythonScript(script, &err, &output)) {
+        if (!interpretPythonScript(script, &err, &output)) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectClose callback: " + err);
         } else {
             if (!output.empty()) {
@@ -430,7 +430,7 @@ ProjectPrivate::runOnProjectLoadCallback()
         std::vector<std::string> args;
         std::string error;
         try {
-            Natron::getFunctionArguments(cb, &error, &args);
+            getFunctionArguments(cb, &error, &args);
         } catch (const std::exception& e) {
             _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectLoaded callback: ")
                                                              + e.what());
@@ -461,7 +461,7 @@ ProjectPrivate::runOnProjectLoadCallback()
         script =  script + "\n" + cb + "(" + appID + ")\n";
         std::string err;
         std::string output;
-        if (!Natron::interpretPythonScript(script, &err, &output)) {
+        if (!interpretPythonScript(script, &err, &output)) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectLoaded callback: " + err);
         } else {
             if (!output.empty()) {

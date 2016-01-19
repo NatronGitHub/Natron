@@ -204,7 +204,7 @@ NodeGui::~NodeGui()
 
 void
 NodeGui::initialize(NodeGraph* dag,
-                    const boost::shared_ptr<Natron::Node> & internalNode)
+                    const boost::shared_ptr<Node> & internalNode)
 {
     _internalNode = internalNode;
     assert(internalNode);
@@ -346,7 +346,7 @@ NodeGui::initialize(NodeGraph* dag,
     ///Link the position of the node to the position of the parent multi-instance
     const std::string parentMultiInstanceName = internalNode->getParentMultiInstanceName();
     if ( !parentMultiInstanceName.empty() ) {
-        boost::shared_ptr<Natron::Node> parentNode = internalNode->getGroup()->getNodeByName(parentMultiInstanceName);
+        boost::shared_ptr<Node> parentNode = internalNode->getGroup()->getNodeByName(parentMultiInstanceName);
         boost::shared_ptr<NodeGuiI> parentNodeGui_I = parentNode->getNodeGui();
         assert(parentNode && parentNodeGui_I);
         NodeGui* parentNodeGui = dynamic_cast<NodeGui*>(parentNodeGui_I.get());
@@ -458,7 +458,7 @@ NodeGui::createPanel(QVBoxLayout* container,
 {
     NodeSettingsPanel* panel = 0;
 
-    boost::shared_ptr<Natron::Node> node = getNode();
+    boost::shared_ptr<Node> node = getNode();
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( node->getLiveInstance() );
 
     if (!isViewer) {
@@ -951,9 +951,9 @@ NodeGui::refreshPositionEnd(double x,
     refreshEdges();
     NodePtr node = getNode();
     if (node) {
-        const std::list<Natron::Node* > & outputs = node->getGuiOutputs();
+        const std::list<Node* > & outputs = node->getGuiOutputs();
 
-        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
             (*it)->doRefreshEdgesGUI();
         }
@@ -1057,8 +1057,8 @@ NodeGui::refreshPosition(double x,
 
             if ( ( !_magnecEnabled.x() || !_magnecEnabled.y() ) ) {
                 ///check now the outputs
-                const std::list<Natron::Node* > & outputs = getNode()->getGuiOutputs();
-                for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+                const std::list<Node* > & outputs = getNode()->getGuiOutputs();
+                for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                     boost::shared_ptr<NodeGuiI> node_gui_i = (*it)->getNodeGui();
                     if (!node_gui_i) {
                         continue;
@@ -1150,7 +1150,7 @@ NodeGui::refreshDashedStateOfEdges()
 void
 NodeGui::refreshEdges()
 {
-    const std::vector<boost::shared_ptr<Natron::Node> > & nodeInputs = getNode()->getGuiInputs();
+    const std::vector<boost::shared_ptr<Node> > & nodeInputs = getNode()->getGuiInputs();
     if (_inputEdges.size() != nodeInputs.size()) {
         return;
     }
@@ -1492,7 +1492,7 @@ NodeGui::refreshEdgesVisibilityInternal(bool hovered)
         _inputEdges[i]->refreshState(hovered);
     }
     
-    boost::shared_ptr<Natron::Node> node = getNode();
+    boost::shared_ptr<Node> node = getNode();
     InspectorNode* isInspector = dynamic_cast<InspectorNode*>(node.get());
     if (isInspector) {
         
@@ -1641,7 +1641,7 @@ NodeGui::findConnectedEdge(NodeGui* parent)
 bool
 NodeGui::connectEdge(int edgeNumber)
 {
-    const std::vector<boost::shared_ptr<Natron::Node> > & inputs = getNode()->getGuiInputs();
+    const std::vector<boost::shared_ptr<Node> > & inputs = getNode()->getGuiInputs();
 
     if ( (edgeNumber < 0) || ( edgeNumber >= (int)inputs.size() ) || _inputEdges.size() != inputs.size() ) {
         return false;
@@ -1774,8 +1774,8 @@ NodeGui::showGui()
         _outputEdge->setActive(true);
     }
     refreshEdges();
-    const std::list<Natron::Node* > & outputs = node->getGuiOutputs();
-    for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+    const std::list<Node* > & outputs = node->getGuiOutputs();
+    for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         assert(*it);
         (*it)->doRefreshEdgesGUI();
     }
@@ -2057,8 +2057,8 @@ NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& int
         boost::shared_ptr<MultiInstancePanel> panel = _settingsPanel->getMultiInstancePanel();
         assert(panel);
 
-        const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >& instances = panel->getInstances();
-        for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin();
+        const std::list<std::pair<boost::weak_ptr<Node>,bool> >& instances = panel->getInstances();
+        for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin();
              it != instances.end(); ++it) {
             boost::shared_ptr<NodeSerialization> childSerialization(new NodeSerialization(it->first.lock(),false));
             internalSerialization.push_back(childSerialization);
@@ -2203,8 +2203,8 @@ NodeGui::moveBelowPositionRecursively(const QRectF & r)
 
     if ( r.intersects(sceneRect) ) {
         changePosition(0, r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-        const std::list<Natron::Node* > & outputs = getNode()->getGuiOutputs();
-        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        const std::list<Node* > & outputs = getNode()->getGuiOutputs();
+        for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
             boost::shared_ptr<NodeGuiI> outputGuiI = (*it)->getNodeGui();
             if (!outputGuiI) {
@@ -2261,7 +2261,7 @@ NodeGui::onAllKnobsSlaved(bool b)
 {
     NodePtr node = getNode();
     if (b) {
-        boost::shared_ptr<Natron::Node> masterNode = node->getMasterNode();
+        boost::shared_ptr<Node> masterNode = node->getMasterNode();
         assert(masterNode);
         boost::shared_ptr<NodeGuiI> masterNodeGui_i = masterNode->getNodeGui();
         assert(masterNodeGui_i);
@@ -2295,7 +2295,7 @@ NodeGui::onAllKnobsSlaved(bool b)
     update();
 }
 
-static QString makeLinkString(Natron::Node* masterNode,KnobI* master,Natron::Node* slaveNode,KnobI* slave)
+static QString makeLinkString(Node* masterNode,KnobI* master,Node* slaveNode,KnobI* slave)
 {
     QString tt("<br>");
     tt.append(masterNode->getLabel().c_str());
@@ -2321,7 +2321,7 @@ NodeGui::onKnobsLinksChanged()
 {
     NodePtr node = getNode();
 
-    typedef std::list<Natron::Node::KnobLink> InternalLinks;
+    typedef std::list<Node::KnobLink> InternalLinks;
     InternalLinks links;
     node->getKnobsLinks(links);
 
@@ -2636,8 +2636,8 @@ NodeGui::setScale_natron(double scale)
         _outputEdge->setScale(scale);
     }
     refreshEdges();
-    const std::list<Natron::Node* > & outputs = getNode()->getGuiOutputs();
-    for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+    const std::list<Node* > & outputs = getNode()->getGuiOutputs();
+    for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         assert(*it);
         (*it)->doRefreshEdgesGUI();
     }
@@ -3024,7 +3024,7 @@ NodeGui::setName(const QString & newName)
     try {
         getNode()->setScriptName(stdName);
     } catch (const std::exception& e) {
-        Natron::errorDialog(tr("Rename").toStdString(), tr("Could not set node script-name to ").toStdString() + stdName + ": " + e.what());
+        natronErrorDialog(tr("Rename").toStdString(), tr("Could not set node script-name to ").toStdString() + stdName + ": " + e.what());
         return;
     }
     
@@ -3062,8 +3062,8 @@ NodeGui::shouldDrawOverlay() const
         boost::shared_ptr<MultiInstancePanel> multiInstance = parentGui->getMultiInstancePanel();
         assert(multiInstance);
 
-        const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
-        for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        const std::list< std::pair<boost::weak_ptr<Node>,bool > >& instances = multiInstance->getInstances();
+        for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             NodePtr instance = it->first.lock();
 
             if (instance == internalNode) {

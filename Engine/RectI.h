@@ -468,6 +468,6 @@ operator!=(const RectI & b1,
 
 NATRON_NAMESPACE_EXIT;
 
-Q_DECLARE_METATYPE(Natron::RectI)
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::RectI)
 
 #endif // Engine_RectI_h

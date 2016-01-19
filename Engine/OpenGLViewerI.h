@@ -98,7 +98,7 @@ public:
      * 4) glTexSubImage2D or glTexImage2D depending whether yo need to resize the texture or not.
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                            const std::list<boost::shared_ptr<Natron::Image> >& tiles,
+                                            const std::list<boost::shared_ptr<Image> >& tiles,
                                             ImageBitDepthEnum depth,
                                             int time,
                                             const RectD& rod,

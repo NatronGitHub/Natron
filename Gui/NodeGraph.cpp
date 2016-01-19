@@ -57,7 +57,7 @@ NATRON_NAMESPACE_USING
 
 
 void
-NodeGraph::makeFullyQualifiedLabel(Natron::Node* node,std::string* ret)
+NodeGraph::makeFullyQualifiedLabel(Node* node,std::string* ret)
 {
     boost::shared_ptr<NodeCollection> parent = node->getGroup();
     NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(parent.get());
@@ -370,7 +370,7 @@ NodeGraph::visibleWidgetRect() const
 }
 
 boost::shared_ptr<NodeGui>
-NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
+NodeGraph::createNodeGUI(const boost::shared_ptr<Node> & node,
                          bool requestedByLoad,
                          bool userEdited,
                          bool pushUndoRedoCommand)

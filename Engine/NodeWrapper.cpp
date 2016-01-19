@@ -165,7 +165,7 @@ UserParamHolder::setHolder(KnobHolder* holder)
     _holder = holder;
 }
 
-Effect::Effect(const boost::shared_ptr<Natron::Node>& node)
+Effect::Effect(const boost::shared_ptr<Node>& node)
 : Group()
 , UserParamHolder(node ? node->getLiveInstance() : 0)
 , _node(node)
@@ -185,7 +185,7 @@ Effect::~Effect()
     
 }
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 Effect::getInternalNode() const
 {
     return _node;
@@ -214,10 +214,10 @@ Effect::canConnectInput(int inputNumber,const Effect* node) const
     if (!node->getInternalNode()) {
         return false;
     }
-    Natron::Node::CanConnectInputReturnValue ret = _node->canConnectInput(node->getInternalNode(),inputNumber);
-    return ret == Natron::Node::eCanConnectInput_ok ||
-    ret == Natron::Node::eCanConnectInput_differentFPS ||
-    ret == Natron::Node::eCanConnectInput_differentPars;
+    Node::CanConnectInputReturnValue ret = _node->canConnectInput(node->getInternalNode(),inputNumber);
+    return ret == Node::eCanConnectInput_ok ||
+    ret == Node::eCanConnectInput_differentFPS ||
+    ret == Node::eCanConnectInput_differentPars;
 }
 
 bool
@@ -239,7 +239,7 @@ Effect::disconnectInput(int inputNumber)
 Effect*
 Effect::getInput(int inputNumber) const
 {
-    boost::shared_ptr<Natron::Node> node = _node->getRealInput(inputNumber);
+    boost::shared_ptr<Node> node = _node->getRealInput(inputNumber);
     if (node) {
         return new Effect(node);
     }
@@ -731,7 +731,7 @@ Effect::getRegionOfDefinition(double time,int view) const
     RenderScale s(1.);
     bool isProject;
     StatusEnum stat = _node->getLiveInstance()->getRegionOfDefinition_public(hash, time, s, view, &rod, &isProject);
-    if (stat != Natron::eStatusOK) {
+    if (stat != eStatusOK) {
         return RectD();
     }
     return rod;

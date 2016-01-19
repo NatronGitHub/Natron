@@ -48,9 +48,11 @@ GCC_DIAG_ON(unused-parameter)
 #define FRAME_KEY_INTRODUCES_CACHE_HOLDER_ID 8
 #define FRAME_KEY_VERSION FRAME_KEY_INTRODUCES_CACHE_HOLDER_ID
 
+NATRON_NAMESPACE_ENTER;
+
 template<class Archive>
 void
-Natron::FrameKey::serialize(Archive & ar,
+FrameKey::serialize(Archive & ar,
                             const unsigned int version)
 {
     ar & ::boost::serialization::make_nvp("Time", _time);
@@ -93,6 +95,8 @@ Natron::FrameKey::serialize(Archive & ar,
         ar & ::boost::serialization::make_nvp("HolderID",_holderID);
     }
 }
+
+NATRON_NAMESPACE_EXIT;
 
 BOOST_CLASS_VERSION(NATRON_NAMESPACE::FrameKey, FRAME_KEY_VERSION)
 

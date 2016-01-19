@@ -125,7 +125,7 @@ KnobI::slaveTo(int dimension,
                int otherDimension,
                bool ignoreMasterPersistence)
 {
-    return slaveTo(dimension, other, otherDimension, Natron::eValueChangedReasonNatronInternalEdited,ignoreMasterPersistence);
+    return slaveTo(dimension, other, otherDimension, eValueChangedReasonNatronInternalEdited, ignoreMasterPersistence);
 }
 
 void
@@ -133,27 +133,27 @@ KnobI::onKnobSlavedTo(int dimension,
                       const boost::shared_ptr<KnobI> &  other,
                       int otherDimension)
 {
-    slaveTo(dimension, other, otherDimension, Natron::eValueChangedReasonUserEdited);
+    slaveTo(dimension, other, otherDimension, eValueChangedReasonUserEdited);
 }
 
 void
 KnobI::unSlave(int dimension,
                bool copyState)
 {
-    unSlave(dimension, Natron::eValueChangedReasonNatronInternalEdited,copyState);
+    unSlave(dimension, eValueChangedReasonNatronInternalEdited,copyState);
 }
 
 void
 KnobI::onKnobUnSlaved(int dimension)
 {
-    unSlave(dimension, Natron::eValueChangedReasonUserEdited,true);
+    unSlave(dimension, eValueChangedReasonUserEdited,true);
 }
 
 void
 KnobI::removeAnimation(int dimension)
 {
     if (canAnimate()) {
-        removeAnimation(dimension, Natron::eValueChangedReasonNatronInternalEdited);
+        removeAnimation(dimension, eValueChangedReasonNatronInternalEdited);
     }
 }
 
@@ -162,7 +162,7 @@ void
 KnobI::onAnimationRemoved(int dimension)
 {
     if (canAnimate()) {
-        removeAnimation(dimension, Natron::eValueChangedReasonUserEdited);
+        removeAnimation(dimension, eValueChangedReasonUserEdited);
     }
 }
 
@@ -767,11 +767,11 @@ KnobHelper::moveValueAtTime(Natron::CurveChangeReason reason, double time,int di
     }
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, newX, Natron::eValueChangedReasonNatronInternalEdited);
+        evaluateValueChange(dimension, newX, eValueChangedReasonNatronInternalEdited);
         
         //We've set the internal curve, so synchronize the gui curve to the internal curve
         //the s_redrawGuiCurve signal will be emitted
-        guiCurveCloneInternalCurve(reason, dimension, Natron::eValueChangedReasonNatronInternalEdited);
+        guiCurveCloneInternalCurve(reason, dimension, eValueChangedReasonNatronInternalEdited);
     } else {
         //notify that the gui curve has changed to redraw it
         if (_signalSlotHandler) {
@@ -855,7 +855,7 @@ KnobHelper::transformValueAtTime(Natron::CurveChangeReason curveChangeReason, do
     }
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension,p.x, Natron::eValueChangedReasonNatronInternalEdited);
+        evaluateValueChange(dimension,p.x, eValueChangedReasonNatronInternalEdited);
         guiCurveCloneInternalCurve(curveChangeReason, dimension , eValueChangedReasonNatronInternalEdited);
     }
     return true;
@@ -884,7 +884,7 @@ KnobHelper::cloneCurve(int dimension,const Curve& curve)
     animationRemoved_virtual(dimension);
     thisCurve->clone(curve);
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, getCurrentTime(), Natron::eValueChangedReasonNatronInternalEdited);
+        evaluateValueChange(dimension, getCurrentTime(), eValueChangedReasonNatronInternalEdited);
         guiCurveCloneInternalCurve(Natron::eCurveChangeReasonInternal,dimension, eValueChangedReasonNatronInternalEdited);
     }
     
@@ -895,7 +895,7 @@ KnobHelper::cloneCurve(int dimension,const Curve& curve)
             keysList.push_back(it->getTime());
         }
         if (!keysList.empty()) {
-            _signalSlotHandler->s_multipleKeyFramesSet(keysList, dimension, (int)Natron::eValueChangedReasonNatronInternalEdited);
+            _signalSlotHandler->s_multipleKeyFramesSet(keysList, dimension, (int)eValueChangedReasonNatronInternalEdited);
         }
     }
 }
@@ -931,7 +931,7 @@ KnobHelper::setInterpolationAtTime(Natron::CurveChangeReason reason,int dimensio
     *newKey = curve->setKeyFrameInterpolation(interpolation, keyIndex);
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, time, Natron::eValueChangedReasonNatronInternalEdited);
+        evaluateValueChange(dimension, time, eValueChangedReasonNatronInternalEdited);
         guiCurveCloneInternalCurve(reason, dimension, eValueChangedReasonNatronInternalEdited);
     } else {
         if (_signalSlotHandler) {
@@ -979,7 +979,7 @@ KnobHelper::moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension
     curve->setKeyFrameDerivatives(left, right, keyIndex);
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, time, Natron::eValueChangedReasonNatronInternalEdited);
+        evaluateValueChange(dimension, time, eValueChangedReasonNatronInternalEdited);
         guiCurveCloneInternalCurve(reason, dimension, eValueChangedReasonNatronInternalEdited);
     } else {
         if (_signalSlotHandler) {
@@ -1030,7 +1030,7 @@ KnobHelper::moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,
     }
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, time, Natron::eValueChangedReasonNatronInternalEdited);
+        evaluateValueChange(dimension, time, eValueChangedReasonNatronInternalEdited);
         guiCurveCloneInternalCurve(reason, dimension, eValueChangedReasonNatronInternalEdited);
     } else {
         if (_signalSlotHandler) {
@@ -1071,7 +1071,7 @@ KnobHelper::removeAnimation(int dimension,
         setGuiCurveHasChanged(dimension,true);
     }
     
-    if ( _signalSlotHandler && (reason != Natron::eValueChangedReasonUserEdited) ) {
+    if ( _signalSlotHandler && (reason != eValueChangedReasonUserEdited) ) {
         _signalSlotHandler->s_animationAboutToBeRemoved(dimension);
     }
 
@@ -1080,7 +1080,7 @@ KnobHelper::removeAnimation(int dimension,
         curve->clearKeyFrames();
     }
     
-    if ( _signalSlotHandler && (reason != Natron::eValueChangedReasonUserEdited) ) {
+    if ( _signalSlotHandler && (reason != eValueChangedReasonUserEdited) ) {
         _signalSlotHandler->s_animationRemoved(dimension);
     }
     
@@ -1110,7 +1110,7 @@ KnobHelper::clearExpressionsResultsIfNeeded(std::map<int,ValueChangedReasonEnum>
         if (_imp->mustClearExprResults[i]) {
             clearExpressionsResults(i);
             _imp->mustClearExprResults[i] = false;
-            modifiedDimensions.insert(std::make_pair(i, Natron::eValueChangedReasonNatronInternalEdited));
+            modifiedDimensions.insert(std::make_pair(i, eValueChangedReasonNatronInternalEdited));
         }
     }
 }
@@ -1123,7 +1123,7 @@ KnobHelper::cloneInternalCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& mo
         if (_imp->mustCloneInternalCurves[i]) {
             guiCurveCloneInternalCurve(Natron::eCurveChangeReasonInternal,i, eValueChangedReasonNatronInternalEdited);
             _imp->mustCloneInternalCurves[i] = false;
-            modifiedDimensions.insert(std::make_pair(i,Natron::eValueChangedReasonNatronInternalEdited));
+            modifiedDimensions.insert(std::make_pair(i,eValueChangedReasonNatronInternalEdited));
         }
     }
 }
@@ -1154,7 +1154,7 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& modifie
             curve->clone(*guicurve);
             _imp->mustCloneGuiCurves[i] = false;
             
-            modifiedDimensions.insert(std::make_pair(i,Natron::eValueChangedReasonUserEdited));
+            modifiedDimensions.insert(std::make_pair(i,eValueChangedReasonUserEdited));
         }
     }
     if (hasChanged && _imp->holder) {
@@ -1297,7 +1297,7 @@ KnobHelper::evaluateValueChange(int dimension,
 
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle
     /// the application responsiveness
-    if ((reason != Natron::eValueChangedReasonTimeChanged || evaluateValueChangeOnTimeChange()) && _imp->holder) {
+    if ((reason != eValueChangedReasonTimeChanged || evaluateValueChangeOnTimeChange()) && _imp->holder) {
         if (!app || !app->getProject()->isLoadingProject()) {
             
             if (_imp->holder->isEvaluationBlocked()) {
@@ -1317,7 +1317,7 @@ KnobHelper::evaluateValueChange(int dimension,
         if (refreshWidget) {
             _signalSlotHandler->s_valueChanged(dimension,(int)reason);
         }
-        if (reason != Natron::eValueChangedReasonSlaveRefresh) {
+        if (reason != eValueChangedReasonSlaveRefresh) {
             refreshListenersAfterValueChange(dimension);
         }
         if (dimension == -1) {
@@ -1823,7 +1823,7 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
     script = declarations + "\n" + script;
     ///This will register the listeners
     std::string error;
-    bool ok = Natron::interpretPythonScript(script, &error,NULL);
+    bool ok = interpretPythonScript(script, &error,NULL);
     if (!error.empty()) {
         qDebug() << error.c_str();
     }
@@ -1838,7 +1838,7 @@ KnobHelperPrivate::parseListenersFromExpression(int dimension)
 std::string
 KnobHelper::validateExpression(const std::string& expression,int dimension,bool hasRetVariable,std::string* resultAsString)
 {
-    Natron::PythonGILLocker pgl;
+    PythonGILLocker pgl;
     
     if (expression.empty()) {
         throw std::invalid_argument("empty expression");;
@@ -1964,7 +1964,7 @@ KnobHelper::setExpressionInternal(int dimension,const std::string& expression,bo
 #endif
     assert(dimension >= 0 && dimension < getDimension());
     
-    Natron::PythonGILLocker pgl;
+    PythonGILLocker pgl;
     
     ///Clear previous expr
     clearExpression(dimension,clearResults);
@@ -2059,7 +2059,7 @@ KnobHelper::getExpressionDependencies(int dimension, std::list<std::pair<KnobI*,
 void
 KnobHelper::clearExpression(int dimension,bool clearResults)
 {
-    Natron::PythonGILLocker pgl;
+    PythonGILLocker pgl;
     bool hadExpression;
     {
         QMutexLocker k(&_imp->expressionMutex);
@@ -2618,7 +2618,7 @@ KnobHelper::slaveTo(int dimension,
     
     if (_signalSlotHandler) {
         ///Notify we want to refresh
-        if (reason == Natron::eValueChangedReasonNatronInternalEdited) {
+        if (reason == eValueChangedReasonNatronInternalEdited) {
             _signalSlotHandler->s_knobSlaved(dimension,true);
         }
     }
@@ -2934,7 +2934,7 @@ KnobHelper::refreshListenersAfterValueChange(int dimension)
             slaveKnob->clone(this,dimChanged);
         }
         
-        slaveKnob->evaluateValueChange(dimChanged, time, Natron::eValueChangedReasonSlaveRefresh);
+        slaveKnob->evaluateValueChange(dimChanged, time, eValueChangedReasonSlaveRefresh);
         
         //call recursively
         slaveKnob->refreshListenersAfterValueChange(dimChanged);
@@ -3423,7 +3423,7 @@ KnobHelper::setKnobAsAliasOfThis(const boost::shared_ptr<KnobI>& master, bool do
             unSlave(i, false);
         }
         if (doAlias) {
-            bool ok = slaveTo(i, master, i, Natron::eValueChangedReasonNatronInternalEdited, false);
+            bool ok = slaveTo(i, master, i, eValueChangedReasonNatronInternalEdited, false);
             assert(ok);
         }
         handleSignalSlotsForAliasLink(master,doAlias);
@@ -3447,7 +3447,7 @@ KnobHelper::getAliasMaster()  const
 }
 
 void
-KnobHelper::getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const
+KnobHelper::getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Node> >& nodes) const
 {
     std::set<KnobI*> deps;
     {
@@ -3846,7 +3846,7 @@ KnobHolder::getOrCreateUserPageKnob()
     if (ret) {
         return ret;
     }
-    ret = Natron::createKnob<KnobPage>(this,NATRON_USER_MANAGED_KNOBS_PAGE_LABEL,1,false);
+    ret = natronCreateKnob<KnobPage>(this,NATRON_USER_MANAGED_KNOBS_PAGE_LABEL,1,false);
     ret->setAsUserKnob();
     ret->setName(NATRON_USER_MANAGED_KNOBS_PAGE);
     
@@ -3865,7 +3865,7 @@ KnobHolder::createIntKnob(const std::string& name, const std::string& label,int 
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobInt>(existingKnob);
     }
-    boost::shared_ptr<KnobInt> ret = Natron::createKnob<KnobInt>(this,label, dimension, false);
+    boost::shared_ptr<KnobInt> ret = natronCreateKnob<KnobInt>(this,label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
@@ -3884,7 +3884,7 @@ KnobHolder::createDoubleKnob(const std::string& name, const std::string& label,i
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobDouble>(existingKnob);
     }
-    boost::shared_ptr<KnobDouble> ret = Natron::createKnob<KnobDouble>(this,label, dimension, false);
+    boost::shared_ptr<KnobDouble> ret = natronCreateKnob<KnobDouble>(this,label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
@@ -3903,7 +3903,7 @@ KnobHolder::createColorKnob(const std::string& name, const std::string& label,in
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobColor>(existingKnob);
     }
-    boost::shared_ptr<KnobColor> ret = Natron::createKnob<KnobColor>(this,label, dimension, false);
+    boost::shared_ptr<KnobColor> ret = natronCreateKnob<KnobColor>(this,label, dimension, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
@@ -3922,7 +3922,7 @@ KnobHolder::createBoolKnob(const std::string& name, const std::string& label)
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobBool>(existingKnob);
     }
-    boost::shared_ptr<KnobBool> ret = Natron::createKnob<KnobBool>(this,label, 1, false);
+    boost::shared_ptr<KnobBool> ret = natronCreateKnob<KnobBool>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
@@ -3941,7 +3941,7 @@ KnobHolder::createChoiceKnob(const std::string& name, const std::string& label)
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobChoice>(existingKnob);
     }
-    boost::shared_ptr<KnobChoice> ret = Natron::createKnob<KnobChoice>(this,label, 1, false);
+    boost::shared_ptr<KnobChoice> ret = natronCreateKnob<KnobChoice>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
@@ -3960,7 +3960,7 @@ KnobHolder::createButtonKnob(const std::string& name, const std::string& label)
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobButton>(existingKnob);
     }
-    boost::shared_ptr<KnobButton> ret = Natron::createKnob<KnobButton>(this,label, 1, false);
+    boost::shared_ptr<KnobButton> ret = natronCreateKnob<KnobButton>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
@@ -3979,7 +3979,7 @@ KnobHolder::createSeparatorKnob(const std::string& name, const std::string& labe
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobSeparator>(existingKnob);
     }
-    boost::shared_ptr<KnobSeparator> ret = Natron::createKnob<KnobSeparator>(this,label, 1, false);
+    boost::shared_ptr<KnobSeparator> ret = natronCreateKnob<KnobSeparator>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
@@ -4000,7 +4000,7 @@ KnobHolder::createStringKnob(const std::string& name, const std::string& label)
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobString>(existingKnob);
     }
-    boost::shared_ptr<KnobString> ret = Natron::createKnob<KnobString>(this,label, 1, false);
+    boost::shared_ptr<KnobString> ret = natronCreateKnob<KnobString>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
@@ -4020,7 +4020,7 @@ KnobHolder::createFileKnob(const std::string& name, const std::string& label)
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobFile>(existingKnob);
     }
-    boost::shared_ptr<KnobFile> ret = Natron::createKnob<KnobFile>(this,label, 1, false);
+    boost::shared_ptr<KnobFile> ret = natronCreateKnob<KnobFile>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
@@ -4039,7 +4039,7 @@ KnobHolder::createOuptutFileKnob(const std::string& name, const std::string& lab
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobOutputFile>(existingKnob);
     }
-    boost::shared_ptr<KnobOutputFile> ret = Natron::createKnob<KnobOutputFile>(this,label, 1, false);
+    boost::shared_ptr<KnobOutputFile> ret = natronCreateKnob<KnobOutputFile>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
@@ -4059,7 +4059,7 @@ KnobHolder::createPathKnob(const std::string& name, const std::string& label)
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobPath>(existingKnob);
     }
-    boost::shared_ptr<KnobPath> ret = Natron::createKnob<KnobPath>(this,label, 1, false);
+    boost::shared_ptr<KnobPath> ret = natronCreateKnob<KnobPath>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
@@ -4079,7 +4079,7 @@ KnobHolder::createGroupKnob(const std::string& name, const std::string& label)
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobGroup>(existingKnob);
     }
-    boost::shared_ptr<KnobGroup> ret = Natron::createKnob<KnobGroup>(this,label, 1, false);
+    boost::shared_ptr<KnobGroup> ret = natronCreateKnob<KnobGroup>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
@@ -4099,7 +4099,7 @@ KnobHolder::createPageKnob(const std::string& name, const std::string& label)
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobPage>(existingKnob);
     }
-    boost::shared_ptr<KnobPage> ret = Natron::createKnob<KnobPage>(this,label, 1, false);
+    boost::shared_ptr<KnobPage> ret = natronCreateKnob<KnobPage>(this,label, 1, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
@@ -4119,7 +4119,7 @@ KnobHolder::createParametricKnob(const std::string& name, const std::string& lab
     if (existingKnob) {
         return boost::dynamic_pointer_cast<KnobParametric>(existingKnob);
     }
-    boost::shared_ptr<KnobParametric> ret = Natron::createKnob<KnobParametric>(this,label, nbCurves, false);
+    boost::shared_ptr<KnobParametric> ret = natronCreateKnob<KnobParametric>(this,label, nbCurves, false);
     ret->setName(name);
     ret->setAsUserKnob();
     /*boost::shared_ptr<KnobPage> pageknob = getOrCreateUserPageKnob();
@@ -4227,7 +4227,7 @@ KnobHolder::appendValueChange(KnobI* knob,double time,  ValueChangedReasonEnum r
             }
         }
         
-        if (reason == Natron::eValueChangedReasonTimeChanged) {
+        if (reason == eValueChangedReasonTimeChanged) {
             return;
         }
 
@@ -4275,7 +4275,7 @@ KnobHolder::isSetValueCurrentlyPossible() const
 
 
 void
-KnobHolder::getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const
+KnobHolder::getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Node> >& nodes) const
 {
     QMutexLocker k(&_imp->knobsMutex);
     for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {

@@ -49,8 +49,8 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_USING
 
-QtWriter::QtWriter(boost::shared_ptr<Natron::Node> node)
-    : Natron::OutputEffectInstance(node)
+QtWriter::QtWriter(boost::shared_ptr<Node> node)
+    : OutputEffectInstance(node)
       , _lut( Natron::Color::LutManager::sRGBLut() )
 {
 }
@@ -132,7 +132,7 @@ QtWriter::getFrameRange(double *first,
 void
 QtWriter::initializeKnobs()
 {
-    Natron::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developpers team to test %1"
+    natronWarningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developpers team to test %1"
                                                   ". You cannot use it to render a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 
@@ -251,7 +251,7 @@ QtWriter::render(const RenderActionArgs& args)
     assert(args.outputPlanes.size() == 1);
     const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
     
-    boost::shared_ptr<Natron::Image> src = getImage(0, args.time, args.mappedScale, args.view, NULL, output.second->getComponents(), output.second->getBitDepth(),1, false,NULL);
+    boost::shared_ptr<Image> src = getImage(0, args.time, args.mappedScale, args.view, NULL, output.second->getComponents(), output.second->getBitDepth(),1, false,NULL);
 
     if ( hasOutputConnected() ) {
         output.second->pasteFrom( *src, src->getBounds() );
@@ -267,7 +267,7 @@ QtWriter::render(const RenderActionArgs& args)
         type = QImage::Format_ARGB32;
     }
     
-    Natron::Image::WriteAccess acc = output.second->getWriteRights();
+    Image::WriteAccess acc = output.second->getWriteRights();
 
     _lut->to_byte_packed(buf, (const float*)acc.pixelAt(0, 0), args.roi, src->getBounds(), args.roi,
                          Natron::Color::ePixelPackingRGBA, Natron::Color::ePixelPackingBGRA, true, premult);

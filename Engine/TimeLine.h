@@ -63,7 +63,7 @@ public:
 
     void seekFrame(SequenceTime frame,
                    bool updateLastCaller,
-                   Natron::OutputEffectInstance* caller,
+                   OutputEffectInstance* caller,
                    Natron::TimelineChangeReasonEnum reason);
 
     void incrementCurrentFrame();

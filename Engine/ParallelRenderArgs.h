@@ -99,10 +99,10 @@ struct ParallelRenderArgs
     U64 renderAge;
     
     ///A pointer to the node that requested the current render.
-    boost::shared_ptr<Natron::Node> treeRoot;
+    boost::shared_ptr<Node> treeRoot;
 
     ///List of the nodes in the rotopaint tree
-    std::list<boost::shared_ptr<Natron::Node> > rotoPaintNodes;
+    std::list<boost::shared_ptr<Node> > rotoPaintNodes;
 
     ///Various stats local to the render of a frame
     boost::shared_ptr<RenderStats> stats;
@@ -257,13 +257,13 @@ struct NodeFrameRequest
 
 };
 
-typedef std::map<boost::shared_ptr<Natron::Node>,boost::shared_ptr<NodeFrameRequest> > FrameRequestMap;
+typedef std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeFrameRequest> > FrameRequestMap;
 
 
 class ParallelRenderArgsSetter
 {
-    boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > > argsMap;
-    std::list<boost::shared_ptr<Natron::Node> > nodes;
+    boost::shared_ptr<std::map<boost::shared_ptr<Node>,ParallelRenderArgs > > argsMap;
+    std::list<boost::shared_ptr<Node> > nodes;
     
 public:
     
@@ -280,17 +280,17 @@ public:
                              bool isSequential,
                              bool canAbort,
                              U64 renderAge,
-                             const boost::shared_ptr<Natron::Node>& treeRoot,
+                             const boost::shared_ptr<Node>& treeRoot,
                              const FrameRequestMap* request,
                              int textureIndex,
                              const TimeLine* timeline,
-                             const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
+                             const boost::shared_ptr<Node>& activeRotoPaintNode,
                              bool isAnalysis,
                              bool draftMode,
                              bool viewerProgressReportEnabled,
                              const boost::shared_ptr<RenderStats>& stats);
     
-    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > >& args);
+    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<boost::shared_ptr<Node>,ParallelRenderArgs > >& args);
     
     virtual ~ParallelRenderArgsSetter();
 };

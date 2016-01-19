@@ -283,7 +283,7 @@ KnobGuiParametric::resetSelectedCurves()
             }
         }
     }
-    k->evaluateValueChange(0, k->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+    k->evaluateValueChange(0, k->getCurrentTime(), eValueChangedReasonUserEdited);
 }
 
 boost::shared_ptr<KnobI> KnobGuiParametric::getKnob() const

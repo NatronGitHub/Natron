@@ -62,7 +62,7 @@
 NATRON_NAMESPACE_USING
 
 
-static void makeFullyQualifiedLabel(Natron::Node* node,std::string* ret)
+static void makeFullyQualifiedLabel(Node* node,std::string* ret)
 {
     boost::shared_ptr<NodeCollection> parent = node->getGroup();
     NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(parent.get());

@@ -63,8 +63,8 @@ typedef std::map<U64,OnGoingRenderInfo> OnGoingRenders;
 
 struct RenderViewerArgs
 {
-    RenderViewerArgs(const boost::shared_ptr<const Natron::Image> &inputImage_,
-                     const boost::shared_ptr<const Natron::Image> &matteImage_,
+    RenderViewerArgs(const boost::shared_ptr<const Image> &inputImage_,
+                     const boost::shared_ptr<const Image> &matteImage_,
                      const TextureRect & texRect_,
                      DisplayChannelsEnum channels_,
                      ImagePremultiplicationEnum srcPremult_,
@@ -90,8 +90,8 @@ struct RenderViewerArgs
     {
     }
 
-    boost::shared_ptr<const Natron::Image> inputImage;
-    boost::shared_ptr<const Natron::Image> matteImage;
+    boost::shared_ptr<const Image> inputImage;
+    boost::shared_ptr<const Image> matteImage;
     TextureRect texRect;
     DisplayChannelsEnum channels;
     ImagePremultiplicationEnum srcPremult;
@@ -116,14 +116,14 @@ public:
     , textureIndex(0)
     , time(0)
     , textureRect()
-    , srcPremult(Natron::eImagePremultiplicationOpaque)
+    , srcPremult(eImagePremultiplicationOpaque)
     , bytesCount(0)
     , depth()
     , gain(1.)
     , gamma(1.)
     , offset(0.)
     , mipMapLevel(0)
-    , premult(Natron::eImagePremultiplicationOpaque)
+    , premult(eImagePremultiplicationOpaque)
     , lut(Natron::eViewerColorSpaceSRGB)
     , layer()
     , alphaLayer()
@@ -168,8 +168,8 @@ public:
     std::string alphaChannelName;
     
     // put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
-    boost::shared_ptr<Natron::FrameEntry> cachedFrame;
-    std::list<boost::shared_ptr<Natron::Image> > tiles;
+    boost::shared_ptr<FrameEntry> cachedFrame;
+    std::list<boost::shared_ptr<Image> > tiles;
     RectD rod;
     U64 renderAge;
     bool isSequential;
@@ -178,7 +178,7 @@ public:
 };
 
 struct ViewerInstance::ViewerInstancePrivate
-: public QObject, public LockManagerI<Natron::FrameEntry>
+: public QObject, public LockManagerI<FrameEntry>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -234,12 +234,12 @@ public:
     
 public:
     
-    virtual void lock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL
+    virtual void lock(const boost::shared_ptr<FrameEntry>& entry) OVERRIDE FINAL
     {
 
 
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<boost::shared_ptr<Natron::FrameEntry> >::iterator it =
+        std::list<boost::shared_ptr<FrameEntry> >::iterator it =
                 std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
         while ( it != textureBeingRendered.end() ) {
             textureBeingRenderedCond.wait(&textureBeingRenderedMutex);
@@ -250,10 +250,10 @@ public:
         textureBeingRendered.push_back(entry);
     }
     
-    virtual bool tryLock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL
+    virtual bool tryLock(const boost::shared_ptr<FrameEntry>& entry) OVERRIDE FINAL
     {
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<boost::shared_ptr<Natron::FrameEntry> >::iterator it =
+        std::list<boost::shared_ptr<FrameEntry> >::iterator it =
         std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
         if ( it != textureBeingRendered.end() ) {
             return false;
@@ -264,11 +264,11 @@ public:
         return true;
     }
     
-    virtual void unlock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL
+    virtual void unlock(const boost::shared_ptr<FrameEntry>& entry) OVERRIDE FINAL
     {
 
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<boost::shared_ptr<Natron::FrameEntry> >::iterator it =
+        std::list<boost::shared_ptr<FrameEntry> >::iterator it =
                 std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
         ///The image must exist, otherwise this is a bug
         assert( it != textureBeingRendered.end() );
@@ -452,7 +452,7 @@ public:
     
     mutable QMutex textureBeingRenderedMutex;
     QWaitCondition textureBeingRenderedCond;
-    std::list<boost::shared_ptr<Natron::FrameEntry> > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
+    std::list<boost::shared_ptr<FrameEntry> > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
     
     mutable QReadWriteLock gammaLookupMutex;
     std::vector<float> gammaLookup; // protected by gammaLookupMutex

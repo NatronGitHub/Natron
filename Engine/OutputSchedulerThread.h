@@ -95,7 +95,7 @@ class RenderThreadTask :  public QThread
     
 public:
     
-    RenderThreadTask(Natron::OutputEffectInstance* output,OutputSchedulerThread* scheduler);
+    RenderThreadTask(OutputEffectInstance* output,OutputSchedulerThread* scheduler);
     
     virtual ~RenderThreadTask();
     
@@ -149,7 +149,7 @@ public:
         eProcessFrameByMainThread //< the processFrame function will be called by the application's main-thread.
     };
     
-    OutputSchedulerThread(RenderEngine* engine,Natron::OutputEffectInstance* effect,ProcessFrameModeEnum mode);
+    OutputSchedulerThread(RenderEngine* engine,OutputEffectInstance* effect,ProcessFrameModeEnum mode);
     
     virtual ~OutputSchedulerThread();
     
@@ -459,7 +459,7 @@ class DefaultScheduler : public OutputSchedulerThread
 {
 public:
     
-    DefaultScheduler(RenderEngine* engine,Natron::OutputEffectInstance* effect);
+    DefaultScheduler(RenderEngine* engine,OutputEffectInstance* effect);
     
     virtual ~DefaultScheduler();
     
@@ -488,7 +488,7 @@ private:
     
 
     
-    Natron::OutputEffectInstance* _effect;
+    OutputEffectInstance* _effect;
 };
 
 
@@ -621,7 +621,7 @@ class RenderEngine : public QObject
     
 public:
     
-    RenderEngine(Natron::OutputEffectInstance* output);
+    RenderEngine(OutputEffectInstance* output);
     
     virtual ~RenderEngine();
    
@@ -757,7 +757,7 @@ protected:
     /**
      * @brief Must create the main-scheduler that will be used for scheduling playback/writing on disk.
      **/
-    virtual OutputSchedulerThread* createScheduler(Natron::OutputEffectInstance* effect) ;
+    virtual OutputSchedulerThread* createScheduler(OutputEffectInstance* effect) ;
     
 private:
     
@@ -788,7 +788,7 @@ class ViewerRenderEngine : public RenderEngine
     
 public:
     
-    ViewerRenderEngine(Natron::OutputEffectInstance* output)
+    ViewerRenderEngine(OutputEffectInstance* output)
     : RenderEngine(output)
     {}
     
@@ -796,7 +796,7 @@ public:
     
 private:
     
-    virtual OutputSchedulerThread* createScheduler(Natron::OutputEffectInstance* effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual OutputSchedulerThread* createScheduler(OutputEffectInstance* effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 NATRON_NAMESPACE_EXIT;

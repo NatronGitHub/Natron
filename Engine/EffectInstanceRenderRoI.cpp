@@ -322,7 +322,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         {
             SequenceTime ptTime;
             int ptView;
-            boost::shared_ptr<Natron::Node> ptInput;
+            boost::shared_ptr<Node> ptInput;
             getComponentsNeededAndProduced_public(true, true, args.time, args.view, neededComps.get(), &processAllComponentsRequested, &ptTime, &ptView, &processChannels, &ptInput);
 
 
@@ -688,7 +688,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             renderScaleOneUpstreamIfRenderScaleSupportDisabled = true;
         }
     }
-    Natron::ImageKey key(getNode().get(),
+    ImageKey key(getNode().get(),
                          nodeHash,
                          isFrameVaryingOrAnimated,
                          args.time,
@@ -696,7 +696,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                          1.,
                          draftModeSupported && tls->frameArgs.draftMode,
                          renderMappedMipMapLevel == 0 && args.mipMapLevel != 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled);
-    Natron::ImageKey nonDraftKey(getNode().get(),
+    ImageKey nonDraftKey(getNode().get(),
                          nodeHash,
                          isFrameVaryingOrAnimated,
                          args.time,
@@ -1317,7 +1317,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if ( renderFullScaleThenDownscale && (it->second.fullscaleImage->getMipMapLevel() == 0) ) {
                     RectI bounds;
                     rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
-                    it->second.downscaleImage.reset( new Natron::Image(*components, rod, downscaledImageBounds, args.mipMapLevel, it->second.fullscaleImage->getPixelAspectRatio(), outputDepth, true) );
+                    it->second.downscaleImage.reset( new Image(*components, rod, downscaledImageBounds, args.mipMapLevel, it->second.fullscaleImage->getPixelAspectRatio(), outputDepth, true) );
                     
                     it->second.fullscaleImage->downscaleMipMap( rod, it->second.fullscaleImage->getBounds(), 0, args.mipMapLevel, true, it->second.downscaleImage.get() );
                 }
@@ -1374,7 +1374,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if (safety == eRenderSafetyInstanceSafe) {
                 locker.reset( new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() ) );
             } else if (safety == eRenderSafetyUnsafe) {
-                const Natron::Plugin* p = getNode()->getPlugin();
+                const Plugin* p = getNode()->getPlugin();
                 assert(p);
                 locker.reset( new QMutexLocker( p->getPluginLock() ) );
             }
@@ -1655,9 +1655,9 @@ EffectInstance::renderRoIInternal(double time,
     }
 
 
-    boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > > tlsCopy;
+    boost::shared_ptr<std::map<boost::shared_ptr<Node>, ParallelRenderArgs > > tlsCopy;
     if (safety == eRenderSafetyFullySafeFrame) {
-        tlsCopy.reset(new std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs >);
+        tlsCopy.reset(new std::map<boost::shared_ptr<Node>, ParallelRenderArgs >);
         /*
          * Since we're about to start new threads potentially, copy all the thread local storage on all nodes (any node may be involved in
          * expressions, and we need to retrieve the exact local time of render).

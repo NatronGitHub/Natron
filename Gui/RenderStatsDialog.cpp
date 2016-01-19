@@ -77,7 +77,7 @@ enum ItemsRoleEnum
 
 struct RowInfo
 {
-    boost::weak_ptr<Natron::Node> node;
+    boost::weak_ptr<Node> node;
     int rowIndex;
     TableItem* item;
     
@@ -113,7 +113,7 @@ struct StatRowsCompare
 class StatsTableModel : public TableModel
 {
     TableView* view;
-    std::vector<boost::weak_ptr<Natron::Node> > rows;
+    std::vector<boost::weak_ptr<Node> > rows;
     
 public:
     
@@ -133,17 +133,17 @@ public:
         rows.clear();
     }
     
-    const std::vector<boost::weak_ptr<Natron::Node> >& getRows() const
+    const std::vector<boost::weak_ptr<Node> >& getRows() const
     {
         return rows;
     }
     
-    void editNodeRow(const boost::shared_ptr<Natron::Node>& node, const NodeRenderStats& stats)
+    void editNodeRow(const boost::shared_ptr<Node>& node, const NodeRenderStats& stats)
     {
         int row = -1;
         bool exists = false;
         for (std::size_t i = 0; i < rows.size(); ++i) {
-            boost::shared_ptr<Natron::Node> n = rows[i].lock();
+            boost::shared_ptr<Node> n = rows[i].lock();
             if (n == node) {
                 row = i;
                 exists = true;
@@ -369,13 +369,13 @@ public:
             assert(item);
             ImagePremultiplicationEnum premult = stats.getOutputPremult();
             switch (premult) {
-                case Natron::eImagePremultiplicationOpaque:
+                case eImagePremultiplicationOpaque:
                     str = "Opaque";
                     break;
-                case Natron::eImagePremultiplicationPremultiplied:
+                case eImagePremultiplicationPremultiplied:
                     str = "Premultiplied";
                     break;
-                case Natron::eImagePremultiplicationUnPremultiplied:
+                case eImagePremultiplicationUnPremultiplied:
                     str = "Unpremultiplied";
                     break;
             }
@@ -456,8 +456,8 @@ public:
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
             assert(item);
-            std::list<std::pair<RectI,boost::shared_ptr<Natron::Node> > > tiles = stats.getIdentityRectangles();
-            for (std::list<std::pair<RectI,boost::shared_ptr<Natron::Node> > >::iterator it = tiles.begin(); it!=tiles.end(); ++it) {
+            std::list<std::pair<RectI,boost::shared_ptr<Node> > > tiles = stats.getIdentityRectangles();
+            for (std::list<std::pair<RectI,boost::shared_ptr<Node> > >::iterator it = tiles.begin(); it!=tiles.end(); ++it) {
                 
                 const RectI& tile = it->first;
                 QString tileEnc = QString("(%1, %2, %3, %4)").arg(tile.x1).arg(tile.y1).arg(tile.x2).arg(tile.y2);
@@ -749,7 +749,7 @@ struct NATRON_NAMESPACE::RenderStatsDialogPrivate
         
     }
     
-    void editNodeRow(const boost::shared_ptr<Natron::Node>& node, const NodeRenderStats& stats);
+    void editNodeRow(const boost::shared_ptr<Node>& node, const NodeRenderStats& stats);
     
     void updateVisibleRowsInternal(const QString& nameFilter, const QString& pluginIDFilter);
         
@@ -939,7 +939,7 @@ RenderStatsDialog::onSelectionChanged(const QItemSelection &selected, const QIte
         return;
     }
     int idx = indexes[0].row();
-    const std::vector<boost::weak_ptr<Natron::Node> >& rows = _imp->model->getRows();
+    const std::vector<boost::weak_ptr<Node> >& rows = _imp->model->getRows();
     if (idx < 0 || idx >= (int)rows.size()) {
         return;
     }
@@ -984,7 +984,7 @@ RenderStatsDialog::resetStats()
 
 
 void
-RenderStatsDialog::addStats(int /*time*/, int /*view*/, double wallTime, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats)
+RenderStatsDialog::addStats(int /*time*/, int /*view*/, double wallTime, const std::map<boost::shared_ptr<Node>,NodeRenderStats >& stats)
 {
     
     if (!_imp->accumulateCheckbox->isChecked()) {
@@ -995,7 +995,7 @@ RenderStatsDialog::addStats(int /*time*/, int /*view*/, double wallTime, const s
     _imp->totalSpentTime += wallTime;
     _imp->totalTimeSpentValueLabel->setText(Timer::printAsTime(_imp->totalSpentTime, false));
     
-    for (std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >::const_iterator it = stats.begin(); it!=stats.end(); ++it) {
+    for (std::map<boost::shared_ptr<Node>,NodeRenderStats >::const_iterator it = stats.begin(); it!=stats.end(); ++it) {
         _imp->model->editNodeRow(it->first, it->second);
     }
     
@@ -1017,7 +1017,7 @@ void
 RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter, const QString& pluginIDFilter)
 {
     QModelIndex rootIdx = view->rootIndex();
-    const std::vector<boost::weak_ptr<Natron::Node> >& rows = model->getRows();
+    const std::vector<boost::weak_ptr<Node> >& rows = model->getRows();
 
     
     if (useUnixWildcardsCheckbox->isChecked()) {
@@ -1034,7 +1034,7 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter, c
         
 
         int i = 0;
-        for (std::vector<boost::weak_ptr<Natron::Node> >::const_iterator it = rows.begin(); it != rows.end(); ++it,++i) {
+        for (std::vector<boost::weak_ptr<Node> >::const_iterator it = rows.begin(); it != rows.end(); ++it,++i) {
             boost::shared_ptr<Node> node = it->lock();
             if (!node) {
                 continue;
@@ -1056,7 +1056,7 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter, c
         
         int i = 0;
 
-        for (std::vector<boost::weak_ptr<Natron::Node> >::const_iterator it = rows.begin(); it != rows.end(); ++it,++i) {
+        for (std::vector<boost::weak_ptr<Node> >::const_iterator it = rows.begin(); it != rows.end(); ++it,++i) {
             boost::shared_ptr<Node> node = it->lock();
             if (!node) {
                 continue;

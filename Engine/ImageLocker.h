@@ -115,8 +115,8 @@ public:
 
 };
 
-typedef ImageLockerHelper<Natron::Image> ImageLocker;
-typedef ImageLockerHelper<Natron::FrameEntry> FrameEntryLocker;
+typedef ImageLockerHelper<Image> ImageLocker;
+typedef ImageLockerHelper<FrameEntry> FrameEntryLocker;
 
 NATRON_NAMESPACE_EXIT;
 

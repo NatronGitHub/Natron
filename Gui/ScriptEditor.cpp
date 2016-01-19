@@ -356,7 +356,7 @@ ScriptEditor::onSourceScriptClicked()
             _imp->inputEdit->setPlainText(content);
             onExecScriptClicked();
         } else {
-            Natron::errorDialog(tr("Operation failed").toStdString(), tr("Failure to open the file").toStdString());
+            natronErrorDialog(tr("Operation failed").toStdString(), tr("Failure to open the file").toStdString());
         }
         
     }
@@ -381,7 +381,7 @@ ScriptEditor::onLoadScriptClicked()
             QString content = ts.readAll();
             _imp->inputEdit->setPlainText(content);
         } else {
-            Natron::errorDialog(tr("Operation failed").toStdString(), tr("Failure to open the file").toStdString());
+            natronErrorDialog(tr("Operation failed").toStdString(), tr("Failure to open the file").toStdString());
         }
         
     }
@@ -406,7 +406,7 @@ ScriptEditor::onSaveScriptClicked()
             QTextStream ts(&file);
             ts << _imp->inputEdit->toPlainText();
         } else {
-            Natron::errorDialog(tr("Operation failed").toStdString(), tr("Failure to save the file").toStdString());
+            natronErrorDialog(tr("Operation failed").toStdString(), tr("Failure to save the file").toStdString());
         }
         
     }
@@ -479,7 +479,7 @@ ScriptEditor::onExecScriptClicked()
     }
     std::string error,output;
     
-    if (!Natron::interpretPythonScript(script.toStdString(), &error, &output)) {
+    if (!interpretPythonScript(script.toStdString(), &error, &output)) {
         _imp->outputEdit->append(Natron::convertFromPlainText(error.c_str(),Qt::WhiteSpaceNormal));
     } else {
         QString toAppend(script);

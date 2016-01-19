@@ -67,14 +67,14 @@ public:
     const RectD& getRoD() const;
     void setRoD(const RectD& rod);
     
-    void setInputImageIdentity(const boost::shared_ptr<Natron::Node>& identity);
-    boost::shared_ptr<Natron::Node> getInputImageIdentity() const;
+    void setInputImageIdentity(const boost::shared_ptr<Node>& identity);
+    boost::shared_ptr<Node> getInputImageIdentity() const;
     
     void addRenderedRectangle(const RectI& rectangle);
     const std::list<RectI>& getRenderedRectangles() const;
     
-    void addIdentityRectangle(const boost::shared_ptr<Natron::Node>& identity, const RectI& rectangle);
-    std::list<std::pair<RectI,boost::shared_ptr<Natron::Node> > > getIdentityRectangles() const;
+    void addIdentityRectangle(const boost::shared_ptr<Node>& identity, const RectI& rectangle);
+    std::list<std::pair<RectI,boost::shared_ptr<Node> > > getIdentityRectangles() const;
     
     void addMipMapLevelRendered(unsigned int level);
     const std::set<unsigned int>& getMipMapLevelsRendered() const;
@@ -120,9 +120,9 @@ public:
     
     bool isInDepthProfilingEnabled() const;
     
-    void setNodeIdentity(const boost::shared_ptr<Natron::Node>& node, const boost::shared_ptr<Natron::Node>& identity);
+    void setNodeIdentity(const boost::shared_ptr<Node>& node, const boost::shared_ptr<Node>& identity);
     
-    void setGlobalRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
+    void setGlobalRenderInfosForNode(const boost::shared_ptr<Node>& node,
                                      const RectD& rod,
                                      ImagePremultiplicationEnum outputPremult,
                                      std::bitset<4> channelsRendered,
@@ -130,17 +130,17 @@ public:
                                      bool renderScaleSupported,
                                      unsigned int mipmapLevel);
     
-    void addCacheInfosForNode(const boost::shared_ptr<Natron::Node>& node,
+    void addCacheInfosForNode(const boost::shared_ptr<Node>& node,
                               bool isCacheMiss,
                               bool hasDownscaled);
     
-    void addRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
-                        const boost::shared_ptr<Natron::Node>& identity,
+    void addRenderInfosForNode(const boost::shared_ptr<Node>& node,
+                        const boost::shared_ptr<Node>& identity,
                         const std::string& plane,
                         const RectI& rectangle,
                         double timeSpent);
     
-    std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > getStats(double *totalTimeSpent) const;
+    std::map<boost::shared_ptr<Node>,NodeRenderStats > getStats(double *totalTimeSpent) const;
     
 private:
     

@@ -38,11 +38,11 @@ NATRON_NAMESPACE_ENTER;
  * and it is also used to implement the "Dot" node.
  **/
 class NoOpBase
-    : public Natron::OutputEffectInstance
+    : public OutputEffectInstance
 {
 public:
 
-    NoOpBase(boost::shared_ptr<Natron::Node> n);
+    NoOpBase(boost::shared_ptr<Node> n);
 
     virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

@@ -56,7 +56,7 @@ TimeLine::currentFrame() const
 void
 TimeLine::seekFrame(SequenceTime frame,
                     bool updateLastCaller,
-                    Natron::OutputEffectInstance* caller,
+                    OutputEffectInstance* caller,
                     Natron::TimelineChangeReasonEnum reason)
 {
     if (reason != Natron::eTimelineChangeReasonPlaybackSeek) {
@@ -72,7 +72,7 @@ TimeLine::seekFrame(SequenceTime frame,
     }
 
     if (_project && updateLastCaller) {
-        _project->getApp()->setLastViewerUsingTimeline(caller ? caller->getNode() : boost::shared_ptr<Natron::Node>());
+        _project->getApp()->setLastViewerUsingTimeline(caller ? caller->getNode() : boost::shared_ptr<Node>());
     }
     if (changed) {
         Q_EMIT frameChanged(frame, (int)reason);

@@ -85,7 +85,7 @@ class ProcessHandler
 
     AppInstance* _app; //< pointer to the app executing this process
     QProcess* _process; //< the process executing the render
-    Natron::OutputEffectInstance* _writer; //< pointer to the writer that will render in the bg process
+    OutputEffectInstance* _writer; //< pointer to the writer that will render in the bg process
     QLocalServer* _ipcServer; //< the server for IPC with the background process
     QLocalSocket* _bgProcessOutputSocket; //< the socket where data is output by the process
 
@@ -105,7 +105,7 @@ public:
      **/
     ProcessHandler(AppInstance* app,
                    const QString & projectPath,
-                   Natron::OutputEffectInstance* writer);
+                   OutputEffectInstance* writer);
 
     virtual ~ProcessHandler();
 

@@ -59,12 +59,12 @@ struct NATRON_NAMESPACE::OfxClipInstancePrivate
 {
     OfxClipInstance* _publicInterface;
     OfxEffectInstance* nodeInstance;
-    Natron::OfxImageEffectInstance* const effect;
+    OfxImageEffectInstance* const effect;
     double aspectRatio;
     
     boost::shared_ptr<TLSHolder<OfxClipInstance::ClipTLSData> > tlsData;
     
-    OfxClipInstancePrivate(OfxClipInstance* publicInterface, OfxEffectInstance* nodeInstance, Natron::OfxImageEffectInstance* effect)
+    OfxClipInstancePrivate(OfxClipInstance* publicInterface, OfxEffectInstance* nodeInstance, OfxImageEffectInstance* effect)
     : _publicInterface(publicInterface)
     , nodeInstance(nodeInstance)
     , effect(effect)
@@ -78,7 +78,7 @@ struct NATRON_NAMESPACE::OfxClipInstancePrivate
 };
 
 OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance,
-                                 Natron::OfxImageEffectInstance* effect,
+                                 OfxImageEffectInstance* effect,
                                  int  /*index*/,
                                  OFX::Host::ImageEffect::ClipDescriptor* desc)
     : OFX::Host::ImageEffect::ClipInstance(effect, *desc)
@@ -110,16 +110,16 @@ OfxClipInstance::getUnmappedBitDepth() const
         inputNode->getPreferredDepthAndComponents(-1, &comp, &depth);
         
         switch (depth) {
-            case Natron::eImageBitDepthByte:
+            case eImageBitDepthByte:
                 return byteStr;
                 break;
-            case Natron::eImageBitDepthShort:
+            case eImageBitDepthShort:
                 return shortStr;
                 break;
-            case Natron::eImageBitDepthHalf:
+            case eImageBitDepthHalf:
                 return halfStr;
                 break;
-            case Natron::eImageBitDepthFloat:
+            case eImageBitDepthFloat:
                 return floatStr;
                 break;
             default:
@@ -234,15 +234,15 @@ OfxClipInstance::getPremult() const
             return premultStr;
         }
         
-        //case Natron::eImageComponentRGBA: // RGBA can be Opaque, PreMult or UnPreMult
+        //case eImageComponentRGBA: // RGBA can be Opaque, PreMult or UnPreMult
         ImagePremultiplicationEnum premult = effect->getOutputPremultiplication();
         
         switch (premult) {
-            case Natron::eImagePremultiplicationOpaque:
+            case eImagePremultiplicationOpaque:
                 return opaqueStr;
-            case Natron::eImagePremultiplicationPremultiplied:
+            case eImagePremultiplicationPremultiplied:
                 return premultStr;
-            case Natron::eImagePremultiplicationUnPremultiplied:
+            case eImagePremultiplicationUnPremultiplied:
                 return unPremultStr;
             default:
                 return opaqueStr;
@@ -408,7 +408,7 @@ OfxClipInstance::getConnected() const
                 return false;
             }
             ImageComponents comps;
-            boost::shared_ptr<Natron::Node> maskInput;
+            boost::shared_ptr<Node> maskInput;
             _imp->nodeInstance->getNode()->getMaskChannel(inputNb, &comps, &maskInput);
             if (maskInput) {
                 input = maskInput->getLiveInstance();
@@ -495,7 +495,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
         
         U64 nodeHash = associatedNode->getRenderHash();
         RectD rod;
-        RenderScale scale(Natron::Image::getScaleFromMipMapLevel(mipmapLevel));
+        RenderScale scale(Image::getScaleFromMipMapLevel(mipmapLevel));
         StatusEnum st = associatedNode->getRegionOfDefinition_public(nodeHash,time, scale, view, &rod, &isProjectFormat);
         if (st == eStatusFailed) {
             ret->x1 = 0.;
@@ -891,7 +891,7 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
      ts << "img_" << time << "_"  << now.toMSecsSinceEpoch() << ".png";
      appPTR->debugImage(image.get(), renderWindow, filename);*/
 
-    return new OfxImage(boost::shared_ptr<OfxClipInstance::RenderActionData>(), image,true,renderWindow,transform, components, nComps, *this);
+    return new NATRON_NAMESPACE::OfxImage(boost::shared_ptr<OfxClipInstance::RenderActionData>(), image,true,renderWindow,transform, components, nComps, *this);
 }
 
 
@@ -1081,15 +1081,15 @@ ImageBitDepthEnum
 OfxClipInstance::ofxDepthToNatronDepth(const std::string & depth)
 {
     if (depth == kOfxBitDepthByte) {
-        return Natron::eImageBitDepthByte;
+        return eImageBitDepthByte;
     } else if (depth == kOfxBitDepthShort) {
-        return Natron::eImageBitDepthShort;
+        return eImageBitDepthShort;
     } else if (depth == kOfxBitDepthHalf) {
-        return Natron::eImageBitDepthHalf;
+        return eImageBitDepthHalf;
     } else if (depth == kOfxBitDepthFloat) {
-        return Natron::eImageBitDepthFloat;
+        return eImageBitDepthFloat;
     } else if (depth == kOfxBitDepthNone) {
-        return Natron::eImageBitDepthNone;
+        return eImageBitDepthNone;
     } else {
         throw std::runtime_error(depth + ": unsupported bitdepth"); //< comp unsupported
     }
@@ -1099,19 +1099,19 @@ std::string
 OfxClipInstance::natronsDepthToOfxDepth(ImageBitDepthEnum depth)
 {
     switch (depth) {
-    case Natron::eImageBitDepthByte:
+    case eImageBitDepthByte:
 
         return kOfxBitDepthByte;
-    case Natron::eImageBitDepthShort:
+    case eImageBitDepthShort:
 
         return kOfxBitDepthShort;
-    case Natron::eImageBitDepthHalf:
+    case eImageBitDepthHalf:
 
         return kOfxBitDepthHalf;
-    case Natron::eImageBitDepthFloat:
+    case eImageBitDepthFloat:
 
         return kOfxBitDepthFloat;
-    case Natron::eImageBitDepthNone:
+    case eImageBitDepthNone:
 
         return kOfxBitDepthNone;
     default:
@@ -1144,7 +1144,7 @@ OfxImage::getInternalImage() const
 }
 
 OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
-                   const boost::shared_ptr<Natron::Image>& internalImage,
+                   const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
                    bool isSrcImage,
                    const RectI& renderWindow,
                    const boost::shared_ptr<Transform::Matrix3x3>& mat,
@@ -1158,7 +1158,7 @@ OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& r
     assert(internalImage);
     
     unsigned int mipMapLevel = internalImage->getMipMapLevel();
-    RenderScale scale(Natron::Image::getScaleFromMipMapLevel(mipMapLevel));
+    RenderScale scale(NATRON_NAMESPACE::Image::getScaleFromMipMapLevel(mipMapLevel));
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
     
@@ -1173,16 +1173,16 @@ OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& r
     RectI pluginsSeenBounds;
     renderWindow.intersect(bounds, &pluginsSeenBounds);
     
-    const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Natron::Image::getRoD() is in *CANONICAL* coordinates
+    const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Image::getRoD() is in *CANONICAL* coordinates
 
     if (isSrcImage) {
-        boost::shared_ptr<Natron::Image::ReadAccess> access(new Natron::Image::ReadAccess(internalImage.get()));
+        boost::shared_ptr<NATRON_NAMESPACE::Image::ReadAccess> access(new NATRON_NAMESPACE::Image::ReadAccess(internalImage.get()));
         const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
         assert(ptr);
         setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr));
         _imp->access = access;
     } else {
-        boost::shared_ptr<Natron::Image::WriteAccess> access(new Natron::Image::WriteAccess(internalImage.get()));
+        boost::shared_ptr<NATRON_NAMESPACE::Image::WriteAccess> access(new NATRON_NAMESPACE::Image::WriteAccess(internalImage.get()));
         unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
         assert(ptr);
         setPointerProperty( kOfxImagePropData, ptr);
@@ -1198,7 +1198,7 @@ OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& r
 
     // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImagePropRegionOfDefinition
     // " An image's region of definition, in *PixelCoordinates,* is the full frame area of the image plane that the image covers."
-    // Natron::Image::getRoD() is in *CANONICAL* coordinates
+    // Image::getRoD() is in *CANONICAL* coordinates
     // OFX::Image RoD is in *PIXEL* coordinates
     RectI pixelRod;
     rod.toPixelEnclosing(mipMapLevel, internalImage->getPixelAspectRatio(), &pixelRod);
@@ -1273,7 +1273,7 @@ OfxClipInstance::getAssociatedNode() const
     } else {
         //if (isMask()) {
         ImageComponents comps;
-        boost::shared_ptr<Natron::Node> maskInput;
+        boost::shared_ptr<Node> maskInput;
         int inputNb = getInputNb();
         _imp->nodeInstance->getNode()->getMaskChannel(inputNb, &comps, &maskInput);
         if (maskInput) {

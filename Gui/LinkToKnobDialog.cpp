@@ -189,7 +189,7 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     QString index = _imp->nodeSelectionCombo->text();
 
     _imp->knobSelectionCombo->clear();
-    boost::shared_ptr<Natron::Node> selectedNode;
+    boost::shared_ptr<Node> selectedNode;
     std::string currentNodeName = index.toStdString();
     for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
         if ((*it)->getLabel() == currentNodeName) {

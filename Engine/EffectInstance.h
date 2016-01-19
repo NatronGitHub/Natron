@@ -97,15 +97,15 @@ NATRON_NAMESPACE_ENTER;
  **/
 class EffectInstance
     : public NamedKnobHolder
-      , public LockManagerI<Natron::Image>
+      , public LockManagerI<Image>
       , public boost::enable_shared_from_this<Natron::EffectInstance>
 {
 public:
 
 
-    typedef std::map<ImageComponents, boost::weak_ptr<Natron::Node> > ComponentsAvailableMap;
-    typedef std::list<std::pair<ImageComponents, boost::weak_ptr<Natron::Node> > > ComponentsAvailableList;
-    typedef std::map<int, std::list< boost::shared_ptr<Natron::Image> > > InputImagesMap;
+    typedef std::map<ImageComponents, boost::weak_ptr<Node> > ComponentsAvailableMap;
+    typedef std::list<std::pair<ImageComponents, boost::weak_ptr<Node> > > ComponentsAvailableList;
+    typedef std::map<int, std::list< boost::shared_ptr<Image> > > InputImagesMap;
     typedef std::map<int, std::vector<ImageComponents> > ComponentsNeededMap;
     
     struct RenderRoIArgs
@@ -189,7 +189,7 @@ public:
      * called just to be able to call a few virtuals fonctions.
      * The constructor is always called by the main thread of the application.
      **/
-    explicit EffectInstance(boost::shared_ptr<Natron::Node> node);
+    explicit EffectInstance(boost::shared_ptr<Node> node);
 
     virtual ~EffectInstance();
 
@@ -211,7 +211,7 @@ public:
     /**
      * @brief Returns a pointer to the node holding this effect.
      **/
-    boost::shared_ptr<Natron::Node> getNode() const WARN_UNUSED_RETURN
+    boost::shared_ptr<Node> getNode() const WARN_UNUSED_RETURN
     {
         return _node.lock();
     }
@@ -385,7 +385,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb, ImageComponents* comps, boost::shared_ptr<Natron::Node>* maskInput) const;
+    int getMaskChannel(int inputNb, ImageComponents* comps, boost::shared_ptr<Node>* maskInput) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -403,7 +403,7 @@ public:
 
     /**
      * @brief Must return the deepest bit depth that this plug-in can support.
-     * If 32 float is supported then return Natron::eImageBitDepthFloat, otherwise
+     * If 32 float is supported then return eImageBitDepthFloat, otherwise
      * return eImageBitDepthShort if 16 bits is supported, and as a last resort, return
      * eImageBitDepthByte. At least one must be returned.
      **/
@@ -484,7 +484,7 @@ public:
 
     void getImageFromCacheAndConvertIfNeeded(bool useCache,
                                              bool useDiskCache,
-                                             const Natron::ImageKey & key,
+                                             const ImageKey & key,
                                              unsigned int mipMapLevel,
                                              const RectI* boundsParam,
                                              const RectD* rodParam,
@@ -494,7 +494,7 @@ public:
                                              const ImageComponents & nodeComponentsPref,
                                              const EffectInstance::InputImagesMap & inputImages,
                                              const boost::shared_ptr<RenderStats> & stats,
-                                             boost::shared_ptr<Natron::Image>* image);
+                                             boost::shared_ptr<Image>* image);
 
 
     /**
@@ -502,7 +502,7 @@ public:
      * by the render action. We allocate those extra planes and cache them so they were not rendered for nothing.
      * Note that the plug-ins may call this only while in the render action, and there must be other planes to render.
      **/
-    boost::shared_ptr<Natron::Image> allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponents & plane);
+    boost::shared_ptr<Image> allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponents & plane);
 
 
     class NotifyRenderingStarted_RAII
@@ -542,13 +542,13 @@ public:
                                   bool canAbort,
                                   U64 nodeHash,
                                   U64 renderAge,
-                                  const boost::shared_ptr<Natron::Node> & treeRoot,
+                                  const boost::shared_ptr<Node> & treeRoot,
                                   const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
                                   int textureIndex,
                                   const TimeLine* timeline,
                                   bool isAnalysis,
                                   bool isDuringPaintStrokeCreation,
-                                  const std::list<boost::shared_ptr<Natron::Node> > & rotoPaintNodes,
+                                  const std::list<boost::shared_ptr<Node> > & rotoPaintNodes,
                                   Natron::RenderSafetyEnum currentThreadSafety,
                                   bool doNanHandling,
                                   bool draftMode,
@@ -571,8 +571,8 @@ public:
                                                    double time,
                                                    int view,
                                                    unsigned originalMipMapLevel,
-                                                   const boost::shared_ptr<Natron::Node> & node,
-                                                   const boost::shared_ptr<Natron::Node> & treeRoot,
+                                                   const boost::shared_ptr<Node> & node,
+                                                   const boost::shared_ptr<Node> & treeRoot,
                                                    const RectD & canonicalRenderWindow,
                                                    FrameRequestMap & requests);
 
@@ -585,12 +585,12 @@ public:
                                                  int view,
                                                  unsigned int mipMapLevel,
                                                  const RectD & renderWindow,
-                                                 const boost::shared_ptr<Natron::Node> & treeRoot,
+                                                 const boost::shared_ptr<Node> & treeRoot,
                                                  FrameRequestMap & request);
 
     // Implem is in ParallelRenderArgs.cpp
     static Natron::EffectInstance::RenderRoIRetCode treeRecurseFunctor(bool isRenderFunctor,
-                                                                       const boost::shared_ptr<Natron::Node> & node,
+                                                                       const boost::shared_ptr<Node> & node,
                                                                        const FramesNeededMap & framesNeeded,
                                                                        const RoIMap & inputRois,
                                                                        const boost::shared_ptr<InputMatrixMap> & reroutesMap,
@@ -598,7 +598,7 @@ public:
                                                                        unsigned int originalMipMapLevel, // roi functor specific
                                                                        double time,
                                                                        int view,
-                                                                       const boost::shared_ptr<Natron::Node> & treeRoot,
+                                                                       const boost::shared_ptr<Node> & treeRoot,
                                                                        FrameRequestMap* requests,  // roi functor specific
                                                                        EffectInstance::InputImagesMap* inputImages, // render functor specific
                                                                        const EffectInstance::ComponentsNeededMap* neededComps, // render functor specific
@@ -660,7 +660,7 @@ protected:
                                            const RenderScale & scale,
                                           ValueChangedReasonEnum reason,
                                            bool forceGetClipPrefAction,
-                                           std::list<Natron::Node*> & markedNodes);
+                                           std::list<Node*> & markedNodes);
 
 
 
@@ -694,9 +694,9 @@ public:
     ///////////////////////End Clip preferences related////////////////////////
 
 
-    virtual void lock(const boost::shared_ptr<Natron::Image> & entry) OVERRIDE FINAL;
-    virtual bool tryLock(const boost::shared_ptr<Natron::Image> & entry) OVERRIDE FINAL;
-    virtual void unlock(const boost::shared_ptr<Natron::Image> & entry) OVERRIDE FINAL;
+    virtual void lock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
+    virtual bool tryLock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
+    virtual void unlock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
     virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void abortAnyEvaluation() OVERRIDE FINAL;
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
@@ -723,9 +723,9 @@ public:
 
     void getThreadLocalInputImages(InputImagesMap* images) const;
 
-    void addThreadLocalInputImageTempPointer(int inputNb, const boost::shared_ptr<Natron::Image> & img);
+    void addThreadLocalInputImageTempPointer(int inputNb, const boost::shared_ptr<Image> & img);
 
-    bool getThreadLocalRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
+    bool getThreadLocalRotoPaintTreeNodes(std::list<boost::shared_ptr<Node> >* nodes) const;
 
     /**
      * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
@@ -780,7 +780,7 @@ public:
         RenderScale originalScale;
         RenderScale mappedScale;
         RectI roi;
-        std::list<std::pair<ImageComponents, boost::shared_ptr<Natron::Image> > > outputPlanes;
+        std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > > outputPlanes;
         EffectInstance::InputImagesMap inputImages;
         int view;
         bool isSequentialRender;
@@ -801,7 +801,7 @@ protected:
      **/
     virtual StatusEnum render(const RenderActionArgs & /*args*/) WARN_UNUSED_RETURN
     {
-        return Natron::eStatusOK;
+        return eStatusOK;
     }
 
     virtual StatusEnum getTransform(double /*time*/,
@@ -810,7 +810,7 @@ protected:
                                             Natron::EffectInstance** /*inputToTransform*/,
                                             Transform::Matrix3x3* /*transform*/) WARN_UNUSED_RETURN
     {
-        return Natron::eStatusReplyDefault;
+        return eStatusReplyDefault;
     }
 
 public:
@@ -1138,7 +1138,7 @@ public:
         return false;
     }
 
-    virtual Natron::PluginOpenGLRenderSupport supportsOpenGLRender() const
+    virtual PluginOpenGLRenderSupport supportsOpenGLRender() const
     {
         return Natron::ePluginOpenGLRenderSupportNone;
     }
@@ -1194,22 +1194,22 @@ public:
     struct PlaneToRender
     {
         //Points to the fullscale image if render scale is not supported by the plug-in, or downscaleImage otherwise
-        boost::shared_ptr<Natron::Image> fullscaleImage;
+        boost::shared_ptr<Image> fullscaleImage;
         
         //Points to the image to be rendered
-        boost::shared_ptr<Natron::Image> downscaleImage;
+        boost::shared_ptr<Image> downscaleImage;
         
         //Points to the image that the plug-in can render (either fullScale or downscale)
-        boost::shared_ptr<Natron::Image> renderMappedImage;
+        boost::shared_ptr<Image> renderMappedImage;
         
         //Points to a temporary image that the plug-in will render
-        boost::shared_ptr<Natron::Image> tmpImage;
+        boost::shared_ptr<Image> tmpImage;
         
         /*
          In the event where the fullScaleImage is in the cache but we must resize it to render a portion unallocated yet and
          if the render is issues directly from getImage() we swap image in cache instead of taking the write lock of fullScaleImage
          */
-        boost::shared_ptr<Natron::Image> cacheSwapImage;
+        boost::shared_ptr<Image> cacheSwapImage;
         
         void* originalCachedImage;
         
@@ -1372,7 +1372,7 @@ protected:
                                                    bool /*draftMode*/,
                                                    int /*view*/)
     {
-        return Natron::eStatusOK;
+        return eStatusOK;
     }
 
     virtual StatusEnum endSequenceRender(double /*first*/,
@@ -1385,7 +1385,7 @@ protected:
                                                  bool /*draftMode*/,
                                                  int /*view*/)
     {
-        return Natron::eStatusOK;
+        return eStatusOK;
     }
 
 public:
@@ -1504,7 +1504,7 @@ public:
                                                SequenceTime* passThroughTime,
                                                int* passThroughView,
                                                std::bitset<4> *processChannels,
-                                               boost::shared_ptr<Natron::Node>* passThroughInput);
+                                               boost::shared_ptr<Node>* passThroughInput);
 
     void setComponentsAvailableDirty(bool dirty);
 
@@ -1666,7 +1666,7 @@ protected:
                                                EffectInstance::ComponentsNeededMap* comps,
                                                 SequenceTime* passThroughTime,
                                                 int* passThroughView,
-                                                boost::shared_ptr<Natron::Node>* passThroughInput);
+                                                boost::shared_ptr<Node>* passThroughInput);
 
 
     /**
@@ -1829,8 +1829,8 @@ private:
                                              EffectInstance::InputImagesMap *inputImages,
                                              RoIMap* inputsRoI);
 
-    static boost::shared_ptr<Natron::Image> convertPlanesFormatsIfNeeded(const AppInstance* app,
-                                                                         const boost::shared_ptr<Natron::Image>& inputImage,
+    static boost::shared_ptr<Image> convertPlanesFormatsIfNeeded(const AppInstance* app,
+                                                                         const boost::shared_ptr<Image>& inputImage,
                                                                          const RectI& roi,
                                                                          const ImageComponents& targetComponents,
                                                                          ImageBitDepthEnum targetDepth,
@@ -1871,8 +1871,8 @@ private:
                             bool renderFullScaleThenDownscale,
                             bool useDiskCache,
                             bool createInCache,
-                            boost::shared_ptr<Natron::Image>* fullScaleImage,
-                            boost::shared_ptr<Natron::Image>* downscaleImage);
+                            boost::shared_ptr<Image>* fullScaleImage,
+                            boost::shared_ptr<Image>* downscaleImage);
 
     /**
      * @brief Must be implemented to evaluate a value change

@@ -165,7 +165,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
     
     boost::shared_ptr<RotoContext> context = getContext();
-    boost::shared_ptr<Natron::Node> node = context->getNode();
+    boost::shared_ptr<Node> node = context->getNode();
   
     
     AppInstance* app = node->getApp();
@@ -335,7 +335,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
             boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
             KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
             if (isDbl) {
-                isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
+                isDbl->setValues(strength, strength, eValueChangedReasonNatronInternalEdited);
             }
         } else if (type == eRotoStrokeTypeSharpen) {
             //todo
@@ -527,7 +527,7 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, ValueCha
         type = eRotoStrokeTypeSolid;
     }
 
-    if (reason == Natron::eValueChangedReasonSlaveRefresh && knob != _imp->center && knob != _imp->cloneCenter) {
+    if (reason == eValueChangedReasonSlaveRefresh && knob != _imp->center && knob != _imp->cloneCenter) {
         getContext()->s_breakMultiStroke();
     }
     
@@ -539,7 +539,7 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, ValueCha
         }
         
         ///Since the compositing operator might have changed, we may have to change the rotopaint tree layout
-        if ( reason == Natron::eValueChangedReasonUserEdited) {
+        if ( reason == eValueChangedReasonUserEdited) {
             getContext()->refreshRotoPaintTree();
         }
     } else if (knob == _imp->sourceColor) {
@@ -552,7 +552,7 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, ValueCha
                 boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
                 KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
                 if (isDbl) {
-                    isDbl->setValues(strength, strength, Natron::eValueChangedReasonNatronInternalEdited);
+                    isDbl->setValues(strength, strength, eValueChangedReasonNatronInternalEdited);
                 }
             }   break;
             case Natron::eRotoStrokeTypeSharpen: {
@@ -674,27 +674,27 @@ RotoDrawableItem::incrementNodesAge()
     }
 }
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 RotoDrawableItem::getEffectNode() const
 {
     return _imp->effectNode;
 }
 
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 RotoDrawableItem::getMergeNode() const
 {
     return _imp->mergeNode;
 }
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 RotoDrawableItem::getTimeOffsetNode() const
 {
     
     return _imp->timeOffsetNode;
 }
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 RotoDrawableItem::getFrameHoldNode() const
 {
     return _imp->frameHoldNode;
@@ -729,7 +729,7 @@ RotoDrawableItem::refreshNodesConnections()
          
          */
         
-        boost::shared_ptr<Natron::Node> effectInput;
+        boost::shared_ptr<Node> effectInput;
         if (!_imp->timeOffsetNode) {
             effectInput = _imp->effectNode;
         } else {

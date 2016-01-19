@@ -653,7 +653,7 @@ BezierCPCurveGui::evaluate(bool /*useExpr*/,double x) const
         if (prev != keys.begin()) {
             --prev;
         }
-        if (prev->second == Natron::eKeyframeTypeConstant) {
+        if (prev->second == eKeyframeTypeConstant) {
             return dist - 1;
         } else {
             ///Always linear for bezier interpolation

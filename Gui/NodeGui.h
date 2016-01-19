@@ -136,7 +136,7 @@ public:
     NodeGui(QGraphicsItem *parent = 0);
 
     void initialize(NodeGraph* dag,
-                    const boost::shared_ptr<Natron::Node> & internalNode);
+                    const boost::shared_ptr<Node> & internalNode);
 
     //Creates panel if needed, might be expensive
     void ensurePanelCreated();
@@ -159,7 +159,7 @@ public:
     void copyFrom(const NodeGuiSerialization & obj);
 
 
-    boost::shared_ptr<Natron::Node> getNode() const
+    boost::shared_ptr<Node> getNode() const
     {
         return _internalNode.lock();
     }
@@ -569,7 +569,7 @@ private:
     NodeGraph* _graph;
 
     /*pointer to the internal node*/
-    boost::weak_ptr<Natron::Node> _internalNode;
+    boost::weak_ptr<Node> _internalNode;
 
     /*true if the node is selected by the user*/
     bool _selected;
@@ -639,7 +639,7 @@ private:
         LinkArrow* arrow;
     };
 
-    typedef std::map<boost::shared_ptr<Natron::Node>,LinkedDim> KnobGuiLinks;
+    typedef std::map<boost::shared_ptr<Node>,LinkedDim> KnobGuiLinks;
     KnobGuiLinks _knobsLinks;
     boost::shared_ptr<NodeGuiIndicator> _expressionIndicator;
     QPoint _magnecEnabled; //<enabled in X or/and Y
@@ -665,7 +665,7 @@ private:
     
     boost::shared_ptr<NodeGuiIndicator> _availableViewsIndicator;
     boost::shared_ptr<NodeGuiIndicator> _passThroughIndicator;
-    boost::weak_ptr<Natron::Node> _identityInput;
+    boost::weak_ptr<Node> _identityInput;
     
 };
 

@@ -55,7 +55,7 @@ NATRON_NAMESPACE_USING
 void
 NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_ptr<NodeGui>& selectedNode, const QRectF& visibleSceneR)
 {
-    boost::shared_ptr<Natron::Node> internalNode = selectedNode->getNode();
+    boost::shared_ptr<Node> internalNode = selectedNode->getNode();
     
     bool doMergeHints = shiftdown && controlDown;
     bool doConnectionHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
@@ -85,7 +85,7 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
     
     boost::shared_ptr<NodeGui> nodeToShowMergeRect;
     
-    boost::shared_ptr<Natron::Node> selectedNodeInternalNode = selectedNode->getNode();
+    boost::shared_ptr<Node> selectedNodeInternalNode = selectedNode->getNode();
     bool selectedNodeIsReader = selectedNodeInternalNode->getLiveInstance()->isReader() || selectedNodeInternalNode->getMaxInputCount() == 0;
     Edge* edge = 0;
     {
@@ -93,8 +93,8 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
         for (NodeGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             
             bool isAlreadyAnOutput = false;
-            const std::list<Natron::Node*>& outputs = internalNode->getGuiOutputs();
-            for (std::list<Natron::Node*>::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+            const std::list<Node*>& outputs = internalNode->getGuiOutputs();
+            for (std::list<Node*>::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 if (*it2 == (*it)->getNode().get()) {
                     isAlreadyAnOutput = true;
                     break;
@@ -110,7 +110,7 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
                     
                     //QRectF nodeRect = (*it)->mapToParent((*it)->boundingRect()).boundingRect();
                     
-                    boost::shared_ptr<Natron::Node> internalNode = (*it)->getNode();
+                    boost::shared_ptr<Node> internalNode = (*it)->getNode();
                     
                     
                     if (!internalNode->isOutputNode() && nodeBbox.intersects(selectedNodeBbox)) {
@@ -160,9 +160,9 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
                         if (prefInput == -1) {
                             edge = 0;
                         } else {
-                            Natron::Node::CanConnectInputReturnValue ret = selectedNodeInternalNode->canConnectInput(edge->getSource()->getNode(),
+                            Node::CanConnectInputReturnValue ret = selectedNodeInternalNode->canConnectInput(edge->getSource()->getNode(),
                                                                                                                      prefInput);
-                            if (ret != Natron::Node::eCanConnectInput_ok) {
+                            if (ret != Node::eCanConnectInput_ok) {
                                 edge = 0;
                             }
                         }
@@ -183,13 +183,13 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
                         
                         //Check that the edge can connect to the selected node
                         {
-                            Natron::Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput(selectedNodeInternalNode, edge->getInputNumber());
-                            if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
+                            Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput(selectedNodeInternalNode, edge->getInputNumber());
+                            if (ret == Node::eCanConnectInput_inputAlreadyConnected &&
                                 !selectedNodeIsReader) {
-                                ret = Natron::Node::eCanConnectInput_ok;
+                                ret = Node::eCanConnectInput_ok;
                             }
                             
-                            if (ret != Natron::Node::eCanConnectInput_ok) {
+                            if (ret != Node::eCanConnectInput_ok) {
                                 edge = 0;
                             }
                         }
@@ -201,13 +201,13 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
                             if (edgeHasSource) {
                                 int prefInput = selectedNodeInternalNode->getPreferredInputForConnection();
                                 if (prefInput != -1) {
-                                    Natron::Node::CanConnectInputReturnValue ret = selectedNodeInternalNode->canConnectInput(edgeHasSource->getNode(), prefInput);
-                                    if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
+                                    Node::CanConnectInputReturnValue ret = selectedNodeInternalNode->canConnectInput(edgeHasSource->getNode(), prefInput);
+                                    if (ret == Node::eCanConnectInput_inputAlreadyConnected &&
                                         !selectedNodeIsReader) {
-                                        ret = Natron::Node::eCanConnectInput_ok;
+                                        ret = Node::eCanConnectInput_ok;
                                     }
                                     
-                                    if (ret != Natron::Node::eCanConnectInput_ok) {
+                                    if (ret != Node::eCanConnectInput_ok) {
                                         edge = 0;
                                     }
                                 }
@@ -238,7 +238,7 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
         
         ///find out if the node is already connected to what the edge is connected
         bool alreadyConnected = false;
-        const std::vector<boost::shared_ptr<Natron::Node> > & inpNodes = selectedNode->getNode()->getGuiInputs();
+        const std::vector<boost::shared_ptr<Node> > & inpNodes = selectedNode->getNode()->getGuiInputs();
         for (U32 i = 0; i < inpNodes.size(); ++i) {
             if ( inpNodes[i] == edge->getSource()->getNode() ) {
                 alreadyConnected = true;

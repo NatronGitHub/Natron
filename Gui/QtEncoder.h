@@ -35,15 +35,15 @@
 NATRON_NAMESPACE_ENTER;
 
 class QtWriter
-    : public Natron::OutputEffectInstance
+    : public OutputEffectInstance
 {
 public:
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new QtWriter(n);
     }
 
-    QtWriter(boost::shared_ptr<Natron::Node> node);
+    QtWriter(boost::shared_ptr<Node> node);
 
     virtual ~QtWriter();
 

@@ -133,7 +133,7 @@ public:
     virtual void setLoadingStatus(const QString & str) OVERRIDE FINAL;
     KnobGui* createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
     virtual void setUndoRedoStackLimit(int limit) OVERRIDE FINAL;
-    virtual void debugImage( const Natron::Image* image, const RectI& roi, const QString & filename = QString() ) const OVERRIDE FINAL;
+    virtual void debugImage( const Image* image, const RectI& roi, const QString & filename = QString() ) const OVERRIDE FINAL;
 
     void setFileToOpen(const QString & str);
 
@@ -230,8 +230,8 @@ private:
 
     virtual void initBuiltinPythonModules() OVERRIDE FINAL;
 
-    void onPluginLoaded(Natron::Plugin* plugin) OVERRIDE;
-    virtual void ignorePlugin(Natron::Plugin* plugin) OVERRIDE FINAL;
+    void onPluginLoaded(Plugin* plugin) OVERRIDE;
+    virtual void ignorePlugin(Plugin* plugin) OVERRIDE FINAL;
     virtual void onAllPluginsLoaded() OVERRIDE FINAL;
     virtual void loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                         std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap) OVERRIDE;

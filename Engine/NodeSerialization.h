@@ -74,7 +74,7 @@ public:
     typedef std::list< boost::shared_ptr<KnobSerialization> > KnobValues;
 
     ///Used to serialize
-    NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs = true);
+    NodeSerialization(const boost::shared_ptr<Node> & n,bool serializeInputs = true);
     
     ////Used to deserialize
     NodeSerialization()
@@ -180,7 +180,7 @@ public:
         return _masterNodeName;
     }
 
-    boost::shared_ptr<Natron::Node> getNode() const
+    boost::shared_ptr<Node> getNode() const
     {
         return _node;
     }
@@ -235,7 +235,7 @@ private:
     std::vector<std::string> _oldInputs;
     bool _hasRotoContext;
     RotoContextSerialization _rotoContext;
-    boost::shared_ptr<Natron::Node> _node;
+    boost::shared_ptr<Node> _node;
     std::string _multiInstanceParentName;
     std::list<boost::shared_ptr<GroupKnobSerialization> > _userPages;
     std::list<std::string> _pagesIndexes;

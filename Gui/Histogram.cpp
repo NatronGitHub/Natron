@@ -132,7 +132,7 @@ struct NATRON_NAMESPACE::HistogramPrivate
     {
     }
     
-    boost::shared_ptr<Natron::Image> getHistogramImage(RectI* imagePortion) const;
+    boost::shared_ptr<Image> getHistogramImage(RectI* imagePortion) const;
     
     
     void showMenu(const QPoint & globalPos);
@@ -431,7 +431,7 @@ Histogram::~Histogram()
 #endif
 }
 
-boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imagePortion) const
+boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -455,13 +455,13 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
     if (index == 0) {
         //no viewer selected
         imagePortion->clear();
-        return boost::shared_ptr<Natron::Image>();
+        return boost::shared_ptr<Image>();
     } else if (index == 1) {
         //current viewer
         viewer = widget->getGui()->getNodeGraph()->getLastSelectedViewer();
         
     } else {
-        boost::shared_ptr<Natron::Image> ret;
+        boost::shared_ptr<Image> ret;
         const std::list<ViewerTab*> & viewerTabs = widget->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
             if ( (*it)->getInternalNode()->getScriptName_mt_safe() == viewerName ) {
@@ -472,21 +472,21 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
 
     }
     
-    std::list<boost::shared_ptr<Natron::Image> > tiles;
+    std::list<boost::shared_ptr<Image> > tiles;
     if (viewer) {
         viewer->getViewer()->getLastRenderedImageByMipMapLevel(textureIndex,viewer->getInternalNode()->getMipMapLevelFromZoomFactor(),&tiles);
     }
     
     ///We must copy all tiles into an image of the whole size
-    boost::shared_ptr<Natron::Image> ret;
+    boost::shared_ptr<Image> ret;
     if (!tiles.empty()) {
-        const    boost::shared_ptr<Natron::Image>& firstTile = tiles.front();
+        const    boost::shared_ptr<Image>& firstTile = tiles.front();
         RectI bounds;
         unsigned int mipMapLevel = 0;
         double par = 1.;
-        ImageBitDepthEnum depth = Natron::eImageBitDepthFloat;
+        ImageBitDepthEnum depth = eImageBitDepthFloat;
         ImageComponents comps;
-        for (std::list<boost::shared_ptr<Natron::Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
+        for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
             if (bounds.isNull()) {
                 bounds = (*it)->getBounds();
                 mipMapLevel = (*it)->getMipMapLevel();
@@ -505,8 +505,8 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
             return ret;
         }
         
-        ret.reset(new Natron::Image(comps,firstTile->getRoD(),bounds,mipMapLevel,par,depth,false));
-        for (std::list<boost::shared_ptr<Natron::Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
+        ret.reset(new Image(comps,firstTile->getRoD(),bounds,mipMapLevel,par,depth,false));
+        for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
             ret->pasteFrom(**it, (*it)->getBounds(), false);
         }
         
@@ -680,7 +680,7 @@ Histogram::initializeGL()
     GLenum err = glewInit();
     if (GLEW_OK != err) {
         /* Problem: glewInit failed, something is seriously wrong. */
-        Natron::errorDialog( tr("OpenGL/GLEW error").toStdString(),
+        natronErrorDialog( tr("OpenGL/GLEW error").toStdString(),
                              (const char*)glewGetErrorString(err) );
     }
 
@@ -1502,7 +1502,7 @@ Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
 
     RectI rect;
-    boost::shared_ptr<Natron::Image> image = _imp->getHistogramImage(&rect);
+    boost::shared_ptr<Image> image = _imp->getHistogramImage(&rect);
     if (image) {
         _imp->histogramThread.computeHistogram(_imp->mode, image, rect, width(),vmin,vmax,_imp->filterSize);
     } else {

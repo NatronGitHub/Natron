@@ -477,7 +477,7 @@ GuiApp::renderBlocking(const std::list<Effect*>& effects,const std::list<int>& f
     renderInternal(true, effects, firstFrames, lastFrames, frameSteps);
 }
 
-PyViewer::PyViewer(const boost::shared_ptr<Natron::Node>& node)
+PyViewer::PyViewer(const boost::shared_ptr<Node>& node)
 : _node(node)
 {
     ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());

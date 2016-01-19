@@ -116,8 +116,8 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
         }
     }
     
-    boost::shared_ptr<Natron::Node> createdNodeInternal = node->getNode();
-    boost::shared_ptr<Natron::Node> selectedNodeInternal;
+    boost::shared_ptr<Node> createdNodeInternal = node->getNode();
+    boost::shared_ptr<Node> selectedNodeInternal;
     if (selected) {
        selectedNodeInternal = selected->getNode();
     }
@@ -126,7 +126,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
     ///if behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
     ///otherwise fallback on behaviour 0
     if (behavior == 1) {
-        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = selected->getNode()->getGuiInputs();
+        const std::vector<boost::shared_ptr<Node> > & inputs = selected->getNode()->getGuiInputs();
         bool oneInputEmpty = false;
         for (U32 i = 0; i < inputs.size(); ++i) {
             if (!inputs[i]) {
@@ -232,7 +232,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
                                         QString(),
                                         CreateNodeArgs::DefaultValuesList(),
                                         createdNodeInternal->getGroup());
-                    boost::shared_ptr<Natron::Node> dotNode = getGui()->getApp()->createNode(args);
+                    boost::shared_ptr<Node> dotNode = getGui()->getApp()->createNode(args);
                     assert(dotNode);
                     boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
                     assert(dotNodeGui_i);
@@ -262,7 +262,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
     } else {
         ///pop it below the selected node
 
-        const std::list<Natron::Node*>& outputs = selectedNodeInternal->getGuiOutputs();
+        const std::list<Node*>& outputs = selectedNodeInternal->getGuiOutputs();
         if (!createdNodeInternal->isOutputNode() || outputs.empty()) {
             QSize selectedNodeSize = selected->getSize();
             QSize createdNodeSize = node->getSize();
@@ -276,8 +276,8 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
             QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
             
             ///and move the selected node below recusively
-            const std::list<Natron::Node* > & outputs = selected->getNode()->getGuiOutputs();
-            for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            const std::list<Node* > & outputs = selected->getNode()->getGuiOutputs();
+            for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                 assert(*it);
                 boost::shared_ptr<NodeGuiI> output_i = (*it)->getNodeGui();
                 if (!output_i) {
@@ -300,10 +300,10 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
             if ( !createdNodeInternal->isOutputNode() ) {
                 ///we find all the nodes that were previously connected to the selected node,
                 ///and connect them to the created node instead.
-                std::map<Natron::Node*,int> outputsConnectedToSelectedNode;
+                std::map<Node*,int> outputsConnectedToSelectedNode;
                 selectedNodeInternal->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
                 
-                for (std::map<Natron::Node*,int>::iterator it = outputsConnectedToSelectedNode.begin();
+                for (std::map<Node*,int>::iterator it = outputsConnectedToSelectedNode.begin();
                      it != outputsConnectedToSelectedNode.end(); ++it) {
                     if (it->first->getParentMultiInstanceName().empty() && it->first != createdNodeInternal.get()) {
                     
@@ -346,7 +346,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
                                     QString(),
                                     CreateNodeArgs::DefaultValuesList(),
                                     createdNodeInternal->getGroup());
-                boost::shared_ptr<Natron::Node> dotNode = getGui()->getApp()->createNode(args);
+                boost::shared_ptr<Node> dotNode = getGui()->getApp()->createNode(args);
                 assert(dotNode);
                 if (dotNode) {
                     boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();

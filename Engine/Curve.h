@@ -58,7 +58,7 @@ public:
              double initialValue,
              double leftDerivative = 0.,
              double rightDerivative = 0.,
-             KeyframeTypeEnum interpolation = Natron::eKeyframeTypeSmooth);
+             KeyframeTypeEnum interpolation = eKeyframeTypeSmooth);
 
     KeyFrame(const KeyFrame & other);
 

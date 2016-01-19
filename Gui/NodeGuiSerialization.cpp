@@ -41,7 +41,7 @@ void
 NodeGuiSerialization::initialize(const NodeGui*  n)
 {
     ////All this code is MT-safe
-    boost::shared_ptr<Natron::Node> node = n->getNode();
+    boost::shared_ptr<Node> node = n->getNode();
     
     
     _nodeName = node->getFullyQualifiedName();

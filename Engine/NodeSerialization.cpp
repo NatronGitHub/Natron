@@ -34,7 +34,7 @@
 
 NATRON_NAMESPACE_USING
 
-NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,bool serializeInputs)
+NodeSerialization::NodeSerialization(const boost::shared_ptr<Node> & n,bool serializeInputs)
     : _isNull(true)
     , _nbKnobs(0)
     , _knobsValues()
@@ -117,7 +117,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Natron::Node> & n,b
             n->getInputNames(_inputs);
         }
 
-        boost::shared_ptr<Natron::Node> masterNode = n->getMasterNode();
+        boost::shared_ptr<Node> masterNode = n->getMasterNode();
         if (masterNode) {
             _masterNodeName = masterNode->getFullyQualifiedName();
         }

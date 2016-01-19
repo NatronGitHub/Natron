@@ -70,7 +70,7 @@ App::createNode(const std::string& pluginID,
         if (isApp) {
             collection = boost::dynamic_pointer_cast<NodeCollection>(isApp->getInternalApp()->getProject());
         } else if (isEffect) {
-            boost::shared_ptr<Natron::Node> node = isEffect->getInternalNode();
+            boost::shared_ptr<Node> node = isEffect->getInternalNode();
             assert(node);
             boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
             if (!isGrp) {
@@ -102,7 +102,7 @@ App::createNode(const std::string& pluginID,
                         QString(),
                         CreateNodeArgs::DefaultValuesList(),
                         collection);
-    boost::shared_ptr<Natron::Node> node = _instance->createNode(args);
+    boost::shared_ptr<Node> node = _instance->createNode(args);
     if (node) {
         return new Effect(node);
     } else {
@@ -199,7 +199,7 @@ App::renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame,int last
         std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
         return;
     }
-    w.writer = dynamic_cast<Natron::OutputEffectInstance*>(node->getLiveInstance());
+    w.writer = dynamic_cast<OutputEffectInstance*>(node->getLiveInstance());
     if (!w.writer) {
         std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
         return;
@@ -235,7 +235,7 @@ App::renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const s
             std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
             return;
         }
-        w.writer = dynamic_cast<Natron::OutputEffectInstance*>(node->getLiveInstance());
+        w.writer = dynamic_cast<OutputEffectInstance*>(node->getLiveInstance());
         if (!w.writer || !w.writer->isOutput()) {
             std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
             return;

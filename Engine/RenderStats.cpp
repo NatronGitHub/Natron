@@ -44,13 +44,13 @@ struct NATRON_NAMESPACE::NodeRenderStatsPrivate
     RectD rod;
     
     //Is identity
-    boost::weak_ptr<Natron::Node> isWholeImageIdentity;
+    boost::weak_ptr<Node> isWholeImageIdentity;
     
     //The list of all tiles rendered
     std::list<RectI> rectanglesRendered;
     
     //The list of rectangles for which isIdentity returned true
-    std::list<std::pair<RectI,boost::weak_ptr<Natron::Node> > > identityRectangles;
+    std::list<std::pair<RectI,boost::weak_ptr<Node> > > identityRectangles;
     
     //The different mipmaplevels rendered
     std::set<unsigned int> mipmapLevelsAccessed;
@@ -89,7 +89,7 @@ struct NATRON_NAMESPACE::NodeRenderStatsPrivate
     , tileSupportEnabled(false)
     , renderScaleSupportEnabled(false)
     , channelsEnabled()
-    , outputPremult(Natron::eImagePremultiplicationOpaque)
+    , outputPremult(eImagePremultiplicationOpaque)
     {
         for (int i = 0; i < 4; ++i) {
             channelsEnabled[i] = false;
@@ -160,12 +160,12 @@ NodeRenderStats::setRoD(const RectD& rod)
 }
 
 void
-NodeRenderStats::setInputImageIdentity(const boost::shared_ptr<Natron::Node>& identity)
+NodeRenderStats::setInputImageIdentity(const boost::shared_ptr<Node>& identity)
 {
     _imp->isWholeImageIdentity = identity;
 }
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 NodeRenderStats::getInputImageIdentity() const
 {
     return _imp->isWholeImageIdentity.lock();
@@ -184,17 +184,17 @@ NodeRenderStats::getRenderedRectangles() const
 }
 
 void
-NodeRenderStats::addIdentityRectangle(const boost::shared_ptr<Natron::Node>& identity, const RectI& rectangle)
+NodeRenderStats::addIdentityRectangle(const boost::shared_ptr<Node>& identity, const RectI& rectangle)
 {
     _imp->identityRectangles.push_back(std::make_pair(rectangle,identity));
 }
 
-std::list<std::pair<RectI,boost::shared_ptr<Natron::Node> > >
+std::list<std::pair<RectI,boost::shared_ptr<Node> > >
 NodeRenderStats::getIdentityRectangles() const
 {
-    std::list<std::pair<RectI,boost::shared_ptr<Natron::Node> > > ret;
-    for (std::list<std::pair<RectI,boost::weak_ptr<Natron::Node> > >::const_iterator it = _imp->identityRectangles.begin(); it!=_imp->identityRectangles.end(); ++it) {
-        boost::shared_ptr<Natron::Node> n = it->second.lock();
+    std::list<std::pair<RectI,boost::shared_ptr<Node> > > ret;
+    for (std::list<std::pair<RectI,boost::weak_ptr<Node> > >::const_iterator it = _imp->identityRectangles.begin(); it!=_imp->identityRectangles.end(); ++it) {
+        boost::shared_ptr<Node> n = it->second.lock();
         if (n) {
             ret.push_back(std::make_pair(it->first, n));
         }
@@ -306,7 +306,7 @@ struct NATRON_NAMESPACE::RenderStatsPrivate
     //When true in-depth profiling will be enabled for all Nodes with detailed infos
     bool doNodesProfiling;
     
-    typedef std::map<boost::weak_ptr<Natron::Node>,NodeRenderStats > NodeInfosMap;
+    typedef std::map<boost::weak_ptr<Node>,NodeRenderStats > NodeInfosMap;
     NodeInfosMap nodeInfos;
     
     
@@ -320,7 +320,7 @@ struct NATRON_NAMESPACE::RenderStatsPrivate
         
     }
     
-    NodeInfosMap::iterator findNode(const boost::shared_ptr<Natron::Node>& node)
+    NodeInfosMap::iterator findNode(const boost::shared_ptr<Node>& node)
     {
         //Private, shouldn't lock
         assert(!lock.tryLock());
@@ -333,7 +333,7 @@ struct NATRON_NAMESPACE::RenderStatsPrivate
         return nodeInfos.end();
     }
     
-    NodeRenderStats& findOrCreateNodeStats(const boost::shared_ptr<Natron::Node>& node)
+    NodeRenderStats& findOrCreateNodeStats(const boost::shared_ptr<Node>& node)
     {
       
         NodeInfosMap::iterator found = findNode(node);
@@ -366,7 +366,7 @@ RenderStats::isInDepthProfilingEnabled() const
 }
 
 void
-RenderStats::setNodeIdentity(const boost::shared_ptr<Natron::Node>& node, const boost::shared_ptr<Natron::Node>& identity)
+RenderStats::setNodeIdentity(const boost::shared_ptr<Node>& node, const boost::shared_ptr<Node>& identity)
 {
     QMutexLocker k(&_imp->lock);
     assert(_imp->doNodesProfiling);
@@ -376,7 +376,7 @@ RenderStats::setNodeIdentity(const boost::shared_ptr<Natron::Node>& node, const 
 }
 
 void
-RenderStats::setGlobalRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
+RenderStats::setGlobalRenderInfosForNode(const boost::shared_ptr<Node>& node,
                                          const RectD& rod,
                                          ImagePremultiplicationEnum outputPremult,
                                          std::bitset<4> channelsRendered,
@@ -397,7 +397,7 @@ RenderStats::setGlobalRenderInfosForNode(const boost::shared_ptr<Natron::Node>& 
 }
 
 void
-RenderStats::addCacheInfosForNode(const boost::shared_ptr<Natron::Node>& node,
+RenderStats::addCacheInfosForNode(const boost::shared_ptr<Node>& node,
                           bool isCacheMiss,
                           bool hasDownscaled)
 {
@@ -409,8 +409,8 @@ RenderStats::addCacheInfosForNode(const boost::shared_ptr<Natron::Node>& node,
 }
 
 void
-RenderStats::addRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
-                           const boost::shared_ptr<Natron::Node>& identity,
+RenderStats::addRenderInfosForNode(const boost::shared_ptr<Node>& node,
+                           const boost::shared_ptr<Node>& identity,
                            const std::string& plane,
                            const RectI& rectangle,
                            double timeSpent)
@@ -428,14 +428,14 @@ RenderStats::addRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
     stats.addPlaneRendered(plane);
 }
 
-std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >
+std::map<boost::shared_ptr<Node>,NodeRenderStats >
 RenderStats::getStats(double *totalTimeSpent) const
 {
     QMutexLocker k(&_imp->lock);
     
-    std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > ret;
+    std::map<boost::shared_ptr<Node>,NodeRenderStats > ret;
     for (RenderStatsPrivate::NodeInfosMap::const_iterator it = _imp->nodeInfos.begin(); it!=_imp->nodeInfos.end(); ++it) {
-        boost::shared_ptr<Natron::Node> node = it->first.lock();
+        boost::shared_ptr<Node> node = it->first.lock();
         if (node) {
             ret.insert(std::make_pair(node, it->second));
         }

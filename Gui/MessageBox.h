@@ -64,7 +64,7 @@ public:
     MessageBox(const QString & title,
                const QString & message,
                MessageBoxTypeEnum type,
-               const Natron::StandardButtons& buttons,
+               const StandardButtons& buttons,
                StandardButtonEnum defaultButton,
                QWidget* parent);
     
@@ -86,7 +86,7 @@ private:
     
     void init(const QString & title,
               const QString & message,
-              const Natron::StandardButtons& buttons,
+              const StandardButtons& buttons,
               StandardButtonEnum defaultButton);
     
     virtual bool event(QEvent* e) OVERRIDE FINAL;

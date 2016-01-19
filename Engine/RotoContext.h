@@ -76,7 +76,7 @@ class RotoContext
 public:
 
     
-    RotoContext(const boost::shared_ptr<Natron::Node>& node);
+    RotoContext(const boost::shared_ptr<Node>& node);
 
     virtual ~RotoContext();
     
@@ -201,7 +201,7 @@ public:
     
     
    
-    boost::shared_ptr<Natron::Image> renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
+    boost::shared_ptr<Image> renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                                           const RectI& roi,
                                                           const ImageComponents& components,
                                                           const double time,
@@ -211,17 +211,17 @@ public:
     
     double renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
                             const RectD& rod,
-                            const std::list<std::pair<Natron::Point,double> >& points,
+                            const std::list<std::pair<Point,double> >& points,
                             unsigned int mipmapLevel,
                             double par,
                             const ImageComponents& components,
                             ImageBitDepthEnum depth,
                             double distToNext,
-                            boost::shared_ptr<Natron::Image> *wholeStrokeImage);
+                            boost::shared_ptr<Image> *wholeStrokeImage);
     
 private:
     
-    boost::shared_ptr<Natron::Image> renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& stroke,
+    boost::shared_ptr<Image> renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                                         const RectI & roi,
                                                         const ImageComponents& components,
                                                         const double startTime,
@@ -230,8 +230,8 @@ private:
                                                         const double time,
                                                         const ImageBitDepthEnum depth,
                                                         const unsigned int mipmapLevel,
-                                                        const std::list<std::list<std::pair<Natron::Point,double> > >& strokes,
-                                                        const boost::shared_ptr<Natron::Image> &image);
+                                                        const std::list<std::list<std::pair<Point,double> > >& strokes,
+                                                        const boost::shared_ptr<Image> &image);
     
 public:
     
@@ -315,7 +315,7 @@ public:
     
     int getNCurves() const;
     
-    boost::shared_ptr<Natron::Node> getNode() const;
+    boost::shared_ptr<Node> getNode() const;
     
     boost::shared_ptr<RotoLayer> getLayerByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getItemByName(const std::string & n) const;
@@ -384,11 +384,11 @@ public:
      **/
     void refreshRotoPaintTree();
     
-    void onRotoPaintInputChanged(const boost::shared_ptr<Natron::Node>& node);
+    void onRotoPaintInputChanged(const boost::shared_ptr<Node>& node);
         
-    void getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
+    void getRotoPaintTreeNodes(std::list<boost::shared_ptr<Node> >* nodes) const;
     
-    boost::shared_ptr<Natron::Node> getRotoPaintBottomMergeNode() const;
+    boost::shared_ptr<Node> getRotoPaintBottomMergeNode() const;
         
     void setWhileCreatingPaintStrokeOnMergeNodes(bool b);
     
@@ -464,7 +464,7 @@ public Q_SLOTS:
 private:
     
     
-    boost::shared_ptr<Natron::Node> getOrCreateGlobalMergeNode(int *availableInputIndex);
+    boost::shared_ptr<Node> getOrCreateGlobalMergeNode(int *availableInputIndex);
     
     void selectInternal(const boost::shared_ptr<RotoItem>& b);
     void deselectInternal(boost::shared_ptr<RotoItem> b);

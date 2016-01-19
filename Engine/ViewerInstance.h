@@ -36,7 +36,7 @@ NATRON_NAMESPACE_ENTER;
 
 class UpdateViewerParams; // ViewerInstancePrivate
 
-typedef std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > RenderStatsMap;
+typedef std::map<boost::shared_ptr<Node>,NodeRenderStats > RenderStatsMap;
 
 struct ViewerArgs
 {
@@ -44,7 +44,7 @@ struct ViewerArgs
     bool forceRender;
     int activeInputIndex;
     U64 activeInputHash;
-    boost::shared_ptr<Natron::FrameKey> key;
+    boost::shared_ptr<FrameKey> key;
     boost::shared_ptr<UpdateViewerParams> params;
     boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
     bool draftModeEnabled;
@@ -54,7 +54,7 @@ struct ViewerArgs
 };
 
 class ViewerInstance
-: public Natron::OutputEffectInstance
+: public OutputEffectInstance
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -63,9 +63,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     friend class ViewerCurrentFrameRequestScheduler;
     
 public:
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n) WARN_UNUSED_RETURN;
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n) WARN_UNUSED_RETURN;
 
-    ViewerInstance(boost::shared_ptr<Natron::Node> node);
+    ViewerInstance(boost::shared_ptr<Node> node);
 
     virtual ~ViewerInstance();
     
@@ -88,7 +88,7 @@ public:
                                                         int view,
                                                         int textureIndex,
                                                         U64 viewerHash,
-                                                        const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                        const boost::shared_ptr<Node>& rotoPaintNode,
                                                         bool useTLS,
                                                         const boost::shared_ptr<RenderStats>& stats,
                                                         ViewerArgs* outArgs);
@@ -104,7 +104,7 @@ private:
                                                         int view,
                                                         int textureIndex,
                                                         U64 viewerHash,
-                                                        const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                        const boost::shared_ptr<Node>& rotoPaintNode,
                                                         bool useTLS,
                                                         U64 renderAge,
                                                         const boost::shared_ptr<RenderStats>& stats,
@@ -126,7 +126,7 @@ public:
     StatusEnum renderViewer(int view,bool singleThreaded,bool isSequentialRender,
                                     U64 viewerHash,
                                     bool canAbort,
-                                    const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                    const boost::shared_ptr<Node>& rotoPaintNode,
                                     bool useTLS,
                                     boost::shared_ptr<ViewerArgs> args[2],
                                     const boost::shared_ptr<RequestedFrame>& request,
@@ -136,7 +136,7 @@ public:
                                                     bool canAbort,
                                                     int view,
                                                     U64 viewerHash,
-                                                    const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                    const boost::shared_ptr<Node>& rotoPaintNode,
                                                     const boost::shared_ptr<RotoStrokeItem>& strokeItem,
                                                     const boost::shared_ptr<RenderStats>& stats,
                                                     boost::shared_ptr<ViewerArgs>* argsA,
@@ -347,7 +347,7 @@ private:
                                              bool isSequentialRender,
                                              U64 viewerHash,
                                              bool canAbort,
-                                             boost::shared_ptr<Natron::Node> rotoPaintNode,
+                                             boost::shared_ptr<Node> rotoPaintNode,
                                              bool useTLS,
                                              const boost::shared_ptr<RequestedFrame>& request,
                                              const boost::shared_ptr<RenderStats>& stats,

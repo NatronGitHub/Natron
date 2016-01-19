@@ -304,7 +304,7 @@ void
 EditScriptDialog::onHelpRequested()
 {
     QString help = getCustomHelp();
-    Natron::informationDialog(tr("Help").toStdString(), help.toStdString(),true);
+    natronInformationDialog(tr("Help").toStdString(), help.toStdString(),true);
 }
 
 

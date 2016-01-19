@@ -644,12 +644,12 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,
         for (int i = 0; i < knob->getDimension(); ++i) {
             std::string expr = knob->getExpression(i);
             if (!expr.empty()) {
-                StandardButtonEnum rep = Natron::questionDialog(tr("Expression").toStdString(), tr("This operation will create "
+                StandardButtonEnum rep = natronQuestionDialog(tr("Expression").toStdString(), tr("This operation will create "
                                                                                                            "an expression link between this parameter and the new parameter on the group"
                                                                                                            " which will wipe the current expression(s).\n"
                                                                                                            "Continue anyway ?").toStdString(),false,
-                                                                        Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel));
-                if (rep != Natron::eStandardButtonYes) {
+                                                                        StandardButtons(eStandardButtonOk | eStandardButtonCancel));
+                if (rep != eStandardButtonYes) {
                     return boost::shared_ptr<KnobI>();
                 }
             }
@@ -674,7 +674,7 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,
                                           knob->getHintToolTip(),
                                           true);
     } catch (const std::exception& e) {
-        Natron::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
+        natronErrorDialog(tr("Error while creating parameter").toStdString(), e.what());
         return boost::shared_ptr<KnobI>();
     }
     if (ret) {

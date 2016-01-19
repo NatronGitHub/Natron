@@ -142,7 +142,7 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , _uiUsingMainThreadCond()
 , _uiUsingMainThread(false)
 , _uiUsingMainThreadMutex()
-, _lastQuestionDialogAnswer(Natron::eStandardButtonNo)
+, _lastQuestionDialogAnswer(eStandardButtonNo)
 , _lastStopAskingAnswer(false)
 , _currentUndoAction(0)
 , _currentRedoAction(0)
@@ -592,7 +592,7 @@ GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,const QString& pr
         if (lockPID != curPid) {
             QString appFilePath = QCoreApplication::applicationFilePath();
             if (Natron::checkIfProcessIsRunning(appFilePath.toStdString().c_str(),(Q_PID)lockPID)) {
-                StandardButtonEnum rep = Natron::questionDialog(QObject::tr("Project").toStdString(),
+                StandardButtonEnum rep = natronQuestionDialog(QObject::tr("Project").toStdString(),
                                                                         QObject::tr("This project may be open in another instance of Natron "
                                                                                     "running on %1 as process ID %2, "
                                                                                     "and was opened by %3 on %4.\nContinue anyway?").arg(lockHost,
@@ -600,8 +600,8 @@ GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,const QString& pr
                                                                                                                                          author,
                                                                                                                                          lockCreationDate).toStdString(),
                                                                         false,
-                                                                        Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo));
-                if (rep == Natron::eStandardButtonYes) {
+                                                                        StandardButtons(eStandardButtonYes | eStandardButtonNo));
+                if (rep == eStandardButtonYes) {
                     return true;
                 } else {
                     return false;

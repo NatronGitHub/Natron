@@ -238,11 +238,11 @@ struct NATRON_NAMESPACE::OutputSchedulerThreadPrivate
     QWaitCondition framesToRenderNotEmptyCond;
 
     
-    Natron::OutputEffectInstance* outputEffect; //< The effect used as output device
+    OutputEffectInstance* outputEffect; //< The effect used as output device
     RenderEngine* engine;
 
     
-    OutputSchedulerThreadPrivate(RenderEngine* engine,Natron::OutputEffectInstance* effect,OutputSchedulerThread::ProcessFrameModeEnum mode)
+    OutputSchedulerThreadPrivate(RenderEngine* engine,OutputEffectInstance* effect,OutputSchedulerThread::ProcessFrameModeEnum mode)
     : buf()
     , bufCondition()
     , bufMutex()
@@ -456,7 +456,7 @@ struct NATRON_NAMESPACE::OutputSchedulerThreadPrivate
 };
 
 
-OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,Natron::OutputEffectInstance* effect,ProcessFrameModeEnum mode)
+OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,OutputEffectInstance* effect,ProcessFrameModeEnum mode)
 : QThread()
 , _imp(new OutputSchedulerThreadPrivate(engine,effect,mode))
 {
@@ -1283,7 +1283,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
     double timeSpent;
     
     if (stats) {
-        std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > statResults = stats->getStats(&timeSpent);
+        std::map<boost::shared_ptr<Node>,NodeRenderStats > statResults = stats->getStats(&timeSpent);
         if (!statResults.empty()) {
             _imp->outputEffect->reportStats(frame, viewIndex, timeSpent, statResults);
         }
@@ -1388,7 +1388,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             std::vector<std::string> args;
             std::string error;
             try {
-                Natron::getFunctionArguments(cb, &error, &args);
+                getFunctionArguments(cb, &error, &args);
             } catch (const std::exception& e) {
                 _imp->outputEffect->getApp()->appendToScriptEditor(std::string("Failed to run onFrameRendered callback: ")
                                                                  + e.what());
@@ -1884,7 +1884,7 @@ OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
         script.append(")\n");
         
         std::string err,output;
-        if (!Natron::interpretPythonScript(callback.toStdString(), &err, &output)) {
+        if (!interpretPythonScript(callback.toStdString(), &err, &output)) {
             _imp->outputEffect->getApp()->appendToScriptEditor("Failed to run callback: " + err);
             throw std::runtime_error(err);
         } else if (!output.empty()) {
@@ -1902,7 +1902,7 @@ struct NATRON_NAMESPACE::RenderThreadTaskPrivate
 {
     OutputSchedulerThread* scheduler;
     
-    Natron::OutputEffectInstance* output;
+    OutputEffectInstance* output;
     
     QMutex mustQuitMutex;
     bool mustQuit;
@@ -1911,7 +1911,7 @@ struct NATRON_NAMESPACE::RenderThreadTaskPrivate
     QMutex runningMutex;
     bool running;
     
-    RenderThreadTaskPrivate(Natron::OutputEffectInstance* output,OutputSchedulerThread* scheduler)
+    RenderThreadTaskPrivate(OutputEffectInstance* output,OutputSchedulerThread* scheduler)
     : scheduler(scheduler)
     , output(output)
     , mustQuitMutex()
@@ -1925,7 +1925,7 @@ struct NATRON_NAMESPACE::RenderThreadTaskPrivate
 };
 
 
-RenderThreadTask::RenderThreadTask(Natron::OutputEffectInstance* output,OutputSchedulerThread* scheduler)
+RenderThreadTask::RenderThreadTask(OutputEffectInstance* output,OutputSchedulerThread* scheduler)
 : QThread()
 , _imp(new RenderThreadTaskPrivate(output,scheduler))
 {
@@ -2013,7 +2013,7 @@ RenderThreadTask::notifyIsRunning(bool running)
 //////////////////////// DefaultScheduler ////////////
 
 
-DefaultScheduler::DefaultScheduler(RenderEngine* engine,Natron::OutputEffectInstance* effect)
+DefaultScheduler::DefaultScheduler(RenderEngine* engine,OutputEffectInstance* effect)
 : OutputSchedulerThread(engine,effect,eProcessFrameBySchedulerThread)
 , _effect(effect)
 {
@@ -2030,7 +2030,7 @@ class DefaultRenderFrameRunnable : public RenderThreadTask
     
 public:
     
-    DefaultRenderFrameRunnable(Natron::OutputEffectInstance* writer,OutputSchedulerThread* scheduler)
+    DefaultRenderFrameRunnable(OutputEffectInstance* writer,OutputSchedulerThread* scheduler)
     : RenderThreadTask(writer,scheduler)
     {
         
@@ -2065,7 +2065,7 @@ private:
             std::vector<std::string> args;
             std::string error;
             try {
-                Natron::getFunctionArguments(cb, &error, &args);
+                getFunctionArguments(cb, &error, &args);
             } catch (const std::exception& e) {
                 _imp->output->getApp()->appendToScriptEditor(std::string("Failed to run beforeFrameRendered callback: ")
                                                                  + e.what());
@@ -2292,7 +2292,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         
         RenderingFlagSetter flagIsRendering(_effect->getNode().get());
         
-        ImagePtr inputImage = boost::dynamic_pointer_cast<Natron::Image>(it->frame);
+        ImagePtr inputImage = boost::dynamic_pointer_cast<Image>(it->frame);
         assert(inputImage);
         
        EffectInstance::InputImagesMap inputImages;
@@ -2398,7 +2398,7 @@ DefaultScheduler::aboutToStartRender()
         std::vector<std::string> args;
         std::string error;
         try {
-            Natron::getFunctionArguments(cb, &error, &args);
+            getFunctionArguments(cb, &error, &args);
         } catch (const std::exception& e) {
             _effect->getApp()->appendToScriptEditor(std::string("Failed to run beforeRender callback: ")
                                                              + e.what());
@@ -2451,7 +2451,7 @@ DefaultScheduler::onRenderStopped(bool aborted)
         std::vector<std::string> args;
         std::string error;
         try {
-            Natron::getFunctionArguments(cb, &error, &args);
+            getFunctionArguments(cb, &error, &args);
         } catch (const std::exception& e) {
             _effect->getApp()->appendToScriptEditor(std::string("Failed to run afterRender callback: ")
                                                              + e.what());
@@ -2704,7 +2704,7 @@ struct NATRON_NAMESPACE::RenderEnginePrivate
     QMutex schedulerCreationLock;
     OutputSchedulerThread* scheduler;
     
-    Natron::OutputEffectInstance* output;
+    OutputEffectInstance* output;
     
     mutable QMutex pbModeMutex;
     PlaybackModeEnum pbMode;
@@ -2724,7 +2724,7 @@ struct NATRON_NAMESPACE::RenderEnginePrivate
      */
     std::list<RefreshRequest> refreshQueue;
     
-    RenderEnginePrivate(Natron::OutputEffectInstance* output)
+    RenderEnginePrivate(OutputEffectInstance* output)
     : schedulerCreationLock()
     , scheduler(0)
     , output(output)
@@ -2737,7 +2737,7 @@ struct NATRON_NAMESPACE::RenderEnginePrivate
     }
 };
 
-RenderEngine::RenderEngine(Natron::OutputEffectInstance* output)
+RenderEngine::RenderEngine(OutputEffectInstance* output)
 : _imp(new RenderEnginePrivate(output))
 {
     QObject::connect(this, SIGNAL(currentFrameRenderRequestPosted()), this, SLOT(onCurrentFrameRenderRequestPosted()), Qt::QueuedConnection);
@@ -2750,7 +2750,7 @@ RenderEngine::~RenderEngine()
 }
 
 OutputSchedulerThread*
-RenderEngine::createScheduler(Natron::OutputEffectInstance* effect)
+RenderEngine::createScheduler(OutputEffectInstance* effect)
 {
     return new DefaultScheduler(this,effect);
 }
@@ -2987,7 +2987,7 @@ RenderEngine::notifyFrameProduced(const BufferableObjectList& frames, const Rend
 }
 
 OutputSchedulerThread*
-ViewerRenderEngine::createScheduler(Natron::OutputEffectInstance* effect) 
+ViewerRenderEngine::createScheduler(OutputEffectInstance* effect) 
 {
     return new ViewerDisplayScheduler(this,dynamic_cast<ViewerInstance*>(effect));
 }
@@ -3003,7 +3003,7 @@ struct NATRON_NAMESPACE::CurrentFrameFunctorArgs
     boost::shared_ptr<RequestedFrame> request;
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
     bool canAbort;
-    boost::shared_ptr<Natron::Node> isRotoPaintRequest;
+    boost::shared_ptr<Node> isRotoPaintRequest;
     boost::shared_ptr<RotoStrokeItem> strokeItem;
     boost::shared_ptr<ViewerArgs> args[2];
     bool isRotoNeatRender;
@@ -3031,7 +3031,7 @@ struct NATRON_NAMESPACE::CurrentFrameFunctorArgs
                             U64 viewerHash,
                             ViewerCurrentFrameRequestSchedulerPrivate* scheduler,
                             bool canAbort,
-                            const boost::shared_ptr<Natron::Node>& isRotoPaintRequest,
+                            const boost::shared_ptr<Node>& isRotoPaintRequest,
                             const boost::shared_ptr<RotoStrokeItem>& strokeItem,
                             bool isRotoNeatRender)
     : view(view)
@@ -3324,7 +3324,7 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStat
         if (params && params->ramBuffer) {
             if (stats) {
                 double timeSpent;
-                std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > ret = stats->getStats(&timeSpent);
+                std::map<boost::shared_ptr<Node>,NodeRenderStats > ret = stats->getStats(&timeSpent);
                 viewer->reportStats(0, 0, timeSpent, ret);
             }
 
@@ -3451,7 +3451,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
         stats.reset(new RenderStats(enableRenderStats));
     }
     
-    boost::shared_ptr<Natron::Node> rotoPaintNode;
+    boost::shared_ptr<Node> rotoPaintNode;
     boost::shared_ptr<RotoStrokeItem> curStroke;
     bool isDrawing;
     _imp->viewer->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke,&isDrawing);
@@ -3490,7 +3490,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
             if (args[i]->params && args[i]->params->ramBuffer) {
                 if (stats && i == 0) {
                     double timeSpent;
-                    std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > statResults = stats->getStats(&timeSpent);
+                    std::map<boost::shared_ptr<Node>,NodeRenderStats > statResults = stats->getStats(&timeSpent);
                     _imp->viewer->reportStats(frame, view, timeSpent, statResults);
                 }
                 _imp->viewer->updateViewer(args[i]->params);

@@ -183,6 +183,6 @@ private:
 
 NATRON_NAMESPACE_EXIT;
 
-Q_DECLARE_METATYPE(Natron::RotoItem*);
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::RotoItem*);
 
 #endif // Engine_RotoItem_h

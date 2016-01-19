@@ -607,7 +607,7 @@ ShortCutEditor::onValidateButtonClicked()
                             QString err = QString("Cannot bind this shortcut because the following action is already using it: %1")
                             .arg( it2->item->text(0) );
                             _imp->shortcutEditor->clear();
-                            Natron::errorDialog( tr("Shortcuts Editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
+                            natronErrorDialog( tr("Shortcuts Editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
                             
                             return;
                         }
@@ -704,11 +704,11 @@ ShortCutEditor::onResetButtonClicked()
 void
 ShortCutEditor::onRestoreDefaultsButtonClicked()
 {
-    StandardButtonEnum reply = Natron::questionDialog( tr("Restore defaults").toStdString(), tr("Restoring default shortcuts "
+    StandardButtonEnum reply = natronQuestionDialog( tr("Restore defaults").toStdString(), tr("Restoring default shortcuts "
                                                                                                     "will wipe all the current configuration "
                                                                                                     "are you sure you want to do this?").toStdString(), false );
 
-    if (reply == Natron::eStandardButtonYes) {
+    if (reply == eStandardButtonYes) {
         appPTR->restoreDefaultShortcuts();
         for (GuiAppShorcuts::const_iterator it = _imp->appShortcuts.begin(); it != _imp->appShortcuts.end(); ++it) {
             for (std::list<GuiBoundAction>::const_iterator it2 = it->actions.begin(); it2 != it->actions.end(); ++it2) {

@@ -202,8 +202,8 @@ NodeGraph::onNodeCreationDialogFinished()
         switch (ret) {
         case QDialog::Accepted: {
             
-            const Natron::PluginsMap & allPlugins = appPTR->getPluginsList();
-            Natron::PluginsMap::const_iterator found = allPlugins.find(res.toStdString());
+            const PluginsMap & allPlugins = appPTR->getPluginsList();
+            PluginsMap::const_iterator found = allPlugins.find(res.toStdString());
             if (found != allPlugins.end()) {
                 QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
                 getGui()->getApp()->createNode( CreateNodeArgs( res,
@@ -316,7 +316,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         ///the first valid output node
         if ( !_imp->_selection.empty() ) {
             boost::shared_ptr<NodeGui> lastSelected = ( *_imp->_selection.rbegin() );
-            const std::list<Natron::Node* > & outputs = lastSelected->getNode()->getGuiOutputs();
+            const std::list<Node* > & outputs = lastSelected->getNode()->getGuiOutputs();
             if ( !outputs.empty() ) {
                 boost::shared_ptr<NodeGuiI> output_i = outputs.front()->getNodeGui();
                 boost::shared_ptr<NodeGui> output = boost::dynamic_pointer_cast<NodeGui>(output_i);
@@ -398,11 +398,11 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         
         if (!intercepted) {
             /// Search for a node which has a shortcut bound
-            const Natron::PluginsMap & allPlugins = appPTR->getPluginsList();
-            for (Natron::PluginsMap::const_iterator it = allPlugins.begin() ; it != allPlugins.end() ; ++it) {
+            const PluginsMap & allPlugins = appPTR->getPluginsList();
+            for (PluginsMap::const_iterator it = allPlugins.begin() ; it != allPlugins.end() ; ++it) {
                 
                 assert(!it->second.empty());
-                Natron::Plugin* plugin = *it->second.rbegin();
+                Plugin* plugin = *it->second.rbegin();
                 
                 if ( plugin->getHasShortcut() ) {
                     QString group(kShortcutGroupNodes);

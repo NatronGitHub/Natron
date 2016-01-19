@@ -172,7 +172,7 @@ NATRON_NAMESPACE_ENTER;
         Image(const ImageKey & key,
               const boost::shared_ptr<ImageParams> &  params,
               const Natron::CacheAPI* cache,
-              Natron::StorageModeEnum storage,
+              StorageModeEnum storage,
               const std::string & path);
         
         
@@ -190,7 +190,7 @@ NATRON_NAMESPACE_ENTER;
 
         //Same as above but parameters are in the ImageParams object
         Image(const ImageKey & key,
-              const boost::shared_ptr<Natron::ImageParams>& params);
+              const boost::shared_ptr<ImageParams>& params);
 
         
         virtual ~Image();
@@ -705,7 +705,7 @@ NATRON_NAMESPACE_ENTER;
      * @brief Copies the content of the portion defined by roi of the other image pixels into this image.
      * The internal bitmap will be copied aswell
      **/
-        void pasteFrom(const Natron::Image & src, const RectI & srcRoi, bool copyBitmap = true);
+        void pasteFrom(const Image & src, const RectI & srcRoi, bool copyBitmap = true);
 
         /**
      * @brief Downscales a portion of this image into output.
@@ -717,13 +717,13 @@ NATRON_NAMESPACE_ENTER;
                              const RectI & roi,
                              unsigned int fromLevel, unsigned int toLevel,
                              bool copyBitMap,
-                             Natron::Image* output) const;
+                             Image* output) const;
 
         /**
      * @brief Upscales a portion of this image into output.
      * If the upscaled roi does not fit into output's bounds, it is cropped first.
      **/
-        void upscaleMipMap(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Natron::Image* output) const;
+        void upscaleMipMap(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Image* output) const;
 
         /**
      * @brief Scales the roi of this image to the size of the output image.
@@ -732,7 +732,7 @@ NATRON_NAMESPACE_ENTER;
      * The scale is computed from the RoD of both images.
      * FIXME: this following function has plenty of bugs (see code).
      **/
-        void scaleBox(const RectI & roi, Natron::Image* output) const;
+        void scaleBox(const RectI & roi, Image* output) const;
 
 
         static double getScaleFromMipMapLevel(unsigned int level);
@@ -775,7 +775,7 @@ NATRON_NAMESPACE_ENTER;
                              int channelForAlpha,
                              bool copyBitMap,
                              bool requiresUnpremult,
-                             Natron::Image* dstImg) const;
+                             Image* dstImg) const;
         
         void convertToFormatAlpha0(const RectI & renderWindow,
                              ViewerColorSpaceEnum srcColorSpace,
@@ -783,7 +783,7 @@ NATRON_NAMESPACE_ENTER;
                              int channelForAlpha,
                              bool copyBitMap,
                              bool requiresUnpremult,
-                             Natron::Image* dstImg) const;
+                             Image* dstImg) const;
         
     private:
         
@@ -795,7 +795,7 @@ NATRON_NAMESPACE_ENTER;
                              bool useAlpha0,
                              bool copyBitMap,
                              bool requiresUnpremult,
-                             Natron::Image* dstImg) const;
+                             Image* dstImg) const;
         
         template <typename PIX, bool doPremult>
         void premultInternal(const RectI& roi);
@@ -924,7 +924,7 @@ NATRON_NAMESPACE_ENTER;
      * If roi is NOT a power of 2, then it will be rounded to the closest power of 2.
      **/
         void buildMipMapLevel(const RectD& dstRoD,const RectI & roiCanonical, unsigned int level, bool copyBitMap,
-                              Natron::Image* output) const;
+                              Image* output) const;
 
 
         /**
@@ -932,27 +932,27 @@ NATRON_NAMESPACE_ENTER;
      * If the RoI bounds are odd, the largest enclosing RoI with even bounds will be considered.
      **/
         void halveRoI(const RectI & roi, bool copyBitMap,
-                      Natron::Image* output) const;
+                      Image* output) const;
         
 
         template <typename PIX, int maxValue>
         void halveRoIForDepth(const RectI & roi,
                               bool copyBitMap,
-                              Natron::Image* output) const;
+                              Image* output) const;
 
         /**
      * @brief Same as halveRoI but for 1D only (either width == 1 or height == 1)
      **/
-        void halve1DImage(const RectI & roi, Natron::Image* output) const;
+        void halve1DImage(const RectI & roi, Image* output) const;
 
         template <typename PIX, int maxValue>
-        void halve1DImageForDepth(const RectI & roi, Natron::Image* output) const;
+        void halve1DImageForDepth(const RectI & roi, Image* output) const;
 
         template <typename PIX,int maxValue>
-        void upscaleMipMapForDepth(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Natron::Image* output) const;
+        void upscaleMipMapForDepth(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Image* output) const;
 
         template<typename PIX>
-        void pasteFromForDepth(const Natron::Image & src, const RectI & srcRoi, bool copyBitmap = true, bool takeSrcLock = true);
+        void pasteFromForDepth(const Image & src, const RectI & srcRoi, bool copyBitmap = true, bool takeSrcLock = true);
 
         template <typename PIX, int maxValue>
         void fillForDepth(const RectI & roi,float r,float g,float b,float a);
@@ -961,7 +961,7 @@ NATRON_NAMESPACE_ENTER;
         void fillForDepthForComponents(const RectI & roi_,  float r,float g, float b, float a);
 
         template<typename PIX>
-        void scaleBoxForDepth(const RectI & roi, Natron::Image* output) const;
+        void scaleBoxForDepth(const RectI & roi, Image* output) const;
 
     private:
         ImageBitDepthEnum _bitDepth;
@@ -1001,7 +1001,7 @@ NATRON_NAMESPACE_ENTER;
     template<> inline unsigned short clampIfInt(float v) { return (unsigned short)clamp<float>(v, 0, 65535); }
     template<> inline float clampIfInt(float v) { return v; }
     
-    typedef boost::shared_ptr<Natron::Image> ImagePtr;
+    typedef boost::shared_ptr<NATRON_NAMESPACE::Image> ImagePtr;
     typedef std::list<ImagePtr> ImageList;
 
 NATRON_NAMESPACE_EXIT;

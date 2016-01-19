@@ -153,7 +153,7 @@ AddMultipleNodesCommand::undo()
                 viewersToRefresh.push_back(*it2);
             }
         }
-        node->getNode()->deactivate(std::list< Natron::Node* >(), //outputs to disconnect
+        node->getNode()->deactivate(std::list< Node* >(), //outputs to disconnect
                                     true, //disconnect all nodes, disregarding the first parameter.
                                     true, //reconnect outputs to inputs of this node?
                                     true, //hide nodeGui?
@@ -185,7 +185,7 @@ AddMultipleNodesCommand::redo()
     if (_firstRedoCalled) {
   
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->getNode()->activate(std::list< Natron::Node* >(), //inputs to restore
+            (*it)->getNode()->activate(std::list< Node* >(), //inputs to restore
                                        true, //restore all inputs ?
                                        false); //triggerRender
         }
@@ -235,8 +235,8 @@ RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
         n.node = *it;
 
         ///find all outputs to restore
-        const std::list<Natron::Node*> & outputs = (*it)->getNode()->getGuiOutputs();
-        for (std::list<Natron::Node* >::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+        const std::list<Node*> & outputs = (*it)->getNode()->getGuiOutputs();
+        for (std::list<Node* >::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
             bool restore = true;
             for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it3 = nodes.begin(); it3 != nodes.end(); ++it3) {
                 if ( (*it3)->getNode().get() == *it2 ) {
@@ -324,7 +324,7 @@ RemoveMultipleNodesCommand::redo()
         
         NodeGuiPtr node = it->node.lock();
         ///Make a copy before calling deactivate which will modify the list
-        std::list<Natron::Node* > outputs = node->getNode()->getGuiOutputs();
+        std::list<Node* > outputs = node->getNode()->getGuiOutputs();
         
         std::list<ViewerInstance* > viewers;
         node->getNode()->hasViewersConnected(&viewers);
@@ -340,18 +340,18 @@ RemoveMultipleNodesCommand::redo()
 
         if (_nodes.size() == 1) {
             ///If we're deleting a single node and there's a viewer in output,reconnect the viewer to another connected input it has
-            for (std::list<Natron::Node* >::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+            for (std::list<Node* >::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 assert(*it2);
 
                 ///the output must be in the outputs to restore
-                std::list<Natron::Node* >::const_iterator found =
+                std::list<Node* >::const_iterator found =
                     std::find(it->outputsToRestore.begin(),it->outputsToRestore.end(),*it2);
 
                 if ( found != it->outputsToRestore.end() ) {
                     InspectorNode* inspector = dynamic_cast<InspectorNode*>( *it2 );
                     ///if the node is an inspector, when disconnecting the active input just activate another input instead
                     if (inspector) {
-                        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = inspector->getGuiInputs();
+                        const std::vector<boost::shared_ptr<Node> > & inputs = inspector->getGuiInputs();
                         ///set as active input the first non null input
                         for (U32 i = 0; i < inputs.size(); ++i) {
                             if (inputs[i]) {
@@ -494,10 +494,10 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
         
         
         if (internalOldSrc && internalNewSrc) {
-            Natron::Node::CanConnectInputReturnValue ret = internalDst->canConnectInput(internalNewSrc, inputNb);
-            bool connectionOk = ret == Natron::Node::eCanConnectInput_ok ||
-            ret == Natron::Node::eCanConnectInput_differentFPS ||
-            ret == Natron::Node::eCanConnectInput_differentPars;
+            Node::CanConnectInputReturnValue ret = internalDst->canConnectInput(internalNewSrc, inputNb);
+            bool connectionOk = ret == Node::eCanConnectInput_ok ||
+            ret == Node::eCanConnectInput_differentFPS ||
+            ret == Node::eCanConnectInput_differentPars;
             if (connectionOk) {
                 internalDst->replaceInput(internalNewSrc, inputNb);
             } else {
@@ -506,10 +506,10 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
         } else if (internalOldSrc && !internalNewSrc) {
             internalDst->disconnectInput(internalDst->getInputIndex(internalOldSrc.get()));
         } else if (!internalOldSrc && internalNewSrc) {
-            Natron::Node::CanConnectInputReturnValue ret = internalDst->canConnectInput(internalNewSrc, inputNb);
-            bool connectionOk = ret == Natron::Node::eCanConnectInput_ok ||
-            ret == Natron::Node::eCanConnectInput_differentFPS ||
-            ret == Natron::Node::eCanConnectInput_differentPars;
+            Node::CanConnectInputReturnValue ret = internalDst->canConnectInput(internalNewSrc, inputNb);
+            bool connectionOk = ret == Node::eCanConnectInput_ok ||
+            ret == Node::eCanConnectInput_differentFPS ||
+            ret == Node::eCanConnectInput_differentPars;
             if (connectionOk) {
                 internalDst->connectInput(internalNewSrc,inputNb);
             } else {
@@ -591,7 +591,7 @@ InsertNodeCommand::redo()
     
     ///find out if the node is already connected to what the edge is connected
     bool alreadyConnected = false;
-    const std::vector<boost::shared_ptr<Natron::Node> > & inpNodes = newSrcInternal->getGuiInputs();
+    const std::vector<boost::shared_ptr<Node> > & inpNodes = newSrcInternal->getGuiInputs();
     if (oldSrcInternal) {
         for (U32 i = 0; i < inpNodes.size(); ++i) {
             if (inpNodes[i] == oldSrcInternal) {
@@ -793,7 +793,7 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
                         std::list<NodeGui*> & usedNodes)
 {
     QSize nodeSize = currentNode->getSize();
-    boost::shared_ptr<Natron::Node> internalNode = currentNode->getNode();
+    boost::shared_ptr<Node> internalNode = currentNode->getNode();
     const std::vector<Edge*> & inputs = currentNode->getInputsArrows();
     NodeGuiPtr firstNonMaskInput;
     std::list<NodeGuiPtr> otherNonMaskInputs;
@@ -928,14 +928,14 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
     
     static bool hasNodeOutputsInList(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node)
     {
-        const std::list<Natron::Node*>& outputs = node->getNode()->getGuiOutputs();
+        const std::list<Node*>& outputs = node->getNode()->getGuiOutputs();
         
         bool foundOutput = false;
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it != node) {
-                boost::shared_ptr<Natron::Node> n = (*it)->getNode();
+                boost::shared_ptr<Node> n = (*it)->getNode();
                 
-                std::list<Natron::Node*>::const_iterator found = std::find(outputs.begin(),outputs.end(),n.get());
+                std::list<Node*>::const_iterator found = std::find(outputs.begin(),outputs.end(),n.get());
                 if (found != outputs.end()) {
                     foundOutput = true;
                     break;
@@ -947,13 +947,13 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
     
     static bool hasNodeInputsInList(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node)
     {
-        const std::vector<boost::shared_ptr<Natron::Node> >& inputs = node->getNode()->getGuiInputs();
+        const std::vector<boost::shared_ptr<Node> >& inputs = node->getNode()->getGuiInputs();
         
         bool foundInput = false;
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it != node) {
-                boost::shared_ptr<Natron::Node> n = (*it)->getNode();
-                std::vector<boost::shared_ptr<Natron::Node> >::const_iterator found = std::find(inputs.begin(),inputs.end(),n);
+                boost::shared_ptr<Node> n = (*it)->getNode();
+                std::vector<boost::shared_ptr<Node> >::const_iterator found = std::find(inputs.begin(),inputs.end(),n);
                 if (found != inputs.end()) {
                     foundInput = true;
                     break;
@@ -1115,10 +1115,10 @@ LoadNodePresetsCommand::LoadNodePresetsCommand(const boost::shared_ptr<NodeGui> 
 }
 
 void
-LoadNodePresetsCommand::getListAsShared(const std::list< boost::weak_ptr<Natron::Node> >& original,
-                     std::list< boost::shared_ptr<Natron::Node> >& shared) const
+LoadNodePresetsCommand::getListAsShared(const std::list< boost::weak_ptr<Node> >& original,
+                     std::list< boost::shared_ptr<Node> >& shared) const
 {
-    for (std::list< boost::weak_ptr<Natron::Node> >::const_iterator it = original.begin(); it != original.end(); ++it) {
+    for (std::list< boost::weak_ptr<Node> >::const_iterator it = original.begin(); it != original.end(); ++it) {
         shared.push_back(it->lock());
     }
 }
@@ -1126,11 +1126,11 @@ LoadNodePresetsCommand::getListAsShared(const std::list< boost::weak_ptr<Natron:
 LoadNodePresetsCommand::~LoadNodePresetsCommand()
 {
 //    if (_isUndone) {
-//        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _newChildren.begin(); it != _newChildren.end(); ++it) {
+//        for (std::list<boost::shared_ptr<Node> >::iterator it = _newChildren.begin(); it != _newChildren.end(); ++it) {
 //            (*it)->getDagGui()->deleteNodepluginsly(*it);
 //        }
 //    } else {
-//        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = _oldChildren.begin(); it != _oldChildren.end(); ++it) {
+//        for (std::list<boost::shared_ptr<Node> >::iterator it = _oldChildren.begin(); it != _oldChildren.end(); ++it) {
 //            (*it)->getDagGui()->deleteNodepluginsly(*it);
 //        }
 //    }
@@ -1144,17 +1144,17 @@ LoadNodePresetsCommand::undo()
     _isUndone = true;
     
     NodeGuiPtr node = _node.lock();
-    boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+    boost::shared_ptr<Node> internalNode = node->getNode();
     boost::shared_ptr<MultiInstancePanel> panel = node->getMultiInstancePanel();
     internalNode->loadKnobs(*_oldSerialization.front(),true);
     if (panel) {
-        std::list< boost::shared_ptr<Natron::Node> > newChildren,oldChildren;
+        std::list< boost::shared_ptr<Node> > newChildren,oldChildren;
         getListAsShared(_newChildren, newChildren);
         getListAsShared(_oldChildren, oldChildren);
         panel->removeInstances(newChildren);
         panel->addInstances(oldChildren);
     }
-    internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
+    internalNode->getLiveInstance()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
     internalNode->getApp()->triggerAutoSave();
     setText(QObject::tr("Load presets"));
 }
@@ -1165,7 +1165,7 @@ LoadNodePresetsCommand::redo()
     
     NodeGuiPtr node = _node.lock();
 
-    boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+    boost::shared_ptr<Node> internalNode = node->getNode();
     boost::shared_ptr<MultiInstancePanel> panel = node->getMultiInstancePanel();
 
     if (!_firstRedoCalled) {
@@ -1174,8 +1174,8 @@ LoadNodePresetsCommand::redo()
         node->serializeInternal(_oldSerialization);
         
         if (panel) {
-            const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >& children = panel->getInstances();
-            for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = children.begin();
+            const std::list<std::pair<boost::weak_ptr<Node>,bool> >& children = panel->getInstances();
+            for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = children.begin();
                  it != children.end(); ++it) {
                 _oldChildren.push_back(it->first.lock());
             }
@@ -1187,7 +1187,7 @@ LoadNodePresetsCommand::redo()
              it != _newSerializations.end(); ++it, ++k) {
             
             if (k > 0)  { /// this is a multi-instance child, create it
-               boost::shared_ptr<Natron::Node> newNode = panel->createNewInstance(false);
+               boost::shared_ptr<Node> newNode = panel->createNewInstance(false);
                 newNode->loadKnobs(**it);
                 std::list<SequenceTime> keys;
                 newNode->getAllKnobsKeyframes(&keys);
@@ -1199,7 +1199,7 @@ LoadNodePresetsCommand::redo()
     
     internalNode->loadKnobs(*_newSerializations.front(),true);
     if (panel) {
-        std::list< boost::shared_ptr<Natron::Node> > oldChildren,newChildren;
+        std::list< boost::shared_ptr<Node> > oldChildren,newChildren;
         getListAsShared(_oldChildren, oldChildren);
         getListAsShared(_newChildren, newChildren);
         panel->removeInstances(oldChildren);
@@ -1216,7 +1216,7 @@ LoadNodePresetsCommand::redo()
     }
     std::map<std::string,std::string> oldNewScriptNames;
     internalNode->restoreKnobsLinks(*_newSerializations.front(), allNodes,oldNewScriptNames);
-    internalNode->getLiveInstance()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
+    internalNode->getLiveInstance()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;
 
@@ -1257,10 +1257,10 @@ void RenameNodeUndoRedoCommand::redo()
 }
 
 static void
-sharedToWeak(const std::vector<boost::shared_ptr<Natron::Node> >& shared,
-                  std::vector<boost::weak_ptr<Natron::Node> >& weak)
+sharedToWeak(const std::vector<boost::shared_ptr<Node> >& shared,
+                  std::vector<boost::weak_ptr<Node> >& weak)
 {
-    for (std::vector<boost::shared_ptr<Natron::Node> >::const_iterator it = shared.begin(); it != shared.end(); ++it) {
+    for (std::vector<boost::shared_ptr<Node> >::const_iterator it = shared.begin(); it != shared.end(); ++it) {
         weak.push_back(*it);
     }
 }
@@ -1305,9 +1305,9 @@ static void extractTreesFromNodes(const std::list<boost::shared_ptr<NodeGui> >& 
         if (isOutput) {
             ExtractedTree tree;
             tree.output.node = *it;
-            boost::shared_ptr<Natron::Node> n = (*it)->getNode();
-            const std::list<Natron::Node* >& outputs = n->getGuiOutputs();
-            for (std::list<Natron::Node*>::const_iterator it2 = outputs.begin(); it2!=outputs.end(); ++it2) {
+            boost::shared_ptr<Node> n = (*it)->getNode();
+            const std::list<Node* >& outputs = n->getGuiOutputs();
+            for (std::list<Node*>::const_iterator it2 = outputs.begin(); it2!=outputs.end(); ++it2) {
                 int idx = (*it2)->inputIndex(n.get());
                 tree.output.outputs.push_back(std::make_pair(idx,*it2));
             }
@@ -1359,7 +1359,7 @@ ExtractNodeUndoRedoCommand::undo()
         
         NodeGuiPtr output = it->output.node.lock();
         ///Connect and move output
-        for (std::list<std::pair<int,Natron::Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
+        for (std::list<std::pair<int,Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
             it2->second->disconnectInput(it2->first);
             it2->second->connectInput(output->getNode(),it2->first);
         }
@@ -1429,10 +1429,10 @@ ExtractNodeUndoRedoCommand::redo()
         if (it->output.outputs.size() == 1 && it->inputs.size() == 1) {
             const ExtractedInput& selectedInput = it->inputs.front();
             
-            const std::vector<boost::weak_ptr<Natron::Node> > &inputs = selectedInput.inputs;
+            const std::vector<boost::weak_ptr<Node> > &inputs = selectedInput.inputs;
             NodeGuiPtr selectedInputNode = selectedInput.node.lock();
             
-            boost::shared_ptr<Natron::Node> inputToConnectTo ;
+            boost::shared_ptr<Node> inputToConnectTo ;
             for (U32 i = 0; i < inputs.size() ; ++i) {
                 if (inputs[i].lock() && !selectedInputNode->getNode()->getLiveInstance()->isInputOptional(i) &&
                     !selectedInputNode->getNode()->getLiveInstance()->isInputRotoBrush(i)) {
@@ -1442,7 +1442,7 @@ ExtractNodeUndoRedoCommand::redo()
             }
             
             if (inputToConnectTo) {
-                for (std::list<std::pair<int,Natron::Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
+                for (std::list<std::pair<int,Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
                     it2->second->disconnectInput(it2->first);
                     it2->second->connectInput(inputToConnectTo, it2->first);
                 }
@@ -1452,7 +1452,7 @@ ExtractNodeUndoRedoCommand::redo()
         
         ///Disconnect and move output
         if (!outputsAlreadyDisconnected) {
-            for (std::list<std::pair<int,Natron::Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
+            for (std::list<std::pair<int,Node*> >::iterator it2 = it->output.outputs.begin(); it2 != it->output.outputs.end(); ++it2) {
                 it2->second->disconnectInput(it2->first);
             }
         }
@@ -1689,9 +1689,9 @@ GroupFromSelectionCommand::undo()
     
     for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
         NodeGuiPtr node = it->lock();
-        node->getNode()->activate(std::list< Natron::Node* >(),true,false);
+        node->getNode()->activate(std::list< Node* >(),true,false);
     }
-    _group.lock()->getNode()->deactivate(std::list< Natron::Node* >(),
+    _group.lock()->getNode()->deactivate(std::list< Node* >(),
                                          true,
                                          false,
                                          true,
@@ -1707,7 +1707,7 @@ GroupFromSelectionCommand::redo()
    
     for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
         NodeGuiPtr node = it->lock();
-        node->getNode()->deactivate(std::list< Natron::Node* >(),
+        node->getNode()->deactivate(std::list< Node* >(),
                                     true,
                                     false,
                                     true,
@@ -1715,7 +1715,7 @@ GroupFromSelectionCommand::redo()
     }
     
     if (_firstRedoCalled) {
-        _group.lock()->getNode()->activate(std::list< Natron::Node* >(),true,false);
+        _group.lock()->getNode()->activate(std::list< Node* >(),true,false);
     }
     
     std::list<ViewerInstance*> viewers;
@@ -1813,7 +1813,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,const std::list<boost::s
                 NodeToConnect ntc;
                 
                 assert(groupInputs[i]);
-                std::map<Natron::Node*,int> outputConnected;
+                std::map<Node*,int> outputConnected;
                 groupInputs[i]->getOutputsConnectedToThisNode(&outputConnected);
                 
                 boost::shared_ptr<NodeGuiI> inputGui_i = input->getNodeGui();
@@ -1827,7 +1827,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,const std::list<boost::s
                     inputY = p.y();
                 }
                 
-                for (std::map<Natron::Node*,int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
+                for (std::map<Node*,int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
                     
                     boost::shared_ptr<NodeGui> outputGui;
                     ///Find the new node that was inlined, based on the script name of the old node in the group
@@ -1867,9 +1867,9 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,const std::list<boost::s
                 firstInputPos = inputGui->mapToScene(inputGui->mapFromParent(inputGui->getPos_mt_safe()));
                 outputConnection.input = inputGui;
                 
-                std::map<Natron::Node*,int> outputConnected;
+                std::map<Node*,int> outputConnected;
                 group->getNode()->getOutputsConnectedToThisNode(&outputConnected);
-                for (std::map<Natron::Node*,int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
+                for (std::map<Node*,int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
                     boost::shared_ptr<NodeGuiI> outputGui_i = it2->first->getNodeGui();
                     assert(outputGui_i);
                     boost::shared_ptr<NodeGui> outputGui = boost::dynamic_pointer_cast<NodeGui>(outputGui_i);
@@ -1937,7 +1937,7 @@ InlineGroupCommand::undo()
     for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it != _groupNodes.end(); ++it) {
         NodeGuiPtr groupNode = it->group.lock();
         if (groupNode) {
-            groupNode->getNode()->activate(std::list< Natron::Node* >(),true,false);
+            groupNode->getNode()->activate(std::list< Node* >(),true,false);
             std::list<ViewerInstance*> connectedViewers;
             groupNode->getNode()->hasViewersConnected(&connectedViewers);
             for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2!=connectedViewers.end(); ++it2) {
@@ -1947,7 +1947,7 @@ InlineGroupCommand::undo()
                  it2 != it->inlinedNodes.end(); ++it2) {
                 NodeGuiPtr node = (*it2).lock();
                 if (node) {
-                    node->getNode()->deactivate(std::list< Natron::Node* >(),false,false,true,false);
+                    node->getNode()->deactivate(std::list< Node* >(),false,false,true,false);
                 }
             }
             
@@ -1973,13 +1973,13 @@ InlineGroupCommand::redo()
             for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2!=connectedViewers.end(); ++it2) {
                 viewers.insert(*it2);
             }
-            groupNode->getNode()->deactivate(std::list< Natron::Node* >(),true,false,true,false);
+            groupNode->getNode()->deactivate(std::list< Node* >(),true,false,true,false);
             if  (_firstRedoCalled) {
                 for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inlinedNodes.begin();
                      it2 != it->inlinedNodes.end(); ++it2) {
                     NodeGuiPtr node = (*it2).lock();
                     if (node) {
-                        node->getNode()->activate(std::list< Natron::Node* >(),false,false);
+                        node->getNode()->activate(std::list< Node* >(),false,false);
                     }
                 }
             }

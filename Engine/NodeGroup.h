@@ -42,7 +42,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef boost::shared_ptr<Natron::Node> NodePtr;
+typedef boost::shared_ptr<Node> NodePtr;
 
 typedef std::list<NodePtr> NodeList;
 
@@ -107,7 +107,7 @@ public:
      * @param errorIfExists If a node with the same script-name exists, error
      * This function throws a runtime exception with the error message in case of error.
      **/
-    void checkNodeName(const Natron::Node* node,const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName);
+    void checkNodeName(const Node* node,const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName);
     
     /**
      * @brief Returns true if there is one or more nodes in the collection.
@@ -125,19 +125,19 @@ public:
      * of the node 'output'. If 'force' is true, then it will disconnect any previous connection
      * existing on 'inputNumber' and connect the previous input as input of the new 'input' node.
      **/
-    static bool connectNodes(int inputNumber,const NodePtr& input,Natron::Node* output,bool force = false);
+    static bool connectNodes(int inputNumber,const NodePtr& input,Node* output,bool force = false);
     
     /**
      * @brief Same as above where inputName is the name of the node input.
      **/
-    bool connectNodes(int inputNumber,const std::string & inputName,Natron::Node* output);
+    bool connectNodes(int inputNumber,const std::string & inputName,Node* output);
     
     /**
      * @brief Disconnects the node 'input' and 'output' if any connection between them is existing.
      * If autoReconnect is true, after disconnecting 'input' and 'output', if the 'input' had only
      * 1 input, and it was connected, it will connect output to the input of  'input'.
      **/
-    static bool disconnectNodes(Natron::Node* input,Natron::Node* output,bool autoReconnect = false);
+    static bool disconnectNodes(Node* input,Node* output,bool autoReconnect = false);
 
     
     /**
@@ -148,12 +148,12 @@ public:
     /**
      * @brief Returns true if a node has the give name n in the group. This is not called recursively on subgroups.
      **/
-    bool checkIfNodeNameExists(const std::string & n,const Natron::Node* caller) const;
+    bool checkIfNodeNameExists(const std::string & n,const Node* caller) const;
     
     /**
      * @brief Returns true if a node has the give label n in the group. This is not called recursively on subgroups.
      **/
-    bool checkIfNodeLabelExists(const std::string & n,const Natron::Node* caller) const;
+    bool checkIfNodeLabelExists(const std::string & n,const Node* caller) const;
 
     /**
      * @brief Returns a pointer to a node whose name is the same as the name given in parameter.
@@ -221,7 +221,7 @@ public:
     /**
      * @brief Get all Writers in the group and sub groups
      **/
-    void getWriters(std::list<Natron::OutputEffectInstance*>* writers) const;
+    void getWriters(std::list<OutputEffectInstance*>* writers) const;
     
     /**
      * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup
@@ -248,7 +248,7 @@ public:
     void recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame);
 
     
-    void getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const;
+    void getParallelRenderArgs(std::map<boost::shared_ptr<Node>,ParallelRenderArgs >& argsMap) const;
     
     
     void forceComputeInputDependentDataOnAllTrees();
@@ -256,28 +256,28 @@ public:
     /**
      * @brief Callback called when a node of the collection is being deactivated
      **/
-    virtual void notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& /*node*/) {}
+    virtual void notifyNodeDeactivated(const boost::shared_ptr<Node>& /*node*/) {}
     
     /**
      * @brief Callback called when a node of the collection is being activated
      **/
-    virtual void notifyNodeActivated(const boost::shared_ptr<Natron::Node>& /*node*/) {}
+    virtual void notifyNodeActivated(const boost::shared_ptr<Node>& /*node*/) {}
     
     /**
      * @brief Callback called when an input of the group changed
      **/
-    virtual void notifyInputOptionalStateChanged(const boost::shared_ptr<Natron::Node>& /*node*/) {}
+    virtual void notifyInputOptionalStateChanged(const boost::shared_ptr<Node>& /*node*/) {}
     
     /**
      * @brief Callback called when an input of the group changed
      **/
-    virtual void notifyInputMaskStateChanged(const boost::shared_ptr<Natron::Node>& /*node*/) {}
+    virtual void notifyInputMaskStateChanged(const boost::shared_ptr<Node>& /*node*/) {}
 
     
     /**
      * @brief Callback called when a node of the collection is being activated
      **/
-    virtual void notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& /*node*/) {}
+    virtual void notifyNodeNameChanged(const boost::shared_ptr<Node>& /*node*/) {}
     
     void exportGroupToPython(const QString& pluginID,
                              const QString& pluginLabel,
@@ -296,7 +296,7 @@ private:
 
 
 struct NodeGroupPrivate;
-class NodeGroup : public Natron::OutputEffectInstance, public NodeCollection
+class NodeGroup : public OutputEffectInstance, public NodeCollection
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -304,7 +304,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new NodeGroup(n);
     }
@@ -367,21 +367,21 @@ public:
     virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
-    virtual void notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
-    virtual void notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
-    virtual void notifyInputOptionalStateChanged(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
-    virtual void notifyInputMaskStateChanged(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
-    virtual void notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
+    virtual void notifyNodeDeactivated(const boost::shared_ptr<Node>& node) OVERRIDE FINAL;
+    virtual void notifyNodeActivated(const boost::shared_ptr<Node>& node) OVERRIDE FINAL;
+    virtual void notifyInputOptionalStateChanged(const boost::shared_ptr<Node>& node) OVERRIDE FINAL;
+    virtual void notifyInputMaskStateChanged(const boost::shared_ptr<Node>& node) OVERRIDE FINAL;
+    virtual void notifyNodeNameChanged(const boost::shared_ptr<Node>& node) OVERRIDE FINAL;
     
-    boost::shared_ptr<Natron::Node> getOutputNode(bool useGuiConnexions) const;
+    boost::shared_ptr<Node> getOutputNode(bool useGuiConnexions) const;
         
-    boost::shared_ptr<Natron::Node> getOutputNodeInput(bool useGuiConnexions) const;
+    boost::shared_ptr<Node> getOutputNodeInput(bool useGuiConnexions) const;
     
-    boost::shared_ptr<Natron::Node> getRealInputForInput(bool useGuiConnexions,const boost::shared_ptr<Natron::Node>& input) const;
+    boost::shared_ptr<Node> getRealInputForInput(bool useGuiConnexions,const boost::shared_ptr<Node>& input) const;
     
-    void getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs, bool useGuiConnexions) const;
+    void getInputs(std::vector<boost::shared_ptr<Node> >* inputs, bool useGuiConnexions) const;
     
-    void getInputsOutputs(std::list<Natron::Node* >* nodes, bool useGuiConnexions) const;
+    void getInputsOutputs(std::list<Node* >* nodes, bool useGuiConnexions) const;
     
     void dequeueConnexions();
     

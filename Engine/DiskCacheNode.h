@@ -32,16 +32,16 @@ NATRON_NAMESPACE_ENTER;
 
 struct DiskCacheNodePrivate;
 
-class DiskCacheNode : public Natron::OutputEffectInstance
+class DiskCacheNode : public OutputEffectInstance
 {
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new DiskCacheNode(n);
     }
     
-    DiskCacheNode(boost::shared_ptr<Natron::Node> node);
+    DiskCacheNode(boost::shared_ptr<Node> node);
     
     virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

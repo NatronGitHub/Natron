@@ -43,8 +43,8 @@ TEST(KeyFrame,Basic)
     EXPECT_EQ( -1.,k.getLeftDerivative() );
     k.setRightDerivative(-2.);
     EXPECT_EQ( -2.,k.getRightDerivative() );
-    k.setInterpolation(Natron::eKeyframeTypeCatmullRom);
-    EXPECT_EQ( Natron::eKeyframeTypeCatmullRom, k.getInterpolation() );
+    k.setInterpolation(eKeyframeTypeCatmullRom);
+    EXPECT_EQ( eKeyframeTypeCatmullRom, k.getInterpolation() );
 
     KeyFrame k1(10.,20.);
     EXPECT_NE(k,k1);
@@ -54,7 +54,7 @@ TEST(KeyFrame,Basic)
     k1.setTime(50.);
     k1.setLeftDerivative(-1.);
     k1.setRightDerivative(-2.);
-    k1.setInterpolation(Natron::eKeyframeTypeCatmullRom);
+    k1.setInterpolation(eKeyframeTypeCatmullRom);
     EXPECT_EQ(k,k1);
 }
 
@@ -99,8 +99,8 @@ TEST(Curve,Basic)
     EXPECT_FALSE( c.isAnimated() );
 
     // two keyframes, constant interpolation
-    EXPECT_TRUE( c.addKeyFrame( KeyFrame(0.,10.,0.,0.,Natron::eKeyframeTypeConstant) ) ); // keyframe already exists, replacing it
-    EXPECT_TRUE( c.addKeyFrame( KeyFrame(1.,20.,0.,0.,Natron::eKeyframeTypeConstant) ) );
+    EXPECT_TRUE( c.addKeyFrame( KeyFrame(0.,10.,0.,0.,eKeyframeTypeConstant) ) ); // keyframe already exists, replacing it
+    EXPECT_TRUE( c.addKeyFrame( KeyFrame(1.,20.,0.,0.,eKeyframeTypeConstant) ) );
     EXPECT_EQ( 10., c.getValueAt(0.) );
     EXPECT_EQ( 20., c.getValueAt(1.) );
     EXPECT_EQ( 10., c.getValueAt(-10.) ); // before first keyframe

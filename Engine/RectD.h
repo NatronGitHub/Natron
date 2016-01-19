@@ -343,7 +343,7 @@ operator!=(const RectD & b1,
 }
 NATRON_NAMESPACE_EXIT;
 
-Q_DECLARE_METATYPE(Natron::RectD)
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::RectD)
 
 
 #endif // Engine_RectD_h

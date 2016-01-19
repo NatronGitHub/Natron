@@ -144,7 +144,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
                             bool clone,
                             std::map<std::string,std::string>* oldNewScriptNameMapping)
 {
-    boost::shared_ptr<Natron::Node> n = _publicInterface->getGui()->getApp()->loadNode( LoadNodeArgs(internalSerialization.getPluginID().c_str(),
+    boost::shared_ptr<Node> n = _publicInterface->getGui()->getApp()->loadNode( LoadNodeArgs(internalSerialization.getPluginID().c_str(),
                                                                                parentName,
                                                                                internalSerialization.getPluginMajorVersion(),
                                                                                internalSerialization.getPluginMinorVersion(),
@@ -186,7 +186,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     const std::string & masterNodeName = internalSerialization.getMasterNodeName();
     if ( !masterNodeName.empty() ) {
 
-        boost::shared_ptr<Natron::Node> masterNode = _publicInterface->getGui()->getApp()->getProject()->getNodeByName(masterNodeName);
+        boost::shared_ptr<Node> masterNode = _publicInterface->getGui()->getApp()->getProject()->getNodeByName(masterNodeName);
 
         ///the node could not exist any longer if the user deleted it in the meantime
         if ( masterNode && masterNode->isActivated() ) {
@@ -195,7 +195,7 @@ NodeGraphPrivate::pasteNode(const NodeSerialization & internalSerialization,
     }
     
     //All nodes that are reachable via expressions
-    std::list<boost::shared_ptr<Natron::Node> > allNodes;
+    std::list<boost::shared_ptr<Node> > allNodes;
     n->getGroup()->getActiveNodes(&allNodes);
     
     ///Add the node group itself

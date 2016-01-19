@@ -42,12 +42,12 @@ class GroupInput
     
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new GroupInput(n);
     }
     
-    GroupInput(boost::shared_ptr<Natron::Node> n)
+    GroupInput(boost::shared_ptr<Node> n)
     : NoOpBase(n)
     {
     }

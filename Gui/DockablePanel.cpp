@@ -103,10 +103,10 @@ private:
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL
     {
         if (triggerButtonIsRight(e)) {
-            StandardButtonEnum rep = Natron::questionDialog(tr("Warning").toStdString(),
+            StandardButtonEnum rep = natronQuestionDialog(tr("Warning").toStdString(),
                                                                     tr("Are you sure you want to reset the overlay color ?").toStdString(),
                                                                     false);
-            if (rep == Natron::eStandardButtonYes) {
+            if (rep == eStandardButtonYes) {
                 _panel->resetHostOverlayColor();
             }
         } else {
@@ -151,7 +151,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             headerMode = eHeaderModeReadOnlyName;
         }
         
-        const Natron::Plugin* plugin = isEffect->getNode()->getPlugin();
+        const Plugin* plugin = isEffect->getNode()->getPlugin();
         pluginLabelVersioned = plugin->getPluginLabel();
         QString toAppend = QString(" version %1.%2").arg(plugin->getMajorVersion()).arg(plugin->getMinorVersion());
         pluginLabelVersioned.append(toAppend);
@@ -235,7 +235,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET, iconSize, &pixHelp);
             _imp->_helpButton = new Button(QIcon(pixHelp),"",_imp->_headerWidget);
             
-            const Natron::Plugin* plugin = isEffect->getNode()->getPlugin();
+            const Plugin* plugin = isEffect->getNode()->getPlugin();
             assert(plugin);
             _imp->_pluginID = plugin->getPluginID();
             _imp->_pluginVersionMajor = plugin->getMajorVersion();
@@ -649,8 +649,8 @@ DockablePanel::onRestoreDefaultsButtonClicked()
     boost::shared_ptr<MultiInstancePanel> multiPanel = getMultiInstancePanel();
 
     if (multiPanel) {
-        const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = multiPanel->getInstances();
-        for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = multiPanel->getInstances();
+        for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             const std::vector<boost::shared_ptr<KnobI> > & knobs = it->first.lock()->getKnobs();
             for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
                 KnobButton* isBtn = dynamic_cast<KnobButton*>( it2->get() );
@@ -861,10 +861,10 @@ DockablePanel::showHelp()
 {
     Natron::EffectInstance* iseffect = dynamic_cast<Natron::EffectInstance*>(_imp->_holder);
     if (iseffect) {
-        const Natron::Plugin* plugin = iseffect->getNode()->getPlugin();
+        const Plugin* plugin = iseffect->getNode()->getPlugin();
         assert(plugin);
         if (plugin) {
-            Natron::informationDialog(plugin->getPluginLabel().toStdString(), helpString().toStdString(), true);
+            natronInformationDialog(plugin->getPluginLabel().toStdString(), helpString().toStdString(), true);
         }
     }
 }
@@ -927,7 +927,7 @@ DockablePanel::setClosedInternal(bool c)
         
         
         boost::shared_ptr<NodeGui> nodeGui = nodePanel->getNode();
-        boost::shared_ptr<Natron::Node> internalNode = nodeGui->getNode();
+        boost::shared_ptr<Node> internalNode = nodeGui->getNode();
         boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
         Gui* gui = getGui();
         
@@ -963,12 +963,12 @@ DockablePanel::setClosedInternal(bool c)
         
         if (panel) {
             ///show all selected instances
-            const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & childrenInstances = panel->getInstances();
-            std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator next = childrenInstances.begin();
+            const std::list<std::pair<boost::weak_ptr<Node>,bool> > & childrenInstances = panel->getInstances();
+            std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator next = childrenInstances.begin();
             if (next != childrenInstances.end()) {
                 ++next;
             }
-            for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = childrenInstances.begin();
+            for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = childrenInstances.begin();
                  it != childrenInstances.end();
                  ++it) {
                 if (c) {
@@ -1274,7 +1274,7 @@ DockablePanel::onOverlayColorDialogColorChanged(const QColor& color)
     if (!nodePanel) {
         return;
     }
-    boost::shared_ptr<Natron::Node> node = nodePanel->getNode()->getNode();
+    boost::shared_ptr<Node> node = nodePanel->getNode()->getNode();
     if (!node) {
         return;
     }
@@ -1290,9 +1290,9 @@ DockablePanel::onOverlayColorDialogColorChanged(const QColor& color)
             _imp->_hasOverlayColor = true;
         }
 
-        std::list<boost::shared_ptr<Natron::Node> > overlayNodes;
+        std::list<boost::shared_ptr<Node> > overlayNodes;
         getGui()->getNodesEntitledForOverlays(overlayNodes);
-        std::list<boost::shared_ptr<Natron::Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
+        std::list<boost::shared_ptr<Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
         if (found != overlayNodes.end()) {
             getGui()->getApp()->redrawAllViewers();
         }
@@ -1325,7 +1325,7 @@ DockablePanel::onOverlayButtonClicked()
     if (!nodePanel) {
         return;
     }
-    boost::shared_ptr<Natron::Node> node = nodePanel->getNode()->getNode();
+    boost::shared_ptr<Node> node = nodePanel->getNode()->getNode();
     if (!node) {
         return;
     }
@@ -1358,9 +1358,9 @@ DockablePanel::onOverlayButtonClicked()
             _imp->_overlayButton->setIcon(QIcon(pixOverlay));
         }
     }
-    std::list<boost::shared_ptr<Natron::Node> > overlayNodes;
+    std::list<boost::shared_ptr<Node> > overlayNodes;
     getGui()->getNodesEntitledForOverlays(overlayNodes);
-    std::list<boost::shared_ptr<Natron::Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
+    std::list<boost::shared_ptr<Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
     if (found != overlayNodes.end()) {
         getGui()->getApp()->redrawAllViewers();
     }
@@ -1395,7 +1395,7 @@ DockablePanel::resetHostOverlayColor()
     if (!nodePanel) {
         return;
     }
-    boost::shared_ptr<Natron::Node> node = nodePanel->getNode()->getNode();
+    boost::shared_ptr<Node> node = nodePanel->getNode()->getNode();
     if (!node) {
         return;
     }
@@ -1407,9 +1407,9 @@ DockablePanel::resetHostOverlayColor()
     appPTR->getIcon(Natron::NATRON_PIXMAP_OVERLAY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixOverlay);
     _imp->_overlayButton->setIcon(QIcon(pixOverlay));
     
-    std::list<boost::shared_ptr<Natron::Node> > overlayNodes;
+    std::list<boost::shared_ptr<Node> > overlayNodes;
     getGui()->getNodesEntitledForOverlays(overlayNodes);
-    std::list<boost::shared_ptr<Natron::Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
+    std::list<boost::shared_ptr<Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
     if (found != overlayNodes.end()) {
         getGui()->getApp()->redrawAllViewers();
     }
@@ -1446,7 +1446,7 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(_imp->_holder);
     if (isEffect) {
         
-        boost::shared_ptr<Natron::Node> master = isEffect->getNode()->getMasterNode();
+        boost::shared_ptr<Node> master = isEffect->getNode()->getMasterNode();
         Natron::Menu menu(this);
         //menu.setFont( QFont(appFont,appFontSize) );
 

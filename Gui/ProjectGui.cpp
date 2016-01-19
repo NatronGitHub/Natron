@@ -289,7 +289,7 @@ void loadNodeGuiSerialization(Gui* gui,
                               const NodeGuiSerialization& serialization)
 {
     const std::string & name = serialization.getFullySpecifiedName();
-    boost::shared_ptr<Natron::Node> internalNode = gui->getApp()->getProject()->getNodeByFullySpecifiedName(name);
+    boost::shared_ptr<Node> internalNode = gui->getApp()->getProject()->getNodeByFullySpecifiedName(name);
     if (!internalNode) {
         return;
     }
@@ -481,7 +481,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
                             QString(),
                             CreateNodeArgs::DefaultValuesList(),
                             _project.lock());
-        boost::shared_ptr<Natron::Node> node = getGui()->getApp()->createNode(args);
+        boost::shared_ptr<Node> node = getGui()->getApp()->createNode(args);
         boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
         assert(gui_i);
         BackDropGui* bd = dynamic_cast<BackDropGui*>(gui_i.get());
@@ -534,7 +534,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         std::string appID = _gui->getApp()->getAppIDString();
         std::string err;
         std::string script = "app = " + appID + '\n';
-        bool ok = Natron::interpretPythonScript(script, &err, 0);
+        bool ok = interpretPythonScript(script, &err, 0);
         assert(ok);
         if (!ok) {
             throw std::runtime_error("ProjectGui::load(): interpretPythonScript("+script+") failed!");
@@ -543,7 +543,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
     for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
         std::string script = (*it)->pythonFunction + "()\n";
         std::string err,output;
-        if (!Natron::interpretPythonScript(script, &err, &output)) {
+        if (!interpretPythonScript(script, &err, &output)) {
             _gui->getApp()->appendToScriptEditor(err);
         } else {
             if (!output.empty()) {
@@ -638,9 +638,9 @@ ProjectGui::setPickersColor(double r,double g, double b,double a)
             _colorPickersEnabled[i]->activateAllDimensions();
         }
         if (_colorPickersEnabled[i]->getDimension() == 3) {
-            _colorPickersEnabled[i]->setValues(r, g, b, Natron::eValueChangedReasonNatronGuiEdited);
+            _colorPickersEnabled[i]->setValues(r, g, b, eValueChangedReasonNatronGuiEdited);
         } else {
-            _colorPickersEnabled[i]->setValues(r, g, b, a, Natron::eValueChangedReasonNatronGuiEdited);
+            _colorPickersEnabled[i]->setValues(r, g, b, a, eValueChangedReasonNatronGuiEdited);
         }
     }
 }

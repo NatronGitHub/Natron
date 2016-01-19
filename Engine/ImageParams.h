@@ -89,19 +89,19 @@ inline int
         getSizeOfForBitDepth(ImageBitDepthEnum bitdepth)
 {
     switch (bitdepth) {
-    case Natron::eImageBitDepthByte: {
+    case eImageBitDepthByte: {
         return sizeof(unsigned char);
     }
-    case Natron::eImageBitDepthShort: {
+    case eImageBitDepthShort: {
         return sizeof(unsigned short);
     }
-    case Natron::eImageBitDepthHalf: {
+    case eImageBitDepthHalf: {
         return sizeof(unsigned short);
     }
-    case Natron::eImageBitDepthFloat: {
+    case eImageBitDepthFloat: {
         return sizeof(float);
     }
-    case Natron::eImageBitDepthNone:
+    case eImageBitDepthNone:
         break;
     }
     return 0;
@@ -119,7 +119,7 @@ public:
         , _framesNeeded()
         , _par(1.)
         , _components(ImageComponents::getRGBAComponents())
-        , _bitdepth(Natron::eImageBitDepthFloat)
+        , _bitdepth(eImageBitDepthFloat)
         , _mipMapLevel(0)
         , _isRoDProjectFormat(false)
     {

@@ -42,9 +42,9 @@ public:
     
     AppSettings(const boost::shared_ptr<Settings>& settings);
     
-    Natron::Param* getParam(const std::string& scriptName) const;
+    Param* getParam(const std::string& scriptName) const;
     
-    std::list<Natron::Param*> getParams() const;
+    std::list<Param*> getParams() const;
     
     void saveSettings();
     

@@ -43,9 +43,9 @@ class FileDialogPreviewProvider
 {
 public:
     ViewerTab* viewerUI;
-    boost::shared_ptr<Natron::Node> viewerNodeInternal;
+    boost::shared_ptr<Node> viewerNodeInternal;
     boost::shared_ptr<NodeGui> viewerNode;
-    std::map<std::string,std::pair< boost::shared_ptr<Natron::Node>, boost::shared_ptr<NodeGui> > > readerNodes;
+    std::map<std::string,std::pair< boost::shared_ptr<Node>, boost::shared_ptr<NodeGui> > > readerNodes;
     
     FileDialogPreviewProvider()
     : viewerUI(0)
@@ -111,13 +111,13 @@ public:
     virtual StandardButtonEnum questionDialog(const std::string & title,
                                                       const std::string & message,
                                                       bool useHtml,
-                                                      Natron::StandardButtons buttons = Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                                      StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                                      StandardButtons buttons = StandardButtons(eStandardButtonYes | eStandardButtonNo),
+                                                      StandardButtonEnum defaultButton = eStandardButtonNoButton) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual StandardButtonEnum questionDialog(const std::string & title,
                                                       const std::string & message,
                                                       bool useHtml,
-                                                      Natron::StandardButtons buttons,
+                                                      StandardButtons buttons,
                                                       StandardButtonEnum defaultButton,
                                                       bool* stopAsking) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
@@ -160,7 +160,7 @@ public:
     virtual void printAutoDeclaredVariable(const std::string& str) OVERRIDE FINAL;
     
     virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
-    virtual void setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& node) OVERRIDE FINAL;
+    virtual void setLastViewerUsingTimeline(const boost::shared_ptr<Node>& node) OVERRIDE FINAL;
     
     virtual ViewerInstance* getLastViewerUsingTimeline() const OVERRIDE FINAL;
     
@@ -232,29 +232,29 @@ public:
     
     ///Rotopaint related
     virtual void updateLastPaintStrokeData(int newAge,
-                                           const std::list<std::pair<Natron::Point,double> >& points,
+                                           const std::list<std::pair<Point,double> >& points,
                                            const RectD& lastPointsBbox,
                                            int strokeIndex) OVERRIDE FINAL;
     
-    virtual void getLastPaintStrokePoints(std::list<std::list<std::pair<Natron::Point,double> > >* strokes, int* strokeIndex) const OVERRIDE FINAL;
+    virtual void getLastPaintStrokePoints(std::list<std::list<std::pair<Point,double> > >* strokes, int* strokeIndex) const OVERRIDE FINAL;
     
-    virtual void getRenderStrokeData(RectD* lastStrokeMovementBbox, std::list<std::pair<Natron::Point,double> >* lastStrokeMovementPoints,
-                                     double *distNextIn, boost::shared_ptr<Natron::Image>* strokeImage) const OVERRIDE FINAL;
+    virtual void getRenderStrokeData(RectD* lastStrokeMovementBbox, std::list<std::pair<Point,double> >* lastStrokeMovementPoints,
+                                     double *distNextIn, boost::shared_ptr<Image>* strokeImage) const OVERRIDE FINAL;
     
     virtual int getStrokeLastIndex() const OVERRIDE FINAL;
     
     virtual void getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* stroke, int* strokeIndex) const OVERRIDE FINAL;
     
-    virtual void updateStrokeImage(const boost::shared_ptr<Natron::Image>& image, double distNextOut, bool setDistNextOut) OVERRIDE FINAL;
+    virtual void updateStrokeImage(const boost::shared_ptr<Image>& image, double distNextOut, bool setDistNextOut) OVERRIDE FINAL;
 
     virtual RectD getLastPaintStrokeBbox() const OVERRIDE FINAL;
     
     virtual RectD getPaintStrokeWholeBbox() const OVERRIDE FINAL;
     
-    virtual void setUserIsPainting(const boost::shared_ptr<Natron::Node>& rotopaintNode,
+    virtual void setUserIsPainting(const boost::shared_ptr<Node>& rotopaintNode,
                                    const boost::shared_ptr<RotoStrokeItem>& stroke,
                                    bool isPainting) OVERRIDE FINAL;
-    virtual void getActiveRotoDrawingStroke(boost::shared_ptr<Natron::Node>* node,
+    virtual void getActiveRotoDrawingStroke(boost::shared_ptr<Node>* node,
                                             boost::shared_ptr<RotoStrokeItem>* stroke,
                                             bool* isPainting) const OVERRIDE FINAL;
     
@@ -270,13 +270,13 @@ public:
     
     virtual void removeMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,bool emitSignal) OVERRIDE FINAL;
     
-    virtual void addNodesKeyframesToTimeline(const std::list<Natron::Node*> & nodes) OVERRIDE FINAL;
+    virtual void addNodesKeyframesToTimeline(const std::list<Node*> & nodes) OVERRIDE FINAL;
     
-    virtual void addNodeKeyframesToTimeline(Natron::Node* node) OVERRIDE FINAL;
+    virtual void addNodeKeyframesToTimeline(Node* node) OVERRIDE FINAL;
     
-    virtual void removeNodesKeyframesFromTimeline(const std::list<Natron::Node*> & nodes) OVERRIDE FINAL;
+    virtual void removeNodesKeyframesFromTimeline(const std::list<Node*> & nodes) OVERRIDE FINAL;
     
-    virtual void removeNodeKeyframesFromTimeline(Natron::Node* node) OVERRIDE FINAL;
+    virtual void removeNodeKeyframesFromTimeline(Node* node) OVERRIDE FINAL;
 
     virtual void getKeyframes(std::list<SequenceTime>* keys) const OVERRIDE FINAL;
     
@@ -285,10 +285,10 @@ public:
     
 private:
     
-    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node,bool requestedByLoad,bool userEdited) OVERRIDE FINAL;
+    virtual void onGroupCreationFinished(const boost::shared_ptr<Node>& node,bool requestedByLoad,bool userEdited) OVERRIDE FINAL;
     
-    virtual void createNodeGui(const boost::shared_ptr<Natron::Node> &node,
-                               const boost::shared_ptr<Natron::Node>&  parentMultiInstance,
+    virtual void createNodeGui(const boost::shared_ptr<Node> &node,
+                               const boost::shared_ptr<Node>&  parentMultiInstance,
                                bool loadRequest,
                                bool autoConnect,
                                bool userEdited,

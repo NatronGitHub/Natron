@@ -79,7 +79,7 @@ CLANG_DIAG_ON(deprecated)
 NATRON_NAMESPACE_ENTER;
 
 class Node
-    : public QObject, public boost::enable_shared_from_this<Natron::Node>
+    : public QObject, public boost::enable_shared_from_this<Node>
     , public CacheEntryHolder
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -93,19 +93,19 @@ public:
 
     Node(AppInstance* app,
          const boost::shared_ptr<NodeCollection>& group,
-         Natron::Plugin* plugin);
+         Plugin* plugin);
 
     virtual ~Node();
 
     boost::shared_ptr<NodeCollection> getGroup() const;
     
-    const Natron::Plugin* getPlugin() const;
+    const Plugin* getPlugin() const;
     
     /**
      * @brief Used internally when instanciating a Python template, we first make a group and then pass a pointer
      * to the real plugin.
      **/
-    void switchInternalPlugin(Natron::Plugin* plugin);
+    void switchInternalPlugin(Plugin* plugin);
     
     void setPrecompNode(const boost::shared_ptr<PrecompNode>& precomp);
     boost::shared_ptr<PrecompNode> isPartOfPrecomp() const;
@@ -165,7 +165,7 @@ public:
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
     void restoreKnobsLinks(const NodeSerialization & serialization,
-                           const std::list<boost::shared_ptr<Natron::Node> > & allNodes,
+                           const std::list<boost::shared_ptr<Node> > & allNodes,
                            const std::map<std::string,std::string>& oldNewScriptNamesMapping);
     
     void restoreUserKnobs(const NodeSerialization& serialization);
@@ -207,12 +207,12 @@ public:
      **/
     bool isMultiInstance() const;
     
-    boost::shared_ptr<Natron::Node> getParentMultiInstance() const;
+    boost::shared_ptr<Node> getParentMultiInstance() const;
 
     ///Accessed by the serialization thread, but mt safe since never changed
     std::string getParentMultiInstanceName() const;
     
-    void getChildrenMultiInstance(std::list<boost::shared_ptr<Natron::Node> >* children) const;
+    void getChildrenMultiInstance(std::list<boost::shared_ptr<Node> >* children) const;
 
     /**
      * @brief Returns the hash value of the node, or 0 if it has never been computed.
@@ -241,7 +241,7 @@ public:
     /*Returns in viewers the list of all the viewers connected to this node*/
     void hasViewersConnected(std::list<ViewerInstance* >* viewers) const;
 
-    void hasOutputNodesConnected(std::list<Natron::OutputEffectInstance* >* writers) const;
+    void hasOutputNodesConnected(std::list<OutputEffectInstance* >* writers) const;
 
     /**
      * @brief Forwarded to the live effect instance
@@ -330,7 +330,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb,ImageComponents* comps, boost::shared_ptr<Natron::Node>* maskInput) const;
+    int getMaskChannel(int inputNb,ImageComponents* comps, boost::shared_ptr<Node>* maskInput) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -370,7 +370,7 @@ public:
     /**
      * @brief Returns the input index of the node if it is an input of this node, -1 otherwise.
      **/
-    int getInputIndex(const Natron::Node* node) const;
+    int getInputIndex(const Node* node) const;
 
     /**
      * @brief Returns true if the node is currently executing the onInputChanged handler.
@@ -382,9 +382,9 @@ public:
      * The vector might be different from what getInputs_other_thread() could return.
      * This can only be called by the main thread.
      **/
-    const std::vector<boost::shared_ptr<Natron::Node> > & getInputs() const WARN_UNUSED_RETURN;
-    const std::vector<boost::shared_ptr<Natron::Node> > & getGuiInputs() const WARN_UNUSED_RETURN;
-    std::vector<boost::shared_ptr<Natron::Node> > getInputs_copy() const WARN_UNUSED_RETURN;
+    const std::vector<boost::shared_ptr<Node> > & getInputs() const WARN_UNUSED_RETURN;
+    const std::vector<boost::shared_ptr<Node> > & getGuiInputs() const WARN_UNUSED_RETURN;
+    std::vector<boost::shared_ptr<Node> > getInputs_copy() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the input index of the node n if it exists,
@@ -424,8 +424,8 @@ public:
     Natron::RenderSafetyEnum getCurrentRenderThreadSafety() const;
     void revertToPluginThreadSafety();
     
-    void setCurrentOpenGLRenderSupport(Natron::PluginOpenGLRenderSupport support);
-    Natron::PluginOpenGLRenderSupport getCurrentOpenGLRenderSupport() const;
+    void setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support);
+    PluginOpenGLRenderSupport getCurrentOpenGLRenderSupport() const;
     
     void setCurrentSequentialRenderSupport(Natron::SequentialPreferenceEnum support);
     Natron::SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
@@ -452,8 +452,8 @@ public:
     
     bool isLastPaintStrokeBitmapCleared() const;
     void clearLastPaintStrokeRoD();
-    void getLastPaintStrokePoints(double time,std::list<std::list<std::pair<Natron::Point,double> > >* strokes, int* strokeIndex) const;
-    boost::shared_ptr<Natron::Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
+    void getLastPaintStrokePoints(double time,std::list<std::list<std::pair<Point,double> > >* strokes, int* strokeIndex) const;
+    boost::shared_ptr<Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                                                 const RectI& roi,
                                                                 double par,
                                                                 const ImageComponents& components,
@@ -813,7 +813,7 @@ public:
 
     void onKnobSlaved(KnobI* slave,KnobI* master,int dimension,bool isSlave);
 
-    boost::shared_ptr<Natron::Node> getMasterNode() const;
+    boost::shared_ptr<Node> getMasterNode() const;
 
     /**
      * @brief Attemps to lock an image for render. If it successfully obtained the lock,
@@ -821,16 +821,16 @@ public:
      * rendering that image, this function will wait until the image is available for render again.
      * This is used internally by EffectInstance::renderRoI
      **/
-    void lock(const boost::shared_ptr<Natron::Image>& entry);
-    bool tryLock(const boost::shared_ptr<Natron::Image>& entry);
-    void unlock(const boost::shared_ptr<Natron::Image>& entry);
+    void lock(const boost::shared_ptr<Image>& entry);
+    bool tryLock(const boost::shared_ptr<Image>& entry);
+    void unlock(const boost::shared_ptr<Image>& entry);
 
 
     /**
      * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
      * do not respect the OpenFX specification.
      **/
-    boost::shared_ptr<Natron::Image> getImageBeingRendered(double time,unsigned int mipMapLevel,int view);
+    boost::shared_ptr<Image> getImageBeingRendered(double time,unsigned int mipMapLevel,int view);
     
     void beginInputEdition();
     
@@ -955,7 +955,7 @@ public:
      * @brief Attempts to detect cycles considering input being an input of this node.
      * Returns true if it couldn't detect any cycle, false otherwise.
      **/
-    bool checkIfConnectingInputIsOk(Natron::Node* input) const;
+    bool checkIfConnectingInputIsOk(Node* input) const;
 
     bool isForceCachingEnabled() const;
     
@@ -1107,7 +1107,7 @@ public:
     
 private:
     
-    void computeHashRecursive(std::list<Natron::Node*>& marked);
+    void computeHashRecursive(std::list<Node*>& marked);
     
     /**
      * @brief Refreshes the node hash depending on its context (knobs age, inputs etc...)
@@ -1119,7 +1119,7 @@ private:
     
     void refreshCreatedViews(KnobI* knob);
     
-    void refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedNodes);
+    void refreshInputRelatedDataRecursiveInternal(std::list<Node*>& markedNodes);
     
     void refreshInputRelatedDataRecursive();
     
@@ -1131,13 +1131,13 @@ private:
     
     void markInputRelatedDataDirtyRecursive();
     
-    void markInputRelatedDataDirtyRecursiveInternal(std::list<Natron::Node*>& markedNodes,bool recurse);
+    void markInputRelatedDataDirtyRecursiveInternal(std::list<Node*>& markedNodes,bool recurse);
     
-    bool refreshAllInputRelatedData(bool hasSerializationData,const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
+    bool refreshAllInputRelatedData(bool hasSerializationData,const std::vector<boost::shared_ptr<Node> >& inputs);
     
-    bool refreshInputRelatedDataInternal(std::list<Natron::Node*>& markedNodes);
+    bool refreshInputRelatedDataInternal(std::list<Node*>& markedNodes);
     
-    bool refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
+    bool refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Node> >& inputs);
     
     void setNameInternal(const std::string& name, bool throwErrors, bool declareToPython);
     
@@ -1281,8 +1281,8 @@ private:
     std::string makeCacheInfo() const;
     std::string makeInfoForInput(int inputNumber) const;
     
-    void setNodeIsRenderingInternal(std::list<Natron::Node*>& markedNodes);
-    void setNodeIsNoLongerRenderingInternal(std::list<Natron::Node*>& markedNodes);
+    void setNodeIsRenderingInternal(std::list<Node*>& markedNodes);
+    void setNodeIsNoLongerRenderingInternal(std::list<Node*>& markedNodes);
     
 
 
@@ -1291,7 +1291,7 @@ private:
      * @brief If the node is an input of this node, set ok to true, otherwise
      * calls this function recursively on all inputs.
      **/
-    void isNodeUpstream(const Natron::Node* input,bool* ok) const;
+    void isNodeUpstream(const Node* input,bool* ok) const;
     
     void declareNodeVariableToPython(const std::string& nodeName);
     void setNodeVariableToPython(const std::string& oldName,const std::string& newName);
@@ -1309,7 +1309,7 @@ private:
  * while still having 1 input active.
  **/
 class InspectorNode
-    : public Natron::Node
+    : public Node
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -1321,7 +1321,7 @@ public:
 
     InspectorNode(AppInstance* app,
                   const boost::shared_ptr<NodeCollection>& group,
-                  Natron::Plugin* plugin,
+                  Plugin* plugin,
                   int maxInputs);
 
     virtual ~InspectorNode();
@@ -1355,10 +1355,10 @@ public:
 
 class RenderingFlagSetter
 {
-    Natron::Node* node;
+    Node* node;
 public:
     
-    RenderingFlagSetter(Natron::Node* n)
+    RenderingFlagSetter(Node* n)
     : node(n)
     {
         node->setNodeIsRendering();

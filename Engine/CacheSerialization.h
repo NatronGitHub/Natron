@@ -122,7 +122,7 @@ void Cache<EntryType>::restore(const CacheTOC & tableOfContents)
 
         EntryType* value = NULL;
 
-        Natron::StorageModeEnum storage = Natron::eStorageModeDisk;
+        StorageModeEnum storage = eStorageModeDisk;
 
         try {
             value = new EntryType(it->key,it->params,this,storage,it->filePath);

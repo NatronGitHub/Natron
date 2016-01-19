@@ -526,29 +526,29 @@ public:
     virtual bool moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,double time,double derivative,bool isLeft) = 0;
 
     /**
-     * @brief Removes animation before the given time and dimension. If the reason is different than Natron::eValueChangedReasonUserEdited
+     * @brief Removes animation before the given time and dimension. If the reason is different than eValueChangedReasonUserEdited
      * a signal will be emitted
      **/
     virtual void deleteAnimationBeforeTime(double time,int dimension,ValueChangedReasonEnum reason) = 0;
 
     /**
-     * @brief Removes animation before the given time and dimension. If the reason is different than Natron::eValueChangedReasonUserEdited
+     * @brief Removes animation before the given time and dimension. If the reason is different than eValueChangedReasonUserEdited
      * a signal will be emitted
      **/
     virtual void deleteAnimationAfterTime(double time,int dimension,ValueChangedReasonEnum reason) = 0;
 
     /**
-     * @brief Calls removeAnimation with a reason of Natron::eValueChangedReasonNatronInternalEdited.
+     * @brief Calls removeAnimation with a reason of eValueChangedReasonNatronInternalEdited.
      **/
     void removeAnimation(int dimension);
 
     /**
-     * @brief Calls deleteValueAtTime with a reason of Natron::eValueChangedReasonUserEdited
+     * @brief Calls deleteValueAtTime with a reason of eValueChangedReasonUserEdited
      **/
     virtual void onKeyFrameRemoved(double time,int dimension) = 0;
 
     /**
-     * @brief Calls removeAnimation with a reason of Natron::eValueChangedReasonUserEdited
+     * @brief Calls removeAnimation with a reason of eValueChangedReasonUserEdited
      **/
     void onAnimationRemoved(int dimension);
     
@@ -616,7 +616,7 @@ public:
 
 
     /**
-     * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonUserEdited.
+     * @brief Calls setValueAtTime with a reason of eValueChangedReasonUserEdited.
      **/
     virtual bool onKeyFrameSet(double time,int dimension) = 0;
     virtual bool onKeyFrameSet(double time,const KeyFrame& key,int dimension) = 0;
@@ -957,7 +957,7 @@ public:
                              const int listenedToDimension,
                              const boost::shared_ptr<KnobI>& listener) = 0;
     
-    virtual void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const = 0;
+    virtual void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Node> >& nodes) const = 0;
     
 private:
     virtual void removeListener(KnobI* listener, int listenerDimension) = 0;
@@ -987,7 +987,7 @@ protected:
 public:
 
     /**
-     * @brief Calls slaveTo with a value changed reason of Natron::eValueChangedReasonNatronInternalEdited.
+     * @brief Calls slaveTo with a value changed reason of eValueChangedReasonNatronInternalEdited.
      * @param ignoreMasterPersistence If true the master will not be serialized.
      **/
     bool slaveTo(int dimension,const boost::shared_ptr<KnobI> & other,int otherDimension,bool ignoreMasterPersistence = false);
@@ -1011,13 +1011,13 @@ public:
     virtual bool setKnobAsAliasOfThis(const boost::shared_ptr<KnobI>& master, bool doAlias) = 0;
 
     /**
-     * @brief Calls slaveTo with a value changed reason of Natron::eValueChangedReasonUserEdited.
+     * @brief Calls slaveTo with a value changed reason of eValueChangedReasonUserEdited.
      **/
     void onKnobSlavedTo(int dimension,const boost::shared_ptr<KnobI> &  other,int otherDimension);
 
 
     /**
-     * @brief Calls unSlave with a value changed reason of Natron::eValueChangedReasonNatronInternalEdited.
+     * @brief Calls unSlave with a value changed reason of eValueChangedReasonNatronInternalEdited.
      **/
     void unSlave(int dimension,bool copyState);
 
@@ -1027,7 +1027,7 @@ public:
     virtual void getListeners(ListenerDimsMap & listeners) const = 0;
     
     /**
-     * @brief Calls unSlave with a value changed reason of Natron::eValueChangedReasonUserEdited.
+     * @brief Calls unSlave with a value changed reason of eValueChangedReasonUserEdited.
      **/
     void onKnobUnSlaved(int dimension);
 
@@ -1338,7 +1338,7 @@ public:
     virtual void addListener(bool isFromExpr,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) OVERRIDE FINAL;
     virtual void removeListener(KnobI* listener, int listenerDimension) OVERRIDE FINAL;
     
-    virtual void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const OVERRIDE FINAL;
+    virtual void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Node> >& nodes) const OVERRIDE FINAL;
 
     virtual void getListeners(KnobI::ListenerDimsMap& listeners) const OVERRIDE FINAL;
     
@@ -1551,7 +1551,7 @@ public:
    
     
     /**
-     * @brief Calls setValue with a reason of Natron::eValueChangedReasonNatronInternalEdited.
+     * @brief Calls setValue with a reason of eValueChangedReasonNatronInternalEdited.
      * @param turnOffAutoKeying If set to true, the underlying call to setValue will
      * not set a new keyframe.
      **/
@@ -1576,7 +1576,7 @@ public:
 
     /**
      * @brief Calls setValue 
-     * @param reason Can either be Natron::eValueChangedReasonUserEdited or Natron::eValueChangedReasonNatronGuiEdited
+     * @param reason Can either be eValueChangedReasonUserEdited or eValueChangedReasonNatronGuiEdited
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns A status according to the operation that was made to the keyframe.
      * @see ValueChangedReturnCodeEnum
@@ -1587,7 +1587,7 @@ public:
                                               KeyFrame* newKey);
     
     /**
-     * @brief Calls setValue with a reason of Natron::eValueChangedReasonPluginEdited.
+     * @brief Calls setValue with a reason of eValueChangedReasonPluginEdited.
      **/
     ValueChangedReturnCodeEnum setValueFromPlugin(const T & value,
                                                   int dimension);
@@ -1599,14 +1599,14 @@ public:
                                     int dimension);
 
     /**
-     * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonNatronInternalEdited.
+     * @brief Calls setValueAtTime with a reason of eValueChangedReasonNatronInternalEdited.
      **/
     void setValueAtTime(double time,
                         const T & v,
                         int dimension);
     
     /**
-     * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonPluginEdited.
+     * @brief Calls setValueAtTime with a reason of eValueChangedReasonPluginEdited.
      **/
     void setValueAtTimeFromPlugin(double time,
                                   const T & v,
@@ -2067,7 +2067,7 @@ public:
     
     bool isSetValueCurrentlyPossible() const;
     
-    void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Natron::Node> >& nodes) const;
+    void getAllExpressionDependenciesRecursive(std::set<boost::shared_ptr<Node> >& nodes) const;
     
 protected:
     
@@ -2364,7 +2364,7 @@ template<typename K>
 boost::shared_ptr<K> KnobHolder::createKnob(const std::string &label,
                                             int dimension) const
 {
-    return Natron::createKnob<K>(this, label, dimension);
+    return natronCreateKnob<K>(this, label, dimension);
 }
 
 NATRON_NAMESPACE_EXIT;

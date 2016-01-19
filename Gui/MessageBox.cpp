@@ -87,7 +87,7 @@ struct NATRON_NAMESPACE::MessageBoxPrivate
 MessageBox::MessageBox(const QString & title,
                        const QString & message,
                        MessageBoxTypeEnum type,
-                       const Natron::StandardButtons& buttons,
+                       const StandardButtons& buttons,
                        StandardButtonEnum defaultButton,
                        QWidget* parent)
 : QDialog(parent,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint)
@@ -99,7 +99,7 @@ MessageBox::MessageBox(const QString & title,
 void
 MessageBox::init(const QString & title,
                  const QString & message,
-                 const Natron::StandardButtons& buttons,
+                 const StandardButtons& buttons,
                  StandardButtonEnum defaultButton)
 {
     _imp->mainLayout = new QHBoxLayout(this);
@@ -251,7 +251,7 @@ MessageBox::getReply() const
 {
     return _imp->clickedButton ?
     QtEnumConvert::fromQtStandardButton((QMessageBox::StandardButton)_imp->buttons->standardButton(_imp->clickedButton)) :
-    Natron::eStandardButtonEscape;
+    eStandardButtonEscape;
 }
 
 void

@@ -268,10 +268,10 @@ TrackerGui::drawOverlays(double time,
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
 
         ///For each instance: <pointer,selected ? >
-        const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-        for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
+        for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             
-            boost::shared_ptr<Natron::Node> instance = it->first.lock();
+            boost::shared_ptr<Node> instance = it->first.lock();
             
             if (instance->isNodeDisabled()) {
                 continue;
@@ -377,8 +377,8 @@ TrackerGui::penDown(double time,
 
     _imp->viewer->getViewer()->getPixelScale(pixelScale.first, pixelScale.second);
     bool didSomething = false;
-    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
         boost::shared_ptr<Node> instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
@@ -390,7 +390,7 @@ TrackerGui::penDown(double time,
     }
 
     double selectionTol = pixelScale.first * 10.;
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
         boost::shared_ptr<Node> instance = it->first.lock();
         boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");
@@ -458,9 +458,9 @@ TrackerGui::penMotion(double time,
                       QInputEvent* /*e*/)
 {
     bool didSomething = false;
-    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
+    const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
 
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
         boost::shared_ptr<Node> instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
@@ -492,9 +492,9 @@ TrackerGui::penUp(double time,
                   QMouseEvent* /*e*/)
 {
     bool didSomething = false;
-    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
+    const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
 
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
         boost::shared_ptr<Node> instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
@@ -528,8 +528,8 @@ TrackerGui::keyDown(double time,
 
     Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
-    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
         boost::shared_ptr<Node> instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
@@ -550,12 +550,12 @@ TrackerGui::keyDown(double time,
         didSomething = true;
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingSelectAll, modifiers, key) ) {
         _imp->panel->onSelectAllButtonClicked();
-        std::list<Natron::Node*> selectedInstances;
+        std::list<Node*> selectedInstances;
         _imp->panel->getSelectedInstances(&selectedInstances);
         didSomething = !selectedInstances.empty();
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingDelete, modifiers, key) ) {
         _imp->panel->onDeleteKeyPressed();
-        std::list<Natron::Node*> selectedInstances;
+        std::list<Node*> selectedInstances;
         _imp->panel->getSelectedInstances(&selectedInstances);
         didSomething = !selectedInstances.empty();
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingBackward, modifiers, key) ) {
@@ -603,8 +603,8 @@ TrackerGui::keyUp(double time,
 
     Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
-    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
         boost::shared_ptr<Node> instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
@@ -637,8 +637,8 @@ TrackerGui::loseFocus(double time,
 
     _imp->controlDown = 0;
 
-    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
         boost::shared_ptr<Node> instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
@@ -661,9 +661,9 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
     double l,r,b,t;
     _imp->viewer->getViewer()->getSelectionRectangle(l, r, b, t);
 
-    std::list<Natron::Node*> currentSelection;
-    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    std::list<Node*> currentSelection;
+    const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
         boost::shared_ptr<Node> instance = it->first.lock();
         boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");

@@ -37,12 +37,12 @@ class RotoSmear : public Natron::EffectInstance
 {
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new RotoSmear(n);
     }
     
-    RotoSmear(boost::shared_ptr<Natron::Node> node);
+    RotoSmear(boost::shared_ptr<Node> node);
     
     virtual ~RotoSmear();
         

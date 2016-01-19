@@ -27,7 +27,6 @@ public:
     inline void customEvent_protected(QEvent * arg__1) { PyPanel::customEvent(arg__1); }
     virtual void customEvent(QEvent * arg__1);
     inline void destroy_protected(bool destroyWindow = true, bool destroySubWindows = true) { PyPanel::destroy(destroyWindow, destroySubWindows); }
-    virtual int devType() const;
     inline void disconnectNotify_protected(const char * signal) { PyPanel::disconnectNotify(signal); }
     virtual void disconnectNotify(const char * signal);
     inline void dragEnterEvent_protected(QDragEnterEvent * event) { PyPanel::dragEnterEvent(event); }
@@ -67,7 +66,6 @@ public:
     virtual void leaveEvent(QEvent * event);
     virtual const QMetaObject * metaObject() const;
     inline int metric_protected(int arg__1) const { return PyPanel::metric(QPaintDevice::PaintDeviceMetric(arg__1)); }
-    virtual int metric(QPaintDevice::PaintDeviceMetric arg__1) const;
     virtual QSize minimumSizeHint() const;
     inline void mouseDoubleClickEvent_protected(QMouseEvent * event) { PyPanel::mouseDoubleClickEvent(event); }
     virtual void mouseDoubleClickEvent(QMouseEvent * event);
@@ -80,7 +78,6 @@ public:
     inline void moveEvent_protected(QMoveEvent * event) { PyPanel::moveEvent(event); }
     virtual void moveEvent(QMoveEvent * event);
     inline void onUserDataChanged_protected() { PyPanel::onUserDataChanged(); }
-    virtual QPaintEngine * paintEngine() const;
     inline void paintEvent_protected(QPaintEvent * event) { PyPanel::paintEvent(event); }
     virtual void paintEvent(QPaintEvent * event);
     inline int receivers_protected(const char * signal) const { return PyPanel::receivers(signal); }

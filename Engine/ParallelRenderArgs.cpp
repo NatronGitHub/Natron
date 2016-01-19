@@ -36,7 +36,7 @@
 NATRON_NAMESPACE_USING
 
 Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
-                                                                            const boost::shared_ptr<Natron::Node>& node,
+                                                                            const boost::shared_ptr<Node>& node,
                                                                             const FramesNeededMap& framesNeeded,
                                                                             const RoIMap& inputRois,
                                                                             const boost::shared_ptr<InputMatrixMap>& reroutesMap,
@@ -44,7 +44,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                                                             unsigned int originalMipMapLevel, // roi functor specific
                                                                             double time,
                                                                             int view,
-                                                                            const boost::shared_ptr<Natron::Node>& treeRoot,
+                                                                            const boost::shared_ptr<Node>& treeRoot,
                                                                             FrameRequestMap* requests,  // roi functor specific
                                                                            EffectInstance::InputImagesMap* inputImages, // render functor specific
                                                                             const EffectInstance::ComponentsNeededMap* neededComps, // render functor specific
@@ -244,7 +244,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                 
                                 RenderScale scaleOne(1.);
                                 
-                                RenderScale scale(Natron::Image::getScaleFromMipMapLevel(originalMipMapLevel));
+                                RenderScale scale(Image::getScaleFromMipMapLevel(originalMipMapLevel));
                                 
                                 ///Render the input image with the bit depth of its preference
                                 std::list<ImageComponents> inputPrefComps;
@@ -325,8 +325,8 @@ StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                                 double time,
                                                                 int view,
                                                                 unsigned originalMipMapLevel,
-                                                                const boost::shared_ptr<Natron::Node>& node,
-                                                                const boost::shared_ptr<Natron::Node>& treeRoot,
+                                                                const boost::shared_ptr<Node>& node,
+                                                                const boost::shared_ptr<Node>& treeRoot,
                                                                 const RectD& canonicalRenderWindow,
                                                                 FrameRequestMap& requests)
 {
@@ -356,7 +356,7 @@ StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         ///Setup global data for the node for the whole frame render
         
         boost::shared_ptr<NodeFrameRequest> tmp(new NodeFrameRequest);
-        tmp->mappedScale.x = tmp->mappedScale.y = Natron::Image::getScaleFromMipMapLevel(mappedLevel);
+        tmp->mappedScale.x = tmp->mappedScale.y = Image::getScaleFromMipMapLevel(mappedLevel);
         tmp->nodeHash = node->getHashValue();
         
         std::pair<FrameRequestMap::iterator,bool> ret = requests.insert(std::make_pair(node, tmp));
@@ -524,7 +524,7 @@ EffectInstance::computeRequestPass(double time,
                                    int view,
                                    unsigned int mipMapLevel,
                                    const RectD& renderWindow,
-                                   const boost::shared_ptr<Natron::Node>& treeRoot,
+                                   const boost::shared_ptr<Node>& treeRoot,
                                    FrameRequestMap& request)
 {
     bool doTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
@@ -666,7 +666,7 @@ static void getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr&
    
     int maxInputs = node->getMaxInputCount();
     for (int i = 0; i < maxInputs; ++i) {
-        boost::shared_ptr<Natron::Node> inputNode = node->getInput(i);
+        boost::shared_ptr<Node> inputNode = node->getInput(i);
         if (inputNode) {
             getAllUpstreamNodesRecursiveWithDependencies_internal(inputNode, finalNodes);
         }
@@ -690,11 +690,11 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                                                    bool isSequential,
                                                    bool canAbort,
                                                    U64 renderAge,
-                                                   const boost::shared_ptr<Natron::Node>& treeRoot,
+                                                   const boost::shared_ptr<Node>& treeRoot,
                                                    const FrameRequestMap* request,
                                                    int textureIndex,
                                                    const TimeLine* timeline,
-                                                   const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
+                                                   const boost::shared_ptr<Node>& activeRotoPaintNode,
                                                    bool isAnalysis,
                                                    bool draftMode,
                                                    bool viewerProgressReportEnabled,
@@ -707,7 +707,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     
     getAllUpstreamNodesRecursiveWithDependencies(treeRoot, nodes);
     
-    for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<boost::shared_ptr<Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         assert(*it);
         
         Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
@@ -715,7 +715,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
         bool duringPaintStrokeCreation = activeRotoPaintNode && (*it)->isDuringPaintStrokeCreation();
         Natron::RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
         
-        std::list<boost::shared_ptr<Natron::Node> > rotoPaintNodes;
+        std::list<boost::shared_ptr<Node> > rotoPaintNodes;
         boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
         if (roto) {
             roto->getRotoPaintTreeNodes(&rotoPaintNodes);
@@ -740,7 +740,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
             liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash,
                                                    renderAge,treeRoot, nodeRequest,textureIndex, timeline, isAnalysis,duringPaintStrokeCreation, rotoPaintNodes, safety, doNanHandling, draftMode, viewerProgressReportEnabled, stats);
         }
-        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
+        for (std::list<boost::shared_ptr<Node> >::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
             
             boost::shared_ptr<NodeFrameRequest> childRequest;
             U64 nodeHash = 0;
@@ -764,9 +764,9 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
             
             ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
             ///on parameters.
-            std::list<boost::shared_ptr<Natron::Node> > children;
+            std::list<boost::shared_ptr<Node> > children;
             (*it)->getChildrenMultiInstance(&children);
-            for (std::list<boost::shared_ptr<Natron::Node> >::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+            for (std::list<boost::shared_ptr<Node> >::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
                 
                 boost::shared_ptr<NodeFrameRequest> childRequest;
                 U64 nodeHash = 0;
@@ -787,7 +787,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                 Natron::EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
                 assert(childLiveInstance);
                 Natron::RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge,treeRoot, childRequest, textureIndex, timeline, isAnalysis, false, std::list<boost::shared_ptr<Natron::Node> >(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled,stats);
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge,treeRoot, childRequest, textureIndex, timeline, isAnalysis, false, std::list<boost::shared_ptr<Node> >(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled,stats);
                 
             }
         }
@@ -802,11 +802,11 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     
 }
 
-ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > >& args)
+ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<boost::shared_ptr<Node>,ParallelRenderArgs > >& args)
 : argsMap(args)
 {
     if (args) {
-        for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
+        for (std::map<boost::shared_ptr<Node>,ParallelRenderArgs >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
             it->first->getLiveInstance()->setParallelRenderArgsTLS(it->second);
         }
     }
@@ -840,7 +840,7 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
     }
     
     if (argsMap) {
-        for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
+        for (std::map<boost::shared_ptr<Node>,ParallelRenderArgs >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
             it->first->getLiveInstance()->invalidateParallelRenderArgsTLS();
         }
     }

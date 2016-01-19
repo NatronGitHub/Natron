@@ -1742,10 +1742,10 @@ RotoGui::drawOverlays(double time,
                             if ( !isBezier->isOpenBezier() && (_imp->selectedTool == eRotoToolSelectAll || _imp->selectedTool == eRotoToolSelectFeatherPoints) ) {
                                 int cpCount = (*it2)->getBezier()->getControlPointsCount();
                                 if (cpCount > 1) {
-                                    Natron::Point controlPoint;
+                                    Point controlPoint;
                                     controlPoint.x = x;
                                     controlPoint.y = y;
-                                    Natron::Point featherPoint;
+                                    Point featherPoint;
                                     featherPoint.x = xF;
                                     featherPoint.y = yF;
                                     
@@ -2234,7 +2234,7 @@ handleControlPointMaximum(double time,
 void
 RotoGui::RotoGuiPrivate::computeSelectedCpsBBOX()
 {
-    boost::shared_ptr<Natron::Node> n = node->getNode();
+    boost::shared_ptr<Node> n = node->getNode();
     if ((n && !n->isActivated()) || !viewer) {
         return;
     }
@@ -3475,7 +3475,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
     double g = Natron::Color::from_func_srgb(color.greenF());
     double b = Natron::Color::from_func_srgb(color.blueF());
 
-    colorKnob->setValues(r,g,b, Natron::eValueChangedReasonNatronGuiEdited);
+    colorKnob->setValues(r,g,b, eValueChangedReasonNatronGuiEdited);
     operatorKnob->setValueFromLabel(getNatronOperationString(compOp),0);
     opacityKnob->setValue(opacity, 0);
     sizeKnob->setValue(size, 0);
@@ -3492,7 +3492,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
         timeOffsetKnob->setValue(timeOffset, 0);
         timeOffsetModeKnob->setValue(timeOffsetMode_i, 0);
         sourceTypeKnob->setValue(sourceType_i, 0);
-        translateKnob->setValues(-rotoData->cloneOffset.first, -rotoData->cloneOffset.second, Natron::eValueChangedReasonNatronGuiEdited);
+        translateKnob->setValues(-rotoData->cloneOffset.first, -rotoData->cloneOffset.second, eValueChangedReasonNatronGuiEdited);
     }
     if (!prepareForLater) {
         boost::shared_ptr<RotoLayer> layer = context->findDeepestSelectedLayer();
@@ -4133,7 +4133,7 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(double time,
             controlPoint = Transform::matApply(transform, controlPoint);
             featherPoint = Transform::matApply(transform, featherPoint);
             {
-                Natron::Point cp,fp;
+                Point cp,fp;
                 cp.x = controlPoint.x;
                 cp.y = controlPoint.y;
                 fp.x = featherPoint.x;
@@ -4842,7 +4842,7 @@ RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost
         }
     }
     if ( knobs.empty() ) {
-        Natron::warningDialog( "", tr("No tracker found in the project.").toStdString() );
+        natronWarningDialog( "", tr("No tracker found in the project.").toStdString() );
 
         return;
     }

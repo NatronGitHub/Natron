@@ -868,7 +868,7 @@ GuiApplicationManager::onFontconfigTimerTriggered()
 }
 
 void
-GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
+GuiApplicationManager::onPluginLoaded(Plugin* plugin)
 {
     QString shortcutGrouping(kShortcutGroupNodes);
     const QStringList & groups = plugin->getGrouping();
@@ -926,7 +926,7 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
 }
 
 void
-GuiApplicationManager::ignorePlugin(Natron::Plugin* plugin)
+GuiApplicationManager::ignorePlugin(Plugin* plugin)
 {
     _imp->removePluginToolButton(plugin->getGrouping());
     _imp->removeKeybind(kShortcutGroupNodes, plugin->getPluginID());

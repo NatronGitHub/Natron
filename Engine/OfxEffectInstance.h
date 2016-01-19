@@ -51,12 +51,12 @@ CLANG_DIAG_ON(unknown-pragmas)
 NATRON_NAMESPACE_ENTER;
 
 class AbstractOfxEffectInstance
-    : public Natron::OutputEffectInstance
+    : public OutputEffectInstance
 {
 public:
 
-    AbstractOfxEffectInstance(boost::shared_ptr<Natron::Node> node)
-        : Natron::OutputEffectInstance(node)
+    AbstractOfxEffectInstance(boost::shared_ptr<Node> node)
+        : OutputEffectInstance(node)
     {
     }
 
@@ -91,7 +91,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    OfxEffectInstance(boost::shared_ptr<Natron::Node> node);
+    OfxEffectInstance(boost::shared_ptr<Node> node);
 
     virtual ~OfxEffectInstance();
 
@@ -104,9 +104,9 @@ public:
                                       bool disableRenderScaleSupport,
                                       bool *hasUsedFileDialog) OVERRIDE FINAL;
 
-    Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN;
+    OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN;
     
-    const Natron::OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN;
+    const OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN;
     
     const std::string & getShortLabel() const WARN_UNUSED_RETURN;
 
@@ -204,7 +204,7 @@ public:
      **/
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool supportsRenderQuality() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual Natron::PluginOpenGLRenderSupport supportsOpenGLRender() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual PluginOpenGLRenderSupport supportsOpenGLRender() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool doesTemporalClipAccess() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
@@ -251,7 +251,7 @@ public:
                                                EffectInstance::ComponentsNeededMap* comps,
                                                 SequenceTime* passThroughTime,
                                                 int* passThroughView,
-                                                boost::shared_ptr<Natron::Node>* passThroughInput) OVERRIDE;
+                                                boost::shared_ptr<Node>* passThroughInput) OVERRIDE;
 
 
     virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;

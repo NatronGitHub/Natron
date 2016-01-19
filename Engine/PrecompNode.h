@@ -43,12 +43,12 @@ class PrecompNode : public Natron::EffectInstance
     
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new PrecompNode(n);
     }
     
-    PrecompNode(boost::shared_ptr<Natron::Node> n);
+    PrecompNode(boost::shared_ptr<Node> n);
     
     virtual ~PrecompNode();
     
@@ -105,9 +105,9 @@ public:
 
     virtual double getPreferredFrameRate() const OVERRIDE FINAL;
 
-    boost::shared_ptr<Natron::Node> getOutputNode() const;
+    boost::shared_ptr<Node> getOutputNode() const;
 
-    void getPrecompInputs(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
+    void getPrecompInputs(std::list<boost::shared_ptr<Node> >* nodes) const;
 
     AppInstance* getPrecompApp() const;
 

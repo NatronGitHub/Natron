@@ -34,8 +34,9 @@
 //After this time, we consider that the crash reporter is dead
 #define NATRON_BREAKPAD_WAIT_FOR_CRASH_REPORTER_ACK_MS 5000
 
+NATRON_NAMESPACE_USING
 
-struct ExistenceCheckerThreadPrivate
+struct NATRON_NAMESPACE::ExistenceCheckerThreadPrivate
 {
     boost::shared_ptr<QLocalSocket> socket;
     QString comServerPipePath;

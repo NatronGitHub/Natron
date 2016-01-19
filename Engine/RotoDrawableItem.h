@@ -188,10 +188,10 @@ public:
      **/
     void setTransform(double time, double tx, double ty, double sx, double sy, double centerX, double centerY, double rot, double skewX, double skewY);
     
-    boost::shared_ptr<Natron::Node> getEffectNode() const;
-    boost::shared_ptr<Natron::Node> getMergeNode() const;
-    boost::shared_ptr<Natron::Node> getTimeOffsetNode() const;
-    boost::shared_ptr<Natron::Node> getFrameHoldNode() const;
+    boost::shared_ptr<Node> getEffectNode() const;
+    boost::shared_ptr<Node> getMergeNode() const;
+    boost::shared_ptr<Node> getTimeOffsetNode() const;
+    boost::shared_ptr<Node> getFrameHoldNode() const;
     
     void resetNodesThreadSafety();
     void deactivateNodes();

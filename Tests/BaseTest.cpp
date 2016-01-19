@@ -67,7 +67,7 @@ BaseTest::registerTestPlugins()
         ///make sure the generic test plugin is present
         Natron::LibraryBinary* bin = NULL;
         try {
-            Natron::Plugin* p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1, false);
+            Plugin* p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1, false);
             if (p) {
                 bin = p->getLibraryBinary();
             }
@@ -102,7 +102,7 @@ BaseTest::TearDown()
  
 }
 
-boost::shared_ptr<Natron::Node> BaseTest::createNode(const QString & pluginID,
+boost::shared_ptr<Node> BaseTest::createNode(const QString & pluginID,
                                                      int majorVersion,
                                                      int minorVersion)
 {
@@ -112,26 +112,26 @@ boost::shared_ptr<Natron::Node> BaseTest::createNode(const QString & pluginID,
                                                                     QString(),CreateNodeArgs::DefaultValuesList(),
                                                                     _app->getProject()) );
 
-    EXPECT_NE(ret.get(),(Natron::Node*)NULL);
+    EXPECT_NE(ret.get(),(Node*)NULL);
 
     return ret;
 }
 
 void
-BaseTest::connectNodes(boost::shared_ptr<Natron::Node> input,
-                       boost::shared_ptr<Natron::Node> output,
+BaseTest::connectNodes(boost::shared_ptr<Node> input,
+                       boost::shared_ptr<Node> output,
                        int inputNumber,
                        bool expectedReturnValue)
 {
     if (expectedReturnValue) {
         ///check that the connections are internally all set as "expected"
 
-        EXPECT_EQ( (Natron::Node*)NULL,output->getInput(inputNumber).get() );
+        EXPECT_EQ( (Node*)NULL,output->getInput(inputNumber).get() );
         EXPECT_FALSE( output->isInputConnected(inputNumber) );
     } else {
         ///the call can only fail for those 2 reasons
         EXPECT_TRUE(inputNumber > output->getMaxInputCount() || //< inputNumber is greater than the maximum input number
-                    output->getInput(inputNumber).get() != (Natron::Node*)NULL); //< input slot is already filled with another node
+                    output->getInput(inputNumber).get() != (Node*)NULL); //< input slot is already filled with another node
     }
 
 
@@ -146,8 +146,8 @@ BaseTest::connectNodes(boost::shared_ptr<Natron::Node> input,
 }
 
 void
-BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
-                          boost::shared_ptr<Natron::Node> output,
+BaseTest::disconnectNodes(boost::shared_ptr<Node> input,
+                          boost::shared_ptr<Node> output,
                           bool expectedReturnvalue)
 {
     if (expectedReturnvalue) {
@@ -155,9 +155,9 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
 
         ///the input must have in its output the node 'output'
         EXPECT_TRUE( input->hasOutputConnected() );
-        const std::list<Natron::Node*> & outputs = input->getGuiOutputs();
+        const std::list<Node*> & outputs = input->getGuiOutputs();
         bool foundOutput = false;
-        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             if ( *it == output.get() ) {
                 foundOutput = true;
                 break;
@@ -165,7 +165,7 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
         }
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = output->getGuiInputs();
+        const std::vector<boost::shared_ptr<Node> > & inputs = output->getGuiInputs();
         int inputIndex = 0;
         bool foundInput = false;
         for (U32 i = 0; i < inputs.size(); ++i) {
@@ -189,9 +189,9 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
     if (expectedReturnvalue) {
         ///check that the disconnection went OK
 
-        const std::list<Natron::Node*> & outputs = input->getGuiOutputs();
+        const std::list<Node*> & outputs = input->getGuiOutputs();
         bool foundOutput = false;
-        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             if ( (*it) == output.get() ) {
                 foundOutput = true;
                 break;
@@ -199,7 +199,7 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
         }
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = output->getGuiInputs();
+        const std::vector<boost::shared_ptr<Node> > & inputs = output->getGuiInputs();
         int inputIndex = 0;
         bool foundInput = false;
         for (U32 i = 0; i < inputs.size(); ++i) {
@@ -212,7 +212,7 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
 
         EXPECT_FALSE(foundOutput);
         EXPECT_FALSE(foundInput);
-        EXPECT_EQ( (Natron::Node*)NULL,output->getInput(inputIndex).get() );
+        EXPECT_EQ( (Node*)NULL,output->getInput(inputIndex).get() );
         EXPECT_FALSE( output->isInputConnected(inputIndex) );
     }
 } // disconnectNodes
@@ -244,7 +244,7 @@ TEST_F(BaseTest,GenerateDot)
     ///and start rendering. This call is blocking.
     std::list<AppInstance::RenderWork> works;
     AppInstance::RenderWork w;
-    w.writer = dynamic_cast<Natron::OutputEffectInstance*>(writer->getLiveInstance());
+    w.writer = dynamic_cast<OutputEffectInstance*>(writer->getLiveInstance());
     assert(w.writer);
     w.firstFrame = INT_MIN;
     w.lastFrame = INT_MAX;
@@ -268,7 +268,7 @@ TEST_F(BaseTest,SetValues)
     
     //Check that linear interpolation is working as intended
     KeyFrame kf;
-    radius->setInterpolationAtTime(Natron::eCurveChangeReasonInternal,0, 0, Natron::eKeyframeTypeLinear, &kf);
+    radius->setInterpolationAtTime(Natron::eCurveChangeReasonInternal,0, 0, eKeyframeTypeLinear, &kf);
     radius->setValueAtTime(0, 0, 0);
     radius->setValueAtTime(100, 100, 0);
     for (int i = 0; i <= 100; ++i) {

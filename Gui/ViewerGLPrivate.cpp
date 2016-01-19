@@ -252,7 +252,7 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _this->context() );
 
-    bool useShader = _this->getBitDepth() != Natron::eImageBitDepthByte && this->supportsGLSL;
+    bool useShader = _this->getBitDepth() != eImageBitDepthByte && this->supportsGLSL;
 
 
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
@@ -515,7 +515,7 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
     GLenum err = glewInit();
     if (GLEW_OK != err) {
         /* Problem: glewInit failed, something is seriously wrong. */
-        Natron::errorDialog( tr("OpenGL/GLEW error").toStdString(),
+        natronErrorDialog( tr("OpenGL/GLEW error").toStdString(),
                             (const char*)glewGetErrorString(err) );
     }
     //fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
@@ -529,7 +529,7 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
                           //"GL_ARB_vertex_array_object " // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
                           //"GL_ARB_framebuffer_object " // or GL_EXT_framebuffer_object GenFramebuffers, core since version 3.0
                           ) ) {
-        Natron::errorDialog( tr("Missing OpenGL requirements").toStdString(),
+        natronErrorDialog( tr("Missing OpenGL requirements").toStdString(),
                             tr("The viewer may not be fully functional. "
                                "This software needs at least OpenGL 1.5 with NPOT textures, GLSL, VBO, PBO, vertex arrays. ").toStdString() );
     }
@@ -540,7 +540,7 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
     if ( !QGLShaderProgram::hasOpenGLShaderPrograms( _this->context() ) ) {
         // no need to pull out a dialog, it was already presented after the GLEW check above
 
-        //Natron::errorDialog("Viewer error","The viewer is unabgile to work without a proper version of GLSL.");
+        //natronErrorDialog("Viewer error","The viewer is unabgile to work without a proper version of GLSL.");
         //cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
         this->supportsGLSL = false;
     }
@@ -783,13 +783,13 @@ public:
             glEnable(GL_BLEND);
         }
         switch (premult) {
-            case Natron::eImagePremultiplicationPremultiplied:
+            case eImagePremultiplicationPremultiplied:
                 glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
                 break;
-            case Natron::eImagePremultiplicationUnPremultiplied:
+            case eImagePremultiplicationUnPremultiplied:
                 glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
                 break;
-            case Natron::eImagePremultiplicationOpaque:
+            case eImagePremultiplicationOpaque:
                 break;
         }
 

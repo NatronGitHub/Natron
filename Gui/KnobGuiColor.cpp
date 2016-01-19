@@ -511,9 +511,9 @@ KnobGuiColor::onDimensionSwitchClicked()
         if (_dimension > 1) {
             double value( _rBox->value() );
             if (_dimension == 3) {
-                knob->setValues(value, value, value, Natron::eValueChangedReasonNatronGuiEdited);
+                knob->setValues(value, value, value, eValueChangedReasonNatronGuiEdited);
             } else {
-                knob->setValues(value, value, value,value, Natron::eValueChangedReasonNatronGuiEdited);
+                knob->setValues(value, value, value,value, eValueChangedReasonNatronGuiEdited);
             }
         }
     }
@@ -970,13 +970,13 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
         knob->setValues(isSimple ? color.redF() : Natron::Color::from_func_srgb(color.redF()),
                         isSimple ? color.greenF() : Natron::Color::from_func_srgb(color.greenF()),
                         isSimple ? color.blueF() : Natron::Color::from_func_srgb(color.blueF()),
-                        Natron::eValueChangedReasonNatronInternalEdited);
+                        eValueChangedReasonNatronInternalEdited);
     } else if (_dimension == 4) {
         knob->setValues(isSimple ? color.redF() : Natron::Color::from_func_srgb(color.redF()),
                         isSimple ? color.greenF() : Natron::Color::from_func_srgb(color.greenF()),
                         isSimple ? color.blueF() : Natron::Color::from_func_srgb(color.blueF()),
                         1.,
-                        Natron::eValueChangedReasonNatronInternalEdited);
+                        eValueChangedReasonNatronInternalEdited);
     }
 
 }

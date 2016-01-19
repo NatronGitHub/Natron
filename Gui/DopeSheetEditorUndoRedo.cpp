@@ -59,7 +59,7 @@ void moveReader(const NodePtr &reader, double dt)
 {
     Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(reader->getKnobByName(kReaderParamNameStartingTime).get());
     assert(startingTimeKnob);
-    KnobHelper::ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
 }
     
@@ -67,7 +67,7 @@ void moveTimeOffset(const NodePtr& node, double dt)
 {
     Knob<int>* timeOffsetKnob = dynamic_cast<Knob<int>*>(node->getKnobByName(kTimeOffsetParamNameTimeOffset).get());
     assert(timeOffsetKnob);
-    KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
 }
 
@@ -75,7 +75,7 @@ void moveFrameRange(const NodePtr& node, double dt)
 {
     Knob<int>* frameRangeKnob = dynamic_cast<Knob<int>*>(node->getKnobByName(kFrameRangeParamNameFrameRange).get());
     assert(frameRangeKnob);
-    frameRangeKnob->setValues(frameRangeKnob->getValue(0) + dt, frameRangeKnob->getValue(1)  + dt, Natron::eValueChangedReasonNatronGuiEdited);
+    frameRangeKnob->setValues(frameRangeKnob->getValue(0) + dt, frameRangeKnob->getValue(1)  + dt, eValueChangedReasonNatronGuiEdited);
 }
     
 void moveGroupNode(DopeSheetEditor* model, const NodePtr& node, double dt)
@@ -150,7 +150,7 @@ _dt(dt),
 _model(model)
 {
     setText(QObject::tr("Move selected keys"));
-    std::set<boost::shared_ptr<Natron::Node> > nodesSet;
+    std::set<boost::shared_ptr<Node> > nodesSet;
     for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
         Natron::DopeSheetItemType type = (*it)->getItemType();
         if (type != Natron::eDopeSheetItemTypeReader &&
@@ -181,7 +181,7 @@ _model(model)
         }
     }
     
-    for (std::set<boost::shared_ptr<Natron::Node> >::iterator it = nodesSet.begin(); it!=nodesSet.end(); ++it) {
+    for (std::set<boost::shared_ptr<Node> >::iterator it = nodesSet.begin(); it!=nodesSet.end(); ++it) {
         _allDifferentNodes.push_back(*it);
     }
 }
@@ -205,7 +205,7 @@ void DSMoveKeysAndNodesCommand::moveSelection(double dt)
     DopeSheetView* view = _model->getDopesheetView();
     view->setUpdatesEnabled(false);
     
-    for (std::list<boost::weak_ptr<Natron::Node> >::iterator khIt = _allDifferentNodes.begin(); khIt != _allDifferentNodes.end(); ++khIt) {
+    for (std::list<boost::weak_ptr<Node> >::iterator khIt = _allDifferentNodes.begin(); khIt != _allDifferentNodes.end(); ++khIt) {
         NodePtr node = khIt->lock();
         if (!node) {
             continue;
@@ -244,7 +244,7 @@ void DSMoveKeysAndNodesCommand::moveSelection(double dt)
     }
     
 
-    for (std::list<boost::weak_ptr<Natron::Node> >::const_iterator khIt = _allDifferentNodes.begin(); khIt != _allDifferentNodes.end(); ++khIt) {
+    for (std::list<boost::weak_ptr<Node> >::const_iterator khIt = _allDifferentNodes.begin(); khIt != _allDifferentNodes.end(); ++khIt) {
         NodePtr node = khIt->lock();
         if (!node) {
             continue;
@@ -513,7 +513,7 @@ void DSLeftTrimReaderCommand::trimLeft(double firstFrame)
         return;
     }
     effectInstance->beginChanges();
-    KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrame, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrame, 0, eValueChangedReasonNatronGuiEdited, 0);
     effectInstance->endChanges();
 
     Q_UNUSED(r);
@@ -593,7 +593,7 @@ void DSRightTrimReaderCommand::trimRight(double lastFrame)
         return;
     }
     effectInstance->beginChanges();
-    KnobHelper::ValueChangedReturnCodeEnum r = lastFrameKnob->setValue(lastFrame, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum r = lastFrameKnob->setValue(lastFrame, 0, eValueChangedReasonNatronGuiEdited, 0);
     effectInstance->endChanges();
 
     Q_UNUSED(r);
@@ -725,11 +725,11 @@ void DSSlipReaderCommand::slipReader(double dt)
     {
         KnobHelper::ValueChangedReturnCodeEnum r;
 
-        r = firstFrameKnob->setValue(firstFrameKnob->getValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+        r = firstFrameKnob->setValue(firstFrameKnob->getValue() - dt, 0, eValueChangedReasonNatronGuiEdited, 0);
         Q_UNUSED(r);
-        r = lastFrameKnob->setValue(lastFrameKnob->getValue() - dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+        r = lastFrameKnob->setValue(lastFrameKnob->getValue() - dt, 0, eValueChangedReasonNatronGuiEdited, 0);
         Q_UNUSED(r);
-        r = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
+        r = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, 0, eValueChangedReasonNatronGuiEdited, 0);
         Q_UNUSED(r);
     }
     effectInstance->endChanges();
@@ -917,7 +917,7 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
                         }
                         k.setValue(keyFrameValue);
                     }
-                    knob->setKeyFrame(k, j, Natron::eValueChangedReasonNatronGuiEdited);
+                    knob->setKeyFrame(k, j, eValueChangedReasonNatronGuiEdited);
                 }
             }
         }

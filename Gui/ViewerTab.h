@@ -43,7 +43,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > RenderStatsMap;
+typedef std::map<boost::shared_ptr<Node>,NodeRenderStats > RenderStatsMap;
 
 struct ViewerTabPrivate;
 class ViewerTab : public QWidget, public PanelWidget
@@ -103,12 +103,12 @@ public:
     
 private:
     
-    bool notifyOverlaysPenDown_internal(const boost::shared_ptr<Natron::Node>& node, const RenderScale & renderScale, Natron::PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool notifyOverlaysPenDown_internal(const boost::shared_ptr<Node>& node, const RenderScale & renderScale, Natron::PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
     
-    bool notifyOverlaysPenMotion_internal(const boost::shared_ptr<Natron::Node>& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
-    bool notifyOverlaysKeyDown_internal(const boost::shared_ptr<Natron::Node>& node, const RenderScale & renderScale, QKeyEvent* e, Natron::Key k,
+    bool notifyOverlaysPenMotion_internal(const boost::shared_ptr<Node>& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
+    bool notifyOverlaysKeyDown_internal(const boost::shared_ptr<Node>& node, const RenderScale & renderScale, QKeyEvent* e, Natron::Key k,
                                         Natron::KeyboardModifiers km);
-    bool notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Natron::Node>& node, const RenderScale & renderScale, QKeyEvent* e, Natron::Key k,
+    bool notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Node>& node, const RenderScale & renderScale, QKeyEvent* e, Natron::Key k,
                                           Natron::KeyboardModifiers km);
 public:
     

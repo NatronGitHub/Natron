@@ -552,11 +552,11 @@ Gui::getRegisteredTabs() const
 }
 
 void
-Gui::debugImage(const Natron::Image* image,
+Gui::debugImage(const Image* image,
                 const RectI& roi,
                 const QString & filename )
 {
-    if (image->getBitDepth() != Natron::eImageBitDepthFloat) {
+    if (image->getBitDepth() != eImageBitDepthFloat) {
         qDebug() << "Debug image only works on float images.";
         return;
     }
@@ -573,7 +573,7 @@ Gui::debugImage(const Natron::Image* image,
     QImage output(renderWindow.width(), renderWindow.height(), QImage::Format_ARGB32);
     const Natron::Color::Lut* lut = Natron::Color::LutManager::sRGBLut();
     lut->validate();
-    Natron::Image::ReadAccess acc = image->getReadRights();
+    Image::ReadAccess acc = image->getReadRights();
     const float* from = (const float*)acc.pixelAt( renderWindow.left(), renderWindow.bottom() );
     assert(from);
     int srcNComps = (int)image->getComponentsCount();
@@ -668,7 +668,7 @@ Gui::onWriterRenderStarted(const QString & sequenceName,
                            int firstFrame,
                            int lastFrame,
                            int frameStep,
-                           Natron::OutputEffectInstance* writer)
+                           OutputEffectInstance* writer)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
@@ -731,7 +731,7 @@ Gui::getCairoVersion() const
 void
 Gui::onNodeNameChanged(const QString & /*name*/)
 {
-    Natron::Node* node = qobject_cast<Natron::Node*>( sender() );
+    Node* node = qobject_cast<Node*>( sender() );
 
     if (!node) {
         return;
@@ -759,7 +759,7 @@ Gui::renderSelectedNode()
     const std::list<boost::shared_ptr<NodeGui> > & selectedNodes = graph->getSelectedNodes();
 
     if ( selectedNodes.empty() ) {
-        Natron::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
+        natronWarningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
     } else {
         std::list<AppInstance::RenderWork> workList;
 
@@ -772,7 +772,7 @@ Gui::renderSelectedNode()
                     //if ((*it)->getNode()->is)
                     ///if the node is a writer, just use it to render!
                     AppInstance::RenderWork w;
-                    w.writer = dynamic_cast<Natron::OutputEffectInstance*>(effect);
+                    w.writer = dynamic_cast<OutputEffectInstance*>(effect);
                     assert(w.writer);
                     w.firstFrame = INT_MIN;
                     w.lastFrame = INT_MAX;
@@ -782,10 +782,10 @@ Gui::renderSelectedNode()
             } else {
                 if (selectedNodes.size() == 1) {
                     ///create a node and connect it to the node and use it to render
-                    boost::shared_ptr<Natron::Node> writer = createWriter();
+                    boost::shared_ptr<Node> writer = createWriter();
                     if (writer) {
                         AppInstance::RenderWork w;
-                        w.writer = dynamic_cast<Natron::OutputEffectInstance*>( writer->getLiveInstance() );
+                        w.writer = dynamic_cast<OutputEffectInstance*>( writer->getLiveInstance() );
                         assert(w.writer);
                         w.firstFrame = INT_MIN;
                         w.lastFrame = INT_MAX;

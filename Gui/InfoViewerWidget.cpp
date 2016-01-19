@@ -466,7 +466,7 @@ InfoViewerWidget::setImageFormat(const ImageComponents& comp,
     QString text = QString("<font color=\"#DBE0E0\" face=\"%1\" size=%2>")
     .arg(font.family())
     .arg(font.pixelSize());
-    QString format(Natron::Image::getFormatString(comp, depth).c_str());
+    QString format(Image::getFormatString(comp, depth).c_str());
     text.append(format);
     text.append("</font>");
     imageFormat->setText(text);

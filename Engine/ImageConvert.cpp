@@ -695,7 +695,7 @@ Image::convertToFormatCommon(const RectI & renderWindow,
                            bool useAlpha0,
                            bool copyBitmap,
                            bool requiresUnpremult,
-                           Natron::Image* dstImg) const
+                           Image* dstImg) const
 {
     
     QWriteLocker k(&dstImg->_entryLock);
@@ -911,7 +911,7 @@ Image::convertToFormat(const RectI & renderWindow,
                        int channelForAlpha,
                        bool copyBitmap,
                        bool requiresUnpremult,
-                       Natron::Image* dstImg) const
+                       Image* dstImg) const
 {
     convertToFormatCommon(renderWindow, srcColorSpace, dstColorSpace, channelForAlpha, false, copyBitmap, requiresUnpremult, dstImg);
 } // convertToFormat
@@ -923,7 +923,7 @@ Image::convertToFormatAlpha0(const RectI & renderWindow,
                            int channelForAlpha,
                            bool copyBitmap,
                            bool requiresUnpremult,
-                           Natron::Image* dstImg) const
+                           Image* dstImg) const
 {
     convertToFormatCommon(renderWindow, srcColorSpace, dstColorSpace, channelForAlpha, true, copyBitmap, requiresUnpremult, dstImg);
 }

@@ -44,10 +44,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define IMAGE_KEY_SERIALIZATION_INTRODUCES_CACHE_HOLDER_ID 2
 #define IMAGE_KEY_SERIALIZATION_VERSION IMAGE_KEY_SERIALIZATION_INTRODUCES_CACHE_HOLDER_ID
 
+NATRON_NAMESPACE_ENTER;
 
 template<class Archive>
 void
-Natron::ImageKey::serialize(Archive & ar,
+ImageKey::serialize(Archive & ar,
           const unsigned int version)
 {
     if (version >= IMAGE_KEY_SERIALIZATION_INTRODUCES_CACHE_HOLDER_ID) {
@@ -61,6 +62,8 @@ Natron::ImageKey::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("Draft",_draftMode);
 
 }
+
+NATRON_NAMESPACE_EXIT;
 
 BOOST_CLASS_VERSION(NATRON_NAMESPACE::ImageKey, IMAGE_KEY_SERIALIZATION_VERSION)
 

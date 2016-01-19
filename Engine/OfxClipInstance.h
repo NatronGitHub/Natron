@@ -60,7 +60,7 @@ class OfxClipInstance
 {
 public:
     OfxClipInstance(OfxEffectInstance* node,
-                    Natron::OfxImageEffectInstance* effect,
+                    OfxImageEffectInstance* effect,
                     int index,
                     OFX::Host::ImageEffect::ClipDescriptor* desc);
 
@@ -315,7 +315,7 @@ public:
 
 
     explicit OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
-                      const boost::shared_ptr<Natron::Image>& internalImage,
+                      const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
                       bool isSrcImage,
                       const RectI& renderWindow,
                       const boost::shared_ptr<Transform::Matrix3x3>& mat,
@@ -325,7 +325,7 @@ public:
 
     virtual ~OfxImage();
 
-    boost::shared_ptr<Natron::Image> getInternalImage() const;
+    boost::shared_ptr<NATRON_NAMESPACE::Image> getInternalImage() const;
 
 private:
     

@@ -28,8 +28,8 @@
 
 NATRON_NAMESPACE_USING
 
-NoOpBase::NoOpBase(boost::shared_ptr<Natron::Node> n)
-    : Natron::OutputEffectInstance(n)
+NoOpBase::NoOpBase(boost::shared_ptr<Node> n)
+    : OutputEffectInstance(n)
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -48,9 +48,9 @@ NoOpBase::addAcceptedComponents(int /*inputNb*/,
 void
 NoOpBase::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
-    depths->push_back(Natron::eImageBitDepthByte);
-    depths->push_back(Natron::eImageBitDepthShort);
-    depths->push_back(Natron::eImageBitDepthFloat);
+    depths->push_back(eImageBitDepthByte);
+    depths->push_back(eImageBitDepthShort);
+    depths->push_back(eImageBitDepthFloat);
 }
 
 
@@ -85,12 +85,12 @@ NoOpBase::getTransform(double /*time*/,
 {
     *inputToTransform = getInput(0);
     if (!*inputToTransform) {
-        return Natron::eStatusFailed;
+        return eStatusFailed;
     }
     transform->a = 1.; transform->b = 0.; transform->c = 0.;
     transform->d = 0.; transform->e = 1.; transform->f = 0.;
     transform->g = 0.; transform->h = 0.; transform->i = 1.;
-    return Natron::eStatusOK;
+    return eStatusOK;
 }
 
 

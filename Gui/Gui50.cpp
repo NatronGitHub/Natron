@@ -676,7 +676,7 @@ Gui::addShortcut(BoundAction* action)
 }
 
 void
-Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> > & nodes) const
+Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Node> > & nodes) const
 {
     std::list<DockablePanel*> panels;
     {
@@ -691,7 +691,7 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> > & n
             continue;
         }
         boost::shared_ptr<NodeGui> node = panel->getNode();
-        boost::shared_ptr<Natron::Node> internalNode = node->getNode();
+        boost::shared_ptr<Node> internalNode = node->getNode();
         if (node && internalNode) {
             boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
             if (multiInstance) {
@@ -837,7 +837,7 @@ Gui::exportGroupAsPythonScript(NodeCollection* collection)
     }
 
     if (!hasOutput) {
-        Natron::errorDialog( tr("Export").toStdString(), tr("To export as group, at least one Ouptut node must exist.").toStdString() );
+        natronErrorDialog( tr("Export").toStdString(), tr("To export as group, at least one Ouptut node must exist.").toStdString() );
 
         return;
     }
@@ -868,7 +868,7 @@ Gui::onUserCommandTriggered()
     if ( found != _imp->pythonCommands.end() ) {
         std::string err;
         std::string output;
-        if ( !Natron::interpretPythonScript(found->second, &err, &output) ) {
+        if ( !interpretPythonScript(found->second, &err, &output) ) {
             getApp()->appendToScriptEditor(err);
         } else {
             getApp()->appendToScriptEditor(output);

@@ -88,7 +88,7 @@ static void scaleToTexture32bits(const RectI& roi,
                                  const RenderViewerArgs & args,
                                  float *output);
 static std::pair<double, double>
-findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
+findAutoContrastVminVmax(boost::shared_ptr<const Image> inputImage,
                          DisplayChannelsEnum channels,
                          const RectI & rect);
 static void renderFunctor(const RectI& roi,
@@ -161,7 +161,7 @@ public:
 
 
 Natron::EffectInstance*
-ViewerInstance::BuildEffect(boost::shared_ptr<Natron::Node> n)
+ViewerInstance::BuildEffect(boost::shared_ptr<Node> n)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -170,7 +170,7 @@ ViewerInstance::BuildEffect(boost::shared_ptr<Natron::Node> n)
 }
 
 ViewerInstance::ViewerInstance(boost::shared_ptr<Node> node)
-    : Natron::OutputEffectInstance(node)
+    : OutputEffectInstance(node)
       , _imp( new ViewerInstancePrivate(this) )
 {
     // always running in the main thread
@@ -320,7 +320,7 @@ ViewerInstance::executeDisconnectTextureRequestOnMainThread(int index)
 }
 
 
-static bool isRotoPaintNodeInputRecursive(Natron::Node* node,const NodePtr& rotoPaintNode) {
+static bool isRotoPaintNodeInputRecursive(Node* node,const NodePtr& rotoPaintNode) {
     
     if (node == rotoPaintNode.get()) {
         return true;
@@ -342,7 +342,7 @@ static bool isRotoPaintNodeInputRecursive(Natron::Node* node,const NodePtr& roto
     return false;
 }
 
-static void updateLastStrokeDataRecursively(Natron::Node* node,const NodePtr& rotoPaintNode, const RectD& lastStrokeBbox,
+static void updateLastStrokeDataRecursively(Node* node,const NodePtr& rotoPaintNode, const RectD& lastStrokeBbox,
                                             bool invalidate)
 {
     if (isRotoPaintNodeInputRecursive(node, rotoPaintNode)) {
@@ -379,7 +379,7 @@ public:
                                    bool isSequential,
                                    bool canAbort,
                                    U64 renderAge,
-                                   const boost::shared_ptr<Natron::Node>& treeRoot,
+                                   const boost::shared_ptr<Node>& treeRoot,
                                    const FrameRequestMap* request,
                                    int textureIndex,
                                    const TimeLine* timeline,
@@ -439,7 +439,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                              bool canAbort,
                                              int view,
                                              U64 viewerHash,
-                                             const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                             const boost::shared_ptr<Node>& rotoPaintNode,
                                              const boost::shared_ptr<RotoStrokeItem>& activeStroke,
                                              const boost::shared_ptr<RenderStats>& stats,
                                              boost::shared_ptr<ViewerArgs>* argsA,
@@ -479,7 +479,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
             roi.y2 = args[i]->params->textureRect.y2;
         }
         status[i] = EffectInstance::computeRequestPass(time, view, args[i]->params->mipMapLevel, roi, thisNode, request);
-        if (status[i] == Natron::eStatusFailed) {
+        if (status[i] == eStatusFailed) {
             continue;
         }*/
         
@@ -520,7 +520,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                  */
                 
                 //The last points input by the user
-                std::list<std::pair<Natron::Point,double> > lastStrokePoints;
+                std::list<std::pair<Point,double> > lastStrokePoints;
                 
                 //The stroke RoD so far
                 RectD wholeStrokeRod;
@@ -594,7 +594,7 @@ ViewerInstance::renderViewer(int view,
                              bool isSequentialRender,
                              U64 viewerHash,
                              bool canAbort,
-                             const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                             const boost::shared_ptr<Node>& rotoPaintNode,
                              bool useTLS,
                              boost::shared_ptr<ViewerArgs> args[2],
                              const boost::shared_ptr<RequestedFrame>& request,
@@ -732,7 +732,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                            int view,
                                                            int textureIndex,
                                                            U64 viewerHash,
-                                                           const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                           const boost::shared_ptr<Node>& rotoPaintNode,
                                                            bool useTLS,
                                                            const boost::shared_ptr<RenderStats>& stats,
                                                            ViewerArgs* outArgs)
@@ -748,7 +748,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  int view,
                                                  int textureIndex,
                                                  U64 viewerHash,
-                                                 const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                 const boost::shared_ptr<Node>& rotoPaintNode,
                                                  bool useTLS,
                                                  U64 renderAge,
                                                  const boost::shared_ptr<RenderStats>& stats,
@@ -795,7 +795,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     int mipMapLevel;
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
-        scale.x = Natron::Image::getScaleFromMipMapLevel(_imp->viewerMipMapLevel);
+        scale.x = Image::getScaleFromMipMapLevel(_imp->viewerMipMapLevel);
         scale.y = scale.x;
         mipMapLevel = _imp->viewerMipMapLevel;
     }
@@ -835,7 +835,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     // this after the first call to getRegionOfDefinition().
     RenderScale scaleOne(1.);
     EffectInstance::SupportsEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
-    scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(originalMipMapLevel);
+    scale.x = scale.y = Image::getScaleFromMipMapLevel(originalMipMapLevel);
     
     
     
@@ -956,7 +956,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     assert(_imp->uiContext);
     outArgs->params->depth = _imp->uiContext->getBitDepth();
-    if (outArgs->params->depth == Natron::eImageBitDepthFloat) {
+    if (outArgs->params->depth == eImageBitDepthFloat) {
         outArgs->params->bytesCount *= sizeof(float);
     }
     
@@ -1011,7 +1011,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         boost::shared_ptr<Natron::FrameParams> cachedFrameParams;
         
         if (!outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get()) {
-            isCached = Natron::getTextureFromCache(*(outArgs->key), &outArgs->params->cachedFrame);
+            isCached = Natron::natronGetTextureFromCache(*(outArgs->key), &outArgs->params->cachedFrame);
             
             if (!isCached && lookups == 2 && lookup == 0) {
                 //Lookup didn't work in non draft mode, try with draft mode now, update the texture rectangle
@@ -1027,8 +1027,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                 outArgs->params->textureRect.closestPo2 = 1 << mipMapLevel;
                 outArgs->params->mipMapLevel = mipMapLevel;
                 outArgs->params->bytesCount = outArgs->params->textureRect.w * outArgs->params->textureRect.h * 4;
-                scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(mipMapLevel);
-                if (outArgs->params->depth == Natron::eImageBitDepthFloat) {
+                scale.x = scale.y = Image::getScaleFromMipMapLevel(mipMapLevel);
+                if (outArgs->params->depth == eImageBitDepthFloat) {
                     outArgs->params->bytesCount *= sizeof(float);
                 }
                 continue;
@@ -1110,7 +1110,7 @@ ViewerInstance::renderViewer_internal(int view,
                                       bool isSequentialRender,
                                       U64 /*viewerHash*/,
                                       bool canAbort,
-                                      boost::shared_ptr<Natron::Node> rotoPaintNode,
+                                      boost::shared_ptr<Node> rotoPaintNode,
                                       bool useTLS,
                                       const boost::shared_ptr<RequestedFrame>& request,
                                       const boost::shared_ptr<RenderStats>& stats,
@@ -1263,13 +1263,13 @@ ViewerInstance::renderViewer_internal(int view,
         
         boost::shared_ptr<Natron::FrameParams> cachedFrameParams =
         FrameEntry::makeParams(bounds,inArgs.key->getBitDepth(), inArgs.params->textureRect.w, inArgs.params->textureRect.h, ImagePtr());
-        bool cached = Natron::getTextureFromCacheOrCreate(*(inArgs.key), cachedFrameParams,
+        bool cached = natronGetTextureFromCacheOrCreate(*(inArgs.key), cachedFrameParams,
                                                                    &inArgs.params->cachedFrame);
         if (!inArgs.params->cachedFrame) {
             std::stringstream ss;
             ss << "Failed to allocate a texture of ";
             ss << printAsRAM( cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t) ).toStdString();
-            Natron::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
+            natronErrorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
             if (!isSequentialRender) {
                 _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
                 _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
@@ -1700,7 +1700,7 @@ ViewerInstance::ViewerInstancePrivate::reportProgress(const boost::shared_ptr<Up
         params->roi = *it;
         params->updateOnlyRoi = true;
         std::size_t pixelSize = 4;
-        if (params->depth == Natron::eImageBitDepthFloat) {
+        if (params->depth == eImageBitDepthFloat) {
             pixelSize *= sizeof(float);
         }
         std::size_t dstRowSize = params->roi.width() * pixelSize;
@@ -1751,7 +1751,7 @@ renderFunctor(const RectI& roi,
 {
     assert(args.texRect.y1 <= roi.y1 && roi.y1 <= roi.y2 && roi.y2 <= args.texRect.y2);
 
-    if ( (args.bitDepth == Natron::eImageBitDepthFloat) ) {
+    if ( (args.bitDepth == eImageBitDepthFloat) ) {
         // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression, as well as gain and offset
         scaleToTexture32bits(roi, args, (float*)buffer);
     } else {
@@ -1762,7 +1762,7 @@ renderFunctor(const RectI& roi,
 
 inline
 std::pair<double, double>
-findAutoContrastVminVmax_generic(boost::shared_ptr<const Natron::Image> inputImage,
+findAutoContrastVminVmax_generic(boost::shared_ptr<const Image> inputImage,
                                  int nComps,
                                  DisplayChannelsEnum channels,
                                  const RectI & rect)
@@ -1770,7 +1770,7 @@ findAutoContrastVminVmax_generic(boost::shared_ptr<const Natron::Image> inputIma
     double localVmin = std::numeric_limits<double>::infinity();
     double localVmax = -std::numeric_limits<double>::infinity();
     
-    Natron::Image::ReadAccess acc = inputImage->getReadRights();
+    Image::ReadAccess acc = inputImage->getReadRights();
     
     for (int y = rect.bottom(); y < rect.top(); ++y) {
         const float* src_pixels = (const float*)acc.pixelAt(rect.left(),y);
@@ -1855,7 +1855,7 @@ findAutoContrastVminVmax_generic(boost::shared_ptr<const Natron::Image> inputIma
 
 template <int nComps>
 std::pair<double, double>
-findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputImage,
+findAutoContrastVminVmax_internal(boost::shared_ptr<const Image> inputImage,
                                   DisplayChannelsEnum channels,
                                   const RectI & rect)
 {
@@ -1863,7 +1863,7 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Natron::Image> inputIm
 }
 
 std::pair<double, double>
-findAutoContrastVminVmax(boost::shared_ptr<const Natron::Image> inputImage,
+findAutoContrastVminVmax(boost::shared_ptr<const Image> inputImage,
                          DisplayChannelsEnum channels,
                          const RectI & rect)
 {
@@ -1892,7 +1892,7 @@ scaleToTexture8bits_generic(const RectI& roi,
     
     const bool luminance = (args.channels == Natron::eDisplayChannelsY);
     
-    Natron::Image::ReadAccess acc = Natron::Image::ReadAccess(args.inputImage.get());
+    Image::ReadAccess acc = Image::ReadAccess(args.inputImage.get());
     const RectI srcImgBounds = args.inputImage->getBounds();
     
     ///offset the output buffer at the starting point
@@ -1904,9 +1904,9 @@ scaleToTexture8bits_generic(const RectI& roi,
     const PIX* src_pixels = (const PIX*)acc.pixelAt(roi.x1, roi.y1);
     const int srcRowElements = (int)args.inputImage->getRowElements();
     
-    boost::shared_ptr<Natron::Image::ReadAccess> matteAcc;
+    boost::shared_ptr<Image::ReadAccess> matteAcc;
     if (applyMatte) {
-        matteAcc.reset(new Natron::Image::ReadAccess(args.matteImage.get()));
+        matteAcc.reset(new Image::ReadAccess(args.matteImage.get()));
     }
     
     for (int y = roi.y1; y < roi.y2;
@@ -2231,11 +2231,11 @@ scaleToTexture8bitsForDepth(const RectI& roi,
                             U32* output)
 {
     switch (args.srcPremult) {
-        case Natron::eImagePremultiplicationOpaque:
+        case eImagePremultiplicationOpaque:
             scaleToTexture8bitsForPremult<PIX, maxValue, true>(roi, args,viewer, output);
             break;
-        case Natron::eImagePremultiplicationPremultiplied:
-        case Natron::eImagePremultiplicationUnPremultiplied:
+        case eImagePremultiplicationPremultiplied:
+        case eImagePremultiplicationUnPremultiplied:
         default:
             scaleToTexture8bitsForPremult<PIX, maxValue, false>(roi, args,viewer, output);
             break;
@@ -2251,19 +2251,19 @@ scaleToTexture8bits(const RectI& roi,
 {
     assert(output);
     switch ( args.inputImage->getBitDepth() ) {
-        case Natron::eImageBitDepthFloat:
+        case eImageBitDepthFloat:
             scaleToTexture8bitsForDepth<float, 1>(roi, args,viewer, output);
             break;
-        case Natron::eImageBitDepthByte:
+        case eImageBitDepthByte:
             scaleToTexture8bitsForDepth<unsigned char, 255>(roi, args,viewer, output);
             break;
-        case Natron::eImageBitDepthShort:
+        case eImageBitDepthShort:
             scaleToTexture8bitsForDepth<unsigned short, 65535>(roi, args,viewer,output);
             break;
-        case Natron::eImageBitDepthHalf:
+        case eImageBitDepthHalf:
             assert(false);
             break;
-        case Natron::eImageBitDepthNone:
+        case eImageBitDepthNone:
             break;
     }
 } // scaleToTexture8bits
@@ -2299,10 +2299,10 @@ scaleToTexture32bitsGeneric(const RectI& roi,
     const int dstRowElements = args.texRect.w * 4;
 
     
-    Natron::Image::ReadAccess acc = Natron::Image::ReadAccess(args.inputImage.get());
-    boost::shared_ptr<Natron::Image::ReadAccess> matteAcc;
+    Image::ReadAccess acc = Image::ReadAccess(args.inputImage.get());
+    boost::shared_ptr<Image::ReadAccess> matteAcc;
     if (applyMatte) {
-        matteAcc.reset(new Natron::Image::ReadAccess(args.matteImage.get()));
+        matteAcc.reset(new Image::ReadAccess(args.matteImage.get()));
     }
     
     float* dst_pixels =  output + (roi.y1 - args.texRect.y1) * dstRowElements + (roi.x1 - args.texRect.x1) * 4;
@@ -2562,11 +2562,11 @@ scaleToTexture32bitsForPremult(const RectI& roi,
                              float *output)
 {
     switch (args.srcPremult) {
-        case Natron::eImagePremultiplicationOpaque:
+        case eImagePremultiplicationOpaque:
             scaleToTexture32bitsForPremultForComponents<PIX, maxValue, true>(roi, args, output);
             break;
-        case Natron::eImagePremultiplicationPremultiplied:
-        case Natron::eImagePremultiplicationUnPremultiplied:
+        case eImagePremultiplicationPremultiplied:
+        case eImagePremultiplicationUnPremultiplied:
         default:
             scaleToTexture32bitsForPremultForComponents<PIX, maxValue, false>(roi, args, output);
             break;
@@ -2584,19 +2584,19 @@ scaleToTexture32bits(const RectI& roi,
     assert(output);
 
     switch ( args.inputImage->getBitDepth() ) {
-        case Natron::eImageBitDepthFloat:
+        case eImageBitDepthFloat:
             scaleToTexture32bitsForPremult<float, 1>(roi, args, output);
             break;
-        case Natron::eImageBitDepthByte:
+        case eImageBitDepthByte:
             scaleToTexture32bitsForPremult<unsigned char, 255>(roi, args, output);
             break;
-        case Natron::eImageBitDepthShort:
+        case eImageBitDepthShort:
             scaleToTexture32bitsForPremult<unsigned short, 65535>(roi, args, output);
             break;
-        case Natron::eImageBitDepthHalf:
+        case eImageBitDepthHalf:
             assert(false);
             break;
-        case Natron::eImageBitDepthNone:
+        case eImageBitDepthNone:
             break;
     }
 } // scaleToTexture32bits
@@ -2665,7 +2665,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
                                               params->updateOnlyRoi);
         updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;
         
-        boost::shared_ptr<Natron::Node> rotoPaintNode;
+        boost::shared_ptr<Node> rotoPaintNode;
         boost::shared_ptr<RotoStrokeItem> curStroke;
         bool isDrawing;
         instance->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke,&isDrawing);
@@ -2716,7 +2716,7 @@ ViewerInstance::onGammaChanged(double value)
     }
     assert(_imp->uiContext);
     if (changed) {
-        if ( ( (_imp->uiContext->getBitDepth() == Natron::eImageBitDepthByte) || !_imp->uiContext->supportsGLSL() )
+        if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) || !_imp->uiContext->supportsGLSL() )
             && !getApp()->getProject()->isLoadingProject() ) {
             renderCurrentFrame(true);
         } else {
@@ -2748,7 +2748,7 @@ ViewerInstance::onGainChanged(double exp)
     }
     if (changed) {
         assert(_imp->uiContext);
-        if ( ( (_imp->uiContext->getBitDepth() == Natron::eImageBitDepthByte) || !_imp->uiContext->supportsGLSL() )
+        if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) || !_imp->uiContext->supportsGLSL() )
             && !getApp()->getProject()->isLoadingProject() ) {
             renderCurrentFrame(true);
         } else {
@@ -2816,7 +2816,7 @@ ViewerInstance::onColorSpaceChanged(ViewerColorSpaceEnum colorspace)
         _imp->viewerParamsLut = colorspace;
     }
     assert(_imp->uiContext);
-    if ( ( (_imp->uiContext->getBitDepth() == Natron::eImageBitDepthByte) || !_imp->uiContext->supportsGLSL() )
+    if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) || !_imp->uiContext->supportsGLSL() )
         && !getApp()->getProject()->isLoadingProject() ) {
         renderCurrentFrame(true);
     } else {
