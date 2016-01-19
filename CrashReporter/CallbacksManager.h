@@ -85,8 +85,6 @@ public:
     {
         return _instance;
     }
-
-    static void exit(int exitCode = 0);
     
     /**
      * @brief Creates the crash generation server and spawns the actual Natron proces.
@@ -97,7 +95,7 @@ public:
     bool hasReceivedDump() const;
     
     void s_emitDoDumpCallBackOnMainThread(const QString& filePath);
-    void s_emitDoExitCallBackOnMainThread();
+    void s_emitDoExitCallBackOnMainThread(int exitCode, bool exitEvenIfDumpedReceived);
     
     int exec();
 
@@ -107,7 +105,7 @@ public Q_SLOTS:
 
     void onDoDumpOnMainThread(const QString& filePath);
     
-    void onDoExitOnMainThread();
+    void onDoExitOnMainThread(int exitCode, bool exitEvenIfDumpedReceived);
 
     void onCrashDialogFinished();
     
@@ -126,7 +124,7 @@ public Q_SLOTS:
     
 Q_SIGNALS:
 
-    void doExitCallbackOnMainThread();
+    void doExitCallbackOnMainThread(int exitCode, bool exitEvenIfDumpedReceived);
     
     void doDumpCallBackOnMainThread(QString);
 

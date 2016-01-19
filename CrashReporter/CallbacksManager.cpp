@@ -97,55 +97,68 @@ CallbacksManager* CallbacksManager::_instance = 0;
 
 #include "Global/ProcInfo.h"
 
-#define EXIT_APP(code) ( CallbacksManager::exit(code) )
+#define EXIT_APP(code,exitIfDumpReceived) ( CallbacksManager::instance()->s_emitDoExitCallBackOnMainThread(code,exitIfDumpReceived) )
 
 namespace {
 #ifdef NATRON_CRASH_REPORTER_USE_FORK
-    
-    static char*
-    qstringToMallocCharArray(const QString& str)
-    {
-        std::string stdStr = str.toStdString();
-        return strndup(stdStr.c_str(), stdStr.size() + 1);
-    }
-    
-    
-    static void
-    handleChildDeadSignal( int /*signalId*/ )
-    {
-        /*
+
+static char*
+qstringToMallocCharArray(const QString& str)
+{
+    std::string stdStr = str.toStdString();
+    return strndup(stdStr.c_str(), stdStr.size() + 1);
+}
+
+
+static void
+handleChildDeadSignal( int /*signalId*/ )
+{
+    /*
          In Practise this handler is only called on OS X when the Natron application exits.
          On Linux this may be called when ptrace dumper suspends the thread of Natron, hence we handle it
          separately
          */
 #ifdef Q_OS_LINUX
-        
+    int status;
+    pid_t pid = waitpid(WAIT_ANY, &status, WUNTRACED | WNOHANG);
+     if (pid <= 0 || errno == ECHILD) {
+         //The child process is not really finished, this was probably called from breakpad, ignore it
+         return;
+     }
 #endif
-        if (qApp) {
-            qDebug() << "Child process terminated!";
-            EXIT_APP(0);
-        } else {
-            std::exit(1);
-        }
+    if (qApp) {
+        EXIT_APP(0, false);
+    } else {
+        std::exit(1);
     }
-    
-    static void
-    setChildDeadSignal()
-    {
-        struct sigaction sa;
-        sa.sa_flags = 0;
-        sigemptyset(&sa.sa_mask);
-        sa.sa_handler = handleChildDeadSignal;
-        if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-            std::perror("setting up termination signal");
-            std::exit(1);
-        }
+}
+
+static void
+setChildDeadSignal()
+{
+    struct sigaction sa;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = handleChildDeadSignal;
+    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+        std::perror("setting up termination signal");
+        std::exit(1);
     }
-    
+}
+
 #endif // NATRON_CRASH_REPORTER_USE_FORK
 } // anon namespace
 
 
+void dumpRequest_xPlatform(const QString& filePath)
+{
+    CallbacksManager::instance()->s_emitDoDumpCallBackOnMainThread(filePath);
+}
+
+void exitRequest_xPlatform()
+{
+    CallbacksManager::instance()->s_emitDoExitCallBackOnMainThread(0, false);
+}
 
 using namespace google_breakpad;
 
@@ -209,13 +222,6 @@ CallbacksManager::~CallbacksManager() {
 }
 
 void
-CallbacksManager::exit(int exitCode)
-{
-    assert(qApp);
-    qApp->exit(exitCode);
-}
-
-void
 CallbacksManager::initQApplication(int &argc, char** argv)
 {
 #ifdef REPORTER_CLI_ONLY
@@ -260,6 +266,7 @@ static QString getNatronBinaryFilePathFromCrashReporterDirPath(const QString& cr
 bool
 CallbacksManager::hasReceivedDump() const
 {
+    assert(QThread::currentThread() == qApp->thread());
     return _dumpReceived;
 }
 
@@ -559,7 +566,7 @@ CallbacksManager::replyFinished() {
 #endif
     _uploadReply->deleteLater();
     _uploadReply = 0;
-    EXIT_APP(0);
+    EXIT_APP(0, true);
 }
 
 static QString getNetworkErrorString(QNetworkReply::NetworkError e)
@@ -650,7 +657,9 @@ CallbacksManager::replyError(QNetworkReply::NetworkError errCode)
     if (!_uploadReply) {
         return;
     }
-    
+    if (errCode == QNetworkReply::UnknownContentError) {
+        return;
+    }
     
     QFileInfo finfo(_dumpFilePath);
     if (!finfo.exists()) {
@@ -686,7 +695,7 @@ CallbacksManager::replyError(QNetworkReply::NetworkError errCode)
     _uploadReply->deleteLater();
     _uploadReply = 0;
     
-    EXIT_APP(0);
+    EXIT_APP(0, true);
 }
 
 void
@@ -743,7 +752,7 @@ CallbacksManager::onCrashDialogFinished()
         uploadFileToRepository(_dialog->getOriginalDumpFilePath(),_dialog->getDescription());
     } else {
         _dialog->deleteLater();
-        EXIT_APP(0);
+        EXIT_APP(0, true);
     }
 
 #endif
@@ -759,16 +768,16 @@ CallbacksManager::s_emitDoDumpCallBackOnMainThread(const QString& filePath)
 }
 
 void
-CallbacksManager::s_emitDoExitCallBackOnMainThread()
+CallbacksManager::s_emitDoExitCallBackOnMainThread(int exitCode, bool exitEvenIfDumpedReceived)
 {
-    Q_EMIT doExitCallbackOnMainThread();
+    Q_EMIT doExitCallbackOnMainThread(exitCode,exitEvenIfDumpedReceived);
 }
 
 void
-CallbacksManager::onDoExitOnMainThread()
+CallbacksManager::onDoExitOnMainThread(int exitCode, bool exitEvenIfDumpedReceived)
 {
-    if (!CallbacksManager::instance()->hasReceivedDump()) {
-        EXIT_APP(0);
+    if (!CallbacksManager::instance()->hasReceivedDump() || exitEvenIfDumpedReceived) {
+        qApp->exit(exitCode);
     }
 }
 
@@ -811,15 +820,7 @@ s2ws(const std::string & s)
 }
 
 
-void dumpRequest_xPlatform(const QString& filePath)
-{
-    CallbacksManager::instance()->s_emitDoDumpCallBackOnMainThread(filePath);
-}
 
-void exitRequest_xPlatform()
-{
-    CallbacksManager::instance()->s_emitDoExitCallBackOnMainThread();
-}
 
 
 #if defined(Q_OS_MAC)
@@ -986,7 +987,7 @@ CallbacksManager::initCrashGenerationServer()
 #endif
     
     QObject::connect(this, SIGNAL(doDumpCallBackOnMainThread(QString)), this, SLOT(onDoDumpOnMainThread(QString)));
-    QObject::connect(this, SIGNAL(doExitCallbackOnMainThread()), this, SLOT(onDoExitOnMainThread()));
+    QObject::connect(this, SIGNAL(doExitCallbackOnMainThread(int,bool)), this, SLOT(onDoExitOnMainThread(int,bool)));
 
 #ifdef Q_OS_LINUX
     if (!google_breakpad::CrashGenerationServer::CreateReportChannel(&_serverFD, &_clientFD)) {
