@@ -3629,7 +3629,7 @@ ViewerCurrentFrameRequestRendererBackup::run()
                 if (!_imp->requestsQueue.empty()) {
                     hasRequest = true;
                     firstRequest = _imp->requestsQueue.front();
-                    if (!firstRequest->viewer) {
+                    if (!firstRequest || !firstRequest->viewer) {
                         hasRequest = false;
                     }
                     _imp->requestsQueue.pop_front();
