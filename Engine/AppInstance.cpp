@@ -991,14 +991,24 @@ AppInstance::createNodeInternal(const QString & pluginID,
     
     if (createGui) {
         // createNodeGui also sets the filename parameter for reader or writers
-        createNodeGui(node,
-                      multiInstanceParent,
-                      requestedByLoad,
-                      autoConnect,
-                      userEdited,
-                      xPosHint,
-                      yPosHint,
-                      pushUndoRedoCommand);
+        try {
+            createNodeGui(node,
+                          multiInstanceParent,
+                          requestedByLoad,
+                          autoConnect,
+                          userEdited,
+                          xPosHint,
+                          yPosHint,
+                          pushUndoRedoCommand);
+        } catch (const std::exception& e) {
+            node->destroyNode(false);
+            std::string title("Error while creating node");
+            std::string message = title + " " + foundPluginID + ": " + e.what();
+            qDebug() << message.c_str();
+            errorDialog(title, message, false);
+            
+            return boost::shared_ptr<Natron::Node>();
+        }
     }
     
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
