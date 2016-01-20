@@ -282,7 +282,7 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     {
         QSettings settings(NATRON_ORGANIZATION_NAME,NATRON_APPLICATION_NAME);
         if ( !settings.contains("checkForUpdates") ) {
-            StandardButtonEnum reply = natronQuestionDialog(tr("Updates").toStdString(),
+            StandardButtonEnum reply = Dialogs::questionDialog(tr("Updates").toStdString(),
                                                                       tr("Do you want " NATRON_APPLICATION_NAME " to check for updates "
                                                                       "on launch of the application ?").toStdString(), false);
             bool checkForUpdates = reply == eStandardButtonYes;
@@ -296,7 +296,7 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     }
     
     if (nSettings->isDefaultAppearanceOutdated()) {
-        StandardButtonEnum reply = natronQuestionDialog(tr("Appearance").toStdString(),
+        StandardButtonEnum reply = Dialogs::questionDialog(tr("Appearance").toStdString(),
                                                                   tr(NATRON_APPLICATION_NAME " default appearance changed since last version.\n"
                                                                      "Would you like to set the new default appearance?").toStdString(), false);
         if (reply == eStandardButtonYes) {
@@ -376,7 +376,7 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
             ///remove any file open event that might have occured
             appPTR->setFileToOpen("");
         } else {
-            natronErrorDialog(tr("Invalid file").toStdString(),
+            Dialogs::errorDialog(tr("Invalid file").toStdString(),
                                 tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString());
             execOnProjectCreatedCallback();
         }
@@ -423,7 +423,7 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
     
     appPTR->hideSplashScreen();
     
-    StandardButtonEnum ret = natronQuestionDialog(tr("Auto-save").toStdString(),
+    StandardButtonEnum ret = Dialogs::questionDialog(tr("Auto-save").toStdString(),
                                                             text.toStdString(),false, StandardButtons(eStandardButtonYes | eStandardButtonNo),
                                                             eStandardButtonYes);
     if ( (ret == eStandardButtonNo) || (ret == eStandardButtonEscape) ) {
@@ -820,7 +820,7 @@ GuiAppInstance::startRenderingFullSequence(bool enableRenderStats,const AppInsta
             lastFrame = projectLast;
         }
         if (firstFrame > lastFrame) {
-            natronErrorDialog( w.writer->getNode()->getLabel_mt_safe(),
+            Dialogs::errorDialog( w.writer->getNode()->getLabel_mt_safe(),
                                 tr("First frame in the sequence is greater than the last frame").toStdString(), false );
 
             return;
@@ -866,10 +866,10 @@ GuiAppInstance::startRenderingFullSequence(bool enableRenderStats,const AppInsta
                 _imp->_activeBgProcesses.push_back(process);
             }
         } catch (const std::exception & e) {
-            natronErrorDialog( w.writer->getNode()->getLabel(),
+            Dialogs::errorDialog( w.writer->getNode()->getLabel(),
                                 tr("Error while starting rendering").toStdString() + ": " + e.what(), false );
         } catch (...) {
-            natronErrorDialog( w.writer->getNode()->getLabel(),
+            Dialogs::errorDialog( w.writer->getNode()->getLabel(),
                                 tr("Error while starting rendering").toStdString(),false  );
         }
     } else {
@@ -1074,7 +1074,7 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     std::string script = ss.str();
     std::string err;
     _imp->declareAppAndParamsString = script;
-    bool ok = interpretPythonScript(script, &err, 0);
+    bool ok = Python::interpretPythonScript(script, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("GuiAppInstance::declareCurrentAppVariable_Python() failed!");
@@ -1285,11 +1285,11 @@ void
 GuiAppInstance::handleFileOpenEvent(const std::string &filename)
 {
     QString fileCopy(filename.c_str());
-    QString ext = removeFileExtension(fileCopy);
+    QString ext = QtCompat::removeFileExtension(fileCopy);
     if (ext == NATRON_PROJECT_FILE_EXT) {
         AppInstance* app = getGui()->openProject(filename);
         if (!app) {
-            natronErrorDialog(tr("Project").toStdString(), tr("Failed to open project").toStdString() + ' ' + filename);
+            Dialogs::errorDialog(tr("Project").toStdString(), tr("Failed to open project").toStdString() + ' ' + filename);
         }
     } else {
         appPTR->handleImageFileOpenRequest(filename);
@@ -1534,7 +1534,7 @@ GuiAppInstance::goToPreviousKeyframe()
     std::list<SequenceTime>::iterator lowerBound = std::lower_bound(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), currentFrame);
     if ( lowerBound != _imp->timelineKeyframes.begin() ) {
         --lowerBound;
-        timeline->seekFrame(*lowerBound, true, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+        timeline->seekFrame(*lowerBound, true, NULL, eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -1549,7 +1549,7 @@ GuiAppInstance::goToNextKeyframe()
     SequenceTime currentFrame = timeline->currentFrame();
     std::list<SequenceTime>::iterator upperBound = std::upper_bound(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), currentFrame);
     if ( upperBound != _imp->timelineKeyframes.end() ) {
-        timeline->seekFrame(*upperBound, true, NULL, Natron::eTimelineChangeReasonPlaybackSeek);
+        timeline->seekFrame(*upperBound, true, NULL, eTimelineChangeReasonPlaybackSeek);
     }
 }
 

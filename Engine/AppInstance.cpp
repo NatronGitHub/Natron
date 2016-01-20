@@ -346,7 +346,7 @@ AppInstance::newVersionCheckDownloaded()
 
             }
         
-            natronInformationDialog( "New version", text.toStdString(), true );
+            Dialogs::informationDialog( "New version", text.toStdString(), true );
     }
     downloader->deleteLater();
 }
@@ -422,10 +422,10 @@ AppInstance::createWriter(const std::string& filename,
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
     
     QString fileCpy(filename.c_str());
-    std::string ext = removeFileExtension(fileCpy).toLower().toStdString();
+    std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
     std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
     if ( found == writersForFormat.end() ) {
-        natronErrorDialog( tr("Writer").toStdString(),
+        Dialogs::errorDialog( tr("Writer").toStdString(),
                             tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString(),false );
         return NodePtr();
     }
@@ -557,14 +557,14 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     addToPythonPath += "\")\n";
     
     std::string err;
-    bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
+    bool ok  = Python::interpretPythonScript(addToPythonPath, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("AppInstance::loadPythonScript(" + file.path().toStdString() + "): interpretPythonScript("+addToPythonPath+" failed!");
     }
 
     std::string s = "app = app1\n";
-    ok = interpretPythonScript(s, &err, 0);
+    ok = Python::interpretPythonScript(s, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("AppInstance::loadPythonScript(" + file.path().toStdString() + "): interpretPythonScript("+s+" failed!");
@@ -612,9 +612,9 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         std::string output;
         FlagSetter flag(true, &_imp->_creatingGroup, &_imp->creatingGroupMutex);
         CreatingNodeTreeFlag_RAII createNodeTree(this);
-        if (!interpretPythonScript(ss.str(), &err, &output)) {
+        if (!Python::interpretPythonScript(ss.str(), &err, &output)) {
             if (!err.empty()) {
-                natronErrorDialog(tr("Python").toStdString(), err);
+                Dialogs::errorDialog(tr("Python").toStdString(), err);
             }
             return false;
         } else {
@@ -632,7 +632,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         QFile f(file.absoluteFilePath());
         PyRun_SimpleString(content.toStdString().c_str());
         
-        PyObject* mainModule = getMainModule();
+        PyObject* mainModule = Python::getMainModule();
         std::string error;
         ///Gui session, do stdout, stderr redirection
         PyObject *errCatcher = 0;
@@ -647,7 +647,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         if (errCatcher) {
             errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
             assert(errorObj);
-            error = PY3String_asString(errorObj);
+            error = Python::PY3String_asString(errorObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(errCatcher, "value", unicode);
             Py_DECREF(errorObj);
@@ -740,8 +740,8 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         ss << ")\n";
         std::string err;
         std::string output;
-        if (!interpretPythonScript(ss.str(), &err, &output)) {
-            natronErrorDialog(tr("Group plugin creation error").toStdString(), err);
+        if (!Python::interpretPythonScript(ss.str(), &err, &output)) {
+            Dialogs::errorDialog(tr("Group plugin creation error").toStdString(), err);
             containerNode->destroyNode(false);
             return node;
         } else {
@@ -772,7 +772,7 @@ AppInstance::setGroupLabelIDAndVersion(const boost::shared_ptr<Node>& node,
 {
     std::string pluginID,pluginLabel,iconFilePath,pluginGrouping,description;
     unsigned int version;
-    if (getGroupInfos(pythonModulePath.toStdString(),pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &version)) {
+    if (Python::getGroupInfos(pythonModulePath.toStdString(),pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &version)) {
         node->setPluginIconFilePath(iconFilePath);
         node->setPluginDescription(description);
         node->setPluginIDAndVersionForGui(pluginLabel, pluginID, version);
@@ -860,7 +860,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
         try {
             plugin = appPTR->getPluginBinaryFromOldID(pluginID, majorVersion, minorVersion);
         } catch (const std::exception& e2) {
-            natronErrorDialog(tr("Plugin error").toStdString(),
+            Dialogs::errorDialog(tr("Plugin error").toStdString(),
                                 tr("Cannot load plugin executable").toStdString() + ": " + e2.what(), false );
             return node;
         }
@@ -883,7 +883,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
         try {
             return createNodeFromPythonModule(plugin, group, requestedByLoad, userEdited, serialization);
         } catch (const std::exception& e) {
-            natronErrorDialog(tr("Plugin error").toStdString(),
+            Dialogs::errorDialog(tr("Plugin error").toStdString(),
                                 tr("Cannot create PyPlug:").toStdString()+ e.what(), false );
             return node;
         }
@@ -925,7 +925,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
         boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
         if (foundPluginID.find("uk.co.thefoundry.furnace") != std::string::npos &&
             (settings->useGlobalThreadPool() || settings->getNumberOfParallelRenders() != 1)) {
-            StandardButtonEnum reply = natronQuestionDialog(tr("Warning").toStdString(),
+            StandardButtonEnum reply = Dialogs::questionDialog(tr("Warning").toStdString(),
                                                                   tr("The settings of the application are currently set to use "
                                                                      "the global thread-pool for rendering effects. The Foundry Furnace "
                                                                      "is known not to work well when this setting is checked. "
@@ -942,7 +942,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
             if (!grouping.isEmpty() && grouping[0] == PLUGIN_GROUP_MULTIVIEW) {
                 int nbViews = getProject()->getProjectViewsCount();
                 if (nbViews < 2) {
-                    StandardButtonEnum reply = natronQuestionDialog(tr("Multi-View").toStdString(),
+                    StandardButtonEnum reply = Dialogs::questionDialog(tr("Multi-View").toStdString(),
                                                                               tr("Using a multi-view node requires the project settings to be setup "
                                                                                  "for multi-view. Would you like to setup the project for stereo?").toStdString(), false);
                     if (reply == eStandardButtonYes) {
@@ -1016,7 +1016,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                     modulePath = pythonModulePath.mid(0,foundLastSlash + 1);
                     moduleName = pythonModulePath.remove(0,foundLastSlash + 1);
                 }
-                removeFileExtension(moduleName);
+                QtCompat::removeFileExtension(moduleName);
                 setGroupLabelIDAndVersion(node, modulePath, moduleName);
             }
         } else if (!requestedByLoad && !_imp->_creatingGroup && userEdited) {
@@ -1401,7 +1401,7 @@ AppInstance::declareCurrentAppVariable_Python()
     std::string script = ss.str();
     std::string err;
     
-    bool ok = interpretPythonScript(script, &err, 0);
+    bool ok = Python::interpretPythonScript(script, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("AppInstance::declareCurrentAppVariable_Python() failed!");
@@ -1409,7 +1409,7 @@ AppInstance::declareCurrentAppVariable_Python()
 
     if (appPTR->isBackground()) {
         std::string err;
-        ok = interpretPythonScript("app = app1\n", &err, 0);
+        ok = Python::interpretPythonScript("app = app1\n", &err, 0);
         assert(ok);
     }
 }
@@ -1464,7 +1464,7 @@ AppInstance::execOnProjectCreatedCallback()
     std::vector<std::string> args;
     std::string error;
     try {
-        getFunctionArguments(cb, &error, &args);
+        Python::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
         appendToScriptEditor(std::string("Failed to run onProjectCreated callback: ")
                                                          + e.what());
@@ -1494,7 +1494,7 @@ AppInstance::execOnProjectCreatedCallback()
     script = script + "\n" + cb + "(" + appID + ")\n";
     std::string err;
     std::string output;
-    if (!interpretPythonScript(script, &err, &output)) {
+    if (!Python::interpretPythonScript(script, &err, &output)) {
         appendToScriptEditor("Failed to run onProjectCreated callback: " + err);
     } else {
         if (!output.empty()) {

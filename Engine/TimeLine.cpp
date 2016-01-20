@@ -57,9 +57,9 @@ void
 TimeLine::seekFrame(SequenceTime frame,
                     bool updateLastCaller,
                     OutputEffectInstance* caller,
-                    Natron::TimelineChangeReasonEnum reason)
+                    TimelineChangeReasonEnum reason)
 {
-    if (reason != Natron::eTimelineChangeReasonPlaybackSeek) {
+    if (reason != eTimelineChangeReasonPlaybackSeek) {
         Q_EMIT frameAboutToChange();
     }
     bool changed = false;
@@ -89,7 +89,7 @@ TimeLine::incrementCurrentFrame()
         frame = _currentFrame;
     }
 
-    Q_EMIT frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
+    Q_EMIT frameChanged(frame, (int)eTimelineChangeReasonPlaybackSeek);
 }
 
 void
@@ -102,7 +102,7 @@ TimeLine::decrementCurrentFrame()
         frame = _currentFrame;
     }
 
-    Q_EMIT frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
+    Q_EMIT frameChanged(frame, (int)eTimelineChangeReasonPlaybackSeek);
 }
 
 void
@@ -123,7 +123,7 @@ TimeLine::onFrameChanged(SequenceTime frame)
     if (changed) {
         /*This function is called in response to a signal emitted by a single timeline gui, but we also
            need to sync all the other timelines potentially existing.*/
-        Q_EMIT frameChanged(frame, (int)Natron::eTimelineChangeReasonUserSeek);
+        Q_EMIT frameChanged(frame, (int)eTimelineChangeReasonUserSeek);
     }
 }
 

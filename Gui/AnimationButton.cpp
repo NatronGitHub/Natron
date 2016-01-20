@@ -71,7 +71,7 @@ AnimationButton::keyPressEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Control) {
         QPixmap p;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
+        appPTR->getIcon(NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
         QCursor c(p);
         setCursor(c);
     }
@@ -83,7 +83,7 @@ AnimationButton::keyReleaseEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Control) {
         QPixmap p;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_CURSOR, &p);
+        appPTR->getIcon(NATRON_PIXMAP_LINK_CURSOR, &p);
         QCursor c(p);
         setCursor(c);
     }
@@ -211,9 +211,9 @@ AnimationButton::enterEvent(QEvent* /*e*/)
         QPixmap p;
         Qt::KeyboardModifiers modifiers = qApp->keyboardModifiers();
         if (modifiers.testFlag(Qt::ControlModifier)) {
-            appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
+            appPTR->getIcon(NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
         } else {
-            appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_CURSOR, &p);
+            appPTR->getIcon(NATRON_PIXMAP_LINK_CURSOR, &p);
         }
         QCursor c(p);
         setCursor(c);

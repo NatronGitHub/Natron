@@ -144,7 +144,7 @@ struct ViewerGL::Implementation
     QStringList persistentMessages;
     int persistentMessageType;
     bool displayPersistentMessage;
-    Natron::TextRenderer textRenderer;
+    TextRenderer textRenderer;
     
     
     QPoint lastMousePosition; //< in widget coordinates
@@ -198,7 +198,7 @@ struct ViewerGL::Implementation
     
     QSize sizeH;
 
-    Natron::PenType pointerTypeOnPress;
+    PenType pointerTypeOnPress;
     bool subsequentMousePressIsTablet;
     double pressureOnPress, pressureOnRelease;
 

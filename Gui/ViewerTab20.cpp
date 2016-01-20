@@ -156,7 +156,7 @@ ViewerTab::drawOverlays(double time,
 bool
 ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Node>& node,
                                           const RenderScale & renderScale,
-                                          Natron::PenType pen,
+                                          PenType pen,
                                           bool isTabletEvent,
                                           const QPointF & viewportPos,
                                           const QPointF & pos,
@@ -258,7 +258,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Node>& node,
 
 bool
 ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
-                                 Natron::PenType pen,
+                                 PenType pen,
                                  bool isTabletEvent,
                                  const QPointF & viewportPos,
                                  const QPointF & pos,
@@ -674,8 +674,8 @@ bool
 ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Node>& node,
                                           const RenderScale & renderScale,
                                           QKeyEvent* e,
-                                          Natron::Key k,
-                                          Natron::KeyboardModifiers km)
+                                          Key k,
+                                          KeyboardModifiers km)
 {
     
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
@@ -752,8 +752,8 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     
    
     
-    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
-    Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     
     std::list<boost::shared_ptr<Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
@@ -872,8 +872,8 @@ bool
 ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Node>& node,
                                             const RenderScale & renderScale,
                                             QKeyEvent* e,
-                                            Natron::Key k,
-                                            Natron::KeyboardModifiers km)
+                                            Key k,
+                                            KeyboardModifiers km)
 {
     int view = getCurrentView();
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
@@ -931,8 +931,8 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
         return false;
     }
     
-    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
-    Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     
     std::list<boost::shared_ptr<Node> >  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);

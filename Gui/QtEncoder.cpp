@@ -51,7 +51,7 @@ NATRON_NAMESPACE_ENTER;
 
 QtWriter::QtWriter(boost::shared_ptr<Node> node)
     : OutputEffectInstance(node)
-      , _lut( Natron::Color::LutManager::sRGBLut() )
+      , _lut( Color::LutManager::sRGBLut() )
 {
 }
 
@@ -132,7 +132,7 @@ QtWriter::getFrameRange(double *first,
 void
 QtWriter::initializeKnobs()
 {
-    natronWarningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developpers team to test %1"
+    Dialogs::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developpers team to test %1"
                                                   ". You cannot use it to render a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 
@@ -270,7 +270,7 @@ QtWriter::render(const RenderActionArgs& args)
     Image::WriteAccess acc = output.second->getWriteRights();
 
     _lut->to_byte_packed(buf, (const float*)acc.pixelAt(0, 0), args.roi, src->getBounds(), args.roi,
-                         Natron::Color::ePixelPackingRGBA, Natron::Color::ePixelPackingBGRA, true, premult);
+                         Color::ePixelPackingRGBA, Color::ePixelPackingBGRA, true, premult);
 
     QImage img(buf,args.roi.width(),args.roi.height(),type);
     std::string filename = _fileKnob->getValue();

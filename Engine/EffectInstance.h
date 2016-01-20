@@ -460,9 +460,9 @@ public:
      * eSequentialPreferencePreferSequential: This indicates that the effect would work better by rendering sequential. This is merely
      * a hint to Natron but for now we just consider it as eSequentialPreferenceNotSequential.
      **/
-    virtual Natron::SequentialPreferenceEnum getSequentialPreference() const
+    virtual SequentialPreferenceEnum getSequentialPreference() const
     {
-        return Natron::eSequentialPreferenceNotSequential;
+        return eSequentialPreferenceNotSequential;
     }
 
     enum RenderRoIRetCode
@@ -549,7 +549,7 @@ public:
                                   bool isAnalysis,
                                   bool isDuringPaintStrokeCreation,
                                   const std::list<boost::shared_ptr<Node> > & rotoPaintNodes,
-                                  Natron::RenderSafetyEnum currentThreadSafety,
+                                  RenderSafetyEnum currentThreadSafety,
                                   bool doNanHandling,
                                   bool draftMode,
                                   bool viewerProgressReportEnabled,
@@ -863,7 +863,7 @@ public:
      * RenderSafetyEnum::eRenderSafetyFullySafe - indicating that any instance of a plugin can have multiple renders running simultaneously
      * RenderSafetyEnum::eRenderSafetyFullySafeFrame - Same as eRenderSafetyFullySafe but the plug-in also flagged  kOfxImageEffectPluginPropHostFrameThreading to true.
      **/
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const WARN_UNUSED_RETURN = 0;
+    virtual RenderSafetyEnum renderThreadSafety() const WARN_UNUSED_RETURN = 0;
 
     /*@brief The derived class should query this to abort any long process
        in the engine function.*/
@@ -1062,7 +1062,7 @@ public:
      * case the function may return false if the user pressed the 'No' button.
      * @param content The message you want to pass.
      **/
-    bool message(Natron::MessageTypeEnum type, const std::string & content) const;
+    bool message(MessageTypeEnum type, const std::string & content) const;
 
     /**
      * @brief Use this function to post a persistent message to the user. It will be displayed on the
@@ -1072,7 +1072,7 @@ public:
      * eMessageTypeError : you want to inform the user an error occured.
      * @param content The message you want to pass.
      **/
-    void setPersistentMessage(Natron::MessageTypeEnum type, const std::string & content);
+    void setPersistentMessage(MessageTypeEnum type, const std::string & content);
 
     /**
      * @brief Test if a persistent message is set.
@@ -1140,7 +1140,7 @@ public:
 
     virtual PluginOpenGLRenderSupport supportsOpenGLRender() const
     {
-        return Natron::ePluginOpenGLRenderSupportNone;
+        return ePluginOpenGLRenderSupportNone;
     }
 
     /**
@@ -1413,11 +1413,11 @@ bool onOverlayPenDown_public(double time, const RenderScale & renderScale, int v
 
     bool onOverlayPenUp_public(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyDown_public(double time, const RenderScale & renderScale, int view, Natron::Key key, Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyDown_public(double time, const RenderScale & renderScale, int view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyUp_public(double time, const RenderScale & renderScale, int view, Natron::Key key, Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyUp_public(double time, const RenderScale & renderScale, int view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyRepeat_public(double time, const RenderScale & renderScale, int view, Natron::Key key, Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyRepeat_public(double time, const RenderScale & renderScale, int view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
     bool onOverlayFocusGained_public(double time, const RenderScale & renderScale, int view) WARN_UNUSED_RETURN;
 
@@ -1716,8 +1716,8 @@ protected:
     virtual bool onOverlayKeyDown(double /*time*/,
                                   const RenderScale & /*renderScale*/,
                                   int /*view*/,
-                                  Natron::Key /*key*/,
-                                  Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+                                  Key /*key*/,
+                                  KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -1725,8 +1725,8 @@ protected:
     virtual bool onOverlayKeyUp(double /*time*/,
                                 const RenderScale & /*renderScale*/,
                                 int /*view*/,
-                                Natron::Key /*key*/,
-                                Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+                                Key /*key*/,
+                                KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -1734,8 +1734,8 @@ protected:
     virtual bool onOverlayKeyRepeat(double /*time*/,
                                     const RenderScale & /*renderScale*/,
                                     int /*view*/,
-                                    Natron::Key /*key*/,
-                                    Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+                                    Key /*key*/,
+                                    KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -1795,7 +1795,7 @@ private:
      **/
     RenderRoIStatusEnum renderRoIInternal(double time,
                                           const ParallelRenderArgs & frameArgs,
-                                          Natron::RenderSafetyEnum safety,
+                                          RenderSafetyEnum safety,
                                           unsigned int mipMapLevel,
                                           int view,
                                           const RectD & rod, //!< rod in canonical coordinates

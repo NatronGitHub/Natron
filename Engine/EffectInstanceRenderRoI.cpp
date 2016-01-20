@@ -1370,7 +1370,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             ///locks belongs to an instance)
 
             boost::shared_ptr<QMutexLocker> locker;
-            Natron::RenderSafetyEnum safety = tls->frameArgs.currentThreadSafety;
+            RenderSafetyEnum safety = tls->frameArgs.currentThreadSafety;
             if (safety == eRenderSafetyInstanceSafe) {
                 locker.reset( new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() ) );
             } else if (safety == eRenderSafetyUnsafe) {
@@ -1574,7 +1574,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 EffectInstance::RenderRoIStatusEnum
 EffectInstance::renderRoIInternal(double time,
                                   const ParallelRenderArgs & frameArgs,
-                                  Natron::RenderSafetyEnum safety,
+                                  RenderSafetyEnum safety,
                                   unsigned int mipMapLevel,
                                   int view,
                                   const RectD & rod, //!< effect rod in canonical coords
@@ -1673,7 +1673,7 @@ EffectInstance::renderRoIInternal(double time,
     bool callBegin = false;
 
     /// call beginsequenceRender here if the render is sequential
-    Natron::SequentialPreferenceEnum pref = getSequentialPreference();
+    SequentialPreferenceEnum pref = getSequentialPreference();
     if ( !isWriter() || (pref == eSequentialPreferenceNotSequential) ) {
         callBegin = true;
     }

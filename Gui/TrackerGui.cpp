@@ -118,14 +118,14 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     _imp->buttonsLayout->setContentsMargins(3, 2, 0, 0);
 
     QPixmap pixAdd;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ADD_TRACK,&pixAdd);
+    appPTR->getIcon(NATRON_PIXMAP_ADD_TRACK,&pixAdd);
     
     _imp->addTrackButton = new Button(QIcon(pixAdd),"",_imp->buttonsBar);
     _imp->addTrackButton->setCheckable(true);
     _imp->addTrackButton->setChecked(false);
     _imp->addTrackButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->addTrackButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    _imp->addTrackButton->setToolTip(Natron::convertFromPlainText(tr("When enabled you can add new tracks "
+    _imp->addTrackButton->setToolTip(GuiUtils::convertFromPlainText(tr("When enabled you can add new tracks "
                                                                  "by clicking on the Viewer. "
                                                                  "Holding the Control + Alt keys is the "
                                                                  "same as pressing this button."),
@@ -134,18 +134,18 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     QObject::connect( _imp->addTrackButton, SIGNAL( clicked(bool) ), this, SLOT( onAddTrackClicked(bool) ) );
     QPixmap pixPrev,pixNext,pixClearAll,pixClearBw,pixClearFw,pixUpdateViewerEnabled,pixUpdateViewerDisabled,pixStop;
     QPixmap bwEnabled,bwDisabled,fwEnabled,fwDisabled;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_REWIND_DISABLED, &bwDisabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_REWIND_ENABLED, &bwEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PREVIOUS, &pixPrev);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_NEXT, &pixNext);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY_DISABLED, &fwDisabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY_ENABLED, &fwEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION, &pixClearAll);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION, &pixClearBw);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION, &pixClearFw);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE, &pixUpdateViewerEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_REFRESH, &pixUpdateViewerDisabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_STOP, &pixStop);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_DISABLED, &bwDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_ENABLED, &bwEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS, &pixPrev);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT, &pixNext);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_DISABLED, &fwDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ENABLED, &fwEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_CLEAR_ALL_ANIMATION, &pixClearAll);
+    appPTR->getIcon(NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION, &pixClearBw);
+    appPTR->getIcon(NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION, &pixClearFw);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE, &pixUpdateViewerEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, &pixUpdateViewerDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP, &pixStop);
 
     QIcon bwIcon;
     bwIcon.addPixmap(bwEnabled,QIcon::Normal,QIcon::On);
@@ -201,21 +201,21 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     _imp->clearAllAnimationButton = new Button(QIcon(pixClearAll),"",_imp->buttonsBar);
     _imp->clearAllAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearAllAnimationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    _imp->clearAllAnimationButton->setToolTip(Natron::convertFromPlainText(tr("Clear all animation for selected tracks."), Qt::WhiteSpaceNormal));
+    _imp->clearAllAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear all animation for selected tracks."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearAllAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearAllAnimationClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->clearAllAnimationButton);
 
     _imp->clearBwAnimationButton = new Button(QIcon(pixClearBw),"",_imp->buttonsBar);
     _imp->clearBwAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearBwAnimationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    _imp->clearBwAnimationButton->setToolTip(Natron::convertFromPlainText(tr("Clear animation backward from the current frame."), Qt::WhiteSpaceNormal));
+    _imp->clearBwAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear animation backward from the current frame."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearBwAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearBwAnimationClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->clearBwAnimationButton);
 
     _imp->clearFwAnimationButton = new Button(QIcon(pixClearFw),"",_imp->buttonsBar);
     _imp->clearFwAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearFwAnimationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    _imp->clearFwAnimationButton->setToolTip(Natron::convertFromPlainText(tr("Clear animation forward from the current frame."), Qt::WhiteSpaceNormal));
+    _imp->clearFwAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear animation forward from the current frame."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearFwAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearFwAnimationClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->clearFwAnimationButton);
 
@@ -228,7 +228,7 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     _imp->updateViewerButton->setCheckable(true);
     _imp->updateViewerButton->setChecked(true);
     _imp->updateViewerButton->setDown(true);
-    _imp->updateViewerButton->setToolTip(Natron::convertFromPlainText(tr("Update viewer during tracking for each frame instead of just the tracks."), Qt::WhiteSpaceNormal));
+    _imp->updateViewerButton->setToolTip(GuiUtils::convertFromPlainText(tr("Update viewer during tracking for each frame instead of just the tracks."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->updateViewerButton,SIGNAL( clicked(bool) ),this,SLOT( onUpdateViewerClicked(bool) ) );
     _imp->buttonsLayout->addWidget(_imp->updateViewerButton);
 
@@ -526,8 +526,8 @@ TrackerGui::keyDown(double time,
         ++_imp->controlDown;
     }
 
-    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
-    Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
     for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
@@ -601,8 +601,8 @@ TrackerGui::keyUp(double time,
         }
     }
 
-    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
-    Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
     for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         

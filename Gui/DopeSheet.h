@@ -116,7 +116,7 @@ bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui);
  *
  * -- Item types --
  *
- * Remember, the Natron::DopeSheetItemType enum describes each possible type for a
+ * Remember, the DopeSheetItemType enum describes each possible type for a
  * context.
  *
  * A DSNode stores this type because the dope sheet editor treats some types
@@ -138,7 +138,7 @@ class DSNode
 {
 public:
     DSNode(DopeSheet *model,
-           Natron::DopeSheetItemType itemType,
+           DopeSheetItemType itemType,
            const boost::shared_ptr<NodeGui> &nodeGui,
            QTreeWidgetItem *nameItem);
     ~DSNode();
@@ -150,7 +150,7 @@ public:
     
     const DSTreeItemKnobMap& getItemKnobMap() const;
     
-    Natron::DopeSheetItemType getItemType() const;
+    DopeSheetItemType getItemType() const;
     
     bool isTimeNode() const;
     
@@ -403,7 +403,7 @@ Q_SIGNALS:
     void keyframeSetOrRemoved(DSKnob *dsKnob);
 
 private: /* functions */
-    boost::shared_ptr<DSNode> createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, Natron::DopeSheetItemType itemType);
+    boost::shared_ptr<DSNode> createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, DopeSheetItemType itemType);
 
 private Q_SLOTS:
     void onNodeNameChanged(const QString &name);

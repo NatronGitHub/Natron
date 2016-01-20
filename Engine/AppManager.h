@@ -194,12 +194,58 @@ public:
     bool getImageOrCreate_diskCache(const ImageKey & key,const boost::shared_ptr<ImageParams>& params,
                           boost::shared_ptr<Image>* returnValue) const;
     
+    static bool
+    getImageFromCache(const ImageKey & key,
+                            std::list<boost::shared_ptr<Image> >* returnValue)
+    {
+        return appPTR->getImage(key, returnValue);
+    }
+
+    static bool
+    getImageFromCacheOrCreate(const ImageKey & key,
+                                    const boost::shared_ptr<ImageParams>& params,
+                                    boost::shared_ptr<Image>* returnValue)
+    {
+        return appPTR->getImageOrCreate(key,params, returnValue);
+    }
+
+    static bool
+    getImageFromDiskCache(const ImageKey & key,
+                                std::list<boost::shared_ptr<Image> >* returnValue)
+    {
+        return appPTR->getImage_diskCache(key, returnValue);
+    }
+
+    static bool
+    getImageFromDiskCacheOrCreate(const ImageKey & key,
+                                        const boost::shared_ptr<ImageParams>& params,
+                                        boost::shared_ptr<Image>* returnValue)
+    {
+        return appPTR->getImageOrCreate_diskCache(key,params, returnValue);
+    }
+
 
     bool getTexture(const FrameKey & key,
                     boost::shared_ptr<FrameEntry>* returnValue) const;
 
     bool getTextureOrCreate(const FrameKey & key,const boost::shared_ptr<FrameParams>& params,
                             boost::shared_ptr<FrameEntry>* returnValue) const;
+
+    static bool
+    getTextureFromCache(const FrameKey & key,
+                              boost::shared_ptr<FrameEntry>* returnValue)
+    {
+        return appPTR->getTexture(key,returnValue);
+    }
+
+    static bool
+    getTextureFromCacheOrCreate(const FrameKey & key,
+                                      const boost::shared_ptr<FrameParams> &params,
+                                      boost::shared_ptr<FrameEntry>* returnValue)
+    {
+        return appPTR->getTextureOrCreate(key,params, returnValue);
+    }
+
 
     U64 getCachesTotalMemorySize() const;
 
@@ -230,6 +276,17 @@ public:
 
     boost::shared_ptr<Settings> getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;
+
+    template <class K>
+    static
+    boost::shared_ptr<K> createKnob(KnobHolder*  holder,
+                                    const std::string &label,
+                                    int dimension = 1,
+                                    bool declaredByPlugin = true)
+    {
+        return appPTR->getKnobFactory().createKnob<K>(holder, label, dimension, declaredByPlugin);
+    }
+
 
     /**
      * @brief If the current process is a background process, then it will right the output pipe the
@@ -420,7 +477,7 @@ public:
     void setOFXHostHandle(void* handle);
     
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                                    Natron::ContextEnum* ctx);
+                                                                    ContextEnum* ctx);
     
     AppTLS* getAppTLS() const;
     
@@ -562,96 +619,46 @@ struct PyCallback
     
     PyCallback() : expression(), originalExpression(),  code(0){}
 };
-    
-void natronErrorDialog(const std::string & title,const std::string & message, bool useHtml = false);
-void natronErrorDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
 
-void natronWarningDialog(const std::string & title,const std::string & message, bool useHtml = false);
-void natronWarningDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
+// put global functions in a namespace, see https://google.github.io/styleguide/cppguide.html#Nonmember,_Static_Member,_and_Global_Functions
+namespace Dialogs {
 
-void natronInformationDialog(const std::string & title,const std::string & message, bool useHtml = false);
-void natronInformationDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
+void errorDialog(const std::string & title,const std::string & message, bool useHtml = false);
+void errorDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
 
-StandardButtonEnum natronQuestionDialog(const std::string & title,const std::string & message, bool useHtml,
+void warningDialog(const std::string & title,const std::string & message, bool useHtml = false);
+void warningDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
+
+void informationDialog(const std::string & title,const std::string & message, bool useHtml = false);
+void informationDialog(const std::string & title,const std::string & message,bool* stopAsking, bool useHtml = false);
+
+StandardButtonEnum questionDialog(const std::string & title,const std::string & message, bool useHtml,
                                           StandardButtons buttons =
                                           StandardButtons(eStandardButtonYes | eStandardButtonNo),
                                       StandardButtonEnum defaultButton = eStandardButtonNoButton);
     
-StandardButtonEnum natronQuestionDialog(const std::string & title,const std::string & message, bool useHtml,
+StandardButtonEnum questionDialog(const std::string & title,const std::string & message, bool useHtml,
                                           StandardButtons buttons,
                                           StandardButtonEnum defaultButton,
                                           bool* stopAsking);
 
-template <class K>
-boost::shared_ptr<K> natronCreateKnob(KnobHolder*  holder,
-                                const std::string &label,
-                                int dimension = 1,
-                                bool declaredByPlugin = true)
-{
-    return appPTR->getKnobFactory().createKnob<K>(holder, label, dimension, declaredByPlugin);
-}
+} // namespace Dialogs
 
-inline bool
-natronGetImageFromCache(const ImageKey & key,
-                  std::list<boost::shared_ptr<Image> >* returnValue)
-{
-    return appPTR->getImage(key, returnValue);
-}
-
-inline bool
-natronGetImageFromCacheOrCreate(const ImageKey & key,
-                          const boost::shared_ptr<ImageParams>& params,
-                          boost::shared_ptr<Image>* returnValue)
-{
-    return appPTR->getImageOrCreate(key,params, returnValue);
-}
-    
-inline bool
-natronGetImageFromDiskCache(const ImageKey & key,
-                      std::list<boost::shared_ptr<Image> >* returnValue)
-{
-    return appPTR->getImage_diskCache(key, returnValue);
-}
-    
-inline bool
-natronGetImageFromDiskCacheOrCreate(const ImageKey & key,
-                              const boost::shared_ptr<ImageParams>& params,
-                              boost::shared_ptr<Image>* returnValue)
-{
-    return appPTR->getImageOrCreate_diskCache(key,params, returnValue);
-}
-    
-
-inline bool
-natronGetTextureFromCache(const FrameKey & key,
-                    boost::shared_ptr<FrameEntry>* returnValue)
-{
-    return appPTR->getTexture(key,returnValue);
-}
-
-inline bool
-natronGetTextureFromCacheOrCreate(const FrameKey & key,
-                            const boost::shared_ptr<FrameParams> &params,
-                            boost::shared_ptr<FrameEntry>* returnValue)
-{
-    return appPTR->getTextureOrCreate(key,params, returnValue);
-}
-    
-
-
+// put global functions in a namespace, see https://google.github.io/styleguide/cppguide.html#Nonmember,_Static_Member,_and_Global_Functions
+namespace Python {
 
 /**
  * @brief Ensures that the given Python script as imported the given module
  * and returns the position of the start of the next line after the imports. Note that this position
  * can be the first character after the last one in the script.
  **/
-std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::string& script);
+//std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::string& script);
     
 /**
  * @brief If the script contains import modules commands, this will return the position of the first character
  * of the next line after the last import call, if there's any, otherwise it returns 0.
  **/
-std::size_t findNewLineStartAfterImports(std::string& script);
+//std::size_t findNewLineStartAfterImports(std::string& script);
 
 /**
  * @brief Return a handle to the __main__ Python module, containing all global definitions.
@@ -665,10 +672,10 @@ PyObject* getMainModule();
  * @param output[out] The string will contain any result printed by the script on stdout. This argument may be passed NULL
  * @returns True on success, false on failure.
 **/
-bool interpretPythonScript(const std::string& script,std::string* error,std::string* output);
+bool interpretPythonScript(const std::string& script, std::string* error, std::string* output);
 
 
-void compilePyScript(const std::string& script,PyObject** code);
+//void compilePyScript(const std::string& script,PyObject** code);
 
 std::string PY3String_asString(PyObject* obj);
     
@@ -682,15 +689,6 @@ bool getGroupInfos(const std::string& modulePath,
                    std::string* grouping,
                    std::string* description,
                    unsigned int* version);
-bool getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
-                                     const std::string& modulePath,
-                                     const std::string& pythonModule,
-                                     std::string* pluginID,
-                                     std::string* pluginLabel,
-                                     std::string* iconFilePath,
-                                     std::string* grouping,
-                                     std::string* description,
-                                     unsigned int* version);
     
 // Does not work for functions with var args
 void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args);
@@ -701,7 +699,9 @@ void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vect
 * If app1 or Group1 does not exist at this point, this is a failure.
 **/
 PyObject* getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined);
-    
+
+} // namespace Python
+
 /**
  * @brief Small helper class to use as RAII to hold the GIL (Global Interpreter Lock) before calling ANY Python code.
  **/

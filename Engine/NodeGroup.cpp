@@ -482,7 +482,7 @@ NodeCollection::checkNodeName(const Node* node, const std::string& baseName,bool
         return;
     }
     ///Remove any non alpha-numeric characters from the baseName
-    std::string cpy = Natron::makeNameScriptFriendly(baseName);
+    std::string cpy = Python::makeNameScriptFriendly(baseName);
     if (cpy.empty()) {
         throw std::runtime_error(QObject::tr("Invalid script-name").toStdString());
         return;
@@ -1248,7 +1248,7 @@ NodeGroup::initializeKnobs()
     assert(nodePage);
     KnobPage* isPage = dynamic_cast<KnobPage*>(nodePage.get());
     assert(isPage);
-    _imp->exportAsTemplate = natronCreateKnob<KnobButton>(this, "Export as PyPlug");
+    _imp->exportAsTemplate = AppManager::createKnob<KnobButton>(this, "Export as PyPlug");
     _imp->exportAsTemplate->setName("exportAsPyPlug");
     _imp->exportAsTemplate->setHintToolTip("Export this group as a Python group script (PyPlug) that can be shared and/or later "
                                            "on re-used as a plug-in.");

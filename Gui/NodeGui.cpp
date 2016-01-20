@@ -126,10 +126,10 @@ replaceLineBreaksWithHtmlParagraph(QString txt)
 static void getPixmapForMergeOperator(const QString& op,QPixmap* pix)
 {
     std::string opstd = op.toStdString();
-    for (int i = 0; i <= (int)Natron::eMergeXOR; ++i) {
-        std::string opStr = Natron::getNatronOperationString((Natron::MergingFunctionEnum)i);
+    for (int i = 0; i <= (int)eMergeXOR; ++i) {
+        std::string opStr = Merge::getOperatorString((MergingFunctionEnum)i);
         if (opStr == opstd) {
-            PixmapEnum pixEnum = Natron::getPixmapForMergingOperator((Natron::MergingFunctionEnum)i);
+            PixmapEnum pixEnum = Merge::getOperatorPixmap((MergingFunctionEnum)i);
             appPTR->getIcon(pixEnum, TO_DPIX(NATRON_PLUGIN_ICON_SIZE), pix);
             return;
         }
@@ -331,9 +331,9 @@ NodeGui::initialize(NodeGraph* dag,
         settings->getDefaultNodeColor(&r, &g, &b);
     }
     QColor color;
-    color.setRgbF(Natron::clamp<qreal>(r, 0., 1.),
-                  Natron::clamp<qreal>(g, 0., 1.),
-                  Natron::clamp<qreal>(b, 0., 1.));
+    color.setRgbF(Image::clamp<qreal>(r, 0., 1.),
+                  Image::clamp<qreal>(g, 0., 1.),
+                  Image::clamp<qreal>(b, 0., 1.));
     setCurrentColor(color);
 
     ///Make the output edge
@@ -599,7 +599,7 @@ NodeGui::createGui()
     exprGrad.push_back( qMakePair( 0.3, QColor(Qt::green) ) );
     exprGrad.push_back( qMakePair( 1., QColor(69,96,63) ) );
     _expressionIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2,"E",bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER, exprGrad,QColor(255,255,255),this));
-    _expressionIndicator->setToolTip(Natron::convertFromPlainText(tr("This node has one or several expression(s) involving values of parameters of other "
+    _expressionIndicator->setToolTip(GuiUtils::convertFromPlainText(tr("This node has one or several expression(s) involving values of parameters of other "
                                          "nodes in the project. Hover the mouse on the green connections to see what are the effective links."), Qt::WhiteSpaceNormal));
     _expressionIndicator->setActive(false);
     
@@ -2494,7 +2494,7 @@ NodeGui::toggleBitDepthIndicator(bool on,
                                  const QString & tooltip)
 {
     if (on) {
-        QString arrangedTt = Natron::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal);
+        QString arrangedTt = GuiUtils::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal);
         setToolTip(arrangedTt);
         _bitDepthWarning->setToolTip(arrangedTt);
     } else {
@@ -3019,12 +3019,12 @@ NodeGui::setName(const QString & newName)
     
     
     std::string stdName = newName.toStdString();
-    stdName = Natron::makeNameScriptFriendly(stdName);
+    stdName = Python::makeNameScriptFriendly(stdName);
     std::string oldScriptName = getNode()->getScriptName();
     try {
         getNode()->setScriptName(stdName);
     } catch (const std::exception& e) {
-        natronErrorDialog(tr("Rename").toStdString(), tr("Could not set node script-name to ").toStdString() + stdName + ": " + e.what());
+        Dialogs::errorDialog(tr("Rename").toStdString(), tr("Could not set node script-name to ").toStdString() + stdName + ": " + e.what());
         return;
     }
     
@@ -3242,7 +3242,7 @@ NodeGui::onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & 
 }
 
 bool
-NodeGui::onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyDownDefault(const RenderScale & renderScale, Key key,KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
         QByteArray keyStr;
@@ -3252,7 +3252,7 @@ NodeGui::onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key ke
 }
 
 bool
-NodeGui::onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyUpDefault(const RenderScale & renderScale, Key key,KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
         QByteArray keyStr;
@@ -3263,7 +3263,7 @@ NodeGui::onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key,
 }
 
 bool
-NodeGui::onOverlayKeyRepeatDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyRepeatDefault(const RenderScale & renderScale, Key key,KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
         QByteArray keyStr;

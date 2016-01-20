@@ -218,7 +218,7 @@ RotoLayer::load(const RotoItemSerialization &obj)
                 _imp->items.push_back(bezier);
             }
             else if (s) {
-                boost::shared_ptr<RotoStrokeItem> stroke(new RotoStrokeItem((Natron::RotoStrokeType)s->getType(),getContext(),kRotoPaintBrushBaseName,boost::shared_ptr<RotoLayer>()));
+                boost::shared_ptr<RotoStrokeItem> stroke(new RotoStrokeItem((RotoStrokeType)s->getType(),getContext(),kRotoPaintBrushBaseName,boost::shared_ptr<RotoLayer>()));
                 stroke->createNodes(false);
                 stroke->load(*s);
                 if (!stroke->getParentLayer()) {

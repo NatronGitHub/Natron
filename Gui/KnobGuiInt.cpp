@@ -157,13 +157,13 @@ KnobGuiInt::createWidget(QHBoxLayout* layout)
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
         boxContainerLayout->setSpacing(3);
-        Natron::Label *subDesc = 0;
+        Label *subDesc = 0;
         if (dim != 1) {
             std::string dimLabel = getKnob()->getDimensionName(i);
             if (!dimLabel.empty()) {
                 dimLabel.append(":");
             }
-            subDesc = new Natron::Label(QString(dimLabel.c_str()), boxContainer);
+            subDesc = new Label(QString(dimLabel.c_str()), boxContainer);
             //subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
@@ -201,7 +201,7 @@ KnobGuiInt::createWidget(QHBoxLayout* layout)
         }
         
         _slider = new ScaleSliderQWidget( dispmin, dispmax,knob->getValue(0),
-                                         ScaleSliderQWidget::eDataTypeInt,getGui(),Natron::eScaleTypeLinear, layout->parentWidget() );
+                                         ScaleSliderQWidget::eDataTypeInt,getGui(),eScaleTypeLinear, layout->parentWidget() );
         _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
             _slider->setToolTip( toolTip() );
@@ -216,7 +216,7 @@ KnobGuiInt::createWidget(QHBoxLayout* layout)
 
     if (dim > 1 && !knob->isSliderDisabled() && sliderVisible) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim),_container);
-        _dimensionSwitchButton->setToolTip(Natron::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
+        _dimensionSwitchButton->setToolTip(GuiUtils::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _dimensionSwitchButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
@@ -460,17 +460,17 @@ KnobGuiInt::updateGUI(int dimension)
 
 void
 KnobGuiInt::reflectAnimationLevel(int dimension,
-                                   Natron::AnimationLevelEnum level)
+                                   AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-        case Natron::eAnimationLevelNone:
+        case eAnimationLevelNone:
             value = 0;
             break;
-        case Natron::eAnimationLevelInterpolatedValue:
+        case eAnimationLevelInterpolatedValue:
             value = 1;
             break;
-        case Natron::eAnimationLevelOnKeyframe:
+        case eAnimationLevelOnKeyframe:
             value = 2;
             break;
         default:
@@ -666,7 +666,7 @@ KnobGuiInt::reflectExpressionState(int dimension,
             _slider->setReadOnly(true);
         }
     } else {
-        Natron::AnimationLevelEnum lvl = knob->getAnimationLevel(dimension);
+        AnimationLevelEnum lvl = knob->getAnimationLevel(dimension);
         _spinBoxes[dimension].first->setAnimation((int)lvl);
         bool isEnabled = knob->isEnabled(dimension);
         _spinBoxes[dimension].first->setReadOnly(!isEnabled);

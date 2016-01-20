@@ -187,7 +187,7 @@ KnobGuiChoice::onItemNewSelected()
     if (dialog.exec()) {
         ImageComponents comps = dialog.getComponents();
         if (comps == ImageComponents::getNoneComponents()) {
-            natronErrorDialog(tr("Layer").toStdString(), tr("Invalid layer").toStdString());
+            Dialogs::errorDialog(tr("Layer").toStdString(), tr("Invalid layer").toStdString());
             return;
         }
         KnobHolder* holder = _knob.lock()->getHolder();
@@ -196,7 +196,7 @@ KnobGuiChoice::onItemNewSelected()
         assert(effect);
         assert(effect->getNode());
         if (!effect->getNode()->addUserComponents(comps)) {
-            natronErrorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
+            Dialogs::errorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
         }
     }
 }
@@ -230,17 +230,17 @@ KnobGuiChoice::updateGUI(int /*dimension*/)
 
 void
 KnobGuiChoice::reflectAnimationLevel(int /*dimension*/,
-                                      Natron::AnimationLevelEnum level)
+                                      AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-    case Natron::eAnimationLevelNone:
+    case eAnimationLevelNone:
             value = 0;
         break;
-    case Natron::eAnimationLevelInterpolatedValue:
+    case eAnimationLevelInterpolatedValue:
             value = 1;
         break;
-    case Natron::eAnimationLevelOnKeyframe:
+    case eAnimationLevelOnKeyframe:
             value = 2;
         break;
     default:

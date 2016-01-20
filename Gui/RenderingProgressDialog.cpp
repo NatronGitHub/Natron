@@ -55,11 +55,11 @@ struct RenderingProgressDialogPrivate
 {
     Gui* _gui;
     QVBoxLayout* _mainLayout;
-    Natron::Label* _totalProgressLabel;
-    Natron::Label* _totalProgressInfo;
+    Label* _totalProgressLabel;
+    Label* _totalProgressInfo;
     QProgressBar* _totalProgressBar;
-    Natron::Label* _estimatedWaitTimeLabel;
-    Natron::Label* _estimatedWaitTimeInfo;
+    Label* _estimatedWaitTimeLabel;
+    Label* _estimatedWaitTimeInfo;
     Button* _cancelButton;
     QString _sequenceName;
     int _firstFrame;
@@ -164,34 +164,34 @@ RenderingProgressDialog::onProcessFinished(int retCode)
         bool showLog = false;
         if (retCode == 0) {
             if (_imp->_process) {
-                StandardButtonEnum reply = natronQuestionDialog( tr("Render").toStdString(),tr("The render ended successfully.\n"
+                StandardButtonEnum reply = Dialogs::questionDialog( tr("Render").toStdString(),tr("The render ended successfully.\n"
                                                                                                      "Would you like to see the log ?").toStdString(), false );
                 if (reply == eStandardButtonYes) {
                     showLog = true;
                 }
             } else {
-                natronInformationDialog( tr("Render").toStdString(), tr("The render ended successfully.").toStdString() );
+                Dialogs::informationDialog( tr("Render").toStdString(), tr("The render ended successfully.").toStdString() );
             }
         } else if (retCode == 1) {
             if (_imp->_process) {
-                StandardButtonEnum reply = natronQuestionDialog( tr("Render").toStdString(),
+                StandardButtonEnum reply = Dialogs::questionDialog( tr("Render").toStdString(),
                                                                        tr("The render ended with a return code of 1, a problem occured.\n"
                                                                           "Would you like to see the log ?").toStdString(), false );
                 if (reply == eStandardButtonYes) {
                     showLog = true;
                 }
             } else {
-                natronErrorDialog( tr("Render").toStdString(),tr("The render ended with a return code of 1, a problem occured.").toStdString() );
+                Dialogs::errorDialog( tr("Render").toStdString(),tr("The render ended with a return code of 1, a problem occured.").toStdString() );
             }
         } else {
             if (_imp->_process) {
-                StandardButtonEnum reply = natronQuestionDialog( tr("Render").toStdString(),tr("The render crashed.\n"
+                StandardButtonEnum reply = Dialogs::questionDialog( tr("Render").toStdString(),tr("The render crashed.\n"
                                                                                                          "Would you like to see the log ?").toStdString() , false);
                 if (reply == eStandardButtonYes) {
                     showLog = true;
                 }
             } else {
-                natronErrorDialog( tr("Render").toStdString(),tr("The render crashed.").toStdString() );
+                Dialogs::errorDialog( tr("Render").toStdString(),tr("The render crashed.").toStdString() );
             }
         }
         if (showLog) {
@@ -230,7 +230,7 @@ RenderingProgressDialog::closeEvent(QCloseEvent* /*e*/)
     if (ret != QDialog::Accepted) {
         Q_EMIT canceled();
         reject();
-        natronInformationDialog( tr("Render").toStdString(), tr("Render aborted.").toStdString() );
+        Dialogs::informationDialog( tr("Render").toStdString(), tr("Render aborted.").toStdString() );
         
     }
     
@@ -267,20 +267,20 @@ RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
     _imp->_mainLayout->addWidget(totalProgressContainer);
 
     
-    _imp->_totalProgressLabel = new Natron::Label(tr("Total progress:"),totalProgressContainer);
+    _imp->_totalProgressLabel = new Label(tr("Total progress:"),totalProgressContainer);
     totalProgressLayout->addWidget(_imp->_totalProgressLabel);
     
-    _imp->_totalProgressInfo = new Natron::Label("0%",totalProgressContainer);
+    _imp->_totalProgressInfo = new Label("0%",totalProgressContainer);
     totalProgressLayout->addWidget(_imp->_totalProgressInfo);
     
     QWidget* waitTimeContainer = new QWidget(this);
     QHBoxLayout* waitTimeLayout = new QHBoxLayout(waitTimeContainer);
     _imp->_mainLayout->addWidget(waitTimeContainer);
 
-    _imp->_estimatedWaitTimeLabel = new Natron::Label(tr("Time remaining:"),waitTimeContainer);
+    _imp->_estimatedWaitTimeLabel = new Label(tr("Time remaining:"),waitTimeContainer);
     waitTimeLayout->addWidget(_imp->_estimatedWaitTimeLabel);
     
-    _imp->_estimatedWaitTimeInfo = new Natron::Label("...",waitTimeContainer);
+    _imp->_estimatedWaitTimeInfo = new Label("...",waitTimeContainer);
     waitTimeLayout->addWidget(_imp->_estimatedWaitTimeInfo);
 
     _imp->_totalProgressBar = new QProgressBar(this);

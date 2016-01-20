@@ -524,7 +524,7 @@ public:
 #ifndef Q_OS_MAC
     bool isHighDPI() const { return false; }
 #else
-    bool isHighDPI() const { return Natron::isHighDPIInternal(this); }
+    bool isHighDPI() const { return QtMac::isHighDPIInternal(this); }
 #endif
     
     AppInstance* createNewProject();

@@ -417,7 +417,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             e->y() >= (10 - 15) && e->y() <= (10 + ih + 15)) {
             assert(isGroup);
             QPoint pos = mapToGlobal(e->pos());
-            QToolTip::showText(pos, Natron::convertFromPlainText(QObject::tr("Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\nAny modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."),Qt::WhiteSpaceNormal));
+            QToolTip::showText(pos, GuiUtils::convertFromPlainText(QObject::tr("Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\nAny modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."),Qt::WhiteSpaceNormal));
         }
 
     }

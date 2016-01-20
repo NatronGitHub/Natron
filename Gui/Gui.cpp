@@ -168,7 +168,7 @@ Gui::reloadProject()
     
     boost::shared_ptr<Project> proj = getApp()->getProject();
     if (!proj->hasProjectBeenSavedByUser()) {
-        natronErrorDialog(tr("Reload project").toStdString(), tr("This project has not been saved yet").toStdString());
+        Dialogs::errorDialog(tr("Reload project").toStdString(), tr("This project has not been saved yet").toStdString());
         return;
     }
     QString filename = proj->getProjectFilename();

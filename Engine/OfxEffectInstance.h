@@ -66,7 +66,7 @@ public:
 
     virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                               OFX::Host::ImageEffect::Descriptor* desc,
-                                              Natron::ContextEnum context,
+                                              ContextEnum context,
                                               const NodeSerialization* serialization,
                                                const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                               bool allowFileDialogs,
@@ -97,7 +97,7 @@ public:
 
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                       OFX::Host::ImageEffect::Descriptor* desc,
-                                      Natron::ContextEnum context,
+                                      ContextEnum context,
                                       const NodeSerialization* serialization,
                                       const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                       bool allowFileDialogs,
@@ -175,9 +175,9 @@ public:
     virtual bool onOverlayPenMotion(double time, const RenderScale & renderScale, int view,
                                     const QPointF & viewportPos, const QPointF & pos, double pressure) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool onOverlayPenUp(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyDown(double time, const RenderScale & renderScale, int view, Natron::Key key, Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyUp(double time, const RenderScale & renderScale, int view, Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyRepeat(double time, const RenderScale & renderScale, int view, Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyDown(double time, const RenderScale & renderScale, int view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(double time, const RenderScale & renderScale, int view, Key key,KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(double time, const RenderScale & renderScale, int view, Key key,KeyboardModifiers modifiers) OVERRIDE FINAL;
     virtual bool onOverlayFocusGained(double time, const RenderScale & renderScale, int view) OVERRIDE FINAL;
     virtual bool onOverlayFocusLost(double time, const RenderScale & renderScale, int view) OVERRIDE FINAL;
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
@@ -193,7 +193,7 @@ public:
                             int view,
                             double* inputTime,
                             int* inputNb) OVERRIDE;
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void purgeCaches() OVERRIDE;
 
     /**
@@ -240,7 +240,7 @@ public:
     virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual void getPreferredDepthAndComponents(int inputNb, std::list<ImageComponents>* comp, ImageBitDepthEnum* depth) const OVERRIDE FINAL;
-    virtual Natron::SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool refreshClipPreferences(double time,
                                         const RenderScale & scale,
@@ -282,8 +282,8 @@ public:
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
 
     
-    static Natron::ContextEnum mapToContextEnum(const std::string &s);
-    static std::string mapContextToString(Natron::ContextEnum ctx);
+    static ContextEnum mapToContextEnum(const std::string &s);
+    static std::string mapContextToString(ContextEnum ctx);
     
     static std::string natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason);
 

@@ -191,17 +191,17 @@ struct GuiPrivate
 
     ///The menu bar and all the menus
     QMenuBar *menubar;
-    Natron::Menu *menuFile;
-    Natron::Menu *menuRecentFiles;
-    Natron::Menu *menuEdit;
-    Natron::Menu *menuLayout;
-    Natron::Menu *menuDisplay;
-    Natron::Menu *menuRender;
-    Natron::Menu *viewersMenu;
-    Natron::Menu *viewerInputsMenu;
-    Natron::Menu *viewersViewMenu;
-    Natron::Menu *cacheMenu;
-    Natron::Menu *menuHelp;
+    Menu *menuFile;
+    Menu *menuRecentFiles;
+    Menu *menuEdit;
+    Menu *menuLayout;
+    Menu *menuDisplay;
+    Menu *menuRender;
+    Menu *viewersMenu;
+    Menu *viewerInputsMenu;
+    Menu *viewersViewMenu;
+    Menu *cacheMenu;
+    Menu *menuHelp;
 
 
     ///all TabWidget's : used to know what to hide/show for fullscreen mode

@@ -1124,7 +1124,7 @@ OfxClipInstance::natronsDepthToOfxDepth(ImageBitDepthEnum depth)
 struct OfxImagePrivate
 {
     ImagePtr natronImage;
-    boost::shared_ptr<Natron::GenericAccess> access;
+    boost::shared_ptr<GenericAccess> access;
     boost::shared_ptr<OfxClipInstance::RenderActionData> tls;
     
     OfxImagePrivate(const ImagePtr& image,

@@ -96,7 +96,7 @@ NATRON_NAMESPACE_ENTER;
 
 ////////////////////////////////////Stroke//////////////////////////////////
 
-RotoStrokeItem::RotoStrokeItem(Natron::RotoStrokeType type,
+RotoStrokeItem::RotoStrokeItem(RotoStrokeType type,
                                const boost::shared_ptr<RotoContext>& context,
                                const std::string & name,
                                const boost::shared_ptr<RotoLayer>& parent)
@@ -120,7 +120,7 @@ RotoStrokeItem::~RotoStrokeItem()
 
 
 
-Natron::RotoStrokeType
+RotoStrokeType
 RotoStrokeItem::getBrushType() const
 {
     return _imp->type;
@@ -729,7 +729,7 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
     assert(s);
     {
         QMutexLocker k(&itemMutex);
-        _imp->type = (Natron::RotoStrokeType)s->_brushType;
+        _imp->type = (RotoStrokeType)s->_brushType;
         
         assert(s->_xCurves.size() == s->_yCurves.size() && s->_xCurves.size() == s->_pressureCurves.size());
         std::list<boost::shared_ptr<Curve> >::const_iterator itY = s->_yCurves.begin();

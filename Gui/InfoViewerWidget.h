@@ -91,16 +91,16 @@ private:
     
 
     QHBoxLayout* layout;
-    Natron::Label* descriptionLabel;
-    Natron::Label* imageFormat;
-    Natron::Label* resolution;
+    Label* descriptionLabel;
+    Label* imageFormat;
+    Label* resolution;
     Format format;
-    Natron::Label* coordDispWindow;
-    Natron::Label* coordMouse;
-    Natron::Label* rgbaValues;
-    Natron::Label* color;
-    Natron::Label* hvl_lastOption;
-    Natron::Label* _fpsLabel;
+    Label* coordDispWindow;
+    Label* coordMouse;
+    Label* rgbaValues;
+    Label* color;
+    Label* hvl_lastOption;
+    Label* _fpsLabel;
     ViewerGL* viewer;
     ImageComponents _comp;
     bool _colorValid;

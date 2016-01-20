@@ -175,7 +175,7 @@ public:
             } else {
                 item = new TableItem;
                 
-                QString tt = Natron::convertFromPlainText(QObject::tr("The label of the node as it appears on the nodegraph"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The label of the node as it appears on the nodegraph"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -198,7 +198,7 @@ public:
                 item = view->item(row, COL_PLUGIN_ID);
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("The ID of the plug-in embedded in the node"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The ID of the plug-in embedded in the node"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -222,7 +222,7 @@ public:
                 timeSoFar += stats.getTotalTimeSpentRendering();
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("The time spent rendering by this node across all threads"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The time spent rendering by this node across all threads"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 timeSoFar = stats.getTotalTimeSpentRendering();
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
@@ -245,7 +245,7 @@ public:
                 item = view->item(row, COL_SUPPORT_TILES);
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("Whether this node has tiles (portions of the final image) support or not"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("Whether this node has tiles (portions of the final image) support or not"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -271,7 +271,7 @@ public:
                 item = view->item(row, COL_SUPPORT_RS);
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("Whether this node has render scale support or not.\n"
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("Whether this node has render scale support or not.\n"
                                                                       "When activated, that means the node can render an image at a "
                                                                       "lower scale."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
@@ -300,7 +300,7 @@ public:
                 item = view->item(row, COL_MIPMAP_LEVEL);
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("The mipmaplevel rendered (See render-scale). 0 means scale = 100%, "
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The mipmaplevel rendered (See render-scale). 0 means scale = 100%, "
                                                                       "1 means scale = 50%, 2 means scale = 25%, etc..."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
@@ -326,7 +326,7 @@ public:
                 item = view->item(row, COL_CHANNELS);
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("The channels processed by this node (corresponding to the RGBA checkboxes)"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The channels processed by this node (corresponding to the RGBA checkboxes)"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -362,7 +362,7 @@ public:
                 item = view->item(row, COL_PREMULT);
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("The alpha premultiplication of the image produced by this node"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The alpha premultiplication of the image produced by this node"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -395,7 +395,7 @@ public:
                 item = view->item(row, COL_ROD);
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("The region of definition of the image produced"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The region of definition of the image produced"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -417,7 +417,7 @@ public:
                 item = view->item(row, COL_IDENTITY);
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("When different of \"-\", this node does not render but rather "
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("When different of \"-\", this node does not render but rather "
                                                                       "directly returns the image produced by the node indicated by its label."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
@@ -450,7 +450,7 @@ public:
                 tilesInfo = item->data((int)eItemsRoleIdentityTilesInfo).toString();
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("The list of the tiles that were identity in the image.\n"
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The list of the tiles that were identity in the image.\n"
                                                                       "Double-click for more info"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
@@ -489,7 +489,7 @@ public:
                 tilesInfo = item->data((int)eItemsRoleRenderedTilesInfo).toString();
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("The list of the tiles effectivly rendered.\n"
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The list of the tiles effectivly rendered.\n"
                                                                       "Double-click for more infos."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
@@ -525,7 +525,7 @@ public:
                 item = view->item(row, COL_RENDERED_PLANES);
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("The list of the planes rendered by this node"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The list of the planes rendered by this node"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -556,7 +556,7 @@ public:
                 nb = item->text().toInt();
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("The number of cache hit (success)"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The number of cache hit (success)"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -586,7 +586,7 @@ public:
                 }
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("The number of cache access hit (success) but at higher scale "
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The number of cache access hit (success) but at higher scale "
                                                                       "hence requiring downscaling."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
@@ -617,7 +617,7 @@ public:
                 }
             } else {
                 item = new TableItem;
-                QString tt = Natron::convertFromPlainText(QObject::tr("The number of cache access miss (image missing)"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The number of cache access miss (image missing)"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -686,18 +686,18 @@ struct RenderStatsDialogPrivate
     
     QVBoxLayout* mainLayout;
     
-    Natron::Label* descriptionLabel;
+    Label* descriptionLabel;
     QWidget* globalInfosContainer;
     QHBoxLayout* globalInfosLayout;
     
-    Natron::Label* accumulateLabel;
+    Label* accumulateLabel;
     QCheckBox* accumulateCheckbox;
     
-    Natron::Label* advancedLabel;
+    Label* advancedLabel;
     QCheckBox* advancedCheckbox;
     
-    Natron::Label* totalTimeSpentDescLabel;
-    Natron::Label* totalTimeSpentValueLabel;
+    Label* totalTimeSpentDescLabel;
+    Label* totalTimeSpentValueLabel;
     double totalSpentTime;
     
     Button* resetButton;
@@ -705,15 +705,15 @@ struct RenderStatsDialogPrivate
     QWidget* filterContainer;
     QHBoxLayout* filterLayout;
     
-    Natron::Label* filtersLabel;
+    Label* filtersLabel;
     
-    Natron::Label* nameFilterLabel;
+    Label* nameFilterLabel;
     LineEdit* nameFilterEdit;
     
-    Natron::Label* idFilterLabel;
+    Label* idFilterLabel;
     LineEdit* idFilterEdit;
     
-    Natron::Label* useUnixWildcardsLabel;
+    Label* useUnixWildcardsLabel;
     QCheckBox* useUnixWildcardsCheckbox;
     
   
@@ -767,7 +767,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     
     _imp->mainLayout = new QVBoxLayout(this);
     
-    QString statsDesc = Natron::convertFromPlainText(tr(
+    QString statsDesc = GuiUtils::convertFromPlainText(tr(
     "Statistics are accumulated over each frame rendered by default.\nIf you want to display statistics of the last "
     "frame rendered, uncheck the \"Accumulate\" checkbox.\nIf you want to have more detailed informations besides the time spent "
     "rendering for each node,\ncheck the \"Advanced\" checkbox.\n The \"Time spent to render\" is the time spent "
@@ -776,14 +776,14 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     "for each statistic.\nBy default, nodes are sorted by decreasing time spent to render.\nClicking on a node will center "
     "the node-graph on it.\nWhen in \"Advanced\" mode, double-clicking on the \"Rendered Tiles\" or "
     "the \"Identity Tiles\" cell\nwill open-up a window containing detailed informations about the tiles rendered.\n"),Qt::WhiteSpaceNormal);
-    _imp->descriptionLabel = new Natron::Label(statsDesc, this);
+    _imp->descriptionLabel = new Label(statsDesc, this);
     _imp->mainLayout->addWidget(_imp->descriptionLabel);
     
     _imp->globalInfosContainer = new QWidget(this);
     _imp->globalInfosLayout = new QHBoxLayout(_imp->globalInfosContainer);
     
-    QString accTt = Natron::convertFromPlainText(tr("When checked, stats are not cleared between the computation of frames."),Qt::WhiteSpaceNormal);
-    _imp->accumulateLabel = new Natron::Label(tr("Accumulate:"), _imp->globalInfosContainer);
+    QString accTt = GuiUtils::convertFromPlainText(tr("When checked, stats are not cleared between the computation of frames."),Qt::WhiteSpaceNormal);
+    _imp->accumulateLabel = new Label(tr("Accumulate:"), _imp->globalInfosContainer);
     _imp->accumulateLabel->setToolTip(accTt);
     _imp->accumulateCheckbox = new QCheckBox(_imp->globalInfosContainer);
     _imp->accumulateCheckbox->setChecked(true);
@@ -794,8 +794,8 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     
     _imp->globalInfosLayout->addSpacing(10);
     
-    QString adTt = Natron::convertFromPlainText(tr("When checked, more statistics are displayed. Useful mainly for debuging purposes."),Qt::WhiteSpaceNormal);
-    _imp->advancedLabel = new Natron::Label(tr("Advanced:"),_imp->globalInfosContainer);
+    QString adTt = GuiUtils::convertFromPlainText(tr("When checked, more statistics are displayed. Useful mainly for debuging purposes."),Qt::WhiteSpaceNormal);
+    _imp->advancedLabel = new Label(tr("Advanced:"),_imp->globalInfosContainer);
     _imp->advancedLabel->setToolTip(adTt);
     _imp->advancedCheckbox = new QCheckBox(_imp->globalInfosContainer);
     _imp->advancedCheckbox->setChecked(false);
@@ -807,11 +807,11 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     
     _imp->globalInfosLayout->addSpacing(20);
     
-    QString wallTimett = Natron::convertFromPlainText(tr("This is the time spent to compute the frame for the whole tree.\n "
+    QString wallTimett = GuiUtils::convertFromPlainText(tr("This is the time spent to compute the frame for the whole tree.\n "
                                                          ),Qt::WhiteSpaceNormal);
-    _imp->totalTimeSpentDescLabel = new Natron::Label(tr("Time spent to render:"),_imp->globalInfosContainer);
+    _imp->totalTimeSpentDescLabel = new Label(tr("Time spent to render:"),_imp->globalInfosContainer);
     _imp->totalTimeSpentDescLabel->setToolTip(wallTimett);
-    _imp->totalTimeSpentValueLabel = new Natron::Label("0.0 sec", _imp->globalInfosContainer);
+    _imp->totalTimeSpentValueLabel = new Label("0.0 sec", _imp->globalInfosContainer);
     _imp->totalTimeSpentValueLabel->setToolTip(wallTimett);
     
     _imp->globalInfosLayout->addWidget(_imp->totalTimeSpentDescLabel);
@@ -829,15 +829,15 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     _imp->filterContainer = new QWidget(this);
     _imp->filterLayout = new QHBoxLayout(_imp->filterContainer);
     
-    _imp->filtersLabel = new Natron::Label(tr("Filters:"),_imp->filterContainer);
+    _imp->filtersLabel = new Label(tr("Filters:"),_imp->filterContainer);
     _imp->filterLayout->addWidget(_imp->filtersLabel);
     
     _imp->filterLayout->addSpacing(10);
     
-    QString nameFilterTt = Natron::convertFromPlainText(tr("If unix wildcards are enabled, show only nodes "
+    QString nameFilterTt = GuiUtils::convertFromPlainText(tr("If unix wildcards are enabled, show only nodes "
                                                            "with a label matching the filter.\nOtherwise if unix wildcards are disabled, "
                                                            "show only nodes with a label containing the text in the filter."), Qt::WhiteSpaceNormal);
-    _imp->nameFilterLabel = new Natron::Label(tr("Name:"),_imp->filterContainer);
+    _imp->nameFilterLabel = new Label(tr("Name:"),_imp->filterContainer);
     _imp->nameFilterLabel->setToolTip(nameFilterTt);
     _imp->nameFilterEdit = new LineEdit(_imp->filterContainer);
     _imp->nameFilterEdit->setToolTip(nameFilterTt);
@@ -849,10 +849,10 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     
     _imp->filterLayout->addSpacing(20);
     
-    QString idFilterTt = Natron::convertFromPlainText(tr("If unix wildcards are enabled, show only nodes "
+    QString idFilterTt = GuiUtils::convertFromPlainText(tr("If unix wildcards are enabled, show only nodes "
                                                            "with a plugin ID matching the filter.\nOtherwise if unix wildcards are disabled, "
                                                            "show only nodes with a plugin ID containing the text in the filter."), Qt::WhiteSpaceNormal);
-    _imp->idFilterLabel = new Natron::Label(tr("Plugin ID:"),_imp->idFilterLabel);
+    _imp->idFilterLabel = new Label(tr("Plugin ID:"),_imp->idFilterLabel);
     _imp->idFilterLabel->setToolTip(idFilterTt);
     _imp->idFilterEdit = new LineEdit(_imp->idFilterEdit);
     _imp->idFilterEdit->setToolTip(idFilterTt);
@@ -862,7 +862,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     _imp->filterLayout->addWidget(_imp->idFilterLabel);
     _imp->filterLayout->addWidget(_imp->idFilterEdit);
     
-    _imp->useUnixWildcardsLabel = new Natron::Label(tr("Use Unix wildcards (*, ?, etc..)"),_imp->filterContainer);
+    _imp->useUnixWildcardsLabel = new Label(tr("Use Unix wildcards (*, ?, etc..)"),_imp->filterContainer);
     _imp->useUnixWildcardsCheckbox = new QCheckBox(_imp->filterContainer);
     _imp->useUnixWildcardsCheckbox->setChecked(false);
     QObject::connect(_imp->useUnixWildcardsCheckbox, SIGNAL(toggled(bool)), this, SLOT(updateVisibleRows()));

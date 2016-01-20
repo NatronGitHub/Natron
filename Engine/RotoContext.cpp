@@ -452,7 +452,7 @@ RotoContext::makeBezier(double x,
 } // makeBezier
 
 boost::shared_ptr<RotoStrokeItem>
-RotoContext::makeStroke(Natron::RotoStrokeType type,const std::string& baseName,bool clearSel)
+RotoContext::makeStroke(RotoStrokeType type,const std::string& baseName,bool clearSel)
 {
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -897,7 +897,7 @@ RotoContext::isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared
         if (!isStroke) {
             assert(dynamic_cast<Bezier*>(it->get()));
         } else {
-            if (isStroke->getBrushType() != Natron::eRotoStrokeTypeSolid) {
+            if (isStroke->getBrushType() != eRotoStrokeTypeSolid) {
                 return false;
             }
         }
@@ -1669,7 +1669,7 @@ RotoContext::goToPreviousKeyframe()
 
     if (minimum != INT_MIN) {
         getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Node>());
-        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, Natron::eTimelineChangeReasonOtherSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, eTimelineChangeReasonOtherSeek);
     }
 }
 
@@ -1702,7 +1702,7 @@ RotoContext::goToNextKeyframe()
     }
     if (maximum != INT_MAX) {
         getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Node>());
-        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false, NULL,Natron::eTimelineChangeReasonOtherSeek);
+        getNode()->getApp()->getTimeLine()->seekFrame(maximum, false, NULL,eTimelineChangeReasonOtherSeek);
         
     }
 }
@@ -2722,12 +2722,12 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
      */
     QMutexLocker k(&_imp->cacheAccessMutex);
     
-    natronGetImageFromCacheOrCreate(key, params, &image);
+    AppManager::getImageFromCacheOrCreate(key, params, &image);
     if (!image) {
         std::stringstream ss;
         ss << "Failed to allocate an image of ";
         ss << printAsRAM( params->getElementsCount() * sizeof(Image::data_t) ).toStdString();
-        natronErrorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
+        Dialogs::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
         
         return image;
     }
@@ -3413,7 +3413,7 @@ RotoContextPrivate::renderInternalShape(double time,
     for (std::list<BezierCPs>::iterator it = coonPatches.begin(); it != coonPatches.end(); ++it) {
         
         std::list<BezierCPs> fixedPatch;
-        Natron::regularize(*it, time, &fixedPatch);
+        CoonsRegularization::regularize(*it, time, &fixedPatch);
         for (std::list<BezierCPs>::iterator it2 = fixedPatch.begin(); it2 != fixedPatch.end(); ++it2) {
             
             
@@ -3868,7 +3868,7 @@ RotoContext::changeItemScriptName(const std::string& oldFullyQualifiedName,const
     if (!appPTR->isBackground()) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }
-    if (!interpretPythonScript(script , &err, 0)) {
+    if (!Python::interpretPythonScript(script , &err, 0)) {
         getNode()->getApp()->appendToScriptEditor(err);
     }
 }
@@ -3890,7 +3890,7 @@ RotoContext::removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
     if (!appPTR->isBackground()) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }
-    if (!interpretPythonScript(script , &err, 0)) {
+    if (!Python::interpretPythonScript(script , &err, 0)) {
         getNode()->getApp()->appendToScriptEditor(err);
     }
     
@@ -4046,7 +4046,7 @@ RotoContext::declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
     if (!appPTR->isBackground()) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }
-    if(!interpretPythonScript(script , &err, 0)) {
+    if(!Python::interpretPythonScript(script , &err, 0)) {
         getNode()->getApp()->appendToScriptEditor(err);
     }
     

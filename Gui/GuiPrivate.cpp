@@ -354,7 +354,7 @@ GuiPrivate::createPropertiesBinGui()
 
     _clearAllPanelsButton->setFixedSize(smallButtonSize);
     _clearAllPanelsButton->setIconSize(smallButtonIconSize);
-    _clearAllPanelsButton->setToolTip( Natron::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
+    _clearAllPanelsButton->setToolTip( GuiUtils::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
                                                                 Qt::WhiteSpaceNormal) );
     _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _clearAllPanelsButton, SIGNAL( clicked(bool) ), _gui, SLOT( clearAllVisiblePanels() ) );
@@ -369,7 +369,7 @@ GuiPrivate::createPropertiesBinGui()
     _minimizeAllPanelsButtons->setChecked(false);
     _minimizeAllPanelsButtons->setFixedSize(smallButtonSize);
     _minimizeAllPanelsButtons->setIconSize(smallButtonIconSize);
-    _minimizeAllPanelsButtons->setToolTip( Natron::convertFromPlainText(_gui->tr("Minimize / Maximize all panels."), Qt::WhiteSpaceNormal) );
+    _minimizeAllPanelsButtons->setToolTip( GuiUtils::convertFromPlainText(_gui->tr("Minimize / Maximize all panels."), Qt::WhiteSpaceNormal) );
     _minimizeAllPanelsButtons->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _minimizeAllPanelsButtons, SIGNAL( clicked(bool) ), _gui, SLOT( minimizeMaximizeAllPanels(bool) ) );
 
@@ -377,7 +377,7 @@ GuiPrivate::createPropertiesBinGui()
     _maxPanelsOpenedSpinBox->setMaximumSize(smallButtonSize);
     _maxPanelsOpenedSpinBox->setMinimum(1);
     _maxPanelsOpenedSpinBox->setMaximum(100);
-    _maxPanelsOpenedSpinBox->setToolTip( Natron::convertFromPlainText(_gui->tr("Set the maximum of panels that can be opened at the same time "
+    _maxPanelsOpenedSpinBox->setToolTip( GuiUtils::convertFromPlainText(_gui->tr("Set the maximum of panels that can be opened at the same time "
                                                                            "in the properties bin pane. The special value of 0 indicates "
                                                                            "that an unlimited number of panels can be opened."),
                                                                   Qt::WhiteSpaceNormal) );
@@ -554,7 +554,7 @@ GuiPrivate::addToolButton(ToolButton* tool)
     const QSize toolButtonSize(TO_DPIX(NATRON_TOOL_BUTTON_SIZE), TO_DPIY(NATRON_TOOL_BUTTON_SIZE));
     button->setFixedSize(toolButtonSize);
     button->setPopupMode(QToolButton::InstantPopup);
-    button->setToolTip( Natron::convertFromPlainText(tool->getLabel().trimmed(), Qt::WhiteSpaceNormal) );
+    button->setToolTip( GuiUtils::convertFromPlainText(tool->getLabel().trimmed(), Qt::WhiteSpaceNormal) );
     _toolBox->addWidget(button);
 }
 
@@ -591,8 +591,8 @@ GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,const QString& pr
         qint64 curPid = (qint64)QCoreApplication::applicationPid();
         if (lockPID != curPid) {
             QString appFilePath = QCoreApplication::applicationFilePath();
-            if (Natron::natronCheckIfProcessIsRunning(appFilePath.toStdString().c_str(),(Q_PID)lockPID)) {
-                StandardButtonEnum rep = natronQuestionDialog(QObject::tr("Project").toStdString(),
+            if (ProcInfo::checkIfProcessIsRunning(appFilePath.toStdString().c_str(),(Q_PID)lockPID)) {
+                StandardButtonEnum rep = Dialogs::questionDialog(QObject::tr("Project").toStdString(),
                                                                         QObject::tr("This project may be open in another instance of Natron "
                                                                                     "running on %1 as process ID %2, "
                                                                                     "and was opened by %3 on %4.\nContinue anyway?").arg(lockHost,

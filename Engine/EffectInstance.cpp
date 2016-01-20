@@ -196,7 +196,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
                                          bool isAnalysis,
                                          bool isDuringPaintStrokeCreation,
                                          const std::list<boost::shared_ptr<Node> > & rotoPaintNodes,
-                                         Natron::RenderSafetyEnum currentThreadSafety,
+                                         RenderSafetyEnum currentThreadSafety,
                                          bool doNanHandling,
                                          bool draftMode,
                                          bool viewerProgressReportEnabled,
@@ -1219,14 +1219,17 @@ getOrCreateFromCacheInternal(const ImageKey & key,
                              ImagePtr* image)
 {
     if (useCache) {
-        !useDiskCache ? natronGetImageFromCacheOrCreate(key, params, image) :
-        natronGetImageFromDiskCacheOrCreate(key, params, image);
+        if (!useDiskCache) {
+            AppManager::getImageFromCacheOrCreate(key, params, image);
+        } else {
+            AppManager::getImageFromDiskCacheOrCreate(key, params, image);
+        }
 
         if (!*image) {
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
             ss << printAsRAM( params->getElementsCount() * sizeof(Image::data_t) ).toStdString();
-            natronErrorDialog( QObject::tr("Out of memory").toStdString(), ss.str() );
+            Dialogs::errorDialog( QObject::tr("Out of memory").toStdString(), ss.str() );
 
             return;
         }
@@ -1285,7 +1288,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
     }
 
     if (!isCached) {
-        isCached = !useDiskCache ? natronGetImageFromCache(key, &cachedImages) : natronGetImageFromDiskCache(key, &cachedImages);
+        isCached = !useDiskCache ? AppManager::getImageFromCache(key, &cachedImages) : AppManager::getImageFromDiskCache(key, &cachedImages);
     }
 
     if (stats && stats->isInDepthProfilingEnabled() && !isCached) {
@@ -2314,7 +2317,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             warning.append( QString::number(actionArgs.roi.y2) );
             warning.append(") ");
             warning.append( tr("contains NaN values. They have been converted to 1.") );
-            _publicInterface->setPersistentMessage( Natron::eMessageTypeWarning, warning.toStdString() );
+            _publicInterface->setPersistentMessage( eMessageTypeWarning, warning.toStdString() );
         }
         if (it->second.isAllocatedOnTheFly) {
             ///Plane allocated on the fly only have a temp image if using the cache and it is defined over the render window only
@@ -2606,14 +2609,14 @@ EffectInstance::evaluate(KnobI* knob,
 } // evaluate
 
 bool
-EffectInstance::message(Natron::MessageTypeEnum type,
+EffectInstance::message(MessageTypeEnum type,
                         const std::string & content) const
 {
     return getNode()->message(type, content);
 }
 
 void
-EffectInstance::setPersistentMessage(Natron::MessageTypeEnum type,
+EffectInstance::setPersistentMessage(MessageTypeEnum type,
                                      const std::string & content)
 {
     getNode()->setPersistentMessage(type, content);
@@ -2878,8 +2881,8 @@ bool
 EffectInstance::onOverlayKeyDown_public(double time,
                                         const RenderScale & renderScale,
                                         int view,
-                                        Natron::Key key,
-                                        Natron::KeyboardModifiers modifiers)
+                                        Key key,
+                                        KeyboardModifiers modifiers)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2906,8 +2909,8 @@ bool
 EffectInstance::onOverlayKeyUp_public(double time,
                                       const RenderScale & renderScale,
                                       int view,
-                                      Natron::Key key,
-                                      Natron::KeyboardModifiers modifiers)
+                                      Key key,
+                                      KeyboardModifiers modifiers)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2935,8 +2938,8 @@ bool
 EffectInstance::onOverlayKeyRepeat_public(double time,
                                           const RenderScale & renderScale,
                                           int view,
-                                          Natron::Key key,
-                                          Natron::KeyboardModifiers modifiers)
+                                          Key key,
+                                          KeyboardModifiers modifiers)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3079,7 +3082,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         *inputTime = time;
     } else {
         /// Don't call isIdentity if plugin is sequential only.
-        if (getSequentialPreference() != Natron::eSequentialPreferenceOnlySequential) {
+        if (getSequentialPreference() != eSequentialPreferenceOnlySequential) {
             try {
                 ret = isIdentity(time, scale, renderWindow, view, inputTime, inputNb);
             } catch (...) {
@@ -3255,7 +3258,7 @@ EffectInstance::getFramesNeeded_public(U64 hash,
         framesNeeded = getFramesNeeded(time, view);
     } catch (std::exception &e) {
         if (!hasPersistentMessage()) { // plugin may already have set a message
-            setPersistentMessage(Natron::eMessageTypeError, e.what());
+            setPersistentMessage(eMessageTypeError, e.what());
         }
     }
     _imp->actionsCache.setFramesNeededResult(hash, time, view, mipMapLevel, framesNeeded);

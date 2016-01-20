@@ -92,7 +92,7 @@ NodeGraph::toggleHideInputs()
 {
     const NodeGuiList& selectedNodes = getSelectedNodes();
     if (selectedNodes.empty()) {
-        natronWarningDialog(tr("Hide Inptus").toStdString(), tr("You must select a node first").toStdString());
+        Dialogs::warningDialog(tr("Hide Inptus").toStdString(), tr("You must select a node first").toStdString());
         return;
     }
 
@@ -265,13 +265,13 @@ struct FindNodeDialogPrivate
     int currentFindIndex;
     
     QVBoxLayout* mainLayout;
-    Natron::Label* label;
+    Label* label;
     
 
     QCheckBox* unixWildcards;
     QCheckBox* caseSensitivity;
 
-    Natron::Label* resultLabel;
+    Label* resultLabel;
     LineEdit* filter;
     QDialogButtonBox* buttons;
     
@@ -302,7 +302,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     
-    _imp->label = new Natron::Label(tr("Select all nodes containing this text:"),this);
+    _imp->label = new Label(tr("Select all nodes containing this text:"),this);
     //_imp->label->setFont(QFont(appFont,appFontSize));
     _imp->mainLayout->addWidget(_imp->label);
 
@@ -324,7 +324,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     _imp->mainLayout->addWidget(_imp->caseSensitivity);
     
     
-    _imp->resultLabel = new Natron::Label(this);
+    _imp->resultLabel = new Label(this);
     _imp->mainLayout->addWidget(_imp->resultLabel);
     //_imp->resultLabel->setFont(QFont(appFont,appFontSize));
     
@@ -590,7 +590,7 @@ NodeGraph::expandSelectedGroups()
     if (!nodes.empty()) {
         pushUndoCommand(new InlineGroupCommand(this,nodes));
     } else {
-        natronWarningDialog(tr("Expand group").toStdString(), tr("You must select a group to expand first").toStdString());
+        Dialogs::warningDialog(tr("Expand group").toStdString(), tr("You must select a group to expand first").toStdString());
     }
 }
 

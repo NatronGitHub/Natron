@@ -214,7 +214,7 @@ private:
             ar & ::boost::serialization::make_nvp("Width",_width);
             ar & ::boost::serialization::make_nvp("Height",_height);
         } else {
-            _nodeName = Natron::makeNameScriptFriendly(_nodeName);
+            _nodeName = Python::makeNameScriptFriendly(_nodeName);
         }
         
         if (version >= NODE_GUI_INTRODUCES_OVERLAY_COLOR) {

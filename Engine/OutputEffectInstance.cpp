@@ -164,8 +164,8 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
     
     ///The effect is sequential (e.g: WriteFFMPEG), and thus cannot render multiple views, we have to choose one
     ///We pick the user defined main view in the project settings
-    Natron::SequentialPreferenceEnum sequentiallity = getSequentialPreference();
-    bool canOnlyHandleOneView = sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential;
+    SequentialPreferenceEnum sequentiallity = getSequentialPreference();
+    bool canOnlyHandleOneView = sequentiallity == eSequentialPreferenceOnlySequential || sequentiallity == eSequentialPreferencePreferSequential;
     
     if (canOnlyHandleOneView) {
         viewsToRender.clear();
@@ -218,12 +218,12 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
                             if (!renderController) {
                                 message.append(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n");
                                 message = message + QObject::tr("Would you like to continue?");
-                                StandardButtonEnum rep = natronQuestionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
+                                StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
                                 if (rep != eStandardButtonOk) {
                                     return;
                                 }
                             } else {
-                                natronWarningDialog(tr("Multi-view support").toStdString(), message.toStdString());
+                                Dialogs::warningDialog(tr("Multi-view support").toStdString(), message.toStdString());
                             }
                         }
                         //Render the main-view only...
@@ -249,12 +249,12 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
             if (!renderController) {
                 message.append(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n");
                 message = message + QObject::tr("Would you like to continue?");
-                StandardButtonEnum rep = natronQuestionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
+                StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
                 if (rep != eStandardButtonOk) {
                     return;
                 }
             } else {
-                natronWarningDialog(tr("Multi-view support").toStdString(), message.toStdString());
+                Dialogs::warningDialog(tr("Multi-view support").toStdString(), message.toStdString());
             }
         }
         
@@ -468,7 +468,7 @@ OutputEffectInstance::reportStats(int time,
         KnobOutputFile* strKnob = dynamic_cast<KnobOutputFile*>( fileKnob.get() );
         if  (strKnob) {
             QString qfileName( SequenceParsing::generateFileNameFromPattern(strKnob->getValue(0), time, view).c_str() );
-            removeFileExtension(qfileName);
+            QtCompat::removeFileExtension(qfileName);
             qfileName.append("-stats.txt");
             filename = qfileName.toStdString();
         }

@@ -168,16 +168,16 @@ struct HistogramPrivate
     QVBoxLayout* mainLayout;
     
     ///////// OPTIONS
-    Natron::Menu* rightClickMenu;
+    Menu* rightClickMenu;
     QMenu* histogramSelectionMenu;
     QActionGroup* histogramSelectionGroup;
-    Natron::Menu* viewerCurrentInputMenu;
+    Menu* viewerCurrentInputMenu;
     QActionGroup* viewerCurrentInputGroup;
     QActionGroup* modeActions;
-    Natron::Menu* modeMenu;
+    Menu* modeMenu;
     QAction* fullImage;
     QActionGroup* filterActions;
-    Natron::Menu* filterMenu;
+    Menu* filterMenu;
     Histogram* widget;
     Histogram::DisplayModeEnum mode;
     QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
@@ -189,7 +189,7 @@ struct HistogramPrivate
     QColor _baseAxisColor;
     QColor _scaleColor;
     QFont _font;
-    Natron::TextRenderer textRenderer;
+    TextRenderer textRenderer;
     bool drawCoordinates;
     QString xCoordinateStr;
     QString rValueStr,gValueStr,bValueStr;
@@ -289,16 +289,16 @@ Histogram::Histogram(Gui* gui,
 //    _imp->sizeH = desktop->screenGeometry().size();
     _imp->sizeH = QSize(10000,10000);
     
-    _imp->rightClickMenu = new Natron::Menu(this);
+    _imp->rightClickMenu = new Menu(this);
     //_imp->rightClickMenu->setFont( QFont(appFont,appFontSize) );
 
-    _imp->histogramSelectionMenu = new Natron::Menu(tr("Viewer target"),_imp->rightClickMenu);
+    _imp->histogramSelectionMenu = new Menu(tr("Viewer target"),_imp->rightClickMenu);
     //_imp->histogramSelectionMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->histogramSelectionMenu->menuAction() );
 
     _imp->histogramSelectionGroup = new QActionGroup(_imp->histogramSelectionMenu);
 
-    _imp->viewerCurrentInputMenu = new Natron::Menu(tr("Viewer input"),_imp->rightClickMenu);
+    _imp->viewerCurrentInputMenu = new Menu(tr("Viewer input"),_imp->rightClickMenu);
     //_imp->viewerCurrentInputMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->viewerCurrentInputMenu->menuAction() );
 
@@ -322,7 +322,7 @@ Histogram::Histogram(Gui* gui,
     _imp->viewerCurrentInputGroup->addAction(inputBAction);
     _imp->viewerCurrentInputMenu->addAction(inputBAction);
 
-    _imp->modeMenu = new Natron::Menu(tr("Display mode"),_imp->rightClickMenu);
+    _imp->modeMenu = new Menu(tr("Display mode"),_imp->rightClickMenu);
     //_imp->modeMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->modeMenu->menuAction() );
 
@@ -333,7 +333,7 @@ Histogram::Histogram(Gui* gui,
     QObject::connect( _imp->fullImage, SIGNAL( triggered() ), this, SLOT( computeHistogramAndRefresh() ) );
     _imp->rightClickMenu->addAction(_imp->fullImage);
 
-    _imp->filterMenu = new Natron::Menu(tr("Smoothing"),_imp->rightClickMenu);
+    _imp->filterMenu = new Menu(tr("Smoothing"),_imp->rightClickMenu);
     //_imp->filterMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->filterMenu->menuAction() );
 
@@ -680,7 +680,7 @@ Histogram::initializeGL()
     GLenum err = glewInit();
     if (GLEW_OK != err) {
         /* Problem: glewInit failed, something is seriously wrong. */
-        natronErrorDialog( tr("OpenGL/GLEW error").toStdString(),
+        Dialogs::errorDialog( tr("OpenGL/GLEW error").toStdString(),
                              (const char*)glewGetErrorString(err) );
     }
 

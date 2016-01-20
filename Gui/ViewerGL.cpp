@@ -474,10 +474,10 @@ ViewerGL::toggleOverlays()
 void
 ViewerGL::toggleWipe()
 {
-    if (getViewerTab()->getCompositingOperator() != Natron::eViewerCompositingOperatorNone) {
-        getViewerTab()->setCompositingOperator(Natron::eViewerCompositingOperatorNone);
+    if (getViewerTab()->getCompositingOperator() != eViewerCompositingOperatorNone) {
+        getViewerTab()->setCompositingOperator(eViewerCompositingOperatorNone);
     } else {
-        getViewerTab()->setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
+        getViewerTab()->setCompositingOperator(eViewerCompositingOperatorWipe);
     }
 }
 
@@ -2923,7 +2923,7 @@ ViewerGL::populateMenu()
     
     QAction* toggleWipe = new ActionWithShortcut(kShortcutGroupViewer,kShortcutIDToggleWipe,kShortcutDescToggleWipe, _imp->menu);
     toggleWipe->setCheckable(true);
-    toggleWipe->setChecked(getViewerTab()->getCompositingOperator() != Natron::eViewerCompositingOperatorNone);
+    toggleWipe->setChecked(getViewerTab()->getCompositingOperator() != eViewerCompositingOperatorNone);
     QObject::connect( toggleWipe,SIGNAL( triggered() ),this,SLOT( toggleWipe() ) );
     _imp->menu->addAction(toggleWipe);
     
@@ -2943,7 +2943,7 @@ ViewerGL::populateMenu()
     QObject::connect( switchAB,SIGNAL( triggered() ),_imp->viewerTab,SLOT( switchInputAAndB() ) );
     _imp->menu->addAction(switchAB);
     
-    Natron::Menu* showHideMenu = new Natron::Menu(tr("Show/Hide"),_imp->menu);
+    Menu* showHideMenu = new Menu(tr("Show/Hide"),_imp->menu);
     //showHideMenu->setFont(QFont(appFont,appFontSize));
     _imp->menu->addAction(showHideMenu->menuAction());
     
@@ -3870,8 +3870,8 @@ getColorAtInternal(const ImageList& tiles,
                    int x,
                    int y,             // in pixel coordinates
                    bool forceLinear,
-                   const Natron::Color::Lut* srcColorSpace,
-                   const Natron::Color::Lut* dstColorSpace,
+                   const Color::Lut* srcColorSpace,
+                   const Color::Lut* dstColorSpace,
                    float* r,
                    float* g,
                    float* b,
@@ -3962,7 +3962,7 @@ ViewerGL::getColorAt(double x,
         getTextureColorAt(x, y, &colorGPU[0], &colorGPU[1], &colorGPU[2], &colorGPU[3]);
         *a = colorGPU[3];
         if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
-            const Natron::Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
+            const Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
             
             *r = srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[0]);
             *g = srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[1]);
@@ -3979,8 +3979,8 @@ ViewerGL::getColorAt(double x,
     
     ImageBitDepthEnum depth = firstTile->getBitDepth();
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(depth);
-    const Natron::Color::Lut* dstColorSpace;
-    const Natron::Color::Lut* srcColorSpace;
+    const Color::Lut* dstColorSpace;
+    const Color::Lut* srcColorSpace;
     if ( (srcCS == _imp->displayingImageLut)
         && ( (_imp->displayingImageLut == eViewerColorSpaceLinear) || !forceLinear ) ) {
         // identity transform
@@ -4105,7 +4105,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
                 
                 aSum += aF;
                 if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
-                    const Natron::Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
+                    const Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
                     
                     rSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(rF);
                     gSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(gF);
@@ -4134,7 +4134,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
                     
                     aSum += aF;
                     if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
-                        const Natron::Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
+                        const Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
                         
                         rSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(rF);
                         gSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(gF);
@@ -4162,8 +4162,8 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     
     ImageBitDepthEnum depth = tiles.front()->getBitDepth();
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(depth);
-    const Natron::Color::Lut* dstColorSpace;
-    const Natron::Color::Lut* srcColorSpace;
+    const Color::Lut* dstColorSpace;
+    const Color::Lut* srcColorSpace;
     if ( (srcCS == _imp->displayingImageLut) && ( (_imp->displayingImageLut == eViewerColorSpaceLinear) || !forceLinear ) ) {
         // identity transform
         srcColorSpace = 0;

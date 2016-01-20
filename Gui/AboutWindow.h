@@ -43,7 +43,7 @@ class AboutWindow
     Q_OBJECT
     
     QVBoxLayout* _mainLayout;
-    Natron::Label* _iconLabel;
+    Label* _iconLabel;
     QTabWidget* _tabWidget;
     QTextBrowser* _aboutText;
     QTextBrowser* _libsText;

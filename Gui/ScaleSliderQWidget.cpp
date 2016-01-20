@@ -59,7 +59,7 @@ struct ScaleSliderQWidgetPrivate
     ZoomContext zoomCtx;
     QPointF oldClick;
     double minimum,maximum;
-    Natron::ScaleTypeEnum type;
+    ScaleTypeEnum type;
     double value;
     bool dragging;
     QFont font;
@@ -82,7 +82,7 @@ struct ScaleSliderQWidgetPrivate
                               double initialPos,
                               Gui* gui,
                               ScaleSliderQWidget::DataTypeEnum dataType,
-                              Natron::ScaleTypeEnum type)
+                              ScaleTypeEnum type)
     : gui(gui)
     , zoomCtx()
     , oldClick()
@@ -113,7 +113,7 @@ ScaleSliderQWidget::ScaleSliderQWidget(double min,
                                        double initialPos,
                                        DataTypeEnum dataType,
                                        Gui* gui,
-                                       Natron::ScaleTypeEnum type,
+                                       ScaleTypeEnum type,
                                        QWidget* parent)
     : QWidget(parent)
     , _imp(new ScaleSliderQWidgetPrivate(parent,min,max,initialPos,gui,dataType,type))
@@ -141,7 +141,7 @@ ScaleSliderQWidget::~ScaleSliderQWidget()
 {
 }
 
-Natron::ScaleTypeEnum
+ScaleTypeEnum
 ScaleSliderQWidget::type() const
 {
     return _imp->type;
@@ -433,9 +433,9 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     }
     
     QColor textColor;
-    textColor.setRgbF(Natron::clamp<qreal>(txtR, 0., 1.),
-                      Natron::clamp<qreal>(txtG, 0., 1.),
-                      Natron::clamp<qreal>(txtB, 0., 1.));
+    textColor.setRgbF(Image::clamp<qreal>(txtR, 0., 1.),
+                      Image::clamp<qreal>(txtG, 0., 1.),
+                      Image::clamp<qreal>(txtB, 0., 1.));
     
     QColor scaleColor;
     scaleColor.setRgbF(textColor.redF() / 2., textColor.greenF() / 2., textColor.blueF() / 2.);

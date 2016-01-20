@@ -116,13 +116,13 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         std::vector<std::string> entries;
         
         for (std::list<Format>::const_iterator it = builtinFormats.begin(); it != builtinFormats.end(); ++it) {
-            QString formatStr = Natron::generateStringFromFormat(*it);
+            QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
             entries.push_back( formatStr.toStdString() );
         }
         
         const std::list<Format> & objAdditionalFormats = obj.getAdditionalFormats();
         for (std::list<Format>::const_iterator it = objAdditionalFormats.begin(); it != objAdditionalFormats.end(); ++it) {
-            QString formatStr = Natron::generateStringFromFormat(*it);
+            QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
             entries.push_back( formatStr.toStdString() );
         }
         additionalFormats = objAdditionalFormats;
@@ -177,7 +177,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         }
         
         /// 2) restore the timeline
-        timeline->seekFrame(obj.getCurrentTime(), false, 0, Natron::eTimelineChangeReasonOtherSeek);
+        timeline->seekFrame(obj.getCurrentTime(), false, 0, eTimelineChangeReasonOtherSeek);
         
         
         /// 3) Restore the nodes
@@ -301,7 +301,7 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
         std::vector<std::string> args;
         std::string error;
         try {
-            getFunctionArguments(onProjectSave, &error, &args);
+            Python::getFunctionArguments(onProjectSave, &error, &args);
         } catch (const std::exception& e) {
             _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectSave callback: ")
                                                              + e.what());
@@ -339,11 +339,11 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
             onProjectSave = ss.str();
             std::string err;
             std::string output;
-            if (!interpretPythonScript(onProjectSave, &err, &output)) {
+            if (!Python::interpretPythonScript(onProjectSave, &err, &output)) {
                 _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + err);
                 return filename;
             } else {
-                PyObject* mainModule = getMainModule();
+                PyObject* mainModule = Python::getMainModule();
                 assert(mainModule);
                 PyObject* ret = PyObject_GetAttrString(mainModule, "ret");
                 if (!ret) {
@@ -351,9 +351,9 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
                 }
                 std::string filePath = filename;
                 if (ret) {
-                    filePath = PY3String_asString(ret);
+                    filePath = Python::PY3String_asString(ret);
                     std::string script = "del ret\n";
-                    bool ok = interpretPythonScript(script, &err, 0);
+                    bool ok = Python::interpretPythonScript(script, &err, 0);
                     assert(ok);
                     if (!ok) {
                         throw std::runtime_error("ProjectPrivate::runOnProjectSaveCallback(): interpretPythonScript("+script+") failed!");
@@ -380,7 +380,7 @@ ProjectPrivate::runOnProjectCloseCallback()
         std::vector<std::string> args;
         std::string error;
         try {
-            getFunctionArguments(onProjectClose, &error, &args);
+            Python::getFunctionArguments(onProjectClose, &error, &args);
         } catch (const std::exception& e) {
             _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectClose callback: ")
                                                              + e.what());
@@ -410,7 +410,7 @@ ProjectPrivate::runOnProjectCloseCallback()
         script = script + "\n" + onProjectClose + "(" + appID + ")\n";
         std::string err;
         std::string output;
-        if (!interpretPythonScript(script, &err, &output)) {
+        if (!Python::interpretPythonScript(script, &err, &output)) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectClose callback: " + err);
         } else {
             if (!output.empty()) {
@@ -430,7 +430,7 @@ ProjectPrivate::runOnProjectLoadCallback()
         std::vector<std::string> args;
         std::string error;
         try {
-            getFunctionArguments(cb, &error, &args);
+            Python::getFunctionArguments(cb, &error, &args);
         } catch (const std::exception& e) {
             _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectLoaded callback: ")
                                                              + e.what());
@@ -461,7 +461,7 @@ ProjectPrivate::runOnProjectLoadCallback()
         script =  script + "\n" + cb + "(" + appID + ")\n";
         std::string err;
         std::string output;
-        if (!interpretPythonScript(script, &err, &output)) {
+        if (!Python::interpretPythonScript(script, &err, &output)) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectLoaded callback: " + err);
         } else {
             if (!output.empty()) {

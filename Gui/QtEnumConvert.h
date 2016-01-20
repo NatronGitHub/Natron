@@ -47,9 +47,9 @@ class QtEnumConvert
 {
 public:
 
-    static Natron::Key fromQtKey(Qt::Key k);
-    static Natron::KeyboardModifier fromQtModifier(Qt::KeyboardModifier m);
-    static Natron::KeyboardModifiers fromQtModifiers(Qt::KeyboardModifiers m);
+    static Key fromQtKey(Qt::Key k);
+    static KeyboardModifierEnum fromQtModifier(Qt::KeyboardModifier m);
+    static KeyboardModifiers fromQtModifiers(Qt::KeyboardModifiers m);
     static StandardButtonEnum fromQtStandardButton(QMessageBox::StandardButton b);
     static QMessageBox::StandardButton toQtStandardButton(StandardButtonEnum b);
     static QMessageBox::StandardButtons toQtStandarButtons(StandardButtons buttons);

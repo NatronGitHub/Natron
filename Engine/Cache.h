@@ -478,9 +478,9 @@ private:
     ///Store the system physical total RAM in a member
     std::size_t _maxPhysicalRAM;
     bool _tearingDown;
-    mutable Natron::DeleterThread<EntryType> _deleterThread;
+    mutable DeleterThread<EntryType> _deleterThread;
     mutable QWaitCondition _memoryFullCondition; //< protected by _sizeLock
-    mutable Natron::CacheCleanerThread _cleanerThread;
+    mutable CacheCleanerThread _cleanerThread;
 
 public:
 

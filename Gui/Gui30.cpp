@@ -257,7 +257,7 @@ Gui::onDoDialog(int type,
         isActiveWindowADialog = qobject_cast<QDialog*>(currentActiveWindow);
     }
     
-    QString msg = useHtml ? content : Natron::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
+    QString msg = useHtml ? content : GuiUtils::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
 
     if (type == 0) { // error dialog
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
@@ -363,14 +363,14 @@ Gui::questionDialog(const std::string & title,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         _imp->_uiUsingMainThread = true;
         locker.unlock();
-        Q_EMIT onDoDialogWithStopAskingCheckbox( (int)Natron::MessageBox::eMessageBoxTypeQuestion,
+        Q_EMIT onDoDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeQuestion,
                                                  QString( title.c_str() ), QString( message.c_str() ), useHtml, buttons, (int)defaultButton );
         locker.relock();
         while (_imp->_uiUsingMainThread) {
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
-        Q_EMIT onDoDialogWithStopAskingCheckbox( (int)Natron::MessageBox::eMessageBoxTypeQuestion,
+        Q_EMIT onDoDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeQuestion,
                                                  QString( title.c_str() ), QString( message.c_str() ), useHtml, buttons, (int)defaultButton );
     }
 
@@ -387,8 +387,8 @@ Gui::onDoDialogWithStopAskingCheckbox(int type,
                                       StandardButtons buttons,
                                       int defaultB)
 {
-    QString message = useHtml ? content : Natron::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
-    Natron::MessageBox dialog(title, content, (Natron::MessageBox::MessageBoxTypeEnum)type, buttons, (StandardButtonEnum)defaultB, this);
+    QString message = useHtml ? content : GuiUtils::convertFromPlainText(content.trimmed(), Qt::WhiteSpaceNormal);
+    MessageBox dialog(title, content, (MessageBox::MessageBoxTypeEnum)type, buttons, (StandardButtonEnum)defaultB, this);
     QCheckBox* stopAskingCheckbox = new QCheckBox(tr("Do Not Show This Again"), &dialog);
 
     dialog.setCheckBox(stopAskingCheckbox);

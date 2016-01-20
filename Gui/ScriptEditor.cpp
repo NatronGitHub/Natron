@@ -121,17 +121,17 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->buttonsContainerLayout->setSpacing(2);
     
     QPixmap undoPix,redoPix,clearHistoPix,sourceScriptPix,loadScriptPix,saveScriptPix,execScriptPix,outputVisiblePix,outputHiddenPix,clearOutpoutPix;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_PREVIOUS_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &undoPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_NEXT_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &redoPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CLOSE_PANEL, NATRON_MEDIUM_BUTTON_ICON_SIZE, &clearHistoPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION, NATRON_MEDIUM_BUTTON_ICON_SIZE, &clearHistoPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &clearOutpoutPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_EXEC_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &execScriptPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_ACTIVATED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &outputVisiblePix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_DEACTIVATED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &outputHiddenPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_LOAD_EXEC_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &sourceScriptPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_LOAD_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &loadScriptPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &saveScriptPix);
+    appPTR->getIcon(NATRON_PIXMAP_SCRIPT_PREVIOUS_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &undoPix);
+    appPTR->getIcon(NATRON_PIXMAP_SCRIPT_NEXT_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &redoPix);
+    appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, NATRON_MEDIUM_BUTTON_ICON_SIZE, &clearHistoPix);
+    appPTR->getIcon(NATRON_PIXMAP_CLEAR_ALL_ANIMATION, NATRON_MEDIUM_BUTTON_ICON_SIZE, &clearHistoPix);
+    appPTR->getIcon(NATRON_PIXMAP_SCRIPT_CLEAR_OUTPUT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &clearOutpoutPix);
+    appPTR->getIcon(NATRON_PIXMAP_SCRIPT_EXEC_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &execScriptPix);
+    appPTR->getIcon(NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_ACTIVATED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &outputVisiblePix);
+    appPTR->getIcon(NATRON_PIXMAP_SCRIPT_OUTPUT_PANE_DEACTIVATED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &outputHiddenPix);
+    appPTR->getIcon(NATRON_PIXMAP_SCRIPT_LOAD_EXEC_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &sourceScriptPix);
+    appPTR->getIcon(NATRON_PIXMAP_SCRIPT_LOAD_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &loadScriptPix);
+    appPTR->getIcon(NATRON_PIXMAP_SCRIPT_SAVE_SCRIPT, NATRON_MEDIUM_BUTTON_ICON_SIZE, &saveScriptPix);
     
     _imp->undoB = new Button(QIcon(undoPix),"",_imp->buttonsContainer);
     QKeySequence undoSeq(Qt::CTRL + Qt::Key_BracketLeft);
@@ -163,21 +163,21 @@ ScriptEditor::ScriptEditor(Gui* gui)
     QObject::connect(_imp->clearHistoB, SIGNAL(clicked(bool)), this, SLOT(onClearHistoryClicked()));
     
     _imp->sourceScriptB = new Button(QIcon(sourceScriptPix),"",_imp->buttonsContainer);
-    _imp->sourceScriptB->setToolTip(Natron::convertFromPlainText(tr("Open and execute a script."), Qt::WhiteSpaceNormal));
+    _imp->sourceScriptB->setToolTip(GuiUtils::convertFromPlainText(tr("Open and execute a script."), Qt::WhiteSpaceNormal));
     _imp->sourceScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->sourceScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->sourceScriptB->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     QObject::connect(_imp->sourceScriptB, SIGNAL(clicked(bool)), this, SLOT(onSourceScriptClicked()));
     
     _imp->loadScriptB = new Button(QIcon(loadScriptPix),"",_imp->buttonsContainer);
-    _imp->loadScriptB->setToolTip(Natron::convertFromPlainText(tr("Open a script without executing it."), Qt::WhiteSpaceNormal));
+    _imp->loadScriptB->setToolTip(GuiUtils::convertFromPlainText(tr("Open a script without executing it."), Qt::WhiteSpaceNormal));
     _imp->loadScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->loadScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->loadScriptB->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     QObject::connect(_imp->loadScriptB, SIGNAL(clicked(bool)), this, SLOT(onLoadScriptClicked()));
     
     _imp->saveScriptB = new Button(QIcon(saveScriptPix),"",_imp->buttonsContainer);
-    _imp->saveScriptB->setToolTip(Natron::convertFromPlainText(tr("Save the current script."), Qt::WhiteSpaceNormal));
+    _imp->saveScriptB->setToolTip(GuiUtils::convertFromPlainText(tr("Save the current script."), Qt::WhiteSpaceNormal));
     _imp->saveScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->saveScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->saveScriptB->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
@@ -224,7 +224,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     bool isAutoDeclEnabled = appPTR->getCurrentSettings()->isAutoDeclaredVariablePrintActivated();
     _imp->showAutoDeclVarsB->setChecked(isAutoDeclEnabled);
     _imp->showAutoDeclVarsB->setDown(isAutoDeclEnabled);
-    _imp->showAutoDeclVarsB->setToolTip(Natron::convertFromPlainText(tr("When checked, auto-declared Python variable will be printed "
+    _imp->showAutoDeclVarsB->setToolTip(GuiUtils::convertFromPlainText(tr("When checked, auto-declared Python variable will be printed "
                                                                         "in gray in the output window."), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->showAutoDeclVarsB, SIGNAL(clicked(bool)), this, SLOT(onShowAutoDeclVarsClicked(bool)));
     
@@ -356,7 +356,7 @@ ScriptEditor::onSourceScriptClicked()
             _imp->inputEdit->setPlainText(content);
             onExecScriptClicked();
         } else {
-            natronErrorDialog(tr("Operation failed").toStdString(), tr("Failure to open the file").toStdString());
+            Dialogs::errorDialog(tr("Operation failed").toStdString(), tr("Failure to open the file").toStdString());
         }
         
     }
@@ -381,7 +381,7 @@ ScriptEditor::onLoadScriptClicked()
             QString content = ts.readAll();
             _imp->inputEdit->setPlainText(content);
         } else {
-            natronErrorDialog(tr("Operation failed").toStdString(), tr("Failure to open the file").toStdString());
+            Dialogs::errorDialog(tr("Operation failed").toStdString(), tr("Failure to open the file").toStdString());
         }
         
     }
@@ -406,7 +406,7 @@ ScriptEditor::onSaveScriptClicked()
             QTextStream ts(&file);
             ts << _imp->inputEdit->toPlainText();
         } else {
-            natronErrorDialog(tr("Operation failed").toStdString(), tr("Failure to save the file").toStdString());
+            Dialogs::errorDialog(tr("Operation failed").toStdString(), tr("Failure to save the file").toStdString());
         }
         
     }
@@ -479,8 +479,8 @@ ScriptEditor::onExecScriptClicked()
     }
     std::string error,output;
     
-    if (!interpretPythonScript(script.toStdString(), &error, &output)) {
-        _imp->outputEdit->append(Natron::convertFromPlainText(error.c_str(),Qt::WhiteSpaceNormal));
+    if (!Python::interpretPythonScript(script.toStdString(), &error, &output)) {
+        _imp->outputEdit->append(GuiUtils::convertFromPlainText(error.c_str(),Qt::WhiteSpaceNormal));
     } else {
         QString toAppend(script);
         if (!output.empty()) {

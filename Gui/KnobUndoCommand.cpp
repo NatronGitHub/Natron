@@ -635,7 +635,7 @@ SetExpressionCommand::undo()
         try {
             _knob->setExpression(i, _oldExprs[i], _hadRetVar[i]);
         } catch (...) {
-            natronErrorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+            Dialogs::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
             break;
         }
     }
@@ -652,7 +652,7 @@ SetExpressionCommand::redo()
             try {
                _knob->setExpression(i, _newExpr, _hasRetVar);
             } catch (...) {
-                natronErrorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+                Dialogs::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
                 break;
             }
         }
@@ -660,7 +660,7 @@ SetExpressionCommand::redo()
         try {
             _knob->setExpression(_dimension, _newExpr, _hasRetVar);
         } catch (...) {
-            natronErrorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+            Dialogs::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
         }
     }
     _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), eValueChangedReasonNatronGuiEdited);

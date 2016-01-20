@@ -222,7 +222,7 @@ public:
     
     void getTimelineBounds(int* first,int* last) const;
     
-    static const Natron::Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
+    static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
     virtual bool refreshClipPreferences(double time,
                                          const RenderScale & scale,
@@ -332,7 +332,7 @@ private:
         return QString::number(inputNb + 1).toStdString();
     }
 
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
     {
         return eRenderSafetyFullySafe;
     }

@@ -153,10 +153,10 @@ public:
     QPoint _lastMousePos; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
     ZoomContext zoomCtx;
     EventStateEnum _state;
-    Natron::Menu* _rightClickMenu;
+    Menu* _rightClickMenu;
     QColor _selectedCurveColor;
     QColor _nextCurveAddedColor;
-    Natron::TextRenderer textRenderer;
+    TextRenderer textRenderer;
     QFont* _font;
     Curves _curves;
     SelectedKeys _selectedKeyFrames;

@@ -173,7 +173,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
                 std::stringstream ss;
                 ss << node->getScriptName_mt_safe();
                 ss << QObject::tr(" asked for an infinite region of interest upstream").toStdString();
-                effect->setPersistentMessage(Natron::eMessageTypeError, ss.str());
+                effect->setPersistentMessage(eMessageTypeError, ss.str());
                 return EffectInstance::eRenderRoIRetCodeFailed;
             }
             
@@ -713,7 +713,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
         EffectInstance* liveInstance = (*it)->getLiveInstance();
         assert(liveInstance);
         bool duringPaintStrokeCreation = activeRotoPaintNode && (*it)->isDuringPaintStrokeCreation();
-        Natron::RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
+        RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
         
         std::list<boost::shared_ptr<Node> > rotoPaintNodes;
         boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
@@ -786,7 +786,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                 assert(*it2);
                 EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
                 assert(childLiveInstance);
-                Natron::RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
+                RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
                 childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge,treeRoot, childRequest, textureIndex, timeline, isAnalysis, false, std::list<boost::shared_ptr<Node> >(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled,stats);
                 
             }

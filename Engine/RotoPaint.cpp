@@ -172,10 +172,10 @@ RotoPaint::initializeKnobs()
     boost::shared_ptr<KnobPage> generalPage = boost::dynamic_pointer_cast<KnobPage>(getKnobByName("General"));
     assert(generalPage);
 
-    boost::shared_ptr<KnobSeparator> sep = natronCreateKnob<KnobSeparator>(this, "Output", 1, false);
+    boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(this, "Output", 1, false);
     generalPage->addKnob(sep);
     
-    boost::shared_ptr<KnobBool> premultKnob = natronCreateKnob<KnobBool>(this, "Premultiply", 1, false);
+    boost::shared_ptr<KnobBool> premultKnob = AppManager::createKnob<KnobBool>(this, "Premultiply", 1, false);
     premultKnob->setName("premultiply");
     premultKnob->setHintToolTip("When checked, the red, green and blue channels in output of this node are premultiplied by the alpha channel."
                                 " This will result in the pixels outside of the shapes and paint strokes "

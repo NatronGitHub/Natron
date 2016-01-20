@@ -521,7 +521,7 @@ private:
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
-    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL { return Natron::eSchedulingPolicyOrdered; }
+    virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL { return eSchedulingPolicyOrdered; }
     
     virtual int getLastRenderedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     

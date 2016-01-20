@@ -143,7 +143,7 @@ public:
     boost::shared_ptr<Bezier> makeSquare(double x,double y,double initialSize,double time);
     
     
-    boost::shared_ptr<RotoStrokeItem> makeStroke(Natron::RotoStrokeType type,
+    boost::shared_ptr<RotoStrokeItem> makeStroke(RotoStrokeType type,
                                                  const std::string& baseName,
                                                  bool clearSel);
     

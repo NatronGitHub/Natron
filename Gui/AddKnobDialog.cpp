@@ -67,40 +67,40 @@ struct AddKnobDialogPrivate
     QWidget* mainContainer;
     QFormLayout* mainLayout;
     
-    Natron::Label* typeLabel;
+    Label* typeLabel;
     ComboBox* typeChoice;
-    Natron::Label* nameLabel;
+    Label* nameLabel;
     LineEdit* nameLineEdit;
 
     
-    Natron::Label* labelLabel;
+    Label* labelLabel;
     LineEdit* labelLineEdit;
     
-    Natron::Label* hideLabel;
+    Label* hideLabel;
     QCheckBox* hideBox;
     
-    Natron::Label* startNewLineLabel;
+    Label* startNewLineLabel;
     QCheckBox* startNewLineBox;
     
-    Natron::Label* animatesLabel;
+    Label* animatesLabel;
     QCheckBox* animatesCheckbox;
     
-    Natron::Label* evaluatesLabel;
+    Label* evaluatesLabel;
     QCheckBox* evaluatesOnChange;
     
-    Natron::Label* tooltipLabel;
+    Label* tooltipLabel;
     QTextEdit* tooltipArea;
     
-    Natron::Label* minLabel;
+    Label* minLabel;
     SpinBox* minBox;
     
-    Natron::Label* maxLabel;
+    Label* maxLabel;
     SpinBox* maxBox;
     
-    Natron::Label* dminLabel;
+    Label* dminLabel;
     SpinBox* dminBox;
     
-    Natron::Label* dmaxLabel;
+    Label* dmaxLabel;
     SpinBox* dmaxBox;
     
     enum DefaultValueType
@@ -112,7 +112,7 @@ struct AddKnobDialogPrivate
     };
     
     
-    Natron::Label* defaultValueLabel;
+    Label* defaultValueLabel;
     SpinBox* default0;
     SpinBox* default1;
     SpinBox* default2;
@@ -120,28 +120,28 @@ struct AddKnobDialogPrivate
     LineEdit* defaultStr;
     QCheckBox* defaultBool;
     
-    Natron::Label* menuItemsLabel;
+    Label* menuItemsLabel;
     QTextEdit* menuItemsEdit;
     
-    Natron::Label* multiLineLabel;
+    Label* multiLineLabel;
     QCheckBox* multiLine;
     
-    Natron::Label* richTextLabel;
+    Label* richTextLabel;
     QCheckBox* richText;
     
-    Natron::Label* sequenceDialogLabel;
+    Label* sequenceDialogLabel;
     QCheckBox* sequenceDialog;
     
-    Natron::Label* multiPathLabel;
+    Label* multiPathLabel;
     QCheckBox* multiPath;
     
-    Natron::Label* groupAsTabLabel;
+    Label* groupAsTabLabel;
     QCheckBox* groupAsTab;
     
-    Natron::Label* parentGroupLabel;
+    Label* parentGroupLabel;
     ComboBox* parentGroup;
     
-    Natron::Label* parentPageLabel;
+    Label* parentPageLabel;
     ComboBox* parentPage;
     
     std::list<KnobGroup*> userGroups;
@@ -493,9 +493,9 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* firstRowLayout = new QHBoxLayout(firstRowContainer);
         firstRowLayout->setContentsMargins(0, 0, 0, 0);
         
-        _imp->nameLabel = new Natron::Label(tr("Script name:"),this);
+        _imp->nameLabel = new Label(tr("Script name:"),this);
         _imp->nameLineEdit = new LineEdit(firstRowContainer);
-        _imp->nameLineEdit->setToolTip(Natron::convertFromPlainText(tr("The name of the parameter as it will be used in Python scripts"), Qt::WhiteSpaceNormal));
+        _imp->nameLineEdit->setToolTip(GuiUtils::convertFromPlainText(tr("The name of the parameter as it will be used in Python scripts"), Qt::WhiteSpaceNormal));
         
         if (knob) {
             _imp->nameLineEdit->setText(knob->getName().c_str());
@@ -511,26 +511,26 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QWidget* secondRowContainer = new QWidget(this);
         QHBoxLayout* secondRowLayout = new QHBoxLayout(secondRowContainer);
         secondRowLayout->setContentsMargins(0, 0, 15, 0);
-        _imp->labelLabel = new Natron::Label(tr("Label:"),secondRowContainer);
+        _imp->labelLabel = new Label(tr("Label:"),secondRowContainer);
         _imp->labelLineEdit = new LineEdit(secondRowContainer);
-        _imp->labelLineEdit->setToolTip(Natron::convertFromPlainText(tr("The label of the parameter as displayed on the graphical user interface"), Qt::WhiteSpaceNormal));
+        _imp->labelLineEdit->setToolTip(GuiUtils::convertFromPlainText(tr("The label of the parameter as displayed on the graphical user interface"), Qt::WhiteSpaceNormal));
         if (knob) {
             _imp->labelLineEdit->setText(knob->getLabel().c_str());
         }
         secondRowLayout->addWidget(_imp->labelLineEdit);
-        _imp->hideLabel = new Natron::Label(tr("Hide:"),secondRowContainer);
+        _imp->hideLabel = new Label(tr("Hide:"),secondRowContainer);
         secondRowLayout->addWidget(_imp->hideLabel);
         _imp->hideBox = new QCheckBox(secondRowContainer);
-        _imp->hideBox->setToolTip(Natron::convertFromPlainText(tr("If checked the parameter will not be visible on the user interface"), Qt::WhiteSpaceNormal));
+        _imp->hideBox->setToolTip(GuiUtils::convertFromPlainText(tr("If checked the parameter will not be visible on the user interface"), Qt::WhiteSpaceNormal));
         if (knob) {
             _imp->hideBox->setChecked(knob->getIsSecret());
         }
 
         secondRowLayout->addWidget(_imp->hideBox);
-        _imp->startNewLineLabel = new Natron::Label(tr("Start new line:"),secondRowContainer);
+        _imp->startNewLineLabel = new Label(tr("Start new line:"),secondRowContainer);
         secondRowLayout->addWidget(_imp->startNewLineLabel);
         _imp->startNewLineBox = new QCheckBox(secondRowContainer);
-        _imp->startNewLineBox->setToolTip(Natron::convertFromPlainText(tr("If unchecked the parameter will be on the same line as the previous parameter"), Qt::WhiteSpaceNormal));
+        _imp->startNewLineBox->setToolTip(GuiUtils::convertFromPlainText(tr("If unchecked the parameter will be on the same line as the previous parameter"), Qt::WhiteSpaceNormal));
         if (knob) {
             
             // get the flag on the previous knob
@@ -572,9 +572,9 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         thirdRowLayout->setContentsMargins(0, 0, 15, 0);
         
         if (!knob) {
-            _imp->typeLabel = new Natron::Label(tr("Type:"),thirdRowContainer);
+            _imp->typeLabel = new Label(tr("Type:"),thirdRowContainer);
             _imp->typeChoice = new ComboBox(thirdRowContainer);
-            _imp->typeChoice->setToolTip(Natron::convertFromPlainText(tr("The data type of the parameter."), Qt::WhiteSpaceNormal));
+            _imp->typeChoice->setToolTip(GuiUtils::convertFromPlainText(tr("The data type of the parameter."), Qt::WhiteSpaceNormal));
             for (int i = 0; i < (int)eParamDataTypeCount; ++i) {
                 assert(_imp->typeChoice->count() == i);
                 _imp->typeChoice->addItem(tr(dataTypeString((ParamDataTypeEnum)i)));
@@ -583,22 +583,22 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
             
             thirdRowLayout->addWidget(_imp->typeChoice);
         }
-        _imp->animatesLabel = new Natron::Label(tr("Animates:"),thirdRowContainer);
+        _imp->animatesLabel = new Label(tr("Animates:"),thirdRowContainer);
 
         if (!knob) {
             thirdRowLayout->addWidget(_imp->animatesLabel);
         }
         _imp->animatesCheckbox = new QCheckBox(thirdRowContainer);
-        _imp->animatesCheckbox->setToolTip(Natron::convertFromPlainText(tr("When checked this parameter will be able to animate with keyframes."), Qt::WhiteSpaceNormal));
+        _imp->animatesCheckbox->setToolTip(GuiUtils::convertFromPlainText(tr("When checked this parameter will be able to animate with keyframes."), Qt::WhiteSpaceNormal));
         if (knob) {
             _imp->animatesCheckbox->setChecked(knob->isAnimationEnabled());
         }
 
         thirdRowLayout->addWidget(_imp->animatesCheckbox);
-        _imp->evaluatesLabel = new Natron::Label(Natron::convertFromPlainText(tr("Render on change:"), Qt::WhiteSpaceNormal),thirdRowContainer);
+        _imp->evaluatesLabel = new Label(GuiUtils::convertFromPlainText(tr("Render on change:"), Qt::WhiteSpaceNormal),thirdRowContainer);
         thirdRowLayout->addWidget(_imp->evaluatesLabel);
         _imp->evaluatesOnChange = new QCheckBox(thirdRowContainer);
-        _imp->evaluatesOnChange->setToolTip(Natron::convertFromPlainText(tr("If checked, when the value of this parameter changes a new render will be triggered."), Qt::WhiteSpaceNormal));
+        _imp->evaluatesOnChange->setToolTip(GuiUtils::convertFromPlainText(tr("If checked, when the value of this parameter changes a new render will be triggered."), Qt::WhiteSpaceNormal));
         if (knob) {
             _imp->evaluatesOnChange->setChecked(knob->getEvaluateOnChange());
         }
@@ -612,18 +612,18 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         }
     }
     {
-        _imp->tooltipLabel = new Natron::Label(tr("Tooltip:"),this);
+        _imp->tooltipLabel = new Label(tr("Tooltip:"),this);
         _imp->tooltipArea = new QTextEdit(this);
-        _imp->tooltipArea->setToolTip(Natron::convertFromPlainText(tr("The help tooltip that will appear when hovering the parameter with the mouse."), Qt::WhiteSpaceNormal));
+        _imp->tooltipArea->setToolTip(GuiUtils::convertFromPlainText(tr("The help tooltip that will appear when hovering the parameter with the mouse."), Qt::WhiteSpaceNormal));
         _imp->mainLayout->addRow(_imp->tooltipLabel,_imp->tooltipArea);
         if (knob) {
             _imp->tooltipArea->setPlainText(knob->getHintToolTip().c_str());
         }
     }
     {
-        _imp->menuItemsLabel = new Natron::Label(tr("Menu items:"),this);
+        _imp->menuItemsLabel = new Label(tr("Menu items:"),this);
         _imp->menuItemsEdit = new QTextEdit(this);
-        QString tt = Natron::convertFromPlainText(tr("The entries that will be available in the drop-down menu. \n"
+        QString tt = GuiUtils::convertFromPlainText(tr("The entries that will be available in the drop-down menu. \n"
                                                  "Each line defines a new menu entry. You can specify a specific help tooltip for each entry "
                                                  "by separating the entry text from the help with the following characters on the line: "
                                                  "<?> \n\n"
@@ -653,9 +653,9 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
         
-        _imp->multiLineLabel = new Natron::Label(tr("Multi-line:"),optContainer);
+        _imp->multiLineLabel = new Label(tr("Multi-line:"),optContainer);
         _imp->multiLine = new QCheckBox(optContainer);
-        _imp->multiLine->setToolTip(Natron::convertFromPlainText(tr("Should this text be multi-line or single-line ?"), Qt::WhiteSpaceNormal));
+        _imp->multiLine->setToolTip(GuiUtils::convertFromPlainText(tr("Should this text be multi-line or single-line ?"), Qt::WhiteSpaceNormal));
         optLayout->addWidget(_imp->multiLine);
         _imp->mainLayout->addRow(_imp->multiLineLabel, optContainer);
         
@@ -671,9 +671,9 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
         
-        _imp->richTextLabel = new Natron::Label(tr("Rich text:"),optContainer);
+        _imp->richTextLabel = new Label(tr("Rich text:"),optContainer);
         _imp->richText = new QCheckBox(optContainer);
-        QString tt = Natron::convertFromPlainText(tr("If checked, the text area will be able to use rich text encoding with a sub-set of html.\n "
+        QString tt = GuiUtils::convertFromPlainText(tr("If checked, the text area will be able to use rich text encoding with a sub-set of html.\n "
                                                  "This property is only valid for multi-line input text only."), Qt::WhiteSpaceNormal);
 
         _imp->richText->setToolTip(tt);
@@ -692,9 +692,9 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
         
-        _imp->sequenceDialogLabel = new Natron::Label(tr("Use sequence dialog:"),optContainer);
+        _imp->sequenceDialogLabel = new Label(tr("Use sequence dialog:"),optContainer);
         _imp->sequenceDialog = new QCheckBox(optContainer);
-        _imp->sequenceDialog->setToolTip(Natron::convertFromPlainText(tr("If checked the file dialog for this parameter will be able to decode image sequences."), Qt::WhiteSpaceNormal));
+        _imp->sequenceDialog->setToolTip(GuiUtils::convertFromPlainText(tr("If checked the file dialog for this parameter will be able to decode image sequences."), Qt::WhiteSpaceNormal));
         optLayout->addWidget(_imp->sequenceDialog);
         _imp->mainLayout->addRow(_imp->sequenceDialogLabel, optContainer);
         
@@ -715,9 +715,9 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
         
-        _imp->multiPathLabel = new Natron::Label(Natron::convertFromPlainText(tr("Multiple paths:"), Qt::WhiteSpaceNormal),optContainer);
+        _imp->multiPathLabel = new Label(GuiUtils::convertFromPlainText(tr("Multiple paths:"), Qt::WhiteSpaceNormal),optContainer);
         _imp->multiPath = new QCheckBox(optContainer);
-        _imp->multiPath->setToolTip(Natron::convertFromPlainText(tr("If checked the parameter will be a table where each entry points to a different path."), Qt::WhiteSpaceNormal));
+        _imp->multiPath->setToolTip(GuiUtils::convertFromPlainText(tr("If checked the parameter will be a table where each entry points to a different path."), Qt::WhiteSpaceNormal));
         optLayout->addWidget(_imp->multiPath);
         _imp->mainLayout->addRow(_imp->multiPathLabel, optContainer);
         
@@ -733,9 +733,9 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
         
-        _imp->groupAsTabLabel = new Natron::Label(tr("Group as tab:"),optContainer);
+        _imp->groupAsTabLabel = new Label(tr("Group as tab:"),optContainer);
         _imp->groupAsTab = new QCheckBox(optContainer);
-        _imp->groupAsTab->setToolTip(Natron::convertFromPlainText(tr("If checked the group will be a tab instead."), Qt::WhiteSpaceNormal));
+        _imp->groupAsTab->setToolTip(GuiUtils::convertFromPlainText(tr("If checked the group will be a tab instead."), Qt::WhiteSpaceNormal));
         optLayout->addWidget(_imp->groupAsTab);
         _imp->mainLayout->addRow(_imp->groupAsTabLabel, optContainer);
         
@@ -754,32 +754,32 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* dminMaxLayout = new QHBoxLayout(dminMaxContainer);
         minMaxLayout->setContentsMargins(0, 0, 0, 0);
         dminMaxLayout->setContentsMargins(0, 0, 0, 0);
-        _imp->minLabel = new Natron::Label(tr("Minimum:"),minMaxContainer);
+        _imp->minLabel = new Label(tr("Minimum:"),minMaxContainer);
 
         _imp->minBox = new SpinBox(minMaxContainer,SpinBox::eSpinBoxTypeDouble);
-        _imp->minBox->setToolTip(Natron::convertFromPlainText(tr("Set the minimum value for the parameter. Even though the user might input "
+        _imp->minBox->setToolTip(GuiUtils::convertFromPlainText(tr("Set the minimum value for the parameter. Even though the user might input "
                                                              "a value higher or lower than the specified min/max range, internally the "
                                                              "real value will be clamped to this interval."), Qt::WhiteSpaceNormal));
         minMaxLayout->addWidget(_imp->minBox);
         
-        _imp->maxLabel = new Natron::Label(tr("Maximum:"),minMaxContainer);
+        _imp->maxLabel = new Label(tr("Maximum:"),minMaxContainer);
         _imp->maxBox = new SpinBox(minMaxContainer,SpinBox::eSpinBoxTypeDouble);
-        _imp->maxBox->setToolTip(Natron::convertFromPlainText(tr("Set the maximum value for the parameter. Even though the user might input "
+        _imp->maxBox->setToolTip(GuiUtils::convertFromPlainText(tr("Set the maximum value for the parameter. Even though the user might input "
                                                              "a value higher or lower than the specified min/max range, internally the "
                                                              "real value will be clamped to this interval."), Qt::WhiteSpaceNormal));
         minMaxLayout->addWidget(_imp->maxLabel);
         minMaxLayout->addWidget(_imp->maxBox);
         minMaxLayout->addStretch();
         
-        _imp->dminLabel = new Natron::Label(tr("Display Minimum:"),dminMaxContainer);
+        _imp->dminLabel = new Label(tr("Display Minimum:"),dminMaxContainer);
         _imp->dminBox = new SpinBox(dminMaxContainer,SpinBox::eSpinBoxTypeDouble);
-        _imp->dminBox->setToolTip(Natron::convertFromPlainText(tr("Set the display minimum value for the parameter. This is a hint that is typically "
+        _imp->dminBox->setToolTip(GuiUtils::convertFromPlainText(tr("Set the display minimum value for the parameter. This is a hint that is typically "
                                                               "used to set the range of the slider."), Qt::WhiteSpaceNormal));
         dminMaxLayout->addWidget(_imp->dminBox);
         
-        _imp->dmaxLabel = new Natron::Label(tr("Display Maximum:"),dminMaxContainer);
+        _imp->dmaxLabel = new Label(tr("Display Maximum:"),dminMaxContainer);
         _imp->dmaxBox = new SpinBox(dminMaxContainer,SpinBox::eSpinBoxTypeDouble);
-        _imp->dmaxBox->setToolTip(Natron::convertFromPlainText(tr("Set the display maximum value for the parameter. This is a hint that is typically "
+        _imp->dmaxBox->setToolTip(GuiUtils::convertFromPlainText(tr("Set the display maximum value for the parameter. This is a hint that is typically "
                                                               "used to set the range of the slider."), Qt::WhiteSpaceNormal));
         dminMaxLayout->addWidget(_imp->dmaxLabel);
         dminMaxLayout->addWidget(_imp->dmaxBox);
@@ -830,36 +830,36 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QWidget* defValContainer = new QWidget(this);
         QHBoxLayout* defValLayout = new QHBoxLayout(defValContainer);
         defValLayout->setContentsMargins(0, 0, 0, 0);
-        _imp->defaultValueLabel = new Natron::Label(tr("Default value:"),defValContainer);
+        _imp->defaultValueLabel = new Label(tr("Default value:"),defValContainer);
 
         _imp->default0 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
         _imp->default0->setValue(0);
-        _imp->default0->setToolTip(Natron::convertFromPlainText(tr("Set the default value for the parameter (dimension 0)."), Qt::WhiteSpaceNormal));
+        _imp->default0->setToolTip(GuiUtils::convertFromPlainText(tr("Set the default value for the parameter (dimension 0)."), Qt::WhiteSpaceNormal));
         defValLayout->addWidget(_imp->default0);
         
         _imp->default1 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
         _imp->default1->setValue(0);
-        _imp->default1->setToolTip(Natron::convertFromPlainText(tr("Set the default value for the parameter (dimension 1)."), Qt::WhiteSpaceNormal));
+        _imp->default1->setToolTip(GuiUtils::convertFromPlainText(tr("Set the default value for the parameter (dimension 1)."), Qt::WhiteSpaceNormal));
         defValLayout->addWidget(_imp->default1);
         
         _imp->default2 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
         _imp->default2->setValue(0);
-        _imp->default2->setToolTip(Natron::convertFromPlainText(tr("Set the default value for the parameter (dimension 2)."), Qt::WhiteSpaceNormal));
+        _imp->default2->setToolTip(GuiUtils::convertFromPlainText(tr("Set the default value for the parameter (dimension 2)."), Qt::WhiteSpaceNormal));
         defValLayout->addWidget(_imp->default2);
         
         _imp->default3 = new SpinBox(defValContainer,SpinBox::eSpinBoxTypeDouble);
         _imp->default3->setValue(0);
-        _imp->default3->setToolTip(Natron::convertFromPlainText(tr("Set the default value for the parameter (dimension 3)."), Qt::WhiteSpaceNormal));
+        _imp->default3->setToolTip(GuiUtils::convertFromPlainText(tr("Set the default value for the parameter (dimension 3)."), Qt::WhiteSpaceNormal));
         defValLayout->addWidget(_imp->default3);
 
         
         _imp->defaultStr = new LineEdit(defValContainer);
-        _imp->defaultStr->setToolTip(Natron::convertFromPlainText(tr("Set the default value for the parameter."), Qt::WhiteSpaceNormal));
+        _imp->defaultStr->setToolTip(GuiUtils::convertFromPlainText(tr("Set the default value for the parameter."), Qt::WhiteSpaceNormal));
         defValLayout->addWidget(_imp->defaultStr);
         
         
         _imp->defaultBool = new QCheckBox(defValContainer);
-        _imp->defaultBool->setToolTip(Natron::convertFromPlainText(tr("Set the default value for the parameter."), Qt::WhiteSpaceNormal));
+        _imp->defaultBool->setToolTip(GuiUtils::convertFromPlainText(tr("Set the default value for the parameter."), Qt::WhiteSpaceNormal));
         _imp->defaultBool->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE,NATRON_MEDIUM_BUTTON_SIZE);
         defValLayout->addWidget(_imp->defaultBool);
 
@@ -926,10 +926,10 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
         optLayout->setContentsMargins(0, 0, 15, 0);
         
-        _imp->parentGroupLabel = new Natron::Label(tr("Group:"),optContainer);
+        _imp->parentGroupLabel = new Label(tr("Group:"),optContainer);
         _imp->parentGroup = new ComboBox(optContainer);
         
-        _imp->parentGroup->setToolTip(Natron::convertFromPlainText(tr("The name of the group under which this parameter will appear."), Qt::WhiteSpaceNormal));
+        _imp->parentGroup->setToolTip(GuiUtils::convertFromPlainText(tr("The name of the group under which this parameter will appear."), Qt::WhiteSpaceNormal));
         optLayout->addWidget(_imp->parentGroup);
         
         _imp->mainLayout->addRow(_imp->parentGroupLabel, optContainer);
@@ -938,7 +938,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     QWidget* optContainer = new QWidget(this);
     QHBoxLayout* optLayout = new QHBoxLayout(optContainer);
     optLayout->setContentsMargins(0, 0, 15, 0);
-    _imp->parentPageLabel = new Natron::Label(tr("Page:"),optContainer);
+    _imp->parentPageLabel = new Label(tr("Page:"),optContainer);
     _imp->parentPage = new ComboBox(optContainer);
     
     QObject::connect(_imp->parentPage,SIGNAL(currentIndexChanged(int)),this,SLOT(onPageCurrentIndexChanged(int)));
@@ -958,7 +958,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     for (std::list<boost::shared_ptr<KnobPage> >::iterator it = _imp->userPages.begin(); it != _imp->userPages.end(); ++it) {
         _imp->parentPage->addItem((*it)->getName().c_str());
     }
-    _imp->parentPage->setToolTip(Natron::convertFromPlainText(tr("The tab under which this parameter will appear."), Qt::WhiteSpaceNormal));
+    _imp->parentPage->setToolTip(GuiUtils::convertFromPlainText(tr("The tab under which this parameter will appear."), Qt::WhiteSpaceNormal));
     optLayout->addWidget(_imp->parentPage);
     
     int pageIndexLoaded = -1;
@@ -1381,7 +1381,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
         case eParamDataTypeInteger2D:
         case eParamDataTypeInteger3D: {
             //int
-            boost::shared_ptr<KnobInt> k = natronCreateKnob<KnobInt>(panel->getHolder(), label, dim, false);
+            boost::shared_ptr<KnobInt> k = AppManager::createKnob<KnobInt>(panel->getHolder(), label, dim, false);
             setKnobMinMax<int>(k.get());
             knob = k;
             break;
@@ -1391,7 +1391,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
         case eParamDataTypeFloatingPoint3D: {
             //double
             int dim = index - 2;
-            boost::shared_ptr<KnobDouble> k = natronCreateKnob<KnobDouble>(panel->getHolder(), label, dim, false);
+            boost::shared_ptr<KnobDouble> k = AppManager::createKnob<KnobDouble>(panel->getHolder(), label, dim, false);
             setKnobMinMax<double>(k.get());
             knob = k;
             break;
@@ -1400,13 +1400,13 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
         case eParamDataTypeColorRGBA: {
             // color
             int dim = index - 3;
-            boost::shared_ptr<KnobColor> k = natronCreateKnob<KnobColor>(panel->getHolder(), label, dim, false);
+            boost::shared_ptr<KnobColor> k = AppManager::createKnob<KnobColor>(panel->getHolder(), label, dim, false);
             setKnobMinMax<double>(k.get());
             knob = k;
             break;
         }
         case eParamDataTypeChoice: {
-            boost::shared_ptr<KnobChoice> k = natronCreateKnob<KnobChoice>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobChoice> k = AppManager::createKnob<KnobChoice>(panel->getHolder(), label, 1, false);
             QString entriesRaw = menuItemsEdit->toPlainText();
             QTextStream stream(&entriesRaw);
             std::vector<std::string> entries,helps;
@@ -1455,7 +1455,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
             break;
         }
         case eParamDataTypeCheckbox: {
-            boost::shared_ptr<KnobBool> k = natronCreateKnob<KnobBool>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobBool> k = AppManager::createKnob<KnobBool>(panel->getHolder(), label, 1, false);
             bool defValue = defaultBool->isChecked();
             k->setDefaultValue(defValue);
             knob = k;
@@ -1463,7 +1463,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
         }
         case eParamDataTypeLabel:
         case eParamDataTypeTextInput: {
-            boost::shared_ptr<KnobString> k = natronCreateKnob<KnobString>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobString> k = AppManager::createKnob<KnobString>(panel->getHolder(), label, 1, false);
             if (multiLine->isChecked()) {
                 k->setAsMultiLine();
                 if (richText->isChecked()) {
@@ -1480,7 +1480,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
             break;
         }
         case eParamDataTypeInputFile: {
-            boost::shared_ptr<KnobFile> k = natronCreateKnob<KnobFile>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobFile> k = AppManager::createKnob<KnobFile>(panel->getHolder(), label, 1, false);
             if (sequenceDialog->isChecked()) {
                 k->setAsInputImage();
             }
@@ -1490,7 +1490,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
             break;
         }
         case eParamDataTypeOutputFile: {
-            boost::shared_ptr<KnobOutputFile> k = natronCreateKnob<KnobOutputFile>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobOutputFile> k = AppManager::createKnob<KnobOutputFile>(panel->getHolder(), label, 1, false);
             if (sequenceDialog->isChecked()) {
                 k->setAsOutputImageFile();
             }
@@ -1500,7 +1500,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
             break;
         }
         case eParamDataTypeDirectory: {
-            boost::shared_ptr<KnobPath> k = natronCreateKnob<KnobPath>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobPath> k = AppManager::createKnob<KnobPath>(panel->getHolder(), label, 1, false);
             if (multiPath->isChecked()) {
                 k->setMultiPath(true);
             }
@@ -1509,7 +1509,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
             knob = k;
         } break;
         case eParamDataTypeGroup: {
-            boost::shared_ptr<KnobGroup> k = natronCreateKnob<KnobGroup>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobGroup> k = AppManager::createKnob<KnobGroup>(panel->getHolder(), label, 1, false);
             if (groupAsTab->isChecked()) {
                 k->setAsTab();
             }
@@ -1517,15 +1517,15 @@ AddKnobDialogPrivate::createKnobFromSelection(int index, int optionalGroupIndex)
             knob = k;
         } break;
         case eParamDataTypePage: {
-            boost::shared_ptr<KnobPage> k = natronCreateKnob<KnobPage>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobPage> k = AppManager::createKnob<KnobPage>(panel->getHolder(), label, 1, false);
             knob = k;
         } break;
         case eParamDataTypeButton: {
-            boost::shared_ptr<KnobButton> k = natronCreateKnob<KnobButton>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobButton> k = AppManager::createKnob<KnobButton>(panel->getHolder(), label, 1, false);
             knob = k;
         } break;
         case eParamDataTypeSeparator: {
-            boost::shared_ptr<KnobSeparator> k = natronCreateKnob<KnobSeparator>(panel->getHolder(), label, 1, false);
+            boost::shared_ptr<KnobSeparator> k = AppManager::createKnob<KnobSeparator>(panel->getHolder(), label, 1, false);
             knob = k;
         } break;
         default:
@@ -1656,7 +1656,7 @@ AddKnobDialog::onOkClicked()
     }
     
     if (badFormat) {
-        natronErrorDialog(tr("Error").toStdString(), tr("A parameter must have a unique script name composed only of characters from "
+        Dialogs::errorDialog(tr("Error").toStdString(), tr("A parameter must have a unique script name composed only of characters from "
                                                           "[a - z / A- Z] and digits [0 - 9]. This name cannot contain spaces for scripting purposes.")
                             .toStdString());
         return;
@@ -1677,7 +1677,7 @@ AddKnobDialog::onOkClicked()
             NodeList nodes = isHolderGroup->getNodes();
             for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
                 if ((*it)->getScriptName() == stdName) {
-                    natronErrorDialog(tr("Error").toStdString(), tr("A parameter on a group cannot have the same script-name as a node within "
+                    Dialogs::errorDialog(tr("Error").toStdString(), tr("A parameter on a group cannot have the same script-name as a node within "
                                                                       "the group for scripting purposes.")
                                         .toStdString());
                     return;
@@ -1778,14 +1778,14 @@ AddKnobDialog::onOkClicked()
             oldKnobIsPage->setName(_imp->nameLineEdit->text().toStdString());
             oldKnobIsPage->setLabel(_imp->labelLineEdit->text().toStdString());
         } catch (const std::exception& e) {
-            natronErrorDialog(tr("Error while creating parameter").toStdString(), e.what());
+            Dialogs::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
             return;
         }
     } else if (!_imp->isKnobAlias) {
         try {
             _imp->createKnobFromSelection((int)t, oldIndexInParent);
         }   catch (const std::exception& e) {
-            natronErrorDialog(tr("Error while creating parameter").toStdString(), e.what());
+            Dialogs::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
             return;
         }
         assert(_imp->knob);
@@ -1838,7 +1838,7 @@ AddKnobDialog::onOkClicked()
                                                                   _imp->tooltipArea->toPlainText().toStdString(),
                                                                   false);
         } catch (const std::exception& e) {
-            natronErrorDialog(tr("Error while creating parameter").toStdString(), e.what());
+            Dialogs::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
             return;
         }
         
@@ -1876,7 +1876,7 @@ AddKnobDialog::onOkClicked()
                 ss << defValue;
                 ss << "\" ";
                 ss << QObject::tr("does not exist in the defined menu items").toStdString();
-                natronErrorDialog(tr("Error while creating parameter").toStdString(), ss.str());
+                Dialogs::errorDialog(tr("Error while creating parameter").toStdString(), ss.str());
                 return;
             }
             if (defIndex < (int)entries.size() && defIndex >= 0) {

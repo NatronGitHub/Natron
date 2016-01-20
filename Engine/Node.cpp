@@ -288,8 +288,8 @@ struct Node::Implementation
     , pluginSafety(eRenderSafetyInstanceSafe)
     , currentThreadSafety(eRenderSafetyInstanceSafe)
     , currentSupportTiles(false)
-    , currentSupportOpenGLRender(Natron::ePluginOpenGLRenderSupportNone)
-    , currentSupportSequentialRender(Natron::eSequentialPreferenceNotSequential)
+    , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
+    , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
     , currentCanTransform(false)
     , draftModeUsed(false)
     , mustComputeInputRelatedData(true)
@@ -510,10 +510,10 @@ struct Node::Implementation
     boost::weak_ptr<RotoDrawableItem> paintStroke;
     
     mutable QMutex pluginsPropMutex;
-    Natron::RenderSafetyEnum pluginSafety,currentThreadSafety;
+    RenderSafetyEnum pluginSafety,currentThreadSafety;
     bool currentSupportTiles;
     PluginOpenGLRenderSupport currentSupportOpenGLRender;
-    Natron::SequentialPreferenceEnum currentSupportSequentialRender;
+    SequentialPreferenceEnum currentSupportSequentialRender;
     bool currentCanTransform;
     bool draftModeUsed,mustComputeInputRelatedData;
 
@@ -865,13 +865,13 @@ Node::isDuringPaintStrokeCreation() const
 }
 
 void
-Node::setRenderThreadSafety(Natron::RenderSafetyEnum safety)
+Node::setRenderThreadSafety(RenderSafetyEnum safety)
 {
     QMutexLocker k(&_imp->pluginsPropMutex);
     _imp->currentThreadSafety = safety;
 }
 
-Natron::RenderSafetyEnum
+RenderSafetyEnum
 Node::getCurrentRenderThreadSafety() const
 {
     QMutexLocker k(&_imp->pluginsPropMutex);
@@ -900,13 +900,13 @@ Node::getCurrentOpenGLRenderSupport() const
 }
 
 void
-Node::setCurrentSequentialRenderSupport(Natron::SequentialPreferenceEnum support)
+Node::setCurrentSequentialRenderSupport(SequentialPreferenceEnum support)
 {
     QMutexLocker k(&_imp->pluginsPropMutex);
     _imp->currentSupportSequentialRender = support;
 }
 
-Natron::SequentialPreferenceEnum
+SequentialPreferenceEnum
 Node::getCurrentSequentialRenderSupport() const
 {
     QMutexLocker k(&_imp->pluginsPropMutex);
@@ -1121,7 +1121,7 @@ Node::declareRotoPythonField()
     if (!appPTR->isBackground()) {
         getApp()->printAutoDeclaredVariable(script);
     }
-    bool ok = interpretPythonScript(script, &err, 0);
+    bool ok = Python::interpretPythonScript(script, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("Node::declareRotoPythonField(): interpretPythonScript("+script+") failed!");
@@ -1636,7 +1636,7 @@ Node::restoreUserKnobs(const NodeSerialization& serialization)
         boost::shared_ptr<KnobI> found = getKnobByName((*it)->getName());
         boost::shared_ptr<KnobPage> page;
         if (!found) {
-            page = natronCreateKnob<KnobPage>(_imp->liveInstance.get(), (*it)->getLabel() , 1, false);
+            page = AppManager::createKnob<KnobPage>(_imp->liveInstance.get(), (*it)->getLabel() , 1, false);
             page->setAsUserKnob();
             page->setName((*it)->getName());
             
@@ -1666,7 +1666,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
         if (isGrp) {
             boost::shared_ptr<KnobGroup> grp;
             if (!found) {
-                grp = natronCreateKnob<KnobGroup>(liveInstance.get(), isGrp->getLabel() , 1, false);
+                grp = AppManager::createKnob<KnobGroup>(liveInstance.get(), isGrp->getLabel() , 1, false);
             } else {
                 grp = boost::dynamic_pointer_cast<KnobGroup>(found);
                 if (!grp) {
@@ -1706,7 +1706,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 boost::shared_ptr<KnobInt> k;
                 
                 if (!found) {
-                    k = natronCreateKnob<KnobInt>(liveInstance.get(), isRegular->getLabel() ,
+                    k = AppManager::createKnob<KnobInt>(liveInstance.get(), isRegular->getLabel() ,
                                                                              sKnob->getDimension(), false);
                 } else {
                     k = boost::dynamic_pointer_cast<KnobInt>(found);
@@ -1729,7 +1729,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             } else if (isDbl) {
                 boost::shared_ptr<KnobDouble> k;
                 if (!found) {
-                    k = natronCreateKnob<KnobDouble>(liveInstance.get(), isRegular->getLabel() ,
+                    k = AppManager::createKnob<KnobDouble>(liveInstance.get(), isRegular->getLabel() ,
                                                         sKnob->getDimension(), false);
                 } else {
                     k = boost::dynamic_pointer_cast<KnobDouble>(found);
@@ -1760,7 +1760,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             } else if (isBool) {
                 boost::shared_ptr<KnobBool> k;
                 if (!found) {
-                    k = natronCreateKnob<KnobBool>(liveInstance.get(), isRegular->getLabel() ,
+                    k = AppManager::createKnob<KnobBool>(liveInstance.get(), isRegular->getLabel() ,
                                                       sKnob->getDimension(), false);
                 } else {
                     k = boost::dynamic_pointer_cast<KnobBool>(found);
@@ -1772,7 +1772,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             } else if (isChoice) {
                 boost::shared_ptr<KnobChoice> k;
                 if (!found) {
-                    k = natronCreateKnob<KnobChoice>(liveInstance.get(), isRegular->getLabel() ,
+                    k = AppManager::createKnob<KnobChoice>(liveInstance.get(), isRegular->getLabel() ,
                                                                                sKnob->getDimension(), false);
                 } else {
                     k = boost::dynamic_pointer_cast<KnobChoice>(found);
@@ -1787,7 +1787,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             } else if (isColor) {
                 boost::shared_ptr<KnobColor> k;
                 if (!found) {
-                    k = natronCreateKnob<KnobColor>(liveInstance.get(), isRegular->getLabel() ,
+                    k = AppManager::createKnob<KnobColor>(liveInstance.get(), isRegular->getLabel() ,
                                                        sKnob->getDimension(), false);
                 } else {
                     k = boost::dynamic_pointer_cast<KnobColor>(found);
@@ -1811,7 +1811,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             } else if (isStr) {
                 boost::shared_ptr<KnobString> k;
                 if (!found) {
-                    k = natronCreateKnob<KnobString>(liveInstance.get(), isRegular->getLabel() ,
+                    k = AppManager::createKnob<KnobString>(liveInstance.get(), isRegular->getLabel() ,
                                                         sKnob->getDimension(), false);
                 } else {
                     k = boost::dynamic_pointer_cast<KnobString>(found);
@@ -1836,7 +1836,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             } else if (isFile) {
                 boost::shared_ptr<KnobFile> k;
                 if (!found) {
-                    k = natronCreateKnob<KnobFile>(liveInstance.get(), isRegular->getLabel() ,
+                    k = AppManager::createKnob<KnobFile>(liveInstance.get(), isRegular->getLabel() ,
                                                       sKnob->getDimension(), false);
                 } else {
                     k = boost::dynamic_pointer_cast<KnobFile>(found);
@@ -1854,7 +1854,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             } else if (isOutFile) {
                 boost::shared_ptr<KnobOutputFile> k;
                 if (!found) {
-                    k = natronCreateKnob<KnobOutputFile>(liveInstance.get(), isRegular->getLabel() ,
+                    k = AppManager::createKnob<KnobOutputFile>(liveInstance.get(), isRegular->getLabel() ,
                                                             sKnob->getDimension(), false);
                 } else {
                     k = boost::dynamic_pointer_cast<KnobOutputFile>(found);
@@ -1871,7 +1871,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             } else if (isPath) {
                 boost::shared_ptr<KnobPath> k;
                 if (!found) {
-                    k = natronCreateKnob<KnobPath>(liveInstance.get(), isRegular->getLabel() ,
+                    k = AppManager::createKnob<KnobPath>(liveInstance.get(), isRegular->getLabel() ,
                                                                                            sKnob->getDimension(), false);
                 } else {
                     k = boost::dynamic_pointer_cast<KnobPath>(found);
@@ -1888,7 +1888,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             } else if (isBtn) {
                 boost::shared_ptr<KnobButton> k;
                 if (!found) {
-                    k = natronCreateKnob<KnobButton>(liveInstance.get(), isRegular->getLabel() ,
+                    k = AppManager::createKnob<KnobButton>(liveInstance.get(), isRegular->getLabel() ,
                                                                                sKnob->getDimension(), false);
                 } else {
                     k = boost::dynamic_pointer_cast<KnobButton>(found);
@@ -1900,7 +1900,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             } else if (isSep) {
                 boost::shared_ptr<KnobSeparator> k;
                 if (!found) {
-                    k = natronCreateKnob<KnobSeparator>(liveInstance.get(), isRegular->getLabel() ,
+                    k = AppManager::createKnob<KnobSeparator>(liveInstance.get(), isRegular->getLabel() ,
                                                        sKnob->getDimension(), false);
                 } else {
                     k = boost::dynamic_pointer_cast<KnobSeparator>(found);
@@ -2520,7 +2520,7 @@ Node::setNameInternal(const std::string& name, bool throwErrors, bool declareToP
     if (!newName.empty()) {
         bool isAttrDefined = false;
         std::string newPotentialQualifiedName = getApp()->getAppIDString() + "." + getFullyQualifiedNameInternal(newName);
-        (void)Natron::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
+        (void)Python::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
         if (isAttrDefined) {
             std::stringstream ss;
             ss << "A Python attribute with the same name (" << newPotentialQualifiedName << ") already exists.";
@@ -2786,7 +2786,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                     }
                 }
                 if (!mainPage) {
-                    mainPage = natronCreateKnob<KnobPage>(_imp->liveInstance.get(), "Settings");
+                    mainPage = AppManager::createKnob<KnobPage>(_imp->liveInstance.get(), "Settings");
                 }
                 assert(mainPage);
             }
@@ -2794,7 +2794,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             
             if (isWriter) {
                 ///Find a  "lastFrame" parameter and add it after it
-                boost::shared_ptr<KnobInt> frameIncrKnob = natronCreateKnob<KnobInt>(_imp->liveInstance.get(), kWriteParamFrameStepLabel, 1 , false);
+                boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(_imp->liveInstance.get(), kWriteParamFrameStepLabel, 1 , false);
                 frameIncrKnob->setName(kWriteParamFrameStep);
                 frameIncrKnob->setHintToolTip(kWriteParamFrameStepHint);
                 frameIncrKnob->setAnimationEnabled(false);
@@ -2853,7 +2853,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                     bool skipSeparator = !mainPageChildren.empty() && dynamic_cast<KnobSeparator*>(mainPageChildren.back().get());
 
                     if (skipSeparator) {
-                        boost::shared_ptr<KnobSeparator> sep = natronCreateKnob<KnobSeparator>(_imp->liveInstance.get(), "Advanced", 1, false);
+                        boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(_imp->liveInstance.get(), "Advanced", 1, false);
                         mainPage->addKnob(sep);
                     }
                     
@@ -2907,7 +2907,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
 #endif
                 if (useRGBACheckbox && (!foundEnabled[0] || !foundEnabled[1] || !foundEnabled[2] || !foundEnabled[3])) {
                     for (int i = 0; i < 4; ++i) {
-                        foundEnabled[i] =  natronCreateKnob<KnobBool>(_imp->liveInstance.get(), channelLabels[i], 1, false);
+                        foundEnabled[i] =  AppManager::createKnob<KnobBool>(_imp->liveInstance.get(), channelLabels[i], 1, false);
                         foundEnabled[i]->setName(channelNames[i]);
                         foundEnabled[i]->setAnimationEnabled(false);
                         foundEnabled[i]->setAddNewLine(i == 3);
@@ -2944,7 +2944,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 
                 
                 MaskSelector sel;
-                boost::shared_ptr<KnobBool> enabled = natronCreateKnob<KnobBool>(_imp->liveInstance.get(), inputLabels[i],1,false);
+                boost::shared_ptr<KnobBool> enabled = AppManager::createKnob<KnobBool>(_imp->liveInstance.get(), inputLabels[i],1,false);
                 
                 enabled->setDefaultValue(false, 0);
                 enabled->setAddNewLine(false);
@@ -2967,7 +2967,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 
                 sel.enabled = enabled;
                 
-                boost::shared_ptr<KnobChoice> channel = natronCreateKnob<KnobChoice>(_imp->liveInstance.get(), "",1,false);
+                boost::shared_ptr<KnobChoice> channel = AppManager::createKnob<KnobChoice>(_imp->liveInstance.get(), "",1,false);
                 
                 std::vector<std::string> choices;
                 choices.push_back("None");
@@ -2996,7 +2996,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                     mainPage->addKnob(channel);
                 }
                 
-                boost::shared_ptr<KnobString> channelName = natronCreateKnob<KnobString>(_imp->liveInstance.get(), "",1,false);
+                boost::shared_ptr<KnobString> channelName = AppManager::createKnob<KnobString>(_imp->liveInstance.get(), "",1,false);
                 channelName->setSecretByDefault(true);
                 channelName->setEvaluateOnChange(false);
                 channelName->setDefaultValue(choices[choices.size() - 1]);
@@ -3019,7 +3019,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
     
             //Create the host mix if needed
             if (!disableNatronKnobs && _imp->liveInstance->isHostMixingEnabled()) {
-                boost::shared_ptr<KnobDouble> mixKnob = natronCreateKnob<KnobDouble>(_imp->liveInstance.get(), "Mix", 1, false);
+                boost::shared_ptr<KnobDouble> mixKnob = AppManager::createKnob<KnobDouble>(_imp->liveInstance.get(), "Mix", 1, false);
                 mixKnob->setName("hostMix");
                 mixKnob->setHintToolTip("Mix between the source image at 0 and the full effect at 1.");
                 mixKnob->setMinimum(0.);
@@ -3046,9 +3046,9 @@ Node::initializeKnobs(int renderScaleSupportPref)
             
         } // !isBd
         
-        _imp->nodeSettingsPage = natronCreateKnob<KnobPage>(_imp->liveInstance.get(), NATRON_PARAMETER_PAGE_NAME_EXTRA,1,false);
+        _imp->nodeSettingsPage = AppManager::createKnob<KnobPage>(_imp->liveInstance.get(), NATRON_PARAMETER_PAGE_NAME_EXTRA,1,false);
 
-        boost::shared_ptr<KnobString> nodeLabel = natronCreateKnob<KnobString>(_imp->liveInstance.get(),
+        boost::shared_ptr<KnobString> nodeLabel = AppManager::createKnob<KnobString>(_imp->liveInstance.get(),
                                                               isBd ? tr("Name label").toStdString() : tr("Label").toStdString(),1,false);
         assert(nodeLabel);
         nodeLabel->setName(kUserLabelKnobName);
@@ -3062,7 +3062,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
         
         if (!isBd) {
             
-            boost::shared_ptr<KnobBool> hideInputs = natronCreateKnob<KnobBool>(_imp->liveInstance.get(), "Hide inputs", 1, false);
+            boost::shared_ptr<KnobBool> hideInputs = AppManager::createKnob<KnobBool>(_imp->liveInstance.get(), "Hide inputs", 1, false);
             hideInputs->setName("hideInputs");
             hideInputs->setDefaultValue(false);
             hideInputs->setAnimationEnabled(false);
@@ -3074,7 +3074,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->nodeSettingsPage.lock()->addKnob(hideInputs);
 
             
-            boost::shared_ptr<KnobBool> fCaching = natronCreateKnob<KnobBool>(_imp->liveInstance.get(), "Force caching", 1, false);
+            boost::shared_ptr<KnobBool> fCaching = AppManager::createKnob<KnobBool>(_imp->liveInstance.get(), "Force caching", 1, false);
             fCaching->setName("forceCaching");
             fCaching->setDefaultValue(false);
             fCaching->setAnimationEnabled(false);
@@ -3086,7 +3086,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->forceCaching = fCaching;
             _imp->nodeSettingsPage.lock()->addKnob(fCaching);
             
-            boost::shared_ptr<KnobBool> previewEnabled = natronCreateKnob<KnobBool>(_imp->liveInstance.get(), tr("Preview").toStdString(),1,false);
+            boost::shared_ptr<KnobBool> previewEnabled = AppManager::createKnob<KnobBool>(_imp->liveInstance.get(), tr("Preview").toStdString(),1,false);
             assert(previewEnabled);
             previewEnabled->setDefaultValue( makePreviewByDefault() );
             previewEnabled->setName(kEnablePreviewKnobName);
@@ -3098,7 +3098,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->nodeSettingsPage.lock()->addKnob(previewEnabled);
             _imp->previewEnabledKnob = previewEnabled;
             
-            boost::shared_ptr<KnobBool> disableNodeKnob = natronCreateKnob<KnobBool>(_imp->liveInstance.get(), "Disable",1,false);
+            boost::shared_ptr<KnobBool> disableNodeKnob = AppManager::createKnob<KnobBool>(_imp->liveInstance.get(), "Disable",1,false);
             assert(disableNodeKnob);
             disableNodeKnob->setAnimationEnabled(false);
             disableNodeKnob->setDefaultValue(false);
@@ -3109,7 +3109,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->nodeSettingsPage.lock()->addKnob(disableNodeKnob);
             _imp->disableNodeKnob = disableNodeKnob;
             
-            boost::shared_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported = natronCreateKnob<KnobBool>(_imp->liveInstance.get(), tr("Render high def. upstream").toStdString(),1,false);
+            boost::shared_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported = AppManager::createKnob<KnobBool>(_imp->liveInstance.get(), tr("Render high def. upstream").toStdString(),1,false);
             useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
             useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
             useFullScaleImagesWhenRenderScaleUnsupported->setName("highDefUpstream");
@@ -3126,7 +3126,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->nodeSettingsPage.lock()->addKnob(useFullScaleImagesWhenRenderScaleUnsupported);
             _imp->useFullScaleImagesWhenRenderScaleUnsupported = useFullScaleImagesWhenRenderScaleUnsupported;
             
-            boost::shared_ptr<KnobString> knobChangedCallback = natronCreateKnob<KnobString>(_imp->liveInstance.get(), tr("After param changed callback").toStdString());
+            boost::shared_ptr<KnobString> knobChangedCallback = AppManager::createKnob<KnobString>(_imp->liveInstance.get(), tr("After param changed callback").toStdString());
             knobChangedCallback->setHintToolTip(tr("Set here the name of a function defined in Python which will be called for each  "
                                                          "parameter change. Either define this function in the Script Editor "
                                                          "or in the init.py script or even in the script of a Python group plug-in.\n"
@@ -3142,7 +3142,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->nodeSettingsPage.lock()->addKnob(knobChangedCallback);
             _imp->knobChangedCallback = knobChangedCallback;
             
-            boost::shared_ptr<KnobString> inputChangedCallback = natronCreateKnob<KnobString>(_imp->liveInstance.get(), tr("After input changed callback").toStdString());
+            boost::shared_ptr<KnobString> inputChangedCallback = AppManager::createKnob<KnobString>(_imp->liveInstance.get(), tr("After input changed callback").toStdString());
             inputChangedCallback->setHintToolTip(tr("Set here the name of a function defined in Python which will be called after "
                                                           "each connection is changed for the inputs of the node. "
                                                           "Either define this function in the Script Editor "
@@ -3160,7 +3160,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->inputChangedCallback = inputChangedCallback;
             
             if (isGroup) {
-                boost::shared_ptr<KnobString> onNodeCreated = natronCreateKnob<KnobString>(_imp->liveInstance.get(), "After Node Created");
+                boost::shared_ptr<KnobString> onNodeCreated = AppManager::createKnob<KnobString>(_imp->liveInstance.get(), "After Node Created");
                 onNodeCreated->setName("afterNodeCreated");
                 onNodeCreated->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
                                               "is created in the group. This will be called in addition to the After Node Created "
@@ -3176,7 +3176,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 _imp->nodeCreatedCallback = onNodeCreated;
                 _imp->nodeSettingsPage.lock()->addKnob(onNodeCreated);
                 
-                boost::shared_ptr<KnobString> onNodeDeleted = natronCreateKnob<KnobString>(_imp->liveInstance.get(), "Before Node Removal");
+                boost::shared_ptr<KnobString> onNodeDeleted = AppManager::createKnob<KnobString>(_imp->liveInstance.get(), "Before Node Removal");
                 onNodeDeleted->setName("beforeNodeRemoval");
                 onNodeDeleted->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
                                               "is about to be deleted. This will be called in addition to the Before Node Removal "
@@ -3191,11 +3191,11 @@ Node::initializeKnobs(int renderScaleSupportPref)
             }
             
             
-            boost::shared_ptr<KnobPage> infoPage = natronCreateKnob<KnobPage>(_imp->liveInstance.get(), tr("Info").toStdString(), 1, false);
+            boost::shared_ptr<KnobPage> infoPage = AppManager::createKnob<KnobPage>(_imp->liveInstance.get(), tr("Info").toStdString(), 1, false);
             infoPage->setName(NATRON_PARAMETER_PAGE_NAME_INFO);
             _imp->infoPage = infoPage;
             
-            boost::shared_ptr<KnobString> nodeInfos = natronCreateKnob<KnobString>(_imp->liveInstance.get(), "", 1, false);
+            boost::shared_ptr<KnobString> nodeInfos = AppManager::createKnob<KnobString>(_imp->liveInstance.get(), "", 1, false);
             nodeInfos->setName("nodeInfos");
             nodeInfos->setAnimationEnabled(false);
             nodeInfos->setIsPersistant(false);
@@ -3207,16 +3207,16 @@ Node::initializeKnobs(int renderScaleSupportPref)
             _imp->nodeInfos = nodeInfos;
             
             
-            boost::shared_ptr<KnobButton> refreshInfoButton = natronCreateKnob<KnobButton>(_imp->liveInstance.get(), tr("Refresh Info").toStdString(),1,false);
+            boost::shared_ptr<KnobButton> refreshInfoButton = AppManager::createKnob<KnobButton>(_imp->liveInstance.get(), tr("Refresh Info").toStdString(),1,false);
             refreshInfoButton->setName("refreshButton");
             refreshInfoButton->setEvaluateOnChange(false);
             infoPage->addKnob(refreshInfoButton);
             _imp->refreshInfoButton = refreshInfoButton;
             
             if (_imp->liveInstance->isWriter()) {
-                boost::shared_ptr<KnobPage> pythonPage = natronCreateKnob<KnobPage>(_imp->liveInstance.get(), tr("Python").toStdString(),1,false);
+                boost::shared_ptr<KnobPage> pythonPage = AppManager::createKnob<KnobPage>(_imp->liveInstance.get(), tr("Python").toStdString(),1,false);
                 
-                boost::shared_ptr<KnobString> beforeFrameRender =  natronCreateKnob<KnobString>(_imp->liveInstance.get(), tr("Before frame render").toStdString(), 1 ,false);
+                boost::shared_ptr<KnobString> beforeFrameRender =  AppManager::createKnob<KnobString>(_imp->liveInstance.get(), tr("Before frame render").toStdString(), 1 ,false);
                 beforeFrameRender->setName("beforeFrameRender");
                 beforeFrameRender->setAnimationEnabled(false);
                 beforeFrameRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called before rendering "
@@ -3228,7 +3228,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 pythonPage->addKnob(beforeFrameRender);
                 _imp->beforeFrameRender = beforeFrameRender;
                 
-                boost::shared_ptr<KnobString> beforeRender =  natronCreateKnob<KnobString>(_imp->liveInstance.get(), tr("Before render").toStdString(),1,false);
+                boost::shared_ptr<KnobString> beforeRender =  AppManager::createKnob<KnobString>(_imp->liveInstance.get(), tr("Before render").toStdString(),1,false);
                 beforeRender->setName("beforeRender");
                 beforeRender->setAnimationEnabled(false);
                 beforeRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called once when "
@@ -3239,7 +3239,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 pythonPage->addKnob(beforeRender);
                 _imp->beforeRender = beforeRender;
                 
-                boost::shared_ptr<KnobString> afterFrameRender =  natronCreateKnob<KnobString>(_imp->liveInstance.get(), tr("After frame render").toStdString(),1,false);
+                boost::shared_ptr<KnobString> afterFrameRender =  AppManager::createKnob<KnobString>(_imp->liveInstance.get(), tr("After frame render").toStdString(),1,false);
                 afterFrameRender->setName("afterFrameRender");
                 afterFrameRender->setAnimationEnabled(false);
                 afterFrameRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called after rendering "
@@ -3251,7 +3251,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 pythonPage->addKnob(afterFrameRender);
                 _imp->afterFrameRender = afterFrameRender;
                 
-                boost::shared_ptr<KnobString> afterRender =  natronCreateKnob<KnobString>(_imp->liveInstance.get(), tr("After render").toStdString(),1,false);
+                boost::shared_ptr<KnobString> afterRender =  AppManager::createKnob<KnobString>(_imp->liveInstance.get(), tr("After render").toStdString(),1,false);
                 afterRender->setName("afterRender");
                 afterRender->setAnimationEnabled(false);
                 afterRender->setHintToolTip(tr("Add here the name of a Python defined function that will be called once when the rendering "
@@ -3284,7 +3284,7 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     
     ChannelSelector sel;
     sel.hasAllChoice = isOutput;
-    boost::shared_ptr<KnobChoice> layer = natronCreateKnob<KnobChoice>(liveInstance.get(), isOutput ? "Output Layer" : inputName + " Layer", 1, false);
+    boost::shared_ptr<KnobChoice> layer = AppManager::createKnob<KnobChoice>(liveInstance.get(), isOutput ? "Output Layer" : inputName + " Layer", 1, false);
     layer->setHostCanAddOptions(isOutput);
     if (!isOutput) {
         layer->setName(inputName + std::string("_") + std::string(kOutputChannelsKnobName));
@@ -3325,7 +3325,7 @@ Node::Implementation::createChannelSelector(int inputNb,const std::string & inpu
     }
     layer->setDefaultValue(defVal);
     
-    boost::shared_ptr<KnobString> layerName = natronCreateKnob<KnobString>(liveInstance.get(), inputName + "_layer_name", 1, false);
+    boost::shared_ptr<KnobString> layerName = AppManager::createKnob<KnobString>(liveInstance.get(), inputName + "_layer_name", 1, false);
     layerName->setSecretByDefault(true);
     layerName->setAnimationEnabled(false);
     layerName->setEvaluateOnChange(false);
@@ -4935,9 +4935,9 @@ namespace {
                         if (srcNComps == 1) {
                             gFilt = bFilt = rFilt;
                         }
-                        int r = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(rFilt) : rFilt);
-                        int g = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(gFilt) : gFilt);
-                        int b = Color::floatToInt<256>(convertToSrgb ? Natron::Color::to_func_srgb(bFilt) : bFilt);
+                        int r = Color::floatToInt<256>(convertToSrgb ? Color::to_func_srgb(rFilt) : rFilt);
+                        int g = Color::floatToInt<256>(convertToSrgb ? Color::to_func_srgb(gFilt) : gFilt);
+                        int b = Color::floatToInt<256>(convertToSrgb ? Color::to_func_srgb(bFilt) : bFilt);
                         dst_pixels[j] = toBGRA(r, g, b, 255);
                     }
                 }
@@ -5113,7 +5113,7 @@ Node::makePreviewImage(SequenceTime time,
         
         ///we convert only when input is Linear.
         //Rec709 and srGB is acceptable for preview
-        bool convertToSrgb = getApp()->getDefaultColorSpaceForBitDepth( img->getBitDepth() ) == Natron::eViewerColorSpaceLinear;
+        bool convertToSrgb = getApp()->getDefaultColorSpaceForBitDepth( img->getBitDepth() ) == eViewerColorSpaceLinear;
         
         switch ( img->getBitDepth() ) {
             case eImageBitDepthByte: {
@@ -5335,20 +5335,20 @@ Node::message(MessageTypeEnum type,
     
     switch (type) {
         case eMessageTypeInfo:
-            natronInformationDialog(getLabel_mt_safe(), content);
+            Dialogs::informationDialog(getLabel_mt_safe(), content);
             
             return true;
         case eMessageTypeWarning:
-            natronWarningDialog(getLabel_mt_safe(), content);
+            Dialogs::warningDialog(getLabel_mt_safe(), content);
             
             return true;
         case eMessageTypeError:
-            natronErrorDialog(getLabel_mt_safe(), content);
+            Dialogs::errorDialog(getLabel_mt_safe(), content);
             
             return true;
         case eMessageTypeQuestion:
             
-            return natronQuestionDialog(getLabel_mt_safe(), content, false) == eStandardButtonYes;
+            return Dialogs::questionDialog(getLabel_mt_safe(), content, false) == eStandardButtonYes;
         default:
             
             return false;
@@ -6200,7 +6200,7 @@ Node::onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & vie
 }
 
 bool
-Node::onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers)
+Node::onOverlayKeyDownDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
@@ -6210,7 +6210,7 @@ Node::onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key key, 
 }
 
 bool
-Node::onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers)
+Node::onOverlayKeyUpDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
@@ -6220,7 +6220,7 @@ Node::onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key, Na
 }
 
 bool
-Node::onOverlayKeyRepeatDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers)
+Node::onOverlayKeyRepeatDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (nodeGui) {
@@ -6495,7 +6495,7 @@ Node::refreshCreatedViews(KnobI* knob)
             << QObject::tr("but do not exist in the project.").toStdString() << std::endl;
             ss << QObject::tr("Would you like to create them?").toStdString();
             std::string question  = ss.str();
-            StandardButtonEnum rep = natronQuestionDialog("Views available", question, false, StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonYes);
+            StandardButtonEnum rep = Dialogs::questionDialog("Views available", question, false, StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonYes);
             if (rep == eStandardButtonYes) {
                 std::vector<std::string> viewsToCreate;
                 for (QStringList::Iterator it = missingViews.begin(); it!=missingViews.end(); ++it) {
@@ -7212,7 +7212,7 @@ bool
 Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 {
     ///Just take into account sequentiallity for writers
-    if ( (_imp->liveInstance->getSequentialPreference() == Natron::eSequentialPreferenceOnlySequential) && _imp->liveInstance->isWriter() ) {
+    if ( (_imp->liveInstance->getSequentialPreference() == eSequentialPreferenceOnlySequential) && _imp->liveInstance->isWriter() ) {
         nodeName = getScriptName_mt_safe();
         
         return true;
@@ -7271,7 +7271,7 @@ Node::canOthersConnectToThisNode() const
         return false;
     } else if (dynamic_cast<GroupOutput*>(_imp->liveInstance.get())) {
         return false;
-    } else if (_imp->liveInstance->isWriter() && _imp->liveInstance->getSequentialPreference() == Natron::eSequentialPreferenceOnlySequential) {
+    } else if (_imp->liveInstance->isWriter() && _imp->liveInstance->getSequentialPreference() == eSequentialPreferenceOnlySequential) {
         return false;
     }
     ///In debug mode only allow connections to Writer nodes
@@ -8103,7 +8103,7 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
     
     std::string nodeFullName = appID + "." + nodeName;
     bool alreadyDefined = false;
-    PyObject* nodeObj = Natron::getAttrRecursive(nodeFullName, mainModule, &alreadyDefined);
+    PyObject* nodeObj = Python::getAttrRecursive(nodeFullName, mainModule, &alreadyDefined);
     assert(nodeObj);
     Q_UNUSED(nodeObj);
 
@@ -8115,7 +8115,7 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
         if (!appPTR->isBackground()) {
             getApp()->printAutoDeclaredVariable(script);
         }
-        if (!interpretPythonScript(script, &err, 0)) {
+        if (!Python::interpretPythonScript(script, &err, 0)) {
             qDebug() << err.c_str();
         }
     }
@@ -8134,7 +8134,7 @@ Node::setNodeVariableToPython(const std::string& oldName,const std::string& newN
     if (!appPTR->isBackground()) {
         getApp()->printAutoDeclaredVariable(script);
     }
-    if (!interpretPythonScript(script, &err, 0)) {
+    if (!Python::interpretPythonScript(script, &err, 0)) {
         qDebug() << err.c_str();
     }
     
@@ -8156,7 +8156,7 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
     if (!appPTR->isBackground()) {
         getApp()->printAutoDeclaredVariable(script);
     }
-    if (!interpretPythonScript(script, &err, 0)) {
+    if (!Python::interpretPythonScript(script, &err, 0)) {
         qDebug() << err.c_str();
     }
 }
@@ -8186,7 +8186,7 @@ Node::declarePythonFields()
     bool alreadyDefined = false;
     
     std::string nodeFullName = appID + "." + nodeName;
-    PyObject* nodeObj = Natron::getAttrRecursive(nodeFullName, getMainModule(), &alreadyDefined);
+    PyObject* nodeObj = Python::getAttrRecursive(nodeFullName, Python::getMainModule(), &alreadyDefined);
     assert(nodeObj);
     Q_UNUSED(nodeObj);
     if (!alreadyDefined) {
@@ -8217,7 +8217,7 @@ Node::removeParameterFromPython(const std::string& parameterName)
     std::string nodeFullName = appID + "." + nodeName;
     bool alreadyDefined = false;
     
-    PyObject* nodeObj = Natron::getAttrRecursive(nodeFullName, getMainModule(), &alreadyDefined);
+    PyObject* nodeObj = Python::getAttrRecursive(nodeFullName, Python::getMainModule(), &alreadyDefined);
     assert(nodeObj);
     Q_UNUSED(nodeObj);
     if (!alreadyDefined) {
@@ -8230,7 +8230,7 @@ Node::removeParameterFromPython(const std::string& parameterName)
         getApp()->printAutoDeclaredVariable(script);
     }
     std::string err;
-    if (!interpretPythonScript(script, &err, 0)) {
+    if (!Python::interpretPythonScript(script, &err, 0)) {
         qDebug() << err.c_str();
     }
 }
@@ -8249,7 +8249,7 @@ Node::declareParameterAsNodeField(const std::string& nodeName,PyObject* nodeObj,
     if (!appPTR->isBackground()) {
         getApp()->printAutoDeclaredVariable(script);
     }
-    if (!interpretPythonScript(script, &err, 0)) {
+    if (!Python::interpretPythonScript(script, &err, 0)) {
         qDebug() << err.c_str();
     }
 
@@ -8275,7 +8275,7 @@ Node::Implementation::runOnNodeCreatedCBInternal(const std::string& cb,bool user
     std::vector<std::string> args;
     std::string error;
     try {
-        getFunctionArguments(cb, &error, &args);
+        Python::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
         _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onNodeCreated callback: ")
                                                          + e.what());
@@ -8310,7 +8310,7 @@ Node::Implementation::runOnNodeCreatedCBInternal(const std::string& cb,bool user
     ss << ")\n";
     std::string output;
     std::string script = ss.str();
-    if (!interpretPythonScript(script, &error, &output)) {
+    if (!Python::interpretPythonScript(script, &error, &output)) {
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeCreated callback: " + error);
     } else if (!output.empty()) {
         _publicInterface->getApp()->appendToScriptEditor(output);
@@ -8324,7 +8324,7 @@ Node::Implementation::runOnNodeDeleteCBInternal(const std::string& cb)
     std::vector<std::string> args;
     std::string error;
     try {
-        getFunctionArguments(cb, &error, &args);
+        Python::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
         _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onNodeDeletion callback: ")
                                                          + e.what());
@@ -8354,7 +8354,7 @@ Node::Implementation::runOnNodeDeleteCBInternal(const std::string& cb)
     
     std::string err;
     std::string output;
-    if (!interpretPythonScript(ss.str(), &err, &output)) {
+    if (!Python::interpretPythonScript(ss.str(), &err, &output)) {
         _publicInterface->getApp()->appendToScriptEditor("Failed to run onNodeDeletion callback: " + err);
     } else if (!output.empty()) {
         _publicInterface->getApp()->appendToScriptEditor(output);
@@ -8468,7 +8468,7 @@ Node::Implementation::runInputChangedCallback(int index,const std::string& cb)
     std::vector<std::string> args;
     std::string error;
     try {
-        getFunctionArguments(cb, &error, &args);
+        Python::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
         _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onInputChanged callback: ")
                                                          + e.what());
@@ -8515,7 +8515,7 @@ Node::Implementation::runInputChangedCallback(int index,const std::string& cb)
     
     std::string script = ss.str();
     std::string output;
-    if (!interpretPythonScript(script, &error,&output)) {
+    if (!Python::interpretPythonScript(script, &error,&output)) {
         _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + error);
     } else {
         if (!output.empty()) {

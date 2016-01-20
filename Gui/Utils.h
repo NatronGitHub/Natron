@@ -38,7 +38,11 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
+namespace GuiUtils {
+
 QString convertFromPlainText(const QString &plain, Qt::WhiteSpaceMode mode);
+
+} // GuiUtils
 
 NATRON_NAMESPACE_EXIT;
 

@@ -105,7 +105,7 @@ public:
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE;
     virtual void knobChanged(KnobI* k, ValueChangedReasonEnum reason, int view, double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {
         return eRenderSafetyInstanceSafe;
     }
@@ -127,7 +127,7 @@ private:
     void getFilenameAtSequenceTime(SequenceTime time, std::string &filename);
 
 
-    const Natron::Color::Lut* _lut;
+    const Color::Lut* _lut;
     std::string _filename;
     QImage* _img;
     QMutex _lock;

@@ -651,7 +651,7 @@ void init_NATRON_NAMESPACE(PyObject* module)
     SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_KEYFRAMETYPEENUM_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_NATRON_NAMESPACE_Type,
         "KeyframeTypeEnum",
         "NatronEngine.Natron.KeyframeTypeEnum",
-        "Natron::KeyframeTypeEnum");
+        "KeyframeTypeEnum");
     if (!SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_KEYFRAMETYPEENUM_IDX])
         return ;
 
@@ -691,7 +691,7 @@ void init_NATRON_NAMESPACE(PyObject* module)
             is_NATRON_NAMESPACE_KeyframeTypeEnum_PythonToCpp_NATRON_NAMESPACE_KeyframeTypeEnum_Convertible);
         Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_KEYFRAMETYPEENUM_IDX], converter);
         Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_KEYFRAMETYPEENUM_IDX], converter);
-        Shiboken::Conversions::registerConverterName(converter, "Natron::KeyframeTypeEnum");
+        Shiboken::Conversions::registerConverterName(converter, "KeyframeTypeEnum");
         Shiboken::Conversions::registerConverterName(converter, "KeyframeTypeEnum");
     }
     // End of 'KeyframeTypeEnum' enum.
@@ -743,7 +743,7 @@ void init_NATRON_NAMESPACE(PyObject* module)
     SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_ANIMATIONLEVELENUM_IDX] = Shiboken::Enum::createScopedEnum(&Sbk_NATRON_NAMESPACE_Type,
         "AnimationLevelEnum",
         "NatronEngine.Natron.AnimationLevelEnum",
-        "Natron::AnimationLevelEnum");
+        "AnimationLevelEnum");
     if (!SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_ANIMATIONLEVELENUM_IDX])
         return ;
 
@@ -765,7 +765,7 @@ void init_NATRON_NAMESPACE(PyObject* module)
             is_NATRON_NAMESPACE_AnimationLevelEnum_PythonToCpp_NATRON_NAMESPACE_AnimationLevelEnum_Convertible);
         Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_ANIMATIONLEVELENUM_IDX], converter);
         Shiboken::Enum::setTypeConverter(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_ANIMATIONLEVELENUM_IDX], converter);
-        Shiboken::Conversions::registerConverterName(converter, "Natron::AnimationLevelEnum");
+        Shiboken::Conversions::registerConverterName(converter, "AnimationLevelEnum");
         Shiboken::Conversions::registerConverterName(converter, "AnimationLevelEnum");
     }
     // End of 'AnimationLevelEnum' enum.
@@ -1635,9 +1635,9 @@ void init_NATRON_NAMESPACE(PyObject* module)
     qRegisterMetaType< ::NATRON_NAMESPACE::StandardButtons >("Natron::StandardButtons");
     qRegisterMetaType< ::NATRON_NAMESPACE::ImageComponentsEnum >("Natron::ImageComponentsEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::ImageBitDepthEnum >("Natron::ImageBitDepthEnum");
-    qRegisterMetaType< ::NATRON_NAMESPACE::KeyframeTypeEnum >("Natron::KeyframeTypeEnum");
+    qRegisterMetaType< ::NATRON_NAMESPACE::KeyframeTypeEnum >("KeyframeTypeEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::ValueChangedReasonEnum >("Natron::ValueChangedReasonEnum");
-    qRegisterMetaType< ::NATRON_NAMESPACE::AnimationLevelEnum >("Natron::AnimationLevelEnum");
+    qRegisterMetaType< ::NATRON_NAMESPACE::AnimationLevelEnum >("AnimationLevelEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::OrientationEnum >("Natron::OrientationEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::DisplayChannelsEnum >("Natron::DisplayChannelsEnum");
     qRegisterMetaType< ::NATRON_NAMESPACE::ImagePremultiplicationEnum >("Natron::ImagePremultiplicationEnum");

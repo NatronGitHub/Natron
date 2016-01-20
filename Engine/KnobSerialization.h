@@ -595,7 +595,7 @@ class KnobSerialization : public KnobSerializationBase
                 KnobDouble::SerializedTrack t;
                 ar & ::boost::serialization::make_nvp("SlavePtNodeName",t.rotoNodeName);
                 if (version >= KNOB_SERIALIZATION_NODE_SCRIPT_NAME) {
-                    t.rotoNodeName = Natron::makeNameScriptFriendly(t.rotoNodeName);
+                    t.rotoNodeName = Python::makeNameScriptFriendly(t.rotoNodeName);
                 }
                 ar & ::boost::serialization::make_nvp("SlavePtBezier",t.bezierName);
                 ar & ::boost::serialization::make_nvp("SlavePtIndex",t.cpIndex);

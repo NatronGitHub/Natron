@@ -170,24 +170,24 @@ struct MultiInstancePanelPrivate
         
         boost::shared_ptr<KnobHelper> ret;
         if ( isInt  ) {
-            boost::shared_ptr<KnobInt> intKnb = natronCreateKnob<KnobInt>(publicInterface, ref->getLabel(), ref->getDimension(),declaredByPlugin);
+            boost::shared_ptr<KnobInt> intKnb = AppManager::createKnob<KnobInt>(publicInterface, ref->getLabel(), ref->getDimension(),declaredByPlugin);
             intKnb->setMinimumsAndMaximums(isInt->getMinimums(), isInt->getMaximums());
             intKnb->setDisplayMinimumsAndMaximums(isInt->getDisplayMinimums(), isInt->getDisplayMaximums());
             ret = intKnb;
         } else if ( dynamic_cast<KnobBool*>( ref.get() ) ) {
-            ret = natronCreateKnob<KnobBool>(publicInterface, ref->getLabel(), ref->getDimension(),declaredByPlugin);
+            ret = AppManager::createKnob<KnobBool>(publicInterface, ref->getLabel(), ref->getDimension(),declaredByPlugin);
         } else if ( isDouble ) {
-            boost::shared_ptr<KnobDouble> dblKnob = natronCreateKnob<KnobDouble>(publicInterface, ref->getLabel(), ref->getDimension(),declaredByPlugin);
+            boost::shared_ptr<KnobDouble> dblKnob = AppManager::createKnob<KnobDouble>(publicInterface, ref->getLabel(), ref->getDimension(),declaredByPlugin);
             dblKnob->setMinimumsAndMaximums(isDouble->getMinimums(), isDouble->getMaximums());
             dblKnob->setDisplayMinimumsAndMaximums(isDouble->getDisplayMinimums(), isDouble->getDisplayMaximums());
             ret = dblKnob;
         } else if (isChoice) {
-            boost::shared_ptr<KnobChoice> choice = natronCreateKnob<KnobChoice>(publicInterface,
+            boost::shared_ptr<KnobChoice> choice = AppManager::createKnob<KnobChoice>(publicInterface,
                                                                                     ref->getLabel(), ref->getDimension(), declaredByPlugin);
             choice->populateChoices( isChoice->getEntries_mt_safe(),isChoice->getEntriesHelp_mt_safe() );
             ret = choice;
         } else if (isString) {
-            boost::shared_ptr<KnobString> strKnob = natronCreateKnob<KnobString>(publicInterface,
+            boost::shared_ptr<KnobString> strKnob = AppManager::createKnob<KnobString>(publicInterface,
                                                                                      ref->getLabel(), ref->getDimension(), declaredByPlugin);
             if ( isString->isCustomKnob() ) {
                 strKnob->setAsCustom();
@@ -203,24 +203,24 @@ struct MultiInstancePanelPrivate
             }
             ret = strKnob;
         } else if ( dynamic_cast<KnobParametric*>( ref.get() ) ) {
-            ret = natronCreateKnob<KnobParametric>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobParametric>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if ( dynamic_cast<KnobColor*>( ref.get() ) ) {
-            ret = natronCreateKnob<KnobColor>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobColor>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if ( dynamic_cast<KnobPath*>( ref.get() ) ) {
-            ret = natronCreateKnob<KnobPath>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobPath>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if ( dynamic_cast<KnobFile*>( ref.get() ) ) {
-            ret = natronCreateKnob<KnobFile>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobFile>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if ( dynamic_cast<KnobOutputFile*>( ref.get() ) ) {
-            ret = natronCreateKnob<KnobOutputFile>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobOutputFile>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if (isButton) {
-            boost::shared_ptr<KnobButton> btn = natronCreateKnob<KnobButton>(publicInterface,
+            boost::shared_ptr<KnobButton> btn = AppManager::createKnob<KnobButton>(publicInterface,
                                                                                  ref->getLabel(), ref->getDimension(), declaredByPlugin);
             ///set the name prior to calling setIconForButton
             btn->setName( ref->getName() );
             publicInterface->setIconForButton( btn.get() );
             ret = btn;
         } else if ( dynamic_cast<KnobPage*>( ref.get() ) ) {
-            ret = natronCreateKnob<KnobPage>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobPage>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else {
             return;
         }
@@ -350,7 +350,7 @@ TableItemDelegate::paint(QPainter * painter,
     QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
 
     int dim;
-    Natron::AnimationLevelEnum level = eAnimationLevelNone;
+    AnimationLevelEnum level = eAnimationLevelNone;
     boost::shared_ptr<KnobI> knob = _panel->getKnobForItem(item, &dim);
     if (knob) {
         level = knob->getAnimationLevel(dim);
@@ -536,12 +536,12 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->addButton = new Button(QIcon(),"+",_imp->buttonsContainer);
     _imp->addButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _imp->addButton->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
-    _imp->addButton->setToolTip(Natron::convertFromPlainText(tr("Add new."), Qt::WhiteSpaceNormal));
+    _imp->addButton->setToolTip(GuiUtils::convertFromPlainText(tr("Add new."), Qt::WhiteSpaceNormal));
     _imp->buttonsLayout->addWidget(_imp->addButton);
     QObject::connect( _imp->addButton, SIGNAL( clicked(bool) ), this, SLOT( onAddButtonClicked() ) );
 
     _imp->removeButton = new Button(QIcon(),"-",_imp->buttonsContainer);
-    _imp->removeButton->setToolTip(Natron::convertFromPlainText(tr("Remove selection."), Qt::WhiteSpaceNormal));
+    _imp->removeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Remove selection."), Qt::WhiteSpaceNormal));
     _imp->removeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _imp->removeButton->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
     _imp->buttonsLayout->addWidget(_imp->removeButton);
@@ -552,14 +552,14 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->selectAll = new Button(QIcon(selectAll),"",_imp->buttonsContainer);
     _imp->selectAll->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _imp->selectAll->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
-    _imp->selectAll->setToolTip(Natron::convertFromPlainText(tr("Select all."), Qt::WhiteSpaceNormal));
+    _imp->selectAll->setToolTip(GuiUtils::convertFromPlainText(tr("Select all."), Qt::WhiteSpaceNormal));
     _imp->buttonsLayout->addWidget(_imp->selectAll);
     QObject::connect( _imp->selectAll, SIGNAL( clicked(bool) ), this, SLOT( onSelectAllButtonClicked() ) );
 
     _imp->resetTracksButton = new Button("Reset",_imp->buttonsContainer);
     QObject::connect( _imp->resetTracksButton, SIGNAL( clicked(bool) ), this, SLOT( resetSelectedInstances() ) );
     _imp->buttonsLayout->addWidget(_imp->resetTracksButton);
-    _imp->resetTracksButton->setToolTip(Natron::convertFromPlainText(tr("Reset selected items."), Qt::WhiteSpaceNormal));
+    _imp->resetTracksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Reset selected items."), Qt::WhiteSpaceNormal));
 
     layout->addWidget(_imp->buttonsContainer);
     appendButtons(_imp->buttonsLayout);
@@ -1710,7 +1710,7 @@ struct TrackerPanelPrivate
     mutable QMutex updateViewerMutex;
     bool updateViewerOnTrackingEnabled;
     
-    Natron::Label* exportLabel;
+    Label* exportLabel;
     QWidget* exportContainer;
     QHBoxLayout* exportLayout;
     ComboBox* exportChoice;
@@ -1767,7 +1767,7 @@ TrackerPanel::appendExtraGui(QVBoxLayout* layout)
         return;
     }
     
-    _imp->exportLabel = new Natron::Label( tr("Export data"),layout->parentWidget() );
+    _imp->exportLabel = new Label( tr("Export data"),layout->parentWidget() );
     layout->addWidget(_imp->exportLabel);
     layout->addSpacing(10);
     _imp->exportContainer = new QWidget( layout->parentWidget() );
@@ -1847,7 +1847,7 @@ TrackerPanel::appendButtons(QHBoxLayout* buttonLayout)
         return;
     }
     _imp->averageTracksButton = new Button( tr("Average tracks"),buttonLayout->parentWidget() );
-    _imp->averageTracksButton->setToolTip(Natron::convertFromPlainText(tr("Make a new track which is the average of the selected tracks."), Qt::WhiteSpaceNormal));
+    _imp->averageTracksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Make a new track which is the average of the selected tracks."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->averageTracksButton, SIGNAL( clicked(bool) ), this, SLOT( onAverageTracksButtonClicked() ) );
     buttonLayout->addWidget(_imp->averageTracksButton);
 }
@@ -1858,9 +1858,9 @@ TrackerPanel::initializeExtraKnobs()
     if (!getMainInstance()->isPointTrackerNode()) {
         return;
     }
-    _imp->transformPage = natronCreateKnob<KnobPage>(this, "Transform",1,false);
+    _imp->transformPage = AppManager::createKnob<KnobPage>(this, "Transform",1,false);
 
-    _imp->referenceFrame = natronCreateKnob<KnobInt>(this,"Reference frame",1,false);
+    _imp->referenceFrame = AppManager::createKnob<KnobInt>(this,"Reference frame",1,false);
     _imp->referenceFrame->setAnimationEnabled(false);
     _imp->referenceFrame->setHintToolTip("This is the frame number at which the transform will be an identity.");
     _imp->transformPage->addKnob(_imp->referenceFrame);
@@ -1889,7 +1889,7 @@ TrackerPanel::onAverageTracksButtonClicked()
 
     getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
-        natronWarningDialog( tr("Average").toStdString(), tr("No tracks selected").toStdString() );
+        Dialogs::warningDialog( tr("Average").toStdString(), tr("No tracks selected").toStdString() );
 
         return;
     }
@@ -2037,7 +2037,7 @@ TrackerPanelPrivate::getTrackInstancesForButton(std::list<KnobButton*>* trackBut
     
     publicInterface->getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
-        natronWarningDialog( QObject::tr("Tracker").toStdString(), QObject::tr("You must select something to track first").toStdString() );
+        Dialogs::warningDialog( QObject::tr("Tracker").toStdString(), QObject::tr("You must select something to track first").toStdString() );
         return false;
     }
     
@@ -2116,7 +2116,7 @@ TrackerPanel::trackPrevious()
 
     getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
-        natronWarningDialog( tr("Tracker").toStdString(), tr("You must select something to track first").toStdString() );
+        Dialogs::warningDialog( tr("Tracker").toStdString(), tr("You must select something to track first").toStdString() );
 
         return false;
     }
@@ -2142,7 +2142,7 @@ TrackerPanel::trackNext()
     
     getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
-        natronWarningDialog( tr("Tracker").toStdString(), tr("You must select something to track first").toStdString() );
+        Dialogs::warningDialog( tr("Tracker").toStdString(), tr("You must select something to track first").toStdString() );
         
         return false;
     }
@@ -2313,7 +2313,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
                                                   bool invert)
 {
     if ( (selection.size() > 4) || selection.empty() ) {
-        natronErrorDialog( QObject::tr("Export").toStdString(),
+        Dialogs::errorDialog( QObject::tr("Export").toStdString(),
                              QObject::tr("Export to corner pin needs between 1 and 4 selected tracks.").toStdString() );
 
         return;
@@ -2408,7 +2408,7 @@ TrackerPanel::showMenuForInstance(Node* instance)
     if (!getMainInstance()->isPointTrackerNode()) {
         return;
     }
-    Natron::Menu menu( getGui() );
+    Menu menu( getGui() );
 
     //menu.setFont( QFont(appFont,appFontSize) );
 
@@ -2564,7 +2564,7 @@ TrackScheduler::run()
             ///Ok all tracks are finished now for this frame, refresh viewer if needed
             bool updateViewer = _imp->panel->isUpdateViewerOnTrackingEnabled();
             if (updateViewer) {
-                timeline->seekFrame(cur, true, 0, Natron::eTimelineChangeReasonUserSeek);
+                timeline->seekFrame(cur, true, 0, eTimelineChangeReasonUserSeek);
             }
 
             if (reportProgress) {

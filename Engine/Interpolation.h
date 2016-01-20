@@ -30,6 +30,9 @@
 
 
 NATRON_NAMESPACE_ENTER;
+
+namespace Interpolation {
+
 /**
  * @brief Interpolates using the control points P0(t0,v0) , P3(t3,v3)
  * and the derivatives P1(t1,v1) (being the derivative at P0 with respect to
@@ -194,6 +197,7 @@ int solveCubic(double c0, double c1, double c2, double c3, double s[3], int o[3]
 /// solutions an and their order are put in s and o
 int solveQuartic(double c0, double c1, double c2, double c3, double c4, double s[4], int o[4]);
 
+} // namespace Interpolation
 
 NATRON_NAMESPACE_EXIT;
 

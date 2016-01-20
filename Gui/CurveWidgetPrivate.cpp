@@ -34,7 +34,7 @@
 #include "Engine/Bezier.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Settings.h"
-#include "Engine/Image.h" // Natron::clamp
+#include "Engine/Image.h" // Image::clamp
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"
@@ -464,9 +464,9 @@ CurveWidgetPrivate::drawScale()
     sett->getCurveEditorScaleColor(&scaleR, &scaleG, &scaleB);
     
     QColor scaleColor;
-    scaleColor.setRgbF(Natron::clamp(scaleR, 0., 1.),
-                       Natron::clamp(scaleG, 0., 1.),
-                       Natron::clamp(scaleB, 0., 1.));
+    scaleColor.setRgbF(Image::clamp(scaleR, 0., 1.),
+                       Image::clamp(scaleG, 0., 1.),
+                       Image::clamp(scaleB, 0., 1.));
 
     
     {

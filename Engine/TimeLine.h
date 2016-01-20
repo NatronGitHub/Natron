@@ -64,7 +64,7 @@ public:
     void seekFrame(SequenceTime frame,
                    bool updateLastCaller,
                    OutputEffectInstance* caller,
-                   Natron::TimelineChangeReasonEnum reason);
+                   TimelineChangeReasonEnum reason);
 
     void incrementCurrentFrame();
 
@@ -81,7 +81,7 @@ Q_SIGNALS:
     
     void frameAboutToChange();
 
-    //reason being a Natron::TimelineChangeReasonEnum
+    //reason being a TimelineChangeReasonEnum
     void frameChanged(SequenceTime,int reason);
 
 private:

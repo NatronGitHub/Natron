@@ -89,14 +89,14 @@ protected:
 
 
     virtual void initializeKnobs() OVERRIDE;
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {
         return eRenderSafetyInstanceSafe;
     }
 
 private:
 
-    const Natron::Color::Lut* _lut;
+    const Color::Lut* _lut;
     boost::shared_ptr<KnobBool> _premultKnob;
     boost::shared_ptr<KnobOutputFile> _fileKnob;
     boost::shared_ptr<KnobChoice> _frameRangeChoosal;

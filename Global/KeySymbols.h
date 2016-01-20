@@ -407,19 +407,19 @@ enum Key
     Key_ydiaeresis = kOfxKey_ydiaeresis
 };
 
-enum KeyboardModifier
+enum KeyboardModifierEnum
 {
-    NoModifier = 0x00000000,
-    ShiftModifier = 0x02000000,
-    ControlModifier = 0x04000000,
-    AltModifier = 0x08000000,
-    MetaModifier = 0x10000000,
-    KeypadModifier = 0x20000000,
-    GroupSwitchModifier = 0x40000000,
-    KeyboardModifierMask = 0xfe000000
+    eKeyboardModifierNone = 0x00000000,
+    eKeyboardModifierShift = 0x02000000,
+    eKeyboardModifierControl = 0x04000000,
+    eKeyboardModifierAlt = 0x08000000,
+    eKeyboardModifierMeta = 0x10000000,
+    eKeyboardModifierKeypad = 0x20000000,
+    eKeyboardModifierGroupSwitch = 0x40000000,
+    eKeyboardModifierMask = 0xfe000000
 };
 
-typedef QFlags<Natron::KeyboardModifier> KeyboardModifiers;
+typedef QFlags<KeyboardModifierEnum> KeyboardModifiers;
 
 NATRON_NAMESPACE_EXIT;
 

@@ -457,18 +457,18 @@ OfxHost::vmessage(const char* msgtype,
         ///It seems that the only errors or warning that passes here are exceptions thrown by plug-ins
         ///(mainly Sapphire) while aborting a render. Instead of spamming the user of meaningless dialogs,
         ///just write to the log instead.
-        //natronErrorDialog(NATRON_APPLICATION_NAME, message);
+        //Dialogs::errorDialog(NATRON_APPLICATION_NAME, message);
         appPTR->writeToOfxLog_mt_safe( message.c_str() );
     } else if (type == kOfxMessageWarning) {
         ///It seems that the only errors or warning that passes here are exceptions thrown by plug-ins
         ///(mainly Sapphire) while aborting a render. Instead of spamming the user of meaningless dialogs,
         ///just write to the log instead.
-        //        natronWarningDialog(NATRON_APPLICATION_NAME, message);
+        //        Dialogs::warningDialog(NATRON_APPLICATION_NAME, message);
         appPTR->writeToOfxLog_mt_safe( message.c_str() );
     } else if (type == kOfxMessageMessage) {
-        natronInformationDialog(NATRON_APPLICATION_NAME, message);
+        Dialogs::informationDialog(NATRON_APPLICATION_NAME, message);
     } else if (type == kOfxMessageQuestion) {
-        if (natronQuestionDialog(NATRON_APPLICATION_NAME, message, false) == eStandardButtonYes) {
+        if (Dialogs::questionDialog(NATRON_APPLICATION_NAME, message, false) == eStandardButtonYes) {
             return kOfxStatReplyYes;
         } else {
             return kOfxStatReplyNo;
@@ -578,7 +578,7 @@ static std::string getContext_internal(const std::set<std::string> & contexts)
 
 OFX::Host::ImageEffect::Descriptor*
 OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                             Natron::ContextEnum* ctx)
+                                             ContextEnum* ctx)
 {
     _imp->loadingPluginID = plugin->getRawIdentifier();
     _imp->loadingPluginVersionMajor = plugin->getVersionMajor();
@@ -908,7 +908,7 @@ OfxHost::clearPluginsLoadedCache()
     if (QFile::exists(oldOfxCache)) {
         QFile::remove(oldOfxCache);
     }
-    Natron::removeRecursively(getOFXCacheDirPath());
+    QtCompat::removeRecursively(getOFXCacheDirPath());
 }
 
 void
@@ -952,7 +952,7 @@ OfxHost::newMemoryInstance(size_t nBytes)
     bool allocated = ret->alloc(nBytes);
     
     if ((nBytes != 0 && !ret->getPtr()) || !allocated) {
-        natronErrorDialog(QObject::tr("Out of memory").toStdString(),
+        Dialogs::errorDialog(QObject::tr("Out of memory").toStdString(),
                             QObject::tr("Failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
     }
     

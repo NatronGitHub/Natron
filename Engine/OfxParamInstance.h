@@ -943,7 +943,7 @@ public Q_SLOTS:
 private:
 
     OFX::Host::Param::Descriptor & _descriptor;
-    Natron::OfxOverlayInteract* _overlayInteract;
+    OfxOverlayInteract* _overlayInteract;
     OfxEffectInstance* _effect;
     boost::weak_ptr<KnobParametric> _knob;
 };

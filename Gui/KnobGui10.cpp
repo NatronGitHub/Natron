@@ -543,7 +543,7 @@ KnobGui::toolTip() const
     }
 
     if ( !realTt.isEmpty() ) {
-        realTt = Natron::convertFromPlainText(realTt.trimmed(), Qt::WhiteSpaceNormal);
+        realTt = GuiUtils::convertFromPlainText(realTt.trimmed(), Qt::WhiteSpaceNormal);
         tt.append(realTt);
     }
 

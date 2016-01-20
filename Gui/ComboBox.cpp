@@ -481,7 +481,7 @@ ComboBox::insertItem(int index,
     action->setText(item);
     action->setData(QVariant(index));
     if ( !toolTip.isEmpty() ) {
-        action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+        action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
     }
     if ( !icon.isNull() ) {
         action->setIcon(icon);
@@ -572,7 +572,7 @@ ComboBox::addItem(const QString & item,
             action->setShortcut(key);
         }
         if ( !toolTip.isEmpty() ) {
-            action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+            action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
         }
 
         addAction(action);
@@ -622,7 +622,7 @@ ComboBox::addItem(const QString & item,
                         action->setShortcut(key);
                     }
                     if ( !toolTip.isEmpty() ) {
-                        action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+                        action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
                     }
 
                     node->isLeaf = action;

@@ -97,7 +97,7 @@ QtReader::getPluginDescription() const
 void
 QtReader::initializeKnobs()
 {
-    natronWarningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developers team to test %1"
+    Dialogs::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developers team to test %1"
                                                   ". You cannot use it when rendering a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 
@@ -340,7 +340,7 @@ QtReader::getSequenceTime(SequenceTime t)
             throw std::invalid_argument("Out of frame range.");
             break;
         case 4:     //error
-            setPersistentMessage( Natron::eMessageTypeError,  QObject::tr("Missing frame").toStdString() );
+            setPersistentMessage( eMessageTypeError,  QObject::tr("Missing frame").toStdString() );
             throw std::invalid_argument("Out of frame range.");
             break;
         default:
@@ -377,7 +377,7 @@ QtReader::getSequenceTime(SequenceTime t)
             throw std::invalid_argument("Out of frame range.");
             break;
         case 4:     //error
-            setPersistentMessage( Natron::eMessageTypeError, QObject::tr("Missing frame").toStdString() );
+            setPersistentMessage( eMessageTypeError, QObject::tr("Missing frame").toStdString() );
             throw std::invalid_argument("Out of frame range.");
             break;
         default:
@@ -403,7 +403,7 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
         if ( filename.empty() ) {
             filename = _fileKnob->getFileName(time);
             if ( filename.empty() ) {
-                setPersistentMessage( Natron::eMessageTypeError, QObject::tr("Nearest frame search went out of range").toStdString() );
+                setPersistentMessage( eMessageTypeError, QObject::tr("Nearest frame search went out of range").toStdString() );
             }
         }
         break;
@@ -411,7 +411,7 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
                 /// For images sequences, if the offset is not 0, that means no frame were found at the  originally given
                 /// time, we can safely say this is  a missing frame.
         if ( filename.empty() ) {
-            setPersistentMessage( Natron::eMessageTypeError, QObject::tr("Missing frame").toStdString() );
+            setPersistentMessage( eMessageTypeError, QObject::tr("Missing frame").toStdString() );
         }
     case 2:     // Black image
                 /// For images sequences, if the offset is not 0, that means no frame were found at the  originally given
@@ -449,7 +449,7 @@ QtReader::getRegionOfDefinition(U64 /*hash*/,double time,
         delete _img;
         _img = new QImage( _filename.c_str() );
         if (_img->format() == QImage::Format_Invalid) {
-            setPersistentMessage(Natron::eMessageTypeError, QObject::tr("Failed to load the image ").toStdString() + filename);
+            setPersistentMessage(eMessageTypeError, QObject::tr("Failed to load the image ").toStdString() + filename);
 
             return eStatusFailed;
         }
@@ -488,12 +488,12 @@ QtReader::render(const RenderActionArgs& args)
     case QImage::Format_ARGB32:     // The image is stored using a 32-bit ARGB format (0xAARRGGBB).
         //might have to invert y coordinates here
         _lut->from_byte_packed( (float*)acc.pixelAt(0, 0), _img->bits(), args.roi, output.second->getBounds(), output.second->getBounds(),
-                                Natron::Color::ePixelPackingBGRA,Natron::Color::ePixelPackingRGBA,true,false );
+                                Color::ePixelPackingBGRA,Color::ePixelPackingRGBA,true,false );
         break;
     case QImage::Format_ARGB32_Premultiplied:     // The image is stored using a premultiplied 32-bit ARGB format (0xAARRGGBB).
         //might have to invert y coordinates here
         _lut->from_byte_packed( (float*)acc.pixelAt(0, 0), _img->bits(), args.roi, output.second->getBounds(), output.second->getBounds(),
-                                Natron::Color::ePixelPackingBGRA,Natron::Color::ePixelPackingRGBA,true,true );
+                                Color::ePixelPackingBGRA,Color::ePixelPackingRGBA,true,true );
         break;
     case QImage::Format_Mono:     // The image is stored using 1-bit per pixel. Bytes are packed with the most significant bit (MSB) first.
     case QImage::Format_MonoLSB:     // The image is stored using 1-bit per pixel. Bytes are packed with the less significant bit (LSB) first.
@@ -506,7 +506,7 @@ QtReader::render(const RenderActionArgs& args)
     {
         QImage img = _img->convertToFormat(QImage::Format_ARGB32);
         _lut->from_byte_packed( (float*)acc.pixelAt(0, 0), img.bits(), args.roi, output.second->getBounds(), output.second->getBounds(),
-                                Natron::Color::ePixelPackingBGRA, Natron::Color::ePixelPackingRGBA, true, false );
+                                Color::ePixelPackingBGRA, Color::ePixelPackingRGBA, true, false );
         break;
     }
     case QImage::Format_ARGB8565_Premultiplied:     // The image is stored using a premultiplied 24-bit ARGB format (8-5-6-5).
@@ -516,13 +516,13 @@ QtReader::render(const RenderActionArgs& args)
     {
         QImage img = _img->convertToFormat(QImage::Format_ARGB32_Premultiplied);
         _lut->from_byte_packed( (float*)acc.pixelAt(0, 0), img.bits(), args.roi, output.second->getBounds(), output.second->getBounds(),
-                                Natron::Color::ePixelPackingBGRA, Natron::Color::ePixelPackingRGBA, true, true );
+                                Color::ePixelPackingBGRA, Color::ePixelPackingRGBA, true, true );
         break;
     }
     case QImage::Format_Invalid:
     default:
         output.second->fill(args.roi,0.f,1.f);
-        setPersistentMessage( Natron::eMessageTypeError, QObject::tr("Invalid image format.").toStdString() );
+        setPersistentMessage( eMessageTypeError, QObject::tr("Invalid image format.").toStdString() );
 
         return eStatusFailed;
     }

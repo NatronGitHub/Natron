@@ -161,7 +161,7 @@ NATRON_NAMESPACE_EXIT;
 
 BOOST_CLASS_VERSION(NATRON_NAMESPACE::RotoDrawableItemSerialization,ROTO_DRAWABLE_ITEM_VERSION)
 
-BOOST_SERIALIZATION_ASSUME_ABSTRACT(Natron::RotoDrawableItemSerialization);
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(RotoDrawableItemSerialization);
 
 
 #endif // Engine_RotoDrawableItemSerialization_h

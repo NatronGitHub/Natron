@@ -269,7 +269,7 @@ TEST_F(BaseTest,SetValues)
     
     //Check that linear interpolation is working as intended
     KeyFrame kf;
-    radius->setInterpolationAtTime(Natron::eCurveChangeReasonInternal,0, 0, eKeyframeTypeLinear, &kf);
+    radius->setInterpolationAtTime(eCurveChangeReasonInternal,0, 0, eKeyframeTypeLinear, &kf);
     radius->setValueAtTime(0, 0, 0);
     radius->setValueAtTime(100, 100, 0);
     for (int i = 0; i <= 100; ++i) {

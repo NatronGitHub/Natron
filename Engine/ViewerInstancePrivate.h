@@ -72,8 +72,8 @@ struct RenderViewerArgs
                      double gain_,
                      double gamma_,
                      double offset_,
-                     const Natron::Color::Lut* srcColorSpace_,
-                     const Natron::Color::Lut* colorSpace_,
+                     const Color::Lut* srcColorSpace_,
+                     const Color::Lut* colorSpace_,
                      int alphaChannelIndex_)
     : inputImage(inputImage_)
     , matteImage(matteImage_)
@@ -99,8 +99,8 @@ struct RenderViewerArgs
     double gain;
     double gamma;
     double offset;
-    const Natron::Color::Lut* srcColorSpace;
-    const Natron::Color::Lut* colorSpace;
+    const Color::Lut* srcColorSpace;
+    const Color::Lut* colorSpace;
     int alphaChannelIndex;
 };
 
@@ -124,7 +124,7 @@ public:
     , offset(0.)
     , mipMapLevel(0)
     , premult(eImagePremultiplicationOpaque)
-    , lut(Natron::eViewerColorSpaceSRGB)
+    , lut(eViewerColorSpaceSRGB)
     , layer()
     , alphaLayer()
     , alphaChannelName()
@@ -195,7 +195,7 @@ public:
     , viewerParamsMutex()
     , viewerParamsGain(1.)
     , viewerParamsGamma(1.)
-    , viewerParamsLut(Natron::eViewerColorSpaceSRGB)
+    , viewerParamsLut(eViewerColorSpaceSRGB)
     , viewerParamsAutoContrast(false)
     , viewerParamsChannels()
     , viewerParamsLayer(ImageComponents::getRGBAComponents())
@@ -220,7 +220,7 @@ public:
             activeInputs[i] = -1;
             renderAge[i] = 1;
             displayAge[i] = 0;
-            viewerParamsChannels[i] = Natron::eDisplayChannelsRGB;
+            viewerParamsChannels[i] = eDisplayChannelsRGB;
         }
         
     }

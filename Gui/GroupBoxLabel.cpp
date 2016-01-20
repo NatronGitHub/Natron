@@ -86,7 +86,7 @@ using std::make_pair;
 
 //=============================GROUP_KNOB_GUI===================================
 GroupBoxLabel::GroupBoxLabel(QWidget *parent)
-: Natron::Label(parent)
+: Label(parent)
 , _checked(false)
 
 {

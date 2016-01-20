@@ -112,7 +112,7 @@ struct ParallelRenderArgs
 
     ///Current thread safety: it might change in the case of the rotopaint: while drawing, the safety is instance safe,
     ///whereas afterwards we revert back to the plug-in thread safety
-    Natron::RenderSafetyEnum currentThreadSafety;
+    RenderSafetyEnum currentThreadSafety;
 
     /// is this a render due to user interaction ? Generally this is true when rendering because
     /// of a user parameter tweek or timeline seek, or more generally by calling RenderEngine::renderCurrentFrame

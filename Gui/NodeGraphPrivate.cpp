@@ -91,7 +91,7 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
 , isDoingPreviewRender(false)
 , autoScrollTimer()
 {
-    appPTR->getIcon(Natron::NATRON_PIXMAP_LOCKED, &unlockIcon);
+    appPTR->getIcon(NATRON_PIXMAP_LOCKED, &unlockIcon);
 }
 
 QPoint

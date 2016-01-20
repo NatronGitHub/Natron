@@ -231,7 +231,7 @@ Plugin::getIsUserCreatable() const
 void
 Plugin::setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,ContextEnum ctx)
 {
-    assert(ctx != Natron::eContextNone);
+    assert(ctx != eContextNone);
     _ofxDescriptor = desc;
     _ofxContext = ctx;
 }

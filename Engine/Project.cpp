@@ -187,7 +187,7 @@ Project::loadProject(const QString & path,
                     QString text = tr("A recent auto-save of %1 was found.\n"
                                       "Would you like to use it instead? "
                                       "Clicking No will remove this auto-save.").arg(name);
-                    ret = natronQuestionDialog(tr("Auto-save").toStdString(),
+                    ret = Dialogs::questionDialog(tr("Auto-save").toStdString(),
                                                  text.toStdString(),false, StandardButtons(eStandardButtonYes | eStandardButtonNo),
                                                  eStandardButtonYes);
                 }
@@ -211,7 +211,7 @@ Project::loadProject(const QString & path,
             saveProject(realPath, realName, 0);
         }
     } catch (const std::exception & e) {
-        natronErrorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what() );
+        Dialogs::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what() );
         if ( !getApp()->isBackground() ) {
             getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                   "",
@@ -229,7 +229,7 @@ Project::loadProject(const QString & path,
         return false;
     } catch (...) {
 
-        natronErrorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Unkown error while loading project").toStdString() );
+        Dialogs::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Unkown error while loading project").toStdString() );
         if ( !getApp()->isBackground() ) {
             getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
                                                   "",
@@ -259,7 +259,7 @@ Project::loadProjectInternal(const QString & path,
                              bool* mustSave)
 {
     
-    Natron::FlagSetter loadingProjectRAII(true,&_imp->isLoadingProject,&_imp->isLoadingProjectMutex);
+    FlagSetter loadingProjectRAII(true,&_imp->isLoadingProject,&_imp->isLoadingProjectMutex);
     
     QString filePath = path + name;
     qDebug() << "Loading project" << filePath;
@@ -437,7 +437,7 @@ Project::saveProject_imp(const QString & path,
         }
     } catch (const std::exception & e) {
         if (!autoS) {
-            natronErrorDialog( QObject::tr("Save").toStdString(), e.what() );
+            Dialogs::errorDialog( QObject::tr("Save").toStdString(), e.what() );
         } else {
             qDebug() << "Save failure: " << e.what();
         }
@@ -720,9 +720,9 @@ bool Project::findAutoSaveForProject(const QString& projectPath,const QString& p
 void
 Project::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = natronCreateKnob<KnobPage>(this, "Settings");
+    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Settings");
 
-    _imp->envVars = natronCreateKnob<KnobPath>(this, "Project Paths");
+    _imp->envVars = AppManager::createKnob<KnobPath>(this, "Project Paths");
     _imp->envVars->setName("projectPaths");
     _imp->envVars->setHintToolTip("Specify here project paths. Any path can be used "
                                   "in file paths and can be used between brackets, for example: \n"
@@ -750,7 +750,7 @@ Project::initializeKnobs()
     
     page->addKnob(_imp->envVars);
     
-    _imp->formatKnob = natronCreateKnob<KnobChoice>(this, "Output Format");
+    _imp->formatKnob = AppManager::createKnob<KnobChoice>(this, "Output Format");
     _imp->formatKnob->setHintToolTip("The project output format is what is used as canvas on the viewers.");
     _imp->formatKnob->setName("outputFormat");
 
@@ -758,7 +758,7 @@ Project::initializeKnobs()
     std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
         Format* f = appFormats[i];
-        QString formatStr = Natron::generateStringFromFormat(*f);
+        QString formatStr = ProjectPrivate::generateStringFromFormat(*f);
         if ( (f->width() == 1920) && (f->height() == 1080) ) {
             _imp->formatKnob->setDefaultValue(i,0);
         }
@@ -770,13 +770,13 @@ Project::initializeKnobs()
     _imp->formatKnob->populateChoices(entries);
     _imp->formatKnob->setAnimationEnabled(false);
     page->addKnob(_imp->formatKnob);
-    _imp->addFormatKnob = natronCreateKnob<KnobButton>(this, "New Format...");
+    _imp->addFormatKnob = AppManager::createKnob<KnobButton>(this, "New Format...");
     _imp->addFormatKnob->setName("newFormat");
     page->addKnob(_imp->addFormatKnob);
 
-    boost::shared_ptr<KnobPage> viewsPage = natronCreateKnob<KnobPage>(this, "Views");
+    boost::shared_ptr<KnobPage> viewsPage = AppManager::createKnob<KnobPage>(this, "Views");
     
-    _imp->viewsList = natronCreateKnob<KnobPath>(this, "Views List");
+    _imp->viewsList = AppManager::createKnob<KnobPath>(this, "Views List");
     _imp->viewsList->setName("viewsList");
     _imp->viewsList->setHintToolTip("The list of the views in the project");
     _imp->viewsList->setAnimationEnabled(false);
@@ -788,13 +788,13 @@ Project::initializeKnobs()
     _imp->viewsList->setDefaultValue(encodedDefaultViews);
     viewsPage->addKnob(_imp->viewsList);
     
-    _imp->setupForStereoButton = natronCreateKnob<KnobButton>(this, "Setup views for stereo");
+    _imp->setupForStereoButton = AppManager::createKnob<KnobButton>(this, "Setup views for stereo");
     _imp->setupForStereoButton->setName("setupForStereo");
     _imp->setupForStereoButton->setHintToolTip("Quickly setup the views list for stereo");
     _imp->setupForStereoButton->setEvaluateOnChange(false);
     viewsPage->addKnob(_imp->setupForStereoButton);
 
-    _imp->previewMode = natronCreateKnob<KnobBool>(this, "Auto Previews");
+    _imp->previewMode = AppManager::createKnob<KnobBool>(this, "Auto Previews");
     _imp->previewMode->setName("autoPreviews");
     _imp->previewMode->setHintToolTip("When checked, preview images on the node graph will be "
                                       "refreshed automatically. You can uncheck this option to improve performances."
@@ -809,7 +809,7 @@ Project::initializeKnobs()
     colorSpaces.push_back("sRGB");
     colorSpaces.push_back("Linear");
     colorSpaces.push_back("Rec.709");
-    _imp->colorSpace8u = natronCreateKnob<KnobChoice>(this, "Colorspace for 8-Bit Integer Images");
+    _imp->colorSpace8u = AppManager::createKnob<KnobChoice>(this, "Colorspace for 8-Bit Integer Images");
     _imp->colorSpace8u->setName("defaultColorSpace8u");
     _imp->colorSpace8u->setHintToolTip("Defines the color-space in which 8-bit images are assumed to be by default.");
     _imp->colorSpace8u->setAnimationEnabled(false);
@@ -817,7 +817,7 @@ Project::initializeKnobs()
     _imp->colorSpace8u->setDefaultValue(0);
     page->addKnob(_imp->colorSpace8u);
     
-    _imp->colorSpace16u = natronCreateKnob<KnobChoice>(this, "Colorspace for 16-Bit Integer Images");
+    _imp->colorSpace16u = AppManager::createKnob<KnobChoice>(this, "Colorspace for 16-Bit Integer Images");
     _imp->colorSpace16u->setName("defaultColorSpace16u");
     _imp->colorSpace16u->setHintToolTip("Defines the color-space in which 16-bit integer images are assumed to be by default.");
     _imp->colorSpace16u->setAnimationEnabled(false);
@@ -825,7 +825,7 @@ Project::initializeKnobs()
     _imp->colorSpace16u->setDefaultValue(2);
     page->addKnob(_imp->colorSpace16u);
     
-    _imp->colorSpace32f = natronCreateKnob<KnobChoice>(this, "Colorspace for 32-Bit Floating Point Images");
+    _imp->colorSpace32f = AppManager::createKnob<KnobChoice>(this, "Colorspace for 32-Bit Floating Point Images");
     _imp->colorSpace32f->setName("defaultColorSpace32f");
     _imp->colorSpace32f->setHintToolTip("Defines the color-space in which 32-bit floating point images are assumed to be by default.");
     _imp->colorSpace32f->setAnimationEnabled(false);
@@ -833,7 +833,7 @@ Project::initializeKnobs()
     _imp->colorSpace32f->setDefaultValue(1);
     page->addKnob(_imp->colorSpace32f);
     
-    _imp->frameRange = natronCreateKnob<KnobInt>(this, "Frame Range",2);
+    _imp->frameRange = AppManager::createKnob<KnobInt>(this, "Frame Range",2);
     _imp->frameRange->setDefaultValue(1,0);
     _imp->frameRange->setDefaultValue(250,1);
     _imp->frameRange->setDimensionName(0, "first");
@@ -848,7 +848,7 @@ Project::initializeKnobs()
     _imp->frameRange->setAddNewLine(false);
     page->addKnob(_imp->frameRange);
     
-    _imp->lockFrameRange = natronCreateKnob<KnobBool>(this, "Lock Range");
+    _imp->lockFrameRange = AppManager::createKnob<KnobBool>(this, "Lock Range");
     _imp->lockFrameRange->setName("lockRange");
     _imp->lockFrameRange->setDefaultValue(false);
     _imp->lockFrameRange->setAnimationEnabled(false);
@@ -857,7 +857,7 @@ Project::initializeKnobs()
     _imp->lockFrameRange->setEvaluateOnChange(false);
     page->addKnob(_imp->lockFrameRange);
     
-    _imp->frameRate = natronCreateKnob<KnobDouble>(this, "Frame Rate");
+    _imp->frameRate = AppManager::createKnob<KnobDouble>(this, "Frame Rate");
     _imp->frameRate->setName("frameRate");
     _imp->frameRate->setHintToolTip("The frame rate of the project. This will serve as a default value for all effects that don't produce "
                                     "special frame rates.");
@@ -867,9 +867,9 @@ Project::initializeKnobs()
     _imp->frameRate->setDisplayMaximum(50.);
     page->addKnob(_imp->frameRate);
     
-    boost::shared_ptr<KnobPage> infoPage = natronCreateKnob<KnobPage>(this, tr("Info").toStdString());
+    boost::shared_ptr<KnobPage> infoPage = AppManager::createKnob<KnobPage>(this, tr("Info").toStdString());
     
-    _imp->projectName = natronCreateKnob<KnobString>(this, "Project Name");
+    _imp->projectName = AppManager::createKnob<KnobString>(this, "Project Name");
     _imp->projectName->setName("projectName");
     _imp->projectName->setIsPersistant(false);
 //    _imp->projectName->setAsLabel();
@@ -878,7 +878,7 @@ Project::initializeKnobs()
     _imp->projectName->setDefaultValue(NATRON_PROJECT_UNTITLED);
     infoPage->addKnob(_imp->projectName);
     
-    _imp->projectPath = natronCreateKnob<KnobString>(this, "Project path");
+    _imp->projectPath = AppManager::createKnob<KnobString>(this, "Project path");
     _imp->projectPath->setName("projectPath");
     _imp->projectPath->setIsPersistant(false);
     _imp->projectPath->setAnimationEnabled(false);
@@ -886,7 +886,7 @@ Project::initializeKnobs()
    // _imp->projectPath->setAsLabel();
     infoPage->addKnob(_imp->projectPath);
     
-    _imp->natronVersion = natronCreateKnob<KnobString>(this, "Saved With");
+    _imp->natronVersion = AppManager::createKnob<KnobString>(this, "Saved With");
     _imp->natronVersion->setName("softwareVersion");
     _imp->natronVersion->setHintToolTip("The version of " NATRON_APPLICATION_NAME " that saved this project for the last time.");
    // _imp->natronVersion->setAsLabel();
@@ -897,7 +897,7 @@ Project::initializeKnobs()
     _imp->natronVersion->setDefaultValue(generateUserFriendlyNatronVersionName());
     infoPage->addKnob(_imp->natronVersion);
     
-    _imp->originalAuthorName = natronCreateKnob<KnobString>(this, "Original Author");
+    _imp->originalAuthorName = AppManager::createKnob<KnobString>(this, "Original Author");
     _imp->originalAuthorName->setName("originalAuthor");
     _imp->originalAuthorName->setHintToolTip("The user name and host name of the original author of the project.");
     //_imp->originalAuthorName->setAsLabel();
@@ -908,7 +908,7 @@ Project::initializeKnobs()
     _imp->originalAuthorName->setDefaultValue(authorName);
     infoPage->addKnob(_imp->originalAuthorName);
     
-    _imp->lastAuthorName = natronCreateKnob<KnobString>(this, "Last Author");
+    _imp->lastAuthorName = AppManager::createKnob<KnobString>(this, "Last Author");
     _imp->lastAuthorName->setName("lastAuthor");
     _imp->lastAuthorName->setHintToolTip("The user name and host name of the last author of the project.");
    // _imp->lastAuthorName->setAsLabel();
@@ -919,7 +919,7 @@ Project::initializeKnobs()
     infoPage->addKnob(_imp->lastAuthorName);
 
 
-    _imp->projectCreationDate = natronCreateKnob<KnobString>(this, "Created On");
+    _imp->projectCreationDate = AppManager::createKnob<KnobString>(this, "Created On");
     _imp->projectCreationDate->setName("creationDate");
     _imp->projectCreationDate->setHintToolTip("The creation date of the project.");
     //_imp->projectCreationDate->setAsLabel();
@@ -929,7 +929,7 @@ Project::initializeKnobs()
     _imp->projectCreationDate->setDefaultValue(QDateTime::currentDateTime().toString().toStdString());
     infoPage->addKnob(_imp->projectCreationDate);
     
-    _imp->saveDate = natronCreateKnob<KnobString>(this, "Last Saved On");
+    _imp->saveDate = AppManager::createKnob<KnobString>(this, "Last Saved On");
     _imp->saveDate->setName("lastSaveDate");
     _imp->saveDate->setHintToolTip("The date this project was last saved.");
     //_imp->saveDate->setAsLabel();
@@ -938,7 +938,7 @@ Project::initializeKnobs()
     _imp->saveDate->setAnimationEnabled(false);
     infoPage->addKnob(_imp->saveDate);
     
-    boost::shared_ptr<KnobString> comments = natronCreateKnob<KnobString>(this, "Comments");
+    boost::shared_ptr<KnobString> comments = AppManager::createKnob<KnobString>(this, "Comments");
     comments->setName("comments");
     comments->setHintToolTip("This area is a good place to write some informations about the project such as its authors, license "
                              "and anything worth mentionning about it.");
@@ -946,8 +946,8 @@ Project::initializeKnobs()
     comments->setAnimationEnabled(false);
     infoPage->addKnob(comments);
     
-    boost::shared_ptr<KnobPage> pythonPage = natronCreateKnob<KnobPage>(this, "Python");
-    _imp->onProjectLoadCB = natronCreateKnob<KnobString>(this, "After Project Loaded");
+    boost::shared_ptr<KnobPage> pythonPage = AppManager::createKnob<KnobPage>(this, "Python");
+    _imp->onProjectLoadCB = AppManager::createKnob<KnobString>(this, "After Project Loaded");
     _imp->onProjectLoadCB->setName("afterProjectLoad");
     _imp->onProjectLoadCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
                                           "is loaded either from an auto-save or by a user action. It will be called immediately after all "
@@ -960,7 +960,7 @@ Project::initializeKnobs()
     pythonPage->addKnob(_imp->onProjectLoadCB);
     
     
-    _imp->onProjectSaveCB = natronCreateKnob<KnobString>(this, "Before Project Save");
+    _imp->onProjectSaveCB = AppManager::createKnob<KnobString>(this, "Before Project Save");
     _imp->onProjectSaveCB->setName("beforeProjectSave");
     _imp->onProjectSaveCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
                                           "is saved by the user. This will be called prior to actually saving the project and can be used "
@@ -975,7 +975,7 @@ Project::initializeKnobs()
     _imp->onProjectSaveCB->setValue(onProjectSave, 0);
     pythonPage->addKnob(_imp->onProjectSaveCB);
     
-    _imp->onProjectCloseCB = natronCreateKnob<KnobString>(this, "Before Project Close");
+    _imp->onProjectCloseCB = AppManager::createKnob<KnobString>(this, "Before Project Close");
     _imp->onProjectCloseCB->setName("beforeProjectClose");
     _imp->onProjectCloseCB->setHintToolTip("Add here the name of a Python-defined function that will be called each time this project "
                                           "is closed or if the user closes the application while this project is opened. This is called "
@@ -987,7 +987,7 @@ Project::initializeKnobs()
     _imp->onProjectCloseCB->setValue(onProjectClose, 0);
     pythonPage->addKnob(_imp->onProjectCloseCB);
     
-    _imp->onNodeCreated = natronCreateKnob<KnobString>(this, "After Node Created");
+    _imp->onNodeCreated = AppManager::createKnob<KnobString>(this, "After Node Created");
     _imp->onNodeCreated->setName("afterNodeCreated");
     _imp->onNodeCreated->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
                                            "is created. The boolean variable userEdited will be set to True if the node was created "
@@ -1002,7 +1002,7 @@ Project::initializeKnobs()
     _imp->onNodeCreated->setValue(onNodeCreated, 0);
     pythonPage->addKnob(_imp->onNodeCreated);
     
-    _imp->onNodeDeleted = natronCreateKnob<KnobString>(this, "Before Node Removal");
+    _imp->onNodeDeleted = AppManager::createKnob<KnobString>(this, "Before Node Removal");
     _imp->onNodeDeleted->setName("beforeNodeRemoval");
     _imp->onNodeDeleted->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
                                         "is about to be deleted. This function will not be called when the project is closing.\n"
@@ -1087,15 +1087,15 @@ Project::tryAddProjectFormat(const Format & f)
     std::vector<std::string> entries;
     for (std::list<Format>::iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
         const Format & f = *it;
-        QString formatStr = generateStringFromFormat(f);
+        QString formatStr = ProjectPrivate::generateStringFromFormat(f);
         entries.push_back( formatStr.toStdString() );
     }
     for (std::list<Format>::iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
         const Format & f = *it;
-        QString formatStr = generateStringFromFormat(f);
+        QString formatStr = ProjectPrivate::generateStringFromFormat(f);
         entries.push_back( formatStr.toStdString() );
     }
-    QString formatStr = generateStringFromFormat(f);
+    QString formatStr = ProjectPrivate::generateStringFromFormat(f);
     entries.push_back( formatStr.toStdString() );
     _imp->additionalFormats.push_back(f);
     _imp->formatKnob->populateChoices(entries);
@@ -2290,7 +2290,7 @@ void Project::extractTreesFromNodes(const std::list<boost::shared_ptr<Node> >& n
 bool Project::addFormat(const std::string& formatSpec)
 {
     Format f;
-    if (generateFormatFromString(formatSpec.c_str(), &f)) {
+    if (ProjectPrivate::generateFormatFromString(formatSpec.c_str(), &f)) {
         QMutexLocker k(&_imp->formatMutex);
         tryAddProjectFormat(f);
         return true;

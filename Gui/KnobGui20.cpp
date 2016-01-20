@@ -214,28 +214,28 @@ KnobGui::pasteClipBoard()
         if (isInt) {
             if ( !it->canConvert(QVariant::Int) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Integer").arg( it->typeName() );
-                natronErrorDialog( tr("Paste").toStdString(),err.toStdString() );
+                Dialogs::errorDialog( tr("Paste").toStdString(),err.toStdString() );
 
                 return;
             }
         } else if (isBool) {
             if ( !it->canConvert(QVariant::Bool) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Boolean").arg( it->typeName() );
-                natronErrorDialog( tr("Paste").toStdString(),err.toStdString() );
+                Dialogs::errorDialog( tr("Paste").toStdString(),err.toStdString() );
 
                 return;
             }
         } else if (isDouble) {
             if ( !it->canConvert(QVariant::Double) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Double").arg( it->typeName() );
-                natronErrorDialog( tr("Paste").toStdString(),err.toStdString() );
+                Dialogs::errorDialog( tr("Paste").toStdString(),err.toStdString() );
 
                 return;
             }
         } else if (isString) {
             if ( !it->canConvert(QVariant::String) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type String").arg( it->typeName() );
-                natronErrorDialog( tr("Paste").toStdString(),err.toStdString() );
+                Dialogs::errorDialog( tr("Paste").toStdString(),err.toStdString() );
 
                 return;
             }
@@ -293,7 +293,7 @@ KnobGui::linkTo(int dimension)
         if (i == dimension || dimension == -1) {
             std::string expr = thisKnob->getExpression(dimension);
             if (!expr.empty()) {
-                natronErrorDialog(tr("Param Link").toStdString(),tr("This parameter already has an expression set, edit or clear it.").toStdString());
+                Dialogs::errorDialog(tr("Param Link").toStdString(),tr("This parameter already has an expression set, edit or clear it.").toStdString());
                 return;
             }
         }
@@ -305,7 +305,7 @@ KnobGui::linkTo(int dimension)
         boost::shared_ptr<KnobI>  otherKnob = dialog.getSelectedKnobs();
         if (otherKnob) {
             if ( !thisKnob->isTypeCompatible(otherKnob) ) {
-                natronErrorDialog( tr("Param Link").toStdString(), tr("Types incompatibles!").toStdString() );
+                Dialogs::errorDialog( tr("Param Link").toStdString(), tr("Types incompatibles!").toStdString() );
 
                 return;
             }
@@ -319,7 +319,7 @@ KnobGui::linkTo(int dimension)
                     err.append( thisKnob->getLabel() );
                     err.append( " \n " + tr("because the knob is already linked to ").toStdString() );
                     err.append( existingLink.second->getLabel() );
-                    natronErrorDialog(tr("Param Link").toStdString(), err);
+                    Dialogs::errorDialog(tr("Param Link").toStdString(), err);
 
                     return;
                 }
@@ -650,7 +650,7 @@ KnobGui::onAnimationLevelChanged(int dim,int level)
         //std::string expr = getKnob()->getExpression(dim);
         //reflectExpressionState(dim,!expr.empty());
         //if (expr.empty()) {
-            reflectAnimationLevel(dim, (Natron::AnimationLevelEnum)level);
+            reflectAnimationLevel(dim, (AnimationLevelEnum)level);
         //}
         
     }
@@ -703,15 +703,15 @@ KnobGui::getCurve(int dimension) const
 void
 KnobGui::onRedrawGuiCurve(int reason, int /*dimension*/)
 {
-    Natron::CurveChangeReason curveChangeReason = (Natron::CurveChangeReason)reason;
+    CurveChangeReason curveChangeReason = (CurveChangeReason)reason;
     switch (curveChangeReason) {
-        case Natron::eCurveChangeReasonCurveEditor:
+        case eCurveChangeReasonCurveEditor:
             Q_EMIT refreshDopeSheet();
             break;
-        case Natron::eCurveChangeReasonDopeSheet:
+        case eCurveChangeReasonDopeSheet:
             Q_EMIT refreshCurveEditor();
             break;
-        case Natron::eCurveChangeReasonInternal:
+        case eCurveChangeReasonInternal:
             Q_EMIT refreshDopeSheet();
             Q_EMIT refreshCurveEditor();
             break;

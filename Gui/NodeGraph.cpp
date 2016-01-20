@@ -175,7 +175,7 @@ NodeGraph::NodeGraph(Gui* gui,
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    _imp->_menu = new Natron::Menu(this);
+    _imp->_menu = new Menu(this);
     
 }
 

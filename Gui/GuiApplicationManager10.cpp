@@ -358,7 +358,7 @@ bool
 GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
 {
     QString fileCopy(filename.c_str());
-    QString ext = removeFileExtension(fileCopy);
+    QString ext = QtCompat::removeFileExtension(fileCopy);
     std::string readerFileType = appPTR->isImageFileSupportedByNatron(ext.toStdString());
     AppInstance* mainInstance = appPTR->getTopLevelInstance();
     bool instanceCreated = false;

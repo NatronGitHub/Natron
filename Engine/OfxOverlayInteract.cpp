@@ -165,7 +165,7 @@ OfxOverlayInteract::loseFocusAction(OfxTime  time,
 }
 
 bool
-Natron::OfxOverlayInteract::getSuggestedColour(double &r,
+OfxOverlayInteract::getSuggestedColour(double &r,
                                                double &g,
                                                double &b) const
 {
@@ -192,7 +192,7 @@ OfxOverlayInteract::redraw()
 }
 
 
-Natron::OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
+OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
                                                          OFX::Host::Interact::Descriptor &desc,
                                                          void *effectInstance)
     : OFX::Host::Interact::Instance(desc,effectInstance)
@@ -271,7 +271,7 @@ NatronOverlayInteractSupport::n_getSuggestedColour(double &/*r*/,
 }
 
 void
-Natron::OfxParamOverlayInteract::getMinimumSize(double & minW,
+OfxParamOverlayInteract::getMinimumSize(double & minW,
                                                 double & minH) const
 {
     minW = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractMinimumSize,0);
@@ -279,7 +279,7 @@ Natron::OfxParamOverlayInteract::getMinimumSize(double & minW,
 }
 
 void
-Natron::OfxParamOverlayInteract::getPreferredSize(int & pW,
+OfxParamOverlayInteract::getPreferredSize(int & pW,
                                                   int & pH) const
 {
     pW = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractPreferedSize,0);
@@ -287,7 +287,7 @@ Natron::OfxParamOverlayInteract::getPreferredSize(int & pW,
 }
 
 void
-Natron::OfxParamOverlayInteract::getSize(int &w,
+OfxParamOverlayInteract::getSize(int &w,
                                          int &h) const
 {
     w = _descriptor.getProperties().getIntProperty(kOfxParamPropInteractSize,0);
@@ -295,7 +295,7 @@ Natron::OfxParamOverlayInteract::getSize(int &w,
 }
 
 void
-Natron::OfxParamOverlayInteract::setSize(int w,
+OfxParamOverlayInteract::setSize(int w,
                                          int h)
 {
     _descriptor.getProperties().setIntProperty(kOfxParamPropInteractSize,w,0);
@@ -303,14 +303,14 @@ Natron::OfxParamOverlayInteract::setSize(int w,
 }
 
 void
-Natron::OfxParamOverlayInteract::getPixelAspectRatio(double & par) const
+OfxParamOverlayInteract::getPixelAspectRatio(double & par) const
 {
     par = _descriptor.getProperties().getDoubleProperty(kOfxParamPropInteractSizeAspect);
 }
 
 
 OfxStatus
-Natron::OfxParamOverlayInteract::redraw()
+OfxParamOverlayInteract::redraw()
 {
     if (_viewport) {
         _viewport->redraw();

@@ -26,15 +26,17 @@
 
 NATRON_NAMESPACE_ENTER;
 
+namespace Utils {
+
 /*!
- \fn QString Natron::convertFromPlainText(const QString &plain, WhiteSpaceMode mode)
+ \fn QString GuiUtils::convertFromPlainText(const QString &plain, WhiteSpaceMode mode)
 
  Converts the plain text string \a plain to an HTML-formatted
  paragraph while preserving most of its look.
 
  \a mode defines how whitespace is handled.
 
- This function was adapted from Natron::convertFromPlainText()
+ This function was adapted from GuiUtils::convertFromPlainText()
  (see src/gui/text/qtextdocument.cpp in the Qt sources)
  The difference is that in Qt::WhiteSpaceNormal mode, spaces are preserved at the beginning of the line.
  */
@@ -92,5 +94,7 @@ QString convertFromPlainText(const QString &plain, Qt::WhiteSpaceMode mode)
         rich += QLatin1String("</p>");
     return rich;
 }
+
+} // namespace Utils
 
 NATRON_NAMESPACE_EXIT;

@@ -110,7 +110,7 @@ public:
 
     void createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
-                   Natron::ClickableLabel* label,
+                   ClickableLabel* label,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
@@ -438,7 +438,7 @@ private:
        the widget for the knob could display its gui a bit differently.
      */
     virtual void reflectAnimationLevel(int /*dimension*/,
-                                       Natron::AnimationLevelEnum /*level*/)
+                                       AnimationLevelEnum /*level*/)
     {
     }
     

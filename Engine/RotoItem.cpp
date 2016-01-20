@@ -350,7 +350,7 @@ RotoItem::setScriptName(const std::string & name)
     }
     
     
-    std::string cpy = Natron::makeNameScriptFriendly(name);
+    std::string cpy = Python::makeNameScriptFriendly(name);
     
     if (cpy.empty()) {
         return false;

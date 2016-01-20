@@ -82,8 +82,10 @@ static NSString* const NSBackingPropertyOldScaleFactorKey =
 
 #endif  // MAC_OS_X_VERSION_10_7
 
+NATRON_NAMESPACE_ENTER;
+
 bool
-NATRON_NAMESPACE::isHighDPIInternal(const QWidget* w) {
+QtMac::isHighDPIInternal(const QWidget* w) {
     NSView* view = reinterpret_cast<NSView*>(w->winId());
     CGFloat scaleFactor = 1.0;
     if ([[view window] respondsToSelector: @selector(backingScaleFactor)])
@@ -91,5 +93,7 @@ NATRON_NAMESPACE::isHighDPIInternal(const QWidget* w) {
     
     return (scaleFactor > 1.0);
 }
+
+NATRON_NAMESPACE_EXIT;
 
 #endif

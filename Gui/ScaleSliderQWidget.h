@@ -65,7 +65,7 @@ public:
                        double initialPos, // the initial value
                        DataTypeEnum dataType,
                        Gui* gui,
-                       Natron::ScaleTypeEnum type = Natron::eScaleTypeLinear, // the type of scale
+                       ScaleTypeEnum type = eScaleTypeLinear, // the type of scale
                        QWidget* parent = 0);
     
 
@@ -74,7 +74,7 @@ public:
     void setMinimumAndMaximum(double min,double max);
 
 
-    Natron::ScaleTypeEnum type() const;
+    ScaleTypeEnum type() const;
 
     double minimum() const;
 

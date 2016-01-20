@@ -52,10 +52,10 @@ struct MessageBoxPrivate
     QHBoxLayout* mainLayout;
     QVBoxLayout* vLayout;
     
-    Natron::Label* infoLabel;
+    Label* infoLabel;
     
     QWidget* vContainer;
-    Natron::Label* questionLabel;
+    Label* questionLabel;
     QTextEdit* infoEdit; //< used if the text is too long so the user can scroll
     QCheckBox* checkbox;
     
@@ -104,7 +104,7 @@ MessageBox::init(const QString & title,
 {
     _imp->mainLayout = new QHBoxLayout(this);
     
-    _imp->infoLabel = new Natron::Label(this);
+    _imp->infoLabel = new Label(this);
     _imp->infoLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     
     QStyle::StandardPixmap pixType = QStyle::SP_MessageBoxCritical;
@@ -131,7 +131,7 @@ MessageBox::init(const QString & title,
     _imp->vLayout = new QVBoxLayout(_imp->vContainer);
     
     if (message.size() < 1000) {
-        _imp->questionLabel = new Natron::Label(message,_imp->vContainer);
+        _imp->questionLabel = new Label(message,_imp->vContainer);
         _imp->questionLabel->setTextInteractionFlags(Qt::TextInteractionFlags(style()->styleHint(QStyle::SH_MessageBox_TextInteractionFlags, 0, this)));
         _imp->questionLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
         _imp->questionLabel->setOpenExternalLinks(true);

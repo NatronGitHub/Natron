@@ -136,7 +136,7 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
         QPixmap pixRefresh;
         appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixRefresh);
         _reloadButton->setIcon(QIcon(pixRefresh));
-        _reloadButton->setToolTip(Natron::convertFromPlainText(tr("Reload the file."), Qt::WhiteSpaceNormal));
+        _reloadButton->setToolTip(GuiUtils::convertFromPlainText(tr("Reload the file."), Qt::WhiteSpaceNormal));
         QObject::connect( _reloadButton, SIGNAL( clicked() ), this, SLOT( onReloadClicked() ) );
         containerLayout->addWidget(_reloadButton);
     }
@@ -299,7 +299,7 @@ KnobGuiFile::watchedFileChanged()
                 QFileInfo fileMonitored(_fileBeingWatched.c_str());
                 if (fileMonitored.lastModified() != _lastModified) {
                     QString warn = tr("The file ") + _lineEdit->text() + tr(" has changed on disk. Press reload file to load the new version of the file");
-                    effect->setPersistentMessage(Natron::eMessageTypeWarning, warn.toStdString());
+                    effect->setPersistentMessage(eMessageTypeWarning, warn.toStdString());
                 }
                 
             } else {
@@ -439,7 +439,7 @@ KnobGuiFile::onSimplifyTriggered()
 }
 
 void
-KnobGuiFile::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevelEnum /*level*/)
+KnobGuiFile::reflectAnimationLevel(int /*dimension*/,AnimationLevelEnum /*level*/)
 {
     _lineEdit->setAnimation(0);
 }
@@ -506,7 +506,7 @@ KnobGuiOutputFile::createWidget(QHBoxLayout* layout)
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
-    _openFileButton->setToolTip(Natron::convertFromPlainText(tr("Browse file..."), Qt::WhiteSpaceNormal));
+    _openFileButton->setToolTip(GuiUtils::convertFromPlainText(tr("Browse file..."), Qt::WhiteSpaceNormal));
     _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
     QObject::connect( _openFileButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
     QWidget *container = new QWidget( layout->parentWidget() );
@@ -695,7 +695,7 @@ KnobGuiOutputFile::reflectExpressionState(int /*dimension*/,bool hasExpr)
 
 
 void
-KnobGuiOutputFile::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevelEnum /*level*/)
+KnobGuiOutputFile::reflectAnimationLevel(int /*dimension*/,AnimationLevelEnum /*level*/)
 {
     _lineEdit->setAnimation(0);
 }
@@ -863,19 +863,19 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         
         _addPathButton = new Button( tr("Add..."),buttonsContainer );
         if (!knob->getIsStringList()) {
-            _addPathButton->setToolTip(Natron::convertFromPlainText(tr("Click to add a new project path."), Qt::WhiteSpaceNormal));
+            _addPathButton->setToolTip(GuiUtils::convertFromPlainText(tr("Click to add a new project path."), Qt::WhiteSpaceNormal));
         }
         QObject::connect( _addPathButton, SIGNAL( clicked() ), this, SLOT( onAddButtonClicked() ) );
         
         _removePathButton = new Button( tr("Remove"),buttonsContainer);
         QObject::connect( _removePathButton, SIGNAL( clicked() ), this, SLOT( onRemoveButtonClicked() ) );
         if (!knob->getIsStringList()) {
-            _removePathButton->setToolTip(Natron::convertFromPlainText(tr("Click to remove selected project path."), Qt::WhiteSpaceNormal));
+            _removePathButton->setToolTip(GuiUtils::convertFromPlainText(tr("Click to remove selected project path."), Qt::WhiteSpaceNormal));
         }
         
         _editPathButton = new Button( tr("Edit..."), buttonsContainer);
         QObject::connect( _editPathButton, SIGNAL( clicked() ), this, SLOT( onEditButtonClicked() ) );
-        _editPathButton->setToolTip(Natron::convertFromPlainText(tr("Click to change the path of the selected project path."), Qt::WhiteSpaceNormal));
+        _editPathButton->setToolTip(GuiUtils::convertFromPlainText(tr("Click to change the path of the selected project path."), Qt::WhiteSpaceNormal));
         
         
         
@@ -901,7 +901,7 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         enableRightClickMenu(_lineEdit, 0);
         _openFileButton = new Button( layout->parentWidget() );
         _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _openFileButton->setToolTip(Natron::convertFromPlainText(tr("Click to select a path to append to/replace this variable."), Qt::WhiteSpaceNormal));
+        _openFileButton->setToolTip(GuiUtils::convertFromPlainText(tr("Click to select a path to append to/replace this variable."), Qt::WhiteSpaceNormal));
         QPixmap pix;
         appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
         _openFileButton->setIcon( QIcon(pix) );
@@ -1367,7 +1367,7 @@ KnobGuiPath::onSimplifyTriggered()
 }
 
 void
-KnobGuiPath::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevelEnum /*level*/)
+KnobGuiPath::reflectAnimationLevel(int /*dimension*/,AnimationLevelEnum /*level*/)
 {
     if (!_knob.lock()->isMultiPath()) {
         _lineEdit->setAnimation(0);

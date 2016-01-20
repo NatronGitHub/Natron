@@ -152,9 +152,11 @@ PY_VERSION_STRINGIZE_(major,minor)
 #define NATRON_PY_VERSION_STRING PY_VERSION_STRINGIZE(PY_MAJOR_VERSION,PY_MINOR_VERSION)
 
 
+namespace Global {
+
 /*Converts a std::string to wide string*/
 inline std::wstring
-natron_s2ws(const std::string & s)
+s2ws(const std::string & s)
 {
 
 
@@ -188,7 +190,7 @@ natron_s2ws(const std::string & s)
     return dest;
 #endif
 
-} // natron_s2ws
+} // s2ws
 
 #ifdef __NATRON_WIN32__
 
@@ -217,6 +219,7 @@ std::string GetLastErrorAsString()
 
 #endif
 
+} // namespace Global
 
 NATRON_NAMESPACE_EXIT;
 

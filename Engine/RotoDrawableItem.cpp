@@ -112,10 +112,10 @@ RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context
     
     std::vector<std::string> operators;
     std::vector<std::string> tooltips;
-    getNatronCompositingOperators(&operators, &tooltips);
+    Merge::getOperatorStrings(&operators, &tooltips);
     
     _imp->compOperator->populateChoices(operators,tooltips);
-    _imp->compOperator->setDefaultValueFromLabel(getNatronOperationString(eMergeCopy));
+    _imp->compOperator->setDefaultValueFromLabel(Merge::getOperatorString(eMergeCopy));
     
 }
 
@@ -190,27 +190,27 @@ RotoDrawableItem::createNodes(bool connectNodes)
     }
   
     switch (type) {
-        case Natron::eRotoStrokeTypeBlur:
+        case eRotoStrokeTypeBlur:
             pluginId = PLUGINID_OFX_BLURCIMG;
             break;
-        case Natron::eRotoStrokeTypeEraser:
+        case eRotoStrokeTypeEraser:
             pluginId = PLUGINID_OFX_CONSTANT;
             break;
-        case Natron::eRotoStrokeTypeSolid:
+        case eRotoStrokeTypeSolid:
             pluginId = PLUGINID_OFX_ROTO;
             break;
-        case Natron::eRotoStrokeTypeClone:
-        case Natron::eRotoStrokeTypeReveal:
+        case eRotoStrokeTypeClone:
+        case eRotoStrokeTypeReveal:
             pluginId = PLUGINID_OFX_TRANSFORM;
             break;
-        case Natron::eRotoStrokeTypeBurn:
-        case Natron::eRotoStrokeTypeDodge:
+        case eRotoStrokeTypeBurn:
+        case eRotoStrokeTypeDodge:
             //uses merge
             break;
-        case Natron::eRotoStrokeTypeSharpen:
+        case eRotoStrokeTypeSharpen:
             //todo
             break;
-        case Natron::eRotoStrokeTypeSmear:
+        case eRotoStrokeTypeSmear:
             pluginId = PLUGINID_NATRON_ROTOSMEAR;
             break;
     }
@@ -326,8 +326,8 @@ RotoDrawableItem::createNodes(bool connectNodes)
     } else {
         op = eMergeCopy;
     }
-    mergeOp->setValueFromLabel(getNatronOperationString(op), 0);
-    compOp->setValueFromLabel(getNatronOperationString(op), 0);
+    mergeOp->setValueFromLabel(Merge::getOperatorString(op), 0);
+    compOp->setValueFromLabel(Merge::getOperatorString(op), 0);
 
     if (isStroke) {
         if (type == eRotoStrokeTypeBlur) {
@@ -548,14 +548,14 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, ValueCha
         
         double strength = _imp->effectStrength->getValue();
         switch (type) {
-            case Natron::eRotoStrokeTypeBlur: {
+            case eRotoStrokeTypeBlur: {
                 boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
                 KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
                 if (isDbl) {
                     isDbl->setValues(strength, strength, eValueChangedReasonNatronInternalEdited);
                 }
             }   break;
-            case Natron::eRotoStrokeTypeSharpen: {
+            case eRotoStrokeTypeSharpen: {
                 //todo
                 break;
             }

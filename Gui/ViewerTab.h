@@ -83,7 +83,7 @@ public:
     /*All the overlay methods are forwarding calls to the default node instance*/
     void drawOverlays(double time, const RenderScale & renderScale) const;
 
-    bool notifyOverlaysPenDown(const RenderScale & renderScale, Natron::PenType pen, bool isTabletEvent,const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool notifyOverlaysPenDown(const RenderScale & renderScale, PenType pen, bool isTabletEvent,const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
 
     bool notifyOverlaysPenDoubleClick(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
@@ -103,13 +103,13 @@ public:
     
 private:
     
-    bool notifyOverlaysPenDown_internal(const boost::shared_ptr<Node>& node, const RenderScale & renderScale, Natron::PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool notifyOverlaysPenDown_internal(const boost::shared_ptr<Node>& node, const RenderScale & renderScale, PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
     
     bool notifyOverlaysPenMotion_internal(const boost::shared_ptr<Node>& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
-    bool notifyOverlaysKeyDown_internal(const boost::shared_ptr<Node>& node, const RenderScale & renderScale, QKeyEvent* e, Natron::Key k,
-                                        Natron::KeyboardModifiers km);
-    bool notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Node>& node, const RenderScale & renderScale, QKeyEvent* e, Natron::Key k,
-                                          Natron::KeyboardModifiers km);
+    bool notifyOverlaysKeyDown_internal(const boost::shared_ptr<Node>& node, const RenderScale & renderScale, QKeyEvent* e, Key k,
+                                        KeyboardModifiers km);
+    bool notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Node>& node, const RenderScale & renderScale, QKeyEvent* e, Key k,
+                                          KeyboardModifiers km);
 public:
     
 

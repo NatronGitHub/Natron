@@ -152,7 +152,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            isKnobCurve->getInternalKnob()->deleteValueAtTime(Natron::eCurveChangeReasonCurveEditor, it->second[i].getTime(), isKnobCurve->getDimension() );
+                            isKnobCurve->getInternalKnob()->deleteValueAtTime(eCurveChangeReasonCurveEditor, it->second[i].getTime(), isKnobCurve->getDimension() );
                         }
                     }
                 } else if (isBezierCurve) {
@@ -311,7 +311,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            isKnobCurve->getInternalKnob()->deleteValueAtTime(Natron::eCurveChangeReasonCurveEditor, it->second[i].getTime(), isKnobCurve->getDimension() );
+                            isKnobCurve->getInternalKnob()->deleteValueAtTime(eCurveChangeReasonCurveEditor, it->second[i].getTime(), isKnobCurve->getDimension() );
                         }
                     }
                 } else if (isBezierCurve) {
@@ -400,7 +400,7 @@ moveKey(KeyPtr &k,
             k->key = curve->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
             isParametric->evaluateValueChange(isKnobCurve->getDimension(), isParametric->getCurrentTime() ,eValueChangedReasonUserEdited);
         } else {
-            knob->moveValueAtTime(Natron::eCurveChangeReasonCurveEditor, k->key.getTime(), isKnobCurve->getDimension(), dt, dv,&k->key);
+            knob->moveValueAtTime(eCurveChangeReasonCurveEditor, k->key.getTime(), isKnobCurve->getDimension(), dt, dv,&k->key);
         }
     } else if (isBezierCurve) {
         double oldTime = k->key.getTime();
@@ -568,7 +568,7 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
                 }
                 isParametric->evaluateValueChange(isKnobCurve->getDimension(), it->key->key.getTime(), eValueChangedReasonUserEdited);
             } else {
-                knob->setInterpolationAtTime(Natron::eCurveChangeReasonCurveEditor, isKnobCurve->getDimension(), it->key->key.getTime(), interp, &it->key->key);
+                knob->setInterpolationAtTime(eCurveChangeReasonCurveEditor, isKnobCurve->getDimension(), it->key->key.getTime(), interp, &it->key->key);
             }
         } else {
             ///interpolation for bezier curve is either linear or constant
@@ -741,14 +741,14 @@ MoveTangentCommand::setNewDerivatives(bool undo)
         if (!isParametric) {
             attachedKnob->beginChanges();
             if (_setBoth) {
-                attachedKnob->moveDerivativesAtTime(Natron::eCurveChangeReasonCurveEditor, isKnobCurve->getDimension(), _key->key.getTime(), left, right);
+                attachedKnob->moveDerivativesAtTime(eCurveChangeReasonCurveEditor, isKnobCurve->getDimension(), _key->key.getTime(), left, right);
             } else {
-                attachedKnob->moveDerivativeAtTime(Natron::eCurveChangeReasonCurveEditor, isKnobCurve->getDimension(), _key->key.getTime(),
+                attachedKnob->moveDerivativeAtTime(eCurveChangeReasonCurveEditor, isKnobCurve->getDimension(), _key->key.getTime(),
                                                    _deriv == eSelectedTangentLeft ? left : right,
                                                    _deriv == eSelectedTangentLeft);
                 
             }
-            attachedKnob->setInterpolationAtTime(Natron::eCurveChangeReasonCurveEditor, isKnobCurve->getDimension(), _key->key.getTime(), interp, &_key->key);
+            attachedKnob->setInterpolationAtTime(eCurveChangeReasonCurveEditor, isKnobCurve->getDimension(), _key->key.getTime(), interp, &_key->key);
             if (_firstRedoCalled || _updateOnFirstRedo) {
                 attachedKnob->endChanges();
             }
@@ -1051,7 +1051,7 @@ TransformKeysCommand::transform(const KeyPtr& k)
             k->key = curve->setKeyFrameValueAndTime(p.x,p.y, keyframeIndex, &newIndex);
             isParametric->evaluateValueChange(isKnobCurve->getDimension(), isParametric->getCurrentTime(), eValueChangedReasonUserEdited);
         } else {
-            knob->transformValueAtTime(Natron::eCurveChangeReasonCurveEditor, k->key.getTime(), isKnobCurve->getDimension(), *_matrix,&k->key);
+            knob->transformValueAtTime(eCurveChangeReasonCurveEditor, k->key.getTime(), isKnobCurve->getDimension(), *_matrix,&k->key);
         }
     } else if (isBezierCurve) {
         double oldTime = k->key.getTime();

@@ -339,7 +339,7 @@ public:
         grouping->push_back(PLUGIN_GROUP_OTHER);
     }
     
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return eRenderSafetyFullySafeFrame;
     }

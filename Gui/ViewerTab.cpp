@@ -220,8 +220,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     const QSize buttonIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
 
     QPixmap lockEnabled,lockDisabled;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_LOCKED, pixmapIconSize, &lockEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_UNLOCKED, pixmapIconSize, &lockDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_LOCKED, pixmapIconSize, &lockEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_UNLOCKED, pixmapIconSize, &lockDisabled);
     
     QIcon lockIcon;
     lockIcon.addPixmap(lockEnabled, QIcon::Normal, QIcon::On);
@@ -230,7 +230,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->syncViewerButton = new Button(lockIcon,"",_imp->firstSettingsRow);
     _imp->syncViewerButton->setCheckable(true);
-    _imp->syncViewerButton->setToolTip(Natron::convertFromPlainText(tr("When enabled, all viewers will be synchronized to the same portion of the image in the viewport."),Qt::WhiteSpaceNormal));
+    _imp->syncViewerButton->setToolTip(GuiUtils::convertFromPlainText(tr("When enabled, all viewers will be synchronized to the same portion of the image in the viewport."),Qt::WhiteSpaceNormal));
     _imp->syncViewerButton->setFixedSize(buttonSize);
     _imp->syncViewerButton->setIconSize(buttonIconSize);
     _imp->syncViewerButton->setFocusPolicy(Qt::NoFocus);
@@ -284,7 +284,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     
     _imp->renderScaleCombo = new ComboBox(_imp->firstSettingsRow);
     _imp->renderScaleCombo->setFocusPolicy(Qt::NoFocus);
-    _imp->renderScaleCombo->setToolTip(Natron::convertFromPlainText(tr("When proxy mode is activated, it scales down the rendered image by this factor "
+    _imp->renderScaleCombo->setToolTip(GuiUtils::convertFromPlainText(tr("When proxy mode is activated, it scales down the rendered image by this factor "
                                                                        "to accelerate the rendering."), Qt::WhiteSpaceNormal));
     
     QAction* proxy2 = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, "2", _imp->renderScaleCombo);
@@ -321,8 +321,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     
     addSpacer(_imp->firstRowLayout);
 
-    _imp->firstInputLabel = new Natron::Label("A:",_imp->firstSettingsRow);
-    _imp->firstInputLabel->setToolTip(Natron::convertFromPlainText(tr("Viewer input A."), Qt::WhiteSpaceNormal));
+    _imp->firstInputLabel = new Label("A:",_imp->firstSettingsRow);
+    _imp->firstInputLabel->setToolTip(GuiUtils::convertFromPlainText(tr("Viewer input A."), Qt::WhiteSpaceNormal));
     _imp->firstRowLayout->addWidget(_imp->firstInputLabel);
 
     _imp->firstInputImage = new ComboBox(_imp->firstSettingsRow);
@@ -335,9 +335,9 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     QPixmap pixMerge;
     appPTR->getIcon(NATRON_PIXMAP_MERGE_GROUPING, pixmapIconSize, &pixMerge);
-    _imp->compositingOperatorLabel = new Natron::Label("",_imp->firstSettingsRow);
+    _imp->compositingOperatorLabel = new Label("",_imp->firstSettingsRow);
     _imp->compositingOperatorLabel->setPixmap(pixMerge);
-    _imp->compositingOperatorLabel->setToolTip(Natron::convertFromPlainText(tr("Operation applied between viewer inputs A and B."), Qt::WhiteSpaceNormal));
+    _imp->compositingOperatorLabel->setToolTip(GuiUtils::convertFromPlainText(tr("Operation applied between viewer inputs A and B."), Qt::WhiteSpaceNormal));
     _imp->firstRowLayout->addWidget(_imp->compositingOperatorLabel);
     
     
@@ -356,8 +356,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->compositingOperator->addAction(actionWipe);
     _imp->firstRowLayout->addWidget(_imp->compositingOperator);
 
-    _imp->secondInputLabel = new Natron::Label("B:",_imp->firstSettingsRow);
-    _imp->secondInputLabel->setToolTip(Natron::convertFromPlainText(tr("Viewer input B."), Qt::WhiteSpaceNormal));
+    _imp->secondInputLabel = new Label("B:",_imp->firstSettingsRow);
+    _imp->secondInputLabel->setToolTip(GuiUtils::convertFromPlainText(tr("Viewer input B."), Qt::WhiteSpaceNormal));
     _imp->firstRowLayout->addWidget(_imp->secondInputLabel);
 
     _imp->secondInputImage = new ComboBox(_imp->firstSettingsRow);
@@ -391,7 +391,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->toggleGainButton->setFocusPolicy(Qt::NoFocus);
     _imp->toggleGainButton->setFixedSize(buttonSize);
     _imp->toggleGainButton->setIconSize(buttonIconSize);
-    _imp->toggleGainButton->setToolTip(Natron::convertFromPlainText(tr("Switch between \"neutral\" 1.0 gain f-stop and the previous setting."), Qt::WhiteSpaceNormal));
+    _imp->toggleGainButton->setToolTip(GuiUtils::convertFromPlainText(tr("Switch between \"neutral\" 1.0 gain f-stop and the previous setting."), Qt::WhiteSpaceNormal));
     _imp->secondRowLayout->addWidget(_imp->toggleGainButton);
     QObject::connect(_imp->toggleGainButton, SIGNAL(clicked(bool)), this, SLOT(onGainToggled(bool)));
     
@@ -403,7 +403,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->secondRowLayout->addWidget(_imp->gainBox);
 
 
-    _imp->gainSlider = new ScaleSliderQWidget(-6, 6, 0.0,ScaleSliderQWidget::eDataTypeDouble,getGui(),Natron::eScaleTypeLinear,_imp->secondSettingsRow);
+    _imp->gainSlider = new ScaleSliderQWidget(-6, 6, 0.0,ScaleSliderQWidget::eDataTypeDouble,getGui(),eScaleTypeLinear,_imp->secondSettingsRow);
     QObject::connect(_imp->gainSlider, SIGNAL(editingFinished(bool)), this, SLOT(onGainSliderEditingFinished(bool)));
     _imp->gainSlider->setToolTip(gainTt);
     _imp->secondRowLayout->addWidget(_imp->gainSlider);
@@ -441,17 +441,17 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->toggleGammaButton->setFocusPolicy(Qt::NoFocus);
     _imp->toggleGammaButton->setFixedSize(buttonSize);
     _imp->toggleGammaButton->setIconSize(buttonIconSize);
-    _imp->toggleGammaButton->setToolTip(Natron::convertFromPlainText(tr("Viewer gamma correction: switch between gamma=1.0 and user setting."), Qt::WhiteSpaceNormal));
+    _imp->toggleGammaButton->setToolTip(GuiUtils::convertFromPlainText(tr("Viewer gamma correction: switch between gamma=1.0 and user setting."), Qt::WhiteSpaceNormal));
     _imp->secondRowLayout->addWidget(_imp->toggleGammaButton);
     
     _imp->gammaBox = new SpinBox(_imp->secondSettingsRow, SpinBox::eSpinBoxTypeDouble);
-    QString gammaTt = Natron::convertFromPlainText(tr("Viewer gamma correction level (applied after gain and before colorspace correction)."), Qt::WhiteSpaceNormal);
+    QString gammaTt = GuiUtils::convertFromPlainText(tr("Viewer gamma correction level (applied after gain and before colorspace correction)."), Qt::WhiteSpaceNormal);
     _imp->gammaBox->setToolTip(gammaTt);
     QObject::connect(_imp->gammaBox,SIGNAL(valueChanged(double)), this, SLOT(onGammaSpinBoxValueChanged(double)));
     _imp->gammaBox->setValue(1.0);
     _imp->secondRowLayout->addWidget(_imp->gammaBox);
     
-    _imp->gammaSlider = new ScaleSliderQWidget(0,4,1.0,ScaleSliderQWidget::eDataTypeDouble,getGui(),Natron::eScaleTypeLinear,_imp->secondSettingsRow);
+    _imp->gammaSlider = new ScaleSliderQWidget(0,4,1.0,ScaleSliderQWidget::eDataTypeDouble,getGui(),eScaleTypeLinear,_imp->secondSettingsRow);
     QObject::connect(_imp->gammaSlider, SIGNAL(editingFinished(bool)), this, SLOT(onGammaSliderEditingFinished(bool)));
     _imp->gammaSlider->setToolTip(gammaTt);
     QObject::connect(_imp->gammaSlider,SIGNAL(positionChanged(double)), this, SLOT(onGammaSliderValueChanged(double)));
@@ -471,8 +471,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->viewerColorSpace->setCurrentIndex(1);
     
     QPixmap pixCheckerboardEnabled,pixCheckerboardDisabld;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_CHECKERBOARD_ENABLED, pixmapIconSize, &pixCheckerboardEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_CHECKERBOARD_DISABLED,pixmapIconSize, &pixCheckerboardDisabld);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_CHECKERBOARD_ENABLED, pixmapIconSize, &pixCheckerboardEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_CHECKERBOARD_DISABLED,pixmapIconSize, &pixCheckerboardDisabld);
     QIcon icCk;
     icCk.addPixmap(pixCheckerboardEnabled,QIcon::Normal,QIcon::On);
     icCk.addPixmap(pixCheckerboardDisabld,QIcon::Normal,QIcon::Off);
@@ -481,7 +481,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->checkerboardButton->setCheckable(true); 
     _imp->checkerboardButton->setChecked(false);
     _imp->checkerboardButton->setDown(false);
-    _imp->checkerboardButton->setToolTip(Natron::convertFromPlainText(tr("If checked, the viewer draws a checkerboard under the image instead of black "
+    _imp->checkerboardButton->setToolTip(GuiUtils::convertFromPlainText(tr("If checked, the viewer draws a checkerboard under the image instead of black "
                                                                      "(only within the project window)."), Qt::WhiteSpaceNormal));
     _imp->checkerboardButton->setFixedSize(buttonSize);
     _imp->checkerboardButton->setIconSize(buttonIconSize);
@@ -506,7 +506,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->pickerButton->setCheckable(true);
     _imp->pickerButton->setChecked(true);
     _imp->pickerButton->setDown(true);
-    _imp->pickerButton->setToolTip(Natron::convertFromPlainText(tr("Show/Hide information bar in the bottom of the viewer and if unchecked deactivate any active color picker."), Qt::WhiteSpaceNormal));
+    _imp->pickerButton->setToolTip(GuiUtils::convertFromPlainText(tr("Show/Hide information bar in the bottom of the viewer and if unchecked deactivate any active color picker."), Qt::WhiteSpaceNormal));
     _imp->pickerButton->setFixedSize(buttonSize);
     _imp->pickerButton->setIconSize(buttonIconSize);
      QObject::connect(_imp->pickerButton,SIGNAL(clicked(bool)),this,SLOT(onPickerButtonClicked(bool)));
@@ -687,7 +687,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->playbackMode_Button->setFocusPolicy(Qt::NoFocus);
     _imp->playbackMode_Button->setFixedSize(buttonSize);
     _imp->playbackMode_Button->setIconSize(buttonIconSize);
-    _imp->playbackMode_Button->setToolTip(Natron::convertFromPlainText(tr("Behaviour to adopt when the playback hit the end of the range: loop,bounce or stop."), Qt::WhiteSpaceNormal));
+    _imp->playbackMode_Button->setToolTip(GuiUtils::convertFromPlainText(tr("Behaviour to adopt when the playback hit the end of the range: loop,bounce or stop."), Qt::WhiteSpaceNormal));
     _imp->playerLayout->addWidget(_imp->playbackMode_Button);
 
 
@@ -702,7 +702,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     _imp->frameRangeEdit = new LineEdit(_imp->playerButtonsContainer);
     QObject::connect( _imp->frameRangeEdit,SIGNAL( editingFinished() ),this,SLOT( onFrameRangeEditingFinished() ) );
-    _imp->frameRangeEdit->setToolTip( Natron::convertFromPlainText(tr("Timeline bounds for video playback. It may be edited by dragging"
+    _imp->frameRangeEdit->setToolTip( GuiUtils::convertFromPlainText(tr("Timeline bounds for video playback. It may be edited by dragging"
                                                                       " the red markers on the timeline using Ctrl+click+drag. This is "
                                                                       "different from the project frame range, which "
                                                                       "is displayed on the timeline with a lighter background."),
@@ -716,14 +716,14 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->playerLayout->addStretch();
     
     QPixmap tripleSyncUnlockPix,tripleSyncLockedPix;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_UNLOCKED, pixmapIconSize, &tripleSyncUnlockPix);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_LOCKED, pixmapIconSize, &tripleSyncLockedPix);
+    appPTR->getIcon(NATRON_PIXMAP_UNLOCKED, pixmapIconSize, &tripleSyncUnlockPix);
+    appPTR->getIcon(NATRON_PIXMAP_LOCKED, pixmapIconSize, &tripleSyncLockedPix);
     
     QIcon tripleSyncIc;
     tripleSyncIc.addPixmap(tripleSyncUnlockPix, QIcon::Normal, QIcon::Off);
     tripleSyncIc.addPixmap(tripleSyncLockedPix, QIcon::Normal, QIcon::On);
     _imp->tripleSyncButton = new Button(tripleSyncIc,"",_imp->playerButtonsContainer);
-    _imp->tripleSyncButton->setToolTip(Natron::convertFromPlainText(tr("When activated, the timeline frame-range is synchronized with the Dope Sheet and the Curve Editor."),Qt::WhiteSpaceNormal));
+    _imp->tripleSyncButton->setToolTip(GuiUtils::convertFromPlainText(tr("When activated, the timeline frame-range is synchronized with the Dope Sheet and the Curve Editor."),Qt::WhiteSpaceNormal));
     _imp->tripleSyncButton->setCheckable(true);
     _imp->tripleSyncButton->setChecked(false);
     _imp->tripleSyncButton->setFixedSize(buttonSize);
@@ -738,7 +738,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     
     _imp->canEditFpsBox = new QCheckBox(_imp->playerButtonsContainer);
     
-    QString canEditFpsBoxTT = Natron::convertFromPlainText(tr("When unchecked, the playback frame rate is automatically set from "
+    QString canEditFpsBoxTT = GuiUtils::convertFromPlainText(tr("When unchecked, the playback frame rate is automatically set from "
                                                               " the Viewer A input.  "
                                                               "When checked, the user setting is used.")
                                                            , Qt::WhiteSpaceNormal);
@@ -769,8 +769,8 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->playerLayout->addWidget(_imp->fpsBox);
     
     QPixmap pixFreezeEnabled,pixFreezeDisabled;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_ENABLED,&pixFreezeEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_FREEZE_DISABLED,&pixFreezeDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_FREEZE_ENABLED,&pixFreezeEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_FREEZE_DISABLED,&pixFreezeDisabled);
     QIcon icFreeze;
     icFreeze.addPixmap(pixFreezeEnabled,QIcon::Normal,QIcon::On);
     icFreeze.addPixmap(pixFreezeDisabled,QIcon::Normal,QIcon::Off);

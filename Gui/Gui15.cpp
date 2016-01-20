@@ -65,7 +65,7 @@ Gui::importLayout()
             ifile.open(filename.c_str(), std::ifstream::in);
         } catch (const std::ifstream::failure & e) {
             QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
-            natronErrorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
+            Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
             return;
         }
@@ -78,13 +78,13 @@ Gui::importLayout()
         } catch (const boost::archive::archive_exception & e) {
             ifile.close();
             QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
-            natronErrorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
+            Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
             return;
         } catch (const std::exception & e) {
             ifile.close();
             QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
-            natronErrorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
+            Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
             return;
         }
@@ -115,13 +115,13 @@ Gui::createDefaultLayoutInternal(bool wipePrevious)
             } catch (const boost::archive::archive_exception & e) {
                 ifile.close();
                 QString err = QString("Exception occured when opening file %1: %2").arg( fileLayout.c_str() ).arg( e.what() );
-                natronErrorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
+                Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
                 return;
             } catch (const std::exception & e) {
                 ifile.close();
                 QString err = QString("Exception occured when opening file %1: %2").arg( fileLayout.c_str() ).arg( e.what() );
-                natronErrorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
+                Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
                 return;
             }

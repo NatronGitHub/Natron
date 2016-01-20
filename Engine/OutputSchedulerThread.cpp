@@ -495,14 +495,14 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,Outp
     }
     if (frame <= firstFrame) {
         switch (pMode) {
-                case Natron::ePlaybackModeLoop:
+                case ePlaybackModeLoop:
                 if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     *nextFrame = firstFrame + frameStep;
                 } else {
                     *nextFrame  = lastFrame - frameStep;
                 }
                 break;
-                case Natron::ePlaybackModeBounce:
+                case ePlaybackModeBounce:
                 if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     *newDirection = OutputSchedulerThread::eRenderDirectionBackward;
                     *nextFrame  = lastFrame - frameStep;
@@ -511,7 +511,7 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,Outp
                     *nextFrame  = firstFrame + frameStep;
                 }
                 break;
-                case Natron::ePlaybackModeOnce:
+                case ePlaybackModeOnce:
                 default:
                 if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     *nextFrame = firstFrame + frameStep;
@@ -524,14 +524,14 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,Outp
         }
     } else if (frame >= lastFrame) {
         switch (pMode) {
-                case Natron::ePlaybackModeLoop:
+                case ePlaybackModeLoop:
                 if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     *nextFrame = firstFrame;
                 } else {
                     *nextFrame = lastFrame - frameStep;
                 }
                 break;
-                case Natron::ePlaybackModeBounce:
+                case ePlaybackModeBounce:
                 if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     *newDirection = OutputSchedulerThread::eRenderDirectionBackward;
                     *nextFrame = lastFrame - frameStep;
@@ -540,7 +540,7 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,Outp
                     *nextFrame = firstFrame + frameStep;
                 }
                 break;
-                case Natron::ePlaybackModeOnce:
+                case ePlaybackModeOnce:
             default:
                 if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     return false;
@@ -845,8 +845,8 @@ OutputSchedulerThread::startRender()
     QMutexLocker l(&_imp->renderThreadsMutex);
     
     
-    Natron::SchedulingPolicyEnum policy = getSchedulingPolicy();
-    if (policy == Natron::eSchedulingPolicyFFA) {
+    SchedulingPolicyEnum policy = getSchedulingPolicy();
+    if (policy == eSchedulingPolicyFFA) {
         
         
         ///push all frame range and let the threads deal with it
@@ -854,7 +854,7 @@ OutputSchedulerThread::startRender()
     } else {
         
         ///If the output effect is sequential (only WriteFFMPEG for now)
-        Natron::SequentialPreferenceEnum pref = _imp->outputEffect->getSequentialPreference();
+        SequentialPreferenceEnum pref = _imp->outputEffect->getSequentialPreference();
         if (pref == eSequentialPreferenceOnlySequential || pref == eSequentialPreferencePreferSequential) {
             
             RenderScale scaleOne(1.);
@@ -899,7 +899,7 @@ OutputSchedulerThread::stopRender()
     
     
     ///If the output effect is sequential (only WriteFFMPEG for now)
-    Natron::SequentialPreferenceEnum pref = _imp->outputEffect->getSequentialPreference();
+    SequentialPreferenceEnum pref = _imp->outputEffect->getSequentialPreference();
     if (pref == eSequentialPreferenceOnlySequential || pref == eSequentialPreferencePreferSequential) {
         
         int firstFrame,lastFrame;
@@ -1275,7 +1275,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
                                            int viewIndex,
                                            const std::vector<int>& viewsToRender,
                                            const RenderStatsPtr& stats,
-                                           Natron::SchedulingPolicyEnum policy)
+                                           SchedulingPolicyEnum policy)
 {
     assert(viewsToRender.size() > 0);
     
@@ -1388,7 +1388,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             std::vector<std::string> args;
             std::string error;
             try {
-                getFunctionArguments(cb, &error, &args);
+                Python::getFunctionArguments(cb, &error, &args);
             } catch (const std::exception& e) {
                 _imp->outputEffect->getApp()->appendToScriptEditor(std::string("Failed to run onFrameRendered callback: ")
                                                                  + e.what());
@@ -1884,7 +1884,7 @@ OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
         script.append(")\n");
         
         std::string err,output;
-        if (!interpretPythonScript(callback.toStdString(), &err, &output)) {
+        if (!Python::interpretPythonScript(callback.toStdString(), &err, &output)) {
             _imp->outputEffect->getApp()->appendToScriptEditor("Failed to run callback: " + err);
             throw std::runtime_error(err);
         } else if (!output.empty()) {
@@ -2047,12 +2047,12 @@ private:
     virtual void
     renderFrame(int time, const std::vector<int>& viewsToRender,  bool enableRenderStats) {
         
-        Natron::SequentialPreferenceEnum sequentiallity = _imp->output->getSequentialPreference();
+        SequentialPreferenceEnum sequentiallity = _imp->output->getSequentialPreference();
         
         /// If the writer dosn't need to render the frames in any sequential order (such as image sequences for instance), then
         /// we just render the frames directly in this thread, no need to use the scheduler thread for maximum efficiency.
         
-        bool renderDirectly = sequentiallity == Natron::eSequentialPreferenceNotSequential;
+        bool renderDirectly = sequentiallity == eSequentialPreferenceNotSequential;
 
         ///Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
         ///Though we don't enable render stats for sequential renders (e.g: WriteFFMPEG) since this is 1 file.
@@ -2065,7 +2065,7 @@ private:
             std::vector<std::string> args;
             std::string error;
             try {
-                getFunctionArguments(cb, &error, &args);
+                Python::getFunctionArguments(cb, &error, &args);
             } catch (const std::exception& e) {
                 _imp->output->getApp()->appendToScriptEditor(std::string("Failed to run beforeFrameRendered callback: ")
                                                                  + e.what());
@@ -2176,7 +2176,7 @@ private:
                 ParallelRenderArgsSetter frameRenderArgs(time,
                                                          viewsToRender[view],
                                                          false,  // is this render due to user interaction ?
-                                                         sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential, // is this sequential ?
+                                                         sequentiallity == eSequentialPreferenceOnlySequential || sequentiallity == eSequentialPreferencePreferSequential, // is this sequential ?
                                                          true, // canAbort ?
                                                          0, //renderAge
                                                          outputNode, // viewer requester
@@ -2267,8 +2267,8 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     
     const double par = _effect->getPreferredAspectRatio();
     
-    Natron::SequentialPreferenceEnum sequentiallity = _effect->getSequentialPreference();
-    bool canOnlyHandleOneView = sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential;
+    SequentialPreferenceEnum sequentiallity = _effect->getSequentialPreference();
+    bool canOnlyHandleOneView = sequentiallity == eSequentialPreferenceOnlySequential || sequentiallity == eSequentialPreferencePreferSequential;
     
     for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
         ignore_result(_effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat));
@@ -2358,14 +2358,14 @@ DefaultScheduler::handleRenderFailure(const std::string& errorMessage)
     std::cout << errorMessage << std::endl;
 }
 
-Natron::SchedulingPolicyEnum
+SchedulingPolicyEnum
 DefaultScheduler::getSchedulingPolicy() const
 {
-    Natron::SequentialPreferenceEnum sequentiallity = _effect->getSequentialPreference();
-    if (sequentiallity == Natron::eSequentialPreferenceNotSequential) {
-        return Natron::eSchedulingPolicyFFA;
+    SequentialPreferenceEnum sequentiallity = _effect->getSequentialPreference();
+    if (sequentiallity == eSequentialPreferenceNotSequential) {
+        return eSchedulingPolicyFFA;
     } else {
-        return Natron::eSchedulingPolicyOrdered;
+        return eSchedulingPolicyOrdered;
     }
 }
 
@@ -2398,7 +2398,7 @@ DefaultScheduler::aboutToStartRender()
         std::vector<std::string> args;
         std::string error;
         try {
-            getFunctionArguments(cb, &error, &args);
+            Python::getFunctionArguments(cb, &error, &args);
         } catch (const std::exception& e) {
             _effect->getApp()->appendToScriptEditor(std::string("Failed to run beforeRender callback: ")
                                                              + e.what());
@@ -2451,7 +2451,7 @@ DefaultScheduler::onRenderStopped(bool aborted)
         std::vector<std::string> args;
         std::string error;
         try {
-            getFunctionArguments(cb, &error, &args);
+            Python::getFunctionArguments(cb, &error, &args);
         } catch (const std::exception& e) {
             _effect->getApp()->appendToScriptEditor(std::string("Failed to run afterRender callback: ")
                                                              + e.what());
@@ -2553,7 +2553,7 @@ void
 ViewerDisplayScheduler::timelineGoTo(int time)
 {
     assert(_viewer);
-    _viewer->getTimeline()->seekFrame(time, false, 0, Natron::eTimelineChangeReasonPlaybackSeek);
+    _viewer->getTimeline()->seekFrame(time, false, 0, eTimelineChangeReasonPlaybackSeek);
 }
 
 int

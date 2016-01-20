@@ -46,7 +46,7 @@ struct PluginMemory::Implementation
     {
     }
 
-    Natron::RamBuffer<char> data;
+    RamBuffer<char> data;
     int locked;
     QMutex mutex;
     EffectInstance* effect;

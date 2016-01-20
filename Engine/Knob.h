@@ -154,7 +154,7 @@ public:
         Q_EMIT keyFrameMoved(dimension, oldTime, newTime);
     }
     
-    void s_redrawGuiCurve(Natron::CurveChangeReason reason, int dimension)
+    void s_redrawGuiCurve(CurveChangeReason reason, int dimension)
     {
         Q_EMIT redrawGuiCurve((int)reason,dimension);
     }
@@ -496,18 +496,18 @@ public:
     /**
      * @brief Removes the keyframe at the given time and dimension if it matches any.
      **/
-    virtual void deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,double time,int dimension) = 0;
+    virtual void deleteValueAtTime(CurveChangeReason curveChangeReason,double time,int dimension) = 0;
     
     
     /**
      * @brief Moves a keyframe by a given delta and emits the signal keyframeMoved
      **/
-    virtual bool moveValueAtTime(Natron::CurveChangeReason reason, double time,int dimension,double dt,double dv,KeyFrame* newKey) = 0;
+    virtual bool moveValueAtTime(CurveChangeReason reason, double time,int dimension,double dt,double dv,KeyFrame* newKey) = 0;
     
     /**
      * @brief Transforms a keyframe by a given matrix. The matrix must not contain any skew or rotation.
      **/
-    virtual bool transformValueAtTime(Natron::CurveChangeReason curveChangeReason, double time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) = 0;
+    virtual bool transformValueAtTime(CurveChangeReason curveChangeReason, double time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) = 0;
     
     /**
      * @brief Copies all the animation of *curve* into the animation curve at the given dimension.
@@ -517,13 +517,13 @@ public:
     /**
      * @brief Changes the interpolation type for the given keyframe
      **/
-    virtual bool setInterpolationAtTime(Natron::CurveChangeReason reason,int dimension,double time,KeyframeTypeEnum interpolation,KeyFrame* newKey) = 0;
+    virtual bool setInterpolationAtTime(CurveChangeReason reason,int dimension,double time,KeyframeTypeEnum interpolation,KeyFrame* newKey) = 0;
     
     /**
      * @brief Set the left/right derivatives of the control point at the given time.
      **/
-    virtual bool moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension,double time,double left,double right) = 0;
-    virtual bool moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,double time,double derivative,bool isLeft) = 0;
+    virtual bool moveDerivativesAtTime(CurveChangeReason reason,int dimension,double time,double left,double right) = 0;
+    virtual bool moveDerivativeAtTime(CurveChangeReason reason,int dimension,double time,double derivative,bool isLeft) = 0;
 
     /**
      * @brief Removes animation before the given time and dimension. If the reason is different than eValueChangedReasonUserEdited
@@ -895,8 +895,8 @@ public:
     /**
      * @brief Call this to set a custom interact entry point, replacing any existing gui.
      **/
-    virtual void setCustomInteract(const boost::shared_ptr<Natron::OfxParamOverlayInteract> & interactDesc) = 0;
-    virtual boost::shared_ptr<Natron::OfxParamOverlayInteract> getCustomInteract() const = 0;
+    virtual void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc) = 0;
+    virtual boost::shared_ptr<OfxParamOverlayInteract> getCustomInteract() const = 0;
     virtual void swapOpenGLBuffers() OVERRIDE = 0;
     virtual void redraw() OVERRIDE = 0;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE = 0;
@@ -1051,12 +1051,12 @@ public:
      * @brief Called by the GUI whenever the animation level changes (due to a time change
      * or a value changed).
      **/
-    virtual void setAnimationLevel(int dimension,Natron::AnimationLevelEnum level) = 0;
+    virtual void setAnimationLevel(int dimension,AnimationLevelEnum level) = 0;
 
     /**
      * @brief Get the current animation level.
      **/
-    virtual Natron::AnimationLevelEnum getAnimationLevel(int dimension) const = 0;
+    virtual AnimationLevelEnum getAnimationLevel(int dimension) const = 0;
 
     /**
      * @brief Restores the default value
@@ -1179,17 +1179,17 @@ private:
     
     
     virtual void removeAnimation(int dimension,ValueChangedReasonEnum reason) OVERRIDE FINAL;
-    virtual void deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,double time,int dimension) OVERRIDE FINAL;
+    virtual void deleteValueAtTime(CurveChangeReason curveChangeReason,double time,int dimension) OVERRIDE FINAL;
 
 public:
 
     virtual void onKeyFrameRemoved(double time,int dimension) OVERRIDE FINAL;
-    virtual bool moveValueAtTime(Natron::CurveChangeReason reason, double time,int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
-    virtual bool transformValueAtTime(Natron::CurveChangeReason curveChangeReason, double time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool moveValueAtTime(CurveChangeReason reason, double time,int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool transformValueAtTime(CurveChangeReason curveChangeReason, double time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) OVERRIDE FINAL;
     virtual void cloneCurve(int dimension,const Curve& curve) OVERRIDE FINAL;
-    virtual bool setInterpolationAtTime(Natron::CurveChangeReason reason,int dimension,double time,KeyframeTypeEnum interpolation,KeyFrame* newKey) OVERRIDE FINAL;
-    virtual bool moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension,double time,double left,double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,double time,double derivative,bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool setInterpolationAtTime(CurveChangeReason reason,int dimension,double time,KeyframeTypeEnum interpolation,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool moveDerivativesAtTime(CurveChangeReason reason,int dimension,double time,double left,double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool moveDerivativeAtTime(CurveChangeReason reason,int dimension,double time,double derivative,bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void deleteAnimationBeforeTime(double time,int dimension,ValueChangedReasonEnum reason) OVERRIDE FINAL;
     virtual void deleteAnimationAfterTime(double time,int dimension,ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
@@ -1268,8 +1268,8 @@ public:
     virtual bool getIsClipPreferencesSlave() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setHintToolTip(const std::string & hint) OVERRIDE FINAL;
     virtual const std::string & getHintToolTip() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setCustomInteract(const boost::shared_ptr<Natron::OfxParamOverlayInteract> & interactDesc) OVERRIDE FINAL;
-    virtual boost::shared_ptr<Natron::OfxParamOverlayInteract> getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc) OVERRIDE FINAL;
+    virtual boost::shared_ptr<OfxParamOverlayInteract> getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
     virtual void redraw() OVERRIDE FINAL;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
@@ -1326,8 +1326,8 @@ public:
     virtual std::pair<int,boost::shared_ptr<KnobI> > getMaster(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSlave(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::vector<std::pair<int,boost::shared_ptr<KnobI> > > getMasters_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual Natron::AnimationLevelEnum getAnimationLevel(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setAnimationLevel(int dimension,AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual AnimationLevelEnum getAnimationLevel(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const OVERRIDE WARN_UNUSED_RETURN = 0;
 
 
@@ -1427,7 +1427,7 @@ protected:
     
     void setInternalCurveHasChanged(int dimension, bool changed);
     
-    void guiCurveCloneInternalCurve(Natron::CurveChangeReason curveChangeReason,int dimension, ValueChangedReasonEnum reason);
+    void guiCurveCloneInternalCurve(CurveChangeReason curveChangeReason,int dimension, ValueChangedReasonEnum reason);
     
     virtual boost::shared_ptr<Curve> getGuiCurve(int dimension,bool byPassMaster = false) const OVERRIDE FINAL;
     
@@ -1539,7 +1539,7 @@ public:
     
     /**
      * @brief Set the value of the knob in the given dimension with the given reason.
-     * @param newKey If not NULL and the animation level of the knob is Natron::eAnimationLevelInterpolatedValue
+     * @param newKey If not NULL and the animation level of the knob is eAnimationLevelInterpolatedValue
      * then a new keyframe will be set at the current time.
      **/
     ValueChangedReturnCodeEnum setValue(const T & v,
@@ -2364,7 +2364,7 @@ template<typename K>
 boost::shared_ptr<K> KnobHolder::createKnob(const std::string &label,
                                             int dimension) const
 {
-    return natronCreateKnob<K>(this, label, dimension);
+    return AppManager::createKnob<K>(this, label, dimension);
 }
 
 NATRON_NAMESPACE_EXIT;

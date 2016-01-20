@@ -420,15 +420,15 @@ public:
     virtual int getPreferredInputForConnection()  const;
     virtual int getPreferredInput() const;
     
-    void setRenderThreadSafety(Natron::RenderSafetyEnum safety);
-    Natron::RenderSafetyEnum getCurrentRenderThreadSafety() const;
+    void setRenderThreadSafety(RenderSafetyEnum safety);
+    RenderSafetyEnum getCurrentRenderThreadSafety() const;
     void revertToPluginThreadSafety();
     
     void setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support);
     PluginOpenGLRenderSupport getCurrentOpenGLRenderSupport() const;
     
-    void setCurrentSequentialRenderSupport(Natron::SequentialPreferenceEnum support);
-    Natron::SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
+    void setCurrentSequentialRenderSupport(SequentialPreferenceEnum support);
+    SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
     
     void setCurrentCanTransform(bool support);
     bool getCurrentCanTransform() const;
@@ -740,7 +740,7 @@ public:
      * case the function may return false if the user pressed the 'No' button.
      * @param content The message you want to pass.
      **/
-    bool message(Natron::MessageTypeEnum type,const std::string & content) const;
+    bool message(MessageTypeEnum type,const std::string & content) const;
 
     /**
      * @brief Use this function to post a persistent message to the user. It will be displayed on the
@@ -750,7 +750,7 @@ public:
      * eMessageTypeError : you want to inform the user an error occured.
      * @param content The message you want to pass.
      **/
-    void setPersistentMessage(Natron::MessageTypeEnum type,const std::string & content);
+    void setPersistentMessage(MessageTypeEnum type,const std::string & content);
 
     /**
      * @brief Clears any message posted previously by setPersistentMessage.
@@ -879,7 +879,7 @@ public:
 
     /**
      * @brief Returns whether this node or one of its inputs (recursively) is marked as
-     * Natron::eSequentialPreferenceOnlySequential
+     * eSequentialPreferenceOnlySequential
      *
      * @param nodeName If the return value is true, this will be set to the name of the node
      * which is sequential.
@@ -1017,11 +1017,11 @@ public:
     
     bool onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyDownDefault(const RenderScale & renderScale, Key key,KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyUpDefault(const RenderScale & renderScale, Key key,KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyRepeatDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyRepeatDefault(const RenderScale & renderScale, Key key,KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
     bool onOverlayFocusGainedDefault(const RenderScale & renderScale) WARN_UNUSED_RETURN;
     

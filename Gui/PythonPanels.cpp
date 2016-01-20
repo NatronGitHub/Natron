@@ -104,7 +104,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         std::vector<std::string> args;
         std::string error;
         try {
-            getFunctionArguments(callback, &error, &args);
+            Python::getFunctionArguments(callback, &error, &args);
         } catch (const std::exception& e) {
             getApp()->appendToScriptEditor(std::string("Failed to run onParamChanged callback: ")
                                                              + e.what());
@@ -142,7 +142,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         std::string script = ss.str();
         std::string err;
         std::string output;
-        if (!interpretPythonScript(script, &err,&output)) {
+        if (!Python::interpretPythonScript(script, &err,&output)) {
             getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + err);
         } else if (!output.empty()) {
             getApp()->appendToScriptEditor(output);
@@ -293,7 +293,7 @@ PyPanel::PyPanel(const std::string& scriptName,const std::string& label,bool use
 
     
     int idx = 1;
-    std::string name = Natron::makeNameScriptFriendly(scriptName);
+    std::string name = Python::makeNameScriptFriendly(scriptName);
     PanelWidget* existing = 0;
     existing = getGui()->findExistingTab(name);
     while (existing) {

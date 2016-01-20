@@ -141,7 +141,7 @@ EdgePrivate::initLabel()
         QColor txt;
         double r,g,b;
         appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
-        txt.setRgbF(Natron::clamp(r,0.,1.),Natron::clamp(g,0.,1.), Natron::clamp(b,0.,1.));
+        txt.setRgbF(Image::clamp(r,0.,1.),Image::clamp(g,0.,1.), Image::clamp(b,0.,1.));
         label->setBrush(txt);
         QFont f = qApp->font();
         bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();

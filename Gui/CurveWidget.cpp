@@ -604,7 +604,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         if (yCurve < yRange.first || yCurve > yRange.second) {
             QString err =  tr(" Out of curve y range ") +
                     QString("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
-            natronWarningDialog("", err.toStdString());
+            Dialogs::warningDialog("", err.toStdString());
             e->accept();
             return;
         }
@@ -690,7 +690,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
             if (yCurve < yRange.first || yCurve > yRange.second) {
                 QString err =  tr(" Out of curve y range ") +
                         QString("[%1 - %2]").arg(yRange.first).arg(yRange.second) ;
-                natronWarningDialog("", err.toStdString());
+                Dialogs::warningDialog("", err.toStdString());
                 e->accept();
                 return;
             }
@@ -1069,7 +1069,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     case eEventStateDraggingTimeline:
         _imp->_gui->setDraftRenderEnabled(true);
         _imp->_gui->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Node>());
-        _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  Natron::eTimelineChangeReasonCurveEditorSeek );
+        _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  eTimelineChangeReasonCurveEditorSeek );
         break;
     case eEventStateZooming: {
         
@@ -1550,7 +1550,7 @@ CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve()
         }
     }
     if (!curve) {
-        natronWarningDialog( QObject::tr("Curve Editor").toStdString(),QObject::tr("You must select a curve first.").toStdString() );
+        Dialogs::warningDialog( QObject::tr("Curve Editor").toStdString(),QObject::tr("You must select a curve first.").toStdString() );
 
         return;
     }
@@ -1599,7 +1599,7 @@ CurveWidget::loopSelectedCurve()
     
     boost::shared_ptr<CurveGui> curve = ce->getSelectedCurve();
     if (!curve) {
-        natronWarningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
         return;
     }
     KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve.get());
@@ -1638,7 +1638,7 @@ CurveWidget::negateSelectedCurve()
     }
     boost::shared_ptr<CurveGui> curve = ce->getSelectedCurve();
     if (!curve) {
-        natronWarningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
         return;
     }
     KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve.get());
@@ -1666,7 +1666,7 @@ CurveWidget::reverseSelectedCurve()
     }
     boost::shared_ptr<CurveGui> curve = ce->getSelectedCurve();
     if (!curve) {
-        natronWarningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the view.").toStdString() );
         return;
     }
     KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve.get());
@@ -1687,7 +1687,7 @@ CurveWidget::frameSelectedCurve()
     _imp->_selectionModel->getSelectedCurves(&selection);
     centerOn(selection);
     if (selection.empty()) {
-        natronWarningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the left pane.").toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("You must select a curve first in the left pane.").toStdString() );
     }
 }
 
@@ -1828,14 +1828,14 @@ CurveWidget::exportCurveToAscii()
             boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
             if (isString) {
-                natronWarningDialog( tr("Curve Editor").toStdString(),tr("String curves cannot be imported/exported.").toStdString() );
+                Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("String curves cannot be imported/exported.").toStdString() );
                 return;
             }
             curves.push_back(*it);
         }
     }
     if ( curves.empty() ) {
-        natronWarningDialog( tr("Curve Editor").toStdString(),tr("You must have a curve on the editor first.").toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("You must have a curve on the editor first.").toStdString() );
 
         return;
     }
@@ -1855,7 +1855,7 @@ CurveWidget::exportCurveToAscii()
             double endInt = std::floor(end);
             if ( curves[i]->areKeyFramesTimeClampedToIntegers() &&
                  ( ( incrInt != incr) || ( xInt != x) || ( endInt != end) ) ) {
-                natronWarningDialog( tr("Curve Export").toStdString(),curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString() );
+                Dialogs::warningDialog( tr("Curve Export").toStdString(),curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString() );
 
                 return;
             }
@@ -1906,7 +1906,7 @@ CurveWidget::importCurveFromAscii()
             boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
             if (isString) {
-                natronWarningDialog( tr("Curve Editor").toStdString(),tr("String curves cannot be imported/exported.").toStdString() );
+                Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("String curves cannot be imported/exported.").toStdString() );
                 return;
             }
             
@@ -1914,7 +1914,7 @@ CurveWidget::importCurveFromAscii()
         }
     }
     if ( curves.empty() ) {
-        natronWarningDialog( tr("Curve Editor").toStdString(),tr("You must have a curve on the editor first.").toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("You must have a curve on the editor first.").toStdString() );
 
         return;
     }
@@ -1923,7 +1923,7 @@ CurveWidget::importCurveFromAscii()
     if ( dialog.exec() ) {
         QString filePath = dialog.getFilePath();
         if ( !QFile::exists(filePath) ) {
-            natronWarningDialog( tr("Curve Import").toStdString(),tr("File not found.").toStdString() );
+            Dialogs::warningDialog( tr("Curve Import").toStdString(),tr("File not found.").toStdString() );
 
             return;
         }
@@ -1940,7 +1940,7 @@ CurveWidget::importCurveFromAscii()
             double xInt = std::floor(x);
             if ( curves[i]->areKeyFramesTimeClampedToIntegers() &&
                  ( ( incrInt != incr) || ( xInt != x) ) ) {
-                natronWarningDialog( tr("Curve Import").toStdString(),curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString() );
+                Dialogs::warningDialog( tr("Curve Import").toStdString(),curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString() );
 
                 return;
             }
@@ -1968,7 +1968,7 @@ CurveWidget::importCurveFromAscii()
                 }
                 if ( i < line.size() ) {
                     if ( line.at(i) != QChar('_') ) {
-                        natronErrorDialog( tr("Curve Import").toStdString(),tr("The file could not be read.").toStdString() );
+                        Dialogs::errorDialog( tr("Curve Import").toStdString(),tr("The file could not be read.").toStdString() );
 
                         return;
                     }
@@ -1977,7 +1977,7 @@ CurveWidget::importCurveFromAscii()
                 bool ok;
                 double v = value.toDouble(&ok);
                 if (!ok) {
-                    natronErrorDialog( tr("Curve Import").toStdString(),tr("The file could not be read.").toStdString() );
+                    Dialogs::errorDialog( tr("Curve Import").toStdString(),tr("The file could not be read.").toStdString() );
 
                     return;
                 }
@@ -1985,14 +1985,14 @@ CurveWidget::importCurveFromAscii()
             }
             ///assert that the values count is greater than the number of curves provided by the user
             if ( values.size() < columns.size() ) {
-                natronErrorDialog( tr("Curve Import").toStdString(),tr("The file contains less curves than what you selected.").toStdString() );
+                Dialogs::errorDialog( tr("Curve Import").toStdString(),tr("The file contains less curves than what you selected.").toStdString() );
 
                 return;
             }
 
             for (std::map<int,boost::shared_ptr<CurveGui> >::const_iterator col = columns.begin(); col != columns.end(); ++col) {
                 if ( col->first >= (int)values.size() ) {
-                    natronErrorDialog( tr("Curve Import").toStdString(),tr("One of the curve column index is not a valid index for the given file.").toStdString() );
+                    Dialogs::errorDialog( tr("Curve Import").toStdString(),tr("One of the curve column index is not a valid index for the given file.").toStdString() );
 
                     return;
                 }

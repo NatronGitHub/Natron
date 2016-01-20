@@ -41,14 +41,14 @@ NATRON_NAMESPACE_ENTER;
 
 template <>
 float
-convertPixelDepth(unsigned char pix)
+Image::convertPixelDepth(unsigned char pix)
 {
     return Color::intToFloat<256>(pix);
 }
 
 template <>
 unsigned short
-convertPixelDepth(unsigned char pix)
+Image::convertPixelDepth(unsigned char pix)
 {
     // 0x01 -> 0x0101, 0x02 -> 0x0202, ..., 0xff -> 0xffff
     return (unsigned short)( (pix << 8) + pix );
@@ -56,14 +56,14 @@ convertPixelDepth(unsigned char pix)
 
 template <>
 unsigned char
-convertPixelDepth(unsigned char pix)
+Image::convertPixelDepth(unsigned char pix)
 {
     return pix;
 }
 
 template <>
 unsigned char
-convertPixelDepth(unsigned short pix)
+Image::convertPixelDepth(unsigned short pix)
 {
     // the following is from ImageMagick's quantum.h
     return (unsigned char)( ( (pix + 128UL) - ( (pix + 128UL) >> 8 ) ) >> 8 );
@@ -71,52 +71,52 @@ convertPixelDepth(unsigned short pix)
 
 template <>
 float
-convertPixelDepth(unsigned short pix)
+Image::convertPixelDepth(unsigned short pix)
 {
     return Color::intToFloat<65536>(pix);
 }
 
 template <>
 unsigned short
-convertPixelDepth(unsigned short pix)
+Image::convertPixelDepth(unsigned short pix)
 {
     return pix;
 }
 
 template <>
 unsigned char
-convertPixelDepth(float pix)
+Image::convertPixelDepth(float pix)
 {
     return (unsigned char)Color::floatToInt<256>(pix);
 }
 
 template <>
 unsigned short
-convertPixelDepth(float pix)
+Image::convertPixelDepth(float pix)
 {
     return (unsigned short)Color::floatToInt<65536>(pix);
 }
 
 template <>
 float
-convertPixelDepth(float pix)
+Image::convertPixelDepth(float pix)
 {
     return pix;
 }
 
-static const Natron::Color::Lut*
+static const Color::Lut*
 lutFromColorspace(ViewerColorSpaceEnum cs)
 {
-    const Natron::Color::Lut* lut;
+    const Color::Lut* lut;
 
     switch (cs) {
-        case Natron::eViewerColorSpaceSRGB:
-            lut = Natron::Color::LutManager::sRGBLut();
+        case eViewerColorSpaceSRGB:
+            lut = Color::LutManager::sRGBLut();
             break;
-        case Natron::eViewerColorSpaceRec709:
-            lut = Natron::Color::LutManager::Rec709Lut();
+        case eViewerColorSpaceRec709:
+            lut = Color::LutManager::Rec709Lut();
             break;
-        case Natron::eViewerColorSpaceLinear:
+        case eViewerColorSpaceLinear:
         default:
             lut = 0;
             break;
@@ -148,13 +148,13 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
     ImageBitDepthEnum dstDepth = dstImg.getBitDepth();
     ImageBitDepthEnum srcDepth = srcImg.getBitDepth();
     int nComp = (int)srcImg.getComponentsCount();
-    const Natron::Color::Lut* const srcLut_ = lutFromColorspace(srcColorSpace);
-    const Natron::Color::Lut* const dstLut_ = lutFromColorspace(dstColorSpace);
+    const Color::Lut* const srcLut_ = lutFromColorspace(srcColorSpace);
+    const Color::Lut* const dstLut_ = lutFromColorspace(dstColorSpace);
 
     
     ///no colorspace conversion applied when luts are the same
-    const Natron::Color::Lut* const srcLut = (srcLut_ == dstLut_) ? 0 : srcLut_;
-    const Natron::Color::Lut* const dstLut = (srcLut_ == dstLut_) ? 0 : dstLut_;
+    const Color::Lut* const srcLut = (srcLut_ == dstLut_) ? 0 : srcLut_;
+    const Color::Lut* const dstLut = (srcLut_ == dstLut_) ? 0 : dstLut_;
     if (intersection.isNull()) {
         return;
     }
@@ -302,8 +302,8 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
         return;
     }
     
-    const Natron::Color::Lut* const srcLut = useColorspaces ? lutFromColorspace((ViewerColorSpaceEnum)srcColorSpace) : 0;
-    const Natron::Color::Lut* const dstLut = useColorspaces ? lutFromColorspace((ViewerColorSpaceEnum)dstColorSpace) : 0;
+    const Color::Lut* const srcLut = useColorspaces ? lutFromColorspace((ViewerColorSpaceEnum)srcColorSpace) : 0;
+    const Color::Lut* const dstLut = useColorspaces ? lutFromColorspace((ViewerColorSpaceEnum)dstColorSpace) : 0;
     
     for (int y = 0; y < renderWindow.height(); ++y) {
         
@@ -489,7 +489,7 @@ Image::convertToFormatInternalForUnpremult(const RectI & renderWindow,
                                            bool copyBitmap,
                                            int channelForAlpha)
 {
-    if (srcColorSpace == Natron::eViewerColorSpaceLinear && dstColorSpace == Natron::eViewerColorSpaceLinear) {
+    if (srcColorSpace == eViewerColorSpaceLinear && dstColorSpace == eViewerColorSpaceLinear) {
         convertToFormatInternalForColorSpace<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, requiresUnpremult, false>(renderWindow, srcImg, dstImg, copyBitmap,useAlpha0, srcColorSpace, dstColorSpace,channelForAlpha);
     } else {
         convertToFormatInternalForColorSpace<SRCPIX, DSTPIX, srcMaxValue, dstMaxValue, srcNComps, dstNComps, requiresUnpremult, true>(renderWindow, srcImg, dstImg, copyBitmap, useAlpha0, srcColorSpace, dstColorSpace, channelForAlpha);

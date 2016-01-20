@@ -33,6 +33,8 @@
 #endif
 
 #include "Global/GlobalDefines.h"
+
+#include "Engine/AppManager.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

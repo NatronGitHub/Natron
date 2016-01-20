@@ -278,7 +278,7 @@ struct HostOverlayPrivate
     
     QPointF lastPenPos;
     
-    Natron::TextRenderer textRenderer;
+    TextRenderer textRenderer;
     
     bool interactiveDrag;
     

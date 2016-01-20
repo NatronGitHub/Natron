@@ -261,7 +261,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
             }
         }
         if (foundEffect) {
-            StandardButtonEnum reply = natronQuestionDialog( tr("Delete").toStdString(), tr("This node has one or several "
+            StandardButtonEnum reply = Dialogs::questionDialog( tr("Delete").toStdString(), tr("This node has one or several "
                                                                                                   "parameters from which other parameters "
                                                                                                   "of the project rely on through expressions "
                                                                                                   "or links. Deleting this node will "
@@ -334,7 +334,7 @@ NodeGraph::deleteSelection()
                     }
                 }
                 if (foundEffect) {
-                    StandardButtonEnum reply = natronQuestionDialog( tr("Delete").toStdString(),
+                    StandardButtonEnum reply = Dialogs::questionDialog( tr("Delete").toStdString(),
                                                                            tr("This node has one or several "
                                                                               "parameters from which other parameters "
                                                                               "of the project rely on through expressions "

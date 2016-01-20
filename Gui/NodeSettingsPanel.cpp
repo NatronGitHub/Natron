@@ -91,7 +91,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     _settingsButton = new Button( QIcon(pixSettings),"",getHeaderWidget() );
     _settingsButton->setFixedSize(mediumBSize);
     _settingsButton->setIconSize(mediumIconSize);
-    _settingsButton->setToolTip(Natron::convertFromPlainText(tr("Settings and presets."), Qt::WhiteSpaceNormal));
+    _settingsButton->setToolTip(GuiUtils::convertFromPlainText(tr("Settings and presets."), Qt::WhiteSpaceNormal));
     _settingsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _settingsButton,SIGNAL( clicked() ),this,SLOT( onSettingsButtonClicked() ) );
     insertHeaderWidget(1, _settingsButton);
@@ -146,7 +146,7 @@ NodeSettingsPanel::initializeExtraGui(QVBoxLayout* layout)
 void
 NodeSettingsPanel::onSettingsButtonClicked()
 {
-    Natron::Menu menu(this);
+    Menu menu(this);
     //menu.setFont(QFont(appFont,appFontSize));
     
     boost::shared_ptr<NodeGui> node = getNode();
@@ -200,7 +200,7 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
         ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         ifile.open(filename.c_str(),std::ifstream::in);
     } catch (const std::ifstream::failure & e) {
-        natronErrorDialog("Presets",e.what());
+        Dialogs::errorDialog("Presets",e.what());
         return;
     }
     
@@ -219,7 +219,7 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
         
     } catch (const std::exception & e) {
         ifile.close();
-        natronErrorDialog("Presets",e.what());
+        Dialogs::errorDialog("Presets",e.what());
         return;
     }
     boost::shared_ptr<NodeGui> node = getNode();
@@ -227,7 +227,7 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
         QString err = QString(tr("You cannot load ") + filename.c_str()  + tr(" which are presets for the plug-in ") +
                               nodeSerialization.front()->getPluginID().c_str() + tr(" on the plug-in ") +
                               node->getNode()->getPluginID().c_str());
-        natronErrorDialog(tr("Presets").toStdString(),err.toStdString());
+        Dialogs::errorDialog(tr("Presets").toStdString(),err.toStdString());
         return;
     }
     
@@ -260,7 +260,7 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
         ofile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
         ofile.open(filename.c_str(),std::ofstream::out);
     } catch (const std::ofstream::failure & e) {
-        natronErrorDialog("Presets",e.what());
+        Dialogs::errorDialog("Presets",e.what());
         return;
     }
 
@@ -280,7 +280,7 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
         
     }  catch (const std::exception & e) {
         ofile.close();
-        natronErrorDialog("Presets",e.what());
+        Dialogs::errorDialog("Presets",e.what());
         return;
     }
  

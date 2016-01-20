@@ -181,7 +181,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 
                 std::string stdModuleName = pythonModuleName.toStdString();
-                if (getGroupInfos(pythonModuleInfo.path().toStdString() + '/', stdModuleName, &pythonPluginID, &pythonPluginLabel, &pythonIcFilePath, &pythonGrouping, &pythonDesc, &pyVersion)) {
+                if (Python::getGroupInfos(pythonModuleInfo.path().toStdString() + '/', stdModuleName, &pythonPluginID, &pythonPluginLabel, &pythonIcFilePath, &pythonGrouping, &pythonDesc, &pyVersion)) {
                     
                     if (pyVersion != savedPythonModuleVersion) {
             
@@ -193,7 +193,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                             }
                         } else {
                             
-                            StandardButtonEnum rep = natronQuestionDialog(QObject::tr("New PyPlug version").toStdString()
+                            StandardButtonEnum rep = Dialogs::questionDialog(QObject::tr("New PyPlug version").toStdString()
                                                                                     , QObject::tr("A different version of ").toStdString() +
                                                                                     stdModuleName + " (" +
                                                                                     QString::number(pyVersion).toStdString() + ") " +

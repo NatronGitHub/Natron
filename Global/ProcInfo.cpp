@@ -267,7 +267,7 @@ static QString applicationFilePath_fromArgv(const char* argv0Param)
 
 } // anon namespace
 
-QString natronApplicationFilePath(const char* argv0Param)
+QString ProcInfo::applicationFilePath(const char* argv0Param)
 {
 
 #if defined(Q_WS_WIN)
@@ -300,9 +300,9 @@ QString natronApplicationFilePath(const char* argv0Param)
 #endif
 }
 
-QString natronApplicationDirPath(const char* argv0Param)
+QString ProcInfo::applicationDirPath(const char* argv0Param)
 {
-    QString filePath = natronApplicationFilePath(argv0Param);
+    QString filePath = ProcInfo::applicationFilePath(argv0Param);
     int foundSlash = filePath.lastIndexOf('/');
     if (foundSlash == -1) {
         return QString();
@@ -310,7 +310,7 @@ QString natronApplicationDirPath(const char* argv0Param)
     return filePath.mid(0, foundSlash);
 }
     
-bool natronCheckIfProcessIsRunning(const char* /*processAbsoluteFilePath*/, Q_PID /*pid*/)
+bool ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/, Q_PID /*pid*/)
 {
     //Not working yet
     return true;
@@ -356,7 +356,7 @@ bool natronCheckIfProcessIsRunning(const char* /*processAbsoluteFilePath*/, Q_PI
     char state;
     //See http://man7.org/linux/man-pages/man5/proc.5.html
     if ( (fscanf(fp, "%ld (%[^)]) %c", &pid, pname, &state)) != 3 ){
-        qDebug() << "natronCheckIfProcessIsRunning(): fscanf call on" << procFile << "failed";
+        qDebug() << "ProcInfo::checkIfProcessIsRunning(): fscanf call on" << procFile << "failed";
         fclose(fp);
         return false;
     }
@@ -391,6 +391,6 @@ bool natronCheckIfProcessIsRunning(const char* /*processAbsoluteFilePath*/, Q_PI
     return false;
 #endif
 #endif
-} // natronCheckIfProcessIsRunning
+} // ProcInfo::checkIfProcessIsRunning
 
 NATRON_NAMESPACE_EXIT;

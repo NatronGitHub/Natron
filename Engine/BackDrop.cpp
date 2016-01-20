@@ -61,9 +61,9 @@ Backdrop::getPluginDescription() const
 void
 Backdrop::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = natronCreateKnob<KnobPage>(this, "Controls");
+    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Controls");
     
-    boost::shared_ptr<KnobString> knobLabel = natronCreateKnob<KnobString>( this, "Label");
+    boost::shared_ptr<KnobString> knobLabel = AppManager::createKnob<KnobString>( this, "Label");
     knobLabel->setAnimationEnabled(false);
     knobLabel->setAsMultiLine();
     knobLabel->setUsesRichText(true);

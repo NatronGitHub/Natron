@@ -662,13 +662,13 @@ AppManager::newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool
     try {
         instance->load(cl, makeEmptyInstance);
     } catch (const std::exception & e) {
-        natronErrorDialog( NATRON_APPLICATION_NAME,e.what(), false );
+        Dialogs::errorDialog( NATRON_APPLICATION_NAME,e.what(), false );
         removeInstance(_imp->_availableID);
         delete instance;
         --_imp->_availableID;
         return NULL;
     } catch (...) {
-        natronErrorDialog( NATRON_APPLICATION_NAME, tr("Cannot load project").toStdString(), false );
+        Dialogs::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot load project").toStdString(), false );
         removeInstance(_imp->_availableID);
         delete instance;
         --_imp->_availableID;
@@ -1089,7 +1089,7 @@ static bool findAndRunScriptFile(const QString& path,const QStringList& files,co
                 QString content = ts.readAll();
                 PyRun_SimpleString(content.toStdString().c_str());
 
-                PyObject* mainModule = getMainModule();
+                PyObject* mainModule = Python::getMainModule();
                 std::string error;
                 ///Gui session, do stdout, stderr redirection
                 PyObject *errCatcher = 0;
@@ -1104,7 +1104,7 @@ static bool findAndRunScriptFile(const QString& path,const QStringList& files,co
                 if (errCatcher) {
                     errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
                     assert(errorObj);
-                    error = PY3String_asString(errorObj);
+                    error = Python::PY3String_asString(errorObj);
                     PyObject* unicode = PyUnicode_FromString("");
                     PyObject_SetAttrString(errCatcher, "value", unicode);
                     Py_DECREF(errorObj);
@@ -1217,7 +1217,7 @@ static void addToPythonPathFunctor(const QDir& directory)
     addToPythonPath += "\")\n";
     
     std::string err;
-    bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
+    bool ok  = Python::interpretPythonScript(addToPythonPath, &err, 0);
     if (!ok) {
         std::string message = QObject::tr("Could not add").toStdString() + ' ' + directory.absolutePath().toStdString() + ' ' +
          QObject::tr("to python path").toStdString() + ": " + err;
@@ -1294,7 +1294,7 @@ AppManager::loadPythonGroups()
     ///Also import Pyside.QtCore and Pyside.QtGui (the later only in non background mode)
     {
         std::string s = "import PySide.QtCore as QtCore";
-        bool ok  = interpretPythonScript(s, &err, 0);
+        bool ok  = Python::interpretPythonScript(s, &err, 0);
         if (!ok) {
             std::string message = QObject::tr("Failed to import PySide.QtCore").toStdString();
             std::cerr << message << std::endl;
@@ -1304,7 +1304,7 @@ AppManager::loadPythonGroups()
     
     if (!isBackground()) {
         std::string s = "import PySide.QtGui as QtGui";
-        bool ok  = interpretPythonScript(s, &err, 0);
+        bool ok  = Python::interpretPythonScript(s, &err, 0);
         if (!ok) {
             std::string message = QObject::tr("Failed to import PySide.QtGui").toStdString();
             std::cerr << message << std::endl;
@@ -1390,7 +1390,7 @@ AppManager::loadPythonGroups()
         std::string pluginLabel,pluginID,pluginGrouping,iconFilePath,pluginDescription;
         unsigned int version;
         
-        bool gotInfos = getGroupInfos(modulePath.toStdString(),moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &version);
+        bool gotInfos = Python::getGroupInfos(modulePath.toStdString(),moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &version);
 
         
         if (gotInfos) {
@@ -2357,7 +2357,7 @@ oom:
 
 
 std::string
-PY3String_asString(PyObject* obj)
+Python::PY3String_asString(PyObject* obj)
 {
     std::string ret;
     if (PyUnicode_Check(obj)) {
@@ -2436,11 +2436,11 @@ AppManager::initPython(int argc,char* argv[])
     
 #ifndef IS_PYTHON_2
 #ifdef __NATRON_WIN32__
-    static const std::wstring pythonHome(natron_s2ws("."));
+    static const std::wstring pythonHome(Global::s2ws("."));
 #elif defined(__NATRON_LINUX__)
-    static const std::wstring pythonHome(natron_s2ws("../lib"));
+    static const std::wstring pythonHome(Global::s2ws("../lib"));
 #elif defined(__NATRON_OSX__)
-    static const std::wstring pythonHome(natron_s2ws("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"));
+    static const std::wstring pythonHome(Global::s2ws("../Frameworks/Python.framework/Versions/" NATRON_PY_VERSION_STRING "/lib"));
 #endif
     Py_SetPythonHome(const_cast<wchar_t*>(pythonHome.c_str()));
     PySys_SetArgv(argc, &_imp->args.front()); /// relative module import
@@ -2480,17 +2480,17 @@ AppManager::initPython(int argc,char* argv[])
         printf("Py_GetProgramFullPath is %s\n", Py_GetProgramFullPath());
         printf("Py_GetPath is %s\n", Py_GetPath());
         printf("Py_GetPythonHome is %s\n", Py_GetPythonHome());
-        bool ok = interpretPythonScript("from distutils.sysconfig import get_python_lib; print('Python library is in ' + get_python_lib())", &err, 0);
+        bool ok = Python::interpretPythonScript("from distutils.sysconfig import get_python_lib; print('Python library is in ' + get_python_lib())", &err, 0);
         assert(ok);
     }
 #endif
-    bool ok = interpretPythonScript("import sys\nfrom math import *\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
+    bool ok = Python::interpretPythonScript("import sys\nfrom math import *\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("Error while loading python module "NATRON_ENGINE_PYTHON_MODULE_NAME": " + err);
     }
 
-    ok = interpretPythonScript(std::string(NATRON_ENGINE_PYTHON_MODULE_NAME) + ".natron = " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME) + ".PyCoreApplication()\n" , &err, 0);
+    ok = Python::interpretPythonScript(std::string(NATRON_ENGINE_PYTHON_MODULE_NAME) + ".natron = " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME) + ".PyCoreApplication()\n" , &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("Error while loading python module "NATRON_ENGINE_PYTHON_MODULE_NAME": " + err);
@@ -2498,13 +2498,13 @@ AppManager::initPython(int argc,char* argv[])
 
     if (!isBackground()) {
         
-        ok = interpretPythonScript("import sys\nimport " + std::string(NATRON_GUI_PYTHON_MODULE_NAME), &err, 0);
+        ok = Python::interpretPythonScript("import sys\nimport " + std::string(NATRON_GUI_PYTHON_MODULE_NAME), &err, 0);
         assert(ok);
         if (!ok) {
             throw std::runtime_error("Error while loading python module "NATRON_GUI_PYTHON_MODULE_NAME": " + err);
         }
 
-        ok = interpretPythonScript(std::string(NATRON_GUI_PYTHON_MODULE_NAME) + ".natron = " +
+        ok = Python::interpretPythonScript(std::string(NATRON_GUI_PYTHON_MODULE_NAME) + ".natron = " +
                                    std::string(NATRON_GUI_PYTHON_MODULE_NAME) + ".PyGuiApplication()\n" , &err, 0);
         assert(ok);
         if (!ok) {
@@ -2524,7 +2524,7 @@ AppManager::initPython(int argc,char* argv[])
         "catchErr = StreamCatcher()\n"
         "sys.stdout = catchOut\n"
         "sys.stderr = catchErr\n");
-        ok = interpretPythonScript(script,&err,0);
+        ok = Python::interpretPythonScript(script,&err,0);
         assert(ok);
         if (!ok) {
             throw std::runtime_error("Error while loading StreamCatcher: " + err);
@@ -2606,7 +2606,7 @@ AppManager::launchPythonInterpreter()
 {
     std::string err;
     std::string s = "app = app1\n";
-    bool ok = interpretPythonScript(s, &err, 0);
+    bool ok = Python::interpretPythonScript(s, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("AppInstance::launchPythonInterpreter(): interpretPythonScript("+s+" failed!");
@@ -2674,7 +2674,7 @@ AppManager::setOnProjectCreatedCallback(const std::string& pythonFunc)
 
 OFX::Host::ImageEffect::Descriptor*
 AppManager::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                                Natron::ContextEnum* ctx)
+                                                                ContextEnum* ctx)
 {
     return _imp->ofxHost->getPluginContextAndDescribe(plugin, ctx);
 }
@@ -2773,7 +2773,7 @@ AppManager::getOFXHost() const
 }
 
 void
-natronErrorDialog(const std::string & title,
+Dialogs::errorDialog(const std::string & title,
             const std::string & message,
             bool useHtml)
 {
@@ -2787,7 +2787,7 @@ natronErrorDialog(const std::string & title,
 }
 
 void
-natronErrorDialog(const std::string & title,
+Dialogs::errorDialog(const std::string & title,
             const std::string & message,
             bool* stopAsking,
             bool useHtml)
@@ -2802,7 +2802,7 @@ natronErrorDialog(const std::string & title,
 }
 
 void
-natronWarningDialog(const std::string & title,
+Dialogs::warningDialog(const std::string & title,
               const std::string & message,
               bool useHtml)
 {
@@ -2816,7 +2816,7 @@ natronWarningDialog(const std::string & title,
 }
 
 void
-natronWarningDialog(const std::string & title,
+Dialogs::warningDialog(const std::string & title,
               const std::string & message,
               bool* stopAsking,
               bool useHtml)
@@ -2831,7 +2831,7 @@ natronWarningDialog(const std::string & title,
 }
 
 void
-natronInformationDialog(const std::string & title,
+Dialogs::informationDialog(const std::string & title,
                   const std::string & message,
                   bool useHtml)
 {
@@ -2845,7 +2845,7 @@ natronInformationDialog(const std::string & title,
 }
 
 void
-natronInformationDialog(const std::string & title,
+Dialogs::informationDialog(const std::string & title,
                   const std::string & message,
                   bool* stopAsking,
                   bool useHtml)
@@ -2860,7 +2860,7 @@ natronInformationDialog(const std::string & title,
 }
 
 StandardButtonEnum
-natronQuestionDialog(const std::string & title,
+Dialogs::questionDialog(const std::string & title,
                const std::string & message,
                bool useHtml,
                StandardButtons buttons,
@@ -2879,7 +2879,7 @@ natronQuestionDialog(const std::string & title,
 }
 
 StandardButtonEnum
-natronQuestionDialog(const std::string & title,
+Dialogs::questionDialog(const std::string & title,
                const std::string & message,
                bool useHtml,
                StandardButtons buttons,
@@ -2897,9 +2897,10 @@ natronQuestionDialog(const std::string & title,
         return eStandardButtonYes;
     }
 }
-    
+
+#if 0 // dead code
 std::size_t
-findNewLineStartAfterImports(std::string& script)
+Python::findNewLineStartAfterImports(std::string& script)
 {
     ///Find position of the last import
     size_t foundImport = script.find("import ");
@@ -2929,32 +2930,34 @@ findNewLineStartAfterImports(std::string& script)
     } else {
         return endLine + 1;
     }
-
 }
-    
+#endif
+
 PyObject*
-getMainModule()
+Python::getMainModule()
 {
     return appPTR->getMainModule();
 }
 
+#if 0 // dead code
 std::size_t
-ensureScriptHasModuleImport(const std::string& moduleName,std::string& script)
+Python::ensureScriptHasModuleImport(const std::string& moduleName,std::string& script)
 {
     /// import module
     script = "from " + moduleName + " import * \n" + script;
-    return findNewLineStartAfterImports(script);
+    return Python::findNewLineStartAfterImports(script);
 }
-    
+#endif
+
 bool
-interpretPythonScript(const std::string& script,std::string* error,std::string* output)
+Python::interpretPythonScript(const std::string& script,std::string* error,std::string* output)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return true;
 #endif
     PythonGILLocker pgl;
     
-    PyObject* mainModule = getMainModule();
+    PyObject* mainModule = Python::getMainModule();
     PyObject* dict = PyModule_GetDict(mainModule);
     
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
@@ -3015,9 +3018,9 @@ interpretPythonScript(const std::string& script,std::string* error,std::string* 
 
 }
 
-    
+#if 0 // dead code
 void
-compilePyScript(const std::string& script,PyObject** code)
+Python::compilePyScript(const std::string& script,PyObject** code)
 {
     ///Must be locked
     assert(PyThreadState_Get());
@@ -3030,11 +3033,11 @@ compilePyScript(const std::string& script,PyObject** code)
         throw std::runtime_error("failed to compile the script");
     }
 }
-    
+#endif
 
     
 std::string
-makeNameScriptFriendly(const std::string& str)
+Python::makeNameScriptFriendly(const std::string& str)
 {
     if (str == "from") {
         return "pFrom";
@@ -3135,7 +3138,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
     std::string toRun = script.arg(pythonModule.c_str()).toStdString();
     
     std::string err;
-    if (!interpretPythonScript(toRun, &err, 0)) {
+    if (!Python::interpretPythonScript(toRun, &err, 0)) {
         QString logStr("Failure when loading ");
         logStr.append(pythonModule.c_str());
         logStr.append(": ");
@@ -3145,7 +3148,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
         return false;
     }
     
-    PyObject* mainModule = getMainModule();
+    PyObject* mainModule = Python::getMainModule();
     PyObject* retObj = PyObject_GetAttrString(mainModule,"ret"); //new ref
     assert(retObj);
     if (PyObject_IsTrue(retObj) == 0) {
@@ -3225,7 +3228,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
     }
     
     
-    bool ok = interpretPythonScript(deleteScript, &err, NULL);
+    bool ok = Python::interpretPythonScript(deleteScript, &err, NULL);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("getGroupInfos(): interpretPythonScript("+deleteScript+" failed!");
@@ -3235,6 +3238,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
 }
   
     
+static
 bool
 getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
                                 const std::string& modulePath,
@@ -3270,7 +3274,7 @@ getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
 }
     
 bool
-getGroupInfos(const std::string& modulePath,
+Python::getGroupInfos(const std::string& modulePath,
               const std::string& pythonModule,
               std::string* pluginID,
               std::string* pluginLabel,
@@ -3298,7 +3302,7 @@ getGroupInfos(const std::string& modulePath,
 
     
 void
-getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args)
+Python::getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return;
@@ -3308,11 +3312,11 @@ getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<st
     ss << "args_spec = inspect.getargspec(" << pyFunc << ")\n";
     std::string script = ss.str();
     std::string output;
-    bool ok = interpretPythonScript(script, error, &output);
+    bool ok = Python::interpretPythonScript(script, error, &output);
     if (!ok) {
-        throw std::runtime_error("getFunctionArguments(): interpretPythonScript("+script+" failed!");
+        throw std::runtime_error("Python::getFunctionArguments(): interpretPythonScript("+script+" failed!");
     }
-    PyObject* mainModule = getMainModule();
+    PyObject* mainModule = Python::getMainModule();
     PyObject* args_specObj = 0;
     if (PyObject_HasAttrString(mainModule, "args_spec")) {
         args_specObj = PyObject_GetAttrString(mainModule,"args_spec");
@@ -3353,7 +3357,7 @@ getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<st
  * If app1 or Group1 does not exist at this point, this is a failure.
  **/
 PyObject*
-getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined)
+Python::getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
     return 0;
@@ -3377,7 +3381,7 @@ getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool*
             recurseName.erase(0, foundDot + 1);
         }
         if (!recurseName.empty()) {
-            return getAttrRecursive(recurseName, obj, isDefined);
+            return Python::getAttrRecursive(recurseName, obj, isDefined);
         } else {
             *isDefined = true;
             return obj;

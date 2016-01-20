@@ -80,22 +80,22 @@ public:
     
     void informationDialog(const std::string& title,const std::string& message)
     {
-        natronInformationDialog(title, message);
+        Dialogs::informationDialog(title, message);
     }
     
     void warningDialog(const std::string& title,const std::string& message)
     {
-        natronWarningDialog(title,message);
+        Dialogs::warningDialog(title,message);
     }
     
     void errorDialog(const std::string& title,const std::string& message)
     {
-        natronErrorDialog(title,message);
+        Dialogs::errorDialog(title,message);
     }
     
     StandardButtonEnum questionDialog(const std::string& title,const std::string& message)
     {
-        return natronQuestionDialog(title, message, false);
+        return Dialogs::questionDialog(title, message, false);
     }
     
     void addMenuCommand(const std::string& grouping,const std::string& pythonFunctionName)

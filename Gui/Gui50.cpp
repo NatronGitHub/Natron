@@ -837,7 +837,7 @@ Gui::exportGroupAsPythonScript(NodeCollection* collection)
     }
 
     if (!hasOutput) {
-        natronErrorDialog( tr("Export").toStdString(), tr("To export as group, at least one Ouptut node must exist.").toStdString() );
+        Dialogs::errorDialog( tr("Export").toStdString(), tr("To export as group, at least one Ouptut node must exist.").toStdString() );
 
         return;
     }
@@ -868,7 +868,7 @@ Gui::onUserCommandTriggered()
     if ( found != _imp->pythonCommands.end() ) {
         std::string err;
         std::string output;
-        if ( !interpretPythonScript(found->second, &err, &output) ) {
+        if ( !Python::interpretPythonScript(found->second, &err, &output) ) {
             getApp()->appendToScriptEditor(err);
         } else {
             getApp()->appendToScriptEditor(output);

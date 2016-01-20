@@ -152,7 +152,7 @@ public:
     void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
     
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                                    Natron::ContextEnum* ctx);
+                                                                    ContextEnum* ctx);
     
     
     /**

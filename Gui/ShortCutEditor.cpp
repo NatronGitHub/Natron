@@ -122,12 +122,12 @@ struct ShortCutEditorPrivate
     HackedTreeWidget* tree;
     QWidget* shortcutGroup;
     QHBoxLayout* shortcutGroupLayout;
-    Natron::Label* shortcutLabel;
+    Label* shortcutLabel;
     KeybindRecorder* shortcutEditor;
     
     QWidget* altShortcutGroup;
     QHBoxLayout* altShortcutGroupLayout;
-    Natron::Label* altShortcutLabel;
+    Label* altShortcutLabel;
     KeybindRecorder* altShortcutEditor;
     
     Button* validateButton;
@@ -292,7 +292,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->tree->setSelectionMode(QAbstractItemView::SingleSelection);
     _imp->tree->setAttribute(Qt::WA_MacShowFocusRect,0);
     _imp->tree->setSortingEnabled(false);
-    _imp->tree->setToolTip( Natron::convertFromPlainText(
+    _imp->tree->setToolTip( GuiUtils::convertFromPlainText(
                                 tr("In this table is represented each action of the application that can have a possible keybind/mouse shortcut."
                                    " Note that this table also have some special assignments which also involve the mouse. "
                                    "You cannot assign a keybind to a shortcut involving the mouse and vice versa. "
@@ -325,7 +325,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->shortcutGroupLayout = new QHBoxLayout(_imp->shortcutGroup);
     _imp->shortcutGroupLayout->setContentsMargins(0, 0, 0, 0);
 
-    _imp->shortcutLabel = new Natron::Label(_imp->shortcutGroup);
+    _imp->shortcutLabel = new Label(_imp->shortcutGroup);
     _imp->shortcutLabel->setText( tr("Sequence:") );
     _imp->shortcutGroupLayout->addWidget(_imp->shortcutLabel);
 
@@ -340,7 +340,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->altShortcutGroupLayout = new QHBoxLayout(_imp->altShortcutGroup);
     _imp->altShortcutGroupLayout->setContentsMargins(0, 0, 0, 0);
     
-    _imp->altShortcutLabel = new Natron::Label(_imp->altShortcutGroup);
+    _imp->altShortcutLabel = new Label(_imp->altShortcutGroup);
     _imp->altShortcutLabel->setText( tr("Alternative Sequence:") );
     _imp->altShortcutGroupLayout->addWidget(_imp->altShortcutLabel);
     
@@ -351,7 +351,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     
 
     _imp->validateButton = new Button(tr("Validate"),_imp->shortcutGroup);
-    _imp->validateButton->setToolTip(Natron::convertFromPlainText(tr("Validates the shortcut on the field editor and set the selected shortcut."), Qt::WhiteSpaceNormal));
+    _imp->validateButton->setToolTip(GuiUtils::convertFromPlainText(tr("Validates the shortcut on the field editor and set the selected shortcut."), Qt::WhiteSpaceNormal));
     _imp->shortcutGroupLayout->addWidget(_imp->validateButton);
     QObject::connect( _imp->validateButton, SIGNAL( clicked(bool) ), this, SLOT( onValidateButtonClicked() ) );
 
@@ -607,7 +607,7 @@ ShortCutEditor::onValidateButtonClicked()
                             QString err = QString("Cannot bind this shortcut because the following action is already using it: %1")
                             .arg( it2->item->text(0) );
                             _imp->shortcutEditor->clear();
-                            natronErrorDialog( tr("Shortcuts Editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
+                            Dialogs::errorDialog( tr("Shortcuts Editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
                             
                             return;
                         }
@@ -704,7 +704,7 @@ ShortCutEditor::onResetButtonClicked()
 void
 ShortCutEditor::onRestoreDefaultsButtonClicked()
 {
-    StandardButtonEnum reply = natronQuestionDialog( tr("Restore defaults").toStdString(), tr("Restoring default shortcuts "
+    StandardButtonEnum reply = Dialogs::questionDialog( tr("Restore defaults").toStdString(), tr("Restoring default shortcuts "
                                                                                                     "will wipe all the current configuration "
                                                                                                     "are you sure you want to do this?").toStdString(), false );
 

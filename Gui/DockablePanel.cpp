@@ -38,7 +38,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include <ofxNatron.h>
 
-#include "Engine/Image.h" // Natron::clamp
+#include "Engine/Image.h" // Image::clamp
 #include "Engine/KnobTypes.h" // KnobButton
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
@@ -104,7 +104,7 @@ private:
     virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL
     {
         if (triggerButtonIsRight(e)) {
-            StandardButtonEnum rep = natronQuestionDialog(tr("Warning").toStdString(),
+            StandardButtonEnum rep = Dialogs::questionDialog(tr("Warning").toStdString(),
                                                                     tr("Are you sure you want to reset the overlay color ?").toStdString(),
                                                                     false);
             if (rep == eStandardButtonYes) {
@@ -184,7 +184,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         
         if (isEffect) {
             
-            _imp->_iconLabel = new Natron::Label(getHeaderWidget());
+            _imp->_iconLabel = new Label(getHeaderWidget());
             _imp->_iconLabel->setContentsMargins(2, 2, 2, 2);
             _imp->_iconLabel->setToolTip(pluginLabelVersioned);
             _imp->_headerLayout->addWidget(_imp->_iconLabel);
@@ -214,7 +214,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             _imp->_centerNodeButton = new Button( QIcon(pixCenter),"",getHeaderWidget() );
             _imp->_centerNodeButton->setFixedSize(mediumBSize);
             _imp->_centerNodeButton->setIconSize(mediumIconSize);
-            _imp->_centerNodeButton->setToolTip(Natron::convertFromPlainText(tr("Centers the node graph on this item."), Qt::WhiteSpaceNormal));
+            _imp->_centerNodeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Centers the node graph on this item."), Qt::WhiteSpaceNormal));
             _imp->_centerNodeButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_centerNodeButton,SIGNAL( clicked() ),this,SLOT( onCenterButtonClicked() ) );
             _imp->_headerLayout->addWidget(_imp->_centerNodeButton);
@@ -229,7 +229,7 @@ DockablePanel::DockablePanel(Gui* gui ,
                 _imp->_enterInGroupButton->setFixedSize(mediumBSize);
                 _imp->_enterInGroupButton->setIconSize(mediumIconSize);
                 _imp->_enterInGroupButton->setFocusPolicy(Qt::NoFocus);
-                _imp->_enterInGroupButton->setToolTip(Natron::convertFromPlainText(tr("Pressing this button will show the underlying node graph used for the implementation of this node."), Qt::WhiteSpaceNormal));
+                _imp->_enterInGroupButton->setToolTip(GuiUtils::convertFromPlainText(tr("Pressing this button will show the underlying node graph used for the implementation of this node."), Qt::WhiteSpaceNormal));
             }
             
             QPixmap pixHelp;
@@ -256,7 +256,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             icHideShow.addPixmap(pixShow,QIcon::Normal,QIcon::Off);
             icHideShow.addPixmap(pixHide,QIcon::Normal,QIcon::On);
             _imp->_hideUnmodifiedButton = new Button(icHideShow,"",_imp->_headerWidget);
-            _imp->_hideUnmodifiedButton->setToolTip(Natron::convertFromPlainText(tr("Show/Hide all parameters without modifications."), Qt::WhiteSpaceNormal));
+            _imp->_hideUnmodifiedButton->setToolTip(GuiUtils::convertFromPlainText(tr("Show/Hide all parameters without modifications."), Qt::WhiteSpaceNormal));
             _imp->_hideUnmodifiedButton->setFocusPolicy(Qt::NoFocus);
             _imp->_hideUnmodifiedButton->setFixedSize(mediumBSize);
             _imp->_hideUnmodifiedButton->setIconSize(mediumIconSize);
@@ -300,9 +300,9 @@ DockablePanel::DockablePanel(Gui* gui ,
             assert(gui_i);
             double r, g, b;
             gui_i->getColor(&r, &g, &b);
-            currentColor.setRgbF(Natron::clamp(r, 0., 1.),
-                                 Natron::clamp(g, 0., 1.),
-                                 Natron::clamp(b, 0., 1.));
+            currentColor.setRgbF(Image::clamp(r, 0., 1.),
+                                 Image::clamp(g, 0., 1.),
+                                 Image::clamp(b, 0., 1.));
             QPixmap p(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE);
             p.fill(currentColor);
 
@@ -310,7 +310,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             _imp->_colorButton = new Button(QIcon(p),"",_imp->_headerWidget);
             _imp->_colorButton->setFixedSize(mediumBSize);
             _imp->_colorButton->setIconSize(mediumIconSize);
-            _imp->_colorButton->setToolTip( Natron::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "
+            _imp->_colorButton->setToolTip( GuiUtils::convertFromPlainText(tr("Set here the color of the node in the nodegraph. "
                                                                         "By default the color of the node is the one set in the "
                                                                         "preferences of %1.").arg(NATRON_APPLICATION_NAME),
                                                                      Qt::WhiteSpaceNormal) );
@@ -325,12 +325,12 @@ DockablePanel::DockablePanel(Gui* gui ,
             
             if (isEffect && isEffect->getNode()->hasOverlay()) {
                 QPixmap pixOverlay;
-                appPTR->getIcon(Natron::NATRON_PIXMAP_OVERLAY, iconSize, &pixOverlay);
+                appPTR->getIcon(NATRON_PIXMAP_OVERLAY, iconSize, &pixOverlay);
                 _imp->_overlayColor.setRgbF(1., 1., 1.);
                 _imp->_overlayButton = new OverlayColorButton(this,QIcon(pixOverlay),_imp->_headerWidget);
                 _imp->_overlayButton->setFixedSize(mediumBSize);
                 _imp->_overlayButton->setIconSize(mediumIconSize);
-                _imp->_overlayButton->setToolTip(Natron::convertFromPlainText(tr("You can suggest here a color for the overlay on the viewer. "
+                _imp->_overlayButton->setToolTip(GuiUtils::convertFromPlainText(tr("You can suggest here a color for the overlay on the viewer. "
                                                                              "Some plug-ins understand it and will use it to change the color of "
                                                                              "the overlay."), Qt::WhiteSpaceNormal));
                 _imp->_overlayButton->setFocusPolicy(Qt::NoFocus);
@@ -348,7 +348,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         _imp->_undoButton = new Button(icUndo,"",_imp->_headerWidget);
         _imp->_undoButton->setFixedSize(mediumBSize);
         _imp->_undoButton->setIconSize(mediumIconSize);
-        _imp->_undoButton->setToolTip( Natron::convertFromPlainText(tr("Undo the last change made to this operator."), Qt::WhiteSpaceNormal) );
+        _imp->_undoButton->setToolTip( GuiUtils::convertFromPlainText(tr("Undo the last change made to this operator."), Qt::WhiteSpaceNormal) );
         _imp->_undoButton->setEnabled(false);
         _imp->_undoButton->setFocusPolicy(Qt::NoFocus);
         QPixmap pixRedo;
@@ -361,7 +361,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         _imp->_redoButton = new Button(icRedo,"",_imp->_headerWidget);
         _imp->_redoButton->setFixedSize(mediumBSize);
         _imp->_redoButton->setIconSize(mediumIconSize);
-        _imp->_redoButton->setToolTip( Natron::convertFromPlainText(tr("Redo the last change undone to this operator."), Qt::WhiteSpaceNormal) );
+        _imp->_redoButton->setToolTip( GuiUtils::convertFromPlainText(tr("Redo the last change undone to this operator."), Qt::WhiteSpaceNormal) );
         _imp->_redoButton->setEnabled(false);
         _imp->_redoButton->setFocusPolicy(Qt::NoFocus);
 
@@ -372,7 +372,7 @@ DockablePanel::DockablePanel(Gui* gui ,
         _imp->_restoreDefaultsButton = new Button(icRestore,"",_imp->_headerWidget);
         _imp->_restoreDefaultsButton->setFixedSize(mediumBSize);
         _imp->_restoreDefaultsButton->setIconSize(mediumIconSize);
-        _imp->_restoreDefaultsButton->setToolTip( Natron::convertFromPlainText(tr("Restore default values for this operator."), Qt::WhiteSpaceNormal) );
+        _imp->_restoreDefaultsButton->setToolTip( GuiUtils::convertFromPlainText(tr("Restore default values for this operator."), Qt::WhiteSpaceNormal) );
         _imp->_restoreDefaultsButton->setFocusPolicy(Qt::NoFocus);
         QObject::connect( _imp->_restoreDefaultsButton,SIGNAL( clicked() ),this,SLOT( onRestoreDefaultsButtonClicked() ) );
         QObject::connect( _imp->_undoButton, SIGNAL( clicked() ),this, SLOT( onUndoClicked() ) );
@@ -388,7 +388,7 @@ DockablePanel::DockablePanel(Gui* gui ,
             QObject::connect( _imp->_nameLineEdit,SIGNAL( editingFinished() ),this,SLOT( onLineEditNameEditingFinished() ) );
             _imp->_headerLayout->addWidget(_imp->_nameLineEdit);
         } else {
-            _imp->_nameLabel = new Natron::Label(initialName,_imp->_headerWidget);
+            _imp->_nameLabel = new Label(initialName,_imp->_headerWidget);
             if (isEffect) {
                 onNodeScriptChanged(isEffect->getScriptName().c_str());
             }
@@ -836,7 +836,7 @@ QString
 DockablePanel::helpString() const
 {
     //Base help
-    QString tt = Natron::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);
+    QString tt = GuiUtils::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);
 
     EffectInstance* iseffect = dynamic_cast<EffectInstance*>(_imp->_holder);
     if (iseffect) {
@@ -865,7 +865,7 @@ DockablePanel::showHelp()
         const Plugin* plugin = iseffect->getNode()->getPlugin();
         assert(plugin);
         if (plugin) {
-            natronInformationDialog(plugin->getPluginLabel().toStdString(), helpString().toStdString(), true);
+            Dialogs::informationDialog(plugin->getPluginLabel().toStdString(), helpString().toStdString(), true);
         }
     }
 }
@@ -1355,7 +1355,7 @@ DockablePanel::onOverlayButtonClicked()
                 _imp->_hasOverlayColor = false;
             }
             QPixmap pixOverlay;
-            appPTR->getIcon(Natron::NATRON_PIXMAP_OVERLAY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixOverlay);
+            appPTR->getIcon(NATRON_PIXMAP_OVERLAY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixOverlay);
             _imp->_overlayButton->setIcon(QIcon(pixOverlay));
         }
     }
@@ -1405,7 +1405,7 @@ DockablePanel::resetHostOverlayColor()
         _imp->_hasOverlayColor = false;
     }
     QPixmap pixOverlay;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_OVERLAY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixOverlay);
+    appPTR->getIcon(NATRON_PIXMAP_OVERLAY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixOverlay);
     _imp->_overlayButton->setIcon(QIcon(pixOverlay));
     
     std::list<boost::shared_ptr<Node> > overlayNodes;
@@ -1448,7 +1448,7 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
     if (isEffect) {
         
         boost::shared_ptr<Node> master = isEffect->getNode()->getMasterNode();
-        Natron::Menu menu(this);
+        Menu menu(this);
         //menu.setFont( QFont(appFont,appFontSize) );
 
         QAction* userParams = new QAction(tr("Manage user parameters..."),&menu);

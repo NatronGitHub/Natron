@@ -89,11 +89,11 @@ struct ViewerTabPrivate
     Button* activateRenderScale;
     bool renderScaleActive;
     ComboBox* renderScaleCombo;
-    Natron::Label* firstInputLabel;
+    Label* firstInputLabel;
     ComboBox* firstInputImage;
-    Natron::Label* compositingOperatorLabel;
+    Label* compositingOperatorLabel;
     ComboBox* compositingOperator;
-    Natron::Label* secondInputLabel;
+    Label* secondInputLabel;
     ComboBox* secondInputImage;
 
     /*2nd row*/
@@ -139,11 +139,11 @@ struct ViewerTabPrivate
     
     LineEdit* frameRangeEdit;
 
-    Natron::ClickableLabel* canEditFrameRangeLabel;
+    ClickableLabel* canEditFrameRangeLabel;
     Button* tripleSyncButton;
     
     QCheckBox* canEditFpsBox;
-    Natron::ClickableLabel* canEditFpsLabel;
+    ClickableLabel* canEditFpsLabel;
     mutable QMutex fpsLockedMutex;
     bool fpsLocked;
     SpinBox* fpsBox;

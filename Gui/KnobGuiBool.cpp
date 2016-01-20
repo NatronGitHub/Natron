@@ -141,17 +141,17 @@ KnobGuiBool::updateGUI(int /*dimension*/)
 
 void
 KnobGuiBool::reflectAnimationLevel(int /*dimension*/,
-                                    Natron::AnimationLevelEnum level)
+                                    AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-        case Natron::eAnimationLevelNone:
+        case eAnimationLevelNone:
             value = 0;
             break;
-        case Natron::eAnimationLevelInterpolatedValue:
+        case eAnimationLevelInterpolatedValue:
             value = 1;
             break;
-        case Natron::eAnimationLevelOnKeyframe:
+        case eAnimationLevelOnKeyframe:
             value = 2;
             break;
         default:

@@ -247,9 +247,9 @@ PrecompNode::initializeKnobs()
         _imp->app = appPTR->newBackgroundInstance(args, true);
     }
     
-    boost::shared_ptr<KnobPage> mainPage = natronCreateKnob<KnobPage>(this, "Controls");
+    boost::shared_ptr<KnobPage> mainPage = AppManager::createKnob<KnobPage>(this, "Controls");
     
-    boost::shared_ptr<KnobFile> filename = natronCreateKnob<KnobFile>(this, "Project Filename (." NATRON_PROJECT_FILE_EXT ")");
+    boost::shared_ptr<KnobFile> filename = AppManager::createKnob<KnobFile>(this, "Project Filename (." NATRON_PROJECT_FILE_EXT ")");
     filename->setName("projectFilename");
     filename->setHintToolTip("The absolute file path of the project to use as a pre-comp");
     filename->setAnimationEnabled(false);
@@ -257,21 +257,21 @@ PrecompNode::initializeKnobs()
     mainPage->addKnob(filename);
     _imp->projectFileNameKnob = filename;
     
-    /*boost::shared_ptr<KnobButton> reload = natronCreateKnob<KnobButton>(this, "Reload");
+    /*boost::shared_ptr<KnobButton> reload = AppManager::createKnob<KnobButton>(this, "Reload");
     reload->setName("reload");
     reload->setHintToolTip("Reload the pre-comp project from the file");
     reload->setAddNewLine(false);
     mainPage->addKnob(reload);
     _imp->reloadProjectKnob = reload;*/
     
-    boost::shared_ptr<KnobButton> edit = natronCreateKnob<KnobButton>(this, "Edit Project...");
+    boost::shared_ptr<KnobButton> edit = AppManager::createKnob<KnobButton>(this, "Edit Project...");
     edit->setName("editProject");
     edit->setEvaluateOnChange(false);
     edit->setHintToolTip("Opens the specified project in a new " NATRON_APPLICATION_NAME " instance");
     mainPage->addKnob(edit);
     _imp->editProjectKnob = edit;
     
-    boost::shared_ptr<KnobBool> enablePreRender = natronCreateKnob<KnobBool>(this, "Pre-Render");
+    boost::shared_ptr<KnobBool> enablePreRender = AppManager::createKnob<KnobBool>(this, "Pre-Render");
     enablePreRender->setName("preRender");
     enablePreRender->setAnimationEnabled(false);
     enablePreRender->setDefaultValue(true);
@@ -285,13 +285,13 @@ PrecompNode::initializeKnobs()
     mainPage->addKnob(enablePreRender);
     _imp->enablePreRenderKnob = enablePreRender;
     
-    boost::shared_ptr<KnobGroup> renderGroup = natronCreateKnob<KnobGroup>(this, "Pre-Render Settings");
+    boost::shared_ptr<KnobGroup> renderGroup = AppManager::createKnob<KnobGroup>(this, "Pre-Render Settings");
     renderGroup->setName("preRenderSettings");
     renderGroup->setDefaultValue(true);
     mainPage->addKnob(renderGroup);
     _imp->preRenderGroupKnob = renderGroup;
     
-    boost::shared_ptr<KnobChoice> writeChoice = natronCreateKnob<KnobChoice>(this, "Write Node");
+    boost::shared_ptr<KnobChoice> writeChoice = AppManager::createKnob<KnobChoice>(this, "Write Node");
     writeChoice->setName("writeNode");
     writeChoice->setHintToolTip("Choose here the Write node in the pre-comp from which to render images then specify a frame-range and "
                                 "hit the \"Render\" button");
@@ -306,7 +306,7 @@ PrecompNode::initializeKnobs()
     
   
     
-    boost::shared_ptr<KnobInt> first = natronCreateKnob<KnobInt>(this, "First-Frame");
+    boost::shared_ptr<KnobInt> first = AppManager::createKnob<KnobInt>(this, "First-Frame");
     first->setName("first");
     first->setHintToolTip("The first-frame to render");
     first->setAnimationEnabled(false);
@@ -315,7 +315,7 @@ PrecompNode::initializeKnobs()
     renderGroup->addKnob(first);
     _imp->firstFrameKnob = first;
     
-    boost::shared_ptr<KnobInt> last = natronCreateKnob<KnobInt>(this, "Last-Frame");
+    boost::shared_ptr<KnobInt> last = AppManager::createKnob<KnobInt>(this, "Last-Frame");
     last->setName("last");
     last->setHintToolTip("The last-frame to render");
     last->setAnimationEnabled(false);
@@ -324,7 +324,7 @@ PrecompNode::initializeKnobs()
     renderGroup->addKnob(last);
     _imp->lastFrameKnob = last;
     
-    boost::shared_ptr<KnobChoice> error = natronCreateKnob<KnobChoice>(this, "On Error");
+    boost::shared_ptr<KnobChoice> error = AppManager::createKnob<KnobChoice>(this, "On Error");
     error->setName("onError");
     error->setHintToolTip("Indicates the behavior when an image is missing from the render of the pre-comp project");
     error->setAnimationEnabled(false);
@@ -347,12 +347,12 @@ PrecompNode::initializeKnobs()
     renderGroup->addKnob(error);
     _imp->errorBehaviourKnbo = error;
     
-    boost::shared_ptr<KnobButton> renderBtn = natronCreateKnob<KnobButton>(this, "Render");
+    boost::shared_ptr<KnobButton> renderBtn = AppManager::createKnob<KnobButton>(this, "Render");
     renderBtn->setName("render");
     renderGroup->addKnob(renderBtn);
     _imp->preRenderKnob = renderBtn;
     
-    boost::shared_ptr<KnobString> outputNode = natronCreateKnob<KnobString>(this, "Output Node");
+    boost::shared_ptr<KnobString> outputNode = AppManager::createKnob<KnobString>(this, "Output Node");
     outputNode->setName("outputNode");
     outputNode->setHintToolTip("The script-name of the node to use as output node in the tree of the pre-comp. This can be any node.");
     outputNode->setAnimationEnabled(false);
@@ -360,7 +360,7 @@ PrecompNode::initializeKnobs()
     mainPage->addKnob(outputNode);
     _imp->outputNodeNameKnob = outputNode;
     
-    boost::shared_ptr<KnobString> sublabel = natronCreateKnob<KnobString>(this, "SubLabel");
+    boost::shared_ptr<KnobString> sublabel = AppManager::createKnob<KnobString>(this, "SubLabel");
     sublabel->setName(kNatronOfxParamStringSublabelName);
     sublabel->setSecretByDefault(true);
     mainPage->addKnob(sublabel);
@@ -437,7 +437,7 @@ PrecompNodePrivate::reloadProject(bool setWriteNodeChoice)
     
     QFileInfo file(filename.c_str());
     if (!file.exists()) {
-        natronErrorDialog(QObject::tr("Pre-Comp").toStdString(), QObject::tr("Pre-comp file not found.").toStdString());
+        Dialogs::errorDialog(QObject::tr("Pre-Comp").toStdString(), QObject::tr("Pre-comp file not found.").toStdString());
         return;
     }
     QString fileUnPathed = file.fileName();
@@ -532,7 +532,7 @@ PrecompNodePrivate::getWriteNodeFromPreComp() const
         ss << QObject::tr("Could not find a node named").toStdString();
         ss << " " << userChoiceNodeName << " ";
         ss << QObject::tr("in the pre-comp project").toStdString();
-        natronErrorDialog(QObject::tr("Pre-Comp").toStdString(), ss.str());
+        Dialogs::errorDialog(QObject::tr("Pre-Comp").toStdString(), ss.str());
         return NodePtr();
     }
     return writeNode;
@@ -593,14 +593,14 @@ PrecompNodePrivate::createReadNode()
     std::map<std::string, std::string> readersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
 
-    std::string ext = removeFileExtension(qpattern).toLower().toStdString();
+    std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
     if ( found == readersForFormat.end() ) {
         std::stringstream ss;
         ss << QObject::tr("No plugin capable of decoding").toStdString();
         ss << " " << ext << " ";
         ss << QObject::tr("was found").toStdString();
-        natronErrorDialog(QObject::tr("Pre-Comp").toStdString(), ss.str());
+        Dialogs::errorDialog(QObject::tr("Pre-Comp").toStdString(), ss.str());
         return;
     }
     
@@ -719,7 +719,7 @@ PrecompNodePrivate::launchPreRender()
 {
     NodePtr output = getWriteNodeFromPreComp();
     if (!output) {
-        natronErrorDialog(QObject::tr("Pre-Render").toStdString(), QObject::tr("Selected write node does not exist").toStdString());
+        Dialogs::errorDialog(QObject::tr("Pre-Render").toStdString(), QObject::tr("Selected write node does not exist").toStdString());
         return;
     }
     AppInstance::RenderWork w;
@@ -770,7 +770,7 @@ PrecompNode::onReadNodePersistentMessageChanged()
     if (message.isEmpty()) {
         clearPersistentMessage(false);
     } else {
-        setPersistentMessage((Natron::MessageTypeEnum)type, message.toStdString());
+        setPersistentMessage((MessageTypeEnum)type, message.toStdString());
     }
 }
 

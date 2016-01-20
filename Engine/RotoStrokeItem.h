@@ -63,7 +63,7 @@ class RotoStrokeItem : public RotoDrawableItem
 {
 public:
     
-    RotoStrokeItem(Natron::RotoStrokeType type,
+    RotoStrokeItem(RotoStrokeType type,
                    const boost::shared_ptr<RotoContext>& context,
                    const std::string & name,
                    const boost::shared_ptr<RotoLayer>& parent);
@@ -71,7 +71,7 @@ public:
     virtual ~RotoStrokeItem();
     
     
-    Natron::RotoStrokeType getBrushType() const;
+    RotoStrokeType getBrushType() const;
     
     bool isEmpty() const;
     

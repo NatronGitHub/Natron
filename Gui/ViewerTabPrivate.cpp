@@ -111,7 +111,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 , nextIncrement_Button(NULL)
 , playbackMode_Button(NULL)
 , playbackModeMutex()
-, playbackMode(Natron::ePlaybackModeLoop)
+, playbackMode(ePlaybackModeLoop)
 , frameRangeEdit(NULL)
 , canEditFrameRangeLabel(NULL)
 , tripleSyncButton(0)

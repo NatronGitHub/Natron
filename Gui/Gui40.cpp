@@ -571,7 +571,7 @@ Gui::debugImage(const Image* image,
         }
     }
     QImage output(renderWindow.width(), renderWindow.height(), QImage::Format_ARGB32);
-    const Natron::Color::Lut* lut = Natron::Color::LutManager::sRGBLut();
+    const Color::Lut* lut = Color::LutManager::sRGBLut();
     lut->validate();
     Image::ReadAccess acc = image->getReadRights();
     const float* from = (const float*)acc.pixelAt( renderWindow.left(), renderWindow.bottom() );
@@ -759,7 +759,7 @@ Gui::renderSelectedNode()
     const std::list<boost::shared_ptr<NodeGui> > & selectedNodes = graph->getSelectedNodes();
 
     if ( selectedNodes.empty() ) {
-        natronWarningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
+        Dialogs::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
     } else {
         std::list<AppInstance::RenderWork> workList;
 

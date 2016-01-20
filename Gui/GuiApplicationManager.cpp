@@ -812,7 +812,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
     
     QCoreApplication::processEvents();
     QPixmap appIcPixmap;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_APP_ICON, &appIcPixmap);
+    appPTR->getIcon(NATRON_PIXMAP_APP_ICON, &appIcPixmap);
     QIcon appIc(appIcPixmap);
     qApp->setWindowIcon(appIc);
     

@@ -271,7 +271,7 @@ public:
 private:
     OfxEffectInstance* _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                                               Not easy since every Knob need a valid pointer to a node when
-                                              KnobFactory::createKnob() is called. That's why we need to pass a pointer
+                                              AppManager::createKnob() is called. That's why we need to pass a pointer
                                               to an OfxParamInstance. Without this pointer we would be unable
                                               to track the knobs that have been created for 1 Node since OfxParamInstance
                                               is totally dissociated from Node.*/

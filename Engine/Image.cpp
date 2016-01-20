@@ -526,7 +526,7 @@ Bitmap::minimalNonMarkedRects_trimap(const RectI & roi,std::list<RectI>& ret,boo
 #endif
 
 void
-Natron::Bitmap::markForRendered(const RectI & roi)
+Bitmap::markForRendered(const RectI & roi)
 {
     char* buf = BM_GET(roi.bottom(), roi.left());
     int w = _bounds.width();
@@ -538,7 +538,7 @@ Natron::Bitmap::markForRendered(const RectI & roi)
 
 #if NATRON_ENABLE_TRIMAP
 void
-Natron::Bitmap::markForRendering(const RectI & roi)
+Bitmap::markForRendering(const RectI & roi)
 {
     char* buf = BM_GET(roi.bottom(), roi.left());
     int w = _bounds.width();
@@ -550,7 +550,7 @@ Natron::Bitmap::markForRendering(const RectI & roi)
 #endif
 
 void
-Natron::Bitmap::clear(const RectI& roi)
+Bitmap::clear(const RectI& roi)
 {
     char* buf = BM_GET(roi.bottom(), roi.left());
     int w = _bounds.width();
@@ -561,7 +561,7 @@ Natron::Bitmap::clear(const RectI& roi)
 }
 
 void
-Natron::Bitmap::swap(Bitmap& other)
+Bitmap::swap(Bitmap& other)
 {
     _map.swap(other._map);
     _bounds = other._bounds;
@@ -570,7 +570,7 @@ Natron::Bitmap::swap(Bitmap& other)
 }
 
 const char*
-Natron::Bitmap::getBitmapAt(int x,
+Bitmap::getBitmapAt(int x,
                             int y) const
 {
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
@@ -581,7 +581,7 @@ Natron::Bitmap::getBitmapAt(int x,
 }
 
 char*
-Natron::Bitmap::getBitmapAt(int x,
+Bitmap::getBitmapAt(int x,
                             int y)
 {
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
@@ -659,7 +659,7 @@ Image::printUnrenderedPixels(const RectI& roi) const
 
 Image::Image(const ImageKey & key,
              const boost::shared_ptr<ImageParams>& params,
-             const Natron::CacheAPI* cache,
+             const CacheAPI* cache,
              StorageModeEnum storage,
              const std::string & path)
     : CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, cache,storage,path)

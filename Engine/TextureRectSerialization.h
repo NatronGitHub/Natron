@@ -48,7 +48,7 @@ namespace serialization {
 template<class Archive>
 void
 serialize(Archive & ar,
-          Natron::TextureRect &t,
+          NATRON_NAMESPACE::TextureRect &t,
           const unsigned int version)
 {
 

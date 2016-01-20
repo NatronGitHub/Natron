@@ -86,7 +86,7 @@ struct DockablePanelPrivate
     QFrame* _headerWidget;
     QHBoxLayout *_headerLayout;
     LineEdit* _nameLineEdit; /*!< if the name is editable*/
-    Natron::Label* _nameLabel; /*!< if the name is read-only*/
+    Label* _nameLabel; /*!< if the name is read-only*/
 
     QHBoxLayout* _horizLayout;
     QWidget* _horizContainer;
@@ -140,7 +140,7 @@ struct DockablePanelPrivate
 
     bool _pagesEnabled;
 
-    Natron::Label* _iconLabel;
+    Label* _iconLabel;
 
     DockablePanelPrivate(DockablePanel* publicI,
                          Gui* gui,

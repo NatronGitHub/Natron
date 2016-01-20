@@ -192,14 +192,14 @@ struct OfxEffectInstancePrivate
     
     boost::scoped_ptr<OfxImageEffectInstance> effect;
     std::string natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
-    boost::scoped_ptr<Natron::OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
+    boost::scoped_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
     std::list< void* > overlaySlaves; //void* to actually a KnobI* but stored as void to avoid dereferencing
     boost::weak_ptr<KnobButton> renderButton; //< render button for writers
     mutable QReadWriteLock preferencesLock;
     mutable QReadWriteLock renderSafetyLock;
-    mutable Natron::RenderSafetyEnum renderSafety;
+    mutable RenderSafetyEnum renderSafety;
     mutable bool wasRenderSafetySet;
-    Natron::ContextEnum context;
+    ContextEnum context;
     
     struct ClipsInfo {
         bool optional;
@@ -275,7 +275,7 @@ OfxEffectInstance::isInitialized() const
 void
 OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                 OFX::Host::ImageEffect::Descriptor* desc,
-                                                Natron::ContextEnum context,
+                                                ContextEnum context,
                                                 const NodeSerialization* serialization,
                                                  const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                                 bool allowFileDialogs,
@@ -486,7 +486,7 @@ OfxEffectInstance::initializeContextDependentParams()
     assert(_imp->context != eContextNone);
     if ( isWriter() ) {
         
-        boost::shared_ptr<KnobButton> b = natronCreateKnob<KnobButton>(this, "Render", 1, false);
+        boost::shared_ptr<KnobButton> b = AppManager::createKnob<KnobButton>(this, "Render", 1, false);
         b->setHintToolTip("Starts rendering the specified frame range.");
         b->setAsRenderButton();
         _imp->renderButton = b;
@@ -988,7 +988,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
 }
 
 /** @brief map a std::string to a context */
-Natron::ContextEnum
+ContextEnum
 OfxEffectInstance::mapToContextEnum(const std::string &s)
 {
     if (s == kOfxImageEffectContextGenerator) {
@@ -1023,28 +1023,28 @@ OfxEffectInstance::mapToContextEnum(const std::string &s)
 }
 
 std::string
-OfxEffectInstance::mapContextToString(Natron::ContextEnum ctx)
+OfxEffectInstance::mapContextToString(ContextEnum ctx)
 {
     switch (ctx) {
-        case Natron::eContextGenerator:
+        case eContextGenerator:
             return kOfxImageEffectContextGenerator;
-        case Natron::eContextFilter:
+        case eContextFilter:
             return kOfxImageEffectContextFilter;
-        case Natron::eContextTransition:
+        case eContextTransition:
             return kOfxImageEffectContextTransition;
-        case Natron::eContextPaint:
+        case eContextPaint:
             return kOfxImageEffectContextPaint;
-        case Natron::eContextGeneral:
+        case eContextGeneral:
             return kOfxImageEffectContextGeneral;
-        case Natron::eContextRetimer:
+        case eContextRetimer:
             return kOfxImageEffectContextRetimer;
-        case Natron::eContextReader:
+        case eContextReader:
             return kOfxImageEffectContextReader;
-        case Natron::eContextWriter:
+        case eContextWriter:
             return kOfxImageEffectContextWriter;
-        case Natron::eContextTracker:
+        case eContextTracker:
             return kNatronOfxImageEffectContextTracker;
-        case Natron::eContextNone:
+        case eContextNone:
         default:
             break;
     }
@@ -2002,7 +2002,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
             } else {
                 err.append(QObject::tr("Unknown failure reason"));
             }
-            setPersistentMessage(Natron::eMessageTypeError, err.toStdString());
+            setPersistentMessage(eMessageTypeError, err.toStdString());
         }
         return eStatusFailed;
     } else {
@@ -2016,7 +2016,7 @@ OfxEffectInstance::supportsMultipleClipsPAR() const
     return _imp->effect->supportsMultipleClipPARs();
 }
 
-Natron::RenderSafetyEnum
+RenderSafetyEnum
 OfxEffectInstance::renderThreadSafety() const
 {
     {
@@ -2205,8 +2205,8 @@ bool
 OfxEffectInstance::onOverlayKeyDown(double time,
                                     const RenderScale & renderScale,
                                     int view,
-                                    Natron::Key key,
-                                    Natron::KeyboardModifiers /*modifiers*/)
+                                    Key key,
+                                    KeyboardModifiers /*modifiers*/)
 {
     if (!_imp->initialized) {
         return false;;
@@ -2233,8 +2233,8 @@ bool
 OfxEffectInstance::onOverlayKeyUp(double time,
                                   const RenderScale & renderScale,
                                   int view,
-                                  Natron::Key key,
-                                  Natron::KeyboardModifiers /* modifiers*/)
+                                  Key key,
+                                  KeyboardModifiers /* modifiers*/)
 {
     if (!_imp->initialized) {
         return false;
@@ -2263,8 +2263,8 @@ bool
 OfxEffectInstance::onOverlayKeyRepeat(double time,
                                       const RenderScale & renderScale,
                                       int view,
-                                      Natron::Key key,
-                                      Natron::KeyboardModifiers /*modifiers*/)
+                                      Key key,
+                                      KeyboardModifiers /*modifiers*/)
 {
     if (!_imp->initialized) {
         return false;
@@ -2732,7 +2732,7 @@ OfxEffectInstance::isViewInvariant() const
     }
  }
 
-Natron::SequentialPreferenceEnum
+SequentialPreferenceEnum
 OfxEffectInstance::getSequentialPreference() const
 {
     int sequential = _imp->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
@@ -2740,16 +2740,16 @@ OfxEffectInstance::getSequentialPreference() const
     switch (sequential) {
     case 0:
 
-        return Natron::eSequentialPreferenceNotSequential;
+        return eSequentialPreferenceNotSequential;
     case 1:
 
-        return Natron::eSequentialPreferenceOnlySequential;
+        return eSequentialPreferenceOnlySequential;
     case 2:
 
-        return Natron::eSequentialPreferencePreferSequential;
+        return eSequentialPreferencePreferSequential;
     default:
 
-        return Natron::eSequentialPreferenceNotSequential;
+        return eSequentialPreferenceNotSequential;
         break;
     }
 }

@@ -821,7 +821,7 @@ Curve::getValueAt(double t,bool doClamp) const
                     &vnextDerivLeft,
                     &interpNext);
         
-        v = Natron::interpolate(tcur,vcur,
+        v = Interpolation::interpolate(tcur,vcur,
                                 vcurDerivRight,
                                 vnextDerivLeft,
                                 tnext,vnext,
@@ -890,7 +890,7 @@ Curve::getDerivativeAt(double t) const
 
     if ( mustClamp() ) {
         std::pair<double,double> minmax = getCurveYRange();
-        d = Natron::derive_clamp(tcur,vcur,
+        d = Interpolation::derive_clamp(tcur,vcur,
                                  vcurDerivRight,
                                  vnextDerivLeft,
                                  tnext,vnext,
@@ -899,7 +899,7 @@ Curve::getDerivativeAt(double t) const
                                  interp,
                                  interpNext);
     } else {
-        d = Natron::derive(tcur,vcur,
+        d = Interpolation::derive(tcur,vcur,
                            vcurDerivRight,
                            vnextDerivLeft,
                            tnext,vnext,
@@ -960,7 +960,7 @@ Curve::getIntegrateFromTo(double t1,
         // add integral from t1 to itup->getTime() to sum
         if ( mustClamp() ) {
             std::pair<double,double> minmax = getCurveYRange();
-            sum += Natron::integrate_clamp(tcur,vcur,
+            sum += Interpolation::integrate_clamp(tcur,vcur,
                                            vcurDerivRight,
                                            vnextDerivLeft,
                                            tnext,vnext,
@@ -969,7 +969,7 @@ Curve::getIntegrateFromTo(double t1,
                                            interp,
                                            interpNext);
         } else {
-            sum += Natron::integrate(tcur,vcur,
+            sum += Interpolation::integrate(tcur,vcur,
                                      vcurDerivRight,
                                      vnextDerivLeft,
                                      tnext,vnext,
@@ -997,7 +997,7 @@ Curve::getIntegrateFromTo(double t1,
     // add integral from t1 to t2 to sum
     if ( mustClamp() ) {
         std::pair<double,double> minmax = getCurveYRange();
-        sum += Natron::integrate_clamp(tcur,vcur,
+        sum += Interpolation::integrate_clamp(tcur,vcur,
                                        vcurDerivRight,
                                        vnextDerivLeft,
                                        tnext,vnext,
@@ -1006,7 +1006,7 @@ Curve::getIntegrateFromTo(double t1,
                                        interp,
                                        interpNext);
     } else {
-        sum += Natron::integrate(tcur,vcur,
+        sum += Interpolation::integrate(tcur,vcur,
                                  vcurDerivRight,
                                  vnextDerivLeft,
                                  tnext,vnext,
@@ -1364,7 +1364,7 @@ Curve::refreshDerivatives(Curve::CurveChangedReasonEnum reason,
     if (key == _imp->keyFrames.end()) {
         throw std::logic_error("Curve::refreshDerivatives");
     }
-    Natron::autoComputeDerivatives(prevType,
+    Interpolation::autoComputeDerivatives(prevType,
                                    key->getInterpolation(),
                                    nextType,
                                    tprev, vprev,

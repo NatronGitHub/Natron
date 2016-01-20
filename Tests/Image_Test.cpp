@@ -31,7 +31,7 @@ NATRON_NAMESPACE_USING
 
 TEST(BitmapTest,SimpleRect) {
     RectI rod(0,0,100,100);
-    Natron::Bitmap bm(rod);
+    Bitmap bm(rod);
 
     ///assert that the union of all the non rendered rects is the rod
     std::list<RectI> nonRenderedRects;

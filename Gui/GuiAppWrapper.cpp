@@ -590,7 +590,7 @@ PlaybackModeEnum
 PyViewer::getPlaybackMode() const
 {
     if (!_node->isActivated()) {
-        return Natron::ePlaybackModeLoop;
+        return ePlaybackModeLoop;
     }
     return _viewer->getPlaybackMode();
 }
@@ -599,7 +599,7 @@ ViewerCompositingOperatorEnum
 PyViewer::getCompositingOperator() const
 {
     if (!_node->isActivated()) {
-        return Natron::eViewerCompositingOperatorNone;
+        return eViewerCompositingOperatorNone;
     }
     return _viewer->getCompositingOperator();
 }
@@ -676,7 +676,7 @@ DisplayChannelsEnum
 PyViewer::getChannels() const
 {
     if (!_node->isActivated()) {
-        return Natron::eDisplayChannelsRGB;
+        return eDisplayChannelsRGB;
     }
     return _viewer->getChannels();
 }

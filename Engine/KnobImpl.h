@@ -349,7 +349,7 @@ Knob<std::string>::pyObjectToType(PyObject* o) const
 {
 #ifndef IS_PYTHON_2
     if (PyUnicode_Check(o)) {
-        return Natron::PY3String_asString(o);
+        return Python::PY3String_asString(o);
     }
 #else
     if (PyString_Check(o)) {
@@ -993,7 +993,7 @@ Knob<T>::setValue(const T & v,
     
     ///Add automatically a new keyframe
     if (isAnimationEnabled() &&
-        getAnimationLevel(dimension) != Natron::eAnimationLevelNone && //< if the knob is animated
+        getAnimationLevel(dimension) != eAnimationLevelNone && //< if the knob is animated
          holder && //< the knob is part of a KnobHolder
          holder->getApp() && //< the app pointer is not NULL
          !holder->getApp()->getProject()->isLoadingProject() && //< we're not loading the project
@@ -1277,7 +1277,7 @@ Knob<T>::setValueAtTime(double time,
     if (holder) {
         holder->setHasAnimation(true);
     }
-    guiCurveCloneInternalCurve(Natron::eCurveChangeReasonInternal, dimension, reason);
+    guiCurveCloneInternalCurve(eCurveChangeReasonInternal, dimension, reason);
     
     if (_signalSlotHandler && ret) {
         _signalSlotHandler->s_keyFrameSet(time,dimension,(int)reason,ret);
@@ -1719,7 +1719,7 @@ Knob<T>::setKeyFrame(const KeyFrame& key,int dimension,ValueChangedReasonEnum re
     bool ret = curve->addKeyFrame(key);
     
     if (!useGuiCurve) {
-        guiCurveCloneInternalCurve(Natron::eCurveChangeReasonInternal,dimension, reason);
+        guiCurveCloneInternalCurve(eCurveChangeReasonInternal,dimension, reason);
         evaluateValueChange(dimension, key.getTime(), reason);
     }
     return ret;

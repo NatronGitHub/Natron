@@ -331,7 +331,7 @@ AppManagerPrivate::declareSettingsToPython()
 
 
 template <typename T>
-void saveCache(Natron::Cache<T>* cache)
+void saveCache(Cache<T>* cache)
 {
     std::ofstream ofile;
     ofile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
@@ -354,7 +354,7 @@ void saveCache(Natron::Cache<T>* cache)
         return;
     }
     
-    typename Natron::Cache<T>::CacheTOC toc;
+    typename Cache<T>::CacheTOC toc;
     cache->save(&toc);
     unsigned int version = cache->cacheVersion();
     try {
@@ -377,7 +377,7 @@ AppManagerPrivate::saveCaches()
 } // saveCaches
 
 template <typename T>
-void restoreCache(AppManagerPrivate* p,Natron::Cache<T>* cache)
+void restoreCache(AppManagerPrivate* p,Cache<T>* cache)
 {
     if ( p->checkForCacheDiskStructure( cache->getCachePath() ) ) {
         std::ifstream ifile;
@@ -398,7 +398,7 @@ void restoreCache(AppManagerPrivate* p,Natron::Cache<T>* cache)
             return;
         }
         
-        typename Natron::Cache<T>::CacheTOC tableOfContents;
+        typename Cache<T>::CacheTOC tableOfContents;
         unsigned int cacheVersion = 0x1; //< default to 1 before NATRON_CACHE_VERSION was introduced
         try {
             boost::archive::binary_iarchive iArchive(ifile);
@@ -491,7 +491,7 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
     QDir cacheFolder(cachePath);
 
 #   if QT_VERSION < 0x050000
-    removeRecursively(cachePath);
+    QtCompat::removeRecursively(cachePath);
 #   else
     if ( cacheFolder.exists() ) {
         cacheFolder.removeRecursively();

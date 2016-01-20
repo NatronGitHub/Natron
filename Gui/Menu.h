@@ -48,7 +48,7 @@ public:
     virtual ~Menu() {}
 };
 
-class MenuWithToolTips: public Natron::Menu
+class MenuWithToolTips: public Menu
 
 {
 public:

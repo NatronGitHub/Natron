@@ -101,7 +101,7 @@ struct LinkToKnobDialogPrivate
     QVBoxLayout* mainLayout;
     QHBoxLayout* firstLineLayout;
     QWidget* firstLine;
-    Natron::Label* selectNodeLabel;
+    Label* selectNodeLabel;
     CompleterLineEdit* nodeSelectionCombo;
     ComboBox* knobSelectionCombo;
     QDialogButtonBox* buttons;
@@ -141,7 +141,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
     _imp->mainLayout->addWidget(_imp->buttons);
 
-    _imp->selectNodeLabel = new Natron::Label(tr("Parent:"),_imp->firstLine);
+    _imp->selectNodeLabel = new Label(tr("Parent:"),_imp->firstLine);
     _imp->firstLineLayout->addWidget(_imp->selectNodeLabel);
 
 
@@ -164,7 +164,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     }
     nodeNames.sort();
     _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames,nodeNames,false,this);
-    _imp->nodeSelectionCombo->setToolTip(Natron::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
+    _imp->nodeSelectionCombo->setToolTip(GuiUtils::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
     _imp->firstLineLayout->addWidget(_imp->nodeSelectionCombo);
 
 

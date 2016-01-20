@@ -67,9 +67,9 @@ struct AppManagerPrivate
     PluginsMap _plugins; //< list of the plugins
     boost::scoped_ptr<OfxHost> ofxHost; //< OpenFX host
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
-    boost::shared_ptr<Natron::Cache<Image> >  _nodeCache; //< Images cache
-    boost::shared_ptr<Natron::Cache<Image> >  _diskCache; //< Images disk cache (used by DiskCache nodes)
-    boost::shared_ptr<Natron::Cache<FrameEntry> > _viewerCache; //< Viewer textures cache
+    boost::shared_ptr<Cache<Image> >  _nodeCache; //< Images cache
+    boost::shared_ptr<Cache<Image> >  _diskCache; //< Images disk cache (used by DiskCache nodes)
+    boost::shared_ptr<Cache<FrameEntry> > _viewerCache; //< Viewer textures cache
     
     mutable QMutex diskCachesLocationMutex;
     QString diskCachesLocation;

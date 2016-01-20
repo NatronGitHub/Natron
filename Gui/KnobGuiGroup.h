@@ -110,7 +110,7 @@ private:
 
 private:
     bool _checked;
-    Natron::GroupBoxLabel *_button;
+    GroupBoxLabel *_button;
     std::list<KnobGui*> _children;
     std::vector< std::pair<KnobGui*,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     TabGroup* _tabGroup;

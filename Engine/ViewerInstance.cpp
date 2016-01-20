@@ -110,19 +110,19 @@ toBGRA(unsigned char r,
     return (a << 24) | (r << 16) | (g << 8) | b;
 }
 
-const Natron::Color::Lut*
+const Color::Lut*
 ViewerInstance::lutFromColorspace(ViewerColorSpaceEnum cs)
 {
-    const Natron::Color::Lut* lut;
+    const Color::Lut* lut;
 
     switch (cs) {
-    case Natron::eViewerColorSpaceSRGB:
-        lut = Natron::Color::LutManager::sRGBLut();
+    case eViewerColorSpaceSRGB:
+        lut = Color::LutManager::sRGBLut();
         break;
-    case Natron::eViewerColorSpaceRec709:
-        lut = Natron::Color::LutManager::Rec709Lut();
+    case eViewerColorSpaceRec709:
+        lut = Color::LutManager::Rec709Lut();
         break;
-    case Natron::eViewerColorSpaceLinear:
+    case eViewerColorSpaceLinear:
     default:
         lut = 0;
         break;
@@ -463,7 +463,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
     boost::shared_ptr<ViewerArgs> args[2];
     for (int i = 0; i < 2; ++i) {
         args[i].reset(new ViewerArgs);
-        if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == Natron::eViewerCompositingOperatorNone) ) {
+        if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == eViewerCompositingOperatorNone) ) {
             break;
         }
         
@@ -607,7 +607,7 @@ ViewerInstance::renderViewer(int view,
         eStatusReplyDefault, eStatusReplyDefault
     };
     for (int i = 0; i < 2; ++i) {
-        if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == Natron::eViewerCompositingOperatorNone) ) {
+        if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == eViewerCompositingOperatorNone) ) {
             break;
         }
         if (args[i] && args[i]->params) {
@@ -1011,7 +1011,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         boost::shared_ptr<FrameParams> cachedFrameParams;
         
         if (!outArgs->userRoIEnabled && !outArgs->autoContrast && !rotoPaintNode.get()) {
-            isCached = Natron::natronGetTextureFromCache(*(outArgs->key), &outArgs->params->cachedFrame);
+            isCached = AppManager::getTextureFromCache(*(outArgs->key), &outArgs->params->cachedFrame);
             
             if (!isCached && lookups == 2 && lookup == 0) {
                 //Lookup didn't work in non draft mode, try with draft mode now, update the texture rectangle
@@ -1263,13 +1263,13 @@ ViewerInstance::renderViewer_internal(int view,
         
         boost::shared_ptr<FrameParams> cachedFrameParams =
         FrameEntry::makeParams(bounds,inArgs.key->getBitDepth(), inArgs.params->textureRect.w, inArgs.params->textureRect.h, ImagePtr());
-        bool cached = natronGetTextureFromCacheOrCreate(*(inArgs.key), cachedFrameParams,
+        bool cached = AppManager::getTextureFromCacheOrCreate(*(inArgs.key), cachedFrameParams,
                                                                    &inArgs.params->cachedFrame);
         if (!inArgs.params->cachedFrame) {
             std::stringstream ss;
             ss << "Failed to allocate a texture of ";
             ss << printAsRAM( cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t) ).toStdString();
-            natronErrorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
+            Dialogs::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
             if (!isSequentialRender) {
                 _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
                 _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
@@ -1311,8 +1311,8 @@ ViewerInstance::renderViewer_internal(int view,
     std::list<ImageComponents> requestedComponents;
     
     int alphaChannelIndex = -1;
-    if (inArgs.channels != Natron::eDisplayChannelsA &&
-        inArgs.channels != Natron::eDisplayChannelsMatte) {
+    if (inArgs.channels != eDisplayChannelsA &&
+        inArgs.channels != eDisplayChannelsMatte) {
         ///We fetch the Layer specified in the gui
         if (inArgs.params->layer.getNumComponents() > 0) {
             requestedComponents.push_back(inArgs.params->layer);
@@ -1330,7 +1330,7 @@ ViewerInstance::renderViewer_internal(int view,
             }
             assert(alphaChannelIndex != -1);
         }
-        if (inArgs.channels == Natron::eDisplayChannelsMatte) {
+        if (inArgs.channels == eDisplayChannelsMatte) {
             //For the matte overlay also display the alpha mask on top of the red channel of the image
             if (inArgs.params->layer.getNumComponents() > 0 && inArgs.params->layer != inArgs.params->alphaLayer) {
                 requestedComponents.push_back(inArgs.params->layer);
@@ -1378,25 +1378,25 @@ ViewerInstance::renderViewer_internal(int view,
     if (stats && stats->isInDepthProfilingEnabled()) {
         std::bitset<4> channelsRendered;
         switch (inArgs.channels) {
-            case Natron::eDisplayChannelsMatte:
-            case Natron::eDisplayChannelsRGB:
-            case Natron::eDisplayChannelsY:
+            case eDisplayChannelsMatte:
+            case eDisplayChannelsRGB:
+            case eDisplayChannelsY:
                 channelsRendered[0] = channelsRendered[1] = channelsRendered[2] = true;
                 channelsRendered[3] = false;
                 break;
-            case Natron::eDisplayChannelsR:
+            case eDisplayChannelsR:
                 channelsRendered[3] = channelsRendered[1] = channelsRendered[2] = false;
                 channelsRendered[0] = true;
                 break;
-            case Natron::eDisplayChannelsG:
+            case eDisplayChannelsG:
                 channelsRendered[0] = channelsRendered[2] = channelsRendered[3] = false;
                 channelsRendered[1] = true;
                 break;
-            case Natron::eDisplayChannelsB:
+            case eDisplayChannelsB:
                 channelsRendered[0] = channelsRendered[1] = channelsRendered[3] = false;
                 channelsRendered[2] = true;
                 break;
-            case Natron::eDisplayChannelsA:
+            case eDisplayChannelsA:
                 channelsRendered[0] = channelsRendered[1] = channelsRendered[2] = false;
                 channelsRendered[3] = true;
                 break;
@@ -1520,8 +1520,8 @@ ViewerInstance::renderViewer_internal(int view,
         
         ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
         
-        assert((inArgs.channels != Natron::eDisplayChannelsMatte && alphaChannelIndex < (int)colorImage->getComponentsCount()) ||
-               (inArgs.channels == Natron::eDisplayChannelsMatte && ((alphaImage && alphaChannelIndex < (int)alphaImage->getComponentsCount()) || !alphaImage)));
+        assert((inArgs.channels != eDisplayChannelsMatte && alphaChannelIndex < (int)colorImage->getComponentsCount()) ||
+               (inArgs.channels == eDisplayChannelsMatte && ((alphaImage && alphaChannelIndex < (int)alphaImage->getComponentsCount()) || !alphaImage)));
         
         //Make sure the viewer does not render something outside the bounds
         RectI viewerRenderRoI;
@@ -1810,27 +1810,27 @@ findAutoContrastVminVmax_generic(boost::shared_ptr<const Image> inputImage,
             
             double mini, maxi;
             switch (channels) {
-                case Natron::eDisplayChannelsRGB:
+                case eDisplayChannelsRGB:
                     mini = std::min(std::min(r,g),b);
                     maxi = std::max(std::max(r,g),b);
                     break;
-                case Natron::eDisplayChannelsY:
+                case eDisplayChannelsY:
                     mini = r = 0.299 * r + 0.587 * g + 0.114 * b;
                     maxi = mini;
                     break;
-                case Natron::eDisplayChannelsR:
+                case eDisplayChannelsR:
                     mini = r;
                     maxi = mini;
                     break;
-                case Natron::eDisplayChannelsG:
+                case eDisplayChannelsG:
                     mini = g;
                     maxi = mini;
                     break;
-                case Natron::eDisplayChannelsB:
+                case eDisplayChannelsB:
                     mini = b;
                     maxi = mini;
                     break;
-                case Natron::eDisplayChannelsA:
+                case eDisplayChannelsA:
                     mini = a;
                     maxi = mini;
                     break;
@@ -1890,7 +1890,7 @@ scaleToTexture8bits_generic(const RectI& roi,
 {
     size_t pixelSize = sizeof(PIX);
     
-    const bool luminance = (args.channels == Natron::eDisplayChannelsY);
+    const bool luminance = (args.channels == eDisplayChannelsY);
     
     Image::ReadAccess acc = Image::ReadAccess(args.inputImage.get());
     const RectI srcImgBounds = args.inputImage->getBounds();
@@ -1980,9 +1980,9 @@ scaleToTexture8bits_generic(const RectI& roi,
                             g = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)g );
                             b = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)b );
                         } else {
-                            r = (double)convertPixelDepth<unsigned char, float>( (unsigned char)r );
-                            g = (double)convertPixelDepth<unsigned char, float>( (unsigned char)g );
-                            b = (double)convertPixelDepth<unsigned char, float>( (unsigned char)b );
+                            r = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)r );
+                            g = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)g );
+                            b = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)b );
                         }
                         break;
                     case sizeof(unsigned short): //short
@@ -1991,9 +1991,9 @@ scaleToTexture8bits_generic(const RectI& roi,
                             g = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)g );
                             b = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)b );
                         } else {
-                            r = (double)convertPixelDepth<unsigned short, float>( (unsigned char)r );
-                            g = (double)convertPixelDepth<unsigned short, float>( (unsigned char)g );
-                            b = (double)convertPixelDepth<unsigned short, float>( (unsigned char)b );
+                            r = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned char)r );
+                            g = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned char)g );
+                            b = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned char)b );
                         }
                         break;
                     case sizeof(float): //float
@@ -2071,10 +2071,10 @@ scaleToTexture8bits_generic(const RectI& roi,
                             alphaMatteValue = (double)src_pixels[args.alphaChannelIndex];
                             switch ( pixelSize ) {
                                 case sizeof(unsigned char): //byte
-                                    alphaMatteValue = (double)convertPixelDepth<unsigned char, float>( (unsigned char)r );
+                                    alphaMatteValue = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)r );
                                     break;
                                 case sizeof(unsigned short): //short
-                                    alphaMatteValue = (double)convertPixelDepth<unsigned short, float>( (unsigned short)r );
+                                    alphaMatteValue = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)r );
                                     break;
                                 default:
                                     break;
@@ -2087,7 +2087,7 @@ scaleToTexture8bits_generic(const RectI& roi,
                     } else {
                         matteA = Color::floatToInt<256>(alphaMatteValue) / 2;
                     }
-                    uR = clampIfInt<U8>((double)uR + matteA);
+                    uR = Image::clampIfInt<U8>((double)uR + matteA);
                     
                 }
                 
@@ -2178,19 +2178,19 @@ scaleToTexture8bitsForPremult(const RectI& roi,
 {
     
     switch (args.channels) {
-        case Natron::eDisplayChannelsRGB:
-        case Natron::eDisplayChannelsY:
-        case Natron::eDisplayChannelsMatte:
+        case eDisplayChannelsRGB:
+        case eDisplayChannelsY:
+        case eDisplayChannelsMatte:
             
             scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 1, 2>(roi, args,viewer, output);
             break;
-        case Natron::eDisplayChannelsG:
+        case eDisplayChannelsG:
             scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(roi, args,viewer, output);
             break;
-        case Natron::eDisplayChannelsB:
+        case eDisplayChannelsB:
             scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(roi, args,viewer, output);
             break;
-        case Natron::eDisplayChannelsA:
+        case eDisplayChannelsA:
             switch (args.alphaChannelIndex) {
                 case -1:
                     scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(roi, args,viewer, output);
@@ -2212,7 +2212,7 @@ scaleToTexture8bitsForPremult(const RectI& roi,
             }
             
             break;
-        case Natron::eDisplayChannelsR:
+        case eDisplayChannelsR:
         default:
             scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(roi, args,viewer, output);
             
@@ -2293,7 +2293,7 @@ scaleToTexture32bitsGeneric(const RectI& roi,
                             float *output)
 {
     size_t pixelSize = sizeof(PIX);
-    const bool luminance = (args.channels == Natron::eDisplayChannelsY);
+    const bool luminance = (args.channels == eDisplayChannelsY);
 
     ///the width of the output buffer multiplied by the channels count
     const int dstRowElements = args.texRect.w * 4;
@@ -2365,9 +2365,9 @@ scaleToTexture32bitsGeneric(const RectI& roi,
                     g = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)g );
                     b = args.srcColorSpace->fromColorSpaceUint8ToLinearFloatFast( (unsigned char)b );
                 } else {
-                    r = (double)convertPixelDepth<unsigned char, float>( (unsigned char)r );
-                    g = (double)convertPixelDepth<unsigned char, float>( (unsigned char)g );
-                    b = (double)convertPixelDepth<unsigned char, float>( (unsigned char)b );
+                    r = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)r );
+                    g = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)g );
+                    b = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)b );
                 }
                 break;
             case sizeof(unsigned short):
@@ -2376,9 +2376,9 @@ scaleToTexture32bitsGeneric(const RectI& roi,
                     g = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)g );
                     b = args.srcColorSpace->fromColorSpaceUint16ToLinearFloatFast( (unsigned short)b );
                 } else {
-                    r = (double)convertPixelDepth<unsigned short, float>( (unsigned char)r );
-                    g = (double)convertPixelDepth<unsigned short, float>( (unsigned char)g );
-                    b = (double)convertPixelDepth<unsigned short, float>( (unsigned char)b );
+                    r = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned char)r );
+                    g = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned char)g );
+                    b = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned char)b );
                 }
                 break;
             case sizeof(float):
@@ -2424,10 +2424,10 @@ scaleToTexture32bitsGeneric(const RectI& roi,
                         alphaMatteValue = (double)src_pixels[args.alphaChannelIndex];
                         switch ( pixelSize ) {
                             case sizeof(unsigned char): //byte
-                                alphaMatteValue = (double)convertPixelDepth<unsigned char, float>( (unsigned char)r );
+                                alphaMatteValue = (double)Image::convertPixelDepth<unsigned char, float>( (unsigned char)r );
                                 break;
                             case sizeof(unsigned short): //short
-                                alphaMatteValue = (double)convertPixelDepth<unsigned short, float>( (unsigned short)r );
+                                alphaMatteValue = (double)Image::convertPixelDepth<unsigned short, float>( (unsigned short)r );
                                 break;
                             default:
                                 break;
@@ -2438,10 +2438,10 @@ scaleToTexture32bitsGeneric(const RectI& roi,
             }
 
             
-            dst_pixels[x * 4] = Natron::clamp(r, 0., 1.);
-            dst_pixels[x * 4 + 1] = Natron::clamp(g, 0., 1.);
-            dst_pixels[x * 4 + 2] = Natron::clamp(b, 0., 1.);
-            dst_pixels[x * 4 + 3] = Natron::clamp(a, 0., 1.);
+            dst_pixels[x * 4] = Image::clamp(r, 0., 1.);
+            dst_pixels[x * 4 + 1] = Image::clamp(g, 0., 1.);
+            dst_pixels[x * 4 + 2] = Image::clamp(b, 0., 1.);
+            dst_pixels[x * 4 + 3] = Image::clamp(a, 0., 1.);
 
         }
         if (src_pixels) {
@@ -2513,18 +2513,18 @@ scaleToTexture32bitsForPremultForComponents(const RectI& roi,
  
     
     switch (args.channels) {
-        case Natron::eDisplayChannelsRGB:
-        case Natron::eDisplayChannelsY:
-        case Natron::eDisplayChannelsMatte:
+        case eDisplayChannelsRGB:
+        case eDisplayChannelsY:
+        case eDisplayChannelsMatte:
             scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 1, 2>(roi, args, output);
             break;
-        case Natron::eDisplayChannelsG:
+        case eDisplayChannelsG:
             scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(roi, args, output);
             break;
-        case Natron::eDisplayChannelsB:
+        case eDisplayChannelsB:
             scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(roi, args, output);
             break;
-        case Natron::eDisplayChannelsA:
+        case eDisplayChannelsA:
             switch (args.alphaChannelIndex) {
                 case -1:
                     scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(roi, args, output);
@@ -2547,7 +2547,7 @@ scaleToTexture32bitsForPremultForComponents(const RectI& roi,
             }
             
             break;
-        case Natron::eDisplayChannelsR:
+        case eDisplayChannelsR:
         default:
             scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(roi, args, output);
             break;
@@ -3024,8 +3024,8 @@ ViewerInstance::refreshActiveInputs(int inputNbChanged)
         } else {
             if (_imp->activeInputs[0] != -1 && _imp->activateInputChangedFromViewer) {
                 ViewerCompositingOperatorEnum op = _imp->uiContext->getCompositingOperator();
-                if (op == Natron::eViewerCompositingOperatorNone) {
-                    _imp->uiContext->setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
+                if (op == eViewerCompositingOperatorNone) {
+                    _imp->uiContext->setCompositingOperator(eViewerCompositingOperatorWipe);
                 }
                 _imp->activeInputs[1] = inputNbChanged;
                 

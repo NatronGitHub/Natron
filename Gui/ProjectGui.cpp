@@ -176,7 +176,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
 
     _copyFromViewerButton = new Button(tr("Copy from"),_fromViewerLine);
-    _copyFromViewerButton->setToolTip( Natron::convertFromPlainText(
+    _copyFromViewerButton->setToolTip( GuiUtils::convertFromPlainText(
                                            tr("Fill the new format with the currently"
                                               " displayed region of definition of the viewer"
                                               " indicated on the left."), Qt::WhiteSpaceNormal) );
@@ -188,7 +188,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _parametersLineLayout = new QHBoxLayout(_parametersLine);
     _mainLayout->addWidget(_parametersLine);
 
-    _widthLabel = new Natron::Label("w:",_parametersLine);
+    _widthLabel = new Label("w:",_parametersLine);
     _parametersLineLayout->addWidget(_widthLabel);
     _widthSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     _widthSpinBox->setMaximum(99999);
@@ -197,7 +197,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _parametersLineLayout->addWidget(_widthSpinBox);
 
 
-    _heightLabel = new Natron::Label("h:",_parametersLine);
+    _heightLabel = new Label("h:",_parametersLine);
     _parametersLineLayout->addWidget(_heightLabel);
     _heightSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     _heightSpinBox->setMaximum(99999);
@@ -206,7 +206,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _parametersLineLayout->addWidget(_heightSpinBox);
 
 
-    _pixelAspectLabel = new Natron::Label(tr("pixel aspect:"),_parametersLine);
+    _pixelAspectLabel = new Label(tr("pixel aspect:"),_parametersLine);
     _parametersLineLayout->addWidget(_pixelAspectLabel);
     _pixelAspectSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeDouble);
     _pixelAspectSpinBox->setMinimum(0.);
@@ -220,7 +220,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
     _mainLayout->addWidget(_formatNameLine);
 
 
-    _nameLabel = new Natron::Label(tr("Name:"),_formatNameLine);
+    _nameLabel = new Label(tr("Name:"),_formatNameLine);
     _formatNameLayout->addWidget(_nameLabel);
     _nameLineEdit = new LineEdit(_formatNameLine);
     _formatNameLayout->addWidget(_nameLineEdit);
@@ -534,7 +534,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         std::string appID = _gui->getApp()->getAppIDString();
         std::string err;
         std::string script = "app = " + appID + '\n';
-        bool ok = interpretPythonScript(script, &err, 0);
+        bool ok = Python::interpretPythonScript(script, &err, 0);
         assert(ok);
         if (!ok) {
             throw std::runtime_error("ProjectGui::load(): interpretPythonScript("+script+") failed!");
@@ -543,7 +543,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
     for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
         std::string script = (*it)->pythonFunction + "()\n";
         std::string err,output;
-        if (!interpretPythonScript(script, &err, &output)) {
+        if (!Python::interpretPythonScript(script, &err, &output)) {
             _gui->getApp()->appendToScriptEditor(err);
         } else {
             if (!output.empty()) {

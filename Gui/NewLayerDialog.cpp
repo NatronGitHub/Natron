@@ -84,17 +84,17 @@ using std::make_pair;
 struct NewLayerDialogPrivate
 {
     QGridLayout* mainLayout;
-    Natron::Label* layerLabel;
+    Label* layerLabel;
     LineEdit* layerEdit;
-    Natron::Label* numCompsLabel;
+    Label* numCompsLabel;
     SpinBox* numCompsBox;
-    Natron::Label* rLabel;
+    Label* rLabel;
     LineEdit* rEdit;
-    Natron::Label* gLabel;
+    Label* gLabel;
     LineEdit* gEdit;
-    Natron::Label* bLabel;
+    Label* bLabel;
     LineEdit* bEdit;
-    Natron::Label* aLabel;
+    Label* aLabel;
     LineEdit* aEdit;
     
     Button* setRgbaButton;
@@ -126,23 +126,23 @@ NewLayerDialog::NewLayerDialog(QWidget* parent)
 , _imp(new NewLayerDialogPrivate())
 {
     _imp->mainLayout = new QGridLayout(this);
-    _imp->layerLabel = new Natron::Label(tr("Layer Name"),this);
+    _imp->layerLabel = new Label(tr("Layer Name"),this);
     _imp->layerEdit = new LineEdit(this);
     
-    _imp->numCompsLabel = new Natron::Label(tr("No. Channels"),this);
+    _imp->numCompsLabel = new Label(tr("No. Channels"),this);
     _imp->numCompsBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     QObject::connect(_imp->numCompsBox, SIGNAL(valueChanged(double)), this, SLOT(onNumCompsChanged(double)));
     _imp->numCompsBox->setMinimum(1);
     _imp->numCompsBox->setMaximum(4);
     _imp->numCompsBox->setValue(4);
     
-    _imp->rLabel = new Natron::Label(tr("1st Channel"),this);
+    _imp->rLabel = new Label(tr("1st Channel"),this);
     _imp->rEdit = new LineEdit(this);
-    _imp->gLabel = new Natron::Label(tr("2nd Channel"),this);
+    _imp->gLabel = new Label(tr("2nd Channel"),this);
     _imp->gEdit = new LineEdit(this);
-    _imp->bLabel = new Natron::Label(tr("3rd Channel"),this);
+    _imp->bLabel = new Label(tr("3rd Channel"),this);
     _imp->bEdit = new LineEdit(this);
-    _imp->aLabel = new Natron::Label(tr("4th Channel"),this);
+    _imp->aLabel = new Label(tr("4th Channel"),this);
     _imp->aEdit = new LineEdit(this);
     
     _imp->setRgbaButton = new Button(this);
@@ -237,7 +237,7 @@ NewLayerDialog::getComponents() const
     QString g = _imp->gEdit->text();
     QString b = _imp->bEdit->text();
     QString a = _imp->aEdit->text();
-    std::string layerFixed = Natron::makeNameScriptFriendly(layer.toStdString());
+    std::string layerFixed = Python::makeNameScriptFriendly(layer.toStdString());
     if (layerFixed.empty()) {
         return ImageComponents::getNoneComponents();
     }

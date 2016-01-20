@@ -253,7 +253,7 @@ DockablePanelPrivate::ensureDefaultPageKnobCreated()
     boost::shared_ptr<KnobI> knob = _holder->getKnobByName(_defaultPageName.toStdString());
     boost::shared_ptr<KnobPage> pk;
     if (!knob) {
-        pk = natronCreateKnob<KnobPage>(_holder, _defaultPageName.toStdString());
+        pk = AppManager::createKnob<KnobPage>(_holder, _defaultPageName.toStdString());
     } else {
         pk = boost::dynamic_pointer_cast<KnobPage>(knob);
     }
