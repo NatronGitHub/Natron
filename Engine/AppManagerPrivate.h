@@ -133,10 +133,6 @@ struct AppManagerPrivate
     QString breakpadProcessExecutableFilePath;
     Q_PID breakpadProcessPID;
     boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
-#ifndef Q_OS_LINUX
-    //On Windows & OSX the breakpad pipe is handled ourselves
-   // boost::shared_ptr<QLocalSocket> breakpadPipeConnection;
-#endif
     boost::shared_ptr<ExistenceCheckerThread> breakpadAliveThread;
 #endif
     

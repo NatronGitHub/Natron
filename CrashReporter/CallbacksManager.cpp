@@ -180,9 +180,6 @@ using namespace google_breakpad;
 
 CallbacksManager::CallbacksManager()
 : QObject()
-#ifndef Q_OS_LINUX
-//, _breakpadPipeServer(0)
-#endif
 #ifndef NATRON_CRASH_REPORTER_USE_FORK
 , _natronProcess(0)
 #endif
@@ -212,10 +209,6 @@ CallbacksManager::CallbacksManager()
 CallbacksManager::~CallbacksManager() {
 #ifdef TRACE_CRASH_RERPORTER
     delete _dFile;
-#endif
-
-#ifndef Q_OS_LINUX
-   // delete _breakpadPipeServer;
 #endif
     
     delete _comServer;
@@ -947,11 +940,7 @@ CallbacksManager::onNatronProcessStdErrWrittenTo()
 void
 CallbacksManager::initCrashGenerationServer()
 {
-    
-#ifndef Q_OS_LINUX
-   // assert(!_breakpadPipeServer);
-#endif
-    
+
     QObject::connect(this, SIGNAL(doDumpCallBackOnMainThread(QString)), this, SLOT(onDoDumpOnMainThread(QString)));
     QObject::connect(this, SIGNAL(doExitCallbackOnMainThread(int,bool)), this, SLOT(onDoExitOnMainThread(int,bool)));
 
@@ -1006,16 +995,6 @@ CallbacksManager::initCrashGenerationServer()
     
     _comPipePath = _pipePath + "IPC_COM";
     
-#ifndef Q_OS_LINUX
-    //Create the crash generation pipe ourselves
-    //qApp has been defined so far
-    /*assert(qApp);
-    _breakpadPipeServer = new QLocalServer;
-    qDebug() << "Breakpad server listening on " << _pipePath;
-    _breakpadPipeServer->listen(_pipePath);*/
-    
-#endif
-
     _comServer = new QLocalServer;
     QObject::connect(_comServer, SIGNAL(newConnection()), this, SLOT(onComPipeConnectionPending()));
     _comServer->listen(_comPipePath);

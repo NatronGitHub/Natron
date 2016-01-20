@@ -484,8 +484,6 @@ public Q_SLOTS:
     qint64 getTotalNodesMemoryRegistered() const;
 
     void onMaxPanelsOpenedChanged(int maxPanels);
-
-    //void onBreakpadPipeConnectionMade();
     
     void onCrashReporterNoLongerResponding();
     
