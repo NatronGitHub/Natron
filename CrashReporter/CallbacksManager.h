@@ -93,6 +93,8 @@ public:
     void init(int& argc, char** argv);
 
     bool hasReceivedDump() const;
+
+    bool hasInit() const;
     
     void s_emitDoDumpCallBackOnMainThread(const QString& filePath);
     void s_emitDoExitCallBackOnMainThread(int exitCode, bool exitEvenIfDumpedReceived);
@@ -117,7 +119,7 @@ public Q_SLOTS:
     void onNatronProcessStdErrWrittenTo();
     
     void onComPipeConnectionPending();
-    
+
     void onComPipeDataWrittenTo();
     
     void onSpawnedProcessFinished(int exitCode, QProcess::ExitStatus status);
@@ -149,7 +151,7 @@ private:
     
 #ifndef Q_OS_LINUX
     //On Windows & OSX breakpad expects us to manage the pipe
-    QLocalServer* _breakpadPipeServer;
+    //QLocalServer* _breakpadPipeServer;
 #endif
     
 #ifndef NATRON_CRASH_REPORTER_USE_FORK
@@ -187,6 +189,8 @@ private:
 #else
     QApplication* _app;
 #endif
+
+    bool _initErr;
     
 };
 

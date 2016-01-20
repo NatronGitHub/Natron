@@ -485,7 +485,7 @@ public Q_SLOTS:
 
     void onMaxPanelsOpenedChanged(int maxPanels);
 
-    void onBreakpadPipeConnectionMade();
+    //void onBreakpadPipeConnectionMade();
     
     void onCrashReporterNoLongerResponding();
     

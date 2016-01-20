@@ -129,7 +129,7 @@ AppManagerPrivate::AppManagerPrivate()
 ,breakpadProcessPID(0)
 ,breakpadHandler()
 #ifndef Q_OS_LINUX
-,breakpadPipeConnection()
+//,breakpadPipeConnection()
 #endif
 ,breakpadAliveThread()
 #endif
@@ -158,17 +158,17 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& 
     assert(!breakpadHandler);
     
 #ifdef Q_OS_LINUX
-    Q_UNUSED(breakpadPipePath);
     //On linux the pipe is already created so create the handler now
-    createBreakpadHandler(breakpad_client_fd);
+    createBreakpadHandler(breakpadPipePath, breakpad_client_fd);
 #else
+    createBreakpadHandler(breakpadPipePath, breakpad_client_fd);
     //on Windows & OSX connect to the pipe opened from the crash reporter process and wait until the connection is made to create
     //the exception handler
-    (void)breakpad_client_fd;
+   /* (void)breakpad_client_fd;
     //on Windows & OSX we handle the breakpad pipe ourselves
     breakpadPipeConnection.reset(new QLocalSocket);
     QObject::connect(breakpadPipeConnection.get(), SIGNAL(connected()), appPTR, SLOT(onBreakpadPipeConnectionMade()));
-    breakpadPipeConnection->connectToServer(breakpadPipePath,QLocalSocket::ReadWrite);
+    breakpadPipeConnection->connectToServer(breakpadPipePath,QLocalSocket::ReadWrite);*/
     
 #endif
 
@@ -186,11 +186,10 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& 
 }
 
 void
-AppManagerPrivate::createBreakpadHandler(int breakpad_client_fd)
+AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath, int breakpad_client_fd)
 {
     
     QString dumpPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
-    (void)breakpad_client_fd;
     try {
 #if defined(Q_OS_MAC)
         breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdString(),
@@ -198,7 +197,7 @@ AppManagerPrivate::createBreakpadHandler(int breakpad_client_fd)
                                                                      0/*dmpcb*/,
                                                                      0,
                                                                      true,
-                                                                     breakpadPipeConnection->serverName().toStdString().c_str()));
+                                                                     breakpadPipePath).toStdString().c_str()));
 #elif defined(Q_OS_LINUX)
         breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(dumpPath.toStdString()),
                                                                      0,
@@ -213,7 +212,7 @@ AppManagerPrivate::createBreakpadHandler(int breakpad_client_fd)
 																	 0, //context
                                                                      google_breakpad::ExceptionHandler::HANDLER_ALL,
                                                                      MiniDumpNormal,
-                                                                     breakpadPipeConnection->serverName().toStdWString().c_str(),
+                                                                     breakpadPipePath.toStdWString().c_str(),
                                                                      0));
 #endif
     } catch (const std::exception& e) {

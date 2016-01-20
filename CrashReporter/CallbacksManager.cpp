@@ -181,7 +181,7 @@ using namespace google_breakpad;
 CallbacksManager::CallbacksManager()
 : QObject()
 #ifndef Q_OS_LINUX
-, _breakpadPipeServer(0)
+//, _breakpadPipeServer(0)
 #endif
 #ifndef NATRON_CRASH_REPORTER_USE_FORK
 , _natronProcess(0)
@@ -203,6 +203,7 @@ CallbacksManager::CallbacksManager()
 , _clientFD(-1)
 #endif
 , _app(0)
+, _initErr(false)
 {
     _instance = this;
 }
@@ -214,7 +215,7 @@ CallbacksManager::~CallbacksManager() {
 #endif
 
 #ifndef Q_OS_LINUX
-    delete _breakpadPipeServer;
+   // delete _breakpadPipeServer;
 #endif
     
     delete _comServer;
@@ -285,6 +286,11 @@ CallbacksManager::hasReceivedDump() const
     return _dumpReceived;
 }
 
+bool
+CallbacksManager::hasInit() const {
+    return !_initErr;
+}
+
 void
 CallbacksManager::onSpawnedProcessFinished(int exitCode, QProcess::ExitStatus status)
 {
@@ -330,6 +336,7 @@ CallbacksManager::onSpawnedProcessError(QProcess::ProcessError error)
     }
     
     if (mustExit) {
+        _initErr = true;
         EXIT_APP(1, false);
     }
     
@@ -377,6 +384,7 @@ CallbacksManager::init(int& argc, char** argv)
     natronBinaryPath = getNatronBinaryFilePathFromCrashReporterDirPath(natronBinaryPath);
     
     if (!QFile::exists(natronBinaryPath)) {
+        _initErr = true;
         std::stringstream ss;
         ss << natronBinaryPath.toStdString() << ": no such file or directory.";
         throw std::runtime_error(ss.str());
@@ -486,6 +494,7 @@ CallbacksManager::init(int& argc, char** argv)
     } // child process
 
 #endif // NATRON_CRASH_REPORTER_USE_FORK
+
 }
 
 static void addTextHttpPart(QHttpMultiPart* multiPart, const QString& name, const QString& value)
@@ -940,7 +949,7 @@ CallbacksManager::initCrashGenerationServer()
 {
     
 #ifndef Q_OS_LINUX
-    assert(!_breakpadPipeServer);
+   // assert(!_breakpadPipeServer);
 #endif
     
     QObject::connect(this, SIGNAL(doDumpCallBackOnMainThread(QString)), this, SLOT(onDoDumpOnMainThread(QString)));
@@ -962,14 +971,12 @@ CallbacksManager::initCrashGenerationServer()
     _dumpDirPath = QDir::tempPath();
     {
         QString tmpFileName;
-#ifdef Q_OS_WIN32
-        tmpFileName += "//./pipe/";
-#elif defined(Q_OS_UNIX)
+#if defined(Q_OS_UNIX)
         tmpFileName	= _dumpDirPath;
         tmpFileName += '/';
         tmpFileName += NATRON_APPLICATION_NAME;
-#endif
         tmpFileName += "_CRASH_PIPE_";
+#endif
         {
             QString tmpTemplate;
 #ifndef Q_OS_WIN32
@@ -988,7 +995,9 @@ CallbacksManager::initCrashGenerationServer()
         if (foundLastSlash !=1) {
             _pipePath = "//./pipe/";
             if (foundLastSlash < tmpFileName.size() - 1) {
-                _pipePath.append(tmpFileName.mid(foundLastSlash + 1));
+                QString toAppend("CRASH_PIPE_");
+                toAppend.append(tmpFileName.mid(foundLastSlash + 1));
+                _pipePath.append(toAppend);
             }
         }
 #endif
@@ -1000,19 +1009,21 @@ CallbacksManager::initCrashGenerationServer()
 #ifndef Q_OS_LINUX
     //Create the crash generation pipe ourselves
     //qApp has been defined so far
-    assert(qApp);
+    /*assert(qApp);
     _breakpadPipeServer = new QLocalServer;
-    _breakpadPipeServer->listen(_pipePath);
+    qDebug() << "Breakpad server listening on " << _pipePath;
+    _breakpadPipeServer->listen(_pipePath);*/
     
 #endif
 
     _comServer = new QLocalServer;
-    _comServer->listen(_comPipePath);
     QObject::connect(_comServer, SIGNAL(newConnection()), this, SLOT(onComPipeConnectionPending()));
+    _comServer->listen(_comPipePath);
 
     createCrashGenerationServer();
     
 }
+
 
 void
 CallbacksManager::onComPipeConnectionPending()

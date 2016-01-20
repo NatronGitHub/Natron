@@ -2637,17 +2637,17 @@ AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
     return -1;
 }
 
-void
+/*void
 AppManager::onBreakpadPipeConnectionMade()
 {
 #ifdef NATRON_USE_BREAKPAD
 #ifndef Q_OS_LINUX
-    assert(_imp->breakpadPipeConnection);
-    _imp->createBreakpadHandler(-1);
+  //  assert(_imp->breakpadPipeConnection);
+  //  _imp->createBreakpadHandler(_imp->breakpadPipeConnection->serverName(),-1);
 #endif
 #endif
 
-}
+}*/
 
 
 
