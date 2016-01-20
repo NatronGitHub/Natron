@@ -361,7 +361,7 @@ Param::_addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension)
     if (fromExprDimension < 0 || fromExprDimension >= expressionKnob->getDimension()) {
         return;
     }
-    if (thisDimension != -1 || thisDimension >= getValueCallerKnob->getDimension()) {
+    if (thisDimension != -1 && thisDimension != 0 && thisDimension >= getValueCallerKnob->getDimension()) {
         return;
     }
     if (getValueCallerKnob == expressionKnob) {

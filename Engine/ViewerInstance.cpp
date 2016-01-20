@@ -673,7 +673,7 @@ ViewerInstance::renderViewer(int view,
 
             }
             
-            if (!isSequentialRender) {
+            if (!isSequentialRender && args[i] && args[i]->params) {
                 if (ret[i] == eViewerRenderRetCodeFail || ret[i] == eViewerRenderRetCodeBlack) {
                     _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex,args[i]->params->renderAge);
                 }
@@ -2277,7 +2277,15 @@ ViewerInstance::markAllOnRendersAsAborted()
 {
     QMutexLocker k(&_imp->renderAgeMutex);
     for (int i = 0; i < 2; ++i) {
-        for (OnGoingRenders::iterator it = _imp->currentRenderAges[i].begin(); it != _imp->currentRenderAges[i].end(); ++it) {
+        if (_imp->currentRenderAges[i].empty()) {
+            continue;
+        }
+        
+        //Do not abort the oldest render, let it finish
+        OnGoingRenders::iterator it = _imp->currentRenderAges[i].begin();
+        ++it;
+        
+        for (;it != _imp->currentRenderAges[i].end(); ++it) {
             it->second.aborted = true;
         }
     }
