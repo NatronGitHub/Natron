@@ -232,6 +232,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
                             boost::shared_ptr<NodeCollection>());
         args.createGui = false;
         _imp->effectNode = app->createNode(args);
+        if (!_imp->effectNode) {
+            throw std::runtime_error("Rotopaint requires the plug-in " + pluginId.toStdString() + " in order to work");
+        }
         assert(_imp->effectNode);
         
         if (type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal) {
@@ -251,6 +254,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
                                     boost::shared_ptr<NodeCollection>());
                 args.createGui = false;
                 _imp->timeOffsetNode = app->createNode(args);
+                if (!_imp->timeOffsetNode) {
+                    throw std::runtime_error("Rotopaint requires the plug-in " PLUGINID_OFX_TIMEOFFSET " in order to work");
+                }
                 assert(_imp->timeOffsetNode);
               
             }
@@ -270,6 +276,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
                                     boost::shared_ptr<NodeCollection>());
                 args.createGui = false;
                 _imp->frameHoldNode = app->createNode(args);
+                if (!_imp->frameHoldNode) {
+                    throw std::runtime_error("Rotopaint requires the plug-in " PLUGINID_OFX_FRAMEHOLD " in order to work");
+                }
                 assert(_imp->frameHoldNode);
                
             }
@@ -291,10 +300,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
                         boost::shared_ptr<NodeCollection>());
     args.createGui = false;
     
-    bool ok = _imp->mergeNode = app->createNode(args);
-    assert(ok);
-    if (!ok) {
-        throw std::logic_error("RotoDrawableItem::createNodes");
+   _imp->mergeNode = app->createNode(args);
+    if (!_imp->mergeNode) {
+        throw std::runtime_error("Rotopaint requires the plug-in " PLUGINID_OFX_MERGE " in order to work");
     }
     assert(_imp->mergeNode);
     
@@ -304,7 +312,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
             if (_imp->mergeNode->getLiveInstance()->isInputMask(i)) {
                 
                 //Connect this rotopaint node as a mask
-                ok = _imp->mergeNode->connectInput(node, i);
+                bool ok = _imp->mergeNode->connectInput(node, i);
                 assert(ok);
                 break;
             }

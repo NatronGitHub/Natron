@@ -127,9 +127,6 @@ AppManagerPrivate::AppManagerPrivate()
 ,breakpadProcessExecutableFilePath()
 ,breakpadProcessPID(0)
 ,breakpadHandler()
-#ifndef Q_OS_LINUX
-,breakpadPipeConnection()
-#endif
 ,breakpadAliveThread()
 #endif
 ,natronPythonGIL(QMutex::Recursive)
@@ -155,21 +152,7 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& 
 {
  
     assert(!breakpadHandler);
-    
-#ifdef Q_OS_LINUX
-    Q_UNUSED(breakpadPipePath);
-    //On linux the pipe is already created so create the handler now
-    createBreakpadHandler(breakpad_client_fd);
-#else
-    //on Windows & OSX connect to the pipe opened from the crash reporter process and wait until the connection is made to create
-    //the exception handler
-    (void)breakpad_client_fd;
-    //on Windows & OSX we handle the breakpad pipe ourselves
-    breakpadPipeConnection.reset(new QLocalSocket);
-    QObject::connect(breakpadPipeConnection.get(), SIGNAL(connected()), appPTR, SLOT(onBreakpadPipeConnectionMade()));
-    breakpadPipeConnection->connectToServer(breakpadPipePath,QLocalSocket::ReadWrite);
-    
-#endif
+    createBreakpadHandler(breakpadPipePath, breakpad_client_fd);
 
     /*
      We check periodically that the crash reporter process is still alive. If the user killed it somehow, then we want
@@ -185,20 +168,21 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& 
 }
 
 void
-AppManagerPrivate::createBreakpadHandler(int breakpad_client_fd)
+AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath, int breakpad_client_fd)
 {
-    
-    QString dumpPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
-    (void)breakpad_client_fd;
+    QString dumpPath = StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+    Q_UNUSED(breakpad_client_fd);
     try {
 #if defined(Q_OS_MAC)
+        Q_UNUSED(breakpad_client_fd);
         breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdString(),
                                                                      0,
                                                                      0/*dmpcb*/,
                                                                      0,
                                                                      true,
-                                                                     breakpadPipeConnection->serverName().toStdString().c_str()));
+                                                                     breakpadPipePath.toStdString().c_str()));
 #elif defined(Q_OS_LINUX)
+        Q_UNUSED(breakpadPipePath);
         breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(dumpPath.toStdString()),
                                                                      0,
                                                                      0/*dmpCb*/,
@@ -206,13 +190,14 @@ AppManagerPrivate::createBreakpadHandler(int breakpad_client_fd)
                                                                      true,
                                                                      breakpad_client_fd));
 #elif defined(Q_OS_WIN32)
+        Q_UNUSED(breakpad_client_fd);
         breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
                                                                      0, //filter callback
                                                                      0/*dmpcb*/,
 																	 0, //context
                                                                      google_breakpad::ExceptionHandler::HANDLER_ALL,
                                                                      MiniDumpNormal,
-                                                                     breakpadPipeConnection->serverName().toStdWString().c_str(),
+                                                                     breakpadPipePath.toStdWString().c_str(),
                                                                      0));
 #endif
     } catch (const std::exception& e) {

@@ -201,6 +201,8 @@ else
     LD_LIBRARY_PATH="$INSTALL_PATH/gcc/lib:$LD_LIBRARY_PATH"
 fi
 export LD_LIBRARY_PATH
+export CC="${INSTALL_PATH}/gcc/bin/gcc"
+export CXX="${INSTALL_PATH}/gcc/bin/g++"
 
 # Install zlib
 if [ ! -f "$INSTALL_PATH/lib/libz.so.1" ]; then
@@ -468,7 +470,7 @@ if [ ! -f "$INSTALL_PATH/lib/pkgconfig/libxml-2.0.pc" ]; then
     fi
     tar xvf "$SRC_PATH/$LIBXML_TAR" || exit 1
     cd libxml* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared --without-python || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared --without-python --without-lzma || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     if [ "$DDIR" != "" ]; then
@@ -942,6 +944,7 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/theora.pc ]; then
     fi
     tar xvf $SRC_PATH/$THEORA_TAR || exit 1
     cd libtheora-* || exit 1
+    sed -i 's/png_\(sizeof\)/\1/g' examples/png2theora.c # fix libpng16
     env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --prefix=$INSTALL_PATH --libdir=$INSTALL_PATH/lib --enable-shared --disable-static || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1

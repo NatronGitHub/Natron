@@ -80,9 +80,24 @@ public:
      **/
     void invalidateUiContext();
 
+    enum ViewerRenderRetCode
+    {
+        //The render failed and should clear to black the viewer and stop any ongoing playback
+        eViewerRenderRetCodeFail = 0,
+        
+        //The render did nothing requiring updating the current texture
+        //but just requires a redraw (something like aborted generally)
+        eViewerRenderRetCodeRedraw,
+        
+        //The viewer needs to be cleared out to black but should not interrupt playback
+        eViewerRenderRetCodeBlack,
+        
+        //The viewer did update or requires and update to the texture displayed
+        eViewerRenderRetCodeRender,
+    };
     
     
-    StatusEnum getRenderViewerArgsAndCheckCache_public(SequenceTime time,
+    ViewerRenderRetCode getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                         bool isSequential,
                                                         bool canAbort,
                                                         int view,
@@ -98,7 +113,7 @@ private:
     /**
      * @brief Look-up the cache and try to find a matching texture for the portion to render.
      **/
-    StatusEnum getRenderViewerArgsAndCheckCache(SequenceTime time,
+    ViewerRenderRetCode getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                         bool isSequential,
                                                         bool canAbort,
                                                         int view,
@@ -123,7 +138,7 @@ public:
      * Otherwise it just calls renderRoi(...) on the active input
      * and then render to the PBO.
      **/
-    StatusEnum renderViewer(int view,bool singleThreaded,bool isSequentialRender,
+    ViewerRenderRetCode renderViewer(int view,bool singleThreaded,bool isSequentialRender,
                                     U64 viewerHash,
                                     bool canAbort,
                                     const boost::shared_ptr<Node>& rotoPaintNode,
@@ -132,7 +147,7 @@ public:
                                     const boost::shared_ptr<RequestedFrame>& request,
                                     const boost::shared_ptr<RenderStats>& stats) WARN_UNUSED_RETURN;
     
-    StatusEnum getViewerArgsAndRenderViewer(SequenceTime time,
+    ViewerRenderRetCode getViewerArgsAndRenderViewer(SequenceTime time,
                                                     bool canAbort,
                                                     int view,
                                                     U64 viewerHash,
@@ -153,6 +168,8 @@ public:
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
 
     void disconnectViewer();
+    
+    void disconnectTexture(int index);
 
     int getLutType() const WARN_UNUSED_RETURN;
 
@@ -342,7 +359,7 @@ private:
     /*******************************************/
     
     
-    StatusEnum renderViewer_internal(int view,
+    ViewerRenderRetCode renderViewer_internal(int view,
                                              bool singleThreaded,
                                              bool isSequentialRender,
                                              U64 viewerHash,

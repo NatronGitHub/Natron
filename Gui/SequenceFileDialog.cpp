@@ -3065,7 +3065,7 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
         _preview->viewerUI->centerOn(firstFrame,lastFrame);
 
     }
-    _preview->viewerUI->getInternalNode()->renderCurrentFrame(false);
+    _preview->viewerUI->getInternalNode()->renderCurrentFrame(true);
 }
 
 ///Reset everything as it was prior to the dialog being opened, also avoid the nodes being deleted

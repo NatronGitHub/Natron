@@ -2909,7 +2909,7 @@ KnobHelper::refreshListenersAfterValueChange(int dimension)
         std::set<int> dimensionsToEvaluate;
         bool mustClone = false;
         for (std::size_t i = 0; i < it->second.size(); ++i) {
-            if (it->second[i].isListening && it->second[i].targetDim == dimension) {
+            if (it->second[i].isListening && (it->second[i].targetDim == dimension || it->second[i].targetDim == -1)) {
                 dimensionsToEvaluate.insert(i);
                 if (!it->second[i].isExpr) {
                     mustClone = true;
@@ -2995,7 +2995,7 @@ KnobHelper::addListener(const bool isExpression,
                         const int listenedToDimension,
                         const boost::shared_ptr<KnobI>& listener)
 {
-    assert(listenedToDimension >= 0 && listenedToDimension < _imp->dimension);
+    assert(listenedToDimension == -1 || (listenedToDimension >= 0 && listenedToDimension < _imp->dimension));
     KnobHelper* listenerIsHelper = dynamic_cast<KnobHelper*>(listener.get());
     assert(listenerIsHelper);
     if (!listenerIsHelper) {

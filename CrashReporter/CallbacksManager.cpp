@@ -34,6 +34,8 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include <cassert>
 #include <iostream>
 #include <sstream>
+#include <string>
+#include <cstring>
 #include <exception>
 
 #ifndef REPORTER_CLI_ONLY
@@ -97,63 +99,87 @@ CallbacksManager* CallbacksManager::_instance = 0;
 
 #include "Global/ProcInfo.h"
 
-#define EXIT_APP(code) ( CallbacksManager::exit(code) )
+#define EXIT_APP(code,exitIfDumpReceived) ( CallbacksManager::instance()->s_emitDoExitCallBackOnMainThread(code,exitIfDumpReceived) )
 
 namespace {
 #ifdef NATRON_CRASH_REPORTER_USE_FORK
+
+
+// strndup doesn't exist on OS X prior to 10.7
+static char *
+strndup_replacement(const char *str, size_t n)
+{
+    size_t len;
+    char *copy;
     
-    static char*
-    qstringToMallocCharArray(const QString& str)
-    {
-        std::string stdStr = str.toStdString();
-        return strndup(stdStr.c_str(), stdStr.size() + 1);
-    }
+    for (len = 0; len < n && str[len]; ++len)
+        continue;
     
+    if ((copy = (char *)malloc(len + 1)) == NULL)
+        return (NULL);
+    memcpy(copy, str, len);
+    copy[len] = '\0';
+    return (copy);
+}
     
-    static void
-    handleChildDeadSignal( int /*signalId*/ )
-    {
-        /*
+static char*
+qstringToMallocCharArray(const QString& str)
+{
+    std::string stdStr = str.toStdString();
+    return strndup_replacement(stdStr.c_str(), stdStr.size() + 1);
+}
+
+
+static void
+handleChildDeadSignal( int /*signalId*/ )
+{
+    /*
          In Practise this handler is only called on OS X when the Natron application exits.
          On Linux this may be called when ptrace dumper suspends the thread of Natron, hence we handle it
          separately
          */
 #ifdef Q_OS_LINUX
-        
+    int status;
+    pid_t pid = waitpid(WAIT_ANY, &status, WUNTRACED | WNOHANG);
+     if (pid <= 0 || errno == ECHILD) {
+         //The child process is not really finished, this was probably called from breakpad, ignore it
+         return;
+     }
 #endif
-        if (qApp) {
-            qDebug() << "Child process terminated!";
-            EXIT_APP(0);
-        } else {
-            std::exit(1);
-        }
+    if (qApp) {
+        EXIT_APP(0, false);
+    } else {
+        std::exit(1);
     }
-    
-    static void
-    setChildDeadSignal()
-    {
-        struct sigaction sa;
-        sa.sa_flags = 0;
-        sigemptyset(&sa.sa_mask);
-        sa.sa_handler = handleChildDeadSignal;
-        if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-            std::perror("setting up termination signal");
-            std::exit(1);
-        }
+}
+
+static void
+setChildDeadSignal()
+{
+    struct sigaction sa;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_handler = handleChildDeadSignal;
+    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+        std::perror("setting up termination signal");
+        std::exit(1);
     }
-    
+}
+
 #endif // NATRON_CRASH_REPORTER_USE_FORK
 } // anon namespace
 
+
+void dumpRequest_xPlatform(const QString& filePath)
+{
+    CallbacksManager::instance()->s_emitDoDumpCallBackOnMainThread(filePath);
+}
 
 
 using namespace google_breakpad;
 
 CallbacksManager::CallbacksManager()
 : QObject()
-#ifndef Q_OS_LINUX
-, _breakpadPipeServer(0)
-#endif
 #ifndef NATRON_CRASH_REPORTER_USE_FORK
 , _natronProcess(0)
 #endif
@@ -165,7 +191,6 @@ CallbacksManager::CallbacksManager()
 , _dialog(0)
 , _progressDialog(0)
 #endif
-, _didError(false)
 , _dumpFilePath()
 , _pipePath()
 , _comPipePath()
@@ -175,6 +200,7 @@ CallbacksManager::CallbacksManager()
 , _clientFD(-1)
 #endif
 , _app(0)
+, _initErr(false)
 {
     _instance = this;
 }
@@ -183,10 +209,6 @@ CallbacksManager::CallbacksManager()
 CallbacksManager::~CallbacksManager() {
 #ifdef TRACE_CRASH_RERPORTER
     delete _dFile;
-#endif
-
-#ifndef Q_OS_LINUX
-    delete _breakpadPipeServer;
 #endif
     
     delete _comServer;
@@ -206,13 +228,6 @@ CallbacksManager::~CallbacksManager() {
     _instance = 0;
 
 
-}
-
-void
-CallbacksManager::exit(int exitCode)
-{
-    assert(qApp);
-    qApp->exit(exitCode);
 }
 
 void
@@ -260,8 +275,66 @@ static QString getNatronBinaryFilePathFromCrashReporterDirPath(const QString& cr
 bool
 CallbacksManager::hasReceivedDump() const
 {
+    assert(QThread::currentThread() == qApp->thread());
     return _dumpReceived;
 }
+
+bool
+CallbacksManager::hasInit() const {
+    return !_initErr;
+}
+
+void
+CallbacksManager::onSpawnedProcessFinished(int exitCode, QProcess::ExitStatus status)
+{
+    
+    int retCode = 0;
+    QString code;
+    if (status == QProcess::CrashExit) {
+        code =  "crashed";
+        retCode = 1;
+    } else if (status == QProcess::NormalExit) {
+        code =  "finished";
+    }
+    qDebug() << "Spawned process" << code << "with exit code:" << exitCode;
+    
+    EXIT_APP(exitCode, false);
+  
+}
+
+void
+CallbacksManager::onSpawnedProcessError(QProcess::ProcessError error)
+{
+    
+    bool mustExit = false;
+    switch (error) {
+        case QProcess::FailedToStart:
+            std::cerr << "Spawned process executable does not exist or the system lacks necessary resources, exiting." << std::endl;
+            mustExit = true;
+            break;
+        case QProcess::Crashed:
+            std::cerr << "Spawned process crashed, exiting." << std::endl;
+            mustExit = true;
+            break;
+        case QProcess::Timedout:
+            std::cerr << "Spawned process timedout, exiting." << std::endl;
+            mustExit = true;
+            break;
+        case QProcess::ReadError:
+            break;
+        case QProcess::WriteError:
+            break;
+        case QProcess::UnknownError:
+            break;
+    }
+    
+    if (mustExit) {
+        _initErr = true;
+        EXIT_APP(1, false);
+    }
+    
+}
+
 
 void
 CallbacksManager::init(int& argc, char** argv)
@@ -304,6 +377,7 @@ CallbacksManager::init(int& argc, char** argv)
     natronBinaryPath = getNatronBinaryFilePathFromCrashReporterDirPath(natronBinaryPath);
     
     if (!QFile::exists(natronBinaryPath)) {
+        _initErr = true;
         std::stringstream ss;
         ss << natronBinaryPath.toStdString() << ": no such file or directory.";
         throw std::runtime_error(ss.str());
@@ -315,7 +389,8 @@ CallbacksManager::init(int& argc, char** argv)
     _natronProcess = new QProcess();
     QObject::connect(_natronProcess,SIGNAL(readyReadStandardOutput()), this, SLOT(onNatronProcessStdOutWrittenTo()));
     QObject::connect(_natronProcess,SIGNAL(readyReadStandardError()), this, SLOT(onNatronProcessStdErrWrittenTo()));
-    
+    QObject::connect(_natronProcess,SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(onSpawnedProcessFinished(int,QProcess::ExitStatus)));
+    QObject::connect(_natronProcess,SIGNAL(error(QProcess::ProcessError)), this, SLOT(onSpawnedProcessError(QProcess::ProcessError)));
 
     QStringList processArgs;
     for (int i = 0; i < argc; ++i) {
@@ -412,6 +487,7 @@ CallbacksManager::init(int& argc, char** argv)
     } // child process
 
 #endif // NATRON_CRASH_REPORTER_USE_FORK
+
 }
 
 static void addTextHttpPart(QHttpMultiPart* multiPart, const QString& name, const QString& value)
@@ -489,8 +565,7 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     }
     
     QNetworkAccessManager *networkMnger = new QNetworkAccessManager(this);
-    QObject::connect(networkMnger, SIGNAL(finished(QNetworkReply*)),
-                     this, SLOT(replyFinished()));
+
     
     //Corresponds to the "multipart/form-data" subtype, meaning the body parts contain form elements, as described in RFC 2388
     // https://www.ietf.org/rfc/rfc2388.txt
@@ -503,11 +578,11 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     addTextHttpPart(multiPart, "Comments", comments);
     addFileHttpPart(multiPart, "upload_file_minidump", filepath);
     
-    QNetworkRequest request(QUrl(UPLOAD_URL));
+    QUrl url = QUrl::fromEncoded(QByteArray(UPLOAD_URL));
+    QNetworkRequest request(url);
     _uploadReply = networkMnger->post(request, multiPart);
     
-    QObject::connect(_uploadReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(replyError(QNetworkReply::NetworkError)));
-    QObject::connect(_uploadReply, SIGNAL(finished()), this, SLOT(replyFinished()));
+    QObject::connect(networkMnger, SIGNAL(finished(QNetworkReply*)), this, SLOT(replyFinished(QNetworkReply*)));
     QObject::connect(_uploadReply, SIGNAL(uploadProgress(qint64,qint64)), this, SLOT(onUploadProgress(qint64,qint64)));
     multiPart->setParent(_uploadReply);
     
@@ -535,86 +610,6 @@ CallbacksManager::onUploadProgress(qint64 bytesSent, qint64 bytesTotal)
 #endif
 }
 
-void
-CallbacksManager::replyFinished() {
-    if (!_uploadReply || _didError) {
-        return;
-    }
-    
-    QByteArray reply = _uploadReply->readAll();
-    while (reply.endsWith('\n')) {
-        reply.chop(1);
-    }
-    QString successStr("File uploaded successfully!\n" + QString(reply));
-    
-#ifndef REPORTER_CLI_ONLY
-    QMessageBox info(QMessageBox::Information, "Dump Uploading", successStr, QMessageBox::NoButton, _dialog, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint| Qt::WindowStaysOnTopHint);
-    info.exec();
-    
-    if (_dialog) {
-        _dialog->deleteLater();
-    }
-#else
-    std::cerr << successStr.toStdString() << std::endl;
-#endif
-    _uploadReply->deleteLater();
-    _uploadReply = 0;
-    EXIT_APP(0);
-}
-
-static QString getNetworkErrorString(QNetworkReply::NetworkError e)
-{
-    switch (e) {
-        case QNetworkReply::ConnectionRefusedError:
-            return "The remote server refused the connection (the server is not accepting requests)";
-        case QNetworkReply::RemoteHostClosedError:
-            return "The remote server closed the connection prematurely, before the entire reply was received and processed";
-        case QNetworkReply::HostNotFoundError:
-            return "The remote host name was not found (invalid hostname)";
-        case QNetworkReply::TimeoutError:
-            return "The connection to the remote server timed out";
-        case QNetworkReply::OperationCanceledError:
-            return "The operation was canceled";
-        case QNetworkReply::SslHandshakeFailedError:
-            return "The SSL/TLS handshake failed and the encrypted channel could not be established";
-        case QNetworkReply::TemporaryNetworkFailureError:
-            return "The connection was broken due to disconnection from the network";
-        case QNetworkReply::ProxyConnectionRefusedError:
-            return "the connection to the proxy server was refused (the proxy server is not accepting requests)";
-        case QNetworkReply::ProxyConnectionClosedError:
-            return "The proxy server closed the connection prematurely, before the entire reply was received and processed";
-        case QNetworkReply::ProxyNotFoundError:
-            return "The proxy host name was not found (invalid proxy hostname)";
-        case QNetworkReply::ProxyTimeoutError:
-            return "The connection to the proxy timed out or the proxy did not reply in time to the request sent";
-        case QNetworkReply::ProxyAuthenticationRequiredError:
-            return "The proxy requires authentication in order to honour the request but did not accept any credentials offered (if any)";
-        case QNetworkReply::ContentAccessDenied:
-            return "The access to the remote content was denied (similar to HTTP error 401)";
-        case QNetworkReply::ContentOperationNotPermittedError:
-            return "The operation requested on the remote content is not permitted";
-        case QNetworkReply::ContentNotFoundError:
-            return "The remote content was not found at the server (similar to HTTP error 404)";
-        case QNetworkReply::AuthenticationRequiredError:
-            return "The remote server requires authentication to serve the content but the credentials provided were not accepted (if any)";
-        case QNetworkReply::ContentReSendError:
-            return "The request needed to be sent again, but this failed for example because the upload data could not be read a second time.";
-        case QNetworkReply::ProtocolUnknownError:
-            return "The Network Access API cannot honor the request because the protocol is not known";
-        case QNetworkReply::ProtocolInvalidOperationError:
-            return "The requested operation is invalid for this protocol";
-        case QNetworkReply::UnknownNetworkError:
-            return "An unknown network-related error was detected";
-        case QNetworkReply::UnknownProxyError:
-            return "An unknown proxy-related error was detected";
-        case QNetworkReply::UnknownContentError:
-            return "An unknown error related to the remote content was detected";
-        case QNetworkReply::ProtocolFailure:
-            return "a breakdown in protocol was detected (parsing error, invalid or unexpected responses, etc.)";
-        default:
-            return QString();
-    }
-}
 
 #ifndef REPORTER_CLI_ONLY
 
@@ -645,48 +640,68 @@ NetworkErrorDialog::~NetworkErrorDialog()
 #endif
 
 void
-CallbacksManager::replyError(QNetworkReply::NetworkError errCode)
-{
+CallbacksManager::replyFinished(QNetworkReply* replyParam) {
+    assert(replyParam == _uploadReply);
     if (!_uploadReply) {
         return;
     }
     
-    
-    QFileInfo finfo(_dumpFilePath);
-    if (!finfo.exists()) {
-        std::cerr << "Dump file (" <<  _dumpFilePath.toStdString() << ") does not exist";
-    }
-    
-    QString guidStr = finfo.fileName();
-    {
-        int lastDotPos = guidStr.lastIndexOf('.');
-        if (lastDotPos != -1) {
-            guidStr = guidStr.mid(0, lastDotPos);
+    QNetworkReply::NetworkError err = _uploadReply->error();
+    if (err == QNetworkReply::NoError) {
+        
+        QByteArray reply = _uploadReply->readAll();
+        while (reply.endsWith('\n')) {
+            reply.chop(1);
         }
-    }
-    
-    QString errStr("Network error: " + getNetworkErrorString(errCode) + "\nDump file is located at " +
-                   _dumpFilePath + "\nYou can submit it directly to the developers by filling out the form at " + QString(FALLBACK_FORM_URL) +
-                   " with the following informations:\nProductName: " + NATRON_APPLICATION_NAME + "\nVersion: " + getVersionString() +
-                   "\nguid: " + guidStr + "\n\nPlease add any comment describing the issue and the state of the application at the moment it crashed.");
-    
-    _didError = true;
-
+        QString successStr("File uploaded successfully!\n Crash ID = " + QString(reply));
+        
 #ifndef REPORTER_CLI_ONLY
-    NetworkErrorDialog info(errStr,_dialog);
-    info.setWindowTitle("Dump Uploading");
-    info.exec();
-    
-    if (_dialog) {
-        _dialog->deleteLater();
-    }
+        QMessageBox info(QMessageBox::Information, "Dump Uploading", successStr, QMessageBox::NoButton, _dialog, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint| Qt::WindowStaysOnTopHint);
+        info.exec();
+        
+        if (_dialog) {
+            _dialog->deleteLater();
+        }
 #else
-    std::cerr << errStr.toStdString() << std::endl;
+        std::cerr << successStr.toStdString() << std::endl;
 #endif
-    _uploadReply->deleteLater();
-    _uploadReply = 0;
+        
+    } else {
+        QFileInfo finfo(_dumpFilePath);
+        if (!finfo.exists()) {
+            std::cerr << "Dump file (" <<  _dumpFilePath.toStdString() << ") does not exist";
+        }
+        
+        QString guidStr = finfo.fileName();
+        {
+            int lastDotPos = guidStr.lastIndexOf('.');
+            if (lastDotPos != -1) {
+                guidStr = guidStr.mid(0, lastDotPos);
+            }
+        }
+        
+        QString errStr("Network error: (" + QString::number(err) + ") " + _uploadReply->errorString() + "\nDump file is located at " +
+                       _dumpFilePath + "\nYou can submit it directly to the developers by filling out the form at\n\n" + QString(FALLBACK_FORM_URL) +
+                       "?product=" + NATRON_APPLICATION_NAME + "&version=" + getVersionString() +
+                       "&id=" + guidStr + "\n\nPlease add any comment describing the issue and the state of the application at the moment it crashed.");
+        
+        
+#ifndef REPORTER_CLI_ONLY
+        NetworkErrorDialog info(errStr,_dialog);
+        info.setWindowTitle("Dump Uploading");
+        info.exec();
+        
+        if (_dialog) {
+            _dialog->deleteLater();
+        }
+#else
+        std::cerr << errStr.toStdString() << std::endl;
+#endif
+
+    }
     
-    EXIT_APP(0);
+    _uploadReply = 0;
+    EXIT_APP(0, true);
 }
 
 void
@@ -743,7 +758,7 @@ CallbacksManager::onCrashDialogFinished()
         uploadFileToRepository(_dialog->getOriginalDumpFilePath(),_dialog->getDescription());
     } else {
         _dialog->deleteLater();
-        EXIT_APP(0);
+        EXIT_APP(0, true);
     }
 
 #endif
@@ -759,16 +774,16 @@ CallbacksManager::s_emitDoDumpCallBackOnMainThread(const QString& filePath)
 }
 
 void
-CallbacksManager::s_emitDoExitCallBackOnMainThread()
+CallbacksManager::s_emitDoExitCallBackOnMainThread(int exitCode, bool exitEvenIfDumpedReceived)
 {
-    Q_EMIT doExitCallbackOnMainThread();
+    Q_EMIT doExitCallbackOnMainThread(exitCode,exitEvenIfDumpedReceived);
 }
 
 void
-CallbacksManager::onDoExitOnMainThread()
+CallbacksManager::onDoExitOnMainThread(int exitCode, bool exitEvenIfDumpedReceived)
 {
-    if (!CallbacksManager::instance()->hasReceivedDump()) {
-        EXIT_APP(0);
+    if (!CallbacksManager::instance()->hasReceivedDump() || exitEvenIfDumpedReceived) {
+        qApp->exit(exitCode);
     }
 }
 
@@ -811,15 +826,7 @@ s2ws(const std::string & s)
 }
 
 
-void dumpRequest_xPlatform(const QString& filePath)
-{
-    CallbacksManager::instance()->s_emitDoDumpCallBackOnMainThread(filePath);
-}
 
-void exitRequest_xPlatform()
-{
-    CallbacksManager::instance()->s_emitDoExitCallBackOnMainThread();
-}
 
 
 #if defined(Q_OS_MAC)
@@ -829,22 +836,13 @@ void OnClientDumpRequest(void */*context*/,
     
     dumpRequest_xPlatform(file_path.c_str());
 }
-void onClientExitRequest(void* /*context*/,
-                          const ClientInfo& /*client_info*/)
-{
-    exitRequest_xPlatform();
-}
+
 #elif defined(Q_OS_LINUX)
 void OnClientDumpRequest(void* /*context*/,
                          const ClientInfo* /*client_info*/,
                          const string* file_path) {
     
     dumpRequest_xPlatform(file_path->c_str());
-}
-void onClientExitRequest(void* /*context*/,
-                          const ClientInfo* /*client_info*/)
-{
-    exitRequest_xPlatform();
 }
 
 #elif defined(Q_OS_WIN32)
@@ -854,11 +852,6 @@ void OnClientDumpRequest(void* /*context*/,
     
     QString str = QString::fromWCharArray(file_path->c_str());
     dumpRequest_xPlatform(str);
-}
-void onClientExitRequest(void* /*context*/,
-                          const ClientInfo* /*client_info*/)
-{
-    exitRequest_xPlatform();
 }
 #endif
 
@@ -875,7 +868,7 @@ CallbacksManager::createCrashGenerationServer()
                                              0, // filter ctx
                                              OnClientDumpRequest, // dump cb
                                              0, // dump ctx
-                                             onClientExitRequest, // exit cb
+                                             0, // exit cb
                                              0, // exit ctx
                                              true, // auto-generate dumps
                                              _dumpDirPath.toStdString()); // path to dump to
@@ -884,7 +877,7 @@ CallbacksManager::createCrashGenerationServer()
     _crashServer = new CrashGenerationServer(_serverFD,
                                           OnClientDumpRequest, // dump cb
                                           0, // dump ctx
-                                          onClientExitRequest, // exit cb
+                                          0, // exit cb
                                           0, // exit ctx
                                           true, // auto-generate dumps
                                           &stdDumpPath); // path to dump to
@@ -900,7 +893,7 @@ CallbacksManager::createCrashGenerationServer()
                                           0, // on client connected ctx
                                           OnClientDumpRequest, // dump cb
                                           0, // dump ctx
-                                          onClientExitRequest, // exit cb
+                                          0, // exit cb
                                           0, // exit ctx
                                           0, // upload request cb
                                           0, //  upload request ctx
@@ -943,50 +936,13 @@ CallbacksManager::onNatronProcessStdErrWrittenTo()
 }
 
 
-static QString getTempDirPath()
-{
-#ifdef Q_OS_UNIX
-
-    QString temp = QString(qgetenv("TMPDIR"));
-    if (temp.isEmpty()) {
-        temp = QLatin1String("/tmp/");
-    }
-    return QDir::cleanPath(temp);
-#else
-    QString ret;
-    wchar_t tempPath[MAX_PATH];
-    DWORD len = GetTempPathW(MAX_PATH, tempPath);
-    if (len)
-        ret = QString::fromWCharArray(tempPath, len);
-    if (!ret.isEmpty()) {
-        while (ret.endsWith(QLatin1Char('\\')))
-            ret.chop(1);
-        ret = QDir::fromNativeSeparators(ret);
-    }
-    if (ret.isEmpty()) {
-#if !defined(Q_OS_WINCE)
-        ret = QLatin1String("C:/tmp");
-#else
-        ret = QLatin1String("/Temp");
-#endif
-    } else if (ret.length() >= 2 && ret[1] == QLatin1Char(':')) {
-        ret[0] = ret.at(0).toUpper(); // Force uppercase drive letters.
-    }
-    return ret;
-#endif
-}
-
 
 void
 CallbacksManager::initCrashGenerationServer()
 {
-    
-#ifndef Q_OS_LINUX
-    assert(!_breakpadPipeServer);
-#endif
-    
+
     QObject::connect(this, SIGNAL(doDumpCallBackOnMainThread(QString)), this, SLOT(onDoDumpOnMainThread(QString)));
-    QObject::connect(this, SIGNAL(doExitCallbackOnMainThread()), this, SLOT(onDoExitOnMainThread()));
+    QObject::connect(this, SIGNAL(doExitCallbackOnMainThread(int,bool)), this, SLOT(onDoExitOnMainThread(int,bool)));
 
 #ifdef Q_OS_LINUX
     if (!google_breakpad::CrashGenerationServer::CreateReportChannel(&_serverFD, &_clientFD)) {
@@ -1000,18 +956,16 @@ CallbacksManager::initCrashGenerationServer()
      We use 2 different pipe: 1 for the CrashReporter to notify to Natron that it has started correctly, and another
      one that is used by the google_breakpad server itself.
      */
-
-    _dumpDirPath = getTempDirPath();
+    assert(qApp);
+    _dumpDirPath = QDir::tempPath();
     {
         QString tmpFileName;
-#ifdef Q_OS_WIN32
-        tmpFileName += "//./pipe/";
-#elif defined(Q_OS_UNIX)
+#if defined(Q_OS_UNIX)
         tmpFileName	= _dumpDirPath;
         tmpFileName += '/';
         tmpFileName += NATRON_APPLICATION_NAME;
-#endif
         tmpFileName += "_CRASH_PIPE_";
+#endif
         {
             QString tmpTemplate;
 #ifndef Q_OS_WIN32
@@ -1030,7 +984,9 @@ CallbacksManager::initCrashGenerationServer()
         if (foundLastSlash !=1) {
             _pipePath = "//./pipe/";
             if (foundLastSlash < tmpFileName.size() - 1) {
-                _pipePath.append(tmpFileName.mid(foundLastSlash + 1));
+                QString toAppend("CRASH_PIPE_");
+                toAppend.append(tmpFileName.mid(foundLastSlash + 1));
+                _pipePath.append(toAppend);
             }
         }
 #endif
@@ -1039,22 +995,14 @@ CallbacksManager::initCrashGenerationServer()
     
     _comPipePath = _pipePath + "IPC_COM";
     
-#ifndef Q_OS_LINUX
-    //Create the crash generation pipe ourselves
-    //qApp has been defined so far
-    assert(qApp);
-    _breakpadPipeServer = new QLocalServer;
-    _breakpadPipeServer->listen(_pipePath);
-    
-#endif
-
     _comServer = new QLocalServer;
-    _comServer->listen(_comPipePath);
     QObject::connect(_comServer, SIGNAL(newConnection()), this, SLOT(onComPipeConnectionPending()));
+    _comServer->listen(_comPipePath);
 
     createCrashGenerationServer();
     
 }
+
 
 void
 CallbacksManager::onComPipeConnectionPending()

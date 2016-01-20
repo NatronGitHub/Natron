@@ -434,7 +434,7 @@ public:
 
 
 
-StatusEnum
+ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                              bool canAbort,
                                              int view,
@@ -449,12 +449,12 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
     ///getRoD or this will not work
     assert(rotoPaintNode);
     if (!rotoPaintNode->getLiveInstance()) {
-        return eStatusFailed;
+        return eViewerRenderRetCodeFail;
     }
     rotoPaintNode->getLiveInstance()->clearActionsCache();
     
-    StatusEnum status[2] = {
-        eStatusFailed, eStatusFailed
+    ViewerRenderRetCode status[2] = {
+        eViewerRenderRetCodeFail, eViewerRenderRetCodeFail
     };
 
     NodePtr thisNode = getNode();
@@ -558,37 +558,89 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                 } else {
                     ///The drawing is already up to date: all changes have been taken into account for this event
                     args[i].reset();
-                    return eStatusReplyDefault;
+                    return eViewerRenderRetCodeRedraw;
                 }
             }
         }
+       
+        
+        if (args[i]) {
+            status[i] = getRenderViewerArgsAndCheckCache(time, false, canAbort, view, i, viewerHash, rotoPaintNode, false, renderAge,stats,  args[i].get());
+        }
+        
+    
+        if (status[i] != eViewerRenderRetCodeRender) {
+            /*
+             Either failure, black or nothing, the texture is junk, remove it from the cache
+             */
+            if (args[i] && args[i]->params && args[i]->params->cachedFrame) {
+                args[i]->params->cachedFrame->setAborted(true);
+                appPTR->removeFromViewerCache(args[i]->params->cachedFrame);
+                args[i]->params->cachedFrame.reset();
+            }
+            
+        }
 
-        status[i] = getRenderViewerArgsAndCheckCache(time, false, canAbort, view, i, viewerHash, rotoPaintNode, false, renderAge,stats,  args[i].get());
         
-        
-        if (status[i] != eStatusFailed && args[i] && args[i]->params) {
+        if (status[i] == eViewerRenderRetCodeFail || status[i] == eViewerRenderRetCodeBlack) {
+            disconnectTextureRequest(i);
+        } else {
+            assert(args[i] && args[i]->params);
             assert(args[i]->params->textureIndex == i);
-            status[i] = renderViewer_internal(view, QThread::currentThread() == qApp->thread(), false, viewerHash, canAbort,rotoPaintNode, false,boost::shared_ptr<RequestedFrame>(), stats, *args[i]);
-            if (status[i] == eStatusReplyDefault) {
+            
+            
+            if (!_imp->addOngoingRender(args[i]->params->textureIndex, args[i]->params->renderAge)) {
+                /*
+                 This may fail if another thread already pushed a more recent render in the render ages queue
+                 */
+                status[i] = eViewerRenderRetCodeRedraw;
                 args[i].reset();
             }
+            
+            if (args[i]) {
+                status[i] = renderViewer_internal(view,
+                                                  QThread::currentThread() == qApp->thread(), // singleThreaded
+                                                  false, // isSequentialRender
+                                                  viewerHash,
+                                                  canAbort,
+                                                  rotoPaintNode,
+                                                  false, //useTLS
+                                                  boost::shared_ptr<RequestedFrame>(),
+                                                  stats,
+                                                  *args[i]);
+            }
+            
+            if (args[i] && args[i]->params) {
+                if (status[i] == eViewerRenderRetCodeFail || status[i] == eViewerRenderRetCodeBlack) {
+                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex,args[i]->params->renderAge);
+                }
+                _imp->removeOngoingRender(args[i]->params->textureIndex, args[i]->params->renderAge);
+            }
+            
+            
+            if (status[i] == eViewerRenderRetCodeRedraw) {
+                args[i].reset();
+            }
+            
         }
+
+        
+     
 
         
     }
     
-    if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
-        disconnectViewer();
-        return eStatusFailed;
+    if (status[0] == eViewerRenderRetCodeFail && status[1] == eViewerRenderRetCodeFail) {
+        return eViewerRenderRetCodeFail;
     }
 
     *argsA = args[0];
     *argsB = args[1];
-    return eStatusOK;
+    return eViewerRenderRetCodeRender;
     
 }
 
-StatusEnum
+ViewerInstance::ViewerRenderRetCode
 ViewerInstance::renderViewer(int view,
                              bool singleThreaded,
                              bool isSequentialRender,
@@ -601,10 +653,17 @@ ViewerInstance::renderViewer(int view,
                              const boost::shared_ptr<RenderStats>& stats)
 {
     if (!_imp->uiContext) {
-        return eStatusFailed;
+        return eViewerRenderRetCodeFail;
     }
-    StatusEnum ret[2] = {
-        eStatusReplyDefault, eStatusReplyDefault
+
+    /**
+     * When entering this code, we already know that the textures are not cached for the A and B inputs
+     * If the an input is not connected, it's args[i] will be NULL.
+     * If either one of the renders fails, that means we should block playback and clear to black the viewer
+     **/
+    
+    ViewerInstance::ViewerRenderRetCode ret[2] = {
+        eViewerRenderRetCodeRedraw, eViewerRenderRetCodeRedraw
     };
     for (int i = 0; i < 2; ++i) {
         if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == eViewerCompositingOperatorNone) ) {
@@ -614,21 +673,57 @@ ViewerInstance::renderViewer(int view,
             assert(args[i]->params->textureIndex == i);
             
             ///We enable render stats just for the A input (i == 0) otherwise we would get crappy results
-            ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort,rotoPaintNode, useTLS, request,
-                                           i == 0 ? stats : boost::shared_ptr<RenderStats>(),
-                                           *args[i]);
-            if (ret[i] == eStatusReplyDefault) {
+            
+            if (!isSequentialRender) {
+                if (!_imp->addOngoingRender(args[i]->params->textureIndex, args[i]->params->renderAge)) {
+                    /*
+                     This may fail if another thread already pushed a more recent render in the render ages queue
+                     */
+                    ret[i] = eViewerRenderRetCodeRedraw;
+                    args[i].reset();
+                }
+            }
+            if (args[i]) {
+                ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort,rotoPaintNode, useTLS, request,
+                                               i == 0 ? stats : boost::shared_ptr<RenderStats>(),
+                                               *args[i]);
+            }
+            
+            if (ret[i] != eViewerRenderRetCodeRender) {
+                /*
+                 Either failure, black or nothing, the texture is junk, remove it from the cache
+                 */
+                if (args[i] && args[i]->params && args[i]->params->cachedFrame) {
+                    args[i]->params->cachedFrame->setAborted(true);
+                    appPTR->removeFromViewerCache(args[i]->params->cachedFrame);
+                    args[i]->params->cachedFrame.reset();
+                }
+
+            }
+            
+            if (!isSequentialRender && args[i] && args[i]->params) {
+                if (ret[i] == eViewerRenderRetCodeFail || ret[i] == eViewerRenderRetCodeBlack) {
+                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex,args[i]->params->renderAge);
+                }
+                _imp->removeOngoingRender(args[i]->params->textureIndex, args[i]->params->renderAge);
+            }
+            
+            if (ret[i] == eViewerRenderRetCodeBlack) {
+                disconnectTexture(args[i]->params->textureIndex);
+            }
+            
+            if (ret[i] == eViewerRenderRetCodeFail || ret[i] == eViewerRenderRetCodeRedraw) {
                 args[i].reset();
             }
         }
     }
     
 
-    if ( (ret[0] == eStatusFailed) || (ret[1] == eStatusFailed) ) {
-        return eStatusFailed;
+    if ( (ret[0] == eViewerRenderRetCodeFail) || (ret[1] == eViewerRenderRetCodeFail) ) {
+        return eViewerRenderRetCodeFail;
     }
 
-    return eStatusOK;
+    return eViewerRenderRetCodeRender;
 }
 
 static bool checkTreeCanRender_internal(Node* node, std::list<Node*>& marked)
@@ -725,7 +820,7 @@ static bool copyAndSwap(const TextureRect& srcRect,
     return true;
 }
 
-StatusEnum
+ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                            bool isSequential,
                                                            bool canAbort,
@@ -738,10 +833,19 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                            ViewerArgs* outArgs)
 {
     U64 renderAge = _imp->getRenderAge(textureIndex);
-    return getRenderViewerArgsAndCheckCache(time, isSequential, canAbort, view, textureIndex, viewerHash, rotoPaintNode, useTLS, renderAge, stats, outArgs);
+    
+   
+    
+    ViewerRenderRetCode stat = getRenderViewerArgsAndCheckCache(time, isSequential, canAbort, view, textureIndex, viewerHash, rotoPaintNode, useTLS, renderAge, stats, outArgs);
+    
+    if (stat == eViewerRenderRetCodeFail || stat == eViewerRenderRetCodeBlack) {
+        _imp->checkAndUpdateDisplayAge(textureIndex,renderAge);
+    }
+    
+    return stat;
 }
 
-StatusEnum
+ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  bool isSequential,
                                                  bool canAbort,
@@ -772,11 +876,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     }
     
     if (!upstreamInput || !outArgs->activeInputToRender || !checkTreeCanRender(outArgs->activeInputToRender->getNode().get())) {
-        Q_EMIT disconnectTextureRequest(textureIndex);
-        //if (!isSequential) {
-            _imp->checkAndUpdateDisplayAge(textureIndex,renderAge);
-        //}
-        return eStatusFailed;
+        return eViewerRenderRetCodeFail;
     }
     
     {
@@ -886,12 +986,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                                                  supportsRS ==  eSupportsNo ? scaleOne : scale,
                                                                                  view, &rod, &isRodProjectFormat);
     if (stat == eStatusFailed) {
-        Q_EMIT disconnectTextureRequest(textureIndex);
-        //if (!isSequential) {
-            _imp->checkAndUpdateDisplayAge(textureIndex,renderAge);
-        //}
-
-        return stat;
+        return eViewerRenderRetCodeFail;
     }
     // update scale after the first call to getRegionOfDefinition
     if ( (supportsRS == eSupportsMaybe) && (mipMapLevel != 0) ) {
@@ -923,13 +1018,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         roi = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, par, originalMipMapLevel);
     }
     
-    if ( (roi.width() == 0) || (roi.height() == 0) ) {
-        Q_EMIT disconnectTextureRequest(textureIndex);
-        outArgs->params.reset();
-        //if (!isSequential) {
-            _imp->checkAndUpdateDisplayAge(textureIndex,renderAge);
-        //}
-        return eStatusReplyDefault;
+    if (roi.isNull()) {
+        return eViewerRenderRetCodeBlack;
     }
     
     
@@ -1058,18 +1148,15 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
             ///but not yet allocated.
             FrameEntryLocker entryLocker(_imp.get());
             if (!entryLocker.tryLock(outArgs->params->cachedFrame)) {
-                outArgs->params->cachedFrame.reset();
                 ///Another thread is rendering it, just return it is not useful to keep this thread waiting.
-                //return eStatusReplyDefault;
-                return eStatusOK;
+                return eViewerRenderRetCodeRedraw;
             }
             
             if (outArgs->params->cachedFrame->getAborted()) {
                 ///The thread rendering the frame entry might have been aborted and the entry removed from the cache
                 ///but another thread might successfully have found it in the cache. This flag is to notify it the frame
                 ///is invalid.
-                outArgs->params->cachedFrame.reset();
-                return eStatusOK;
+                return eViewerRenderRetCodeRedraw;
             }
             
             // how do you make sure cachedFrame->data() is not freed after this line?
@@ -1089,22 +1176,15 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         }
         break;
     } // for (int lookup = 0; lookup < lookups; ++lookup) {
-    return eStatusOK;
+    return eViewerRenderRetCodeRender;
 }
 
 //if render was aborted, remove the frame from the cache as it contains only garbage
-#define abortCheck(input) if ( input->aborted() ) { \
-                                if (inArgs.params->cachedFrame) { \
-                                    inArgs.params->cachedFrame->setAborted(true); \
-                                    appPTR->removeFromViewerCache(inArgs.params->cachedFrame); \
-                                } \
-                                if (!isSequentialRender) { \
-                                    _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge); \
-                                } \
-                                return eStatusReplyDefault; \
-                            }
+#define abortCheck(input) if (input->aborted()) { \
+                                return eViewerRenderRetCodeRedraw; \
+                          }
 
-StatusEnum
+ViewerInstance::ViewerRenderRetCode
 ViewerInstance::renderViewer_internal(int view,
                                       bool singleThreaded,
                                       bool isSequentialRender,
@@ -1130,15 +1210,9 @@ ViewerInstance::renderViewer_internal(int view,
      * latency so it looks like it is actually seeking, otherwise it would just refresh the image upon the mouseRelease event because all
      * other renders would be aborted. To enable this behaviour, we ensure that at least 1 render is always running, even if it does not
      * correspond to the GUI state anymore.
-     * 3) Single frame non-abortable render: the canAbort flag is set to false and the isSequentialRender flag is set to false. Basically
-     * only the viewer uses this when issuing renders due to a zoom or pan of the user. This is used to enable a trimap-caching technique
-     * to optimize threads repartitions across tiles processing of the image.
+     * 3) Single frame non-abortable render: the canAbort flag is set to false and the isSequentialRender flag is set to false. 
      */
-    if (!isSequentialRender) {
-        if (!_imp->addOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge)) {
-             return eStatusReplyDefault;
-        }
-    }
+  
     
     RectI roi;
     roi.x1 = inArgs.params->textureRect.x1;
@@ -1150,8 +1224,7 @@ ViewerInstance::renderViewer_internal(int view,
     ///Check that we were not aborted already
     if ( !isSequentialRender && (inArgs.activeInputToRender->getHash() != inArgs.activeInputHash ||
                                  inArgs.params->time != getTimeline()->currentFrame()) ) {
-        _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
-        return eStatusReplyDefault;
+        return eViewerRenderRetCodeRedraw;
     }
     
     ///Notify the gui we're rendering.
@@ -1173,10 +1246,7 @@ ViewerInstance::renderViewer_internal(int view,
         FrameRequestMap request;
         StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipMapLevel, canonicalRoi, getNode(), request);
         if (stat == eStatusFailed) {
-            if (!isSequentialRender) {
-                _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
-            }
-            return stat;
+            return eViewerRenderRetCodeFail;
         }
         
         frameArgs.reset(new ViewerParallelRenderArgsSetter(inArgs.params->time,
@@ -1230,7 +1300,7 @@ ViewerInstance::renderViewer_internal(int view,
                 }
                 _imp->lastRotoPaintTickParams[inArgs.params->textureIndex].reset();
                 if (!inArgs.params->ramBuffer) {
-                    return eStatusFailed;
+                    return eViewerRenderRetCodeFail;
                 }
             } else {
                 inArgs.params->mustFreeRamBuffer = true;
@@ -1270,11 +1340,8 @@ ViewerInstance::renderViewer_internal(int view,
             ss << "Failed to allocate a texture of ";
             ss << printAsRAM( cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t) ).toStdString();
             Dialogs::errorDialog( QObject::tr("Out of memory").toStdString(),ss.str() );
-            if (!isSequentialRender) {
-                _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
-                _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
-            }
-            return eStatusFailed;
+
+            return eViewerRenderRetCodeFail;
         }
         
         entryLocker.lock(inArgs.params->cachedFrame);
@@ -1339,20 +1406,7 @@ ViewerInstance::renderViewer_internal(int view,
     }
     
     if (requestedComponents.empty()) {
-        if (inArgs.params->cachedFrame) {
-            inArgs.params->cachedFrame->setAborted(true);
-            appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
-            if (!isSequentialRender) {
-                _imp->checkAndUpdateDisplayAge(inArgs.params->textureIndex,inArgs.params->renderAge);
-            }
-        }
-        if (!isSequentialRender) {
-            _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
-        }
-        Q_EMIT disconnectTextureRequest(inArgs.params->textureIndex);
-        inArgs.params.reset();
-
-        return eStatusReplyDefault;
+        return eViewerRenderRetCodeBlack;
     }
 
     EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(getNode().get(),inArgs.activeInputIndex);
@@ -1468,22 +1522,18 @@ ViewerInstance::renderViewer_internal(int view,
                 inArgs.params->tiles.push_back(colorImage);
             }
             if (!colorImage) {
-                if (inArgs.params->cachedFrame) {
-                    inArgs.params->cachedFrame->setAborted(true);
-                    appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
-                }
-                if (!isSequentialRender) {
-                    _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
-                }
-                if (retCode != EffectInstance::eRenderRoIRetCodeAborted) {
-                    Q_EMIT disconnectTextureRequest(inArgs.params->textureIndex);
-                }
-                
                 if (retCode == EffectInstance::eRenderRoIRetCodeFailed) {
-                    inArgs.params.reset();
-                    return eStatusFailed;
+                    return eViewerRenderRetCodeFail;
+                } else if (retCode == EffectInstance::eRenderRoIRetCodeOk) {
+                    return eViewerRenderRetCodeBlack;
+                } else {
+                    /*
+                     The render was not aborted but did not return an image, this may be the case
+                     for example when an effect returns a NULL RoD at some point. Don't fail but
+                     display a black image
+                     */
+                    return eViewerRenderRetCodeRedraw;
                 }
-                return eStatusReplyDefault;
             }
             
             if (!reportProgress && splitRoi.size() > 1) {
@@ -1504,15 +1554,7 @@ ViewerInstance::renderViewer_internal(int view,
         ///We check that the render age is still OK and that no other renders were triggered, in which case we should not need to
         ///refresh the viewer.
         if (!_imp->checkAgeNoUpdate(inArgs.params->textureIndex,inArgs.params->renderAge)) {
-            if (inArgs.params->cachedFrame) {
-                inArgs.params->cachedFrame->setAborted(true);
-                appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
-                inArgs.params->cachedFrame.reset();
-            }
-            if (!isSequentialRender) {
-                _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
-            }
-            return eStatusReplyDefault;
+            return eViewerRenderRetCodeRedraw;
         }
         
         abortCheck(inArgs.activeInputToRender);
@@ -1668,23 +1710,7 @@ ViewerInstance::renderViewer_internal(int view,
         }
     } // for (std::vector<RectI>::iterator rect = splitRoi.begin(); rect != splitRoi.end(), ++rect) {
     
-    if (!isSequentialRender) {
-        
-        bool couldRemove = _imp->removeOngoingRender(inArgs.params->textureIndex, inArgs.params->renderAge);
-
-        if (!couldRemove) {
-            if (inArgs.params->cachedFrame) {
-                inArgs.params->cachedFrame->setAborted(true);
-                appPTR->removeFromViewerCache(inArgs.params->cachedFrame);
-                inArgs.params->cachedFrame.reset();
-            }
-            return eStatusReplyDefault;
-        }
-    }
-    
-   
-    
-    return eStatusOK;
+    return eViewerRenderRetCodeRender;
 } // renderViewer_internal
 
 void
@@ -2279,7 +2305,15 @@ ViewerInstance::markAllOnRendersAsAborted()
 {
     QMutexLocker k(&_imp->renderAgeMutex);
     for (int i = 0; i < 2; ++i) {
-        for (OnGoingRenders::iterator it = _imp->currentRenderAges[i].begin(); it != _imp->currentRenderAges[i].end(); ++it) {
+        if (_imp->currentRenderAges[i].empty()) {
+            continue;
+        }
+        
+        //Do not abort the oldest render, let it finish
+        OnGoingRenders::iterator it = _imp->currentRenderAges[i].begin();
+        ++it;
+        
+        for (;it != _imp->currentRenderAges[i].end(); ++it) {
             it->second.aborted = true;
         }
     }
@@ -2898,10 +2932,16 @@ void
 ViewerInstance::disconnectViewer()
 {
     // always running in the render thread
-
-    //_lastRenderedImage.reset(); // if you uncomment this, _lastRenderedImage is not set back when you reconnect the viewer immediately after disconnecting
     if (_imp->uiContext) {
         Q_EMIT viewerDisconnected();
+    }
+}
+
+void
+ViewerInstance::disconnectTexture(int index)
+{
+    if (_imp->uiContext) {
+        Q_EMIT disconnectTextureRequest(index);
     }
 }
 

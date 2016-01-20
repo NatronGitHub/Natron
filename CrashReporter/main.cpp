@@ -35,5 +35,8 @@ main(int argc,char *argv[])
         return 1;
         
     }
+    if (!manager.hasInit()) {
+        return 1;
+    }
     return manager.exec();
 }

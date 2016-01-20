@@ -2603,7 +2603,7 @@ private:
         }
         ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
         ///it calls appendToBuffer by itself
-        StatusEnum stat = eStatusReplyDefault;
+        ViewerInstance::ViewerRenderRetCode stat = ViewerInstance::eViewerRenderRetCodeRedraw;
         
         //Viewer can only render 1 view for now
         assert(viewsToRender.size() == 1);
@@ -2612,19 +2612,35 @@ private:
         U64 viewerHash = _viewer->getHash();
         boost::shared_ptr<ViewerArgs> args[2];
         
-        StatusEnum status[2] = {
-            eStatusFailed, eStatusFailed
+        ViewerInstance::ViewerRenderRetCode status[2] = {
+            ViewerInstance::eViewerRenderRetCodeFail, ViewerInstance::eViewerRenderRetCodeFail
         };
+        
+        bool clearTexture[2] = { false, false };
         
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
             status[i] = _viewer->getRenderViewerArgsAndCheckCache_public(time, true, true, view, i, viewerHash, NodePtr(), true, stats, args[i].get());
+            clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
+            if (clearTexture[i]) {
+                //Just clear the viewer, nothing to do
+                args[i]->params.reset();
+            }
         }
        
-        if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
+        if (clearTexture[0] && clearTexture[1]) {
             _imp->scheduler->notifyRenderFailure(std::string());
             return;
-        } else if (status[0] == eStatusReplyDefault || status[1] == eStatusReplyDefault) {
+        } else if (clearTexture[0] && !clearTexture[1]) {
+            _viewer->disconnectTexture(0);
+        } else if (!clearTexture[0] && clearTexture[1]) {
+            _viewer->disconnectTexture(1);
+        }
+
+        if (status[0] == ViewerInstance::eViewerRenderRetCodeFail && status[1] == ViewerInstance::eViewerRenderRetCodeFail) {
+            
+            return;
+        } else if (status[0] == ViewerInstance::eViewerRenderRetCodeRedraw || status[1] == ViewerInstance::eViewerRenderRetCodeRedraw) {
             return;
         } else {
             BufferableObjectList toAppend;
@@ -2638,17 +2654,17 @@ private:
         }
         
         
-        if ((args[0] && status[0] != eStatusFailed) || (args[1] && status[1] != eStatusFailed)) {
+        if ((args[0] && status[0] != ViewerInstance::eViewerRenderRetCodeFail) || (args[1] && status[1] != ViewerInstance::eViewerRenderRetCodeFail)) {
             try {
                 stat = _viewer->renderViewer(view,false,true,viewerHash,true, NodePtr(), true,  args, boost::shared_ptr<RequestedFrame>(), stats);
             } catch (...) {
-                stat = eStatusFailed;
+                stat = ViewerInstance::eViewerRenderRetCodeFail;
             }
         } else {
             return;
         }
         
-        if (stat == eStatusFailed) {
+        if (stat == ViewerInstance::eViewerRenderRetCodeFail) {
             ///Don't report any error message otherwise we will flood the viewer with irrelevant messages such as
             ///"Render failed", instead we let the plug-in that failed post an error message which will be more helpful.
             _imp->scheduler->notifyRenderFailure(std::string());
@@ -3157,7 +3173,7 @@ static void renderCurrentFrameFunctor(const boost::shared_ptr<CurrentFrameFuncto
     
     ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
     ///it calls appendToBuffer by itself
-    StatusEnum stat;
+    ViewerInstance::ViewerRenderRetCode stat;
     
     BufferableObjectList ret;
     try {
@@ -3168,10 +3184,10 @@ static void renderCurrentFrameFunctor(const boost::shared_ptr<CurrentFrameFuncto
             stat = args->viewer->getViewerArgsAndRenderViewer(args->time, args->canAbort, args->view, args->viewerHash, args->isRotoPaintRequest, args->strokeItem, args->stats,&args->args[0],&args->args[1]);
         }
     } catch (...) {
-        stat = eStatusFailed;
+        stat = ViewerInstance::eViewerRenderRetCodeFail;
     }
     
-    if (stat == eStatusFailed) {
+    if (stat == ViewerInstance::eViewerRenderRetCodeFail) {
         ///Don't report any error message otherwise we will flood the viewer with irrelevant messages such as
         ///"Render failed", instead we let the plug-in that failed post an error message which will be more helpful.
         args->viewer->disconnectViewer();
@@ -3439,8 +3455,8 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
     int view = viewsCount > 0 ? _imp->viewer->getViewerCurrentView() : 0;
     U64 viewerHash = _imp->viewer->getHash();
     
-    StatusEnum status[2] = {
-        eStatusFailed, eStatusFailed
+    ViewerInstance::ViewerRenderRetCode status[2] = {
+        ViewerInstance::eViewerRenderRetCodeFail, ViewerInstance::eViewerRenderRetCodeFail
     };
     if (!_imp->viewer->getUiContext() || _imp->viewer->getApp()->isCreatingNode()) {
         return;
@@ -3473,21 +3489,44 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
     
     boost::shared_ptr<ViewerArgs> args[2];
     if (!rotoPaintNode || isRotoNeatRender) {
+        
+        bool clearTexture[2] = {false, false};
+        
         for (int i = 0; i < 2; ++i) {
             args[i].reset(new ViewerArgs);
             status[i] = _imp->viewer->getRenderViewerArgsAndCheckCache_public(frame, false, canAbort, view, i, viewerHash,rotoPaintNode, true, stats, args[i].get());
+            
+            clearTexture[i] = status[i] == ViewerInstance::eViewerRenderRetCodeFail || status[i] == ViewerInstance::eViewerRenderRetCodeBlack;
+            if (clearTexture[i]) {
+                //Just clear the viewer, nothing to do
+                args[i]->params.reset();
+            }
+            
+            if (status[i] == ViewerInstance::eViewerRenderRetCodeRedraw) {
+                //We must redraw (re-render) don't hold a pointer to the cached frame
+                args[i]->params->cachedFrame.reset();
+            }
         }
         
-        if (status[0] == eStatusFailed && status[1] == eStatusFailed) {
+        if (clearTexture[0] && clearTexture[1]) {
             _imp->viewer->disconnectViewer();
             return;
-        } else if (status[0] == eStatusReplyDefault && status[1] == eStatusReplyDefault) {
+        } else if (clearTexture[0] && !clearTexture[1]) {
+            _imp->viewer->disconnectTexture(0);
+        } else if (!clearTexture[0] && clearTexture[1]) {
+            _imp->viewer->disconnectTexture(1);
+        }
+        
+        if (status[0] == ViewerInstance::eViewerRenderRetCodeRedraw && status[1] == ViewerInstance::eViewerRenderRetCodeRedraw) {
             _imp->viewer->redrawViewer();
             return;
         }
         
         for (int i = 0; i < 2 ; ++i) {
             if (args[i]->params && args[i]->params->ramBuffer) {
+                /*
+                 The texture was cached
+                 */
                 if (stats && i == 0) {
                     double timeSpent;
                     std::map<boost::shared_ptr<Node>,NodeRenderStats > statResults = stats->getStats(&timeSpent);
@@ -3498,8 +3537,8 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
             }
         }
         if ((!args[0] && !args[1]) ||
-            (!args[0] && status[0] == eStatusOK && args[1] && status[1] == eStatusFailed) ||
-            (!args[1] && status[1] == eStatusOK && args[0] && status[0] == eStatusFailed)) {
+            (!args[0] && status[0] == ViewerInstance::eViewerRenderRetCodeRender && args[1] && status[1] == ViewerInstance::eViewerRenderRetCodeFail) ||
+            (!args[1] && status[1] == ViewerInstance::eViewerRenderRetCodeRender && args[0] && status[0] == ViewerInstance::eViewerRenderRetCodeFail)) {
             _imp->viewer->redrawViewer();
             return;
         }
@@ -3628,7 +3667,7 @@ ViewerCurrentFrameRequestRendererBackup::run()
                 if (!_imp->requestsQueue.empty()) {
                     hasRequest = true;
                     firstRequest = _imp->requestsQueue.front();
-                    if (!firstRequest->viewer) {
+                    if (!firstRequest || !firstRequest->viewer) {
                         hasRequest = false;
                     }
                     _imp->requestsQueue.pop_front();

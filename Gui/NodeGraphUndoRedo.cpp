@@ -1954,7 +1954,7 @@ InlineGroupCommand::undo()
         }
     }
     for (std::set<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame(false);
+        (*it)->renderCurrentFrame(true);
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
@@ -2000,7 +2000,7 @@ InlineGroupCommand::redo()
         }
     }
     for (std::set<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame(false);
+        (*it)->renderCurrentFrame(true);
     }
     _graph->getGui()->getApp()->triggerAutoSave();
     setText(QObject::tr("Inline group(s)"));

@@ -204,7 +204,7 @@ ViewerGL::resizeGL(int w,
     if ( viewer->getUiContext() && _imp->viewerTab->getGui() &&
          !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() &&
          ( ( oldWidth != w) || ( oldHeight != h) ) ) {
-        viewer->renderCurrentFrame(false);
+        viewer->renderCurrentFrame(true);
         
         if (!_imp->persistentMessages.empty()) {
             updatePersistentMessageToWidth(w - 20);
@@ -1888,7 +1888,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
     
     if (_imp->renderOnPenUp) {
         _imp->renderOnPenUp = false;
-        getInternalNode()->renderCurrentFrame(false);
+        getInternalNode()->renderCurrentFrame(true);
     }
 }
 
@@ -2066,7 +2066,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
                 _imp->viewerTab->synchronizeOtherViewersProjection();
             }
             
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
             
             //  else {
             mustRedraw = true;
@@ -2105,7 +2105,7 @@ ViewerGL::penMotionInternal(int x, int y, double pressure, double timestamp, QIn
             }
             
             //_imp->oldClick = newClick; // don't update oldClick! this is the zoom center
-            _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+            _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
             
             //  else {
             mustRedraw = true;
@@ -2520,7 +2520,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
         _imp->viewerTab->synchronizeOtherViewersProjection();
     }
 
-    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+    _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
     
 
     ///Clear green cached line so the user doesn't expect to see things in the cache
@@ -2570,7 +2570,7 @@ ViewerGL::zoomSlot(int v)
         _imp->viewerTab->clearTimelineCacheLine();
     }
     
-    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+    _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
    
 }
 
@@ -2637,7 +2637,7 @@ ViewerGL::fitImageToFormat(bool useProjectFormat)
         _imp->viewerTab->clearTimelineCacheLine();
     }
     
-    _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+    _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
     
     update();
 }
@@ -2816,7 +2816,7 @@ ViewerGL::setClipToDisplayWindow(bool b)
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
     if ( viewer->getUiContext() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() ) {
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
     }
 }
 
@@ -3163,7 +3163,7 @@ ViewerGL::setUserRoIEnabled(bool b)
         _imp->buildUserRoIOnNextPress = false;
     }
     if ( displayingImage() ) {
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame(false);
+        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
     }
     update();
 }

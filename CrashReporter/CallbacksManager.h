@@ -85,8 +85,6 @@ public:
     {
         return _instance;
     }
-
-    static void exit(int exitCode = 0);
     
     /**
      * @brief Creates the crash generation server and spawns the actual Natron proces.
@@ -95,24 +93,24 @@ public:
     void init(int& argc, char** argv);
 
     bool hasReceivedDump() const;
+
+    bool hasInit() const;
     
     void s_emitDoDumpCallBackOnMainThread(const QString& filePath);
-    void s_emitDoExitCallBackOnMainThread();
+    void s_emitDoExitCallBackOnMainThread(int exitCode, bool exitEvenIfDumpedReceived);
     
     int exec();
 
 public Q_SLOTS:
 
-    void replyFinished();
+    void replyFinished(QNetworkReply* reply);
 
     void onDoDumpOnMainThread(const QString& filePath);
     
-    void onDoExitOnMainThread();
+    void onDoExitOnMainThread(int exitCode, bool exitEvenIfDumpedReceived);
 
     void onCrashDialogFinished();
-    
-    void replyError(QNetworkReply::NetworkError);
-    
+        
     void onUploadProgress(qint64 bytesSent, qint64 bytesTotal);
     
     void onProgressDialogCanceled();
@@ -121,12 +119,15 @@ public Q_SLOTS:
     void onNatronProcessStdErrWrittenTo();
     
     void onComPipeConnectionPending();
-    
+
     void onComPipeDataWrittenTo();
+    
+    void onSpawnedProcessFinished(int exitCode, QProcess::ExitStatus status);
+    void onSpawnedProcessError(QProcess::ProcessError error);
     
 Q_SIGNALS:
 
-    void doExitCallbackOnMainThread();
+    void doExitCallbackOnMainThread(int exitCode, bool exitEvenIfDumpedReceived);
     
     void doDumpCallBackOnMainThread(QString);
 
@@ -148,11 +149,6 @@ private:
     static CallbacksManager *_instance;
 
     
-#ifndef Q_OS_LINUX
-    //On Windows & OSX breakpad expects us to manage the pipe
-    QLocalServer* _breakpadPipeServer;
-#endif
-    
 #ifndef NATRON_CRASH_REPORTER_USE_FORK
     //The Natron process has no way to print to stdout/stderr, so connect signals
     QProcess* _natronProcess;
@@ -172,7 +168,6 @@ private:
     CrashDialog* _dialog;
     QProgressDialog* _progressDialog;
 #endif
-    bool _didError;
     QString _dumpFilePath;
     QString _dumpDirPath;
     QString _pipePath,_comPipePath;
@@ -189,6 +184,8 @@ private:
 #else
     QApplication* _app;
 #endif
+
+    bool _initErr;
     
 };
 
