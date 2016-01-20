@@ -22,8 +22,8 @@ set -e
 # Print commands and their arguments as they are executed.
 set -x
 
-BREAKPAD=disable-breakpad
-#BREAKPAD= # doesn't compile on linux yet
+BREAKPAD=
+#BREAKPAD=gbreakpad # doesn't compile on linux yet
 SILENT=silent
 
 # enable testing locally or on forks without multi-os enabled
@@ -63,9 +63,9 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     fi
     export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
     make $J -C HostSupport;
-    make $J -C Engine mocables all;
-    make $J -C Gui mocables all;
-    make -C App mocables all; # linking Natron may break the 3Gb limit
+    make $J -C Engine;
+    make $J -C Gui;
+    make -C App; # linking Natron may break the 3Gb limit
     make $J
     if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
     
