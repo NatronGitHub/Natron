@@ -1,11 +1,15 @@
 #!/bin/sh
-USER_DIR="${HOME}/.local/share/mime"
-ROOT_DIR="/usr/share/mime"
+USER_MIME_DIR="${HOME}/.local/share/mime"
+USER_DESK_DIR="${HOME}/.local/share/applications"
+ROOT_MIME_DIR="/usr/share/mime"
+ROOT_DESK_DIR="/usr/share/applications"
 
 if [ "$UID" = "0" ]; then
-  MIME_DIR="$ROOT_DIR"
+  MIME_DIR="$ROOT_MIME_DIR"
+  DESK_DIR="$ROOT_DESK_DIR"
 else
-  MIME_DIR="$USER_DIR"
+  MIME_DIR="$USER_MIME_DIR"
+  DESK_DIR="$USER_DESK_DIR"
 fi
 if [ ! -d "$MIME_DIR/packages" ]; then
   mkdir -p "$MIME_DIR/packages"
@@ -24,3 +28,4 @@ cat <<EOF > "$MIME_DIR/packages/x-natron.xml"
 EOF
 
 update-mime-database "$MIME_DIR"
+update-desktop-database "$DESK_DIR"

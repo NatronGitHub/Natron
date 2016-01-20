@@ -470,7 +470,7 @@ if [ ! -f "$INSTALL_PATH/lib/pkgconfig/libxml-2.0.pc" ]; then
     fi
     tar xvf "$SRC_PATH/$LIBXML_TAR" || exit 1
     cd libxml* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared --without-python || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-docs --disable-static --enable-shared --without-python --without-lzma || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     if [ "$DDIR" != "" ]; then
