@@ -3175,17 +3175,17 @@ static bool getGroupInfosInternal(const std::string& modulePath,
     
     assert(labelObj);
     
-    *pluginLabel = PY3String_asString(labelObj);
+    *pluginLabel = Python::PY3String_asString(labelObj);
     Py_XDECREF(labelObj);
     
     if (idObj) {
-        *pluginID = PY3String_asString(idObj);
+        *pluginID = Python::PY3String_asString(idObj);
         deleteScript.append("del pluginID\n");
         Py_XDECREF(idObj);
     }
     
     if (iconObj) {
-        *iconFilePath = PY3String_asString(iconObj);
+        *iconFilePath = Python::PY3String_asString(iconObj);
         QFileInfo iconInfo(QString(modulePath.c_str()) + QString(iconFilePath->c_str()));
         *iconFilePath =  iconInfo.canonicalFilePath().toStdString();
         
@@ -3193,7 +3193,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
         Py_XDECREF(iconObj);
     }
     if (iconGrouping) {
-        *grouping = PY3String_asString(iconGrouping);
+        *grouping = Python::PY3String_asString(iconGrouping);
         deleteScript.append("del templateGrouping\n");
         Py_XDECREF(iconGrouping);
     }
@@ -3205,7 +3205,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
     }
     
     if (pluginDescriptionObj) {
-        *description = PY3String_asString(pluginDescriptionObj);
+        *description = Python::PY3String_asString(pluginDescriptionObj);
         deleteScript.append("del description\n");
         Py_XDECREF(pluginDescriptionObj);
     }
