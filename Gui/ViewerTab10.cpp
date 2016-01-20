@@ -421,7 +421,7 @@ ViewerTab::centerViewer()
 {
     _imp->viewer->fitImageToFormat();
     if ( _imp->viewer->displayingImage() ) {
-        _imp->viewerNode->renderCurrentFrame(false);
+        _imp->viewerNode->renderCurrentFrame(true);
     } else {
         _imp->viewer->update();
     }
@@ -432,7 +432,7 @@ ViewerTab::refresh(bool enableRenderStats)
 {
     _imp->viewerNode->forceFullComputationOnNextFrame();
     if (!enableRenderStats) {
-        _imp->viewerNode->renderCurrentFrame(false);
+        _imp->viewerNode->renderCurrentFrame(true);
     } else {
         getGui()->getOrCreateRenderStatsDialog()->show();
         _imp->viewerNode->renderCurrentFrameWithRenderStats(false);
