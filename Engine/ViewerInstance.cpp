@@ -561,9 +561,13 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                 }
             }
         }
-
-        status[i] = getRenderViewerArgsAndCheckCache(time, false, canAbort, view, i, viewerHash, rotoPaintNode, false, renderAge,stats,  args[i].get());
+       
         
+        if (args[i]) {
+            status[i] = getRenderViewerArgsAndCheckCache(time, false, canAbort, view, i, viewerHash, rotoPaintNode, false, renderAge,stats,  args[i].get());
+        }
+        
+    
         if (status[i] != eViewerRenderRetCodeRender) {
             /*
              Either failure, black or nothing, the texture is junk, remove it from the cache
@@ -583,21 +587,44 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
             assert(args[i] && args[i]->params);
             assert(args[i]->params->textureIndex == i);
             
-            status[i] = renderViewer_internal(view,
-                                              QThread::currentThread() == qApp->thread(),
-                                              false,
-                                              viewerHash,
-                                              canAbort,
-                                              rotoPaintNode,
-                                              false,
-                                              boost::shared_ptr<RequestedFrame>(),
-                                              stats,
-                                              *args[i]);
+            
+            if (!_imp->addOngoingRender(args[i]->params->textureIndex, args[i]->params->renderAge)) {
+                /*
+                 This may fail if another thread already pushed a more recent render in the render ages queue
+                 */
+                status[i] = eViewerRenderRetCodeRedraw;
+                args[i].reset();
+            }
+            
+            if (args[i]) {
+                status[i] = renderViewer_internal(view,
+                                                  QThread::currentThread() == qApp->thread(), // singleThreaded
+                                                  false, // isSequentialRender
+                                                  viewerHash,
+                                                  canAbort,
+                                                  rotoPaintNode,
+                                                  false, //useTLS
+                                                  boost::shared_ptr<RequestedFrame>(),
+                                                  stats,
+                                                  *args[i]);
+            }
+            
+            if (args[i] && args[i]->params) {
+                if (status[i] == eViewerRenderRetCodeFail || status[i] == eViewerRenderRetCodeBlack) {
+                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex,args[i]->params->renderAge);
+                }
+                _imp->removeOngoingRender(args[i]->params->textureIndex, args[i]->params->renderAge);
+            }
+            
             
             if (status[i] == eViewerRenderRetCodeRedraw) {
                 args[i].reset();
             }
+            
         }
+
+        
+     
 
         
     }
