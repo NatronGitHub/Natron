@@ -129,8 +129,8 @@ if [ "$DISABLE_BREAKPAD" != "1" ]; then
 #        dsymutil -arch x86_64 -o $DSYM_64 "$binary"
 #        dsymutil -arch i386 -o $DSYM_32 "$binary"
 
-		$DUMP_SYMS -a x86_64 "$PLUGINDIR"/${bin}.ofx.bundle/*/*/${bin}.ofx  > "$CWD/build/symbols/${bin}.ofx-${TAG}-Mac-x86_64.sym"
-		$DUMP_SYMS -a i386 "$PLUGINDIR"/${bin}.ofx.bundle/*/*/${bin}.ofx  > "$CWD/build/symbols/${bin}.ofx-${TAG}-Mac-i386.sym"
+		$DUMP_SYMS -a x86_64 "$PLUGINDIR"/${bin}.ofx.bundle/Contents/$OS-$BITS-$CONFIG/${bin}.ofx  > "$CWD/build/symbols/${bin}.ofx-${TAG}-Mac-x86_64.sym"
+		$DUMP_SYMS -a i386 "$PLUGINDIR"/${bin}.ofx.bundle/Contents/$OS-$BITS-$CONFIG/${bin}.ofx  > "$CWD/build/symbols/${bin}.ofx-${TAG}-Mac-i386.sym"
 		
 #		rm -rf $DSYM_64
 #		rm -rf $DSYM_32
