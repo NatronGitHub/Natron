@@ -653,7 +653,7 @@ CallbacksManager::replyFinished(QNetworkReply* replyParam) {
         while (reply.endsWith('\n')) {
             reply.chop(1);
         }
-        QString successStr("File uploaded successfully!\n" + QString(reply));
+        QString successStr("File uploaded successfully!\n Crash ID = " + QString(reply));
         
 #ifndef REPORTER_CLI_ONLY
         QMessageBox info(QMessageBox::Information, "Dump Uploading", successStr, QMessageBox::NoButton, _dialog, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint| Qt::WindowStaysOnTopHint);
