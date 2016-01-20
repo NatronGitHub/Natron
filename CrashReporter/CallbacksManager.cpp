@@ -104,11 +104,29 @@ CallbacksManager* CallbacksManager::_instance = 0;
 namespace {
 #ifdef NATRON_CRASH_REPORTER_USE_FORK
 
+
+// strndup doesn't exist on OS X prior to 10.7
+static char *
+strndup_replacement(const char *str, size_t n)
+{
+    size_t len;
+    char *copy;
+    
+    for (len = 0; len < n && str[len]; ++len)
+        continue;
+    
+    if ((copy = (char *)malloc(len + 1)) == NULL)
+        return (NULL);
+    memcpy(copy, str, len);
+    copy[len] = '\0';
+    return (copy);
+}
+    
 static char*
 qstringToMallocCharArray(const QString& str)
 {
     std::string stdStr = str.toStdString();
-    return strndup(stdStr.c_str(), stdStr.size() + 1);
+    return strndup_replacement(stdStr.c_str(), stdStr.size() + 1);
 }
 
 
