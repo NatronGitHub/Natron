@@ -1144,7 +1144,7 @@ ViewerTab::synchronizeOtherViewersProjection()
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         if ((*it) != this) {
             (*it)->getViewer()->setProjection(left, bottom, factor, par);
-            (*it)->getInternalNode()->renderCurrentFrame(false);
+            (*it)->getInternalNode()->renderCurrentFrame(true);
             
         }
     }

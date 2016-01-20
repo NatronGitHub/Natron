@@ -37,6 +37,7 @@
 
 #include "Engine/Settings.h"
 #include "Engine/Node.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/Button.h"
@@ -845,8 +846,19 @@ ViewerTab::setInputA(int index)
     }
     _imp->firstInputImage->setCurrentIndex(comboboxIndex);
     _imp->viewerNode->setInputA(index);
-    _imp->viewerNode->renderCurrentFrame(true);
-    
+
+    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        ViewerInstance* viewer = (*it)->getInternalNode();
+        if (viewer) {
+            RenderEngine* engine = viewer->getRenderEngine();
+            if (engine && engine->hasThreadsWorking()) {
+                engine->abortRendering(true,false);
+                engine->renderCurrentFrame(false, true);
+            }
+        }
+    }
+
 }
 
 void
@@ -863,7 +875,18 @@ ViewerTab::setInputB(int index)
     }
     _imp->secondInputImage->setCurrentIndex(comboboxIndex);
     _imp->viewerNode->setInputB(index);
-    _imp->viewerNode->renderCurrentFrame(true);
+    
+    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        ViewerInstance* viewer = (*it)->getInternalNode();
+        if (viewer) {
+            RenderEngine* engine = viewer->getRenderEngine();
+            if (engine && engine->hasThreadsWorking()) {
+                engine->abortRendering(true,false);
+                engine->renderCurrentFrame(false, true);
+            }
+        }
+    }
 }
 
 void
@@ -891,7 +914,18 @@ ViewerTab::switchInputAAndB()
     }
     _imp->viewerNode->setInputA(inputBIndex);
     _imp->viewerNode->setInputB(inputAIndex);
-    _imp->viewerNode->renderCurrentFrame(true);
+    
+    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        ViewerInstance* viewer = (*it)->getInternalNode();
+        if (viewer) {
+            RenderEngine* engine = viewer->getRenderEngine();
+            if (engine && engine->hasThreadsWorking()) {
+                engine->abortRendering(true,false);
+                engine->renderCurrentFrame(false, true);
+            }
+        }
+    }
 }
 
 ///Called when the user change the combobox choice
@@ -907,7 +941,18 @@ ViewerTab::onFirstInputNameChanged(const QString & text)
         }
     }
     _imp->viewerNode->setInputA(inputIndex);
-    _imp->viewerNode->renderCurrentFrame(true);
+    
+    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        ViewerInstance* viewer = (*it)->getInternalNode();
+        if (viewer) {
+            RenderEngine* engine = viewer->getRenderEngine();
+            if (engine && engine->hasThreadsWorking()) {
+                engine->abortRendering(true,false);
+                engine->renderCurrentFrame(false, true);
+            }
+        }
+    }
 }
 
 ///Called when the user change the combobox choice
@@ -938,7 +983,17 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
             }
         }
     }
-    _imp->viewerNode->renderCurrentFrame(true);
+    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        ViewerInstance* viewer = (*it)->getInternalNode();
+        if (viewer) {
+            RenderEngine* engine = viewer->getRenderEngine();
+            if (engine && engine->hasThreadsWorking()) {
+                engine->abortRendering(true,false);
+                engine->renderCurrentFrame(false, true);
+            }
+        }
+    }
 }
 
 ///This function is called only when the user changed inputs on the node graph
