@@ -661,9 +661,9 @@ CallbacksManager::replyFinished(QNetworkReply* replyParam) {
         }
         
         QString errStr("Network error: (" + QString::number(err) + ") " + _uploadReply->errorString() + "\nDump file is located at " +
-                       _dumpFilePath + "\nYou can submit it directly to the developers by filling out the form at " + QString(FALLBACK_FORM_URL) +
-                       " with the following informations:\nProductName: " + NATRON_APPLICATION_NAME + "\nVersion: " + getVersionString() +
-                       "\nguid: " + guidStr + "\n\nPlease add any comment describing the issue and the state of the application at the moment it crashed.");
+                       _dumpFilePath + "\nYou can submit it directly to the developers by filling out the form at\n\n" + QString(FALLBACK_FORM_URL) +
+                       "?product=" + NATRON_APPLICATION_NAME + "&version=" + getVersionString() +
+                       "&id=" + guidStr + "\n\nPlease add any comment describing the issue and the state of the application at the moment it crashed.");
         
         
 #ifndef REPORTER_CLI_ONLY
