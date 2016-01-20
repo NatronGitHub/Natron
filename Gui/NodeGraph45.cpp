@@ -49,7 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
@@ -105,9 +105,9 @@ NodeGraph::toggleHideInputs()
 
 }
 
-std::list<boost::shared_ptr<NodeGui> > NodeGraph::getNodesWithinBackDrop(const boost::shared_ptr<NodeGui>& bd) const
+std::list<boost::shared_ptr<NodeGui> > NodeGraph::getNodesWithinBackdrop(const boost::shared_ptr<NodeGui>& bd) const
 {
-    BackDropGui* isBd = dynamic_cast<BackDropGui*>(bd.get());
+    BackdropGui* isBd = dynamic_cast<BackdropGui*>(bd.get());
     if (!isBd) {
         return std::list<boost::shared_ptr<NodeGui> >();
     }

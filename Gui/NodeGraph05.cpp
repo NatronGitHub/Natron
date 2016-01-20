@@ -36,7 +36,7 @@
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -51,7 +51,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
                                      const boost::shared_ptr<NodeGui> &selected,
                                      bool autoConnect)
 {
-    BackDropGui* isBd = dynamic_cast<BackDropGui*>(node.get());
+    BackdropGui* isBd = dynamic_cast<BackdropGui*>(node.get());
     if (isBd) {
         return;
     }

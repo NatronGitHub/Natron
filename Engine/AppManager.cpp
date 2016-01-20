@@ -64,7 +64,7 @@
 
 
 #include "Engine/AppInstance.h"
-#include "Engine/BackDrop.h"
+#include "Engine/Backdrop.h"
 #include "Engine/CLArgs.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Dot.h"
@@ -1061,7 +1061,7 @@ void
 AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* /*readersMap*/,
                                    std::map<std::string,std::vector< std::pair<std::string,double> > >* /*writersMap*/)
 {
-    registerBuiltInPlugin<BackDrop>(NATRON_IMAGES_PATH "backdrop_icon.png", false, false);
+    registerBuiltInPlugin<Backdrop>(NATRON_IMAGES_PATH "backdrop_icon.png", false, false);
     registerBuiltInPlugin<GroupOutput>(NATRON_IMAGES_PATH "output_icon.png", false, false);
     registerBuiltInPlugin<GroupInput>(NATRON_IMAGES_PATH "input_icon.png", false, false);
     registerBuiltInPlugin<NodeGroup>(NATRON_IMAGES_PATH "group_icon.png", false, false);
@@ -1542,7 +1542,7 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,int majorVersion,i
         return _imp->findPluginById(PLUGINID_NATRON_DOT,majorVersion, minorVersion );
     } else if (pluginId == "DiskCache") {
         return _imp->findPluginById(PLUGINID_NATRON_DISKCACHE, majorVersion, minorVersion);
-    } else if (pluginId == "BackDrop") {
+    } else if (pluginId == "Backdrop") { // DO NOT change the capitalization, even if it's wrong
         return _imp->findPluginById(PLUGINID_NATRON_BACKDROP, majorVersion, minorVersion);
     } else if (pluginId == "RotoOFX  [Draw]") {
         return _imp->findPluginById(PLUGINID_NATRON_ROTO, majorVersion, minorVersion);

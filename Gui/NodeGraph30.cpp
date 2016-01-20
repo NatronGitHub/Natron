@@ -291,7 +291,7 @@ NodeGraph::deleteSelection()
         
         ///For all backdrops also move all the nodes contained within it
         for (NodeGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
-            NodeGuiList nodesWithinBD = getNodesWithinBackDrop(*it);
+            NodeGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
             for (NodeGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
                 NodeGuiList::iterator found = std::find(nodesToRemove.begin(),nodesToRemove.end(),*it2);
                 if ( found == nodesToRemove.end()) {

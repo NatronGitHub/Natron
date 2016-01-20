@@ -49,7 +49,7 @@
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/MultiInstancePanel.h"
@@ -535,12 +535,12 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Node> &node,
             QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
             nodegui->refreshPosition( pos.x(),pos.y(), true );
         } else {
-            BackDropGui* isBd = dynamic_cast<BackDropGui*>(nodegui.get());
+            BackdropGui* isBd = dynamic_cast<BackdropGui*>(nodegui.get());
             if (!isBd && !isGroup) {
                 boost::shared_ptr<NodeGui> selectedNode;
                 if (userEdited && selectedNodes.size() == 1) {
                     selectedNode = selectedNodes.front();
-                    BackDropGui* isBackdropGui = dynamic_cast<BackDropGui*>(selectedNode.get());
+                    BackdropGui* isBackdropGui = dynamic_cast<BackdropGui*>(selectedNode.get());
                     if (isBackdropGui) {
                         selectedNode.reset();
                     }
@@ -1168,7 +1168,7 @@ GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Node>& node,bool
         boost::shared_ptr<NodeGui> selectedNode;
         if (!selectedNodes.empty()) {
             selectedNode = selectedNodes.front();
-            if (dynamic_cast<BackDropGui*>(selectedNode.get())) {
+            if (dynamic_cast<BackdropGui*>(selectedNode.get())) {
                 selectedNode.reset();
             }
         }

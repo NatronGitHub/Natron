@@ -630,7 +630,7 @@ InsertNodeCommand::redo()
 
 }
 
-ResizeBackDropCommand::ResizeBackDropCommand(const NodeGuiPtr& bd,
+ResizeBackdropCommand::ResizeBackdropCommand(const NodeGuiPtr& bd,
                                              int w,
                                              int h,
                                              QUndoCommand *parent)
@@ -647,28 +647,28 @@ ResizeBackDropCommand::ResizeBackDropCommand(const NodeGuiPtr& bd,
     _oldH = bbox.height();
 }
 
-ResizeBackDropCommand::~ResizeBackDropCommand()
+ResizeBackdropCommand::~ResizeBackdropCommand()
 {
 }
 
 void
-ResizeBackDropCommand::undo()
+ResizeBackdropCommand::undo()
 {
     _bd->resize(_oldW, _oldH);
     setText( QObject::tr("Resize %1").arg( _bd->getNode()->getLabel().c_str() ) );
 }
 
 void
-ResizeBackDropCommand::redo()
+ResizeBackdropCommand::redo()
 {
     _bd->resize(_w, _h);
     setText( QObject::tr("Resize %1").arg( _bd->getNode()->getLabel().c_str() ) );
 }
 
 bool
-ResizeBackDropCommand::mergeWith(const QUndoCommand *command)
+ResizeBackdropCommand::mergeWith(const QUndoCommand *command)
 {
-    const ResizeBackDropCommand* rCmd = dynamic_cast<const ResizeBackDropCommand*>(command);
+    const ResizeBackdropCommand* rCmd = dynamic_cast<const ResizeBackdropCommand*>(command);
 
     if (!rCmd) {
         return false;

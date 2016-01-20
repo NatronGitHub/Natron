@@ -134,7 +134,7 @@ class LineEdit;
 class LinkArrow;
 class MenuWithToolTips;
 class MultiInstancePanel;
-class NodeBackDropSerialization;
+class NodeBackdropSerialization;
 class NodeClipBoard;
 class NodeCollection;
 class NodeCurveEditorElement;

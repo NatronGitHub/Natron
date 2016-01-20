@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Gui_BackDropGui_h
-#define Gui_BackDropGui_h
+#ifndef Gui_BackdropGui_h
+#define Gui_BackdropGui_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -32,8 +32,8 @@
 
 NATRON_NAMESPACE_ENTER;
 
-struct BackDropGuiPrivate;
-class BackDropGui : public NodeGui
+struct BackdropGuiPrivate;
+class BackdropGui : public NodeGui
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -41,9 +41,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    BackDropGui(QGraphicsItem* parent = 0);
+    BackdropGui(QGraphicsItem* parent = 0);
     
-    virtual ~BackDropGui();
+    virtual ~BackdropGui();
     
     void refreshTextLabelFromKnob();
 
@@ -83,9 +83,9 @@ private:
 private:
     
 
-    boost::scoped_ptr<BackDropGuiPrivate> _imp;
+    boost::scoped_ptr<BackdropGuiPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // Gui_BackDropGui_h
+#endif // Gui_BackdropGui_h

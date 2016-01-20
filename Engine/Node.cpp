@@ -45,7 +45,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
-#include "Engine/BackDrop.h"
+#include "Engine/Backdrop.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Dot.h"
 #include "Engine/EffectInstance.h"
@@ -2746,7 +2746,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
     assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->knobsInitialized);
     
-    BackDrop* isBd = dynamic_cast<BackDrop*>(_imp->liveInstance.get());
+    Backdrop* isBd = dynamic_cast<Backdrop*>(_imp->liveInstance.get());
     Dot* isDot = dynamic_cast<Dot*>(_imp->liveInstance.get());
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(_imp->liveInstance.get());
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
@@ -7246,7 +7246,7 @@ Node::isPointTrackerNode() const
 }
 
 bool
-Node::isBackDropNode() const
+Node::isBackdropNode() const
 {
     return getPluginID() == PLUGINID_NATRON_BACKDROP;
 }
@@ -7267,7 +7267,7 @@ Node::updateEffectLabelKnob(const QString & name)
 bool
 Node::canOthersConnectToThisNode() const
 {
-    if (dynamic_cast<BackDrop*>(_imp->liveInstance.get())) {
+    if (dynamic_cast<Backdrop*>(_imp->liveInstance.get())) {
         return false;
     } else if (dynamic_cast<GroupOutput*>(_imp->liveInstance.get())) {
         return false;

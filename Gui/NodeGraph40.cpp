@@ -49,7 +49,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/RotoLayer.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -250,9 +250,9 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         }
         
         ///Also copy all nodes within the backdrop
-        BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
+        BackdropGui* isBd = dynamic_cast<BackdropGui*>(it->get());
         if (isBd) {
-            NodeGuiList nodesWithinBD = getNodesWithinBackDrop(*it);
+            NodeGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
             for (NodeGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
                 NodeGuiList::iterator found = std::find(nodesToCopy.begin(),nodesToCopy.end(),*it2);
                 if ( found == nodesToCopy.end() ) {
@@ -335,10 +335,10 @@ NodeGraph::decloneSelectedNodes()
 
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
         
-        BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
+        BackdropGui* isBd = dynamic_cast<BackdropGui*>(it->get());
         if (isBd) {
             ///Also copy all nodes within the backdrop
-            NodeGuiList nodesWithinBD = getNodesWithinBackDrop(*it);
+            NodeGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
             for (NodeGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
                 NodeGuiList::iterator found = std::find(nodesToDeclone.begin(),nodesToDeclone.end(),*it2);
                 if ( found == nodesToDeclone.end() ) {

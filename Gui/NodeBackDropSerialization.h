@@ -57,10 +57,10 @@ NATRON_NAMESPACE_ENTER;
   We keep it for backward compatibility with old projects prior to Natron v1.1
  **/
 
-class NodeBackDropSerialization
+class NodeBackdropSerialization
 {
 public:
-    NodeBackDropSerialization();
+    NodeBackdropSerialization();
 
     std::string getFullySpecifiedName() const
     {
@@ -163,6 +163,6 @@ private:
 
 NATRON_NAMESPACE_EXIT;
 
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::NodeBackDropSerialization, NODE_BACKDROP_SERIALIZATION_VERSION)
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::NodeBackdropSerialization, NODE_BACKDROP_SERIALIZATION_VERSION)
 
 #endif // NODEBACKDROPSERIALIZATION_H

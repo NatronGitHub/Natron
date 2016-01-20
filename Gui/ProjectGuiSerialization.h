@@ -48,7 +48,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/RectD.h"
 
 #include "Gui/NodeGuiSerialization.h"
-#include "Gui/NodeBackDropSerialization.h"
+#include "Gui/NodeBackdropSerialization.h"
 #include "Gui/GuiFwd.h"
 
 
@@ -641,7 +641,7 @@ class ProjectGuiSerialization
     std::list<std::string> _histograms;
 
     ///Active backdrops (kept here for bw compatibility with Natron < 1.1
-    std::list<NodeBackDropSerialization> _backdrops;
+    std::list<NodeBackdropSerialization> _backdrops;
     
     ///All properties panels opened
     std::list<std::string> _openedPanelsOrdered;
@@ -758,7 +758,7 @@ public:
         return _histograms;
     }
 
-    const std::list<NodeBackDropSerialization> & getBackdrops() const
+    const std::list<NodeBackdropSerialization> & getBackdrops() const
     {
         return _backdrops;
     }

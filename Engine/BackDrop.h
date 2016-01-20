@@ -30,9 +30,9 @@
 
 NATRON_NAMESPACE_ENTER;
 
-struct BackDropPrivate;
+struct BackdropPrivate;
 
-class BackDrop : public NoOpBase
+class Backdrop : public NoOpBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -42,12 +42,12 @@ public:
     
     static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
-        return new BackDrop(n);
+        return new Backdrop(n);
     }
     
-    BackDrop(boost::shared_ptr<Node> node);
+    Backdrop(boost::shared_ptr<Node> node);
     
-    virtual ~BackDrop();
+    virtual ~Backdrop();
   
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -56,7 +56,7 @@ public:
     
     virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return "BackDrop";
+        return "Backdrop";
     }
     
     virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -85,7 +85,7 @@ private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
     
-    boost::scoped_ptr<BackDropPrivate> _imp;
+    boost::scoped_ptr<BackdropPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;

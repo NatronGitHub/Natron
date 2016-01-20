@@ -124,7 +124,7 @@ public:
 
     void deleteNodepluginsly(boost::shared_ptr<NodeGui> n);
 
-    std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackDrop(const boost::shared_ptr<NodeGui>& node) const;
+    std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackdrop(const boost::shared_ptr<NodeGui>& node) const;
 
     void selectAllNodes(bool onlyInVisiblePortion);
 

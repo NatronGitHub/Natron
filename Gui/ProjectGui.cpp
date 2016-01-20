@@ -38,7 +38,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 
-#include "Engine/BackDrop.h"
+#include "Engine/Backdrop.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
@@ -47,7 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Button.h"
 #include "Gui/ComboBox.h"
 #include "Gui/CurveEditor.h"
@@ -312,7 +312,7 @@ void loadNodeGuiSerialization(Gui* gui,
         iseffect->getPluginGrouping(&grouping);
         std::string majGroup = grouping.empty() ? "" : grouping.front();
         
-        BackDropGui* isBd = dynamic_cast<BackDropGui*>(nGui.get());
+        BackdropGui* isBd = dynamic_cast<BackdropGui*>(nGui.get());
         float defR,defG,defB;
 
         if ( iseffect->isReader() ) {
@@ -342,7 +342,7 @@ void loadNodeGuiSerialization(Gui* gui,
         } else if (majGroup == PLUGIN_GROUP_DEEP) {
             settings->getDeepGroupColor(&defR, &defG, &defB);
         } else if (isBd) {
-            settings->getDefaultBackDropColor(&defR, &defG, &defB);
+            settings->getDefaultBackdropColor(&defR, &defG, &defB);
         } else {
             settings->getDefaultNodeColor(&defR, &defG, &defB);
         }
@@ -458,8 +458,8 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
     }
     
     ///now restore the backdrops from old version prior to Natron 1.1
-    const std::list<NodeBackDropSerialization> & backdrops = obj.getBackdrops();
-    for (std::list<NodeBackDropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
+    const std::list<NodeBackdropSerialization> & backdrops = obj.getBackdrops();
+    for (std::list<NodeBackdropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
         
         double x,y;
         it->getPos(x, y);
@@ -484,7 +484,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         boost::shared_ptr<Node> node = getGui()->getApp()->createNode(args);
         boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
         assert(gui_i);
-        BackDropGui* bd = dynamic_cast<BackDropGui*>(gui_i.get());
+        BackdropGui* bd = dynamic_cast<BackdropGui*>(gui_i.get());
         assert(bd);
         bd->setVisibleSettingsPanel(false);
         bd->resize(w,h);

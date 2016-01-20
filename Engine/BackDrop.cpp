@@ -22,44 +22,44 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "BackDrop.h"
+#include "Backdrop.h"
 #include "Engine/Transform.h"
 #include "Engine/KnobTypes.h"
 
 NATRON_NAMESPACE_ENTER;
 
-struct BackDropPrivate
+struct BackdropPrivate
 {
     
     boost::weak_ptr<KnobString> knobLabel;
     
-    BackDropPrivate()
+    BackdropPrivate()
     : knobLabel()
     {
     }
     
 };
 
-BackDrop::BackDrop(boost::shared_ptr<Node> node)
+Backdrop::Backdrop(boost::shared_ptr<Node> node)
 : NoOpBase(node)
-, _imp(new BackDropPrivate())
+, _imp(new BackdropPrivate())
 {
 }
 
-BackDrop::~BackDrop()
+Backdrop::~Backdrop()
 {
     
 }
 
 std::string
-BackDrop::getPluginDescription() const
+Backdrop::getPluginDescription() const
 {
     return QObject::tr("The node backdrop is useful to group nodes and identify them in the node graph. You can also "
               "move all the nodes inside the backdrop.").toStdString() ;
 }
 
 void
-BackDrop::initializeKnobs()
+Backdrop::initializeKnobs()
 {
     boost::shared_ptr<KnobPage> page = natronCreateKnob<KnobPage>(this, "Controls");
     
@@ -77,7 +77,7 @@ BackDrop::initializeKnobs()
 
 
 void
-BackDrop::knobChanged(KnobI* k,
+Backdrop::knobChanged(KnobI* k,
                       ValueChangedReasonEnum /*reason*/,
                       int /*view*/,
                       double /*time*/,

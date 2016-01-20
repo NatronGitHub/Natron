@@ -45,7 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <ofxNatron.h>
 
-#include "Engine/BackDrop.h"
+#include "Engine/Backdrop.h"
 #include "Engine/Image.h"
 #include "Engine/Knob.h"
 #include "Engine/MergingEnum.h"
@@ -62,7 +62,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Button.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/HostOverlay.h"
@@ -293,7 +293,7 @@ NodeGui::initialize(NodeGraph* dag,
     EffectInstance* iseffect = internalNode->getLiveInstance();
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
     float r,g,b;
-    BackDrop* isBd = dynamic_cast<BackDrop*>(iseffect);
+    Backdrop* isBd = dynamic_cast<Backdrop*>(iseffect);
     
     std::list<std::string> grouping;
     iseffect->getPluginGrouping(&grouping);
@@ -302,7 +302,7 @@ NodeGui::initialize(NodeGraph* dag,
     if ( iseffect->isReader() ) {
         settings->getReaderColor(&r, &g, &b);
     } else if (isBd) {
-        settings->getDefaultBackDropColor(&r, &g, &b);
+        settings->getDefaultBackdropColor(&r, &g, &b);
     } else if ( iseffect->isWriter() ) {
         settings->getWriterColor(&r, &g, &b);
     } else if ( iseffect->isGenerator() ) {
@@ -538,7 +538,7 @@ NodeGui::createGui()
 
     const QString& iconFilePath = node->getPlugin()->getIconFilePath();
 
-    BackDropGui* isBd = dynamic_cast<BackDropGui*>(this);
+    BackdropGui* isBd = dynamic_cast<BackdropGui*>(this);
 
     if (!isBd && !iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
 
@@ -1095,7 +1095,7 @@ NodeGui::refreshPosition(double x,
 void
 NodeGui::setAboveItem(QGraphicsItem* item)
 {
-    if (!isVisible() || dynamic_cast<BackDropGui*>(this) || dynamic_cast<BackDropGui*>(item)) {
+    if (!isVisible() || dynamic_cast<BackdropGui*>(this) || dynamic_cast<BackdropGui*>(item)) {
         return;
     }
     item->stackBefore(this);

@@ -44,7 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <ofxNatron.h>
 
-#include "Engine/BackDrop.h"
+#include "Engine/Backdrop.h"
 #include "Engine/Image.h"
 #include "Engine/Knob.h"
 #include "Engine/MergingEnum.h"
@@ -58,7 +58,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Button.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/HostOverlay.h"
@@ -199,5 +199,5 @@ DotGui::shape() const
 
 NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
-#include "moc_DotGui.cpp"
+//NATRON_NAMESPACE_USING;
+//#include "moc_DotGui.cpp"

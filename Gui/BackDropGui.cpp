@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "BackDropGui.h"
+#include "BackdropGui.h"
 
 #include <algorithm> // min, max
 
@@ -36,7 +36,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
-#include "Engine/BackDrop.h"
+#include "Engine/Backdrop.h"
 #include "Engine/Settings.h"
 
 #include "Gui/GuiApplicationManager.h"
@@ -50,13 +50,13 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-struct BackDropGuiPrivate
+struct BackdropGuiPrivate
 {
-    BackDropGui* _publicInterface;
+    BackdropGui* _publicInterface;
     
     NodeGraphTextItem* label;
 
-    BackDropGuiPrivate(BackDropGui* publicInterface)
+    BackdropGuiPrivate(BackdropGui* publicInterface)
     : _publicInterface(publicInterface)
     , label(0)
     {
@@ -68,14 +68,14 @@ struct BackDropGuiPrivate
     
 };
 
-BackDropGui::BackDropGui(QGraphicsItem* parent)
+BackdropGui::BackdropGui(QGraphicsItem* parent)
     : NodeGui(parent)
-    , _imp( new BackDropGuiPrivate(this) )
+    , _imp( new BackdropGuiPrivate(this) )
 {
 }
 
 
-BackDropGui::~BackDropGui()
+BackdropGui::~BackdropGui()
 {
     
 }
@@ -83,7 +83,7 @@ BackDropGui::~BackDropGui()
 
 
 std::string
-BackDropGuiPrivate::getLabelValue() const
+BackdropGuiPrivate::getLabelValue() const
 {
     boost::shared_ptr<KnobI> k = _publicInterface->getNode()->getKnobByName("Label");
     assert(k);
@@ -93,14 +93,14 @@ BackDropGuiPrivate::getLabelValue() const
 }
 
 void
-BackDropGui::getInitialSize(int *w, int *h) const
+BackdropGui::getInitialSize(int *w, int *h) const
 {
     *w = NATRON_BACKDROP_DEFAULT_WIDTH;
     *h = NATRON_BACKDROP_DEFAULT_HEIGHT;
 }
 
 void
-BackDropGui::createGui()
+BackdropGui::createGui()
 {
     NodeGui::createGui();
     
@@ -110,7 +110,7 @@ BackDropGui::createGui()
     
     EffectInstance* effect = dynamic_cast<EffectInstance*>(getNode()->getLiveInstance());
     assert(effect);
-    BackDrop* isBd = dynamic_cast<BackDrop*>(effect);
+    Backdrop* isBd = dynamic_cast<Backdrop*>(effect);
     assert(isBd);
     
     QObject::connect(isBd,SIGNAL(labelChanged(QString)),this, SLOT(onLabelChanged(QString)));
@@ -119,7 +119,7 @@ BackDropGui::createGui()
 }
 
 void
-BackDropGui::onLabelChanged(const QString& label)
+BackdropGui::onLabelChanged(const QString& label)
 {
     int nameHeight = getFrameNameHeight();
     _imp->refreshLabelText(nameHeight, label);
@@ -127,7 +127,7 @@ BackDropGui::onLabelChanged(const QString& label)
 
 
 void
-BackDropGui::adjustSizeToContent(int *w,int *h,bool /*adjustToTextSize*/)
+BackdropGui::adjustSizeToContent(int *w,int *h,bool /*adjustToTextSize*/)
 {
     NodeGui::adjustSizeToContent(w, h,false);
     QRectF labelBbox = _imp->label->boundingRect();
@@ -138,7 +138,7 @@ BackDropGui::adjustSizeToContent(int *w,int *h,bool /*adjustToTextSize*/)
 }
 
 void
-BackDropGui::resizeExtraContent(int /*w*/,int /*h*/,bool forceResize)
+BackdropGui::resizeExtraContent(int /*w*/,int /*h*/,bool forceResize)
 {
     QPointF p = pos();
     QPointF thisItemPos = mapFromParent(p);
@@ -152,14 +152,14 @@ BackDropGui::resizeExtraContent(int /*w*/,int /*h*/,bool forceResize)
 }
 
 void
-BackDropGui::refreshTextLabelFromKnob()
+BackdropGui::refreshTextLabelFromKnob()
 {
     int nameHeight = getFrameNameHeight();
     _imp->refreshLabelText( nameHeight, QString( _imp->getLabelValue().c_str() ) );
 }
 
 void
-BackDropGuiPrivate::refreshLabelText(int nameHeight,const QString &text)
+BackdropGuiPrivate::refreshLabelText(int nameHeight,const QString &text)
 {
     QString textLabel = text;
 
@@ -195,4 +195,4 @@ BackDropGuiPrivate::refreshLabelText(int nameHeight,const QString &text)
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;
-#include "moc_BackDropGui.cpp"
+#include "moc_BackdropGui.cpp"

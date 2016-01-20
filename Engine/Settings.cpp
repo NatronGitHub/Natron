@@ -2664,7 +2664,7 @@ Settings::getDefaultNodeColor(float *r,
 }
 
 void
-Settings::getDefaultBackDropColor(float *r,
+Settings::getDefaultBackdropColor(float *r,
                                   float *g,
                                   float *b) const
 {

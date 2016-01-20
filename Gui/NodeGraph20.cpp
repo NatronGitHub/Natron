@@ -41,7 +41,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/NodeGroup.h"
 #include "Engine/Settings.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Edge.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
@@ -61,7 +61,7 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
     bool doConnectionHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
     
     //Ignore hints for backdrops
-    BackDropGui* isBd = dynamic_cast<BackDropGui*>(selectedNode.get());
+    BackdropGui* isBd = dynamic_cast<BackdropGui*>(selectedNode.get());
     if (isBd) {
         return;
     }
@@ -502,7 +502,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         int h = newPos.y() - p.y();
         checkAndStartAutoScrollTimer(newPos);
         mustUpdate = true;
-        pushUndoCommand( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
+        pushUndoCommand( new ResizeBackdropCommand(_imp->_backdropResized,w,h) );
         break;
     }
     case eEventStateSelectionRect: {

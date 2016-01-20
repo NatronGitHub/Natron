@@ -284,7 +284,7 @@ public:
     /**
      * @brief Returns true if this node is a backdrop
      **/
-    bool isBackDropNode() const;
+    bool isBackdropNode() const;
     
     /**
      * @brief Returns true if the node is a rotopaint node

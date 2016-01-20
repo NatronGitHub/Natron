@@ -189,22 +189,22 @@ private:
 };
 
 
-class ResizeBackDropCommand
+class ResizeBackdropCommand
     : public QUndoCommand
 {
 public:
 
-    ResizeBackDropCommand(const NodeGuiPtr& bd,
+    ResizeBackdropCommand(const NodeGuiPtr& bd,
                           int w,
                           int h,
                           QUndoCommand *parent = 0);
-    virtual ~ResizeBackDropCommand();
+    virtual ~ResizeBackdropCommand();
 
     virtual void undo();
     virtual void redo();
     virtual int id() const
     {
-        return kNodeGraphResizeNodeBackDropCommandCompressionID;
+        return kNodeGraphResizeNodeBackdropCommandCompressionID;
     }
 
     virtual bool mergeWith(const QUndoCommand *command);

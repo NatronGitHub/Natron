@@ -129,8 +129,8 @@ typedef OfxRangeD RangeD;
 #define kRotoMakeRectangleCompressionID 11
 #define kRotoTransformCompressionID 12
 #define kMultipleKnobsUndoChangeCommandCompressionID 13
-#define kNodeGraphMoveNodeBackDropCommandCompressionID 14
-#define kNodeGraphResizeNodeBackDropCommandCompressionID 15
+#define kNodeGraphMoveNodeBackdropCommandCompressionID 14
+#define kNodeGraphResizeNodeBackdropCommandCompressionID 15
 #define kCurveEditorMoveTangentsCommandCompressionID 16
 #define kCurveEditorTransformKeysCommandCompressionID 17
 #define kDopeSheetEditorMoveKeysCommandCompressionID 18

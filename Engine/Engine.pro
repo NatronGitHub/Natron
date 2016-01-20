@@ -76,7 +76,7 @@ SOURCES += \
     AppInstanceWrapper.cpp \
     AppManager.cpp \
     AppManagerPrivate.cpp \
-    BackDrop.cpp \
+    Backdrop.cpp \
     Bezier.cpp \
     BezierCP.cpp \
     BlockingBackgroundRender.cpp \
@@ -216,7 +216,7 @@ HEADERS += \
     AppInstanceWrapper.h \
     AppManager.h \
     AppManagerPrivate.h \
-    BackDrop.h \
+    Backdrop.h \
     Bezier.h \
     BezierSerialization.h \
     BezierCP.h \

@@ -188,7 +188,7 @@ public:
 
     void getDefaultNodeColor(float *r,float *g,float *b) const;
 
-    void getDefaultBackDropColor(float *r,float *g,float *b) const;
+    void getDefaultBackdropColor(float *r,float *g,float *b) const;
 
     int getDisconnectedArrowLength() const;
 

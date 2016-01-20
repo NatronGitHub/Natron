@@ -197,7 +197,7 @@ NodeGraphPrivate::copyNodesInternal(const NodeGuiList& selection,NodeClipBoard &
     NodeGuiList nodesToCopy = selection;
     for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         ///Also copy all nodes within the backdrop
-        std::list<boost::shared_ptr<NodeGui> > nodesWithinBD = _publicInterface->getNodesWithinBackDrop(*it);
+        std::list<boost::shared_ptr<NodeGui> > nodesWithinBD = _publicInterface->getNodesWithinBackdrop(*it);
         for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
             std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(nodesToCopy.begin(),nodesToCopy.end(),*it2);
             if ( found == nodesToCopy.end() ) {

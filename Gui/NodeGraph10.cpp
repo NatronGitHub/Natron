@@ -40,7 +40,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -134,7 +134,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             QPointF evpt = (*it)->mapFromScene(lastMousePosScene);
             if ( (*it)->isVisible() && (*it)->isActive() ) {
                 
-                BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
+                BackdropGui* isBd = dynamic_cast<BackdropGui*>(it->get());
                 if (isBd) {
                     if (isBd->isNearbyNameFrame(evpt)) {
                         matches.insert(std::make_pair((*it)->zValue(),*it));
@@ -178,7 +178,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         didSomething = true;
         if ( buttonDownIsLeft(e) ) {
             
-            BackDropGui* isBd = dynamic_cast<BackDropGui*>(selected.get());
+            BackdropGui* isBd = dynamic_cast<BackdropGui*>(selected.get());
             if (!isBd) {
                 _imp->_magnifiedNode = selected;
             }
@@ -199,9 +199,9 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             ///build the _nodesWithinBDAtPenDown map
             _imp->_nodesWithinBDAtPenDown.clear();
             for (NodeGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-                BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
+                BackdropGui* isBd = dynamic_cast<BackdropGui*>(it->get());
                 if (isBd) {
-                    NodeGuiList nodesWithin = getNodesWithinBackDrop(*it);
+                    NodeGuiList nodesWithin = getNodesWithinBackdrop(*it);
                     _imp->_nodesWithinBDAtPenDown.insert(std::make_pair(*it,nodesWithin));
                 }
             }
