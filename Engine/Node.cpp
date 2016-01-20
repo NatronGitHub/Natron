@@ -8596,6 +8596,9 @@ Node::refreshChannelSelectors()
         }
         
         int foundCurLayerChoice = -1;
+        if (curLayer == "All" || curLayer == "None") {
+            foundCurLayerChoice = 0;
+        }
         
         if (node) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
