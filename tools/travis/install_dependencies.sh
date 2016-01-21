@@ -140,7 +140,9 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     brew update
     brew tap homebrew/python
     brew tap homebrew/science
-
+    brew upgrade
+    brew cleanup
+    
     echo "Install Natron dependencies"
     echo " - pip install numpy"
     pip install numpy
