@@ -30,6 +30,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "Engine/NodeWrapper.h"
 #include "Engine/EngineFwd.h"
 

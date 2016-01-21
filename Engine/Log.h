@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #ifdef NATRON_LOG
 
 #include "Global/Macros.h"
