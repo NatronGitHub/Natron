@@ -47,10 +47,9 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QTextEdit>
-#else //!REPORTER_CLI_ONLY
-#include <QCoreApplication>
 #endif
 
+#include <QCoreApplication>
 #include <QLocalSocket>
 #include <QLocalServer>
 #include <QThread>
@@ -187,6 +186,7 @@ CallbacksManager::CallbacksManager()
 , _comPipeConnection(0)
 , _uploadReply(0)
 , _dumpReceived(false)
+, _mustInitQAppAfterDump(false)
 #ifndef REPORTER_CLI_ONLY
 , _dialog(0)
 , _progressDialog(0)
@@ -199,7 +199,6 @@ CallbacksManager::CallbacksManager()
 , _serverFD(-1)
 , _clientFD(-1)
 #endif
-, _app(0)
 , _initErr(false)
 {
     _instance = this;
@@ -207,10 +206,7 @@ CallbacksManager::CallbacksManager()
 
 
 CallbacksManager::~CallbacksManager() {
-#ifdef TRACE_CRASH_RERPORTER
-    delete _dFile;
-#endif
-    
+
     delete _comServer;
     
     delete _crashServer;
@@ -223,7 +219,8 @@ CallbacksManager::~CallbacksManager() {
     }
 #endif
     
-    delete _app;
+    
+    delete qApp;
     
     _instance = 0;
 
@@ -233,20 +230,52 @@ CallbacksManager::~CallbacksManager() {
 void
 CallbacksManager::initQApplication(int &argc, char** argv)
 {
-#ifdef REPORTER_CLI_ONLY
-    _app = new QCoreApplication(argc,argv);
-#else
-    _app = new QApplication(argc,argv);
-    _app->setQuitOnLastWindowClosed(false);
-#endif
-    
+    _argc = argc;
+    _argv = argv;
+    new QCoreApplication(argc,argv);
 }
 
 int
 CallbacksManager::exec()
 {
-    assert(_app);
-    return _app->exec();
+    assert(qApp);
+    int retCode =  qApp->exec();
+    if (_mustInitQAppAfterDump) {
+        
+        /*
+         We are in gui mode, clean-up everything related to Qt, Kill
+         the QCoreApplication and create a QApplication to pop-up the crash dialog instead.
+         We do this so that the application icon showsup in the taskbar/dock only now and not when
+         we started the crash reporter
+         */
+        _mustInitQAppAfterDump = false;
+        
+        /*
+         Cleanup everything related
+         */
+        delete _comServer;
+        _comServer = 0;
+        
+        delete _crashServer;
+        _crashServer = 0;
+        
+#ifndef NATRON_CRASH_REPORTER_USE_FORK
+        _natronProcess->waitForFinished(2000);
+        delete _natronProcess;
+        _natronProcess = 0;
+#endif
+        
+        delete qApp;
+        
+        new QApplication(_argc,_argv);
+        assert(qApp);
+        qApp->setQuitOnLastWindowClosed(false);
+        
+        processCrashReport();
+        
+        retCode = qApp->exec();
+    }
+    return retCode;
 }
 
 static QString getNatronBinaryFilePathFromCrashReporterDirPath(const QString& crashReporterDirPath)
@@ -370,7 +399,7 @@ CallbacksManager::init(int& argc, char** argv)
      At this point the crash generation server is created
      qApp has been defined so far
      */
-    assert(_app);
+    assert(qApp);
     
     QString crashReporterBinaryFilePath = qApp->applicationFilePath();
     QString natronBinaryPath = qApp->applicationDirPath();
@@ -711,15 +740,29 @@ CallbacksManager::onDoDumpOnMainThread(const QString& filePath)
     assert(QThread::currentThread() == qApp->thread());
 
     _dumpReceived = true;
-    
+    _dumpFilePath = filePath;
+#ifndef REPORTER_CLI_ONLY
+    /*
+     In 
+     */
+    _mustInitQAppAfterDump = true;
+    qApp->exit(0);
+    return;
+#else
+    processCrashReport();
+#endif
+}
+
+void
+CallbacksManager::processCrashReport()
+{
 #ifdef REPORTER_CLI_ONLY
     uploadFileToRepository(filePath,"Crash auto-uploaded from NatronRenderer");
     
     ///@todo We must notify the user the log is available at filePath but we don't have access to the terminal with this process
 #else
     assert(!_dialog);
-    _dumpFilePath = filePath;
-    _dialog = new CrashDialog(filePath);
+    _dialog = new CrashDialog(_dumpFilePath);
     QObject::connect(_dialog ,SIGNAL(rejected()), this, SLOT(onCrashDialogFinished()));
     QObject::connect(_dialog ,SIGNAL(accepted()), this, SLOT(onCrashDialogFinished()));
     _dialog->raise();

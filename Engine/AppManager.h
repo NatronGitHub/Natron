@@ -514,6 +514,9 @@ public:
     ///Closes the application not saving any projects.
     virtual void exitApp(bool warnUserForSave);
     
+    bool isSpawnedFromCrashReporter() const;
+    
+    
 public Q_SLOTS:
     
     void exitAppWithSaveWarning()

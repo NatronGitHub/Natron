@@ -251,6 +251,7 @@ AppManager::load(int &argc,
         hadArgs = false;
     }
     initializeQApp(argc, argv);
+    
 
     // set fontconfig path on all platforms
     if (qgetenv("FONTCONFIG_PATH").isNull()) {
@@ -528,6 +529,16 @@ AppManager::loadInternal(const CLArgs& cl)
 
 } // loadInternal
 
+
+bool
+AppManager::isSpawnedFromCrashReporter() const
+{
+#ifdef NATRON_USE_BREAKPAD
+    return _imp->breakpadHandler.get() != 0;
+#else
+    return false;
+#endif
+}
 
 bool
 AppManager::initGui(const CLArgs& cl)

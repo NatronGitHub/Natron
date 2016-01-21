@@ -133,6 +133,8 @@ Q_SIGNALS:
 
 private:
     
+    void processCrashReport();
+    
     /**
      * @brief To be called to start breakpad generation server right away
      * after the constructor
@@ -151,19 +153,24 @@ private:
     
 #ifndef NATRON_CRASH_REPORTER_USE_FORK
     //The Natron process has no way to print to stdout/stderr, so connect signals
+    //owned by us
     QProcess* _natronProcess;
 #endif
     
     /*
      Pipe between the 2 applications to check one another if they are still alive
+     Owned by us
      */
     QLocalServer* _comServer;
     
     //owned by _comServer
     QLocalSocket* _comPipeConnection;
 
+    //Referenc
     QNetworkReply* _uploadReply;
+    
     bool _dumpReceived;
+    bool _mustInitQAppAfterDump;
 #ifndef REPORTER_CLI_ONLY
     CrashDialog* _dialog;
     QProgressDialog* _progressDialog;
@@ -171,6 +178,8 @@ private:
     QString _dumpFilePath;
     QString _dumpDirPath;
     QString _pipePath,_comPipePath;
+    
+    //owned by us
     google_breakpad::CrashGenerationServer* _crashServer;
     
 #ifdef Q_OS_LINUX
@@ -178,14 +187,11 @@ private:
     int _serverFD;
     int _clientFD;
 #endif
-    
-#ifdef REPORTER_CLI_ONLY
-    QCoreApplication* _app;
-#else
-    QApplication* _app;
-#endif
 
     bool _initErr;
+    
+    int _argc;
+    char** _argv;
     
 };
 
