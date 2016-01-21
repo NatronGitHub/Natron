@@ -134,6 +134,77 @@ static PyObject* Sbk_ParametricParamFunc_getNControlPoints(PyObject* self, PyObj
         return 0;
 }
 
+static PyObject* Sbk_ParametricParamFunc_getNthControlPoint(PyObject* self, PyObject* args)
+{
+    ParametricParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParametricParamWrapper*)((::ParametricParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAMETRICPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "getNthControlPoint", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: getNthControlPoint(int,int,double*,double*,double*,double*)const
+    if (numArgs == 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
+        overloadId = 0; // getNthControlPoint(int,int,double*,double*,double*,double*)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParametricParamFunc_getNthControlPoint_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        int cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+
+        if (!PyErr_Occurred()) {
+            // getNthControlPoint(int,int,double*,double*,double*,double*)const
+            // Begin code injection
+
+            double key,value,left,right;
+            NATRON_NAMESPACE::StatusEnum cppResult = cppSelf->getNthControlPoint(cppArg0, cppArg1,&key,&value, &left, &right);
+            pyResult = PyTuple_New(5);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_STATUSENUM_IDX]), &cppResult));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &key));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &value));
+            PyTuple_SET_ITEM(pyResult, 3, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &left));
+            PyTuple_SET_ITEM(pyResult, 4, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &right));
+            return pyResult;
+
+            // End of code injection
+
+
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_ParametricParamFunc_getNthControlPoint_TypeError:
+        const char* overloads[] = {"int, int, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double, PySide.QtCore.double", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ParametricParam.getNthControlPoint", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_ParametricParamFunc_getValue(PyObject* self, PyObject* args)
 {
     ParametricParamWrapper* cppSelf = 0;
@@ -256,6 +327,7 @@ static PyObject* Sbk_ParametricParamFunc_setCurveColor(PyObject* self, PyObject*
 static PyMethodDef Sbk_ParametricParam_methods[] = {
     {"getCurveColor", (PyCFunction)Sbk_ParametricParamFunc_getCurveColor, METH_O},
     {"getNControlPoints", (PyCFunction)Sbk_ParametricParamFunc_getNControlPoints, METH_O},
+    {"getNthControlPoint", (PyCFunction)Sbk_ParametricParamFunc_getNthControlPoint, METH_VARARGS},
     {"getValue", (PyCFunction)Sbk_ParametricParamFunc_getValue, METH_VARARGS},
     {"setCurveColor", (PyCFunction)Sbk_ParametricParamFunc_setCurveColor, METH_VARARGS},
 

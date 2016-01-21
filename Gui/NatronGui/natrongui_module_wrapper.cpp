@@ -38,8 +38,8 @@ void init_PyGuiApplication(PyObject* module);
 void init_GuiApp(PyObject* module);
 void init_PyViewer(PyObject* module);
 void init_PyTabWidget(PyObject* module);
-void init_PyModalDialog(PyObject* module);
 void init_PyPanel(PyObject* module);
+void init_PyModalDialog(PyObject* module);
 
 // Required modules' type and converter arrays.
 PyTypeObject** SbkPySide_QtGuiTypes;
@@ -500,8 +500,8 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronGui)
     init_GuiApp(module);
     init_PyViewer(module);
     init_PyTabWidget(module);
-    init_PyModalDialog(module);
     init_PyPanel(module);
+    init_PyModalDialog(module);
 
     // Register converter for type 'std::list<Effect*>'.
     SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_EFFECTPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _std_list_EffectPTR__CppToPython__std_list_EffectPTR_);

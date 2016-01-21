@@ -1130,8 +1130,9 @@ public:
     double getValue(int dimension,double parametricPosition) const;
     
     int getNControlPoints(int dimension) const ;
-    
-    StatusEnum getNthControlPoint(int dimension,
+
+    // NATRON_NAMESPACE is necessary for shiboken
+    NATRON_NAMESPACE::StatusEnum getNthControlPoint(int dimension,
                                           int nthCtl,
                                           double *key,
                                           double *value,
