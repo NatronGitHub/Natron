@@ -229,7 +229,7 @@ if [ ! -f "$INSTALL_PATH/lib/pkgconfig/libzip.pc" ]; then
     fi
     tar xvf "$SRC_PATH/$ZIP_TAR" || exit 1
     cd libzip* || exit 1
-    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --enable-static --disable-shared || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" --disable-static --enable-shared || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
     if [ "$DDIR" != "" ]; then

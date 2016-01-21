@@ -138,6 +138,7 @@ cp -a $INSTALL_PATH/Plugins/IO.ofx.bundle $OFX_IO_PATH/data/Plugins/OFX/Natron/ 
 
 if [ "$DISABLE_BREAKPAD" != "1" ]; then
     $INSTALL_PATH/bin/dump_syms $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/IO.ofx > $INSTALL_PATH/symbols/IO.ofx-${TAG}-${PKGOS}.sym || exit 1
+    #$INSTALL_PATH/bin/dump_syms $INSTALL_PATH/lib/libOpenImageIO.so.1.6 > $INSTALL_PATH/symbols/libOpenImageIO.so.1.6-${TAG}-${PKGOS}.sym || exit 1
 fi
 
 strip -s $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/*
@@ -160,7 +161,7 @@ rm -f $IO_LIBS/{liblcms*,libgcc*,libstdc*,libbz2*,libfont*,libfree*,libpng*,libj
   ln -sf ../../../../../lib/libbz2.so.1 .
   ln -sf ../../../../../lib/libfontconfig.so.1 .
   ln -sf ../../../../../lib/libfreetype.so.6 .
-  ln -sf ../../../../../lib/libpng12.so.0 .
+  ln -sf ../../../../../lib/libpng16.so.16 .
   ln -sf ../../../../../lib/libjpeg.so.9 .
   ln -sf ../../../../../lib/libtiff.so.5 .
   ln -sf ../../../../../lib/libz.so.1 .
@@ -257,7 +258,7 @@ cat $XML/corelibs.xml | sed "s/_VERSION_/${CLIBS_VERSION}/;s/_DATE_/${DATE}/" > 
 cat $QS/corelibs.qs > $CLIBS_PATH/meta/installscript.qs || exit 1
 cp $INSTALL_PATH/lib/libQtDBus.so.4 $CLIBS_PATH/data/lib/ || exit 1
 cp $INSTALL_PATH/share/pixmaps/natronIcon256_linux.png $CLIBS_PATH/data/share/pixmaps/ || exit 1
-
+cp $INSTALL_PATH/share/pixmaps/natronProjectIcon_linux.png $CLIBS_PATH/data/share/pixmaps/ || exit 1
 cp -a $INSTALL_PATH/plugins/* $CLIBS_PATH/data/bin/ || exit 1
 CORE_DEPENDS=$(ldd $NATRON_PATH/data/bin/*|grep opt | awk '{print $3}')
 for i in $CORE_DEPENDS; do
@@ -275,7 +276,7 @@ if [ -f $INC_PATH/misc/compat${BIT}.tgz ]; then
     tar xvf $INC_PATH/misc/compat${BIT}.tgz -C $CLIBS_PATH/data/lib/ || exit 1
 fi
 
-cp $INSTALL_PATH/lib/{liblcms2.so.2,libcairo.so.2} $CLIBS_PATH/data/lib/ || exit 1
+cp $INSTALL_PATH/lib/{libbz2.so.1,liblcms2.so.2,libcairo.so.2} $CLIBS_PATH/data/lib/ || exit 1
 cp $INSTALL_PATH/lib/{libicudata.so.55,libicui18n.so.55,libicuuc.so.55} $CLIBS_PATH/data/lib/ || exit 1
 
 mv $IO_LIBS/{libOpenColor*,libgomp*} $CLIBS_PATH/data/lib/ || exit 1
@@ -429,7 +430,7 @@ rm -f $ARENA_LIBS/{libcairo*,libpix*,liblcms*,libgomp*,libOpenColorIO*,libbz2*,l
   ln -sf ../../../../../lib/libfreetype.so.6 .
   ln -sf ../../../../../lib/libglib-2.0.so.0 .
   ln -sf ../../../../../lib/libgthread-2.0.so.0 .
-  ln -sf ../../../../../lib/libpng12.so.0 .
+  ln -sf ../../../../../lib/libpng16.so.16 .
   ln -sf ../../../../../lib/libz.so.1 .
   ln -sf ../../../../../lib/libgcc_s.so.1 .
   ln -sf ../../../../../lib/libstdc++.so.6 .
@@ -514,6 +515,8 @@ if [ "$RPM_BUILD" = "1" ]; then
   echo "echo \"Checking GCC compatibility for Natron ...\"" >>$INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   echo "DIR=/opt/Natron2" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   cat $INSTALLER/packages/fr.inria.natron/data/Natron | sed '26,65!d' >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  echo "update-mime-database /usr/share/mime" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
+  echo "update-desktop-database /usr/share/applications" >> $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   chmod +x $INSTALLER/packages/fr.inria.natron/data/bin/postinstall.sh || exit 1
   sed -i '26,65d' $INSTALLER/packages/fr.inria.natron/data/Natron || exit 1
   sed -i '26,65d' $INSTALLER/packages/fr.inria.natron/data/NatronRenderer || exit 1

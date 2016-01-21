@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+    <mime-type type="application/x-natron">
+        <comment>Natron Project File</comment>
+        <icon name="natronProjectIcon_linux"/>
+        <glob-deleteall/>
+        <glob pattern="*.ntp"/>
+    </mime-type>
+</mime-info>
