@@ -20,7 +20,7 @@ cat <<EOF > "$MIME_DIR/packages/x-natron.xml"
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
     <mime-type type="application/x-natron">
         <comment>Natron Project File</comment>
-        <icon name="natronIcon256_linux"/>
+        <icon name="natronProjectIcon_linux"/>
         <glob-deleteall/>
         <glob pattern="*.ntp"/>
     </mime-type>

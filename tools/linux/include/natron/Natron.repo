@@ -1,0 +1,5 @@
+[Natron]
+name = Natron RPM Repository
+baseurl = https://downloads.natron.fr/Linux/releases/$basearch/files/
+gpgcheck=0
+enabled=1
