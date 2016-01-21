@@ -830,6 +830,7 @@ CallbacksManager::onDoExitOnMainThread(int exitCode, bool exitEvenIfDumpedReceiv
     }
 }
 
+#ifdef Q_OS_WIN32
 /*Converts a std::string to wide string*/
 static inline std::wstring
 s2ws(const std::string & s)
@@ -866,8 +867,8 @@ s2ws(const std::string & s)
     return dest;
 #endif
     
-}
-
+} // s2ws
+#endif
 
 
 
