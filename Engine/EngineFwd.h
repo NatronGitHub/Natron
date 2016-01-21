@@ -130,6 +130,7 @@ class KnobButton;
 class KnobChoice;
 class KnobColor;
 class KnobDouble;
+class KnobFactory;
 class KnobFile;
 class KnobGroup;
 class KnobHelper;
