@@ -40,13 +40,14 @@ CLANG_DIAG_OFF(mismatched-tags)\
 GCC_DIAG_OFF(unused-parameter)\
 GCC_DIAG_OFF(missing-field-initializers)\
 GCC_DIAG_OFF(missing-declarations)\
+GCC_DIAG_OFF(uninitialized)\
 #include <shiboken.h> // produces many warnings@' -i .bak Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp
 
 sed -e 's@// Extra includes@// Extra includes\
 NATRON_NAMESPACE_USING@' -i .bak Engine/NatronEngine/*.cpp Gui/NatronGui/*.cpp
 
 # replace NATRON_NAMESPACE with Natron for enums with flags (e.g. StandardButtonEnum)
-sed -e 's@"NatronEngine\.NATRON_NAMESPACE@"NatronEngine.Natron@g' -e 's@"NatronGui\.NATRON_NAMESPACE@"NatronGui.Natron@g' -e 's@"NATRON_NAMESPACE@"Natron@g' -i .bak Engine/NatronEngine/natron_namespace_wrapper.cpp Gui/NatronGui/natron_namespace_wrapper.cpp
+sed -e 's@"NatronEngine\.NATRON_NAMESPACE@"NatronEngine.Natron@g' -e 's@"NatronGui\.NATRON_NAMESPACE@"NatronGui.Natron@g' -e 's@"NATRON_NAMESPACE@"Natron@g' -i .bak Engine/NatronEngine/natron_namespace_wrapper.cpp
 
 # re-add the Natron namespace
 #sed -e 's@" ::\([^s][^t][^d]\)@ NATRON_NAMESPACE::\1@g' -i .bak Engine/NatronEngine/*.cpp Engine/NatronEngine/*.h Gui/NatronGui/*.cpp Gui/NatronGui/*.h

@@ -1323,25 +1323,25 @@ ViewerGL::initShaderGLSL()
     if (!_imp->shaderLoaded && _imp->supportsGLSL) {
         _imp->shaderBlack = new QGLShaderProgram( context() );
         if ( !_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Vertex, vertRGB) ) {
-            std::cout << qPrintable( _imp->shaderBlack->log() ) << endl;
+            qDebug() << qPrintable( _imp->shaderBlack->log() );
         }
         if ( !_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Fragment, blackFrag) ) {
-            std::cout << qPrintable( _imp->shaderBlack->log() ) << endl;
+            qDebug() << qPrintable( _imp->shaderBlack->log() );
         }
         if ( !_imp->shaderBlack->link() ) {
-            std::cout << qPrintable( _imp->shaderBlack->log() ) << endl;
+            qDebug() << qPrintable( _imp->shaderBlack->log() );
         }
 
         _imp->shaderRGB = new QGLShaderProgram( context() );
         if ( !_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Vertex, vertRGB) ) {
-            std::cout << qPrintable( _imp->shaderRGB->log() ) << endl;
+            qDebug() << qPrintable( _imp->shaderRGB->log() );
         }
         if ( !_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Fragment, fragRGB) ) {
-            std::cout << qPrintable( _imp->shaderRGB->log() ) << endl;
+            qDebug() << qPrintable( _imp->shaderRGB->log() );
         }
 
         if ( !_imp->shaderRGB->link() ) {
-            std::cout << qPrintable( _imp->shaderRGB->log() ) << endl;
+            qDebug() << qPrintable( _imp->shaderRGB->log() );
         }
         _imp->shaderLoaded = true;
     }

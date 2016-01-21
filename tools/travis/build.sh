@@ -22,8 +22,8 @@ set -e
 # Print commands and their arguments as they are executed.
 set -x
 
-BREAKPAD=
-#BREAKPAD=gbreakpad # doesn't compile on linux yet
+BREAKPAD=disable-breakpad
+#BREAKPAD= # doesn't compile on linux yet
 SILENT=silent
 
 # enable testing locally or on forks without multi-os enabled

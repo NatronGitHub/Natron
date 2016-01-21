@@ -5,6 +5,7 @@ CLANG_DIAG_OFF(mismatched-tags)
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(missing-field-initializers)
 GCC_DIAG_OFF(missing-declarations)
+GCC_DIAG_OFF(uninitialized)
 #include <shiboken.h> // produces many warnings
 #include <pysidesignal.h>
 #include <pysideproperty.h>
@@ -12,7 +13,8 @@ GCC_DIAG_OFF(missing-declarations)
 #include <typeresolver.h>
 #include <typeinfo>
 #include <signalmanager.h>
-#include <pysidemetafunction.h>
+CLANG_DIAG_OFF(header-guard)
+#include <pysidemetafunction.h> // has wrong header guards in pyside 1.2.2
 #include <set>
 #include "natrongui_python.h"
 
