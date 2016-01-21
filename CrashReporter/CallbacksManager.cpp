@@ -759,7 +759,7 @@ void
 CallbacksManager::processCrashReport()
 {
 #ifdef REPORTER_CLI_ONLY
-    uploadFileToRepository(filePath,"Crash auto-uploaded from NatronRenderer");
+    uploadFileToRepository(_dumpFilePath,"Crash auto-uploaded from NatronRenderer");
     
     ///@todo We must notify the user the log is available at filePath but we don't have access to the terminal with this process
 #else
