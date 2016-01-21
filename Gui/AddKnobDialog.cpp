@@ -1969,7 +1969,7 @@ AddKnobDialogPrivate::setVisibleMinMax(bool visible)
     if (typeChoice) {
         ParamDataTypeEnum t = (ParamDataTypeEnum)typeChoice->activeIndex();
         
-        if (t == eParamDataTypeColorRGB || t == eParamDataTypeColorRGB) {
+        if (t == eParamDataTypeColorRGB || t == eParamDataTypeColorRGBA) {
             // color range to 0-1
             minBox->setValue(INT_MIN);
             maxBox->setValue(INT_MAX);

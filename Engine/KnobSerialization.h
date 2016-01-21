@@ -826,6 +826,8 @@ public:
     KnobSerialization()
         : _knob()
         , _dimension(0)
+        , _masters()
+        , _masterIsAlias(false)
         , _extraData(NULL)
         , _isUserKnob(false)
         , _label()
