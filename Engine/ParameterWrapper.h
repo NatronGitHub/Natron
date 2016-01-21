@@ -1125,7 +1125,7 @@ public:
     
     void getCurveColor(int dimension, ColorTuple& ret) const;
     
-    StatusEnum addControlPoint(int dimension,double key,double value);
+    NATRON_NAMESPACE::StatusEnum addControlPoint(int dimension,double key,double value);
     
     double getValue(int dimension,double parametricPosition) const;
     
@@ -1139,16 +1139,16 @@ public:
                                           double *leftDerivative,
                                           double *rightDerivative) const;
     
-    StatusEnum setNthControlPoint(int dimension,
+    NATRON_NAMESPACE::StatusEnum setNthControlPoint(int dimension,
                                           int nthCtl,
                                           double key,
                                           double value,
                                           double leftDerivative,
                                           double rightDerivative) ;
     
-    StatusEnum deleteControlPoint(int dimension, int nthCtl) ;
+    NATRON_NAMESPACE::StatusEnum deleteControlPoint(int dimension, int nthCtl) ;
     
-    StatusEnum deleteAllControlPoints(int dimension) ;
+    NATRON_NAMESPACE::StatusEnum deleteAllControlPoints(int dimension) ;
     
 };
 

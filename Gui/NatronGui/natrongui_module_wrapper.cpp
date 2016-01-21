@@ -34,10 +34,10 @@ static PyMethodDef NatronGui_methods[] = {
 };
 
 // Classes initialization functions ------------------------------------------------------------
-void init_PyGuiApplication(PyObject* module);
-void init_GuiApp(PyObject* module);
 void init_PyViewer(PyObject* module);
 void init_PyTabWidget(PyObject* module);
+void init_PyGuiApplication(PyObject* module);
+void init_GuiApp(PyObject* module);
 void init_PyPanel(PyObject* module);
 void init_PyModalDialog(PyObject* module);
 
@@ -496,10 +496,10 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronGui)
 #endif
 
     // Initialize classes in the type system
-    init_PyGuiApplication(module);
-    init_GuiApp(module);
     init_PyViewer(module);
     init_PyTabWidget(module);
+    init_PyGuiApplication(module);
+    init_GuiApp(module);
     init_PyPanel(module);
     init_PyModalDialog(module);
 
