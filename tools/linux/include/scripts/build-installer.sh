@@ -138,7 +138,7 @@ cp -a $INSTALL_PATH/Plugins/IO.ofx.bundle $OFX_IO_PATH/data/Plugins/OFX/Natron/ 
 
 if [ "$DISABLE_BREAKPAD" != "1" ]; then
     $INSTALL_PATH/bin/dump_syms $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/IO.ofx > $INSTALL_PATH/symbols/IO.ofx-${TAG}-${PKGOS}.sym || exit 1
-    $INSTALL_PATH/bin/dump_syms $INSTALL_PATH/lib/libOpenImageIO.so.1.6 > $INSTALL_PATH/symbols/libOpenImageIO.so.1.6-${TAG}-${PKGOS}.sym || exit 1
+    #$INSTALL_PATH/bin/dump_syms $INSTALL_PATH/lib/libOpenImageIO.so.1.6 > $INSTALL_PATH/symbols/libOpenImageIO.so.1.6-${TAG}-${PKGOS}.sym || exit 1
 fi
 
 strip -s $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/*
