@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 142934 2015-11-28 18:06:52Z mcalhoun@macports.org $
+# $Id: Portfile 144443 2016-01-08 23:54:17Z devans@macports.org $
 
 PortSystem          1.0
 
@@ -16,7 +16,7 @@ name                qt4-mac
 #conflicts           qt3 qt3-mac qt4-mac-devel
 conflicts           qt3 qt3-mac
 version             4.8.7
-revision            2
+revision            3
 set branch          [join [lrange [split ${version} .] 0 1] .]
 
 categories          aqua

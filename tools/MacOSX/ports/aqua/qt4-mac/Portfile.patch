@@ -1,11 +1,11 @@
---- Portfile.orig	2015-12-01 09:10:35.000000000 +0100
-+++ Portfile	2015-12-01 09:10:47.000000000 +0100
+--- Portfile.orig	2016-01-11 17:04:02.000000000 +0100
++++ Portfile	2016-01-11 17:04:58.000000000 +0100
 @@ -16,7 +16,7 @@
  #conflicts           qt3 qt3-mac qt4-mac-devel
  conflicts           qt3 qt3-mac
  version             4.8.7
--revision            2
-+revision            102
+-revision            3
++revision            103
  set branch          [join [lrange [split ${version} .] 0 1] .]
  
  categories          aqua

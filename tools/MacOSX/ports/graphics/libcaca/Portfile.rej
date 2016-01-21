@@ -1,0 +1,18 @@
+***************
+*** 19,26 ****
+  homepage            http://libcaca.zoy.org/wiki/libcaca
+  platforms           darwin
+  depends_build       port:pkgconfig
+- depends_lib         port:imlib2 \
+-                     port:freeglut \
+                      port:libGLU \
+                      port:ncurses
+  master_sites        http://caca.zoy.org/files/libcaca/
+--- 19,25 ----
+  homepage            http://libcaca.zoy.org/wiki/libcaca
+  platforms           darwin
+  depends_build       port:pkgconfig
++ depends_lib         port:freeglut \
+                      port:libGLU \
+                      port:ncurses
+  master_sites        http://caca.zoy.org/files/libcaca/

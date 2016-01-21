@@ -1,16 +1,6 @@
---- Portfile.orig	2015-10-12 10:52:10.000000000 +0200
-+++ Portfile	2015-10-12 10:53:53.000000000 +0200
-@@ -19,8 +19,7 @@
- homepage            http://libcaca.zoy.org/wiki/libcaca
- platforms           darwin
- depends_build       port:pkgconfig
--depends_lib         port:imlib2 \
--                    port:freeglut \
-+depends_lib         port:freeglut \
-                     port:libGLU \
-                     port:ncurses
- master_sites        http://caca.zoy.org/files/libcaca/
-@@ -38,7 +37,7 @@
+--- Portfile.orig	2016-01-11 17:06:04.000000000 +0100
++++ Portfile	2016-01-11 17:06:11.000000000 +0100
+@@ -35,7 +35,7 @@
  configure.args      --mandir=${prefix}/share/man \
                      --disable-win32 --disable-conio --disable-slang \
                      --disable-imlib2 --disable-doc \
@@ -19,7 +9,7 @@
                      --disable-ruby --disable-csharp
  
  # Disable silent rules
-@@ -52,6 +51,12 @@
+@@ -53,6 +53,12 @@
  	                        --x-libraries=${prefix}/lib 
  }
  
@@ -31,4 +21,4 @@
 +
  compiler.blacklist  llvm-gcc-4.2
  
- livecheck.type      regex
+ test.run            yes
