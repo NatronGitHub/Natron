@@ -1739,7 +1739,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementa
     
     
     
-    return tiledRenderingFunctor(specificData,
+    EffectInstance::RenderingFunctorRetEnum ret = tiledRenderingFunctor(specificData,
                                  args.renderFullScaleThenDownscale,
                                  args.isSequentialRender,
                                  args.isRenderResponseToUserInteraction,
@@ -1761,6 +1761,8 @@ EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementa
     
     //Exit of the host frame threading thread
     appPTR->getAppTLS()->cleanupTLSForThread();
+    
+    return ret;
 }
 
 EffectInstance::RenderingFunctorRetEnum
