@@ -26,7 +26,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-namespace Utils {
+namespace GuiUtils {
 
 /*!
  \fn QString GuiUtils::convertFromPlainText(const QString &plain, WhiteSpaceMode mode)
@@ -95,6 +95,6 @@ QString convertFromPlainText(const QString &plain, Qt::WhiteSpaceMode mode)
     return rich;
 }
 
-} // namespace Utils
+} // namespace GuiUtils
 
 NATRON_NAMESPACE_EXIT;
