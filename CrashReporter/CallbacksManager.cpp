@@ -240,6 +240,7 @@ CallbacksManager::exec()
 {
     assert(qApp);
     int retCode =  qApp->exec();
+#ifndef REPORTER_CLI_ONLY
     if (_mustInitQAppAfterDump) {
         
         /*
@@ -275,6 +276,7 @@ CallbacksManager::exec()
         
         retCode = qApp->exec();
     }
+#endif // REPORTER_CLI_ONLY
     return retCode;
 }
 
