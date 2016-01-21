@@ -42,6 +42,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Utils.h"
 
+NATRON_NAMESPACE_ENTER;
+
 PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
                                    Gui *parent)
     : QWidget(parent)
@@ -64,11 +66,11 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
 
     _buttonBox = new QDialogButtonBox(Qt::Horizontal);
     _restoreDefaultsB = new Button( tr("Restore defaults") );
-    _restoreDefaultsB->setToolTip( Natron::convertFromPlainText(tr("Restore default values for all preferences."), Qt::WhiteSpaceNormal) );
+    _restoreDefaultsB->setToolTip( GuiUtils::convertFromPlainText(tr("Restore default values for all preferences."), Qt::WhiteSpaceNormal) );
     _cancelB = new Button( tr("Discard") );
-    _cancelB->setToolTip( Natron::convertFromPlainText(tr("Cancel changes that were not saved and close the window."), Qt::WhiteSpaceNormal) );
+    _cancelB->setToolTip( GuiUtils::convertFromPlainText(tr("Cancel changes that were not saved and close the window."), Qt::WhiteSpaceNormal) );
     _okB = new Button( tr("Save") );
-    _okB->setToolTip( Natron::convertFromPlainText(tr("Save changes on disk and close the window."), Qt::WhiteSpaceNormal) );
+    _okB->setToolTip( GuiUtils::convertFromPlainText(tr("Save changes on disk and close the window."), Qt::WhiteSpaceNormal) );
     _buttonBox->addButton(_restoreDefaultsB, QDialogButtonBox::ResetRole);
     _buttonBox->addButton(_cancelB, QDialogButtonBox::RejectRole);
     _buttonBox->addButton(_okB, QDialogButtonBox::AcceptRole);
@@ -100,10 +102,10 @@ PreferencesPanel::onSettingChanged(KnobI* knob)
 void
 PreferencesPanel::restoreDefaults()
 {
-    Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Preferences").toStdString(),
+    StandardButtonEnum reply = Dialogs::questionDialog( tr("Preferences").toStdString(),
                                                            tr("Restoring the settings will delete any custom configuration, are you sure you want to do this?").toStdString(), false );
 
-    if (reply == Natron::eStandardButtonYes) {
+    if (reply == eStandardButtonYes) {
         _settings->restoreDefault();
     }
 }
@@ -159,3 +161,7 @@ PreferencesPanel::keyPressEvent(QKeyEvent* e)
     }
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_PreferencesPanel.cpp"

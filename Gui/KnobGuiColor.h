@@ -51,12 +51,13 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 //================================
 
 class KnobGuiColor;
 class ColorPickerLabel
-    : public Natron::Label
+    : public Label
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -171,7 +172,7 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
@@ -185,10 +186,10 @@ private:
     QHBoxLayout *boxLayout;
     QWidget *colorContainer;
     QHBoxLayout *colorLayout;
-    Natron::Label *_rLabel;
-    Natron::Label *_gLabel;
-    Natron::Label *_bLabel;
-    Natron::Label *_aLabel;
+    Label *_rLabel;
+    Label *_gLabel;
+    Label *_bLabel;
+    Label *_aLabel;
     SpinBox *_rBox;
     SpinBox *_gBox;
     SpinBox *_bBox;
@@ -201,5 +202,7 @@ private:
     boost::weak_ptr<KnobColor> _knob;
     std::vector<double> _lastColor;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_KnobGuiColor_h

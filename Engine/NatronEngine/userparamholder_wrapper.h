@@ -5,6 +5,7 @@
 
 #include <NodeWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class UserParamHolderWrapper : public UserParamHolder
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~UserParamHolderWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_USERPARAMHOLDERWRAPPER_H
 

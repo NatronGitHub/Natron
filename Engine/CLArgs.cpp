@@ -35,6 +35,8 @@
 #include "Global/QtCompat.h"
 #include "Engine/AppManager.h"
 
+NATRON_NAMESPACE_ENTER;
+
 
 struct CLArgsPrivate
 {
@@ -385,7 +387,7 @@ CLArgs::getImageFilename() const
         for (; it!=_imp->args.end(); ++it) {
             if (!it->startsWith("-")) {
                 QString fileCopy = *it;
-                QString ext = Natron::removeFileExtension(fileCopy);
+                QString ext = QtCompat::removeFileExtension(fileCopy);
                 if (!ext.isEmpty()) {
                     std::string readerId = appPTR->isImageFileSupportedByNatron(ext.toStdString());
                     if (!readerId.empty()) {
@@ -829,7 +831,7 @@ CLArgsPrivate::parse()
         
         
         //Check that the name is conform to a Python acceptable script name
-        std::string pythonConform = Natron::makeNameScriptFriendly(next->toStdString());
+        std::string pythonConform = Python::makeNameScriptFriendly(next->toStdString());
         if (next->toStdString() != pythonConform) {
             std::cout << QObject::tr("The name of the Write node specified is not valid: it cannot contain non alpha-numerical "
                                      "characters and must not start with a digit.").toStdString() << std::endl;
@@ -913,5 +915,6 @@ CLArgsPrivate::parse()
         error = 1;
         return;
     }
-  
 }
+
+NATRON_NAMESPACE_EXIT;

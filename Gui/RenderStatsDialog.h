@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct RenderStatsDialogPrivate;
 
@@ -58,7 +59,7 @@ public:
     
     virtual ~RenderStatsDialog();
     
-    void addStats(int time, int view, double wallTime, const std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >& stats);
+    void addStats(int time, int view, double wallTime, const std::map<boost::shared_ptr<Node>,NodeRenderStats >& stats);
     
 public Q_SLOTS:
     
@@ -76,5 +77,7 @@ private:
     
     boost::scoped_ptr<RenderStatsDialogPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // RENDERSTATSDIALOG_H

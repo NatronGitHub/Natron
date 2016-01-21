@@ -58,7 +58,7 @@
 
 #define NATRON_PYPLUG_EXPORTER_VERSION 5
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 struct NodeCollectionPrivate
 {
@@ -230,12 +230,12 @@ NodeCollection::getViewers(std::list<ViewerInstance*>* viewers) const
 }
 
 void
-NodeCollection::getWriters(std::list<Natron::OutputEffectInstance*>* writers) const
+NodeCollection::getWriters(std::list<OutputEffectInstance*>* writers) const
 {
     QMutexLocker k(&_imp->nodesMutex);
     for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         if ((*it)->getLiveInstance()->isWriter()) {
-            Natron::OutputEffectInstance* out = dynamic_cast<Natron::OutputEffectInstance*>((*it)->getLiveInstance());
+            OutputEffectInstance* out = dynamic_cast<OutputEffectInstance*>((*it)->getLiveInstance());
             assert(out);
             writers->push_back(out);
         }
@@ -310,7 +310,7 @@ NodeCollection::resetTotalTimeSpentRenderingForAllNodes()
 {
     QMutexLocker k(&_imp->nodesMutex);
     for (NodeList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        Natron::EffectInstance* effect = (*it)->getLiveInstance();
+        EffectInstance* effect = (*it)->getLiveInstance();
         effect->resetTotalTimeSpentRendering();
         NodeGroup* isGroup = dynamic_cast<NodeGroup*>(effect);
         if (isGroup) {
@@ -451,7 +451,7 @@ NodeCollection::clearNodes(bool emitSignal)
     
     ///Kill effects
     for (NodeList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-        (*it)->deactivate(std::list<Natron::Node* >(),false,false,true,false);
+        (*it)->deactivate(std::list<Node* >(),false,false,true,false);
     }
     
     for (NodeList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
@@ -475,14 +475,14 @@ NodeCollection::clearNodes(bool emitSignal)
 
 
 void
-NodeCollection::checkNodeName(const Natron::Node* node, const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName)
+NodeCollection::checkNodeName(const Node* node, const std::string& baseName,bool appendDigit,bool errorIfExists,std::string* nodeName)
 {
     if (baseName.empty()) {
         throw std::runtime_error(QObject::tr("Invalid script-name").toStdString());
         return;
     }
     ///Remove any non alpha-numeric characters from the baseName
-    std::string cpy = Natron::makeNameScriptFriendly(baseName);
+    std::string cpy = Python::makeNameScriptFriendly(baseName);
     if (cpy.empty()) {
         throw std::runtime_error(QObject::tr("Invalid script-name").toStdString());
         return;
@@ -559,7 +559,7 @@ NodeCollection::initNodeName(const std::string& pluginLabel,std::string* nodeNam
 }
 
 bool
-NodeCollection::connectNodes(int inputNumber,const NodePtr& input,Natron::Node* output,bool force)
+NodeCollection::connectNodes(int inputNumber,const NodePtr& input,Node* output,bool force)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -597,7 +597,7 @@ NodeCollection::connectNodes(int inputNumber,const NodePtr& input,Natron::Node* 
 
 
 bool
-NodeCollection::connectNodes(int inputNumber,const std::string & inputName,Natron::Node* output)
+NodeCollection::connectNodes(int inputNumber,const std::string & inputName,Node* output)
 {
     NodeList nodes = getNodes();
     
@@ -613,7 +613,7 @@ NodeCollection::connectNodes(int inputNumber,const std::string & inputName,Natro
 
 
 bool
-NodeCollection::disconnectNodes(Natron::Node* input,Natron::Node* output,bool autoReconnect)
+NodeCollection::disconnectNodes(Node* input,Node* output,bool autoReconnect)
 {
     NodePtr inputToReconnectTo;
     int indexOfInput = output->inputIndex( input );
@@ -840,7 +840,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,const st
 {
     NodeList nodes = getNodes();
     
-    boost::shared_ptr<Natron::Project> project = _imp->app->getProject();
+    boost::shared_ptr<Project> project = _imp->app->getProject();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ((*it)->isActivated()) {
             (*it)->getLiveInstance()->beginChanges();
@@ -879,7 +879,7 @@ void
 NodeCollection::fixPathName(const std::string& oldName,const std::string& newName)
 {
     NodeList nodes = getNodes();
-    boost::shared_ptr<Natron::Project> project = _imp->app->getProject();
+    boost::shared_ptr<Project> project = _imp->app->getProject();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ((*it)->isActivated()) {
             const std::vector<boost::shared_ptr<KnobI> >& knobs = (*it)->getKnobs();
@@ -914,7 +914,7 @@ NodeCollection::fixPathName(const std::string& oldName,const std::string& newNam
 }
 
 bool
-NodeCollection::checkIfNodeLabelExists(const std::string & n,const Natron::Node* caller) const
+NodeCollection::checkIfNodeLabelExists(const std::string & n,const Node* caller) const
 {
     QMutexLocker k(&_imp->nodesMutex);
     for (NodeList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
@@ -927,7 +927,7 @@ NodeCollection::checkIfNodeLabelExists(const std::string & n,const Natron::Node*
 }
 
 bool
-NodeCollection::checkIfNodeNameExists(const std::string & n,const Natron::Node* caller) const
+NodeCollection::checkIfNodeNameExists(const std::string & n,const Node* caller) const
 {
     QMutexLocker k(&_imp->nodesMutex);
     for (NodeList::const_iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
@@ -982,7 +982,7 @@ NodeCollection::forceComputeInputDependentDataOnAllTrees()
         (*it)->markAllInputRelatedDataDirty();
     }
     
-    std::list<Natron::Node*> markedNodes;
+    std::list<Node*> markedNodes;
     for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
         it->output.node->forceRefreshAllInputRelatedData();
     }
@@ -990,7 +990,7 @@ NodeCollection::forceComputeInputDependentDataOnAllTrees()
 
 
 void
-NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& argsMap) const
+NodeCollection::getParallelRenderArgs(std::map<boost::shared_ptr<Node>,ParallelRenderArgs >& argsMap) const
 {
     NodeList nodes = getNodes();
     for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -1120,7 +1120,7 @@ NodeGroup::getPluginDescription() const
 
 void
 NodeGroup::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponents>* comps)
+                                std::list<ImageComponents>* comps)
 {
     comps->push_back(ImageComponents::getRGBAComponents());
     comps->push_back(ImageComponents::getRGBComponents());
@@ -1128,11 +1128,11 @@ NodeGroup::addAcceptedComponents(int /*inputNb*/,
 }
 
 void
-NodeGroup::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+NodeGroup::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
-    depths->push_back(Natron::eImageBitDepthByte);
-    depths->push_back(Natron::eImageBitDepthShort);
-    depths->push_back(Natron::eImageBitDepthFloat);
+    depths->push_back(eImageBitDepthByte);
+    depths->push_back(eImageBitDepthShort);
+    depths->push_back(eImageBitDepthFloat);
 }
 
 int
@@ -1248,7 +1248,7 @@ NodeGroup::initializeKnobs()
     assert(nodePage);
     KnobPage* isPage = dynamic_cast<KnobPage*>(nodePage.get());
     assert(isPage);
-    _imp->exportAsTemplate = Natron::createKnob<KnobButton>(this, "Export as PyPlug");
+    _imp->exportAsTemplate = AppManager::createKnob<KnobButton>(this, "Export as PyPlug");
     _imp->exportAsTemplate->setName("exportAsPyPlug");
     _imp->exportAsTemplate->setHintToolTip("Export this group as a Python group script (PyPlug) that can be shared and/or later "
                                            "on re-used as a plug-in.");
@@ -1256,7 +1256,7 @@ NodeGroup::initializeKnobs()
 }
 
 void
-NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
+NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Node>& node)
 {
     
     if (getIsDeactivatingGroup()) {
@@ -1287,7 +1287,7 @@ NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
         }
         GroupOutput* isOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
         if (isOutput) {
-            for (std::list<boost::weak_ptr<Natron::Node> >::iterator it = _imp->outputs.begin(); it !=_imp->outputs.end(); ++it) {
+            for (std::list<boost::weak_ptr<Node> >::iterator it = _imp->outputs.begin(); it !=_imp->outputs.end(); ++it) {
                 if (it->lock()->getLiveInstance() == isOutput) {
                     _imp->outputs.erase(it);
                     break;
@@ -1301,8 +1301,8 @@ NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
     }
     
     ///Notify outputs of the group nodes that their inputs may have changed
-    const std::list<Natron::Node*>& outputs = thisNode->getOutputs();
-    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+    const std::list<Node*>& outputs = thisNode->getOutputs();
+    for (std::list<Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         int idx = (*it)->getInputIndex(thisNode.get());
         assert(idx != -1);
         (*it)->onInputChanged(idx);
@@ -1311,7 +1311,7 @@ NodeGroup::notifyNodeDeactivated(const boost::shared_ptr<Natron::Node>& node)
 }
 
 void
-NodeGroup::notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node)
+NodeGroup::notifyNodeActivated(const boost::shared_ptr<Node>& node)
 {
     
     if (getIsActivatingGroup()) {
@@ -1335,8 +1335,8 @@ NodeGroup::notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node)
         }
     }
     ///Notify outputs of the group nodes that their inputs may have changed
-    const std::list<Natron::Node*>& outputs = thisNode->getOutputs();
-    for (std::list<Natron::Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+    const std::list<Node*>& outputs = thisNode->getOutputs();
+    for (std::list<Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         int idx = (*it)->getInputIndex(thisNode.get());
         assert(idx != -1);
         (*it)->onInputChanged(idx);
@@ -1344,19 +1344,19 @@ NodeGroup::notifyNodeActivated(const boost::shared_ptr<Natron::Node>& node)
 }
 
 void
-NodeGroup::notifyInputOptionalStateChanged(const boost::shared_ptr<Natron::Node>& /*node*/)
+NodeGroup::notifyInputOptionalStateChanged(const boost::shared_ptr<Node>& /*node*/)
 {
     getNode()->initializeInputs();
 }
 
 void
-NodeGroup::notifyInputMaskStateChanged(const boost::shared_ptr<Natron::Node>& /*node*/)
+NodeGroup::notifyInputMaskStateChanged(const boost::shared_ptr<Node>& /*node*/)
 {
     getNode()->initializeInputs();
 }
 
 void
-NodeGroup::notifyNodeNameChanged(const boost::shared_ptr<Natron::Node>& node)
+NodeGroup::notifyNodeNameChanged(const boost::shared_ptr<Node>& node)
 {
     GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
     if (isInput) {
@@ -1372,7 +1372,7 @@ NodeGroup::dequeueConnexions()
     _imp->outputs = _imp->guiOutputs;
 }
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 NodeGroup::getOutputNode(bool useGuiConnexions) const
 {
     QMutexLocker k(&_imp->nodesLock);
@@ -1385,7 +1385,7 @@ NodeGroup::getOutputNode(bool useGuiConnexions) const
 
 
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 NodeGroup::getOutputNodeInput(bool useGuiConnexions) const
 {
     NodePtr output = getOutputNode(useGuiConnexions);
@@ -1395,8 +1395,8 @@ NodeGroup::getOutputNodeInput(bool useGuiConnexions) const
     return NodePtr();
 }
 
-boost::shared_ptr<Natron::Node>
-NodeGroup::getRealInputForInput(bool useGuiConnexions,const boost::shared_ptr<Natron::Node>& input) const
+boost::shared_ptr<Node>
+NodeGroup::getRealInputForInput(bool useGuiConnexions,const boost::shared_ptr<Node>& input) const
 {
     
     {
@@ -1416,22 +1416,22 @@ NodeGroup::getRealInputForInput(bool useGuiConnexions,const boost::shared_ptr<Na
 
         }
     }
-    return boost::shared_ptr<Natron::Node>();
+    return boost::shared_ptr<Node>();
 }
 
 void
-NodeGroup::getInputsOutputs(std::list<Natron::Node* >* nodes, bool useGuiConnexions) const
+NodeGroup::getInputsOutputs(std::list<Node* >* nodes, bool useGuiConnexions) const
 {
     QMutexLocker k(&_imp->nodesLock);
     if (!useGuiConnexions) {
         for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            std::list<Natron::Node*> outputs;
+            std::list<Node*> outputs;
             _imp->inputs[i].lock()->getOutputs_mt_safe(outputs);
             nodes->insert(nodes->end(), outputs.begin(),outputs.end());
         }
     } else {
         for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-            std::list<Natron::Node*> outputs;
+            std::list<Node*> outputs;
             _imp->guiInputs[i].lock()->getOutputs_mt_safe(outputs);
             nodes->insert(nodes->end(), outputs.begin(),outputs.end());
         }
@@ -1439,7 +1439,7 @@ NodeGroup::getInputsOutputs(std::list<Natron::Node* >* nodes, bool useGuiConnexi
 }
 
 void
-NodeGroup::getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs,bool useGuiConnexions) const
+NodeGroup::getInputs(std::vector<boost::shared_ptr<Node> >* inputs,bool useGuiConnexions) const
 {
     QMutexLocker k(&_imp->nodesLock);
     if (!useGuiConnexions) {
@@ -1454,7 +1454,7 @@ NodeGroup::getInputs(std::vector<boost::shared_ptr<Natron::Node> >* inputs,bool 
 }
 
 void
-NodeGroup::knobChanged(KnobI* k,Natron::ValueChangedReasonEnum /*reason*/,
+NodeGroup::knobChanged(KnobI* k,ValueChangedReasonEnum /*reason*/,
                  int /*view*/,
                  double /*time*/,
                  bool /*originatedFromMainThread*/)
@@ -2247,7 +2247,7 @@ static void exportRotoLayer(int indentLevel,
                 }
                 boost::shared_ptr<KnobDouble> track = (*it2)->isSlaved();
                 if (track) {
-                    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(track->getHolder());
+                    EffectInstance* effect = dynamic_cast<EffectInstance*>(track->getHolder());
                     assert(effect && effect->getNode()->isPointTrackerNode());
                     std::string trackerName = effect->getNode()->getScriptName_mt_safe();
                     int trackTime = (*it2)->getOffsetTime();
@@ -2289,7 +2289,7 @@ static void exportRotoLayer(int indentLevel,
     }
 }
 
-static void exportAllNodeKnobs(int indentLevel,const boost::shared_ptr<Natron::Node>& node,QTextStream& ts)
+static void exportAllNodeKnobs(int indentLevel,const boost::shared_ptr<Node>& node,QTextStream& ts)
 {
     
     const std::vector<boost::shared_ptr<KnobI> >& knobs = node->getKnobs();
@@ -2378,8 +2378,8 @@ static void exportAllNodeKnobs(int indentLevel,const boost::shared_ptr<Natron::N
 }
 
 static bool exportKnobLinks(int indentLevel,
-                            const boost::shared_ptr<Natron::Node>& groupNode,
-                            const boost::shared_ptr<Natron::Node>& node,
+                            const boost::shared_ptr<Node>& groupNode,
+                            const boost::shared_ptr<Node>& node,
                             const QString& groupName,
                             const QString& nodeName,
                             QTextStream& ts)
@@ -2399,7 +2399,7 @@ static bool exportKnobLinks(int indentLevel,
             }
             hasExportedLink = true;
             
-            Natron::EffectInstance* aliasHolder = dynamic_cast<Natron::EffectInstance*>(alias->getHolder());
+            EffectInstance* aliasHolder = dynamic_cast<EffectInstance*>(alias->getHolder());
             assert(aliasHolder);
             QString aliasName;
             if (aliasHolder == groupNode->getLiveInstance()) {
@@ -2493,9 +2493,9 @@ static void exportGroupInternal(int indentLevel,const NodeCollection* collection
         // a precision of 3 digits is enough for the node coloe
         WRITE_INDENT(indentLevel); WRITE_STRING("lastNode.setColor(" + NUM_COLOR(r) + ", " + NUM_COLOR(g) + ", " + NUM_COLOR(b) +  ")");
         
-        std::list<Natron::ImageComponents> userComps;
+        std::list<ImageComponents> userComps;
         (*it)->getUserCreatedComponents(&userComps);
-        for (std::list<Natron::ImageComponents>::iterator it2 = userComps.begin(); it2 != userComps.end(); ++it2) {
+        for (std::list<ImageComponents>::iterator it2 = userComps.begin(); it2 != userComps.end(); ++it2) {
             
             const std::vector<std::string>& channels = it2->getComponentsNames();
             QString compStr("[");
@@ -2671,3 +2671,8 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     WRITE_INDENT(1);WRITE_STRING(testAttr);
     WRITE_INDENT(2);WRITE_STRING("extModule.createInstanceExt(app,group)");
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_NodeGroup.cpp"

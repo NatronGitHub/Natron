@@ -41,6 +41,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 class PyGuiApplication : public PyCoreApplication
 {
 public:
@@ -56,7 +58,7 @@ public:
         
     }
     
-    QPixmap getIcon(Natron::PixmapEnum val) const
+    QPixmap getIcon(PixmapEnum val) const
     {
         QPixmap ret;
         appPTR->getIcon(val,&ret);
@@ -78,22 +80,22 @@ public:
     
     void informationDialog(const std::string& title,const std::string& message)
     {
-        Natron::informationDialog(title, message);
+        Dialogs::informationDialog(title, message);
     }
     
     void warningDialog(const std::string& title,const std::string& message)
     {
-        Natron::warningDialog(title,message);
+        Dialogs::warningDialog(title,message);
     }
     
     void errorDialog(const std::string& title,const std::string& message)
     {
-        Natron::errorDialog(title,message);
+        Dialogs::errorDialog(title,message);
     }
     
-    Natron::StandardButtonEnum questionDialog(const std::string& title,const std::string& message)
+    StandardButtonEnum questionDialog(const std::string& title,const std::string& message)
     {
-        return Natron::questionDialog(title, message, false);
+        return Dialogs::questionDialog(title, message, false);
     }
     
     void addMenuCommand(const std::string& grouping,const std::string& pythonFunctionName)
@@ -110,6 +112,6 @@ public:
     
 };
 
-
+NATRON_NAMESPACE_EXIT;
 
 #endif // GLOBAL_GUI_WRAPPER_H

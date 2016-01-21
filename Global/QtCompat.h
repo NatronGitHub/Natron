@@ -18,12 +18,16 @@
 #ifndef NATRON_GLOBAL_QTCOMPAT_H
 #define NATRON_GLOBAL_QTCOMPAT_H
 
+#include "Global/Macros.h"
 
 #if QT_VERSION < 0x050000
 #include <QtCore/QDir>
 #include <QtCore/QString>
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
+namespace QtCompat {
+
 inline bool
 removeRecursively(const QString & dirName)
 {
@@ -47,7 +51,11 @@ removeRecursively(const QString & dirName)
 
     return result;
 }
-}
+
+} // namespace QtCompat
+
+NATRON_NAMESPACE_EXIT;
+
 #endif
 
 #include <QtCore/QString>
@@ -55,7 +63,10 @@ removeRecursively(const QString & dirName)
 #include <QtCore/QFileInfo>
 //#include <QtCore/QDebug>
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
+namespace QtCompat {
+
 /*Removes the . and the extension from the filename and also
  * returns the extension as a string.*/
 inline QString
@@ -80,6 +91,8 @@ QUrl toLocalFileUrlFixed(const QUrl& url);
 inline QUrl toLocalFileUrlFixed(const QUrl& url) { return url; }
 #endif // #if defined(Q_OS_MAC) && QT_VERSION < 0x050000
 
-} // namespace Natron
+} // namespace QtCompat
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_GLOBAL_QTCOMPAT_H

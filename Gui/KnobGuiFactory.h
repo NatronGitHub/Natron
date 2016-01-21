@@ -36,6 +36,7 @@
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /******************************KNOB_FACTORY**************************************/
 //Maybe the factory should move to a separate file since it is used to create KnobGui aswell
@@ -44,7 +45,7 @@ class KnobHolder;
 
 class KnobGuiFactory
 {
-    std::map<std::string, Natron::LibraryBinary *> _loadedKnobs;
+    std::map<std::string, LibraryBinary *> _loadedKnobs;
 
 public:
     KnobGuiFactory();
@@ -55,7 +56,7 @@ public:
     KnobGui * createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
 
 private:
-    const std::map<std::string, Natron::LibraryBinary *> &getLoadedKnobs() const
+    const std::map<std::string, LibraryBinary *> &getLoadedKnobs() const
     {
         return _loadedKnobs;
     }
@@ -63,5 +64,6 @@ private:
     void loadBultinKnobs();
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_GUI_KNOBGUIFACTORY_H

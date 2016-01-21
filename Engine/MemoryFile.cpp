@@ -46,6 +46,8 @@
 
 #define MIN_FILE_SIZE 4096
 
+NATRON_NAMESPACE_ENTER;
+
 struct MemoryFilePrivate
 {
     std::string path; //< filepath of the backing file
@@ -229,7 +231,7 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
     ********************************************************
     *********************************************************/
 #ifdef UNICODE
-    std::wstring wpath = Natron::s2ws(path);
+    std::wstring wpath = Global::s2ws(path);
     file_handle = ::CreateFile(wpath.c_str(), GENERIC_READ | GENERIC_WRITE,
                                0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
 
@@ -239,7 +241,7 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
 #endif
     
     if (file_handle == INVALID_HANDLE_VALUE) {
-		std::string winError = Natron::GetLastErrorAsString();
+		std::string winError = Global::GetLastErrorAsString();
         std::string str("MemoryFile EXC : Failed to open file ");
         str.append(path);
 		str.append(winError);
@@ -388,4 +390,6 @@ MemoryFile::remove()
         _imp->data = 0;
     }
 }
+
+NATRON_NAMESPACE_EXIT;
 

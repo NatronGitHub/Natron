@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+NATRON_NAMESPACE_ENTER;
+
 extern const char* fragRGB;
 extern const char* vertRGB;
 
@@ -38,5 +40,7 @@ extern const char *histogramRendering_frag;
 extern const char *histogramRenderingVertex_vert;
 extern const char* minimal_vert;
 extern const char *histogramMaximum_frag;
+
+NATRON_NAMESPACE_EXIT;
 
 #endif

@@ -80,31 +80,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "ofxNatron.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 
 
 //=============================GROUP_KNOB_GUI===================================
-GroupBoxLabel::GroupBoxLabel(QWidget *parent)
-: Natron::Label(parent)
-, _checked(false)
-
-{
-    QObject::connect( this, SIGNAL( checked(bool) ), this, SLOT( setChecked(bool) ) );
-}
-
-void
-GroupBoxLabel::setChecked(bool b)
-{
-    _checked = b;
-    QPixmap pix;
-    if (b) {
-        appPTR->getIcon(NATRON_PIXMAP_GROUPBOX_UNFOLDED, NATRON_SMALL_BUTTON_ICON_SIZE, &pix);
-    } else {
-        appPTR->getIcon(NATRON_PIXMAP_GROUPBOX_FOLDED, NATRON_SMALL_BUTTON_ICON_SIZE, &pix);
-    }
-    setPixmap(pix);
-}
 
 KnobGuiGroup::KnobGuiGroup(boost::shared_ptr<KnobI> knob,
                              DockablePanel *container)
@@ -187,7 +167,7 @@ KnobGuiGroup::setCheckedInternal(bool checked, bool userRequested)
     if (userRequested) {
         boost::shared_ptr<KnobGroup> knob = _knob.lock();
         if (knob) {
-            knob->evaluateValueChange(0, knob->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+            knob->evaluateValueChange(0, knob->getCurrentTime(), eValueChangedReasonUserEdited);
         }
     }
     
@@ -301,3 +281,7 @@ boost::shared_ptr<KnobI> KnobGuiGroup::getKnob() const
     return _knob.lock();
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_KnobGuiGroup.cpp"

@@ -65,7 +65,7 @@
 
 #define NATRON_CUSTOM_HOST_NAME_ENTRY "Custom..."
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 Settings::Settings()
@@ -118,22 +118,22 @@ Settings::initializeKnobs()
 void
 Settings::initializeKnobsGeneral()
 {
-    _generalTab = Natron::createKnob<KnobPage>(this, "General");
+    _generalTab = AppManager::createKnob<KnobPage>(this, "General");
 
-    _natronSettingsExist = Natron::createKnob<KnobBool>(this, "Existing settings");
+    _natronSettingsExist = AppManager::createKnob<KnobBool>(this, "Existing settings");
     _natronSettingsExist->setAnimationEnabled(false);
     _natronSettingsExist->setName("existingSettings");
     _natronSettingsExist->setSecretByDefault(true);
     _generalTab->addKnob(_natronSettingsExist);
     
 
-    _checkForUpdates = Natron::createKnob<KnobBool>(this, "Always check for updates on start-up");
+    _checkForUpdates = AppManager::createKnob<KnobBool>(this, "Always check for updates on start-up");
     _checkForUpdates->setName("checkForUpdates");
     _checkForUpdates->setAnimationEnabled(false);
     _checkForUpdates->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " will check for new updates on start-up of the application.");
     _generalTab->addKnob(_checkForUpdates);
     
-    _enableCrashReports = Natron::createKnob<KnobBool>(this, "Enable crash reporting");
+    _enableCrashReports = AppManager::createKnob<KnobBool>(this, "Enable crash reporting");
     _enableCrashReports->setName("enableCrashReports");
     _enableCrashReports->setAnimationEnabled(false);
     _enableCrashReports->setHintToolTip("When checked, if " NATRON_APPLICATION_NAME "crashes a window will pop-up asking you "
@@ -144,14 +144,14 @@ Settings::initializeKnobsGeneral()
                                         "enabled, they will be automatically uploaded.\n"
                                         "Changing this requires a restart of the application to take effect.");
     
-    _notifyOnFileChange = Natron::createKnob<KnobBool>(this, "Warn when a file changes externally");
+    _notifyOnFileChange = AppManager::createKnob<KnobBool>(this, "Warn when a file changes externally");
     _notifyOnFileChange->setName("warnOnExternalChange");
     _notifyOnFileChange->setAnimationEnabled(false);
     _notifyOnFileChange->setHintToolTip("When checked, if a file read from a file parameter changes externally, a warning will be displayed "
                                         "on the viewer. Turning this off will suspend the notification system.");
     _generalTab->addKnob(_notifyOnFileChange);
 
-    _autoSaveDelay = Natron::createKnob<KnobInt>(this, "Auto-save trigger delay");
+    _autoSaveDelay = AppManager::createKnob<KnobInt>(this, "Auto-save trigger delay");
     _autoSaveDelay->setName("autoSaveDelay");
     _autoSaveDelay->setAnimationEnabled(false);
     _autoSaveDelay->disableSlider();
@@ -163,7 +163,7 @@ Settings::initializeKnobsGeneral()
     _generalTab->addKnob(_autoSaveDelay);
 
 
-    _linearPickers = Natron::createKnob<KnobBool>(this, "Linear color pickers");
+    _linearPickers = AppManager::createKnob<KnobBool>(this, "Linear color pickers");
     _linearPickers->setName("linearPickers");
     _linearPickers->setAnimationEnabled(false);
     _linearPickers->setHintToolTip("When activated, all colors picked from the color parameters are linearized "
@@ -171,7 +171,7 @@ Settings::initializeKnobsGeneral()
                                    "as the viewer they were picked from.");
     _generalTab->addKnob(_linearPickers);
     
-    _convertNaNValues = Natron::createKnob<KnobBool>(this, "Convert NaN values");
+    _convertNaNValues = AppManager::createKnob<KnobBool>(this, "Convert NaN values");
     _convertNaNValues->setName("convertNaNs");
     _convertNaNValues->setAnimationEnabled(false);
     _convertNaNValues->setHintToolTip("When activated, any pixel that is a Not-a-Number will be converted to 1 to avoid potential crashes from "
@@ -180,7 +180,7 @@ Settings::initializeKnobsGeneral()
                                       "undefined behavior.");
     _generalTab->addKnob(_convertNaNValues);
 
-    _numberOfThreads = Natron::createKnob<KnobInt>(this, "Number of render threads (0=\"guess\")");
+    _numberOfThreads = AppManager::createKnob<KnobInt>(this, "Number of render threads (0=\"guess\")");
     _numberOfThreads->setName("noRenderThreads");
     _numberOfThreads->setAnimationEnabled(false);
 
@@ -193,7 +193,7 @@ Settings::initializeKnobsGeneral()
     _numberOfThreads->setDisplayMinimum(-1);
     _generalTab->addKnob(_numberOfThreads);
     
-    _numberOfParallelRenders = Natron::createKnob<KnobInt>(this, "Number of parallel renders (0=\"guess\")");
+    _numberOfParallelRenders = AppManager::createKnob<KnobInt>(this, "Number of parallel renders (0=\"guess\")");
     _numberOfParallelRenders->setHintToolTip("Controls the number of parallel frame that will be rendered at the same time by the renderer."
                                              "A value of 0 indicate that " NATRON_APPLICATION_NAME " should automatically determine "
                                                                                                    "the best number of parallel renders to launch given your CPU activity. "
@@ -206,7 +206,7 @@ Settings::initializeKnobsGeneral()
     _numberOfParallelRenders->setAnimationEnabled(false);
     _generalTab->addKnob(_numberOfParallelRenders);
     
-    _useThreadPool = Natron::createKnob<KnobBool>(this, "Effects use thread-pool");
+    _useThreadPool = AppManager::createKnob<KnobBool>(this, "Effects use thread-pool");
     _useThreadPool->setName("useThreadPool");
     _useThreadPool->setHintToolTip("When checked, all effects will use a global thread-pool to do their processing instead of launching "
                                    "their own threads. "
@@ -219,7 +219,7 @@ Settings::initializeKnobsGeneral()
     _useThreadPool->setAnimationEnabled(false);
     _generalTab->addKnob(_useThreadPool);
 
-    _nThreadsPerEffect = Natron::createKnob<KnobInt>(this, "Max threads usable per effect (0=\"guess\")");
+    _nThreadsPerEffect = AppManager::createKnob<KnobInt>(this, "Max threads usable per effect (0=\"guess\")");
     _nThreadsPerEffect->setName("nThreadsPerEffect");
     _nThreadsPerEffect->setAnimationEnabled(false);
     _nThreadsPerEffect->setHintToolTip("Controls how many threads a specific effect can use at most to do its processing. "
@@ -232,14 +232,14 @@ Settings::initializeKnobsGeneral()
     _nThreadsPerEffect->disableSlider();
     _generalTab->addKnob(_nThreadsPerEffect);
 
-    _renderInSeparateProcess = Natron::createKnob<KnobBool>(this, "Render in a separate process");
+    _renderInSeparateProcess = AppManager::createKnob<KnobBool>(this, "Render in a separate process");
     _renderInSeparateProcess->setName("renderNewProcess");
     _renderInSeparateProcess->setAnimationEnabled(false);
     _renderInSeparateProcess->setHintToolTip("If true, " NATRON_APPLICATION_NAME " will render frames to disk in "
                                                                                  "a separate process so that if the main application crashes, the render goes on.");
     _generalTab->addKnob(_renderInSeparateProcess);
 
-    _autoPreviewEnabledForNewProjects = Natron::createKnob<KnobBool>(this, "Auto-preview enabled by default for new projects");
+    _autoPreviewEnabledForNewProjects = AppManager::createKnob<KnobBool>(this, "Auto-preview enabled by default for new projects");
     _autoPreviewEnabledForNewProjects->setName("enableAutoPreviewNewProjects");
     _autoPreviewEnabledForNewProjects->setAnimationEnabled(false);
     _autoPreviewEnabledForNewProjects->setHintToolTip("If checked, then when creating a new project, the Auto-preview option"
@@ -247,21 +247,21 @@ Settings::initializeKnobsGeneral()
     _generalTab->addKnob(_autoPreviewEnabledForNewProjects);
 
 
-    _firstReadSetProjectFormat = Natron::createKnob<KnobBool>(this, "First image read set project format");
+    _firstReadSetProjectFormat = AppManager::createKnob<KnobBool>(this, "First image read set project format");
     _firstReadSetProjectFormat->setName("autoProjectFormat");
     _firstReadSetProjectFormat->setAnimationEnabled(false);
     _firstReadSetProjectFormat->setHintToolTip("If checked, the first image you read in the project sets the project format to the "
                                                "image size.");
     _generalTab->addKnob(_firstReadSetProjectFormat);
     
-    _fixPathsOnProjectPathChanged = Natron::createKnob<KnobBool>(this, "Auto fix relative file-paths");
+    _fixPathsOnProjectPathChanged = AppManager::createKnob<KnobBool>(this, "Auto fix relative file-paths");
     _fixPathsOnProjectPathChanged->setAnimationEnabled(false);
     _fixPathsOnProjectPathChanged->setHintToolTip("If checked, when a project-path changes (either the name or the value pointed to), "
                                                   NATRON_APPLICATION_NAME " checks all file-path parameters in the project and tries to fix them.");
     _fixPathsOnProjectPathChanged->setName("autoFixRelativePaths");
     _generalTab->addKnob(_fixPathsOnProjectPathChanged);
     
-    _maxPanelsOpened = Natron::createKnob<KnobInt>(this, "Maximum number of open settings panels (0=\"unlimited\")");
+    _maxPanelsOpened = AppManager::createKnob<KnobInt>(this, "Maximum number of open settings panels (0=\"unlimited\")");
     _maxPanelsOpened->setName("maxPanels");
     _maxPanelsOpened->setHintToolTip("This property holds the maximum number of settings panels that can be "
                                      "held by the properties dock at the same time."
@@ -272,7 +272,7 @@ Settings::initializeKnobsGeneral()
     _maxPanelsOpened->setMaximum(100);
     _generalTab->addKnob(_maxPanelsOpened);
 
-    _useCursorPositionIncrements = Natron::createKnob<KnobBool>(this, "Value increments based on cursor position");
+    _useCursorPositionIncrements = AppManager::createKnob<KnobBool>(this, "Value increments based on cursor position");
     _useCursorPositionIncrements->setName("cursorPositionAwareFields");
     _useCursorPositionIncrements->setHintToolTip("When enabled, incrementing the value fields of parameters with the "
                                                  "mouse wheel or with arrow keys will increment the digits on the right "
@@ -283,7 +283,7 @@ Settings::initializeKnobsGeneral()
     _useCursorPositionIncrements->setAnimationEnabled(false);
     _generalTab->addKnob(_useCursorPositionIncrements);
 
-    _defaultLayoutFile = Natron::createKnob<KnobFile>(this, "Default layout file");
+    _defaultLayoutFile = AppManager::createKnob<KnobFile>(this, "Default layout file");
     _defaultLayoutFile->setName("defaultLayout");
     _defaultLayoutFile->setHintToolTip("When set, " NATRON_APPLICATION_NAME " uses the given layout file "
                                                                             "as default layout for new projects. You can export/import a layout to/from a file "
@@ -291,21 +291,21 @@ Settings::initializeKnobsGeneral()
     _defaultLayoutFile->setAnimationEnabled(false);
     _generalTab->addKnob(_defaultLayoutFile);
     
-    _loadProjectsWorkspace = Natron::createKnob<KnobBool>(this, "Load workspace embedded within projects");
+    _loadProjectsWorkspace = AppManager::createKnob<KnobBool>(this, "Load workspace embedded within projects");
     _loadProjectsWorkspace->setName("loadProjectWorkspace");
     _loadProjectsWorkspace->setHintToolTip("When checked, when loading a project, the workspace (windows layout) will also be loaded, otherwise it "
                                            "will use your current layout.");
     _loadProjectsWorkspace->setAnimationEnabled(false);
     _generalTab->addKnob(_loadProjectsWorkspace);
 
-    _renderOnEditingFinished = Natron::createKnob<KnobBool>(this, "Refresh viewer only when editing is finished");
+    _renderOnEditingFinished = AppManager::createKnob<KnobBool>(this, "Refresh viewer only when editing is finished");
     _renderOnEditingFinished->setName("renderOnEditingFinished");
     _renderOnEditingFinished->setHintToolTip("When checked, the viewer triggers a new render only when mouse is released when editing parameters, curves "
                                              " or the timeline. This setting doesn't apply to roto splines editing.");
     _renderOnEditingFinished->setAnimationEnabled(false);
     _generalTab->addKnob(_renderOnEditingFinished);
     
-    _activateRGBSupport = Natron::createKnob<KnobBool>(this, "RGB components support");
+    _activateRGBSupport = AppManager::createKnob<KnobBool>(this, "RGB components support");
     _activateRGBSupport->setHintToolTip("When checked " NATRON_APPLICATION_NAME " is able to process images with only RGB components "
                                                                                 "(support for images with RGBA and Alpha components is always enabled). "
                                                                                 "Un-checking this option may prevent plugins that do not well support RGB components from crashing " NATRON_APPLICATION_NAME ". "
@@ -315,7 +315,7 @@ Settings::initializeKnobsGeneral()
     _generalTab->addKnob(_activateRGBSupport);
 
 
-    _activateTransformConcatenationSupport = Natron::createKnob<KnobBool>(this, "Transforms concatenation support");
+    _activateTransformConcatenationSupport = AppManager::createKnob<KnobBool>(this, "Transforms concatenation support");
     _activateTransformConcatenationSupport->setHintToolTip("When checked " NATRON_APPLICATION_NAME " is able to concatenate transform effects "
                                                                                                    "when they are chained in the compositing tree. This yields better results and faster "
                                                                                                    "render times because the image is only filtered once instead of as many times as there are "
@@ -324,7 +324,7 @@ Settings::initializeKnobsGeneral()
     _activateTransformConcatenationSupport->setName("transformCatSupport");
     _generalTab->addKnob(_activateTransformConcatenationSupport);
     
-    _hostName = Natron::createKnob<KnobChoice>(this, "Appear to plug-ins as");
+    _hostName = AppManager::createKnob<KnobChoice>(this, "Appear to plug-ins as");
     _hostName->setName("pluginHostName");
     _hostName->setHintToolTip(NATRON_APPLICATION_NAME " will appear with the name of the selected application to the OpenFX plug-ins. "
                               "Changing it to the name of another application can help loading plugins which "
@@ -410,7 +410,7 @@ Settings::initializeKnobsGeneral()
     _hostName->setAddNewLine(false);
     _generalTab->addKnob(_hostName);
     
-    _customHostName = Natron::createKnob<KnobString>(this, "Custom Host name");
+    _customHostName = AppManager::createKnob<KnobString>(this, "Custom Host name");
     _customHostName->setName("customHostName");
     _customHostName->setHintToolTip("This is the name of the OpenFX host (application) as it appears to the OpenFX plugins. "
                               "Changing it to the name of another application can help loading some plugins which "
@@ -429,91 +429,91 @@ void
 Settings::initializeKnobsAppearance()
 {
     //////////////APPEARANCE TAB/////////////////
-    _appearanceTab = Natron::createKnob<KnobPage>(this, "Appearance");
+    _appearanceTab = AppManager::createKnob<KnobPage>(this, "Appearance");
     
-    _defaultAppearanceVersion = Natron::createKnob<KnobInt>(this, "Appearance version");
+    _defaultAppearanceVersion = AppManager::createKnob<KnobInt>(this, "Appearance version");
     _defaultAppearanceVersion->setName("appearanceVersion");
     _defaultAppearanceVersion->setAnimationEnabled(false);
     _defaultAppearanceVersion->setSecretByDefault(true);
     _appearanceTab->addKnob(_defaultAppearanceVersion);
     
-    _systemFontChoice = Natron::createKnob<KnobChoice>(this, "Font");
+    _systemFontChoice = AppManager::createKnob<KnobChoice>(this, "Font");
     _systemFontChoice->setHintToolTip("List of all fonts available on your system");
     _systemFontChoice->setName("systemFont");
     _systemFontChoice->setAddNewLine(false);
     _systemFontChoice->setAnimationEnabled(false);
     _appearanceTab->addKnob(_systemFontChoice);
     
-    _fontSize = Natron::createKnob<KnobInt>(this, "Font size");
+    _fontSize = AppManager::createKnob<KnobInt>(this, "Font size");
     _fontSize->setName("fontSize");
     _fontSize->setAnimationEnabled(false);
     _appearanceTab->addKnob(_fontSize);
     
-    _qssFile = Natron::createKnob<KnobFile>(this, "Stylesheet file (.qss)");
+    _qssFile = AppManager::createKnob<KnobFile>(this, "Stylesheet file (.qss)");
     _qssFile->setName("stylesheetFile");
     _qssFile->setHintToolTip("When pointing to a valid .qss file, the stylesheet of the application will be set according to this file instead of the default "
                              "stylesheet. You can adapt the default stylesheet that can be found in your distribution of " NATRON_APPLICATION_NAME ".");
     _qssFile->setAnimationEnabled(false);
     _appearanceTab->addKnob(_qssFile);
     
-    _guiColors = Natron::createKnob<KnobGroup>(this, "GUI colors");
+    _guiColors = AppManager::createKnob<KnobGroup>(this, "GUI colors");
     _guiColors->setAsTab();
     _appearanceTab->addKnob(_guiColors);
     
-    _curveEditorColors = Natron::createKnob<KnobGroup>(this, "Curve Editor");
+    _curveEditorColors = AppManager::createKnob<KnobGroup>(this, "Curve Editor");
     _curveEditorColors->setAsTab();
     _appearanceTab->addKnob(_curveEditorColors);
 
-    _dopeSheetEditorColors = Natron::createKnob<KnobGroup>(this, "Dope Sheet");
+    _dopeSheetEditorColors = AppManager::createKnob<KnobGroup>(this, "Dope Sheet");
     _dopeSheetEditorColors->setAsTab();
     _appearanceTab->addKnob(_dopeSheetEditorColors);
     
-    _scriptEditorColors = Natron::createKnob<KnobGroup>(this, "Script Editor");
+    _scriptEditorColors = AppManager::createKnob<KnobGroup>(this, "Script Editor");
     _scriptEditorColors->setAsTab();
     _appearanceTab->addKnob(_scriptEditorColors);
     
-    _sunkenColor =  Natron::createKnob<KnobColor>(this, "Sunken",3);
+    _sunkenColor =  AppManager::createKnob<KnobColor>(this, "Sunken",3);
     _sunkenColor->setName("sunken");
     _sunkenColor->setAnimationEnabled(false);
     _sunkenColor->setSimplified(true);
     _sunkenColor->setAddNewLine(false);
     _guiColors->addKnob(_sunkenColor);
     
-    _baseColor =  Natron::createKnob<KnobColor>(this, "Base",3);
+    _baseColor =  AppManager::createKnob<KnobColor>(this, "Base",3);
     _baseColor->setName("base");
     _baseColor->setAnimationEnabled(false);
     _baseColor->setSimplified(true);
     _baseColor->setAddNewLine(false);
     _guiColors->addKnob(_baseColor);
     
-    _raisedColor =  Natron::createKnob<KnobColor>(this, "Raised",3);
+    _raisedColor =  AppManager::createKnob<KnobColor>(this, "Raised",3);
     _raisedColor->setName("raised");
     _raisedColor->setAnimationEnabled(false);
     _raisedColor->setSimplified(true);
     _raisedColor->setAddNewLine(false);
     _guiColors->addKnob(_raisedColor);
     
-    _selectionColor =  Natron::createKnob<KnobColor>(this, "Selection",3);
+    _selectionColor =  AppManager::createKnob<KnobColor>(this, "Selection",3);
     _selectionColor->setName("selection");
     _selectionColor->setAnimationEnabled(false);
     _selectionColor->setSimplified(true);
     _selectionColor->setAddNewLine(false);
     _guiColors->addKnob(_selectionColor);
     
-    _textColor =  Natron::createKnob<KnobColor>(this, "Text",3);
+    _textColor =  AppManager::createKnob<KnobColor>(this, "Text",3);
     _textColor->setName("text");
     _textColor->setAnimationEnabled(false);
     _textColor->setSimplified(true);
     _textColor->setAddNewLine(false);
     _guiColors->addKnob(_textColor);
     
-    _altTextColor =  Natron::createKnob<KnobColor>(this, "Unmodified text",3);
+    _altTextColor =  AppManager::createKnob<KnobColor>(this, "Unmodified text",3);
     _altTextColor->setName("unmodifiedText");
     _altTextColor->setAnimationEnabled(false);
     _altTextColor->setSimplified(true);
     _guiColors->addKnob(_altTextColor);
     
-    _timelinePlayheadColor =  Natron::createKnob<KnobColor>(this, "Timeline playhead",3);
+    _timelinePlayheadColor =  AppManager::createKnob<KnobColor>(this, "Timeline playhead",3);
     _timelinePlayheadColor->setName("timelinePlayhead");
     _timelinePlayheadColor->setAnimationEnabled(false);
     _timelinePlayheadColor->setSimplified(true);
@@ -521,55 +521,55 @@ Settings::initializeKnobsAppearance()
     _guiColors->addKnob(_timelinePlayheadColor);
     
     
-    _timelineBGColor =  Natron::createKnob<KnobColor>(this, "Timeline background",3);
+    _timelineBGColor =  AppManager::createKnob<KnobColor>(this, "Timeline background",3);
     _timelineBGColor->setName("timelineBG");
     _timelineBGColor->setAnimationEnabled(false);
     _timelineBGColor->setSimplified(true);
     _timelineBGColor->setAddNewLine(false);
     _guiColors->addKnob(_timelineBGColor);
     
-    _timelineBoundsColor =  Natron::createKnob<KnobColor>(this, "Timeline bounds",3);
+    _timelineBoundsColor =  AppManager::createKnob<KnobColor>(this, "Timeline bounds",3);
     _timelineBoundsColor->setName("timelineBound");
     _timelineBoundsColor->setAnimationEnabled(false);
     _timelineBoundsColor->setSimplified(true);
     _timelineBoundsColor->setAddNewLine(false);
     _guiColors->addKnob(_timelineBoundsColor);
     
-    _cachedFrameColor =  Natron::createKnob<KnobColor>(this, "Cached frame",3);
+    _cachedFrameColor =  AppManager::createKnob<KnobColor>(this, "Cached frame",3);
     _cachedFrameColor->setName("cachedFrame");
     _cachedFrameColor->setAnimationEnabled(false);
     _cachedFrameColor->setSimplified(true);
     _cachedFrameColor->setAddNewLine(false);
     _guiColors->addKnob(_cachedFrameColor);
     
-    _diskCachedFrameColor =  Natron::createKnob<KnobColor>(this, "Disk cached frame",3);
+    _diskCachedFrameColor =  AppManager::createKnob<KnobColor>(this, "Disk cached frame",3);
     _diskCachedFrameColor->setName("diskCachedFrame");
     _diskCachedFrameColor->setAnimationEnabled(false);
     _diskCachedFrameColor->setSimplified(true);
     _guiColors->addKnob(_diskCachedFrameColor);
     
-    _interpolatedColor =  Natron::createKnob<KnobColor>(this, "Interpolated value",3);
+    _interpolatedColor =  AppManager::createKnob<KnobColor>(this, "Interpolated value",3);
     _interpolatedColor->setName("interpValue");
     _interpolatedColor->setAnimationEnabled(false);
     _interpolatedColor->setSimplified(true);
     _interpolatedColor->setAddNewLine(false);
     _guiColors->addKnob(_interpolatedColor);
     
-    _keyframeColor =  Natron::createKnob<KnobColor>(this, "Keyframe",3);
+    _keyframeColor =  AppManager::createKnob<KnobColor>(this, "Keyframe",3);
     _keyframeColor->setName("keyframe");
     _keyframeColor->setAnimationEnabled(false);
     _keyframeColor->setSimplified(true);
     _keyframeColor->setAddNewLine(false);
     _guiColors->addKnob(_keyframeColor);
     
-    _exprColor =  Natron::createKnob<KnobColor>(this, "Expression",3);
+    _exprColor =  AppManager::createKnob<KnobColor>(this, "Expression",3);
     _exprColor->setName("exprColor");
     _exprColor->setAnimationEnabled(false);
     _exprColor->setSimplified(true);
     _guiColors->addKnob(_exprColor);
     
     
-    _curveEditorBGColor =  Natron::createKnob<KnobColor>(this, "Background color",3);
+    _curveEditorBGColor =  AppManager::createKnob<KnobColor>(this, "Background color",3);
     _curveEditorBGColor->setName("curveEditorBG");
     _curveEditorBGColor->setAnimationEnabled(false);
     _curveEditorBGColor->setSimplified(true);
@@ -577,7 +577,7 @@ Settings::initializeKnobsAppearance()
     _curveEditorColors->addKnob(_curveEditorBGColor);
 
     
-    _gridColor =  Natron::createKnob<KnobColor>(this, "Grid color",3);
+    _gridColor =  AppManager::createKnob<KnobColor>(this, "Grid color",3);
     _gridColor->setName("curveditorGrid");
     _gridColor->setAnimationEnabled(false);
     _gridColor->setSimplified(true);
@@ -585,103 +585,103 @@ Settings::initializeKnobsAppearance()
     _curveEditorColors->addKnob(_gridColor);
 
 
-    _curveEditorScaleColor =  Natron::createKnob<KnobColor>(this, "Scale color",3);
+    _curveEditorScaleColor =  AppManager::createKnob<KnobColor>(this, "Scale color",3);
     _curveEditorScaleColor->setName("curveeditorScale");
     _curveEditorScaleColor->setAnimationEnabled(false);
     _curveEditorScaleColor->setSimplified(true);
     _curveEditorColors->addKnob(_curveEditorScaleColor);
 
     // Create the dope sheet editor settings page
-    _dopeSheetEditorBackgroundColor = Natron::createKnob<KnobColor>(this, "Sheet background color", 3);
+    _dopeSheetEditorBackgroundColor = AppManager::createKnob<KnobColor>(this, "Sheet background color", 3);
     _dopeSheetEditorBackgroundColor->setName("dopesheetBackground");
     _dopeSheetEditorBackgroundColor->setAnimationEnabled(false);
     _dopeSheetEditorBackgroundColor->setSimplified(true);
     _dopeSheetEditorColors->addKnob(_dopeSheetEditorBackgroundColor);
 
-    _dopeSheetEditorRootSectionBackgroundColor = Natron::createKnob<KnobColor>(this, "Root section background color", 4);
+    _dopeSheetEditorRootSectionBackgroundColor = AppManager::createKnob<KnobColor>(this, "Root section background color", 4);
     _dopeSheetEditorRootSectionBackgroundColor->setName("dopesheetRootSectionBackground");
     _dopeSheetEditorRootSectionBackgroundColor->setAnimationEnabled(false);
     _dopeSheetEditorRootSectionBackgroundColor->setSimplified(true);
     _dopeSheetEditorRootSectionBackgroundColor->setAddNewLine(false);
     _dopeSheetEditorColors->addKnob(_dopeSheetEditorRootSectionBackgroundColor);
 
-    _dopeSheetEditorKnobSectionBackgroundColor = Natron::createKnob<KnobColor>(this, "Knob section background color", 4);
+    _dopeSheetEditorKnobSectionBackgroundColor = AppManager::createKnob<KnobColor>(this, "Knob section background color", 4);
     _dopeSheetEditorKnobSectionBackgroundColor->setName("dopesheetKnobSectionBackground");
     _dopeSheetEditorKnobSectionBackgroundColor->setAnimationEnabled(false);
     _dopeSheetEditorKnobSectionBackgroundColor->setSimplified(true);
     _dopeSheetEditorColors->addKnob(_dopeSheetEditorKnobSectionBackgroundColor);
 
-    _dopeSheetEditorScaleColor = Natron::createKnob<KnobColor>(this, "Sheet scale color", 3);
+    _dopeSheetEditorScaleColor = AppManager::createKnob<KnobColor>(this, "Sheet scale color", 3);
     _dopeSheetEditorScaleColor->setName("dopesheetScale");
     _dopeSheetEditorScaleColor->setAnimationEnabled(false);
     _dopeSheetEditorScaleColor->setSimplified(true);
     _dopeSheetEditorScaleColor->setAddNewLine(false);
     _dopeSheetEditorColors->addKnob(_dopeSheetEditorScaleColor);
 
-    _dopeSheetEditorGridColor = Natron::createKnob<KnobColor>(this, "Sheet grid color", 3);
+    _dopeSheetEditorGridColor = AppManager::createKnob<KnobColor>(this, "Sheet grid color", 3);
     _dopeSheetEditorGridColor->setName("dopesheetGrid");
     _dopeSheetEditorGridColor->setAnimationEnabled(false);
     _dopeSheetEditorGridColor->setSimplified(true);
     _dopeSheetEditorColors->addKnob(_dopeSheetEditorGridColor);
     
     
-    _curLineColor = Natron::createKnob<KnobColor>(this, "Current Line Color", 3);
+    _curLineColor = AppManager::createKnob<KnobColor>(this, "Current Line Color", 3);
     _curLineColor->setName("currentLineColor");
     _curLineColor->setAnimationEnabled(false);
     _curLineColor->setSimplified(true);
     //_numbersColor->setAddNewLine(false);
     _scriptEditorColors->addKnob(_curLineColor);
     
-    _keywordColor = Natron::createKnob<KnobColor>(this, "Keyword Color", 3);
+    _keywordColor = AppManager::createKnob<KnobColor>(this, "Keyword Color", 3);
     _keywordColor->setName("keywordColor");
     _keywordColor->setAnimationEnabled(false);
     _keywordColor->setSimplified(true);
     _keywordColor->setAddNewLine(false);
     _scriptEditorColors->addKnob(_keywordColor);
     
-    _operatorColor = Natron::createKnob<KnobColor>(this, "Operator Color", 3);
+    _operatorColor = AppManager::createKnob<KnobColor>(this, "Operator Color", 3);
     _operatorColor->setName("operatorColor");
     _operatorColor->setAnimationEnabled(false);
     _operatorColor->setSimplified(true);
     _operatorColor->setAddNewLine(false);
     _scriptEditorColors->addKnob(_operatorColor);
     
-    _braceColor = Natron::createKnob<KnobColor>(this, "Brace Color", 3);
+    _braceColor = AppManager::createKnob<KnobColor>(this, "Brace Color", 3);
     _braceColor->setName("braceColor");
     _braceColor->setAnimationEnabled(false);
     _braceColor->setSimplified(true);
     _braceColor->setAddNewLine(false);
     _scriptEditorColors->addKnob(_braceColor);
     
-    _defClassColor = Natron::createKnob<KnobColor>(this, "Class Def Color", 3);
+    _defClassColor = AppManager::createKnob<KnobColor>(this, "Class Def Color", 3);
     _defClassColor->setName("classDefColor");
     _defClassColor->setAnimationEnabled(false);
     _defClassColor->setSimplified(true);
     //_defClassColor->setAddNewLine(false);
     _scriptEditorColors->addKnob(_defClassColor);
     
-    _stringsColor = Natron::createKnob<KnobColor>(this, "Strings Color", 3);
+    _stringsColor = AppManager::createKnob<KnobColor>(this, "Strings Color", 3);
     _stringsColor->setName("stringsColor");
     _stringsColor->setAnimationEnabled(false);
     _stringsColor->setSimplified(true);
     _stringsColor->setAddNewLine(false);
     _scriptEditorColors->addKnob(_stringsColor);
     
-    _commentsColor = Natron::createKnob<KnobColor>(this, "Comments Color", 3);
+    _commentsColor = AppManager::createKnob<KnobColor>(this, "Comments Color", 3);
     _commentsColor->setName("commentsColor");
     _commentsColor->setAnimationEnabled(false);
     _commentsColor->setSimplified(true);
     _commentsColor->setAddNewLine(false);
     _scriptEditorColors->addKnob(_commentsColor);
     
-    _selfColor = Natron::createKnob<KnobColor>(this, "Self Color", 3);
+    _selfColor = AppManager::createKnob<KnobColor>(this, "Self Color", 3);
     _selfColor->setName("selfColor");
     _selfColor->setAnimationEnabled(false);
     _selfColor->setSimplified(true);
     _selfColor->setAddNewLine(false);
     _scriptEditorColors->addKnob(_selfColor);
     
-    _numbersColor = Natron::createKnob<KnobColor>(this, "Numbers Color", 3);
+    _numbersColor = AppManager::createKnob<KnobColor>(this, "Numbers Color", 3);
     _numbersColor->setName("numbersColor");
     _numbersColor->setAnimationEnabled(false);
     _numbersColor->setSimplified(true);
@@ -689,8 +689,8 @@ Settings::initializeKnobsAppearance()
     _scriptEditorColors->addKnob(_numbersColor);
 
 
-    boost::shared_ptr<KnobPage> ocioTab = Natron::createKnob<KnobPage>(this, "OpenColorIO");
-    _ocioConfigKnob = Natron::createKnob<KnobChoice>(this, "OpenColorIO config");
+    boost::shared_ptr<KnobPage> ocioTab = AppManager::createKnob<KnobPage>(this, "OpenColorIO");
+    _ocioConfigKnob = AppManager::createKnob<KnobChoice>(this, "OpenColorIO config");
     _ocioConfigKnob->setName("ocioConfig");
     _ocioConfigKnob->setAnimationEnabled(false);
 
@@ -723,7 +723,7 @@ Settings::initializeKnobsAppearance()
 
     ocioTab->addKnob(_ocioConfigKnob);
 
-    _customOcioConfigFile = Natron::createKnob<KnobFile>(this, "Custom OpenColorIO config file");
+    _customOcioConfigFile = AppManager::createKnob<KnobFile>(this, "Custom OpenColorIO config file");
     _customOcioConfigFile->setName("ocioCustomConfigFile");
     _customOcioConfigFile->setDefaultAllDimensionsEnabled(false);
     _customOcioConfigFile->setAnimationEnabled(false);
@@ -731,13 +731,13 @@ Settings::initializeKnobsAppearance()
                                                                                                                                   "is selected as the OpenColorIO config.");
     ocioTab->addKnob(_customOcioConfigFile);
     
-    _warnOcioConfigKnobChanged = Natron::createKnob<KnobBool>(this, "Warn on OpenColorIO config change");
+    _warnOcioConfigKnobChanged = AppManager::createKnob<KnobBool>(this, "Warn on OpenColorIO config change");
     _warnOcioConfigKnobChanged->setName("warnOCIOChanged");
     _warnOcioConfigKnobChanged->setHintToolTip("Show a warning dialog when changing the OpenColorIO config to remember that a restart is required.");
     _warnOcioConfigKnobChanged->setAnimationEnabled(false);
     ocioTab->addKnob(_warnOcioConfigKnobChanged);
     
-    _ocioStartupCheck = Natron::createKnob<KnobBool>(this, "Warn on startup if OpenColorIO config is not the default");
+    _ocioStartupCheck = AppManager::createKnob<KnobBool>(this, "Warn on startup if OpenColorIO config is not the default");
     _ocioStartupCheck->setName("startupCheckOCIO");
     _ocioStartupCheck->setAnimationEnabled(false);
     ocioTab->addKnob(_ocioStartupCheck);
@@ -746,9 +746,9 @@ Settings::initializeKnobsAppearance()
 void
 Settings::initializeKnobsViewers()
 {
-    _viewersTab = Natron::createKnob<KnobPage>(this, "Viewers");
+    _viewersTab = AppManager::createKnob<KnobPage>(this, "Viewers");
 
-    _texturesMode = Natron::createKnob<KnobChoice>(this, "Viewer textures bit depth");
+    _texturesMode = AppManager::createKnob<KnobChoice>(this, "Viewer textures bit depth");
     _texturesMode->setName("texturesBitDepth");
     _texturesMode->setAnimationEnabled(false);
     std::vector<std::string> textureModes;
@@ -766,7 +766,7 @@ Settings::initializeKnobsViewers()
                                   " Hover each option with the mouse for a detailed description.");
     _viewersTab->addKnob(_texturesMode);
 
-    _powerOf2Tiling = Natron::createKnob<KnobInt>(this, "Viewer tile size is 2 to the power of...");
+    _powerOf2Tiling = AppManager::createKnob<KnobInt>(this, "Viewer tile size is 2 to the power of...");
     _powerOf2Tiling->setName("viewerTiling");
     _powerOf2Tiling->setHintToolTip("The dimension of the viewer tiles is 2^n by 2^n (i.e. 256 by 256 pixels for n=8). "
                                     "A high value means that the viewer renders large tiles, so that "
@@ -779,26 +779,26 @@ Settings::initializeKnobsViewers()
     _powerOf2Tiling->setAnimationEnabled(false);
     _viewersTab->addKnob(_powerOf2Tiling);
     
-    _checkerboardTileSize = Natron::createKnob<KnobInt>(this, "Checkerboard tile size (pixels)");
+    _checkerboardTileSize = AppManager::createKnob<KnobInt>(this, "Checkerboard tile size (pixels)");
     _checkerboardTileSize->setName("checkerboardTileSize");
     _checkerboardTileSize->setMinimum(1);
     _checkerboardTileSize->setAnimationEnabled(false);
     _checkerboardTileSize->setHintToolTip("The size (in screen pixels) of one tile of the checkerboard.");
     _viewersTab->addKnob(_checkerboardTileSize);
     
-    _checkerboardColor1 = Natron::createKnob<KnobColor>(this, "Checkerboard color 1",4);
+    _checkerboardColor1 = AppManager::createKnob<KnobColor>(this, "Checkerboard color 1",4);
     _checkerboardColor1->setName("checkerboardColor1");
     _checkerboardColor1->setAnimationEnabled(false);
     _checkerboardColor1->setHintToolTip("The first color used by the checkerboard.");
     _viewersTab->addKnob(_checkerboardColor1);
     
-    _checkerboardColor2 = Natron::createKnob<KnobColor>(this, "Checkerboard color 2",4);
+    _checkerboardColor2 = AppManager::createKnob<KnobColor>(this, "Checkerboard color 2",4);
     _checkerboardColor2->setName("checkerboardColor2");
     _checkerboardColor2->setAnimationEnabled(false);
     _checkerboardColor2->setHintToolTip("The second color used by the checkerboard.");
     _viewersTab->addKnob(_checkerboardColor2);
     
-    _autoWipe = Natron::createKnob<KnobBool>(this, "Automatically enable wipe");
+    _autoWipe = AppManager::createKnob<KnobBool>(this, "Automatically enable wipe");
     _autoWipe->setName("autoWipeForViewer");
     _autoWipe->setHintToolTip("When checked, the wipe tool of the viewer will be automatically enabled "
                               "when the mouse is hovering the viewer and changing an input of a viewer." );
@@ -806,7 +806,7 @@ Settings::initializeKnobsViewers()
     _viewersTab->addKnob(_autoWipe);
 
     
-    _autoProxyWhenScrubbingTimeline = Natron::createKnob<KnobBool>(this, "Automatically enable proxy when scrubbing the timeline");
+    _autoProxyWhenScrubbingTimeline = AppManager::createKnob<KnobBool>(this, "Automatically enable proxy when scrubbing the timeline");
     _autoProxyWhenScrubbingTimeline->setName("autoProxyScrubbing");
     _autoProxyWhenScrubbingTimeline->setHintToolTip("When checked, the proxy mode will be at least at the level "
                                                     "indicated by the auto-proxy parameter.");
@@ -815,7 +815,7 @@ Settings::initializeKnobsViewers()
     _viewersTab->addKnob(_autoProxyWhenScrubbingTimeline);
     
     
-    _autoProxyLevel = Natron::createKnob<KnobChoice>(this, "Auto-proxy level");
+    _autoProxyLevel = AppManager::createKnob<KnobChoice>(this, "Auto-proxy level");
     _autoProxyLevel->setName("autoProxyLevel");
     _autoProxyLevel->setAnimationEnabled(false);
     std::vector<std::string> autoProxyChoices;
@@ -828,7 +828,7 @@ Settings::initializeKnobsViewers()
     _viewersTab->addKnob(_autoProxyLevel);
     
     
-    _enableProgressReport = Natron::createKnob<KnobBool>(this, "Enable progress-report (experimental, slower)");
+    _enableProgressReport = AppManager::createKnob<KnobBool>(this, "Enable progress-report (experimental, slower)");
     _enableProgressReport->setName("inViewerProgress");
     _enableProgressReport->setAnimationEnabled(false);
     _enableProgressReport->setHintToolTip("When enabled, the viewer will decompose the portion to render in small tiles and will "
@@ -845,30 +845,30 @@ void
 Settings::initializeKnobsNodeGraph()
 {
     /////////// Nodegraph tab
-    _nodegraphTab = Natron::createKnob<KnobPage>(this, "Nodegraph");
+    _nodegraphTab = AppManager::createKnob<KnobPage>(this, "Nodegraph");
     
-    _autoTurbo = Natron::createKnob<KnobBool>(this, "Auto-turbo");
+    _autoTurbo = AppManager::createKnob<KnobBool>(this, "Auto-turbo");
     _autoTurbo->setName("autoTurbo");
     _autoTurbo->setHintToolTip("When checked the Turbo-mode will be enabled automatically when playback is started and disabled "
                                "when finished.");
     _autoTurbo->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_autoTurbo);
 
-    _snapNodesToConnections = Natron::createKnob<KnobBool>(this, "Snap to node");
+    _snapNodesToConnections = AppManager::createKnob<KnobBool>(this, "Snap to node");
     _snapNodesToConnections->setName("enableSnapToNode");
     _snapNodesToConnections->setHintToolTip("When moving nodes on the node graph, snap to positions where they are lined up "
                                             "with the inputs and output nodes.");
     _snapNodesToConnections->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_snapNodesToConnections);
 
-    _useBWIcons = Natron::createKnob<KnobBool>(this, "Use black & white toolbutton icons");
+    _useBWIcons = AppManager::createKnob<KnobBool>(this, "Use black & white toolbutton icons");
     _useBWIcons->setName("useBwIcons");
     _useBWIcons->setHintToolTip("When checked, the tools icons in the left toolbar are greyscale. Changing this takes "
                                 "effect upon the next launch of the application.");
     _useBWIcons->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_useBWIcons);
 
-    _useNodeGraphHints = Natron::createKnob<KnobBool>(this, "Use connection hints");
+    _useNodeGraphHints = AppManager::createKnob<KnobBool>(this, "Use connection hints");
     _useNodeGraphHints->setName("useHints");
     _useNodeGraphHints->setHintToolTip("When checked, moving a node which is not connected to anything to arrows "
                                        "nearby displays a hint for possible connections. Releasing the mouse when "
@@ -876,7 +876,7 @@ Settings::initializeKnobsNodeGraph()
     _useNodeGraphHints->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_useNodeGraphHints);
 
-    _maxUndoRedoNodeGraph = Natron::createKnob<KnobInt>(this, "Maximum undo/redo for the node graph");
+    _maxUndoRedoNodeGraph = AppManager::createKnob<KnobInt>(this, "Maximum undo/redo for the node graph");
     _maxUndoRedoNodeGraph->setName("maxUndoRedo");
     _maxUndoRedoNodeGraph->setAnimationEnabled(false);
     _maxUndoRedoNodeGraph->disableSlider();
@@ -888,7 +888,7 @@ Settings::initializeKnobsNodeGraph()
     _nodegraphTab->addKnob(_maxUndoRedoNodeGraph);
 
 
-    _disconnectedArrowLength = Natron::createKnob<KnobInt>(this, "Disconnected arrow length");
+    _disconnectedArrowLength = AppManager::createKnob<KnobInt>(this, "Disconnected arrow length");
     _disconnectedArrowLength->setName("disconnectedArrowLength");
     _disconnectedArrowLength->setAnimationEnabled(false);
     _disconnectedArrowLength->setHintToolTip("The size of a disconnected node input arrow in pixels.");
@@ -896,7 +896,7 @@ Settings::initializeKnobsNodeGraph()
 
     _nodegraphTab->addKnob(_disconnectedArrowLength);
     
-    _hideOptionalInputsAutomatically = Natron::createKnob<KnobBool>(this, "Auto hide masks inputs");
+    _hideOptionalInputsAutomatically = AppManager::createKnob<KnobBool>(this, "Auto hide masks inputs");
     _hideOptionalInputsAutomatically->setName("autoHideInputs");
     _hideOptionalInputsAutomatically->setAnimationEnabled(false);
     _hideOptionalInputsAutomatically->setHintToolTip("When checked, any diconnected mask input of a node in the nodegraph "
@@ -904,7 +904,7 @@ Settings::initializeKnobsNodeGraph()
                                                      "selected.");
     _nodegraphTab->addKnob(_hideOptionalInputsAutomatically);
     
-    _useInputAForMergeAutoConnect = Natron::createKnob<KnobBool>(this,"Merge node connect to A input");
+    _useInputAForMergeAutoConnect = AppManager::createKnob<KnobBool>(this,"Merge node connect to A input");
     _useInputAForMergeAutoConnect->setName("mergeConnectToA");
     _useInputAForMergeAutoConnect->setAnimationEnabled(false);
     _useInputAForMergeAutoConnect->setHintToolTip("If checked, upon creation of a new Merge node, the input A will be preferred "
@@ -912,14 +912,14 @@ Settings::initializeKnobsNodeGraph()
                                                   "This also applies to any other node with inputs named A and B.");
     _nodegraphTab->addKnob(_useInputAForMergeAutoConnect);
     
-    _usePluginIconsInNodeGraph = Natron::createKnob<KnobBool>(this, "Display plug-in icon on node-graph");
+    _usePluginIconsInNodeGraph = AppManager::createKnob<KnobBool>(this, "Display plug-in icon on node-graph");
     _usePluginIconsInNodeGraph->setName("usePluginIcons");
     _usePluginIconsInNodeGraph->setHintToolTip("When checked, each node that has a plug-in icon will display it in the node-graph."
                                                "Changing this option will not affect already existing nodes, unless a restart of Natron is made.");
     _usePluginIconsInNodeGraph->setAnimationEnabled(false);
     _nodegraphTab->addKnob(_usePluginIconsInNodeGraph);
     
-    _useAntiAliasing = Natron::createKnob<KnobBool>(this, "Anti-Aliasing");
+    _useAntiAliasing = AppManager::createKnob<KnobBool>(this, "Anti-Aliasing");
     _useAntiAliasing->setName("antiAliasing");
     _useAntiAliasing->setHintToolTip("When checked, the node graph will be painted using anti-aliasing. Unchecking it may increase performances."
                                      " Changing this requires a restart of Natron");
@@ -927,7 +927,7 @@ Settings::initializeKnobsNodeGraph()
     _nodegraphTab->addKnob(_useAntiAliasing);
     
    
-    _defaultNodeColor = Natron::createKnob<KnobColor>(this, "Default node color",3);
+    _defaultNodeColor = AppManager::createKnob<KnobColor>(this, "Default node color",3);
     _defaultNodeColor->setName("defaultNodeColor");
     _defaultNodeColor->setAnimationEnabled(false);
     _defaultNodeColor->setSimplified(true);
@@ -937,7 +937,7 @@ Settings::initializeKnobsNodeGraph()
     _nodegraphTab->addKnob(_defaultNodeColor);
 
 
-    _defaultBackdropColor =  Natron::createKnob<KnobColor>(this, "Default backdrop color",3);
+    _defaultBackdropColor =  AppManager::createKnob<KnobColor>(this, "Default backdrop color",3);
     _defaultBackdropColor->setName("backdropColor");
     _defaultBackdropColor->setAnimationEnabled(false);
     _defaultBackdropColor->setSimplified(true);
@@ -947,7 +947,7 @@ Settings::initializeKnobsNodeGraph()
 
     ///////////////////DEFAULT GROUP COLORS
 
-    _defaultReaderColor =  Natron::createKnob<KnobColor>(this, PLUGIN_GROUP_IMAGE_READERS,3);
+    _defaultReaderColor =  AppManager::createKnob<KnobColor>(this, PLUGIN_GROUP_IMAGE_READERS,3);
     _defaultReaderColor->setName("readerColor");
     _defaultReaderColor->setAnimationEnabled(false);
     _defaultReaderColor->setSimplified(true);
@@ -955,7 +955,7 @@ Settings::initializeKnobsNodeGraph()
     _defaultReaderColor->setHintToolTip("The color used for newly created Reader nodes.");
     _nodegraphTab->addKnob(_defaultReaderColor);
 
-    _defaultWriterColor =  Natron::createKnob<KnobColor>(this, PLUGIN_GROUP_IMAGE_WRITERS,3);
+    _defaultWriterColor =  AppManager::createKnob<KnobColor>(this, PLUGIN_GROUP_IMAGE_WRITERS,3);
     _defaultWriterColor->setName("writerColor");
     _defaultWriterColor->setAnimationEnabled(false);
     _defaultWriterColor->setSimplified(true);
@@ -963,14 +963,14 @@ Settings::initializeKnobsNodeGraph()
     _defaultWriterColor->setHintToolTip("The color used for newly created Writer nodes.");
     _nodegraphTab->addKnob(_defaultWriterColor);
 
-    _defaultGeneratorColor =  Natron::createKnob<KnobColor>(this, "Generators",3);
+    _defaultGeneratorColor =  AppManager::createKnob<KnobColor>(this, "Generators",3);
     _defaultGeneratorColor->setName("generatorColor");
     _defaultGeneratorColor->setAnimationEnabled(false);
     _defaultGeneratorColor->setSimplified(true);
     _defaultGeneratorColor->setHintToolTip("The color used for newly created Generator nodes.");
     _nodegraphTab->addKnob(_defaultGeneratorColor);
 
-    _defaultColorGroupColor =  Natron::createKnob<KnobColor>(this, "Color group",3);
+    _defaultColorGroupColor =  AppManager::createKnob<KnobColor>(this, "Color group",3);
     _defaultColorGroupColor->setName("colorNodesColor");
     _defaultColorGroupColor->setAnimationEnabled(false);
     _defaultColorGroupColor->setSimplified(true);
@@ -978,7 +978,7 @@ Settings::initializeKnobsNodeGraph()
     _defaultColorGroupColor->setHintToolTip("The color used for newly created Color nodes.");
     _nodegraphTab->addKnob(_defaultColorGroupColor);
 
-    _defaultFilterGroupColor =  Natron::createKnob<KnobColor>(this, "Filter group",3);
+    _defaultFilterGroupColor =  AppManager::createKnob<KnobColor>(this, "Filter group",3);
     _defaultFilterGroupColor->setName("filterNodesColor");
     _defaultFilterGroupColor->setAnimationEnabled(false);
     _defaultFilterGroupColor->setSimplified(true);
@@ -986,7 +986,7 @@ Settings::initializeKnobsNodeGraph()
     _defaultFilterGroupColor->setHintToolTip("The color used for newly created Filter nodes.");
     _nodegraphTab->addKnob(_defaultFilterGroupColor);
 
-    _defaultTransformGroupColor =  Natron::createKnob<KnobColor>(this, "Transform group",3);
+    _defaultTransformGroupColor =  AppManager::createKnob<KnobColor>(this, "Transform group",3);
     _defaultTransformGroupColor->setName("transformNodesColor");
     _defaultTransformGroupColor->setAnimationEnabled(false);
     _defaultTransformGroupColor->setSimplified(true);
@@ -994,7 +994,7 @@ Settings::initializeKnobsNodeGraph()
     _defaultTransformGroupColor->setHintToolTip("The color used for newly created Transform nodes.");
     _nodegraphTab->addKnob(_defaultTransformGroupColor);
 
-    _defaultTimeGroupColor =  Natron::createKnob<KnobColor>(this, "Time group",3);
+    _defaultTimeGroupColor =  AppManager::createKnob<KnobColor>(this, "Time group",3);
     _defaultTimeGroupColor->setName("timeNodesColor");
     _defaultTimeGroupColor->setAnimationEnabled(false);
     _defaultTimeGroupColor->setSimplified(true);
@@ -1002,14 +1002,14 @@ Settings::initializeKnobsNodeGraph()
     _defaultTimeGroupColor->setHintToolTip("The color used for newly created Time nodes.");
     _nodegraphTab->addKnob(_defaultTimeGroupColor);
 
-    _defaultDrawGroupColor =  Natron::createKnob<KnobColor>(this, "Draw group",3);
+    _defaultDrawGroupColor =  AppManager::createKnob<KnobColor>(this, "Draw group",3);
     _defaultDrawGroupColor->setName("drawNodesColor");
     _defaultDrawGroupColor->setAnimationEnabled(false);
     _defaultDrawGroupColor->setSimplified(true);
     _defaultDrawGroupColor->setHintToolTip("The color used for newly created Draw nodes.");
     _nodegraphTab->addKnob(_defaultDrawGroupColor);
 
-    _defaultKeyerGroupColor =  Natron::createKnob<KnobColor>(this, "Keyer group",3);
+    _defaultKeyerGroupColor =  AppManager::createKnob<KnobColor>(this, "Keyer group",3);
     _defaultKeyerGroupColor->setName("keyerNodesColor");
     _defaultKeyerGroupColor->setAnimationEnabled(false);
     _defaultKeyerGroupColor->setSimplified(true);
@@ -1017,7 +1017,7 @@ Settings::initializeKnobsNodeGraph()
     _defaultKeyerGroupColor->setHintToolTip("The color used for newly created Keyer nodes.");
     _nodegraphTab->addKnob(_defaultKeyerGroupColor);
 
-    _defaultChannelGroupColor =  Natron::createKnob<KnobColor>(this, "Channel group",3);
+    _defaultChannelGroupColor =  AppManager::createKnob<KnobColor>(this, "Channel group",3);
     _defaultChannelGroupColor->setName("channelNodesColor");
     _defaultChannelGroupColor->setAnimationEnabled(false);
     _defaultChannelGroupColor->setSimplified(true);
@@ -1025,7 +1025,7 @@ Settings::initializeKnobsNodeGraph()
     _defaultChannelGroupColor->setHintToolTip("The color used for newly created Channel nodes.");
     _nodegraphTab->addKnob(_defaultChannelGroupColor);
 
-    _defaultMergeGroupColor =  Natron::createKnob<KnobColor>(this, "Merge group",3);
+    _defaultMergeGroupColor =  AppManager::createKnob<KnobColor>(this, "Merge group",3);
     _defaultMergeGroupColor->setName("defaultMergeColor");
     _defaultMergeGroupColor->setAnimationEnabled(false);
     _defaultMergeGroupColor->setSimplified(true);
@@ -1033,7 +1033,7 @@ Settings::initializeKnobsNodeGraph()
     _defaultMergeGroupColor->setHintToolTip("The color used for newly created Merge nodes.");
     _nodegraphTab->addKnob(_defaultMergeGroupColor);
 
-    _defaultViewsGroupColor =  Natron::createKnob<KnobColor>(this, "Views group",3);
+    _defaultViewsGroupColor =  AppManager::createKnob<KnobColor>(this, "Views group",3);
     _defaultViewsGroupColor->setName("defaultViewsColor");
     _defaultViewsGroupColor->setAnimationEnabled(false);
     _defaultViewsGroupColor->setSimplified(true);
@@ -1041,7 +1041,7 @@ Settings::initializeKnobsNodeGraph()
     _defaultViewsGroupColor->setHintToolTip("The color used for newly created Views nodes.");
     _nodegraphTab->addKnob(_defaultViewsGroupColor);
 
-    _defaultDeepGroupColor =  Natron::createKnob<KnobColor>(this, "Deep group",3);
+    _defaultDeepGroupColor =  AppManager::createKnob<KnobColor>(this, "Deep group",3);
     _defaultDeepGroupColor->setName("defaultDeepColor");
     _defaultDeepGroupColor->setAnimationEnabled(false);
     _defaultDeepGroupColor->setSimplified(true);
@@ -1053,9 +1053,9 @@ void
 Settings::initializeKnobsCaching()
 {
     /////////// Caching tab
-    _cachingTab = Natron::createKnob<KnobPage>(this, "Caching");
+    _cachingTab = AppManager::createKnob<KnobPage>(this, "Caching");
 
-    _aggressiveCaching = Natron::createKnob<KnobBool>(this, "Aggressive caching");
+    _aggressiveCaching = AppManager::createKnob<KnobBool>(this, "Aggressive caching");
     _aggressiveCaching->setName("aggressiveCaching");
     _aggressiveCaching->setAnimationEnabled(false);
     _aggressiveCaching->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " will cache the output of all images "
@@ -1066,7 +1066,7 @@ Settings::initializeKnobsCaching()
                                                                                                                            "output has its settings panel opened.");
     _cachingTab->addKnob(_aggressiveCaching);
     
-    _maxRAMPercent = Natron::createKnob<KnobInt>(this, "Maximum amount of RAM memory used for caching (% of total RAM)");
+    _maxRAMPercent = AppManager::createKnob<KnobInt>(this, "Maximum amount of RAM memory used for caching (% of total RAM)");
     _maxRAMPercent->setName("maxRAMPercent");
     _maxRAMPercent->setAnimationEnabled(false);
     _maxRAMPercent->setMinimum(0);
@@ -1084,14 +1084,14 @@ Settings::initializeKnobsCaching()
     _maxRAMPercent->setAddNewLine(false);
     _cachingTab->addKnob(_maxRAMPercent);
 
-    _maxRAMLabel = Natron::createKnob<KnobString>(this, "");
+    _maxRAMLabel = AppManager::createKnob<KnobString>(this, "");
     _maxRAMLabel->setName("maxRamLabel");
     _maxRAMLabel->setIsPersistant(false);
     _maxRAMLabel->setAsLabel();
     _maxRAMLabel->setAnimationEnabled(false);
     _cachingTab->addKnob(_maxRAMLabel);
 
-    _maxPlayBackPercent = Natron::createKnob<KnobInt>(this, "Playback cache RAM percentage (% of maximum RAM used for caching)");
+    _maxPlayBackPercent = AppManager::createKnob<KnobInt>(this, "Playback cache RAM percentage (% of maximum RAM used for caching)");
     _maxPlayBackPercent->setName("maxPlaybackPercent");
     _maxPlayBackPercent->setAnimationEnabled(false);
     _maxPlayBackPercent->setMinimum(0);
@@ -1101,14 +1101,14 @@ Settings::initializeKnobsCaching()
     _maxPlayBackPercent->setAddNewLine(false);
     _cachingTab->addKnob(_maxPlayBackPercent);
 
-    _maxPlaybackLabel = Natron::createKnob<KnobString>(this, "");
+    _maxPlaybackLabel = AppManager::createKnob<KnobString>(this, "");
     _maxPlaybackLabel->setName("maxPlaybackLabel");
     _maxPlaybackLabel->setIsPersistant(false);
     _maxPlaybackLabel->setAsLabel();
     _maxPlaybackLabel->setAnimationEnabled(false);
     _cachingTab->addKnob(_maxPlaybackLabel);
 
-    _unreachableRAMPercent = Natron::createKnob<KnobInt>(this, "System RAM to keep free (% of total RAM)");
+    _unreachableRAMPercent = AppManager::createKnob<KnobInt>(this, "System RAM to keep free (% of total RAM)");
     _unreachableRAMPercent->setName("unreachableRAMPercent");
     _unreachableRAMPercent->setAnimationEnabled(false);
     _unreachableRAMPercent->setMinimum(0);
@@ -1124,14 +1124,14 @@ Settings::initializeKnobsCaching()
                                            );
     _unreachableRAMPercent->setAddNewLine(false);
     _cachingTab->addKnob(_unreachableRAMPercent);
-    _unreachableRAMLabel = Natron::createKnob<KnobString>(this, "");
+    _unreachableRAMLabel = AppManager::createKnob<KnobString>(this, "");
     _unreachableRAMLabel->setName("unreachableRAMLabel");
     _unreachableRAMLabel->setIsPersistant(false);
     _unreachableRAMLabel->setAsLabel();
     _unreachableRAMLabel->setAnimationEnabled(false);
     _cachingTab->addKnob(_unreachableRAMLabel);
 
-    _maxViewerDiskCacheGB = Natron::createKnob<KnobInt>(this, "Maximum playback disk cache size (GiB)");
+    _maxViewerDiskCacheGB = AppManager::createKnob<KnobInt>(this, "Maximum playback disk cache size (GiB)");
     _maxViewerDiskCacheGB->setName("maxViewerDiskCache");
     _maxViewerDiskCacheGB->setAnimationEnabled(false);
     _maxViewerDiskCacheGB->setMinimum(0);
@@ -1139,7 +1139,7 @@ Settings::initializeKnobsCaching()
     _maxViewerDiskCacheGB->setHintToolTip("The maximum size that may be used by the playback cache on disk (in GiB)");
     _cachingTab->addKnob(_maxViewerDiskCacheGB);
     
-    _maxDiskCacheNodeGB = Natron::createKnob<KnobInt>(this, "Maximum DiskCache node disk usage (GiB)");
+    _maxDiskCacheNodeGB = AppManager::createKnob<KnobInt>(this, "Maximum DiskCache node disk usage (GiB)");
     _maxDiskCacheNodeGB->setName("maxDiskCacheNode");
     _maxDiskCacheNodeGB->setAnimationEnabled(false);
     _maxDiskCacheNodeGB->setMinimum(0);
@@ -1148,12 +1148,12 @@ Settings::initializeKnobsCaching()
     _cachingTab->addKnob(_maxDiskCacheNodeGB);
 
 
-    _diskCachePath = Natron::createKnob<KnobPath>(this, "Disk cache path (empty = default)");
+    _diskCachePath = AppManager::createKnob<KnobPath>(this, "Disk cache path (empty = default)");
     _diskCachePath->setName("diskCachePath");
     _diskCachePath->setAnimationEnabled(false);
     _diskCachePath->setMultiPath(false);
     
-    QString defaultLocation = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationCache);
+    QString defaultLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
     std::string diskCacheTt("WARNING: Changing this parameter requires a restart of the application. \n"
                             "This is points to the location where " NATRON_APPLICATION_NAME " on-disk caches will be. "
                                                                                             "This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, "
@@ -1162,7 +1162,7 @@ Settings::initializeKnobsCaching()
     _diskCachePath->setHintToolTip(diskCacheTt + defaultLocation.toStdString());
     _cachingTab->addKnob(_diskCachePath);
     
-    _wipeDiskCache = Natron::createKnob<KnobButton>(this, "Wipe Disk Cache");
+    _wipeDiskCache = AppManager::createKnob<KnobButton>(this, "Wipe Disk Cache");
     _wipeDiskCache->setHintToolTip("Cleans-up all caches, deleting all folders that may contain cached data. "
                                    "This is provided in case " NATRON_APPLICATION_NAME " lost track of cached images "
                                    "for some reason.");
@@ -1175,24 +1175,24 @@ Settings::initializeKnobsReaders()
     ///readers & writers settings are created in a postponed manner because we don't know
     ///their dimension yet. See populateReaderPluginsAndFormats & populateWriterPluginsAndFormats
 
-    _readersTab = Natron::createKnob<KnobPage>(this, PLUGIN_GROUP_IMAGE_READERS);
+    _readersTab = AppManager::createKnob<KnobPage>(this, PLUGIN_GROUP_IMAGE_READERS);
     _readersTab->setName("readersTab");
 }
 
 void
 Settings::initializeKnobsWriters()
 {
-    _writersTab = Natron::createKnob<KnobPage>(this, PLUGIN_GROUP_IMAGE_WRITERS);
+    _writersTab = AppManager::createKnob<KnobPage>(this, PLUGIN_GROUP_IMAGE_WRITERS);
     _writersTab->setName("writersTab");
 }
 
 void
 Settings::initializeKnobsPlugins()
 {
-    _pluginsTab = Natron::createKnob<KnobPage>(this, "Plug-ins");
+    _pluginsTab = AppManager::createKnob<KnobPage>(this, "Plug-ins");
     _pluginsTab->setName("plugins");
     
-    _extraPluginPaths = Natron::createKnob<KnobPath>(this, "OpenFX plugins search path");
+    _extraPluginPaths = AppManager::createKnob<KnobPath>(this, "OpenFX plugins search path");
     _extraPluginPaths->setName("extraPluginsSearchPaths");
     
 #if defined(__linux__) || defined(__FreeBSD__)
@@ -1224,7 +1224,7 @@ Settings::initializeKnobsPlugins()
     _extraPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_extraPluginPaths);
     
-    _templatesPluginPaths = Natron::createKnob<KnobPath>(this, "PyPlugs search path");
+    _templatesPluginPaths = AppManager::createKnob<KnobPath>(this, "PyPlugs search path");
     _templatesPluginPaths->setName("groupPluginsSearchPath");
     _templatesPluginPaths->setHintToolTip("Search path where " NATRON_APPLICATION_NAME " should scan for Python group scripts (PyPlugs). "
                                                                                        "The search paths for groups can also be specified using the "
@@ -1232,7 +1232,7 @@ Settings::initializeKnobsPlugins()
     _templatesPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_templatesPluginPaths);
     
-    _loadBundledPlugins = Natron::createKnob<KnobBool>(this, "Use bundled plugins");
+    _loadBundledPlugins = AppManager::createKnob<KnobBool>(this, "Use bundled plugins");
     _loadBundledPlugins->setName("useBundledPlugins");
     _loadBundledPlugins->setHintToolTip("When checked, " NATRON_APPLICATION_NAME " also uses the plugins bundled "
                                                                                  "with the binary distribution.\n"
@@ -1241,7 +1241,7 @@ Settings::initializeKnobsPlugins()
     _loadBundledPlugins->setAnimationEnabled(false);
     _pluginsTab->addKnob(_loadBundledPlugins);
     
-    _preferBundledPlugins = Natron::createKnob<KnobBool>(this, "Prefer bundled plugins over system-wide plugins");
+    _preferBundledPlugins = AppManager::createKnob<KnobBool>(this, "Prefer bundled plugins over system-wide plugins");
     _preferBundledPlugins->setName("preferBundledPlugins");
     _preferBundledPlugins->setHintToolTip("When checked, and if \"Use bundled plugins\" is also checked, plugins bundled with the "
                                           NATRON_APPLICATION_NAME " binary distribution will take precedence over system-wide plugins "
@@ -1253,10 +1253,10 @@ Settings::initializeKnobsPlugins()
 void
 Settings::initializeKnobsPython()
 {
-    _pythonPage = Natron::createKnob<KnobPage>(this, "Python");
+    _pythonPage = AppManager::createKnob<KnobPage>(this, "Python");
     
     
-    _onProjectCreated = Natron::createKnob<KnobString>(this, "After project created");
+    _onProjectCreated = AppManager::createKnob<KnobString>(this, "After project created");
     _onProjectCreated->setName("afterProjectCreated");
     _onProjectCreated->setHintToolTip("Callback called once a new project is created (this is never called "
                                       "when \"After project loaded\" is called.)\n"
@@ -1266,40 +1266,40 @@ Settings::initializeKnobsPython()
     _pythonPage->addKnob(_onProjectCreated);
     
     
-    _defaultOnProjectLoaded = Natron::createKnob<KnobString>(this, "Default after project loaded");
+    _defaultOnProjectLoaded = AppManager::createKnob<KnobString>(this, "Default after project loaded");
     _defaultOnProjectLoaded->setName("defOnProjectLoaded");
     _defaultOnProjectLoaded->setHintToolTip("The default afterProjectLoad callback that will be set for new projects.");
     _defaultOnProjectLoaded->setAnimationEnabled(false);
     _pythonPage->addKnob(_defaultOnProjectLoaded);
     
-    _defaultOnProjectSave = Natron::createKnob<KnobString>(this, "Default before project save");
+    _defaultOnProjectSave = AppManager::createKnob<KnobString>(this, "Default before project save");
     _defaultOnProjectSave->setName("defOnProjectSave");
     _defaultOnProjectSave->setHintToolTip("The default beforeProjectSave callback that will be set for new projects.");
     _defaultOnProjectSave->setAnimationEnabled(false);
     _pythonPage->addKnob(_defaultOnProjectSave);
 
     
-    _defaultOnProjectClose = Natron::createKnob<KnobString>(this, "Default before project close");
+    _defaultOnProjectClose = AppManager::createKnob<KnobString>(this, "Default before project close");
     _defaultOnProjectClose->setName("defOnProjectClose");
     _defaultOnProjectClose->setHintToolTip("The default beforeProjectClose callback that will be set for new projects.");
     _defaultOnProjectClose->setAnimationEnabled(false);
     _pythonPage->addKnob(_defaultOnProjectClose);
 
     
-    _defaultOnNodeCreated = Natron::createKnob<KnobString>(this, "Default after node created");
+    _defaultOnNodeCreated = AppManager::createKnob<KnobString>(this, "Default after node created");
     _defaultOnNodeCreated->setName("defOnNodeCreated");
     _defaultOnNodeCreated->setHintToolTip("The default afterNodeCreated callback that will be set for new projects.");
     _defaultOnNodeCreated->setAnimationEnabled(false);
     _pythonPage->addKnob(_defaultOnNodeCreated);
 
     
-    _defaultOnNodeDelete = Natron::createKnob<KnobString>(this, "Default before node removal");
+    _defaultOnNodeDelete = AppManager::createKnob<KnobString>(this, "Default before node removal");
     _defaultOnNodeDelete->setName("defOnNodeDelete");
     _defaultOnNodeDelete->setHintToolTip("The default beforeNodeRemoval callback that will be set for new projects.");
     _defaultOnNodeDelete->setAnimationEnabled(false);
     _pythonPage->addKnob(_defaultOnNodeDelete);
     
-    _loadPyPlugsFromPythonScript = Natron::createKnob<KnobBool>(this, "Load PyPlugs in projects from .py if possible");
+    _loadPyPlugsFromPythonScript = AppManager::createKnob<KnobBool>(this, "Load PyPlugs in projects from .py if possible");
     _loadPyPlugsFromPythonScript->setName("loadFromPyFile");
     _loadPyPlugsFromPythonScript->setHintToolTip("When checked, if a project contains a PyPlug, it will try to first load the PyPlug "
                                                  "from the .py file. If the version of the PyPlug has changed Natron will ask you "
@@ -1311,7 +1311,7 @@ Settings::initializeKnobsPython()
     _loadPyPlugsFromPythonScript->setAnimationEnabled(false);
     _pythonPage->addKnob(_loadPyPlugsFromPythonScript);
 
-    _echoVariableDeclarationToPython = Natron::createKnob<KnobBool>(this, "Print auto-declared variables in the Script Editor");
+    _echoVariableDeclarationToPython = AppManager::createKnob<KnobBool>(this, "Print auto-declared variables in the Script Editor");
     _echoVariableDeclarationToPython->setName("printAutoDeclaredVars");
     _echoVariableDeclarationToPython->setHintToolTip("When checked, Natron will print in the Script Editor all variables that are "
                                                      "automatically declared, such as the app variable or node attributes.");
@@ -1606,7 +1606,7 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
                 && !didFontWarn) {
             
             didOCIOWarn = true;
-            Natron::warningDialog(QObject::tr("Font change").toStdString(),
+            Dialogs::warningDialog(QObject::tr("Font change").toStdString(),
                                   QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString());
             
             
@@ -1618,7 +1618,7 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
             bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
             if (warnOcioChanged) {
                 bool stopAsking = false;
-                Natron::warningDialog(QObject::tr("OCIO config changed").toStdString(),
+                Dialogs::warningDialog(QObject::tr("OCIO config changed").toStdString(),
                                       QObject::tr("The OpenColorIO config change requires a restart of "
                                                   NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
                 if (stopAsking) {
@@ -1639,7 +1639,7 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
                     
                     if (isFirstViewer) {
                         if ( !(*it)->supportsGLSL() && (_texturesMode->getValue() != 0) ) {
-                            Natron::errorDialog( QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
+                            Dialogs::errorDialog( QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
                                                                                                   "Reverting to 8bits textures.").toStdString() );
                             _texturesMode->setValue(0,0);
                             saveSetting(_texturesMode.get());
@@ -1890,7 +1890,7 @@ Settings::tryLoadOpenColorIOConfig()
             return false;
         }
         if ( !QFile::exists( file.c_str() ) ) {
-            Natron::errorDialog( "OpenColorIO", file + QObject::tr(": No such file.").toStdString() );
+            Dialogs::errorDialog( "OpenColorIO", file + QObject::tr(": No such file.").toStdString() );
 
             return false;
         }
@@ -1913,12 +1913,12 @@ Settings::tryLoadOpenColorIOConfig()
                 if ( !defaultConfigsDir.exists(configFileName) ) {
                     QDir subDir(defaultConfigsPaths[i] + QDir::separator() + activeEntryText);
                     if ( !subDir.exists() ) {
-                        Natron::errorDialog( "OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + QObject::tr(": No such file or directory.").toStdString() );
+                        Dialogs::errorDialog( "OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + QObject::tr(": No such file or directory.").toStdString() );
 
                         return false;
                     }
                     if ( !subDir.exists("config.ocio") ) {
-                        Natron::errorDialog( "OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + QObject::tr(": No such file or directory.").toStdString() );
+                        Dialogs::errorDialog( "OpenColorIO",subDir.absoluteFilePath("config.ocio").toStdString() + QObject::tr(": No such file or directory.").toStdString() );
 
                         return false;
                     }
@@ -1951,7 +1951,7 @@ Settings::tryLoadOpenColorIOConfig()
 
 void
 Settings::onKnobValueChanged(KnobI* k,
-                             Natron::ValueChangedReasonEnum reason,
+                             ValueChangedReasonEnum reason,
                              double /*time*/,
                              bool /*originatedFromMainThread*/)
 {
@@ -2010,7 +2010,7 @@ Settings::onKnobValueChanged(KnobI* k,
             bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
             if (warnOcioChanged && appPTR->getTopLevelInstance()) {
                 bool stopAsking = false;
-                Natron::warningDialog(QObject::tr("OCIO config changed").toStdString(),
+                Dialogs::warningDialog(QObject::tr("OCIO config changed").toStdString(),
                                       QObject::tr("The OpenColorIO config change requires a restart of "
                                                   NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
                 if (stopAsking) {
@@ -2025,7 +2025,7 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->onMaxPanelsOpenedChanged( _maxPanelsOpened->getValue() );
     } else if ( k == _checkerboardTileSize.get() || k == _checkerboardColor1.get() || k == _checkerboardColor2.get() ) {
         appPTR->onCheckerboardSettingsChanged();
-    }  else if (k == _hideOptionalInputsAutomatically.get() && !_restoringSettings && reason == Natron::eValueChangedReasonUserEdited) {
+    }  else if (k == _hideOptionalInputsAutomatically.get() && !_restoringSettings && reason == eValueChangedReasonUserEdited) {
         appPTR->toggleAutoHideGraphInputs();
     } else if (k == _autoProxyWhenScrubbingTimeline.get()) {
         _autoProxyLevel->setSecret(!_autoProxyWhenScrubbingTimeline->getValue());
@@ -2070,21 +2070,21 @@ Settings::onKnobValueChanged(KnobI* k,
         _customHostName->setSecret(!isCustom);
     }
     if ((k == _hostName.get() || k == _customHostName.get()) && !_restoringSettings) {
-        Natron::warningDialog(tr("Host-name change").toStdString(), tr("Changing this requires a restart of " NATRON_APPLICATION_NAME
+        Dialogs::warningDialog(tr("Host-name change").toStdString(), tr("Changing this requires a restart of " NATRON_APPLICATION_NAME
                                                                        " and clearing the OpenFX plug-ins load cache from the Cache menu.").toStdString());
     }
 } // onKnobValueChanged
 
-Natron::ImageBitDepthEnum
+ImageBitDepthEnum
 Settings::getViewersBitDepth() const
 {
     int v = _texturesMode->getValue();
     if (v == 0) {
-        return Natron::eImageBitDepthByte;
+        return eImageBitDepthByte;
     } else if (v == 1) {
-        return Natron::eImageBitDepthFloat;
+        return eImageBitDepthFloat;
     } else {
-        return Natron::eImageBitDepthByte;
+        return eImageBitDepthByte;
     }
 }
 
@@ -2189,7 +2189,7 @@ Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector
 {
     std::vector<boost::shared_ptr<KnobI> > knobs;
     for (std::map<std::string,std::vector< std::pair<std::string,double> > >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
-        boost::shared_ptr<KnobChoice> k = Natron::createKnob<KnobChoice>(this, it->first);
+        boost::shared_ptr<KnobChoice> k = AppManager::createKnob<KnobChoice>(this, it->first);
         k->setName("Reader_" + it->first);
         k->setAnimationEnabled(false);
 
@@ -2223,7 +2223,7 @@ Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector
     std::vector<boost::shared_ptr<KnobI> > knobs;
 
     for (std::map<std::string,std::vector< std::pair<std::string,double> > >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
-        boost::shared_ptr<KnobChoice> k = Natron::createKnob<KnobChoice>(this, it->first);
+        boost::shared_ptr<KnobChoice> k = AppManager::createKnob<KnobChoice>(this, it->first);
         k->setName("Writer_" + it->first);
         k->setAnimationEnabled(false);
 
@@ -2350,7 +2350,7 @@ Settings::populatePluginsTab()
         const QStringList& grouping = (*it->second.rbegin())->getGrouping();
         if (grouping.size() > 0) {
             
-            groupNames.insert(std::make_pair(Natron::makeNameScriptFriendly(grouping[0].toStdString()),grouping[0].toStdString()));
+            groupNames.insert(std::make_pair(Python::makeNameScriptFriendly(grouping[0].toStdString()),grouping[0].toStdString()));
         }
     }
     
@@ -2358,7 +2358,7 @@ Settings::populatePluginsTab()
 
     std::list< boost::shared_ptr<KnobGroup> > groups;
     for (std::map< std::string,std::string >::iterator it = groupNames.begin(); it != groupNames.end(); ++it) {
-        boost::shared_ptr<KnobGroup>  g = Natron::createKnob<KnobGroup>(this, it->second);
+        boost::shared_ptr<KnobGroup>  g = AppManager::createKnob<KnobGroup>(this, it->second);
         g->setName(it->first);
         _pluginsTab->addKnob(g);
         groups.push_back(g);
@@ -2377,7 +2377,7 @@ Settings::populatePluginsTab()
         assert(it->second.size() > 0);
         
         for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            Natron::Plugin* plugin  = *it2;
+            Plugin* plugin  = *it2;
             assert(plugin);
             
             if (plugin->getIsForInternalUseOnly()) {
@@ -2388,7 +2388,7 @@ Settings::populatePluginsTab()
             const QStringList& grouping = plugin->getGrouping();
             if (grouping.size() > 0) {
                 
-                std::string mainGroup = Natron::makeNameScriptFriendly(grouping[0].toStdString());
+                std::string mainGroup = Python::makeNameScriptFriendly(grouping[0].toStdString());
                 
                 ///Find the corresponding group
                 for (std::list< boost::shared_ptr<KnobGroup> >::const_iterator it3 = groups.begin(); it3 != groups.end(); ++it3) {
@@ -2402,7 +2402,7 @@ Settings::populatePluginsTab()
             ///Create checkbox to activate/deactivate the plug-in
             std::string pluginName = plugin->getPluginID().toStdString();
             
-            boost::shared_ptr<KnobString> pluginLabel = Natron::createKnob<KnobString>(this, pluginName);
+            boost::shared_ptr<KnobString> pluginLabel = AppManager::createKnob<KnobString>(this, pluginName);
             pluginLabel->setAsLabel();
             pluginLabel->setName(it->first);
             pluginLabel->setAnimationEnabled(false);
@@ -2414,7 +2414,7 @@ Settings::populatePluginsTab()
             }
             
             
-            boost::shared_ptr<KnobBool> pluginActivation = Natron::createKnob<KnobBool>(this, "Enabled");
+            boost::shared_ptr<KnobBool> pluginActivation = AppManager::createKnob<KnobBool>(this, "Enabled");
             pluginActivation->setDefaultValue(filterDefaultActivatedPlugin(plugin->getPluginID()) && !plugin->getIsDeprecated());
             pluginActivation->setName(it->first + ".enabled");
             pluginActivation->setAnimationEnabled(false);
@@ -2426,7 +2426,7 @@ Settings::populatePluginsTab()
             
             knobsToRestore.push_back(pluginActivation);
             
-            boost::shared_ptr<KnobChoice> zoomSupport = Natron::createKnob<KnobChoice>(this, "Zoom support");
+            boost::shared_ptr<KnobChoice> zoomSupport = AppManager::createKnob<KnobChoice>(this, "Zoom support");
             zoomSupport->populateChoices(zoomSupportEntries);
             zoomSupport->setName(it->first + ".zoomSupport");
             zoomSupport->setDefaultValue(filterDefaultRenderScaleSupportPlugin(plugin->getPluginID()));
@@ -2455,12 +2455,12 @@ Settings::populatePluginsTab()
 }
 
 bool
-Settings::isPluginDeactivated(const Natron::Plugin* p) const
+Settings::isPluginDeactivated(const Plugin* p) const
 {
     if (p->getIsForInternalUseOnly()) {
         return false;
     }
-    std::map<const Natron::Plugin*,PerPluginKnobs>::const_iterator found = _pluginsMap.find(p);
+    std::map<const Plugin*,PerPluginKnobs>::const_iterator found = _pluginsMap.find(p);
     if (found == _pluginsMap.end()) {
         qDebug() << "Settings::isPluginDeactivated: Plugin not found";
         return false;
@@ -2469,12 +2469,12 @@ Settings::isPluginDeactivated(const Natron::Plugin* p) const
 }
 
 int
-Settings::getRenderScaleSupportPreference(const Natron::Plugin* p) const
+Settings::getRenderScaleSupportPreference(const Plugin* p) const
 {
     if (p->getIsForInternalUseOnly()) {
         return 0;
     }
-    std::map<const Natron::Plugin*,PerPluginKnobs>::const_iterator found = _pluginsMap.find(p);
+    std::map<const Plugin*,PerPluginKnobs>::const_iterator found = _pluginsMap.find(p);
     if (found == _pluginsMap.end()) {
         qDebug() << "Settings::getRenderScaleSupportPreference: Plugin not found";
         return -1;
@@ -2664,7 +2664,7 @@ Settings::getDefaultNodeColor(float *r,
 }
 
 void
-Settings::getDefaultBackDropColor(float *r,
+Settings::getDefaultBackdropColor(float *r,
                                   float *g,
                                   float *b) const
 {
@@ -2967,16 +2967,16 @@ Settings::doOCIOStartupCheckIfNeeded()
         }
         
         bool stopAsking = false;
-        Natron::StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", QObject::tr(warnText.c_str()).toStdString(),false,
-                                                                        Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                                                        Natron::eStandardButtonYes,
+        StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", QObject::tr(warnText.c_str()).toStdString(),false,
+                                                                        StandardButtons(eStandardButtonYes | eStandardButtonNo),
+                                                                        eStandardButtonYes,
                                                                         &stopAsking);
         if (stopAsking != !docheck) {
             _ocioStartupCheck->setValue(!stopAsking,0);
             saveSetting(_ocioStartupCheck.get());
         }
         
-        if (reply == Natron::eStandardButtonYes) {
+        if (reply == eStandardButtonYes) {
             
             int defaultIndex = -1;
             for (int i = 0; i < (int)entries.size(); ++i) {
@@ -2989,7 +2989,7 @@ Settings::doOCIOStartupCheckIfNeeded()
                 _ocioConfigKnob->setValue(defaultIndex,0);
                 saveSetting(_ocioConfigKnob.get());
             } else {
-                Natron::warningDialog("OCIO config", QObject::tr("The " NATRON_DEFAULT_OCIO_CONFIG_NAME " config could not be found. "
+                Dialogs::warningDialog("OCIO config", QObject::tr("The " NATRON_DEFAULT_OCIO_CONFIG_NAME " config could not be found. "
                                                                                                         "This is probably because you're not using the OpenColorIO-Configs folder that should "
                                                                                                         "be bundled with your " NATRON_APPLICATION_NAME " installation.").toStdString());
             }
@@ -3456,3 +3456,8 @@ Settings::isAutoWipeEnabled() const
 {
     return _autoWipe->getValue();
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_Settings.cpp"

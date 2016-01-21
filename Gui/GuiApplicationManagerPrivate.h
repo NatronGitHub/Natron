@@ -54,6 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 #include "Gui/PreviewThread.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct KnobsClipBoard
 {
@@ -154,5 +155,7 @@ struct GuiApplicationManagerPrivate
     
     void updateFontConfigCache();
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif

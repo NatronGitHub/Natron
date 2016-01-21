@@ -58,6 +58,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kTimeOffsetParamNameTimeOffset "timeOffset"
 
 
+NATRON_NAMESPACE_ENTER;
 
 class DopeSheetPrivate;
 class DopeSheetSelectionModel;
@@ -115,7 +116,7 @@ bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui);
  *
  * -- Item types --
  *
- * Remember, the Natron::DopeSheetItemType enum describes each possible type for a
+ * Remember, the DopeSheetItemType enum describes each possible type for a
  * context.
  *
  * A DSNode stores this type because the dope sheet editor treats some types
@@ -137,7 +138,7 @@ class DSNode
 {
 public:
     DSNode(DopeSheet *model,
-           Natron::DopeSheetItemType itemType,
+           DopeSheetItemType itemType,
            const boost::shared_ptr<NodeGui> &nodeGui,
            QTreeWidgetItem *nameItem);
     ~DSNode();
@@ -145,11 +146,11 @@ public:
     QTreeWidgetItem *getTreeItem() const;
     
     boost::shared_ptr<NodeGui> getNodeGui() const;
-    boost::shared_ptr<Natron::Node> getInternalNode() const;
+    boost::shared_ptr<Node> getInternalNode() const;
     
     const DSTreeItemKnobMap& getItemKnobMap() const;
     
-    Natron::DopeSheetItemType getItemType() const;
+    DopeSheetItemType getItemType() const;
     
     bool isTimeNode() const;
     
@@ -348,7 +349,7 @@ public:
     boost::shared_ptr<DSKnob> mapNameItemToDSKnob(QTreeWidgetItem *knobTreeItem) const;
 
     boost::shared_ptr<DSNode> findParentDSNode(QTreeWidgetItem *treeItem) const;
-    boost::shared_ptr<DSNode> findDSNode(Natron::Node *node) const;
+    boost::shared_ptr<DSNode> findDSNode(Node *node) const;
     boost::shared_ptr<DSNode> findDSNode(const boost::shared_ptr<KnobI> &knob) const;
 
     boost::shared_ptr<DSKnob> findDSKnob(KnobGui *knobGui) const;
@@ -359,7 +360,7 @@ public:
     std::vector<boost::shared_ptr<DSNode> > getImportantNodes(DSNode *dsNode) const;
 
     boost::shared_ptr<DSNode> getNearestTimeNodeFromOutputs(DSNode *dsNode) const;
-    Natron::Node *getNearestReader(DSNode *timeNode) const;
+    Node *getNearestReader(DSNode *timeNode) const;
 
     DopeSheetSelectionModel *getSelectionModel() const;
     
@@ -380,7 +381,7 @@ public:
     
     void pasteKeys(const std::vector<DopeSheetKey>& keys);
     
-    void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum keyType);
+    void setSelectedKeysInterpolation(KeyframeTypeEnum keyType);
     
     void transformSelectedKeys(const Transform::Matrix3x3& transform);
 
@@ -402,7 +403,7 @@ Q_SIGNALS:
     void keyframeSetOrRemoved(DSKnob *dsKnob);
 
 private: /* functions */
-    boost::shared_ptr<DSNode> createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, Natron::DopeSheetItemType itemType);
+    boost::shared_ptr<DSNode> createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, DopeSheetItemType itemType);
 
 private Q_SLOTS:
     void onNodeNameChanged(const QString &name);
@@ -477,6 +478,8 @@ private:
     boost::scoped_ptr<DopeSheetSelectionModelPrivate> _imp;
 };
 
-Q_DECLARE_OPERATORS_FOR_FLAGS(DopeSheetSelectionModel::SelectionTypeFlags)
+NATRON_NAMESPACE_EXIT;
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(NATRON_NAMESPACE::DopeSheetSelectionModel::SelectionTypeFlags)
 
 #endif // DOPESHEET_H

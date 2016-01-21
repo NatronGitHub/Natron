@@ -49,6 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Utils.h" // convertFromPlainText
 #include "Gui/GuiDefines.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class PlaceHolderTextEdit: public QTextEdit
 {
@@ -107,23 +108,23 @@ struct ExportGroupTemplateDialogPrivate
     NodeCollection* group;
     QGridLayout* mainLayout;
 
-    Natron::Label* labelLabel;
+    Label* labelLabel;
     LineEdit* labelEdit;
 
-    Natron::Label* idLabel;
+    Label* idLabel;
     LineEdit* idEdit;
 
-    Natron::Label* groupingLabel;
+    Label* groupingLabel;
     LineEdit* groupingEdit;
 
-    Natron::Label* fileLabel;
+    Label* fileLabel;
     LineEdit* fileEdit;
     Button* openButton;
 
-    Natron::Label* iconPathLabel;
+    Label* iconPathLabel;
     LineEdit* iconPath;
 
-    Natron::Label* descriptionLabel;
+    Label* descriptionLabel;
     PlaceHolderTextEdit* descriptionEdit;
 
     QDialogButtonBox *buttons;
@@ -158,8 +159,8 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->mainLayout = new QGridLayout(this);
 
 
-    _imp->idLabel = new Natron::Label(tr("Unique ID"),this);
-    QString idTt = Natron::convertFromPlainText(tr("The unique ID is used by " NATRON_APPLICATION_NAME "to identify the plug-in in various "
+    _imp->idLabel = new Label(tr("Unique ID"),this);
+    QString idTt = GuiUtils::convertFromPlainText(tr("The unique ID is used by " NATRON_APPLICATION_NAME "to identify the plug-in in various "
                                                "places in the application. Generally this contains domain and sub-domains names "
                                                "such as fr.inria.group.XXX. If 2 plug-ins happen to have the same ID they will be "
                                                "gathered by version. If 2 plug-ins have the same ID and version, the first loaded in the"
@@ -169,8 +170,8 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->idEdit->setToolTip(idTt);
 
 
-    _imp->labelLabel = new Natron::Label(tr("Label"),this);
-    QString labelTt = Natron::convertFromPlainText(tr("Set the label of the group as the user will see it in the user interface."), Qt::WhiteSpaceNormal);
+    _imp->labelLabel = new Label(tr("Label"),this);
+    QString labelTt = GuiUtils::convertFromPlainText(tr("Set the label of the group as the user will see it in the user interface."), Qt::WhiteSpaceNormal);
     _imp->labelLabel->setToolTip(labelTt);
     _imp->labelEdit = new LineEdit(this);
     _imp->labelEdit->setPlaceholderText("MyPlugin");
@@ -178,8 +179,8 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->labelEdit->setToolTip(labelTt);
 
 
-    _imp->groupingLabel = new Natron::Label(tr("Grouping"),this);
-    QString groupingTt = Natron::convertFromPlainText(tr("The grouping of the plug-in specifies where the plug-in will be located in the menus. "
+    _imp->groupingLabel = new Label(tr("Grouping"),this);
+    QString groupingTt = GuiUtils::convertFromPlainText(tr("The grouping of the plug-in specifies where the plug-in will be located in the menus. "
                                                      "E.g: Color/Transform, or Draw. Each sub-level must be separated by a '/'."), Qt::WhiteSpaceNormal);
     _imp->groupingLabel->setToolTip(groupingTt);
 
@@ -188,23 +189,23 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
     _imp->groupingEdit->setToolTip(groupingTt);
 
 
-    _imp->iconPathLabel = new Natron::Label(tr("Icon relative path"),this);
-    QString iconTt = Natron::convertFromPlainText(tr("Set here the file path of an optional icon to identify the plug-in. "
+    _imp->iconPathLabel = new Label(tr("Icon relative path"),this);
+    QString iconTt = GuiUtils::convertFromPlainText(tr("Set here the file path of an optional icon to identify the plug-in. "
                                                  "The path is relative to the Python script."), Qt::WhiteSpaceNormal);
     _imp->iconPathLabel->setToolTip(iconTt);
     _imp->iconPath = new LineEdit(this);
     _imp->iconPath->setPlaceholderText("Label.png");
     _imp->iconPath->setToolTip(iconTt);
 
-    _imp->descriptionLabel = new Natron::Label(tr("Description"),this);
-    QString descTt =  Natron::convertFromPlainText(tr("Set here the (optional) plug-in description that the user will see when clicking the "
+    _imp->descriptionLabel = new Label(tr("Description"),this);
+    QString descTt =  GuiUtils::convertFromPlainText(tr("Set here the (optional) plug-in description that the user will see when clicking the "
                                                   " \"?\" button on the settings panel of the node."), Qt::WhiteSpaceNormal);
     _imp->descriptionEdit = new PlaceHolderTextEdit(this);
     _imp->descriptionEdit->setToolTip(descTt);
     _imp->descriptionEdit->setPlaceHolderText(tr("This plug-in can be used to produce XXX effect..."));
 
-    _imp->fileLabel = new Natron::Label(tr("Directory"),this);
-    QString fileTt  = Natron::convertFromPlainText(tr("Specify here the directory where to export the Python script."), Qt::WhiteSpaceNormal);
+    _imp->fileLabel = new Label(tr("Directory"),this);
+    QString fileTt  = GuiUtils::convertFromPlainText(tr("Specify here the directory where to export the Python script."), Qt::WhiteSpaceNormal);
     _imp->fileLabel->setToolTip(fileTt);
     _imp->fileEdit = new LineEdit(this);
 
@@ -213,7 +214,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,Gui* 
 
 
     QPixmap openPix;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &openPix);
+    appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &openPix);
     _imp->openButton = new Button(QIcon(openPix),"",this);
     _imp->openButton->setFocusPolicy(Qt::NoFocus);
     _imp->openButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
@@ -284,20 +285,20 @@ ExportGroupTemplateDialog::onOkClicked()
     QDir d(dirPath);
 
     if (!d.exists()) {
-        Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a directory to save the script").toStdString());
+        Dialogs::errorDialog(tr("Error").toStdString(), tr("You must specify a directory to save the script").toStdString());
         return;
     }
     QString pluginLabel = _imp->labelEdit->text();
     if (pluginLabel.isEmpty()) {
-        Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a label to name the script").toStdString());
+        Dialogs::errorDialog(tr("Error").toStdString(), tr("You must specify a label to name the script").toStdString());
         return;
     } else {
-        pluginLabel = Natron::makeNameScriptFriendly(pluginLabel.toStdString()).c_str();
+        pluginLabel = Python::makeNameScriptFriendly(pluginLabel.toStdString()).c_str();
     }
 
     QString pluginID = _imp->idEdit->text();
     if (pluginID.isEmpty()) {
-        Natron::errorDialog(tr("Error").toStdString(), tr("You must specify a unique ID to identify the script").toStdString());
+        Dialogs::errorDialog(tr("Error").toStdString(), tr("You must specify a unique ID to identify the script").toStdString());
         return;
     }
 
@@ -310,11 +311,11 @@ ExportGroupTemplateDialog::onOkClicked()
     QStringList filters;
     filters.push_back(QString(pluginLabel + ".py"));
     if (!d.entryList(filters,QDir::Files | QDir::NoDotAndDotDot).isEmpty()) {
-        Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Existing plug-in").toStdString(),
+        StandardButtonEnum rep = Dialogs::questionDialog(tr("Existing plug-in").toStdString(),
                                                                 tr("A group plug-in with the same name already exists "
                                                                    "would you like to "
                                                                    "override it?").toStdString(), false);
-        if  (rep == Natron::eStandardButtonNo) {
+        if  (rep == eStandardButtonNo) {
             return;
         }
     }
@@ -333,10 +334,10 @@ ExportGroupTemplateDialog::onOkClicked()
     if (!foundInPath) {
 
         QString message = dirPath + tr(" does not exist in the group plug-in search path, would you like to add it?");
-        Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Plug-in path").toStdString(),
+        StandardButtonEnum rep = Dialogs::questionDialog(tr("Plug-in path").toStdString(),
                                                                 message.toStdString(), false);
 
-        if  (rep == Natron::eStandardButtonYes) {
+        if  (rep == eStandardButtonYes) {
             appPTR->getCurrentSettings()->appendPythonGroupsPath(dirPath.toStdString());
         }
 
@@ -344,7 +345,7 @@ ExportGroupTemplateDialog::onOkClicked()
 
     QFile file(filePath);
     if (!file.open(QIODevice::ReadWrite | QIODevice::Truncate)) {
-        Natron::errorDialog(tr("Error").toStdString(), QString(tr("Cannot open ") + filePath).toStdString());
+        Dialogs::errorDialog(tr("Error").toStdString(), QString(tr("Cannot open ") + filePath).toStdString());
         return;
     }
 
@@ -355,3 +356,8 @@ ExportGroupTemplateDialog::onOkClicked()
 
     accept();
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_ExportGroupTemplateDialog.cpp"

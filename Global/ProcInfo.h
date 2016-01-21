@@ -38,8 +38,9 @@
 #include <sys/stat.h>
 #endif
 
-namespace Natron
-{
+NATRON_NAMESPACE_ENTER;
+
+namespace ProcInfo {
 
 /**
 * @brief Returns the application's executable absolute file path.
@@ -61,5 +62,8 @@ QString applicationDirPath(const char* argv0Param);
 **/
 bool checkIfProcessIsRunning(const char* processAbsoluteFilePath, Q_PID pid);
 
-} //Natron
+} // namespace ProcInfo
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // NATRON_GLOBAL_PROCINFO_H

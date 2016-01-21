@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NODEGROUPWRAPPER_H
-#define NODEGROUPWRAPPER_H
+#ifndef Engine_NodeGroupWrapper_h
+#define Engine_NodeGroupWrapper_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -33,6 +33,7 @@
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class Group
 {
@@ -67,4 +68,6 @@ public:
 
 };
 
-#endif // NODEGROUPWRAPPER_H
+NATRON_NAMESPACE_EXIT;
+
+#endif // Engine_NodeGroupWrapper_h

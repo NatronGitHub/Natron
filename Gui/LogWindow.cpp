@@ -36,6 +36,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Button.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 
+NATRON_NAMESPACE_ENTER;
+
 LogWindow::LogWindow(const QString & log,
                      QWidget* parent)
     : QDialog(parent)
@@ -68,3 +70,8 @@ LogWindow::onClearButtonClicked()
     appPTR->clearOfxLog_mt_safe();
     textBrowser->clear();
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_LogWindow.cpp"

@@ -51,6 +51,8 @@
 #include "Gui/PickKnobDialog.h"
 #include "Gui/Utils.h" // convertFromPlainText
 
+NATRON_NAMESPACE_ENTER;
+
 namespace {
 struct TreeItem
 {
@@ -143,7 +145,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel, QWidget* pa
 : QDialog(parent)
 , _imp(new ManageUserParamsDialogPrivate(panel))
 {
-    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(panel->getHolder());
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(panel->getHolder());
     QString title = "User Parameters";
     if (effect) {
         title += " for ";
@@ -218,37 +220,37 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel, QWidget* pa
     _imp->buttonsLayout = new QVBoxLayout(_imp->buttonsContainer);
     
     _imp->addButton = new Button(tr("Add..."),_imp->buttonsContainer);
-    _imp->addButton->setToolTip(Natron::convertFromPlainText(tr("Add a new parameter, group or page"), Qt::WhiteSpaceNormal));
+    _imp->addButton->setToolTip(GuiUtils::convertFromPlainText(tr("Add a new parameter, group or page"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->addButton,SIGNAL(clicked(bool)),this,SLOT(onAddClicked()));
     _imp->buttonsLayout->addWidget(_imp->addButton);
     
     _imp->pickButton = new Button(tr("Pick..."),_imp->buttonsContainer);
-    _imp->pickButton->setToolTip(Natron::convertFromPlainText(tr("Add a new parameter that is directly copied from/linked to another parameter"), Qt::WhiteSpaceNormal));
+    _imp->pickButton->setToolTip(GuiUtils::convertFromPlainText(tr("Add a new parameter that is directly copied from/linked to another parameter"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->pickButton,SIGNAL(clicked(bool)),this,SLOT(onPickClicked()));
     _imp->buttonsLayout->addWidget(_imp->pickButton);
     
     _imp->editButton = new Button(tr("Edit..."),_imp->buttonsContainer);
-    _imp->editButton->setToolTip(Natron::convertFromPlainText(tr("Edit the selected parameter"), Qt::WhiteSpaceNormal));
+    _imp->editButton->setToolTip(GuiUtils::convertFromPlainText(tr("Edit the selected parameter"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->editButton,SIGNAL(clicked(bool)),this,SLOT(onEditClicked()));
     _imp->buttonsLayout->addWidget(_imp->editButton);
     
     _imp->removeButton = new Button(tr("Delete"),_imp->buttonsContainer);
-    _imp->removeButton->setToolTip(Natron::convertFromPlainText(tr("Delete the selected parameter"), Qt::WhiteSpaceNormal));
+    _imp->removeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Delete the selected parameter"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->removeButton,SIGNAL(clicked(bool)),this,SLOT(onDeleteClicked()));
     _imp->buttonsLayout->addWidget(_imp->removeButton);
     
     _imp->upButton = new Button(tr("Up"),_imp->buttonsContainer);
-    _imp->upButton->setToolTip(Natron::convertFromPlainText(tr("Move the selected parameter one level up in the layout"), Qt::WhiteSpaceNormal));
+    _imp->upButton->setToolTip(GuiUtils::convertFromPlainText(tr("Move the selected parameter one level up in the layout"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->upButton,SIGNAL(clicked(bool)),this,SLOT(onUpClicked()));
     _imp->buttonsLayout->addWidget(_imp->upButton);
     
     _imp->downButton = new Button(tr("Down"),_imp->buttonsContainer);
-    _imp->downButton->setToolTip(Natron::convertFromPlainText(tr("Move the selected parameter one level down in the layout"), Qt::WhiteSpaceNormal));
+    _imp->downButton->setToolTip(GuiUtils::convertFromPlainText(tr("Move the selected parameter one level down in the layout"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->downButton,SIGNAL(clicked(bool)),this,SLOT(onDownClicked()));
     _imp->buttonsLayout->addWidget(_imp->downButton);
     
     _imp->closeButton = new Button(tr("Close"),_imp->buttonsContainer);
-    _imp->closeButton->setToolTip(Natron::convertFromPlainText(tr("Close this dialog"), Qt::WhiteSpaceNormal));
+    _imp->closeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Close this dialog"), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->closeButton,SIGNAL(clicked(bool)),this,SLOT(onCloseClicked()));
     _imp->buttonsLayout->addWidget(_imp->closeButton);
     
@@ -274,7 +276,7 @@ static QString createTextForKnob(const boost::shared_ptr<KnobI>& knob)
         boost::shared_ptr<KnobI> listener = listeners.begin()->first.lock();
         if (listener && listener->getAliasMaster() == knob) {
             text += " (alias of ";
-            Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(listener->getHolder());
+            EffectInstance* effect = dynamic_cast<EffectInstance*>(listener->getHolder());
             if (effect) {
                 text += effect->getScriptName_mt_safe().c_str();
                 text += '.';
@@ -495,9 +497,9 @@ ManageUserParamsDialog::onDeleteClicked()
                     question += it->knob->getName().c_str();
                     question += ' ';
                     question += tr("cannot be undone. Are you sure you want to continue?");
-                    Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Remove parameter").toStdString(), question.toStdString(), false,
-                                                                             Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo), Natron::eStandardButtonYes);
-                    if (rep != Natron::eStandardButtonYes) {
+                    StandardButtonEnum rep = Dialogs::questionDialog(tr("Remove parameter").toStdString(), question.toStdString(), false,
+                                                                             StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonYes);
+                    if (rep != eStandardButtonYes) {
                         return;
                     }
                     it->knob->getHolder()->removeDynamicKnob(it->knob.get());
@@ -786,3 +788,8 @@ ManageUserParamsDialog::onSelectionChanged()
     _imp->upButton->setEnabled(selection.size() == 1);
     _imp->downButton->setEnabled(selection.size() == 1);
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_ManageUserParamsDialog.cpp"

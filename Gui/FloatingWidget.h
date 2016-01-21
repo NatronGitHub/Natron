@@ -50,6 +50,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kMainSplitterObjectName "ToolbarSplitter"
 
+NATRON_NAMESPACE_ENTER;
+
 /*This class represents a floating pane that embeds a widget*/
 class FloatingWidget
     : public QWidget, public SerializableWindow
@@ -95,5 +97,7 @@ private:
     QVBoxLayout* _layout;
     Gui* _gui;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_FloatingWidget_h

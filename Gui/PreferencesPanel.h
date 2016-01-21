@@ -39,6 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class PreferencesPanel
     : public QWidget
@@ -82,5 +83,7 @@ private:
     std::vector<KnobI*> _changedKnobs;
     bool _closeIsOK;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PREFERENCESPANEL_H

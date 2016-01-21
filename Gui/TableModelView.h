@@ -44,6 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class TableItem
 {
@@ -247,7 +248,6 @@ TableItem::setFont(const QFont &afont)
     setData(Qt::FontRole, afont);
 }
 
-Q_DECLARE_METATYPE(TableItem*)
 
 struct TableViewPrivate;
 class TableView
@@ -408,5 +408,8 @@ private:
     boost::scoped_ptr<TableModelPrivate> _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
+
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::TableItem*)
 
 #endif // TABLEMODELVIEW_H

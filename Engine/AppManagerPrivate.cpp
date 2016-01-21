@@ -61,10 +61,10 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/StandardPaths.h"
 
 
-BOOST_CLASS_EXPORT(Natron::FrameParams)
-BOOST_CLASS_EXPORT(Natron::ImageParams)
+BOOST_CLASS_EXPORT(NATRON_NAMESPACE::FrameParams)
+BOOST_CLASS_EXPORT(NATRON_NAMESPACE::ImageParams)
 
-
+NATRON_NAMESPACE_ENTER;
 
 
 #if defined(NATRON_USE_BREAKPAD) || defined(Q_OS_LINUX)
@@ -86,7 +86,6 @@ void crash_application()
 #endif // DEBUG
 #endif // NATRON_USE_BREAKPAD
 
-using namespace Natron;
 
 AppManagerPrivate::AppManagerPrivate()
 : globalTLS()
@@ -98,7 +97,7 @@ AppManagerPrivate::AppManagerPrivate()
 , _settings()
 , _formats()
 , _plugins()
-, ofxHost( new Natron::OfxHost() )
+, ofxHost( new OfxHost() )
 , _knobFactory( new KnobFactory() )
 , _nodeCache()
 , _diskCache()
@@ -171,8 +170,8 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& 
 void
 AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath, int breakpad_client_fd)
 {
-    
-    QString dumpPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+    QString dumpPath = StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+    Q_UNUSED(breakpad_client_fd);
     try {
 #if defined(Q_OS_MAC)
         Q_UNUSED(breakpad_client_fd);
@@ -289,7 +288,7 @@ AppManagerPrivate::loadBuiltinFormats()
     }
 } // loadBuiltinFormats
 
-Natron::Plugin*
+Plugin*
 AppManagerPrivate::findPluginById(const QString& newId,int major, int minor) const
 {
     for (PluginsMap::const_iterator it = _plugins.begin(); it != _plugins.end(); ++it) {
@@ -317,7 +316,7 @@ AppManagerPrivate::declareSettingsToPython()
 
 
 template <typename T>
-void saveCache(Natron::Cache<T>* cache)
+void saveCache(Cache<T>* cache)
 {
     std::ofstream ofile;
     ofile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
@@ -340,7 +339,7 @@ void saveCache(Natron::Cache<T>* cache)
         return;
     }
     
-    typename Natron::Cache<T>::CacheTOC toc;
+    typename Cache<T>::CacheTOC toc;
     cache->save(&toc);
     unsigned int version = cache->cacheVersion();
     try {
@@ -358,12 +357,12 @@ void saveCache(Natron::Cache<T>* cache)
 void
 AppManagerPrivate::saveCaches()
 {
-    saveCache<Natron::FrameEntry>(_viewerCache.get());
-    saveCache<Natron::Image>(_diskCache.get());
+    saveCache<FrameEntry>(_viewerCache.get());
+    saveCache<Image>(_diskCache.get());
 } // saveCaches
 
 template <typename T>
-void restoreCache(AppManagerPrivate* p,Natron::Cache<T>* cache)
+void restoreCache(AppManagerPrivate* p,Cache<T>* cache)
 {
     if ( p->checkForCacheDiskStructure( cache->getCachePath() ) ) {
         std::ifstream ifile;
@@ -384,7 +383,7 @@ void restoreCache(AppManagerPrivate* p,Natron::Cache<T>* cache)
             return;
         }
         
-        typename Natron::Cache<T>::CacheTOC tableOfContents;
+        typename Cache<T>::CacheTOC tableOfContents;
         unsigned int cacheVersion = 0x1; //< default to 1 before NATRON_CACHE_VERSION was introduced
         try {
             boost::archive::binary_iarchive iArchive(ifile);
@@ -477,7 +476,7 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
     QDir cacheFolder(cachePath);
 
 #   if QT_VERSION < 0x050000
-    removeRecursively(cachePath);
+    QtCompat::removeRecursively(cachePath);
 #   else
     if ( cacheFolder.exists() ) {
         cacheFolder.removeRecursively();
@@ -584,3 +583,5 @@ AppManagerPrivate::setMaxCacheFiles()
 
     maxCacheFiles = hardMax * 0.9;
 }
+
+NATRON_NAMESPACE_EXIT;

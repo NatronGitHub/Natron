@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <iostream>
 #include <cassert>
 #include <cstdio> // for std::remove
@@ -49,7 +51,8 @@
 #include <SequenceParsing.h> // for removePath
 #include "Engine/EngineFwd.h"
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////BUFFER////////////////////////////////////////////////////
 
@@ -160,7 +163,7 @@ public:
     }
 
     void allocate( U64 count,
-                   Natron::StorageModeEnum storage,
+                   StorageModeEnum storage,
                    std::string path = std::string() )
     {
         /*allocate should be called only once.*/
@@ -171,7 +174,7 @@ public:
         }
 
 
-        if (storage == Natron::eStorageModeDisk) {
+        if (storage == eStorageModeDisk) {
             _storageMode = eStorageModeDisk;
             _path = path;
             try {
@@ -182,7 +185,7 @@ public:
                 ///if opening the file mapping failed, just call allocate again, but this time on RA%!
                 _backingFile.reset();
                 _path.clear();
-                allocate(count,Natron::eStorageModeRAM, path);
+                allocate(count,eStorageModeRAM, path);
 
                 return;
             }
@@ -191,7 +194,7 @@ public:
                 //if the backing file has already the good size and we just wanted to re-open the mapping
                 _backingFile->resize(count);
             }
-        } else if (storage == Natron::eStorageModeRAM) {
+        } else if (storage == eStorageModeRAM) {
             _storageMode = eStorageModeRAM;
             _buffer.resize(count);
         }
@@ -335,7 +338,7 @@ public:
         }
     }
 
-    Natron::StorageModeEnum getStorageMode() const
+    StorageModeEnum getStorageMode() const
     {
         return _storageMode;
     }
@@ -348,7 +351,7 @@ private:
     /*mutable so the reOpenFileMapping function can reopen the mmaped file. It doesn't
        change the underlying data*/
     mutable boost::scoped_ptr<MemoryFile> _backingFile;
-    Natron::StorageModeEnum _storageMode;
+    StorageModeEnum _storageMode;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -370,12 +373,12 @@ public:
     /**
      * @brief To be called by a CacheEntry on allocation.
      **/
-    virtual void notifyEntryAllocated(double time, size_t size, Natron::StorageModeEnum storage) const = 0;
+    virtual void notifyEntryAllocated(double time, size_t size, StorageModeEnum storage) const = 0;
 
     /**
      * @brief To be called by a CacheEntry on destruction.
      **/
-    virtual void notifyEntryDestroyed(double time, size_t size, Natron::StorageModeEnum storage) const = 0;
+    virtual void notifyEntryDestroyed(double time, size_t size, StorageModeEnum storage) const = 0;
     
     /**
      * @brief Called by the Cache deleter thread to wake up sleeping threads that were attempting to create a new iamge
@@ -391,7 +394,7 @@ public:
      * @brief To be called whenever an entry is deallocated from memory and put back on disk or whenever
      * it is reallocated in the RAM.
      **/
-    virtual void notifyEntryStorageChanged(Natron::StorageModeEnum oldStorage,Natron::StorageModeEnum newStorage,
+    virtual void notifyEntryStorageChanged(StorageModeEnum oldStorage,StorageModeEnum newStorage,
                                            double time,size_t size) const = 0;
     
     /**
@@ -524,7 +527,7 @@ public:
     CacheEntryHelper(const KeyType & key,
                      const boost::shared_ptr<ParamsType> & params,
                      const CacheAPI* cache,
-                     Natron::StorageModeEnum storage,
+                     StorageModeEnum storage,
                      const std::string & path)
     : _key(key)
     , _params(params)
@@ -553,7 +556,7 @@ public:
     void setCacheEntry(const KeyType & key,
                        const boost::shared_ptr<ParamsType> & params,
                        const CacheAPI* cache,
-                       Natron::StorageModeEnum storage,
+                       StorageModeEnum storage,
                        const std::string & path)
     {
         assert(!_params && _cache == NULL);
@@ -571,7 +574,7 @@ public:
      **/
     void allocateMemory()
     {
-        if (_requestedStorage == Natron::eStorageModeNone) {
+        if (_requestedStorage == eStorageModeNone) {
             return;
         }
         
@@ -599,7 +602,7 @@ public:
      **/
     void restoreMetaDataFromFile(std::size_t size)
     {
-        if (!_cache || _requestedStorage != Natron::eStorageModeDisk) {
+        if (!_cache || _requestedStorage != eStorageModeDisk) {
             return;
         }
         
@@ -615,7 +618,7 @@ public:
         }
         
         if (_cache) {
-            _cache->notifyEntryStorageChanged(Natron::eStorageModeNone, Natron::eStorageModeDisk, getTime(),size);
+            _cache->notifyEntryStorageChanged(eStorageModeNone, eStorageModeDisk, getTime(),size);
         }
     }
 
@@ -685,7 +688,7 @@ public:
             _data.reOpenFileMapping();
         }
         if (_cache) {
-            _cache->notifyEntryStorageChanged( Natron::eStorageModeDisk, Natron::eStorageModeRAM,getTime(), size() );
+            _cache->notifyEntryStorageChanged( eStorageModeDisk, eStorageModeRAM,getTime(), size() );
         }
     }
 
@@ -705,11 +708,11 @@ public:
         if (_cache) {
             if ( isStoredOnDisk() ) {
                 if (dataAllocated) {
-                    _cache->notifyEntryStorageChanged( Natron::eStorageModeRAM, Natron::eStorageModeDisk, time, sz );
+                    _cache->notifyEntryStorageChanged( eStorageModeRAM, eStorageModeDisk, time, sz );
                 }
             } else {
                 if (dataAllocated) {
-                    _cache->notifyEntryDestroyed(time, sz, Natron::eStorageModeRAM);
+                    _cache->notifyEntryDestroyed(time, sz, eStorageModeRAM);
                 }
             }
         }
@@ -717,7 +720,7 @@ public:
 
     /**
      * @brief Returns the size of the cache entry in bytes. This is made virtual
-     * so derived class could add any extra size related to a buffer it may have (@see Natron::Image::size())
+     * so derived class could add any extra size related to a buffer it may have (@see Image::size())
      *
      * WARNING: When overloading this, make sure you call then the deallocate() function in your destructor right prior
      * anything else is destroyed, to make sure the good amount of memory to be destroyed is notified to the cache.
@@ -742,7 +745,7 @@ public:
 
     bool isStoredOnDisk() const
     {
-        return _data.getStorageMode() == Natron::eStorageModeDisk;
+        return _data.getStorageMode() == eStorageModeDisk;
     }
     
     bool isAllocated() const
@@ -771,10 +774,10 @@ public:
             _cache->backingFileClosed();
         }
         if ( isAlloc ) {
-            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType),Natron::eStorageModeRAM);
+            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType),eStorageModeRAM);
         } else {
             ///size() will return 0 at this point, we have to recompute it
-            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType),Natron::eStorageModeDisk);
+            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType),eStorageModeDisk);
         }
     }
     
@@ -834,12 +837,12 @@ private:
      * it is private.
      **/
     void allocate( U64 count,
-                   Natron::StorageModeEnum storage,
+                   StorageModeEnum storage,
                    std::string path = std::string() )
     {
         std::string fileName;
         
-        if (storage == Natron::eStorageModeDisk) {
+        if (storage == eStorageModeDisk) {
             
             typename AbstractCacheEntry<KeyType>::hash_type hashKey = getHashKey();
             try {
@@ -894,9 +897,10 @@ protected:
     const CacheAPI* _cache;
     std::string _requestedPath;
     mutable QReadWriteLock _entryLock;
-    Natron::StorageModeEnum _requestedStorage;
+    StorageModeEnum _requestedStorage;
     bool _removeBackingFileBeforeDestruction;
 };
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // CACHEENTRY_H

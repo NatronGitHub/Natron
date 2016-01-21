@@ -43,7 +43,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Label.h"
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 struct MessageBoxPrivate
 {
     MessageBox::MessageBoxTypeEnum type;
@@ -51,10 +52,10 @@ struct MessageBoxPrivate
     QHBoxLayout* mainLayout;
     QVBoxLayout* vLayout;
     
-    Natron::Label* infoLabel;
+    Label* infoLabel;
     
     QWidget* vContainer;
-    Natron::Label* questionLabel;
+    Label* questionLabel;
     QTextEdit* infoEdit; //< used if the text is too long so the user can scroll
     QCheckBox* checkbox;
     
@@ -86,8 +87,8 @@ struct MessageBoxPrivate
 MessageBox::MessageBox(const QString & title,
                        const QString & message,
                        MessageBoxTypeEnum type,
-                       const Natron::StandardButtons& buttons,
-                       Natron::StandardButtonEnum defaultButton,
+                       const StandardButtons& buttons,
+                       StandardButtonEnum defaultButton,
                        QWidget* parent)
 : QDialog(parent,Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint)
 , _imp(new MessageBoxPrivate(type))
@@ -98,12 +99,12 @@ MessageBox::MessageBox(const QString & title,
 void
 MessageBox::init(const QString & title,
                  const QString & message,
-                 const Natron::StandardButtons& buttons,
-                 Natron::StandardButtonEnum defaultButton)
+                 const StandardButtons& buttons,
+                 StandardButtonEnum defaultButton)
 {
     _imp->mainLayout = new QHBoxLayout(this);
     
-    _imp->infoLabel = new Natron::Label(this);
+    _imp->infoLabel = new Label(this);
     _imp->infoLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     
     QStyle::StandardPixmap pixType = QStyle::SP_MessageBoxCritical;
@@ -130,7 +131,7 @@ MessageBox::init(const QString & title,
     _imp->vLayout = new QVBoxLayout(_imp->vContainer);
     
     if (message.size() < 1000) {
-        _imp->questionLabel = new Natron::Label(message,_imp->vContainer);
+        _imp->questionLabel = new Label(message,_imp->vContainer);
         _imp->questionLabel->setTextInteractionFlags(Qt::TextInteractionFlags(style()->styleHint(QStyle::SH_MessageBox_TextInteractionFlags, 0, this)));
         _imp->questionLabel->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
         _imp->questionLabel->setOpenExternalLinks(true);
@@ -245,12 +246,12 @@ void MessageBox::updateSize()
 //    QCoreApplication::removePostedEvents(this, QEvent::LayoutRequest);
 }
 
-Natron::StandardButtonEnum
+StandardButtonEnum
 MessageBox::getReply() const
 {
     return _imp->clickedButton ?
     QtEnumConvert::fromQtStandardButton((QMessageBox::StandardButton)_imp->buttons->standardButton(_imp->clickedButton)) :
-    Natron::eStandardButtonEscape;
+    eStandardButtonEscape;
 }
 
 void
@@ -291,4 +292,7 @@ MessageBox::event(QEvent* e)
     return result;
 }
 
-}
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_MessageBox.cpp"

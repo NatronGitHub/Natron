@@ -22,46 +22,48 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "BackDrop.h"
+#include "Backdrop.h"
 #include "Engine/Transform.h"
 #include "Engine/KnobTypes.h"
 
-struct BackDropPrivate
+NATRON_NAMESPACE_ENTER;
+
+struct BackdropPrivate
 {
     
     boost::weak_ptr<KnobString> knobLabel;
     
-    BackDropPrivate()
+    BackdropPrivate()
     : knobLabel()
     {
     }
     
 };
 
-BackDrop::BackDrop(boost::shared_ptr<Natron::Node> node)
+Backdrop::Backdrop(boost::shared_ptr<Node> node)
 : NoOpBase(node)
-, _imp(new BackDropPrivate())
+, _imp(new BackdropPrivate())
 {
 }
 
-BackDrop::~BackDrop()
+Backdrop::~Backdrop()
 {
     
 }
 
 std::string
-BackDrop::getPluginDescription() const
+Backdrop::getPluginDescription() const
 {
     return QObject::tr("The node backdrop is useful to group nodes and identify them in the node graph. You can also "
               "move all the nodes inside the backdrop.").toStdString() ;
 }
 
 void
-BackDrop::initializeKnobs()
+Backdrop::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = Natron::createKnob<KnobPage>(this, "Controls");
+    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Controls");
     
-    boost::shared_ptr<KnobString> knobLabel = Natron::createKnob<KnobString>( this, "Label");
+    boost::shared_ptr<KnobString> knobLabel = AppManager::createKnob<KnobString>( this, "Label");
     knobLabel->setAnimationEnabled(false);
     knobLabel->setAsMultiLine();
     knobLabel->setUsesRichText(true);
@@ -75,8 +77,8 @@ BackDrop::initializeKnobs()
 
 
 void
-BackDrop::knobChanged(KnobI* k,
-                      Natron::ValueChangedReasonEnum /*reason*/,
+Backdrop::knobChanged(KnobI* k,
+                      ValueChangedReasonEnum /*reason*/,
                       int /*view*/,
                       double /*time*/,
                       bool /*originatedFromMainThread*/)
@@ -86,3 +88,8 @@ BackDrop::knobChanged(KnobI* k,
         Q_EMIT labelChanged(text);
     } 
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_Backdrop.cpp"

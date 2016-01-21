@@ -93,7 +93,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Utils.h"
 #include "Gui/ViewerTab.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* parent)
 : EditScriptDialog(parent)
@@ -174,3 +174,5 @@ EditExpressionDialog::getDeclaredVariables(std::list<std::pair<QString,QString> 
     variables.push_back(std::make_pair("dimension", tr("Defined only if the parameter is multi-dimensional, it references the dimension of the parameter being edited (0-based index)")));
     variables.push_back(std::make_pair("frame", tr("the current time on the timeline or the time passed to the get function")));
 }
+
+NATRON_NAMESPACE_EXIT;

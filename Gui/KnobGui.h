@@ -56,6 +56,8 @@ CLANG_DIAG_ON(uninitialized)
 //Define this if you want the spinbox to clamp to the plugin defined range
 //#define SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
 
+NATRON_NAMESPACE_ENTER;
+
 struct KnobGuiPrivate;
 
 class KnobGui
@@ -108,7 +110,7 @@ public:
 
     void createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
-                   Natron::ClickableLabel* label,
+                   ClickableLabel* label,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
@@ -167,7 +169,7 @@ public:
                  const T & v,
                  KeyFrame* newKey,
                  bool refreshGui,
-                 Natron::ValueChangedReasonEnum reason)
+                 ValueChangedReasonEnum reason)
     {
         KnobHelper::ValueChangedReturnCodeEnum ret = KnobHelper::eValueChangedReturnCodeNothingChanged;
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
@@ -175,7 +177,7 @@ public:
         if (knob) {
             ret = knob->setValue(v,dimension,reason,newKey);
         }
-        if (ret > 0 && ret != KnobHelper::eValueChangedReturnCodeNothingChanged && reason == Natron::eValueChangedReasonUserEdited) {
+        if (ret > 0 && ret != KnobHelper::eValueChangedReturnCodeNothingChanged && reason == eValueChangedReasonUserEdited) {
             assert(newKey);
             if (ret == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
                 setKeyframeMarkerOnTimeline( newKey->getTime() );
@@ -197,7 +199,7 @@ public:
                         double time,
                         KeyFrame* newKey,
                         bool refreshGui,
-                        Natron::ValueChangedReasonEnum reason)
+                        ValueChangedReasonEnum reason)
     {
         
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
@@ -206,7 +208,7 @@ public:
         if (knob) {
             addedKey = knob->setValueAtTime(time,v,dimension,reason,newKey);
         }
-        if ((knob) && reason == Natron::eValueChangedReasonUserEdited) {
+        if ((knob) && reason == eValueChangedReasonUserEdited) {
             assert(newKey);
             setKeyframeMarkerOnTimeline( newKey->getTime() );
         }
@@ -241,7 +243,7 @@ public:
      **/
     bool isSecretRecursive() const;
     
-    boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,
+    boost::shared_ptr<KnobI> createDuplicateOnNode(EffectInstance* effect,
                                                    bool makeAlias,
                                                    const boost::shared_ptr<KnobPage>& page,
                                                    const boost::shared_ptr<KnobGroup>& group,
@@ -436,7 +438,7 @@ private:
        the widget for the knob could display its gui a bit differently.
      */
     virtual void reflectAnimationLevel(int /*dimension*/,
-                                       Natron::AnimationLevelEnum /*level*/)
+                                       AnimationLevelEnum /*level*/)
     {
     }
     
@@ -449,12 +451,13 @@ private:
     void createAnimationButton(QHBoxLayout* layout);
 
 
-    void setInterpolationForDimensions(const std::vector<int> & dimensions,Natron::KeyframeTypeEnum interp);
+    void setInterpolationForDimensions(const std::vector<int> & dimensions,KeyframeTypeEnum interp);
 
 private:
 
     boost::scoped_ptr<KnobGuiPrivate> _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_GUI_KNOBGUI_H

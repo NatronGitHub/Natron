@@ -37,9 +37,7 @@
 
 #include "Engine/RectD.h"
 
-
-
-using namespace Transform;
+NATRON_NAMESPACE_ENTER;
 namespace Transform {
 
 
@@ -660,7 +658,7 @@ transformRegionFromRoD(const RectD &srcRect, const Matrix3x3 &transform, RectD &
     
     
 } //namespace Transform
-
+NATRON_NAMESPACE_EXIT;
 
 
 

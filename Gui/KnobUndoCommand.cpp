@@ -31,6 +31,8 @@
 #include "Engine/AppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 
+NATRON_NAMESPACE_ENTER;
+
 PasteUndoCommand::PasteUndoCommand(KnobGui* knob,
                                    bool copyAnimation,
                                    const std::list<Variant> & values,
@@ -114,7 +116,7 @@ PasteUndoCommand::undo()
             }
         }
         ///parameters are meaningless here, we just want to update the curve editor.
-        _knob->onInternalKeySet(0, 0,Natron::eValueChangedReasonNatronGuiEdited,false);
+        _knob->onInternalKeySet(0, 0,eValueChangedReasonNatronGuiEdited,false);
         _knob->setAllKeyframeMarkersOnTimeline(-1);
 
         if (hasKeyframes) {
@@ -237,7 +239,7 @@ PasteUndoCommand::redo()
 } // redo
 
 MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
-                                                           Natron::ValueChangedReasonEnum reason,
+                                                           ValueChangedReasonEnum reason,
                                                            bool createNew,
                                                            bool setKeyFrame,
                                                            const Variant & value,
@@ -339,7 +341,7 @@ MultipleKnobEditsUndoCommand::undo()
             (*it)->evaluateValueChange(0,time,  _reason);
         }
         holder->endChanges();
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
             holderName = effect->getNode()->getLabel().c_str();
         }
@@ -428,7 +430,7 @@ MultipleKnobEditsUndoCommand::redo()
     assert( !knobs.empty() );
     QString holderName;
     if (holder) {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
         if (effect) {
             if (!firstRedoCalled) {
                 effect->getApp()->triggerAutoSave();
@@ -520,8 +522,8 @@ RestoreDefaultsCommand::undo()
     }
     app->addMultipleKeyframeIndicatorsAdded(times,true);
 
-    _knobs.front()->getHolder()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
-    first->getHolder()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
+    _knobs.front()->getHolder()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
+    first->getHolder()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
     if ( first->getHolder()->getApp() ) {
         first->getHolder()->getApp()->redrawAllViewers();
     }
@@ -584,7 +586,7 @@ RestoreDefaultsCommand::redo()
     }
    for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
        if ((*it)->getHolder()) {
-           (*it)->getHolder()->onKnobValueChanged_public(it->get(), Natron::eValueChangedReasonRestoreDefault, time, true);
+           (*it)->getHolder()->onKnobValueChanged_public(it->get(), eValueChangedReasonRestoreDefault, time, true);
         }
     }
     
@@ -598,7 +600,7 @@ RestoreDefaultsCommand::redo()
     }
     
     if (first->getHolder()) {
-        first->getHolder()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
+        first->getHolder()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
         if (first->getHolder()->getApp() ) {
             first->getHolder()->getApp()->redrawAllViewers();
         }
@@ -633,12 +635,12 @@ SetExpressionCommand::undo()
         try {
             _knob->setExpression(i, _oldExprs[i], _hadRetVar[i]);
         } catch (...) {
-            Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+            Dialogs::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
             break;
         }
     }
     
-    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), Natron::eValueChangedReasonNatronGuiEdited);
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), eValueChangedReasonNatronGuiEdited);
     setText( QObject::tr("Set expression") );
 }
 
@@ -650,7 +652,7 @@ SetExpressionCommand::redo()
             try {
                _knob->setExpression(i, _newExpr, _hasRetVar);
             } catch (...) {
-                Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+                Dialogs::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
                 break;
             }
         }
@@ -658,9 +660,11 @@ SetExpressionCommand::redo()
         try {
             _knob->setExpression(_dimension, _newExpr, _hasRetVar);
         } catch (...) {
-            Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+            Dialogs::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
         }
     }
-    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), Natron::eValueChangedReasonNatronGuiEdited);
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), eValueChangedReasonNatronGuiEdited);
     setText( QObject::tr("Set expression") );
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -35,13 +35,13 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 void
 NodeGuiSerialization::initialize(const NodeGui*  n)
 {
     ////All this code is MT-safe
-    boost::shared_ptr<Natron::Node> node = n->getNode();
+    boost::shared_ptr<Node> node = n->getNode();
     
     
     _nodeName = node->getFullyQualifiedName();
@@ -83,3 +83,4 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
     
 }
 
+NATRON_NAMESPACE_EXIT;

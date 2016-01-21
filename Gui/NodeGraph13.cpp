@@ -36,7 +36,7 @@
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 //using std::cout; using std::endl;
 
 
@@ -117,3 +117,5 @@ NodeGraph::deselect()
         _imp->_magnifiedNode->setScale_natron(_imp->_nodeSelectedScaleBeforeMagnif);
     }
 }
+
+NATRON_NAMESPACE_EXIT;

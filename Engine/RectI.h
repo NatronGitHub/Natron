@@ -43,6 +43,7 @@
 GCC_DIAG_OFF(strict-overflow)
 #endif
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief A rectangle where x1 < x2 and y1 < y2 such as width() == (x2 - x1) && height() == (y2 - y1)
@@ -465,6 +466,8 @@ operator!=(const RectI & b1,
            b1.top() != b2.top();
 }
 
-Q_DECLARE_METATYPE(RectI)
+NATRON_NAMESPACE_EXIT;
+
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::RectI)
 
 #endif // Engine_RectI_h

@@ -46,13 +46,14 @@ CLANG_DIAG_ON(uninitialized)
 
 #define NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
+NATRON_NAMESPACE_ENTER;
 
 struct ViewerTabPrivate
 {
     struct InputName
     {
         QString name;
-        boost::weak_ptr<Natron::Node> input;
+        boost::weak_ptr<Node> input;
     };
 
     typedef std::map<int,InputName> InputNamesMap;
@@ -88,11 +89,11 @@ struct ViewerTabPrivate
     Button* activateRenderScale;
     bool renderScaleActive;
     ComboBox* renderScaleCombo;
-    Natron::Label* firstInputLabel;
+    Label* firstInputLabel;
     ComboBox* firstInputImage;
-    Natron::Label* compositingOperatorLabel;
+    Label* compositingOperatorLabel;
     ComboBox* compositingOperator;
-    Natron::Label* secondInputLabel;
+    Label* secondInputLabel;
     ComboBox* secondInputImage;
 
     /*2nd row*/
@@ -134,15 +135,15 @@ struct ViewerTabPrivate
     Button* playbackMode_Button;
     
     mutable QMutex playbackModeMutex;
-    Natron::PlaybackModeEnum playbackMode;
+    PlaybackModeEnum playbackMode;
     
     LineEdit* frameRangeEdit;
 
-    Natron::ClickableLabel* canEditFrameRangeLabel;
+    ClickableLabel* canEditFrameRangeLabel;
     Button* tripleSyncButton;
     
     QCheckBox* canEditFpsBox;
-    Natron::ClickableLabel* canEditFpsLabel;
+    ClickableLabel* canEditFpsLabel;
     mutable QMutex fpsLockedMutex;
     bool fpsLocked;
     SpinBox* fpsBox;
@@ -157,7 +158,7 @@ struct ViewerTabPrivate
     std::pair<NodeGui*,TrackerGui*> currentTracker;
     InputNamesMap inputNamesMap;
     mutable QMutex compOperatorMutex;
-    Natron::ViewerCompositingOperatorEnum compOperator;
+    ViewerCompositingOperatorEnum compOperator;
     ViewerInstance* viewerNode; // < pointer to the internal node
     
     mutable QMutex visibleToolbarsMutex; //< protects the 4 bool below
@@ -177,7 +178,7 @@ struct ViewerTabPrivate
     double fps;
     
     //The last node that took the penDown/motion/keyDown/keyRelease etc...
-    boost::weak_ptr<Natron::Node> lastOverlayNode;
+    boost::weak_ptr<Node> lastOverlayNode;
     bool hasPenDown;
     bool hasCaughtPenMotionWhileDragging;
     
@@ -187,19 +188,22 @@ struct ViewerTabPrivate
     // return the tronsform to apply to the overlay as a 3x3 homography in canonical coordinates
     bool getOverlayTransform(double time,
                              int view,
-                             const boost::shared_ptr<Natron::Node>& target,
-                             Natron::EffectInstance* currentNode,
+                             const boost::shared_ptr<Node>& target,
+                             EffectInstance* currentNode,
                              Transform::Matrix3x3* transform) const;
 
     bool getTimeTransform(double time,
                           int view,
-                          const boost::shared_ptr<Natron::Node>& target,
-                          Natron::EffectInstance* currentNode,
+                          const boost::shared_ptr<Node>& target,
+                          EffectInstance* currentNode,
                           double *newTime) const;
 
 #endif
 
-    void getComponentsAvailabel(std::set<Natron::ImageComponents>* comps) const;
+    void getComponentsAvailabel(std::set<ImageComponents>* comps) const;
 
 };
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // Gui_ViewerTabPrivate_h

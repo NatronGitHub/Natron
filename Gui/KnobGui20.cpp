@@ -29,13 +29,13 @@
 
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 void
 KnobGui::onInternalValueChanged(int dimension,
                                 int reason)
 {
-    if (_imp->widgetCreated && (Natron::ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
+    if (_imp->widgetCreated && (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         updateGuiInternal(dimension);
     }
 }
@@ -50,7 +50,7 @@ void
 KnobGui::onMultipleKeySet(const std::list<double>& keys,int /*dimension*/, int reason)
 {
     
-    if ((Natron::ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
+    if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         boost::shared_ptr<KnobI> knob = getKnob();
         if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
             std::list<SequenceTime> intKeys;
@@ -71,7 +71,7 @@ KnobGui::onInternalKeySet(double time,
                           int reason,
                           bool added )
 {
-    if ((Natron::ValueChangedReasonEnum)reason != Natron::eValueChangedReasonUserEdited) {
+    if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         if (added) {
             boost::shared_ptr<KnobI> knob = getKnob();
             if ( !knob->getIsSecret() && knob->isDeclaredByPlugin()) {
@@ -172,7 +172,7 @@ KnobGui::copyToClipBoard(bool copyAnimation) const
     std::string nodeFullyQualifiedName;
     KnobHolder* holder = getKnob()->getHolder();
     if (holder) {
-        Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
+        EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
         if (isEffect) {
             nodeFullyQualifiedName = isEffect->getNode()->getFullyQualifiedName();
         }
@@ -214,28 +214,28 @@ KnobGui::pasteClipBoard()
         if (isInt) {
             if ( !it->canConvert(QVariant::Int) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Integer").arg( it->typeName() );
-                Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
+                Dialogs::errorDialog( tr("Paste").toStdString(),err.toStdString() );
 
                 return;
             }
         } else if (isBool) {
             if ( !it->canConvert(QVariant::Bool) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Boolean").arg( it->typeName() );
-                Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
+                Dialogs::errorDialog( tr("Paste").toStdString(),err.toStdString() );
 
                 return;
             }
         } else if (isDouble) {
             if ( !it->canConvert(QVariant::Double) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Double").arg( it->typeName() );
-                Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
+                Dialogs::errorDialog( tr("Paste").toStdString(),err.toStdString() );
 
                 return;
             }
         } else if (isString) {
             if ( !it->canConvert(QVariant::String) ) {
                 QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type String").arg( it->typeName() );
-                Natron::errorDialog( tr("Paste").toStdString(),err.toStdString() );
+                Dialogs::errorDialog( tr("Paste").toStdString(),err.toStdString() );
 
                 return;
             }
@@ -282,7 +282,7 @@ KnobGui::linkTo(int dimension)
     
     boost::shared_ptr<KnobI> thisKnob = getKnob();
     assert(thisKnob);
-    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(thisKnob->getHolder());
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(thisKnob->getHolder());
     if (!isEffect) {
         return;
     }
@@ -293,7 +293,7 @@ KnobGui::linkTo(int dimension)
         if (i == dimension || dimension == -1) {
             std::string expr = thisKnob->getExpression(dimension);
             if (!expr.empty()) {
-                errorDialog(tr("Param Link").toStdString(),tr("This parameter already has an expression set, edit or clear it.").toStdString());
+                Dialogs::errorDialog(tr("Param Link").toStdString(),tr("This parameter already has an expression set, edit or clear it.").toStdString());
                 return;
             }
         }
@@ -305,7 +305,7 @@ KnobGui::linkTo(int dimension)
         boost::shared_ptr<KnobI>  otherKnob = dialog.getSelectedKnobs();
         if (otherKnob) {
             if ( !thisKnob->isTypeCompatible(otherKnob) ) {
-                errorDialog( tr("Param Link").toStdString(), tr("Types incompatibles!").toStdString() );
+                Dialogs::errorDialog( tr("Param Link").toStdString(), tr("Types incompatibles!").toStdString() );
 
                 return;
             }
@@ -319,14 +319,14 @@ KnobGui::linkTo(int dimension)
                     err.append( thisKnob->getLabel() );
                     err.append( " \n " + tr("because the knob is already linked to ").toStdString() );
                     err.append( existingLink.second->getLabel() );
-                    errorDialog(tr("Param Link").toStdString(), err);
+                    Dialogs::errorDialog(tr("Param Link").toStdString(), err);
 
                     return;
                 }
                 
             }
             
-            Natron::EffectInstance* otherEffect = dynamic_cast<Natron::EffectInstance*>(otherKnob->getHolder());
+            EffectInstance* otherEffect = dynamic_cast<EffectInstance*>(otherKnob->getHolder());
             if (!otherEffect) {
                 return;
             }
@@ -650,7 +650,7 @@ KnobGui::onAnimationLevelChanged(int dim,int level)
         //std::string expr = getKnob()->getExpression(dim);
         //reflectExpressionState(dim,!expr.empty());
         //if (expr.empty()) {
-            reflectAnimationLevel(dim, (Natron::AnimationLevelEnum)level);
+            reflectAnimationLevel(dim, (AnimationLevelEnum)level);
         //}
         
     }
@@ -664,7 +664,7 @@ KnobGui::onAppendParamEditChanged(int reason,
                                   bool createNewCommand,
                                   bool setKeyFrame)
 {
-    pushUndoCommand( new MultipleKnobEditsUndoCommand(this,(Natron::ValueChangedReasonEnum)reason, createNewCommand,setKeyFrame,v,dim,time) );
+    pushUndoCommand( new MultipleKnobEditsUndoCommand(this,(ValueChangedReasonEnum)reason, createNewCommand,setKeyFrame,v,dim,time) );
 }
 
 void
@@ -703,15 +703,15 @@ KnobGui::getCurve(int dimension) const
 void
 KnobGui::onRedrawGuiCurve(int reason, int /*dimension*/)
 {
-    Natron::CurveChangeReason curveChangeReason = (Natron::CurveChangeReason)reason;
+    CurveChangeReason curveChangeReason = (CurveChangeReason)reason;
     switch (curveChangeReason) {
-        case Natron::eCurveChangeReasonCurveEditor:
+        case eCurveChangeReasonCurveEditor:
             Q_EMIT refreshDopeSheet();
             break;
-        case Natron::eCurveChangeReasonDopeSheet:
+        case eCurveChangeReasonDopeSheet:
             Q_EMIT refreshCurveEditor();
             break;
-        case Natron::eCurveChangeReasonInternal:
+        case eCurveChangeReasonInternal:
             Q_EMIT refreshDopeSheet();
             Q_EMIT refreshCurveEditor();
             break;
@@ -778,3 +778,5 @@ KnobGui::onLabelChanged()
         onLabelChangedInternal();
     }
 }
+
+NATRON_NAMESPACE_EXIT;

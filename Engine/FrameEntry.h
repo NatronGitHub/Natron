@@ -41,16 +41,16 @@
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 class FrameEntry
-    : public CacheEntryHelper<U8,Natron::FrameKey,Natron::FrameParams>
+    : public CacheEntryHelper<U8,FrameKey,FrameParams>
 {
 public:
     FrameEntry(const FrameKey & key,
                const boost::shared_ptr<FrameParams> &  params,
-               const Natron::CacheAPI* cache,
-               Natron::StorageModeEnum storage,
+               const CacheAPI* cache,
+               StorageModeEnum storage,
                const std::string & path)
         : CacheEntryHelper<U8,FrameKey,FrameParams>(key,params,cache,storage,path)
         , _abortedMutex()
@@ -67,7 +67,7 @@ public:
                                                      int bitDepth,
                                                      int texW,
                                                      int texH,
-                                                     const boost::shared_ptr<Natron::Image>& image) WARN_UNUSED_RETURN;
+                                                     const boost::shared_ptr<Image>& image) WARN_UNUSED_RETURN;
     const U8* data() const WARN_UNUSED_RETURN
     {
         return _data.readable();
@@ -92,13 +92,13 @@ public:
         return _aborted;
     }
 
-    void getOriginalTiles(std::list<boost::shared_ptr<Natron::Image> >* ret) const
+    void getOriginalTiles(std::list<boost::shared_ptr<Image> >* ret) const
     {
         QReadLocker k(&_entryLock);
         _params->getOriginalTiles(ret);
     }
 
-    void addOriginalTile(const boost::shared_ptr<Natron::Image>& image)
+    void addOriginalTile(const boost::shared_ptr<Image>& image)
     {
         QWriteLocker k(&_entryLock);
         _params->addOriginalTile(image);
@@ -112,7 +112,7 @@ private:
     mutable QMutex _abortedMutex;
     bool _aborted;
 };
-}
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_FRAMEENTRY_H

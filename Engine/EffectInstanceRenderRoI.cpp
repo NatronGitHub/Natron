@@ -75,7 +75,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 /*
  * @brief Split all rects to render in smaller rects and check if each one of them is identity.
@@ -83,7 +83,7 @@ using namespace Natron;
  * For non-identity rectangles, compute the bounding box of them and render it
  */
 static void
-optimizeRectsToRender(Natron::EffectInstance* self,
+optimizeRectsToRender(EffectInstance* self,
                       const RectI & inputsRoDIntersection,
                       const std::list<RectI> & rectsToRender,
                       const double time,
@@ -120,14 +120,14 @@ optimizeRectsToRender(Natron::EffectInstance* self,
 
                 //Walk along the identity branch until we find the non identity input, or NULL in we case we will
                 //just render black and transparant
-                Natron::EffectInstance* identityInput = self->getInput(identityInputNb);
+                EffectInstance* identityInput = self->getInput(identityInputNb);
                 if (identityInput) {
                     for (;; ) {
                         identity = identityInput->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &identityInputNb);
                         if ( !identity || (identityInputNb == -2) ) {
                             break;
                         }
-                        Natron::EffectInstance* subIdentityInput = identityInput->getInput(identityInputNb);
+                        EffectInstance* subIdentityInput = identityInput->getInput(identityInputNb);
                         if (subIdentityInput == identityInput) {
                             break;
                         }
@@ -322,7 +322,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         {
             SequenceTime ptTime;
             int ptView;
-            boost::shared_ptr<Natron::Node> ptInput;
+            boost::shared_ptr<Node> ptInput;
             getComponentsNeededAndProduced_public(true, true, args.time, args.view, neededComps.get(), &processAllComponentsRequested, &ptTime, &ptView, &processChannels, &ptInput);
 
 
@@ -333,11 +333,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         if (processAllComponentsRequested) {
             std::vector<ImageComponents> compVec;
-            for (std::list<Natron::ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
+            for (std::list<ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
                 bool found = false;
 
                 //Change all needed comps in output to the requested components
-                for (std::vector<Natron::ImageComponents>::const_iterator it2 = foundOutputNeededComps->second.begin(); it2 != foundOutputNeededComps->second.end(); ++it2) {
+                for (std::vector<ImageComponents>::const_iterator it2 = foundOutputNeededComps->second.begin(); it2 != foundOutputNeededComps->second.end(); ++it2) {
                     if ( ( it2->isColorPlane() && it->isColorPlane() ) ) {
                         compVec.push_back(*it2);
                         found = true;
@@ -353,11 +353,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
         }
     }
-    const std::vector<Natron::ImageComponents> & outputComponents = foundOutputNeededComps->second;
+    const std::vector<ImageComponents> & outputComponents = foundOutputNeededComps->second;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Handle pass-through for planes //////////////////////////////////////////////////////////
-    std::list<Natron::ImageComponents> requestedComponents;
+    std::list<ImageComponents> requestedComponents;
     {
         ComponentsAvailableList componentsToFetchUpstream;
         {
@@ -372,7 +372,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
              * If the components are from the color plane, if another set of components of the color plane is present
              * we try to render with those instead.
              */
-            for (std::list<Natron::ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
+            for (std::list<ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
                 assert(it->getNumComponents() > 0);
 
                 bool isColorComponents = it->isColorPlane();
@@ -498,7 +498,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
             args.roi.toCanonical_noClipping(args.mipMapLevel, par,  &canonicalRoI);
 
-            Natron::EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
+            EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
                 if ( tls->frameArgs.stats && tls->frameArgs.stats->isInDepthProfilingEnabled() ) {
                     tls->frameArgs.stats->setNodeIdentity( getNode(), inputEffectIdentity->getNode() );
@@ -555,7 +555,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     assert(args.components.size() == outputPlanes->size() || outputPlanes->empty());
                     bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
                     
-                    std::list<Natron::ImageComponents>::const_iterator compIt = args.components.begin();
+                    std::list<ImageComponents>::const_iterator compIt = args.components.begin();
                     
                     for (ImageList::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it,++compIt) {
                         
@@ -688,7 +688,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             renderScaleOneUpstreamIfRenderScaleSupportDisabled = true;
         }
     }
-    Natron::ImageKey key(getNode().get(),
+    ImageKey key(getNode().get(),
                          nodeHash,
                          isFrameVaryingOrAnimated,
                          args.time,
@@ -696,7 +696,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                          1.,
                          draftModeSupported && tls->frameArgs.draftMode,
                          renderMappedMipMapLevel == 0 && args.mipMapLevel != 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled);
-    Natron::ImageKey nonDraftKey(getNode().get(),
+    ImageKey nonDraftKey(getNode().get(),
                          nodeHash,
                          isFrameVaryingOrAnimated,
                          args.time,
@@ -712,8 +712,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
      * Get the bitdepth and output components that the plug-in expects to render. The cached image does not necesserarily has the bitdepth
      * that the plug-in expects.
      */
-    Natron::ImageBitDepthEnum outputDepth;
-    std::list<Natron::ImageComponents> outputClipPrefComps;
+    ImageBitDepthEnum outputDepth;
+    std::list<ImageComponents> outputClipPrefComps;
     getPreferredDepthAndComponents(-1, &outputClipPrefComps, &outputDepth);
     assert( !outputClipPrefComps.empty() );
 
@@ -740,7 +740,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if ( !it->isColorPlane() ) {
                 components = &(*it);
             } else {
-                for (std::vector<Natron::ImageComponents>::const_iterator it2 = outputComponents.begin(); it2 != outputComponents.end(); ++it2) {
+                for (std::vector<ImageComponents>::const_iterator it2 = outputComponents.begin(); it2 != outputComponents.end(); ++it2) {
                     if ( it2->isColorPlane() ) {
                         components = &(*it2);
                         break;
@@ -1004,7 +1004,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 bool isProjectFormat;
                 const ParallelRenderArgs* inputFrameArgs = input->getParallelRenderArgsTLS();
                 U64 inputHash = (inputFrameArgs && inputFrameArgs->validArgs) ? inputFrameArgs->nodeHash : input->getHash();
-                Natron::StatusEnum stat = input->getRegionOfDefinition_public(inputHash, args.time, args.scale, args.view, &inputRod, &isProjectFormat);
+                StatusEnum stat = input->getRegionOfDefinition_public(inputHash, args.time, args.scale, args.view, &inputRod, &isProjectFormat);
                 if ( (stat != eStatusOK) && !inputRod.isNull() ) {
                     break;
                 }
@@ -1101,7 +1101,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             for (InputImagesMap::iterator it2 = it->imgs.begin(); it2 != it->imgs.end(); ++it2) {
                 EffectInstance* input = getInput(it2->first);
                 if (input) {
-                    Natron::ImagePremultiplicationEnum inputPremult = input->getOutputPremultiplication();
+                    ImagePremultiplicationEnum inputPremult = input->getOutputPremultiplication();
                     if ( !it2->second.empty() ) {
                         const ImageComponents & comps = it2->second.front()->getComponents();
                         if ( !comps.isColorPlane() ) {
@@ -1139,7 +1139,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if ( !it->first.isColorPlane() ) {
                 components = &(it->first);
             } else {
-                for (std::vector<Natron::ImageComponents>::const_iterator it = outputComponents.begin(); it != outputComponents.end(); ++it) {
+                for (std::vector<ImageComponents>::const_iterator it = outputComponents.begin(); it != outputComponents.end(); ++it) {
                     if ( it->isColorPlane() ) {
                         components = &(*it);
                         break;
@@ -1248,7 +1248,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 components = &(it->first);
             } else {
                 //Find color plane from clip preferences
-                for (std::vector<Natron::ImageComponents>::const_iterator it = outputComponents.begin(); it != outputComponents.end(); ++it) {
+                for (std::vector<ImageComponents>::const_iterator it = outputComponents.begin(); it != outputComponents.end(); ++it) {
                     if ( it->isColorPlane() ) {
                         components = &(*it);
                         break;
@@ -1317,7 +1317,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if ( renderFullScaleThenDownscale && (it->second.fullscaleImage->getMipMapLevel() == 0) ) {
                     RectI bounds;
                     rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
-                    it->second.downscaleImage.reset( new Natron::Image(*components, rod, downscaledImageBounds, args.mipMapLevel, it->second.fullscaleImage->getPixelAspectRatio(), outputDepth, true) );
+                    it->second.downscaleImage.reset( new Image(*components, rod, downscaledImageBounds, args.mipMapLevel, it->second.fullscaleImage->getPixelAspectRatio(), outputDepth, true) );
                     
                     it->second.fullscaleImage->downscaleMipMap( rod, it->second.fullscaleImage->getBounds(), 0, args.mipMapLevel, true, it->second.downscaleImage.get() );
                 }
@@ -1370,11 +1370,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             ///locks belongs to an instance)
 
             boost::shared_ptr<QMutexLocker> locker;
-            Natron::RenderSafetyEnum safety = tls->frameArgs.currentThreadSafety;
+            RenderSafetyEnum safety = tls->frameArgs.currentThreadSafety;
             if (safety == eRenderSafetyInstanceSafe) {
                 locker.reset( new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() ) );
             } else if (safety == eRenderSafetyUnsafe) {
-                const Natron::Plugin* p = getNode()->getPlugin();
+                const Plugin* p = getNode()->getPlugin();
                 assert(p);
                 locker.reset( new QMutexLocker( p->getPluginLock() ) );
             }
@@ -1392,7 +1392,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 for (std::list<RectToRender>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
                     qDebug() << "rect: " << "x1= " <<  it->rect.x1 << " , y1= " << it->rect.y1 << " , x2= " << it->rect.x2 << " , y2= " << it->rect.y2 << "(identity:" << it->isIdentity << ")";
                 }
-                for (std::map<Natron::ImageComponents, PlaneToRender> ::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+                for (std::map<ImageComponents, PlaneToRender> ::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
                     qDebug() << "plane: " <<  it->second.downscaleImage.get() << it->first.getLayerName().c_str();
                 }
                 qDebug() << "Cached:" << (isPlaneCached.get() != 0) << "Rendered elsewhere:" << planesToRender->isBeingRenderedElsewhere;
@@ -1574,7 +1574,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 EffectInstance::RenderRoIStatusEnum
 EffectInstance::renderRoIInternal(double time,
                                   const ParallelRenderArgs & frameArgs,
-                                  Natron::RenderSafetyEnum safety,
+                                  RenderSafetyEnum safety,
                                   unsigned int mipMapLevel,
                                   int view,
                                   const RectD & rod, //!< effect rod in canonical coords
@@ -1585,8 +1585,8 @@ EffectInstance::renderRoIInternal(double time,
                                   U64 nodeHash,
                                   bool renderFullScaleThenDownscale,
                                   bool byPassCache,
-                                  Natron::ImageBitDepthEnum outputClipPrefDepth,
-                                  const std::list<Natron::ImageComponents> & outputClipPrefsComps,
+                                  ImageBitDepthEnum outputClipPrefDepth,
+                                  const std::list<ImageComponents> & outputClipPrefsComps,
                                   const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                   const std::bitset<4> processChannels)
 {
@@ -1655,9 +1655,9 @@ EffectInstance::renderRoIInternal(double time,
     }
 
 
-    boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > > tlsCopy;
+    boost::shared_ptr<std::map<boost::shared_ptr<Node>, ParallelRenderArgs > > tlsCopy;
     if (safety == eRenderSafetyFullySafeFrame) {
-        tlsCopy.reset(new std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs >);
+        tlsCopy.reset(new std::map<boost::shared_ptr<Node>, ParallelRenderArgs >);
         /*
          * Since we're about to start new threads potentially, copy all the thread local storage on all nodes (any node may be involved in
          * expressions, and we need to retrieve the exact local time of render).
@@ -1673,7 +1673,7 @@ EffectInstance::renderRoIInternal(double time,
     bool callBegin = false;
 
     /// call beginsequenceRender here if the render is sequential
-    Natron::SequentialPreferenceEnum pref = getSequentialPreference();
+    SequentialPreferenceEnum pref = getSequentialPreference();
     if ( !isWriter() || (pref == eSequentialPreferenceNotSequential) ) {
         callBegin = true;
     }
@@ -1798,3 +1798,5 @@ EffectInstance::renderRoIInternal(double time,
     
     return retCode;
 } // renderRoIInternal
+
+NATRON_NAMESPACE_EXIT;

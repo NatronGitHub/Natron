@@ -40,6 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct DialogParamHolderPrivate;
 class DialogParamHolder : public NamedKnobHolder
@@ -60,10 +61,10 @@ private:
     
     virtual void initializeKnobs() OVERRIDE FINAL {}
     
-    virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/,Natron::ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL {}
+    virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/,ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL {}
     
     virtual void onKnobValueChanged(KnobI* /*k*/,
-                                    Natron::ValueChangedReasonEnum /*reason*/,
+                                    ValueChangedReasonEnum /*reason*/,
                                     double /*time*/,
                                     bool /*originatedFromMainThread*/) OVERRIDE FINAL;
 
@@ -199,5 +200,7 @@ public :
     
     std::string getScriptName() const;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PYTHONPANELS_H

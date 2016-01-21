@@ -58,7 +58,7 @@
 #include "Gui/ViewerTab.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -189,7 +189,7 @@ Gui::onPropertiesScrolled()
 }
 
 void
-Gui::createGroupGui(const boost::shared_ptr<Natron::Node> & group,
+Gui::createGroupGui(const boost::shared_ptr<Node> & group,
                     bool requestedByLoad)
 {
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getLiveInstance()->shared_from_this() );
@@ -357,3 +357,4 @@ Gui::wipeLayout()
     }
 }
 
+NATRON_NAMESPACE_EXIT;

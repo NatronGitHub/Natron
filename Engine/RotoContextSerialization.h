@@ -53,10 +53,11 @@ GCC_DIAG_ON(unused-parameter)
 #define ROTO_CTX_REMOVE_COUNTERS 2
 #define ROTO_CTX_VERSION ROTO_CTX_REMOVE_COUNTERS
 
+NATRON_NAMESPACE_ENTER;
 
 class RotoContextSerialization
 {
-    friend class boost::serialization::access;
+    friend class ::boost::serialization::access;
     friend class RotoContext;
 
 public:
@@ -83,11 +84,11 @@ private:
     {
         Q_UNUSED(version);
 
-        ar & boost::serialization::make_nvp("BaseLayer",_baseLayer);
-        ar & boost::serialization::make_nvp("AutoKeying",_autoKeying);
-        ar & boost::serialization::make_nvp("RippleEdit",_rippleEdit);
-        ar & boost::serialization::make_nvp("FeatherLink",_featherLink);
-        ar & boost::serialization::make_nvp("Selection",_selectedItems);
+        ar & ::boost::serialization::make_nvp("BaseLayer",_baseLayer);
+        ar & ::boost::serialization::make_nvp("AutoKeying",_autoKeying);
+        ar & ::boost::serialization::make_nvp("RippleEdit",_rippleEdit);
+        ar & ::boost::serialization::make_nvp("FeatherLink",_featherLink);
+        ar & ::boost::serialization::make_nvp("Selection",_selectedItems);
     }
 
     template<class Archive>
@@ -95,14 +96,14 @@ private:
               const unsigned int version)
     {
 
-        ar & boost::serialization::make_nvp("BaseLayer",_baseLayer);
-        ar & boost::serialization::make_nvp("AutoKeying",_autoKeying);
-        ar & boost::serialization::make_nvp("RippleEdit",_rippleEdit);
-        ar & boost::serialization::make_nvp("FeatherLink",_featherLink);
-        ar & boost::serialization::make_nvp("Selection",_selectedItems);
+        ar & ::boost::serialization::make_nvp("BaseLayer",_baseLayer);
+        ar & ::boost::serialization::make_nvp("AutoKeying",_autoKeying);
+        ar & ::boost::serialization::make_nvp("RippleEdit",_rippleEdit);
+        ar & ::boost::serialization::make_nvp("FeatherLink",_featherLink);
+        ar & ::boost::serialization::make_nvp("Selection",_selectedItems);
         if (version < ROTO_CTX_REMOVE_COUNTERS) {
             std::map<std::string,int> _itemCounters;
-            ar & boost::serialization::make_nvp("Counters",_itemCounters);
+            ar & ::boost::serialization::make_nvp("Counters",_itemCounters);
         }
     }
 
@@ -115,7 +116,9 @@ private:
     bool _featherLink;
 };
 
-BOOST_CLASS_VERSION(RotoContextSerialization,ROTO_CTX_VERSION)
+NATRON_NAMESPACE_EXIT;
+
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::RotoContextSerialization,ROTO_CTX_VERSION)
 
 
 #endif // Engine_RotoContextSerialization_h

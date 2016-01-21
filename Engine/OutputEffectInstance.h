@@ -42,10 +42,10 @@
 class QThread;
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 class OutputEffectInstance
-    : public Natron::EffectInstance
+    : public EffectInstance
 {
     
     struct RenderSequenceArgs
@@ -135,7 +135,7 @@ public:
 
     void updateRenderTimeInfos(double lastTimeSpent, double *averageTimePerFrame, double *totalTimeSpent);
 
-    virtual void reportStats(int time, int view, double wallTime, const std::map<boost::shared_ptr<Natron::Node>, NodeRenderStats > & stats);
+    virtual void reportStats(int time, int view, double wallTime, const std::map<boost::shared_ptr<Node>, NodeRenderStats > & stats);
 
 protected:
     
@@ -149,5 +149,7 @@ protected:
     virtual RenderEngine* createRenderEngine();
     virtual void resetTimeSpentRenderingInfos() OVERRIDE FINAL;
 };
-} // Natron
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // Engine_OutputEffectInstance_h

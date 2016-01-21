@@ -52,7 +52,7 @@
 #define kNatronBackwardMotionVectorsPlaneUserName kNatronBackwardMotionVectorsPlaneName "." kNatronMotionComponentsName
 #define kNatronForwardMotionVectorsPlaneUserName kNatronForwardMotionVectorsPlaneName "." kNatronMotionComponentsName
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 class ImageComponents
 {
@@ -132,6 +132,6 @@ private:
     std::string _globalComponentsName;
 };
 
-}
+NATRON_NAMESPACE_EXIT;
 
 #endif // IMAGECOMPONENTS_H

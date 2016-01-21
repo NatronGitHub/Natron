@@ -34,6 +34,8 @@
 #include <QScrollBar>
 #include "Gui/GuiMacros.h"
 
+NATRON_NAMESPACE_ENTER;
+
 //////////////TableItem
 
 namespace {
@@ -1269,3 +1271,8 @@ TableView::dropEvent(QDropEvent* e)
     
     Q_EMIT itemDropped();
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_TableModelView.cpp"

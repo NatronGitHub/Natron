@@ -50,7 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 typedef boost::shared_ptr<BezierCP> CpPtr;
 typedef std::pair<CpPtr,CpPtr> SelectedCp;
@@ -2260,3 +2260,4 @@ UnLinkFromTrackUndoCommand::redo()
     setText( QObject::tr("Unlink from track") );
 }
 
+NATRON_NAMESPACE_EXIT;

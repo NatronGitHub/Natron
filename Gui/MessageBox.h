@@ -42,7 +42,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 struct MessageBoxPrivate;
 class MessageBox : public QDialog
 {
@@ -63,13 +64,13 @@ public:
     MessageBox(const QString & title,
                const QString & message,
                MessageBoxTypeEnum type,
-               const Natron::StandardButtons& buttons,
-               Natron::StandardButtonEnum defaultButton,
+               const StandardButtons& buttons,
+               StandardButtonEnum defaultButton,
                QWidget* parent);
     
     virtual ~MessageBox();
     
-    Natron::StandardButtonEnum getReply() const;
+    StandardButtonEnum getReply() const;
     
     void setCheckBox(QCheckBox* checkbox);
     
@@ -85,14 +86,14 @@ private:
     
     void init(const QString & title,
               const QString & message,
-              const Natron::StandardButtons& buttons,
-              Natron::StandardButtonEnum defaultButton);
+              const StandardButtons& buttons,
+              StandardButtonEnum defaultButton);
     
     virtual bool event(QEvent* e) OVERRIDE FINAL;
     
     boost::scoped_ptr<MessageBoxPrivate> _imp;
 };
 
-}
+NATRON_NAMESPACE_EXIT;
 
 #endif // _NATRON_MESSAGE_BOX_H

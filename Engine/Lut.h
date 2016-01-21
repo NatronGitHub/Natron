@@ -30,6 +30,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <cmath>
 #include <map>
 #include <string>
@@ -42,7 +44,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 namespace Color {
 /// @enum An enum describing supported pixels packing formats
 enum PixelPackingEnum
@@ -574,7 +576,7 @@ charToUint8xx(unsigned char quantum)
     return (unsigned short) (quantum << 8);
 }
 }     //namespace Color
-} //namespace Natron
 
+NATRON_NAMESPACE_EXIT;
 
 #endif //NATRON_ENGINE_LUT_H

@@ -78,7 +78,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "ofxNatron.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 
 //==========================KnobBool_GUI======================================
@@ -141,17 +141,17 @@ KnobGuiBool::updateGUI(int /*dimension*/)
 
 void
 KnobGuiBool::reflectAnimationLevel(int /*dimension*/,
-                                    Natron::AnimationLevelEnum level)
+                                    AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-        case Natron::eAnimationLevelNone:
+        case eAnimationLevelNone:
             value = 0;
             break;
-        case Natron::eAnimationLevelInterpolatedValue:
+        case eAnimationLevelInterpolatedValue:
             value = 1;
             break;
-        case Natron::eAnimationLevelOnKeyframe:
+        case eAnimationLevelOnKeyframe:
             value = 2;
             break;
         default:
@@ -265,3 +265,7 @@ KnobGuiBool::updateToolTip()
     }
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_KnobGuiBool.cpp"

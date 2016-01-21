@@ -38,9 +38,10 @@
 #include <SequenceParsing.h>
 #include "Global/QtCompat.h"
 
-using namespace Natron;
-using std::make_pair;
-using std::pair;
+NATRON_NAMESPACE_ENTER;
+
+//using std::make_pair;
+//using std::pair;
 
 /***********************************KnobFile*****************************************/
 
@@ -357,3 +358,8 @@ KnobPath::appendPath(const std::string& path)
         setPaths(paths);
     }
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_KnobFile.cpp"

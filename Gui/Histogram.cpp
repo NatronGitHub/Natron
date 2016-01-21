@@ -68,6 +68,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
+NATRON_NAMESPACE_ENTER;
+
 namespace { // protext local classes in anonymous namespace
 enum EventStateEnum
 {
@@ -130,7 +132,7 @@ struct HistogramPrivate
     {
     }
     
-    boost::shared_ptr<Natron::Image> getHistogramImage(RectI* imagePortion) const;
+    boost::shared_ptr<Image> getHistogramImage(RectI* imagePortion) const;
     
     
     void showMenu(const QPoint & globalPos);
@@ -166,16 +168,16 @@ struct HistogramPrivate
     QVBoxLayout* mainLayout;
     
     ///////// OPTIONS
-    Natron::Menu* rightClickMenu;
+    Menu* rightClickMenu;
     QMenu* histogramSelectionMenu;
     QActionGroup* histogramSelectionGroup;
-    Natron::Menu* viewerCurrentInputMenu;
+    Menu* viewerCurrentInputMenu;
     QActionGroup* viewerCurrentInputGroup;
     QActionGroup* modeActions;
-    Natron::Menu* modeMenu;
+    Menu* modeMenu;
     QAction* fullImage;
     QActionGroup* filterActions;
-    Natron::Menu* filterMenu;
+    Menu* filterMenu;
     Histogram* widget;
     Histogram::DisplayModeEnum mode;
     QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
@@ -187,7 +189,7 @@ struct HistogramPrivate
     QColor _baseAxisColor;
     QColor _scaleColor;
     QFont _font;
-    Natron::TextRenderer textRenderer;
+    TextRenderer textRenderer;
     bool drawCoordinates;
     QString xCoordinateStr;
     QString rValueStr,gValueStr,bValueStr;
@@ -287,16 +289,16 @@ Histogram::Histogram(Gui* gui,
 //    _imp->sizeH = desktop->screenGeometry().size();
     _imp->sizeH = QSize(10000,10000);
     
-    _imp->rightClickMenu = new Natron::Menu(this);
+    _imp->rightClickMenu = new Menu(this);
     //_imp->rightClickMenu->setFont( QFont(appFont,appFontSize) );
 
-    _imp->histogramSelectionMenu = new Natron::Menu(tr("Viewer target"),_imp->rightClickMenu);
+    _imp->histogramSelectionMenu = new Menu(tr("Viewer target"),_imp->rightClickMenu);
     //_imp->histogramSelectionMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->histogramSelectionMenu->menuAction() );
 
     _imp->histogramSelectionGroup = new QActionGroup(_imp->histogramSelectionMenu);
 
-    _imp->viewerCurrentInputMenu = new Natron::Menu(tr("Viewer input"),_imp->rightClickMenu);
+    _imp->viewerCurrentInputMenu = new Menu(tr("Viewer input"),_imp->rightClickMenu);
     //_imp->viewerCurrentInputMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->viewerCurrentInputMenu->menuAction() );
 
@@ -320,7 +322,7 @@ Histogram::Histogram(Gui* gui,
     _imp->viewerCurrentInputGroup->addAction(inputBAction);
     _imp->viewerCurrentInputMenu->addAction(inputBAction);
 
-    _imp->modeMenu = new Natron::Menu(tr("Display mode"),_imp->rightClickMenu);
+    _imp->modeMenu = new Menu(tr("Display mode"),_imp->rightClickMenu);
     //_imp->modeMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->modeMenu->menuAction() );
 
@@ -331,7 +333,7 @@ Histogram::Histogram(Gui* gui,
     QObject::connect( _imp->fullImage, SIGNAL( triggered() ), this, SLOT( computeHistogramAndRefresh() ) );
     _imp->rightClickMenu->addAction(_imp->fullImage);
 
-    _imp->filterMenu = new Natron::Menu(tr("Smoothing"),_imp->rightClickMenu);
+    _imp->filterMenu = new Menu(tr("Smoothing"),_imp->rightClickMenu);
     //_imp->filterMenu->setFont( QFont(appFont,appFontSize) );
     _imp->rightClickMenu->addAction( _imp->filterMenu->menuAction() );
 
@@ -429,7 +431,7 @@ Histogram::~Histogram()
 #endif
 }
 
-boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imagePortion) const
+boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion) const
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -453,13 +455,13 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
     if (index == 0) {
         //no viewer selected
         imagePortion->clear();
-        return boost::shared_ptr<Natron::Image>();
+        return boost::shared_ptr<Image>();
     } else if (index == 1) {
         //current viewer
         viewer = widget->getGui()->getNodeGraph()->getLastSelectedViewer();
         
     } else {
-        boost::shared_ptr<Natron::Image> ret;
+        boost::shared_ptr<Image> ret;
         const std::list<ViewerTab*> & viewerTabs = widget->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
             if ( (*it)->getInternalNode()->getScriptName_mt_safe() == viewerName ) {
@@ -470,21 +472,21 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
 
     }
     
-    std::list<boost::shared_ptr<Natron::Image> > tiles;
+    std::list<boost::shared_ptr<Image> > tiles;
     if (viewer) {
         viewer->getViewer()->getLastRenderedImageByMipMapLevel(textureIndex,viewer->getInternalNode()->getMipMapLevelFromZoomFactor(),&tiles);
     }
     
     ///We must copy all tiles into an image of the whole size
-    boost::shared_ptr<Natron::Image> ret;
+    boost::shared_ptr<Image> ret;
     if (!tiles.empty()) {
-        const    boost::shared_ptr<Natron::Image>& firstTile = tiles.front();
+        const    boost::shared_ptr<Image>& firstTile = tiles.front();
         RectI bounds;
         unsigned int mipMapLevel = 0;
         double par = 1.;
-        Natron::ImageBitDepthEnum depth = Natron::eImageBitDepthFloat;
-        Natron::ImageComponents comps;
-        for (std::list<boost::shared_ptr<Natron::Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
+        ImageBitDepthEnum depth = eImageBitDepthFloat;
+        ImageComponents comps;
+        for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
             if (bounds.isNull()) {
                 bounds = (*it)->getBounds();
                 mipMapLevel = (*it)->getMipMapLevel();
@@ -503,8 +505,8 @@ boost::shared_ptr<Natron::Image> HistogramPrivate::getHistogramImage(RectI* imag
             return ret;
         }
         
-        ret.reset(new Natron::Image(comps,firstTile->getRoD(),bounds,mipMapLevel,par,depth,false));
-        for (std::list<boost::shared_ptr<Natron::Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
+        ret.reset(new Image(comps,firstTile->getRoD(),bounds,mipMapLevel,par,depth,false));
+        for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
             ret->pasteFrom(**it, (*it)->getBounds(), false);
         }
         
@@ -678,7 +680,7 @@ Histogram::initializeGL()
     GLenum err = glewInit();
     if (GLEW_OK != err) {
         /* Problem: glewInit failed, something is seriously wrong. */
-        Natron::errorDialog( tr("OpenGL/GLEW error").toStdString(),
+        Dialogs::errorDialog( tr("OpenGL/GLEW error").toStdString(),
                              (const char*)glewGetErrorString(err) );
     }
 
@@ -1500,7 +1502,7 @@ Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
 
     RectI rect;
-    boost::shared_ptr<Natron::Image> image = _imp->getHistogramImage(&rect);
+    boost::shared_ptr<Image> image = _imp->getHistogramImage(&rect);
     if (image) {
         _imp->histogramThread.computeHistogram(_imp->mode, image, rect, width(),vmin,vmax,_imp->filterSize);
     } else {
@@ -1942,3 +1944,7 @@ Histogram::renderText(double x,
     glCheckError();
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_Histogram.cpp"

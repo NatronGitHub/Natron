@@ -40,6 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct TrackerGuiPrivate;
 
@@ -108,5 +109,7 @@ private:
 
     boost::scoped_ptr<TrackerGuiPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // TRACKERGUI_H

@@ -5,6 +5,7 @@
 
 #include <ParameterWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class FileParamWrapper : public FileParam
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~FileParamWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_FILEPARAMWRAPPER_H
 

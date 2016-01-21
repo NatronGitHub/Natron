@@ -33,17 +33,19 @@
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 class GroupOutput
 : public NoOpBase
 {
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new GroupOutput(n);
     }
     
-    GroupOutput(boost::shared_ptr<Natron::Node> n)
+    GroupOutput(boost::shared_ptr<Node> n)
     : NoOpBase(n)
     {
     }
@@ -77,6 +79,6 @@ public:
     
 };
 
-
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_GroupOutput_h

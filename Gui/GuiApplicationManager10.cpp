@@ -36,6 +36,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QSettings>
 #include <QApplication>
 #include <QDesktopWidget>
+#include <QFileOpenEvent>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -55,6 +56,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/QtDecoder.h"
 #include "Gui/QtEncoder.h"
 #include "Gui/SplashScreen.h"
+
+Q_INIT_RESOURCE_EXTERN(GuiResources);
 
 /**
  * @macro Registers a keybind to the application.
@@ -94,7 +97,7 @@ CLANG_DIAG_ON(uninitialized)
 //in a way. This way the user will get prompted to restore default shortcuts on next launch
 #define NATRON_SHORTCUTS_DEFAULT_VERSION 7
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -138,7 +141,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
     {
         QStringList pgrp = grouping;
         pgrp.push_back("Readers");
-        std::auto_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( boost::shared_ptr<Natron::Node>() ) ) );
+        std::auto_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( boost::shared_ptr<Node>() ) ) );
         assert(reader.get());
         std::map<std::string,void(*)()> readerFunctions;
         readerFunctions.insert( std::make_pair("BuildEffect", (void(*)())&QtReader::BuildEffect) );
@@ -165,7 +168,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
     {
         QStringList pgrp = grouping;
         pgrp.push_back("Writers");
-        std::auto_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( boost::shared_ptr<Natron::Node>() ) ) );
+        std::auto_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( boost::shared_ptr<Node>() ) ) );
         assert(writer.get());
         std::map<std::string,void(*)()> writerFunctions;
         writerFunctions.insert( std::make_pair("BuildEffect", (void(*)())&QtWriter::BuildEffect) );
@@ -290,8 +293,12 @@ GuiApplicationManager::initializeQApp(int &argc,
     setCurrentLogicalDPI(dpiX,dpiY);
 
     app->setQuitOnLastWindowClosed(true);
-    Q_INIT_RESOURCE(GuiResources);
-    
+
+    //Q_INIT_RESOURCE(GuiResources);
+    // Q_INIT_RESOURCES expanded, and fixed for use from inside a namespace:
+    // (requires using Q_INIT_RESOURCES_EXTERN(GuiResources) before entering the namespace)
+    ::qInitResources_GuiResources();
+
     ///Register all the shortcuts.
     populateShortcuts();
 }
@@ -331,7 +338,7 @@ GuiApplicationManager::setUndoRedoStackLimit(int limit)
 }
 
 void
-GuiApplicationManager::debugImage(const Natron::Image* image,
+GuiApplicationManager::debugImage(const Image* image,
                                   const RectI& roi,
                                   const QString & filename) const
 {
@@ -351,7 +358,7 @@ bool
 GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
 {
     QString fileCopy(filename.c_str());
-    QString ext = Natron::removeFileExtension(fileCopy);
+    QString ext = QtCompat::removeFileExtension(fileCopy);
     std::string readerFileType = appPTR->isImageFileSupportedByNatron(ext.toStdString());
     AppInstance* mainInstance = appPTR->getTopLevelInstance();
     bool instanceCreated = false;
@@ -1221,3 +1228,5 @@ GuiApplicationManager::reloadStylesheets()
         }
     }
 }
+
+NATRON_NAMESPACE_EXIT;

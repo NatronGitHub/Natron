@@ -29,13 +29,21 @@
 #define SBK_RUN
 
 #include <pyside_global.h>
+#include <QtGui/qpytextobject.h>
+
+//Global
+#include <GlobalDefines.h>
+#include <Enums.h>
 
 //Engine
-#include "AppInstanceWrapper.h"
-#include "NodeGroupWrapper.h"
 #include "GlobalFunctionsWrapper.h"
+#include "NodeGroupWrapper.h"
+#include "AppInstanceWrapper.h"
+#include "RotoWrapper.h"
 #include "NodeWrapper.h"
 #include "ParameterWrapper.h"
+#include "RectI.h"
+#include "RectD.h"
 
 //Gui
 #include "GlobalGuiWrapper.h"

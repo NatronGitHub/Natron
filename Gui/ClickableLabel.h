@@ -38,7 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/Label.h"
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
  
 class ClickableLabel
     : public Label
@@ -112,5 +112,6 @@ private:
     bool sunkenStyle;
 };
 
-} // namespace Natron
+NATRON_NAMESPACE_EXIT;
+
 #endif // NATRON_GUI_CLICKABLELABEL_H

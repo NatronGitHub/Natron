@@ -30,10 +30,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstanceWrapper.h"
 #include "Global/MemoryInfo.h"
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 class PyCoreApplication
 {
@@ -189,6 +192,8 @@ public:
     
 
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #if defined(PYSIDE_H) && defined(PYSIDE_OLD)
 namespace PySide {

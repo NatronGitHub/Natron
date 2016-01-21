@@ -49,6 +49,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kPropertiesBinName "properties"
 
+NATRON_NAMESPACE_ENTER;
+
 struct GuiPrivate
 {
     Gui* _gui; //< ptr to the public interface
@@ -60,7 +62,7 @@ struct GuiPrivate
     QWaitCondition _uiUsingMainThreadCond; //< used with _uiUsingMainThread
     bool _uiUsingMainThread; //< true when the Gui is showing a dialog in the main thread
     mutable QMutex _uiUsingMainThreadMutex; //< protects _uiUsingMainThread
-    Natron::StandardButtonEnum _lastQuestionDialogAnswer; //< stores the last question answer
+    StandardButtonEnum _lastQuestionDialogAnswer; //< stores the last question answer
     bool _lastStopAskingAnswer;
 
     ///ptrs to the undo/redo actions from the active stack.
@@ -189,17 +191,17 @@ struct GuiPrivate
 
     ///The menu bar and all the menus
     QMenuBar *menubar;
-    Natron::Menu *menuFile;
-    Natron::Menu *menuRecentFiles;
-    Natron::Menu *menuEdit;
-    Natron::Menu *menuLayout;
-    Natron::Menu *menuDisplay;
-    Natron::Menu *menuRender;
-    Natron::Menu *viewersMenu;
-    Natron::Menu *viewerInputsMenu;
-    Natron::Menu *viewersViewMenu;
-    Natron::Menu *cacheMenu;
-    Natron::Menu *menuHelp;
+    Menu *menuFile;
+    Menu *menuRecentFiles;
+    Menu *menuEdit;
+    Menu *menuLayout;
+    Menu *menuDisplay;
+    Menu *menuRender;
+    Menu *viewersMenu;
+    Menu *viewerInputsMenu;
+    Menu *viewersViewMenu;
+    Menu *cacheMenu;
+    Menu *menuHelp;
 
 
     ///all TabWidget's : used to know what to hide/show for fullscreen mode
@@ -289,5 +291,7 @@ struct GuiPrivate
     ///True= yes overwrite
     bool checkProjectLockAndWarn(const QString& projectPath,const QString& projectName);
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_GuiPrivate_h

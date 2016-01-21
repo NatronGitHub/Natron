@@ -72,7 +72,7 @@ SOURCES += \
     AnimatedCheckBox.cpp \
     AnimationButton.cpp \
     AutoHideToolBar.cpp \
-    BackDropGui.cpp \
+    BackdropGui.cpp \
     Button.cpp \
     ChannelsComboBox.cpp \
     ClickableLabel.cpp \
@@ -99,6 +99,7 @@ SOURCES += \
     ExportGroupTemplateDialog.cpp \
     FloatingWidget.cpp \
     QtEnumConvert.cpp \
+    GroupBoxLabel.cpp \
     Gui.cpp \
     Gui05.cpp \
     Gui10.cpp \
@@ -143,7 +144,7 @@ SOURCES += \
     Menu.cpp \
     MultiInstancePanel.cpp \
     NewLayerDialog.cpp \
-    NodeBackDropSerialization.cpp \
+    NodeBackdropSerialization.cpp \
     NodeCreationDialog.cpp \
     NodeGraph.cpp \
     NodeGraph05.cpp \
@@ -226,7 +227,7 @@ HEADERS += \
     AnimatedCheckBox.h \
     AnimationButton.h \
     AutoHideToolBar.h \
-    BackDropGui.h \
+    BackdropGui.h \
     Button.h \
     ChannelsComboBox.h \
     ClickableLabel.h \
@@ -292,7 +293,7 @@ HEADERS += \
     Menu.h \
     MultiInstancePanel.h \
     NewLayerDialog.h \
-    NodeBackDropSerialization.h \
+    NodeBackdropSerialization.h \
     NodeClipBoard.h \
     NodeCreationDialog.h \
     NodeGraph.h \

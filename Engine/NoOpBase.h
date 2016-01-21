@@ -31,17 +31,18 @@
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief A NoOp is an effect that doesn't do anything. It is useful for scripting (adding custom parameters)
  * and it is also used to implement the "Dot" node.
  **/
 class NoOpBase
-    : public Natron::OutputEffectInstance
+    : public OutputEffectInstance
 {
 public:
 
-    NoOpBase(boost::shared_ptr<Natron::Node> n);
+    NoOpBase(boost::shared_ptr<Node> n);
 
     virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -74,19 +75,19 @@ public:
 
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return Natron::eRenderSafetyFullySafeFrame;
+        return eRenderSafetyFullySafeFrame;
     }
 
-    virtual Natron::StatusEnum getTransform(double time,
+    virtual StatusEnum getTransform(double time,
                                             const RenderScale & renderScale,
                                             int view,
-                                            Natron::EffectInstance** inputToTransform,
+                                            EffectInstance** inputToTransform,
                                             Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -111,5 +112,7 @@ private:
                             double* inputTime,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_NoOpBase_h

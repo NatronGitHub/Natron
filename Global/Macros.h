@@ -33,6 +33,21 @@
 #define __NATRON_LINUX__
 #endif
 
+#ifdef SBK_RUN
+// run shiboken without the Natron namespace, and add NATRON_NAMESPACE_USING to each cpp afterwards
+#define NATRON_NAMESPACE
+#define NATRON_NAMESPACE_ENTER
+#define NATRON_NAMESPACE_EXIT
+#else
+#define NATRON_NAMESPACE Natron
+// Macros to use in each file to enter and exit the right name spaces.
+#define NATRON_NAMESPACE_ENTER namespace NATRON_NAMESPACE {
+#define NATRON_NAMESPACE_EXIT }
+#define NATRON_NAMESPACE_USING using namespace NATRON_NAMESPACE;
+// Establish the name space.
+namespace NATRON_NAMESPACE { }
+#endif
+
 #define NATRON_APPLICATION_DESCRIPTION "Open-source, cross-platform, nodal compositing software."
 #define NATRON_COPYRIGHT "Copyright (C) 2016 the Natron developers."
 #define NATRON_ORGANIZATION_NAME "INRIA"

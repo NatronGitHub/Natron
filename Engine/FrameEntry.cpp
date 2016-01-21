@@ -26,7 +26,7 @@
 
 #include "Engine/RectI.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 
@@ -35,7 +35,7 @@ FrameEntry::makeParams(const RectI & rod,
                        int bitDepth,
                        int texW,
                        int texH,
-                       const boost::shared_ptr<Natron::Image>& image)
+                       const boost::shared_ptr<Image>& image)
 {
     return boost::shared_ptr<FrameParams>( new FrameParams(rod, bitDepth, texW, texH, image) );
 }
@@ -49,7 +49,7 @@ FrameEntry::pixelAt(int x, int y ) const
     }
     std::size_t rowSize = bounds.w;
     unsigned int srcPixelSize = 4;
-    if ((Natron::ImageBitDepthEnum)_key.getBitDepth() == Natron::eImageBitDepthFloat) {
+    if ((ImageBitDepthEnum)_key.getBitDepth() == eImageBitDepthFloat) {
         srcPixelSize *= sizeof(float);
     }
     rowSize *= srcPixelSize;
@@ -71,14 +71,14 @@ FrameEntry::copy(const FrameEntry& other)
     
     std::size_t srcRowSize = srcBounds.w;
     unsigned int srcPixelSize = 4;
-    if ((Natron::ImageBitDepthEnum)other.getKey().getBitDepth() == Natron::eImageBitDepthFloat) {
+    if ((ImageBitDepthEnum)other.getKey().getBitDepth() == eImageBitDepthFloat) {
         srcPixelSize *= sizeof(float);
     }
     srcRowSize *= srcPixelSize;
     
     std::size_t dstRowSize = srcBounds.w ;
     unsigned int dstPixelSize = 4;
-    if ((Natron::ImageBitDepthEnum)_key.getBitDepth() == Natron::eImageBitDepthFloat) {
+    if ((ImageBitDepthEnum)_key.getBitDepth() == eImageBitDepthFloat) {
         dstPixelSize *= sizeof(float);
     }
     dstRowSize *= dstPixelSize;
@@ -118,5 +118,6 @@ FrameEntry::copy(const FrameEntry& other)
          dstPixels += dstRowSize) {
         memcpy(dstPixels, srcPixels, roiRowSize);
     }
-    
 }
+
+NATRON_NAMESPACE_EXIT;

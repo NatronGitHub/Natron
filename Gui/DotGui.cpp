@@ -44,7 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <ofxNatron.h>
 
-#include "Engine/BackDrop.h"
+#include "Engine/Backdrop.h"
 #include "Engine/Image.h"
 #include "Engine/Knob.h"
 #include "Engine/MergingEnum.h"
@@ -58,7 +58,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Button.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/HostOverlay.h"
@@ -101,7 +101,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_PLUGIN_ICON_SIZE 20
 #define PLUGIN_ICON_OFFSET 2
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 using std::make_pair;
 
@@ -196,3 +196,8 @@ DotGui::shape() const
 {
     return diskShape->shape();
 }
+
+NATRON_NAMESPACE_EXIT;
+
+//NATRON_NAMESPACE_USING;
+//#include "moc_DotGui.cpp"

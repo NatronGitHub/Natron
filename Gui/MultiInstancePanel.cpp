@@ -83,7 +83,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define COL_SCRIPT_NAME 1
 #define COL_FIRST_KNOB 2
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 namespace {
 typedef std::list < std::pair<boost::weak_ptr<Node>,bool> > Nodes;
@@ -146,7 +146,7 @@ struct MultiInstancePanelPrivate
     {
     }
 
-    boost::shared_ptr<Natron::Node> getMainInstance() const
+    boost::shared_ptr<Node> getMainInstance() const
     {
         return mainInstance.lock()->getNode();
     }
@@ -170,24 +170,24 @@ struct MultiInstancePanelPrivate
         
         boost::shared_ptr<KnobHelper> ret;
         if ( isInt  ) {
-            boost::shared_ptr<KnobInt> intKnb = Natron::createKnob<KnobInt>(publicInterface, ref->getLabel(), ref->getDimension(),declaredByPlugin);
+            boost::shared_ptr<KnobInt> intKnb = AppManager::createKnob<KnobInt>(publicInterface, ref->getLabel(), ref->getDimension(),declaredByPlugin);
             intKnb->setMinimumsAndMaximums(isInt->getMinimums(), isInt->getMaximums());
             intKnb->setDisplayMinimumsAndMaximums(isInt->getDisplayMinimums(), isInt->getDisplayMaximums());
             ret = intKnb;
         } else if ( dynamic_cast<KnobBool*>( ref.get() ) ) {
-            ret = Natron::createKnob<KnobBool>(publicInterface, ref->getLabel(), ref->getDimension(),declaredByPlugin);
+            ret = AppManager::createKnob<KnobBool>(publicInterface, ref->getLabel(), ref->getDimension(),declaredByPlugin);
         } else if ( isDouble ) {
-            boost::shared_ptr<KnobDouble> dblKnob = Natron::createKnob<KnobDouble>(publicInterface, ref->getLabel(), ref->getDimension(),declaredByPlugin);
+            boost::shared_ptr<KnobDouble> dblKnob = AppManager::createKnob<KnobDouble>(publicInterface, ref->getLabel(), ref->getDimension(),declaredByPlugin);
             dblKnob->setMinimumsAndMaximums(isDouble->getMinimums(), isDouble->getMaximums());
             dblKnob->setDisplayMinimumsAndMaximums(isDouble->getDisplayMinimums(), isDouble->getDisplayMaximums());
             ret = dblKnob;
         } else if (isChoice) {
-            boost::shared_ptr<KnobChoice> choice = Natron::createKnob<KnobChoice>(publicInterface,
+            boost::shared_ptr<KnobChoice> choice = AppManager::createKnob<KnobChoice>(publicInterface,
                                                                                     ref->getLabel(), ref->getDimension(), declaredByPlugin);
             choice->populateChoices( isChoice->getEntries_mt_safe(),isChoice->getEntriesHelp_mt_safe() );
             ret = choice;
         } else if (isString) {
-            boost::shared_ptr<KnobString> strKnob = Natron::createKnob<KnobString>(publicInterface,
+            boost::shared_ptr<KnobString> strKnob = AppManager::createKnob<KnobString>(publicInterface,
                                                                                      ref->getLabel(), ref->getDimension(), declaredByPlugin);
             if ( isString->isCustomKnob() ) {
                 strKnob->setAsCustom();
@@ -203,24 +203,24 @@ struct MultiInstancePanelPrivate
             }
             ret = strKnob;
         } else if ( dynamic_cast<KnobParametric*>( ref.get() ) ) {
-            ret = Natron::createKnob<KnobParametric>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobParametric>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if ( dynamic_cast<KnobColor*>( ref.get() ) ) {
-            ret = Natron::createKnob<KnobColor>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobColor>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if ( dynamic_cast<KnobPath*>( ref.get() ) ) {
-            ret = Natron::createKnob<KnobPath>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobPath>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if ( dynamic_cast<KnobFile*>( ref.get() ) ) {
-            ret = Natron::createKnob<KnobFile>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobFile>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if ( dynamic_cast<KnobOutputFile*>( ref.get() ) ) {
-            ret = Natron::createKnob<KnobOutputFile>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobOutputFile>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else if (isButton) {
-            boost::shared_ptr<KnobButton> btn = Natron::createKnob<KnobButton>(publicInterface,
+            boost::shared_ptr<KnobButton> btn = AppManager::createKnob<KnobButton>(publicInterface,
                                                                                  ref->getLabel(), ref->getDimension(), declaredByPlugin);
             ///set the name prior to calling setIconForButton
             btn->setName( ref->getName() );
             publicInterface->setIconForButton( btn.get() );
             ret = btn;
         } else if ( dynamic_cast<KnobPage*>( ref.get() ) ) {
-            ret = Natron::createKnob<KnobPage>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
+            ret = AppManager::createKnob<KnobPage>(publicInterface, ref->getLabel(), ref->getDimension(), declaredByPlugin);
         } else {
             return;
         }
@@ -239,7 +239,7 @@ struct MultiInstancePanelPrivate
         }
     } // createKnob
 
-    void addTableRow(const boost::shared_ptr<Natron::Node> & node);
+    void addTableRow(const boost::shared_ptr<Node> & node);
 
     void removeRow(int index);
 
@@ -273,7 +273,7 @@ struct MultiInstancePanelPrivate
         mainInstance.lock()->getSettingPanel()->pushUndoCommand(cmd);
     }
 
-    boost::shared_ptr<Natron::Node> getInstanceFromItem(TableItem* item) const;
+    boost::shared_ptr<Node> getInstanceFromItem(TableItem* item) const;
 };
 
 MultiInstancePanel::MultiInstancePanel(const boost::shared_ptr<NodeGui> & node)
@@ -350,7 +350,7 @@ TableItemDelegate::paint(QPainter * painter,
     QRect geom = style->subElementRect(QStyle::SE_ItemViewItemText, &option);
 
     int dim;
-    Natron::AnimationLevelEnum level = eAnimationLevelNone;
+    AnimationLevelEnum level = eAnimationLevelNone;
     boost::shared_ptr<KnobI> knob = _panel->getKnobForItem(item, &dim);
     if (knob) {
         level = knob->getAnimationLevel(dim);
@@ -411,7 +411,7 @@ TableItemDelegate::paint(QPainter * painter,
     //   widget->render(painter);
 }
 
-boost::shared_ptr<Natron::Node> MultiInstancePanel::getMainInstance() const
+boost::shared_ptr<Node> MultiInstancePanel::getMainInstance() const
 {
     return _imp->getMainInstance();
 }
@@ -536,12 +536,12 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->addButton = new Button(QIcon(),"+",_imp->buttonsContainer);
     _imp->addButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _imp->addButton->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
-    _imp->addButton->setToolTip(Natron::convertFromPlainText(tr("Add new."), Qt::WhiteSpaceNormal));
+    _imp->addButton->setToolTip(GuiUtils::convertFromPlainText(tr("Add new."), Qt::WhiteSpaceNormal));
     _imp->buttonsLayout->addWidget(_imp->addButton);
     QObject::connect( _imp->addButton, SIGNAL( clicked(bool) ), this, SLOT( onAddButtonClicked() ) );
 
     _imp->removeButton = new Button(QIcon(),"-",_imp->buttonsContainer);
-    _imp->removeButton->setToolTip(Natron::convertFromPlainText(tr("Remove selection."), Qt::WhiteSpaceNormal));
+    _imp->removeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Remove selection."), Qt::WhiteSpaceNormal));
     _imp->removeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _imp->removeButton->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
     _imp->buttonsLayout->addWidget(_imp->removeButton);
@@ -552,21 +552,21 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->selectAll = new Button(QIcon(selectAll),"",_imp->buttonsContainer);
     _imp->selectAll->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _imp->selectAll->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
-    _imp->selectAll->setToolTip(Natron::convertFromPlainText(tr("Select all."), Qt::WhiteSpaceNormal));
+    _imp->selectAll->setToolTip(GuiUtils::convertFromPlainText(tr("Select all."), Qt::WhiteSpaceNormal));
     _imp->buttonsLayout->addWidget(_imp->selectAll);
     QObject::connect( _imp->selectAll, SIGNAL( clicked(bool) ), this, SLOT( onSelectAllButtonClicked() ) );
 
     _imp->resetTracksButton = new Button("Reset",_imp->buttonsContainer);
     QObject::connect( _imp->resetTracksButton, SIGNAL( clicked(bool) ), this, SLOT( resetSelectedInstances() ) );
     _imp->buttonsLayout->addWidget(_imp->resetTracksButton);
-    _imp->resetTracksButton->setToolTip(Natron::convertFromPlainText(tr("Reset selected items."), Qt::WhiteSpaceNormal));
+    _imp->resetTracksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Reset selected items."), Qt::WhiteSpaceNormal));
 
     layout->addWidget(_imp->buttonsContainer);
     appendButtons(_imp->buttonsLayout);
     _imp->buttonsLayout->addStretch();
 
     ///Deactivate the main-instance since this is more convenient this way for the user.
-    //_imp->getMainInstance()->deactivate(std::list<Natron::Node* >(),false,false,false,false);
+    //_imp->getMainInstance()->deactivate(std::list<Node* >(),false,false,false,false);
     _imp->guiCreated = true;
 } // createMultiInstanceGui
 
@@ -616,7 +616,7 @@ public:
     }
 };
 
-boost::shared_ptr<Natron::Node> MultiInstancePanel::createNewInstance(bool useUndoRedoStack)
+boost::shared_ptr<Node> MultiInstancePanel::createNewInstance(bool useUndoRedoStack)
 {
     return addInstanceInternal(useUndoRedoStack);
 }
@@ -627,9 +627,9 @@ MultiInstancePanel::onAddButtonClicked()
     ignore_result(addInstanceInternal(true));
 }
 
-boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal(bool useUndoRedoStack)
+boost::shared_ptr<Node> MultiInstancePanel::addInstanceInternal(bool useUndoRedoStack)
 {
-    boost::shared_ptr<Natron::Node> mainInstance = _imp->getMainInstance();
+    boost::shared_ptr<Node> mainInstance = _imp->getMainInstance();
     CreateNodeArgs args( mainInstance->getPluginID().c_str(),
                          mainInstance->getScriptName(),
                          -1,-1,
@@ -651,12 +651,12 @@ boost::shared_ptr<Natron::Node> MultiInstancePanel::addInstanceInternal(bool use
 }
 
 void
-MultiInstancePanel::onChildCreated(const boost::shared_ptr<Natron::Node>& node)
+MultiInstancePanel::onChildCreated(const boost::shared_ptr<Node>& node)
 {
     _imp->addTableRow(node);
 }
 
-const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool> > &
+const std::list< std::pair<boost::weak_ptr<Node>,bool> > &
 MultiInstancePanel::getInstances() const
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -665,13 +665,13 @@ MultiInstancePanel::getInstances() const
 }
 
 void
-MultiInstancePanel::addRow(const boost::shared_ptr<Natron::Node> & node)
+MultiInstancePanel::addRow(const boost::shared_ptr<Node> & node)
 {
     _imp->addTableRow(node);
 }
 
 void
-MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & node)
+MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Node> & node)
 {
     for (Nodes::iterator it = instances.begin(); it != instances.end(); ++it) {
         if (it->first.lock() == node) {
@@ -786,7 +786,7 @@ MultiInstancePanelPrivate::addTableRow(const boost::shared_ptr<Natron::Node> & n
 } // addTableRow
 
 void
-MultiInstancePanel::selectNode(const boost::shared_ptr<Natron::Node> & node,
+MultiInstancePanel::selectNode(const boost::shared_ptr<Node> & node,
                                bool addToSelection)
 {
     if (!addToSelection) {
@@ -808,7 +808,7 @@ MultiInstancePanel::selectNode(const boost::shared_ptr<Natron::Node> & node,
 }
 
 void
-MultiInstancePanel::removeNodeFromSelection(const boost::shared_ptr<Natron::Node> & node)
+MultiInstancePanel::removeNodeFromSelection(const boost::shared_ptr<Node> & node)
 {
     int index = -1;
     int i = 0;
@@ -831,7 +831,7 @@ MultiInstancePanel::clearSelection()
 }
 
 void
-MultiInstancePanel::selectNodes(const std::list<Natron::Node*> & nodes,
+MultiInstancePanel::selectNodes(const std::list<Node*> & nodes,
                                 bool addToSelection)
 {
     //_imp->view->selectionModel()->blockSignals(true);
@@ -849,7 +849,7 @@ MultiInstancePanel::selectNodes(const std::list<Natron::Node*> & nodes,
 
 
     QItemSelection newSelection;
-    for (std::list<Natron::Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<Node*>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         int i = 0;
         for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::iterator it2 = _imp->instances.begin();
              it2 != _imp->instances.end(); ++it2, ++i) {
@@ -867,12 +867,12 @@ class RemoveNodeCommand
     : public QUndoCommand
 {
     MultiInstancePanel* _panel;
-    std::list<boost::shared_ptr<Natron::Node> > _nodes;
+    std::list<boost::shared_ptr<Node> > _nodes;
 
 public:
 
     RemoveNodeCommand(MultiInstancePanel* panel,
-                      const std::list<boost::shared_ptr<Natron::Node> > & nodes,
+                      const std::list<boost::shared_ptr<Node> > & nodes,
                       QUndoCommand* parent = 0)
         : QUndoCommand(parent)
           , _panel(panel)
@@ -906,22 +906,22 @@ public:
 };
 
 void
-MultiInstancePanel::removeInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances)
+MultiInstancePanel::removeInstances(const std::list<boost::shared_ptr<Node> >& instances)
 {
     boost::shared_ptr<Node> mainInstance = getMainInstance();
-    std::list<boost::shared_ptr<Natron::Node> >::const_iterator next = instances.begin();
+    std::list<boost::shared_ptr<Node> >::const_iterator next = instances.begin();
     if (next != instances.end()) {
 	   ++next;
 	}
    
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = instances.begin();
+    for (std::list<boost::shared_ptr<Node> >::const_iterator it = instances.begin();
          it != instances.end();
          ++it) {
         int index = getNodeIndex(*it);
         assert(index != -1);
         removeRow(index);
         bool isMainInstance = (*it) == mainInstance;
-        (*it)->deactivate( std::list<Natron::Node* >(),false,false,!isMainInstance,next == instances.end() );
+        (*it)->deactivate( std::list<Node* >(),false,false,!isMainInstance,next == instances.end() );
 
         // increment for next iteration
         if (next != instances.end()) {
@@ -933,17 +933,17 @@ MultiInstancePanel::removeInstances(const std::list<boost::shared_ptr<Natron::No
 }
 
 void
-MultiInstancePanel::addInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances)
+MultiInstancePanel::addInstances(const std::list<boost::shared_ptr<Node> >& instances)
 {
-    std::list<boost::shared_ptr<Natron::Node> >::const_iterator next = instances.begin();
+    std::list<boost::shared_ptr<Node> >::const_iterator next = instances.begin();
     if (next != instances.end()) {
 		++next;
 	}
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it = instances.begin();
+    for (std::list<boost::shared_ptr<Node> >::const_iterator it = instances.begin();
          it != instances.end();
          ++it) {
         addRow(*it);
-        (*it)->activate( std::list<Natron::Node* >(),false,next == instances.end() );
+        (*it)->activate( std::list<Node* >(),false,next == instances.end() );
 
         // increment for next iteration
         if (next != instances.end()) {
@@ -971,7 +971,7 @@ MultiInstancePanelPrivate::removeRow(int index)
 }
 
 int
-MultiInstancePanel::getNodeIndex(const boost::shared_ptr<Natron::Node> & node) const
+MultiInstancePanel::getNodeIndex(const boost::shared_ptr<Node> & node) const
 {
     int i = 0;
     Nodes::iterator it = _imp->instances.begin();
@@ -1255,7 +1255,7 @@ MultiInstancePanelPrivate::getNodesFromSelection(const QModelIndexList & indexes
     }
 }
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 MultiInstancePanelPrivate::getInstanceFromItem(TableItem* item) const
 {
     assert( item->row() >= 0 && item->row() < (int)instances.size() );
@@ -1266,7 +1266,7 @@ MultiInstancePanelPrivate::getInstanceFromItem(TableItem* item) const
         }
     }
 
-    return boost::shared_ptr<Natron::Node>();
+    return boost::shared_ptr<Node>();
 }
 
 boost::shared_ptr<KnobI> MultiInstancePanel::getKnobForItem(TableItem* item,
@@ -1316,7 +1316,7 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
     Nodes::iterator nIt = _imp->instances.begin();
     std::advance( nIt, modelIndex.row() );
 
-    boost::shared_ptr<Natron::Node> node = nIt->first.lock();
+    boost::shared_ptr<Node> node = nIt->first.lock();
     assert(node);
     const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getKnobs();
 
@@ -1372,7 +1372,7 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
 void
 MultiInstancePanel::onItemRightClicked(TableItem* item)
 {
-    boost::shared_ptr<Natron::Node> instance = _imp->getInstanceFromItem(item);
+    boost::shared_ptr<Node> instance = _imp->getInstanceFromItem(item);
 
     if (instance) {
         showMenuForInstance( instance.get() );
@@ -1427,7 +1427,7 @@ void
 MultiInstancePanel::onInstanceKnobValueChanged(int dim,
                                                int reason)
 {
-    if ( (Natron::ValueChangedReasonEnum)reason == Natron::eValueChangedReasonSlaveRefresh ) {
+    if ( (ValueChangedReasonEnum)reason == eValueChangedReasonSlaveRefresh ) {
         return;
     }
 
@@ -1538,7 +1538,7 @@ MultiInstancePanel::onInstanceKnobValueChanged(int dim,
 } // onInstanceKnobValueChanged
 
 void
-MultiInstancePanel::getSelectedInstances(std::list<Natron::Node*>* instances) const
+MultiInstancePanel::getSelectedInstances(std::list<Node*>* instances) const
 {
     const QItemSelection selection = _imp->view->selectionModel()->selection();
     QModelIndexList indexes = selection.indexes();
@@ -1559,7 +1559,7 @@ MultiInstancePanel::getSelectedInstances(std::list<Natron::Node*>* instances) co
 void
 MultiInstancePanel::resetSelectedInstances()
 {
-    std::list<Natron::Node*> selectedInstances;
+    std::list<Node*> selectedInstances;
 
     getSelectedInstances(&selectedInstances);
     _imp->view->selectionModel()->clear();
@@ -1570,7 +1570,7 @@ void
 MultiInstancePanel::resetAllInstances()
 {
     _imp->view->selectionModel()->clear();
-    std::list<Natron::Node*> all;
+    std::list<Node*> all;
     for (Nodes::iterator it = _imp->instances.begin(); it != _imp->instances.end(); ++it) {
         all.push_back( it->first.lock().get() );
     }
@@ -1578,17 +1578,17 @@ MultiInstancePanel::resetAllInstances()
 }
 
 void
-MultiInstancePanel::resetInstances(const std::list<Natron::Node*> & instances)
+MultiInstancePanel::resetInstances(const std::list<Node*> & instances)
 {
     if ( instances.empty() ) {
         return;
     }
 
-    std::list<Natron::Node*>::const_iterator next = instances.begin();
+    std::list<Node*>::const_iterator next = instances.begin();
     if (next != instances.end()) {
         ++next;
     }
-    for (std::list<Natron::Node*>::const_iterator it = instances.begin();
+    for (std::list<Node*>::const_iterator it = instances.begin();
          it != instances.end();
          ++it) {
         //invalidate the cache by incrementing the age
@@ -1615,7 +1615,7 @@ MultiInstancePanel::resetInstances(const std::list<Natron::Node*> & instances)
             ++next;
         }
     } // for(it)
-    instances.front()->getLiveInstance()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
+    instances.front()->getLiveInstance()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
 
     ///To update interacts, kinda hack but can't figure out where else put this
     getMainInstance()->getApp()->redrawAllViewers();
@@ -1624,7 +1624,7 @@ MultiInstancePanel::resetInstances(const std::list<Natron::Node*> & instances)
 void
 MultiInstancePanel::evaluate(KnobI* /*knob*/,
                              bool /*isSignificant*/,
-                             Natron::ValueChangedReasonEnum /*reason*/)
+                             ValueChangedReasonEnum /*reason*/)
 {
 }
 
@@ -1646,7 +1646,7 @@ MultiInstancePanel::onButtonTriggered(KnobButton* button)
 
 void
 MultiInstancePanel::onKnobValueChanged(KnobI* k,
-                                       Natron::ValueChangedReasonEnum reason,
+                                       ValueChangedReasonEnum reason,
                                        double time,
                                        bool /*originatedFromMainThread*/)
 {
@@ -1659,7 +1659,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
             }
         }
     } else {
-        if (reason == Natron::eValueChangedReasonUserEdited) {
+        if (reason == eValueChangedReasonUserEdited) {
             KnobButton* isButton = dynamic_cast<KnobButton*>(k);            
             if ( isButton && (reason == eValueChangedReasonUserEdited) ) {
                 onButtonTriggered(isButton);
@@ -1710,7 +1710,7 @@ struct TrackerPanelPrivate
     mutable QMutex updateViewerMutex;
     bool updateViewerOnTrackingEnabled;
     
-    Natron::Label* exportLabel;
+    Label* exportLabel;
     QWidget* exportContainer;
     QHBoxLayout* exportLayout;
     ComboBox* exportChoice;
@@ -1767,7 +1767,7 @@ TrackerPanel::appendExtraGui(QVBoxLayout* layout)
         return;
     }
     
-    _imp->exportLabel = new Natron::Label( tr("Export data"),layout->parentWidget() );
+    _imp->exportLabel = new Label( tr("Export data"),layout->parentWidget() );
     layout->addWidget(_imp->exportLabel);
     layout->addSpacing(10);
     _imp->exportContainer = new QWidget( layout->parentWidget() );
@@ -1847,7 +1847,7 @@ TrackerPanel::appendButtons(QHBoxLayout* buttonLayout)
         return;
     }
     _imp->averageTracksButton = new Button( tr("Average tracks"),buttonLayout->parentWidget() );
-    _imp->averageTracksButton->setToolTip(Natron::convertFromPlainText(tr("Make a new track which is the average of the selected tracks."), Qt::WhiteSpaceNormal));
+    _imp->averageTracksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Make a new track which is the average of the selected tracks."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->averageTracksButton, SIGNAL( clicked(bool) ), this, SLOT( onAverageTracksButtonClicked() ) );
     buttonLayout->addWidget(_imp->averageTracksButton);
 }
@@ -1858,9 +1858,9 @@ TrackerPanel::initializeExtraKnobs()
     if (!getMainInstance()->isPointTrackerNode()) {
         return;
     }
-    _imp->transformPage = Natron::createKnob<KnobPage>(this, "Transform",1,false);
+    _imp->transformPage = AppManager::createKnob<KnobPage>(this, "Transform",1,false);
 
-    _imp->referenceFrame = Natron::createKnob<KnobInt>(this,"Reference frame",1,false);
+    _imp->referenceFrame = AppManager::createKnob<KnobInt>(this,"Reference frame",1,false);
     _imp->referenceFrame->setAnimationEnabled(false);
     _imp->referenceFrame->setHintToolTip("This is the frame number at which the transform will be an identity.");
     _imp->transformPage->addKnob(_imp->referenceFrame);
@@ -1885,11 +1885,11 @@ TrackerPanel::setIconForButton(KnobButton* knob)
 void
 TrackerPanel::onAverageTracksButtonClicked()
 {
-    std::list<Natron::Node*> selectedInstances;
+    std::list<Node*> selectedInstances;
 
     getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
-        Natron::warningDialog( tr("Average").toStdString(), tr("No tracks selected").toStdString() );
+        Dialogs::warningDialog( tr("Average").toStdString(), tr("No tracks selected").toStdString() );
 
         return;
     }
@@ -1897,8 +1897,8 @@ TrackerPanel::onAverageTracksButtonClicked()
     boost::shared_ptr<Node> newInstance = addInstanceInternal(true);
     ///give an appropriate name to the new instance
     int avgIndex = 0;
-    const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > > & allInstances = getInstances();
-    for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = allInstances.begin();
+    const std::list< std::pair<boost::weak_ptr<Node>,bool > > & allInstances = getInstances();
+    for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::const_iterator it = allInstances.begin();
          it != allInstances.end(); ++it) {
         if ( QString( it->first.lock()->getScriptName().c_str() ).contains("average",Qt::CaseInsensitive) ) {
             ++avgIndex;
@@ -1918,7 +1918,7 @@ TrackerPanel::onAverageTracksButtonClicked()
     keyframesRange.min = INT_MAX;
     keyframesRange.max = INT_MIN;
 
-    for (std::list<Natron::Node*>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
+    for (std::list<Node*>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         boost::shared_ptr<KnobDouble> dblKnob = getCenterKnobForTracker(*it);
         centers.push_back(dblKnob);
         double mini,maxi;
@@ -1989,7 +1989,7 @@ handleTrackNextAndPrevious(KnobButton* selectedInstance,
 {
 //        ///When a reason of eValueChangedReasonUserEdited is given, the tracker plug-in will move the timeline so just send it
 //        ///upon the last track if we want to update the viewer
-//        Natron::ValueChangedReasonEnum reason;
+//        ValueChangedReasonEnum reason;
 //        if (updateViewer) {
 //            reason = next == selectedInstances.end() ? eValueChangedReasonNatronGuiEdited : eValueChangedReasonNatronInternalEdited;
 //        } else {
@@ -2037,7 +2037,7 @@ TrackerPanelPrivate::getTrackInstancesForButton(std::list<KnobButton*>* trackBut
     
     publicInterface->getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
-        Natron::warningDialog( QObject::tr("Tracker").toStdString(), QObject::tr("You must select something to track first").toStdString() );
+        Dialogs::warningDialog( QObject::tr("Tracker").toStdString(), QObject::tr("You must select something to track first").toStdString() );
         return false;
     }
     
@@ -2116,7 +2116,7 @@ TrackerPanel::trackPrevious()
 
     getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
-        Natron::warningDialog( tr("Tracker").toStdString(), tr("You must select something to track first").toStdString() );
+        Dialogs::warningDialog( tr("Tracker").toStdString(), tr("You must select something to track first").toStdString() );
 
         return false;
     }
@@ -2142,7 +2142,7 @@ TrackerPanel::trackNext()
     
     getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
-        Natron::warningDialog( tr("Tracker").toStdString(), tr("You must select something to track first").toStdString() );
+        Dialogs::warningDialog( tr("Tracker").toStdString(), tr("You must select something to track first").toStdString() );
         
         return false;
     }
@@ -2188,7 +2188,7 @@ TrackerPanel::clearBackwardAnimationForSelection()
         const std::vector<boost::shared_ptr<KnobI> > & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->deleteAnimationBeforeTime(time,dim,Natron::eValueChangedReasonPluginEdited);
+                knobs[i]->deleteAnimationBeforeTime(time,dim,eValueChangedReasonPluginEdited);
             }
         }
     }
@@ -2205,7 +2205,7 @@ TrackerPanel::clearForwardAnimationForSelection()
         const std::vector<boost::shared_ptr<KnobI> > & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->deleteAnimationAfterTime(time,dim,Natron::eValueChangedReasonPluginEdited);
+                knobs[i]->deleteAnimationAfterTime(time,dim,eValueChangedReasonPluginEdited);
             }
         }
     }
@@ -2292,7 +2292,7 @@ TrackerPanelPrivate::createTransformFromSelection(const std::list<Node*> & /*sel
 namespace  {
 
 boost::shared_ptr<KnobDouble>
-getCornerPinPoint(Natron::Node* node,
+getCornerPinPoint(Node* node,
                   bool isFrom,
                   int index)
 {
@@ -2313,7 +2313,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
                                                   bool invert)
 {
     if ( (selection.size() > 4) || selection.empty() ) {
-        Natron::errorDialog( QObject::tr("Export").toStdString(),
+        Dialogs::errorDialog( QObject::tr("Export").toStdString(),
                              QObject::tr("Export to corner pin needs between 1 and 4 selected tracks.").toStdString() );
 
         return;
@@ -2326,7 +2326,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         assert(centers[i]);
     }
     GuiAppInstance* app = publicInterface->getGui()->getApp();
-    boost::shared_ptr<Natron::Node> cornerPin = app->createNode( CreateNodeArgs(PLUGINID_OFX_CORNERPIN,
+    boost::shared_ptr<Node> cornerPin = app->createNode( CreateNodeArgs(PLUGINID_OFX_CORNERPIN,
                                                                                 "",
                                                                                 -1, -1,
                                                                                 false, //< don't autoconnect
@@ -2371,7 +2371,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         if (!linked) {
             toPoints[i]->cloneAndUpdateGui(centers[i].get());
         } else {
-            Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(centers[i]->getHolder());
+            EffectInstance* effect = dynamic_cast<EffectInstance*>(centers[i]->getHolder());
             assert(effect);
             
             std::stringstream ss;
@@ -2403,12 +2403,12 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
 } // createCornerPinFromSelection
 
 void
-TrackerPanel::showMenuForInstance(Natron::Node* instance)
+TrackerPanel::showMenuForInstance(Node* instance)
 {
     if (!getMainInstance()->isPointTrackerNode()) {
         return;
     }
-    Natron::Menu menu( getGui() );
+    Menu menu( getGui() );
 
     //menu.setFont( QFont(appFont,appFontSize) );
 
@@ -2564,7 +2564,7 @@ TrackScheduler::run()
             ///Ok all tracks are finished now for this frame, refresh viewer if needed
             bool updateViewer = _imp->panel->isUpdateViewerOnTrackingEnabled();
             if (updateViewer) {
-                timeline->seekFrame(cur, true, 0, Natron::eTimelineChangeReasonUserSeek);
+                timeline->seekFrame(cur, true, 0, eTimelineChangeReasonUserSeek);
             }
 
             if (reportProgress) {
@@ -2683,3 +2683,8 @@ TrackScheduler::quitThread()
     wait();
     
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_MultiInstancePanel.cpp"

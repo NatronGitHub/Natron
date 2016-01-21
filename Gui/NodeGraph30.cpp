@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -261,7 +261,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
             }
         }
         if (foundEffect) {
-            Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Delete").toStdString(), tr("This node has one or several "
+            StandardButtonEnum reply = Dialogs::questionDialog( tr("Delete").toStdString(), tr("This node has one or several "
                                                                                                   "parameters from which other parameters "
                                                                                                   "of the project rely on through expressions "
                                                                                                   "or links. Deleting this node will "
@@ -269,7 +269,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
                                                                                                   "and undoing the action will not recover "
                                                                                                   "them. Do you wish to continue ?")
                                                                    .toStdString(), false );
-            if (reply == Natron::eStandardButtonNo) {
+            if (reply == eStandardButtonNo) {
                 return;
             }
             break;
@@ -291,7 +291,7 @@ NodeGraph::deleteSelection()
         
         ///For all backdrops also move all the nodes contained within it
         for (NodeGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
-            NodeGuiList nodesWithinBD = getNodesWithinBackDrop(*it);
+            NodeGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
             for (NodeGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
                 NodeGuiList::iterator found = std::find(nodesToRemove.begin(),nodesToRemove.end(),*it2);
                 if ( found == nodesToRemove.end()) {
@@ -334,7 +334,7 @@ NodeGraph::deleteSelection()
                     }
                 }
                 if (foundEffect) {
-                    Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Delete").toStdString(),
+                    StandardButtonEnum reply = Dialogs::questionDialog( tr("Delete").toStdString(),
                                                                            tr("This node has one or several "
                                                                               "parameters from which other parameters "
                                                                               "of the project rely on through expressions "
@@ -343,7 +343,7 @@ NodeGraph::deleteSelection()
                                                                               ". Undoing the action will not recover "
                                                                               "them. \nContinue anyway ?")
                                                                            .toStdString(), false );
-                    if (reply == Natron::eStandardButtonNo) {
+                    if (reply == eStandardButtonNo) {
                         return;
                     }
                     mustBreak = true;
@@ -491,3 +491,5 @@ NodeGraph::areAllNodesVisible()
     }
     return true;
 }
+
+NATRON_NAMESPACE_EXIT;

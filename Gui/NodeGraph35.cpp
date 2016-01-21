@@ -55,7 +55,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 QImage
@@ -317,7 +317,7 @@ NodeGraph::showMenu(const QPoint & pos)
     _imp->_menu->addSeparator();
     
     //QFont font(appFont,appFontSize);
-    Natron::Menu* editMenu = new Natron::Menu(tr("Edit"),_imp->_menu);
+    Menu* editMenu = new Menu(tr("Edit"),_imp->_menu);
     //editMenu->setFont(font);
     _imp->_menu->addAction( editMenu->menuAction() );
     
@@ -489,7 +489,7 @@ NodeGraph::dropEvent(QDropEvent* e)
     QStringList filesList;
     QList<QUrl> urls = e->mimeData()->urls();
     for (int i = 0; i < urls.size(); ++i) {
-        const QUrl rl = Natron::toLocalFileUrlFixed(urls.at(i));
+        const QUrl rl = QtCompat::toLocalFileUrlFixed(urls.at(i));
         QString path = rl.toLocalFile();
 
 #ifdef __NATRON_WIN32__
@@ -534,7 +534,7 @@ NodeGraph::dropEvent(QDropEvent* e)
         }
         std::map<std::string,std::string>::iterator found = readersForFormat.find(extLower);
         if ( found == readersForFormat.end() ) {
-            errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
+            Dialogs::errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
         } else {
             
             std::string pattern = sequence->generateValidSequencePattern();
@@ -553,7 +553,7 @@ NodeGraph::dropEvent(QDropEvent* e)
                                 QString(),
                                 defaultValues,
                                 getGroup());
-            boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(args);
+            boost::shared_ptr<Node>  n = getGui()->getApp()->createNode(args);
             
             //And offset scenePos by the Width of the previous node created if several nodes are created
             double w,h;
@@ -580,3 +580,5 @@ NodeGraph::dragMoveEvent(QDragMoveEvent* e)
 {
     e->accept();
 }
+
+NATRON_NAMESPACE_EXIT;

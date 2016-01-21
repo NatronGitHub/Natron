@@ -31,6 +31,8 @@
 #include "Engine/AppManager.h"
 #include "Engine/CLArgs.h"
 
+NATRON_NAMESPACE_USING
+
 int
 main(int argc,
      char *argv[])

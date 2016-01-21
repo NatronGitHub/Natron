@@ -43,7 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-class QPaintEvent;
+NATRON_NAMESPACE_ENTER;
 
 LineEdit::LineEdit(QWidget* parent)
     : QLineEdit(parent)
@@ -81,7 +81,7 @@ LineEdit::dropEvent(QDropEvent* e)
     QList<QUrl> urls = e->mimeData()->urls();
     QString path;
     if (urls.size() > 0) {
-        path = Natron::toLocalFileUrlFixed(urls.at(0)).path();
+        path = QtCompat::toLocalFileUrlFixed(urls.at(0)).path();
     }
     if ( !path.isEmpty() ) {
         setText(path);
@@ -148,3 +148,8 @@ LineEdit::keyPressEvent(QKeyEvent* e)
         Q_EMIT textPasted();
     }
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_LineEdit.cpp"

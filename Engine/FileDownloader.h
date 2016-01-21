@@ -36,7 +36,7 @@ CLANG_DIAG_ON(deprecated-register)
 
 #include "Engine/EngineFwd.h"
 
-class QTimer;
+NATRON_NAMESPACE_ENTER;
 
 /**
    Usage:
@@ -93,5 +93,7 @@ private:
     QByteArray m_DownloadedData;
     QTimer* m_timer;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // FILEDOWNLOADER_H

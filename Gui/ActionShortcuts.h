@@ -614,6 +614,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionScriptShowOutput "showHideOutput"
 #define kShortcutDescActionScriptShowOutput "Show/Hide Output Window"
 
+NATRON_NAMESPACE_ENTER;
 
 inline
 QKeySequence
@@ -851,5 +852,6 @@ typedef std::map<QString,BoundAction*> GroupShortcuts;
 ///All groups shortcuts mapped against the name of the group
 typedef std::map<QString,GroupShortcuts> AppShortcuts;
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // ACTIONSHORTCUTS_H

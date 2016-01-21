@@ -78,7 +78,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #define READER_INPUT_NAME "Sync"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
+
 using std::cout; using std::endl;
 
 
@@ -108,7 +109,7 @@ public:
             OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
             assert(clip);
             if (clip) {
-                clip->setClipTLS(view, mipmapLevel, Natron::ImageComponents::getNoneComponents());
+                clip->setClipTLS(view, mipmapLevel, ImageComponents::getNoneComponents());
             }
         }
     }
@@ -137,7 +138,7 @@ public:
     RenderThreadStorageSetter(OfxImageEffectInstance* effect,
                               int view,
                               unsigned int mipmapLevel,
-                              const Natron::ImageComponents& currentPlane,
+                              const ImageComponents& currentPlane,
                               const EffectInstance::InputImagesMap& inputImages)
     : effect(effect)
     {
@@ -189,16 +190,16 @@ struct OfxEffectInstancePrivate
 {
     
     
-    boost::scoped_ptr<Natron::OfxImageEffectInstance> effect;
+    boost::scoped_ptr<OfxImageEffectInstance> effect;
     std::string natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
-    boost::scoped_ptr<Natron::OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
+    boost::scoped_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
     std::list< void* > overlaySlaves; //void* to actually a KnobI* but stored as void to avoid dereferencing
     boost::weak_ptr<KnobButton> renderButton; //< render button for writers
     mutable QReadWriteLock preferencesLock;
     mutable QReadWriteLock renderSafetyLock;
-    mutable Natron::RenderSafetyEnum renderSafety;
+    mutable RenderSafetyEnum renderSafety;
     mutable bool wasRenderSafetySet;
-    Natron::ContextEnum context;
+    ContextEnum context;
     
     struct ClipsInfo {
         bool optional;
@@ -223,7 +224,7 @@ struct OfxEffectInstancePrivate
     , renderButton()
     , preferencesLock(QReadWriteLock::Recursive)
     , renderSafetyLock()
-    , renderSafety(Natron::eRenderSafetyUnsafe)
+    , renderSafety(eRenderSafetyUnsafe)
     , wasRenderSafetySet(false)
     , context(eContextNone)
     , clipsInfos()
@@ -240,20 +241,20 @@ struct OfxEffectInstancePrivate
 };
 
 
-OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Natron::Node> node)
+OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Node> node)
 : AbstractOfxEffectInstance(node)
 , _imp(new OfxEffectInstancePrivate())
 {
     QObject::connect( this, SIGNAL( syncPrivateDataRequested() ), this, SLOT( onSyncPrivateDataRequested() ) );
 }
 
-Natron::OfxImageEffectInstance*
+OfxImageEffectInstance*
 OfxEffectInstance::effectInstance()
 {
     return _imp->effect.get();
 }
 
-const Natron::OfxImageEffectInstance*
+const OfxImageEffectInstance*
 OfxEffectInstance::effectInstance() const
 {
     return _imp->effect.get();
@@ -274,7 +275,7 @@ OfxEffectInstance::isInitialized() const
 void
 OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                 OFX::Host::ImageEffect::Descriptor* desc,
-                                                Natron::ContextEnum context,
+                                                ContextEnum context,
                                                 const NodeSerialization* serialization,
                                                  const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                                 bool allowFileDialogs,
@@ -319,7 +320,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     std::string images;
 
     try {
-        _imp->effect.reset(new Natron::OfxImageEffectInstance(plugin,*desc,mapContextToString(context),false));
+        _imp->effect.reset(new OfxImageEffectInstance(plugin,*desc,mapContextToString(context),false));
         assert(_imp->effect);
         _imp->effect->setOfxEffectInstance( dynamic_cast<OfxEffectInstance*>(this) );
 
@@ -485,7 +486,7 @@ OfxEffectInstance::initializeContextDependentParams()
     assert(_imp->context != eContextNone);
     if ( isWriter() ) {
         
-        boost::shared_ptr<KnobButton> b = Natron::createKnob<KnobButton>(this, "Render", 1, false);
+        boost::shared_ptr<KnobButton> b = AppManager::createKnob<KnobButton>(this, "Render", 1, false);
         b->setHintToolTip("Starts rendering the specified frame range.");
         b->setAsRenderButton();
         _imp->renderButton = b;
@@ -987,7 +988,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
 }
 
 /** @brief map a std::string to a context */
-Natron::ContextEnum
+ContextEnum
 OfxEffectInstance::mapToContextEnum(const std::string &s)
 {
     if (s == kOfxImageEffectContextGenerator) {
@@ -1022,28 +1023,28 @@ OfxEffectInstance::mapToContextEnum(const std::string &s)
 }
 
 std::string
-OfxEffectInstance::mapContextToString(Natron::ContextEnum ctx)
+OfxEffectInstance::mapContextToString(ContextEnum ctx)
 {
     switch (ctx) {
-        case Natron::eContextGenerator:
+        case eContextGenerator:
             return kOfxImageEffectContextGenerator;
-        case Natron::eContextFilter:
+        case eContextFilter:
             return kOfxImageEffectContextFilter;
-        case Natron::eContextTransition:
+        case eContextTransition:
             return kOfxImageEffectContextTransition;
-        case Natron::eContextPaint:
+        case eContextPaint:
             return kOfxImageEffectContextPaint;
-        case Natron::eContextGeneral:
+        case eContextGeneral:
             return kOfxImageEffectContextGeneral;
-        case Natron::eContextRetimer:
+        case eContextRetimer:
             return kOfxImageEffectContextRetimer;
-        case Natron::eContextReader:
+        case eContextReader:
             return kOfxImageEffectContextReader;
-        case Natron::eContextWriter:
+        case eContextWriter:
             return kOfxImageEffectContextWriter;
-        case Natron::eContextTracker:
+        case eContextTracker:
             return kNatronOfxImageEffectContextTracker;
-        case Natron::eContextNone:
+        case eContextNone:
         default:
             break;
     }
@@ -1052,7 +1053,7 @@ OfxEffectInstance::mapContextToString(Natron::ContextEnum ctx)
 
 /**
  * @brief The purpose of this function is to allow Natron to modify slightly the values returned in the getClipPreferencesAction
- * by the plugin so that we can minimize the amount of Natron::Image::convertToFormat calls.
+ * by the plugin so that we can minimize the amount of Image::convertToFormat calls.
  **/
 static void
 clipPrefsProxy(OfxEffectInstance* self,
@@ -1075,7 +1076,7 @@ clipPrefsProxy(OfxEffectInstance* self,
     if (outputClipDepth.empty()) {
         outputClipDepth = self->effectInstance()->bestSupportedDepth(kOfxBitDepthFloat);
     }
-    Natron::ImageBitDepthEnum outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
+    ImageBitDepthEnum outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
     
     ///Set a warning on the node if the bitdepth conversion from one of the input clip to the output clip is lossy
     QString bitDepthWarning("This nodes converts higher bit depths images from its inputs to work. As "
@@ -1143,7 +1144,7 @@ clipPrefsProxy(OfxEffectInstance* self,
 
             ///Try to remap the clip's bitdepth to be the same as
             const std::string & input_outputDepth = inputOutputClip->getPixelDepth();
-            Natron::ImageBitDepthEnum input_outputNatronDepth = OfxClipInstance::ofxDepthToNatronDepth(input_outputDepth);
+            ImageBitDepthEnum input_outputNatronDepth = OfxClipInstance::ofxDepthToNatronDepth(input_outputDepth);
             
             ///If supported, set the clip's bitdepth to be the same as the output depth of the input node
             if ( self->isSupportedBitDepth(input_outputNatronDepth) ) {
@@ -1189,7 +1190,7 @@ clipPrefsProxy(OfxEffectInstance* self,
 bool
 OfxEffectInstance::refreshClipPreferences(double time,
                                            const RenderScale & scale,
-                                          Natron::ValueChangedReasonEnum reason,
+                                          ValueChangedReasonEnum reason,
                                            bool forceGetClipPrefAction)
 {
     
@@ -1307,7 +1308,7 @@ OfxEffectInstance::supportedFileFormats() const
     return formats;
 }
 
-Natron::StatusEnum
+StatusEnum
 OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
                                          double time,
                                          const RenderScale & scale,
@@ -1316,7 +1317,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
 {
     assert(_imp->context != eContextNone);
     if (!_imp->initialized) {
-        return Natron::eStatusFailed;
+        return eStatusFailed;
     }
 
     assert(_imp->effect);
@@ -1649,7 +1650,7 @@ OfxEffectInstance::getFramesNeeded(double time, int view)
     
     //Default is already handled by HostSupport
 //    if (stat == kOfxStatReplyDefault) {
-//        return Natron::EffectInstance::getFramesNeeded(time,view);
+//        return EffectInstance::getFramesNeeded(time,view);
 //    }
     return ret;
 }
@@ -1815,7 +1816,7 @@ OfxEffectInstance::isIdentity(double time,
     //throw std::runtime_error("isIdentity failed");
 } // isIdentity
 
-Natron::StatusEnum
+StatusEnum
 OfxEffectInstance::beginSequenceRender(double first,
                                        double last,
                                        double step,
@@ -1858,7 +1859,7 @@ OfxEffectInstance::beginSequenceRender(double first,
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 OfxEffectInstance::endSequenceRender(double first,
                                      double last,
                                      double step,
@@ -1900,11 +1901,11 @@ OfxEffectInstance::endSequenceRender(double first,
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 OfxEffectInstance::render(const RenderActionArgs& args)
 {
     if (!_imp->initialized) {
-        return Natron::eStatusFailed;
+        return eStatusFailed;
     }
 
     assert(!args.outputPlanes.empty());
@@ -1923,7 +1924,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
     bool multiPlanar = isMultiPlanar();
     
     std::list<std::string> ofxPlanes;
-    for (std::list<std::pair<ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator it = args.outputPlanes.begin();
+    for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator it = args.outputPlanes.begin();
          it!=args.outputPlanes.end(); ++it) {
         if (!multiPlanar) {
             ofxPlanes.push_back(OfxClipInstance::natronsPlaneToOfxPlane(it->second->getComponents()));
@@ -1966,7 +1967,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         
         RenderThreadStorageSetter clipSetter(effectInstance(),
                                              args.view,
-                                             Natron::Image::getLevelFromScale(args.originalScale.x),
+                                             Image::getLevelFromScale(args.originalScale.x),
                                              firstPlane.first,
                                              args.inputImages);
 
@@ -2001,7 +2002,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
             } else {
                 err.append(QObject::tr("Unknown failure reason"));
             }
-            setPersistentMessage(Natron::eMessageTypeError, err.toStdString());
+            setPersistentMessage(eMessageTypeError, err.toStdString());
         }
         return eStatusFailed;
     } else {
@@ -2015,7 +2016,7 @@ OfxEffectInstance::supportsMultipleClipsPAR() const
     return _imp->effect->supportsMultipleClipPARs();
 }
 
-Natron::RenderSafetyEnum
+RenderSafetyEnum
 OfxEffectInstance::renderThreadSafety() const
 {
     {
@@ -2028,18 +2029,18 @@ OfxEffectInstance::renderThreadSafety() const
         QWriteLocker writeL(&_imp->renderSafetyLock);
         const std::string & safety = _imp->effect->getRenderThreadSafety();
         if (safety == kOfxImageEffectRenderUnsafe) {
-            _imp->renderSafety =  Natron::eRenderSafetyUnsafe;
+            _imp->renderSafety =  eRenderSafetyUnsafe;
         } else if (safety == kOfxImageEffectRenderInstanceSafe) {
-            _imp->renderSafety = Natron::eRenderSafetyInstanceSafe;
+            _imp->renderSafety = eRenderSafetyInstanceSafe;
         } else if (safety == kOfxImageEffectRenderFullySafe) {
             if ( _imp->effect->getHostFrameThreading() ) {
-                _imp->renderSafety =  Natron::eRenderSafetyFullySafeFrame;
+                _imp->renderSafety =  eRenderSafetyFullySafeFrame;
             } else {
-                _imp->renderSafety =  Natron::eRenderSafetyFullySafe;
+                _imp->renderSafety =  eRenderSafetyFullySafe;
             }
         } else {
             qDebug() << "Unknown thread safety level: " << safety.c_str();
-            _imp->renderSafety =  Natron::eRenderSafetyUnsafe;
+            _imp->renderSafety =  eRenderSafetyUnsafe;
         }
         _imp->wasRenderSafetySet = true;
 
@@ -2204,8 +2205,8 @@ bool
 OfxEffectInstance::onOverlayKeyDown(double time,
                                     const RenderScale & renderScale,
                                     int view,
-                                    Natron::Key key,
-                                    Natron::KeyboardModifiers /*modifiers*/)
+                                    Key key,
+                                    KeyboardModifiers /*modifiers*/)
 {
     if (!_imp->initialized) {
         return false;;
@@ -2232,8 +2233,8 @@ bool
 OfxEffectInstance::onOverlayKeyUp(double time,
                                   const RenderScale & renderScale,
                                   int view,
-                                  Natron::Key key,
-                                  Natron::KeyboardModifiers /* modifiers*/)
+                                  Key key,
+                                  KeyboardModifiers /* modifiers*/)
 {
     if (!_imp->initialized) {
         return false;
@@ -2262,8 +2263,8 @@ bool
 OfxEffectInstance::onOverlayKeyRepeat(double time,
                                       const RenderScale & renderScale,
                                       int view,
-                                      Natron::Key key,
-                                      Natron::KeyboardModifiers /*modifiers*/)
+                                      Key key,
+                                      KeyboardModifiers /*modifiers*/)
 {
     if (!_imp->initialized) {
         return false;
@@ -2354,18 +2355,18 @@ OfxEffectInstance::getOverlayInteractRenderScale() const
 }
 
 std::string
-OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReasonEnum reason)
+OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason)
 {
     switch (reason) {
-        case Natron::eValueChangedReasonUserEdited:
-        case Natron::eValueChangedReasonNatronGuiEdited:
-        case Natron::eValueChangedReasonSlaveRefresh:
-        case Natron::eValueChangedReasonRestoreDefault:
-        case Natron::eValueChangedReasonNatronInternalEdited:
+        case eValueChangedReasonUserEdited:
+        case eValueChangedReasonNatronGuiEdited:
+        case eValueChangedReasonSlaveRefresh:
+        case eValueChangedReasonRestoreDefault:
+        case eValueChangedReasonNatronInternalEdited:
             return kOfxChangeUserEdited;
-        case Natron::eValueChangedReasonPluginEdited:
+        case eValueChangedReasonPluginEdited:
             return kOfxChangePluginEdited;
-        case Natron::eValueChangedReasonTimeChanged:
+        case eValueChangedReasonTimeChanged:
             return kOfxChangeTime;
         default:
             assert(false);     // all Natron reasons should be processed
@@ -2375,7 +2376,7 @@ OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(Natron::Value
 
 void
 OfxEffectInstance::knobChanged(KnobI* k,
-                               Natron::ValueChangedReasonEnum reason,
+                               ValueChangedReasonEnum reason,
                                int view,
                                double time,
                                bool /*originatedFromMainThread*/)
@@ -2418,7 +2419,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 } // knobChanged
 
 void
-OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason)
+OfxEffectInstance::beginKnobsValuesChanged(ValueChangedReasonEnum reason)
 {
     if (!_imp->initialized) {
         return;
@@ -2433,7 +2434,7 @@ OfxEffectInstance::beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason
 }
 
 void
-OfxEffectInstance::endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason)
+OfxEffectInstance::endKnobsValuesChanged(ValueChangedReasonEnum reason)
 {
     if (!_imp->initialized) {
         return;
@@ -2509,7 +2510,7 @@ OfxEffectInstance::supportsTiles() const
     return outputClip->supportsTiles();
 }
 
-Natron::PluginOpenGLRenderSupport
+PluginOpenGLRenderSupport
 OfxEffectInstance::supportsOpenGLRender() const
 {
     // first, check the descriptor
@@ -2564,7 +2565,7 @@ OfxEffectInstance::onSyncPrivateDataRequested()
 
 void
 OfxEffectInstance::addAcceptedComponents(int inputNb,
-                                         std::list<Natron::ImageComponents>* comps)
+                                         std::list<ImageComponents>* comps)
 {
     if (inputNb >= 0) {
         OfxClipInstance* clip = getClipCorrespondingToInput(inputNb);
@@ -2572,7 +2573,7 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
         const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
             try {
-                std::list<Natron::ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
+                std::list<ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
                 comps->insert(comps->end(), ofxComp.begin(), ofxComp.end());
             } catch (const std::runtime_error &e) {
                 // ignore unsupported components
@@ -2585,7 +2586,7 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
         const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
         for (U32 i = 0; i < supportedComps.size(); ++i) {
             try {
-                std::list<Natron::ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
+                std::list<ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
                 comps->insert(comps->end(), ofxComp.begin(), ofxComp.end());
             } catch (const std::runtime_error &e) {
                 // ignore unsupported components
@@ -2595,7 +2596,7 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
 }
 
 void
-OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+OfxEffectInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     const OFX::Host::Property::Set & prop = effectInstance()->getPlugin()->getDescriptor().getParamSetProps();
     int dim = prop.getDimension(kOfxImageEffectPropSupportedPixelDepths);
@@ -2613,8 +2614,8 @@ OfxEffectInstance::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* de
 
 void
 OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,
-                                                  std::list<Natron::ImageComponents>* comp,
-                                                  Natron::ImageBitDepthEnum* depth) const
+                                                  std::list<ImageComponents>* comp,
+                                                  ImageBitDepthEnum* depth) const
 {
     OfxClipInstance* clip;
 
@@ -2642,7 +2643,7 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time, int view,
                                            EffectInstance::ComponentsNeededMap* comps,
                                             SequenceTime* passThroughTime,
                                             int* passThroughView,
-                                            boost::shared_ptr<Natron::Node>* passThroughInput) 
+                                            boost::shared_ptr<Node>* passThroughInput) 
 {
     OfxStatus stat ;
     {
@@ -2676,9 +2677,9 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time, int view,
                 assert(clip);
                 int index = clip->getInputNb();
                 
-                std::vector<Natron::ImageComponents> compNeeded;
+                std::vector<ImageComponents> compNeeded;
                 for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                    std::list<Natron::ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(*it2);
+                    std::list<ImageComponents> ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(*it2);
                     compNeeded.insert(compNeeded.end(), ofxComp.begin(), ofxComp.end());
                 }
                 comps->insert(std::make_pair(index, compNeeded));
@@ -2731,7 +2732,7 @@ OfxEffectInstance::isViewInvariant() const
     }
  }
 
-Natron::SequentialPreferenceEnum
+SequentialPreferenceEnum
 OfxEffectInstance::getSequentialPreference() const
 {
     int sequential = _imp->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
@@ -2739,31 +2740,31 @@ OfxEffectInstance::getSequentialPreference() const
     switch (sequential) {
     case 0:
 
-        return Natron::eSequentialPreferenceNotSequential;
+        return eSequentialPreferenceNotSequential;
     case 1:
 
-        return Natron::eSequentialPreferenceOnlySequential;
+        return eSequentialPreferenceOnlySequential;
     case 2:
 
-        return Natron::eSequentialPreferencePreferSequential;
+        return eSequentialPreferencePreferSequential;
     default:
 
-        return Natron::eSequentialPreferenceNotSequential;
+        return eSequentialPreferenceNotSequential;
         break;
     }
 }
 
-Natron::ImagePremultiplicationEnum
+ImagePremultiplicationEnum
 OfxEffectInstance::getOutputPremultiplication() const
 {
     const std::string & str = ofxGetOutputPremultiplication();
 
     if (str == kOfxImagePreMultiplied) {
-        return Natron::eImagePremultiplicationPremultiplied;
+        return eImagePremultiplicationPremultiplied;
     } else if (str == kOfxImageUnPreMultiplied) {
-        return Natron::eImagePremultiplicationUnPremultiplied;
+        return eImagePremultiplicationUnPremultiplied;
     } else {
-        return Natron::eImagePremultiplicationOpaque;
+        return eImagePremultiplicationOpaque;
     }
 }
 
@@ -2840,11 +2841,11 @@ OfxEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
     return effectInstance()->getInputsHoldingTransform(inputs);
 }
 
-Natron::StatusEnum
+StatusEnum
 OfxEffectInstance::getTransform(double time,
                                 const RenderScale & renderScale, //< the plug-in accepted scale
                                 int view,
-                                Natron::EffectInstance** inputToTransform,
+                                EffectInstance** inputToTransform,
                                 Transform::Matrix3x3* transform)
 {
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
@@ -2860,14 +2861,14 @@ OfxEffectInstance::getTransform(double time,
         
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             view,
-                                            Natron::Image::getLevelFromScale(renderScale.x));
+                                            Image::getLevelFromScale(renderScale.x));
         
         
         stat = effectInstance()->getTransformAction((OfxTime)time, field, renderScale, view, clipName, tmpTransform);
         if (stat == kOfxStatReplyDefault) {
-            return Natron::eStatusReplyDefault;
+            return eStatusReplyDefault;
         } else if (stat == kOfxStatFailed) {
-            return Natron::eStatusFailed;
+            return eStatusFailed;
         }
 
     }
@@ -2885,13 +2886,13 @@ OfxEffectInstance::getTransform(double time,
     assert(clip);
     OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
     if (!natronClip) {
-        return Natron::eStatusFailed;
+        return eStatusFailed;
     }
     *inputToTransform = natronClip->getAssociatedNode();
     if (!*inputToTransform) {
-        return Natron::eStatusFailed;
+        return eStatusFailed;
     }
-    return Natron::eStatusOK;
+    return eStatusOK;
 }
 
 
@@ -2957,3 +2958,8 @@ OfxEffectInstance::getClipInputNumber(const OfxClipInstance* clip) const
     }
     return 0;
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_OfxEffectInstance.cpp"

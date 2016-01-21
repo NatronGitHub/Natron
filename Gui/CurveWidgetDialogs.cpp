@@ -52,7 +52,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
                                                  const std::vector<boost::shared_ptr<CurveGui> > & curves,
@@ -134,7 +134,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     if (isExportDialog) {
         _endContainer = new QWidget(this);
         _endLayout = new QHBoxLayout(_endContainer);
-        _endLabel = new Natron::Label(tr("X end value:"),_endContainer);
+        _endLabel = new Label(tr("X end value:"),_endContainer);
         _endLabel->setFont(QApplication::font()); // necessary, or the labels will get the default font size
         _endLayout->addWidget(_endLabel);
         _endSpinBox = new SpinBox(_endContainer,SpinBox::eSpinBoxTypeDouble);
@@ -162,7 +162,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         column._curve = curves[i];
         column._curveContainer = new QWidget(this);
         column._curveLayout = new QHBoxLayout(column._curveContainer);
-        column._curveLabel = new Natron::Label( curves[i]->getName() + tr(" column:") );
+        column._curveLabel = new Label( curves[i]->getName() + tr(" column:") );
         column._curveLabel->setFont(QApplication::font()); // necessary, or the labels will get the default font size
         column._curveLayout->addWidget(column._curveLabel);
         column._curveSpinBox = new SpinBox(column._curveContainer,SpinBox::eSpinBoxTypeInt);
@@ -338,9 +338,9 @@ struct EditKeyFrameDialogPrivate
     
     QWidget* boxContainer;
     QHBoxLayout* boxLayout;
-    Natron::Label* xLabel;
+    Label* xLabel;
     SpinBox* xSpinbox;
-    Natron::Label* yLabel;
+    Label* yLabel;
     SpinBox* ySpinbox;
     
     bool wasAccepted;
@@ -397,7 +397,7 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
         xLabel = QString(tr("Right slope: "));
         break;
     }
-    _imp->xLabel = new Natron::Label(xLabel,_imp->boxContainer);
+    _imp->xLabel = new Label(xLabel,_imp->boxContainer);
     _imp->xLabel->setFont(QApplication::font()); // necessary, or the labels will get the default font size
     _imp->boxLayout->addWidget(_imp->xLabel);
     
@@ -418,7 +418,7 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,CurveWidget* curveWidge
     if (mode == eEditModeKeyframePosition) {
         
 
-        _imp->yLabel = new Natron::Label("y: ",_imp->boxContainer);
+        _imp->yLabel = new Label("y: ",_imp->boxContainer);
         _imp->yLabel->setFont(QApplication::font()); // necessary, or the labels will get the default font size
         _imp->boxLayout->addWidget(_imp->yLabel);
         
@@ -568,3 +568,7 @@ EditKeyFrameDialog::changeEvent(QEvent* e)
     QDialog::changeEvent(e);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_CurveWidgetDialogs.cpp"

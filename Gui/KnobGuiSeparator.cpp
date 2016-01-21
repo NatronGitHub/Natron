@@ -78,7 +78,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "ofxNatron.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 
 //=============================SEPARATOR_KNOB_GUI===================================
@@ -132,3 +132,4 @@ boost::shared_ptr<KnobI> KnobGuiSeparator::getKnob() const
     return _knob.lock();
 }
 
+NATRON_NAMESPACE_EXIT;

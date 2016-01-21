@@ -59,14 +59,14 @@
 #include "Gui/ViewerGL.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 void
 ViewerTab::onInputChanged(int inputNb)
 {
     ///rebuild the name maps
     NodePtr inp;
-    const std::vector<boost::shared_ptr<Natron::Node> > &inputs  = _imp->viewerNode->getNode()->getGuiInputs();
+    const std::vector<boost::shared_ptr<Node> > &inputs  = _imp->viewerNode->getNode()->getGuiInputs();
     if (inputNb >= 0 && inputNb < (int)inputs.size()) {
         if (inputs[inputNb]) {
             inp = inputs[inputNb];
@@ -153,7 +153,7 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
 }
 
 void
-ViewerTab::setImageFormat(int textureIndex,const Natron::ImageComponents& components,Natron::ImageBitDepthEnum depth)
+ViewerTab::setImageFormat(int textureIndex,const ImageComponents& components,ImageBitDepthEnum depth)
 {
     _imp->infoWidget[textureIndex]->setImageFormat(components,depth);
 }
@@ -1235,3 +1235,5 @@ ViewerTab::toggleTripleSync(bool toggled)
     }
 
 }
+
+NATRON_NAMESPACE_EXIT;

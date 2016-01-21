@@ -5,6 +5,7 @@ CLANG_DIAG_OFF(mismatched-tags)
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(missing-field-initializers)
 GCC_DIAG_OFF(missing-declarations)
+GCC_DIAG_OFF(uninitialized)
 #include <shiboken.h> // produces many warnings
 #include <algorithm>
 #include <pyside.h>
@@ -13,6 +14,7 @@ GCC_DIAG_OFF(missing-declarations)
 
 
 // Extra includes
+NATRON_NAMESPACE_USING
 
 // Current module's type array.
 PyTypeObject** SbkNatronEngineTypes;
@@ -71,7 +73,7 @@ void init_Double3DTuple(PyObject* module);
 void init_ColorTuple(PyObject* module);
 void init_RectI(PyObject* module);
 void init_RectD(PyObject* module);
-void init_Natron(PyObject* module);
+void init_NATRON_NAMESPACE(PyObject* module);
 
 // Required modules' type and converter arrays.
 PyTypeObject** SbkPySide_QtCoreTypes;
@@ -642,7 +644,7 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_ColorTuple(module);
     init_RectI(module);
     init_RectD(module);
-    init_Natron(module);
+    init_NATRON_NAMESPACE(module);
 
     // Register converter for type 'NatronEngine.std::size_t'.
     SbkNatronEngineTypeConverters[SBK_STD_SIZE_T_IDX] = Shiboken::Conversions::createConverter(&PyLong_Type, std_size_t_CppToPython_std_size_t);

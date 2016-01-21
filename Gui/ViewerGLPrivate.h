@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #define WIPE_ROTATE_HANDLE_LENGTH 100.
 #define WIPE_ROTATE_OFFSET 30
 
+NATRON_NAMESPACE_ENTER;
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
    Everything related to OpenGL will (almost always) be in this class */
@@ -124,9 +125,9 @@ struct ViewerGL::Implementation
     double displayingImageGamma[2];
     double displayingImageOffset[2];
     unsigned int displayingImageMipMapLevel[2];
-    Natron::ImagePremultiplicationEnum displayingImagePremult[2];
+    ImagePremultiplicationEnum displayingImagePremult[2];
     int displayingImageTime[2];
-    Natron::ViewerColorSpaceEnum displayingImageLut;
+    ViewerColorSpaceEnum displayingImageLut;
     MouseStateEnum ms; /*!< Holds the mouse state*/
     HoverStateEnum hs;
     const QColor textRenderingColor;
@@ -143,7 +144,7 @@ struct ViewerGL::Implementation
     QStringList persistentMessages;
     int persistentMessageType;
     bool displayPersistentMessage;
-    Natron::TextRenderer textRenderer;
+    TextRenderer textRenderer;
     
     
     QPoint lastMousePosition; //< in widget coordinates
@@ -192,12 +193,12 @@ struct ViewerGL::Implementation
     GLuint prevBoundTexture; // @see bindTextureAndActivateShader/unbindTextureAndReleaseShader
 
     mutable QMutex lastRenderedImageMutex; //protects lastRenderedImage & memoryHeldByLastRenderedImages
-    std::vector<Natron::ImageList> lastRenderedTiles[2]; //<  last image passed to transferRAMBuffer
+    std::vector<ImageList> lastRenderedTiles[2]; //<  last image passed to transferRAMBuffer
     U64 memoryHeldByLastRenderedImages[2];
     
     QSize sizeH;
 
-    Natron::PenType pointerTypeOnPress;
+    PenType pointerTypeOnPress;
     bool subsequentMousePressIsTablet;
     double pressureOnPress, pressureOnRelease;
 
@@ -272,5 +273,6 @@ private:
     void initAndCheckGlExtensions ();
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif //_Gui_ViewerGLPrivate_h_

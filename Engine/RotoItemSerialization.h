@@ -52,10 +52,11 @@ GCC_DIAG_ON(unused-parameter)
 #define ROTO_ITEM_INTRODUCES_LABEL 2
 #define ROTO_ITEM_VERSION ROTO_ITEM_INTRODUCES_LABEL
 
+NATRON_NAMESPACE_ENTER;
 
 class RotoItemSerialization
 {
-    friend class boost::serialization::access;
+    friend class ::boost::serialization::access;
     friend class RotoItem;
 
 public:
@@ -80,11 +81,11 @@ private:
               const unsigned int version) const
     {
         Q_UNUSED(version);
-        ar & boost::serialization::make_nvp("Name",name);
-        ar & boost::serialization::make_nvp("Label",label);
-        ar & boost::serialization::make_nvp("Activated",activated);
-        ar & boost::serialization::make_nvp("ParentLayer",parentLayerName);
-        ar & boost::serialization::make_nvp("Locked",locked);
+        ar & ::boost::serialization::make_nvp("Name",name);
+        ar & ::boost::serialization::make_nvp("Label",label);
+        ar & ::boost::serialization::make_nvp("Activated",activated);
+        ar & ::boost::serialization::make_nvp("ParentLayer",parentLayerName);
+        ar & ::boost::serialization::make_nvp("Locked",locked);
     }
 
     template<class Archive>
@@ -92,13 +93,13 @@ private:
               const unsigned int version)
     {
         Q_UNUSED(version);
-        ar & boost::serialization::make_nvp("Name",name);
+        ar & ::boost::serialization::make_nvp("Name",name);
         if ( version >= ROTO_ITEM_INTRODUCES_LABEL) {
-            ar & boost::serialization::make_nvp("Label",label);
+            ar & ::boost::serialization::make_nvp("Label",label);
         }
-        ar & boost::serialization::make_nvp("Activated",activated);
-        ar & boost::serialization::make_nvp("ParentLayer",parentLayerName);
-        ar & boost::serialization::make_nvp("Locked",locked);
+        ar & ::boost::serialization::make_nvp("Activated",activated);
+        ar & ::boost::serialization::make_nvp("ParentLayer",parentLayerName);
+        ar & ::boost::serialization::make_nvp("Locked",locked);
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -109,7 +110,9 @@ private:
     bool locked;
 };
 
-BOOST_CLASS_VERSION(RotoItemSerialization,ROTO_ITEM_VERSION)
+NATRON_NAMESPACE_EXIT;
+
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::RotoItemSerialization,ROTO_ITEM_VERSION)
 
 
 //BOOST_SERIALIZATION_ASSUME_ABSTRACT(RotoItemSerialization);

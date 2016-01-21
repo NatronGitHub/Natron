@@ -39,6 +39,7 @@
 #include "Global/Enums.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class PluginGroupNode
 {
@@ -148,10 +149,9 @@ public:
     }
 };
 
-namespace Natron {
 class Plugin
 {
-    Natron::LibraryBinary* _binary;
+    LibraryBinary* _binary;
     QString _id;
     QString _label;
     QString _iconFilePath;
@@ -204,7 +204,7 @@ public:
     {
     }
 
-    Plugin(Natron::LibraryBinary* binary,
+    Plugin(LibraryBinary* binary,
            const QString & id,
            const QString & label,
            const QString & iconFilePath,
@@ -286,7 +286,7 @@ public:
     
     QMutex* getPluginLock() const;
 
-    Natron::LibraryBinary* getLibraryBinary() const;
+    LibraryBinary* getLibraryBinary() const;
 
     int getMajorVersion() const;
 
@@ -321,6 +321,7 @@ struct Plugin_compare_major
     
 typedef std::set<Plugin*,Plugin_compare_major> PluginMajorsOrdered;
 typedef std::map<std::string,PluginMajorsOrdered> PluginsMap;
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PLUGIN_H

@@ -28,6 +28,8 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeWrapper.h"
 
+NATRON_NAMESPACE_ENTER;
+
 Group::Group()
 : _collection()
 {
@@ -51,7 +53,7 @@ Group::getNode(const std::string& fullySpecifiedName) const
     if (!_collection.lock()) {
         return 0;
     }
-    boost::shared_ptr<Natron::Node> node = _collection.lock()->getNodeByFullySpecifiedName(fullySpecifiedName);
+    boost::shared_ptr<Node> node = _collection.lock()->getNodeByFullySpecifiedName(fullySpecifiedName);
     if (node && node->isActivated()) {
         return new Effect(node);
     } else {
@@ -76,3 +78,5 @@ Group::getChildren() const
     }
     return ret;
 }
+
+NATRON_NAMESPACE_EXIT;

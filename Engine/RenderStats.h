@@ -43,6 +43,7 @@
 #include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief Holds render infos for one frame for one node. Not MT-safe: MT-safety is handled by RenderStats.
@@ -66,14 +67,14 @@ public:
     const RectD& getRoD() const;
     void setRoD(const RectD& rod);
     
-    void setInputImageIdentity(const boost::shared_ptr<Natron::Node>& identity);
-    boost::shared_ptr<Natron::Node> getInputImageIdentity() const;
+    void setInputImageIdentity(const boost::shared_ptr<Node>& identity);
+    boost::shared_ptr<Node> getInputImageIdentity() const;
     
     void addRenderedRectangle(const RectI& rectangle);
     const std::list<RectI>& getRenderedRectangles() const;
     
-    void addIdentityRectangle(const boost::shared_ptr<Natron::Node>& identity, const RectI& rectangle);
-    std::list<std::pair<RectI,boost::shared_ptr<Natron::Node> > > getIdentityRectangles() const;
+    void addIdentityRectangle(const boost::shared_ptr<Node>& identity, const RectI& rectangle);
+    std::list<std::pair<RectI,boost::shared_ptr<Node> > > getIdentityRectangles() const;
     
     void addMipMapLevelRendered(unsigned int level);
     const std::set<unsigned int>& getMipMapLevelsRendered() const;
@@ -93,8 +94,8 @@ public:
     void setChannelsRendered(std::bitset<4> channelsRendered);
     std::bitset<4> getChannelsRendered() const;
     
-    void setOutputPremult(Natron::ImagePremultiplicationEnum premult);
-    Natron::ImagePremultiplicationEnum getOutputPremult() const;
+    void setOutputPremult(ImagePremultiplicationEnum premult);
+    ImagePremultiplicationEnum getOutputPremult() const;
     
 private:
     
@@ -119,31 +120,34 @@ public:
     
     bool isInDepthProfilingEnabled() const;
     
-    void setNodeIdentity(const boost::shared_ptr<Natron::Node>& node, const boost::shared_ptr<Natron::Node>& identity);
+    void setNodeIdentity(const boost::shared_ptr<Node>& node, const boost::shared_ptr<Node>& identity);
     
-    void setGlobalRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
+    void setGlobalRenderInfosForNode(const boost::shared_ptr<Node>& node,
                                      const RectD& rod,
-                                     Natron::ImagePremultiplicationEnum outputPremult,
+                                     ImagePremultiplicationEnum outputPremult,
                                      std::bitset<4> channelsRendered,
                                      bool tilesSupported,
                                      bool renderScaleSupported,
                                      unsigned int mipmapLevel);
     
-    void addCacheInfosForNode(const boost::shared_ptr<Natron::Node>& node,
+    void addCacheInfosForNode(const boost::shared_ptr<Node>& node,
                               bool isCacheMiss,
                               bool hasDownscaled);
     
-    void addRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
-                        const boost::shared_ptr<Natron::Node>& identity,
+    void addRenderInfosForNode(const boost::shared_ptr<Node>& node,
+                        const boost::shared_ptr<Node>& identity,
                         const std::string& plane,
                         const RectI& rectangle,
                         double timeSpent);
     
-    std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > getStats(double *totalTimeSpent) const;
+    std::map<boost::shared_ptr<Node>,NodeRenderStats > getStats(double *totalTimeSpent) const;
     
 private:
     
     boost::scoped_ptr<RenderStatsPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
+
 
 #endif // RENDERSTATS_H

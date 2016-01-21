@@ -5,6 +5,7 @@
 
 #include <ParameterWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class SeparatorParamWrapper : public SeparatorParam
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~SeparatorParamWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_SEPARATORPARAMWRAPPER_H
 

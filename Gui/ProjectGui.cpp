@@ -38,7 +38,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 
-#include "Engine/BackDrop.h"
+#include "Engine/Backdrop.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
@@ -47,7 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Button.h"
 #include "Gui/ComboBox.h"
 #include "Gui/CurveEditor.h"
@@ -76,6 +76,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RectISerialization.h"
 #include "Engine/RectDSerialization.h"
 
+NATRON_NAMESPACE_ENTER;
+
 ProjectGui::ProjectGui(Gui* gui)
     : _gui(gui)
       , _project()
@@ -98,7 +100,7 @@ ProjectGui::initializeKnobsGui()
 }
 
 void
-ProjectGui::create(boost::shared_ptr<Natron::Project> projectInternal,
+ProjectGui::create(boost::shared_ptr<Project> projectInternal,
                    QVBoxLayout* container,
                    QWidget* parent)
 
@@ -139,7 +141,7 @@ ProjectGui::setVisible(bool visible)
 void
 ProjectGui::createNewFormat()
 {
-    boost::shared_ptr<Natron::Project> project = _project.lock();
+    boost::shared_ptr<Project> project = _project.lock();
     AddFormatDialog dialog( project.get(),_gui->getApp()->getGui() );
 
     if ( dialog.exec() ) {
@@ -147,7 +149,7 @@ ProjectGui::createNewFormat()
     }
 }
 
-AddFormatDialog::AddFormatDialog(Natron::Project *project,
+AddFormatDialog::AddFormatDialog(Project *project,
                                  Gui* gui)
     : QDialog(gui),
       _gui(gui),
@@ -174,7 +176,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
     _fromViewerLineLayout->addWidget(_copyFromViewerCombo);
 
     _copyFromViewerButton = new Button(tr("Copy from"),_fromViewerLine);
-    _copyFromViewerButton->setToolTip( Natron::convertFromPlainText(
+    _copyFromViewerButton->setToolTip( GuiUtils::convertFromPlainText(
                                            tr("Fill the new format with the currently"
                                               " displayed region of definition of the viewer"
                                               " indicated on the left."), Qt::WhiteSpaceNormal) );
@@ -186,7 +188,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
     _parametersLineLayout = new QHBoxLayout(_parametersLine);
     _mainLayout->addWidget(_parametersLine);
 
-    _widthLabel = new Natron::Label("w:",_parametersLine);
+    _widthLabel = new Label("w:",_parametersLine);
     _parametersLineLayout->addWidget(_widthLabel);
     _widthSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     _widthSpinBox->setMaximum(99999);
@@ -195,7 +197,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
     _parametersLineLayout->addWidget(_widthSpinBox);
 
 
-    _heightLabel = new Natron::Label("h:",_parametersLine);
+    _heightLabel = new Label("h:",_parametersLine);
     _parametersLineLayout->addWidget(_heightLabel);
     _heightSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     _heightSpinBox->setMaximum(99999);
@@ -204,7 +206,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
     _parametersLineLayout->addWidget(_heightSpinBox);
 
 
-    _pixelAspectLabel = new Natron::Label(tr("pixel aspect:"),_parametersLine);
+    _pixelAspectLabel = new Label(tr("pixel aspect:"),_parametersLine);
     _parametersLineLayout->addWidget(_pixelAspectLabel);
     _pixelAspectSpinBox = new SpinBox(this,SpinBox::eSpinBoxTypeDouble);
     _pixelAspectSpinBox->setMinimum(0.);
@@ -218,7 +220,7 @@ AddFormatDialog::AddFormatDialog(Natron::Project *project,
     _mainLayout->addWidget(_formatNameLine);
 
 
-    _nameLabel = new Natron::Label(tr("Name:"),_formatNameLine);
+    _nameLabel = new Label(tr("Name:"),_formatNameLine);
     _formatNameLayout->addWidget(_nameLabel);
     _nameLineEdit = new LineEdit(_formatNameLine);
     _formatNameLayout->addWidget(_nameLineEdit);
@@ -287,7 +289,7 @@ void loadNodeGuiSerialization(Gui* gui,
                               const NodeGuiSerialization& serialization)
 {
     const std::string & name = serialization.getFullySpecifiedName();
-    boost::shared_ptr<Natron::Node> internalNode = gui->getApp()->getProject()->getNodeByFullySpecifiedName(name);
+    boost::shared_ptr<Node> internalNode = gui->getApp()->getProject()->getNodeByFullySpecifiedName(name);
     if (!internalNode) {
         return;
     }
@@ -303,14 +305,14 @@ void loadNodeGuiSerialization(Gui* gui,
         nGui->togglePreview();
     }
     
-    Natron::EffectInstance* iseffect = nGui->getNode()->getLiveInstance();
+    EffectInstance* iseffect = nGui->getNode()->getLiveInstance();
     
     if ( serialization.colorWasFound() ) {
         std::list<std::string> grouping;
         iseffect->getPluginGrouping(&grouping);
         std::string majGroup = grouping.empty() ? "" : grouping.front();
         
-        BackDropGui* isBd = dynamic_cast<BackDropGui*>(nGui.get());
+        BackdropGui* isBd = dynamic_cast<BackdropGui*>(nGui.get());
         float defR,defG,defB;
 
         if ( iseffect->isReader() ) {
@@ -340,7 +342,7 @@ void loadNodeGuiSerialization(Gui* gui,
         } else if (majGroup == PLUGIN_GROUP_DEEP) {
             settings->getDeepGroupColor(&defR, &defG, &defB);
         } else if (isBd) {
-            settings->getDefaultBackDropColor(&defR, &defG, &defB);
+            settings->getDefaultBackdropColor(&defR, &defG, &defB);
         } else {
             settings->getDefaultNodeColor(&defR, &defG, &defB);
         }
@@ -386,7 +388,7 @@ void loadNodeGuiSerialization(Gui* gui,
             tab->setClipToProject(found->second.isClippedToProject);
             tab->setRenderScaleActivated(found->second.renderScaleActivated);
             tab->setMipMapLevel(found->second.mipMapLevel);
-            tab->setCompositingOperator( (Natron::ViewerCompositingOperatorEnum)found->second.wipeCompositingOp );
+            tab->setCompositingOperator( (ViewerCompositingOperatorEnum)found->second.wipeCompositingOp );
             tab->setZoomOrPannedSinceLastFit(found->second.zoomOrPanSinceLastFit);
             tab->setTopToolbarVisible(found->second.topToolbarVisible);
             tab->setLeftToolbarVisible(found->second.leftToolbarVisible);
@@ -456,8 +458,8 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
     }
     
     ///now restore the backdrops from old version prior to Natron 1.1
-    const std::list<NodeBackDropSerialization> & backdrops = obj.getBackdrops();
-    for (std::list<NodeBackDropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
+    const std::list<NodeBackdropSerialization> & backdrops = obj.getBackdrops();
+    for (std::list<NodeBackdropSerialization>::const_iterator it = backdrops.begin(); it != backdrops.end(); ++it) {
         
         double x,y;
         it->getPos(x, y);
@@ -479,10 +481,10 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
                             QString(),
                             CreateNodeArgs::DefaultValuesList(),
                             _project.lock());
-        boost::shared_ptr<Natron::Node> node = getGui()->getApp()->createNode(args);
+        boost::shared_ptr<Node> node = getGui()->getApp()->createNode(args);
         boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
         assert(gui_i);
-        BackDropGui* bd = dynamic_cast<BackDropGui*>(gui_i.get());
+        BackdropGui* bd = dynamic_cast<BackdropGui*>(gui_i.get());
         assert(bd);
         bd->setVisibleSettingsPanel(false);
         bd->resize(w,h);
@@ -532,7 +534,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         std::string appID = _gui->getApp()->getAppIDString();
         std::string err;
         std::string script = "app = " + appID + '\n';
-        bool ok = Natron::interpretPythonScript(script, &err, 0);
+        bool ok = Python::interpretPythonScript(script, &err, 0);
         assert(ok);
         if (!ok) {
             throw std::runtime_error("ProjectGui::load(): interpretPythonScript("+script+") failed!");
@@ -541,7 +543,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
     for (std::list<boost::shared_ptr<PythonPanelSerialization> >::const_iterator it = pythonPanels.begin(); it != pythonPanels.end(); ++it) {
         std::string script = (*it)->pythonFunction + "()\n";
         std::string err,output;
-        if (!Natron::interpretPythonScript(script, &err, &output)) {
+        if (!Python::interpretPythonScript(script, &err, &output)) {
             _gui->getApp()->appendToScriptEditor(err);
         } else {
             if (!output.empty()) {
@@ -636,10 +638,14 @@ ProjectGui::setPickersColor(double r,double g, double b,double a)
             _colorPickersEnabled[i]->activateAllDimensions();
         }
         if (_colorPickersEnabled[i]->getDimension() == 3) {
-            _colorPickersEnabled[i]->setValues(r, g, b, Natron::eValueChangedReasonNatronGuiEdited);
+            _colorPickersEnabled[i]->setValues(r, g, b, eValueChangedReasonNatronGuiEdited);
         } else {
-            _colorPickersEnabled[i]->setValues(r, g, b, a, Natron::eValueChangedReasonNatronGuiEdited);
+            _colorPickersEnabled[i]->setValues(r, g, b, a, eValueChangedReasonNatronGuiEdited);
         }
     }
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_ProjectGui.cpp"

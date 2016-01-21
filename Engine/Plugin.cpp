@@ -30,7 +30,7 @@
 #include "Engine/LibraryBinary.h"
 #include "Engine/Settings.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 Plugin::~Plugin()
 {
@@ -158,7 +158,7 @@ Plugin::getPluginLock() const
     return _lock;
 }
 
-Natron::LibraryBinary*
+LibraryBinary*
 Plugin::getLibraryBinary() const
 {
     return _binary;
@@ -231,7 +231,7 @@ Plugin::getIsUserCreatable() const
 void
 Plugin::setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,ContextEnum ctx)
 {
-    assert(ctx != Natron::eContextNone);
+    assert(ctx != eContextNone);
     _ofxDescriptor = desc;
     _ofxContext = ctx;
 }
@@ -258,3 +258,4 @@ PluginGroupNode::tryRemoveChild(PluginGroupNode* plugin)
     }
 }
 
+NATRON_NAMESPACE_EXIT;

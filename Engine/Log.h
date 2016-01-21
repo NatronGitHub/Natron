@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #ifdef NATRON_LOG
 
 #include "Global/Macros.h"
@@ -32,10 +34,10 @@
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 class LogPrivate;
 class Log
-    : public Singleton<Natron::Log>
+    : public Singleton<Log>
 {
     LogPrivate* _imp;
 
@@ -84,7 +86,7 @@ public:
 #else
 #include <string>
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 // no-op class
 class Log
 {

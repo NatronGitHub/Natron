@@ -7,6 +7,7 @@
 
 namespace PySide { class DynamicQMetaObject; }
 
+NATRON_NAMESPACE_ENTER;
 class PyModalDialogWrapper : public PyModalDialog
 {
 public:
@@ -105,6 +106,7 @@ public:
     virtual void* qt_metacast(const char* _clname);
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_PYMODALDIALOGWRAPPER_H
 

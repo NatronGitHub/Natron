@@ -48,6 +48,8 @@ CLANG_DIAG_ON(deprecated)
 
 #define THIRD_PARTY_LICENSE_DIR_PATH ":"
 
+NATRON_NAMESPACE_ENTER;
+
 AboutWindow::AboutWindow(Gui* gui,
                          QWidget* parent)
     : QDialog(parent)
@@ -57,7 +59,7 @@ AboutWindow::AboutWindow(Gui* gui,
     _mainLayout = new QVBoxLayout(this);
     setLayout(_mainLayout);
 
-    _iconLabel = new Natron::Label(this);
+    _iconLabel = new Label(this);
     _iconLabel->setPixmap( QPixmap(NATRON_APPLICATION_ICON_PATH).scaled(128, 128) );
     _mainLayout->addWidget(_iconLabel);
 
@@ -116,7 +118,7 @@ AboutWindow::AboutWindow(Gui* gui,
     {
         QFile license(":LICENSE_SHORT.txt");
         license.open(QIODevice::ReadOnly | QIODevice::Text);
-        licenseStr = Natron::convertFromPlainText(QTextCodec::codecForName("UTF-8")->toUnicode(license.readAll()), Qt::WhiteSpaceNormal);
+        licenseStr = GuiUtils::convertFromPlainText(QTextCodec::codecForName("UTF-8")->toUnicode(license.readAll()), Qt::WhiteSpaceNormal);
     }
     aboutText.append(licenseStr);
 
@@ -319,3 +321,7 @@ AboutWindow::updateLibrariesVersions()
     _libsText->setText(libsText);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_AboutWindow.cpp"

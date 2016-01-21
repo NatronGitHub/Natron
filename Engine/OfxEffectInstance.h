@@ -48,14 +48,15 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class AbstractOfxEffectInstance
-    : public Natron::OutputEffectInstance
+    : public OutputEffectInstance
 {
 public:
 
-    AbstractOfxEffectInstance(boost::shared_ptr<Natron::Node> node)
-        : Natron::OutputEffectInstance(node)
+    AbstractOfxEffectInstance(boost::shared_ptr<Node> node)
+        : OutputEffectInstance(node)
     {
     }
 
@@ -65,7 +66,7 @@ public:
 
     virtual void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                               OFX::Host::ImageEffect::Descriptor* desc,
-                                              Natron::ContextEnum context,
+                                              ContextEnum context,
                                               const NodeSerialization* serialization,
                                                const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                               bool allowFileDialogs,
@@ -90,22 +91,22 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    OfxEffectInstance(boost::shared_ptr<Natron::Node> node);
+    OfxEffectInstance(boost::shared_ptr<Node> node);
 
     virtual ~OfxEffectInstance();
 
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                       OFX::Host::ImageEffect::Descriptor* desc,
-                                      Natron::ContextEnum context,
+                                      ContextEnum context,
                                       const NodeSerialization* serialization,
                                       const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                       bool allowFileDialogs,
                                       bool disableRenderScaleSupport,
                                       bool *hasUsedFileDialog) OVERRIDE FINAL;
 
-    Natron::OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN;
+    OfxImageEffectInstance* effectInstance() WARN_UNUSED_RETURN;
     
-    const Natron::OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN;
+    const OfxImageEffectInstance* effectInstance() const WARN_UNUSED_RETURN;
     
     const std::string & getShortLabel() const WARN_UNUSED_RETURN;
 
@@ -152,7 +153,7 @@ public:
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputRotoBrush(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getRotoBrushInputIndex() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance
     virtual void calcDefaultRegionOfDefinition(U64 hash, double time, const RenderScale & scale, int view, RectD *rod)  OVERRIDE;
@@ -174,25 +175,25 @@ public:
     virtual bool onOverlayPenMotion(double time, const RenderScale & renderScale, int view,
                                     const QPointF & viewportPos, const QPointF & pos, double pressure) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool onOverlayPenUp(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyDown(double time, const RenderScale & renderScale, int view, Natron::Key key, Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyUp(double time, const RenderScale & renderScale, int view, Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyRepeat(double time, const RenderScale & renderScale, int view, Natron::Key key,Natron::KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyDown(double time, const RenderScale & renderScale, int view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(double time, const RenderScale & renderScale, int view, Key key,KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(double time, const RenderScale & renderScale, int view, Key key,KeyboardModifiers modifiers) OVERRIDE FINAL;
     virtual bool onOverlayFocusGained(double time, const RenderScale & renderScale, int view) OVERRIDE FINAL;
     virtual bool onOverlayFocusLost(double time, const RenderScale & renderScale, int view) OVERRIDE FINAL;
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
-    virtual void beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE;
-    virtual void endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE;
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, double time,
+    virtual void beginKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
+    virtual void endKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
+    virtual void knobChanged(KnobI* k, ValueChangedReasonEnum reason, int view, double time,
                              bool originatedFromMainThread) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
-    virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
+    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isIdentity(double time,
                             const RenderScale & scale,
                             const RectI & renderWindow, //!< render window in pixel coords
                             int view,
                             double* inputTime,
                             int* inputNb) OVERRIDE;
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void purgeCaches() OVERRIDE;
 
     /**
@@ -203,7 +204,7 @@ public:
      **/
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool supportsRenderQuality() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual Natron::PluginOpenGLRenderSupport supportsOpenGLRender() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual PluginOpenGLRenderSupport supportsOpenGLRender() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool doesTemporalClipAccess() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
@@ -218,7 +219,7 @@ public:
     virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     virtual std::vector<std::string> supportedFileFormats() const OVERRIDE FINAL;
-    virtual Natron::StatusEnum beginSequenceRender(double first,
+    virtual StatusEnum beginSequenceRender(double first,
                                                    double last,
                                                    double step,
                                                    bool interactive,
@@ -227,7 +228,7 @@ public:
                                                    bool isRenderResponseToUserInteraction,
                                                    bool draftMode,
                                                    int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual Natron::StatusEnum endSequenceRender(double first,
+    virtual StatusEnum endSequenceRender(double first,
                                                  double last,
                                                  double step,
                                                  bool interactive,
@@ -236,21 +237,21 @@ public:
                                                  bool isRenderResponseToUserInteraction,
                                                  bool draftMode,
                                                  int view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void addAcceptedComponents(int inputNb, std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-    virtual void getPreferredDepthAndComponents(int inputNb, std::list<Natron::ImageComponents>* comp, Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;
-    virtual Natron::SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void getPreferredDepthAndComponents(int inputNb, std::list<ImageComponents>* comp, ImageBitDepthEnum* depth) const OVERRIDE FINAL;
+    virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool refreshClipPreferences(double time,
                                         const RenderScale & scale,
-                                        Natron::ValueChangedReasonEnum reason,
+                                        ValueChangedReasonEnum reason,
                                         bool forceGetClipPrefAction) OVERRIDE FINAL;
     
     virtual void getComponentsNeededAndProduced(double time, int view,
                                                EffectInstance::ComponentsNeededMap* comps,
                                                 SequenceTime* passThroughTime,
                                                 int* passThroughView,
-                                                boost::shared_ptr<Natron::Node>* passThroughInput) OVERRIDE;
+                                                boost::shared_ptr<Node>* passThroughInput) OVERRIDE;
 
 
     virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -264,10 +265,10 @@ public:
     virtual double getPreferredFrameRate() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getInputsHoldingTransform(std::list<int>* inputs) const  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual Natron::StatusEnum getTransform(double time,
+    virtual StatusEnum getTransform(double time,
                                             const RenderScale & renderScale,
                                             int view,
-                                            Natron::EffectInstance** inputToTransform,
+                                            EffectInstance** inputToTransform,
                                             Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool isFrameVarying() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -281,10 +282,10 @@ public:
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
 
     
-    static Natron::ContextEnum mapToContextEnum(const std::string &s);
-    static std::string mapContextToString(Natron::ContextEnum ctx);
+    static ContextEnum mapToContextEnum(const std::string &s);
+    static std::string mapContextToString(ContextEnum ctx);
     
-    static std::string natronValueChangedReasonToOfxValueChangedReason(Natron::ValueChangedReasonEnum reason);
+    static std::string natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason);
 
     int getClipInputNumber(const OfxClipInstance* clip) const;
     
@@ -311,5 +312,7 @@ private:
 
     boost::scoped_ptr<OfxEffectInstancePrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_OFXNODE_H

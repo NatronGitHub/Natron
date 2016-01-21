@@ -39,8 +39,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGraph.h"
 #include "Gui/ViewerGL.h"
 
-using namespace Natron;
-
+NATRON_NAMESPACE_ENTER;
 
 void
 RightClickableWidget::mousePressEvent(QMouseEvent* e)
@@ -87,3 +86,7 @@ RightClickableWidget::enterEvent(QEvent* e)
     QWidget::enterEvent(e);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_RightClickableWidget.cpp"

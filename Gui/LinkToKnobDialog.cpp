@@ -93,7 +93,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Utils.h"
 #include "Gui/ViewerTab.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 struct LinkToKnobDialogPrivate
 {
@@ -101,7 +101,7 @@ struct LinkToKnobDialogPrivate
     QVBoxLayout* mainLayout;
     QHBoxLayout* firstLineLayout;
     QWidget* firstLine;
-    Natron::Label* selectNodeLabel;
+    Label* selectNodeLabel;
     CompleterLineEdit* nodeSelectionCombo;
     ComboBox* knobSelectionCombo;
     QDialogButtonBox* buttons;
@@ -141,7 +141,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
     _imp->mainLayout->addWidget(_imp->buttons);
 
-    _imp->selectNodeLabel = new Natron::Label(tr("Parent:"),_imp->firstLine);
+    _imp->selectNodeLabel = new Label(tr("Parent:"),_imp->firstLine);
     _imp->firstLineLayout->addWidget(_imp->selectNodeLabel);
 
 
@@ -164,7 +164,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     }
     nodeNames.sort();
     _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames,nodeNames,false,this);
-    _imp->nodeSelectionCombo->setToolTip(Natron::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
+    _imp->nodeSelectionCombo->setToolTip(GuiUtils::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
     _imp->firstLineLayout->addWidget(_imp->nodeSelectionCombo);
 
 
@@ -189,7 +189,7 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     QString index = _imp->nodeSelectionCombo->text();
 
     _imp->knobSelectionCombo->clear();
-    boost::shared_ptr<Natron::Node> selectedNode;
+    boost::shared_ptr<Node> selectedNode;
     std::string currentNodeName = index.toStdString();
     for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
         if ((*it)->getLabel() == currentNodeName) {
@@ -238,3 +238,7 @@ boost::shared_ptr<KnobI> LinkToKnobDialog::getSelectedKnobs() const
     }
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_LinkToKnobDialog.cpp"

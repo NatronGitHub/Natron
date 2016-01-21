@@ -38,7 +38,7 @@
 #include "Engine/TimeLine.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 struct CustomParamInteractPrivate
 {
@@ -341,3 +341,4 @@ CustomParamInteract::keyReleaseEvent(QKeyEvent* e)
     }
 }
 
+NATRON_NAMESPACE_EXIT;

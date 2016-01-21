@@ -33,10 +33,7 @@
 #include "Gui/ClickableLabel.h"
 
 
-
-
-using namespace Natron;
-
+NATRON_NAMESPACE_ENTER;
 
 
 /////////////// KnobGui
@@ -146,7 +143,7 @@ KnobGui::pushUndoCommand(QUndoCommand* cmd)
 void
 KnobGui::createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
-                   Natron::ClickableLabel* label,
+                   ClickableLabel* label,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine)
@@ -213,7 +210,7 @@ KnobGui::updateGuiInternal(int dimension)
 void
 KnobGui::createAnimationButton(QHBoxLayout* layout)
 {
-    _imp->animationMenu = new Natron::Menu( layout->parentWidget() );
+    _imp->animationMenu = new Menu( layout->parentWidget() );
     //_imp->animationMenu->setFont( QFont(appFont,appFontSize) );
     QPixmap pix;
 
@@ -221,11 +218,11 @@ KnobGui::createAnimationButton(QHBoxLayout* layout)
     QSize buttonSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
     QSize buttonIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
 
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CURVE, iconSize, &pix);
+    appPTR->getIcon(NATRON_PIXMAP_CURVE, iconSize, &pix);
     _imp->animationButton = new AnimationButton( this,QIcon(pix),"",layout->parentWidget() );
     _imp->animationButton->setFixedSize(buttonSize);
     _imp->animationButton->setIconSize(buttonIconSize);
-    _imp->animationButton->setToolTip( Natron::convertFromPlainText(tr("Animation menu."), Qt::WhiteSpaceNormal) );
+    _imp->animationButton->setToolTip( GuiUtils::convertFromPlainText(tr("Animation menu."), Qt::WhiteSpaceNormal) );
     QObject::connect( _imp->animationButton,SIGNAL( animationMenuRequested() ),this,SLOT( showAnimationMenu() ) );
     layout->addWidget(_imp->animationButton);
 
@@ -344,10 +341,10 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
     bool dimensionHasKeyframe = false;
     bool hasAllKeyframes = true;
     for (int i = 0; i < knob->getDimension(); ++i) {
-        Natron::AnimationLevelEnum lvl = knob->getAnimationLevel(i);
-        if (lvl != Natron::eAnimationLevelOnKeyframe) {
+        AnimationLevelEnum lvl = knob->getAnimationLevel(i);
+        if (lvl != eAnimationLevelOnKeyframe) {
             hasAllKeyframes = false;
-        } else if (dimension == i && lvl == Natron::eAnimationLevelOnKeyframe) {
+        } else if (dimension == i && lvl == eAnimationLevelOnKeyframe) {
             dimensionHasKeyframe = true;
         }
     }
@@ -452,7 +449,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
                 showInCurveEditorAction->setEnabled(false);
             }
 
-            Natron::Menu* interpolationMenu = new Natron::Menu(menu);
+            Menu* interpolationMenu = new Menu(menu);
             //interpolationMenu->setFont( QFont(appFont,appFontSize) );
             interpolationMenu->setTitle("Interpolation");
             menu->addAction( interpolationMenu->menuAction() );
@@ -633,7 +630,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
 } // createAnimationMenu
 
 boost::shared_ptr<KnobI>
-KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,
+KnobGui::createDuplicateOnNode(EffectInstance* effect,
                                bool makeAlias,
                                const boost::shared_ptr<KnobPage>& page,
                                const boost::shared_ptr<KnobGroup>& group,
@@ -647,19 +644,19 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,
         for (int i = 0; i < knob->getDimension(); ++i) {
             std::string expr = knob->getExpression(i);
             if (!expr.empty()) {
-                Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Expression").toStdString(), tr("This operation will create "
+                StandardButtonEnum rep = Dialogs::questionDialog(tr("Expression").toStdString(), tr("This operation will create "
                                                                                                            "an expression link between this parameter and the new parameter on the group"
                                                                                                            " which will wipe the current expression(s).\n"
                                                                                                            "Continue anyway ?").toStdString(),false,
-                                                                        Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel));
-                if (rep != Natron::eStandardButtonYes) {
+                                                                        StandardButtons(eStandardButtonOk | eStandardButtonCancel));
+                if (rep != eStandardButtonYes) {
                     return boost::shared_ptr<KnobI>();
                 }
             }
         }
     }
     
-    Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(knob->getHolder());
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(knob->getHolder());
     if (!isEffect) {
         return boost::shared_ptr<KnobI>();
     }
@@ -677,7 +674,7 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,
                                           knob->getHintToolTip(),
                                           true);
     } catch (const std::exception& e) {
-        Natron::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
+        Dialogs::errorDialog(tr("Error while creating parameter").toStdString(), e.what());
         return boost::shared_ptr<KnobI>();
     }
     if (ret) {
@@ -689,3 +686,8 @@ KnobGui::createDuplicateOnNode(Natron::EffectInstance* effect,
     effect->getApp()->triggerAutoSave();
     return ret;
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_KnobGui.cpp"

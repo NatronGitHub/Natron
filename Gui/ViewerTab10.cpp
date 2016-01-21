@@ -60,20 +60,20 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerGL.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 void
 ViewerTab::onColorSpaceComboBoxChanged(int v)
 {
-    Natron::ViewerColorSpaceEnum colorspace = Natron::eViewerColorSpaceSRGB;
+    ViewerColorSpaceEnum colorspace = eViewerColorSpaceSRGB;
 
     if (v == 0) {
-        colorspace = Natron::eViewerColorSpaceLinear;
+        colorspace = eViewerColorSpaceLinear;
     } else if (v == 1) {
-        colorspace = Natron::eViewerColorSpaceSRGB;
+        colorspace = eViewerColorSpaceSRGB;
     } else if (v == 2) {
-        colorspace = Natron::eViewerColorSpaceRec709;
+        colorspace = eViewerColorSpaceRec709;
     } else {
         assert(false);
         throw std::logic_error("ViewerTab::onColorSpaceComboBoxChanged(): unknown colorspace");
@@ -151,17 +151,17 @@ ViewerTab::getCurrentView() const
 }
 
 void
-ViewerTab::setPlaybackMode(Natron::PlaybackModeEnum mode)
+ViewerTab::setPlaybackMode(PlaybackModeEnum mode)
 {
     QPixmap pix;
     switch (mode) {
-        case Natron::ePlaybackModeLoop:
+        case ePlaybackModeLoop:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE, &pix);
             break;
-        case Natron::ePlaybackModeBounce:
+        case ePlaybackModeBounce:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_BOUNCE, &pix);
             break;
-        case Natron::ePlaybackModeOnce:
+        case ePlaybackModeOnce:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ONCE, &pix);
             break;
         default:
@@ -176,7 +176,7 @@ ViewerTab::setPlaybackMode(Natron::PlaybackModeEnum mode)
 
 }
 
-Natron::PlaybackModeEnum
+PlaybackModeEnum
 ViewerTab::getPlaybackMode() const
 {
     QMutexLocker k(&_imp->playbackModeMutex);
@@ -186,17 +186,17 @@ ViewerTab::getPlaybackMode() const
 void
 ViewerTab::togglePlaybackMode()
 {
-    Natron::PlaybackModeEnum mode = _imp->viewerNode->getRenderEngine()->getPlaybackMode();
-    mode = (Natron::PlaybackModeEnum)(((int)mode + 1) % 3);
+    PlaybackModeEnum mode = _imp->viewerNode->getRenderEngine()->getPlaybackMode();
+    mode = (PlaybackModeEnum)(((int)mode + 1) % 3);
     QPixmap pix;
     switch (mode) {
-        case Natron::ePlaybackModeLoop:
+        case ePlaybackModeLoop:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE, &pix);
             break;
-        case Natron::ePlaybackModeBounce:
+        case ePlaybackModeBounce:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_BOUNCE, &pix);
             break;
-        case Natron::ePlaybackModeOnce:
+        case ePlaybackModeOnce:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ONCE, &pix);
             break;
         default:
@@ -789,32 +789,32 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
 void
 ViewerTab::setDisplayChannels(int i, bool setBothInputs)
 {
-    Natron::DisplayChannelsEnum channels;
+    DisplayChannelsEnum channels;
     
     switch (i) {
         case 0:
-            channels = Natron::eDisplayChannelsY;
+            channels = eDisplayChannelsY;
             break;
         case 1:
-            channels = Natron::eDisplayChannelsRGB;
+            channels = eDisplayChannelsRGB;
             break;
         case 2:
-            channels = Natron::eDisplayChannelsR;
+            channels = eDisplayChannelsR;
             break;
         case 3:
-            channels = Natron::eDisplayChannelsG;
+            channels = eDisplayChannelsG;
             break;
         case 4:
-            channels = Natron::eDisplayChannelsB;
+            channels = eDisplayChannelsB;
             break;
         case 5:
-            channels = Natron::eDisplayChannelsA;
+            channels = eDisplayChannelsA;
             break;
         case 6:
-            channels = Natron::eDisplayChannelsMatte;
+            channels = eDisplayChannelsMatte;
             break;
         default:
-            channels = Natron::eDisplayChannelsRGB;
+            channels = eDisplayChannelsRGB;
             break;
     }
     _imp->viewerNode->setDisplayChannels(channels, setBothInputs);
@@ -878,3 +878,5 @@ ViewerTab::showView(int view)
     abortRendering();
     _imp->viewerNode->renderCurrentFrame(true);
 }
+
+NATRON_NAMESPACE_EXIT;

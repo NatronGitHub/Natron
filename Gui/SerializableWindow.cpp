@@ -26,6 +26,8 @@
 
 #include <QMutex>
 
+NATRON_NAMESPACE_ENTER;
+
 SerializableWindow::SerializableWindow()
     : _lock(new QMutex)
       , _w(0), _h(0), _x(0), _y(0)
@@ -76,4 +78,6 @@ SerializableWindow::getMtSafePosition(int &x,
     x = _x;
     y = _y;
 }
+
+NATRON_NAMESPACE_EXIT;
 

@@ -36,8 +36,14 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
+namespace GuiUtils {
+
 QString convertFromPlainText(const QString &plain, Qt::WhiteSpaceMode mode);
-}
+
+} // GuiUtils
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Natron_Gui_Utils_h

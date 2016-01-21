@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "Engine/BezierCP.h"
 #include "Engine/BezierCPPrivate.h"
 
@@ -47,6 +49,8 @@ GCC_DIAG_ON(unused-parameter)
 #define BEZIER_CP_FIX_BUG_CURVE_POINTER 3
 #define BEZIER_CP_VERSION BEZIER_CP_FIX_BUG_CURVE_POINTER
 
+NATRON_NAMESPACE_ENTER;
+
 template<class Archive>
 void
 BezierCP::serialize(Archive &ar,
@@ -61,21 +65,21 @@ BezierCP::save(Archive & ar,
                     const unsigned int version) const
 {
     Q_UNUSED(version);
-    ar & boost::serialization::make_nvp("X",_imp->x);
-    ar & boost::serialization::make_nvp("X_animation",*_imp->curveX);
-    ar & boost::serialization::make_nvp("Y",_imp->y);
-    ar & boost::serialization::make_nvp("Y_animation",*_imp->curveY);
-    ar & boost::serialization::make_nvp("Left_X",_imp->leftX);
-    ar & boost::serialization::make_nvp("Left_X_animation",*_imp->curveLeftBezierX);
-    ar & boost::serialization::make_nvp("Left_Y",_imp->leftY);
-    ar & boost::serialization::make_nvp("Left_Y_animation",*_imp->curveLeftBezierY);
-    ar & boost::serialization::make_nvp("Right_X",_imp->rightX);
-    ar & boost::serialization::make_nvp("Right_X_animation",*_imp->curveRightBezierX);
-    ar & boost::serialization::make_nvp("Right_Y",_imp->rightY);
-    ar & boost::serialization::make_nvp("Right_Y_animation",*_imp->curveRightBezierY);
+    ar & ::boost::serialization::make_nvp("X",_imp->x);
+    ar & ::boost::serialization::make_nvp("X_animation",*_imp->curveX);
+    ar & ::boost::serialization::make_nvp("Y",_imp->y);
+    ar & ::boost::serialization::make_nvp("Y_animation",*_imp->curveY);
+    ar & ::boost::serialization::make_nvp("Left_X",_imp->leftX);
+    ar & ::boost::serialization::make_nvp("Left_X_animation",*_imp->curveLeftBezierX);
+    ar & ::boost::serialization::make_nvp("Left_Y",_imp->leftY);
+    ar & ::boost::serialization::make_nvp("Left_Y_animation",*_imp->curveLeftBezierY);
+    ar & ::boost::serialization::make_nvp("Right_X",_imp->rightX);
+    ar & ::boost::serialization::make_nvp("Right_X_animation",*_imp->curveRightBezierX);
+    ar & ::boost::serialization::make_nvp("Right_Y",_imp->rightY);
+    ar & ::boost::serialization::make_nvp("Right_Y_animation",*_imp->curveRightBezierY);
     if (version >= BEZIER_CP_INTRODUCES_OFFSET) {
         QWriteLocker l(&_imp->masterMutex);
-        ar & boost::serialization::make_nvp("OffsetTime",_imp->offsetTime);
+        ar & ::boost::serialization::make_nvp("OffsetTime",_imp->offsetTime);
     }
 }
 
@@ -87,34 +91,34 @@ BezierCP::load(Archive & ar,
     bool createdDuringToRC2Or3 = appPTR->wasProjectCreatedDuringRC2Or3();
     if (version >= BEZIER_CP_FIX_BUG_CURVE_POINTER || !createdDuringToRC2Or3) {
     
-        ar & boost::serialization::make_nvp("X",_imp->x);
+        ar & ::boost::serialization::make_nvp("X",_imp->x);
         
         Curve xCurve;
-        ar & boost::serialization::make_nvp("X_animation",xCurve);
+        ar & ::boost::serialization::make_nvp("X_animation",xCurve);
         _imp->curveX->clone(xCurve);
         
         if (version < BEZIER_CP_FIX_BUG_CURVE_POINTER) {
             Curve curveBug;
-            ar & boost::serialization::make_nvp("Y",curveBug);
+            ar & ::boost::serialization::make_nvp("Y",curveBug);
         } else {
-            ar & boost::serialization::make_nvp("Y",_imp->y);
+            ar & ::boost::serialization::make_nvp("Y",_imp->y);
         }
         
         Curve yCurve;
-        ar & boost::serialization::make_nvp("Y_animation",yCurve);
+        ar & ::boost::serialization::make_nvp("Y_animation",yCurve);
         _imp->curveY->clone(yCurve);
         
-        ar & boost::serialization::make_nvp("Left_X",_imp->leftX);
+        ar & ::boost::serialization::make_nvp("Left_X",_imp->leftX);
         
         Curve leftCurveX,leftCurveY,rightCurveX,rightCurveY;
         
-        ar & boost::serialization::make_nvp("Left_X_animation",leftCurveX);
-        ar & boost::serialization::make_nvp("Left_Y",_imp->leftY);
-        ar & boost::serialization::make_nvp("Left_Y_animation",leftCurveY);
-        ar & boost::serialization::make_nvp("Right_X",_imp->rightX);
-        ar & boost::serialization::make_nvp("Right_X_animation",rightCurveX);
-        ar & boost::serialization::make_nvp("Right_Y",_imp->rightY);
-        ar & boost::serialization::make_nvp("Right_Y_animation",rightCurveY);
+        ar & ::boost::serialization::make_nvp("Left_X_animation",leftCurveX);
+        ar & ::boost::serialization::make_nvp("Left_Y",_imp->leftY);
+        ar & ::boost::serialization::make_nvp("Left_Y_animation",leftCurveY);
+        ar & ::boost::serialization::make_nvp("Right_X",_imp->rightX);
+        ar & ::boost::serialization::make_nvp("Right_X_animation",rightCurveX);
+        ar & ::boost::serialization::make_nvp("Right_Y",_imp->rightY);
+        ar & ::boost::serialization::make_nvp("Right_Y_animation",rightCurveY);
         
         _imp->curveLeftBezierX->clone(leftCurveX);
         _imp->curveLeftBezierY->clone(leftCurveY);
@@ -122,29 +126,29 @@ BezierCP::load(Archive & ar,
         _imp->curveRightBezierY->clone(rightCurveY);
         
     } else {
-        ar & boost::serialization::make_nvp("X",_imp->x);
+        ar & ::boost::serialization::make_nvp("X",_imp->x);
         
         boost::shared_ptr<Curve> xCurve,yCurve,leftCurveX,leftCurveY,rightCurveX,rightCurveY;
-        ar & boost::serialization::make_nvp("X_animation",xCurve);
+        ar & ::boost::serialization::make_nvp("X_animation",xCurve);
         _imp->curveX->clone(*xCurve);
         
         boost::shared_ptr<Curve> curveBug;
-        ar & boost::serialization::make_nvp("Y",curveBug);
+        ar & ::boost::serialization::make_nvp("Y",curveBug);
      
         
-        ar & boost::serialization::make_nvp("Y_animation",yCurve);
+        ar & ::boost::serialization::make_nvp("Y_animation",yCurve);
         _imp->curveY->clone(*yCurve);
         
-        ar & boost::serialization::make_nvp("Left_X",_imp->leftX);
+        ar & ::boost::serialization::make_nvp("Left_X",_imp->leftX);
         
         
-        ar & boost::serialization::make_nvp("Left_X_animation",leftCurveX);
-        ar & boost::serialization::make_nvp("Left_Y",_imp->leftY);
-        ar & boost::serialization::make_nvp("Left_Y_animation",leftCurveY);
-        ar & boost::serialization::make_nvp("Right_X",_imp->rightX);
-        ar & boost::serialization::make_nvp("Right_X_animation",rightCurveX);
-        ar & boost::serialization::make_nvp("Right_Y",_imp->rightY);
-        ar & boost::serialization::make_nvp("Right_Y_animation",rightCurveY);
+        ar & ::boost::serialization::make_nvp("Left_X_animation",leftCurveX);
+        ar & ::boost::serialization::make_nvp("Left_Y",_imp->leftY);
+        ar & ::boost::serialization::make_nvp("Left_Y_animation",leftCurveY);
+        ar & ::boost::serialization::make_nvp("Right_X",_imp->rightX);
+        ar & ::boost::serialization::make_nvp("Right_X_animation",rightCurveX);
+        ar & ::boost::serialization::make_nvp("Right_Y",_imp->rightY);
+        ar & ::boost::serialization::make_nvp("Right_Y_animation",rightCurveY);
         
         _imp->curveLeftBezierX->clone(*leftCurveX);
         _imp->curveLeftBezierY->clone(*leftCurveY);
@@ -153,10 +157,13 @@ BezierCP::load(Archive & ar,
     }
     if (version >= BEZIER_CP_INTRODUCES_OFFSET) {
         QWriteLocker l(&_imp->masterMutex);
-        ar & boost::serialization::make_nvp("OffsetTime",_imp->offsetTime);
+        ar & ::boost::serialization::make_nvp("OffsetTime",_imp->offsetTime);
     }
 }
+    
+NATRON_NAMESPACE_EXIT;
 
-BOOST_CLASS_VERSION(BezierCP,BEZIER_CP_VERSION)
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::BezierCP,BEZIER_CP_VERSION)
+
 
 #endif // Engine_BezierCPSerialization_h

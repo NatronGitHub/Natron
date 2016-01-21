@@ -37,6 +37,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QPainter>
 #include <QPen>
 
+NATRON_NAMESPACE_ENTER;
+
 void
 ChannelsComboBox::paintEvent(QPaintEvent* event)
 {
@@ -87,3 +89,5 @@ ChannelsComboBox::paintEvent(QPaintEvent* event)
         p.drawPath(path);
     }
 }
+
+NATRON_NAMESPACE_EXIT;

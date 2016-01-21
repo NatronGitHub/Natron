@@ -53,7 +53,7 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Gui/Utils.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 /*
@@ -481,7 +481,7 @@ ComboBox::insertItem(int index,
     action->setText(item);
     action->setData(QVariant(index));
     if ( !toolTip.isEmpty() ) {
-        action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+        action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
     }
     if ( !icon.isNull() ) {
         action->setIcon(icon);
@@ -572,7 +572,7 @@ ComboBox::addItem(const QString & item,
             action->setShortcut(key);
         }
         if ( !toolTip.isEmpty() ) {
-            action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+            action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
         }
 
         addAction(action);
@@ -622,7 +622,7 @@ ComboBox::addItem(const QString & item,
                         action->setShortcut(key);
                     }
                     if ( !toolTip.isEmpty() ) {
-                        action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+                        action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
                     }
 
                     node->isLeaf = action;
@@ -1042,3 +1042,8 @@ ComboBox::getAltered() const
 {
     return _altered;
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_ComboBox.cpp"

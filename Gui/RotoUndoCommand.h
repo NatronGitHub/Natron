@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class MoveControlPointsUndoCommand
     : public QUndoCommand
@@ -744,5 +745,6 @@ private:
     std::list<PointToUnlink> _points;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // ROTOUNDOCOMMAND_H

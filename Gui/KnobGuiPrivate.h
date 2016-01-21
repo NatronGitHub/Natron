@@ -100,8 +100,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Utils.h"
 #include "Gui/ViewerTab.h"
 
-using namespace Natron;
-
+NATRON_NAMESPACE_ENTER;
 
 struct KnobGuiPrivate
 {
@@ -130,5 +129,7 @@ struct KnobGuiPrivate
     
     void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob);
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // _Gui_KnobGuiPrivate_h_

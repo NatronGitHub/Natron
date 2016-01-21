@@ -91,7 +91,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 ////////////////////////////////////Layer////////////////////////////////////
 
@@ -218,7 +218,7 @@ RotoLayer::load(const RotoItemSerialization &obj)
                 _imp->items.push_back(bezier);
             }
             else if (s) {
-                boost::shared_ptr<RotoStrokeItem> stroke(new RotoStrokeItem((Natron::RotoStrokeType)s->getType(),getContext(),kRotoPaintBrushBaseName,boost::shared_ptr<RotoLayer>()));
+                boost::shared_ptr<RotoStrokeItem> stroke(new RotoStrokeItem((RotoStrokeType)s->getType(),getContext(),kRotoPaintBrushBaseName,boost::shared_ptr<RotoLayer>()));
                 stroke->createNodes(false);
                 stroke->load(*s);
                 if (!stroke->getParentLayer()) {
@@ -360,3 +360,4 @@ RotoLayer::getItems_mt_safe() const
     return _imp->items;
 }
 
+NATRON_NAMESPACE_EXIT;

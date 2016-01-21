@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <set>
 #include <utility>
@@ -39,6 +41,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A Bezier is an animated control point of a Bezier. It is the starting point
@@ -124,11 +127,11 @@ public:
 
     void getKeyframeTimes(bool useGuiCurves,std::set<double>* times) const;
     
-    void getKeyFrames(bool useGuiCurves,std::list<std::pair<double,Natron::KeyframeTypeEnum> >* keys) const;
+    void getKeyFrames(bool useGuiCurves,std::list<std::pair<double,KeyframeTypeEnum> >* keys) const;
     
     int getKeyFrameIndex(bool useGuiCurves,double time) const;
     
-    void setKeyFrameInterpolation(bool useGuiCurves,Natron::KeyframeTypeEnum interp,int index);
+    void setKeyFrameInterpolation(bool useGuiCurves,KeyframeTypeEnum interp,int index);
 
     double getKeyframeTime(bool useGuiCurves,int index) const;
 
@@ -180,5 +183,7 @@ private:
 };
 
 typedef std::list< boost::shared_ptr<BezierCP> > BezierCPs;
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_BezierCP_h

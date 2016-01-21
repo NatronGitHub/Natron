@@ -41,9 +41,11 @@
 #include "Engine/Node.h"
 #include "Engine/OutputEffectInstance.h"
 
+NATRON_NAMESPACE_ENTER;
+
 ProcessHandler::ProcessHandler(AppInstance* app,
                                const QString & projectPath,
-                               Natron::OutputEffectInstance* writer)
+                               OutputEffectInstance* writer)
     : _app(app)
       ,_process(new QProcess)
       ,_writer(writer)
@@ -233,7 +235,7 @@ void
 ProcessHandler::onProcessError(QProcess::ProcessError err)
 {
     if (err == QProcess::FailedToStart) {
-        Natron::errorDialog( _writer->getScriptName(),QObject::tr("The render process failed to start").toStdString() );
+        Dialogs::errorDialog( _writer->getScriptName(),QObject::tr("The render process failed to start").toStdString() );
     } else if (err == QProcess::Crashed) {
         //@TODO: find out a way to get the backtrace
     }
@@ -387,3 +389,7 @@ ProcessInputChannel::onOutputPipeConnectionMade()
     qDebug() << "The output channel was successfully created and connected.";
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_ProcessHandler.cpp"

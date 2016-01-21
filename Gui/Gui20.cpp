@@ -73,6 +73,10 @@
 
 #define NAMED_PLUGIN_GROUP_NO 15
 
+#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/other_grouping_" NATRON_ICON_SET_NUMBER ".png"
+
+NATRON_NAMESPACE_ENTER;
+
 static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_IMAGE,
     PLUGIN_GROUP_COLOR,
@@ -91,47 +95,41 @@ static std::string namedGroupsOrdered[NAMED_PLUGIN_GROUP_NO] = {
     PLUGIN_GROUP_DEFAULT
 };
 
-#define PLUGIN_GROUP_DEFAULT_ICON_PATH NATRON_IMAGES_PATH "GroupingIcons/Set" NATRON_ICON_SET_NUMBER "/other_grouping_" NATRON_ICON_SET_NUMBER ".png"
-
-
-using namespace Natron;
-
-
 namespace {
 static void
 getPixmapForGrouping(QPixmap* pixmap,
                      int size,
                      const QString & grouping)
 {
-    Natron::PixmapEnum e = Natron::NATRON_PIXMAP_OTHER_PLUGINS;
+    PixmapEnum e = NATRON_PIXMAP_OTHER_PLUGINS;
     if (grouping == PLUGIN_GROUP_COLOR) {
-        e = Natron::NATRON_PIXMAP_COLOR_GROUPING;
+        e = NATRON_PIXMAP_COLOR_GROUPING;
     } else if (grouping == PLUGIN_GROUP_FILTER) {
-        e = Natron::NATRON_PIXMAP_FILTER_GROUPING;
+        e = NATRON_PIXMAP_FILTER_GROUPING;
     } else if (grouping == PLUGIN_GROUP_IMAGE) {
-        e = Natron::NATRON_PIXMAP_IO_GROUPING;
+        e = NATRON_PIXMAP_IO_GROUPING;
     } else if (grouping == PLUGIN_GROUP_TRANSFORM) {
-        e = Natron::NATRON_PIXMAP_TRANSFORM_GROUPING;
+        e = NATRON_PIXMAP_TRANSFORM_GROUPING;
     } else if (grouping == PLUGIN_GROUP_DEEP) {
-        e = Natron::NATRON_PIXMAP_DEEP_GROUPING;
+        e = NATRON_PIXMAP_DEEP_GROUPING;
     } else if (grouping == PLUGIN_GROUP_MULTIVIEW) {
-        e = Natron::NATRON_PIXMAP_MULTIVIEW_GROUPING;
+        e = NATRON_PIXMAP_MULTIVIEW_GROUPING;
     } else if (grouping == PLUGIN_GROUP_TIME) {
-        e = Natron::NATRON_PIXMAP_TIME_GROUPING;
+        e = NATRON_PIXMAP_TIME_GROUPING;
     } else if (grouping == PLUGIN_GROUP_PAINT) {
-        e = Natron::NATRON_PIXMAP_PAINT_GROUPING;
+        e = NATRON_PIXMAP_PAINT_GROUPING;
     } else if (grouping == PLUGIN_GROUP_OTHER) {
-        e = Natron::NATRON_PIXMAP_MISC_GROUPING;
+        e = NATRON_PIXMAP_MISC_GROUPING;
     } else if (grouping == PLUGIN_GROUP_KEYER) {
-        e = Natron::NATRON_PIXMAP_KEYER_GROUPING;
+        e = NATRON_PIXMAP_KEYER_GROUPING;
     } else if (grouping == PLUGIN_GROUP_TOOLSETS) {
-        e = Natron::NATRON_PIXMAP_TOOLSETS_GROUPING;
+        e = NATRON_PIXMAP_TOOLSETS_GROUPING;
     } else if (grouping == PLUGIN_GROUP_3D) {
-        e = Natron::NATRON_PIXMAP_3D_GROUPING;
+        e = NATRON_PIXMAP_3D_GROUPING;
     } else if (grouping == PLUGIN_GROUP_CHANNEL) {
-        e = Natron::NATRON_PIXMAP_CHANNEL_GROUPING;
+        e = NATRON_PIXMAP_CHANNEL_GROUPING;
     } else if (grouping == PLUGIN_GROUP_MERGE) {
-        e = Natron::NATRON_PIXMAP_MERGE_GROUPING;
+        e = NATRON_PIXMAP_MERGE_GROUPING;
     }
     appPTR->getIcon(e, size, pixmap);
 }
@@ -232,7 +230,7 @@ Gui::loadStyleSheet()
                        .arg(altStr)  // %10 = altered text color
                        .arg(lightSelStr)); // %11 = mouse over selection color
     } else {
-        Natron::errorDialog(tr("Stylesheet").toStdString(), tr("Failure to load stylesheet file ").toStdString() + qss.fileName().toStdString());
+        Dialogs::errorDialog(tr("Stylesheet").toStdString(), tr("Failure to load stylesheet file ").toStdString() + qss.fileName().toStdString());
     }
 } // Gui::loadStyleSheet
 
@@ -854,7 +852,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         QObject::connect( createReaderAction, SIGNAL( triggered() ), this, SLOT( createReader() ) );
         createReaderAction->setText( tr("Read") );
         QPixmap readImagePix;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_READ_IMAGE, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &readImagePix);
+        appPTR->getIcon(NATRON_PIXMAP_READ_IMAGE, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &readImagePix);
         createReaderAction->setIcon( QIcon(readImagePix) );
         createReaderAction->setShortcutContext(Qt::WidgetShortcut);
         createReaderAction->setShortcut( QKeySequence(Qt::Key_R) );
@@ -864,7 +862,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         QObject::connect( createWriterAction, SIGNAL( triggered() ), this, SLOT( createWriter() ) );
         createWriterAction->setText( tr("Write") );
         QPixmap writeImagePix;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_WRITE_IMAGE, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &writeImagePix);
+        appPTR->getIcon(NATRON_PIXMAP_WRITE_IMAGE, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &writeImagePix);
         createWriterAction->setIcon( QIcon(writeImagePix) );
         createWriterAction->setShortcutContext(Qt::WidgetShortcut);
         createWriterAction->setShortcut( QKeySequence(Qt::Key_W) );
@@ -1052,7 +1050,7 @@ updateRecentFiles(const QString & filename)
 bool
 Gui::saveProject()
 {
-    boost::shared_ptr<Natron::Project> project= _imp->_appInstance->getProject();
+    boost::shared_ptr<Project> project= _imp->_appInstance->getProject();
     if (project->hasProjectBeenSavedByUser()) {
         
         
@@ -1202,10 +1200,10 @@ Gui::createNewViewer()
                                                                    graph->getGroup() ) ) );
 }
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 Gui::createReader()
 {
-    boost::shared_ptr<Natron::Node> ret;
+    boost::shared_ptr<Node> ret;
     std::map<std::string, std::string> readersForFormat;
 
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
@@ -1222,7 +1220,7 @@ Gui::createReader()
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadSequenceOpenedDir = path.c_str();
         
-        std::string ext = Natron::removeFileExtension(qpattern).toLower().toStdString();
+        std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
         std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
         if ( found == readersForFormat.end() ) {
             errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString(), false);
@@ -1260,10 +1258,10 @@ Gui::createReader()
     return ret;
 }
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 Gui::createWriter()
 {
-    boost::shared_ptr<Natron::Node> ret;
+    boost::shared_ptr<Node> ret;
     std::map<std::string, std::string> writersForFormat;
 
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
@@ -1361,13 +1359,13 @@ int
 Gui::saveWarning()
 {
     if ( !_imp->_appInstance->getProject()->isSaveUpToDate() ) {
-        Natron::StandardButtonEnum ret =  Natron::questionDialog(NATRON_APPLICATION_NAME, tr("Save changes to ").toStdString() +
+        StandardButtonEnum ret =  Dialogs::questionDialog(NATRON_APPLICATION_NAME, tr("Save changes to ").toStdString() +
                                                                  _imp->_appInstance->getProject()->getProjectFilename().toStdString() + " ?",
                                                                  false,
-                                                                 Natron::StandardButtons(Natron::eStandardButtonSave | Natron::eStandardButtonDiscard | Natron::eStandardButtonCancel), Natron::eStandardButtonSave);
-        if ( (ret == Natron::eStandardButtonEscape) || (ret == Natron::eStandardButtonCancel) ) {
+                                                                 StandardButtons(eStandardButtonSave | eStandardButtonDiscard | eStandardButtonCancel), eStandardButtonSave);
+        if ( (ret == eStandardButtonEscape) || (ret == eStandardButtonCancel) ) {
             return 2;
-        } else if (ret == Natron::eStandardButtonDiscard) {
+        } else if (ret == eStandardButtonDiscard) {
             return 1;
         } else {
             return 0;
@@ -1397,4 +1395,6 @@ Gui::isAboutToClose() const
     QMutexLocker l(&_imp->aboutToCloseMutex);
     return _imp->_aboutToClose;
 }
+
+NATRON_NAMESPACE_EXIT;
 

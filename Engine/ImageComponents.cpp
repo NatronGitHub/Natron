@@ -19,7 +19,7 @@
 #include "ImageComponents.h"
 #include "ofxNatron.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 static const char* rgbaComps[4] = {"R","G","B","A"};
 static const char* rgbComps[3] = {"R","G","B"};
@@ -255,4 +255,6 @@ ImageComponents::getXYComponents()
     static const ImageComponents comp("XY","xy",xyComps,2);
     return comp;
 }
+
+NATRON_NAMESPACE_EXIT;
 

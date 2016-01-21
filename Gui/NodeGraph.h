@@ -48,6 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class NodeGraphPrivate;
 
@@ -66,12 +67,12 @@ public:
 
     virtual ~NodeGraph();
     
-    static void makeFullyQualifiedLabel(Natron::Node* node,std::string* ret);
+    static void makeFullyQualifiedLabel(Node* node,std::string* ret);
     
     boost::shared_ptr<NodeCollection> getGroup() const;
 
     const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
-    boost::shared_ptr<NodeGui> createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
+    boost::shared_ptr<NodeGui> createNodeGUI(const boost::shared_ptr<Node> & node,
                                              bool requestedByLoad,
                                              bool userEdited,
                                              bool pushUndoRedoCommand);
@@ -123,7 +124,7 @@ public:
 
     void deleteNodepluginsly(boost::shared_ptr<NodeGui> n);
 
-    std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackDrop(const boost::shared_ptr<NodeGui>& node) const;
+    std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackdrop(const boost::shared_ptr<NodeGui>& node) const;
 
     void selectAllNodes(bool onlyInVisiblePortion);
 
@@ -341,5 +342,7 @@ private:
     
     boost::scoped_ptr<EditNodeNameDialogPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_NodeGraph_h

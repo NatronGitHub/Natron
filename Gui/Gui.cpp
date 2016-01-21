@@ -55,7 +55,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ToolButton.h"
 #include "Gui/RenderStatsDialog.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -91,10 +91,10 @@ Gui::Gui(GuiAppInstance* app,
     enableShellOpen();
 #endif
     
-    QObject::connect( this, SIGNAL( doDialog(int, QString, QString, bool, Natron::StandardButtons, int) ), this,
-                     SLOT( onDoDialog(int, QString, QString, bool, Natron::StandardButtons, int) ) );
-    QObject::connect( this, SIGNAL( doDialogWithStopAskingCheckbox(int, QString, QString, bool, Natron::StandardButtons, int) ), this,
-                      SLOT( onDoDialogWithStopAskingCheckbox(int, QString, QString, bool, Natron::StandardButtons, int) ) );
+    QObject::connect( this, SIGNAL( doDialog(int, QString, QString, bool, StandardButtons, int) ), this,
+                     SLOT( onDoDialog(int, QString, QString, bool, StandardButtons, int) ) );
+    QObject::connect( this, SIGNAL( doDialogWithStopAskingCheckbox(int, QString, QString, bool, StandardButtons, int) ), this,
+                      SLOT( onDoDialogWithStopAskingCheckbox(int, QString, QString, bool, StandardButtons, int) ) );
     QObject::connect( app, SIGNAL( pluginsPopulated() ), this, SLOT( addToolButttonsToToolBar() ) );
     
     QObject::connect(qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*, QWidget*)));
@@ -168,7 +168,7 @@ Gui::reloadProject()
     
     boost::shared_ptr<Project> proj = getApp()->getProject();
     if (!proj->hasProjectBeenSavedByUser()) {
-        Natron::errorDialog(tr("Reload project").toStdString(), tr("This project has not been saved yet").toStdString());
+        Dialogs::errorDialog(tr("Reload project").toStdString(), tr("This project has not been saved yet").toStdString());
         return;
     }
     QString filename = proj->getProjectFilename();
@@ -701,3 +701,7 @@ Gui::openHelpPython()
     QDesktopServices::openUrl(QUrl(NATRON_PYTHON_URL));
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_Gui.cpp"

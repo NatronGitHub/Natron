@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <vector>
 #include <list>
 
@@ -39,6 +41,8 @@
 #include "Engine/RectD.h"
 #include "Engine/TimeLineKeyFrames.h"
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 struct AppInstancePrivate;
 
@@ -127,8 +131,6 @@ struct LoadNodeArgs
     }
 };
 
-namespace Natron {
-    
 class FlagSetter {
     
     bool* p;
@@ -142,8 +144,6 @@ public:
     
     ~FlagSetter();
 };
-    
-}
 
 class AppInstance
     : public QObject, public boost::noncopyable, public TimeLineKeyFrames
@@ -167,7 +167,7 @@ public:
     };
     
     struct RenderWork {
-        Natron::OutputEffectInstance* writer;
+        OutputEffectInstance* writer;
         int firstFrame;
         int lastFrame;
         int frameStep;
@@ -197,14 +197,14 @@ public:
      * You can use this function to create backdrops also which are purely GUI stuff. In this case the pointer returned will
      * be NULL.
      **/
-    boost::shared_ptr<Natron::Node> createNode(const CreateNodeArgs & args);
+    boost::shared_ptr<Node> createNode(const CreateNodeArgs & args);
 
     ///Same as createNode but used when loading a project
-    boost::shared_ptr<Natron::Node> loadNode(const LoadNodeArgs & args);
+    boost::shared_ptr<Node> loadNode(const LoadNodeArgs & args);
   
-    boost::shared_ptr<Natron::Node> getNodeByFullySpecifiedName(const std::string & name) const;
+    boost::shared_ptr<Node> getNodeByFullySpecifiedName(const std::string & name) const;
     
-    boost::shared_ptr<Natron::Project> getProject() const;
+    boost::shared_ptr<Project> getProject() const;
     
     boost::shared_ptr<TimeLine> getTimeLine() const;
 
@@ -229,25 +229,25 @@ public:
     virtual void informationDialog(const std::string & title,const std::string & message,bool useHtml) const;
     virtual void informationDialog(const std::string & title,const std::string & message,bool* stopAsking,bool useHtml) const;
     
-    virtual Natron::StandardButtonEnum questionDialog(const std::string & title,
+    virtual StandardButtonEnum questionDialog(const std::string & title,
                                                       const std::string & message,
                                                       bool useHtml,
-                                                      Natron::StandardButtons buttons =
-                                                      Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                                  Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton) const WARN_UNUSED_RETURN;
+                                                      StandardButtons buttons =
+                                                      StandardButtons(eStandardButtonYes | eStandardButtonNo),
+                                                  StandardButtonEnum defaultButton = eStandardButtonNoButton) const WARN_UNUSED_RETURN;
     
     /**
      * @brief Asks a question to the user and returns the reply.
      * @param stopAsking Set to true if the user do not want Natron to ask the question again.
      **/
-    virtual Natron::StandardButtonEnum questionDialog(const std::string & /*title*/,
+    virtual StandardButtonEnum questionDialog(const std::string & /*title*/,
                                                       const std::string & /*message*/,
                                                       bool /*useHtml*/,
-                                                      Natron::StandardButtons /*buttons*/,
-                                                      Natron::StandardButtonEnum /*defaultButton*/,
+                                                      StandardButtons /*buttons*/,
+                                                      StandardButtonEnum /*defaultButton*/,
                                                       bool* /*stopAsking*/)
     {
-        return Natron::eStandardButtonYes;
+        return eStandardButtonYes;
     }
 
     
@@ -307,7 +307,7 @@ public:
     {
     }
 
-    Natron::ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const;
+    ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const;
     
     double getProjectFrameRate() const;
 
@@ -350,13 +350,13 @@ public:
     
     void getFrameRange(double* first,double* last) const;
     
-    virtual void setLastViewerUsingTimeline(const boost::shared_ptr<Natron::Node>& /*node*/) {}
+    virtual void setLastViewerUsingTimeline(const boost::shared_ptr<Node>& /*node*/) {}
     
     virtual ViewerInstance* getLastViewerUsingTimeline() const { return 0; }
     
     bool loadPythonScript(const QFileInfo& file);
     
-    boost::shared_ptr<Natron::Node> createWriter(const std::string& filename,
+    boost::shared_ptr<Node> createWriter(const std::string& filename,
                                                  const boost::shared_ptr<NodeCollection>& collection,
                                                  bool userEdited,
                                                  int firstFrame = INT_MIN, int lastFrame = INT_MAX);
@@ -381,11 +381,11 @@ public:
     
     virtual bool isDraftRenderEnabled() const { return false; }
     
-    virtual void setUserIsPainting(const boost::shared_ptr<Natron::Node>& /*rotopaintNode*/,
+    virtual void setUserIsPainting(const boost::shared_ptr<Node>& /*rotopaintNode*/,
                                    const boost::shared_ptr<RotoStrokeItem>& /*stroke*/,
                                   bool /*isPainting*/) {}
     
-    virtual void getActiveRotoDrawingStroke(boost::shared_ptr<Natron::Node>* /*node*/,
+    virtual void getActiveRotoDrawingStroke(boost::shared_ptr<Node>* /*node*/,
                                             boost::shared_ptr<RotoStrokeItem>* /*stroke*/,
                                             bool* /*isPainting*/) const { }
     
@@ -408,20 +408,20 @@ public:
     virtual void* getOfxHostOSHandle() const { return NULL; }
     
     virtual void updateLastPaintStrokeData(int /*newAge*/,
-                                           const std::list<std::pair<Natron::Point,double> >& /*points*/,
+                                           const std::list<std::pair<Point,double> >& /*points*/,
                                            const RectD& /*lastPointsBbox*/,
                                            int /*strokeIndex*/) {}
     
-    virtual void getLastPaintStrokePoints(std::list<std::list<std::pair<Natron::Point,double> > >* /*strokes*/, int* /*strokeIndex*/) const {}
+    virtual void getLastPaintStrokePoints(std::list<std::list<std::pair<Point,double> > >* /*strokes*/, int* /*strokeIndex*/) const {}
 
     virtual int getStrokeLastIndex() const { return -1; }
     
     virtual void getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* /*stroke*/, int* /*strokeIndex*/) const {}
     
-    virtual void getRenderStrokeData(RectD* /*lastStrokeMovementBbox*/, std::list<std::pair<Natron::Point,double> >* /*lastStrokeMovementPoints*/,
-                                     double */*distNextIn*/, boost::shared_ptr<Natron::Image>* /*strokeImage*/) const {}
+    virtual void getRenderStrokeData(RectD* /*lastStrokeMovementBbox*/, std::list<std::pair<Point,double> >* /*lastStrokeMovementPoints*/,
+                                     double */*distNextIn*/, boost::shared_ptr<Image>* /*strokeImage*/) const {}
     
-    virtual void updateStrokeImage(const boost::shared_ptr<Natron::Image>& /*image*/, double /*distNextOut*/, bool /*setDistNextOut*/) {}
+    virtual void updateStrokeImage(const boost::shared_ptr<Image>& /*image*/, double /*distNextOut*/, bool /*setDistNextOut*/) {}
     
     virtual RectD getLastPaintStrokeBbox() const { return RectD(); }
     
@@ -449,10 +449,10 @@ Q_SIGNALS:
 
 protected:
     
-    virtual void onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node, bool requestedByLoad, bool userEdited);
+    virtual void onGroupCreationFinished(const boost::shared_ptr<Node>& node, bool requestedByLoad, bool userEdited);
 
-    virtual void createNodeGui(const boost::shared_ptr<Natron::Node>& /*node*/,
-                               const boost::shared_ptr<Natron::Node>&  /*parentmultiinstance*/,
+    virtual void createNodeGui(const boost::shared_ptr<Node>& /*node*/,
+                               const boost::shared_ptr<Node>&  /*parentmultiinstance*/,
                                bool /*loadRequest*/,
                                bool /*autoConnect*/,
                                bool /*userEdited*/,
@@ -468,7 +468,7 @@ private:
     void getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderRequest>& requests);
 
 
-    boost::shared_ptr<Natron::Node> createNodeInternal(const QString & pluginID,const std::string & multiInstanceParentName,
+    boost::shared_ptr<Node> createNodeInternal(const QString & pluginID,const std::string & multiInstanceParentName,
                                                        int majorVersion,int minorVersion,
                                                        bool requestedByLoad,
                                                        const NodeSerialization & serialization,bool dontLoadName,
@@ -479,11 +479,11 @@ private:
                                                        const CreateNodeArgs::DefaultValuesList& paramValues,
                                                        const boost::shared_ptr<NodeCollection>& group);
     
-    void setGroupLabelIDAndVersion(const boost::shared_ptr<Natron::Node>& node,
+    void setGroupLabelIDAndVersion(const boost::shared_ptr<Node>& node,
                                    const QString& pythonModulePath,
                                    const QString &pythonModule);
     
-    boost::shared_ptr<Natron::Node> createNodeFromPythonModule(Natron::Plugin* plugin,
+    boost::shared_ptr<Node> createNodeFromPythonModule(Plugin* plugin,
                                                                const boost::shared_ptr<NodeCollection>& group,
                                                                bool requestedByLoad,
                                                                bool userEdited,
@@ -508,5 +508,7 @@ public:
         _app->setIsCreatingNodeTree(false);
     }
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // APPINSTANCE_H

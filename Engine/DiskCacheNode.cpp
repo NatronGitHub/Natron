@@ -32,7 +32,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 struct DiskCacheNodePrivate
 {
@@ -56,16 +56,16 @@ DiskCacheNode::DiskCacheNode(boost::shared_ptr<Node> node)
 
 
 void
-DiskCacheNode::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
+DiskCacheNode::addAcceptedComponents(int /*inputNb*/,std::list<ImageComponents>* comps)
 {
     comps->push_back(ImageComponents::getRGBAComponents());
     comps->push_back(ImageComponents::getRGBComponents());
     comps->push_back(ImageComponents::getAlphaComponents());
 }
 void
-DiskCacheNode::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
-    depths->push_back(Natron::eImageBitDepthFloat);
+    depths->push_back(eImageBitDepthFloat);
 }
 
 bool
@@ -77,9 +77,9 @@ DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,double /*time
 void
 DiskCacheNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = Natron::createKnob<KnobPage>(this, "Controls");
+    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Controls");
     
-    boost::shared_ptr<KnobChoice> frameRange = Natron::createKnob<KnobChoice>(this, "Frame range");
+    boost::shared_ptr<KnobChoice> frameRange = AppManager::createKnob<KnobChoice>(this, "Frame range");
     frameRange->setName("frameRange");
     frameRange->setAnimationEnabled(false);
     std::vector<std::string> choices;
@@ -92,7 +92,7 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(frameRange);
     _imp->frameRange = frameRange;
     
-    boost::shared_ptr<KnobInt> firstFrame = Natron::createKnob<KnobInt>(this, "First frame");
+    boost::shared_ptr<KnobInt> firstFrame = AppManager::createKnob<KnobInt>(this, "First frame");
     firstFrame->setAnimationEnabled(false);
     firstFrame->setName("firstFrame");
     firstFrame->disableSlider();
@@ -103,7 +103,7 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(firstFrame);
     _imp->firstFrame = firstFrame;
     
-    boost::shared_ptr<KnobInt> lastFrame = Natron::createKnob<KnobInt>(this, "Last frame");
+    boost::shared_ptr<KnobInt> lastFrame = AppManager::createKnob<KnobInt>(this, "Last frame");
     lastFrame->setAnimationEnabled(false);
     lastFrame->setName("LastFrame");
     lastFrame->disableSlider();
@@ -113,7 +113,7 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(lastFrame);
     _imp->lastFrame = lastFrame;
     
-    boost::shared_ptr<KnobButton> preRender = Natron::createKnob<KnobButton>(this, "Pre-cache");
+    boost::shared_ptr<KnobButton> preRender = AppManager::createKnob<KnobButton>(this, "Pre-cache");
     preRender->setName("preRender");
     preRender->setEvaluateOnChange(false);
     preRender->setHintToolTip("Cache the frame range specified by rendering images at zoom-level 100% only.");
@@ -124,7 +124,7 @@ DiskCacheNode::initializeKnobs()
 }
 
 void
-DiskCacheNode::knobChanged(KnobI* k, Natron::ValueChangedReasonEnum /*reason*/, int /*view*/, double /*time*/,
+DiskCacheNode::knobChanged(KnobI* k, ValueChangedReasonEnum /*reason*/, int /*view*/, double /*time*/,
                            bool /*originatedFromMainThread*/)
 {
     if (_imp->frameRange.lock().get() == k) {
@@ -178,7 +178,7 @@ DiskCacheNode::getFrameRange(double *first,double *last)
 }
 
 void
-DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const
+DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const
 {
     EffectInstance* input = getInput(0);
     if (input) {
@@ -190,7 +190,7 @@ DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::
 }
 
 
-Natron::ImagePremultiplicationEnum
+ImagePremultiplicationEnum
 DiskCacheNode::getOutputPremultiplication() const
 {
     EffectInstance* input = getInput(0);
@@ -214,7 +214,7 @@ DiskCacheNode::getPreferredAspectRatio() const
 
 }
 
-Natron::StatusEnum
+StatusEnum
 DiskCacheNode::render(const RenderActionArgs& args)
 {
     
@@ -256,3 +256,4 @@ DiskCacheNode::render(const RenderActionArgs& args)
     return eStatusOK;
 }
 
+NATRON_NAMESPACE_EXIT;

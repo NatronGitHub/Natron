@@ -35,7 +35,7 @@
 #include "Engine/Node.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 struct ComputePreviewRequest
 {
@@ -176,7 +176,7 @@ PreviewThread::run()
                 _imp->data[i] = qRgba(0,0,0,255);
             }
 #endif
-            boost::shared_ptr<Natron::Node> internalNode = front.node->getNode();
+            boost::shared_ptr<Node> internalNode = front.node->getNode();
             if (internalNode) {
                 bool success = internalNode->makePreviewImage(front.time, &w, &h, &_imp->data.front());
                 if (success) {
@@ -188,4 +188,6 @@ PreviewThread::run()
         
     } // for(;;)
 }
+
+NATRON_NAMESPACE_EXIT;
 

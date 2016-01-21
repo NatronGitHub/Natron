@@ -27,6 +27,8 @@
 #include <QApplication>
 #include "Gui/GuiApplicationManager.h"
 
+NATRON_NAMESPACE_ENTER;
+
 Button::Button(QWidget* parent)
     : QPushButton(parent)
 {
@@ -57,4 +59,6 @@ Button::initInternal()
     setFont(QApplication::font()); // necessary, or the buttons will get the default font size
     //setFont( QFont(appFont,appFontSize) );
 }
+
+NATRON_NAMESPACE_EXIT;
 

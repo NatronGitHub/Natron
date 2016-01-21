@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <vector>
 #include <string>
 #include <map>
@@ -76,10 +78,10 @@ CLANG_DIAG_ON(deprecated)
 
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 class Node
-    : public QObject, public boost::enable_shared_from_this<Natron::Node>
+    : public QObject, public boost::enable_shared_from_this<Node>
     , public CacheEntryHolder
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -93,19 +95,19 @@ public:
 
     Node(AppInstance* app,
          const boost::shared_ptr<NodeCollection>& group,
-         Natron::Plugin* plugin);
+         Plugin* plugin);
 
     virtual ~Node();
 
     boost::shared_ptr<NodeCollection> getGroup() const;
     
-    const Natron::Plugin* getPlugin() const;
+    const Plugin* getPlugin() const;
     
     /**
      * @brief Used internally when instanciating a Python template, we first make a group and then pass a pointer
      * to the real plugin.
      **/
-    void switchInternalPlugin(Natron::Plugin* plugin);
+    void switchInternalPlugin(Plugin* plugin);
     
     void setPrecompNode(const boost::shared_ptr<PrecompNode>& precomp);
     boost::shared_ptr<PrecompNode> isPartOfPrecomp() const;
@@ -165,7 +167,7 @@ public:
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
     void restoreKnobsLinks(const NodeSerialization & serialization,
-                           const std::list<boost::shared_ptr<Natron::Node> > & allNodes,
+                           const std::list<boost::shared_ptr<Node> > & allNodes,
                            const std::map<std::string,std::string>& oldNewScriptNamesMapping);
     
     void restoreUserKnobs(const NodeSerialization& serialization);
@@ -197,9 +199,9 @@ public:
     /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
      * is set earlier.
      */
-    void setLiveInstance(const boost::shared_ptr<Natron::EffectInstance>& liveInstance);
+    void setLiveInstance(const boost::shared_ptr<EffectInstance>& liveInstance);
 
-    Natron::EffectInstance* getLiveInstance() const;
+    EffectInstance* getLiveInstance() const;
 
     /**
      * @brief Returns true if the node is a multi-instance node, that is, holding several other nodes.
@@ -207,12 +209,12 @@ public:
      **/
     bool isMultiInstance() const;
     
-    boost::shared_ptr<Natron::Node> getParentMultiInstance() const;
+    boost::shared_ptr<Node> getParentMultiInstance() const;
 
     ///Accessed by the serialization thread, but mt safe since never changed
     std::string getParentMultiInstanceName() const;
     
-    void getChildrenMultiInstance(std::list<boost::shared_ptr<Natron::Node> >* children) const;
+    void getChildrenMultiInstance(std::list<boost::shared_ptr<Node> >* children) const;
 
     /**
      * @brief Returns the hash value of the node, or 0 if it has never been computed.
@@ -241,7 +243,7 @@ public:
     /*Returns in viewers the list of all the viewers connected to this node*/
     void hasViewersConnected(std::list<ViewerInstance* >* viewers) const;
 
-    void hasOutputNodesConnected(std::list<Natron::OutputEffectInstance* >* writers) const;
+    void hasOutputNodesConnected(std::list<OutputEffectInstance* >* writers) const;
 
     /**
      * @brief Forwarded to the live effect instance
@@ -284,7 +286,7 @@ public:
     /**
      * @brief Returns true if this node is a backdrop
      **/
-    bool isBackDropNode() const;
+    bool isBackdropNode() const;
     
     /**
      * @brief Returns true if the node is a rotopaint node
@@ -307,20 +309,20 @@ public:
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
      * then this function will check whether the effect can produce the given components.
      **/
-    bool isSupportedComponent(int inputNb,const Natron::ImageComponents& comp) const;
+    bool isSupportedComponent(int inputNb,const ImageComponents& comp) const;
 
     /**
      * @brief Returns the most appropriate components that can be supported by the inputNb.
      * If inputNb equals -1 then this function will check the output components.
      **/
-    Natron::ImageComponents findClosestSupportedComponents(int inputNb,const Natron::ImageComponents& comp) const;
-    static Natron::ImageComponents findClosestInList(const Natron::ImageComponents& comp,
-                                                     const std::list<Natron::ImageComponents> &components,
+    ImageComponents findClosestSupportedComponents(int inputNb,const ImageComponents& comp) const;
+    static ImageComponents findClosestInList(const ImageComponents& comp,
+                                                     const std::list<ImageComponents> &components,
                                                      bool multiPlanar);
     
-    Natron::ImageBitDepthEnum getBestSupportedBitDepth() const;
-    bool isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const;
-    Natron::ImageBitDepthEnum getClosestSupportedBitDepth(Natron::ImageBitDepthEnum depth);
+    ImageBitDepthEnum getBestSupportedBitDepth() const;
+    bool isSupportedBitDepth(ImageBitDepthEnum depth) const;
+    ImageBitDepthEnum getClosestSupportedBitDepth(ImageBitDepthEnum depth);
 
     /**
      * @brief Returns the components and index of the channel to use to produce the mask.
@@ -330,7 +332,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb,Natron::ImageComponents* comps, boost::shared_ptr<Natron::Node>* maskInput) const;
+    int getMaskChannel(int inputNb,ImageComponents* comps, boost::shared_ptr<Node>* maskInput) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -370,7 +372,7 @@ public:
     /**
      * @brief Returns the input index of the node if it is an input of this node, -1 otherwise.
      **/
-    int getInputIndex(const Natron::Node* node) const;
+    int getInputIndex(const Node* node) const;
 
     /**
      * @brief Returns true if the node is currently executing the onInputChanged handler.
@@ -382,9 +384,9 @@ public:
      * The vector might be different from what getInputs_other_thread() could return.
      * This can only be called by the main thread.
      **/
-    const std::vector<boost::shared_ptr<Natron::Node> > & getInputs() const WARN_UNUSED_RETURN;
-    const std::vector<boost::shared_ptr<Natron::Node> > & getGuiInputs() const WARN_UNUSED_RETURN;
-    std::vector<boost::shared_ptr<Natron::Node> > getInputs_copy() const WARN_UNUSED_RETURN;
+    const std::vector<boost::shared_ptr<Node> > & getInputs() const WARN_UNUSED_RETURN;
+    const std::vector<boost::shared_ptr<Node> > & getGuiInputs() const WARN_UNUSED_RETURN;
+    std::vector<boost::shared_ptr<Node> > getInputs_copy() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the input index of the node n if it exists,
@@ -420,15 +422,15 @@ public:
     virtual int getPreferredInputForConnection()  const;
     virtual int getPreferredInput() const;
     
-    void setRenderThreadSafety(Natron::RenderSafetyEnum safety);
-    Natron::RenderSafetyEnum getCurrentRenderThreadSafety() const;
+    void setRenderThreadSafety(RenderSafetyEnum safety);
+    RenderSafetyEnum getCurrentRenderThreadSafety() const;
     void revertToPluginThreadSafety();
     
-    void setCurrentOpenGLRenderSupport(Natron::PluginOpenGLRenderSupport support);
-    Natron::PluginOpenGLRenderSupport getCurrentOpenGLRenderSupport() const;
+    void setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support);
+    PluginOpenGLRenderSupport getCurrentOpenGLRenderSupport() const;
     
-    void setCurrentSequentialRenderSupport(Natron::SequentialPreferenceEnum support);
-    Natron::SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
+    void setCurrentSequentialRenderSupport(SequentialPreferenceEnum support);
+    SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
     
     void setCurrentCanTransform(bool support);
     bool getCurrentCanTransform() const;
@@ -452,12 +454,12 @@ public:
     
     bool isLastPaintStrokeBitmapCleared() const;
     void clearLastPaintStrokeRoD();
-    void getLastPaintStrokePoints(double time,std::list<std::list<std::pair<Natron::Point,double> > >* strokes, int* strokeIndex) const;
-    boost::shared_ptr<Natron::Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
+    void getLastPaintStrokePoints(double time,std::list<std::list<std::pair<Point,double> > >* strokes, int* strokeIndex) const;
+    boost::shared_ptr<Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                                                 const RectI& roi,
                                                                 double par,
-                                                                const Natron::ImageComponents& components,
-                                                                Natron::ImageBitDepthEnum depth) const;
+                                                                const ImageComponents& components,
+                                                                ImageBitDepthEnum depth) const;
     
     void setWhileCreatingPaintStroke(bool creating);
     bool isDuringPaintStrokeCreation() const;
@@ -740,7 +742,7 @@ public:
      * case the function may return false if the user pressed the 'No' button.
      * @param content The message you want to pass.
      **/
-    bool message(Natron::MessageTypeEnum type,const std::string & content) const;
+    bool message(MessageTypeEnum type,const std::string & content) const;
 
     /**
      * @brief Use this function to post a persistent message to the user. It will be displayed on the
@@ -750,7 +752,7 @@ public:
      * eMessageTypeError : you want to inform the user an error occured.
      * @param content The message you want to pass.
      **/
-    void setPersistentMessage(Natron::MessageTypeEnum type,const std::string & content);
+    void setPersistentMessage(MessageTypeEnum type,const std::string & content);
 
     /**
      * @brief Clears any message posted previously by setPersistentMessage.
@@ -813,7 +815,7 @@ public:
 
     void onKnobSlaved(KnobI* slave,KnobI* master,int dimension,bool isSlave);
 
-    boost::shared_ptr<Natron::Node> getMasterNode() const;
+    boost::shared_ptr<Node> getMasterNode() const;
 
     /**
      * @brief Attemps to lock an image for render. If it successfully obtained the lock,
@@ -821,16 +823,16 @@ public:
      * rendering that image, this function will wait until the image is available for render again.
      * This is used internally by EffectInstance::renderRoI
      **/
-    void lock(const boost::shared_ptr<Natron::Image>& entry);
-    bool tryLock(const boost::shared_ptr<Natron::Image>& entry);
-    void unlock(const boost::shared_ptr<Natron::Image>& entry);
+    void lock(const boost::shared_ptr<Image>& entry);
+    bool tryLock(const boost::shared_ptr<Image>& entry);
+    void unlock(const boost::shared_ptr<Image>& entry);
 
 
     /**
      * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
      * do not respect the OpenFX specification.
      **/
-    boost::shared_ptr<Natron::Image> getImageBeingRendered(double time,unsigned int mipMapLevel,int view);
+    boost::shared_ptr<Image> getImageBeingRendered(double time,unsigned int mipMapLevel,int view);
     
     void beginInputEdition();
     
@@ -838,7 +840,7 @@ public:
 
     void onInputChanged(int inputNb);
 
-    void onEffectKnobValueChanged(KnobI* what,Natron::ValueChangedReasonEnum reason);
+    void onEffectKnobValueChanged(KnobI* what,ValueChangedReasonEnum reason);
 
     bool isNodeDisabled() const;
 
@@ -879,7 +881,7 @@ public:
 
     /**
      * @brief Returns whether this node or one of its inputs (recursively) is marked as
-     * Natron::eSequentialPreferenceOnlySequential
+     * eSequentialPreferenceOnlySequential
      *
      * @param nodeName If the return value is true, this will be set to the name of the node
      * which is sequential.
@@ -955,7 +957,7 @@ public:
      * @brief Attempts to detect cycles considering input being an input of this node.
      * Returns true if it couldn't detect any cycle, false otherwise.
      **/
-    bool checkIfConnectingInputIsOk(Natron::Node* input) const;
+    bool checkIfConnectingInputIsOk(Node* input) const;
 
     bool isForceCachingEnabled() const;
     
@@ -1017,11 +1019,11 @@ public:
     
     bool onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyDownDefault(const RenderScale & renderScale, Key key,KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyUpDefault(const RenderScale & renderScale, Key key,KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
-    bool onOverlayKeyRepeatDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyRepeatDefault(const RenderScale & renderScale, Key key,KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
     
     bool onOverlayFocusGainedDefault(const RenderScale & renderScale) WARN_UNUSED_RETURN;
     
@@ -1070,11 +1072,11 @@ public:
     
     boost::shared_ptr<KnobChoice> getChannelSelectorKnob(int inputNb) const;
     
-    bool getSelectedLayer(int inputNb, std::bitset<4> *processChannels, bool* isAll, Natron::ImageComponents *layer) const;
+    bool getSelectedLayer(int inputNb, std::bitset<4> *processChannels, bool* isAll, ImageComponents *layer) const;
     
-    bool addUserComponents(const Natron::ImageComponents& comps);
+    bool addUserComponents(const ImageComponents& comps);
     
-    void getUserCreatedComponents(std::list<Natron::ImageComponents>* comps);
+    void getUserCreatedComponents(std::list<ImageComponents>* comps);
     
     bool hasAtLeastOneChannelToProcess() const;
     
@@ -1107,7 +1109,7 @@ public:
     
 private:
     
-    void computeHashRecursive(std::list<Natron::Node*>& marked);
+    void computeHashRecursive(std::list<Node*>& marked);
     
     /**
      * @brief Refreshes the node hash depending on its context (knobs age, inputs etc...)
@@ -1115,11 +1117,11 @@ private:
      **/
     bool computeHashInternal() WARN_UNUSED_RETURN;
     
-    void refreshEnabledKnobsLabel(const Natron::ImageComponents& layer);
+    void refreshEnabledKnobsLabel(const ImageComponents& layer);
     
     void refreshCreatedViews(KnobI* knob);
     
-    void refreshInputRelatedDataRecursiveInternal(std::list<Natron::Node*>& markedNodes);
+    void refreshInputRelatedDataRecursiveInternal(std::list<Node*>& markedNodes);
     
     void refreshInputRelatedDataRecursive();
     
@@ -1131,13 +1133,13 @@ private:
     
     void markInputRelatedDataDirtyRecursive();
     
-    void markInputRelatedDataDirtyRecursiveInternal(std::list<Natron::Node*>& markedNodes,bool recurse);
+    void markInputRelatedDataDirtyRecursiveInternal(std::list<Node*>& markedNodes,bool recurse);
     
-    bool refreshAllInputRelatedData(bool hasSerializationData,const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
+    bool refreshAllInputRelatedData(bool hasSerializationData,const std::vector<boost::shared_ptr<Node> >& inputs);
     
-    bool refreshInputRelatedDataInternal(std::list<Natron::Node*>& markedNodes);
+    bool refreshInputRelatedDataInternal(std::list<Node*>& markedNodes);
     
-    bool refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Natron::Node> >& inputs);
+    bool refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Node> >& inputs);
     
     void setNameInternal(const std::string& name, bool throwErrors, bool declareToPython);
     
@@ -1281,8 +1283,8 @@ private:
     std::string makeCacheInfo() const;
     std::string makeInfoForInput(int inputNumber) const;
     
-    void setNodeIsRenderingInternal(std::list<Natron::Node*>& markedNodes);
-    void setNodeIsNoLongerRenderingInternal(std::list<Natron::Node*>& markedNodes);
+    void setNodeIsRenderingInternal(std::list<Node*>& markedNodes);
+    void setNodeIsNoLongerRenderingInternal(std::list<Node*>& markedNodes);
     
 
 
@@ -1291,7 +1293,7 @@ private:
      * @brief If the node is an input of this node, set ok to true, otherwise
      * calls this function recursively on all inputs.
      **/
-    void isNodeUpstream(const Natron::Node* input,bool* ok) const;
+    void isNodeUpstream(const Node* input,bool* ok) const;
     
     void declareNodeVariableToPython(const std::string& nodeName);
     void setNodeVariableToPython(const std::string& oldName,const std::string& newName);
@@ -1300,7 +1302,6 @@ private:
 
     boost::scoped_ptr<Implementation> _imp;
 };
-} //namespace Natron
 
 /**
  * @brief An InspectorNode is a type of node that is able to have a dynamic number of inputs.
@@ -1310,7 +1311,7 @@ private:
  * while still having 1 input active.
  **/
 class InspectorNode
-    : public Natron::Node
+    : public Node
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -1322,7 +1323,7 @@ public:
 
     InspectorNode(AppInstance* app,
                   const boost::shared_ptr<NodeCollection>& group,
-                  Natron::Plugin* plugin,
+                  Plugin* plugin,
                   int maxInputs);
 
     virtual ~InspectorNode();
@@ -1356,10 +1357,10 @@ public:
 
 class RenderingFlagSetter
 {
-    Natron::Node* node;
+    Node* node;
 public:
     
-    RenderingFlagSetter(Natron::Node* n)
+    RenderingFlagSetter(Node* n)
     : node(n)
     {
         node->setNodeIsRendering();
@@ -1371,5 +1372,6 @@ public:
     }
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_NODE_H

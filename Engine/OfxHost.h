@@ -44,7 +44,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 //#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
     
 struct OfxHostPrivate;
 class OfxHost
@@ -149,10 +149,10 @@ public:
 
     void clearPluginsLoadedCache();
 
-    void setThreadAsActionCaller(Natron::OfxImageEffectInstance* instance, bool actionCaller);
+    void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
     
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                                    Natron::ContextEnum* ctx);
+                                                                    ContextEnum* ctx);
     
     
     /**
@@ -161,7 +161,7 @@ public:
      **/
     struct OfxHostTLSData
     {
-        Natron::OfxImageEffectInstance* lastEffectCallingMainEntry;
+        OfxImageEffectInstance* lastEffectCallingMainEntry;
         
         ///Stored as int, because we need -1; list because we need it recursive for the multiThread func
         std::list<int> threadIndexes;
@@ -188,6 +188,6 @@ private:
 
     boost::scoped_ptr<OfxHostPrivate> _imp;
 };
-} // namespace Natron
+NATRON_NAMESPACE_EXIT;
 
 #endif // ifndef NATRON_ENGINE_OFXHOST_H

@@ -38,6 +38,8 @@
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 struct PreviewThreadPrivate;
 class PreviewThread : public QThread
 {
@@ -60,5 +62,7 @@ private:
     
     boost::scoped_ptr<PreviewThreadPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PREVIEWTHREAD_H

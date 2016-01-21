@@ -34,6 +34,8 @@
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 
+NATRON_NAMESPACE_ENTER;
+
 ItemBase::ItemBase(const boost::shared_ptr<RotoItem>& item)
 : _item(item)
 {
@@ -271,7 +273,7 @@ BezierCurve::slavePointToTrack(int index, double trackTime, DoubleParam* trackCe
         return;
     }
     
-    Natron::EffectInstance* parent = dynamic_cast<Natron::EffectInstance*>(isDouble->getHolder());
+    EffectInstance* parent = dynamic_cast<EffectInstance*>(isDouble->getHolder());
     if (!parent) {
         return;
     }
@@ -567,3 +569,5 @@ Roto::createRectangle(double x,double y,double size,double time)
     }
     return 0;
 }
+
+NATRON_NAMESPACE_EXIT;

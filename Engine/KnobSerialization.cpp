@@ -36,6 +36,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
 
+NATRON_NAMESPACE_ENTER;
 
 ValueSerialization::ValueSerialization(KnobSerializationBase* serialization,
                                        const boost::shared_ptr<KnobI> & knob,
@@ -120,13 +121,13 @@ boost::shared_ptr<KnobI> KnobSerialization::createKnob(const std::string & typeN
 }
 
 static boost::shared_ptr<KnobI> findMaster(const boost::shared_ptr<KnobI> & knob,
-                                           const std::list<boost::shared_ptr<Natron::Node> > & allNodes,
+                                           const std::list<boost::shared_ptr<Node> > & allNodes,
                                            const std::string& masterKnobName,
                                            const std::string& masterNodeName,
                                            const std::map<std::string,std::string>& oldNewScriptNamesMapping)
 {
     ///we need to cycle through all the nodes of the project to find the real master
-    boost::shared_ptr<Natron::Node> masterNode;
+    boost::shared_ptr<Node> masterNode;
     
     std::string masterNodeNameToFind = masterNodeName;
     
@@ -139,7 +140,7 @@ static boost::shared_ptr<KnobI> findMaster(const boost::shared_ptr<KnobI> & knob
         masterNodeNameToFind = foundMapping->second;
     }
     
-    for (std::list<boost::shared_ptr<Natron::Node> >::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
+    for (std::list<boost::shared_ptr<Node> >::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
         if ((*it2)->getScriptName() == masterNodeNameToFind) {
             masterNode = *it2;
             break;
@@ -169,7 +170,7 @@ static boost::shared_ptr<KnobI> findMaster(const boost::shared_ptr<KnobI> & knob
 
 void
 KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
-                                    const std::list<boost::shared_ptr<Natron::Node> > & allNodes,
+                                    const std::list<boost::shared_ptr<Node> > & allNodes,
                                     const std::map<std::string,std::string>& oldNewScriptNamesMapping)
 {
     int i = 0;
@@ -202,7 +203,7 @@ KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
 
 void
 KnobSerialization::restoreTracks(const boost::shared_ptr<KnobI> & knob,
-                                 const std::list<boost::shared_ptr<Natron::Node> > & allNodes)
+                                 const std::list<boost::shared_ptr<Node> > & allNodes)
 {
     KnobDouble* isDouble = dynamic_cast<KnobDouble*>( knob.get() );
 
@@ -245,3 +246,5 @@ KnobSerialization::setChoiceExtraString(const std::string& label)
     assert(cData);
     cData->_choiceString = label;
 }
+
+NATRON_NAMESPACE_EXIT;

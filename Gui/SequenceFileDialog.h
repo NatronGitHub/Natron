@@ -64,6 +64,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief The UrlModel class is the model used by the favorite view in the file dialog. It serves as a connexion between
@@ -570,7 +571,7 @@ private:
     boost::scoped_ptr<QFileSystemModel> _lookinViewModel;
     QVBoxLayout* _mainLayout;
     QString _requestedDir;
-    Natron::Label* _lookInLabel;
+    Label* _lookInLabel;
     FileDialogComboBox* _lookInCombobox;
     Button* _previousButton;
     Button* _nextButton;
@@ -581,10 +582,10 @@ private:
     Button* _addFavoriteButton;
     Button* _removeFavoriteButton;
     FileDialogLineEdit* _selectionLineEdit;
-    Natron::Label* _relativeLabel;
+    Label* _relativeLabel;
     ComboBox* _relativeChoice;
     ComboBox* _sequenceButton;
-    Natron::Label* _filterLabel;
+    Label* _filterLabel;
     FileDialogLineEdit* _filterLineEdit;
     Button* _filterDropDown;
     ComboBox* _fileExtensionCombo;
@@ -649,7 +650,7 @@ class AddFavoriteDialog
     Q_OBJECT
 
     QVBoxLayout* _mainLayout;
-    Natron::Label* _descriptionLabel;
+    Label* _descriptionLabel;
     QWidget* _secondLine;
     QHBoxLayout* _secondLineLayout;
     LineEdit* _pathLineEdit;
@@ -678,5 +679,7 @@ public Q_SLOTS:
 
     void openDir();
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif /* defined(NATRON_GUI_SEQUENCEFILEDIALOG_H_) */

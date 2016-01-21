@@ -36,6 +36,7 @@
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class CurveSelection
 {
@@ -45,5 +46,7 @@ public:
 
     virtual void getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection) = 0;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // CURVESELECTION_H

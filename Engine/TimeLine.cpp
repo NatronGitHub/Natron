@@ -35,7 +35,9 @@
 #include "Engine/Node.h"
 #include "Engine/EffectInstance.h"
 
-TimeLine::TimeLine(Natron::Project* project)
+NATRON_NAMESPACE_ENTER;
+
+TimeLine::TimeLine(Project* project)
 : _project(project)
 , _currentFrame(1)
 {
@@ -54,10 +56,10 @@ TimeLine::currentFrame() const
 void
 TimeLine::seekFrame(SequenceTime frame,
                     bool updateLastCaller,
-                    Natron::OutputEffectInstance* caller,
-                    Natron::TimelineChangeReasonEnum reason)
+                    OutputEffectInstance* caller,
+                    TimelineChangeReasonEnum reason)
 {
-    if (reason != Natron::eTimelineChangeReasonPlaybackSeek) {
+    if (reason != eTimelineChangeReasonPlaybackSeek) {
         Q_EMIT frameAboutToChange();
     }
     bool changed = false;
@@ -70,7 +72,7 @@ TimeLine::seekFrame(SequenceTime frame,
     }
 
     if (_project && updateLastCaller) {
-        _project->getApp()->setLastViewerUsingTimeline(caller ? caller->getNode() : boost::shared_ptr<Natron::Node>());
+        _project->getApp()->setLastViewerUsingTimeline(caller ? caller->getNode() : boost::shared_ptr<Node>());
     }
     if (changed) {
         Q_EMIT frameChanged(frame, (int)reason);
@@ -87,7 +89,7 @@ TimeLine::incrementCurrentFrame()
         frame = _currentFrame;
     }
 
-    Q_EMIT frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
+    Q_EMIT frameChanged(frame, (int)eTimelineChangeReasonPlaybackSeek);
 }
 
 void
@@ -100,7 +102,7 @@ TimeLine::decrementCurrentFrame()
         frame = _currentFrame;
     }
 
-    Q_EMIT frameChanged(frame, (int)Natron::eTimelineChangeReasonPlaybackSeek);
+    Q_EMIT frameChanged(frame, (int)eTimelineChangeReasonPlaybackSeek);
 }
 
 void
@@ -121,8 +123,11 @@ TimeLine::onFrameChanged(SequenceTime frame)
     if (changed) {
         /*This function is called in response to a signal emitted by a single timeline gui, but we also
            need to sync all the other timelines potentially existing.*/
-        Q_EMIT frameChanged(frame, (int)Natron::eTimelineChangeReasonUserSeek);
+        Q_EMIT frameChanged(frame, (int)eTimelineChangeReasonUserSeek);
     }
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
+#include "moc_TimeLine.cpp"

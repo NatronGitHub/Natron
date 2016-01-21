@@ -32,7 +32,7 @@
 #include <locale>
 #include <algorithm> // min, max
 
-#include "Engine/BackDrop.h"
+#include "Engine/Backdrop.h"
 #include "Engine/Dot.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -40,7 +40,7 @@
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/DotGui.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
@@ -52,12 +52,12 @@
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 //using std::cout; using std::endl;
 
 
 void
-NodeGraph::makeFullyQualifiedLabel(Natron::Node* node,std::string* ret)
+NodeGraph::makeFullyQualifiedLabel(Node* node,std::string* ret)
 {
     boost::shared_ptr<NodeCollection> parent = node->getGroup();
     NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(parent.get());
@@ -175,7 +175,7 @@ NodeGraph::NodeGraph(Gui* gui,
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    _imp->_menu = new Natron::Menu(this);
+    _imp->_menu = new Menu(this);
     
 }
 
@@ -370,14 +370,14 @@ NodeGraph::visibleWidgetRect() const
 }
 
 boost::shared_ptr<NodeGui>
-NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
+NodeGraph::createNodeGUI(const boost::shared_ptr<Node> & node,
                          bool requestedByLoad,
                          bool userEdited,
                          bool pushUndoRedoCommand)
 {
     boost::shared_ptr<NodeGui> node_ui;
     Dot* isDot = dynamic_cast<Dot*>( node->getLiveInstance() );
-    BackDrop* isBd = dynamic_cast<BackDrop*>(node->getLiveInstance());
+    Backdrop* isBd = dynamic_cast<Backdrop*>(node->getLiveInstance());
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
     
     
@@ -387,7 +387,7 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
     if (isDot) {
         node_ui.reset( new DotGui(_imp->_nodeRoot) );
     } else if (isBd) {
-        node_ui.reset(new BackDropGui(_imp->_nodeRoot));
+        node_ui.reset(new BackdropGui(_imp->_nodeRoot));
     } else {
         node_ui.reset( new NodeGui(_imp->_nodeRoot) );
     }
@@ -395,7 +395,7 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
     node_ui->initialize(this, node);
 
     if (isBd) {
-        BackDropGui* bd = dynamic_cast<BackDropGui*>(node_ui.get());
+        BackdropGui* bd = dynamic_cast<BackdropGui*>(node_ui.get());
         assert(bd);
         NodeGuiList selectedNodes = _imp->_selection;
         if ( bd && !selectedNodes.empty() ) {
@@ -449,3 +449,7 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
     return node_ui;
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_NodeGraph.cpp"

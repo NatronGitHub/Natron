@@ -29,8 +29,7 @@
 #include "Global/Enums.h"
 #include "Engine/EngineFwd.h"
 
-class QPointF;
-
+NATRON_NAMESPACE_ENTER;
 
 class NodeGuiI
 {
@@ -114,11 +113,11 @@ public :
     
     virtual bool onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
     
-    virtual bool onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers)  = 0;
+    virtual bool onOverlayKeyDownDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers)  = 0;
     
-    virtual bool onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers)  = 0;
+    virtual bool onOverlayKeyUpDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers)  = 0;
     
-    virtual bool onOverlayKeyRepeatDefault(const RenderScale & renderScale, Natron::Key key, Natron::KeyboardModifiers modifiers) = 0;
+    virtual bool onOverlayKeyRepeatDefault(const RenderScale & renderScale, Key key, KeyboardModifiers modifiers) = 0;
     
     virtual bool onOverlayFocusGainedDefault(const RenderScale & renderScale) = 0;
     
@@ -144,5 +143,7 @@ public :
     
     virtual void onIdentityStateChanged(int inputNb) = 0;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NODEGUII_H

@@ -34,6 +34,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 typedef boost::shared_ptr<RenderStats> RenderStatsPtr;
 
@@ -94,7 +95,7 @@ class RenderThreadTask :  public QThread
     
 public:
     
-    RenderThreadTask(Natron::OutputEffectInstance* output,OutputSchedulerThread* scheduler);
+    RenderThreadTask(OutputEffectInstance* output,OutputSchedulerThread* scheduler);
     
     virtual ~RenderThreadTask();
     
@@ -148,7 +149,7 @@ public:
         eProcessFrameByMainThread //< the processFrame function will be called by the application's main-thread.
     };
     
-    OutputSchedulerThread(RenderEngine* engine,Natron::OutputEffectInstance* effect,ProcessFrameModeEnum mode);
+    OutputSchedulerThread(RenderEngine* engine,OutputEffectInstance* effect,ProcessFrameModeEnum mode);
     
     virtual ~OutputSchedulerThread();
     
@@ -225,7 +226,7 @@ public:
                              int viewIndex,
                              const std::vector<int>& viewsToRender,
                              const RenderStatsPtr& stats,
-                             Natron::SchedulingPolicyEnum policy);
+                             SchedulingPolicyEnum policy);
 
     /**
      * @brief To be called by concurrent worker threads in case of failure, all renders will be aborted
@@ -390,7 +391,7 @@ protected:
     /**
      * @brief Must return the scheduling policy that the output device will have
      **/
-    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const = 0;
+    virtual SchedulingPolicyEnum getSchedulingPolicy() const = 0;
     
     /**
      * @brief Returns the last successful render time.
@@ -453,14 +454,12 @@ private:
     
 };
 
-namespace Natron {
-class OutputEffectInstance;
-}
+
 class DefaultScheduler : public OutputSchedulerThread
 {
 public:
     
-    DefaultScheduler(RenderEngine* engine,Natron::OutputEffectInstance* effect);
+    DefaultScheduler(RenderEngine* engine,OutputEffectInstance* effect);
     
     virtual ~DefaultScheduler();
     
@@ -481,7 +480,7 @@ private:
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
-    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
+    virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
     
     virtual void aboutToStartRender() OVERRIDE FINAL;
     
@@ -489,7 +488,7 @@ private:
     
 
     
-    Natron::OutputEffectInstance* _effect;
+    OutputEffectInstance* _effect;
 };
 
 
@@ -522,7 +521,7 @@ private:
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
-    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL { return Natron::eSchedulingPolicyOrdered; }
+    virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL { return eSchedulingPolicyOrdered; }
     
     virtual int getLastRenderedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
@@ -622,7 +621,7 @@ class RenderEngine : public QObject
     
 public:
     
-    RenderEngine(Natron::OutputEffectInstance* output);
+    RenderEngine(OutputEffectInstance* output);
     
     virtual ~RenderEngine();
    
@@ -658,7 +657,7 @@ public:
     /**
      * @brief Returns the playback mode of the internal scheduler
      **/
-    Natron::PlaybackModeEnum getPlaybackMode() const;
+    PlaybackModeEnum getPlaybackMode() const;
     
     /**
      * @brief Returns the desired user FPS that the internal scheduler should stick to
@@ -696,7 +695,7 @@ public Q_SLOTS:
     
     /**
      * @brief Set the playback mode
-     * @param mode Corresponds to the Natron::PlaybackModeEnum enum
+     * @param mode Corresponds to the PlaybackModeEnum enum
      **/
     void setPlaybackMode(int mode);
     
@@ -758,7 +757,7 @@ protected:
     /**
      * @brief Must create the main-scheduler that will be used for scheduling playback/writing on disk.
      **/
-    virtual OutputSchedulerThread* createScheduler(Natron::OutputEffectInstance* effect) ;
+    virtual OutputSchedulerThread* createScheduler(OutputEffectInstance* effect) ;
     
 private:
     
@@ -789,7 +788,7 @@ class ViewerRenderEngine : public RenderEngine
     
 public:
     
-    ViewerRenderEngine(Natron::OutputEffectInstance* output)
+    ViewerRenderEngine(OutputEffectInstance* output)
     : RenderEngine(output)
     {}
     
@@ -797,7 +796,9 @@ public:
     
 private:
     
-    virtual OutputSchedulerThread* createScheduler(Natron::OutputEffectInstance* effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual OutputSchedulerThread* createScheduler(OutputEffectInstance* effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // OUTPUTSCHEDULERTHREAD_H

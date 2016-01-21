@@ -30,12 +30,13 @@
 
 #include "Engine/Image.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct HistogramRequest
 {
     int binsCount;
     int mode;
-    boost::shared_ptr<Natron::Image> image;
+    boost::shared_ptr<Image> image;
     RectI rect;
     double vmin;
     double vmax;
@@ -54,7 +55,7 @@ struct HistogramRequest
 
     HistogramRequest(int binsCount,
                      int mode,
-                     const boost::shared_ptr<Natron::Image> & image,
+                     const boost::shared_ptr<Image> & image,
                      const RectI & rect,
                      double vmin,
                      double vmax,
@@ -132,7 +133,7 @@ HistogramCPU::~HistogramCPU()
 
 void
 HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histogram::DisplayModeEnum
-                               const boost::shared_ptr<Natron::Image> & image,
+                               const boost::shared_ptr<Image> & image,
                                const RectI & rect,
                                int binsCount,
                                double vmin,
@@ -162,7 +163,7 @@ HistogramCPU::quitAnyComputation()
 
         ///post a fake request to wakeup the thread
         l.unlock();
-        computeHistogram(0, boost::shared_ptr<Natron::Image>(), RectI(), 0,0,0,0);
+        computeHistogram(0, boost::shared_ptr<Image>(), RectI(), 0,0,0,0);
         l.relock();
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
@@ -267,9 +268,9 @@ computeHisto(const HistogramRequest & request,
     double binSize = (request.vmax - request.vmin) / histo->size();
 
     ///Images come from the viewer which is in float.
-    assert(request.image->getBitDepth() == Natron::eImageBitDepthFloat);
+    assert(request.image->getBitDepth() == eImageBitDepthFloat);
 
-    Natron::Image::ReadAccess acc = request.image->getReadRights();
+    Image::ReadAccess acc = request.image->getReadRights();
     
     for (int y = request.rect.bottom(); y < request.rect.top(); ++y) {
         for (int x = request.rect.left(); x < request.rect.right(); ++x) {
@@ -568,3 +569,7 @@ HistogramCPU::run()
     }
 } // run
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_HistogramCPU.cpp"

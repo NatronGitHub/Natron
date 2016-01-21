@@ -30,6 +30,7 @@
 #include "Gui/Button.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class AnimationButton
     : public Button
@@ -95,5 +96,7 @@ private:
     bool _dragging;
     KnobGui* _knob;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // ANIMATIONBUTTON_H

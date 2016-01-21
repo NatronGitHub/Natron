@@ -26,10 +26,10 @@
 
 #include "Engine/Transform.h" // Matrix3x3
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
-NoOpBase::NoOpBase(boost::shared_ptr<Natron::Node> n)
-    : Natron::OutputEffectInstance(n)
+NoOpBase::NoOpBase(boost::shared_ptr<Node> n)
+    : OutputEffectInstance(n)
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -37,7 +37,7 @@ NoOpBase::NoOpBase(boost::shared_ptr<Natron::Node> n)
 
 void
 NoOpBase::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponents>* comps)
+                                std::list<ImageComponents>* comps)
 {
     comps->push_back(ImageComponents::getRGBComponents());
     comps->push_back(ImageComponents::getRGBAComponents());
@@ -46,11 +46,11 @@ NoOpBase::addAcceptedComponents(int /*inputNb*/,
 
 
 void
-NoOpBase::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+NoOpBase::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
-    depths->push_back(Natron::eImageBitDepthByte);
-    depths->push_back(Natron::eImageBitDepthShort);
-    depths->push_back(Natron::eImageBitDepthFloat);
+    depths->push_back(eImageBitDepthByte);
+    depths->push_back(eImageBitDepthShort);
+    depths->push_back(eImageBitDepthFloat);
 }
 
 
@@ -76,21 +76,21 @@ NoOpBase::isHostChannelSelectorSupported(bool* /*defaultR*/,bool* /*defaultG*/, 
 }
 
 
-Natron::StatusEnum
+StatusEnum
 NoOpBase::getTransform(double /*time*/,
                        const RenderScale & /*renderScale*/,
                        int /*view*/,
-                       Natron::EffectInstance** inputToTransform,
+                       EffectInstance** inputToTransform,
                        Transform::Matrix3x3* transform)
 {
     *inputToTransform = getInput(0);
     if (!*inputToTransform) {
-        return Natron::eStatusFailed;
+        return eStatusFailed;
     }
     transform->a = 1.; transform->b = 0.; transform->c = 0.;
     transform->d = 0.; transform->e = 1.; transform->f = 0.;
     transform->g = 0.; transform->h = 0.; transform->i = 1.;
-    return Natron::eStatusOK;
+    return eStatusOK;
 }
 
 
@@ -101,3 +101,4 @@ NoOpBase::getInputsHoldingTransform(std::list<int>* inputs) const
     return true;
 }
 
+NATRON_NAMESPACE_EXIT;

@@ -54,6 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kMainSplitterObjectName "ToolbarSplitter"
 
+NATRON_NAMESPACE_ENTER;
 
 struct GuiPrivate;
 
@@ -85,7 +86,7 @@ public:
      **/
     void createGui();
 
-    boost::shared_ptr<NodeGui> createNodeGUI(boost::shared_ptr<Natron::Node> node,
+    boost::shared_ptr<NodeGui> createNodeGUI(boost::shared_ptr<Node> node,
                                              bool requestedByLoad,
                                              bool userEdited,
                                              bool pushUndoRedoCommand);
@@ -99,9 +100,9 @@ public:
 
     const std::list<boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
 
-    void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
+    void createViewerGui(boost::shared_ptr<Node> viewer);
 
-    void createGroupGui(const boost::shared_ptr<Natron::Node>& group, bool requestedByLoad);
+    void createGroupGui(const boost::shared_ptr<Node>& group, bool requestedByLoad);
 
     void addGroupGui(NodeGraph* tab,TabWidget* where);
 
@@ -189,17 +190,17 @@ public:
                            bool* stopAsking,
                            bool useHtml);
 
-    Natron::StandardButtonEnum questionDialog(const std::string & title,
+    StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
                                               bool useHtml,
-                                              Natron::StandardButtons buttons = Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                              Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
+                                              StandardButtons buttons = StandardButtons(eStandardButtonYes | eStandardButtonNo),
+                                              StandardButtonEnum defaultButton = eStandardButtonNoButton);
 
-    Natron::StandardButtonEnum questionDialog(const std::string & title,
+    StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
                                               bool useHtml,
-                                              Natron::StandardButtons buttons,
-                                              Natron::StandardButtonEnum defaultButton,
+                                              StandardButtons buttons,
+                                              StandardButtonEnum defaultButton,
                                               bool* stopAsking);
 
 
@@ -349,7 +350,7 @@ public:
                                  const boost::shared_ptr<ProcessHandler> & process);
 
     void onWriterRenderStarted(const QString & sequenceName,int firstFrame,int lastFrame,int frameStep,
-                               Natron::OutputEffectInstance* writer);
+                               OutputEffectInstance* writer);
 
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
@@ -418,7 +419,7 @@ public:
 
     /*Useful function that saves on disk the image in png format.
        The name of the image will be the hash key of the image.*/
-    static void debugImage( const Natron::Image* image, const RectI& roi, const QString & filename = QString() );
+    static void debugImage( const Image* image, const RectI& roi, const QString & filename = QString() );
 
     void addVisibleDockablePanel(DockablePanel* panel);
     void removeVisibleDockablePanel(DockablePanel* panel);
@@ -463,7 +464,7 @@ public:
     /**
      * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.
      **/
-    void getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& nodes) const;
+    void getNodesEntitledForOverlays(std::list<boost::shared_ptr<Node> >& nodes) const;
 
     bool isLeftToolBarDisplayedOnMouseHoverOnly() const;
 
@@ -523,7 +524,7 @@ public:
 #ifndef Q_OS_MAC
     bool isHighDPI() const { return false; }
 #else
-    bool isHighDPI() const { return Natron::isHighDPIInternal(this); }
+    bool isHighDPI() const { return QtMac::isHighDPIInternal(this); }
 #endif
     
     AppInstance* createNewProject();
@@ -561,9 +562,9 @@ protected:
 Q_SIGNALS:
 
 
-    void doDialog(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
+    void doDialog(int type,const QString & title,const QString & content,bool useHtml,StandardButtons buttons,int defaultB);
 
-    void doDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
+    void doDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,StandardButtons buttons,int defaultB);
 
     ///emitted when a viewer changes its name or is deleted/added
     void viewersChanged();
@@ -611,9 +612,9 @@ public Q_SLOTS:
     void showView8();
     void showView9();
 
-    void onDoDialog(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
+    void onDoDialog(int type,const QString & title,const QString & content,bool useHtml,StandardButtons buttons,int defaultB);
 
-    void onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
+    void onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,StandardButtons buttons,int defaultB);
     /*Returns a code from the save dialog:
      * -1  = unrecognized code
      * 0 = Save
@@ -648,8 +649,8 @@ public Q_SLOTS:
 
     void onViewerImageChanged(int texIndex,bool hasImageBackend);
 
-    boost::shared_ptr<Natron::Node> createReader();
-    boost::shared_ptr<Natron::Node> createWriter();
+    boost::shared_ptr<Node> createReader();
+    boost::shared_ptr<Node> createWriter();
 
     void renderAllWriters();
 
@@ -719,4 +720,7 @@ private:
     
     boost::scoped_ptr<GuiPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // Gui_Gui_h

@@ -37,6 +37,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class PanelWidget : public ScriptObject
 {
@@ -90,9 +91,9 @@ protected:
      * @brief To be called in the leaveEvent handler of all derived classes.
      **/
     void leaveEventBase();
-  
- 
-
 };
+
+NATRON_NAMESPACE_EXIT;
+
 
 #endif // PANELWIDGET_H

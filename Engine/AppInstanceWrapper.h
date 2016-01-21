@@ -21,8 +21,8 @@
 * Engine module.
 **/
 
-#ifndef APPINSTANCEWRAPPER_H
-#define APPINSTANCEWRAPPER_H
+#ifndef Engine_AppInstanceWrapper_h
+#define Engine_AppInstanceWrapper_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -30,8 +30,12 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "Engine/NodeWrapper.h"
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 class AppSettings
 {
@@ -117,5 +121,6 @@ protected:
     
 };
 
+NATRON_NAMESPACE_EXIT;
 
-#endif // APPINSTANCEWRAPPER_H
+#endif // Engine_AppInstanceWrapper_h

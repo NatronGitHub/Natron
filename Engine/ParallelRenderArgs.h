@@ -44,12 +44,14 @@
 //do not all stick altogether in memory
 #define NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING 4
 
-typedef std::map<Natron::EffectInstance*,RectD> RoIMap; // RoIs are in canonical coordinates
+NATRON_NAMESPACE_ENTER;
+
+typedef std::map<EffectInstance*,RectD> RoIMap; // RoIs are in canonical coordinates
 typedef std::map<int, std::map<int, std::vector<OfxRangeD> > > FramesNeededMap;
 
 struct InputMatrix
 {
-    Natron::EffectInstance* newInputEffect;
+    EffectInstance* newInputEffect;
     boost::shared_ptr<Transform::Matrix3x3> cat;
     int newInputNbToFetchFrom;
 };
@@ -97,10 +99,10 @@ struct ParallelRenderArgs
     U64 renderAge;
     
     ///A pointer to the node that requested the current render.
-    boost::shared_ptr<Natron::Node> treeRoot;
+    boost::shared_ptr<Node> treeRoot;
 
     ///List of the nodes in the rotopaint tree
-    std::list<boost::shared_ptr<Natron::Node> > rotoPaintNodes;
+    std::list<boost::shared_ptr<Node> > rotoPaintNodes;
 
     ///Various stats local to the render of a frame
     boost::shared_ptr<RenderStats> stats;
@@ -110,7 +112,7 @@ struct ParallelRenderArgs
 
     ///Current thread safety: it might change in the case of the rotopaint: while drawing, the safety is instance safe,
     ///whereas afterwards we revert back to the plug-in thread safety
-    Natron::RenderSafetyEnum currentThreadSafety;
+    RenderSafetyEnum currentThreadSafety;
 
     /// is this a render due to user interaction ? Generally this is true when rendering because
     /// of a user parameter tweek or timeline seek, or more generally by calling RenderEngine::renderCurrentFrame
@@ -153,7 +155,7 @@ struct ParallelRenderArgs
     , rotoPaintNodes()
     , stats()
     , textureIndex(0)
-    , currentThreadSafety(Natron::eRenderSafetyInstanceSafe)
+    , currentThreadSafety(eRenderSafetyInstanceSafe)
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
     , canAbort(false)
@@ -180,7 +182,7 @@ struct FrameViewRequestGlobalData
 {
     ///The transforms associated to each input branch, set on first request
     boost::shared_ptr<InputMatrixMap> transforms;
-    boost::shared_ptr<std::map<int, Natron::EffectInstance*> > reroutesMap;
+    boost::shared_ptr<std::map<int, EffectInstance*> > reroutesMap;
     
     ///The required frame/views in input, set on first request
     FramesNeededMap frameViewsNeeded;
@@ -255,13 +257,13 @@ struct NodeFrameRequest
 
 };
 
-typedef std::map<boost::shared_ptr<Natron::Node>,boost::shared_ptr<NodeFrameRequest> > FrameRequestMap;
+typedef std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeFrameRequest> > FrameRequestMap;
 
 
 class ParallelRenderArgsSetter
 {
-    boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > > argsMap;
-    std::list<boost::shared_ptr<Natron::Node> > nodes;
+    boost::shared_ptr<std::map<boost::shared_ptr<Node>,ParallelRenderArgs > > argsMap;
+    std::list<boost::shared_ptr<Node> > nodes;
     
 public:
     
@@ -278,20 +280,21 @@ public:
                              bool isSequential,
                              bool canAbort,
                              U64 renderAge,
-                             const boost::shared_ptr<Natron::Node>& treeRoot,
+                             const boost::shared_ptr<Node>& treeRoot,
                              const FrameRequestMap* request,
                              int textureIndex,
                              const TimeLine* timeline,
-                             const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
+                             const boost::shared_ptr<Node>& activeRotoPaintNode,
                              bool isAnalysis,
                              bool draftMode,
                              bool viewerProgressReportEnabled,
                              const boost::shared_ptr<RenderStats>& stats);
     
-    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > >& args);
+    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<boost::shared_ptr<Node>,ParallelRenderArgs > >& args);
     
     virtual ~ParallelRenderArgsSetter();
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // PARALLELRENDERARGS_H

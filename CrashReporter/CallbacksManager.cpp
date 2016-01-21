@@ -788,7 +788,7 @@ CallbacksManager::onDoExitOnMainThread(int exitCode, bool exitEvenIfDumpedReceiv
 }
 
 /*Converts a std::string to wide string*/
-inline std::wstring
+static inline std::wstring
 s2ws(const std::string & s)
 {
     

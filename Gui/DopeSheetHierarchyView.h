@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class HierarchyViewPrivate;
 
@@ -270,5 +271,7 @@ public:
     virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
     virtual void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // DOPESHEETHIERARCHYVIEW_H

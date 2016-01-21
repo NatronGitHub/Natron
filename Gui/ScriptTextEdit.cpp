@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 
+NATRON_NAMESPACE_ENTER;
 
 
 struct PyHighLightRule
@@ -232,7 +233,7 @@ PySyntaxHighlighterPrivate::getTextCharFormat(double r, double g, double b, cons
 {
     QTextCharFormat charFormat;
     QColor color;
-    color.setRgbF(Natron::clamp(r, 0., 1.), Natron::clamp(g, 0., 1.), Natron::clamp(b, 0., 1.));
+    color.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
     charFormat.setForeground(color);
     if (style.contains("bold", Qt::CaseInsensitive)) {
         charFormat.setFontWeight(QFont::Bold);
@@ -396,11 +397,11 @@ InputScriptTextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
     {
         double r,g,b;
         appPTR->getCurrentSettings()->getRaisedColor(&r, &g, &b);
-        fillColor.setRgbF(Natron::clamp(r, 0., 1.), Natron::clamp(g, 0., 1.), Natron::clamp(b, 0., 1.));
+        fillColor.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
         appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
-        txtColor.setRgbF(Natron::clamp(r, 0., 1.), Natron::clamp(g, 0., 1.), Natron::clamp(b, 0., 1.));
+        txtColor.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
         appPTR->getCurrentSettings()->getSelectionColor(&r, &g, &b);
-        selColor.setRgbF(Natron::clamp(r, 0., 1.), Natron::clamp(g, 0., 1.), Natron::clamp(b, 0., 1.));
+        selColor.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
 
     }
     
@@ -535,3 +536,8 @@ OutputScriptTextEdit::scrollContentsBy(int dx, int dy)
     int max = sb->maximum();
     Q_EMIT userScrollChanged(v == max);
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_ScriptTextEdit.cpp"

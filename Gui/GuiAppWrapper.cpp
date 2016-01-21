@@ -51,6 +51,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
+NATRON_NAMESPACE_ENTER;
+
 GuiApp::GuiApp(AppInstance* app)
 : App(app)
 , _app(dynamic_cast<GuiAppInstance*>(app))
@@ -475,7 +477,7 @@ GuiApp::renderBlocking(const std::list<Effect*>& effects,const std::list<int>& f
     renderInternal(true, effects, firstFrames, lastFrames, frameSteps);
 }
 
-PyViewer::PyViewer(const boost::shared_ptr<Natron::Node>& node)
+PyViewer::PyViewer(const boost::shared_ptr<Node>& node)
 : _node(node)
 {
     ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
@@ -576,7 +578,7 @@ PyViewer::getFrameRange(int* firstFrame,int* lastFrame) const
 }
 
 void
-PyViewer::setPlaybackMode(Natron::PlaybackModeEnum mode)
+PyViewer::setPlaybackMode(PlaybackModeEnum mode)
 {
     if (!_node->isActivated()) {
         return;
@@ -584,26 +586,26 @@ PyViewer::setPlaybackMode(Natron::PlaybackModeEnum mode)
     _viewer->setPlaybackMode(mode);
 }
 
-Natron::PlaybackModeEnum
+PlaybackModeEnum
 PyViewer::getPlaybackMode() const
 {
     if (!_node->isActivated()) {
-        return Natron::ePlaybackModeLoop;
+        return ePlaybackModeLoop;
     }
     return _viewer->getPlaybackMode();
 }
 
-Natron::ViewerCompositingOperatorEnum
+ViewerCompositingOperatorEnum
 PyViewer::getCompositingOperator() const
 {
     if (!_node->isActivated()) {
-        return Natron::eViewerCompositingOperatorNone;
+        return eViewerCompositingOperatorNone;
     }
     return _viewer->getCompositingOperator();
 }
 
 void
-PyViewer::setCompositingOperator(Natron::ViewerCompositingOperatorEnum op)
+PyViewer::setCompositingOperator(ViewerCompositingOperatorEnum op)
 {
     if (!_node->isActivated()) {
         return;
@@ -628,7 +630,7 @@ PyViewer::setAInput(int index)
     if (!_node->isActivated()) {
         return;
     }
-    Natron::EffectInstance* input = _viewer->getInternalNode()->getInput(index);
+    EffectInstance* input = _viewer->getInternalNode()->getInput(index);
     if (!input) {
         return;
     }
@@ -652,7 +654,7 @@ PyViewer::setBInput(int index)
     if (!_node->isActivated()) {
         return;
     }
-    Natron::EffectInstance* input = _viewer->getInternalNode()->getInput(index);
+    EffectInstance* input = _viewer->getInternalNode()->getInput(index);
     if (!input) {
         return;
     }
@@ -661,7 +663,7 @@ PyViewer::setBInput(int index)
 }
 
 void
-PyViewer::setChannels(Natron::DisplayChannelsEnum channels)
+PyViewer::setChannels(DisplayChannelsEnum channels)
 {
     if (!_node->isActivated()) {
         return;
@@ -670,11 +672,11 @@ PyViewer::setChannels(Natron::DisplayChannelsEnum channels)
     _viewer->setChannels(c);
 }
 
-Natron::DisplayChannelsEnum
+DisplayChannelsEnum
 PyViewer::getChannels() const
 {
     if (!_node->isActivated()) {
-        return Natron::eDisplayChannelsRGB;
+        return eDisplayChannelsRGB;
     }
     return _viewer->getChannels();
 }
@@ -735,3 +737,5 @@ PyViewer::getCurrentView() const
     }
     return _viewer->getCurrentView();
 }
+
+NATRON_NAMESPACE_EXIT;

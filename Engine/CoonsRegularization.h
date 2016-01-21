@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -34,12 +36,16 @@
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
-    void regularize(const std::list<boost::shared_ptr<BezierCP> >& coonsPatch,
-                    double time,
-                    std::list<std::list<boost::shared_ptr<BezierCP> > >* fixedPatch);
-    
-}
+namespace CoonsRegularization {
+
+void regularize(const std::list<boost::shared_ptr<BezierCP> >& coonsPatch,
+                double time,
+                std::list<std::list<boost::shared_ptr<BezierCP> > >* fixedPatch);
+
+} // namespace CoonsRegularization
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // COONSREGULARIZATION_H

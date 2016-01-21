@@ -35,6 +35,7 @@
 #include "Global/Macros.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 template<typename EntryType>
 class LockManagerI
@@ -114,13 +115,9 @@ public:
 
 };
 
-namespace Natron {
-    class Image;
-    class FrameEntry;
-}
+typedef ImageLockerHelper<Image> ImageLocker;
+typedef ImageLockerHelper<FrameEntry> FrameEntryLocker;
 
-
-typedef ImageLockerHelper<Natron::Image> ImageLocker;
-typedef ImageLockerHelper<Natron::FrameEntry> FrameEntryLocker;
+NATRON_NAMESPACE_EXIT;
 
 #endif // IMAGELOCKER_H

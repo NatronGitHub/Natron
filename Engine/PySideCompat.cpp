@@ -106,4 +106,5 @@ namespace PySide
         return pyOut;
     }
 } //namespace PySide
+
 #endif

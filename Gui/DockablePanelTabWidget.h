@@ -35,6 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @class This is to overcome an issue in QTabWidget : switching tab does not resize the QTabWidget.
@@ -61,5 +62,6 @@ private:
     virtual void keyPressEvent(QKeyEvent* event) OVERRIDE FINAL;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_DockablePanelTabWidget_h

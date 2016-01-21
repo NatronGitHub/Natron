@@ -48,51 +48,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 
 
-namespace Natron {
-
-inline QString
-generateStringFromFormat(const Format & f)
-{
-    QString formatStr;
-
-    formatStr.append(f.getName().c_str());
-    formatStr.append("  ");
-    formatStr.append(QString::number(f.width()));
-    formatStr.append(" x ");
-    formatStr.append(QString::number(f.height()));
-    formatStr.append("  ");
-    formatStr.append(QString::number(f.getPixelAspectRatio()));
-
-    return formatStr;
-}
-    
-    
-inline bool
-generateFormatFromString(const QString& spec, Format* f)
-{
-    QStringList splits = spec.split(' ');
-    if (splits.size() != 3) {
-        return false;
-    }
-    
-    QStringList sizes = splits[1].split('x');
-    if (sizes.size() != 2) {
-        return false;
-    }
-    
-    f->setName(splits[0].toStdString());
-    f->x1 = 0;
-    f->y1 = 0;
-    f->x2 = sizes[0].toInt();
-    f->y2 = sizes[1].toInt();
-    
-    f->setPixelAspectRatio(splits[2].toDouble());
-    return true;
-}
+NATRON_NAMESPACE_ENTER;
 
 struct ProjectPrivate
 {
-    Natron::Project* _publicInterface;
+    Project* _publicInterface;
     mutable QMutex projectLock; //< protects the whole project
     QString lastAutoSaveFilePath; //< absolute file path of the last auto-save file
     bool hasProjectBeenSavedByUser; //< has this project ever been saved by the user?
@@ -148,7 +108,7 @@ struct ProjectPrivate
     
     boost::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
     
-    ProjectPrivate(Natron::Project* project);
+    ProjectPrivate(Project* project);
 
     bool restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path, bool* mustSave);
 
@@ -170,8 +130,50 @@ struct ProjectPrivate
     
     void setProjectPath(const std::string& path);
     std::string getProjectPath() const;
+
+    static QString
+    generateStringFromFormat(const Format & f)
+    {
+        QString formatStr;
+
+        formatStr.append(f.getName().c_str());
+        formatStr.append("  ");
+        formatStr.append(QString::number(f.width()));
+        formatStr.append(" x ");
+        formatStr.append(QString::number(f.height()));
+        formatStr.append("  ");
+        formatStr.append(QString::number(f.getPixelAspectRatio()));
+
+        return formatStr;
+    }
+
+
+    static bool
+    generateFormatFromString(const QString& spec, Format* f)
+    {
+        QStringList splits = spec.split(' ');
+        if (splits.size() != 3) {
+            return false;
+        }
+
+        QStringList sizes = splits[1].split('x');
+        if (sizes.size() != 2) {
+            return false;
+        }
+
+        f->setName(splits[0].toStdString());
+        f->x1 = 0;
+        f->y1 = 0;
+        f->x2 = sizes[0].toInt();
+        f->y2 = sizes[1].toInt();
+        
+        f->setPixelAspectRatio(splits[2].toDouble());
+        return true;
+    }
     
+
 };
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PROJECTPRIVATE_H

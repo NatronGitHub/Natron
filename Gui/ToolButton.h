@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct ToolButtonPrivate;
 
@@ -100,5 +101,7 @@ private:
 
     boost::scoped_ptr<ToolButtonPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // TOOLBUTTON_H

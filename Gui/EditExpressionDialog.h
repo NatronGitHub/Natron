@@ -35,6 +35,7 @@
 #include "Gui/EditScriptDialog.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class EditExpressionDialog : public EditScriptDialog
 {
@@ -67,5 +68,7 @@ private:
     virtual QString getCustomHelp() OVERRIDE FINAL;
 
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_EditExpressionDialog_h

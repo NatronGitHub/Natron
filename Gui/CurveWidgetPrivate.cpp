@@ -34,7 +34,7 @@
 #include "Engine/Bezier.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Settings.h"
-#include "Engine/Image.h" // Natron::clamp
+#include "Engine/Image.h" // Image::clamp
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveEditor.h"
@@ -50,7 +50,6 @@
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-using namespace Natron;
 
 #define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click
 // (in widget pixels)
@@ -63,6 +62,7 @@ using namespace Natron;
 #define AXIS_MAX 100000.
 #define AXIS_MIN -100000.
 
+NATRON_NAMESPACE_ENTER;
 
 
 CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
@@ -464,9 +464,9 @@ CurveWidgetPrivate::drawScale()
     sett->getCurveEditorScaleColor(&scaleR, &scaleG, &scaleB);
     
     QColor scaleColor;
-    scaleColor.setRgbF(Natron::clamp(scaleR, 0., 1.),
-                       Natron::clamp(scaleG, 0., 1.),
-                       Natron::clamp(scaleB, 0., 1.));
+    scaleColor.setRgbF(Image::clamp(scaleR, 0., 1.),
+                       Image::clamp(scaleG, 0., 1.),
+                       Image::clamp(scaleB, 0., 1.));
 
     
     {
@@ -1425,7 +1425,7 @@ CurveWidgetPrivate::refreshSelectionRectangle(double x,
 
 
 void
-CurveWidgetPrivate::setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type)
+CurveWidgetPrivate::setSelectedKeysInterpolation(KeyframeTypeEnum type)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1463,4 +1463,5 @@ CurveWidgetPrivate::updateDopeSheetViewFrameRange()
     _gui->getDopeSheetEditor()->centerOn(zoomCtx.left(), zoomCtx.right());
 }
 
+NATRON_NAMESPACE_EXIT;
 

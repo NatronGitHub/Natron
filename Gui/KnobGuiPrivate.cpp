@@ -24,36 +24,39 @@
 
 #include "Gui/KnobGuiPrivate.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 KnobGuiPrivate::KnobGuiPrivate(DockablePanel* container)
-    : triggerNewLine(true)
-    , spacingBetweenItems(0)
-    , widgetCreated(false)
-    , container(container)
-    , animationMenu(NULL)
-    , animationButton(NULL)
-    , copyRightClickMenu( new MenuWithToolTips(container) )
-    , fieldLayout(NULL)
-    , knobsOnSameLine()
-    , containerLayout(NULL)
-    , field(NULL)
-    , descriptionLabel(NULL)
-    , isOnNewLine(false)
-    , customInteract(NULL)
-    , guiCurves()
-    , guiRemoved(false)
-    {
-        //copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
-    }
-    
+: triggerNewLine(true)
+, spacingBetweenItems(0)
+, widgetCreated(false)
+, container(container)
+, animationMenu(NULL)
+, animationButton(NULL)
+, copyRightClickMenu( new MenuWithToolTips(container) )
+, fieldLayout(NULL)
+, knobsOnSameLine()
+, containerLayout(NULL)
+, field(NULL)
+, descriptionLabel(NULL)
+, isOnNewLine(false)
+, customInteract(NULL)
+, guiCurves()
+, guiRemoved(false)
+{
+    //copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
+}
+
 void KnobGuiPrivate::removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob)
-    {
-        for (std::vector< boost::weak_ptr< KnobI > >::iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
-            if (it->lock() == knob) {
-                knobsOnSameLine.erase(it);
-                break;
-            }
+{
+    for (std::vector< boost::weak_ptr< KnobI > >::iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
+        if (it->lock() == knob) {
+            knobsOnSameLine.erase(it);
+            break;
         }
     }
+}
+
+NATRON_NAMESPACE_EXIT;
+

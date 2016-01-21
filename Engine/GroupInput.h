@@ -32,6 +32,8 @@
 #include "Engine/NoOpBase.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 class GroupInput
 : public NoOpBase
 {
@@ -40,12 +42,12 @@ class GroupInput
     
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new GroupInput(n);
     }
     
-    GroupInput(boost::shared_ptr<Natron::Node> n)
+    GroupInput(boost::shared_ptr<Node> n)
     : NoOpBase(n)
     {
     }
@@ -80,14 +82,16 @@ public:
     virtual void initializeKnobs() OVERRIDE FINAL;
     
     virtual void knobChanged(KnobI* k,
-                             Natron::ValueChangedReasonEnum /*reason*/,
+                             ValueChangedReasonEnum /*reason*/,
                              int /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
     
-    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NOOP_H

@@ -39,19 +39,23 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 template<class Archive>
 void RectD::serialize(Archive & ar,
                       const unsigned int version)
 {
     Q_UNUSED(version);
-    ar & boost::serialization::make_nvp("Left",x1);
-    ar & boost::serialization::make_nvp("Bottom",y1);
-    ar & boost::serialization::make_nvp("Right",x2);
-    ar & boost::serialization::make_nvp("Top",y2);
+    ar & ::boost::serialization::make_nvp("Left",x1);
+    ar & ::boost::serialization::make_nvp("Bottom",y1);
+    ar & ::boost::serialization::make_nvp("Right",x2);
+    ar & ::boost::serialization::make_nvp("Top",y2);
 }
 
 
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(RectD);
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_RectDSerialization_h

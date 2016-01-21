@@ -41,7 +41,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/NodeGroup.h"
 #include "Engine/Settings.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Edge.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
@@ -50,18 +50,18 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 void
 NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_ptr<NodeGui>& selectedNode, const QRectF& visibleSceneR)
 {
-    boost::shared_ptr<Natron::Node> internalNode = selectedNode->getNode();
+    boost::shared_ptr<Node> internalNode = selectedNode->getNode();
     
     bool doMergeHints = shiftdown && controlDown;
     bool doConnectionHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
     
     //Ignore hints for backdrops
-    BackDropGui* isBd = dynamic_cast<BackDropGui*>(selectedNode.get());
+    BackdropGui* isBd = dynamic_cast<BackdropGui*>(selectedNode.get());
     if (isBd) {
         return;
     }
@@ -85,7 +85,7 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
     
     boost::shared_ptr<NodeGui> nodeToShowMergeRect;
     
-    boost::shared_ptr<Natron::Node> selectedNodeInternalNode = selectedNode->getNode();
+    boost::shared_ptr<Node> selectedNodeInternalNode = selectedNode->getNode();
     bool selectedNodeIsReader = selectedNodeInternalNode->getLiveInstance()->isReader() || selectedNodeInternalNode->getMaxInputCount() == 0;
     Edge* edge = 0;
     {
@@ -93,8 +93,8 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
         for (NodeGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             
             bool isAlreadyAnOutput = false;
-            const std::list<Natron::Node*>& outputs = internalNode->getGuiOutputs();
-            for (std::list<Natron::Node*>::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+            const std::list<Node*>& outputs = internalNode->getGuiOutputs();
+            for (std::list<Node*>::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
                 if (*it2 == (*it)->getNode().get()) {
                     isAlreadyAnOutput = true;
                     break;
@@ -110,7 +110,7 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
                     
                     //QRectF nodeRect = (*it)->mapToParent((*it)->boundingRect()).boundingRect();
                     
-                    boost::shared_ptr<Natron::Node> internalNode = (*it)->getNode();
+                    boost::shared_ptr<Node> internalNode = (*it)->getNode();
                     
                     
                     if (!internalNode->isOutputNode() && nodeBbox.intersects(selectedNodeBbox)) {
@@ -160,9 +160,9 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
                         if (prefInput == -1) {
                             edge = 0;
                         } else {
-                            Natron::Node::CanConnectInputReturnValue ret = selectedNodeInternalNode->canConnectInput(edge->getSource()->getNode(),
+                            Node::CanConnectInputReturnValue ret = selectedNodeInternalNode->canConnectInput(edge->getSource()->getNode(),
                                                                                                                      prefInput);
-                            if (ret != Natron::Node::eCanConnectInput_ok) {
+                            if (ret != Node::eCanConnectInput_ok) {
                                 edge = 0;
                             }
                         }
@@ -183,13 +183,13 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
                         
                         //Check that the edge can connect to the selected node
                         {
-                            Natron::Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput(selectedNodeInternalNode, edge->getInputNumber());
-                            if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
+                            Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput(selectedNodeInternalNode, edge->getInputNumber());
+                            if (ret == Node::eCanConnectInput_inputAlreadyConnected &&
                                 !selectedNodeIsReader) {
-                                ret = Natron::Node::eCanConnectInput_ok;
+                                ret = Node::eCanConnectInput_ok;
                             }
                             
-                            if (ret != Natron::Node::eCanConnectInput_ok) {
+                            if (ret != Node::eCanConnectInput_ok) {
                                 edge = 0;
                             }
                         }
@@ -201,13 +201,13 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
                             if (edgeHasSource) {
                                 int prefInput = selectedNodeInternalNode->getPreferredInputForConnection();
                                 if (prefInput != -1) {
-                                    Natron::Node::CanConnectInputReturnValue ret = selectedNodeInternalNode->canConnectInput(edgeHasSource->getNode(), prefInput);
-                                    if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
+                                    Node::CanConnectInputReturnValue ret = selectedNodeInternalNode->canConnectInput(edgeHasSource->getNode(), prefInput);
+                                    if (ret == Node::eCanConnectInput_inputAlreadyConnected &&
                                         !selectedNodeIsReader) {
-                                        ret = Natron::Node::eCanConnectInput_ok;
+                                        ret = Node::eCanConnectInput_ok;
                                     }
                                     
-                                    if (ret != Natron::Node::eCanConnectInput_ok) {
+                                    if (ret != Node::eCanConnectInput_ok) {
                                         edge = 0;
                                     }
                                 }
@@ -238,7 +238,7 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
         
         ///find out if the node is already connected to what the edge is connected
         bool alreadyConnected = false;
-        const std::vector<boost::shared_ptr<Natron::Node> > & inpNodes = selectedNode->getNode()->getGuiInputs();
+        const std::vector<boost::shared_ptr<Node> > & inpNodes = selectedNode->getNode()->getGuiInputs();
         for (U32 i = 0; i < inpNodes.size(); ++i) {
             if ( inpNodes[i] == edge->getSource()->getNode() ) {
                 alreadyConnected = true;
@@ -417,7 +417,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             e->y() >= (10 - 15) && e->y() <= (10 + ih + 15)) {
             assert(isGroup);
             QPoint pos = mapToGlobal(e->pos());
-            QToolTip::showText(pos, Natron::convertFromPlainText(QObject::tr("Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\nAny modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."),Qt::WhiteSpaceNormal));
+            QToolTip::showText(pos, GuiUtils::convertFromPlainText(QObject::tr("Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\nAny modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."),Qt::WhiteSpaceNormal));
         }
 
     }
@@ -502,7 +502,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         int h = newPos.y() - p.y();
         checkAndStartAutoScrollTimer(newPos);
         mustUpdate = true;
-        pushUndoCommand( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
+        pushUndoCommand( new ResizeBackdropCommand(_imp->_backdropResized,w,h) );
         break;
     }
     case eEventStateSelectionRect: {
@@ -556,4 +556,6 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     }
     QGraphicsView::mouseMoveEvent(e);
 } // mouseMoveEvent
+
+NATRON_NAMESPACE_EXIT;
 

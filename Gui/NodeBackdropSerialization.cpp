@@ -22,10 +22,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "NodeBackDropSerialization.h"
+#include "NodeBackdropSerialization.h"
 
-NodeBackDropSerialization::NodeBackDropSerialization()
+NATRON_NAMESPACE_ENTER;
+
+NodeBackdropSerialization::NodeBackdropSerialization()
     : posX(0),posY(0),width(0),height(0),name(),label(),r(0),g(0),b(0),selected(false), _isNull(true)
 {
 }
 
+NATRON_NAMESPACE_EXIT;

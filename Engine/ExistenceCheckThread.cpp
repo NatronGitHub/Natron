@@ -16,10 +16,9 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#include "ExistenceCheckThread.h"
-
-
 #ifdef NATRON_USE_BREAKPAD
+
+#include "ExistenceCheckThread.h"
 
 #include <QLocalSocket>
 #include <QMutex>
@@ -35,6 +34,7 @@
 //After this time, we consider that the crash reporter is dead
 #define NATRON_BREAKPAD_WAIT_FOR_CRASH_REPORTER_ACK_MS 5000
 
+NATRON_NAMESPACE_ENTER;
 
 struct ExistenceCheckerThreadPrivate
 {
@@ -151,5 +151,10 @@ ExistenceCheckerThread::run()
         
     } // for(;;)
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_ExistenceCheckThread.cpp"
 
 #endif // NATRON_USE_BREAKPAD

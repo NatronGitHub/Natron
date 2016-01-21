@@ -37,6 +37,8 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 /**
  * @brief A simple TimeLine representing the time for image sequences.
  * The interval [_firstFrame,_lastFrame] represents where images exist in the time space.
@@ -51,7 +53,7 @@ class TimeLine
 
 public:
 
-    TimeLine(Natron::Project* project);
+    TimeLine(Project* project);
 
     virtual ~TimeLine()
     {
@@ -61,8 +63,8 @@ public:
 
     void seekFrame(SequenceTime frame,
                    bool updateLastCaller,
-                   Natron::OutputEffectInstance* caller,
-                   Natron::TimelineChangeReasonEnum reason);
+                   OutputEffectInstance* caller,
+                   TimelineChangeReasonEnum reason);
 
     void incrementCurrentFrame();
 
@@ -79,14 +81,16 @@ Q_SIGNALS:
     
     void frameAboutToChange();
 
-    //reason being a Natron::TimelineChangeReasonEnum
+    //reason being a TimelineChangeReasonEnum
     void frameChanged(SequenceTime,int reason);
 
 private:
     
     mutable QMutex _lock; // protects the following SequenceTime members
-    Natron::Project* _project;
+    Project* _project;
     SequenceTime _currentFrame;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif /* defined(NATRON_ENGINE_TIMELINE_H_) */

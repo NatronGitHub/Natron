@@ -64,8 +64,7 @@
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 
 
-using namespace Natron;
-
+NATRON_NAMESPACE_ENTER;
 
 
 ///Sort the frames by time and then by view
@@ -239,11 +238,11 @@ struct OutputSchedulerThreadPrivate
     QWaitCondition framesToRenderNotEmptyCond;
 
     
-    Natron::OutputEffectInstance* outputEffect; //< The effect used as output device
+    OutputEffectInstance* outputEffect; //< The effect used as output device
     RenderEngine* engine;
 
     
-    OutputSchedulerThreadPrivate(RenderEngine* engine,Natron::OutputEffectInstance* effect,OutputSchedulerThread::ProcessFrameModeEnum mode)
+    OutputSchedulerThreadPrivate(RenderEngine* engine,OutputEffectInstance* effect,OutputSchedulerThread::ProcessFrameModeEnum mode)
     : buf()
     , bufCondition()
     , bufMutex()
@@ -457,7 +456,7 @@ struct OutputSchedulerThreadPrivate
 };
 
 
-OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,Natron::OutputEffectInstance* effect,ProcessFrameModeEnum mode)
+OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,OutputEffectInstance* effect,ProcessFrameModeEnum mode)
 : QThread()
 , _imp(new OutputSchedulerThreadPrivate(engine,effect,mode))
 {
@@ -496,14 +495,14 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,Outp
     }
     if (frame <= firstFrame) {
         switch (pMode) {
-                case Natron::ePlaybackModeLoop:
+                case ePlaybackModeLoop:
                 if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     *nextFrame = firstFrame + frameStep;
                 } else {
                     *nextFrame  = lastFrame - frameStep;
                 }
                 break;
-                case Natron::ePlaybackModeBounce:
+                case ePlaybackModeBounce:
                 if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     *newDirection = OutputSchedulerThread::eRenderDirectionBackward;
                     *nextFrame  = lastFrame - frameStep;
@@ -512,7 +511,7 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,Outp
                     *nextFrame  = firstFrame + frameStep;
                 }
                 break;
-                case Natron::ePlaybackModeOnce:
+                case ePlaybackModeOnce:
                 default:
                 if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     *nextFrame = firstFrame + frameStep;
@@ -525,14 +524,14 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,Outp
         }
     } else if (frame >= lastFrame) {
         switch (pMode) {
-                case Natron::ePlaybackModeLoop:
+                case ePlaybackModeLoop:
                 if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     *nextFrame = firstFrame;
                 } else {
                     *nextFrame = lastFrame - frameStep;
                 }
                 break;
-                case Natron::ePlaybackModeBounce:
+                case ePlaybackModeBounce:
                 if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     *newDirection = OutputSchedulerThread::eRenderDirectionBackward;
                     *nextFrame = lastFrame - frameStep;
@@ -541,7 +540,7 @@ OutputSchedulerThreadPrivate::getNextFrameInSequence(PlaybackModeEnum pMode,Outp
                     *nextFrame = firstFrame + frameStep;
                 }
                 break;
-                case Natron::ePlaybackModeOnce:
+                case ePlaybackModeOnce:
             default:
                 if (direction == OutputSchedulerThread::eRenderDirectionForward) {
                     return false;
@@ -846,8 +845,8 @@ OutputSchedulerThread::startRender()
     QMutexLocker l(&_imp->renderThreadsMutex);
     
     
-    Natron::SchedulingPolicyEnum policy = getSchedulingPolicy();
-    if (policy == Natron::eSchedulingPolicyFFA) {
+    SchedulingPolicyEnum policy = getSchedulingPolicy();
+    if (policy == eSchedulingPolicyFFA) {
         
         
         ///push all frame range and let the threads deal with it
@@ -855,7 +854,7 @@ OutputSchedulerThread::startRender()
     } else {
         
         ///If the output effect is sequential (only WriteFFMPEG for now)
-        Natron::SequentialPreferenceEnum pref = _imp->outputEffect->getSequentialPreference();
+        SequentialPreferenceEnum pref = _imp->outputEffect->getSequentialPreference();
         if (pref == eSequentialPreferenceOnlySequential || pref == eSequentialPreferencePreferSequential) {
             
             RenderScale scaleOne(1.);
@@ -900,7 +899,7 @@ OutputSchedulerThread::stopRender()
     
     
     ///If the output effect is sequential (only WriteFFMPEG for now)
-    Natron::SequentialPreferenceEnum pref = _imp->outputEffect->getSequentialPreference();
+    SequentialPreferenceEnum pref = _imp->outputEffect->getSequentialPreference();
     if (pref == eSequentialPreferenceOnlySequential || pref == eSequentialPreferencePreferSequential) {
         
         int firstFrame,lastFrame;
@@ -1070,7 +1069,7 @@ OutputSchedulerThread::run()
                     ///////////
                     ///Determine if we finished rendering or if we should just increment/decrement the timeline
                     ///or just loop/bounce
-                    Natron::PlaybackModeEnum pMode = _imp->engine->getPlaybackMode();
+                    PlaybackModeEnum pMode = _imp->engine->getPlaybackMode();
                     RenderDirectionEnum newDirection;
                     if (firstFrame == lastFrame && pMode == ePlaybackModeOnce) {
                         renderFinished = true;
@@ -1276,7 +1275,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
                                            int viewIndex,
                                            const std::vector<int>& viewsToRender,
                                            const RenderStatsPtr& stats,
-                                           Natron::SchedulingPolicyEnum policy)
+                                           SchedulingPolicyEnum policy)
 {
     assert(viewsToRender.size() > 0);
     
@@ -1284,7 +1283,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
     double timeSpent;
     
     if (stats) {
-        std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > statResults = stats->getStats(&timeSpent);
+        std::map<boost::shared_ptr<Node>,NodeRenderStats > statResults = stats->getStats(&timeSpent);
         if (!statResults.empty()) {
             _imp->outputEffect->reportStats(frame, viewIndex, timeSpent, statResults);
         }
@@ -1389,7 +1388,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             std::vector<std::string> args;
             std::string error;
             try {
-                Natron::getFunctionArguments(cb, &error, &args);
+                Python::getFunctionArguments(cb, &error, &args);
             } catch (const std::exception& e) {
                 _imp->outputEffect->getApp()->appendToScriptEditor(std::string("Failed to run onFrameRendered callback: ")
                                                                  + e.what());
@@ -1885,7 +1884,7 @@ OutputSchedulerThread::runCallbackWithVariables(const QString& callback)
         script.append(")\n");
         
         std::string err,output;
-        if (!Natron::interpretPythonScript(callback.toStdString(), &err, &output)) {
+        if (!Python::interpretPythonScript(callback.toStdString(), &err, &output)) {
             _imp->outputEffect->getApp()->appendToScriptEditor("Failed to run callback: " + err);
             throw std::runtime_error(err);
         } else if (!output.empty()) {
@@ -1903,7 +1902,7 @@ struct RenderThreadTaskPrivate
 {
     OutputSchedulerThread* scheduler;
     
-    Natron::OutputEffectInstance* output;
+    OutputEffectInstance* output;
     
     QMutex mustQuitMutex;
     bool mustQuit;
@@ -1912,7 +1911,7 @@ struct RenderThreadTaskPrivate
     QMutex runningMutex;
     bool running;
     
-    RenderThreadTaskPrivate(Natron::OutputEffectInstance* output,OutputSchedulerThread* scheduler)
+    RenderThreadTaskPrivate(OutputEffectInstance* output,OutputSchedulerThread* scheduler)
     : scheduler(scheduler)
     , output(output)
     , mustQuitMutex()
@@ -1926,7 +1925,7 @@ struct RenderThreadTaskPrivate
 };
 
 
-RenderThreadTask::RenderThreadTask(Natron::OutputEffectInstance* output,OutputSchedulerThread* scheduler)
+RenderThreadTask::RenderThreadTask(OutputEffectInstance* output,OutputSchedulerThread* scheduler)
 : QThread()
 , _imp(new RenderThreadTaskPrivate(output,scheduler))
 {
@@ -2014,7 +2013,7 @@ RenderThreadTask::notifyIsRunning(bool running)
 //////////////////////// DefaultScheduler ////////////
 
 
-DefaultScheduler::DefaultScheduler(RenderEngine* engine,Natron::OutputEffectInstance* effect)
+DefaultScheduler::DefaultScheduler(RenderEngine* engine,OutputEffectInstance* effect)
 : OutputSchedulerThread(engine,effect,eProcessFrameBySchedulerThread)
 , _effect(effect)
 {
@@ -2031,7 +2030,7 @@ class DefaultRenderFrameRunnable : public RenderThreadTask
     
 public:
     
-    DefaultRenderFrameRunnable(Natron::OutputEffectInstance* writer,OutputSchedulerThread* scheduler)
+    DefaultRenderFrameRunnable(OutputEffectInstance* writer,OutputSchedulerThread* scheduler)
     : RenderThreadTask(writer,scheduler)
     {
         
@@ -2048,12 +2047,12 @@ private:
     virtual void
     renderFrame(int time, const std::vector<int>& viewsToRender,  bool enableRenderStats) {
         
-        Natron::SequentialPreferenceEnum sequentiallity = _imp->output->getSequentialPreference();
+        SequentialPreferenceEnum sequentiallity = _imp->output->getSequentialPreference();
         
         /// If the writer dosn't need to render the frames in any sequential order (such as image sequences for instance), then
         /// we just render the frames directly in this thread, no need to use the scheduler thread for maximum efficiency.
         
-        bool renderDirectly = sequentiallity == Natron::eSequentialPreferenceNotSequential;
+        bool renderDirectly = sequentiallity == eSequentialPreferenceNotSequential;
 
         ///Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
         ///Though we don't enable render stats for sequential renders (e.g: WriteFFMPEG) since this is 1 file.
@@ -2066,7 +2065,7 @@ private:
             std::vector<std::string> args;
             std::string error;
             try {
-                Natron::getFunctionArguments(cb, &error, &args);
+                Python::getFunctionArguments(cb, &error, &args);
             } catch (const std::exception& e) {
                 _imp->output->getApp()->appendToScriptEditor(std::string("Failed to run beforeFrameRendered callback: ")
                                                                  + e.what());
@@ -2177,7 +2176,7 @@ private:
                 ParallelRenderArgsSetter frameRenderArgs(time,
                                                          viewsToRender[view],
                                                          false,  // is this render due to user interaction ?
-                                                         sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential, // is this sequential ?
+                                                         sequentiallity == eSequentialPreferenceOnlySequential || sequentiallity == eSequentialPreferencePreferSequential, // is this sequential ?
                                                          true, // canAbort ?
                                                          0, //renderAge
                                                          outputNode, // viewer requester
@@ -2262,14 +2261,14 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     RectD rod;
     RectI roi;
     
-    std::list<Natron::ImageComponents> components;
-    Natron::ImageBitDepthEnum imageDepth;
+    std::list<ImageComponents> components;
+    ImageBitDepthEnum imageDepth;
     _effect->getPreferredDepthAndComponents(-1, &components, &imageDepth);
     
     const double par = _effect->getPreferredAspectRatio();
     
-    Natron::SequentialPreferenceEnum sequentiallity = _effect->getSequentialPreference();
-    bool canOnlyHandleOneView = sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential;
+    SequentialPreferenceEnum sequentiallity = _effect->getSequentialPreference();
+    bool canOnlyHandleOneView = sequentiallity == eSequentialPreferenceOnlySequential || sequentiallity == eSequentialPreferencePreferSequential;
     
     for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
         ignore_result(_effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat));
@@ -2293,12 +2292,12 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         
         RenderingFlagSetter flagIsRendering(_effect->getNode().get());
         
-        ImagePtr inputImage = boost::dynamic_pointer_cast<Natron::Image>(it->frame);
+        ImagePtr inputImage = boost::dynamic_pointer_cast<Image>(it->frame);
         assert(inputImage);
         
        EffectInstance::InputImagesMap inputImages;
         inputImages[0].push_back(inputImage);
-        Natron::EffectInstance::RenderRoIArgs args(frame.time,
+        EffectInstance::RenderRoIArgs args(frame.time,
                                                    scale,0,
                                                    it->view,
                                                    true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
@@ -2359,14 +2358,14 @@ DefaultScheduler::handleRenderFailure(const std::string& errorMessage)
     std::cout << errorMessage << std::endl;
 }
 
-Natron::SchedulingPolicyEnum
+SchedulingPolicyEnum
 DefaultScheduler::getSchedulingPolicy() const
 {
-    Natron::SequentialPreferenceEnum sequentiallity = _effect->getSequentialPreference();
-    if (sequentiallity == Natron::eSequentialPreferenceNotSequential) {
-        return Natron::eSchedulingPolicyFFA;
+    SequentialPreferenceEnum sequentiallity = _effect->getSequentialPreference();
+    if (sequentiallity == eSequentialPreferenceNotSequential) {
+        return eSchedulingPolicyFFA;
     } else {
-        return Natron::eSchedulingPolicyOrdered;
+        return eSchedulingPolicyOrdered;
     }
 }
 
@@ -2399,7 +2398,7 @@ DefaultScheduler::aboutToStartRender()
         std::vector<std::string> args;
         std::string error;
         try {
-            Natron::getFunctionArguments(cb, &error, &args);
+            Python::getFunctionArguments(cb, &error, &args);
         } catch (const std::exception& e) {
             _effect->getApp()->appendToScriptEditor(std::string("Failed to run beforeRender callback: ")
                                                              + e.what());
@@ -2452,7 +2451,7 @@ DefaultScheduler::onRenderStopped(bool aborted)
         std::vector<std::string> args;
         std::string error;
         try {
-            Natron::getFunctionArguments(cb, &error, &args);
+            Python::getFunctionArguments(cb, &error, &args);
         } catch (const std::exception& e) {
             _effect->getApp()->appendToScriptEditor(std::string("Failed to run afterRender callback: ")
                                                              + e.what());
@@ -2554,7 +2553,7 @@ void
 ViewerDisplayScheduler::timelineGoTo(int time)
 {
     assert(_viewer);
-    _viewer->getTimeline()->seekFrame(time, false, 0, Natron::eTimelineChangeReasonPlaybackSeek);
+    _viewer->getTimeline()->seekFrame(time, false, 0, eTimelineChangeReasonPlaybackSeek);
 }
 
 int
@@ -2721,10 +2720,10 @@ struct RenderEnginePrivate
     QMutex schedulerCreationLock;
     OutputSchedulerThread* scheduler;
     
-    Natron::OutputEffectInstance* output;
+    OutputEffectInstance* output;
     
     mutable QMutex pbModeMutex;
-    Natron::PlaybackModeEnum pbMode;
+    PlaybackModeEnum pbMode;
     
     ViewerCurrentFrameRequestScheduler* currentFrameScheduler;
     
@@ -2741,7 +2740,7 @@ struct RenderEnginePrivate
      */
     std::list<RefreshRequest> refreshQueue;
     
-    RenderEnginePrivate(Natron::OutputEffectInstance* output)
+    RenderEnginePrivate(OutputEffectInstance* output)
     : schedulerCreationLock()
     , scheduler(0)
     , output(output)
@@ -2754,7 +2753,7 @@ struct RenderEnginePrivate
     }
 };
 
-RenderEngine::RenderEngine(Natron::OutputEffectInstance* output)
+RenderEngine::RenderEngine(OutputEffectInstance* output)
 : _imp(new RenderEnginePrivate(output))
 {
     QObject::connect(this, SIGNAL(currentFrameRenderRequestPosted()), this, SLOT(onCurrentFrameRenderRequestPosted()), Qt::QueuedConnection);
@@ -2767,7 +2766,7 @@ RenderEngine::~RenderEngine()
 }
 
 OutputSchedulerThread*
-RenderEngine::createScheduler(Natron::OutputEffectInstance* effect)
+RenderEngine::createScheduler(OutputEffectInstance* effect)
 {
     return new DefaultScheduler(this,effect);
 }
@@ -2967,10 +2966,10 @@ void
 RenderEngine::setPlaybackMode(int mode)
 {
     QMutexLocker l(&_imp->pbModeMutex);
-    _imp->pbMode = (Natron::PlaybackModeEnum)mode;
+    _imp->pbMode = (PlaybackModeEnum)mode;
 }
 
-Natron::PlaybackModeEnum
+PlaybackModeEnum
 RenderEngine::getPlaybackMode() const
 {
     QMutexLocker l(&_imp->pbModeMutex);
@@ -3004,7 +3003,7 @@ RenderEngine::notifyFrameProduced(const BufferableObjectList& frames, const Rend
 }
 
 OutputSchedulerThread*
-ViewerRenderEngine::createScheduler(Natron::OutputEffectInstance* effect) 
+ViewerRenderEngine::createScheduler(OutputEffectInstance* effect) 
 {
     return new ViewerDisplayScheduler(this,dynamic_cast<ViewerInstance*>(effect));
 }
@@ -3020,7 +3019,7 @@ struct CurrentFrameFunctorArgs
     boost::shared_ptr<RequestedFrame> request;
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
     bool canAbort;
-    boost::shared_ptr<Natron::Node> isRotoPaintRequest;
+    boost::shared_ptr<Node> isRotoPaintRequest;
     boost::shared_ptr<RotoStrokeItem> strokeItem;
     boost::shared_ptr<ViewerArgs> args[2];
     bool isRotoNeatRender;
@@ -3048,7 +3047,7 @@ struct CurrentFrameFunctorArgs
                             U64 viewerHash,
                             ViewerCurrentFrameRequestSchedulerPrivate* scheduler,
                             bool canAbort,
-                            const boost::shared_ptr<Natron::Node>& isRotoPaintRequest,
+                            const boost::shared_ptr<Node>& isRotoPaintRequest,
                             const boost::shared_ptr<RotoStrokeItem>& strokeItem,
                             bool isRotoNeatRender)
     : view(view)
@@ -3341,7 +3340,7 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStat
         if (params && params->ramBuffer) {
             if (stats) {
                 double timeSpent;
-                std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > ret = stats->getStats(&timeSpent);
+                std::map<boost::shared_ptr<Node>,NodeRenderStats > ret = stats->getStats(&timeSpent);
                 viewer->reportStats(0, 0, timeSpent, ret);
             }
 
@@ -3468,7 +3467,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
         stats.reset(new RenderStats(enableRenderStats));
     }
     
-    boost::shared_ptr<Natron::Node> rotoPaintNode;
+    boost::shared_ptr<Node> rotoPaintNode;
     boost::shared_ptr<RotoStrokeItem> curStroke;
     bool isDrawing;
     _imp->viewer->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke,&isDrawing);
@@ -3530,7 +3529,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
                  */
                 if (stats && i == 0) {
                     double timeSpent;
-                    std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > statResults = stats->getStats(&timeSpent);
+                    std::map<boost::shared_ptr<Node>,NodeRenderStats > statResults = stats->getStats(&timeSpent);
                     _imp->viewer->reportStats(frame, view, timeSpent, statResults);
                 }
                 _imp->viewer->updateViewer(args[i]->params);
@@ -3723,3 +3722,8 @@ ViewerCurrentFrameRequestRendererBackup::quitThread()
         _imp->requestsQueue.clear();
     }
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_OutputSchedulerThread.cpp"

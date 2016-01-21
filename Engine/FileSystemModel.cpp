@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <SequenceParsing.h>
 
 
+NATRON_NAMESPACE_ENTER;
 
 static QStringList getSplitPath(const QString& path)
 {
@@ -1468,3 +1469,8 @@ FileGathererThread::fetchDirectory(const boost::shared_ptr<FileSystemItem>& item
         start();
     }
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_FileSystemModel.cpp"

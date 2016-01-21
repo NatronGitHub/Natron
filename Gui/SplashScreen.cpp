@@ -34,6 +34,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QDesktopWidget>
 CLANG_DIAG_ON(deprecated)
 
+NATRON_NAMESPACE_ENTER;
 
 SplashScreen::SplashScreen(const QString & filePath)
     : QWidget(0,Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
@@ -146,4 +147,6 @@ LoadProjectSplashScreen::paintEvent(QPaintEvent* /*e*/)
     p.setPen(QColor(243,137,0));
     p.drawText(loadStrPos, loadString);
 }
+
+NATRON_NAMESPACE_EXIT;
 

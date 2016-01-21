@@ -29,9 +29,10 @@
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
 
+NATRON_NAMESPACE_ENTER;
 
 void
-ProjectSerialization::initialize(const Natron::Project* project)
+ProjectSerialization::initialize(const Project* project)
 {
     ///All the code in this function is MT-safe
 
@@ -57,3 +58,4 @@ ProjectSerialization::initialize(const Natron::Project* project)
     _creationDate = project->getProjectCreationTime();
 }
 
+NATRON_NAMESPACE_EXIT;

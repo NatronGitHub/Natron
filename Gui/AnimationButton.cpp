@@ -52,6 +52,9 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/GuiApplicationManager.h"
+
+NATRON_NAMESPACE_ENTER;
+
 void
 AnimationButton::mousePressEvent(QMouseEvent* e)
 {
@@ -68,7 +71,7 @@ AnimationButton::keyPressEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Control) {
         QPixmap p;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
+        appPTR->getIcon(NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
         QCursor c(p);
         setCursor(c);
     }
@@ -80,7 +83,7 @@ AnimationButton::keyReleaseEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Control) {
         QPixmap p;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_CURSOR, &p);
+        appPTR->getIcon(NATRON_PIXMAP_LINK_CURSOR, &p);
         QCursor c(p);
         setCursor(c);
     }
@@ -100,7 +103,7 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
             return;
         }
         
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_knob->getKnob()->getHolder());
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(_knob->getKnob()->getHolder());
         if (!effect) {
             return;
         }
@@ -208,9 +211,9 @@ AnimationButton::enterEvent(QEvent* /*e*/)
         QPixmap p;
         Qt::KeyboardModifiers modifiers = qApp->keyboardModifiers();
         if (modifiers.testFlag(Qt::ControlModifier)) {
-            appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
+            appPTR->getIcon(NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
         } else {
-            appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_CURSOR, &p);
+            appPTR->getIcon(NATRON_PIXMAP_LINK_CURSOR, &p);
         }
         QCursor c(p);
         setCursor(c);
@@ -225,3 +228,7 @@ AnimationButton::leaveEvent(QEvent* /*e*/)
     }
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_AnimationButton.cpp"

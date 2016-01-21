@@ -28,6 +28,8 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 /**
  * @brief An interface to implement to manage keyframes that are to be displayed on the timeline
  * Timeline keyframes indicators are integers
@@ -75,23 +77,23 @@ public:
      * @brief Show keyframe markers for the given nodes on the timeline. The signal to refresh the gui
      * will be emitted only once.
      **/
-    virtual void addNodesKeyframesToTimeline(const std::list<Natron::Node*> & /*nodes*/) {}
+    virtual void addNodesKeyframesToTimeline(const std::list<Node*> & /*nodes*/) {}
     
     /**
      * @brief Provided for convenience for a single node
      **/
-    virtual void addNodeKeyframesToTimeline(Natron::Node* /*node*/) {}
+    virtual void addNodeKeyframesToTimeline(Node* /*node*/) {}
     
     /**
      * @brief Hide keyframe markers for the given nodes on the timeline. The signal to refresh the gui
      * will be emitted only once.
      **/
-    virtual void removeNodesKeyframesFromTimeline(const std::list<Natron::Node*> & /*nodes*/) {}
+    virtual void removeNodesKeyframesFromTimeline(const std::list<Node*> & /*nodes*/) {}
     
     /**
      * @brief Provided for convenience for a single node
      **/
-    virtual void removeNodeKeyframesFromTimeline(Natron::Node* /*node*/) {}
+    virtual void removeNodeKeyframesFromTimeline(Node* /*node*/) {}
     
     /**
      * @brief Get all keyframes, there may be duplicates.
@@ -108,5 +110,7 @@ public:
      **/
     virtual void goToNextKeyframe() {}
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // TIMELINEKEYFRAMES_H

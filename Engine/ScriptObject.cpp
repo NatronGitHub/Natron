@@ -27,6 +27,8 @@
 #include <string>
 #include <QMutex>
 
+NATRON_NAMESPACE_ENTER;
+
 struct ScriptObjectPrivate
 {
     mutable QMutex nameMutex;
@@ -78,3 +80,5 @@ ScriptObject::getScriptName() const
     QMutexLocker k(&_imp->nameMutex);
     return _imp->name;
 }
+
+NATRON_NAMESPACE_EXIT;

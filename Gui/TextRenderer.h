@@ -34,7 +34,8 @@
 #include "Gui/GuiFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 class TextRenderer
 {
 public:
@@ -49,6 +50,7 @@ private:
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp;
 };
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_GUI_TEXTRENDERER_H

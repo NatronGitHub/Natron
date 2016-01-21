@@ -56,7 +56,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_PIXELS_FOR_DPI_DEFAULT 72.
 #endif
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 GuiApplicationManager::GuiApplicationManager()
@@ -77,7 +77,7 @@ GuiApplicationManager::~GuiApplicationManager()
 }
 
 void
-GuiApplicationManager::getIcon(Natron::PixmapEnum e,
+GuiApplicationManager::getIcon(PixmapEnum e,
                                QPixmap* pix) const
 {
     int iconSet = appPTR->getCurrentSettings()->getIconsBlackAndWhite() ? 2 : 3;
@@ -721,7 +721,7 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
 } // getIcon
 
 void
-GuiApplicationManager::getIcon(Natron::PixmapEnum e,
+GuiApplicationManager::getIcon(PixmapEnum e,
                                int size,
                                QPixmap* pix) const
 {
@@ -812,7 +812,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
     
     QCoreApplication::processEvents();
     QPixmap appIcPixmap;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_APP_ICON, &appIcPixmap);
+    appPTR->getIcon(NATRON_PIXMAP_APP_ICON, &appIcPixmap);
     QIcon appIc(appIcPixmap);
     qApp->setWindowIcon(appIc);
     
@@ -868,7 +868,7 @@ GuiApplicationManager::onFontconfigTimerTriggered()
 }
 
 void
-GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
+GuiApplicationManager::onPluginLoaded(Plugin* plugin)
 {
     QString shortcutGrouping(kShortcutGroupNodes);
     const QStringList & groups = plugin->getGrouping();
@@ -926,7 +926,7 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
 }
 
 void
-GuiApplicationManager::ignorePlugin(Natron::Plugin* plugin)
+GuiApplicationManager::ignorePlugin(Plugin* plugin)
 {
     _imp->removePluginToolButton(plugin->getGrouping());
     _imp->removeKeybind(kShortcutGroupNodes, plugin->getPluginID());
@@ -1035,3 +1035,8 @@ GuiApplicationManager::setCurrentLogicalDPI(double dpiX,double dpiY)
     _imp->dpiX = dpiX;
     _imp->dpiY = dpiY;
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_GuiApplicationManager.cpp"

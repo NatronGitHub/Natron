@@ -52,6 +52,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "ofxhParametricParam.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /*This file contains the classes that connect the knobs to the OpenFX params.
    Note that all the get(...) and set(...) functions are called BY PLUGIN and you should
@@ -942,10 +943,12 @@ public Q_SLOTS:
 private:
 
     OFX::Host::Param::Descriptor & _descriptor;
-    Natron::OfxOverlayInteract* _overlayInteract;
+    OfxOverlayInteract* _overlayInteract;
     OfxEffectInstance* _effect;
     boost::weak_ptr<KnobParametric> _knob;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_OFXPARAMINSTANCE_H
 

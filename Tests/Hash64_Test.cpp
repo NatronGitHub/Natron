@@ -24,7 +24,10 @@
 
 #include <cstdlib>
 #include <gtest/gtest.h>
+
 #include "Engine/Hash64.h"
+
+NATRON_NAMESPACE_USING
 
 TEST(Hash64,GeneralTest) {
     Hash64 hash1;

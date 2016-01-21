@@ -29,7 +29,10 @@
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
+namespace Interpolation {
+
 /**
  * @brief Interpolates using the control points P0(t0,v0) , P3(t3,v3)
  * and the derivatives P1(t1,v1) (being the derivative at P0 with respect to
@@ -80,8 +83,8 @@ double integrate_clamp(double tcur, const double vcur, //start control point
                        double tnext, const double vnext, //end control point
                        double time1, double time2,
                        double vmin, double vmax,
-                       Natron::KeyframeTypeEnum interp,
-                       Natron::KeyframeTypeEnum interpNext) WARN_UNUSED_RETURN;
+                       KeyframeTypeEnum interp,
+                       KeyframeTypeEnum interpNext) WARN_UNUSED_RETURN;
 
 /**
  * @brief This function will set the left and right derivative of 'cur', depending on the interpolation method 'interp' and the
@@ -162,9 +165,9 @@ double integrate_clamp(double tcur, const double vcur, //start control point
    map(C,%):
 
  */
-void autoComputeDerivatives(Natron::KeyframeTypeEnum interpPrev,
-                            Natron::KeyframeTypeEnum interp,
-                            Natron::KeyframeTypeEnum interpNext,
+void autoComputeDerivatives(KeyframeTypeEnum interpPrev,
+                            KeyframeTypeEnum interp,
+                            KeyframeTypeEnum interpNext,
                             double tprev, const double vprev, // vprev = Q0
                             double tcur, const double vcur, // vcur = Q3 = P0
                             double tnext, const double vnext, // vnext = P3
@@ -193,7 +196,10 @@ int solveCubic(double c0, double c1, double c2, double c3, double s[3], int o[3]
 /// @returns the number of solutions.
 /// solutions an and their order are put in s and o
 int solveQuartic(double c0, double c1, double c2, double c3, double c4, double s[4], int o[4]);
-}
+
+} // namespace Interpolation
+
+NATRON_NAMESPACE_EXIT;
 
 
 #endif // NATRON_ENGINE_INTERPOLATION_H

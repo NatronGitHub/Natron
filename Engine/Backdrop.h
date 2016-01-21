@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Gui_BackDropGui_h
-#define Gui_BackDropGui_h
+#ifndef BACKDROP_H
+#define BACKDROP_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -27,62 +27,69 @@
 
 #include "Global/Macros.h"
 
-#include "Gui/NodeGui.h"
-#include "Gui/GuiFwd.h"
+#include "Engine/NoOpBase.h"
+#include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
-struct BackDropGuiPrivate;
-class BackDropGui : public NodeGui
+struct BackdropPrivate;
+
+class Backdrop : public NoOpBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
-
+    
 public:
-
-    BackDropGui(QGraphicsItem* parent = 0);
     
-    virtual ~BackDropGui();
-    
-    void refreshTextLabelFromKnob();
-
-public Q_SLOTS:
-    
-    void onLabelChanged(const QString& label);
-        
-private:
-    
-    virtual int getBaseDepth() const OVERRIDE FINAL { return 10; }
-    
-    virtual void createGui() OVERRIDE FINAL;
-    
-    virtual bool canMakePreview() OVERRIDE FINAL WARN_UNUSED_RETURN
+    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
-        return false;
+        return new Backdrop(n);
     }
     
-    virtual void resizeExtraContent(int w,int h,bool forceResize) OVERRIDE FINAL;
+    Backdrop(boost::shared_ptr<Node> node);
     
-    virtual bool mustFrameName() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual ~Backdrop();
+  
+    virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return true;
+        return PLUGINID_NATRON_BACKDROP;
     }
     
-    virtual bool mustAddResizeHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return true;
+        return "Backdrop";
     }
     
-    virtual void adjustSizeToContent(int *w,int *h,bool adjustToTextSize) OVERRIDE FINAL;
-        
-    virtual void getInitialSize(int *w, int *h) const OVERRIDE FINAL;
+    virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-
+    virtual std::string getInputLabel(int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return "";
+    }
+    
+    virtual int getMaxInputCount() const OVERRIDE FINAL  WARN_UNUSED_RETURN
+    {
+        return 0;
+    }
+    
+Q_SIGNALS:
+    
+    void labelChanged(QString);
     
 private:
     
+    virtual void knobChanged(KnobI* k,
+                             ValueChangedReasonEnum /*reason*/,
+                             int /*view*/,
+                             double /*time*/,
+                             bool /*originatedFromMainThread*/) OVERRIDE FINAL;
 
-    boost::scoped_ptr<BackDropGuiPrivate> _imp;
+    virtual void initializeKnobs() OVERRIDE FINAL;
+    
+    boost::scoped_ptr<BackdropPrivate> _imp;
 };
 
-#endif // Gui_BackDropGui_h
+NATRON_NAMESPACE_EXIT;
+
+#endif // BACKDROP_H

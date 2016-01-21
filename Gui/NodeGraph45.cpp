@@ -49,7 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
@@ -63,7 +63,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -92,7 +92,7 @@ NodeGraph::toggleHideInputs()
 {
     const NodeGuiList& selectedNodes = getSelectedNodes();
     if (selectedNodes.empty()) {
-        Natron::warningDialog(tr("Hide Inptus").toStdString(), tr("You must select a node first").toStdString());
+        Dialogs::warningDialog(tr("Hide Inptus").toStdString(), tr("You must select a node first").toStdString());
         return;
     }
 
@@ -105,9 +105,9 @@ NodeGraph::toggleHideInputs()
 
 }
 
-std::list<boost::shared_ptr<NodeGui> > NodeGraph::getNodesWithinBackDrop(const boost::shared_ptr<NodeGui>& bd) const
+std::list<boost::shared_ptr<NodeGui> > NodeGraph::getNodesWithinBackdrop(const boost::shared_ptr<NodeGui>& bd) const
 {
-    BackDropGui* isBd = dynamic_cast<BackDropGui*>(bd.get());
+    BackdropGui* isBd = dynamic_cast<BackdropGui*>(bd.get());
     if (!isBd) {
         return std::list<boost::shared_ptr<NodeGui> >();
     }
@@ -147,8 +147,8 @@ NodeGraph::refreshAllKnobsGui()
                 if (!knob->getIsSecret()) {
                     for (int i = 0; i < knob->getDimension(); ++i) {
                         if (knob->isAnimated(i)) {
-                            it2->second->onInternalValueChanged(i, Natron::eValueChangedReasonPluginEdited);
-                            it2->second->onAnimationLevelChanged(i, Natron::eValueChangedReasonPluginEdited);
+                            it2->second->onInternalValueChanged(i, eValueChangedReasonPluginEdited);
+                            it2->second->onAnimationLevelChanged(i, eValueChangedReasonPluginEdited);
                         }
                     }
                 }
@@ -265,13 +265,13 @@ struct FindNodeDialogPrivate
     int currentFindIndex;
     
     QVBoxLayout* mainLayout;
-    Natron::Label* label;
+    Label* label;
     
 
     QCheckBox* unixWildcards;
     QCheckBox* caseSensitivity;
 
-    Natron::Label* resultLabel;
+    Label* resultLabel;
     LineEdit* filter;
     QDialogButtonBox* buttons;
     
@@ -302,7 +302,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     
-    _imp->label = new Natron::Label(tr("Select all nodes containing this text:"),this);
+    _imp->label = new Label(tr("Select all nodes containing this text:"),this);
     //_imp->label->setFont(QFont(appFont,appFontSize));
     _imp->mainLayout->addWidget(_imp->label);
 
@@ -324,7 +324,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     _imp->mainLayout->addWidget(_imp->caseSensitivity);
     
     
-    _imp->resultLabel = new Natron::Label(this);
+    _imp->resultLabel = new Label(this);
     _imp->mainLayout->addWidget(_imp->resultLabel);
     //_imp->resultLabel->setFont(QFont(appFont,appFontSize));
     
@@ -590,7 +590,7 @@ NodeGraph::expandSelectedGroups()
     if (!nodes.empty()) {
         pushUndoCommand(new InlineGroupCommand(this,nodes));
     } else {
-        Natron::warningDialog(tr("Expand group").toStdString(), tr("You must select a group to expand first").toStdString());
+        Dialogs::warningDialog(tr("Expand group").toStdString(), tr("You must select a group to expand first").toStdString());
     }
 }
 
@@ -683,3 +683,5 @@ NodeGraph::getRootPos() const
 {
     return _imp->_root->pos();
 }
+
+NATRON_NAMESPACE_EXIT;

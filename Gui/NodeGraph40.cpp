@@ -49,7 +49,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/RotoLayer.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -60,7 +60,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -77,7 +77,7 @@ NodeGraph::togglePreviewsForSelectedNodes()
         }
     }
     if (empty) {
-        Natron::warningDialog(tr("Toggle Preview").toStdString(), tr("You must select a node first").toStdString());
+        Dialogs::warningDialog(tr("Toggle Preview").toStdString(), tr("You must select a node first").toStdString());
     }
 }
 
@@ -110,7 +110,7 @@ void
 NodeGraph::copySelectedNodes()
 {
     if ( _imp->_selection.empty()) {
-        Natron::warningDialog( tr("Copy").toStdString(), tr("You must select at least a node to copy first.").toStdString() );
+        Dialogs::warningDialog( tr("Copy").toStdString(), tr("You must select at least a node to copy first.").toStdString() );
 
         return;
     }
@@ -140,7 +140,7 @@ void
 NodeGraph::cutSelectedNodes()
 {
     if ( _imp->_selection.empty() ) {
-        Natron::warningDialog( tr("Cut").toStdString(), tr("You must select at least a node to cut first.").toStdString() );
+        Dialogs::warningDialog( tr("Cut").toStdString(), tr("You must select at least a node to cut first.").toStdString() );
 
         return;
     }
@@ -195,7 +195,7 @@ void
 NodeGraph::duplicateSelectedNodes(const QPointF& pos)
 {
     if ( _imp->_selection.empty() && _imp->_selection.empty() ) {
-        Natron::warningDialog( tr("Duplicate").toStdString(), tr("You must select at least a node to duplicate first.").toStdString() );
+        Dialogs::warningDialog( tr("Duplicate").toStdString(), tr("You must select at least a node to duplicate first.").toStdString() );
         
         return;
     }
@@ -220,7 +220,7 @@ void
 NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 {
     if (_imp->_selection.empty()) {
-        Natron::warningDialog( tr("Clone").toStdString(), tr("You must select at least a node to clone first.").toStdString() );
+        Dialogs::warningDialog( tr("Clone").toStdString(), tr("You must select at least a node to clone first.").toStdString() );
         return;
     }
     
@@ -231,7 +231,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     NodeGuiList nodesToCopy = _imp->_selection;
     for (NodeGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
         if ( (*it)->getNode()->getMasterNode()) {
-            Natron::errorDialog( tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString() );
+            Dialogs::errorDialog( tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString() );
             return;
         }
         QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
@@ -250,9 +250,9 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         }
         
         ///Also copy all nodes within the backdrop
-        BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
+        BackdropGui* isBd = dynamic_cast<BackdropGui*>(it->get());
         if (isBd) {
-            NodeGuiList nodesWithinBD = getNodesWithinBackDrop(*it);
+            NodeGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
             for (NodeGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
                 NodeGuiList::iterator found = std::find(nodesToCopy.begin(),nodesToCopy.end(),*it2);
                 if ( found == nodesToCopy.end() ) {
@@ -264,19 +264,19 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     
     for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         if ( (*it)->getNode()->getLiveInstance()->isSlave() ) {
-            Natron::errorDialog( tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString() );
+            Dialogs::errorDialog( tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString() );
             
             return;
         }
         ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>((*it)->getNode()->getLiveInstance());
         if (isViewer) {
-            Natron::errorDialog( tr("Clone").toStdString(), tr("Cloning a viewer is not a valid operation.").toStdString() );
+            Dialogs::errorDialog( tr("Clone").toStdString(), tr("Cloning a viewer is not a valid operation.").toStdString() );
             
             return;
         }
         if ( (*it)->getNode()->isMultiInstance() ) {
             QString err = QString("%1 cannot be cloned.").arg( (*it)->getNode()->getLabel().c_str() );
-            Natron::errorDialog( tr("Clone").toStdString(),
+            Dialogs::errorDialog( tr("Clone").toStdString(),
                                 tr( err.toStdString().c_str() ).toStdString() );
             
             return;
@@ -326,7 +326,7 @@ void
 NodeGraph::decloneSelectedNodes()
 {
     if ( _imp->_selection.empty() ) {
-        Natron::warningDialog( tr("Declone").toStdString(), tr("You must select at least a node to declone first.").toStdString() );
+        Dialogs::warningDialog( tr("Declone").toStdString(), tr("You must select at least a node to declone first.").toStdString() );
 
         return;
     }
@@ -335,10 +335,10 @@ NodeGraph::decloneSelectedNodes()
 
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
         
-        BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
+        BackdropGui* isBd = dynamic_cast<BackdropGui*>(it->get());
         if (isBd) {
             ///Also copy all nodes within the backdrop
-            NodeGuiList nodesWithinBD = getNodesWithinBackDrop(*it);
+            NodeGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
             for (NodeGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
                 NodeGuiList::iterator found = std::find(nodesToDeclone.begin(),nodesToDeclone.end(),*it2);
                 if ( found == nodesToDeclone.end() ) {
@@ -365,10 +365,10 @@ void
 NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
 {
     assert(n);
-    boost::shared_ptr<Natron::Node> internalNode = n->getNode();
+    boost::shared_ptr<Node> internalNode = n->getNode();
 
     if (internalNode) {
-        internalNode->deactivate(std::list< Natron::Node* >(),false,false,true,false);
+        internalNode->deactivate(std::list< Node* >(),false,false,true,false);
     }
     std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_nodesTrash.begin(),_imp->_nodesTrash.end(),n);
 
@@ -516,3 +516,5 @@ NodeGraph::centerOnAllNodes()
     _imp->_refreshOverlays = true;
     update();
 }
+
+NATRON_NAMESPACE_EXIT;

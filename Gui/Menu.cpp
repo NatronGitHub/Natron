@@ -37,7 +37,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 Menu::Menu(const QString &title, QWidget *parent)
 : QMenu(title,parent)
@@ -79,3 +79,4 @@ MenuWithToolTips::event (QEvent* e)
     return QMenu::event(e);
 }
 
+NATRON_NAMESPACE_EXIT;

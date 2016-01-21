@@ -31,6 +31,7 @@
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief A serializable window is a window which have mutex-protected members that can be accessed in the serialization thread
@@ -62,5 +63,8 @@ public:
 
     void getMtSafePosition(int &x, int &y);
 };
+
+NATRON_NAMESPACE_EXIT;
+
 
 #endif // SERIALIZABLEWINDOW_H

@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -36,6 +38,7 @@
 #include "Engine/Curve.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct BezierCPPrivate
 {
@@ -92,5 +95,7 @@ struct BezierCPPrivate
     {
     }
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_BezierCPPrivate_h_

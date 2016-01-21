@@ -35,7 +35,6 @@
 
 #include "Global/Macros.h"
 
-
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
@@ -76,9 +75,9 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxPixels.h>
 
-typedef int SequenceTime;
+NATRON_NAMESPACE_ENTER;
 
-Q_DECLARE_METATYPE(SequenceTime)
+typedef int SequenceTime;
 
 struct RenderScale : public OfxPointD {
     RenderScale() { x = y = 1.; }
@@ -86,9 +85,7 @@ struct RenderScale : public OfxPointD {
     RenderScale(double scaleX, double scaleY) { x = scaleX; y = scaleY; }
 };
 
-namespace Natron {
 typedef OfxPointD Point;
-}
 
 typedef OfxRGBAColourF RGBAColourF;
 typedef OfxRangeD RangeD;
@@ -132,8 +129,8 @@ typedef OfxRangeD RangeD;
 #define kRotoMakeRectangleCompressionID 11
 #define kRotoTransformCompressionID 12
 #define kMultipleKnobsUndoChangeCommandCompressionID 13
-#define kNodeGraphMoveNodeBackDropCommandCompressionID 14
-#define kNodeGraphResizeNodeBackDropCommandCompressionID 15
+#define kNodeGraphMoveNodeBackdropCommandCompressionID 14
+#define kNodeGraphResizeNodeBackdropCommandCompressionID 15
 #define kCurveEditorMoveTangentsCommandCompressionID 16
 #define kCurveEditorTransformKeysCommandCompressionID 17
 #define kDopeSheetEditorMoveKeysCommandCompressionID 18
@@ -155,7 +152,8 @@ PY_VERSION_STRINGIZE_(major,minor)
 #define NATRON_PY_VERSION_STRING PY_VERSION_STRINGIZE(PY_MAJOR_VERSION,PY_MINOR_VERSION)
 
 
-namespace Natron {
+namespace Global {
+
 /*Converts a std::string to wide string*/
 inline std::wstring
 s2ws(const std::string & s)
@@ -221,9 +219,10 @@ std::string GetLastErrorAsString()
 
 #endif
 
+} // namespace Global
 
+NATRON_NAMESPACE_EXIT;
 
-
-} // Natron
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::SequenceTime)
 
 #endif // ifndef NATRON_GLOBAL_GLOBALDEFINES_H

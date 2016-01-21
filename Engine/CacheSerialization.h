@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -58,7 +60,7 @@ GCC_DIAG_ON(unused-parameter)
 ///When defined, number of opened files, memory size and disk size of the cache are printed whenever there's activity.
 //#define NATRON_DEBUG_CACHE
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 /*Saves cache to disk as a settings file.
  */
@@ -122,7 +124,7 @@ void Cache<EntryType>::restore(const CacheTOC & tableOfContents)
 
         EntryType* value = NULL;
 
-        Natron::StorageModeEnum storage = Natron::eStorageModeDisk;
+        StorageModeEnum storage = eStorageModeDisk;
 
         try {
             value = new EntryType(it->key,it->params,this,storage,it->filePath);
@@ -164,29 +166,29 @@ struct Cache<EntryType>::SerializedEntry
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        ar & boost::serialization::make_nvp("Hash",hash);
-        ar & boost::serialization::make_nvp("Key",key);
-        ar & boost::serialization::make_nvp("Params",params);
-        ar & boost::serialization::make_nvp("Size",size);
-        ar & boost::serialization::make_nvp("Filename",filePath);
+        ar & ::boost::serialization::make_nvp("Hash",hash);
+        ar & ::boost::serialization::make_nvp("Key",key);
+        ar & ::boost::serialization::make_nvp("Params",params);
+        ar & ::boost::serialization::make_nvp("Size",size);
+        ar & ::boost::serialization::make_nvp("Filename",filePath);
     }
 
     template<class Archive>
     void load(Archive & ar,
               const unsigned int /*version*/)
     {
-        ar & boost::serialization::make_nvp("Hash",hash);
-        ar & boost::serialization::make_nvp("Key",key);
-        ar & boost::serialization::make_nvp("Params",params);
-        ar & boost::serialization::make_nvp("Size",size);
-        ar & boost::serialization::make_nvp("Filename",filePath);
+        ar & ::boost::serialization::make_nvp("Hash",hash);
+        ar & ::boost::serialization::make_nvp("Key",key);
+        ar & ::boost::serialization::make_nvp("Params",params);
+        ar & ::boost::serialization::make_nvp("Size",size);
+        ar & ::boost::serialization::make_nvp("Filename",filePath);
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 };
 
-}
+NATRON_NAMESPACE_EXIT;
 
 
 #endif // Engine_CacheSerialization_h

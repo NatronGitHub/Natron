@@ -31,8 +31,7 @@
 
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 
-using namespace Natron;
-
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -262,7 +261,7 @@ KnobGui::onRemoveAnimationActionTriggered()
 
 void
 KnobGui::setInterpolationForDimensions(const std::vector<int> & dimensions,
-                                       Natron::KeyframeTypeEnum interp)
+                                       KeyframeTypeEnum interp)
 {
     boost::shared_ptr<KnobI> knob = getKnob();
     
@@ -280,7 +279,7 @@ KnobGui::setInterpolationForDimensions(const std::vector<int> & dimensions,
         }
     }
     if (knob->getHolder()) {
-        knob->getHolder()->evaluate_public(knob.get(), knob->getEvaluateOnChange(), Natron::eValueChangedReasonNatronGuiEdited);
+        knob->getHolder()->evaluate_public(knob.get(), knob->getEvaluateOnChange(), eValueChangedReasonNatronGuiEdited);
     }
     Q_EMIT keyInterpolationChanged();
 
@@ -295,7 +294,7 @@ KnobGui::onConstantInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims, Natron::eKeyframeTypeConstant);
+    setInterpolationForDimensions(dims, eKeyframeTypeConstant);
 }
 
 void
@@ -307,7 +306,7 @@ KnobGui::onLinearInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims, Natron::eKeyframeTypeLinear);
+    setInterpolationForDimensions(dims, eKeyframeTypeLinear);
 }
 
 void
@@ -319,7 +318,7 @@ KnobGui::onSmoothInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims, Natron::eKeyframeTypeSmooth);
+    setInterpolationForDimensions(dims, eKeyframeTypeSmooth);
 }
 
 void
@@ -331,7 +330,7 @@ KnobGui::onCatmullromInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims, Natron::eKeyframeTypeCatmullRom);
+    setInterpolationForDimensions(dims, eKeyframeTypeCatmullRom);
 }
 
 void
@@ -343,7 +342,7 @@ KnobGui::onCubicInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims, Natron::eKeyframeTypeCubic);
+    setInterpolationForDimensions(dims, eKeyframeTypeCubic);
 }
 
 void
@@ -355,7 +354,7 @@ KnobGui::onHorizontalInterpActionTriggered()
     for (int i = 0; i < knob->getDimension(); ++i) {
         dims.push_back(i);
     }
-    setInterpolationForDimensions(dims, Natron::eKeyframeTypeHorizontal);
+    setInterpolationForDimensions(dims, eKeyframeTypeHorizontal);
 }
 
 void
@@ -544,7 +543,7 @@ KnobGui::toolTip() const
     }
 
     if ( !realTt.isEmpty() ) {
-        realTt = Natron::convertFromPlainText(realTt.trimmed(), Qt::WhiteSpaceNormal);
+        realTt = GuiUtils::convertFromPlainText(realTt.trimmed(), Qt::WhiteSpaceNormal);
         tt.append(realTt);
     }
 
@@ -735,3 +734,5 @@ KnobGui::getFieldContainer() const
 {
     return _imp->field;
 }
+
+NATRON_NAMESPACE_EXIT;

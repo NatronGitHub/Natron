@@ -27,6 +27,8 @@
 #include <QEvent>
 #include <QTextEdit>
 
+NATRON_NAMESPACE_ENTER;
+
 // resizable message box,
 // see http://www.qtcentre.org/threads/24888-Resizing-a-QMessageBox#post135851
 // and http://stackoverflow.com/questions/2655354/how-to-allow-resizing-of-qmessagebox-in-pyqt4
@@ -73,4 +75,5 @@ ResizableMessageBox::event(QEvent *e)
     return result;
 }
 
+NATRON_NAMESPACE_EXIT;
 

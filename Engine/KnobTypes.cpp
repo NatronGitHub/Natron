@@ -52,9 +52,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 
-using namespace Natron;
-using std::make_pair;
-using std::pair;
+NATRON_NAMESPACE_ENTER;
+
+//using std::make_pair;
+//using std::pair;
 
 /******************************KnobInt**************************************/
 KnobInt::KnobInt(KnobHolder* holder,
@@ -196,7 +197,7 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
 {
     KnobHolder* holder = getHolder();
     if (holder) {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
         if (!effect) {
             return;
         }
@@ -384,7 +385,7 @@ KnobDouble::restoreTracks(const std::list <SerializedTrack> & tracks,
     for (std::list< SerializedTrack >::const_iterator it = tracks.begin(); it != tracks.end(); ++it) {
         RotoContext* roto = 0;
         ///speed-up by remembering the last one
-        std::string scriptFriendlyRoto = Natron::makeNameScriptFriendly(it->rotoNodeName);
+        std::string scriptFriendlyRoto = Python::makeNameScriptFriendly(it->rotoNodeName);
         if (it->rotoNodeName == lastNodeName || scriptFriendlyRoto == lastNodeName) {
             roto = lastRoto;
         } else {
@@ -403,7 +404,7 @@ KnobDouble::restoreTracks(const std::list <SerializedTrack> & tracks,
             
             boost::shared_ptr<RotoItem> item = roto->getItemByName(it->bezierName);
             if (!item) {
-                std::string scriptFriendlyBezier = Natron::makeNameScriptFriendly(it->bezierName);
+                std::string scriptFriendlyBezier = Python::makeNameScriptFriendly(it->bezierName);
                 item = roto->getItemByName(scriptFriendlyBezier);
                 if (!item) {
                     qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();
@@ -537,7 +538,7 @@ KnobButton::typeName() const
 void
 KnobButton::trigger()
 {
-    evaluateValueChange(0, getCurrentTime(),  Natron::eValueChangedReasonUserEdited);
+    evaluateValueChange(0, getCurrentTime(),  eValueChangedReasonUserEdited);
 }
 
 /******************************KnobChoice**************************************/
@@ -1504,7 +1505,7 @@ boost::shared_ptr<Curve> KnobParametric::getParametricCurve(int dimension) const
     }
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::addControlPoint(int dimension,
                                  double key,
                                  double value)
@@ -1519,14 +1520,14 @@ KnobParametric::addControlPoint(int dimension,
     }
     
     KeyFrame k(key,value);
-    k.setInterpolation(Natron::eKeyframeTypeCubic);
+    k.setInterpolation(eKeyframeTypeCubic);
     _curves[dimension]->addKeyFrame(k);
     Q_EMIT curveChanged(dimension);
     
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::addHorizontalControlPoint(int dimension,double key,double value)
 {
     ///Mt-safe as Curve is MT-safe
@@ -1539,7 +1540,7 @@ KnobParametric::addHorizontalControlPoint(int dimension,double key,double value)
     }
     
     KeyFrame k(key,value);
-    k.setInterpolation(Natron::eKeyframeTypeBroken);
+    k.setInterpolation(eKeyframeTypeBroken);
     k.setLeftDerivative(0);
     k.setRightDerivative(0);
     _curves[dimension]->addKeyFrame(k);
@@ -1549,7 +1550,7 @@ KnobParametric::addHorizontalControlPoint(int dimension,double key,double value)
  
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::getValue(int dimension,
                           double parametricPosition,
                           double *returnValue) const
@@ -1561,13 +1562,13 @@ KnobParametric::getValue(int dimension,
     try {
         *returnValue = getParametricCurve(dimension)->getValueAt(parametricPosition);
     }catch (...) {
-        return Natron::eStatusFailed;
+        return eStatusFailed;
     }
     
-    return Natron::eStatusOK;
+    return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::getNControlPoints(int dimension,
                                    int *returnValue) const
 {
@@ -1580,7 +1581,7 @@ KnobParametric::getNControlPoints(int dimension,
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::getNthControlPoint(int dimension,
                                     int nthCtl,
                                     double *key,
@@ -1601,7 +1602,7 @@ KnobParametric::getNthControlPoint(int dimension,
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::getNthControlPoint(int dimension,
                                       int nthCtl,
                                       double *key,
@@ -1626,7 +1627,7 @@ KnobParametric::getNthControlPoint(int dimension,
 
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::setNthControlPoint(int dimension,
                                     int nthCtl,
                                     double key,
@@ -1646,7 +1647,7 @@ KnobParametric::setNthControlPoint(int dimension,
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::setNthControlPoint(int dimension,
                                       int nthCtl,
                                       double key,
@@ -1671,7 +1672,7 @@ KnobParametric::setNthControlPoint(int dimension,
 
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::deleteControlPoint(int dimension,
                                     int nthCtl)
 {
@@ -1686,7 +1687,7 @@ KnobParametric::deleteControlPoint(int dimension,
     return eStatusOK;
 }
 
-Natron::StatusEnum
+StatusEnum
 KnobParametric::deleteAllControlPoints(int dimension)
 {
     ///Mt-safe as Curve is MT-safe
@@ -1770,7 +1771,7 @@ KnobParametric::loadParametricCurves(const std::list< Curve > & curves)
 void
 KnobParametric::resetExtraToDefaultValue(int dimension)
 {
-    Natron::StatusEnum s = deleteAllControlPoints(dimension);
+    StatusEnum s = deleteAllControlPoints(dimension);
     Q_UNUSED(s);
     _curves[dimension]->clone(*_defaultCurves[dimension]);
     Q_EMIT curveChanged(dimension);
@@ -1803,3 +1804,8 @@ KnobParametric::hasModificationsVirtual(int dimension) const
     }
     return false;
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_KnobTypes.cpp"

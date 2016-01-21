@@ -34,7 +34,7 @@
 #include "Engine/ViewerInstance.h"
 #include <SequenceParsing.h>
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 void
 NodeCollectionSerialization::initialize(const NodeCollection& group)
@@ -74,7 +74,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     ///If a parent of a multi-instance node doesn't exist anymore but the children do, we must recreate the parent.
     ///Problem: we have lost the nodes connections. To do so we restore them using the serialization of a child.
     ///This map contains all the parents that must be reconnected and an iterator to the child serialization
-    std::map<boost::shared_ptr<Natron::Node>, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator > parentsToReconnect;
+    std::map<boost::shared_ptr<Node>, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator > parentsToReconnect;
     
     std::list< boost::shared_ptr<NodeSerialization> > multiInstancesToRecurse;
     
@@ -112,7 +112,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 ///Create the parent
                 if (!foundParent) {
-                    boost::shared_ptr<Natron::Node> parent = group->getApplication()->createNode(CreateNodeArgs( pluginID.c_str(),
+                    boost::shared_ptr<Node> parent = group->getApplication()->createNode(CreateNodeArgs( pluginID.c_str(),
                                                                                                                 "",
                                                                                                                 (*it)->getPluginMajorVersion(),
                                                                                                                 (*it)->getPluginMinorVersion(),
@@ -137,7 +137,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
 
         const std::string& pythonModuleAbsolutePath = (*it)->getPythonModule();
         
-        boost::shared_ptr<Natron::Node> n;
+        boost::shared_ptr<Node> n;
         
         bool usingPythonModule = false;
         if (!pythonModuleAbsolutePath.empty()) {
@@ -181,7 +181,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 
                 std::string stdModuleName = pythonModuleName.toStdString();
-                if (getGroupInfos(pythonModuleInfo.path().toStdString() + '/', stdModuleName, &pythonPluginID, &pythonPluginLabel, &pythonIcFilePath, &pythonGrouping, &pythonDesc, &pyVersion)) {
+                if (Python::getGroupInfos(pythonModuleInfo.path().toStdString() + '/', stdModuleName, &pythonPluginID, &pythonPluginLabel, &pythonIcFilePath, &pythonGrouping, &pythonDesc, &pyVersion)) {
                     
                     if (pyVersion != savedPythonModuleVersion) {
             
@@ -193,7 +193,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                             }
                         } else {
                             
-                            Natron::StandardButtonEnum rep = Natron::questionDialog(QObject::tr("New PyPlug version").toStdString()
+                            StandardButtonEnum rep = Dialogs::questionDialog(QObject::tr("New PyPlug version").toStdString()
                                                                                     , QObject::tr("A different version of ").toStdString() +
                                                                                     stdModuleName + " (" +
                                                                                     QString::number(pyVersion).toStdString() + ") " +
@@ -202,12 +202,12 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                                                                                     QString::number(savedPythonModuleVersion).toStdString() + ".\n" +
                                                                                     QObject::tr("Would you like to update your script?").toStdString()
                                                                                     , false ,
-                                                                                    Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo));
-                            if (rep == Natron::eStandardButtonYes) {
+                                                                                    StandardButtons(eStandardButtonYes | eStandardButtonNo));
+                            if (rep == eStandardButtonYes) {
                                 pluginID = pythonPluginID;
                                 usingPythonModule = true;
                             }
-                            moduleUpdatesProcessed->insert(std::make_pair(stdModuleName, rep == Natron::eStandardButtonYes));
+                            moduleUpdatesProcessed->insert(std::make_pair(stdModuleName, rep == eStandardButtonYes));
                         }
                     } else {
                         pluginID = pythonPluginID;
@@ -274,7 +274,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         if (!children.empty()) {
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>(n->getLiveInstance());
             if (isGrp) {
-                boost::shared_ptr<Natron::EffectInstance> sharedEffect = isGrp->shared_from_this();
+                boost::shared_ptr<EffectInstance> sharedEffect = isGrp->shared_from_this();
                 boost::shared_ptr<NodeGroup> sharedGrp = boost::dynamic_pointer_cast<NodeGroup>(sharedEffect);
                 NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp ,!usingPythonModule, moduleUpdatesProcessed);
                 
@@ -311,7 +311,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         const std::string & masterNodeName = it->second->getMasterNodeName();
         if ( !masterNodeName.empty() ) {
             ///find such a node
-            boost::shared_ptr<Natron::Node> masterNode = it->first->getApp()->getNodeByFullySpecifiedName(masterNodeName);
+            boost::shared_ptr<Node> masterNode = it->first->getApp()->getNodeByFullySpecifiedName(masterNodeName);
             
             if (!masterNode) {
                 appPTR->writeToOfxLog_mt_safe(QString("Cannot restore the link between " + QString(it->second->getNodeScriptName().c_str()) + " and " + masterNodeName.c_str()));
@@ -379,7 +379,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     }
     
     ///Also reconnect parents of multiinstance nodes that were created on the fly
-    for (std::map<boost::shared_ptr<Natron::Node>, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator >::const_iterator
+    for (std::map<boost::shared_ptr<Node>, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator >::const_iterator
          it = parentsToReconnect.begin(); it != parentsToReconnect.end(); ++it) {
         const std::vector<std::string> & oldInputs = (*it->second)->getOldInputs();
         if (!oldInputs.empty()) {
@@ -419,3 +419,5 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     }
     return !mustShowErrorsLog;
 }
+
+NATRON_NAMESPACE_EXIT;

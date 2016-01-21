@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <vector>
 #include <map>
 #include <set>
@@ -39,6 +41,9 @@
 #include "Engine/EngineFwd.h"
 
 #define NATRON_CURVE_X_SPACING_EPSILON 1e-6
+
+NATRON_NAMESPACE_ENTER;
+
 /**
  * @brief A KeyFrame is a lightweight pair <time,value>. These are the values that are used
  * to interpolate a Curve. The _leftDerivative and _rightDerivative can be
@@ -55,7 +60,7 @@ public:
              double initialValue,
              double leftDerivative = 0.,
              double rightDerivative = 0.,
-             Natron::KeyframeTypeEnum interpolation = Natron::eKeyframeTypeSmooth);
+             KeyframeTypeEnum interpolation = eKeyframeTypeSmooth);
 
     KeyFrame(const KeyFrame & other);
 
@@ -93,9 +98,9 @@ public:
 
     void setTime(double time);
 
-    void setInterpolation(Natron::KeyframeTypeEnum interp);
+    void setInterpolation(KeyframeTypeEnum interp);
 
-    Natron::KeyframeTypeEnum getInterpolation() const;
+    KeyframeTypeEnum getInterpolation() const;
 
 private:
 
@@ -103,9 +108,9 @@ private:
     double _value;
     double _leftDerivative;
     double _rightDerivative;
-    Natron::KeyframeTypeEnum _interpolation;
+    KeyframeTypeEnum _interpolation;
 
-    friend class boost::serialization::access;
+    friend class ::boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar,
                    const unsigned int version);
@@ -261,9 +266,9 @@ public:
      * @brief  Set the interpolation method of the keyframe positioned at index index and returns the new  keyframe.
      * Also the index of the new keyframe is returned in newIndex.
      **/
-    KeyFrame setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index,int* newIndex = NULL);
+    KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp,int index,int* newIndex = NULL);
 
-    void setCurveInterpolation(Natron::KeyframeTypeEnum interp);
+    void setCurveInterpolation(KeyframeTypeEnum interp);
 
     std::pair<double,double> getCurveYRange() const WARN_UNUSED_RETURN;
 
@@ -275,7 +280,7 @@ public:
     static KeyFrameSet::const_iterator findWithTime(const KeyFrameSet& keys,double time);
     
 private:
-    friend class boost::serialization::access;
+    friend class ::boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 
@@ -309,7 +314,7 @@ private:
 
     bool mustClamp() const;
 
-    KeyFrameSet::iterator setKeyframeInterpolation_internal(KeyFrameSet::iterator it,Natron::KeyframeTypeEnum type);
+    KeyFrameSet::iterator setKeyframeInterpolation_internal(KeyFrameSet::iterator it,KeyframeTypeEnum type);
     
     /**
      * @brief Called when the curve has changed to invalidate any cache relying on the curve values.
@@ -320,5 +325,6 @@ private:
     boost::scoped_ptr<CurvePrivate> _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_CURVE_H

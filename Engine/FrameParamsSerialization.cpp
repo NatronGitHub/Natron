@@ -26,8 +26,10 @@
 
 // explicit template instantiations
 
+NATRON_NAMESPACE_ENTER;
 
-template void Natron::FrameParams::serialize<boost::archive::binary_iarchive>(boost::archive::binary_iarchive & ar,
+template void NATRON_NAMESPACE::FrameParams::serialize<boost::archive::binary_iarchive>(boost::archive::binary_iarchive & ar,
                                                                               const unsigned int file_version);
-template void Natron::FrameParams::serialize<boost::archive::binary_oarchive>(boost::archive::binary_oarchive & ar,
+template void NATRON_NAMESPACE::FrameParams::serialize<boost::archive::binary_oarchive>(boost::archive::binary_oarchive & ar,
                                                                               const unsigned int file_version);
+NATRON_NAMESPACE_EXIT;

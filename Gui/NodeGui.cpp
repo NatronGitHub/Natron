@@ -45,7 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <ofxNatron.h>
 
-#include "Engine/BackDrop.h"
+#include "Engine/Backdrop.h"
 #include "Engine/Image.h"
 #include "Engine/Knob.h"
 #include "Engine/MergingEnum.h"
@@ -62,7 +62,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Button.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/HostOverlay.h"
@@ -107,7 +107,7 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_PLUGIN_ICON_SIZE 20
 #define PLUGIN_ICON_OFFSET 2
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 using std::make_pair;
 
@@ -126,10 +126,10 @@ replaceLineBreaksWithHtmlParagraph(QString txt)
 static void getPixmapForMergeOperator(const QString& op,QPixmap* pix)
 {
     std::string opstd = op.toStdString();
-    for (int i = 0; i <= (int)Natron::eMergeXOR; ++i) {
-        std::string opStr = Natron::getNatronOperationString((Natron::MergingFunctionEnum)i);
+    for (int i = 0; i <= (int)eMergeXOR; ++i) {
+        std::string opStr = Merge::getOperatorString((MergingFunctionEnum)i);
         if (opStr == opstd) {
-            Natron::PixmapEnum pixEnum = Natron::getPixmapForMergingOperator((Natron::MergingFunctionEnum)i);
+            PixmapEnum pixEnum = Merge::getOperatorPixmap((MergingFunctionEnum)i);
             appPTR->getIcon(pixEnum, TO_DPIX(NATRON_PLUGIN_ICON_SIZE), pix);
             return;
         }
@@ -204,7 +204,7 @@ NodeGui::~NodeGui()
 
 void
 NodeGui::initialize(NodeGraph* dag,
-                    const boost::shared_ptr<Natron::Node> & internalNode)
+                    const boost::shared_ptr<Node> & internalNode)
 {
     _internalNode = internalNode;
     assert(internalNode);
@@ -290,10 +290,10 @@ NodeGui::initialize(NodeGraph* dag,
     _clonedColor.setRgb(200,70,100);
 
     //QColor defaultColor = getCurrentColor();
-    Natron::EffectInstance* iseffect = internalNode->getLiveInstance();
+    EffectInstance* iseffect = internalNode->getLiveInstance();
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
     float r,g,b;
-    BackDrop* isBd = dynamic_cast<BackDrop*>(iseffect);
+    Backdrop* isBd = dynamic_cast<Backdrop*>(iseffect);
     
     std::list<std::string> grouping;
     iseffect->getPluginGrouping(&grouping);
@@ -302,7 +302,7 @@ NodeGui::initialize(NodeGraph* dag,
     if ( iseffect->isReader() ) {
         settings->getReaderColor(&r, &g, &b);
     } else if (isBd) {
-        settings->getDefaultBackDropColor(&r, &g, &b);
+        settings->getDefaultBackdropColor(&r, &g, &b);
     } else if ( iseffect->isWriter() ) {
         settings->getWriterColor(&r, &g, &b);
     } else if ( iseffect->isGenerator() ) {
@@ -331,9 +331,9 @@ NodeGui::initialize(NodeGraph* dag,
         settings->getDefaultNodeColor(&r, &g, &b);
     }
     QColor color;
-    color.setRgbF(Natron::clamp<qreal>(r, 0., 1.),
-                  Natron::clamp<qreal>(g, 0., 1.),
-                  Natron::clamp<qreal>(b, 0., 1.));
+    color.setRgbF(Image::clamp<qreal>(r, 0., 1.),
+                  Image::clamp<qreal>(g, 0., 1.),
+                  Image::clamp<qreal>(b, 0., 1.));
     setCurrentColor(color);
 
     ///Make the output edge
@@ -346,7 +346,7 @@ NodeGui::initialize(NodeGraph* dag,
     ///Link the position of the node to the position of the parent multi-instance
     const std::string parentMultiInstanceName = internalNode->getParentMultiInstanceName();
     if ( !parentMultiInstanceName.empty() ) {
-        boost::shared_ptr<Natron::Node> parentNode = internalNode->getGroup()->getNodeByName(parentMultiInstanceName);
+        boost::shared_ptr<Node> parentNode = internalNode->getGroup()->getNodeByName(parentMultiInstanceName);
         boost::shared_ptr<NodeGuiI> parentNodeGui_I = parentNode->getNodeGui();
         assert(parentNode && parentNodeGui_I);
         NodeGui* parentNodeGui = dynamic_cast<NodeGui*>(parentNodeGui_I.get());
@@ -458,7 +458,7 @@ NodeGui::createPanel(QVBoxLayout* container,
 {
     NodeSettingsPanel* panel = 0;
 
-    boost::shared_ptr<Natron::Node> node = getNode();
+    boost::shared_ptr<Node> node = getNode();
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( node->getLiveInstance() );
 
     if (!isViewer) {
@@ -538,7 +538,7 @@ NodeGui::createGui()
 
     const QString& iconFilePath = node->getPlugin()->getIconFilePath();
 
-    BackDropGui* isBd = dynamic_cast<BackDropGui*>(this);
+    BackdropGui* isBd = dynamic_cast<BackdropGui*>(this);
 
     if (!isBd && !iconFilePath.isEmpty() && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
 
@@ -599,7 +599,7 @@ NodeGui::createGui()
     exprGrad.push_back( qMakePair( 0.3, QColor(Qt::green) ) );
     exprGrad.push_back( qMakePair( 1., QColor(69,96,63) ) );
     _expressionIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2,"E",bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER, exprGrad,QColor(255,255,255),this));
-    _expressionIndicator->setToolTip(Natron::convertFromPlainText(tr("This node has one or several expression(s) involving values of parameters of other "
+    _expressionIndicator->setToolTip(GuiUtils::convertFromPlainText(tr("This node has one or several expression(s) involving values of parameters of other "
                                          "nodes in the project. Hover the mouse on the green connections to see what are the effective links."), Qt::WhiteSpaceNormal));
     _expressionIndicator->setActive(false);
     
@@ -951,9 +951,9 @@ NodeGui::refreshPositionEnd(double x,
     refreshEdges();
     NodePtr node = getNode();
     if (node) {
-        const std::list<Natron::Node* > & outputs = node->getGuiOutputs();
+        const std::list<Node* > & outputs = node->getGuiOutputs();
 
-        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
             (*it)->doRefreshEdgesGUI();
         }
@@ -1057,8 +1057,8 @@ NodeGui::refreshPosition(double x,
 
             if ( ( !_magnecEnabled.x() || !_magnecEnabled.y() ) ) {
                 ///check now the outputs
-                const std::list<Natron::Node* > & outputs = getNode()->getGuiOutputs();
-                for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+                const std::list<Node* > & outputs = getNode()->getGuiOutputs();
+                for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
                     boost::shared_ptr<NodeGuiI> node_gui_i = (*it)->getNodeGui();
                     if (!node_gui_i) {
                         continue;
@@ -1095,7 +1095,7 @@ NodeGui::refreshPosition(double x,
 void
 NodeGui::setAboveItem(QGraphicsItem* item)
 {
-    if (!isVisible() || dynamic_cast<BackDropGui*>(this) || dynamic_cast<BackDropGui*>(item)) {
+    if (!isVisible() || dynamic_cast<BackdropGui*>(this) || dynamic_cast<BackdropGui*>(item)) {
         return;
     }
     item->stackBefore(this);
@@ -1150,7 +1150,7 @@ NodeGui::refreshDashedStateOfEdges()
 void
 NodeGui::refreshEdges()
 {
-    const std::vector<boost::shared_ptr<Natron::Node> > & nodeInputs = getNode()->getGuiInputs();
+    const std::vector<boost::shared_ptr<Node> > & nodeInputs = getNode()->getGuiInputs();
     if (_inputEdges.size() != nodeInputs.size()) {
         return;
     }
@@ -1492,7 +1492,7 @@ NodeGui::refreshEdgesVisibilityInternal(bool hovered)
         _inputEdges[i]->refreshState(hovered);
     }
     
-    boost::shared_ptr<Natron::Node> node = getNode();
+    boost::shared_ptr<Node> node = getNode();
     InspectorNode* isInspector = dynamic_cast<InspectorNode*>(node.get());
     if (isInspector) {
         
@@ -1641,7 +1641,7 @@ NodeGui::findConnectedEdge(NodeGui* parent)
 bool
 NodeGui::connectEdge(int edgeNumber)
 {
-    const std::vector<boost::shared_ptr<Natron::Node> > & inputs = getNode()->getGuiInputs();
+    const std::vector<boost::shared_ptr<Node> > & inputs = getNode()->getGuiInputs();
 
     if ( (edgeNumber < 0) || ( edgeNumber >= (int)inputs.size() ) || _inputEdges.size() != inputs.size() ) {
         return false;
@@ -1774,8 +1774,8 @@ NodeGui::showGui()
         _outputEdge->setActive(true);
     }
     refreshEdges();
-    const std::list<Natron::Node* > & outputs = node->getGuiOutputs();
-    for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+    const std::list<Node* > & outputs = node->getGuiOutputs();
+    for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         assert(*it);
         (*it)->doRefreshEdgesGUI();
     }
@@ -2057,8 +2057,8 @@ NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& int
         boost::shared_ptr<MultiInstancePanel> panel = _settingsPanel->getMultiInstancePanel();
         assert(panel);
 
-        const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >& instances = panel->getInstances();
-        for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin();
+        const std::list<std::pair<boost::weak_ptr<Node>,bool> >& instances = panel->getInstances();
+        for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin();
              it != instances.end(); ++it) {
             boost::shared_ptr<NodeSerialization> childSerialization(new NodeSerialization(it->first.lock(),false));
             internalSerialization.push_back(childSerialization);
@@ -2203,8 +2203,8 @@ NodeGui::moveBelowPositionRecursively(const QRectF & r)
 
     if ( r.intersects(sceneRect) ) {
         changePosition(0, r.height() + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
-        const std::list<Natron::Node* > & outputs = getNode()->getGuiOutputs();
-        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        const std::list<Node* > & outputs = getNode()->getGuiOutputs();
+        for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
             boost::shared_ptr<NodeGuiI> outputGuiI = (*it)->getNodeGui();
             if (!outputGuiI) {
@@ -2261,7 +2261,7 @@ NodeGui::onAllKnobsSlaved(bool b)
 {
     NodePtr node = getNode();
     if (b) {
-        boost::shared_ptr<Natron::Node> masterNode = node->getMasterNode();
+        boost::shared_ptr<Node> masterNode = node->getMasterNode();
         assert(masterNode);
         boost::shared_ptr<NodeGuiI> masterNodeGui_i = masterNode->getNodeGui();
         assert(masterNodeGui_i);
@@ -2295,7 +2295,7 @@ NodeGui::onAllKnobsSlaved(bool b)
     update();
 }
 
-static QString makeLinkString(Natron::Node* masterNode,KnobI* master,Natron::Node* slaveNode,KnobI* slave)
+static QString makeLinkString(Node* masterNode,KnobI* master,Node* slaveNode,KnobI* slave)
 {
     QString tt("<br>");
     tt.append(masterNode->getLabel().c_str());
@@ -2321,7 +2321,7 @@ NodeGui::onKnobsLinksChanged()
 {
     NodePtr node = getNode();
 
-    typedef std::list<Natron::Node::KnobLink> InternalLinks;
+    typedef std::list<Node::KnobLink> InternalLinks;
     InternalLinks links;
     node->getKnobsLinks(links);
 
@@ -2494,7 +2494,7 @@ NodeGui::toggleBitDepthIndicator(bool on,
                                  const QString & tooltip)
 {
     if (on) {
-        QString arrangedTt = Natron::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal);
+        QString arrangedTt = GuiUtils::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal);
         setToolTip(arrangedTt);
         _bitDepthWarning->setToolTip(arrangedTt);
     } else {
@@ -2636,8 +2636,8 @@ NodeGui::setScale_natron(double scale)
         _outputEdge->setScale(scale);
     }
     refreshEdges();
-    const std::list<Natron::Node* > & outputs = getNode()->getGuiOutputs();
-    for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+    const std::list<Node* > & outputs = getNode()->getGuiOutputs();
+    for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         assert(*it);
         (*it)->doRefreshEdgesGUI();
     }
@@ -3019,12 +3019,12 @@ NodeGui::setName(const QString & newName)
     
     
     std::string stdName = newName.toStdString();
-    stdName = Natron::makeNameScriptFriendly(stdName);
+    stdName = Python::makeNameScriptFriendly(stdName);
     std::string oldScriptName = getNode()->getScriptName();
     try {
         getNode()->setScriptName(stdName);
     } catch (const std::exception& e) {
-        Natron::errorDialog(tr("Rename").toStdString(), tr("Could not set node script-name to ").toStdString() + stdName + ": " + e.what());
+        Dialogs::errorDialog(tr("Rename").toStdString(), tr("Could not set node script-name to ").toStdString() + stdName + ": " + e.what());
         return;
     }
     
@@ -3062,8 +3062,8 @@ NodeGui::shouldDrawOverlay() const
         boost::shared_ptr<MultiInstancePanel> multiInstance = parentGui->getMultiInstancePanel();
         assert(multiInstance);
 
-        const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >& instances = multiInstance->getInstances();
-        for (std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        const std::list< std::pair<boost::weak_ptr<Node>,bool > >& instances = multiInstance->getInstances();
+        for (std::list< std::pair<boost::weak_ptr<Node>,bool > >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             NodePtr instance = it->first.lock();
 
             if (instance == internalNode) {
@@ -3242,7 +3242,7 @@ NodeGui::onOverlayPenUpDefault(const RenderScale & renderScale, const QPointF & 
 }
 
 bool
-NodeGui::onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyDownDefault(const RenderScale & renderScale, Key key,KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
         QByteArray keyStr;
@@ -3252,7 +3252,7 @@ NodeGui::onOverlayKeyDownDefault(const RenderScale & renderScale, Natron::Key ke
 }
 
 bool
-NodeGui::onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyUpDefault(const RenderScale & renderScale, Key key,KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
         QByteArray keyStr;
@@ -3263,7 +3263,7 @@ NodeGui::onOverlayKeyUpDefault(const RenderScale & renderScale, Natron::Key key,
 }
 
 bool
-NodeGui::onOverlayKeyRepeatDefault(const RenderScale & renderScale, Natron::Key key,Natron::KeyboardModifiers /*modifiers*/)
+NodeGui::onOverlayKeyRepeatDefault(const RenderScale & renderScale, Key key,KeyboardModifiers /*modifiers*/)
 {
     if (_hostOverlay) {
         QByteArray keyStr;
@@ -3472,3 +3472,7 @@ NodeGui::onHideInputsKnobValueChanged(bool /*hidden*/)
     refreshEdgesVisility();
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_NodeGui.cpp"

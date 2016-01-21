@@ -28,6 +28,8 @@
 
 #include "Gui/Gui.h"
 
+NATRON_NAMESPACE_ENTER;
+
 PropertiesBinWrapper::PropertiesBinWrapper(Gui* parent)
 : QWidget(parent)
 , PanelWidget(this,parent)
@@ -75,3 +77,5 @@ PropertiesBinWrapper::keyReleaseEvent(QKeyEvent* e)
     handleUnCaughtKeyUpEvent(e);
     QWidget::keyReleaseEvent(e);
 }
+
+NATRON_NAMESPACE_EXIT;

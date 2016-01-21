@@ -51,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class KnobGuiGroup
     : public KnobGui
@@ -109,7 +110,7 @@ private:
 
 private:
     bool _checked;
-    Natron::GroupBoxLabel *_button;
+    GroupBoxLabel *_button;
     std::list<KnobGui*> _children;
     std::vector< std::pair<KnobGui*,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     TabGroup* _tabGroup;
@@ -117,5 +118,6 @@ private:
     boost::weak_ptr<KnobGroup> _knob;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_KnobGuiGroup_h

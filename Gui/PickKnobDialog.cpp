@@ -49,19 +49,21 @@
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/Utils.h" // convertFromPlainText
 
+NATRON_NAMESPACE_ENTER;
+
 struct PickKnobDialogPrivate
 {
     
     DockablePanel* panel;
     QGridLayout* mainLayout;
-    Natron::Label* selectNodeLabel;
+    Label* selectNodeLabel;
     CompleterLineEdit* nodeSelectionCombo;
     ComboBox* knobSelectionCombo;
-    Natron::Label* useAliasLabel;
+    Label* useAliasLabel;
     QCheckBox* useAliasCheckBox;
-    Natron::Label* destPageLabel;
+    Label* destPageLabel;
     ComboBox* destPageCombo;
-    Natron::Label* groupLabel;
+    Label* groupLabel;
     ComboBox* groupCombo;
     std::vector<boost::shared_ptr<KnobPage> > pages;
     std::vector<boost::shared_ptr<KnobGroup> > groups;
@@ -148,19 +150,19 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     nodeNames.sort();
 
     _imp->mainLayout = new QGridLayout(this);
-    _imp->selectNodeLabel = new Natron::Label(tr("Node:"));
+    _imp->selectNodeLabel = new Label(tr("Node:"));
     _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames,nodeNames,false,this);
-    _imp->nodeSelectionCombo->setToolTip(Natron::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
+    _imp->nodeSelectionCombo->setToolTip(GuiUtils::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
     _imp->nodeSelectionCombo->setFocus(Qt::PopupFocusReason);
     
     _imp->knobSelectionCombo = new ComboBox(this);
     
-    QString useAliasTt = Natron::convertFromPlainText(QObject::tr("If checked, an alias of the selected parameter will be created, coyping entirely its state. "
+    QString useAliasTt = GuiUtils::convertFromPlainText(QObject::tr("If checked, an alias of the selected parameter will be created, coyping entirely its state. "
                                      "Only the script-name, label and tooltip will be editable. For choice parameters this will also "
                                      "dynamically refresh the menu entries when the original parameter's menu is changed.\n"
                                      "When unchecked a simple expression will be set linking the 2 parameters but things such as  dynamic menus "
                                                                   "will not be enabled."),Qt::WhiteSpaceNormal);
-    _imp->useAliasLabel = new Natron::Label(tr("Make Alias:"),this);
+    _imp->useAliasLabel = new Label(tr("Make Alias:"),this);
     _imp->useAliasLabel->setToolTip(useAliasTt);
     _imp->useAliasCheckBox = new QCheckBox(this);
     _imp->useAliasCheckBox->setToolTip(useAliasTt);
@@ -168,8 +170,8 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     
     QObject::connect( _imp->nodeSelectionCombo,SIGNAL( itemCompletionChosen() ),this,SLOT( onNodeComboEditingFinished() ) );
     
-    _imp->destPageLabel = new Natron::Label(tr("Page:"),this);
-    QString pagett = Natron::convertFromPlainText(QObject::tr("Select the page into which the parameter will be created"), Qt::WhiteSpaceNormal);
+    _imp->destPageLabel = new Label(tr("Page:"),this);
+    QString pagett = GuiUtils::convertFromPlainText(QObject::tr("Select the page into which the parameter will be created"), Qt::WhiteSpaceNormal);
     _imp->destPageLabel->setToolTip(pagett);
     _imp->destPageCombo = new ComboBox(this);
     _imp->destPageCombo->setToolTip(pagett);
@@ -195,8 +197,8 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     }
     
     
-    _imp->groupLabel = new Natron::Label(tr("Group:"), this);
-    QString grouptt = Natron::convertFromPlainText(QObject::tr("Select the group into which the parameter will be created"), Qt::WhiteSpaceNormal);
+    _imp->groupLabel = new Label(tr("Group:"), this);
+    QString grouptt = GuiUtils::convertFromPlainText(QObject::tr("Select the group into which the parameter will be created"), Qt::WhiteSpaceNormal);
     _imp->groupCombo = new ComboBox(this);
     _imp->groupLabel->setToolTip(grouptt);
     _imp->groupCombo->setToolTip(grouptt);
@@ -233,7 +235,7 @@ PickKnobDialog::onNodeComboEditingFinished()
     QString index = _imp->nodeSelectionCombo->text();
     _imp->knobSelectionCombo->clear();
     _imp->allKnobs.clear();
-    boost::shared_ptr<Natron::Node> selectedNode;
+    boost::shared_ptr<Node> selectedNode;
     std::string currentNodeName = index.toStdString();
     for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
         if ((*it)->getLabel() == currentNodeName) {
@@ -307,7 +309,7 @@ KnobGui*
 PickKnobDialog::getSelectedKnob(bool* makeAlias,boost::shared_ptr<KnobPage>* page,boost::shared_ptr<KnobGroup>* group) const
 {
     QString index = _imp->nodeSelectionCombo->text();
-    boost::shared_ptr<Natron::Node> selectedNode;
+    boost::shared_ptr<Node> selectedNode;
     std::string currentNodeName = index.toStdString();
     for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
         if ((*it)->getLabel() == currentNodeName) {
@@ -365,3 +367,8 @@ PickKnobDialog::getSelectedKnob(bool* makeAlias,boost::shared_ptr<KnobPage>* pag
     
     return 0;
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_PickKnobDialog.cpp"

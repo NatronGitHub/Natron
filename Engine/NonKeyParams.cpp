@@ -24,7 +24,7 @@
 
 #include "NonKeyParams.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 NonKeyParams::NonKeyParams()
@@ -65,5 +65,4 @@ NonKeyParams::getCost() const
     return _cost;
 }
 
-
-
+NATRON_NAMESPACE_EXIT;

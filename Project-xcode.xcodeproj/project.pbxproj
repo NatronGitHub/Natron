@@ -16,6 +16,7 @@
 				D7A1964818B2242E00F412DA /* PBXTargetDependency */,
 				1E5F8F5818AA913D0045A477 /* PBXTargetDependency */,
 				1E5F8F5A18AA913D0045A477 /* PBXTargetDependency */,
+				1EA307F71C4E7DF800B77270 /* PBXTargetDependency */,
 			);
 			name = libs;
 			productName = libs;
@@ -153,6 +154,13 @@
 			remoteGlobalIDString = 1E8132FA1BA31D6D006845CF;
 			remoteInfo = BreakpadClient;
 		};
+		1EA307F61C4E7DF800B77270 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 79F5A65F5B69CA741078AAA0;
+			remoteInfo = BreakpadClient;
+		};
 		1EADE5CE18AA403700EF3180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
@@ -228,7 +236,7 @@
 		1E306DA41C49482B00BAC6E3 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1E306DAA1C49482C00BAC6E3 /* NatronCrashReporter */,
+				1E306DAA1C49482C00BAC6E3 /* NatronCrashReporter.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -382,10 +390,10 @@
 			remoteRef = 1E189EC31C49475E00F1FD20 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		1E306DAA1C49482C00BAC6E3 /* NatronCrashReporter */ = {
+		1E306DAA1C49482C00BAC6E3 /* NatronCrashReporter.app */ = {
 			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = NatronCrashReporter;
+			fileType = wrapper.application;
+			path = NatronCrashReporter.app;
 			remoteRef = 1E306DA91C49482C00BAC6E3 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
@@ -497,6 +505,11 @@
 			isa = PBXTargetDependency;
 			target = 1E5F8F5118AA91330045A477 /* libs */;
 			targetProxy = 1E5F8F5B18AA91430045A477 /* PBXContainerItemProxy */;
+		};
+		1EA307F71C4E7DF800B77270 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = BreakpadClient;
+			targetProxy = 1EA307F61C4E7DF800B77270 /* PBXContainerItemProxy */;
 		};
 		1EADE5FF18AA408B00EF3180 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

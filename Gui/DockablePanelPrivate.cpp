@@ -50,7 +50,7 @@
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
 
 using std::make_pair;
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 
@@ -253,7 +253,7 @@ DockablePanelPrivate::ensureDefaultPageKnobCreated()
     boost::shared_ptr<KnobI> knob = _holder->getKnobByName(_defaultPageName.toStdString());
     boost::shared_ptr<KnobPage> pk;
     if (!knob) {
-        pk = Natron::createKnob<KnobPage>(_holder, _defaultPageName.toStdString());
+        pk = AppManager::createKnob<KnobPage>(_holder, _defaultPageName.toStdString());
     } else {
         pk = boost::dynamic_pointer_cast<KnobPage>(knob);
     }
@@ -746,14 +746,15 @@ DockablePanelPrivate::refreshPagesSecretness()
         if (isPage->getLabel() == stdName) {
             if (isPage->getIsSecret()) {
                 isPage->setSecret(false);
-                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), eValueChangedReasonUserEdited);
             }
         } else {
             if (!isPage->getIsSecret()) {
                 isPage->setSecret(true);
-                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), eValueChangedReasonUserEdited);
             }
         }
     }
 }
 
+NATRON_NAMESPACE_EXIT;

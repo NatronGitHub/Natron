@@ -5,6 +5,7 @@
 
 #include <ParameterWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class Int3DParamWrapper : public Int3DParam
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~Int3DParamWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_INT3DPARAMWRAPPER_H
 

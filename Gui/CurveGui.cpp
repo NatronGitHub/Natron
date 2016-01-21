@@ -45,7 +45,7 @@
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 CurveGui::CurveGui(const CurveWidget *curveWidget,
                    boost::shared_ptr<Curve> curve,
@@ -597,7 +597,7 @@ KnobCurveGui::getKeyFrameIndex(double time) const
 }
 
 KeyFrame
-KnobCurveGui::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
+KnobCurveGui::setKeyFrameInterpolation(KeyframeTypeEnum interp,int index)
 {
     return getInternalCurve()->setKeyFrameInterpolation(interp, index);
 }
@@ -632,12 +632,12 @@ BezierCPCurveGui::~BezierCPCurveGui()
 double
 BezierCPCurveGui::evaluate(bool /*useExpr*/,double x) const
 {
-    std::list<std::pair<double,Natron::KeyframeTypeEnum> > keys;
+    std::list<std::pair<double,KeyframeTypeEnum> > keys;
     _bezier->getKeyframeTimesAndInterpolation(&keys);
     
-    std::list<std::pair<double,Natron::KeyframeTypeEnum> >::iterator upb = keys.end();
+    std::list<std::pair<double,KeyframeTypeEnum> >::iterator upb = keys.end();
     int dist = 0;
-    for (std::list<std::pair<double,Natron::KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it, ++dist) {
+    for (std::list<std::pair<double,KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it, ++dist) {
         if (it->first > x) {
             upb = it;
             break;
@@ -649,11 +649,11 @@ BezierCPCurveGui::evaluate(bool /*useExpr*/,double x) const
     } else if (upb == keys.begin()) {
         return 0;
     } else {
-        std::list<std::pair<double,Natron::KeyframeTypeEnum> >::iterator prev = upb;
+        std::list<std::pair<double,KeyframeTypeEnum> >::iterator prev = upb;
         if (prev != keys.begin()) {
             --prev;
         }
-        if (prev->second == Natron::eKeyframeTypeConstant) {
+        if (prev->second == eKeyframeTypeConstant) {
             return dist - 1;
         } else {
             ///Always linear for bezier interpolation
@@ -690,9 +690,13 @@ BezierCPCurveGui::getKeyFrameIndex(double time) const
 }
 
 KeyFrame
-BezierCPCurveGui::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
+BezierCPCurveGui::setKeyFrameInterpolation(KeyframeTypeEnum interp,int index)
 {
     _bezier->setKeyFrameInterpolation(interp, index);
     return KeyFrame();
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_CurveGui.cpp"

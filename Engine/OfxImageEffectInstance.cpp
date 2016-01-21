@@ -60,7 +60,7 @@
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/Project.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 // see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
 static
@@ -163,11 +163,11 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
     std::string message = string_format(format, args);
 
     if (strcmp(type, kOfxMessageError) == 0) {
-        _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeError, message);
+        _ofxEffectInstance->setPersistentMessage(eMessageTypeError, message);
     } else if ( strcmp(type, kOfxMessageWarning) == 0 ) {
-        _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, message);
+        _ofxEffectInstance->setPersistentMessage(eMessageTypeWarning, message);
     } else if ( strcmp(type, kOfxMessageMessage) == 0 ) {
-        _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeInfo, message);
+        _ofxEffectInstance->setPersistentMessage(eMessageTypeInfo, message);
     }
 
     return kOfxStatOK;
@@ -196,13 +196,13 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
     if (type == kOfxMessageLog) {
         appPTR->writeToOfxLog_mt_safe( message.c_str() );
     } else if ( (type == kOfxMessageFatal) || (type == kOfxMessageError) ) {
-        _ofxEffectInstance->message(Natron::eMessageTypeError, message);
+        _ofxEffectInstance->message(eMessageTypeError, message);
     } else if (type == kOfxMessageWarning) {
-        _ofxEffectInstance->message(Natron::eMessageTypeWarning, message);
+        _ofxEffectInstance->message(eMessageTypeWarning, message);
     } else if (type == kOfxMessageMessage) {
-        _ofxEffectInstance->message(Natron::eMessageTypeInfo, message);
+        _ofxEffectInstance->message(eMessageTypeInfo, message);
     } else if (type == kOfxMessageQuestion) {
-        if ( _ofxEffectInstance->message(Natron::eMessageTypeQuestion, message) ) {
+        if ( _ofxEffectInstance->message(eMessageTypeQuestion, message) ) {
             return kOfxStatReplyYes;
         } else {
             return kOfxStatReplyNo;
@@ -331,7 +331,7 @@ OfxImageEffectInstance::getRenderScaleRecursive(double &x,
     if ( !attachedViewers.empty() ) {
         ViewerInstance* first = attachedViewers.front();
         int mipMapLevel = first->getMipMapLevel();
-        x = Natron::Image::getScaleFromMipMapLevel( (unsigned int)mipMapLevel );
+        x = Image::getScaleFromMipMapLevel( (unsigned int)mipMapLevel );
         y = x;
     } else {
         x = 1.;
@@ -675,7 +675,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
             int layoutHint = (*it)->getProperties().getIntProperty(kOfxParamPropLayoutHint);
             if (layoutHint == kOfxParamPropLayoutHintDivider) {
                 
-                boost::shared_ptr<KnobSeparator> sep = Natron::createKnob<KnobSeparator>( getOfxEffectInstance(),"");
+                boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>( getOfxEffectInstance(),"");
                 sep->setName((*it)->getName() + "_separator");
                 if (grp) {
                     grp->addKnob(sep);
@@ -720,7 +720,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                         
                             if (child->isSeparatorActivated()) {
                     
-                                boost::shared_ptr<KnobSeparator> sep = Natron::createKnob<KnobSeparator>( getOfxEffectInstance(),"");
+                                boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>( getOfxEffectInstance(),"");
                                 sep->setName(child->getName() + "_separator");
                                 pageKnob->addKnob(sep);
                             }
@@ -833,7 +833,7 @@ OfxImageEffectInstance::timeLineGotoTime(double t)
     bool redrawNeeded = _ofxEffectInstance->checkIfOverlayRedrawNeeded();
     Q_UNUSED(redrawNeeded);
     
-    _ofxEffectInstance->getApp()->getTimeLine()->seekFrame( (int)t, false, 0, Natron::eTimelineChangeReasonOtherSeek);
+    _ofxEffectInstance->getApp()->getTimeLine()->seekFrame( (int)t, false, 0, eTimelineChangeReasonOtherSeek);
 }
 
 /// get the first and last times available on the effect's timeline
@@ -861,7 +861,7 @@ OfxImageEffectInstance::newMemoryInstance(size_t nBytes)
     bool allocated = ret->alloc(nBytes);
 
     if ((nBytes != 0 && !ret->getPtr()) || !allocated) {
-        Natron::errorDialog(QObject::tr("Out of memory").toStdString(), getOfxEffectInstance()->getNode()->getLabel_mt_safe() + QObject::tr(" failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
+        Dialogs::errorDialog(QObject::tr("Out of memory").toStdString(), getOfxEffectInstance()->getNode()->getLabel_mt_safe() + QObject::tr(" failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
     }
 
     return ret;
@@ -941,18 +941,18 @@ OfxImageEffectInstance::getClipPreferences_safe(std::map<OfxClipInstance*, ClipP
         "earlier (before connecting the node @see Node::canConnectInput) .";
         outArgs.setDoubleProperty(kOfxImageEffectPropFrameRate, getFrameRate());
         std::string name = _ofxEffectInstance->getScriptName_mt_safe();
-        _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different pixel aspect ratio or different frame rates but it cannot handle it.");
+        _ofxEffectInstance->setPersistentMessage(eMessageTypeWarning, "Several input clips with different pixel aspect ratio or different frame rates but it cannot handle it.");
     }
 
     if (mustWarnPar && !mustWarnFPS) {
         std::string name = _ofxEffectInstance->getNode()->getLabel_mt_safe();
-        _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different pixel aspect ratio but it cannot handle it.");
+        _ofxEffectInstance->setPersistentMessage(eMessageTypeWarning, "Several input clips with different pixel aspect ratio but it cannot handle it.");
     } else if (!mustWarnPar && mustWarnFPS) {
         std::string name = _ofxEffectInstance->getNode()->getLabel_mt_safe();
-        _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different frame rates but it cannot handle it.");
+        _ofxEffectInstance->setPersistentMessage(eMessageTypeWarning, "Several input clips with different frame rates but it cannot handle it.");
     } else if (mustWarnPar && mustWarnFPS) {
         std::string name = _ofxEffectInstance->getNode()->getLabel_mt_safe();
-        _ofxEffectInstance->setPersistentMessage(Natron::eMessageTypeWarning, "Several input clips with different pixel aspect ratio and different frame rates but it cannot handle it.");
+        _ofxEffectInstance->setPersistentMessage(eMessageTypeWarning, "Several input clips with different pixel aspect ratio and different frame rates but it cannot handle it.");
     } else {
         if (_ofxEffectInstance->getNode()->hasPersistentMessage()) {
             _ofxEffectInstance->clearPersistentMessage(false);
@@ -1150,3 +1150,5 @@ OfxImageEffectInstance::paramChangedByPlugin(OFX::Host::Param::Instance */*param
      To prevent that, Natron already checks the current thread and calls the instanceChanged action in the appropriate thread.
      */
 }
+
+NATRON_NAMESPACE_EXIT;

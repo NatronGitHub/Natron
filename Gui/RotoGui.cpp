@@ -96,7 +96,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kTransformArrowOffsetFromPoint 15
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 namespace {
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
@@ -237,7 +237,7 @@ struct RotoGui::RotoGuiPrivate
     ComboBox* timeOffsetMode;
     ComboBox* sourceTypeCombobox;
     Button* resetCloneOffset;
-    Natron::Label* multiStrokeEnabledLabel;
+    Label* multiStrokeEnabledLabel;
     QCheckBox* multiStrokeEnabled;
     
     
@@ -552,43 +552,43 @@ RotoGui::RotoGui(NodeGui* node,
     QPixmap pixBboxClickEnabled,pixBboxClickDisabled;
     QPixmap pixPaintBrush,pixEraser,pixBlur,pixSmear,pixSharpen,pixDodge,pixBurn,pixClone,pixReveal,pixPencil;
 
-    appPTR->getIcon(Natron::NATRON_PIXMAP_BEZIER_32, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBezier);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ELLIPSE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixEllipse);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_RECTANGLE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRectangle);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ADD_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixAddPts);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRemovePts);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CUSP_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixCuspPts);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SMOOTH_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSmoothPts);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_OPEN_CLOSE_CURVE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixOpenCloseCurve);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_FEATHER, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRemoveFeather);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SELECT_ALL, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSelectAll);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SELECT_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSelectPoints);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SELECT_FEATHER, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSelectFeather);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_SELECT_CURVES, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSelectCurves);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_AUTO_KEYING_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixAutoKeyingEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_AUTO_KEYING_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixAutoKeyingDisabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_STICKY_SELECTION_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixStickySelEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_STICKY_SELECTION_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixStickySelDisabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_FEATHER_LINK_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixFeatherLinkEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_FEATHER_LINK_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixFeatherLinkDisabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ADD_KEYFRAME, NATRON_LARGE_BUTTON_ICON_SIZE, &pixAddKey);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_REMOVE_KEYFRAME, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRemoveKey);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_RIPPLE_EDIT_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRippleEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_RIPPLE_EDIT_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRippleDisabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_FEATHER_VISIBLE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixFeatherEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_FEATHER_UNVISIBLE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixFeatherDisabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_ROI_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBboxClickEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_ROI_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBboxClickDisabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_SOLID, NATRON_LARGE_BUTTON_ICON_SIZE, &pixPaintBrush);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_ERASER, NATRON_LARGE_BUTTON_ICON_SIZE, &pixEraser);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_BLUR, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBlur);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_SMEAR, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSmear);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_SHARPEN, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSharpen);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_DODGE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixDodge);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_BURN, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBurn);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_CLONE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixClone);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ROTOPAINT_REVEAL, NATRON_LARGE_BUTTON_ICON_SIZE, &pixReveal);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PENCIL, NATRON_LARGE_BUTTON_ICON_SIZE, &pixPencil);
+    appPTR->getIcon(NATRON_PIXMAP_BEZIER_32, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBezier);
+    appPTR->getIcon(NATRON_PIXMAP_ELLIPSE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixEllipse);
+    appPTR->getIcon(NATRON_PIXMAP_RECTANGLE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRectangle);
+    appPTR->getIcon(NATRON_PIXMAP_ADD_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixAddPts);
+    appPTR->getIcon(NATRON_PIXMAP_REMOVE_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRemovePts);
+    appPTR->getIcon(NATRON_PIXMAP_CUSP_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixCuspPts);
+    appPTR->getIcon(NATRON_PIXMAP_SMOOTH_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSmoothPts);
+    appPTR->getIcon(NATRON_PIXMAP_OPEN_CLOSE_CURVE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixOpenCloseCurve);
+    appPTR->getIcon(NATRON_PIXMAP_REMOVE_FEATHER, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRemoveFeather);
+    appPTR->getIcon(NATRON_PIXMAP_SELECT_ALL, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSelectAll);
+    appPTR->getIcon(NATRON_PIXMAP_SELECT_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSelectPoints);
+    appPTR->getIcon(NATRON_PIXMAP_SELECT_FEATHER, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSelectFeather);
+    appPTR->getIcon(NATRON_PIXMAP_SELECT_CURVES, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSelectCurves);
+    appPTR->getIcon(NATRON_PIXMAP_AUTO_KEYING_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixAutoKeyingEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_AUTO_KEYING_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixAutoKeyingDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_STICKY_SELECTION_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixStickySelEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_STICKY_SELECTION_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixStickySelDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_FEATHER_LINK_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixFeatherLinkEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_FEATHER_LINK_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixFeatherLinkDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_ADD_KEYFRAME, NATRON_LARGE_BUTTON_ICON_SIZE, &pixAddKey);
+    appPTR->getIcon(NATRON_PIXMAP_REMOVE_KEYFRAME, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRemoveKey);
+    appPTR->getIcon(NATRON_PIXMAP_RIPPLE_EDIT_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRippleEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_RIPPLE_EDIT_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRippleDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_FEATHER_VISIBLE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixFeatherEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_FEATHER_UNVISIBLE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixFeatherDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_ROI_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBboxClickEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_ROI_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBboxClickDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_SOLID, NATRON_LARGE_BUTTON_ICON_SIZE, &pixPaintBrush);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_ERASER, NATRON_LARGE_BUTTON_ICON_SIZE, &pixEraser);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_BLUR, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBlur);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_SMEAR, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSmear);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_SHARPEN, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSharpen);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_DODGE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixDodge);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_BURN, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBurn);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_CLONE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixClone);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_REVEAL, NATRON_LARGE_BUTTON_ICON_SIZE, &pixReveal);
+    appPTR->getIcon(NATRON_PIXMAP_PENCIL, NATRON_LARGE_BUTTON_ICON_SIZE, &pixPencil);
     
     _imp->toolbar = new QToolBar(parent);
     _imp->toolbar->setOrientation(Qt::Vertical);
@@ -607,7 +607,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->autoKeyingEnabled->setCheckable(true);
     _imp->autoKeyingEnabled->setChecked( _imp->context->isAutoKeyingEnabled() );
     _imp->autoKeyingEnabled->setDown( _imp->context->isAutoKeyingEnabled() );
-    _imp->autoKeyingEnabled->setToolTip(Natron::convertFromPlainText(tr("Auto-keying: When activated any movement to a control point will set a keyframe at the current time."), Qt::WhiteSpaceNormal));
+    _imp->autoKeyingEnabled->setToolTip(GuiUtils::convertFromPlainText(tr("Auto-keying: When activated any movement to a control point will set a keyframe at the current time."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->autoKeyingEnabled, SIGNAL( clicked(bool) ), this, SLOT( onAutoKeyingButtonClicked(bool) ) );
     _imp->selectionButtonsBarLayout->addWidget(_imp->autoKeyingEnabled);
     
@@ -620,7 +620,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->featherLinkEnabled->setCheckable(true);
     _imp->featherLinkEnabled->setChecked( _imp->context->isFeatherLinkEnabled() );
     _imp->featherLinkEnabled->setDown( _imp->context->isFeatherLinkEnabled() );
-    _imp->featherLinkEnabled->setToolTip(Natron::convertFromPlainText(tr("Feather-link: When activated the feather points will follow the same"
+    _imp->featherLinkEnabled->setToolTip(GuiUtils::convertFromPlainText(tr("Feather-link: When activated the feather points will follow the same"
                                                                          " movement as their counter-part does."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->featherLinkEnabled, SIGNAL( clicked(bool) ), this, SLOT( onFeatherLinkButtonClicked(bool) ) );
     _imp->selectionButtonsBarLayout->addWidget(_imp->featherLinkEnabled);
@@ -634,7 +634,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->displayFeatherEnabled->setCheckable(true);
     _imp->displayFeatherEnabled->setChecked(true);
     _imp->displayFeatherEnabled->setDown(true);
-    _imp->displayFeatherEnabled->setToolTip(Natron::convertFromPlainText(tr("When checked, the feather curve applied to the shape(s) will be visible and editable."), Qt::WhiteSpaceNormal));
+    _imp->displayFeatherEnabled->setToolTip(GuiUtils::convertFromPlainText(tr("When checked, the feather curve applied to the shape(s) will be visible and editable."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->displayFeatherEnabled, SIGNAL( clicked(bool) ), this, SLOT( onDisplayFeatherButtonClicked(bool) ) );
     _imp->selectionButtonsBarLayout->addWidget(_imp->displayFeatherEnabled);
     
@@ -647,7 +647,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->stickySelectionEnabled->setCheckable(true);
     _imp->stickySelectionEnabled->setChecked(false);
     _imp->stickySelectionEnabled->setDown(false);
-    _imp->stickySelectionEnabled->setToolTip(Natron::convertFromPlainText(tr("Sticky-selection: When activated, "
+    _imp->stickySelectionEnabled->setToolTip(GuiUtils::convertFromPlainText(tr("Sticky-selection: When activated, "
                                                                              " clicking outside of any shape will not clear the current selection."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->stickySelectionEnabled, SIGNAL( clicked(bool) ), this, SLOT( onStickySelectionButtonClicked(bool) ) );
     _imp->selectionButtonsBarLayout->addWidget(_imp->stickySelectionEnabled);
@@ -661,7 +661,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->bboxClickAnywhere->setCheckable(true);
     _imp->bboxClickAnywhere->setChecked(true);
     _imp->bboxClickAnywhere->setDown(true);
-    _imp->bboxClickAnywhere->setToolTip(Natron::convertFromPlainText(tr("Easy bounding box manipulation: When activated, "
+    _imp->bboxClickAnywhere->setToolTip(GuiUtils::convertFromPlainText(tr("Easy bounding box manipulation: When activated, "
                                                                         " clicking inside of the bounding box of selected points will move the points."
                                                                         "When deactivated, only clicking on the cross will move the points."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->bboxClickAnywhere, SIGNAL( clicked(bool) ), this, SLOT( onBboxClickButtonClicked(bool) ) );
@@ -677,7 +677,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->rippleEditEnabled->setCheckable(true);
     _imp->rippleEditEnabled->setChecked( _imp->context->isRippleEditEnabled() );
     _imp->rippleEditEnabled->setDown( _imp->context->isRippleEditEnabled() );
-    _imp->rippleEditEnabled->setToolTip(Natron::convertFromPlainText(tr("Ripple-edit: When activated, moving a control point"
+    _imp->rippleEditEnabled->setToolTip(GuiUtils::convertFromPlainText(tr("Ripple-edit: When activated, moving a control point"
                                                                         " will move it by the same amount for all the keyframes "
                                                                         "it has."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->rippleEditEnabled, SIGNAL( clicked(bool) ), this, SLOT( onRippleEditButtonClicked(bool) ) );
@@ -687,14 +687,14 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->addKeyframeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->addKeyframeButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     QObject::connect( _imp->addKeyframeButton, SIGNAL( clicked(bool) ), this, SLOT( onAddKeyFrameClicked() ) );
-    _imp->addKeyframeButton->setToolTip(Natron::convertFromPlainText(tr("Set a keyframe at the current time for the selected shape(s), if any."), Qt::WhiteSpaceNormal));
+    _imp->addKeyframeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Set a keyframe at the current time for the selected shape(s), if any."), Qt::WhiteSpaceNormal));
     _imp->selectionButtonsBarLayout->addWidget(_imp->addKeyframeButton);
     
     _imp->removeKeyframeButton = new Button(QIcon(pixRemoveKey),"",_imp->selectionButtonsBar);
     _imp->removeKeyframeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->removeKeyframeButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     QObject::connect( _imp->removeKeyframeButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveKeyFrameClicked() ) );
-    _imp->removeKeyframeButton->setToolTip(Natron::convertFromPlainText(tr("Remove a keyframe at the current time for the selected shape(s), if any."), Qt::WhiteSpaceNormal));
+    _imp->removeKeyframeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Remove a keyframe at the current time for the selected shape(s), if any."), Qt::WhiteSpaceNormal));
     _imp->selectionButtonsBarLayout->addWidget(_imp->removeKeyframeButton);
     _imp->selectionButtonsBarLayout->addStretch();
     _imp->selectionButtonsBar->setVisible(false);
@@ -707,10 +707,10 @@ RotoGui::RotoGui(NodeGui* node,
     
     
     
-    QString multiTt = Natron::convertFromPlainText(tr("When checked, strokes will be appended to the same item "
+    QString multiTt = GuiUtils::convertFromPlainText(tr("When checked, strokes will be appended to the same item "
                                                       "in the hierarchy as long as the same tool is selected.\n"
                                                       "Select another tool to make a new item."),Qt::WhiteSpaceNormal);
-    _imp->multiStrokeEnabledLabel = new Natron::Label(QObject::tr("Multi-stroke:"),_imp->brushButtonsBar);
+    _imp->multiStrokeEnabledLabel = new Label(QObject::tr("Multi-stroke:"),_imp->brushButtonsBar);
     _imp->multiStrokeEnabledLabel->setToolTip(multiTt);
     _imp->brushButtonsBarLayout->addWidget(_imp->multiStrokeEnabledLabel);
     
@@ -726,12 +726,12 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->colorPickerLabel = new ColorPickerLabel(0,_imp->brushButtonsBar);
     _imp->colorPickerLabel->setColor(Qt::white);
     _imp->colorPickerLabel->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->colorPickerLabel->setToolTip(Natron::convertFromPlainText(tr("The color of the next paint brush stroke to be painted."), Qt::WhiteSpaceNormal));
+    _imp->colorPickerLabel->setToolTip(GuiUtils::convertFromPlainText(tr("The color of the next paint brush stroke to be painted."), Qt::WhiteSpaceNormal));
     _imp->brushButtonsBarLayout->addWidget(_imp->colorPickerLabel);
     QPixmap colorWheelPix;
     appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, NATRON_MEDIUM_BUTTON_ICON_SIZE, &colorWheelPix);
     _imp->colorWheelButton = new Button(QIcon(colorWheelPix),"",_imp->brushButtonsBar);
-    _imp->colorWheelButton->setToolTip(Natron::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));
+    _imp->colorWheelButton->setToolTip(GuiUtils::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));
     _imp->colorWheelButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->colorWheelButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
     QObject::connect(_imp->colorWheelButton, SIGNAL(clicked(bool)), this, SLOT(onColorWheelButtonClicked()));
@@ -742,23 +742,23 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->compositingOperatorButton = new ComboBox(_imp->brushButtonsBar);
     {
         std::vector<std::string> operators,tooltips;
-        getNatronCompositingOperators(&operators, &tooltips);
+        Merge::getOperatorStrings(&operators, &tooltips);
         assert(operators.size() == tooltips.size());
         for (std::size_t i = 0; i < operators.size(); ++i) {
             _imp->compositingOperatorButton->addItem(operators[i].c_str(),QIcon(),QKeySequence(),tooltips[i].c_str());
         }
     }
-    _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)Natron::eMergeCopy);
-    _imp->compositingOperatorButton->setToolTip(Natron::convertFromPlainText(tr("The blending mode of the next brush stroke."), Qt::WhiteSpaceNormal));
+    _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)eMergeCopy);
+    _imp->compositingOperatorButton->setToolTip(GuiUtils::convertFromPlainText(tr("The blending mode of the next brush stroke."), Qt::WhiteSpaceNormal));
     QObject::connect(_imp->compositingOperatorButton, SIGNAL(currentIndexChanged(int)), this, SLOT(onBreakMultiStrokeTriggered()));
     _imp->brushButtonsBarLayout->addWidget(_imp->compositingOperatorButton);
     
     
     _imp->brushButtonsBarLayout->addSpacing(5);
     
-    QString opacitytt = Natron::convertFromPlainText(tr("The opacity of the next brush stroke to be painted. Use CTRL + SHIFT + drag "
+    QString opacitytt = GuiUtils::convertFromPlainText(tr("The opacity of the next brush stroke to be painted. Use CTRL + SHIFT + drag "
                                                         "with the mouse to change the opacity."), Qt::WhiteSpaceNormal);
-    _imp->opacityLabel = new Natron::Label(tr("Opacity:"),_imp->brushButtonsBar);
+    _imp->opacityLabel = new Label(tr("Opacity:"),_imp->brushButtonsBar);
     _imp->opacityLabel->setToolTip(opacitytt);
     _imp->brushButtonsBarLayout->addWidget(_imp->opacityLabel);
     
@@ -779,7 +779,7 @@ RotoGui::RotoGui(NodeGui* node,
     QIcon pressureIc;
     pressureIc.addPixmap(pressureOnPix,QIcon::Normal,QIcon::On);
     pressureIc.addPixmap(pressureOffPix,QIcon::Normal,QIcon::Off);
-    QString pressOpatt = Natron::convertFromPlainText(tr("If checked, the pressure of the pen will dynamically alter the opacity of the next "
+    QString pressOpatt = GuiUtils::convertFromPlainText(tr("If checked, the pressure of the pen will dynamically alter the opacity of the next "
                                                          "brush stroke."), Qt::WhiteSpaceNormal);
     
     _imp->pressureOpacityButton = new Button(pressureIc,"",_imp->brushButtonsBar);
@@ -794,9 +794,9 @@ RotoGui::RotoGui(NodeGui* node,
     
     _imp->brushButtonsBarLayout->addSpacing(5);
     
-    QString sizett = Natron::convertFromPlainText(tr("The size of the next brush stroke to be painted. Use SHIFT + drag with the mouse "
+    QString sizett = GuiUtils::convertFromPlainText(tr("The size of the next brush stroke to be painted. Use SHIFT + drag with the mouse "
                                                      "to change the size."), Qt::WhiteSpaceNormal);
-    _imp->sizeLabel = new Natron::Label(tr("Size:"),_imp->brushButtonsBar);
+    _imp->sizeLabel = new Label(tr("Size:"),_imp->brushButtonsBar);
     _imp->sizeLabel->setToolTip(sizett);
     _imp->brushButtonsBarLayout->addWidget(_imp->sizeLabel);
     
@@ -808,7 +808,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->sizeSpinbox->setToolTip(sizett);
     _imp->brushButtonsBarLayout->addWidget(_imp->sizeSpinbox);
     
-    QString pressSizett = Natron::convertFromPlainText(tr("If checked, the pressure of the pen will dynamically alter the size of the next "
+    QString pressSizett = GuiUtils::convertFromPlainText(tr("If checked, the pressure of the pen will dynamically alter the size of the next "
                                                           "brush stroke."), Qt::WhiteSpaceNormal);
     _imp->pressureSizeButton = new Button(pressureIc,"",_imp->brushButtonsBar);
     QObject::connect(_imp->pressureSizeButton, SIGNAL(clicked(bool)), this, SLOT(onPressureSizeClicked(bool)));
@@ -822,8 +822,8 @@ RotoGui::RotoGui(NodeGui* node,
     
     _imp->brushButtonsBarLayout->addSpacing(5);
     
-    QString hardnesstt = Natron::convertFromPlainText(tr("The hardness of the next brush stroke to be painted."), Qt::WhiteSpaceNormal);
-    _imp->hardnessLabel = new Natron::Label(tr("Hardness:"),_imp->brushButtonsBar);
+    QString hardnesstt = GuiUtils::convertFromPlainText(tr("The hardness of the next brush stroke to be painted."), Qt::WhiteSpaceNormal);
+    _imp->hardnessLabel = new Label(tr("Hardness:"),_imp->brushButtonsBar);
     _imp->hardnessLabel->setToolTip(hardnesstt);
     _imp->brushButtonsBarLayout->addWidget(_imp->hardnessLabel);
     
@@ -835,7 +835,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->hardnessSpinBox->setToolTip(hardnesstt);
     _imp->brushButtonsBarLayout->addWidget(_imp->hardnessSpinBox);
     
-    QString pressHardnesstt = Natron::convertFromPlainText(tr("If checked, the pressure of the pen will dynamically alter the hardness of the next "
+    QString pressHardnesstt = GuiUtils::convertFromPlainText(tr("If checked, the pressure of the pen will dynamically alter the hardness of the next "
                                                               "brush stroke."), Qt::WhiteSpaceNormal);
     _imp->pressureHardnessButton = new Button(pressureIc,"",_imp->brushButtonsBar);
     QObject::connect(_imp->pressureHardnessButton, SIGNAL(clicked(bool)), this, SLOT(onPressureHardnessClicked(bool)));
@@ -849,10 +849,10 @@ RotoGui::RotoGui(NodeGui* node,
     
     _imp->brushButtonsBarLayout->addSpacing(5);
     
-    QString builduptt = Natron::convertFromPlainText(tr("When build-up is enabled, the next brush stroke will build up "
+    QString builduptt = GuiUtils::convertFromPlainText(tr("When build-up is enabled, the next brush stroke will build up "
                                                         "when painted over itself."), Qt::WhiteSpaceNormal);
     
-    _imp->buildUpLabel = new Natron::Label(tr("Build-up:"),_imp->brushButtonsBar);
+    _imp->buildUpLabel = new Label(tr("Build-up:"),_imp->brushButtonsBar);
     _imp->buildUpLabel->setToolTip(builduptt);
     _imp->brushButtonsBarLayout->addWidget(_imp->buildUpLabel);
     
@@ -871,12 +871,12 @@ RotoGui::RotoGui(NodeGui* node,
     
     _imp->brushButtonsBarLayout->addSpacing(5);
     
-    QString timeOfftt = Natron::convertFromPlainText(tr("When the Clone tool is used, this determines depending on the time offset "
+    QString timeOfftt = GuiUtils::convertFromPlainText(tr("When the Clone tool is used, this determines depending on the time offset "
                                                         "mode the source frame to clone. When in absolute mode, this is the frame "
                                                         "number of the source, when in relative mode, this is an offset relative "
                                                         "to the current frame."), Qt::WhiteSpaceNormal);
     
-    _imp->timeOffsetLabel = new Natron::Label(tr("Time Offset:"),_imp->brushButtonsBar);
+    _imp->timeOffsetLabel = new Label(tr("Time Offset:"),_imp->brushButtonsBar);
     _imp->timeOffsetLabel->setVisible(false);
     _imp->timeOffsetLabel->setToolTip(timeOfftt);
     _imp->brushButtonsBarLayout->addWidget(_imp->timeOffsetLabel);
@@ -889,7 +889,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->addWidget(_imp->timeOffsetSpinbox);
     
     _imp->timeOffsetMode = new ComboBox(_imp->brushButtonsBar);
-    _imp->timeOffsetMode->setToolTip(Natron::convertFromPlainText(tr("When in absolute mode, this is the frame number of the source, "
+    _imp->timeOffsetMode->setToolTip(GuiUtils::convertFromPlainText(tr("When in absolute mode, this is the frame number of the source, "
                                                                      "when in relative mode, this is an offset relative to "
                                                                      "the current frame."), Qt::WhiteSpaceNormal));
     _imp->timeOffsetMode->addItem(tr("Relative"));
@@ -899,7 +899,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->addWidget(_imp->timeOffsetMode);
     
     _imp->sourceTypeCombobox = new ComboBox(_imp->brushButtonsBar);
-    _imp->sourceTypeCombobox->setToolTip(Natron::convertFromPlainText(tr(
+    _imp->sourceTypeCombobox->setToolTip(GuiUtils::convertFromPlainText(tr(
                                                                          "Source color used for painting the stroke when the Reveal/Clone tools are used:\n"
                                                                          "- foreground: the painted result at this point in the hierarchy,\n"
                                                                          "- background: the original image unpainted connected to bg,\n"
@@ -918,7 +918,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->addWidget(_imp->sourceTypeCombobox);
     
     _imp->resetCloneOffset = new Button(QIcon(),tr("Reset Transform"),_imp->brushButtonsBar);
-    _imp->resetCloneOffset->setToolTip(Natron::convertFromPlainText(tr("Reset the transform applied before cloning to identity."),Qt::WhiteSpaceNormal));
+    _imp->resetCloneOffset->setToolTip(GuiUtils::convertFromPlainText(tr("Reset the transform applied before cloning to identity."),Qt::WhiteSpaceNormal));
     QObject::connect(_imp->resetCloneOffset, SIGNAL(clicked(bool)), this, SLOT(onResetCloneTransformClicked()));
     _imp->brushButtonsBarLayout->addWidget(_imp->resetCloneOffset);
     _imp->resetCloneOffset->setVisible(false);
@@ -1267,13 +1267,13 @@ RotoGui::onToolActionTriggeredInternal(QAction* action,
     if (actionRole == eRotoRolePaintBrush || actionRole == eRotoRoleCloneBrush || actionRole == eRotoRoleMergeBrush ||
         actionRole == eRotoRoleEffectBrush) {
         if ((RotoToolEnum)data.x() == eRotoToolSolidBrush || (RotoToolEnum)data.x() == eRotoToolOpenBezier) {
-            _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)Natron::eMergeOver);
+            _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)eMergeOver);
         } else if ((RotoToolEnum)data.x() == eRotoToolBurn) {
-            _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)Natron::eMergeColorBurn);
+            _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)eMergeColorBurn);
         } else if ((RotoToolEnum)data.x() == eRotoToolDodge) {
-            _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)Natron::eMergeColorDodge);
+            _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)eMergeColorDodge);
         } else {
-            _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)Natron::eMergeCopy);
+            _imp->compositingOperatorButton->setCurrentIndex_no_emit((int)eMergeCopy);
         }
     }
     
@@ -1742,10 +1742,10 @@ RotoGui::drawOverlays(double time,
                             if ( !isBezier->isOpenBezier() && (_imp->selectedTool == eRotoToolSelectAll || _imp->selectedTool == eRotoToolSelectFeatherPoints) ) {
                                 int cpCount = (*it2)->getBezier()->getControlPointsCount();
                                 if (cpCount > 1) {
-                                    Natron::Point controlPoint;
+                                    Point controlPoint;
                                     controlPoint.x = x;
                                     controlPoint.y = y;
-                                    Natron::Point featherPoint;
+                                    Point featherPoint;
                                     featherPoint.x = xF;
                                     featherPoint.y = yF;
                                     
@@ -2234,7 +2234,7 @@ handleControlPointMaximum(double time,
 void
 RotoGui::RotoGuiPrivate::computeSelectedCpsBBOX()
 {
-    boost::shared_ptr<Natron::Node> n = node->getNode();
+    boost::shared_ptr<Node> n = node->getNode();
     if ((n && !n->isActivated()) || !viewer) {
         return;
     }
@@ -2326,7 +2326,7 @@ RotoGui::RotoGuiPrivate::handleControlPointSelection(const std::pair<boost::shar
 bool
 RotoGui::penDown(double time,
                  const RenderScale & renderScale,
-                 Natron::PenType pen,
+                 PenType pen,
                  bool isTabletEvent,
                  const QPointF & viewportPos,
                  const QPointF & pos,
@@ -3384,43 +3384,43 @@ RotoGui::RotoGuiPrivate::checkViewersAreDirectlyConnected()
 void
 RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
 {
-    Natron::RotoStrokeType strokeType;
+    RotoStrokeType strokeType;
     std::string itemName;
     switch (selectedTool) {
         case eRotoToolSolidBrush:
-            strokeType = Natron::eRotoStrokeTypeSolid;
+            strokeType = eRotoStrokeTypeSolid;
             itemName = kRotoPaintBrushBaseName;
             break;
         case eRotoToolEraserBrush:
-            strokeType = Natron::eRotoStrokeTypeEraser;
+            strokeType = eRotoStrokeTypeEraser;
             itemName = kRotoPaintEraserBaseName;
             break;
         case eRotoToolClone:
-            strokeType = Natron::eRotoStrokeTypeClone;
+            strokeType = eRotoStrokeTypeClone;
             itemName = kRotoPaintCloneBaseName;
             break;
         case eRotoToolReveal:
-            strokeType = Natron::eRotoStrokeTypeReveal;
+            strokeType = eRotoStrokeTypeReveal;
             itemName = kRotoPaintRevealBaseName;
             break;
         case eRotoToolBlur:
-            strokeType = Natron::eRotoStrokeTypeBlur;
+            strokeType = eRotoStrokeTypeBlur;
             itemName = kRotoPaintBlurBaseName;
             break;
         case eRotoToolSharpen:
-            strokeType = Natron::eRotoStrokeTypeSharpen;
+            strokeType = eRotoStrokeTypeSharpen;
             itemName = kRotoPaintSharpenBaseName;
             break;
         case eRotoToolSmear:
-            strokeType = Natron::eRotoStrokeTypeSmear;
+            strokeType = eRotoStrokeTypeSmear;
             itemName = kRotoPaintSmearBaseName;
             break;
         case eRotoToolDodge:
-            strokeType = Natron::eRotoStrokeTypeDodge;
+            strokeType = eRotoStrokeTypeDodge;
             itemName = kRotoPaintDodgeBaseName;
             break;
         case eRotoToolBurn:
-            strokeType = Natron::eRotoStrokeTypeBurn;
+            strokeType = eRotoStrokeTypeBurn;
             itemName = kRotoPaintBurnBaseName;
             break;
         default:
@@ -3471,12 +3471,12 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
     int sourceType_i = sourceTypeCombobox->activeIndex();
     
 
-    double r = Natron::Color::from_func_srgb(color.redF());
-    double g = Natron::Color::from_func_srgb(color.greenF());
-    double b = Natron::Color::from_func_srgb(color.blueF());
+    double r = Color::from_func_srgb(color.redF());
+    double g = Color::from_func_srgb(color.greenF());
+    double b = Color::from_func_srgb(color.blueF());
 
-    colorKnob->setValues(r,g,b, Natron::eValueChangedReasonNatronGuiEdited);
-    operatorKnob->setValueFromLabel(getNatronOperationString(compOp),0);
+    colorKnob->setValues(r,g,b, eValueChangedReasonNatronGuiEdited);
+    operatorKnob->setValueFromLabel(Merge::getOperatorString(compOp),0);
     opacityKnob->setValue(opacity, 0);
     sizeKnob->setValue(size, 0);
     hardnessKnob->setValue(hardness, 0);
@@ -3488,11 +3488,11 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
         boost::shared_ptr<KnobInt> lifeTimeFrameKnob = rotoData->strokeBeingPaint->getLifeTimeFrameKnob();
         lifeTimeFrameKnob->setValue(context->getTimelineCurrentTime(), 0);
     }
-    if (strokeType == Natron::eRotoStrokeTypeClone || strokeType == Natron::eRotoStrokeTypeReveal) {
+    if (strokeType == eRotoStrokeTypeClone || strokeType == eRotoStrokeTypeReveal) {
         timeOffsetKnob->setValue(timeOffset, 0);
         timeOffsetModeKnob->setValue(timeOffsetMode_i, 0);
         sourceTypeKnob->setValue(sourceType_i, 0);
-        translateKnob->setValues(-rotoData->cloneOffset.first, -rotoData->cloneOffset.second, Natron::eValueChangedReasonNatronGuiEdited);
+        translateKnob->setValues(-rotoData->cloneOffset.first, -rotoData->cloneOffset.second, eValueChangedReasonNatronGuiEdited);
     }
     if (!prepareForLater) {
         boost::shared_ptr<RotoLayer> layer = context->findDeepestSelectedLayer();
@@ -3525,8 +3525,8 @@ RotoGui::keyDown(double /*time*/,
                  const RenderScale & renderScale,
                  QKeyEvent* e)
 {
-    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
-    Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     NodePtr node = _imp->node->getNode();
     node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
     if (node->onOverlayKeyDownDefault(renderScale, natronKey, natronMod)) {
@@ -3672,8 +3672,8 @@ RotoGui::keyRepeat(double /*time*/,
 {
     NodePtr node = _imp->node->getNode();
     node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
-    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
-    Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     if (node->onOverlayKeyRepeatDefault(renderScale, natronKey, natronMod)) {
         return true;
     }
@@ -3709,8 +3709,8 @@ RotoGui::keyUp(double /*time*/,
                const RenderScale & renderScale,
                QKeyEvent* e)
 {
-    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
-    Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     NodePtr node = _imp->node->getNode();
     node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
     if (node->onOverlayKeyUpDefault(renderScale, natronKey, natronMod)) {
@@ -4133,7 +4133,7 @@ RotoGui::RotoGuiPrivate::isNearbyFeatherBar(double time,
             controlPoint = Transform::matApply(transform, controlPoint);
             featherPoint = Transform::matApply(transform, featherPoint);
             {
-                Natron::Point cp,fp;
+                Point cp,fp;
                 cp.x = controlPoint.x;
                 cp.y = controlPoint.y;
                 fp.x = featherPoint.x;
@@ -4448,7 +4448,7 @@ void
 RotoGui::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
 {
     QPoint pos = QCursor::pos();
-    Natron::Menu menu(_imp->viewer);
+    Menu menu(_imp->viewer);
     
 
 
@@ -4693,7 +4693,7 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
     _imp->viewer->getPixelScale(pixelScale.first, pixelScale.second);
     
     QPoint pos = QCursor::pos();
-    Natron::Menu menu(_imp->viewer);
+    Menu menu(_imp->viewer);
 
     //menu.setFont( QFont(appFont,appFontSize) );
 
@@ -4842,7 +4842,7 @@ RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost
         }
     }
     if ( knobs.empty() ) {
-        Natron::warningDialog( "", tr("No tracker found in the project.").toStdString() );
+        Dialogs::warningDialog( "", tr("No tracker found in the project.").toStdString() );
 
         return;
     }
@@ -4926,3 +4926,8 @@ RotoGui::onResetCloneTransformClicked()
     _imp->rotoData->cloneOffset.first = _imp->rotoData->cloneOffset.second = 0;
     onBreakMultiStrokeTriggered();
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_RotoGui.cpp"

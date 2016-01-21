@@ -59,6 +59,8 @@
 // number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 #define kGraphicalContainerOffset 10
 
+NATRON_NAMESPACE_ENTER;
+
 struct EdgePrivate
 {
     Edge* _publicInterface;
@@ -139,7 +141,7 @@ EdgePrivate::initLabel()
         QColor txt;
         double r,g,b;
         appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
-        txt.setRgbF(Natron::clamp(r,0.,1.),Natron::clamp(g,0.,1.), Natron::clamp(b,0.,1.));
+        txt.setRgbF(Image::clamp(r,0.,1.),Image::clamp(g,0.,1.), Image::clamp(b,0.,1.));
         label->setBrush(txt);
         QFont f = qApp->font();
         bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
@@ -289,7 +291,7 @@ Edge::refreshState(bool hovered)
 {
     boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
     
-    Natron::EffectInstance* effect = dst ? dst->getNode()->getLiveInstance() : 0;
+    EffectInstance* effect = dst ? dst->getNode()->getLiveInstance() : 0;
     
     if (effect) {
         
@@ -904,3 +906,7 @@ LinkArrow::paint(QPainter *painter,
     painter->fillPath(headPath, _headColor);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_Edge.cpp"

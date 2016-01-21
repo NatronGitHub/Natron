@@ -63,6 +63,8 @@
 #define TO_DPIX(x) ( appPTR->adjustSizeToDPIX(x) )
 #define TO_DPIY(y) ( appPTR->adjustSizeToDPIY(y) )
 
+NATRON_NAMESPACE_ENTER;
+
 struct PythonUserCommand {
     QString grouping;
     Qt::Key key;
@@ -97,8 +99,8 @@ public:
         return false;
     }
 
-    void getIcon(Natron::PixmapEnum e, QPixmap* pix) const;
-    void getIcon(Natron::PixmapEnum e, int size, QPixmap* pix) const;
+    void getIcon(PixmapEnum e, QPixmap* pix) const;
+    void getIcon(PixmapEnum e, int size, QPixmap* pix) const;
 
     void setKnobClipBoard(bool copyAnimation,
                           const std::list<Variant> & values,
@@ -131,7 +133,7 @@ public:
     virtual void setLoadingStatus(const QString & str) OVERRIDE FINAL;
     KnobGui* createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
     virtual void setUndoRedoStackLimit(int limit) OVERRIDE FINAL;
-    virtual void debugImage( const Natron::Image* image, const RectI& roi, const QString & filename = QString() ) const OVERRIDE FINAL;
+    virtual void debugImage( const Image* image, const RectI& roi, const QString & filename = QString() ) const OVERRIDE FINAL;
 
     void setFileToOpen(const QString & str);
 
@@ -228,8 +230,8 @@ private:
 
     virtual void initBuiltinPythonModules() OVERRIDE FINAL;
 
-    void onPluginLoaded(Natron::Plugin* plugin) OVERRIDE;
-    virtual void ignorePlugin(Natron::Plugin* plugin) OVERRIDE FINAL;
+    void onPluginLoaded(Plugin* plugin) OVERRIDE;
+    virtual void ignorePlugin(Plugin* plugin) OVERRIDE FINAL;
     virtual void onAllPluginsLoaded() OVERRIDE FINAL;
     virtual void loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                         std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap) OVERRIDE;
@@ -252,5 +254,8 @@ private:
 
     boost::scoped_ptr<GuiApplicationManagerPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
+
 
 #endif // Gui_GuiApplicationManager_h

@@ -69,19 +69,16 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/EngineFwd.h"
 
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
 
 
-using namespace Natron;
-
-
-class KnobFile;
-class KnobOutputFile;
+NATRON_NAMESPACE_ENTER;
 
 
 OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
-    : Natron::EffectInstance(node)
+    : EffectInstance(node)
     , _outputEffectDataLock()
     , _renderSequenceRequests()
     , _engine(0)
@@ -167,8 +164,8 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
     
     ///The effect is sequential (e.g: WriteFFMPEG), and thus cannot render multiple views, we have to choose one
     ///We pick the user defined main view in the project settings
-    Natron::SequentialPreferenceEnum sequentiallity = getSequentialPreference();
-    bool canOnlyHandleOneView = sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential;
+    SequentialPreferenceEnum sequentiallity = getSequentialPreference();
+    bool canOnlyHandleOneView = sequentiallity == eSequentialPreferenceOnlySequential || sequentiallity == eSequentialPreferencePreferSequential;
     
     if (canOnlyHandleOneView) {
         viewsToRender.clear();
@@ -221,12 +218,12 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
                             if (!renderController) {
                                 message.append(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n");
                                 message = message + QObject::tr("Would you like to continue?");
-                                Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel), Natron::eStandardButtonOk);
-                                if (rep != Natron::eStandardButtonOk) {
+                                StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
+                                if (rep != eStandardButtonOk) {
                                     return;
                                 }
                             } else {
-                                Natron::warningDialog(tr("Multi-view support").toStdString(), message.toStdString());
+                                Dialogs::warningDialog(tr("Multi-view support").toStdString(), message.toStdString());
                             }
                         }
                         //Render the main-view only...
@@ -252,12 +249,12 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
             if (!renderController) {
                 message.append(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n");
                 message = message + QObject::tr("Would you like to continue?");
-                Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel), Natron::eStandardButtonOk);
-                if (rep != Natron::eStandardButtonOk) {
+                StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
+                if (rep != eStandardButtonOk) {
                     return;
                 }
             } else {
-                Natron::warningDialog(tr("Multi-view support").toStdString(), message.toStdString());
+                Dialogs::warningDialog(tr("Multi-view support").toStdString(), message.toStdString());
             }
         }
         
@@ -462,7 +459,7 @@ void
 OutputEffectInstance::reportStats(int time,
                                   int view,
                                   double wallTime,
-                                  const std::map<boost::shared_ptr<Natron::Node>, NodeRenderStats > & stats)
+                                  const std::map<boost::shared_ptr<Node>, NodeRenderStats > & stats)
 {
     std::string filename;
     boost::shared_ptr<KnobI> fileKnob = getKnobByName(kOfxImageEffectFileParamName);
@@ -471,7 +468,7 @@ OutputEffectInstance::reportStats(int time,
         KnobOutputFile* strKnob = dynamic_cast<KnobOutputFile*>( fileKnob.get() );
         if  (strKnob) {
             QString qfileName( SequenceParsing::generateFileNameFromPattern(strKnob->getValue(0), time, view).c_str() );
-            Natron::removeFileExtension(qfileName);
+            QtCompat::removeFileExtension(qfileName);
             qfileName.append("-stats.txt");
             filename = qfileName.toStdString();
         }
@@ -502,7 +499,7 @@ OutputEffectInstance::reportStats(int time,
     }
 
     ofile << "Time spent to render frame (wall clock time): " << Timer::printAsTime(wallTime, false).toStdString() << std::endl;
-    for (std::map<boost::shared_ptr<Natron::Node>, NodeRenderStats >::const_iterator it = stats.begin(); it != stats.end(); ++it) {
+    for (std::map<boost::shared_ptr<Node>, NodeRenderStats >::const_iterator it = stats.begin(); it != stats.end(); ++it) {
         ofile << "------------------------------- " << it->first->getScriptName_mt_safe() << "------------------------------- " << std::endl;
         ofile << "Time spent rendering: " << Timer::printAsTime(it->second.getTotalTimeSpentRendering(), false).toStdString() << std::endl;
         const RectD & rod = it->second.getRoD();
@@ -547,13 +544,13 @@ OutputEffectInstance::reportStats(int time,
 
         ofile << "Output alpha premultiplication: ";
         switch ( it->second.getOutputPremult() ) {
-        case Natron::eImagePremultiplicationOpaque:
+        case eImagePremultiplicationOpaque:
             ofile << "opaque";
             break;
-        case Natron::eImagePremultiplicationPremultiplied:
+        case eImagePremultiplicationPremultiplied:
             ofile << "premultiplied";
             break;
-        case Natron::eImagePremultiplicationUnPremultiplied:
+        case eImagePremultiplicationUnPremultiplied:
             ofile << "unpremultiplied";
             break;
         }
@@ -577,11 +574,11 @@ OutputEffectInstance::reportStats(int time,
         }
         ofile << std::endl;
 
-        std::list<std::pair<RectI, boost::shared_ptr<Natron::Node> > > identityRectangles = it->second.getIdentityRectangles();
+        std::list<std::pair<RectI, boost::shared_ptr<Node> > > identityRectangles = it->second.getIdentityRectangles();
         const std::list<RectI> & renderedRectangles = it->second.getRenderedRectangles();
 
         ofile << "Identity rectangles: " << identityRectangles.size() << std::endl;
-        for (std::list<std::pair<RectI, boost::shared_ptr<Natron::Node> > > ::iterator it2 = identityRectangles.begin(); it2 != identityRectangles.end(); ++it2) {
+        for (std::list<std::pair<RectI, boost::shared_ptr<Node> > > ::iterator it2 = identityRectangles.begin(); it2 != identityRectangles.end(); ++it2) {
             ofile << "Origin: " << it2->second->getScriptName_mt_safe() << ", rect: x1 = " << it2->first.x1
                   << " y1 = " << it2->first.y1 << " x2 = " << it2->first.x2 << " y2 = " << it2->first.y2 << std::endl;
         }
@@ -593,3 +590,4 @@ OutputEffectInstance::reportStats(int time,
     }
 } // OutputEffectInstance::reportStats
 
+NATRON_NAMESPACE_EXIT;

@@ -32,27 +32,29 @@
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 class UpdateViewerParams; // ViewerInstancePrivate
 
-typedef std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > RenderStatsMap;
+typedef std::map<boost::shared_ptr<Node>,NodeRenderStats > RenderStatsMap;
 
 struct ViewerArgs
 {
-    Natron::EffectInstance* activeInputToRender;
+    EffectInstance* activeInputToRender;
     bool forceRender;
     int activeInputIndex;
     U64 activeInputHash;
-    boost::shared_ptr<Natron::FrameKey> key;
+    boost::shared_ptr<FrameKey> key;
     boost::shared_ptr<UpdateViewerParams> params;
     boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
     bool draftModeEnabled;
     bool autoContrast;
-    Natron::DisplayChannelsEnum channels;
+    DisplayChannelsEnum channels;
     bool userRoIEnabled;
 };
 
 class ViewerInstance
-: public Natron::OutputEffectInstance
+: public OutputEffectInstance
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -61,9 +63,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     friend class ViewerCurrentFrameRequestScheduler;
     
 public:
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n) WARN_UNUSED_RETURN;
+    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n) WARN_UNUSED_RETURN;
 
-    ViewerInstance(boost::shared_ptr<Natron::Node> node);
+    ViewerInstance(boost::shared_ptr<Node> node);
 
     virtual ~ViewerInstance();
     
@@ -101,7 +103,7 @@ public:
                                                         int view,
                                                         int textureIndex,
                                                         U64 viewerHash,
-                                                        const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                        const boost::shared_ptr<Node>& rotoPaintNode,
                                                         bool useTLS,
                                                         const boost::shared_ptr<RenderStats>& stats,
                                                         ViewerArgs* outArgs);
@@ -117,7 +119,7 @@ private:
                                                         int view,
                                                         int textureIndex,
                                                         U64 viewerHash,
-                                                        const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                        const boost::shared_ptr<Node>& rotoPaintNode,
                                                         bool useTLS,
                                                         U64 renderAge,
                                                         const boost::shared_ptr<RenderStats>& stats,
@@ -139,7 +141,7 @@ public:
     ViewerRenderRetCode renderViewer(int view,bool singleThreaded,bool isSequentialRender,
                                     U64 viewerHash,
                                     bool canAbort,
-                                    const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                    const boost::shared_ptr<Node>& rotoPaintNode,
                                     bool useTLS,
                                     boost::shared_ptr<ViewerArgs> args[2],
                                     const boost::shared_ptr<RequestedFrame>& request,
@@ -149,7 +151,7 @@ public:
                                                     bool canAbort,
                                                     int view,
                                                     U64 viewerHash,
-                                                    const boost::shared_ptr<Natron::Node>& rotoPaintNode,
+                                                    const boost::shared_ptr<Node>& rotoPaintNode,
                                                     const boost::shared_ptr<RotoStrokeItem>& strokeItem,
                                                     const boost::shared_ptr<RenderStats>& stats,
                                                     boost::shared_ptr<ViewerArgs>* argsA,
@@ -177,7 +179,7 @@ public:
 
     int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
-    Natron::DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
+    DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
 
     /**
      * @brief This is a short-cut, this is primarily used when the user switch the
@@ -194,11 +196,11 @@ public:
     bool isRenderAbortable(int textureIndex, U64 renderAge) const;
 
 
-    void setDisplayChannels(Natron::DisplayChannelsEnum channels, bool bothInputs);
+    void setDisplayChannels(DisplayChannelsEnum channels, bool bothInputs);
     
-    void setActiveLayer(const Natron::ImageComponents& layer, bool doRender);
+    void setActiveLayer(const ImageComponents& layer, bool doRender);
     
-    void setAlphaChannel(const Natron::ImageComponents& layer, const std::string& channelName, bool doRender);
+    void setAlphaChannel(const ImageComponents& layer, const std::string& channelName, bool doRender);
 
     bool isAutoContrastEnabled() const WARN_UNUSED_RETURN;
 
@@ -215,7 +217,7 @@ public:
     
     double getGamma() const WARN_UNUSED_RETURN;
 
-    void onColorSpaceChanged(Natron::ViewerColorSpaceEnum colorspace);
+    void onColorSpaceChanged(ViewerColorSpaceEnum colorspace);
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
     
@@ -237,11 +239,11 @@ public:
     
     void getTimelineBounds(int* first,int* last) const;
     
-    static const Natron::Color::Lut* lutFromColorspace(Natron::ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
+    static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
     virtual bool refreshClipPreferences(double time,
                                          const RenderScale & scale,
-                                        Natron::ValueChangedReasonEnum reason,
+                                        ValueChangedReasonEnum reason,
                                          bool forceGetClipPrefAction) OVERRIDE FINAL;
     
     virtual void onChannelsSelectorRefreshed() OVERRIDE FINAL;
@@ -347,13 +349,13 @@ private:
         return QString::number(inputNb + 1).toStdString();
     }
 
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL
     {
-        return Natron::eRenderSafetyFullySafe;
+        return eRenderSafetyFullySafe;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     /*******************************************/
     
     
@@ -362,7 +364,7 @@ private:
                                              bool isSequentialRender,
                                              U64 viewerHash,
                                              bool canAbort,
-                                             boost::shared_ptr<Natron::Node> rotoPaintNode,
+                                             boost::shared_ptr<Node> rotoPaintNode,
                                              bool useTLS,
                                              const boost::shared_ptr<RequestedFrame>& request,
                                              const boost::shared_ptr<RenderStats>& stats,
@@ -379,5 +381,6 @@ private:
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
 };
 
-//} // namespace Natron
+NATRON_NAMESPACE_EXIT;
+
 #endif // NATRON_ENGINE_VIEWERNODE_H

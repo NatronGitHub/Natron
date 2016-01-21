@@ -69,8 +69,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 using std::make_pair;
 using std::cout;
 using std::endl;
-using Natron::Label;
 
+NATRON_NAMESPACE_ENTER;
 
 class CurveEditorTreeWidget : public QTreeWidget
 {
@@ -114,7 +114,7 @@ struct CurveEditorPrivate
     CurveEditorTreeWidget* tree;
     QWidget* filterContainer;
     QHBoxLayout* filterLayout;
-    Natron::Label* filterLabel;
+    Label* filterLabel;
     LineEdit* filterEdit;
     QWidget* leftPaneContainer;
     QVBoxLayout* leftPaneLayout;
@@ -124,9 +124,9 @@ struct CurveEditorPrivate
     
     QWidget* expressionContainer;
     QHBoxLayout* expressionLayout;
-    Natron::Label* knobLabel;
+    Label* knobLabel;
     LineEdit* knobLineEdit;
-    Natron::Label* resultLabel;
+    Label* resultLabel;
     
     boost::weak_ptr<KnobCurveGui> selectedKnobCurve;
     
@@ -221,12 +221,12 @@ CurveEditor::CurveEditor(Gui* gui,
     _imp->expressionLayout = new QHBoxLayout(_imp->expressionContainer);
     _imp->expressionLayout->setContentsMargins(0, 0, 0, 0);
     
-    _imp->knobLabel = new Natron::Label(_imp->expressionContainer);
+    _imp->knobLabel = new Label(_imp->expressionContainer);
     _imp->knobLabel->setAltered(true);
     _imp->knobLabel->setText(tr("No curve selected"));
     _imp->knobLineEdit = new LineEdit(_imp->expressionContainer);
     QObject::connect(_imp->knobLineEdit, SIGNAL(editingFinished()), this, SLOT(onExprLineEditFinished()));
-    _imp->resultLabel = new Natron::Label(_imp->expressionContainer);
+    _imp->resultLabel = new Label(_imp->expressionContainer);
     _imp->resultLabel->setAltered(true);
     _imp->resultLabel->setText("= ");
     _imp->knobLineEdit->setReadOnly(true);
@@ -944,7 +944,7 @@ CurveEditor::findCurve(KnobGui* knob,
 {
     KnobHolder* holder = knob->getKnob()->getHolder();
     assert(holder);
-    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
     assert(effect);
     
     std::list<boost::shared_ptr<CurveGui> > ret;
@@ -1510,7 +1510,7 @@ RotoCurveEditorContext::findElement(KnobGui* knob,int dimension) const
         return ret;
     }
     
-    Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
     if (!effect) {
         return ret;
     }
@@ -1609,7 +1609,7 @@ CurveEditor::setSelectedCurve(const boost::shared_ptr<CurveGui>& curve)
         assert(knob);
         KnobHolder* holder = knob->getHolder();
         if (holder) {
-            Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+            EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
             assert(effect);
             ss << effect->getNode()->getFullyQualifiedName();
             ss << '.';
@@ -1695,3 +1695,8 @@ CurveEditor::onExprLineEditFinished()
 {
     setSelectedCurveExpression(_imp->knobLineEdit->text());
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_CurveEditor.cpp"

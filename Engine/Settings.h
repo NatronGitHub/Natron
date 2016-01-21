@@ -38,6 +38,8 @@
 
 #define kQSettingsSoftwareMajorVersionSettingName "SoftwareVersionMajor"
 
+NATRON_NAMESPACE_ENTER;
+
 /*The current settings in the preferences menu.
    @todo Move this class to QSettings instead*/
 
@@ -83,14 +85,14 @@ public:
 
     virtual void evaluate(KnobI* /*knob*/,
                           bool /*isSignificant*/,
-                          Natron::ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL
+                          ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL
     {
     }
 
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,double time,
+    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
 
-    Natron::ImageBitDepthEnum getViewersBitDepth() const;
+    ImageBitDepthEnum getViewersBitDepth() const;
 
     int getViewerTilesPowerOf2() const;
 
@@ -186,7 +188,7 @@ public:
 
     void getDefaultNodeColor(float *r,float *g,float *b) const;
 
-    void getDefaultBackDropColor(float *r,float *g,float *b) const;
+    void getDefaultBackdropColor(float *r,float *g,float *b) const;
 
     int getDisconnectedArrowLength() const;
 
@@ -252,7 +254,7 @@ public:
      * for the given plug-in.
      * If the plug-in ID is not valid, -1 is returned.
      **/
-    int getRenderScaleSupportPreference(const Natron::Plugin* p) const;
+    int getRenderScaleSupportPreference(const Plugin* p) const;
     
     
     bool notifyOnFileChange() const;
@@ -339,7 +341,7 @@ public:
     
     std::string getUserStyleSheetFilePath() const;
     
-    bool isPluginDeactivated(const Natron::Plugin* p) const;
+    bool isPluginDeactivated(const Plugin* p) const;
     
 Q_SIGNALS:
     
@@ -552,12 +554,14 @@ private:
         }
     };
 
-    std::map<const Natron::Plugin*,PerPluginKnobs> _pluginsMap;
+    std::map<const Plugin*,PerPluginKnobs> _pluginsMap;
     std::vector<std::string> _knownHostNames;
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;
     bool _defaultAppearanceOutdated;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_SETTINGS_H

@@ -26,6 +26,8 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 
+NATRON_NAMESPACE_ENTER;
+
 Param::Param(const boost::shared_ptr<KnobI>& knob)
 : _knob(knob)
 {
@@ -322,7 +324,7 @@ AnimatedParam::getKeyTime(int index,int dimension,double* time) const
 void
 AnimatedParam::deleteValueAtTime(double time,int dimension)
 {
-    getInternalKnob()->deleteValueAtTime(Natron::eCurveChangeReasonInternal,time, dimension);
+    getInternalKnob()->deleteValueAtTime(eCurveChangeReasonInternal,time, dimension);
 }
 
 void
@@ -1637,7 +1639,7 @@ ParametricParam::getCurveColor(int dimension, ColorTuple& ret) const
     ret.a = 1.;
 }
 
-Natron::StatusEnum
+StatusEnum
 ParametricParam::addControlPoint(int dimension,double key,double value)
 {
     return _parametricKnob.lock()->addControlPoint(dimension, key, value);
@@ -1647,8 +1649,8 @@ double
 ParametricParam::getValue(int dimension,double parametricPosition) const
 {
     double ret;
-    Natron::StatusEnum stat =  _parametricKnob.lock()->getValue(dimension, parametricPosition, &ret);
-    if (stat == Natron::eStatusFailed) {
+    StatusEnum stat =  _parametricKnob.lock()->getValue(dimension, parametricPosition, &ret);
+    if (stat == eStatusFailed) {
         ret =  0.;
     }
     return ret;
@@ -1658,14 +1660,14 @@ int
 ParametricParam::getNControlPoints(int dimension) const
 {
     int ret;
-    Natron::StatusEnum stat =  _parametricKnob.lock()->getNControlPoints(dimension, &ret);
-    if (stat == Natron::eStatusFailed) {
+    StatusEnum stat =  _parametricKnob.lock()->getNControlPoints(dimension, &ret);
+    if (stat == eStatusFailed) {
         ret = 0;
     }
     return ret;
 }
 
-Natron::StatusEnum
+StatusEnum
 ParametricParam::getNthControlPoint(int dimension,
                                     int nthCtl,
                                     double *key,
@@ -1676,7 +1678,7 @@ ParametricParam::getNthControlPoint(int dimension,
     return _parametricKnob.lock()->getNthControlPoint(dimension, nthCtl, key, value,leftDerivative, rightDerivative);
 }
 
-Natron::StatusEnum
+StatusEnum
 ParametricParam::setNthControlPoint(int dimension,
                                     int nthCtl,
                                     double key,
@@ -1687,15 +1689,17 @@ ParametricParam::setNthControlPoint(int dimension,
     return _parametricKnob.lock()->setNthControlPoint(dimension, nthCtl, key, value,leftDerivative,rightDerivative);
 }
 
-Natron::StatusEnum
+StatusEnum
 ParametricParam::deleteControlPoint(int dimension, int nthCtl)
 {
     return _parametricKnob.lock()->deleteControlPoint(dimension, nthCtl);
 }
 
-Natron::StatusEnum
+StatusEnum
 ParametricParam::deleteAllControlPoints(int dimension)
 {
     return _parametricKnob.lock()->deleteAllControlPoints(dimension);
 }
+
+NATRON_NAMESPACE_EXIT;
 

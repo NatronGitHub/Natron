@@ -33,6 +33,8 @@
 #include "Engine/RotoWrapper.h"
 #include "Engine/Hash64.h"
 
+NATRON_NAMESPACE_ENTER;
+
 ImageLayer::ImageLayer(const std::string& layerName,
            const std::string& componentsPrettyName,
            const std::vector<std::string>& componentsName)
@@ -41,7 +43,7 @@ ImageLayer::ImageLayer(const std::string& layerName,
     
 }
 
-ImageLayer::ImageLayer(const Natron::ImageComponents& internalComps)
+ImageLayer::ImageLayer(const ImageComponents& internalComps)
 : _comps(internalComps)
 {
     
@@ -106,42 +108,42 @@ ImageLayer::operator<(const ImageLayer& other) const
  */
 ImageLayer ImageLayer::getNoneComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getNoneComponents());
+    return ImageLayer(ImageComponents::getNoneComponents());
 }
 
 ImageLayer ImageLayer::getRGBAComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getRGBAComponents());
+    return ImageLayer(ImageComponents::getRGBAComponents());
 }
 
 ImageLayer ImageLayer::getRGBComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getRGBComponents());
+    return ImageLayer(ImageComponents::getRGBComponents());
 }
 
 ImageLayer ImageLayer::getAlphaComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getAlphaComponents());
+    return ImageLayer(ImageComponents::getAlphaComponents());
 }
 
 ImageLayer ImageLayer::getBackwardMotionComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getBackwardMotionComponents());
+    return ImageLayer(ImageComponents::getBackwardMotionComponents());
 }
 
 ImageLayer ImageLayer::getForwardMotionComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getForwardMotionComponents());
+    return ImageLayer(ImageComponents::getForwardMotionComponents());
 }
 
 ImageLayer ImageLayer::getDisparityLeftComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getDisparityLeftComponents());
+    return ImageLayer(ImageComponents::getDisparityLeftComponents());
 }
 
 ImageLayer ImageLayer::getDisparityRightComponents()
 {
-    return ImageLayer(Natron::ImageComponents::getDisparityRightComponents());
+    return ImageLayer(ImageComponents::getDisparityRightComponents());
 }
 
 UserParamHolder::UserParamHolder()
@@ -163,7 +165,7 @@ UserParamHolder::setHolder(KnobHolder* holder)
     _holder = holder;
 }
 
-Effect::Effect(const boost::shared_ptr<Natron::Node>& node)
+Effect::Effect(const boost::shared_ptr<Node>& node)
 : Group()
 , UserParamHolder(node ? node->getLiveInstance() : 0)
 , _node(node)
@@ -183,7 +185,7 @@ Effect::~Effect()
     
 }
 
-boost::shared_ptr<Natron::Node>
+boost::shared_ptr<Node>
 Effect::getInternalNode() const
 {
     return _node;
@@ -212,10 +214,10 @@ Effect::canConnectInput(int inputNumber,const Effect* node) const
     if (!node->getInternalNode()) {
         return false;
     }
-    Natron::Node::CanConnectInputReturnValue ret = _node->canConnectInput(node->getInternalNode(),inputNumber);
-    return ret == Natron::Node::eCanConnectInput_ok ||
-    ret == Natron::Node::eCanConnectInput_differentFPS ||
-    ret == Natron::Node::eCanConnectInput_differentPars;
+    Node::CanConnectInputReturnValue ret = _node->canConnectInput(node->getInternalNode(),inputNumber);
+    return ret == Node::eCanConnectInput_ok ||
+    ret == Node::eCanConnectInput_differentFPS ||
+    ret == Node::eCanConnectInput_differentPars;
 }
 
 bool
@@ -237,7 +239,7 @@ Effect::disconnectInput(int inputNumber)
 Effect*
 Effect::getInput(int inputNumber) const
 {
-    boost::shared_ptr<Natron::Node> node = _node->getRealInput(inputNumber);
+    boost::shared_ptr<Node> node = _node->getRealInput(inputNumber);
     if (node) {
         return new Effect(node);
     }
@@ -728,8 +730,8 @@ Effect::getRegionOfDefinition(double time,int view) const
     U64 hash = _node->getHashValue();
     RenderScale s(1.);
     bool isProject;
-    Natron::StatusEnum stat = _node->getLiveInstance()->getRegionOfDefinition_public(hash, time, s, view, &rod, &isProject);
-    if (stat != Natron::eStatusOK) {
+    StatusEnum stat = _node->getLiveInstance()->getRegionOfDefinition_public(hash, time, s, view, &rod, &isProject);
+    if (stat != eStatusOK) {
         return RectD();
     }
     return rod;
@@ -759,7 +761,7 @@ Effect::addUserPlane(const std::string& planeName, const std::vector<std::string
     for (std::size_t i = 0; i < channels.size(); ++i) {
         compsGlobal.append(channels[i]);
     }
-    Natron::ImageComponents comp(planeName,compsGlobal,channels);
+    ImageComponents comp(planeName,compsGlobal,channels);
     return _node->addUserComponents(comp);
 }
 
@@ -770,9 +772,9 @@ Effect::getAvailableLayers() const
     if (!_node) {
         return ret;
     }
-    Natron::EffectInstance::ComponentsAvailableMap availComps;
+    EffectInstance::ComponentsAvailableMap availComps;
     _node->getLiveInstance()->getComponentsAvailable(true, true, _node->getLiveInstance()->getCurrentTime(), &availComps);
-    for (Natron::EffectInstance::ComponentsAvailableMap::iterator it = availComps.begin(); it != availComps.end(); ++it) {
+    for (EffectInstance::ComponentsAvailableMap::iterator it = availComps.begin(); it != availComps.end(); ++it) {
         NodePtr node = it->second.lock();
         if (node) {
             Effect* effect = new Effect(node);
@@ -791,3 +793,5 @@ Effect::setPagesOrder(const std::list<std::string>& pages)
     }
     _node->setPagesOrder(pages);
 }
+
+NATRON_NAMESPACE_EXIT;

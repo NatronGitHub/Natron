@@ -32,8 +32,10 @@
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 struct PrecompNodePrivate;
-class PrecompNode : public Natron::EffectInstance
+class PrecompNode : public EffectInstance
 {
     GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -41,12 +43,12 @@ class PrecompNode : public Natron::EffectInstance
     
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
     {
         return new PrecompNode(n);
     }
     
-    PrecompNode(boost::shared_ptr<Natron::Node> n);
+    PrecompNode(boost::shared_ptr<Node> n);
     
     virtual ~PrecompNode();
     
@@ -75,13 +77,13 @@ public:
         return false;
     }
     
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return Natron::eRenderSafetyFullySafeFrame;
+        return eRenderSafetyFullySafeFrame;
     }
     
     
@@ -95,17 +97,17 @@ public:
         return false;
     }
 
-    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE WARN_UNUSED_RETURN;
     virtual void getPreferredDepthAndComponents(int inputNb,
-                                            std::list<Natron::ImageComponents>* comp,
-                                            Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;
+                                            std::list<ImageComponents>* comp,
+                                            ImageBitDepthEnum* depth) const OVERRIDE FINAL;
     virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
 
     virtual double getPreferredFrameRate() const OVERRIDE FINAL;
 
-    boost::shared_ptr<Natron::Node> getOutputNode() const;
+    boost::shared_ptr<Node> getOutputNode() const;
 
-    void getPrecompInputs(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
+    void getPrecompInputs(std::list<boost::shared_ptr<Node> >* nodes) const;
 
     AppInstance* getPrecompApp() const;
 
@@ -121,12 +123,14 @@ private:
 
     virtual void onKnobsLoaded() OVERRIDE FINAL;
 
-    virtual void knobChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,
+    virtual void knobChanged(KnobI* k,ValueChangedReasonEnum reason,
                          int /*view*/,
                          double /*time*/,
                          bool /*originatedFromMainThread*/) OVERRIDE FINAL;
 
     boost::scoped_ptr<PrecompNodePrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PRECOMPNODE_H
