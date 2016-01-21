@@ -60,10 +60,6 @@ typedef std::pair<QTreeWidgetItem *, boost::shared_ptr<DSNode> > TreeItemAndDSNo
 typedef std::pair<QTreeWidgetItem *, DSKnob *> TreeItemAndDSKnob;
 
 
-#pragma message WARN("NO_DIM huh?")
-const int NO_DIM = -5;
-
-
 ////////////////////////// Helpers //////////////////////////
 
 bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui)
@@ -116,9 +112,8 @@ QTreeWidgetItem *createKnobNameItem(const QString &text,
 
     ret->setData(0, QT_ROLE_CONTEXT_TYPE, itemType);
 
-    if (dimension != NO_DIM) {
-        ret->setData(0, QT_ROLE_CONTEXT_DIM, dimension);
-    }
+    ret->setData(0, QT_ROLE_CONTEXT_DIM, dimension);
+    
 
     ret->setText(0, text);
 
