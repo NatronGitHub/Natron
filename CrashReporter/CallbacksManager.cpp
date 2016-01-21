@@ -745,12 +745,14 @@ CallbacksManager::onDoDumpOnMainThread(const QString& filePath)
     _dumpFilePath = filePath;
 #ifndef REPORTER_CLI_ONLY
     /*
-     In 
+     We are in need to popup the dialog but are still governed by the QCoreApplication, quit the event loop and re-create a 
+     QApplication, see exec()
      */
     _mustInitQAppAfterDump = true;
     qApp->exit(0);
     return;
 #else
+    //In CLI mode we don't need a QApplication...
     processCrashReport();
 #endif
 }

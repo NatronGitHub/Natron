@@ -41,6 +41,8 @@
 #include <QtCore/QFutureWatcher>
 #include <QtCore/QRunnable>
 #include <QtCore/QTextStream>
+#include <QtCore/QThreadPool>
+#include <QtCore/QRunnable>
 
 #include "Global/MemoryInfo.h"
 
@@ -3076,11 +3078,13 @@ struct CurrentFrameFunctorArgs
     }
 };
 
-
+class RenderCurrentFrameFunctorRunnable;
 struct ViewerCurrentFrameRequestSchedulerPrivate
 {
     
     ViewerInstance* viewer;
+    
+    QThreadPool* threadPool;
     
     QMutex requestsQueueMutex;
     std::list<boost::shared_ptr<RequestedFrame> > requestsQueue;
@@ -3108,8 +3112,14 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
      **/
     ViewerCurrentFrameRequestRendererBackup backupThread;
     
+    
+    mutable QMutex currentFrameRenderTasksMutex;
+    QWaitCondition currentFrameRenderTasksCond;
+    std::list<RenderCurrentFrameFunctorRunnable*> currentFrameRenderTasks;
+    
     ViewerCurrentFrameRequestSchedulerPrivate(ViewerInstance* viewer)
     : viewer(viewer)
+    , threadPool(QThreadPool::globalInstance())
     , requestsQueueMutex()
     , requestsQueue()
     , requestsQueueNotEmpty()
@@ -3125,8 +3135,42 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
     , abortRequested(0)
     , abortRequestedMutex()
     , backupThread()
+    , currentFrameRenderTasksCond()
+    , currentFrameRenderTasks()
     {
         
+    }
+    
+    void appendRunnableTask(RenderCurrentFrameFunctorRunnable* task)
+    {
+        {
+            QMutexLocker k(&currentFrameRenderTasksMutex);
+            currentFrameRenderTasks.push_back(task);
+        }
+    }
+    
+    void removeRunnableTask(RenderCurrentFrameFunctorRunnable* task)
+    {
+        {
+            QMutexLocker k(&currentFrameRenderTasksMutex);
+            for (std::list<RenderCurrentFrameFunctorRunnable*>::iterator it = currentFrameRenderTasks.begin();
+                 it != currentFrameRenderTasks.end(); ++it) {
+                if (*it == task) {
+                    currentFrameRenderTasks.erase(it);
+                    
+                    currentFrameRenderTasksCond.wakeAll();
+                    break;
+                }
+            }
+        }
+    }
+    
+    void waitForRunnableTasks()
+    {
+        QMutexLocker k(&currentFrameRenderTasksMutex);
+        while (!currentFrameRenderTasks.empty()) {
+            currentFrameRenderTasksCond.wait(&currentFrameRenderTasksMutex);
+        }
     }
     
     bool checkForExit()
@@ -3167,52 +3211,72 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
 
 };
 
-
-static void renderCurrentFrameFunctor(const boost::shared_ptr<CurrentFrameFunctorArgs>& args)
+class RenderCurrentFrameFunctorRunnable : public QRunnable
 {
+    boost::shared_ptr<CurrentFrameFunctorArgs> _args;
     
-    ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
-    ///it calls appendToBuffer by itself
-    ViewerInstance::ViewerRenderRetCode stat;
+public:
     
-    BufferableObjectList ret;
-    try {
-        if (!args->isRotoPaintRequest || args->isRotoNeatRender) {
-            stat = args->viewer->renderViewer(args->view,QThread::currentThread() == qApp->thread(),false,args->viewerHash,args->canAbort,
-                                             NodePtr(), true,args->args, args->request, args->stats);
-        } else {
-            stat = args->viewer->getViewerArgsAndRenderViewer(args->time, args->canAbort, args->view, args->viewerHash, args->isRotoPaintRequest, args->strokeItem, args->stats,&args->args[0],&args->args[1]);
-        }
-    } catch (...) {
-        stat = ViewerInstance::eViewerRenderRetCodeFail;
+    RenderCurrentFrameFunctorRunnable(const boost::shared_ptr<CurrentFrameFunctorArgs>& args)
+    : _args(args)
+    {
+        
     }
     
-    if (stat == ViewerInstance::eViewerRenderRetCodeFail) {
-        ///Don't report any error message otherwise we will flood the viewer with irrelevant messages such as
-        ///"Render failed", instead we let the plug-in that failed post an error message which will be more helpful.
-        args->viewer->disconnectViewer();
-        ret.clear();
-    } else {
-        for (int i = 0; i < 2; ++i) {
-            if (args->args[i] && args->args[i]->params && args->args[i]->params->ramBuffer) {
-                ret.push_back(args->args[i]->params);
+    virtual ~RenderCurrentFrameFunctorRunnable()
+    {
+        
+    }
+    
+    virtual void run() OVERRIDE FINAL
+    {
+        ///The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
+        ///it calls appendToBuffer by itself
+        ViewerInstance::ViewerRenderRetCode stat;
+        
+        BufferableObjectList ret;
+        try {
+            if (!_args->isRotoPaintRequest || _args->isRotoNeatRender) {
+                stat = _args->viewer->renderViewer(_args->view,QThread::currentThread() == qApp->thread(),false,_args->viewerHash,_args->canAbort,
+                                                  NodePtr(), true,_args->args, _args->request, _args->stats);
+            } else {
+                stat = _args->viewer->getViewerArgsAndRenderViewer(_args->time, _args->canAbort, _args->view, _args->viewerHash, _args->isRotoPaintRequest, _args->strokeItem, _args->stats,&_args->args[0],&_args->args[1]);
+            }
+        } catch (...) {
+            stat = ViewerInstance::eViewerRenderRetCodeFail;
+        }
+        
+        if (stat == ViewerInstance::eViewerRenderRetCodeFail) {
+            ///Don't report any error message otherwise we will flood the viewer with irrelevant messages such as
+            ///"Render failed", instead we let the plug-in that failed post an error message which will be more helpful.
+            _args->viewer->disconnectViewer();
+            ret.clear();
+        } else {
+            for (int i = 0; i < 2; ++i) {
+                if (_args->args[i] && _args->args[i]->params && _args->args[i]->params->ramBuffer) {
+                    ret.push_back(_args->args[i]->params);
+                }
             }
         }
-    }
-    
-    if (args->request) {
-        args->scheduler->notifyFrameProduced(ret, args->stats, args->request, true);
-    } else {
         
-        assert(QThread::currentThread() == qApp->thread());
-        args->scheduler->processProducedFrame(args->stats, ret);
+        if (_args->request) {
+            _args->scheduler->notifyFrameProduced(ret, _args->stats, _args->request, true);
+        } else {
+            
+            assert(QThread::currentThread() == qApp->thread());
+            _args->scheduler->processProducedFrame(_args->stats, ret);
+        }
+        
+        ///This thread is done, clean-up its TLS
+        appPTR->getAppTLS()->cleanupTLSForThread();
+        
+        
+        _args->scheduler->removeRunnableTask(this);
+        
+
     }
-    
-    ///This thread is done, clean-up its TLS
-    appPTR->getAppTLS()->cleanupTLSForThread();
-    
-    
-}
+};
+
 
 ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerInstance* viewer)
 : QThread()
@@ -3389,6 +3453,8 @@ ViewerCurrentFrameRequestScheduler::abortRendering()
         ++_imp->abortRequested;
     }
     
+    _imp->waitForRunnableTasks();
+
 }
 
 void
@@ -3421,6 +3487,8 @@ ViewerCurrentFrameRequestScheduler::quitThread()
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
         }
     }
+    
+    
     wait();
     
     ///Clear all queues
@@ -3557,7 +3625,8 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
     functorArgs->args[1] = args[1];
     
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
-        renderCurrentFrameFunctor(functorArgs);
+        RenderCurrentFrameFunctorRunnable task(functorArgs);
+        task.run();
     } else {
         boost::shared_ptr<RequestedFrame> request(new RequestedFrame);
         request->id = 0;
@@ -3575,9 +3644,8 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
         
         /*
          * Let at least 1 free thread in the thread-pool to allow the renderer to use the thread pool if we use the thread-pool
-         * with QtConcurrent::run
          */
-        int maxThreads = QThreadPool::globalInstance()->maxThreadCount();
+        int maxThreads = _imp->threadPool->maxThreadCount();
         
         //When painting, limit the number of threads to 1 to be sure strokes are painted in the right order
         if (rotoUse1Thread) {
@@ -3586,7 +3654,9 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
         if (maxThreads == 1 || (QThreadPool::globalInstance()->activeThreadCount() >= maxThreads - 1)) {
             _imp->backupThread.renderCurrentFrame(functorArgs);
         } else {
-            QtConcurrent::run(renderCurrentFrameFunctor,functorArgs);
+            RenderCurrentFrameFunctorRunnable* task = new RenderCurrentFrameFunctorRunnable(functorArgs);
+            _imp->appendRunnableTask(task);
+            _imp->threadPool->start(task);
         }
     }
     
@@ -3680,7 +3750,8 @@ ViewerCurrentFrameRequestRendererBackup::run()
             
             
             if (hasRequest) {
-                renderCurrentFrameFunctor(firstRequest);
+                RenderCurrentFrameFunctorRunnable task(firstRequest);
+                task.run();
             }
         } // firstRequest
         
