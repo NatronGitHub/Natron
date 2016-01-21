@@ -36,10 +36,6 @@
 #include <QtCore/QString>
 #include <QtCore/QThreadPool>
 #include <QtCore/QDebug>
-#include <QtCore/QtConcurrentRun>
-#include <QtCore/QFuture>
-#include <QtCore/QFutureWatcher>
-#include <QtCore/QRunnable>
 #include <QtCore/QTextStream>
 #include <QtCore/QThreadPool>
 #include <QtCore/QRunnable>
@@ -3651,7 +3647,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
         if (rotoUse1Thread) {
             maxThreads = 1;
         }
-        if (maxThreads == 1 || (QThreadPool::globalInstance()->activeThreadCount() >= maxThreads - 1)) {
+        if (maxThreads == 1 || (_imp->threadPool->activeThreadCount() >= maxThreads - 1)) {
             _imp->backupThread.renderCurrentFrame(functorArgs);
         } else {
             RenderCurrentFrameFunctorRunnable* task = new RenderCurrentFrameFunctorRunnable(functorArgs);
