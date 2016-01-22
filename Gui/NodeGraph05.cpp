@@ -34,6 +34,8 @@
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
+#include "Engine/RotoDrawableItem.h"
+#include "Engine/RotoContext.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/BackdropGui.h"
@@ -307,6 +309,15 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
                      it != outputsConnectedToSelectedNode.end(); ++it) {
                     if (it->first->getParentMultiInstanceName().empty() && it->first != createdNodeInternal.get()) {
                     
+                        /*
+                         Internal rotopaint nodes are connecting to the Rotopaint itself... make sure not to connect
+                         internal nodes of the tree 
+                         */
+                        boost::shared_ptr<RotoDrawableItem> stroke = it->first->getAttachedRotoItem();
+                        if (stroke && stroke->getContext()->getNode() == selectedNodeInternal) {
+                            continue;
+                        }
+                        
                         ignore_result(it->first->replaceInput(createdNodeInternal, it->second));
 //                        bool ok = proj->disconnectNodes(selectedNodeInternal.get(), it->first);
 //                        if (ok) {
