@@ -478,8 +478,15 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         }
         
         //Identity but no input, if it's optional ignore, otherwise fail
-        if (callerNode && callerNode != node && callerNode->getLiveInstance()->isInputOptional(fvRequest->globalData.identityInputNb)) {
-            return eStatusOK;
+        if (callerNode && callerNode != node) {
+            
+            int inputIndex = callerNode->getInputIndex(node.get());
+            if (callerNode->getLiveInstance()->isInputOptional(inputIndex)
+                || callerNode->getLiveInstance()->isInputMask(inputIndex)) {
+                
+                
+                return eStatusOK;
+            }
         }
         return eStatusFailed;
     }
