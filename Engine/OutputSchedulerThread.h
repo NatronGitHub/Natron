@@ -556,7 +556,7 @@ public:
     
     void quitThread();
     
-    void abortRendering();
+    void abortRendering(bool blocking);
     
     bool hasThreadsWorking() const;
     

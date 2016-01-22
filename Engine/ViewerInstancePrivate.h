@@ -281,7 +281,7 @@ public:
      * @brief Returns the current render age of the viewer (a simple counter incrementing at each request).
      * The age is then incremented so the next call to getRenderAge will return the current value plus one.
      **/
-    U64 getRenderAge(int texIndex)
+    U64 getRenderAgeAndIncrement(int texIndex)
     {
         QMutexLocker k(&renderAgeMutex);
         
@@ -340,7 +340,7 @@ public:
         QMutexLocker k(&renderAgeMutex);
         assert(age <= renderAge[texIndex]);
         assert(age != displayAge[texIndex]);
-        if (age < displayAge[texIndex]) {
+        if (age <= displayAge[texIndex]) {
             return false;
         }
         displayAge[texIndex] = age;

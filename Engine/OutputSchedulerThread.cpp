@@ -2950,7 +2950,7 @@ RenderEngine::abortRendering(bool enableAutoRestartPlayback, bool blocking)
         
     }
     if (_imp->currentFrameScheduler) {
-        _imp->currentFrameScheduler->abortRendering();
+        _imp->currentFrameScheduler->abortRendering(blocking);
     }
 
     if (_imp->scheduler && _imp->scheduler->isWorking()) {
@@ -3421,7 +3421,7 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStat
 }
 
 void
-ViewerCurrentFrameRequestScheduler::abortRendering()
+ViewerCurrentFrameRequestScheduler::abortRendering(bool blocking)
 {
     if (!isRunning()) {
         return;
@@ -3449,7 +3449,9 @@ ViewerCurrentFrameRequestScheduler::abortRendering()
         ++_imp->abortRequested;
     }
     
-    _imp->waitForRunnableTasks();
+    if (blocking) {
+        _imp->waitForRunnableTasks();
+    }
 
 }
 
@@ -3460,7 +3462,7 @@ ViewerCurrentFrameRequestScheduler::quitThread()
         return;
     }
     
-    abortRendering();
+    abortRendering(true);
     _imp->backupThread.quitThread();
     {
         QMutexLocker l2(&_imp->processMutex);

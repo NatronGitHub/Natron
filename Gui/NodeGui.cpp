@@ -658,7 +658,7 @@ NodeGui::togglePreview_internal(bool refreshPreview)
         }
     } else {
         if (_previewPixmap) {
-            _previewPixmap->hide();
+            _previewPixmap->setVisible(false);
         }
         int w,h;
         getInitialSize(&w, &h);
@@ -690,7 +690,6 @@ NodeGui::ensurePreviewCreated()
 
         resize(w,h);
         _previewPixmap->stackBefore(_nameItem);
-        _previewPixmap->show();
     }
 
 }
@@ -805,6 +804,10 @@ NodeGui::refreshPreviewAndLabelPosition(const QRectF& bbox)
         prevW = _previewW;
         prevH = _previewH;
     }
+    if (!_previewPixmap || !_previewPixmap->isVisible()) {
+        prevW = 0;
+        prevH = 0;
+    }
     const double textPlusPixHeight = std::min((double)prevH + 5. + labelHeight, bbox.height() - 5);
     const int iconWidth = getPluginIconWidth();
 
@@ -831,7 +834,7 @@ NodeGui::refreshPreviewAndLabelPosition(const QRectF& bbox)
             height = std::max((double)bbox.height(), nameFrameBox.height());
             textY = bbox.y() + frameHeight / 2 -  labelHeight / 2;
         } else {
-            if (_previewPixmap) {
+            if (_previewPixmap && _previewPixmap->isVisible()) {
                 textY = bbox.y() + height / 2 - textPlusPixHeight / 2 + prevH;
             } else {
                 textY = bbox.y() + height / 2 - labelHeight / 2;
@@ -1248,7 +1251,10 @@ NodeGui::onPreviewImageComputed()
 {
     assert(QThread::currentThread() == qApp->thread());
     assert(_previewPixmap);
-    
+    if (!_previewPixmap->isVisible()) {
+        _previewPixmap->setVisible(true);
+    }
+
     {
         QMutexLocker k(&_previewDataMutex);
         QImage img(reinterpret_cast<const uchar*>(&_previewData.front()), _previewW, _previewH, QImage::Format_ARGB32_Premultiplied);

@@ -225,13 +225,14 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
                             
                             if (!isRenderFunctor) {
                                 StatusEnum stat = EffectInstance::getInputsRoIsFunctor(useTransforms,
-                                                                                               f,
-                                                                                               viewIt->first,
-                                                                                               originalMipMapLevel,
-                                                                                               inputNode,
-                                                                                               treeRoot,
-                                                                                               roi,
-                                                                                               *requests);
+                                                                                       f,
+                                                                                       viewIt->first,
+                                                                                       originalMipMapLevel,
+                                                                                       inputNode,
+                                                                                       node,
+                                                                                       treeRoot,
+                                                                                       roi,
+                                                                                       *requests);
                                 
                                 if (stat == eStatusFailed) {
                                     return EffectInstance::eRenderRoIRetCodeFailed;
@@ -322,13 +323,14 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
 }
 
 StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
-                                                                double time,
-                                                                int view,
-                                                                unsigned originalMipMapLevel,
-                                                                const boost::shared_ptr<Node>& node,
-                                                                const boost::shared_ptr<Node>& treeRoot,
-                                                                const RectD& canonicalRenderWindow,
-                                                                FrameRequestMap& requests)
+                                                double time,
+                                                int view,
+                                                unsigned originalMipMapLevel,
+                                                const boost::shared_ptr<Node>& node,
+                                                const boost::shared_ptr<Node>& callerNode,
+                                                const boost::shared_ptr<Node>& treeRoot,
+                                                const RectD& canonicalRenderWindow,
+                                                FrameRequestMap& requests)
 {
     
     boost::shared_ptr<NodeFrameRequest> nodeRequest;
@@ -447,6 +449,7 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                    inputView,
                                                    originalMipMapLevel,
                                                    node,
+                                                   node,
                                                    treeRoot,
                                                    canonicalRenderWindow,
                                                    requests);
@@ -460,18 +463,24 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         EffectInstance* inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
         if (inputEffectIdentity) {
             fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, FrameViewPerRequestData()));
+            
+            NodePtr inputIdentityNode = inputEffectIdentity->getNode();
             StatusEnum stat = getInputsRoIsFunctor(useTransforms,
                                                    fvRequest->globalData.inputIdentityTime,
                                                    view,
                                                    originalMipMapLevel,
-                                                   inputEffectIdentity->getNode(),
+                                                   inputIdentityNode,
+                                                   node,
                                                    treeRoot,
                                                    canonicalRenderWindow,
                                                    requests);
             return stat;
         }
         
-        //Identity but no input
+        //Identity but no input, if it's optional ignore, otherwise fail
+        if (callerNode && callerNode != node && callerNode->getLiveInstance()->isInputOptional(fvRequest->globalData.identityInputNb)) {
+            return eStatusOK;
+        }
         return eStatusFailed;
     }
     
@@ -529,13 +538,14 @@ EffectInstance::computeRequestPass(double time,
 {
     bool doTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
     StatusEnum stat = getInputsRoIsFunctor(doTransforms,
-                                                   time,
-                                                   view,
-                                                   mipMapLevel,
-                                                   treeRoot,
-                                                   treeRoot,
-                                                   renderWindow,
-                                                   request);
+                                           time,
+                                           view,
+                                           mipMapLevel,
+                                           treeRoot,
+                                           treeRoot,
+                                           treeRoot,
+                                           renderWindow,
+                                           request);
     
     if (stat == eStatusFailed) {
         return stat;

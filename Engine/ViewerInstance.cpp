@@ -467,7 +467,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
             break;
         }
         
-        U64 renderAge = _imp->getRenderAge(i);
+        U64 renderAge = _imp->getRenderAgeAndIncrement(i);
 
         
         /*FrameRequestMap request;
@@ -832,7 +832,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                            const boost::shared_ptr<RenderStats>& stats,
                                                            ViewerArgs* outArgs)
 {
-    U64 renderAge = _imp->getRenderAge(textureIndex);
+    U64 renderAge = _imp->getRenderAgeAndIncrement(textureIndex);
     
    
     

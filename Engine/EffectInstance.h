@@ -568,13 +568,14 @@ public:
 
     //Implem in ParallelRenderArgs.cpp
     static StatusEnum getInputsRoIsFunctor(bool useTransforms,
-                                                   double time,
-                                                   int view,
-                                                   unsigned originalMipMapLevel,
-                                                   const boost::shared_ptr<Node> & node,
-                                                   const boost::shared_ptr<Node> & treeRoot,
-                                                   const RectD & canonicalRenderWindow,
-                                                   FrameRequestMap & requests);
+                                           double time,
+                                           int view,
+                                           unsigned originalMipMapLevel,
+                                           const boost::shared_ptr<Node> & node,
+                                           const boost::shared_ptr<Node>& callerNode,
+                                           const boost::shared_ptr<Node> & treeRoot,
+                                           const RectD & canonicalRenderWindow,
+                                           FrameRequestMap & requests);
 
     /**
      * @brief Visit recursively the compositing tree and computes required informations about region of interests for each node and
