@@ -3446,8 +3446,8 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
         return;
     }
 
-    const double par_min = 0.01; // 1 pixel for 100 frames
-    const double par_max = 100.; // 100 pixels per frame is reasonale, see also TimeLineGui::wheelEvent()
+    static const double par_min = 0.01; // 1 pixel for 100 frames
+    static const double par_max = 100.; // 100 pixels per frame is reasonale, see also TimeLineGui::wheelEvent()
 
     double par;
     double scaleFactor = std::pow(NATRON_WHEEL_ZOOM_PER_DELTA, e->delta());
@@ -3466,9 +3466,6 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
         scaleFactor = par / _imp->zoomContext.factor();
     }
 
-    if (scaleFactor >= par_max || scaleFactor <= par_min) {
-        return;
-    }
 
     _imp->zoomContext.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactor);
 
