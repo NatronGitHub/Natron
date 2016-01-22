@@ -8565,7 +8565,8 @@ Node::refreshChannelSelectors()
         
         boost::shared_ptr<KnobChoice> layerKnob = it->second.layer.lock();
         const std::vector<std::string> currentLayerEntries = layerKnob->getEntries_mt_safe();
-        const std::string curLayer = ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(it->second.layerName.lock()->getValue());
+        const std::string curLayer_internalName = it->second.layerName.lock()->getValue();
+        const std::string curLayer = ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(curLayer_internalName);
         
         bool isCurLayerColorComp = curLayer == kNatronAlphaComponentsName || curLayer == kNatronRGBAComponentsName || curLayer == kNatronRGBComponentsName;
         
@@ -8588,7 +8589,7 @@ Node::refreshChannelSelectors()
             int i = 0;
             while (ImageComponents::defaultComponents[i][0] != 0) {
                 std::string layer = ImageComponents::defaultComponents[i][0];
-                if (!ImageComponents::isColorPlane(layer)) {
+                if (layer != kNatronAlphaComponentsName && layer != kNatronRGBAComponentsName && layer != kNatronRGBComponentsName) {
                     //Do not add the color plane, because it is handled in a separate case to make sure it is always the first choice
                     defaultLayers[layer] = -1;
                 }
@@ -8703,6 +8704,7 @@ Node::refreshChannelSelectors()
         
         
         if (!curLayer.empty() && foundCurLayerChoice != -1) {
+            //We already had a choice and it was found in the current layers
             assert(foundCurLayerChoice >= 0 && foundCurLayerChoice < (int)choices.size());
             layerKnob->blockValueChanges();
             _imp->liveInstance->beginChanges();
@@ -8714,26 +8716,46 @@ Node::refreshChannelSelectors()
             }
             
         } else {
-            if (it->second.hasAllChoice &&
-                _imp->liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
-                layerKnob->setValue(0, 0);
-                it->second.layerName.lock()->setValue(choices[0], 0);
-            } else {
-                int defaultIndex = -1;
-                for (std::map<std::string, int>::iterator itl = defaultLayers.begin(); itl != defaultLayers.end(); ++itl) {
-                    if (itl->second != -1) {
-                        defaultIndex = itl->second;
+            //fallback
+            bool foundLayer = false;
+            if (!curLayer_internalName.empty()) {
+                //check if the layer is in the available options: since we had default layers that may not be produced, it may be in the list
+                //but not in the components presents
+                for (std::size_t i = 0; i < currentLayerEntries.size(); ++i) {
+                    if (currentLayerEntries[i] == curLayer_internalName) {
+                        layerKnob->setValue(i, 0);
+                        it->second.layerName.lock()->setValue(choices[i], 0);
+                        foundLayer = true;
                         break;
                     }
                 }
-                if (defaultIndex == -1) {
-                    defaultIndex = gotColor;
-                }
-                
-                assert(defaultIndex != -1 && defaultIndex >= 0 && defaultIndex < (int)choices.size());
-                layerKnob->setValue(defaultIndex,0);
-                it->second.layerName.lock()->setValue(choices[defaultIndex], 0);
+
             }
+            if (!foundLayer) {
+                if (it->second.hasAllChoice &&
+                    _imp->liveInstance->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
+                    layerKnob->setValue(0, 0);
+                    it->second.layerName.lock()->setValue(choices[0], 0);
+                } else {
+                    
+                    int defaultIndex;
+                    if (gotColor != -1) {
+                        defaultIndex = gotColor;
+                    } else {
+                        defaultIndex = -1;
+                        for (std::map<std::string, int>::iterator itl = defaultLayers.begin(); itl != defaultLayers.end(); ++itl) {
+                            if (itl->second != -1) {
+                                defaultIndex = itl->second;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    assert(defaultIndex != -1 && defaultIndex >= 0 && defaultIndex < (int)choices.size());
+                    layerKnob->setValue(defaultIndex,0);
+                    it->second.layerName.lock()->setValue(choices[defaultIndex], 0);
+                }
+            } // !foundLayer
         }
     } // for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
     
