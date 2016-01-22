@@ -254,13 +254,12 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
     assert(knob);
     boost::shared_ptr<KnobI> originalKnob = knob->getKnob();
     boost::shared_ptr<KnobI> copy = createCopyForKnob(originalKnob);
-    ValueToSet v;
+    ValueToSet& v = knobs[knob];
     v.newValue = value;
     v.dimension = dimension;
     v.time = time;
     v.copy = copy;
     v.setKeyFrame = setKeyFrame;
-    knobs.insert( std::make_pair(knob, v) );
 }
 
 MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
@@ -320,10 +319,10 @@ MultipleKnobEditsUndoCommand::undo()
         boost::shared_ptr<KnobI> copyWithNewValues = createCopyForKnob(originalKnob);
 
         ///clone the original knob back to its old state
-        originalKnob->clone(it->second.copy);
+        originalKnob->clone(it->second.copy, it->second.dimension);
 
         ///clone the copy to the new values
-        it->second.copy->clone(copyWithNewValues);
+        it->second.copy->clone(copyWithNewValues, it->second.dimension);
 
         knobsUnique.insert( originalKnob.get() );
     }
@@ -369,10 +368,10 @@ MultipleKnobEditsUndoCommand::redo()
             boost::shared_ptr<KnobI> copyWithOldValues = createCopyForKnob(originalKnob);
 
             ///clone the original knob back to its old state
-            originalKnob->clone(it->second.copy);
+            originalKnob->clone(it->second.copy, it->second.dimension);
 
             ///clone the copy to the old values
-            it->second.copy->clone(copyWithOldValues);
+            it->second.copy->clone(copyWithOldValues,it->second.dimension);
 
             knobsUnique.insert( originalKnob.get() );
 
@@ -479,6 +478,17 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
         return false;
     }
 
+    for (ParamsMap::const_iterator otherIt = knobCommand->knobs.begin(); otherIt != knobCommand->knobs.end(); ++otherIt) {
+        ParamsMap::iterator foundExistinKnob =  knobs.find(otherIt->first);
+        if (foundExistinKnob == knobs.end()) {
+            knobs.insert(*otherIt);
+        } else {
+            //copy the other dimension of that knob which changed and set the dimension to -1 so
+            //that subsequent calls to undo() and redo() clone all dimensions at once
+            foundExistinKnob->second.copy->clone(otherIt->second.copy,otherIt->second.dimension);
+            foundExistinKnob->second.dimension = -1;
+        }
+    }
     knobs.insert( knobCommand->knobs.begin(), knobCommand->knobs.end() );
 
     return true;
