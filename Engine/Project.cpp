@@ -639,10 +639,15 @@ Project::triggerAutoSave()
 {
     ///Should only be called in the main-thread, that is upon user interaction.
     assert( QThread::currentThread() == qApp->thread() );
-
+    
     if ( getApp()->isBackground() || !appPTR->isLoaded() || isProjectClosing() ) {
         return;
     }
+    
+    if (!hasProjectBeenSavedByUser() && !appPTR->getCurrentSettings()->isAutoSaveEnabledForUnsavedProjects()) {
+        return;
+    }
+    
     {
         QMutexLocker l(&_imp->isLoadingProjectMutex);
         if (_imp->isLoadingProject) {

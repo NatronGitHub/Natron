@@ -157,11 +157,21 @@ Settings::initializeKnobsGeneral()
     _autoSaveDelay->disableSlider();
     _autoSaveDelay->setMinimum(0);
     _autoSaveDelay->setMaximum(60);
+    _autoSaveDelay->setAddNewLine(false);
     _autoSaveDelay->setHintToolTip("The number of seconds after an event that " NATRON_APPLICATION_NAME " should wait before "
                                                                                                         " auto-saving. Note that if a render is in progress, " NATRON_APPLICATION_NAME " will "
                                                                                                                                                                                        " wait until it is done to actually auto-save.");
     _generalTab->addKnob(_autoSaveDelay);
 
+    
+    
+    _autoSaveUnSavedProjects = AppManager::createKnob<KnobBool>(this, "Enable Auto-save for unsaved projects");
+    _autoSaveUnSavedProjects->setName("autoSaveUnSavedProjects");
+    _autoSaveUnSavedProjects->setAnimationEnabled(false);
+    _autoSaveUnSavedProjects->setHintToolTip("When activated " NATRON_APPLICATION_NAME " will auto-save projects that have never been "
+                                             "saved and will prompt you on startup if an auto-save of that unsaved project was found. "
+                                             "Disabling this will no longer save un-saved project.");
+    _generalTab->addKnob(_autoSaveUnSavedProjects);
 
     _linearPickers = AppManager::createKnob<KnobBool>(this, "Linear color pickers");
     _linearPickers->setName("linearPickers");
@@ -1347,6 +1357,7 @@ Settings::setDefaultValues()
     _enableCrashReports->setDefaultValue(true);
     _notifyOnFileChange->setDefaultValue(true);
     _autoSaveDelay->setDefaultValue(5, 0);
+    _autoSaveUnSavedProjects->setDefaultValue(true);
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
     _linearPickers->setDefaultValue(true,0);
     _convertNaNValues->setDefaultValue(true);
@@ -2588,6 +2599,12 @@ int
 Settings::getAutoSaveDelayMS() const
 {
     return _autoSaveDelay->getValue() * 1000;
+}
+
+bool
+Settings::isAutoSaveEnabledForUnsavedProjects() const
+{
+    return _autoSaveUnSavedProjects->getValue();
 }
 
 bool

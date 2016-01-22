@@ -397,6 +397,11 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
 bool
 GuiAppInstance::findAndTryLoadUntitledAutoSave()
 {
+    
+    if (!appPTR->getCurrentSettings()->isAutoSaveEnabledForUnsavedProjects()) {
+        return false;
+    }
+    
     QDir savesDir(Project::autoSavesDir());
     QStringList entries = savesDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
     
