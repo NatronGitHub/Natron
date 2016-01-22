@@ -2571,6 +2571,9 @@ FavoriteView::editUrl()
     QUrl url = QUrl::fromLocalFile(newName);
     UrlModel *myurlModel = dynamic_cast<UrlModel*>( model() );
     assert(myurlModel);
+    if (!myurlModel) {
+        return;
+    }
     QFileSystemModel* fileSystemModel = myurlModel->getFileSystemModel();
     assert(fileSystemModel);
     QModelIndex idx = fileSystemModel->index(cleanpath);

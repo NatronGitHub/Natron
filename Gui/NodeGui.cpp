@@ -1065,6 +1065,9 @@ NodeGui::refreshPosition(double x,
                     }
                     NodeGui* node = dynamic_cast<NodeGui*>(node_gui_i.get());
                     assert(node);
+                    if (!node) {
+                        return;
+                    }
                     QSize outputSize = node->getSize();
                     QPointF nodeScenePos = node->scenePos();
                     QPointF outputPos = nodeScenePos  + QPointF(outputSize.width() / 2,outputSize.height() / 2);

@@ -678,7 +678,9 @@ bool Knob<std::string>::getValueFromCurve(double time, int dimension, bool useGu
     }
     if (curve && curve->getKeyFramesCount() > 0) {
         assert(isStringAnimated);
-        isStringAnimated->stringFromInterpolatedValue(curve->getValueAt(time), ret);
+        if (isStringAnimated) {
+            isStringAnimated->stringFromInterpolatedValue(curve->getValueAt(time), ret);
+        }
         return true;
     }
     return false;

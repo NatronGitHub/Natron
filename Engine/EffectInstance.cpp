@@ -375,7 +375,7 @@ EffectInstance::Implementation::aborted(const EffectDataTLSPtr& tls) const
                 OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( args.treeRoot->getLiveInstance() );
                 assert(effect);
                 
-                return effect->isSequentialRenderBeingAborted();
+                return effect ? effect->isSequentialRenderBeingAborted() : false;
             } else {
                 return false;
             }
