@@ -1179,10 +1179,6 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     return eViewerRenderRetCodeRender;
 }
 
-//if render was aborted, remove the frame from the cache as it contains only garbage
-#define abortCheck(input) if (input->aborted()) { \
-                                return eViewerRenderRetCodeRedraw; \
-                          }
 
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::renderViewer_internal(int view,
@@ -1546,7 +1542,9 @@ ViewerInstance::renderViewer_internal(int view,
         } catch (...) {
             ///If the plug-in was aborted, this is probably not a failure due to render but because of abortion.
             ///Don't forward the exception in that case.
-            abortCheck(inArgs.activeInputToRender);
+            if (inArgs.activeInputToRender->aborted()) {
+                return eViewerRenderRetCodeRedraw;
+            }
             throw;
         }
         
@@ -1557,8 +1555,9 @@ ViewerInstance::renderViewer_internal(int view,
             return eViewerRenderRetCodeRedraw;
         }
         
-        abortCheck(inArgs.activeInputToRender);
- 
+        if (inArgs.activeInputToRender->aborted()) {
+            return eViewerRenderRetCodeRedraw;
+        }
         
         ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
         
@@ -2301,22 +2300,9 @@ ViewerInstance::interpolateGammaLut(float value)
 }
 
 void
-ViewerInstance::markAllOnRendersAsAborted()
+ViewerInstance::markAllOnGoingRendersAsAborted()
 {
-    QMutexLocker k(&_imp->renderAgeMutex);
-    for (int i = 0; i < 2; ++i) {
-        if (_imp->currentRenderAges[i].empty()) {
-            continue;
-        }
-        
-        //Do not abort the oldest render, let it finish
-        OnGoingRenders::iterator it = _imp->currentRenderAges[i].begin();
-        ++it;
-        
-        for (;it != _imp->currentRenderAges[i].end(); ++it) {
-            it->second.aborted = true;
-        }
-    }
+    _imp->markAllRendersAsAborted();
 }
 
 template <typename PIX,int maxValue,bool opaque, bool applyMatte, int rOffset,int gOffset,int bOffset>

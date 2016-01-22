@@ -2944,16 +2944,13 @@ RenderEngine::isDoingSequentialRender() const
 bool
 RenderEngine::abortRendering(bool enableAutoRestartPlayback, bool blocking)
 {
-    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(_imp->output);
-    if (viewer) {
-        viewer->markAllOnRendersAsAborted();
-        
-    }
+ 
     if (_imp->currentFrameScheduler) {
         _imp->currentFrameScheduler->abortRendering(blocking);
     }
 
     if (_imp->scheduler && _imp->scheduler->isWorking()) {
+        //If any playback active, abort it
         _imp->scheduler->abortRendering(enableAutoRestartPlayback, blocking);
         return true;
     }
@@ -3423,6 +3420,11 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStat
 void
 ViewerCurrentFrameRequestScheduler::abortRendering(bool blocking)
 {
+    //This will make all processing nodes that call the abort() function return true
+    //This function marks all active renders of the viewer as aborted (except the oldest one)
+    //and each node actually check if the render has been aborted in EffectInstance::Implementation::aborted()
+    _imp->viewer->markAllOnGoingRendersAsAborted();
+    
     if (!isRunning()) {
         return;
     }

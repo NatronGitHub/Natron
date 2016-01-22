@@ -860,7 +860,7 @@ Gui::onTimelineTimeAboutToChange()
     const std::list<ViewerTab*>& viewers = getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         RenderEngine* engine = (*it)->getInternalNode()->getRenderEngine();
-        _imp->wasLaskUserSeekDuringPlayback |= engine->abortRendering(true,true);
+        _imp->wasLaskUserSeekDuringPlayback |= engine->abortRendering(true,false);
     }
 }
 

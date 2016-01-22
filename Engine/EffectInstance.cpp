@@ -2575,6 +2575,7 @@ EffectInstance::evaluate(KnobI* knob,
 
     ///increments the knobs age following a change
     if (!button && isSignificant) {
+        //We changed, abort any ongoing current render to refresh them with a newer version
         abortAnyEvaluation();
         node->incrementKnobsAge();
         node->refreshIdentityState();
@@ -4204,12 +4205,13 @@ EffectInstance::canSetValue() const
 void
 EffectInstance::abortAnyEvaluation()
 {
-    ///Just change the hash
+    /*
+     Get recursively downstream all Output nodes and abort any render on them
+     If an output node such as a viewer was doing playback, enable it to restart 
+     automatically playback when the abort finished
+     */
     NodePtr node = getNode();
-
-    
     assert(node);
-   // node->incrementKnobsAge();
     std::list<OutputEffectInstance*> outputNodes;
     
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
@@ -4229,6 +4231,8 @@ EffectInstance::abortAnyEvaluation()
         }
     }
     for (std::list<OutputEffectInstance*>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
+        //Abort and allow playback to restart but do not block, when this function returns any ongoing render may very
+        //well not be finished
         (*it)->getRenderEngine()->abortRendering(true,false);
     }
 }

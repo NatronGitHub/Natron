@@ -254,7 +254,7 @@ public:
     
     float interpolateGammaLut(float value);
     
-    void markAllOnRendersAsAborted();
+    void markAllOnGoingRendersAsAborted();
     
     virtual void reportStats(int time, int view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
     

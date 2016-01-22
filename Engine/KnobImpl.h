@@ -916,6 +916,8 @@ Knob<T>::setValue(const T & v,
     if (holder && !holder->isSetValueCurrentlyPossible()) {
         ///If we cannot set value, queue it
         if (holder && getEvaluateOnChange()) {
+            //We explicitly abort rendering now and do not wait for it to be done in EffectInstance::evaluate()
+            //because the actual value change (which will call evaluate()) may arise well later
             holder->abortAnyEvaluation();
         }
         
@@ -1240,6 +1242,8 @@ Knob<T>::setValueAtTime(double time,
         
         ///If we cannot set value, queue it
         if (holder && getEvaluateOnChange()) {
+            //We explicitly abort rendering now and do not wait for it to be done in EffectInstance::evaluate()
+            //because the actual value change (which will call evaluate()) may arise well later
             holder->abortAnyEvaluation();
         }
         

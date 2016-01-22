@@ -1866,7 +1866,6 @@ void
 RotoContext::evaluateChange()
 {
     _imp->incrementRotoAge();
-    _imp->node.lock()->getLiveInstance()->abortAnyEvaluation();
     getNode()->getLiveInstance()->evaluate_public(NULL, true,eValueChangedReasonUserEdited);
 }
 

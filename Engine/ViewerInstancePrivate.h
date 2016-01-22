@@ -55,10 +55,11 @@ NATRON_NAMESPACE_ENTER;
 struct OnGoingRenderInfo
 {
     bool aborted;
+    U64 age;
 };
 
 
-typedef std::map<U64,OnGoingRenderInfo> OnGoingRenders;
+typedef std::list<OnGoingRenderInfo> OnGoingRenders;
 
 
 struct RenderViewerArgs
@@ -305,12 +306,32 @@ public:
       
         
         for (OnGoingRenders::const_iterator it = currentRenderAges[texIndex].begin(); it!=currentRenderAges[texIndex].end();++it) {
-            if (it->first == age) {
-                return it->second.aborted;
+            if (it->age == age) {
+                return it->aborted;
             }
         }
          //hmm something is wrong the render doesn't exist
         return true;
+    }
+    
+    
+    void
+    markAllRendersAsAborted()
+    {
+        QMutexLocker k(&renderAgeMutex);
+        for (int i = 0; i < 2; ++i) {
+            if (currentRenderAges[i].empty()) {
+                continue;
+            }
+            
+            //Do not abort the oldest render, let it finish
+            OnGoingRenders::iterator it = currentRenderAges[i].begin();
+            ++it;
+            
+            for (;it != currentRenderAges[i].end(); ++it) {
+                it->aborted = true;
+            }
+        }
     }
     
     /**
@@ -349,20 +370,21 @@ public:
     
     bool addOngoingRender(int texIndex, U64 age) {
         QMutexLocker k(&renderAgeMutex);
-        if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].rbegin()->first >= age) {
+        if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].back().age >= age) {
             return false;
         }
        
         OnGoingRenderInfo info;
         info.aborted = false;
-        currentRenderAges[texIndex][age] = info;
+        info.age = age;
+        currentRenderAges[texIndex].push_back(info);
         return true;
     }
     
     bool removeOngoingRender(int texIndex, U64 age) {
         QMutexLocker k(&renderAgeMutex);
         for (OnGoingRenders::iterator it = currentRenderAges[texIndex].begin(); it!=currentRenderAges[texIndex].end();++it) {
-            if (it->first == age) {
+            if (it->age == age) {
                 currentRenderAges[texIndex].erase(it);
                 return true;
             }
