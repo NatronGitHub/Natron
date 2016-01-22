@@ -6542,7 +6542,8 @@ Node::onRefreshIdentityStateRequestReceived()
     }
     _imp->refreshIdentityStateRequestsCount = 0;
     
-    double time = getApp()->getTimeLine()->currentFrame();
+    boost::shared_ptr<Project> project = getApp()->getProject();
+    double time = project->currentFrame();
     RenderScale scale(1.);
     
     double inputTime = 0;
@@ -6550,30 +6551,29 @@ Node::onRefreshIdentityStateRequestReceived()
     U64 hash = getHashValue();
     
     bool viewAware =  _imp->liveInstance->isViewAware();
-    int nViews = !viewAware ? 1 : getApp()->getProject()->getProjectViewsCount();
+    
+    
+    int nViews = !viewAware ? 1 : project->getProjectViewsCount();
+    
+    Format frmt;
+    project->getProjectDefaultFormat(&frmt);
     
     bool isIdentity = false;
     int inputNb = -1;
     for (int i = 0; i < nViews; ++i) {
-        RectD rod;
-        bool isProj;
-        StatusEnum stat = _imp->liveInstance->getRegionOfDefinition_public(hash, time, scale, i, &rod, &isProj);
-        RectI pixelRod;
-        rod.toPixelEnclosing(scale, _imp->liveInstance->getPreferredAspectRatio(), &pixelRod);
-        if (!pixelRod.isNull() && stat != eStatusFailed) {
-            int identityInputNb = -1;
-            bool isIdentityView = _imp->liveInstance->isIdentity_public(true, hash, time, scale, pixelRod, i, &inputTime, &identityInputNb);
-            if (i > 0 && (isIdentityView != isIdentity || identityInputNb != inputNb)) {
-                isIdentity = false;
-                inputNb = -1;
-                break;
-            }
-            isIdentity |= isIdentityView;
-            inputNb = identityInputNb;
-            if (!isIdentity) {
-                break;
-            }
+        int identityInputNb = -1;
+        bool isIdentityView = _imp->liveInstance->isIdentity_public(true, hash, time, scale, frmt, i, &inputTime, &identityInputNb);
+        if (i > 0 && (isIdentityView != isIdentity || identityInputNb != inputNb)) {
+            isIdentity = false;
+            inputNb = -1;
+            break;
         }
+        isIdentity |= isIdentityView;
+        inputNb = identityInputNb;
+        if (!isIdentity) {
+            break;
+        }
+        
     }
     
    
