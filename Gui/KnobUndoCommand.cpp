@@ -252,14 +252,25 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
       , _reason(reason)
 {
     assert(knob);
-    boost::shared_ptr<KnobI> originalKnob = knob->getKnob();
-    boost::shared_ptr<KnobI> copy = createCopyForKnob(originalKnob);
-    ValueToSet& v = knobs[knob];
+    std::list<ValueToSet>& vlist = knobs[knob];
+    ValueToSet v;
     v.newValue = value;
     v.dimension = dimension;
+    assert(dimension != -1);
     v.time = time;
-    v.copy = copy;
     v.setKeyFrame = setKeyFrame;
+    v.setValueRetCode = -1;
+    vlist.push_back(v);
+    
+    KnobHolder* holder = knob->getKnob()->getHolder();
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+    QString holderName;
+    if (effect) {
+        holderName = effect->getNode()->getLabel().c_str();
+    }
+
+    setText( QObject::tr("Multiple edits for %1").arg(holderName) );
+
 }
 
 MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
@@ -310,42 +321,68 @@ boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const b
 void
 MultipleKnobEditsUndoCommand::undo()
 {
-    ///keep track of all different knobs and call instance changed action only once for all of them
-    std::set <KnobI*> knobsUnique;
-
-    for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        ///clone the copy for all knobs
-        boost::shared_ptr<KnobI> originalKnob = it->first->getKnob();
-        boost::shared_ptr<KnobI> copyWithNewValues = createCopyForKnob(originalKnob);
-
-        ///clone the original knob back to its old state
-        originalKnob->clone(it->second.copy, it->second.dimension);
-
-        ///clone the copy to the new values
-        it->second.copy->clone(copyWithNewValues, it->second.dimension);
-
-        knobsUnique.insert( originalKnob.get() );
+    
+    assert(!knobs.empty());
+    KnobHolder* holder = knobs.begin()->first->getKnob()->getHolder();
+    if (holder) {
+        holder->beginChanges();
     }
 
-
-    assert( !knobs.empty() );
-    KnobHolder* holder = knobs.begin()->first->getKnob()->getHolder();
-    QString holderName;
+    for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        boost::shared_ptr<KnobI> knob = it->first->getKnob();
+        if (!knob) {
+            continue;
+        }
+        knob->beginChanges();
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
+        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
+        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+        KeyFrame k;
+        for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            KnobHelper::ValueChangedReturnCodeEnum retCode = (KnobHelper::ValueChangedReturnCodeEnum)it2->setValueRetCode;
+            
+            if (retCode == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
+                it->first->removeKeyFrame(it2->time, it2->dimension);
+            } else {
+                if (it2->setKeyFrame) {
+                    
+                    bool refreshGui =  it2->time == knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+                    if (isInt) {
+                        it->first->setValueAtTime<int>(it2->dimension, it2->oldValue.toInt(), it2->time, &k,refreshGui,_reason);
+                    } else if (isBool) {
+                        it->first->setValueAtTime<bool>(it2->dimension, it2->oldValue.toBool(), it2->time, &k,refreshGui,_reason);
+                    } else if (isDouble) {
+                        it->first->setValueAtTime<double>(it2->dimension,it2->oldValue.toDouble(), it2->time, &k,refreshGui,_reason);
+                    } else if (isString) {
+                        it->first->setValueAtTime<std::string>(it2->dimension, it2->oldValue.toString().toStdString(), it2->time,
+                                                               &k,refreshGui,_reason);
+                    } else {
+                        assert(false);
+                    }
+                } else {
+                    if (isInt) {
+                        it->first->setValue<int>(it2->dimension, it2->oldValue.toInt(), &k,true,_reason);
+                    } else if (isBool) {
+                        it->first->setValue<bool>(it2->dimension, it2->oldValue.toBool(), &k,true,_reason);
+                    } else if (isDouble) {
+                        it->first->setValue<double>(it2->dimension, it2->oldValue.toDouble(), &k,true,_reason);
+                    } else if (isString) {
+                        it->first->setValue<std::string>(it2->dimension, it2->oldValue.toString().toStdString(),
+                                                         &k,true,_reason);
+                    } else {
+                        assert(false);
+                    }
+                }
+            }
+        }
+        knob->endChanges();
+    }
 
 
     if (holder) {
-        holder->beginChanges();
-        double time = holder->getCurrentTime();
-        for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
-            (*it)->evaluateValueChange(0,time,  _reason);
-        }
         holder->endChanges();
-        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
-        if (effect) {
-            holderName = effect->getNode()->getLabel().c_str();
-        }
     }
-    setText( QObject::tr("Multiple edits for %1").arg(holderName) );
 }
 
 void
@@ -356,90 +393,77 @@ MultipleKnobEditsUndoCommand::redo()
     if (holder) {
         holder->beginChanges();
     }
-    if (firstRedoCalled) {
-        ///just clone
-        std::set <KnobI*> knobsUnique;
-        double time = -1;
-        if (holder) {
-            time = holder->getCurrentTime();
+    
+    ///this is the first redo command, set values
+    for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        
+        boost::shared_ptr<KnobI> knob = it->first->getKnob();
+        if (!knob) {
+            continue;
         }
-        for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            boost::shared_ptr<KnobI> originalKnob = it->first->getKnob();
-            boost::shared_ptr<KnobI> copyWithOldValues = createCopyForKnob(originalKnob);
-
-            ///clone the original knob back to its old state
-            originalKnob->clone(it->second.copy, it->second.dimension);
-
-            ///clone the copy to the old values
-            it->second.copy->clone(copyWithOldValues,it->second.dimension);
-
-            knobsUnique.insert( originalKnob.get() );
-
+        knob->beginChanges();
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
+        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
+        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+        
+        for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            KeyFrame k;
             
-            for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
-                if (holder) {
-                    (*it)->evaluateValueChange(0, time, _reason);
+            if (!firstRedoCalled) {
+                if (isInt) {
+                    it2->oldValue.setValue(isInt->getValueAtTime(it2->time, it2->dimension));
+                } else if (isBool) {
+                    it2->oldValue.setValue(isBool->getValueAtTime(it2->time, it2->dimension));
+                } else if (isDouble) {
+                    it2->oldValue.setValue(isDouble->getValueAtTime(it2->time, it2->dimension));
+                } else if (isString) {
+                    it2->oldValue.setValue(isString->getValueAtTime(it2->time, it2->dimension));
                 }
             }
-        }
-    } else {
-        ///this is the first redo command, set values
-        for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            boost::shared_ptr<KnobI> knob = it->first->getKnob();
-            KeyFrame k;
-            Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-            Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-            Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
             
-            
-            if (it->second.setKeyFrame) {
-                bool refreshGui =  it->second.time == knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+            if (it2->setKeyFrame) {
+                
+                bool keyAdded = false;
+                bool refreshGui =  it2->time == knob->getHolder()->getApp()->getTimeLine()->currentFrame();
                 if (isInt) {
-                    it->first->setValueAtTime<int>(it->second.dimension, it->second.newValue.toInt(), it->second.time, &k,refreshGui,_reason);
+                    keyAdded = it->first->setValueAtTime<int>(it2->dimension, it2->newValue.toInt(), it2->time, &k,refreshGui,_reason);
                 } else if (isBool) {
-                    it->first->setValueAtTime<bool>(it->second.dimension, it->second.newValue.toBool(), it->second.time, &k,refreshGui,_reason);
+                    keyAdded = it->first->setValueAtTime<bool>(it2->dimension, it2->newValue.toBool(), it2->time, &k,refreshGui,_reason);
                 } else if (isDouble) {
-                    it->first->setValueAtTime<double>(it->second.dimension,it->second.newValue.toDouble(), it->second.time, &k,refreshGui,_reason);
+                    keyAdded = it->first->setValueAtTime<double>(it2->dimension,it2->newValue.toDouble(), it2->time, &k,refreshGui,_reason);
                 } else if (isString) {
-                    it->first->setValueAtTime<std::string>(it->second.dimension, it->second.newValue.toString().toStdString(), it->second.time,
-                                                     &k,refreshGui,_reason);
+                    keyAdded = it->first->setValueAtTime<std::string>(it2->dimension, it2->newValue.toString().toStdString(), it2->time,
+                                                           &k,refreshGui,_reason);
                 } else {
                     assert(false);
                 }
+                it2->setValueRetCode = keyAdded ? KnobHelper::eValueChangedReturnCodeKeyframeAdded : KnobHelper::eValueChangedReturnCodeKeyframeModified;
             } else {
                 if (isInt) {
-                    it->first->setValue<int>(it->second.dimension, it->second.newValue.toInt(), &k,true,_reason);
+                    it2->setValueRetCode = it->first->setValue<int>(it2->dimension, it2->newValue.toInt(), &k,true,_reason);
                 } else if (isBool) {
-                    it->first->setValue<bool>(it->second.dimension, it->second.newValue.toBool(), &k,true,_reason);
+                    it2->setValueRetCode = it->first->setValue<bool>(it2->dimension, it2->newValue.toBool(), &k,true,_reason);
                 } else if (isDouble) {
-                    it->first->setValue<double>(it->second.dimension, it->second.newValue.toDouble(), &k,true,_reason);
+                    it2->setValueRetCode = it->first->setValue<double>(it2->dimension, it2->newValue.toDouble(), &k,true,_reason);
                 } else if (isString) {
-                    it->first->setValue<std::string>(it->second.dimension, it->second.newValue.toString().toStdString(),
+                    it2->setValueRetCode = it->first->setValue<std::string>(it2->dimension, it2->newValue.toString().toStdString(),
                                                      &k,true,_reason);
                 } else {
                     assert(false);
                 }
             }
+
         }
+        knob->endChanges();
     }
+    
     if (holder) {
         holder->endChanges();
     }
-    assert( !knobs.empty() );
-    QString holderName;
-    if (holder) {
-        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
-        if (effect) {
-            if (!firstRedoCalled) {
-                effect->getApp()->triggerAutoSave();
-            }
-            holderName = effect->getNode()->getLabel().c_str();
-        }
-    }
+    
     firstRedoCalled = true;
 
-    setText( QObject::tr("Multiple edits for %1").arg(holderName) );
 } // redo
 
 int
@@ -451,6 +475,10 @@ MultipleKnobEditsUndoCommand::id() const
 bool
 MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
 {
+    /*
+     * The command in parameter just had its redo() function call and we attempt to merge it with a previous 
+     * command that has been redone already
+     */
     const MultipleKnobEditsUndoCommand *knobCommand = dynamic_cast<const MultipleKnobEditsUndoCommand *>(command);
 
     if ( !knobCommand || ( command->id() != id() ) ) {
@@ -485,11 +513,10 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
         } else {
             //copy the other dimension of that knob which changed and set the dimension to -1 so
             //that subsequent calls to undo() and redo() clone all dimensions at once
-            foundExistinKnob->second.copy->clone(otherIt->second.copy,otherIt->second.dimension);
-            foundExistinKnob->second.dimension = -1;
+            //foundExistinKnob->second.copy->clone(otherIt->second.copy,otherIt->second.dimension);
+            foundExistinKnob->second.insert(foundExistinKnob->second.end(), otherIt->second.begin(), otherIt->second.end());
         }
     }
-    knobs.insert( knobCommand->knobs.begin(), knobCommand->knobs.end() );
 
     return true;
 }

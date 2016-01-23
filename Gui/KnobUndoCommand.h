@@ -290,15 +290,15 @@ class MultipleKnobEditsUndoCommand
 {
     struct ValueToSet
     {
-        boost::shared_ptr<KnobI> copy;
-        Variant newValue;
+        Variant newValue,oldValue;
         int dimension;
         double time;
         bool setKeyFrame;
+        int setValueRetCode;
     };
 
     ///For each knob, the second member points to a clone of the knob before the first redo() call was made
-    typedef std::map < KnobGui*, ValueToSet >  ParamsMap;
+    typedef std::map < KnobGui*, std::list<ValueToSet> >  ParamsMap;
     ParamsMap knobs;
     bool createNew;
     bool firstRedoCalled;

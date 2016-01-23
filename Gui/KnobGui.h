@@ -194,7 +194,7 @@ public:
     /*This function is used by KnobUndoCommand. Calling this in a onInternalValueChanged/valueChanged
      signal/slot sequence can cause an infinite loop.*/
     template<typename T>
-    void setValueAtTime(int dimension,
+    bool setValueAtTime(int dimension,
                         const T & v,
                         double time,
                         KeyFrame* newKey,
@@ -215,6 +215,7 @@ public:
         if (refreshGui) {
             updateGUI(dimension);
         }
+        return addedKey;
     }
 
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
