@@ -452,6 +452,9 @@ MultipleKnobEditsUndoCommand::redo()
                 } else {
                     assert(false);
                 }
+                if (!firstRedoCalled && !it2->setKeyFrame) {
+                    it2->time = knob->getCurrentTime();
+                }
             }
 
         }
