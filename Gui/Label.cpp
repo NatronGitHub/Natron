@@ -27,7 +27,7 @@
 #include <QApplication>
 #include <QStyle>
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 Label::Label(const QString &text,
              QWidget *parent,
@@ -71,7 +71,7 @@ Label::setAltered(bool a)
     }
 }
 
-}
+NATRON_NAMESPACE_EXIT;
 
-using namespace Natron;
+NATRON_NAMESPACE_USING;
 #include "moc_Label.cpp"

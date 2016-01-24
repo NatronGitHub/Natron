@@ -36,9 +36,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
-//use explicitly the namespace Natron here because we use it in the .qss stylehseet and qt parser gets
-//lost if we put a macro here
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 class Label
     : public QLabel
@@ -69,6 +67,6 @@ private:
     bool altered;
 };
 
-}
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_GUI_-LABEL_H
