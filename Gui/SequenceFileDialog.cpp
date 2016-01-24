@@ -332,23 +332,30 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _buttonsLayout->addStretch();
 
 
+    QSize buttonSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
+    QSize buttonIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+
     _previousButton = new Button(style()->standardIcon(QStyle::SP_ArrowBack),"",_buttonsWidget);
-    _previousButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _previousButton->setFixedSize(buttonSize);
+    _previousButton->setIconSize(buttonIconSize);
     _buttonsLayout->addWidget(_previousButton);
     QObject::connect( _previousButton, SIGNAL( clicked() ), this, SLOT( previousFolder() ) );
 
     _nextButton = new Button(style()->standardIcon(QStyle::SP_ArrowForward),"",_buttonsWidget);
-    _nextButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _nextButton->setFixedSize(buttonSize);
+    _nextButton->setIconSize(buttonIconSize);
     _buttonsLayout->addWidget(_nextButton);
     QObject::connect( _nextButton, SIGNAL( clicked() ), this, SLOT( nextFolder() ) );
 
     _upButton = new Button(style()->standardIcon(QStyle::SP_ArrowUp),"",_buttonsWidget);
-    _upButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _upButton->setIconSize(buttonIconSize);
+    _upButton->setFixedSize(buttonSize);
     _buttonsLayout->addWidget(_upButton);
     QObject::connect( _upButton, SIGNAL( clicked() ), this, SLOT( parentFolder() ) );
 
     _createDirButton = new Button(style()->standardIcon(QStyle::SP_FileDialogNewFolder),"",_buttonsWidget);
-    _createDirButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _createDirButton->setIconSize(buttonIconSize);
+    _createDirButton->setFixedSize(buttonSize);
     _buttonsLayout->addWidget(_createDirButton);
     QObject::connect( _createDirButton, SIGNAL( clicked() ), this, SLOT( createDir() ) );
 
@@ -468,7 +475,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         icPreview.addPixmap(pixPreviewButtonEnabled,QIcon::Normal,QIcon::On);
         icPreview.addPixmap(pixPreviewButtonDisabled,QIcon::Normal,QIcon::Off);
         _togglePreviewButton = new Button(icPreview,"",_centerArea);
-        _togglePreviewButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+        _togglePreviewButton->setIconSize(buttonIconSize);
         QObject::connect(_togglePreviewButton, SIGNAL(clicked(bool)), this, SLOT(onTogglePreviewButtonClicked(bool) ) );
         _togglePreviewButton->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Expanding);
         _togglePreviewButton->setCheckable(true);

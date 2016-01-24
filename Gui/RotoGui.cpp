@@ -552,43 +552,45 @@ RotoGui::RotoGui(NodeGui* node,
     QPixmap pixBboxClickEnabled,pixBboxClickDisabled;
     QPixmap pixPaintBrush,pixEraser,pixBlur,pixSmear,pixSharpen,pixDodge,pixBurn,pixClone,pixReveal,pixPencil;
 
-    appPTR->getIcon(NATRON_PIXMAP_BEZIER_32, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBezier);
-    appPTR->getIcon(NATRON_PIXMAP_ELLIPSE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixEllipse);
-    appPTR->getIcon(NATRON_PIXMAP_RECTANGLE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRectangle);
-    appPTR->getIcon(NATRON_PIXMAP_ADD_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixAddPts);
-    appPTR->getIcon(NATRON_PIXMAP_REMOVE_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRemovePts);
-    appPTR->getIcon(NATRON_PIXMAP_CUSP_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixCuspPts);
-    appPTR->getIcon(NATRON_PIXMAP_SMOOTH_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSmoothPts);
-    appPTR->getIcon(NATRON_PIXMAP_OPEN_CLOSE_CURVE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixOpenCloseCurve);
-    appPTR->getIcon(NATRON_PIXMAP_REMOVE_FEATHER, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRemoveFeather);
-    appPTR->getIcon(NATRON_PIXMAP_SELECT_ALL, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSelectAll);
-    appPTR->getIcon(NATRON_PIXMAP_SELECT_POINTS, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSelectPoints);
-    appPTR->getIcon(NATRON_PIXMAP_SELECT_FEATHER, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSelectFeather);
-    appPTR->getIcon(NATRON_PIXMAP_SELECT_CURVES, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSelectCurves);
-    appPTR->getIcon(NATRON_PIXMAP_AUTO_KEYING_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixAutoKeyingEnabled);
-    appPTR->getIcon(NATRON_PIXMAP_AUTO_KEYING_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixAutoKeyingDisabled);
-    appPTR->getIcon(NATRON_PIXMAP_STICKY_SELECTION_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixStickySelEnabled);
-    appPTR->getIcon(NATRON_PIXMAP_STICKY_SELECTION_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixStickySelDisabled);
-    appPTR->getIcon(NATRON_PIXMAP_FEATHER_LINK_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixFeatherLinkEnabled);
-    appPTR->getIcon(NATRON_PIXMAP_FEATHER_LINK_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixFeatherLinkDisabled);
-    appPTR->getIcon(NATRON_PIXMAP_ADD_KEYFRAME, NATRON_LARGE_BUTTON_ICON_SIZE, &pixAddKey);
-    appPTR->getIcon(NATRON_PIXMAP_REMOVE_KEYFRAME, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRemoveKey);
-    appPTR->getIcon(NATRON_PIXMAP_RIPPLE_EDIT_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRippleEnabled);
-    appPTR->getIcon(NATRON_PIXMAP_RIPPLE_EDIT_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixRippleDisabled);
-    appPTR->getIcon(NATRON_PIXMAP_FEATHER_VISIBLE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixFeatherEnabled);
-    appPTR->getIcon(NATRON_PIXMAP_FEATHER_UNVISIBLE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixFeatherDisabled);
-    appPTR->getIcon(NATRON_PIXMAP_VIEWER_ROI_ENABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBboxClickEnabled);
-    appPTR->getIcon(NATRON_PIXMAP_VIEWER_ROI_DISABLED, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBboxClickDisabled);
-    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_SOLID, NATRON_LARGE_BUTTON_ICON_SIZE, &pixPaintBrush);
-    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_ERASER, NATRON_LARGE_BUTTON_ICON_SIZE, &pixEraser);
-    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_BLUR, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBlur);
-    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_SMEAR, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSmear);
-    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_SHARPEN, NATRON_LARGE_BUTTON_ICON_SIZE, &pixSharpen);
-    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_DODGE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixDodge);
-    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_BURN, NATRON_LARGE_BUTTON_ICON_SIZE, &pixBurn);
-    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_CLONE, NATRON_LARGE_BUTTON_ICON_SIZE, &pixClone);
-    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_REVEAL, NATRON_LARGE_BUTTON_ICON_SIZE, &pixReveal);
-    appPTR->getIcon(NATRON_PIXMAP_PENCIL, NATRON_LARGE_BUTTON_ICON_SIZE, &pixPencil);
+    int largeIconSize = TO_DPIY(NATRON_LARGE_BUTTON_ICON_SIZE);
+
+    appPTR->getIcon(NATRON_PIXMAP_BEZIER_32, largeIconSize, &pixBezier);
+    appPTR->getIcon(NATRON_PIXMAP_ELLIPSE, largeIconSize, &pixEllipse);
+    appPTR->getIcon(NATRON_PIXMAP_RECTANGLE, largeIconSize, &pixRectangle);
+    appPTR->getIcon(NATRON_PIXMAP_ADD_POINTS, largeIconSize, &pixAddPts);
+    appPTR->getIcon(NATRON_PIXMAP_REMOVE_POINTS, largeIconSize, &pixRemovePts);
+    appPTR->getIcon(NATRON_PIXMAP_CUSP_POINTS, largeIconSize, &pixCuspPts);
+    appPTR->getIcon(NATRON_PIXMAP_SMOOTH_POINTS, largeIconSize, &pixSmoothPts);
+    appPTR->getIcon(NATRON_PIXMAP_OPEN_CLOSE_CURVE, largeIconSize, &pixOpenCloseCurve);
+    appPTR->getIcon(NATRON_PIXMAP_REMOVE_FEATHER, largeIconSize, &pixRemoveFeather);
+    appPTR->getIcon(NATRON_PIXMAP_SELECT_ALL, largeIconSize, &pixSelectAll);
+    appPTR->getIcon(NATRON_PIXMAP_SELECT_POINTS, largeIconSize, &pixSelectPoints);
+    appPTR->getIcon(NATRON_PIXMAP_SELECT_FEATHER, largeIconSize, &pixSelectFeather);
+    appPTR->getIcon(NATRON_PIXMAP_SELECT_CURVES, largeIconSize, &pixSelectCurves);
+    appPTR->getIcon(NATRON_PIXMAP_AUTO_KEYING_ENABLED, largeIconSize, &pixAutoKeyingEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_AUTO_KEYING_DISABLED, largeIconSize, &pixAutoKeyingDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_STICKY_SELECTION_ENABLED, largeIconSize, &pixStickySelEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_STICKY_SELECTION_DISABLED, largeIconSize, &pixStickySelDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_FEATHER_LINK_ENABLED, largeIconSize, &pixFeatherLinkEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_FEATHER_LINK_DISABLED, largeIconSize, &pixFeatherLinkDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_ADD_KEYFRAME, largeIconSize, &pixAddKey);
+    appPTR->getIcon(NATRON_PIXMAP_REMOVE_KEYFRAME, largeIconSize, &pixRemoveKey);
+    appPTR->getIcon(NATRON_PIXMAP_RIPPLE_EDIT_ENABLED, largeIconSize, &pixRippleEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_RIPPLE_EDIT_DISABLED, largeIconSize, &pixRippleDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_FEATHER_VISIBLE, largeIconSize, &pixFeatherEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_FEATHER_UNVISIBLE, largeIconSize, &pixFeatherDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_ROI_ENABLED, largeIconSize, &pixBboxClickEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_ROI_DISABLED, largeIconSize, &pixBboxClickDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_SOLID, largeIconSize, &pixPaintBrush);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_ERASER, largeIconSize, &pixEraser);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_BLUR, largeIconSize, &pixBlur);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_SMEAR, largeIconSize, &pixSmear);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_SHARPEN, largeIconSize, &pixSharpen);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_DODGE, largeIconSize, &pixDodge);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_BURN, largeIconSize, &pixBurn);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_CLONE, largeIconSize, &pixClone);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_REVEAL, largeIconSize, &pixReveal);
+    appPTR->getIcon(NATRON_PIXMAP_PENCIL, largeIconSize, &pixPencil);
     
     _imp->toolbar = new QToolBar(parent);
     _imp->toolbar->setOrientation(Qt::Vertical);
@@ -600,10 +602,12 @@ RotoGui::RotoGui(NodeGui* node,
     autoKeyIc.addPixmap(pixAutoKeyingEnabled,QIcon::Normal,QIcon::On);
     autoKeyIc.addPixmap(pixAutoKeyingDisabled,QIcon::Normal,QIcon::Off);
     
-    
+    QSize medButtonSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
+    QSize medButtonIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+
     _imp->autoKeyingEnabled = new Button(autoKeyIc,"",_imp->selectionButtonsBar);
-    _imp->autoKeyingEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->autoKeyingEnabled->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->autoKeyingEnabled->setFixedSize(medButtonSize);
+    _imp->autoKeyingEnabled->setIconSize(medButtonIconSize);
     _imp->autoKeyingEnabled->setCheckable(true);
     _imp->autoKeyingEnabled->setChecked( _imp->context->isAutoKeyingEnabled() );
     _imp->autoKeyingEnabled->setDown( _imp->context->isAutoKeyingEnabled() );
@@ -615,8 +619,8 @@ RotoGui::RotoGui(NodeGui* node,
     featherLinkIc.addPixmap(pixFeatherLinkEnabled,QIcon::Normal,QIcon::On);
     featherLinkIc.addPixmap(pixFeatherLinkDisabled,QIcon::Normal,QIcon::Off);
     _imp->featherLinkEnabled = new Button(featherLinkIc,"",_imp->selectionButtonsBar);
-    _imp->featherLinkEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->featherLinkEnabled->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->featherLinkEnabled->setFixedSize(medButtonSize);
+    _imp->featherLinkEnabled->setIconSize(medButtonIconSize);
     _imp->featherLinkEnabled->setCheckable(true);
     _imp->featherLinkEnabled->setChecked( _imp->context->isFeatherLinkEnabled() );
     _imp->featherLinkEnabled->setDown( _imp->context->isFeatherLinkEnabled() );
@@ -629,8 +633,8 @@ RotoGui::RotoGui(NodeGui* node,
     enableFeatherIC.addPixmap(pixFeatherEnabled,QIcon::Normal,QIcon::On);
     enableFeatherIC.addPixmap(pixFeatherDisabled,QIcon::Normal,QIcon::Off);
     _imp->displayFeatherEnabled = new Button(enableFeatherIC,"",_imp->selectionButtonsBar);
-    _imp->displayFeatherEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->displayFeatherEnabled->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->displayFeatherEnabled->setFixedSize(medButtonSize);
+    _imp->displayFeatherEnabled->setIconSize(medButtonIconSize);
     _imp->displayFeatherEnabled->setCheckable(true);
     _imp->displayFeatherEnabled->setChecked(true);
     _imp->displayFeatherEnabled->setDown(true);
@@ -642,8 +646,8 @@ RotoGui::RotoGui(NodeGui* node,
     stickSelIc.addPixmap(pixStickySelEnabled,QIcon::Normal,QIcon::On);
     stickSelIc.addPixmap(pixStickySelDisabled,QIcon::Normal,QIcon::Off);
     _imp->stickySelectionEnabled = new Button(stickSelIc,"",_imp->selectionButtonsBar);
-    _imp->stickySelectionEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->stickySelectionEnabled->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->stickySelectionEnabled->setFixedSize(medButtonSize);
+    _imp->stickySelectionEnabled->setIconSize(medButtonIconSize);
     _imp->stickySelectionEnabled->setCheckable(true);
     _imp->stickySelectionEnabled->setChecked(false);
     _imp->stickySelectionEnabled->setDown(false);
@@ -656,8 +660,8 @@ RotoGui::RotoGui(NodeGui* node,
     bboxClickIc.addPixmap(pixBboxClickEnabled,QIcon::Normal,QIcon::On);
     bboxClickIc.addPixmap(pixBboxClickDisabled,QIcon::Normal,QIcon::Off);
     _imp->bboxClickAnywhere = new Button(bboxClickIc,"",_imp->selectionButtonsBar);
-    _imp->bboxClickAnywhere->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->bboxClickAnywhere->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->bboxClickAnywhere->setFixedSize(medButtonSize);
+    _imp->bboxClickAnywhere->setIconSize(medButtonIconSize);
     _imp->bboxClickAnywhere->setCheckable(true);
     _imp->bboxClickAnywhere->setChecked(true);
     _imp->bboxClickAnywhere->setDown(true);
@@ -672,8 +676,8 @@ RotoGui::RotoGui(NodeGui* node,
     rippleEditIc.addPixmap(pixRippleEnabled,QIcon::Normal,QIcon::On);
     rippleEditIc.addPixmap(pixRippleDisabled,QIcon::Normal,QIcon::Off);
     _imp->rippleEditEnabled = new Button(rippleEditIc,"",_imp->selectionButtonsBar);
-    _imp->rippleEditEnabled->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->rippleEditEnabled->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->rippleEditEnabled->setFixedSize(medButtonSize);
+    _imp->rippleEditEnabled->setIconSize(medButtonIconSize);
     _imp->rippleEditEnabled->setCheckable(true);
     _imp->rippleEditEnabled->setChecked( _imp->context->isRippleEditEnabled() );
     _imp->rippleEditEnabled->setDown( _imp->context->isRippleEditEnabled() );
@@ -684,15 +688,15 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->selectionButtonsBarLayout->addWidget(_imp->rippleEditEnabled);
     
     _imp->addKeyframeButton = new Button(QIcon(pixAddKey),"",_imp->selectionButtonsBar);
-    _imp->addKeyframeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->addKeyframeButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->addKeyframeButton->setFixedSize(medButtonSize);
+    _imp->addKeyframeButton->setIconSize(medButtonIconSize);
     QObject::connect( _imp->addKeyframeButton, SIGNAL( clicked(bool) ), this, SLOT( onAddKeyFrameClicked() ) );
     _imp->addKeyframeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Set a keyframe at the current time for the selected shape(s), if any."), Qt::WhiteSpaceNormal));
     _imp->selectionButtonsBarLayout->addWidget(_imp->addKeyframeButton);
     
     _imp->removeKeyframeButton = new Button(QIcon(pixRemoveKey),"",_imp->selectionButtonsBar);
-    _imp->removeKeyframeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->removeKeyframeButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->removeKeyframeButton->setFixedSize(medButtonSize);
+    _imp->removeKeyframeButton->setIconSize(medButtonIconSize);
     QObject::connect( _imp->removeKeyframeButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveKeyFrameClicked() ) );
     _imp->removeKeyframeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Remove a keyframe at the current time for the selected shape(s), if any."), Qt::WhiteSpaceNormal));
     _imp->selectionButtonsBarLayout->addWidget(_imp->removeKeyframeButton);
@@ -725,15 +729,15 @@ RotoGui::RotoGui(NodeGui* node,
     
     _imp->colorPickerLabel = new ColorPickerLabel(0,_imp->brushButtonsBar);
     _imp->colorPickerLabel->setColor(Qt::white);
-    _imp->colorPickerLabel->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+    _imp->colorPickerLabel->setFixedSize(medButtonSize);
     _imp->colorPickerLabel->setToolTip(GuiUtils::convertFromPlainText(tr("The color of the next paint brush stroke to be painted."), Qt::WhiteSpaceNormal));
     _imp->brushButtonsBarLayout->addWidget(_imp->colorPickerLabel);
     QPixmap colorWheelPix;
-    appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, NATRON_MEDIUM_BUTTON_ICON_SIZE, &colorWheelPix);
+    appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &colorWheelPix);
     _imp->colorWheelButton = new Button(QIcon(colorWheelPix),"",_imp->brushButtonsBar);
     _imp->colorWheelButton->setToolTip(GuiUtils::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));
-    _imp->colorWheelButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->colorWheelButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->colorWheelButton->setFixedSize(medButtonSize);
+    _imp->colorWheelButton->setIconSize(medButtonIconSize);
     QObject::connect(_imp->colorWheelButton, SIGNAL(clicked(bool)), this, SLOT(onColorWheelButtonClicked()));
     _imp->brushButtonsBarLayout->addWidget(_imp->colorWheelButton);
     
@@ -771,10 +775,10 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->addWidget(_imp->opacitySpinbox);
     
     QPixmap pressureOnPix,pressureOffPix,buildupOnPix,buildupOffPix;
-    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_PRESSURE_ENABLED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pressureOnPix);
-    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_PRESSURE_DISABLED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pressureOffPix);
-    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_BUILDUP_ENABLED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &buildupOnPix);
-    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_BUILDUP_DISABLED, NATRON_MEDIUM_BUTTON_ICON_SIZE, &buildupOffPix);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_PRESSURE_ENABLED, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &pressureOnPix);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_PRESSURE_DISABLED, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &pressureOffPix);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_BUILDUP_ENABLED, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &buildupOnPix);
+    appPTR->getIcon(NATRON_PIXMAP_ROTOPAINT_BUILDUP_DISABLED, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &buildupOffPix);
     
     QIcon pressureIc;
     pressureIc.addPixmap(pressureOnPix,QIcon::Normal,QIcon::On);
@@ -785,8 +789,8 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->pressureOpacityButton = new Button(pressureIc,"",_imp->brushButtonsBar);
     QObject::connect(_imp->pressureOpacityButton, SIGNAL(clicked(bool)), this, SLOT(onPressureOpacityClicked(bool)));
     _imp->pressureOpacityButton->setToolTip(pressOpatt);
-    _imp->pressureOpacityButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->pressureOpacityButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->pressureOpacityButton->setFixedSize(medButtonSize);
+    _imp->pressureOpacityButton->setIconSize(medButtonIconSize);
     _imp->pressureOpacityButton->setCheckable(true);
     _imp->pressureOpacityButton->setChecked(true);
     _imp->pressureOpacityButton->setDown(true);
@@ -813,8 +817,8 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->pressureSizeButton = new Button(pressureIc,"",_imp->brushButtonsBar);
     QObject::connect(_imp->pressureSizeButton, SIGNAL(clicked(bool)), this, SLOT(onPressureSizeClicked(bool)));
     _imp->pressureSizeButton->setToolTip(pressSizett);
-    _imp->pressureSizeButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->pressureSizeButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->pressureSizeButton->setFixedSize(medButtonSize);
+    _imp->pressureSizeButton->setIconSize(medButtonIconSize);
     _imp->pressureSizeButton->setCheckable(true);
     _imp->pressureSizeButton->setChecked(false);
     _imp->pressureSizeButton->setDown(false);
@@ -840,8 +844,8 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->pressureHardnessButton = new Button(pressureIc,"",_imp->brushButtonsBar);
     QObject::connect(_imp->pressureHardnessButton, SIGNAL(clicked(bool)), this, SLOT(onPressureHardnessClicked(bool)));
     _imp->pressureHardnessButton->setToolTip(pressHardnesstt);
-    _imp->pressureHardnessButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->pressureHardnessButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->pressureHardnessButton->setFixedSize(medButtonSize);
+    _imp->pressureHardnessButton->setIconSize(medButtonIconSize);
     _imp->pressureHardnessButton->setCheckable(true);
     _imp->pressureHardnessButton->setChecked(false);
     _imp->pressureHardnessButton->setDown(false);
@@ -862,8 +866,8 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->buildUpButton = new Button(buildupIc,"",_imp->brushButtonsBar);
     QObject::connect(_imp->buildUpButton, SIGNAL(clicked(bool)), this, SLOT(onBuildupClicked(bool)));
     _imp->buildUpButton->setToolTip(builduptt);
-    _imp->buildUpButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->buildUpButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->buildUpButton->setFixedSize(medButtonSize);
+    _imp->buildUpButton->setIconSize(medButtonIconSize);
     _imp->buildUpButton->setCheckable(true);
     _imp->buildUpButton->setChecked(true);
     _imp->buildUpButton->setDown(true);
@@ -928,7 +932,7 @@ RotoGui::RotoGui(NodeGui* node,
     
     ////////////////////////////////////// CREATING VIEWER LEFT TOOLBAR //////////////////////////////////////
     
-    QSize rotoToolSize(NATRON_LARGE_BUTTON_SIZE, NATRON_LARGE_BUTTON_SIZE);
+    QSize rotoToolSize(TO_DPIX(NATRON_LARGE_BUTTON_SIZE), TO_DPIY(NATRON_LARGE_BUTTON_SIZE));
 
     _imp->selectTool = new RotoToolButton(_imp->toolbar);
     _imp->selectTool->setFixedSize(rotoToolSize);

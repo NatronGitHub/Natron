@@ -365,9 +365,9 @@ TimeLineGui::paintGL()
         }
 
 
-        QFontMetrics fontM(_imp->font);
+        QFontMetrics fontM(_imp->font, 0);
 
-        double lineYPosWidget = height() - 1 - fontM.height()  - TICK_HEIGHT / 2.;
+        double lineYPosWidget = height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT) / 2.;
         double lineYpos = toTimeLineCoordinates(0,lineYPosWidget).y();
         double cachedLineYPos = toTimeLineCoordinates(0,lineYPosWidget + 1).y();
 
@@ -398,7 +398,7 @@ TimeLineGui::paintGL()
         glCheckErrorIgnoreOSXBug();
 
         double tickBottom = toTimeLineCoordinates( 0,height() - 1 - fontM.height() ).y();
-        double tickTop = toTimeLineCoordinates(0,height() - 1 - fontM.height()  - TICK_HEIGHT).y();
+        double tickTop = toTimeLineCoordinates(0,height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT)).y();
         const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
         const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
         std::vector<double> acceptedDistances;
@@ -470,24 +470,27 @@ TimeLineGui::paintGL()
         }
         glCheckError();
 
+        int cursorWidth = TO_DPIX(CURSOR_WIDTH);
+        int cursorHeight = TO_DPIY(CURSOR_HEIGHT);
+
         QPointF cursorBtm(_imp->timeline->currentFrame(),lineYpos);
         QPointF cursorBtmWidgetCoord = toWidgetCoordinates( cursorBtm.x(),cursorBtm.y() );
-        QPointF cursorTopLeft = toTimeLineCoordinates(cursorBtmWidgetCoord.x() - CURSOR_WIDTH / 2.,
-                                                      cursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
-        QPointF cursorTopRight = toTimeLineCoordinates(cursorBtmWidgetCoord.x() + CURSOR_WIDTH / 2.,
-                                                       cursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
+        QPointF cursorTopLeft = toTimeLineCoordinates(cursorBtmWidgetCoord.x() - cursorWidth / 2.,
+                                                      cursorBtmWidgetCoord.y() - cursorHeight);
+        QPointF cursorTopRight = toTimeLineCoordinates(cursorBtmWidgetCoord.x() + cursorWidth / 2.,
+                                                       cursorBtmWidgetCoord.y() - cursorHeight);
         QPointF leftBoundBtm(leftBound,lineYpos);
         QPointF leftBoundWidgetCoord = toWidgetCoordinates( leftBoundBtm.x(),leftBoundBtm.y() );
-        QPointF leftBoundBtmRight = toTimeLineCoordinates( leftBoundWidgetCoord.x() + CURSOR_WIDTH / 2.,
+        QPointF leftBoundBtmRight = toTimeLineCoordinates( leftBoundWidgetCoord.x() + cursorWidth / 2.,
                                                            leftBoundWidgetCoord.y() );
         QPointF leftBoundTop = toTimeLineCoordinates(leftBoundWidgetCoord.x(),
-                                                     leftBoundWidgetCoord.y() - CURSOR_HEIGHT);
+                                                     leftBoundWidgetCoord.y() - cursorHeight);
         QPointF rightBoundBtm(rightBound,lineYpos);
         QPointF rightBoundWidgetCoord = toWidgetCoordinates( rightBoundBtm.x(),rightBoundBtm.y() );
-        QPointF rightBoundBtmLeft = toTimeLineCoordinates( rightBoundWidgetCoord.x() - CURSOR_WIDTH / 2.,
+        QPointF rightBoundBtmLeft = toTimeLineCoordinates( rightBoundWidgetCoord.x() - cursorWidth / 2.,
                                                            rightBoundWidgetCoord.y() );
         QPointF rightBoundTop = toTimeLineCoordinates(rightBoundWidgetCoord.x(),
-                                                      rightBoundWidgetCoord.y() - CURSOR_HEIGHT);
+                                                      rightBoundWidgetCoord.y() - cursorHeight);
         
         std::set<SequenceTime> keyframes;
         {
@@ -508,14 +511,14 @@ TimeLineGui::paintGL()
             int currentPosBtmWidgetCoordX = _imp->lastMouseEventWidgetCoord.x();
             int currentPosBtmWidgetCoordY = toWidgetCoordinates(0,lineYpos).y();
             QPointF currentPosBtm = toTimeLineCoordinates(currentPosBtmWidgetCoordX,currentPosBtmWidgetCoordY);
-            QPointF currentPosTopLeft = toTimeLineCoordinates(currentPosBtmWidgetCoordX - CURSOR_WIDTH / 2.,
-                                                              currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
-            QPointF currentPosTopRight = toTimeLineCoordinates(currentPosBtmWidgetCoordX + CURSOR_WIDTH / 2.,
-                                                               currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
+            QPointF currentPosTopLeft = toTimeLineCoordinates(currentPosBtmWidgetCoordX - cursorWidth / 2.,
+                                                              currentPosBtmWidgetCoordY - cursorHeight);
+            QPointF currentPosTopRight = toTimeLineCoordinates(currentPosBtmWidgetCoordX + cursorWidth / 2.,
+                                                               currentPosBtmWidgetCoordY - cursorHeight);
             int hoveredTime = std::floor(currentPosBtm.x() + 0.5);
             QString mouseNumber( QString::number(hoveredTime) );
             QPoint mouseNumberWidgetCoord(currentPosBtmWidgetCoordX - fontM.width(mouseNumber) / 2,
-                                          currentPosBtmWidgetCoordY - CURSOR_HEIGHT - 2);
+                                          currentPosBtmWidgetCoordY - cursorHeight - 2);
             QPointF mouseNumberPos = toTimeLineCoordinates( mouseNumberWidgetCoord.x(),mouseNumberWidgetCoord.y() );
             std::set<SequenceTime>::iterator foundHoveredAsKeyframe = keyframes.find(hoveredTime);
             QColor currentColor;

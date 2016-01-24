@@ -134,7 +134,7 @@ ScaleSliderQWidget::sizeHint() const
 QSize
 ScaleSliderQWidget::minimumSizeHint() const
 {
-   return QSize(150,20); 
+   return QSize(TO_DPIX(150),TO_DPIY(20));
 }
 
 ScaleSliderQWidget::~ScaleSliderQWidget()
@@ -456,11 +456,11 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     }
 
     /*drawing X axis*/
-    double lineYpos = height() - 1 - fontM.height()  - TICK_HEIGHT / 2;
+    double lineYpos = height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT) / 2;
     p.drawLine(0, lineYpos, width() - 1, lineYpos);
 
     double tickBottom = _imp->zoomCtx.toZoomCoordinates( 0,height() - 1 - fontM.height() ).y();
-    double tickTop = _imp->zoomCtx.toZoomCoordinates(0,height() - 1 - fontM.height()  - TICK_HEIGHT).y();
+    double tickTop = _imp->zoomCtx.toZoomCoordinates(0,height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT)).y();
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
     std::vector<double> acceptedDistances;
@@ -535,8 +535,8 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
         }
     }
     double positionValue = _imp->zoomCtx.toWidgetCoordinates(_imp->value,0).x();
-    QPointF sliderBottomLeft(positionValue - SLIDER_WIDTH / 2,height() - 1 - fontM.height() / 2);
-    QPointF sliderTopRight(positionValue + SLIDER_WIDTH / 2,height() - 1 - fontM.height() / 2 - SLIDER_HEIGHT);
+    QPointF sliderBottomLeft(positionValue - TO_DPIX(SLIDER_WIDTH) / 2,height() - 1 - fontM.height() / 2);
+    QPointF sliderTopRight(positionValue + TO_DPIX(SLIDER_WIDTH) / 2,height() - 1 - fontM.height() / 2 - TO_DPIY(SLIDER_HEIGHT));
 
     /*draw the slider*/
     p.setPen(_imp->sliderColor);

@@ -515,14 +515,14 @@ Edge::initLine()
         if (foundIntersection) {
             double distToCenter = std::sqrt( ( intersection.x() - dst.x() ) * ( intersection.x() - dst.x() ) +
                                             ( intersection.y() - dst.y() ) * ( intersection.y() - dst.y() ) );
-            distToCenter += appPTR->getCurrentSettings()->getDisconnectedArrowLength();
+            distToCenter += TO_DPIY(appPTR->getCurrentSettings()->getDisconnectedArrowLength());
 
             srcpt = QPointF( dst.x() + (std::cos(_imp->angle) * distToCenter * sc),
                             dst.y() - (std::sin(_imp->angle) * distToCenter * sc) );
             setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
 
             if (_imp->label) {
-                QFontMetrics fm(_imp->label->font());
+                QFontMetrics fm(_imp->label->font(), 0);
                 double cosinus = std::cos(_imp->angle);
                 int yOffset = 0;
                 if (cosinus < 0) {

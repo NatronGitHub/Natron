@@ -744,7 +744,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                                                            , Qt::WhiteSpaceNormal);
     
     _imp->canEditFpsBox->setFixedSize(buttonSize);
-    _imp->canEditFpsBox->setIconSize(buttonIconSize);
+    //_imp->canEditFpsBox->setIconSize(buttonIconSize);
     _imp->canEditFpsBox->setToolTip(canEditFpsBoxTT);
     _imp->canEditFpsBox->setChecked(!_imp->fpsLocked);
     QObject::connect( _imp->canEditFpsBox,SIGNAL( clicked(bool) ),this,SLOT( onCanSetFPSClicked(bool) ) );
