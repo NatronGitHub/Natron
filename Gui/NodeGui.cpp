@@ -102,8 +102,6 @@ CLANG_DIAG_ON(uninitialized)
 #define NATRON_ELLIPSE_WARN_DIAMETER 10
 
 
-#define DOT_GUI_DIAMETER 15
-
 #define NATRON_PLUGIN_ICON_SIZE 20
 #define PLUGIN_ICON_OFFSET 2
 
@@ -588,8 +586,11 @@ NodeGui::createGui()
     bitDepthGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
     bitDepthGrad.push_back( qMakePair( 0.3, QColor(Qt::yellow) ) );
     bitDepthGrad.push_back( qMakePair( 1., QColor(243,137,0) ) );
+
+    double ellipseDiam = TO_DPIX(NATRON_ELLIPSE_WARN_DIAMETER);
+
     _bitDepthWarning.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "C",QPointF(bbox.x() + bbox.width() / 2, bbox.y()),
-                                                NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,
+                                                ellipseDiam,ellipseDiam,
                                             bitDepthGrad,QColor(0,0,0,255),this));
     _bitDepthWarning->setActive(false);
 
@@ -598,12 +599,12 @@ NodeGui::createGui()
     exprGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
     exprGrad.push_back( qMakePair( 0.3, QColor(Qt::green) ) );
     exprGrad.push_back( qMakePair( 1., QColor(69,96,63) ) );
-    _expressionIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2,"E",bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER, exprGrad,QColor(255,255,255),this));
+    _expressionIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2,"E",bbox.topRight(),ellipseDiam,ellipseDiam, exprGrad,QColor(255,255,255),this));
     _expressionIndicator->setToolTip(GuiUtils::convertFromPlainText(tr("This node has one or several expression(s) involving values of parameters of other "
                                          "nodes in the project. Hover the mouse on the green connections to see what are the effective links."), Qt::WhiteSpaceNormal));
     _expressionIndicator->setActive(false);
     
-    _availableViewsIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "V", bbox.topLeft(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,exprGrad, QColor(255,255,255), this));
+    _availableViewsIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "V", bbox.topLeft(),ellipseDiam,ellipseDiam,exprGrad, QColor(255,255,255), this));
     _availableViewsIndicator->setActive(false);
     
     onAvailableViewsChanged();
@@ -616,7 +617,7 @@ NodeGui::createGui()
         ptGrad.push_back(qMakePair(0., QColor(0,0,255)));
         ptGrad.push_back(qMakePair(0.5, QColor(0,50,200)));
         ptGrad.push_back(qMakePair(1., QColor(0,100,150)));
-        _passThroughIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "P", bbox.topRight(),NATRON_ELLIPSE_WARN_DIAMETER,NATRON_ELLIPSE_WARN_DIAMETER,ptGrad, QColor(255,255,255), this));
+        _passThroughIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, "P", bbox.topRight(),ellipseDiam,ellipseDiam,ptGrad, QColor(255,255,255), this));
         _passThroughIndicator->setActive(false);
     }
 
@@ -899,9 +900,9 @@ NodeGui::resize(int width,
 
     if (mustAddResizeHandle()) {
         QPolygonF poly;
-        poly.push_back( QPointF( bottomRight.x() - 20,bottomRight.y() ) );
+        poly.push_back( QPointF( bottomRight.x() - TO_DPIX(20),bottomRight.y() ) );
         poly.push_back(bottomRight);
-        poly.push_back( QPointF(bottomRight.x(), bottomRight.y() - 20) );
+        poly.push_back( QPointF(bottomRight.x(), bottomRight.y() - TO_DPIY(20)) );
         _resizeHandle->setPolygon(poly);
 
     }
@@ -979,7 +980,7 @@ NodeGui::refreshPosition(double x,
         if ( _magnecEnabled.x() || _magnecEnabled.y() ) {
             if ( _magnecEnabled.x() ) {
                 _magnecDistance.rx() += ( x - _magnecStartingPos.x() );
-                if (std::abs( _magnecDistance.x() ) >= NATRON_MAGNETIC_GRID_RELEASE_DISTANCE) {
+                if (std::abs( _magnecDistance.x() ) >= TO_DPIX(NATRON_MAGNETIC_GRID_RELEASE_DISTANCE)) {
                     _magnecEnabled.rx() = 0;
                     _updateDistanceSinceLastMagnec.rx() = 1;
                     _distanceSinceLastMagnec.rx() = 0;
@@ -987,7 +988,7 @@ NodeGui::refreshPosition(double x,
             }
             if ( _magnecEnabled.y() ) {
                 _magnecDistance.ry() += ( y - _magnecStartingPos.y() );
-                if (std::abs( _magnecDistance.y() ) >= NATRON_MAGNETIC_GRID_RELEASE_DISTANCE) {
+                if (std::abs( _magnecDistance.y() ) >= TO_DPIY(NATRON_MAGNETIC_GRID_RELEASE_DISTANCE)) {
                     _magnecEnabled.ry() = 0;
                     _updateDistanceSinceLastMagnec.ry() = 1;
                     _distanceSinceLastMagnec.ry() = 0;
@@ -1015,7 +1016,7 @@ NodeGui::refreshPosition(double x,
         bool continueMagnet = true;
         if (_updateDistanceSinceLastMagnec.rx() == 1) {
             _distanceSinceLastMagnec.rx() = x - _magnecStartingPos.x();
-            if ( std::abs( _distanceSinceLastMagnec.x() ) > (NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) ) {
+            if ( std::abs( _distanceSinceLastMagnec.x() ) > (TO_DPIX(NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) ) {
                 _updateDistanceSinceLastMagnec.rx() = 0;
             } else {
                 continueMagnet = false;
@@ -1023,7 +1024,7 @@ NodeGui::refreshPosition(double x,
         }
         if (_updateDistanceSinceLastMagnec.ry() == 1) {
             _distanceSinceLastMagnec.ry() = y - _magnecStartingPos.y();
-            if ( std::abs( _distanceSinceLastMagnec.y() ) > (NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) ) {
+            if ( std::abs( _distanceSinceLastMagnec.y() ) > (TO_DPIY(NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) ) {
                 _updateDistanceSinceLastMagnec.ry() = 0;
             } else {
                 continueMagnet = false;
@@ -1041,14 +1042,14 @@ NodeGui::refreshPosition(double x,
                     QPointF inputPos = inputScenePos + QPointF(inputSize.width() / 2,inputSize.height() / 2);
                     QPointF mapped = mapToParent( mapFromScene(inputPos) );
                     if ( !contains(mapped) ) {
-                        if ( !_magnecEnabled.x() && ( ( mapped.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) ) &&
-                                                      ( mapped.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) ) ) ) {
+                        if ( !_magnecEnabled.x() && ( ( mapped.x() >= (middlePos.x() - TO_DPIX(NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) ) &&
+                                                      ( mapped.x() <= (middlePos.x() + TO_DPIX(NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) ) ) ) {
                             _magnecEnabled.rx() = 1;
                             _magnecDistance.rx() = 0;
                             x = mapped.x() - size.width() / 2;
                             _magnecStartingPos.setX(x);
-                        } else if ( !_magnecEnabled.y() && ( ( mapped.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) ) &&
-                                                             ( mapped.y() <= (middlePos.y() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) ) ) ) {
+                        } else if ( !_magnecEnabled.y() && ( ( mapped.y() >= (middlePos.y() - TO_DPIX(NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) ) &&
+                                                             ( mapped.y() <= (middlePos.y() + TO_DPIX(NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) ) ) ) {
                             _magnecEnabled.ry() = 1;
                             _magnecDistance.ry() = 0;
                             y = mapped.y() - size.height() / 2;
@@ -1076,14 +1077,14 @@ NodeGui::refreshPosition(double x,
                     QPointF outputPos = nodeScenePos  + QPointF(outputSize.width() / 2,outputSize.height() / 2);
                     QPointF mapped = mapToParent( mapFromScene(outputPos) );
                     if ( !contains(mapped) ) {
-                        if ( !_magnecEnabled.x() && ( ( mapped.x() >= (middlePos.x() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) ) &&
-                                                      ( mapped.x() <= (middlePos.x() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) ) ) ) {
+                        if ( !_magnecEnabled.x() && ( ( mapped.x() >= (middlePos.x() - TO_DPIX(NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) ) &&
+                                                      ( mapped.x() <= (middlePos.x() + TO_DPIX(NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) ) ) ) {
                             _magnecEnabled.rx() = 1;
                             _magnecDistance.rx() = 0;
                             x = mapped.x() - size.width() / 2;
                             _magnecStartingPos.setX(x);
-                        } else if ( !_magnecEnabled.y() && ( ( mapped.y() >= (middlePos.y() - NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) ) &&
-                                                             ( mapped.y() <= (middlePos.y() + NATRON_MAGNETIC_GRID_GRIP_TOLERANCE) ) ) ) {
+                        } else if ( !_magnecEnabled.y() && ( ( mapped.y() >= (middlePos.y() - TO_DPIY(NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) ) &&
+                                                             ( mapped.y() <= (middlePos.y() + TO_DPIY(NATRON_MAGNETIC_GRID_GRIP_TOLERANCE)) ) ) ) {
                             _magnecEnabled.ry() = 1;
                             _magnecDistance.ry() = 0;
                             y = mapped.y() - size.height() / 2;
@@ -1553,8 +1554,8 @@ NodeGui::isNearby(QPointF &point)
 {
     QPointF p = mapFromScene(point);
     QRectF bbox = boundingRect();
-    QRectF r(bbox.x() - NATRON_EDGE_DROP_TOLERANCE,bbox.y() - NATRON_EDGE_DROP_TOLERANCE,
-             bbox.width() + NATRON_EDGE_DROP_TOLERANCE,bbox.height() + NATRON_EDGE_DROP_TOLERANCE);
+    QRectF r(bbox.x() - TO_DPIX(NATRON_EDGE_DROP_TOLERANCE),bbox.y() - TO_DPIY(NATRON_EDGE_DROP_TOLERANCE),
+             bbox.width() + TO_DPIX(NATRON_EDGE_DROP_TOLERANCE),bbox.height() + TO_DPIY(NATRON_EDGE_DROP_TOLERANCE));
 
     return r.contains(p);
 }

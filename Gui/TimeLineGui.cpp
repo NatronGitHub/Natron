@@ -229,7 +229,7 @@ TimeLineGui::getTimeline() const
 QSize
 TimeLineGui::sizeHint() const
 {
-    return QSize(1000,45);
+    return QSize(TO_DPIX(1000),TO_DPIY(45));
 }
 
 void

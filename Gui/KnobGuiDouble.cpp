@@ -286,12 +286,14 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         
     }
     
-    
+    QSize medSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
+    QSize medIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+
     if (dim > 1 && !knob->isSliderDisabled() && sliderVisible ) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim), _container);
         _dimensionSwitchButton->setToolTip(GuiUtils::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
-        _dimensionSwitchButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _dimensionSwitchButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+        _dimensionSwitchButton->setFixedSize(medSize);
+        _dimensionSwitchButton->setIconSize(medIconSize);
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setCheckable(true);
         containerLayout->addWidget(_dimensionSwitchButton);

@@ -472,8 +472,8 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 ///if new line is not turned off, create a new line
                 fieldContainer = new QWidget(page->second.tab);
                 fieldLayout = new QHBoxLayout(fieldContainer);
-                fieldLayout->setContentsMargins(3,0,0,TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS));
-                fieldLayout->setSpacing(2);
+                fieldLayout->setContentsMargins(TO_DPIX(3),0,0,TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS));
+                fieldLayout->setSpacing(TO_DPIY(2));
             } else {
                 ///otherwise re-use the last row's widget and layout
                 assert(lastRowWidget);

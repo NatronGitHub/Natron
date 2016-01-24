@@ -43,7 +43,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGuiString.h"
 #include "Gui/NodeGraphTextItem.h"
 
-#define RESIZE_HANDLE_SIZE 20
 
 #define NATRON_BACKDROP_DEFAULT_WIDTH 80
 #define NATRON_BACKDROP_DEFAULT_HEIGHT 80
@@ -95,8 +94,8 @@ BackdropGuiPrivate::getLabelValue() const
 void
 BackdropGui::getInitialSize(int *w, int *h) const
 {
-    *w = NATRON_BACKDROP_DEFAULT_WIDTH;
-    *h = NATRON_BACKDROP_DEFAULT_HEIGHT;
+    *w = TO_DPIX(NATRON_BACKDROP_DEFAULT_WIDTH);
+    *h = TO_DPIY(NATRON_BACKDROP_DEFAULT_HEIGHT);
 }
 
 void
@@ -145,7 +144,7 @@ BackdropGui::resizeExtraContent(int /*w*/,int /*h*/,bool forceResize)
     
     int nameHeight = getFrameNameHeight();
     
-    _imp->label->setPos(thisItemPos.x(), thisItemPos.y() + nameHeight + 10);
+    _imp->label->setPos(thisItemPos.x(), thisItemPos.y() + nameHeight + TO_DPIY(10));
     if (!forceResize) {
         _imp->label->adjustSize();
     }
@@ -186,7 +185,7 @@ BackdropGuiPrivate::refreshLabelText(int nameHeight,const QString &text)
     //label->adjustSize();
     int w = std::max( bbox.width(), label->textWidth() * 1.2 );
     QRectF labelBbox = label->boundingRect();
-    int h = std::max( labelBbox.height() + nameHeight + 10, bbox.height() );
+    int h = std::max( labelBbox.height() + nameHeight + TO_DPIX(10), bbox.height() );
     _publicInterface->resize(w, h);
     _publicInterface->update();
     

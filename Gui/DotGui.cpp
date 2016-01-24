@@ -126,13 +126,17 @@ DotGui::createGui()
     diskShape = new QGraphicsEllipseItem(this);
     diskShape->setZValue(depth);
     QPointF topLeft = mapFromParent( pos() );
-    diskShape->setRect( QRectF(topLeft.x(),topLeft.y(),DOT_GUI_DIAMETER,DOT_GUI_DIAMETER) );
+
+    int diam = TO_DPIX(DOT_GUI_DIAMETER);
+    int stateOffset = TO_DPIX(NATRON_STATE_INDICATOR_OFFSET);
+
+    diskShape->setRect( QRectF(topLeft.x(),topLeft.y(),diam,diam) );
 
     ellipseIndicator = new QGraphicsEllipseItem(this);
-    ellipseIndicator->setRect(QRectF(topLeft.x() - NATRON_STATE_INDICATOR_OFFSET,
-                                     topLeft.y() - NATRON_STATE_INDICATOR_OFFSET,
-                                     DOT_GUI_DIAMETER + NATRON_STATE_INDICATOR_OFFSET * 2,
-                                     DOT_GUI_DIAMETER + NATRON_STATE_INDICATOR_OFFSET * 2));
+    ellipseIndicator->setRect(QRectF(topLeft.x() - stateOffset,
+                                     topLeft.y() - stateOffset,
+                                     diam + stateOffset * 2,
+                                     diam + stateOffset * 2));
     ellipseIndicator->hide();
 }
 

@@ -340,7 +340,11 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
                                                                 "because all the processing pipeline is linear, but you can turn this off in the\n"
                                                                 "preferences panel.").arg(NATRON_APPLICATION_NAME), Qt::WhiteSpaceNormal) );
     }
-    _colorLabel->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
+
+    QSize medSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
+    QSize medIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+
+    _colorLabel->setFixedSize(medSize);
     QObject::connect( _colorLabel,SIGNAL( pickingEnabled(bool) ),this,SLOT( onPickingEnabled(bool) ) );
     colorLayout->addWidget(_colorLabel);
     
@@ -349,10 +353,12 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     }
     
     QPixmap buttonPix;
+
+
     appPTR->getIcon(NATRON_PIXMAP_COLORWHEEL, NATRON_MEDIUM_BUTTON_ICON_SIZE, &buttonPix);
     _colorDialogButton = new Button(QIcon(buttonPix), "", colorContainer);
-    _colorDialogButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _colorDialogButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _colorDialogButton->setFixedSize(medSize);
+    _colorDialogButton->setIconSize(medIconSize);
     _colorDialogButton->setToolTip(GuiUtils::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));
     _colorDialogButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _colorDialogButton, SIGNAL( clicked() ), this, SLOT( showColorDialog() ) );
@@ -361,8 +367,8 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     bool enableAllDimensions = false;
     
     _dimensionSwitchButton = new Button(QIcon(),QString::number(_dimension),colorContainer);
-    _dimensionSwitchButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _dimensionSwitchButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _dimensionSwitchButton->setFixedSize(medSize);
+    _dimensionSwitchButton->setIconSize(medIconSize);
     _dimensionSwitchButton->setToolTip(GuiUtils::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
     _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
     _dimensionSwitchButton->setCheckable(true);
