@@ -28,6 +28,9 @@
 #define __NATRON_UNIX__
 #elif  defined(_WIN32)
 #define __NATRON_WIN32__
+#ifdef __MINGW32__
+#define __NATRON_MINGW__
+#endif
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__) || defined(__FreeBSD__)
 #define __NATRON_UNIX__
 #define __NATRON_LINUX__

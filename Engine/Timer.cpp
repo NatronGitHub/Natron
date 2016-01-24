@@ -35,7 +35,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-#ifdef _WIN32
+#if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
 int
 gettimeofday (struct timeval *tv,
               void *tz)

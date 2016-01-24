@@ -431,7 +431,7 @@ CallbacksManager::init(int& argc, char** argv)
         processArgs.push_back(QString("--" NATRON_BREAKPAD_PROCESS_EXEC));
         processArgs.push_back(crashReporterBinaryFilePath);
         processArgs.push_back(QString("--" NATRON_BREAKPAD_PROCESS_PID));
-        qint64 crashReporterPid = _app->applicationPid();
+        qint64 crashReporterPid = qApp->applicationPid();
         QString pidStr = QString::number(crashReporterPid);
         processArgs.push_back(pidStr);
         processArgs.push_back(QString("--" NATRON_BREAKPAD_CLIENT_FD_ARG));
