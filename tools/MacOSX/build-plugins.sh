@@ -40,6 +40,11 @@ else
     CV_BRANCH=$CVPLUG_GIT_TAG
 fi
 
+# tag symbols we want to keep with 'release'
+if [ "$BUILD_CONFIG" != "" ] && [ "$BUILD_CONFIG" != "SNAPSHOT" ]; then
+  BPAD_TAG="-release"
+fi
+
 if [ ! -d "$PLUGINDIR" ]; then
     echo "Error: plugin directory '$PLUGINDIR' does not exist"
     exit 1
@@ -129,8 +134,8 @@ if [ "$DISABLE_BREAKPAD" != "1" ]; then
 #        dsymutil -arch x86_64 -o $DSYM_64 "$binary"
 #        dsymutil -arch i386 -o $DSYM_32 "$binary"
 
-		$DUMP_SYMS -a x86_64 "$PLUGINDIR"/${bin}.ofx.bundle/Contents/MacOS/${bin}.ofx  > "$CWD/build/symbols/${bin}.ofx-${TAG}-Mac-x86_64.sym"
-		$DUMP_SYMS -a i386 "$PLUGINDIR"/${bin}.ofx.bundle/Contents/MacOS/${bin}.ofx  > "$CWD/build/symbols/${bin}.ofx-${TAG}-Mac-i386.sym"
+		$DUMP_SYMS -a x86_64 "$PLUGINDIR"/${bin}.ofx.bundle/Contents/MacOS/${bin}.ofx  > "$CWD/build/symbols/${bin}.ofx-${TAG}${BPAD_TAG}-Mac-x86_64.sym"
+		$DUMP_SYMS -a i386 "$PLUGINDIR"/${bin}.ofx.bundle/Contents/MacOS/${bin}.ofx  > "$CWD/build/symbols/${bin}.ofx-${TAG}${BPAD_TAG}-Mac-i386.sym"
 		
 #		rm -rf $DSYM_64
 #		rm -rf $DSYM_32

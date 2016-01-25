@@ -107,6 +107,11 @@ if [ -d "$INSTALL_PATH/symbols" ]; then
 fi
 mkdir -p $INSTALL_PATH/symbols || exit 1
 
+# tag symbols we want to keep with 'release'
+if [ "$BUILD_CONFIG" != "" ] && [ "$BUILD_CONFIG" != "SNAPSHOT" ]; then
+  BPAD_TAG="-release"
+fi
+
 # SETUP
 INSTALLER=$TMP_PATH/Natron-installer
 XML=$INC_PATH/xml
@@ -137,8 +142,8 @@ strip -s $OFX_IO_PATH/data/ffprobe
 cp -a $INSTALL_PATH/Plugins/IO.ofx.bundle $OFX_IO_PATH/data/Plugins/OFX/Natron/ || exit 1
 
 if [ "$DISABLE_BREAKPAD" != "1" ]; then
-    $INSTALL_PATH/bin/dump_syms $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/IO.ofx > $INSTALL_PATH/symbols/IO.ofx-${TAG}-${PKGOS}.sym || exit 1
-    #$INSTALL_PATH/bin/dump_syms $INSTALL_PATH/lib/libOpenImageIO.so.1.6 > $INSTALL_PATH/symbols/libOpenImageIO.so.1.6-${TAG}-${PKGOS}.sym || exit 1
+    $INSTALL_PATH/bin/dump_syms $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/IO.ofx > $INSTALL_PATH/symbols/IO.ofx-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
+    #$INSTALL_PATH/bin/dump_syms $INSTALL_PATH/lib/libOpenImageIO.so.1.6 > $INSTALL_PATH/symbols/libOpenImageIO.so.1.6-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
 fi
 
 strip -s $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/*
@@ -183,8 +188,8 @@ cat $QS/openfx-misc.qs > $OFX_MISC_PATH/meta/installscript.qs || exit 1
 cp -a $INSTALL_PATH/Plugins/{CImg,Misc}.ofx.bundle $OFX_MISC_PATH/data/Plugins/OFX/Natron/ || exit 1
 
 if [ "$DISABLE_BREAKPAD" != "1" ]; then
-    $INSTALL_PATH/bin/dump_syms $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/CImg.ofx > $INSTALL_PATH/symbols/CImg.ofx-${TAG}-${PKGOS}.sym || exit 1
-    $INSTALL_PATH/bin/dump_syms $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/Misc.ofx > $INSTALL_PATH/symbols/Misc.ofx-${TAG}-${PKGOS}.sym || exit
+    $INSTALL_PATH/bin/dump_syms $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/CImg.ofx > $INSTALL_PATH/symbols/CImg.ofx-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
+    $INSTALL_PATH/bin/dump_syms $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/Misc.ofx > $INSTALL_PATH/symbols/Misc.ofx-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit
 1
 fi
 strip -s $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/*
@@ -225,8 +230,8 @@ if [ "$DISABLE_BREAKPAD" != "1" ]; then
     cp $INSTALL_PATH/bin/NatronCrashReporter $NATRON_PATH/data/bin/Natron || exit 1
     cp $INSTALL_PATH/bin/NatronRendererCrashReporter $NATRON_PATH/data/bin/NatronRenderer || exit 1
 
-    $INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/Natron-bin > $INSTALL_PATH/symbols/Natron-${TAG}-${PKGOS}.sym || exit 1
-    $INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/NatronRenderer-bin > $INSTALL_PATH/symbols/NatronRenderer-${TAG}-${PKGOS}.sym || exit 1
+    $INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/Natron-bin > $INSTALL_PATH/symbols/Natron-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
+    $INSTALL_PATH/bin/dump_syms $NATRON_PATH/data/bin/NatronRenderer-bin > $INSTALL_PATH/symbols/NatronRenderer-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
 else
     cp $INSTALL_PATH/bin/Natron $NATRON_PATH/data/bin/Natron || exit 1
     cp $INSTALL_PATH/bin/NatronRenderer $NATRON_PATH/data/bin/NatronRenderer || exit 1
@@ -412,7 +417,7 @@ cat $XML/openfx-arena.xml | sed "s/_VERSION_/${OFX_ARENA_VERSION}/;s/_DATE_/${DA
 cat $QS/openfx-arena.qs > $OFX_ARENA_PATH/meta/installscript.qs || exit 1
 cp -av $INSTALL_PATH/Plugins/Arena.ofx.bundle $OFX_ARENA_PATH/data/Plugins/OFX/Natron/ || exit 1
 if [ "$DISABLE_BREAKPAD" != "1" ]; then
-  $INSTALL_PATH/bin/dump_syms $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/Arena.ofx > $INSTALL_PATH/symbols/Arena.ofx-${TAG}-${PKGOS}.sym || exit 1
+  $INSTALL_PATH/bin/dump_syms $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/Arena.ofx > $INSTALL_PATH/symbols/Arena.ofx-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
 fi
 strip -s $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/*
 

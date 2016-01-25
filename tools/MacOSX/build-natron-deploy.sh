@@ -32,6 +32,11 @@ if [ ! -d "$package" ]; then
     exit 1
 fi
 
+# tag symbols we want to keep with 'release'
+if [ "$BUILD_CONFIG" != "" ] && [ "$BUILD_CONFIG" != "SNAPSHOT" ]; then
+  BPAD_TAG="-release"
+fi
+
 MACPORTS="/opt/local"
 HOMEBREW="/brew2/local"
 LOCAL="/usr/local"
@@ -425,8 +430,8 @@ for bin in Natron NatronRenderer; do
 #		DSYM_32=${bin}i386.dSYM
 #        dsymutil -arch x86_64 -o $DSYM_64 "$binary"
 #        dsymutil -arch i386 -o $DSYM_32 "$binary"
-        $DUMP_SYMS -a x86_64 "$binary"  > "$SYMBOLS_PATH/${bin}-${TAG}-Mac-x86_64.sym"
-        $DUMP_SYMS -a i386 "$binary"  > "$SYMBOLS_PATH/${bin}-${TAG}-Mac-i386.sym"
+        $DUMP_SYMS -a x86_64 "$binary"  > "$SYMBOLS_PATH/${bin}-${TAG}${BPAD_TAG}-Mac-x86_64.sym"
+        $DUMP_SYMS -a i386 "$binary"  > "$SYMBOLS_PATH/${bin}-${TAG}${BPAD_TAG}-Mac-i386.sym"
 #       rm -rf $DSYM_64;
 #		rm -rf $DSYM_32;
     fi

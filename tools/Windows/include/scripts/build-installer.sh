@@ -102,6 +102,10 @@ fi
 mkdir -p $TMP_BUILD_DIR || exit 1
 
 
+# tag symbols we want to keep with 'release'
+if [ "$BUILD_CONFIG" != "" ] && [ "$BUILD_CONFIG" != "SNAPSHOT" ]; then
+  BPAD_TAG="-release"
+fi
 
 # SETUP
 INSTALLER="$TMP_BUILD_DIR/Natron-installer"
@@ -133,7 +137,7 @@ if [ "$BUNDLE_IO" = "1" ]; then
 	
 
     if [ "$DISABLE_BREAKPAD" != "1" ]; then
-        $INSTALL_PATH/bin/dump_syms.exe $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/IO.ofx > $INSTALL_PATH/symbols/IO.ofx-${TAG}-${PKGOS}.sym || exit 1
+        $INSTALL_PATH/bin/dump_syms.exe $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/IO.ofx > $INSTALL_PATH/symbols/IO.ofx-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
     fi
     strip -s $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/*
 	
@@ -157,8 +161,8 @@ if [ "$BUNDLE_MISC" = "1" ]; then
     done
 
     if [ "$DISABLE_BREAKPAD" != "1" ]; then
-        $INSTALL_PATH/bin/dump_syms.exe $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/CImg.ofx > $INSTALL_PATH/symbols/CImg.ofx-${TAG}-${PKGOS}.sym || exit 1
-        $INSTALL_PATH/bin/dump_syms.exe $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/Misc.ofx > $INSTALL_PATH/symbols/Misc.ofx-${TAG}-${PKGOS}.sym || exit 1
+        $INSTALL_PATH/bin/dump_syms.exe $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/CImg.ofx > $INSTALL_PATH/symbols/CImg.ofx-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
+        $INSTALL_PATH/bin/dump_syms.exe $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/Misc.ofx > $INSTALL_PATH/symbols/Misc.ofx-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
     fi
     strip -s $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/*
 	
@@ -190,8 +194,8 @@ cp $CWD/include/config/natronProjectIcon_windows.ico $NATRON_PATH/data/share/pix
 cp $INSTALL_PATH/share/stylesheets/mainstyle.qss $NATRON_PATH/data/share/ || exit 1
 
 if [ "$DISABLE_BREAKPAD" != "1" ]; then
-    $INSTALL_PATH/bin/dump_syms.exe $NATRON_PATH/data/bin/Natron-bin.exe > $INSTALL_PATH/symbols/Natron-${TAG}-${PKGOS}.sym || exit 1
-    $INSTALL_PATH/bin/dump_syms.exe $NATRON_PATH/data/bin/NatronRenderer-bin.exe > $INSTALL_PATH/symbols/NatronRenderer-${TAG}-${PKGOS}.sym || exit 1
+    $INSTALL_PATH/bin/dump_syms.exe $NATRON_PATH/data/bin/Natron-bin.exe > $INSTALL_PATH/symbols/Natron-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
+    $INSTALL_PATH/bin/dump_syms.exe $NATRON_PATH/data/bin/NatronRenderer-bin.exe > $INSTALL_PATH/symbols/NatronRenderer-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
 fi
 
 strip -s $NATRON_PATH/data/bin/*
@@ -307,7 +311,7 @@ if [ "$BUNDLE_ARENA" = "1" ]; then
 	#OpenColorIO is located in $INSTALL_PATH/lib and not bin
 	cp $INSTALL_PATH/lib/LIBOPENCOLORIO.DLL $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT/ || exit 1
     if [ "$DISABLE_BREAKPAD" != "1" ]; then
-        $INSTALL_PATH/bin/dump_syms.exe $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/Arena.ofx > $INSTALL_PATH/symbols/Arena.ofx-${TAG}-${PKGOS}.sym || exit 1
+        $INSTALL_PATH/bin/dump_syms.exe $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/Arena.ofx > $INSTALL_PATH/symbols/Arena.ofx-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
     fi
     strip -s $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/*
     #echo "ImageMagick License:" >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
