@@ -2741,6 +2741,9 @@ void
 Node::initializeKnobs(int renderScaleSupportPref)
 {
     ////Only called by the main-thread
+    
+    
+    
     _imp->liveInstance->beginChanges();
     
     assert( QThread::currentThread() == qApp->thread() );
@@ -2756,6 +2759,8 @@ Node::initializeKnobs(int renderScaleSupportPref)
     if (!isGroup) {
         _imp->liveInstance->initializeKnobsPublic();
     }
+    
+    InitializeKnobsFlag_RAII __isInitializingKnobsFlag__(_imp->liveInstance.get());
 
     ///If the effect has a mask, add additionnal mask controls
     int inputsCount = getMaxInputCount();
@@ -8193,11 +8198,31 @@ Node::declarePythonFields()
         qDebug() << QString("declarePythonFields(): attribute ") + nodeFullName.c_str() + " is not defined";
         throw std::logic_error(std::string("declarePythonFields(): attribute ") + nodeFullName + " is not defined");
     }
+    
+    
+    std::stringstream ss;
     const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         const std::string& knobName = knobs[i]->getName();
         if (!knobName.empty() && knobName.find(" ") == std::string::npos && !std::isdigit(knobName[0],locale)) {
-            declareParameterAsNodeField(nodeFullName, nodeObj, knobName);
+            
+            if (PyObject_HasAttrString(nodeObj, knobName.c_str())) {
+                continue;
+            }
+            ss << nodeFullName <<  "." << knobName << " = ";
+            ss << nodeFullName << ".getParam(\"" << knobName << "\")\n";
+            
+        }
+    }
+    
+    std::string script = ss.str();
+    if (!script.empty()) {
+        if (!appPTR->isBackground()) {
+            getApp()->printAutoDeclaredVariable(script);
+        }
+        std::string err;
+        if (!Python::interpretPythonScript(script, &err, 0)) {
+            qDebug() << err.c_str();
         }
     }
 }
@@ -8236,24 +8261,6 @@ Node::removeParameterFromPython(const std::string& parameterName)
 }
 
 
-void
-Node::declareParameterAsNodeField(const std::string& nodeName,PyObject* nodeObj,const std::string& parameterName)
-{
-    if (PyObject_HasAttrString(nodeObj, parameterName.c_str())) {
-        return;
-    }
-    
-    std::string script = nodeName +  "." + parameterName + " = " +
-    nodeName + ".getParam(\"" + parameterName + "\")\n";
-    std::string err;
-    if (!appPTR->isBackground()) {
-        getApp()->printAutoDeclaredVariable(script);
-    }
-    if (!Python::interpretPythonScript(script, &err, 0)) {
-        qDebug() << err.c_str();
-    }
-
-}
 
 std::string
 Node::getKnobChangedCallback() const
