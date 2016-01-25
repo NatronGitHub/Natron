@@ -1184,6 +1184,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 optimizeRectsToRender(this, inputsRoDIntersectionPixel, rectsLeftToRender, args.time, args.view, renderMappedScale, &planesToRender->rectsToRender);
             } else {
                 for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it != rectsLeftToRender.end(); ++it) {
+                    if (it->isNull()) {
+                        continue;
+                    }
                     RectToRender r;
                     r.rect = *it;
                     r.identityTime = 0;
