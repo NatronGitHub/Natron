@@ -127,7 +127,11 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
 
         }
         
-        _publicInterface->getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
+        
+        if (clipboard.nodes.size() > 1) {
+            ///Only compute datas if we're pasting more than 1 node
+            _publicInterface->getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
+        }
         
         if (useUndoCommand) {
             _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface,newNodeList) );
