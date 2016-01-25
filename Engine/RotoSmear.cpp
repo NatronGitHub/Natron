@@ -272,7 +272,7 @@ RotoSmear::render(const RenderActionArgs& args)
 
     
     EffectInstance::ComponentsNeededMap::iterator foundBg = neededComps.find(0);
-    assert(foundBg != neededComps.end() && !foundBg->second.empty());
+   
     
     double par = getPreferredAspectRatio();
     RectI bgImgRoI;
@@ -323,9 +323,11 @@ RotoSmear::render(const RenderActionArgs& args)
         
         if (strokeIndex == 0) {
             ///For the first multi-stroke, init background
-            bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), eImageBitDepthFloat, par, false, true, &bgImgRoI);
+            if (foundBg != neededComps.end()) {
+                bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), eImageBitDepthFloat, par, false, true, &bgImgRoI);
+            }
         }
-
+        
         
         for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
