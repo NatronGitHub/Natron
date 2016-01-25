@@ -62,6 +62,9 @@ struct OfxClipInstancePrivate
     OfxImageEffectInstance* const effect;
     double aspectRatio;
     
+    bool optional;
+    bool mask;
+    
     boost::shared_ptr<TLSHolder<OfxClipInstance::ClipTLSData> > tlsData;
     
     OfxClipInstancePrivate(OfxClipInstance* publicInterface, OfxEffectInstance* nodeInstance, OfxImageEffectInstance* effect)
@@ -69,6 +72,8 @@ struct OfxClipInstancePrivate
     , nodeInstance(nodeInstance)
     , effect(effect)
     , aspectRatio(1.)
+    , optional(false)
+    , mask(false)
     , tlsData(new TLSHolder<OfxClipInstance::ClipTLSData>())
     {
         
@@ -85,11 +90,25 @@ OfxClipInstance::OfxClipInstance(OfxEffectInstance* nodeInstance,
     , _imp(new OfxClipInstancePrivate(this,nodeInstance,effect))
 {
     assert(nodeInstance && effect);
+    _imp->optional = isOptional();
+    _imp->mask = isMask();
 }
 
 OfxClipInstance::~OfxClipInstance()
 {
     
+}
+
+bool
+OfxClipInstance::getIsOptional() const
+{
+    return _imp->optional;
+}
+
+bool
+OfxClipInstance::getIsMask() const
+{
+    return _imp->mask;
 }
 
 const std::string &
@@ -181,11 +200,11 @@ OfxClipInstance::getUnmappedComponents() const
     } else {
         ///The node is not connected but optional, return the closest supported components
         ///of the first connected non optional input.
-        if ( isOptional() ) {
+        if (_imp->optional) {
             int nInputs = _imp->nodeInstance->getMaxInputCount();
             for (int i  = 0 ; i < nInputs ; ++i) {
                 OfxClipInstance* clip = _imp->nodeInstance->getClipCorrespondingToInput(i);
-                if (clip && !clip->isOptional() && clip->getConnected() && clip->getComponents() != noneStr) {
+                if (clip && !clip->getIsOptional() && clip->getConnected() && clip->getComponents() != noneStr) {
                     return clip->getComponents();
                 }
             }
@@ -402,7 +421,6 @@ OfxClipInstance::getConnected() const
             int inputNb = getInputNb();
             
             EffectInstance* input = 0;
-            // if (isMask()) {
             
             if (!_imp->nodeInstance->getNode()->isMaskEnabled(inputNb)) {
                 return false;
@@ -414,11 +432,9 @@ OfxClipInstance::getConnected() const
                 input = maskInput->getLiveInstance();
             }
             
-            //} else {
             if (!input) {
                 input = _imp->nodeInstance->getInput(inputNb);
             }
-            //}
             
             return input != NULL;
         }
@@ -468,7 +484,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
         attachedStroke = _imp->nodeInstance->getNode()->getAttachedRotoItem();
     }
     
-    bool inputIsMask = isMask();
+    bool inputIsMask = _imp->mask;
     
     RectD rod;
     if (attachedStroke && (inputIsMask || getName() == CLIP_OFX_ROTO)) {
@@ -1271,7 +1287,6 @@ OfxClipInstance::getAssociatedNode() const
     if (_isOutput) {
         return _imp->nodeInstance;
     } else {
-        //if (isMask()) {
         ImageComponents comps;
         boost::shared_ptr<Node> maskInput;
         int inputNb = getInputNb();
@@ -1280,13 +1295,11 @@ OfxClipInstance::getAssociatedNode() const
             return maskInput->getLiveInstance();
         }
         
-        //} else {
         if (!maskInput) {
             return  _imp->nodeInstance->getInput( getInputNb() );
         } else {
             return maskInput->getLiveInstance();
         }
-       // }
 
     }
 }

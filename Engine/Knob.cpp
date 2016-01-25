@@ -3500,6 +3500,7 @@ struct KnobHolder::KnobHolderPrivate
     QMutex knobsMutex;
     std::vector< boost::shared_ptr<KnobI> > knobs;
     bool knobsInitialized;
+    bool isInitializingKnobs;
     bool isSlave;
     
 
@@ -3535,6 +3536,7 @@ struct KnobHolder::KnobHolderPrivate
     , knobsMutex()
     , knobs()
     , knobsInitialized(false)
+    , isInitializingKnobs(false)
     , isSlave(false)
     , overlayRedrawStackMutex()
     , overlayRedrawStack(0)
@@ -3577,6 +3579,20 @@ KnobHolder::~KnobHolder()
             helper->_imp->holder = 0;
         }
     }
+}
+
+void
+KnobHolder::setIsInitializingKnobs(bool b)
+{
+    QMutexLocker k(&_imp->knobsMutex);
+    _imp->isInitializingKnobs = b;
+}
+
+bool
+KnobHolder::isInitializingKnobs() const
+{
+    QMutexLocker k(&_imp->knobsMutex);
+    return _imp->isInitializingKnobs;
 }
 
 void
@@ -4211,6 +4227,9 @@ KnobHolder::onDoValueChangeOnMainThread(KnobI* knob, int reason, double time, bo
 void
 KnobHolder::appendValueChange(KnobI* knob,double time,  ValueChangedReasonEnum reason)
 {
+    if (isInitializingKnobs()) {
+        return;
+    }
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
 
@@ -4330,7 +4349,10 @@ KnobHolder::getApp() const
 void
 KnobHolder::initializeKnobsPublic()
 {
-    initializeKnobs();
+    {
+        InitializeKnobsFlag_RAII __isInitializingKnobsFlag__(this);
+        initializeKnobs();
+    }
     _imp->knobsInitialized = true;
 }
 

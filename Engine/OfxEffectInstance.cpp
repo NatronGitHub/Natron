@@ -1436,7 +1436,7 @@ OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
         int maxInputs = getMaxInputCount();
         for (int i = 0; i < maxInputs; ++i) {
             OfxClipInstance* clip = getClipCorrespondingToInput(i);
-            if ( clip && !clip->getConnected() && !clip->isOptional() && !clip->isMask() ) {
+            if ( clip && !clip->getConnected() && !clip->getIsOptional() && !clip->getIsMask() ) {
                 ///this is a mandatory source clip and it is not connected, return statfailed
                 return eStatusFailed;
             }

@@ -1954,6 +1954,9 @@ public:
     
     void refreshAfterTimeChange(double time);
     
+    void setIsInitializingKnobs(bool b);
+    bool isInitializingKnobs() const;
+    
 protected:
     
     virtual void refreshExtraStateAfterTimeChanged(double /*time*/) {}
@@ -2340,6 +2343,24 @@ public:
  * @brief Should be called in the begining of any action that can be called recursively
  **/
 #define RECURSIVE_ACTION() MANAGE_RECURSION(false)
+
+
+class InitializeKnobsFlag_RAII
+{
+    KnobHolder* _h;
+public:
+    
+    InitializeKnobsFlag_RAII(KnobHolder* h)
+    : _h(h)
+    {
+        h->setIsInitializingKnobs(true);
+    }
+    
+    ~InitializeKnobsFlag_RAII()
+    {
+        _h->setIsInitializingKnobs(false);
+    }
+};
 
 ////Common interface for EffectInstance and backdrops
 class NamedKnobHolder

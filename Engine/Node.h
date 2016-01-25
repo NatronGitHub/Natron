@@ -1298,7 +1298,6 @@ private:
     void declareNodeVariableToPython(const std::string& nodeName);
     void setNodeVariableToPython(const std::string& oldName,const std::string& newName);
     void deleteNodeVariableToPython(const std::string& nodeName);
-    void declareParameterAsNodeField(const std::string& nodeName,PyObject* nodeObj,const std::string& parameterName);
 
     boost::scoped_ptr<Implementation> _imp;
 };
