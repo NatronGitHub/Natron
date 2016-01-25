@@ -204,7 +204,7 @@ Gui::progressStart(KnobHolder* effect,
         return;
     }
 
-    QProgressDialog* dialog = new QProgressDialog(message.c_str(), tr("Cancel"), 0, 100, this);
+    QProgressDialog* dialog = new QProgressDialog(message.c_str(), tr("Cancel"), 0, 100, this, Qt::WindowStaysOnTopHint);
     if (!canCancel) {
         dialog->setCancelButton(0);
     }
