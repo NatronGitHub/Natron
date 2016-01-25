@@ -439,6 +439,26 @@ private:
     bool _firstRedoCalled;
 };
 
+class RestoreNodeToDefaultCommand
+: public QUndoCommand
+{
+public:
+    
+    RestoreNodeToDefaultCommand(const boost::shared_ptr<Node>& node);
+    
+    virtual ~RestoreNodeToDefaultCommand();
+    
+    virtual void undo();
+    virtual void redo();
+
+private:
+    
+    void createNodeAndDeleteActiveNode(bool isRedo);
+    
+    boost::shared_ptr<NodeSerialization> originalSerialization;
+    boost::shared_ptr<Node> activeNode;
+};
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // NODEGRAPHUNDOREDO_H

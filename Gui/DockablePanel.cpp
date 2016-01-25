@@ -646,26 +646,11 @@ DockablePanel::getHolder() const
 void
 DockablePanel::onRestoreDefaultsButtonClicked()
 {
-    std::list<boost::shared_ptr<KnobI> > knobsList;
-    boost::shared_ptr<MultiInstancePanel> multiPanel = getMultiInstancePanel();
-
-    if (multiPanel) {
-        const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = multiPanel->getInstances();
-        for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            const std::vector<boost::shared_ptr<KnobI> > & knobs = it->first.lock()->getKnobs();
-            for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-                KnobButton* isBtn = dynamic_cast<KnobButton*>( it2->get() );
-                KnobPage* isPage = dynamic_cast<KnobPage*>( it2->get() );
-                KnobGroup* isGroup = dynamic_cast<KnobGroup*>( it2->get() );
-                KnobSeparator* isSeparator = dynamic_cast<KnobSeparator*>( it2->get() );
-                if ( !isBtn && !isPage && !isGroup && !isSeparator && ( (*it2)->getName() != kUserLabelKnobName ) &&
-                     ( (*it2)->getName() != kNatronOfxParamStringSublabelName ) ) {
-                    knobsList.push_back(*it2);
-                }
-            }
-        }
-        multiPanel->clearSelection();
-    } else {
+    NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(this);
+    
+    if (!panel) {
+        std::list<boost::shared_ptr<KnobI> > knobsList;
+        
         const std::vector<boost::shared_ptr<KnobI> > & knobs = _imp->_holder->getKnobs();
         for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
             KnobButton* isBtn = dynamic_cast<KnobButton*>( it->get() );
@@ -673,12 +658,15 @@ DockablePanel::onRestoreDefaultsButtonClicked()
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( it->get() );
             KnobSeparator* isSeparator = dynamic_cast<KnobSeparator*>( it->get() );
             if ( !isBtn && !isPage && !isGroup && !isSeparator && ( (*it)->getName() != kUserLabelKnobName ) &&
-                 ( (*it)->getName() != kNatronOfxParamStringSublabelName ) ) {
+                ( (*it)->getName() != kNatronOfxParamStringSublabelName ) ) {
                 knobsList.push_back(*it);
             }
         }
+        
+        pushUndoCommand( new RestoreDefaultsCommand(knobsList) );
+    } else {
+        pushUndoCommand(new RestoreNodeToDefaultCommand(panel->getNode()->getNode()));
     }
-    pushUndoCommand( new RestoreDefaultsCommand(knobsList) );
 }
 
 void

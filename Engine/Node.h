@@ -372,9 +372,9 @@ public:
      * The vector might be different from what getInputs_other_thread() could return.
      * This can only be called by the main thread.
      **/
-    const std::vector<boost::shared_ptr<Node> > & getInputs() const WARN_UNUSED_RETURN;
-    const std::vector<boost::shared_ptr<Node> > & getGuiInputs() const WARN_UNUSED_RETURN;
-    std::vector<boost::shared_ptr<Node> > getInputs_copy() const WARN_UNUSED_RETURN;
+    const std::vector<boost::weak_ptr<Node> > & getInputs() const WARN_UNUSED_RETURN;
+    const std::vector<boost::weak_ptr<Node> > & getGuiInputs() const WARN_UNUSED_RETURN;
+    std::vector<boost::weak_ptr<Node> > getInputs_copy() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the input index of the node n if it exists,
@@ -665,7 +665,8 @@ public:
                   bool triggerRender = true);
     
     /**
-     * @brief Calls deactivate() and then remove the node from the project. It will no longer be possible to use it.
+     * @brief Calls deactivate() and then remove the node from the project. The object will be destroyed
+     * when the caller releases the reference to this Node
      * @param autoReconnect If set to true, outputs connected to this node will try to connect to the input of this node automatically.
      **/
     void destroyNode(bool autoReconnect);
@@ -901,7 +902,7 @@ public:
         KnobI* master;
 
         ///The master node to which the knob is slaved to
-        boost::shared_ptr<Node> masterNode;
+        boost::weak_ptr<Node> masterNode;
 
         ///The dimension being slaved, -1 if irrelevant
         int dimension;
@@ -1123,11 +1124,11 @@ private:
     
     void markInputRelatedDataDirtyRecursiveInternal(std::list<Node*>& markedNodes,bool recurse);
     
-    bool refreshAllInputRelatedData(bool hasSerializationData,const std::vector<boost::shared_ptr<Node> >& inputs);
+    bool refreshAllInputRelatedData(bool hasSerializationData,const std::vector<boost::weak_ptr<Node> >& inputs);
     
     bool refreshInputRelatedDataInternal(std::list<Node*>& markedNodes);
     
-    bool refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Node> >& inputs);
+    bool refreshDraftFlagInternal(const std::vector<boost::weak_ptr<Node> >& inputs);
     
     void setNameInternal(const std::string& name, bool throwErrors, bool declareToPython);
     

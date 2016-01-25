@@ -205,13 +205,13 @@ Node *DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Node *node,std::list
 
 Node *DopeSheetPrivate::getNearestReaderFromInputs_recursive(Node *node,std::list<Node*>& markedNodes) const
 {
-    const std::vector<boost::shared_ptr<Node> > &inputs = node->getGuiInputs();
+    const std::vector<boost::weak_ptr<Node> > &inputs = node->getGuiInputs();
     if (std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end()) {
         return 0;
     }
     markedNodes.push_back(node);
-    for (std::vector<boost::shared_ptr<Node> >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
-        NodePtr input = (*it);
+    for (std::vector<boost::weak_ptr<Node> >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+        NodePtr input = it->lock();
 
         if (!input) {
             continue;
@@ -237,10 +237,10 @@ Node *DopeSheetPrivate::getNearestReaderFromInputs_recursive(Node *node,std::lis
 
 void DopeSheetPrivate::getInputsConnected_recursive(Node *node, std::vector<boost::shared_ptr<DSNode> > *result) const
 {
-    const std::vector<boost::shared_ptr<Node> > &inputs = node->getGuiInputs();
+    const std::vector<boost::weak_ptr<Node> > &inputs = node->getGuiInputs();
 
-    for (std::vector<boost::shared_ptr<Node> >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
-        NodePtr input = (*it);
+    for (std::vector<boost::weak_ptr<Node> >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+        NodePtr input = it->lock();
 
         if (!input) {
             continue;

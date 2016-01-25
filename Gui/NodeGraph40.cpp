@@ -362,7 +362,7 @@ NodeGraph::setUndoRedoStackLimit(int limit)
 }
 
 void
-NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
+NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
 {
     assert(n);
     boost::shared_ptr<Node> internalNode = n->getNode();
@@ -399,7 +399,7 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
         }
 
         ///now that we made the command dirty, delete the node everywhere in Natron
-        getGui()->getApp()->deleteNode(n);
+        internalNode->removeReferences();
 
 
         getGui()->getCurveEditor()->removeNode( n.get() );
@@ -443,7 +443,7 @@ NodeGraph::deleteNodepluginsly(boost::shared_ptr<NodeGui> n)
             }
         }
     }
-} // deleteNodepluginsly
+} // deleteNodePermanantly
 
 void
 NodeGraph::invalidateAllNodesParenting()

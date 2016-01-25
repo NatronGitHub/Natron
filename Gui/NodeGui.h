@@ -639,7 +639,7 @@ private:
         LinkArrow* arrow;
     };
 
-    typedef std::map<boost::shared_ptr<Node>,LinkedDim> KnobGuiLinks;
+    typedef std::map<boost::weak_ptr<Node>,LinkedDim> KnobGuiLinks;
     KnobGuiLinks _knobsLinks;
     boost::shared_ptr<NodeGuiIndicator> _expressionIndicator;
     QPoint _magnecEnabled; //<enabled in X or/and Y

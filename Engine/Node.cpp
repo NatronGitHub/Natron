@@ -92,7 +92,7 @@ namespace { // protect local classes in anonymous namespace
     /*The output node was connected from inputNumber to this...*/
     typedef std::map<Node*,int > DeactivatedState;
     typedef std::list<Node::KnobLink> KnobLinkList;
-    typedef std::vector<boost::shared_ptr<Node> > InputsV;
+    typedef std::vector<boost::weak_ptr<Node> > InputsV;
     
    
     
@@ -2207,9 +2207,10 @@ Node::getInputNames(std::map<std::string,std::string> & inputNames) const
     
     QMutexLocker l(&_imp->inputsLabelsMutex);
     assert(_imp->inputs.size() == _imp->inputLabels.size());
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            inputNames.insert(std::make_pair(_imp->inputLabels[i], _imp->inputs[i]->getScriptName_mt_safe()) );
+    for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
+        NodePtr input = _imp->inputs[i].lock();
+        if (input) {
+            inputNames.insert(std::make_pair(_imp->inputLabels[i], input->getScriptName_mt_safe()) );
         }
     }
 }
@@ -3656,7 +3657,7 @@ Node::getInputInternal(bool useGuiInput, bool useGroupRedirections, int index) c
         return boost::shared_ptr<Node>();
     }
     
-    boost::shared_ptr<Node> ret =  useGuiInput ? _imp->guiInputs[index] : _imp->inputs[index];
+    boost::shared_ptr<Node> ret =  useGuiInput ? _imp->guiInputs[index].lock() : _imp->inputs[index].lock();
     if (ret && useGroupRedirections) {
         ret = applyNodeRedirectionsUpstream(ret, useGuiInput);
     }
@@ -3687,14 +3688,14 @@ Node::getInputIndex(const Node* node) const
 {
     QMutexLocker l(&_imp->inputsMutex);
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].get() == node) {
+        if (_imp->inputs[i].lock().get() == node) {
             return i;
         }
     }
     return -1;
 }
 
-const std::vector<boost::shared_ptr<Node> > &
+const std::vector<boost::weak_ptr<Node> > &
 Node::getInputs() const
 {
     ////Only called by the main-thread
@@ -3709,7 +3710,7 @@ Node::getInputs() const
     return _imp->inputs;
 }
 
-const std::vector<boost::shared_ptr<Node> > &
+const std::vector<boost::weak_ptr<Node> > &
 Node::getGuiInputs() const
 {
     ////Only called by the main-thread
@@ -3724,7 +3725,7 @@ Node::getGuiInputs() const
     return _imp->guiInputs;
 }
 
-std::vector<boost::shared_ptr<Node> >
+std::vector<boost::weak_ptr<Node> >
 Node::getInputs_copy() const
 {
     assert(_imp->inputsInitialized);
@@ -3783,7 +3784,7 @@ Node::hasInputConnected() const
     }
     QMutexLocker l(&_imp->inputsMutex);
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
+        if (_imp->inputs[i].lock()) {
             return true;
         }
     }
@@ -3798,7 +3799,7 @@ Node::hasMandatoryInputDisconnected() const
     QMutexLocker l(&_imp->inputsMutex);
     
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (!_imp->inputs[i] && !_imp->liveInstance->isInputOptional(i)) {
+        if (!_imp->inputs[i].lock() && !_imp->liveInstance->isInputOptional(i)) {
             return true;
         }
     }
@@ -3811,7 +3812,7 @@ Node::hasAllInputsConnected() const
     QMutexLocker l(&_imp->inputsMutex);
     
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (!_imp->inputs[i]) {
+        if (!_imp->inputs[i].lock()) {
             return false;
         }
     }
@@ -3885,7 +3886,7 @@ Node::isNodeUpstream(const Node* input,
     ///No need to lock guiInputs is only written to by the main-thread
     
     for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].get() == input) {
+        if (_imp->inputs[i].lock().get() == input) {
             *ok = true;
             
             return;
@@ -3893,8 +3894,9 @@ Node::isNodeUpstream(const Node* input,
     }
     *ok = false;
     for (U32 i = 0; i  < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            _imp->inputs[i]->isNodeUpstream(input, ok);
+        NodePtr in = _imp->inputs[i].lock();
+        if (in) {
+            in->isNodeUpstream(input, ok);
             if (*ok) {
                 return;
             }
@@ -3962,7 +3964,7 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
         if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->guiInputs.size() )) {
             return eCanConnectInput_indexOutOfRange;
         }
-        if (_imp->guiInputs[inputNumber]) {
+        if (_imp->guiInputs[inputNumber].lock()) {
             return eCanConnectInput_inputAlreadyConnected;
         }
     }
@@ -4004,12 +4006,13 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
             QMutexLocker l(&_imp->inputsMutex);
 
             for (InputsV::const_iterator it = _imp->guiInputs.begin(); it != _imp->guiInputs.end(); ++it) {
-                if (*it) {
-                    if ((*it)->getLiveInstance()->getPreferredAspectRatio() != inputPAR) {
+                NodePtr node = it->lock();
+                if (node) {
+                    if (node->getLiveInstance()->getPreferredAspectRatio() != inputPAR) {
                         return eCanConnectInput_differentPars;
                     }
                     
-                    if (std::abs((*it)->getLiveInstance()->getPreferredFrameRate() - inputFPS) > 0.01) {
+                    if (std::abs(node->getLiveInstance()->getPreferredFrameRate() - inputFPS) > 0.01) {
                         return eCanConnectInput_differentFPS;
                     }
                     
@@ -4054,8 +4057,10 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber >= (int)_imp->inputs.size() ) || (!useGuiInputs && _imp->inputs[inputNumber]) ||
-            (useGuiInputs && _imp->guiInputs[inputNumber])) {
+        if (inputNumber < 0 ||
+            inputNumber >= (int)_imp->inputs.size() ||
+            (!useGuiInputs && _imp->inputs[inputNumber].lock()) ||
+            (useGuiInputs && _imp->guiInputs[inputNumber].lock())) {
             return false;
         }
         
@@ -4161,16 +4166,18 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
         ///Set the input
         
         if (!useGuiInputs) {
-            if (_imp->inputs[inputNumber]) {
-                QObject::connect( _imp->inputs[inputNumber].get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
-                _imp->inputs[inputNumber]->disconnectOutput(useGuiInputs, this);
+            NodePtr curIn = _imp->inputs[inputNumber].lock();
+            if (curIn) {
+                QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)));
+                curIn->disconnectOutput(useGuiInputs, this);
             }
             _imp->inputs[inputNumber] = input;
             _imp->guiInputs[inputNumber] = input;
         } else {
-            if (_imp->guiInputs[inputNumber]) {
-                QObject::connect( _imp->guiInputs[inputNumber].get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
-                _imp->guiInputs[inputNumber]->disconnectOutput(useGuiInputs, this);
+            NodePtr curIn = _imp->guiInputs[inputNumber].lock();
+            if (curIn) {
+                QObject::connect(curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)));
+                curIn->disconnectOutput(useGuiInputs, this);
             }
             _imp->guiInputs[inputNumber] = input;
             _imp->mustCopyGuiInputs = true;
@@ -4265,13 +4272,13 @@ Node::switchInput0And1()
         boost::shared_ptr<Node> input0;
         
         if (!useGuiInputs) {
-            input0 = _imp->inputs[inputAIndex];
+            input0 = _imp->inputs[inputAIndex].lock();
             _imp->inputs[inputAIndex] = _imp->inputs[inputBIndex];
             _imp->inputs[inputBIndex] = input0;
             _imp->guiInputs[inputAIndex] = _imp->inputs[inputAIndex];
             _imp->guiInputs[inputBIndex] = _imp->inputs[inputBIndex];
         } else {
-            input0 = _imp->guiInputs[inputAIndex];
+            input0 = _imp->guiInputs[inputAIndex].lock();
             _imp->guiInputs[inputAIndex] = _imp->guiInputs[inputBIndex];
             _imp->guiInputs[inputBIndex] = input0;
             _imp->mustCopyGuiInputs = true;
@@ -4323,7 +4330,7 @@ Node::onInputLabelChanged(const QString & name)
     ///No need to lock, inputs is only written to by the mainthread
     
     for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-        if (_imp->guiInputs[i].get() == inp) {
+        if (_imp->guiInputs[i].lock().get() == inp) {
             inputNb = i;
             break;
         }
@@ -4369,11 +4376,13 @@ Node::disconnectInput(int inputNumber)
     
     {
         QMutexLocker l(&_imp->inputsMutex);
-        if ( (inputNumber < 0) || ( inputNumber > (int)_imp->inputs.size() ) || (!useGuiValues && !_imp->inputs[inputNumber]) ||
-            (useGuiValues && !_imp->guiInputs[inputNumber])) {
+        if (inputNumber < 0 ||
+            inputNumber > (int)_imp->inputs.size() ||
+            (!useGuiValues && !_imp->inputs[inputNumber].lock()) ||
+            (useGuiValues && !_imp->guiInputs[inputNumber].lock())) {
             return -1;
         }
-        inputShared = useGuiValues ? _imp->guiInputs[inputNumber] : _imp->inputs[inputNumber];
+        inputShared = useGuiValues ? _imp->guiInputs[inputNumber].lock() : _imp->inputs[inputNumber].lock();
     }
     
 
@@ -4434,17 +4443,19 @@ Node::disconnectInput(Node* input)
     {
         QMutexLocker l(&_imp->inputsMutex);
         if (!useGuiValues) {
-            for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-                if (_imp->inputs[i].get() == input) {
-                    inputShared = _imp->inputs[i];
+            for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
+                NodePtr curInput = _imp->inputs[i].lock();
+                if (curInput.get() == input) {
+                    inputShared = curInput;
                     found = (int)i;
                     break;
                 }
             }
         } else {
-            for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-                if (_imp->guiInputs[i].get() == input) {
-                    inputShared = _imp->guiInputs[i];
+            for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
+                NodePtr curInput = _imp->guiInputs[i].lock();
+                if (curInput.get() == input) {
+                    inputShared = curInput;
                     found = (int)i;
                     break;
                 }
@@ -4546,8 +4557,8 @@ Node::inputIndex(Node* n) const
     }
     
     ///No need to lock this is only called by the main-thread
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].get() == n) {
+    for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
+        if (_imp->inputs[i].lock().get() == n) {
             return i;
         }
     }
@@ -4638,9 +4649,9 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
         bool hasOnlyOneInputConnected = false;
         
         ///No need to lock guiInputs is only written to by the mainthread
-        for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-            
-            if (_imp->guiInputs[i]) {
+        for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
+            NodePtr input = _imp->guiInputs[i].lock();
+            if (input) {
                 if ( !_imp->liveInstance->isInputOptional(i) ) {
                     if (firstNonOptionalInput == -1) {
                         firstNonOptionalInput = i;
@@ -4649,7 +4660,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
                         hasOnlyOneInputConnected = false;
                     }
                 } else if (!firstOptionalInput) {
-                    firstOptionalInput = _imp->guiInputs[i];
+                    firstOptionalInput = input;
                     if (hasOnlyOneInputConnected) {
                         hasOnlyOneInputConnected = false;
                     } else {
@@ -4676,9 +4687,10 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     ///For multi-instances, if we deactivate the main instance without hiding the GUI (the default state of the tracker node)
     ///then don't remove it from outputs of the inputs
     if (hideGui || !_imp->isMultiInstance) {
-        for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-            if (_imp->guiInputs[i]) {
-                _imp->guiInputs[i]->disconnectOutput(false,this);
+        for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
+            NodePtr input = _imp->guiInputs[i].lock();
+            if (input) {
+                input->disconnectOutput(false,this);
             }
         }
     }
@@ -4787,9 +4799,10 @@ Node::activate(const std::list< Node* > & outputsToRestore,
     ///No need to lock, guiInputs is only written to by the main-thread
     
     ///for all inputs, reconnect their output to this node
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            _imp->inputs[i]->connectOutput(false,this);
+    for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
+        NodePtr input = _imp->inputs[i].lock();
+        if (input) {
+            input->connectOutput(false,this);
         }
     }
     
@@ -5222,9 +5235,10 @@ Node::setKnobsFrozen(bool frozen)
     _imp->liveInstance->setKnobsFrozen(frozen);
     
     QMutexLocker l(&_imp->inputsMutex);
-    for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i]) {
-            _imp->inputs[i]->setKnobsFrozen(frozen);
+    for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
+        NodePtr input = _imp->inputs[i].lock();
+        if (input) {
+            input->setKnobsFrozen(frozen);
         }
     }
 }
@@ -5590,11 +5604,12 @@ static void refreshPreviewsRecursivelyUpstreamInternal(double time,Node* node,st
     
     marked.push_back(node);
     
-    std::vector<boost::shared_ptr<Node> > inputs = node->getInputs_copy();
+    std::vector<boost::weak_ptr<Node> > inputs = node->getInputs_copy();
     
-    for (U32 i = 0; i < inputs.size(); ++i) {
-        if (inputs[i]) {
-            inputs[i]->refreshPreviewsRecursivelyUpstream(time);
+    for (std::size_t i = 0; i < inputs.size(); ++i) {
+        NodePtr input = inputs[i].lock();
+        if (input) {
+            input->refreshPreviewsRecursivelyUpstream(time);
         }
     }
 
@@ -5698,7 +5713,7 @@ Node::onKnobSlaved(KnobI* slave,KnobI* master,
         QMutexLocker l(&_imp->masterNodeMutex);
         KnobLinkList::iterator found = _imp->nodeLinks.end();
         for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
-            if (it->masterNode == parentNode) {
+            if (it->masterNode.lock() == parentNode) {
                 found = it;
                 break;
             }
@@ -7236,8 +7251,9 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
         QMutexLocker l(&_imp->inputsMutex);
         
         for (InputsV::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
-            if ( (*it) && (*it)->hasSequentialOnlyNodeUpstream(nodeName) && (*it)->getLiveInstance()->isWriter() ) {
-                nodeName = (*it)->getScriptName_mt_safe();
+            NodePtr input = it->lock();
+            if (input && input->hasSequentialOnlyNodeUpstream(nodeName) && input->getLiveInstance()->isWriter() ) {
+                nodeName = input->getScriptName_mt_safe();
                 
                 return true;
             }
@@ -7446,9 +7462,12 @@ Node::dequeueActions()
         assert(_imp->guiInputs.size() == _imp->inputs.size());
 
         for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
-            if (_imp->inputs[i] != _imp->guiInputs[i]) {
+            
+            NodePtr inp = _imp->inputs[i].lock();
+            NodePtr guiInp = _imp->guiInputs[i].lock();
+            if (inp != guiInp) {
                 inputChanges.insert(i);
-                _imp->inputs[i] = _imp->guiInputs[i];
+                _imp->inputs[i] = guiInp;
             }
         }
     }
@@ -7719,12 +7738,13 @@ Node::refreshMaskEnabledNess(int inputNb)
 }
 
 bool
-Node::refreshDraftFlagInternal(const std::vector<boost::shared_ptr<Node> >& inputs)
+Node::refreshDraftFlagInternal(const std::vector<boost::weak_ptr<Node> >& inputs)
 {
     bool hasDraftInput = false;
     for (std::size_t i = 0; i < inputs.size(); ++i) {
-        if (inputs[i]) {
-            hasDraftInput |= inputs[i]->isDraftModeUsed();
+        NodePtr input = inputs[i].lock();
+        if (input) {
+            hasDraftInput |= input->isDraftModeUsed();
         }
     }
     hasDraftInput |= _imp->liveInstance->supportsRenderQuality();
@@ -7744,7 +7764,7 @@ Node::refreshAllInputRelatedData(bool canChangeValues)
 }
 
 bool
-Node::refreshAllInputRelatedData(bool /*canChangeValues*/,const std::vector<boost::shared_ptr<Node> >& inputs)
+Node::refreshAllInputRelatedData(bool /*canChangeValues*/,const std::vector<boost::weak_ptr<Node> >& inputs)
 {
     bool hasChanged = false;
     hasChanged |= refreshDraftFlagInternal(inputs);
@@ -7818,11 +7838,12 @@ Node::refreshInputRelatedDataInternal(std::list<Node*>& markedNodes)
     ///Check if inputs must be refreshed first
  
     int maxInputs = getMaxInputCount();
-    std::vector<NodePtr> inputsCopy(maxInputs);
+    std::vector<boost::weak_ptr<Node> > inputsCopy(maxInputs);
     for (int i = 0; i < maxInputs; ++i) {
-        inputsCopy[i] = getInput(i);
-        if (inputsCopy[i] && inputsCopy[i]->isInputRelatedDataDirty()) {
-            inputsCopy[i]->refreshInputRelatedDataInternal(markedNodes);
+        NodePtr input = getInput(i);
+        inputsCopy[i] = input;
+        if (input && input->isInputRelatedDataDirty()) {
+            input->refreshInputRelatedDataInternal(markedNodes);
         }
     }
     
@@ -8058,7 +8079,8 @@ Node::isSettingsPanelOpenedInternal(std::set<const Node*>& recursionList) const
             return master->isSettingsPanelOpened();
         }
         for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
-            if (it->masterNode.get() != this && it->masterNode->isSettingsPanelOpenedInternal(recursionList)) {
+            NodePtr masterNode = it->masterNode.lock();
+            if (masterNode && masterNode.get() != this && masterNode->isSettingsPanelOpenedInternal(recursionList)) {
                 return true;
             }
         }

@@ -129,7 +129,7 @@ AddMultipleNodesCommand::~AddMultipleNodesCommand()
         for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
             boost::shared_ptr<NodeGui> node = it->lock();
             if (node) {
-                _graph->deleteNodepluginsly(node);
+                _graph->deleteNodePermanantly(node);
             }
         }
     }
@@ -258,7 +258,7 @@ RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
         for (std::list<NodeToRemove>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
             boost::shared_ptr<NodeGui> n = it->node.lock();
             if (n) {
-                _graph->deleteNodepluginsly(n);
+                _graph->deleteNodePermanantly(n);
             }
         }
     }
@@ -351,10 +351,11 @@ RemoveMultipleNodesCommand::redo()
                     InspectorNode* inspector = dynamic_cast<InspectorNode*>( *it2 );
                     ///if the node is an inspector, when disconnecting the active input just activate another input instead
                     if (inspector) {
-                        const std::vector<boost::shared_ptr<Node> > & inputs = inspector->getGuiInputs();
+                        const std::vector<boost::weak_ptr<Node> > & inputs = inspector->getGuiInputs();
                         ///set as active input the first non null input
-                        for (U32 i = 0; i < inputs.size(); ++i) {
-                            if (inputs[i]) {
+                        for (std::size_t i = 0; i < inputs.size(); ++i) {
+                            NodePtr input = inputs[i].lock();
+                            if (input) {
                                 inspector->setActiveInputAndRefresh(i, false);
                                 ///make sure we don't refresh it a second time
                                 std::list<ViewerInstance*>::iterator foundViewer =
@@ -591,10 +592,10 @@ InsertNodeCommand::redo()
     
     ///find out if the node is already connected to what the edge is connected
     bool alreadyConnected = false;
-    const std::vector<boost::shared_ptr<Node> > & inpNodes = newSrcInternal->getGuiInputs();
+    const std::vector<boost::weak_ptr<Node> > & inpNodes = newSrcInternal->getGuiInputs();
     if (oldSrcInternal) {
-        for (U32 i = 0; i < inpNodes.size(); ++i) {
-            if (inpNodes[i] == oldSrcInternal) {
+        for (std::size_t i = 0; i < inpNodes.size(); ++i) {
+            if (inpNodes[i].lock() == oldSrcInternal) {
                 alreadyConnected = true;
                 break;
             }
@@ -947,15 +948,20 @@ Tree::buildTreeInternal(const std::list<NodeGuiPtr>& selectedNodes,
     
     static bool hasNodeInputsInList(const std::list<boost::shared_ptr<NodeGui> >& nodes,const boost::shared_ptr<NodeGui>& node)
     {
-        const std::vector<boost::shared_ptr<Node> >& inputs = node->getNode()->getGuiInputs();
+        const std::vector<boost::weak_ptr<Node> >& inputs = node->getNode()->getGuiInputs();
         
         bool foundInput = false;
         for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it != node) {
                 boost::shared_ptr<Node> n = (*it)->getNode();
-                std::vector<boost::shared_ptr<Node> >::const_iterator found = std::find(inputs.begin(),inputs.end(),n);
-                if (found != inputs.end()) {
-                    foundInput = true;
+                
+                for (std::size_t i = 0; i < inputs.size(); ++i) {
+                    if (inputs[i].lock() == n) {
+                        foundInput = true;
+                        break;
+                    }
+                }
+                if (foundInput) {
                     break;
                 }
             }
@@ -1280,7 +1286,7 @@ static void addTreeInputs(const std::list<boost::shared_ptr<NodeGui> >& nodes,co
     if (!hasNodeInputsInList(nodes,node)) {
         ExtractedInput input;
         input.node = node;
-        sharedToWeak(node->getNode()->getGuiInputs(),input.inputs);
+        input.inputs = node->getNode()->getGuiInputs();
         tree.inputs.push_back(input);
         markedNodes.push_back(node);
     } else {
@@ -1323,7 +1329,7 @@ static void extractTreesFromNodes(const std::list<boost::shared_ptr<NodeGui> >& 
             if (tree.inputs.empty()) {
                 ExtractedInput input;
                 input.node = *it;
-                sharedToWeak(n->getGuiInputs(),input.inputs);
+                input.inputs = n->getGuiInputs();
                 tree.inputs.push_back(input);
             }
             
@@ -1564,9 +1570,11 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
             }
         
             NodePtr originalNodeInternal = foundOriginalNode->getNode();
-            const std::vector<NodePtr>& originalNodeInputs = originalNodeInternal->getInputs();
+            const std::vector<boost::weak_ptr<Node> >& originalNodeInputs = originalNodeInternal->getInputs();
             for (std::size_t i = 0; i < originalNodeInputs.size(); ++i) {
-                if (originalNodeInputs[i]) {
+                
+                NodePtr originalInput = originalNodeInputs[i].lock();
+                if (originalInput) {
                     
                     //Create an input node corresponding to this input
                     CreateNodeArgs args(PLUGINID_NATRON_INPUT, eCreateNodeReasonInternal, isGrp);
@@ -1579,7 +1587,7 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
                     double offsetX,offsetY;
                     {
                         double inputX,inputY;
-                        originalNodeInputs[i]->getPosition(&inputX, &inputY);
+                        originalInput->getPosition(&inputX, &inputY);
                         double originalX,originalY;
                         foundOriginalNode->getPosition(&originalX, &originalY);
                         offsetX = inputX - originalX;
@@ -1596,7 +1604,7 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
                     
                     it2->node->connectInput(input, i);
                     
-                    containerNode->connectInput(originalNodeInputs[i], inputNb);
+                    containerNode->connectInput(originalInput, inputNb);
                     
                     ++inputNb;
                     
@@ -1974,6 +1982,68 @@ InlineGroupCommand::redo()
     _graph->getGui()->getApp()->triggerAutoSave();
     setText(QObject::tr("Inline group(s)"));
     _firstRedoCalled = true;
+}
+
+
+RestoreNodeToDefaultCommand::RestoreNodeToDefaultCommand(const boost::shared_ptr<Node>& node)
+: QUndoCommand()
+, activeNode(node)
+{
+    originalSerialization.reset(new NodeSerialization(node, false));
+
+    
+    
+    setText(QObject::tr("Restore default values on %1").arg(node->getScriptName().c_str()));
+}
+
+RestoreNodeToDefaultCommand::~RestoreNodeToDefaultCommand()
+{
+    
+}
+
+void
+RestoreNodeToDefaultCommand::createNodeAndDeleteActiveNode(bool isRedo)
+{
+    CreateNodeArgs args(activeNode->getPluginID().c_str(), eCreateNodeReasonInternal, activeNode->getGroup());
+    if (!isRedo) {
+        args.serialization = originalSerialization;
+    }
+    NodePtr newNode = activeNode->getApp()->createNode(args);
+    assert(newNode);
+    
+    double x,y;
+    activeNode->getPosition(&x, &y);
+    newNode->setPosition(x, y);
+    
+    assert(newNode->getMaxInputCount() == activeNode->getMaxInputCount());
+    int nInputs = newNode->getMaxInputCount();
+    for (int i = 0; i < nInputs; ++i) {
+        NodePtr input = activeNode->getInput(i);
+        if (input) {
+            newNode->connectInput(input, i);
+        }
+    }
+    
+    std::string oldScriptName = activeNode->getScriptName();
+    std::string oldLabel = activeNode->getLabel();
+    activeNode->destroyNode(false);
+    activeNode = newNode;
+    
+    activeNode->setScriptName(oldScriptName);
+    activeNode->setLabel(oldLabel);
+}
+
+void
+RestoreNodeToDefaultCommand::undo()
+{
+    createNodeAndDeleteActiveNode(false);
+}
+
+void
+RestoreNodeToDefaultCommand::redo()
+{
+    createNodeAndDeleteActiveNode(true);
+    
 }
 
 NATRON_NAMESPACE_EXIT;

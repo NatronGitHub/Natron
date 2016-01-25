@@ -3903,18 +3903,18 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
     {
         QMutexLocker k(&_imp->rotoContextMutex);
         for (std::list<boost::shared_ptr<Node> >::iterator it = _imp->globalMergeNodes.begin(); it!=_imp->globalMergeNodes.end(); ++it) {
-            const std::vector<boost::shared_ptr<Node> > &inputs = (*it)->getInputs();
+            const std::vector<boost::weak_ptr<Node> > &inputs = (*it)->getInputs();
             
             //Merge node goes like this: B, A, Mask, A2, A3, A4 ...
             assert(inputs.size() >= 3 && (*it)->getLiveInstance()->isInputMask(2));
-            if (!inputs[1]) {
+            if (!inputs[1].lock()) {
                 *availableInputIndex = 1;
                 return *it;
             }
             
             //Leave the B empty to connect the next merge node
             for (std::size_t i = 3; i < inputs.size(); ++i) {
-                if (!inputs[i]) {
+                if (!inputs[i].lock()) {
                     *availableInputIndex = (int)i;
                     return *it;
                 }

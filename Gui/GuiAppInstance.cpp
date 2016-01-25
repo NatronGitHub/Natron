@@ -597,17 +597,6 @@ GuiAppInstance::shouldRefreshPreview() const
 }
 
 
-void
-GuiAppInstance::deleteNode(const boost::shared_ptr<NodeGui> & n)
-{
-    if ( !isClosing() ) {
-        boost::shared_ptr<Node> internalNode = n->getNode();
-        if (internalNode) {
-            getProject()->removeNode(internalNode);
-            internalNode->removeReferences();
-        }
-    }
-}
 
 void
 GuiAppInstance::errorDialog(const std::string & title,

@@ -1157,7 +1157,7 @@ NodeGui::refreshDashedStateOfEdges()
 void
 NodeGui::refreshEdges()
 {
-    const std::vector<boost::shared_ptr<Node> > & nodeInputs = getNode()->getGuiInputs();
+    const std::vector<boost::weak_ptr<Node> > & nodeInputs = getNode()->getGuiInputs();
     if (_inputEdges.size() != nodeInputs.size()) {
         return;
     }
@@ -1165,8 +1165,10 @@ NodeGui::refreshEdges()
     for (U32 i = 0; i < _inputEdges.size(); ++i) {
         assert(i < nodeInputs.size());
         assert(_inputEdges[i]);
-        if (nodeInputs[i]) {
-            boost::shared_ptr<NodeGuiI> nodeInputGui_i = nodeInputs[i]->getNodeGui();
+        
+        NodePtr input = nodeInputs[i].lock();
+        if (input) {
+            boost::shared_ptr<NodeGuiI> nodeInputGui_i = input->getNodeGui();
             if (!nodeInputGui_i) {
                 continue;
             }
@@ -1357,7 +1359,7 @@ NodeGui::initializeInputs()
     NodePtr node = getNode();
 
     ///The actual numbers of inputs of the internal node
-    const std::vector<NodePtr>& inputs = node->getGuiInputs();
+    const std::vector<boost::weak_ptr<Node> >& inputs = node->getGuiInputs();
 
     ///Delete all  inputs that may exist
     for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
@@ -1377,8 +1379,10 @@ NodeGui::initializeInputs()
             edge->setActive(false);
             edge->hide();
         }
-        if (inputs[i]) {
-            boost::shared_ptr<NodeGuiI> gui_i = inputs[i]->getNodeGui();
+        
+        NodePtr input = inputs[i].lock();
+        if (input) {
+            boost::shared_ptr<NodeGuiI> gui_i = input->getNodeGui();
             assert(gui_i);
             boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
             assert(gui);
@@ -1386,7 +1390,7 @@ NodeGui::initializeInputs()
         }
         if (!node->getLiveInstance()->isInputMask(i) &&
             !node->getLiveInstance()->isInputRotoBrush(i)) {
-            if (!inputs[i]) {
+            if (!input) {
                 ++emptyInputsCount;
             }
             ++inputsCount;
@@ -1651,15 +1655,17 @@ NodeGui::findConnectedEdge(NodeGui* parent)
 bool
 NodeGui::connectEdge(int edgeNumber)
 {
-    const std::vector<boost::shared_ptr<Node> > & inputs = getNode()->getGuiInputs();
+    const std::vector<boost::weak_ptr<Node> > & inputs = getNode()->getGuiInputs();
 
     if ( (edgeNumber < 0) || ( edgeNumber >= (int)inputs.size() ) || _inputEdges.size() != inputs.size() ) {
         return false;
     }
 
     boost::shared_ptr<NodeGui> src;
-    if (inputs[edgeNumber]) {
-        boost::shared_ptr<NodeGuiI> ngi = inputs[edgeNumber]->getNodeGui();
+    
+    NodePtr input = inputs[edgeNumber].lock();
+    if (input) {
+        boost::shared_ptr<NodeGuiI> ngi = input->getNodeGui();
         src = boost::dynamic_pointer_cast<NodeGui>(ngi);
     }
 
@@ -2340,7 +2346,7 @@ NodeGui::onKnobsLinksChanged()
     for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
         bool found = false;
         for (InternalLinks::iterator it2 = links.begin(); it2 != links.end(); ++it2) {
-            if (it2->masterNode == it->first) {
+            if (it2->masterNode.lock() == it->first.lock()) {
                 found = true;
                 break;
             }
@@ -2357,9 +2363,12 @@ NodeGui::onKnobsLinksChanged()
 
     for (InternalLinks::iterator it = links.begin(); it != links.end(); ++it) {
 
-        KnobGuiLinks::iterator foundGuiLink = _knobsLinks.find(it->masterNode);
+        boost::shared_ptr<Node> masterNode = it->masterNode.lock();
+      
+        KnobGuiLinks::iterator foundGuiLink = masterNode ? _knobsLinks.find(it->masterNode) : _knobsLinks.end();
         if (foundGuiLink != _knobsLinks.end()) {
-
+            
+            
             //We already have a link to the master node
             bool found = false;
 
@@ -2375,15 +2384,15 @@ NodeGui::onKnobsLinksChanged()
                 foundGuiLink->second.knobs.push_back(std::make_pair(it->slave,it->master));
                 QString fullTooltip;
                 for (std::list<std::pair<KnobI*,KnobI*> >::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
-                    QString tt = makeLinkString(it->masterNode.get(),it2->second,node.get(),it2->first);
+                    QString tt = makeLinkString(masterNode.get(),it2->second,node.get(),it2->first);
                     fullTooltip.append(tt);
                 }
             }
         } else {
 
             ///There's no link to the master node yet
-            if (it->masterNode->getNodeGui().get() != this && it->masterNode->getGroup() == getNode()->getGroup()) {
-                boost::shared_ptr<NodeGuiI> master_i = it->masterNode->getNodeGui();
+            if (masterNode->getNodeGui().get() != this && masterNode->getGroup() == getNode()->getGroup()) {
+                boost::shared_ptr<NodeGuiI> master_i = masterNode->getNodeGui();
                 boost::shared_ptr<NodeGui> master = boost::dynamic_pointer_cast<NodeGui>(master_i);
                 assert(master);
                 LinkArrow* arrow = new LinkArrow( master.get(),this,parentItem() );
@@ -2391,7 +2400,7 @@ NodeGui::onKnobsLinksChanged()
                 arrow->setColor( QColor(143,201,103) );
                 arrow->setArrowHeadColor( QColor(200,255,200) );
 
-                QString tt = makeLinkString(it->masterNode.get(),it->master,node.get(),it->slave);
+                QString tt = makeLinkString(masterNode.get(),it->master,node.get(),it->slave);
                 arrow->setToolTip(tt);
                 if ( !getDagGui()->areKnobLinksVisible() ) {
                     arrow->setVisible(false);

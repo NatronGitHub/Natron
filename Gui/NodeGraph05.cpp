@@ -128,10 +128,10 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
     ///if behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
     ///otherwise fallback on behaviour 0
     if (behavior == 1) {
-        const std::vector<boost::shared_ptr<Node> > & inputs = selected->getNode()->getGuiInputs();
+        const std::vector<boost::weak_ptr<Node> > & inputs = selected->getNode()->getGuiInputs();
         bool oneInputEmpty = false;
-        for (U32 i = 0; i < inputs.size(); ++i) {
-            if (!inputs[i]) {
+        for (std::size_t i = 0; i < inputs.size(); ++i) {
+            if (!inputs[i].lock()) {
                 oneInputEmpty = true;
                 break;
             }

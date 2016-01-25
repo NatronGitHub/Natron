@@ -238,9 +238,9 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
         
         ///find out if the node is already connected to what the edge is connected
         bool alreadyConnected = false;
-        const std::vector<boost::shared_ptr<Node> > & inpNodes = selectedNode->getNode()->getGuiInputs();
-        for (U32 i = 0; i < inpNodes.size(); ++i) {
-            if ( inpNodes[i] == edge->getSource()->getNode() ) {
+        const std::vector<boost::weak_ptr<Node> > & inpNodes = selectedNode->getNode()->getGuiInputs();
+        for (std::size_t i = 0; i < inpNodes.size(); ++i) {
+            if ( inpNodes[i].lock() == edge->getSource()->getNode() ) {
                 alreadyConnected = true;
                 break;
             }

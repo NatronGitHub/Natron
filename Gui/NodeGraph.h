@@ -120,7 +120,7 @@ public:
 
     void setUndoRedoStackLimit(int limit);
 
-    void deleteNodepluginsly(boost::shared_ptr<NodeGui> n);
+    void deleteNodePermanantly(boost::shared_ptr<NodeGui> n);
 
     std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackdrop(const boost::shared_ptr<NodeGui>& node) const;
 

@@ -258,11 +258,11 @@ NodeGraph::onNodesCleared()
         nodesCpy = _imp->_nodes;
     }
     for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesCpy.begin(); it != nodesCpy.end(); ++it) {
-        deleteNodepluginsly( *it );
+        deleteNodePermanantly( *it );
     }
 
     while ( !_imp->_nodesTrash.empty() ) {
-        deleteNodepluginsly( *( _imp->_nodesTrash.begin() ) );
+        deleteNodePermanantly( *( _imp->_nodesTrash.begin() ) );
     }
     _imp->_selection.clear();
     _imp->_magnifiedNode.reset();
