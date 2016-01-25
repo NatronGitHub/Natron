@@ -55,6 +55,9 @@ PKG_PREFIX64=${MINGW_PREFIX}x86_64-
 INSTALL32_PATH=/mingw32
 INSTALL64_PATH=/mingw64
 
+# bump timestamp on SDK changes, important!
+CORELIBS_VERSION=20160121
+
 # Common values
 #
 TMP_DIR=/tmp

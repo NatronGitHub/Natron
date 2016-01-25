@@ -215,7 +215,7 @@ if [ "$NO_ZIP" != "1" ]; then
 fi
 
 # CORE LIBS
-CLIBS_VERSION=$NATRON_VERSION_NUMBER
+CLIBS_VERSION=$CORELIBS_VERSION
 CLIBS_PATH=$INSTALLER/packages/$CORELIBS_PKG
 mkdir -p $CLIBS_PATH/meta $CLIBS_PATH/data/bin $CLIBS_PATH/data/lib $CLIBS_PATH/data/share/pixmaps $CLIBS_PATH/data/Resources/etc/fonts || exit 1
 cat $XML/corelibs.xml | sed "s/_VERSION_/${CLIBS_VERSION}/;s/_DATE_/${DATE}/" > $CLIBS_PATH/meta/package.xml || exit 1
