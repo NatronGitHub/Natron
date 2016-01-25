@@ -1035,6 +1035,9 @@ CallbacksManager::initCrashGenerationServer()
                 QString toAppend("CRASH_PIPE_");
                 toAppend.append(tmpFileName.mid(foundLastSlash + 1));
                 _pipePath.append(toAppend);
+            } else {
+                _pipePath.append("CRASH_PIPE_");
+                _pipePath.append(tmpFileName);
             }
         }
 #endif
