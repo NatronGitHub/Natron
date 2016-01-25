@@ -107,11 +107,11 @@ boost::shared_ptr<Node> BaseTest::createNode(const QString & pluginID,
                                                      int majorVersion,
                                                      int minorVersion)
 {
-    boost::shared_ptr<Node> ret =  _app->createNode( CreateNodeArgs(pluginID,
-                                                                    "",
-                                                                    majorVersion,minorVersion,true,INT_MIN,INT_MIN,true,true,false,
-                                                                    QString(),CreateNodeArgs::DefaultValuesList(),
-                                                                    _app->getProject()) );
+    CreateNodeArgs args(pluginID, eCreateNodeReasonInternal, _app->getProject());
+    args.majorV = majorVersion;
+    args.minorV = minorVersion;
+    boost::shared_ptr<Node> ret =  _app->createNode(args);
+                                                    
 
     EXPECT_NE(ret.get(),(Node*)NULL);
 
