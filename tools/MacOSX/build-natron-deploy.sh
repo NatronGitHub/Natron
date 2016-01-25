@@ -131,7 +131,7 @@ if [ ! -d "${package}/Contents/PlugIns" -a -d "$QTDIR/share/plugins" ]; then
     cp -r "$QTDIR/share/plugins" "${package}/Contents/PlugIns" || exit 1
     for binary in "${package}/Contents/PlugIns"/*/*.dylib; do
         chmod +w "$binary"
-        for lib in libjpeg.9.dylib libmng.1.dylib libtiff.5.dylib libQGLViewer.2.dylib; do
+        for lib in libjpeg.9.dylib libmng.2.dylib libtiff.5.dylib libQGLViewer.2.dylib; do
             install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
         done
         for f in $QT_LIBS; do
