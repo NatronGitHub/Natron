@@ -184,18 +184,10 @@ ToolButton::onTriggered()
 {
     boost::shared_ptr<NodeCollection> group = _imp->_app->getGui()->getLastSelectedNodeCollection();
     assert(group);
-    CreateNodeArgs args(_imp->_id,
-                        "",
-                        _imp->_major,_imp->_minor,
-                        true,
-                        INT_MIN,INT_MIN,
-                        true,
-                        true,
-                        true,
-                        QString(),
-                        CreateNodeArgs::DefaultValuesList(),
-                        group);
-    _imp->_app->createNode( args );
+    CreateNodeArgs args(_imp->_id, eCreateNodeReasonUserCreate, group);
+    args.majorV = _imp->_major;
+    args.minorV = _imp->_minor;
+    _imp->_app->createNode(args);
 }
 
 struct ToolButtonChildrenSortFunctor

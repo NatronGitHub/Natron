@@ -300,6 +300,8 @@ public:
     
     const QString& getPythonModule() const ;
     
+    void getPythonModuleNameAndPath(QString* moduleName, QString* modulePath) const;
+    
     void setOfxPlugin(OFX::Host::ImageEffect::ImageEffectPlugin* p);
     
     OFX::Host::ImageEffect::ImageEffectPlugin* getOfxPlugin() const;

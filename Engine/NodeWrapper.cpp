@@ -692,17 +692,9 @@ Effect::createChild()
     if (!_node->isMultiInstance()) {
         return 0;
     }
-    CreateNodeArgs args( _node->getPluginID().c_str(),
-                        _node->getScriptName(),
-                        -1,-1,
-                        true,
-                        INT_MIN,INT_MIN,
-                        false,  //< never use the undo-stack of the nodegraph since we use the one of the dockablepanel
-                        true,
-                        false,
-                        QString(),
-                        CreateNodeArgs::DefaultValuesList(),
-                        _node->getGroup());
+    
+    CreateNodeArgs args(_node->getPluginID().c_str(), eCreateNodeReasonInternal, _node->getGroup());
+    args.multiInstanceParentName = _node->getScriptName();
     NodePtr child = _node->getApp()->createNode(args);
     if (child) {
         return new Effect(child);

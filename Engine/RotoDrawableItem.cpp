@@ -219,18 +219,10 @@ RotoDrawableItem::createNodes(bool connectNodes)
     if (!pluginId.isEmpty()) {
         fixedNamePrefix.append("Effect");
         
-        CreateNodeArgs args(pluginId, "",
-                            -1,-1,
-                            false,
-                            INT_MIN,
-                            INT_MIN,
-                            false,
-                            false,
-                            false,
-                            fixedNamePrefix,
-                            CreateNodeArgs::DefaultValuesList(),
-                            boost::shared_ptr<NodeCollection>());
+        CreateNodeArgs args(pluginId, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+        args.fixedName = fixedNamePrefix;
         args.createGui = false;
+        args.addToProject = false;
         _imp->effectNode = app->createNode(args);
         if (!_imp->effectNode) {
             throw std::runtime_error("Rotopaint requires the plug-in " + pluginId.toStdString() + " in order to work");
@@ -241,18 +233,10 @@ RotoDrawableItem::createNodes(bool connectNodes)
             {
                 fixedNamePrefix = baseFixedName;
                 fixedNamePrefix.append("TimeOffset");
-                CreateNodeArgs args(PLUGINID_OFX_TIMEOFFSET, "",
-                                    -1,-1,
-                                    false,
-                                    INT_MIN,
-                                    INT_MIN,
-                                    false,
-                                    false,
-                                    false,
-                                    fixedNamePrefix,
-                                    CreateNodeArgs::DefaultValuesList(),
-                                    boost::shared_ptr<NodeCollection>());
+                CreateNodeArgs args(PLUGINID_OFX_TIMEOFFSET, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+                args.fixedName = fixedNamePrefix;
                 args.createGui = false;
+                args.addToProject = false;
                 _imp->timeOffsetNode = app->createNode(args);
                 if (!_imp->timeOffsetNode) {
                     throw std::runtime_error("Rotopaint requires the plug-in " PLUGINID_OFX_TIMEOFFSET " in order to work");
@@ -263,18 +247,10 @@ RotoDrawableItem::createNodes(bool connectNodes)
             {
                 fixedNamePrefix = baseFixedName;
                 fixedNamePrefix.append("FrameHold");
-                CreateNodeArgs args(PLUGINID_OFX_FRAMEHOLD, "",
-                                    -1,-1,
-                                    false,
-                                    INT_MIN,
-                                    INT_MIN,
-                                    false,
-                                    false,
-                                    false,
-                                    fixedNamePrefix,
-                                    CreateNodeArgs::DefaultValuesList(),
-                                    boost::shared_ptr<NodeCollection>());
+                CreateNodeArgs args(PLUGINID_OFX_FRAMEHOLD, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+                args.fixedName = fixedNamePrefix;
                 args.createGui = false;
+                args.addToProject = false;
                 _imp->frameHoldNode = app->createNode(args);
                 if (!_imp->frameHoldNode) {
                     throw std::runtime_error("Rotopaint requires the plug-in " PLUGINID_OFX_FRAMEHOLD " in order to work");
@@ -287,18 +263,11 @@ RotoDrawableItem::createNodes(bool connectNodes)
     
     fixedNamePrefix = baseFixedName;
     fixedNamePrefix.append("Merge");
-    CreateNodeArgs args(PLUGINID_OFX_MERGE, "",
-                        -1,-1,
-                        false,
-                        INT_MIN,
-                        INT_MIN,
-                        false,
-                        false,
-                        false,
-                        fixedNamePrefix,
-                        CreateNodeArgs::DefaultValuesList(),
-                        boost::shared_ptr<NodeCollection>());
+    
+    CreateNodeArgs args(PLUGINID_OFX_MERGE, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
+    args.fixedName = fixedNamePrefix;
     args.createGui = false;
+    args.addToProject = false;
     
    _imp->mergeNode = app->createNode(args);
     if (!_imp->mergeNode) {

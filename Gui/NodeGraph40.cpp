@@ -292,9 +292,9 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     std::map<std::string,std::string> oldNewScriptNameMapping;
     for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         boost::shared_ptr<NodeSerialization>  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
-        NodeGuiSerialization guiSerialization;
-        (*it)->serialize(&guiSerialization);
-        boost::shared_ptr<NodeGui> clone = _imp->pasteNode( *internalSerialization, guiSerialization, offset,
+        boost::shared_ptr<NodeGuiSerialization> guiSerialization(new NodeGuiSerialization);
+        (*it)->serialize(guiSerialization.get());
+        boost::shared_ptr<NodeGui> clone = _imp->pasteNode(internalSerialization, guiSerialization, offset,
                                                            _imp->group.lock(),std::string(),true, &oldNewScriptNameMapping );
         
         newNodes.push_back(std::make_pair(internalSerialization->getNodeScriptName(),clone));

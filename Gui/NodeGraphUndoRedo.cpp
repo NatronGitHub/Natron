@@ -1519,17 +1519,8 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
         groupPosition.ry() /= nodes.size();
     }
     
-    CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
-                             "",
-                             -1,-1,
-                             false, //< autoconnect
-                             INT_MIN,INT_MIN,
-                             false, //< push undo/redo command
-                             true, // add to project
-                             false,
-                             QString(),
-                             CreateNodeArgs::DefaultValuesList(),
-                             _graph->getGroup());
+    CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP, eCreateNodeReasonInternal, _graph->getGroup());
+
     NodePtr containerNode = _graph->getGui()->getApp()->createNode(groupArgs);
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(containerNode->getLiveInstance()->shared_from_this());
     assert(isGrp);
@@ -1578,19 +1569,8 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
                 if (originalNodeInputs[i]) {
                     
                     //Create an input node corresponding to this input
-                    CreateNodeArgs args(PLUGINID_NATRON_INPUT,
-                                        std::string(),
-                                        -1,
-                                        -1,
-                                        true, // autoconnect
-                                        INT_MIN,
-                                        INT_MIN,
-                                        false, //<< don't push an undo command
-                                        true,
-                                        true,
-                                        QString(),
-                                        CreateNodeArgs::DefaultValuesList(),
-                                        isGrp);
+                    CreateNodeArgs args(PLUGINID_NATRON_INPUT, eCreateNodeReasonInternal, isGrp);
+        
                     NodePtr input = _graph->getGui()->getApp()->createNode(args);
                     assert(input);
                     std::string inputLabel = originalNodeInternal->getLabel() + '_' + originalNodeInternal->getInputLabel(i);
@@ -1635,19 +1615,8 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,const Node
             }
             assert(foundOriginalNode);
             
-            CreateNodeArgs args(PLUGINID_NATRON_OUTPUT,
-                                std::string(),
-                                -1,
-                                -1,
-                                false, //< don't autoconnect
-                                INT_MIN,
-                                INT_MIN,
-                                false, //<< don't push an undo command
-                                true,
-                                true,
-                                QString(),
-                                CreateNodeArgs::DefaultValuesList(),
-                                isGrp);
+            CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, eCreateNodeReasonInternal, isGrp);
+
             NodePtr output = graph->getGui()->getApp()->createNode(args);
             try {
                 output->setScriptName("Output");

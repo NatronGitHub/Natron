@@ -190,7 +190,7 @@ Gui::onPropertiesScrolled()
 
 void
 Gui::createGroupGui(const boost::shared_ptr<Node> & group,
-                    bool requestedByLoad)
+                    CreateNodeReason reason)
 {
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getLiveInstance()->shared_from_this() );
 
@@ -215,7 +215,7 @@ Gui::createGroupGui(const boost::shared_ptr<Node> & group,
     NodeGraph* nodeGraph = new NodeGraph(this, collection, scene, this);
     nodeGraph->setObjectName( group->getLabel().c_str() );
     _imp->_groups.push_back(nodeGraph);
-    if ( where && !requestedByLoad && !getApp()->isCreatingPythonGroup() ) {
+    if ( where && reason == eCreateNodeReasonUserCreate && !getApp()->isCreatingPythonGroup() ) {
         where->appendTab(nodeGraph, nodeGraph);
         QTimer::singleShot( 25, nodeGraph, SLOT( centerOnAllNodes() ) );
     } else {

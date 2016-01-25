@@ -97,6 +97,7 @@ class ButtonParam;
 class CLArgs;
 class CacheEntryHolder;
 class CacheSignalEmitter;
+struct CreateNodeArgs;
 class ChoiceExtraData;
 class ChoiceParam;
 class ColorParam;

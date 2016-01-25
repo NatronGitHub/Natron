@@ -73,9 +73,7 @@ public:
 
     const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
     boost::shared_ptr<NodeGui> createNodeGUI(const boost::shared_ptr<Node> & node,
-                                             bool requestedByLoad,
-                                             bool userEdited,
-                                             bool pushUndoRedoCommand);
+                                             const CreateNodeArgs& args);
 
     void selectNode(const boost::shared_ptr<NodeGui> & n,bool addToSelection);
     

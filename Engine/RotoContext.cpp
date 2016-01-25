@@ -3928,19 +3928,13 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
     fixedNamePrefix.append('_');
     fixedNamePrefix.append("globalMerge");
     fixedNamePrefix.append('_');
-    CreateNodeArgs args(PLUGINID_OFX_MERGE, "",
-                        -1,-1,
-                        false,
-                        INT_MIN,
-                        INT_MIN,
-                        false,
-                        false,
-                        false,
-                        fixedNamePrefix,
-                        CreateNodeArgs::DefaultValuesList(),
-                        boost::shared_ptr<NodeCollection>());
-    args.createGui = false;
     
+    
+    
+    CreateNodeArgs args(PLUGINID_OFX_MERGE, eCreateNodeReasonInternal,  boost::shared_ptr<NodeCollection>());
+    args.fixedName = fixedNamePrefix;
+    args.createGui = false;
+    args.addToProject = false;
     boost::shared_ptr<Node> mergeNode = node->getApp()->createNode(args);
     if (!mergeNode) {
         return mergeNode;

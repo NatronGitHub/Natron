@@ -89,19 +89,9 @@ App::createNode(const std::string& pluginID,
     
     assert(collection);
     
-    CreateNodeArgs args(pluginID.c_str(),
-                        "",
-                        majorVersion,
-                        -1,
-                        false,
-                        INT_MIN,
-                        INT_MIN,
-                        false,
-                        true,
-                        false,
-                        QString(),
-                        CreateNodeArgs::DefaultValuesList(),
-                        collection);
+    CreateNodeArgs args(pluginID.c_str(), eCreateNodeReasonInternal, collection);
+    args.majorV = majorVersion;
+
     boost::shared_ptr<Node> node = _instance->createNode(args);
     if (node) {
         return new Effect(node);

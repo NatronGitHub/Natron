@@ -213,17 +213,7 @@ Project::loadProject(const QString & path,
     } catch (const std::exception & e) {
         Dialogs::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what() );
         if ( !getApp()->isBackground() ) {
-            getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
-                                                  "",
-                                                  -1,-1,
-                                                  true,
-                                                  INT_MIN,INT_MIN,
-                                                  true,
-                                                  true,
-                                                  false,
-                                                  QString(),
-                                                  CreateNodeArgs::DefaultValuesList(),
-                                                  shared_from_this()) );
+            getApp()->createNode(CreateNodeArgs(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, shared_from_this()));
         }
 
         return false;
@@ -231,17 +221,7 @@ Project::loadProject(const QString & path,
 
         Dialogs::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Unkown error while loading project").toStdString() );
         if ( !getApp()->isBackground() ) {
-            getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
-                                                  "",
-                                                  -1,-1,
-                                                  true,
-                                                  INT_MIN,INT_MIN,
-                                                  true,
-                                                  true,
-                                                  false,
-                                                  QString(),
-                                                  CreateNodeArgs::DefaultValuesList(),
-                                                  shared_from_this()) );
+            getApp()->createNode(CreateNodeArgs(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, shared_from_this()));
         }
 
         return false;
@@ -2180,17 +2160,9 @@ Project::createViewer()
     if (getApp()->isBackground()) {
         return;
     }
-    getApp()->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
-                                         "",
-                                         -1,-1,
-                                         true,
-                                         INT_MIN,INT_MIN,
-                                         false,
-                                         true,
-                                         false,
-                                         QString(),
-                                         CreateNodeArgs::DefaultValuesList(),
-                                         shared_from_this()) );
+    
+    getApp()->createNode(CreateNodeArgs(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, shared_from_this()));
+
 }
     
 static bool hasNodeOutputsInList(const std::list<boost::shared_ptr<Node> >& nodes,const boost::shared_ptr<Node>& node)

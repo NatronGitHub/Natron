@@ -233,8 +233,8 @@ public:
      * @brief Create a new node given the serialization of another one
      * @param offset[in] The offset applied to the new node position relative to the serialized node's position.
      **/
-    boost::shared_ptr<NodeGui> pasteNode(const NodeSerialization & internalSerialization,
-                                         const NodeGuiSerialization & guiSerialization,
+    boost::shared_ptr<NodeGui> pasteNode(const boost::shared_ptr<NodeSerialization> & internalSerialization,
+                                         const boost::shared_ptr<NodeGuiSerialization> & guiSerialization,
                                          const QPointF & offset,
                                          const boost::shared_ptr<NodeCollection>& group,
                                          const std::string& parentName,

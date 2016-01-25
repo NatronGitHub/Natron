@@ -285,15 +285,11 @@ public:
     
 private:
     
-    virtual void onGroupCreationFinished(const boost::shared_ptr<Node>& node,bool requestedByLoad,bool userEdited) OVERRIDE FINAL;
+    virtual void onGroupCreationFinished(const boost::shared_ptr<Node>& node, CreateNodeReason reason) OVERRIDE FINAL;
     
     virtual void createNodeGui(const boost::shared_ptr<Node> &node,
                                const boost::shared_ptr<Node>&  parentMultiInstance,
-                               bool loadRequest,
-                               bool autoConnect,
-                               bool userEdited,
-                               double xPosHint,double yPosHint,
-                               bool pushUndoRedoCommand) OVERRIDE FINAL;
+                               const CreateNodeArgs& args) OVERRIDE FINAL;
     
 
     boost::scoped_ptr<GuiAppInstancePrivate> _imp;

@@ -1187,17 +1187,7 @@ Gui::createNewViewer()
         throw std::logic_error("");
     }
 
-    ignore_result( _imp->_appInstance->createNode( CreateNodeArgs( PLUGINID_NATRON_VIEWER,
-                                                                   "",
-                                                                   -1, -1,
-                                                                   true,
-                                                                   INT_MIN, INT_MIN,
-                                                                   true,
-                                                                   true,
-                                                                   true,
-                                                                   QString(),
-                                                                   CreateNodeArgs::DefaultValuesList(),
-                                                                   graph->getGroup() ) ) );
+    ignore_result(_imp->_appInstance->createNode(CreateNodeArgs(PLUGINID_NATRON_VIEWER, eCreateNodeReasonUserCreate, graph->getGroup())));
 }
 
 boost::shared_ptr<Node>
@@ -1234,19 +1224,8 @@ Gui::createReader()
             boost::shared_ptr<NodeCollection> group = graph->getGroup();
             assert(group);
 
-            CreateNodeArgs::DefaultValuesList defaultValues;
-            defaultValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern) );
-            CreateNodeArgs args(found->second.c_str(),
-                                "",
-                                -1, -1,
-                                true,
-                                INT_MIN, INT_MIN,
-                                true,
-                                true,
-                                true,
-                                QString(),
-                                defaultValues,
-                                group);
+            CreateNodeArgs args(found->second.c_str(), eCreateNodeReasonUserCreate, group);
+            args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
             ret = _imp->_appInstance->createNode(args);
 
             if (!ret) {
@@ -1285,7 +1264,7 @@ Gui::createWriter()
         boost::shared_ptr<NodeCollection> group = graph->getGroup();
         assert(group);
 
-        ret =  getApp()->createWriter(file, group, true);
+        ret =  getApp()->createWriter(file, eCreateNodeReasonUserCreate, group);
     }
 
     return ret;

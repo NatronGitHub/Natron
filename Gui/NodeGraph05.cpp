@@ -221,19 +221,9 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
                 if (index != -1) {
                     
                     ///Create a dot to make things nicer
-                    CreateNodeArgs args(PLUGINID_NATRON_DOT,
-                                        std::string(),
-                                        -1,
-                                        -1,
-                                        false, //< don't autoconnect
-                                        INT_MIN,
-                                        INT_MIN,
-                                        true,
-                                        true,
-                                        true,
-                                        QString(),
-                                        CreateNodeArgs::DefaultValuesList(),
-                                        createdNodeInternal->getGroup());
+                    
+                    CreateNodeArgs args(PLUGINID_NATRON_DOT, eCreateNodeReasonInternal, createdNodeInternal->getGroup());
+
                     boost::shared_ptr<Node> dotNode = getGui()->getApp()->createNode(args);
                     assert(dotNode);
                     boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
@@ -344,19 +334,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
             int index = createdNodeInternal->getPreferredInputForConnection();
             if (index != -1) {
                 ///Create a dot to make things nicer
-                CreateNodeArgs args(PLUGINID_NATRON_DOT,
-                                    std::string(),
-                                    -1,
-                                    -1,
-                                    false, //< don't autoconnect
-                                    INT_MIN,
-                                    INT_MIN,
-                                    true,
-                                    true,
-                                    true,
-                                    QString(),
-                                    CreateNodeArgs::DefaultValuesList(),
-                                    createdNodeInternal->getGroup());
+                CreateNodeArgs args(PLUGINID_NATRON_DOT, eCreateNodeReasonInternal, createdNodeInternal->getGroup());
                 boost::shared_ptr<Node> dotNode = getGui()->getApp()->createNode(args);
                 assert(dotNode);
                 if (dotNode) {

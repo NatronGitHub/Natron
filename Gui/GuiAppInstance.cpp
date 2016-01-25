@@ -460,12 +460,7 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
 void
 GuiAppInstance::createNodeGui(const boost::shared_ptr<Node> &node,
                               const boost::shared_ptr<Node>& parentMultiInstance,
-                              bool loadRequest,
-                              bool autoConnect,
-                              bool userEdited,
-                              double xPosHint,
-                              double yPosHint,
-                              bool pushUndoRedoCommand)
+                              const CreateNodeArgs& args)
 {
 
     boost::shared_ptr<NodeCollection> group = node->getGroup();
@@ -486,7 +481,7 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Node> &node,
 
     std::list<boost::shared_ptr<NodeGui> >  selectedNodes = graph->getSelectedNodes();
 
-    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,loadRequest,userEdited,pushUndoRedoCommand);
+    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,args);
 
     assert(nodegui);
     if ( parentMultiInstance && nodegui) {
@@ -515,7 +510,7 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Node> &node,
 
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(node->getLiveInstance());
     if (isGroup) {
-        _imp->_gui->createGroupGui(node, loadRequest);
+        _imp->_gui->createGroupGui(node, args.reason);
     }
 
     ///Don't initialize inputs if it is a multi-instance child since it is not part of  the graph
@@ -523,27 +518,29 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Node> &node,
         nodegui->initializeInputs();
     }
 
-    if (!loadRequest && !isViewer) {
+    if (args.reason == eCreateNodeReasonUserCreate && !isViewer) {
         ///we make sure we can have a clean preview.
-        node->computePreviewImage( getTimeLine()->currentFrame() );
-
+        node->computePreviewImage(getTimeLine()->currentFrame());
         triggerAutoSave();
     }
     
     
     ///only move main instances
     if (node->getParentMultiInstanceName().empty()) {
+        
+        bool autoConnect = args.reason == eCreateNodeReasonUserCreate;
+        
         if (selectedNodes.empty()) {
             autoConnect = false;
         }
-        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && !autoConnect ) {
-            QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(xPosHint,yPosHint) ) );
+        if ( (args.xPosHint != INT_MIN) && (args.yPosHint != INT_MIN) && !autoConnect ) {
+            QPointF pos = nodegui->mapToParent( nodegui->mapFromScene(QPointF(args.xPosHint,args.yPosHint)));
             nodegui->refreshPosition( pos.x(),pos.y(), true );
         } else {
             BackdropGui* isBd = dynamic_cast<BackdropGui*>(nodegui.get());
             if (!isBd && !isGroup) {
                 boost::shared_ptr<NodeGui> selectedNode;
-                if (userEdited && selectedNodes.size() == 1) {
+                if (args.reason == eCreateNodeReasonUserCreate && selectedNodes.size() == 1) {
                     selectedNode = selectedNodes.front();
                     BackdropGui* isBackdropGui = dynamic_cast<BackdropGui*>(selectedNode.get());
                     if (isBackdropGui) {
@@ -1151,9 +1148,9 @@ GuiAppInstance::clearOverlayRedrawRequests()
 }
 
 void
-GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Node>& node,bool requestedByLoad,bool userEdited)
+GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Node>& node, CreateNodeReason reason)
 {
-    if (!requestedByLoad && userEdited) {
+    if (reason == eCreateNodeReasonUserCreate) {
         NodeGraph* graph = 0;
         boost::shared_ptr<NodeCollection> collection = node->getGroup();
         assert(collection);
@@ -1183,13 +1180,13 @@ GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Node>& node,bool
         graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
     }
    
-    AppInstance::onGroupCreationFinished(node,requestedByLoad,userEdited);
+    AppInstance::onGroupCreationFinished(node, reason);
     
-    std::list<ViewerInstance* > viewers;
+    /*std::list<ViewerInstance* > viewers;
     node->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
         (*it2)->renderCurrentFrame(false);
-    }
+    }*/
 }
 
 bool

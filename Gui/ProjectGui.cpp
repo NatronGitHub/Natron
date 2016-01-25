@@ -468,19 +468,8 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         
         boost::shared_ptr<KnobI> labelSerialization = it->getLabelSerialization();
         
-        CreateNodeArgs args(PLUGINID_NATRON_BACKDROP,
-                            "",
-                            -1,
-                            -1,
-                            false,
-                            x,
-                            y,
-                            false,
-                            true,
-                            true,
-                            QString(),
-                            CreateNodeArgs::DefaultValuesList(),
-                            _project.lock());
+        CreateNodeArgs args(PLUGINID_NATRON_BACKDROP, eCreateNodeReasonInternal, _project.lock());
+
         boost::shared_ptr<Node> node = getGui()->getApp()->createNode(args);
         boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
         assert(gui_i);

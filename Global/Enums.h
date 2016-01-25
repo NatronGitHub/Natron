@@ -533,9 +533,24 @@ enum DopeSheetItemType
     eDopeSheetItemTypeKnobDim
 };
 
+enum CreateNodeReason
+{
+    //The user created the node via the GUI
+    eCreateNodeReasonUserCreate,
+    
+    //The user created the node via copy/paste
+    eCreateNodeReasonCopyPaste,
+    
+    //The node was created following a project load
+    eCreateNodeReasonProjectLoad,
+    
+    //The node was created by Natron internally
+    eCreateNodeReasonInternal,
+};
+    
 //typedef QFlags<StandardButtonEnum> StandardButtons;
 Q_DECLARE_FLAGS(StandardButtons,StandardButtonEnum)
-
+    
 #ifdef SBK_RUN
 }
 NATRON_NAMESPACE_ENTER;

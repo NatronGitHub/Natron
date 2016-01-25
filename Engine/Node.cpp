@@ -615,35 +615,27 @@ Node::isPartOfPrecomp() const
 }
 
 void
-Node::load(const std::string & parentMultiInstanceName,
-           const NodeSerialization & serialization,
-           bool dontLoadName,
-           bool userEdited,
-           bool isPartOfProject,
-           const QString& fixedName,
-           const CreateNodeArgs::DefaultValuesList& paramValues)
+Node::load(const CreateNodeArgs& args)
 {
     ///Called from the main thread. MT-safe
     assert( QThread::currentThread() == qApp->thread() );
     
     ///cannot load twice
     assert(!_imp->liveInstance);
+    _imp->isPartOfProject = args.addToProject;
     
-    _imp->isPartOfProject = isPartOfProject;
+    boost::shared_ptr<NodeCollection> group = getGroup();
+
     
     bool isMultiInstanceChild = false;
-    if ( !parentMultiInstanceName.empty() ) {
-        _imp->multiInstanceParentName = parentMultiInstanceName;
+    if (!args.multiInstanceParentName.empty()) {
+        _imp->multiInstanceParentName = args.multiInstanceParentName;
         isMultiInstanceChild = true;
         _imp->isMultiInstance = false;
-    }
-    
-    if (!parentMultiInstanceName.empty()) {
         fetchParentMultiInstancePointer();
     }
     
-    
-   
+
     boost::shared_ptr<Node> thisShared = shared_from_this();
 
     int renderScaleSupportPreference = appPTR->getCurrentSettings()->getRenderScaleSupportPreference(_imp->plugin);
@@ -653,17 +645,22 @@ Node::load(const std::string & parentMultiInstanceName,
     if (binary) {
         func = binary->findFunction<EffectBuilder>("BuildEffect");
     }
-    bool isFileDialogPreviewReader = fixedName.contains(NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
+    bool isFileDialogPreviewReader = args.fixedName.contains(NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
     
     bool nameSet = false;
-    
-    if (!serialization.isNull()) {
-        {
+    /*
+     If the serialization is not null, we are either pasting a node or loading it from a project.
+     */
+    if (args.serialization) {
+        
+        assert(args.reason == eCreateNodeReasonCopyPaste || args.reason == eCreateNodeReasonProjectLoad);
+        
+        if (group && !group->isCacheIDAlreadyTaken(args.serialization->getCacheID())) {
             QMutexLocker k(&_imp->nameMutex);
-            _imp->cacheID = serialization.getCacheID();
+            _imp->cacheID = args.serialization->getCacheID();
         }
-        if (!dontLoadName && !nameSet && fixedName.isEmpty()) {
-            const std::string& baseName = serialization.getNodeScriptName();
+        if (/*!dontLoadName && */!nameSet && args.fixedName.isEmpty()) {
+            const std::string& baseName = args.serialization->getNodeScriptName();
             std::string name = baseName;
             int no = 1;
             do {
@@ -676,18 +673,23 @@ Node::load(const std::string & parentMultiInstanceName,
                     name = ss.str();
                 }
                 ++no;
-            } while(getGroup() && getGroup()->checkIfNodeNameExists(name, this));
+            } while(group && group->checkIfNodeNameExists(name, this));
             
             //This version of setScriptName will not error if the name is invalid or already taken
             //and will not declare to python the node (because liveInstance is not instanced yet)
             setScriptName_no_error_check(name);
-            setLabel(serialization.getNodeLabel());
+            setLabel(args.serialization->getNodeLabel());
             nameSet = true;
         }
     }
 
     bool hasUsedFileDialog = false;
+    bool canOpenFileDialog = args.reason == eCreateNodeReasonUserCreate && !args.serialization && args.paramValues.empty() && !isFileDialogPreviewReader;
+
     if (func.first) {
+        /*
+         We are creating a built-in plug-in
+         */
         _imp->liveInstance.reset(func.second(thisShared));
         assert(_imp->liveInstance);
         _imp->liveInstance->initializeData();
@@ -696,18 +698,18 @@ Node::load(const std::string & parentMultiInstanceName,
         initializeInputs();
         initializeKnobs(renderScaleSupportPreference);
         
-        if (!serialization.isNull()) {
-            loadKnobs(serialization);
+        if (args.serialization) {
+            loadKnobs(*args.serialization);
         }
-        if (!paramValues.empty()) {
-            setValuesFromSerialization(paramValues);
+        if (!args.paramValues.empty()) {
+            setValuesFromSerialization(args.paramValues);
         }
         
         
         std::string images;
-        if (_imp->liveInstance->isReader() && serialization.isNull() && paramValues.empty() && !isFileDialogPreviewReader) {
+        if (_imp->liveInstance->isReader() && canOpenFileDialog) {
             images = getApp()->openImageFileDialog();
-        } else if (_imp->liveInstance->isWriter() && serialization.isNull() && paramValues.empty() && !isFileDialogPreviewReader) {
+        } else if (_imp->liveInstance->isWriter() && canOpenFileDialog) {
             images = getApp()->saveImageFileDialog();
         }
         if (!images.empty()) {
@@ -717,12 +719,13 @@ Node::load(const std::string & parentMultiInstanceName,
             list.push_back(defaultFile);
             setValuesFromSerialization(list);
         }
-    } else { //ofx plugin
-                
-        _imp->liveInstance = appPTR->createOFXEffect(thisShared,&serialization,paramValues,!isFileDialogPreviewReader && userEdited,renderScaleSupportPreference == 1, &hasUsedFileDialog);
-        assert(_imp->liveInstance);
-        _imp->liveInstance->initializeOverlayInteract();
+    } else {
+            //ofx plugin   
+        _imp->liveInstance = appPTR->createOFXEffect(thisShared, args.serialization.get(),args.paramValues,canOpenFileDialog,renderScaleSupportPreference == 1, &hasUsedFileDialog);
+            assert(_imp->liveInstance);
     }
+    
+    _imp->liveInstance->initializeOverlayInteract();
     
     _imp->liveInstance->addSupportedBitDepth(&_imp->supportedDepths);
     
@@ -743,7 +746,7 @@ Node::load(const std::string & parentMultiInstanceName,
    
     
     if (!nameSet) {
-        if (fixedName.isEmpty()) {
+        if (args.fixedName.isEmpty()) {
             std::string name;
             QString pluginLabel;
             AppManager::AppTypeEnum appType = appPTR->getAppType();
@@ -756,7 +759,7 @@ Node::load(const std::string & parentMultiInstanceName,
                 pluginLabel = _imp->plugin->getPluginLabel();
             }
             try {
-                getGroup()->initNodeName(isMultiInstanceChild ? parentMultiInstanceName + '_' : pluginLabel.toStdString(),&name);
+                group->initNodeName(isMultiInstanceChild ? args.multiInstanceParentName + '_' : pluginLabel.toStdString(),&name);
             } catch (...) {
                 
             }
@@ -764,9 +767,9 @@ Node::load(const std::string & parentMultiInstanceName,
             nameSet = true;
         } else {
             try {
-                setScriptName(fixedName.toStdString());
+                setScriptName(args.fixedName.toStdString());
             } catch (...) {
-                appPTR->writeToOfxLog_mt_safe("Could not set node name to " + fixedName);
+                appPTR->writeToOfxLog_mt_safe("Could not set node name to " + args.fixedName);
             }
         }
         if (!isMultiInstanceChild && _imp->isMultiInstance) {
@@ -777,18 +780,17 @@ Node::load(const std::string & parentMultiInstanceName,
         //with setScriptName_no_error_check
         declareNodeVariableToPython(getFullyQualifiedName());
     }
-    if ( isMultiInstanceChild && serialization.isNull() ) {
+    if (isMultiInstanceChild && !args.serialization) {
         assert(nameSet);
         updateEffectLabelKnob(getScriptName().c_str());
     }
-    if (isPartOfProject) {
+    if (args.addToProject) {
         declarePythonFields();
         if  (getRotoContext()) {
             declareRotoPythonField();
         }
     }
     
-    boost::shared_ptr<NodeCollection> group = getGroup();
     if (group) {
         group->notifyNodeActivated(thisShared);
     }
@@ -801,7 +803,7 @@ Node::load(const std::string & parentMultiInstanceName,
         _imp->useAlpha0ToConvertFromRGBToRGBA = true;
     }
     
-    if (serialization.isNull()) {
+    if (!args.serialization) {
         computeHash();
     }
     
@@ -815,16 +817,16 @@ Node::load(const std::string & parentMultiInstanceName,
     bool isLoadingPyPlug = getApp()->isCreatingPythonGroup();
     
     if (!getApp()->isCreatingNodeTree()) {
-        refreshAllInputRelatedData(serialization.isNull());
+        refreshAllInputRelatedData(!args.serialization);
     }
 
-    _imp->runOnNodeCreatedCB(serialization.isNull() && !isLoadingPyPlug);
+    _imp->runOnNodeCreatedCB(!args.serialization && !isLoadingPyPlug);
     
     
     ///Now that the instance is created, make sure instanceChangedActino is called for all extra default values
     ///that we set
     double time = getLiveInstance()->getCurrentTime();
-    for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end(); ++it) {
+    for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = args.paramValues.begin(); it != args.paramValues.end(); ++it) {
         boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
         if (knob) {
             for (int i = 0; i < knob->getDimension(); ++i) {

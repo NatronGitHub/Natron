@@ -87,9 +87,7 @@ public:
     void createGui();
 
     boost::shared_ptr<NodeGui> createNodeGUI(boost::shared_ptr<Node> node,
-                                             bool requestedByLoad,
-                                             bool userEdited,
-                                             bool pushUndoRedoCommand);
+                                             const CreateNodeArgs& args);
 
     void addNodeGuiToCurveEditor(const boost::shared_ptr<NodeGui> &node);
     
@@ -102,7 +100,7 @@ public:
 
     void createViewerGui(boost::shared_ptr<Node> viewer);
 
-    void createGroupGui(const boost::shared_ptr<Node>& group, bool requestedByLoad);
+    void createGroupGui(const boost::shared_ptr<Node>& group, CreateNodeReason reason);
 
     void addGroupGui(NodeGraph* tab,TabWidget* where);
 

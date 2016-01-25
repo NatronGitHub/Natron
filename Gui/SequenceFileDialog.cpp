@@ -2944,18 +2944,9 @@ SequenceFileDialog::onTogglePreviewButtonClicked(bool toggled)
 void
 SequenceFileDialog::createViewerPreviewNode()
 {
-    CreateNodeArgs args(PLUGINID_NATRON_VIEWER,
-                        "",
-                        -1,-1,
-                        false,
-                        INT_MIN,
-                        INT_MIN,
-                        false,
-                        false,
-                        false,
-                        NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME,
-                        CreateNodeArgs::DefaultValuesList(),
-                        _gui->getApp()->getProject());
+    CreateNodeArgs args(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, _gui->getApp()->getProject());
+    args.fixedName = NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME;
+
     
     _preview->viewerNodeInternal = _gui->getApp()->createNode(args);
     assert(_preview->viewerNodeInternal);
@@ -3012,18 +3003,9 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
         std::map<std::string,std::pair< boost::shared_ptr<Node>, boost::shared_ptr<NodeGui> > >::iterator foundReader = _preview->readerNodes.find(found->second);
         if (foundReader == _preview->readerNodes.end()) {
             
-            CreateNodeArgs args(found->second.c_str(),
-                                "",
-                                -1,-1,
-                                false,
-                                INT_MIN,
-                                INT_MIN,
-                                false,
-                                false,
-                                false,
-                                QString(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) +  QString(found->first.c_str()),
-                                CreateNodeArgs::DefaultValuesList(),
-                                _gui->getApp()->getProject());
+            CreateNodeArgs args(found->second.c_str(), eCreateNodeReasonInternal, _gui->getApp()->getProject());
+            args.fixedName = QString(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) +  QString(found->first.c_str());
+            
             
             boost::shared_ptr<Node> reader = _gui->getApp()->createNode(args);
             boost::shared_ptr<NodeGuiI> readerGui_i = reader->getNodeGui();

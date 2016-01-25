@@ -606,8 +606,6 @@ PrecompNodePrivate::createReadNode()
     
     QString readPluginID(found->second.c_str());
     
-    CreateNodeArgs::DefaultValuesList defaultValues;
-    defaultValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern) );
     
     
     QString fixedNamePrefix(_publicInterface->getScriptName_mt_safe().c_str());
@@ -615,19 +613,11 @@ PrecompNodePrivate::createReadNode()
     fixedNamePrefix.append("readNode");
     fixedNamePrefix.append('_');
     
-    CreateNodeArgs args(readPluginID,
-                        "",
-                        -1,-1,
-                        false,
-                        INT_MIN,
-                        INT_MIN,
-                        false,
-                        true, //add to project so the TLS gets set on it
-                        false,
-                        fixedNamePrefix,
-                        defaultValues,
-                        app->getProject());
+    CreateNodeArgs args(readPluginID, eCreateNodeReasonInternal, app->getProject());
     args.createGui = false;
+    args.fixedName = fixedNamePrefix;
+    args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern) );
+
     
     boost::shared_ptr<Node> read = app->createNode(args);
     if (!read) {

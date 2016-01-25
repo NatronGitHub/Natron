@@ -371,7 +371,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderR
         if (!it->mustCreate) {
             writerName = it->name;
         } else {
-            NodePtr writer = createWriter(it->filename.toStdString(), getProject(), INT_MIN, INT_MAX);
+            NodePtr writer = createWriter(it->filename.toStdString(), eCreateNodeReasonInternal, getProject());
             
             //Connect the writer to the corresponding Output node input
             NodePtr output = getProject()->getNodeByFullySpecifiedName(it->name.toStdString());
@@ -414,8 +414,8 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderR
 
 NodePtr
 AppInstance::createWriter(const std::string& filename,
+                          CreateNodeReason reason,
                           const boost::shared_ptr<NodeCollection>& collection,
-                          bool userEdited,
                           int firstFrame, int lastFrame)
 {
     std::map<std::string,std::string> writersForFormat;
@@ -431,25 +431,14 @@ AppInstance::createWriter(const std::string& filename,
     }
     
     
-    CreateNodeArgs::DefaultValuesList defaultValues;
-    defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename));
+    CreateNodeArgs args(found->second.c_str(), reason, collection);
+    args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename));
     if (firstFrame != INT_MIN && lastFrame != INT_MAX) {
-        defaultValues.push_back(createDefaultValueForParam<int>("frameRange", 2));
-        defaultValues.push_back(createDefaultValueForParam<int>("firstFrame", firstFrame));
-        defaultValues.push_back(createDefaultValueForParam<int>("lastFrame", lastFrame));
+        args.paramValues.push_back(createDefaultValueForParam<int>("frameRange", 2));
+        args.paramValues.push_back(createDefaultValueForParam<int>("firstFrame", firstFrame));
+        args.paramValues.push_back(createDefaultValueForParam<int>("lastFrame", lastFrame));
     }
-    CreateNodeArgs args(found->second.c_str(),
-                        "",
-                        -1,
-                        -1,
-                        true,
-                        INT_MIN,INT_MIN,
-                        true,
-                        true,
-                        userEdited,
-                        QString(),
-                        defaultValues,
-                        collection);
+  
     return createNode(args);
     
 }
@@ -670,19 +659,11 @@ AppInstance::loadPythonScript(const QFileInfo& file)
 boost::shared_ptr<Node>
 AppInstance::createNodeFromPythonModule(Plugin* plugin,
                                         const boost::shared_ptr<NodeCollection>& group,
-                                        bool requestedByLoad,
-                                        bool userEdited,
-                                        const NodeSerialization & serialization)
+                                        CreateNodeReason reason,
+                                        const boost::shared_ptr<NodeSerialization>& serialization)
 
 {
-    QString pythonModulePath = plugin->getPythonModule();
-    QString moduleName;
-    QString modulePath;
-    int foundLastSlash = pythonModulePath.lastIndexOf('/');
-    if (foundLastSlash != -1) {
-        modulePath = pythonModulePath.mid(0,foundLastSlash + 1);
-        moduleName = pythonModulePath.remove(0,foundLastSlash + 1);
-    }
+   
     
     boost::shared_ptr<Node> node;
     
@@ -691,19 +672,14 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         CreatingNodeTreeFlag_RAII createNodeTree(this);
         
         NodePtr containerNode;
-        if (!requestedByLoad) {
-            CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
-                                     "",
-                                     -1,-1,
-                                     true, //< autoconnect
-                                     INT_MIN,INT_MIN,
-                                     true, //< push undo/redo command
-                                     true, // add to project
-                                     true,
-                                     QString(),
-                                     CreateNodeArgs::DefaultValuesList(),
-                                     group);
-            containerNode = createNode(groupArgs);
+        CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP, reason, group);
+        groupArgs.serialization = serialization;
+        containerNode = createNode(groupArgs);
+        if (!containerNode) {
+            return containerNode;
+        }
+        
+        if (reason == eCreateNodeReasonUserCreate || reason == eCreateNodeReasonInternal) {
             std::string containerName;
             try {
                 group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
@@ -712,24 +688,15 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
             } catch (...) {
                 
             }
-            
-            
-        } else {
-            
-            LoadNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
-                                   "",
-                                   -1,-1,
-                                   &serialization,
-                                   false,
-                                   group);
-            containerNode = loadNode(groupArgs);
         }
-        if (!containerNode) {
-            return containerNode;
-        }
+        
         
         
         std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
+        
+        QString moduleName;
+        QString modulePath;
+        plugin->getPythonModuleNameAndPath(&moduleName, &modulePath);
         
         int appID = getAppID() + 1;
         
@@ -759,7 +726,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
     
     ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-    onGroupCreationFinished(node, requestedByLoad, userEdited);
+    onGroupCreationFinished(node, reason);
     
     return node;
 }
@@ -822,43 +789,28 @@ static int isEntitledForInspector(Plugin* plugin,OFX::Host::ImageEffect::Descrip
 }
 
 boost::shared_ptr<Node>
-AppInstance::createNodeInternal(const QString & pluginID,
-                                const std::string & multiInstanceParentName,
-                                int majorVersion,
-                                int minorVersion,
-                                bool requestedByLoad,
-                                const NodeSerialization & serialization,
-                                bool dontLoadName,
-                                bool autoConnect,
-                                double xPosHint,
-                                double yPosHint,
-                                bool pushUndoRedoCommand,
-                                bool addToProject,
-                                bool userEdited,
-                                bool createGui,
-                                const QString& fixedName,
-                                const CreateNodeArgs::DefaultValuesList& paramValues,
-                                const boost::shared_ptr<NodeCollection>& group)
+AppInstance::createNodeInternal(const CreateNodeArgs& args)
 {
     
     boost::shared_ptr<Node> node;
     Plugin* plugin = 0;
     QString findId;
+    
     //Roto has moved to a built-in plugin
-    if ((userEdited || requestedByLoad) &&
-        ((!_imp->_projectCreatedWithLowerCaseIDs && pluginID == PLUGINID_OFX_ROTO) || (_imp->_projectCreatedWithLowerCaseIDs && pluginID == QString(PLUGINID_OFX_ROTO).toLower()))) {
+    if ((args.reason == eCreateNodeReasonUserCreate || args.reason == eCreateNodeReasonProjectLoad) &&
+        ((!_imp->_projectCreatedWithLowerCaseIDs && args.pluginID == PLUGINID_OFX_ROTO) || (_imp->_projectCreatedWithLowerCaseIDs && args.pluginID == QString(PLUGINID_OFX_ROTO).toLower()))) {
         findId = PLUGINID_NATRON_ROTO;
     } else {
-        findId = pluginID;
+        findId = args.pluginID;
     }
     
     try {
-        plugin = appPTR->getPluginBinary(findId,majorVersion,minorVersion,_imp->_projectCreatedWithLowerCaseIDs && requestedByLoad);
+        plugin = appPTR->getPluginBinary(findId,args.majorV,args.minorV,_imp->_projectCreatedWithLowerCaseIDs && args.reason == eCreateNodeReasonProjectLoad);
     } catch (const std::exception & e1) {
         
         ///Ok try with the old Ids we had in Natron prior to 1.0
         try {
-            plugin = appPTR->getPluginBinaryFromOldID(pluginID, majorVersion, minorVersion);
+            plugin = appPTR->getPluginBinaryFromOldID(args.pluginID, args.majorV, args.minorV);
         } catch (const std::exception& e2) {
             Dialogs::errorDialog(tr("Plugin error").toStdString(),
                                 tr("Cannot load plugin executable").toStdString() + ": " + e2.what(), false );
@@ -872,20 +824,33 @@ AppInstance::createNodeInternal(const QString & pluginID,
         return node;
     }
     
-    if (!plugin->getIsUserCreatable() && userEdited) {
+    if (!plugin->getIsUserCreatable() && args.reason == eCreateNodeReasonUserCreate) {
         //The plug-in should not be instantiable by the user
-        qDebug() << "Attempt to create" << pluginID << "which is not user creatable";
+        qDebug() << "Attempt to create" << args.pluginID << "which is not user creatable";
         return node;
     }
 
+    
+    /*
+     If the plug-in is a PyPlug create it with createNodeFromPythonModule() except in the following situations:
+     - The user speicifed in the Preferences that he/she prefers loading PyPlugs from their serialization in the .ntp
+     file rather than load the Python script
+     - The user is copy/pasting in which case we don't want to run the Python code which could override modifications
+     made by the user on the original node
+     */
     const QString& pythonModule = plugin->getPythonModule();
     if (!pythonModule.isEmpty()) {
-        try {
-            return createNodeFromPythonModule(plugin, group, requestedByLoad, userEdited, serialization);
-        } catch (const std::exception& e) {
-            Dialogs::errorDialog(tr("Plugin error").toStdString(),
-                                tr("Cannot create PyPlug:").toStdString()+ e.what(), false );
-            return node;
+        if (args.reason != eCreateNodeReasonCopyPaste) {
+            try {
+                return createNodeFromPythonModule(plugin, args.group, args.reason, args.serialization);
+            } catch (const std::exception& e) {
+                Dialogs::errorDialog(tr("Plugin error").toStdString(),
+                                     tr("Cannot create PyPlug:").toStdString()+ e.what(), false );
+                return node;
+            }
+        } else {
+            plugin = appPTR->getPluginBinary(PLUGINID_NATRON_GROUP,-1,-1, false);
+            assert(plugin);
         }
     }
 
@@ -904,7 +869,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                 ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin,&ctx);
             } catch (const std::exception& e) {
                 errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of ").toStdString()
-                            + pluginID.toStdString() + ": " + e.what(), false);
+                            + args.pluginID.toStdString() + ": " + e.what(), false);
                 return NodePtr();
             }
             assert(ofxDesc);
@@ -915,9 +880,9 @@ AppInstance::createNodeInternal(const QString & pluginID,
     int nInputsForInspector = isEntitledForInspector(plugin,ofxDesc);
     
     if (!nInputsForInspector) {
-        node.reset( new Node(this, addToProject ? group : boost::shared_ptr<NodeCollection>(), plugin) );
+        node.reset( new Node(this, args.addToProject ? args.group : boost::shared_ptr<NodeCollection>(), plugin) );
     } else {
-        node.reset( new InspectorNode(this, addToProject ? group : boost::shared_ptr<NodeCollection>(), plugin,nInputsForInspector) );
+        node.reset( new InspectorNode(this, args.addToProject ? args.group : boost::shared_ptr<NodeCollection>(), plugin,nInputsForInspector) );
     }
     
     {
@@ -937,7 +902,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
         }
         
         ///If this is a stereo plug-in, check that the project has been set for multi-view
-        if (userEdited && !requestedByLoad) {
+        if (args.reason == eCreateNodeReasonUserCreate) {
             const QStringList& grouping = plugin->getGrouping();
             if (!grouping.isEmpty() && grouping[0] == PLUGIN_GROUP_MULTIVIEW) {
                 int nbViews = getProject()->getProjectViewsCount();
@@ -954,20 +919,20 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
     
     
-    if (addToProject) {
+    if (args.addToProject) {
         //Add the node to the project before loading it so it is present when the python script that registers a variable of the name
         //of the node works
-        assert(group);
-        if (group) {
-            group->addNode(node);
+        assert(args.group);
+        if (args.group) {
+            args.group->addNode(node);
         }
     }
     assert(node);
     try {
-        node->load(multiInstanceParentName, serialization,dontLoadName, userEdited, addToProject, fixedName,paramValues);
+        node->load(args);
     } catch (const std::exception & e) {
-        if (group) {
-            group->removeNode(node);
+        if (args.group) {
+            args.group->removeNode(node);
         }
         std::string title("Error while creating node");
         std::string message = title + " " + foundPluginID + ": " + e.what();
@@ -976,8 +941,8 @@ AppInstance::createNodeInternal(const QString & pluginID,
 
         return boost::shared_ptr<Node>();
     } catch (...) {
-        if (group) {
-            group->removeNode(node);
+        if (args.group) {
+            args.group->removeNode(node);
         }
         std::string title("Error while creating node");
         std::string message = title + " " + foundPluginID;
@@ -989,17 +954,10 @@ AppInstance::createNodeInternal(const QString & pluginID,
 
     boost::shared_ptr<Node> multiInstanceParent = node->getParentMultiInstance();
     
-    if (createGui) {
+    if (args.createGui) {
         // createNodeGui also sets the filename parameter for reader or writers
         try {
-            createNodeGui(node,
-                          multiInstanceParent,
-                          requestedByLoad,
-                          autoConnect,
-                          userEdited,
-                          xPosHint,
-                          yPosHint,
-                          pushUndoRedoCommand);
+            createNodeGui(node, multiInstanceParent, args);
         } catch (const std::exception& e) {
             node->destroyNode(false);
             std::string title("Error while creating node");
@@ -1015,10 +973,10 @@ AppInstance::createNodeInternal(const QString & pluginID,
 
     if (isGrp) {
         
-        if (requestedByLoad) {
-            if (!serialization.isNull() && !serialization.getPythonModule().empty()) {
+        if (args.reason == eCreateNodeReasonProjectLoad || args.reason == eCreateNodeReasonCopyPaste) {
+            if (args.serialization && !args.serialization->getPythonModule().empty()) {
                 
-                QString pythonModulePath(serialization.getPythonModule().c_str());
+                QString pythonModulePath(args.serialization->getPythonModule().c_str());
                 QString moduleName;
                 QString modulePath;
                 int foundLastSlash = pythonModulePath.lastIndexOf('/');
@@ -1029,24 +987,14 @@ AppInstance::createNodeInternal(const QString & pluginID,
                 QtCompat::removeFileExtension(moduleName);
                 setGroupLabelIDAndVersion(node, modulePath, moduleName);
             }
-        } else if (!requestedByLoad && !_imp->_creatingGroup && userEdited) {
+            onGroupCreationFinished(node, args.reason);
+
+        } else if (args.reason == eCreateNodeReasonUserCreate && !_imp->_creatingGroup) {
             //if the node is a group and we're not loading the project, create one input and one output
             NodePtr input,output;
             
             {
-                CreateNodeArgs args(PLUGINID_NATRON_OUTPUT,
-                                    std::string(),
-                                    -1,
-                                    -1,
-                                    false, //< don't autoconnect
-                                    INT_MIN,
-                                    INT_MIN,
-                                    false, //<< don't push an undo command
-                                    true,
-                                    true,
-                                    QString(),
-                                    CreateNodeArgs::DefaultValuesList(),
-                                    isGrp);
+                CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, eCreateNodeReasonInternal, isGrp);
                 output = createNode(args);
                 try {
                     output->setScriptName("Output");
@@ -1056,26 +1004,23 @@ AppInstance::createNodeInternal(const QString & pluginID,
                 assert(output);
             }
             {
-                CreateNodeArgs args(PLUGINID_NATRON_INPUT,
-                                    std::string(),
-                                    -1,
-                                    -1,
-                                    true, // autoconnect
-                                    INT_MIN,
-                                    INT_MIN,
-                                    false, //<< don't push an undo command
-                                    true,
-                                    true,
-                                    QString(),
-                                    CreateNodeArgs::DefaultValuesList(),
-                                    isGrp);
+                CreateNodeArgs args(PLUGINID_NATRON_INPUT, eCreateNodeReasonInternal, isGrp);
                 input = createNode(args);
                 assert(input);
             }
-            
+            if (input && output && !output->getInput(0)) {
+                output->connectInput(input, 0);
+                
+                double x,y;
+                output->getPosition(&x, &y);
+                y -= 100;
+                input->setPosition(x, y);
+            }
+            onGroupCreationFinished(node, args.reason);
+
             ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-            onGroupCreationFinished(node, false, userEdited);
         }
+
     }
     
     return node;
@@ -1084,42 +1029,9 @@ AppInstance::createNodeInternal(const QString & pluginID,
 boost::shared_ptr<Node>
 AppInstance::createNode(const CreateNodeArgs & args)
 {
-    return createNodeInternal(args.pluginID,
-                              args.multiInstanceParentName,
-                              args.majorV, args.minorV,
-                              false,
-                              NodeSerialization( boost::shared_ptr<Node>() ),
-                              !args.fixedName.isEmpty(),
-                              args.autoConnect,
-                              args.xPosHint,args.yPosHint,
-                              args.pushUndoRedoCommand,
-                              args.addToProject,
-                              args.userEdited,
-                              args.createGui,
-                              args.fixedName,
-                              args.paramValues,
-                              args.group);
+    return createNodeInternal(args);
 }
 
-boost::shared_ptr<Node>
-AppInstance::loadNode(const LoadNodeArgs & args)
-{
-    return createNodeInternal(args.pluginID,
-                              args.multiInstanceParentName,
-                              args.majorV, args.minorV,
-                              true,
-                              *args.serialization,
-                              args.dontLoadName,
-                              false,
-                              INT_MIN,INT_MIN,
-                              false,
-                              true,
-                              false,
-                              true,
-                              QString(),
-                              CreateNodeArgs::DefaultValuesList(),
-                              args.group);
-}
 
 int
 AppInstance::getAppID() const
@@ -1526,11 +1438,10 @@ AppInstance::getAppIDString() const
 
 void
 AppInstance::onGroupCreationFinished(const boost::shared_ptr<Node>& node,
-                                     bool requestedByLoad,
-                                     bool /*userEdited*/)
+                                     CreateNodeReason reason)
 {
     assert(node);
-    if (!_imp->_currentProject->isLoadingProject() && !requestedByLoad) {
+    if (!_imp->_currentProject->isLoadingProject() && reason != eCreateNodeReasonProjectLoad && reason != eCreateNodeReasonCopyPaste) {
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
         assert(isGrp);
         if (!isGrp) {

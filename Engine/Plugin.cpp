@@ -196,7 +196,19 @@ Plugin::setPythonModule(const QString& module)
 
 const QString&
 Plugin::getPythonModule() const {
-    return _pythonModule;
+    return _pythonModule; // < does not end with .py
+}
+
+void
+Plugin::getPythonModuleNameAndPath(QString* moduleName, QString* modulePath) const
+{
+    int foundLastSlash = _pythonModule.lastIndexOf('/');
+    if (foundLastSlash != -1) {
+        *modulePath = _pythonModule.mid(0,foundLastSlash + 1);
+        *moduleName = _pythonModule.mid(foundLastSlash + 1);
+    } else {
+        *moduleName = _pythonModule;
+    }
 }
 
 void

@@ -371,9 +371,7 @@ NodeGraph::visibleWidgetRect() const
 
 boost::shared_ptr<NodeGui>
 NodeGraph::createNodeGUI(const boost::shared_ptr<Node> & node,
-                         bool requestedByLoad,
-                         bool userEdited,
-                         bool pushUndoRedoCommand)
+                         const CreateNodeArgs& args)
 {
     boost::shared_ptr<NodeGui> node_ui;
     Dot* isDot = dynamic_cast<Dot*>( node->getLiveInstance() );
@@ -424,8 +422,9 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Node> & node,
         _imp->_nodes.push_back(node_ui);
     }
 
+    NodeGroup* parentIsGroup = dynamic_cast<NodeGroup*>(node->getGroup().get());;
     
-    if (!requestedByLoad && (!getGui()->getApp()->isCreatingPythonGroup() || dynamic_cast<NodeGroup*>(node->getLiveInstance()))) {
+    if (args.reason != eCreateNodeReasonProjectLoad && (!getGui()->getApp()->isCreatingPythonGroup() || dynamic_cast<NodeGroup*>(node->getLiveInstance())) && !parentIsGroup) {
         node_ui->ensurePanelCreated();
     }
     
@@ -436,12 +435,10 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Node> & node,
         getGui()->registerNewUndoStack(nodeStack.get());
     }
     
-    if (pushUndoRedoCommand) {
+    if (args.reason == eCreateNodeReasonUserCreate) {
         pushUndoCommand( new AddMultipleNodesCommand(this,node_ui) );
-    } else if (!requestedByLoad) {
-        if (!isGrp && userEdited) {
-            selectNode(node_ui, false);
-        }
+    } else if (args.reason != eCreateNodeReasonProjectLoad && !isGrp) {
+        selectNode(node_ui, false);
     }
 
     _imp->_evtState = eEventStateNone;

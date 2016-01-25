@@ -206,19 +206,12 @@ NodeGraph::onNodeCreationDialogFinished()
             PluginsMap::const_iterator found = allPlugins.find(res.toStdString());
             if (found != allPlugins.end()) {
                 QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                getGui()->getApp()->createNode( CreateNodeArgs( res,
-                                                               "",
-                                                               major,
-                                                               -1,
-                                                               true,
-                                                               posHint.x(),
-                                                               posHint.y(),
-                                                               true,
-                                                               true,
-                                                               true,
-                                                               QString(),
-                                                               CreateNodeArgs::DefaultValuesList(),
-                                                               getGroup()) );
+                
+                CreateNodeArgs args(res, eCreateNodeReasonUserCreate, getGroup());
+                args.xPosHint = posHint.x();
+                args.yPosHint = posHint.y();
+                args.majorV = major;
+                getGui()->getApp()->createNode(args);
             }
             break;
         }
@@ -413,17 +406,12 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                     }
                     if ( isKeybind(group.toStdString().c_str(), plugin->getPluginID(), modifiers, key) ) {
                         QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                        getGui()->getApp()->createNode( CreateNodeArgs( plugin->getPluginID(),
-                                                                       "",
-                                                                       -1,-1,
-                                                                       true,
-                                                                       hint.x(),hint.y(),
-                                                                       true,
-                                                                       true,
-                                                                       true,
-                                                                       QString(),
-                                                                       CreateNodeArgs::DefaultValuesList(),
-                                                                       getGroup()) );
+                        
+                        CreateNodeArgs args(plugin->getPluginID(), eCreateNodeReasonUserCreate, getGroup());
+                        args.xPosHint = hint.x();
+                        args.yPosHint = hint.y();
+                        getGui()->getApp()->createNode(args);
+                        
                         intercepted = true;
                         break;
                     }

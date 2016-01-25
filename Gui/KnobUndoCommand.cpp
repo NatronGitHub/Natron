@@ -580,11 +580,16 @@ RestoreDefaultsCommand::redo()
     AppInstance* app = 0;
     
     KnobHolder* holder = first->getHolder();
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
     if (holder) {
         app = holder->getApp();
         holder->beginChanges();
     }
     
+    
+    /*
+     First reset all knobs values, this will not call instanceChanged action
+     */
     for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         if ( (*it)->getHolder() && (*it)->getHolder()->getApp() ) {
             int dim = (*it)->getDimension();
@@ -624,20 +629,27 @@ RestoreDefaultsCommand::redo()
     if (app) {
         time = app->getTimeLine()->currentFrame();
     }
-   for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
-       if ((*it)->getHolder()) {
-           (*it)->getHolder()->onKnobValueChanged_public(it->get(), eValueChangedReasonRestoreDefault, time, true);
+
+    
+    if (app) {
+        app->removeMultipleKeyframeIndicator(times,true);
+    }
+    if (isEffect) {
+        //Clear any cache on the plug-in that depends on the parameters
+        isEffect->purgeCaches();
+        
+        //emulate a clipChanged action call so that the plug-in is in the same state than after  the creation of the node
+        int nbMaxInput = isEffect->getMaxInputCount();
+        for (int i = 0; i < nbMaxInput; ++i) {
+            isEffect->getNode()->onInputChanged(i);
         }
     }
+    
     
     if (holder && holder->getApp()) {
         holder->endChanges();
     }
     
-    
-    if (app) {
-        app->removeMultipleKeyframeIndicator(times,true);
-    }
     
     if (first->getHolder()) {
         first->getHolder()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);

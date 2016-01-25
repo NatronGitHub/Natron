@@ -630,17 +630,8 @@ MultiInstancePanel::onAddButtonClicked()
 boost::shared_ptr<Node> MultiInstancePanel::addInstanceInternal(bool useUndoRedoStack)
 {
     boost::shared_ptr<Node> mainInstance = _imp->getMainInstance();
-    CreateNodeArgs args( mainInstance->getPluginID().c_str(),
-                         mainInstance->getScriptName(),
-                         -1,-1,
-                        true,
-                        INT_MIN,INT_MIN,
-                        false,  //< never use the undo-stack of the nodegraph since we use the one of the dockablepanel
-                        true,
-                        true,
-                        QString(),
-                        CreateNodeArgs::DefaultValuesList(),
-                        mainInstance->getGroup());
+    CreateNodeArgs args(mainInstance->getPluginID().c_str(), eCreateNodeReasonInternal, mainInstance->getGroup());
+    args.multiInstanceParentName = mainInstance->getScriptName();
     boost::shared_ptr<Node> newInstance = _imp->getMainInstance()->getApp()->createNode(args);
     
     if (useUndoRedoStack) {
@@ -2326,18 +2317,8 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         assert(centers[i]);
     }
     GuiAppInstance* app = publicInterface->getGui()->getApp();
-    boost::shared_ptr<Node> cornerPin = app->createNode( CreateNodeArgs(PLUGINID_OFX_CORNERPIN,
-                                                                                "",
-                                                                                -1, -1,
-                                                                                false, //< don't autoconnect
-                                                                                INT_MIN,
-                                                                                INT_MIN,
-                                                                                true,
-                                                                                true,
-                                                                                true,
-                                                                                QString(),
-                                                                                CreateNodeArgs::DefaultValuesList(),
-                                                                                publicInterface->getMainInstance()->getGroup()) );
+    boost::shared_ptr<Node> cornerPin = app->createNode( CreateNodeArgs(PLUGINID_OFX_CORNERPIN, eCreateNodeReasonInternal, publicInterface->getMainInstance()->getGroup()));
+                                                        
     if (!cornerPin) {
         return;
     }

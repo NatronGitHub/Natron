@@ -371,19 +371,8 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
         return false;
     }
     
-    CreateNodeArgs::DefaultValuesList defaultValues;
-    defaultValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
-    CreateNodeArgs args(readerFileType.c_str(),
-                        "",
-                        -1, -1,
-                        true,
-                        INT_MIN, INT_MIN,
-                        true,
-                        true,
-                        true,
-                        QString(),
-                        defaultValues,
-                        mainInstance->getProject());
+    CreateNodeArgs args(readerFileType.c_str(), eCreateNodeReasonUserCreate, mainInstance->getProject());
+    args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
     NodePtr readerNode = mainInstance->createNode(args);
     if (!readerNode && instanceCreated) {
         mainInstance->quit();
@@ -402,17 +391,7 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
     
     ///If no viewer is found, create it
     if (!viewerFound) {
-        viewerFound = mainInstance->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
-                                             "",
-                                             -1,-1,
-                                             true,
-                                             INT_MIN,INT_MIN,
-                                             false,
-                                             true,
-                                             false,
-                                             QString(),
-                                             CreateNodeArgs::DefaultValuesList(),
-                                             mainInstance->getProject()));
+        viewerFound = mainInstance->createNode(CreateNodeArgs(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, mainInstance->getProject()));
     }
     if (viewerFound) {
         viewerFound->connectInput(readerNode, 0);

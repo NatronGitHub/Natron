@@ -538,21 +538,12 @@ NodeGraph::dropEvent(QDropEvent* e)
         } else {
             
             std::string pattern = sequence->generateValidSequencePattern();
-            CreateNodeArgs::DefaultValuesList defaultValues;
-            defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
             
-            CreateNodeArgs args(found->second.c_str(),
-                                "",
-                                -1,
-                                -1,
-                                false,
-                                scenePos.x(),scenePos.y(),
-                                true,
-                                true,
-                                false,
-                                QString(),
-                                defaultValues,
-                                getGroup());
+            CreateNodeArgs args(found->second.c_str(), eCreateNodeReasonUserCreate, getGroup());
+            args.xPosHint = scenePos.x();
+            args.yPosHint = scenePos.y();
+            args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
+
             boost::shared_ptr<Node>  n = getGui()->getApp()->createNode(args);
             
             //And offset scenePos by the Width of the previous node created if several nodes are created
