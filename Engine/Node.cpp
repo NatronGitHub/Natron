@@ -3369,6 +3369,7 @@ Node::onSetSupportRenderScaleMaybeSet(int support)
     if ((EffectInstance::SupportsEnum)support == EffectInstance::eSupportsYes) {
         boost::shared_ptr<KnobBool> b = _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock();
         if (b) {
+            b->setSecretByDefault(true);
             b->setSecret(true);
         }
     }
@@ -6042,6 +6043,12 @@ Node::onInputChanged(int inputNb)
         ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
         _imp->liveInstance->onInputChanged(inputNb);
         _imp->inputsModified.insert(inputNb);
+        
+        //A knob value might have changed recursively, redraw  any overlay
+        if (!_imp->liveInstance->isDequeueingValuesSet() &&
+            _imp->liveInstance->getRecursionLevel() == 0 && _imp->liveInstance->checkIfOverlayRedrawNeeded()) {
+            _imp->liveInstance->redrawOverlayInteract();
+        }
     }
    
     /*
