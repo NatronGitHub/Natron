@@ -2125,7 +2125,7 @@ Node::quitAnyProcessing()
 
 Node::~Node()
 {
-    destroyNode(false);
+    destroyNodeInternal(true, false);
 }
 
 
@@ -4886,7 +4886,7 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
 } // activate
 
 void
-Node::destroyNode(bool autoReconnect)
+Node::destroyNodeInternal(bool fromDest, bool autoReconnect)
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -4900,7 +4900,7 @@ Node::destroyNode(bool autoReconnect)
     }
     
     quitAnyProcessing();
-
+    
     
     ///Remove the node from the project
     deactivate(NodesList(),
@@ -4922,7 +4922,7 @@ Node::destroyNode(bool autoReconnect)
         isGrp->clearNodes(true);
     }
     
-
+    
     ///Quit any rendering
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(_imp->effect.get());
     if (isOutput) {
@@ -4932,15 +4932,15 @@ Node::destroyNode(bool autoReconnect)
     ///Remove all images in the cache associated to this node
     ///This will not remove from the disk cache if the project is closing
     removeAllImagesFromCache(false);
-
+    
     ///Remove the Python node
     deleteNodeVariableToPython(getFullyQualifiedName());
     
     ///Disconnect all inputs
-    int maxInputs = getMaxInputCount();
-    for (int i = 0; i < maxInputs; ++i) {
-        disconnectInput(i);
-    }
+    /*int maxInputs = getMaxInputCount();
+     for (int i = 0; i < maxInputs; ++i) {
+     disconnectInput(i);
+     }*/
     
     ///Kill the effect
     _imp->effect.reset();
@@ -4949,11 +4949,21 @@ Node::destroyNode(bool autoReconnect)
     ///the use_count() after the call to removeNode should be 2 and should be the shared_ptr held by the caller and the
     ///thisShared ptr
     
-    NodePtr thisShared = shared_from_this();
-    if (getGroup()) {
-        getGroup()->removeNode(thisShared);
+    ///If not inside a gorup or inside fromDest the shared_ptr is probably invalid at this point
+    if (!fromDest) {
+        NodePtr thisShared = shared_from_this();
+        if (getGroup()) {
+            getGroup()->removeNode(thisShared);
+        }
     }
     
+    
+}
+
+void
+Node::destroyNode(bool autoReconnect)
+{
+    destroyNodeInternal(false, autoReconnect);
 }
 
 KnobPtr

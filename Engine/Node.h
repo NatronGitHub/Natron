@@ -670,6 +670,13 @@ public:
      * @param autoReconnect If set to true, outputs connected to this node will try to connect to the input of this node automatically.
      **/
     void destroyNode(bool autoReconnect);
+    
+private:
+    
+    void destroyNodeInternal(bool fromDest, bool autoReconnect);
+    
+public:
+    
 
     /**
      * @brief Forwarded to the live effect instance
