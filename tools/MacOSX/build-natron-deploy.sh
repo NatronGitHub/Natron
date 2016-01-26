@@ -421,7 +421,14 @@ done
 
 find $pkglib -type f -exec sed -e "s@$MACPORTS@$MACRAND@g" -e "s@$HOMEBREW@$HOMEBREWRAND@g" -e "s@$LOCAL@$LOCALRAND@g" -i "" {} \;
 
-for bin in Natron NatronRenderer; do
+if [ "$DISABLE_BREAKPAD" != "1" ]; then
+    mv "$package/Contents/MacOS/Natron" "$package/Contents/MacOS/Natron-bin" || exit 1
+    mv "$package/Contents/MacOS/NatronCrashReporter" "$package/Contents/MacOS/Natron" || exit 1
+    mv "$package/Contents/MacOS/NatronRenderer" "$package/Contents/MacOS/NatronRenderer-bin" || exit 1
+    mv "$package/Contents/MacOS/NatronRendererCrashReporter" "$package/Contents/MacOS/NatronRenderer" || exit 1
+fi
+
+for bin in Natron-bin NatronRenderer-bin; do
 
     binary="$package/Contents/MacOS/$bin";
     #Dump symbols for breakpad before stripping
@@ -430,15 +437,17 @@ for bin in Natron NatronRenderer; do
 #		DSYM_32=${bin}i386.dSYM
 #        dsymutil -arch x86_64 -o $DSYM_64 "$binary"
 #        dsymutil -arch i386 -o $DSYM_32 "$binary"
-        $DUMP_SYMS -a x86_64 "$binary"  > "$SYMBOLS_PATH/${bin}-${TAG}${BPAD_TAG}-Mac-x86_64.sym"
-        $DUMP_SYMS -a i386 "$binary"  > "$SYMBOLS_PATH/${bin}-${TAG}${BPAD_TAG}-Mac-i386.sym"
+        if [ -x "$binary" ]; then
+            $DUMP_SYMS -a x86_64 "$binary"  > "$SYMBOLS_PATH/${bin}-${TAG}${BPAD_TAG}-Mac-x86_64.sym"
+            $DUMP_SYMS -a i386 "$binary"  > "$SYMBOLS_PATH/${bin}-${TAG}${BPAD_TAG}-Mac-i386.sym"
+        fi
 #       rm -rf $DSYM_64;
 #		rm -rf $DSYM_32;
     fi
 done
 
 if [ "$STRIP" = 1 ]; then
-    for bin in Natron NatronRenderer NatronCrashReporter NatronRendererCrashReporter; do
+    for bin in Natron NatronRenderer Natron-bin NatronRenderer-bin; do
         binary="$package/Contents/MacOS/$bin";
 
         if [ -x "$binary" ]; then
@@ -447,8 +456,8 @@ if [ "$STRIP" = 1 ]; then
             #mv -f "$binary" "${binary}_FULL";
             if lipo "$binary" -verify_arch i386 x86_64; then
                 # Extract each arch into a "thin" binary for stripping
-		lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
-		lipo "$binary" -thin i386   -output "${binary}_i386";
+                lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
+                lipo "$binary" -thin i386   -output "${binary}_i386";
 
 
                 # Perform desired stripping on each thin binary.  
@@ -467,9 +476,4 @@ if [ "$STRIP" = 1 ]; then
     done
 fi
 
-if [ "$DISABLE_BREAKPAD" != "1" ]; then
-    mv "$package/Contents/MacOS/Natron" "$package/Contents/MacOS/Natron-bin" || exit 1
-    mv "$package/Contents/MacOS/NatronCrashReporter" "$package/Contents/MacOS/Natron" || exit 1
-    mv "$package/Contents/MacOS/NatronRenderer" "$package/Contents/MacOS/NatronRenderer-bin" || exit 1
-    mv "$package/Contents/MacOS/NatronRendererCrashReporter" "$package/Contents/MacOS/NatronRenderer" || exit 1
-fi
+
