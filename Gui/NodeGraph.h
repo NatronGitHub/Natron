@@ -120,7 +120,7 @@ public:
 
     void setUndoRedoStackLimit(int limit);
 
-    void deleteNodePermanantly(NodeGuiPtr n);
+    void deleteNodePermanantly(const NodeGuiPtr& n);
 
     NodesGuiList getNodesWithinBackdrop(const NodeGuiPtr& node) const;
 

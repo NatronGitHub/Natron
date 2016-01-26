@@ -78,6 +78,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
 #include "Gui/MultiInstancePanel.h"
+#include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/NodeGuiSerialization.h"
@@ -196,7 +197,6 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 
 NodeGui::~NodeGui()
 {
-    deleteReferences();
 
 }
 
@@ -2456,33 +2456,112 @@ NodeGui::refreshOutputEdgeVisibility()
 }
 
 void
-NodeGui::deleteReferences()
+NodeGui::destroyGui()
 {
+    
+    Gui* guiObj = getDagGui()->getGui();
+    if (!guiObj) {
+        return;
+    }
+    
+    //Remove undo stack
     removeUndoStack();
+    
+    
+    {
+        ///Remove from the nodegraph containers
+        NodeGuiPtr thisShared = shared_from_this();
+        _graph->deleteNodePermanantly(thisShared);
+    }
+    
+    
+    
+    NodePtr internalNode = _internalNode.lock();
+    assert(internalNode);
+    
+    //Remove roto
+    if (internalNode->isRotoPaintingNode()) {
+        guiObj->removeRotoInterface(this,true);
+    }
+    
+    //Remove tracker
+    if (internalNode->isPointTrackerNode()) {
+        guiObj->removeTrackerInterface(this, true);
+    }
+    
+    
+    //Remove from curve editor
+    guiObj->getCurveEditor()->removeNode(this);
+    
+    //Remove from dope sheet
+    guiObj->getDopeSheetEditor()->removeNode(this);
+    
+    
+    //Remove nodegraph if group
+    if (internalNode->getEffectInstance()) {
+        NodeGroup* isGrp = internalNode->isEffectGroup();
+        if (isGrp) {
+            NodeGraphI* graph_i = isGrp->getNodeGraph();
+            if (graph_i) {
+                NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
+                assert(graph);
+                if (graph) {
+                    guiObj->removeGroupGui(graph, true);
+                }
+            }
+        }
+    }
+    
+    
+    // remove from clipboard if existing
+    if (internalNode) {
+        ///remove the node from the clipboard if it is
+        NodeClipBoard &cb = appPTR->getNodeClipBoard();
+        for (std::list< boost::shared_ptr<NodeSerialization> >::iterator it = cb.nodes.begin();
+             it != cb.nodes.end(); ++it) {
+            if ( (*it)->getNode() == internalNode ) {
+                cb.nodes.erase(it);
+                break;
+            }
+        }
+        
+        for (std::list<boost::shared_ptr<NodeGuiSerialization> >::iterator it = cb.nodesUI.begin();
+             it != cb.nodesUI.end(); ++it) {
+            if ( (*it)->getFullySpecifiedName() == internalNode->getFullyQualifiedName() ) {
+                cb.nodesUI.erase(it);
+                break;
+            }
+        }
+    }
+    
+    //Delete edges
     for (InputEdges::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
-
+        
         QGraphicsScene* scene = (*it)->scene();
         if (scene) {
             scene->removeItem((*it));
         }
-        (*it)->setParentItem(NULL);
+        (*it)->setParentItem(0);
         delete *it;
     }
     _inputEdges.clear();
-
+    
     if (_outputEdge) {
         QGraphicsScene* scene = _outputEdge->scene();
         if (scene) {
             scene->removeItem(_outputEdge);
         }
-        _outputEdge->setParentItem(NULL);
+        _outputEdge->setParentItem(0);
         delete _outputEdge;
-        _outputEdge = NULL;
+        _outputEdge = 0;
     }
-
+    
+    //Delete settings panel
     delete _settingsPanel;
-    _settingsPanel = NULL;
+    _settingsPanel = 0;
 }
+
+
 
 QSize
 NodeGui::getSize() const

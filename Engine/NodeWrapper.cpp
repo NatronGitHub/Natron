@@ -188,19 +188,19 @@ Effect::~Effect()
 NodePtr
 Effect::getInternalNode() const
 {
-    return _node;
+    return _node.lock();
 }
 
 void
 Effect::destroy(bool autoReconnect)
 {
-    _node->destroyNode(autoReconnect);
+    getInternalNode()->destroyNode(autoReconnect);
 }
 
 int
 Effect::getMaxInputCount() const
 {
-    return _node->getMaxInputCount();
+    return getInternalNode()->getMaxInputCount();
 }
 
 bool
@@ -214,7 +214,7 @@ Effect::canConnectInput(int inputNumber,const Effect* node) const
     if (!node->getInternalNode()) {
         return false;
     }
-    Node::CanConnectInputReturnValue ret = _node->canConnectInput(node->getInternalNode(),inputNumber);
+    Node::CanConnectInputReturnValue ret = getInternalNode()->canConnectInput(node->getInternalNode(),inputNumber);
     return ret == Node::eCanConnectInput_ok ||
     ret == Node::eCanConnectInput_differentFPS ||
     ret == Node::eCanConnectInput_differentPars;
@@ -224,7 +224,7 @@ bool
 Effect::connectInput(int inputNumber,const Effect* input)
 {
     if (canConnectInput(inputNumber, input)) {
-        return _node->connectInput(input->_node, inputNumber);
+        return getInternalNode()->connectInput(input->getInternalNode(), inputNumber);
     } else {
         return false;
     }
@@ -233,13 +233,13 @@ Effect::connectInput(int inputNumber,const Effect* input)
 void
 Effect::disconnectInput(int inputNumber)
 {
-    _node->disconnectInput(inputNumber);
+    getInternalNode()->disconnectInput(inputNumber);
 }
 
 Effect*
 Effect::getInput(int inputNumber) const
 {
-    NodePtr node = _node->getRealInput(inputNumber);
+    NodePtr node = getInternalNode()->getRealInput(inputNumber);
     if (node) {
         return new Effect(node);
     }
@@ -249,14 +249,14 @@ Effect::getInput(int inputNumber) const
 std::string
 Effect::getScriptName() const
 {
-    return _node->getScriptName_mt_safe();
+    return getInternalNode()->getScriptName_mt_safe();
 }
 
 bool
 Effect::setScriptName(const std::string& scriptName)
 {
     try {
-        _node->setScriptName(scriptName);
+        getInternalNode()->setScriptName(scriptName);
     } catch (...) {
         return false;
     }
@@ -266,23 +266,23 @@ Effect::setScriptName(const std::string& scriptName)
 std::string
 Effect::getLabel() const
 {
-    return _node->getLabel_mt_safe();
+    return getInternalNode()->getLabel_mt_safe();
 }
 
 
 void
 Effect::setLabel(const std::string& name)
 {
-    return _node->setLabel(name);
+    return getInternalNode()->setLabel(name);
 }
 
 std::string
 Effect::getInputLabel(int inputNumber)
 {
     try {
-        return _node->getInputLabel(inputNumber);
+        return getInternalNode()->getInputLabel(inputNumber);
     } catch (const std::exception& e) {
-        _node->getApp()->appendToScriptEditor(e.what());
+        getInternalNode()->getApp()->appendToScriptEditor(e.what());
     }
     return std::string();
 }
@@ -290,7 +290,7 @@ Effect::getInputLabel(int inputNumber)
 std::string
 Effect::getPluginID() const
 {
-    return _node->getPluginID();
+    return getInternalNode()->getPluginID();
 }
 
 Param*
@@ -366,7 +366,7 @@ std::list<Param*>
 Effect::getParams() const
 {
     std::list<Param*> ret;
-    const KnobsVec& knobs = _node->getKnobs();
+    const KnobsVec& knobs = getInternalNode()->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         Param* p = createParamWrapperForKnob(*it);
         if (p) {
@@ -379,7 +379,7 @@ Effect::getParams() const
 Param*
 Effect::getParam(const std::string& name) const
 {
-    KnobPtr knob = _node->getKnobByName(name);
+    KnobPtr knob = getInternalNode()->getKnobByName(name);
     if (knob) {
         return createParamWrapperForKnob(knob);
     } else {
@@ -390,63 +390,63 @@ Effect::getParam(const std::string& name) const
 int
 Effect::getCurrentTime() const
 {
-    return _node->getEffectInstance()->getCurrentTime();
+    return getInternalNode()->getEffectInstance()->getCurrentTime();
 }
 
 void
 Effect::setPosition(double x,double y)
 {
-    _node->setPosition(x, y);
+    getInternalNode()->setPosition(x, y);
 }
 
 void
 Effect::getPosition(double* x, double* y) const
 {
-    _node->getPosition(x, y);
+    getInternalNode()->getPosition(x, y);
 }
 
 void
 Effect::setSize(double w,double h)
 {
-    _node->setSize(w, h);
+    getInternalNode()->setSize(w, h);
 }
 
 void
 Effect::getSize(double* w, double* h) const
 {
-    _node->getSize(w, h);
+    getInternalNode()->getSize(w, h);
 }
 
 void
 Effect::getColor(double* r,double *g, double* b) const
 {
-    _node->getColor(r, g, b);
+    getInternalNode()->getColor(r, g, b);
 }
 
 void
 Effect::setColor(double r, double g, double b)
 {
-    _node->setColor(r, g, b);
+    getInternalNode()->setColor(r, g, b);
 }
 
 bool
 Effect::isNodeSelected() const
 {
-    return _node->isUserSelected();
+    return getInternalNode()->isUserSelected();
 }
 
 void
 Effect::beginChanges()
 {
-    _node->getEffectInstance()->beginChanges();
-    _node->beginInputEdition();
+    getInternalNode()->getEffectInstance()->beginChanges();
+    getInternalNode()->beginInputEdition();
 }
 
 void
 Effect::endChanges()
 {
-    _node->getEffectInstance()->endChanges();
-    _node->endInputEdition(true);
+    getInternalNode()->getEffectInstance()->endChanges();
+    getInternalNode()->endInputEdition(true);
 }
 
 IntParam*
@@ -675,7 +675,7 @@ UserParamHolder::removeParam(Param* param)
 PageParam*
 Effect::getUserPageParam() const
 {
-    boost::shared_ptr<KnobPage> page = _node->getEffectInstance()->getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> page = getInternalNode()->getEffectInstance()->getOrCreateUserPageKnob();
     assert(page);
     return new PageParam(page);
 }
@@ -689,13 +689,13 @@ UserParamHolder::refreshUserParamsGUI()
 Effect*
 Effect::createChild()
 {
-    if (!_node->isMultiInstance()) {
+    if (!getInternalNode()->isMultiInstance()) {
         return 0;
     }
     
-    CreateNodeArgs args(_node->getPluginID().c_str(), eCreateNodeReasonInternal, _node->getGroup());
-    args.multiInstanceParentName = _node->getScriptName();
-    NodePtr child = _node->getApp()->createNode(args);
+    CreateNodeArgs args(getInternalNode()->getPluginID().c_str(), eCreateNodeReasonInternal, getInternalNode()->getGroup());
+    args.multiInstanceParentName = getInternalNode()->getScriptName();
+    NodePtr child = getInternalNode()->getApp()->createNode(args);
     if (child) {
         return new Effect(child);
     }
@@ -705,7 +705,7 @@ Effect::createChild()
 Roto*
 Effect::getRotoContext() const
 {
-    boost::shared_ptr<RotoContext> roto = _node->getRotoContext();
+    boost::shared_ptr<RotoContext> roto = getInternalNode()->getRotoContext();
     if (roto) {
         return new Roto(roto);
     }
@@ -716,13 +716,13 @@ RectD
 Effect::getRegionOfDefinition(double time,int view) const
 {
     RectD rod;
-    if (!_node || !_node->getEffectInstance()) {
+    if (!getInternalNode() || !getInternalNode()->getEffectInstance()) {
         return rod;
     }
-    U64 hash = _node->getHashValue();
+    U64 hash = getInternalNode()->getHashValue();
     RenderScale s(1.);
     bool isProject;
-    StatusEnum stat = _node->getEffectInstance()->getRegionOfDefinition_public(hash, time, s, view, &rod, &isProject);
+    StatusEnum stat = getInternalNode()->getEffectInstance()->getRegionOfDefinition_public(hash, time, s, view, &rod, &isProject);
     if (stat != eStatusOK) {
         return RectD();
     }
@@ -732,10 +732,10 @@ Effect::getRegionOfDefinition(double time,int view) const
 void
 Effect::setSubGraphEditable(bool editable)
 {
-    if (!_node) {
+    if (!getInternalNode()) {
         return;
     }
-    NodeGroup* isGroup = _node->isEffectGroup();
+    NodeGroup* isGroup = getInternalNode()->isEffectGroup();
     if (isGroup) {
         isGroup->setSubGraphEditable(editable);
     }
@@ -754,18 +754,18 @@ Effect::addUserPlane(const std::string& planeName, const std::vector<std::string
         compsGlobal.append(channels[i]);
     }
     ImageComponents comp(planeName,compsGlobal,channels);
-    return _node->addUserComponents(comp);
+    return getInternalNode()->addUserComponents(comp);
 }
 
 std::map<ImageLayer,Effect*>
 Effect::getAvailableLayers() const
 {
     std::map<ImageLayer,Effect*> ret;
-    if (!_node) {
+    if (!getInternalNode()) {
         return ret;
     }
     EffectInstance::ComponentsAvailableMap availComps;
-    _node->getEffectInstance()->getComponentsAvailable(true, true, _node->getEffectInstance()->getCurrentTime(), &availComps);
+    getInternalNode()->getEffectInstance()->getComponentsAvailable(true, true, getInternalNode()->getEffectInstance()->getCurrentTime(), &availComps);
     for (EffectInstance::ComponentsAvailableMap::iterator it = availComps.begin(); it != availComps.end(); ++it) {
         NodePtr node = it->second.lock();
         if (node) {
@@ -780,10 +780,10 @@ Effect::getAvailableLayers() const
 void
 Effect::setPagesOrder(const std::list<std::string>& pages)
 {
-    if (!_node) {
+    if (!getInternalNode()) {
         return;
     }
-    _node->setPagesOrder(pages);
+    getInternalNode()->setPagesOrder(pages);
 }
 
 NATRON_NAMESPACE_EXIT;

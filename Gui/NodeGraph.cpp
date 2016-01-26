@@ -251,23 +251,14 @@ NodeGraph::notifyGuiClosing()
 void
 NodeGraph::onNodesCleared()
 {
-    _imp->_selection.clear();
-    NodesGuiList nodesCpy;
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        nodesCpy = _imp->_nodes;
-    }
-    for (NodesGuiList::iterator it = nodesCpy.begin(); it != nodesCpy.end(); ++it) {
-        deleteNodePermanantly( *it );
+        _imp->_nodes.clear();
+        _imp->_nodesTrash.clear();
     }
 
-    while ( !_imp->_nodesTrash.empty() ) {
-        deleteNodePermanantly( *( _imp->_nodesTrash.begin() ) );
-    }
     _imp->_selection.clear();
     _imp->_magnifiedNode.reset();
-    _imp->_nodes.clear();
-    _imp->_nodesTrash.clear();
     _imp->_undoStack->clear();
 
 }

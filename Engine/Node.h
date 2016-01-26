@@ -140,9 +140,6 @@ public:
     ///If the node can have a roto context, create it
     void createRotoContextConditionnally();
 
-    ///called by Project::removeNode, never call this
-    void removeReferences();
-
     ///function called by EffectInstance to create a knob
     template <class K>
     boost::shared_ptr<K> createKnob(const std::string &description,
@@ -187,7 +184,7 @@ public:
     /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
      * is set earlier.
      */
-    void setLiveInstance(const EffectInstPtr& liveInstance);
+    void setEffect(const EffectInstPtr& liveInstance);
 
     EffectInstPtr getEffectInstance() const;
 

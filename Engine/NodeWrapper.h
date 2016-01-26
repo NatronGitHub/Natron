@@ -207,7 +207,7 @@ public:
 
 class Effect : public Group, public UserParamHolder
 {
-    NodePtr _node;
+    NodeWPtr _node;
     
 public:
     

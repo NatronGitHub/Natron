@@ -40,6 +40,12 @@ public :
     virtual ~NodeGuiI() {}
     
     /**
+     * @brief Should destroy any GUI associated to the internal node. Memory should be recycled and widgets no longer accessible from 
+     * anywhere. Upon returning this function, the caller should have a shared_ptr use_count() of 1
+     **/
+    virtual void destroyGui() = 0;
+    
+    /**
      * @brief Returns whether the settings panel of this node is opened or not.
      **/
     virtual bool isSettingsPanelOpened() const = 0;

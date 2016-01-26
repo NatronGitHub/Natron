@@ -362,14 +362,9 @@ NodeGraph::setUndoRedoStackLimit(int limit)
 }
 
 void
-NodeGraph::deleteNodePermanantly(NodeGuiPtr n)
+NodeGraph::deleteNodePermanantly(const NodeGuiPtr& n)
 {
     assert(n);
-    NodePtr internalNode = n->getNode();
-
-    if (internalNode) {
-        internalNode->deactivate(NodesList(),false,false,true,false);
-    }
     NodesGuiList::iterator it = std::find(_imp->_nodesTrash.begin(),_imp->_nodesTrash.end(),n);
 
     if ( it != _imp->_nodesTrash.end() ) {
@@ -383,66 +378,13 @@ NodeGraph::deleteNodePermanantly(NodeGuiPtr n)
             _imp->_nodes.erase(it);
         }
     }
-
-
-    n->deleteReferences();
-    n->discardGraphPointer();
-
-    if ( getGui() ) {
-        
-        if (internalNode->isRotoPaintingNode()) {
-            getGui()->removeRotoInterface(n.get(),true);
-        }
-        
-        if (internalNode->isPointTrackerNode()) {
-            getGui()->removeTrackerInterface(n.get(), true);
-        }
-
-        ///now that we made the command dirty, delete the node everywhere in Natron
-        internalNode->removeReferences();
-
-
-        getGui()->getCurveEditor()->removeNode( n.get() );
-        NodesGuiList::iterator found = std::find(_imp->_selection.begin(),_imp->_selection.end(),n);
-        if ( found != _imp->_selection.end() ) {
-            n->setUserSelected(false);
-            _imp->_selection.erase(found);
-        }
-        
-        if (internalNode && internalNode->getEffectInstance()) {
-            NodeGroup* isGrp = internalNode->isEffectGroup();
-            if (isGrp) {
-                NodeGraphI* graph_i = isGrp->getNodeGraph();
-                if (graph_i) {
-                    NodeGraph* graph = dynamic_cast<NodeGraph*>(graph_i);
-                    assert(graph);
-                    if (graph) {
-                        getGui()->removeGroupGui(graph, true);
-                    }
-                }
-            }
-        }
-    }
     
-    if (internalNode) {
-        ///remove the node from the clipboard if it is
-        NodeClipBoard &cb = appPTR->getNodeClipBoard();
-        for (std::list< boost::shared_ptr<NodeSerialization> >::iterator it = cb.nodes.begin();
-             it != cb.nodes.end(); ++it) {
-            if ( (*it)->getNode() == internalNode ) {
-                cb.nodes.erase(it);
-                break;
-            }
-        }
-        
-        for (std::list<boost::shared_ptr<NodeGuiSerialization> >::iterator it = cb.nodesUI.begin();
-             it != cb.nodesUI.end(); ++it) {
-            if ( (*it)->getFullySpecifiedName() == internalNode->getFullyQualifiedName() ) {
-                cb.nodesUI.erase(it);
-                break;
-            }
-        }
+    NodesGuiList::iterator found = std::find(_imp->_selection.begin(),_imp->_selection.end(),n);
+    if ( found != _imp->_selection.end() ) {
+        n->setUserSelected(false);
+        _imp->_selection.erase(found);
     }
+
 } // deleteNodePermanantly
 
 void

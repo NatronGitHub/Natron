@@ -450,12 +450,9 @@ NodeCollection::clearNodes(bool emitSignal)
     }
     
     ///Kill effects
-    for (NodesList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-        (*it)->deactivate(NodesList(),false,false,true,false);
-    }
     
     for (NodesList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-        (*it)->removeReferences();
+        (*it)->destroyNode(false);
     }
     
     

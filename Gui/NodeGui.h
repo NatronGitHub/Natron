@@ -140,11 +140,9 @@ public:
 
     //Creates panel if needed, might be expensive
     void ensurePanelCreated();
+  
     
-    /**
-     * @brief Called by NodeGraph::clearExceedingUndoRedoEvents when we want to delete a node.
-     **/
-    void deleteReferences();
+    virtual void destroyGui() OVERRIDE FINAL;
 
     ~NodeGui() OVERRIDE;
     

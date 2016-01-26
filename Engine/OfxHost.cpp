@@ -658,7 +658,7 @@ OfxHost::createOfxEffect(NodePtr node,
 
     boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect(new OfxEffectInstance(node));
     if ( node && !node->getEffectInstance() ) {
-        node->setLiveInstance(hostSideEffect);
+        node->setEffect(hostSideEffect);
     }
 
     hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx,serialization,paramValues,allowFileDialogs,disableRenderScaleSupport,hasUsedFileDialog);

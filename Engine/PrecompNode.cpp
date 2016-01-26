@@ -562,9 +562,7 @@ PrecompNodePrivate::createReadNode()
     }
     if (oldReadNode) {
         //Ensure it is no longer part of the tree
-        oldReadNode->deactivate();
-        //Ensure the shared_ptr is no longer lying around, at this point the node is dead
-        oldReadNode->removeReferences();
+        oldReadNode->destroyNode(false);
         
         
         //Reset the pointer
