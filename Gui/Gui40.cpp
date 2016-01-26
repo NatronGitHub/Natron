@@ -871,13 +871,14 @@ Gui::onTimeChanged(SequenceTime time,
     assert(QThread::currentThread() == qApp->thread());
     
     boost::shared_ptr<Project> project = getApp()->getProject();
-    
+    bool isPlayback = reason == eTimelineChangeReasonPlaybackSeek;
+
     ///Refresh all visible knobs at the current time
     if (!getApp()->isGuiFrozen()) {
         for (std::list<DockablePanel*>::const_iterator it = _imp->openedPanels.begin(); it!=_imp->openedPanels.end(); ++it) {
             NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
             if (nodePanel) {
-                nodePanel->getNode()->getNode()->getEffectInstance()->refreshAfterTimeChange(time);
+                nodePanel->getNode()->getNode()->getEffectInstance()->refreshAfterTimeChange(isPlayback, time);
             }
         }
     }
@@ -885,7 +886,6 @@ Gui::onTimeChanged(SequenceTime time,
     
     ViewerInstance* leadViewer = getApp()->getLastViewerUsingTimeline();
     
-    bool isPlayback = reason == eTimelineChangeReasonPlaybackSeek;
     
     
 

@@ -1438,7 +1438,7 @@ KnobHelper::setSecret(bool b)
     
     ///the knob was revealed , refresh its gui to the current time
     if ( !b && _imp->holder && _imp->holder->getApp() ) {
-        onTimeChanged( _imp->holder->getApp()->getTimeLine()->currentFrame() );
+        onTimeChanged( false, _imp->holder->getApp()->getTimeLine()->currentFrame() );
     }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_secretChanged();
@@ -4359,21 +4359,33 @@ KnobHolder::initializeKnobsPublic()
 }
 
 void
-KnobHolder::refreshAfterTimeChange(double time)
+KnobHolder::refreshAfterTimeChange(bool isPlayback, double time)
 {
     assert(QThread::currentThread() == qApp->thread());
     AppInstance* app = getApp();
     if (!app || app->isGuiFrozen()) {
         return;
     }
-    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
-        _imp->knobs[i]->onTimeChanged(time);
+    for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
+        _imp->knobs[i]->onTimeChanged(isPlayback, time);
     }
     refreshExtraStateAfterTimeChanged(time);
 }
 
 void
-KnobHolder::refreshInstanceSpecificKnobsOnly(double time)
+KnobHolder::refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(double time)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
+        if (_imp->knobs[i]->evaluateValueChangeOnTimeChange()) {
+            _imp->knobs[i]->onTimeChanged(false, time);
+        }
+    }
+
+}
+
+void
+KnobHolder::refreshInstanceSpecificKnobsOnly(bool isPlayback, double time)
 {
     assert(QThread::currentThread() == qApp->thread());
     if (!getApp() || getApp()->isGuiFrozen()) {
@@ -4381,7 +4393,7 @@ KnobHolder::refreshInstanceSpecificKnobsOnly(double time)
     }
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         if ( _imp->knobs[i]->isInstanceSpecific() ) {
-            _imp->knobs[i]->onTimeChanged(time);
+            _imp->knobs[i]->onTimeChanged(isPlayback, time);
         }
     }
 }

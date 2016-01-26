@@ -673,6 +673,8 @@ public Q_SLOTS:
     void restoreDefaultLayout();
 
     void onFreezeUIButtonClicked(bool clicked);
+    
+    void refreshAllTimeEvaluationParams();
 
     void onPropertiesScrolled();
 

@@ -4915,7 +4915,7 @@ Node::destroyNode(bool autoReconnect)
     }
     
     ///Remove all images in the cache associated to this node
-#pragma message WARN("Check that we do not clear the disk cache")
+    ///This will not remove from the disk cache if the project is closing
     removeAllImagesFromCache(false);
 
     ///Remove the Python node

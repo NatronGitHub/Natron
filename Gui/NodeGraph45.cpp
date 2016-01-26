@@ -127,11 +127,11 @@ NodesGuiList NodeGraph::getNodesWithinBackdrop(const NodeGuiPtr& bd) const
 }
 
 void
-NodeGraph::refreshNodesKnobsAtTime(SequenceTime time)
+NodeGraph::refreshNodesKnobsAtTime(bool onlyTimeEvaluationKnobs, SequenceTime time)
 {
     ///Refresh all knobs at the current time
     for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-        (*it)->refreshKnobsAfterTimeChange(time);
+        (*it)->refreshKnobsAfterTimeChange(onlyTimeEvaluationKnobs, time);
     }
 }
 

@@ -307,7 +307,7 @@ public:
     
     void setOverlayColor(const QColor& c);
 
-    void refreshKnobsAfterTimeChange(SequenceTime time);
+    void refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs, SequenceTime time);
     
     boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const;
 

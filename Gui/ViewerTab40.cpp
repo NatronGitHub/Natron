@@ -567,19 +567,6 @@ ViewerTab::getTimeLine() const
     return _imp->timeLineGui->getTimeline();
 }
 
-void
-ViewerTab::onVideoEngineStopped()
-{
-    ///Refresh knobs
-    if (getGui() && getGui()->isGUIFrozen()) {
-        NodeGraph* graph = getGui()->getNodeGraph();
-        if (graph && _imp->timeLineGui) {
-            boost::shared_ptr<TimeLine> timeline = _imp->timeLineGui->getTimeline();
-            graph->refreshNodesKnobsAtTime(timeline->currentFrame());
-        }
-    }
-}
-
 bool
 ViewerTab::isPickerEnabled() const
 {

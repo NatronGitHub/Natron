@@ -1740,7 +1740,7 @@ Knob<T>::onKeyFrameSet(double /*time*/,const KeyFrame& key,int dimension)
 
 template<typename T>
 void
-Knob<T>::onTimeChanged(double time)
+Knob<T>::onTimeChanged(bool isPlayback, double time)
 {
     int dims = getDimension();
 
@@ -1757,7 +1757,7 @@ Knob<T>::onTimeChanged(double time)
     if (shouldRefresh) {
         _signalSlotHandler->s_valueChanged(-1, eValueChangedReasonTimeChanged);
     }
-    if (evaluateValueChangeOnTimeChange()) {
+    if (evaluateValueChangeOnTimeChange() && !isPlayback) {
         //Some knobs like KnobFile do not animate but the plug-in may need to know the time has changed
         evaluateValueChange(0, time, eValueChangedReasonTimeChanged);
     }

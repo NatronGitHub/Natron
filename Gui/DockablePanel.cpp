@@ -912,7 +912,7 @@ DockablePanel::setClosedInternal(bool c)
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
         
-        nodePanel->getNode()->getNode()->getEffectInstance()->refreshAfterTimeChange(getGui()->getApp()->getTimeLine()->currentFrame());
+        nodePanel->getNode()->getNode()->getEffectInstance()->refreshAfterTimeChange(false, getGui()->getApp()->getTimeLine()->currentFrame());
         
         
         NodeGuiPtr nodeGui = nodePanel->getNode();
