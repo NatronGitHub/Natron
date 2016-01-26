@@ -1947,7 +1947,7 @@ Node::setKnobsAge(U64 newAge)
     bool changed;
     {
         QWriteLocker l(&_imp->knobsAgeMutex);
-        changed = _imp->knobsAge != newAge;
+        changed = _imp->knobsAge != newAge || !_imp->hash.value();
         if (changed) {
             _imp->knobsAge = newAge;
         }
@@ -4474,7 +4474,9 @@ Node::disconnectInput(const NodePtr& input)
         bool creatingNodeTree = getApp()->isCreatingNodeTree();
         if (!creatingNodeTree) {
             ///Recompute the hash
-            computeHash();
+            if (!getApp()->getProject()->isProjectClosing()) {
+                computeHash();
+            }
         }
 
         
@@ -4882,12 +4884,15 @@ Node::destroyNode(bool autoReconnect)
         return;
     }
     
+    _imp->isBeingDestroyed = true;
+
+    
     ///Remove the node from the project
     deactivate(NodesList(),
                true,
                autoReconnect,
                true,
-               true);
+               false);
     
     {
         boost::shared_ptr<NodeGuiI> guiPtr = _imp->guiPointer.lock();
@@ -4902,7 +4907,6 @@ Node::destroyNode(bool autoReconnect)
         isGrp->clearNodes(true);
     }
     
-    _imp->isBeingDestroyed = true;
 
     ///Quit any rendering
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(_imp->effect.get());
@@ -7878,8 +7882,9 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,const std::vector<Node
     
     refreshIdentityState();
     
-    if (getApp()->isCreatingNodeTree()) {
+    if (getApp()->getProject()->isLoadingProject()) {
         //When loading the project, refresh the hash of the nodes in a recursive manner in the proper order
+        //for the disk cache to work
         hasChanged |= computeHashInternal();
     }
 

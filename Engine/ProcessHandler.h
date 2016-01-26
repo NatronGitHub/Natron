@@ -83,7 +83,6 @@ class ProcessHandler
 {
     Q_OBJECT
 
-    AppInstance* _app; //< pointer to the app executing this process
     QProcess* _process; //< the process executing the render
     OutputEffectInstance* _writer; //< pointer to the writer that will render in the bg process
     QLocalServer* _ipcServer; //< the server for IPC with the background process
@@ -103,8 +102,7 @@ public:
      * @brief Starts a new process which will load the project specified by "projectPath".
      * The process will render using the effect specified by writer.
      **/
-    ProcessHandler(AppInstance* app,
-                   const QString & projectPath,
+    ProcessHandler(const QString & projectPath,
                    OutputEffectInstance* writer);
 
     virtual ~ProcessHandler();

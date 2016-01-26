@@ -656,6 +656,10 @@ void ViewerTab::setCheckerboardEnabled(bool enabled)
 void
 ViewerTab::onSpinboxFpsChangedInternal(double fps)
 {
+    if (!getGui()) {
+        //might be caled from a focus out event when leaving gui
+        return;
+    }
     _imp->fpsBox->setValue(fps);
     _imp->viewerNode->getRenderEngine()->setDesiredFPS(fps);
     {

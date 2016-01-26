@@ -2785,7 +2785,9 @@ RenderEngine::RenderEngine(const boost::shared_ptr<OutputEffectInstance>& output
 RenderEngine::~RenderEngine()
 {
     delete _imp->currentFrameScheduler;
+    _imp->currentFrameScheduler = 0;
     delete _imp->scheduler;
+    _imp->scheduler = 0;
 }
 
 OutputSchedulerThread*
