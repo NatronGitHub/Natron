@@ -52,8 +52,8 @@ if [ ! -z "$REBUILD" ]; then
         rm -rf $INSTALL_PATH || exit 1
     fi
 fi
-if [ -d $$TMP_BUILD_DIR ]; then
-    rm -rf $$TMP_BUILD_DIR || exit 1
+if [ -d $TMP_BUILD_DIR ]; then
+    rm -rf $TMP_BUILD_DIR || exit 1
 fi
 mkdir -p $TMP_BUILD_DIR || exit 1
 if [ ! -d $SRC_PATH ]; then
@@ -89,11 +89,13 @@ if [ ! -f $INSTALL_PATH/lib/pkgconfig/Magick++.pc ]; then
     cd ImageMagick-* || exit 1
     patch -p1 < $INC_PATH/patches/ImageMagick/mingw.patch || exit 1
     patch -p0 < $INC_PATH/patches/ImageMagick/pango-align-hack.diff || exit 1
+    patch -p1 < $INC_PATH/patches/ImageMagick/xcf-layername.patch || exit 1
     env CFLAGS="-DMAGICKCORE_EXCLUDE_DEPRECATED=1" CXXFLAGS="-I${INSTALL_PATH}/include -DMAGICKCORE_EXCLUDE_DEPRECATED=1" LDFLAGS="-lz -lws2_32" ./configure --prefix=$INSTALL_PATH --with-magick-plus-plus=yes --with-quantum-depth=32 --without-dps --without-djvu --without-fftw --without-fpx --without-gslib --without-gvc --without-jbig --without-jpeg --with-lcms --without-openjp2 --without-lqr --without-lzma --without-openexr --with-pango --with-png --with-rsvg --without-tiff --without-webp --with-xml --without-zlib --without-bzlib --enable-static --disable-shared --enable-hdri --with-freetype --with-fontconfig --without-x --without-modules || exit 1
     make -j${MKJOBS} || exit 1
     make install || exit 1
-    mkdir -p $INSTALL_PATH/docs/imagemagick || exit 1
-    cp LIC* COP* Copy* Lic* README AUTH* CONT* $INSTALL_PATH/docs/imagemagick/
+    if [ "$DDIR" != "" ]; then
+      make DESTDIR="${DDIR}" install || exit 1
+    fi
 fi
 
 
