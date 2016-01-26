@@ -641,6 +641,16 @@ Gui::isGUIFrozen() const
 }
 
 void
+Gui::refreshAllTimeEvaluationParams()
+{
+    int time = getApp()->getProject()->getCurrentTime();
+    for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it!= _imp->_groups.end(); ++it) {
+        (*it)->refreshNodesKnobsAtTime(true, time);
+    }
+    getNodeGraph()->refreshNodesKnobsAtTime(true, time);
+}
+
+void
 Gui::onFreezeUIButtonClicked(bool clicked)
 {
     {
@@ -660,6 +670,15 @@ Gui::onFreezeUIButtonClicked(bool clicked)
         }
     }
     _imp->_propertiesBin->setEnabled(!clicked);
+    
+    if (!clicked) {
+        int time = getApp()->getProject()->getCurrentTime();
+        for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it!= _imp->_groups.end(); ++it) {
+            (*it)->refreshNodesKnobsAtTime(false, time);
+        }
+        getNodeGraph()->refreshNodesKnobsAtTime(false, time);
+    }
+    
 }
 
 bool

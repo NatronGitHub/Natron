@@ -297,6 +297,7 @@ struct Node::Implementation
     , lastStrokeMovementMutex()
     , strokeBitmapCleared(false)
     , useAlpha0ToConvertFromRGBToRGBA(false)
+    , isBeingDestroyedMutex()
     , isBeingDestroyed(false)
     , inputModifiedRecursion(0)
     , inputsModified()
@@ -528,6 +529,7 @@ struct Node::Implementation
     //won't be able to paint the alpha channel
     bool useAlpha0ToConvertFromRGBToRGBA;
     
+    mutable QMutex isBeingDestroyedMutex;
     bool isBeingDestroyed;
     
     /*
@@ -1947,7 +1949,7 @@ Node::setKnobsAge(U64 newAge)
     bool changed;
     {
         QWriteLocker l(&_imp->knobsAgeMutex);
-        changed = _imp->knobsAge != newAge;
+        changed = _imp->knobsAge != newAge || !_imp->hash.value();
         if (changed) {
             _imp->knobsAge = newAge;
         }
@@ -4359,7 +4361,12 @@ Node::disconnectInput(int inputNumber)
     NodePtr inputShared;
     bool useGuiValues = isNodeRendering();
     
-    if (!_imp->isBeingDestroyed) {
+    bool destroyed;
+    {
+        QMutexLocker k(&_imp->isBeingDestroyedMutex);
+        destroyed = _imp->isBeingDestroyed;
+    }
+    if (!destroyed) {
         _imp->effect->abortAnyEvaluation();
     }
     
@@ -4390,8 +4397,11 @@ Node::disconnectInput(int inputNumber)
         }
     }
     
-    if (_imp->isBeingDestroyed) {
-        return -1;
+    {
+        QMutexLocker k(&_imp->isBeingDestroyedMutex);
+        if (_imp->isBeingDestroyed) {
+            return -1;
+        }
     }
     
     Q_EMIT inputChanged(inputNumber);
@@ -4474,7 +4484,9 @@ Node::disconnectInput(const NodePtr& input)
         bool creatingNodeTree = getApp()->isCreatingNodeTree();
         if (!creatingNodeTree) {
             ///Recompute the hash
-            computeHash();
+            if (!getApp()->getProject()->isProjectClosing()) {
+                computeHash();
+            }
         }
 
         
@@ -4882,12 +4894,20 @@ Node::destroyNode(bool autoReconnect)
         return;
     }
     
+    {
+        QMutexLocker k(&_imp->activatedMutex);
+        _imp->isBeingDestroyed = true;
+    }
+    
+    quitAnyProcessing();
+
+    
     ///Remove the node from the project
     deactivate(NodesList(),
                true,
                autoReconnect,
                true,
-               true);
+               false);
     
     {
         boost::shared_ptr<NodeGuiI> guiPtr = _imp->guiPointer.lock();
@@ -4902,7 +4922,6 @@ Node::destroyNode(bool autoReconnect)
         isGrp->clearNodes(true);
     }
     
-    _imp->isBeingDestroyed = true;
 
     ///Quit any rendering
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(_imp->effect.get());
@@ -4911,7 +4930,7 @@ Node::destroyNode(bool autoReconnect)
     }
     
     ///Remove all images in the cache associated to this node
-#pragma message WARN("Check that we do not clear the disk cache")
+    ///This will not remove from the disk cache if the project is closing
     removeAllImagesFromCache(false);
 
     ///Remove the Python node
@@ -5073,6 +5092,13 @@ Node::makePreviewImage(SequenceTime time,
 {
     assert(_imp->knobsInitialized);
     
+    
+    {
+        QMutexLocker k(&_imp->isBeingDestroyedMutex);
+        if (_imp->isBeingDestroyed) {
+            return false;
+        }
+    }
     
     if (_imp->checkForExitPreview()) {
         return false;
@@ -7878,8 +7904,9 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,const std::vector<Node
     
     refreshIdentityState();
     
-    if (getApp()->isCreatingNodeTree()) {
+    if (getApp()->getProject()->isLoadingProject()) {
         //When loading the project, refresh the hash of the nodes in a recursive manner in the proper order
+        //for the disk cache to work
         hasChanged |= computeHashInternal();
     }
 

@@ -325,6 +325,10 @@ ViewerTab::onEngineStopped()
     }
     if (getGui() && getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
         getGui()->onFreezeUIButtonClicked(false);
+    } else {
+        if (getGui()) {
+            getGui()->refreshAllTimeEvaluationParams();
+        }
     }
 }
 

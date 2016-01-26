@@ -836,7 +836,7 @@ GuiAppInstance::startRenderingFullSequence(bool enableRenderStats,const AppInsta
 
     if ( renderInSeparateProcess ) {
         try {
-            boost::shared_ptr<ProcessHandler> process( new ProcessHandler(this,savePath,w.writer) );
+            boost::shared_ptr<ProcessHandler> process( new ProcessHandler(savePath,w.writer) );
             QObject::connect( process.get(), SIGNAL( processFinished(int) ), this, SLOT( onProcessFinished() ) );
             notifyRenderProcessHandlerStarted(outputFileSequence,firstFrame,lastFrame, frameStep, process);
             process->startProcess();

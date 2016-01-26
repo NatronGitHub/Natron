@@ -133,7 +133,7 @@ public:
 
     bool areKnobLinksVisible() const;
     
-    void refreshNodesKnobsAtTime(SequenceTime time);
+    void refreshNodesKnobsAtTime(bool onlyTimeEvaluationKnobs,SequenceTime time);
     
     void pushUndoCommand(QUndoCommand* command);
     

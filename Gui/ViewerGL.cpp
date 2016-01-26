@@ -198,11 +198,14 @@ ViewerGL::resizeGL(int w,
     assert(_imp->viewerTab);
     ViewerInstance* viewer = _imp->viewerTab->getInternalNode();
     assert(viewer);
-    if (!zoomSinceLastFit) {
+    
+    bool isLoadingProject = _imp->viewerTab->getGui() &&
+    _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
+    
+    if (!zoomSinceLastFit && !isLoadingProject) {
         fitImageToFormat();
     }
-    if ( viewer->getUiContext() && _imp->viewerTab->getGui() &&
-         !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() &&
+    if ( viewer->getUiContext() && !isLoadingProject  &&
          ( ( oldWidth != w) || ( oldHeight != h) ) ) {
         viewer->renderCurrentFrame(true);
         

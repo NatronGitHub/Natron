@@ -627,7 +627,7 @@ public:
      * It must get the value at the given time and notify  the gui it must
      * update the value displayed.
      **/
-    virtual void onTimeChanged(double time) = 0;
+    virtual void onTimeChanged(bool isPlayback, double time) = 0;
 
     /**
      * @brief Compute the derivative at time as a double
@@ -790,6 +790,9 @@ public:
      **/
     virtual void setIsFrozen(bool frozen) = 0;
 
+    
+    virtual bool evaluateValueChangeOnTimeChange() const { return false; }
+    
     /**
      * @brief When dirty, the knob is actually representing several elements that do not hold the same value.
      * For example for the roto node, a knob actually represent the value of the opacity of the selected curve.
@@ -1167,10 +1170,9 @@ public:
     virtual double random(double min = 0., double max = 1.) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int randomInt(double time,unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int randomInt(int min = 0,int max = INT_MAX) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
 protected:
     
-    virtual bool evaluateValueChangeOnTimeChange() const { return false; }
     
     void randomSeed(double time, unsigned int seed) const;
     
@@ -1680,7 +1682,7 @@ public:
     virtual bool onKeyFrameSet(double time,const KeyFrame& key,int dimension) OVERRIDE FINAL;
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
-    virtual void onTimeChanged(double time) OVERRIDE FINAL;
+    virtual void onTimeChanged(bool isPlayback, double time) OVERRIDE FINAL;
 
     ///Cannot be overloaded by KnobHelper as it requires the value member
     virtual double getDerivativeAtTime(double time, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1952,7 +1954,14 @@ public:
     
     std::vector< KnobPtr >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
     
-    void refreshAfterTimeChange(double time);
+    void refreshAfterTimeChange(bool isPlayback,double time);
+    
+    /**
+     * @brief Same as refreshAfterTimeChange but refreshes only the knobs
+     * whose function evaluateValueChangeOnTimeChange() return true so that 
+     * after a playback their state is correct
+     **/
+    void refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(double time);
     
     void setIsInitializingKnobs(bool b);
     bool isInitializingKnobs() const;
@@ -1963,7 +1972,7 @@ protected:
     
 public:
 
-    void refreshInstanceSpecificKnobsOnly(double time);
+    void refreshInstanceSpecificKnobsOnly(bool isPlayback,double time);
 
     KnobHolder::MultipleParamsEditEnum getMultipleParamsEditLevel() const;
     

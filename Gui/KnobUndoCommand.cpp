@@ -524,10 +524,12 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
     return true;
 }
 
-RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<KnobPtr > & knobs,
+RestoreDefaultsCommand::RestoreDefaultsCommand(bool isNodeReset,
+                                               const std::list<KnobPtr > & knobs,
                                                QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _knobs(knobs)
+    , _isNodeReset(isNodeReset)
+    , _knobs(knobs)
 {
     for (std::list<KnobPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         _clones.push_back( MultipleKnobEditsUndoCommand::createCopyForKnob(*it) );
@@ -580,6 +582,7 @@ RestoreDefaultsCommand::redo()
     AppInstance* app = 0;
     
     KnobHolder* holder = first->getHolder();
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
     if (holder) {
         app = holder->getApp();
         holder->beginChanges();
@@ -641,6 +644,10 @@ RestoreDefaultsCommand::redo()
     
     if (holder && holder->getApp()) {
         holder->endChanges();
+    }
+    
+    if (_isNodeReset && isEffect) {
+        isEffect->purgeCaches();
     }
     
     

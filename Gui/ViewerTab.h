@@ -368,9 +368,7 @@ public Q_SLOTS:
 
     void showAllToolbars();    
     void hideAllToolbars();
-    
-    void onVideoEngineStopped();
-    
+        
     void onCheckerboardButtonClicked();
     
     void onPickerButtonClicked(bool);

@@ -713,7 +713,7 @@ ViewerInstance::renderViewer(int view,
                 disconnectTexture(args[i]->params->textureIndex);
             }
             
-            if (ret[i] == eViewerRenderRetCodeFail || ret[i] == eViewerRenderRetCodeRedraw) {
+            if (ret[i] == eViewerRenderRetCodeFail || ret[i] == eViewerRenderRetCodeRedraw || ret[i] == eViewerRenderRetCodeBlack) {
                 args[i].reset();
             }
         }

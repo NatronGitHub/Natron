@@ -3044,13 +3044,17 @@ TextItem::init()
 }
 
 void
-NodeGui::refreshKnobsAfterTimeChange(SequenceTime time)
+NodeGui::refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs, SequenceTime time)
 {
     NodePtr node = getNode();
     if ( ( _settingsPanel && !_settingsPanel->isClosed() ) ) {
-        node->getEffectInstance()->refreshAfterTimeChange(time);
+        if (onlyTimeEvaluationKnobs) {
+            node->getEffectInstance()->refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(time);
+        } else {
+            node->getEffectInstance()->refreshAfterTimeChange(false, time);
+        }
     } else if ( !node->getParentMultiInstanceName().empty() ) {
-        node->getEffectInstance()->refreshInstanceSpecificKnobsOnly(time);
+        node->getEffectInstance()->refreshInstanceSpecificKnobsOnly(false, time);
     }
 }
 
@@ -3071,7 +3075,7 @@ NodeGui::onSettingsPanelClosedChanged(bool closed)
             if (!closed) {
                 NodePtr node = getNode();
                 SequenceTime time = node->getApp()->getTimeLine()->currentFrame();
-                node->getEffectInstance()->refreshAfterTimeChange(time);
+                node->getEffectInstance()->refreshAfterTimeChange(false, time);
             }
         }
     }

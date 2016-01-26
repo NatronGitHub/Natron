@@ -567,19 +567,6 @@ ViewerTab::getTimeLine() const
     return _imp->timeLineGui->getTimeline();
 }
 
-void
-ViewerTab::onVideoEngineStopped()
-{
-    ///Refresh knobs
-    if (getGui() && getGui()->isGUIFrozen()) {
-        NodeGraph* graph = getGui()->getNodeGraph();
-        if (graph && _imp->timeLineGui) {
-            boost::shared_ptr<TimeLine> timeline = _imp->timeLineGui->getTimeline();
-            graph->refreshNodesKnobsAtTime(timeline->currentFrame());
-        }
-    }
-}
-
 bool
 ViewerTab::isPickerEnabled() const
 {
@@ -656,6 +643,10 @@ void ViewerTab::setCheckerboardEnabled(bool enabled)
 void
 ViewerTab::onSpinboxFpsChangedInternal(double fps)
 {
+    if (!getGui()) {
+        //might be caled from a focus out event when leaving gui
+        return;
+    }
     _imp->fpsBox->setValue(fps);
     _imp->viewerNode->getRenderEngine()->setDesiredFPS(fps);
     {

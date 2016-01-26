@@ -43,18 +43,16 @@
 
 NATRON_NAMESPACE_ENTER;
 
-ProcessHandler::ProcessHandler(AppInstance* app,
-                               const QString & projectPath,
+ProcessHandler::ProcessHandler(const QString & projectPath,
                                OutputEffectInstance* writer)
-    : _app(app)
-      ,_process(new QProcess)
-      ,_writer(writer)
-      ,_ipcServer(0)
-      ,_bgProcessOutputSocket(0)
-      ,_bgProcessInputSocket(0)
-      ,_earlyCancel(false)
-      ,_processLog()
-      ,_processArgs()
+: _process(new QProcess)
+,_writer(writer)
+,_ipcServer(0)
+,_bgProcessOutputSocket(0)
+,_bgProcessInputSocket(0)
+,_earlyCancel(false)
+,_processLog()
+,_processArgs()
 {
     ///setup the server used to listen the output of the background process
     _ipcServer = new QLocalServer();

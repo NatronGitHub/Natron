@@ -360,13 +360,15 @@ class RestoreDefaultsCommand
 {
 public:
 
-    RestoreDefaultsCommand(const std::list<KnobPtr > & knobs,
+    RestoreDefaultsCommand(bool isNodeReset,
+                           const std::list<KnobPtr > & knobs,
                            QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
 
 private:
 
+    bool _isNodeReset;
     std::list<KnobPtr > _knobs,_clones;
 };
 
