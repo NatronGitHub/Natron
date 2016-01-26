@@ -390,7 +390,7 @@ KnobGui::resetDefault(int /*dimension*/)
     if (!isBtn && !isPage && !isGroup && !isSeparator) {
         std::list<KnobPtr > knobs;
         knobs.push_back(knob);
-        pushUndoCommand( new RestoreDefaultsCommand(knobs) );
+        pushUndoCommand( new RestoreDefaultsCommand(false, knobs) );
     }
 }
 

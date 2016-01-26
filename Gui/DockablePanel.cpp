@@ -646,13 +646,28 @@ DockablePanel::getHolder() const
 void
 DockablePanel::onRestoreDefaultsButtonClicked()
 {
-    NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(this);
+    std::list<boost::shared_ptr<KnobI> > knobsList;
+    boost::shared_ptr<MultiInstancePanel> multiPanel = getMultiInstancePanel();
     
-    if (!panel) {
-        std::list<KnobPtr > knobsList;
-        
-        const KnobsVec & knobs = _imp->_holder->getKnobs();
-        for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    if (multiPanel) {
+        const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = multiPanel->getInstances();
+        for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+            const std::vector<boost::shared_ptr<KnobI> > & knobs = it->first.lock()->getKnobs();
+            for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+                KnobButton* isBtn = dynamic_cast<KnobButton*>( it2->get() );
+                KnobPage* isPage = dynamic_cast<KnobPage*>( it2->get() );
+                KnobGroup* isGroup = dynamic_cast<KnobGroup*>( it2->get() );
+                KnobSeparator* isSeparator = dynamic_cast<KnobSeparator*>( it2->get() );
+                if ( !isBtn && !isPage && !isGroup && !isSeparator && ( (*it2)->getName() != kUserLabelKnobName ) &&
+                    ( (*it2)->getName() != kNatronOfxParamStringSublabelName ) ) {
+                    knobsList.push_back(*it2);
+                }
+            }
+        }
+        multiPanel->clearSelection();
+    } else {
+        const std::vector<boost::shared_ptr<KnobI> > & knobs = _imp->_holder->getKnobs();
+        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
             KnobButton* isBtn = dynamic_cast<KnobButton*>( it->get() );
             KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( it->get() );
@@ -662,11 +677,14 @@ DockablePanel::onRestoreDefaultsButtonClicked()
                 knobsList.push_back(*it);
             }
         }
-        
-        pushUndoCommand( new RestoreDefaultsCommand(knobsList) );
-    } else {
-        pushUndoCommand(new RestoreNodeToDefaultCommand(panel->getNode()->getNode()));
     }
+    
+    /*
+     This is not a perfect solution because here we only reset knob values to their defaults, but the plug-in
+     may not revert its state to the original as if after the createInstanceAction.
+     We may not either kill this node and create a new one because otherwise the undo/redo stack will be wiped.
+     */
+    pushUndoCommand( new RestoreDefaultsCommand(true, knobsList) );
 }
 
 void
