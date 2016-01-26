@@ -136,7 +136,7 @@ BaseTest::connectNodes(NodePtr input,
     }
 
 
-    bool ret = _app->getProject()->connectNodes(inputNumber,input,output.get());
+    bool ret = _app->getProject()->connectNodes(inputNumber,input,output);
     EXPECT_EQ(expectedReturnValue,ret);
 
     if (expectedReturnValue) {
@@ -156,21 +156,21 @@ BaseTest::disconnectNodes(NodePtr input,
 
         ///the input must have in its output the node 'output'
         EXPECT_TRUE( input->hasOutputConnected() );
-        const std::list<Node*> & outputs = input->getGuiOutputs();
+        const NodesWList & outputs = input->getGuiOutputs();
         bool foundOutput = false;
-        for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            if ( *it == output.get() ) {
+        for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            if ( it->lock() == output) {
                 foundOutput = true;
                 break;
             }
         }
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<NodePtr > & inputs = output->getGuiInputs();
+        const std::vector<NodeWPtr> & inputs = output->getGuiInputs();
         int inputIndex = 0;
         bool foundInput = false;
         for (U32 i = 0; i < inputs.size(); ++i) {
-            if (inputs[i] == input) {
+            if (inputs[i].lock() == input) {
                 foundInput = true;
                 break;
             }
@@ -184,27 +184,27 @@ BaseTest::disconnectNodes(NodePtr input,
     }
 
     ///call disconnect
-    bool ret = _app->getProject()->disconnectNodes(input.get(),output.get());
+    bool ret = _app->getProject()->disconnectNodes(input,output);
     EXPECT_EQ(expectedReturnvalue,ret);
 
     if (expectedReturnvalue) {
         ///check that the disconnection went OK
 
-        const std::list<Node*> & outputs = input->getGuiOutputs();
+        const NodesWList & outputs = input->getGuiOutputs();
         bool foundOutput = false;
-        for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            if ( (*it) == output.get() ) {
+        for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            if (it->lock() == output) {
                 foundOutput = true;
                 break;
             }
         }
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<NodePtr > & inputs = output->getGuiInputs();
+        const std::vector<NodeWPtr> & inputs = output->getGuiInputs();
         int inputIndex = 0;
         bool foundInput = false;
         for (U32 i = 0; i < inputs.size(); ++i) {
-            if (inputs[i] == input) {
+            if (inputs[i].lock() == input) {
                 foundInput = true;
                 break;
             }
@@ -245,7 +245,7 @@ TEST_F(BaseTest,GenerateDot)
     ///and start rendering. This call is blocking.
     std::list<AppInstance::RenderWork> works;
     AppInstance::RenderWork w;
-    w.writer = dynamic_cast<OutputEffectInstance*>(writer->getEffectInstance());
+    w.writer = dynamic_cast<OutputEffectInstance*>(writer->getEffectInstance().get());
     assert(w.writer);
     w.firstFrame = INT_MIN;
     w.lastFrame = INT_MAX;
