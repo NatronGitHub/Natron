@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include <list>
+#include <vector>
 
 #include "Global/Macros.h"
 
