@@ -134,7 +134,7 @@ public:
 
     virtual OFX::Host::Memory::Instance* newMemoryInstance(size_t nBytes) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    boost::shared_ptr<AbstractOfxEffectInstance> createOfxEffect(boost::shared_ptr<Node> node,
+    boost::shared_ptr<AbstractOfxEffectInstance> createOfxEffect(NodePtr node,
                                                const NodeSerialization* serialization,
                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                                 bool allowFileDialogs,

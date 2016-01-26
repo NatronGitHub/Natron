@@ -47,12 +47,12 @@ class QtReader
     : public EffectInstance
 {
 public:
-    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new QtReader(n);
     }
 
-    QtReader(boost::shared_ptr<Node> node);
+    QtReader(NodePtr node);
 
     virtual ~QtReader();
 

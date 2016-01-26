@@ -71,15 +71,15 @@ public:
     
     boost::shared_ptr<NodeCollection> getGroup() const;
 
-    const std::list< boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
-    boost::shared_ptr<NodeGui> createNodeGUI(const boost::shared_ptr<Node> & node,
+    const std::list< NodeGuiPtr > & getSelectedNodes() const;
+    NodeGuiPtr createNodeGUI(const NodePtr & node,
                                              const CreateNodeArgs& args);
 
-    void selectNode(const boost::shared_ptr<NodeGui> & n,bool addToSelection);
+    void selectNode(const NodeGuiPtr & n,bool addToSelection);
     
-    void deselectNode(const boost::shared_ptr<NodeGui>& n);
+    void deselectNode(const NodeGuiPtr& n);
     
-    void setSelection(const std::list<boost::shared_ptr<NodeGui> >& nodes);
+    void setSelection(const NodesGuiList& nodes);
     
     void clearSelection();
 
@@ -98,8 +98,8 @@ public:
      **/
     void updateNavigator();
 
-    const std::list<boost::shared_ptr<NodeGui> > & getAllActiveNodes() const;
-    std::list<boost::shared_ptr<NodeGui> > getAllActiveNodes_mt_safe() const;
+    const NodesGuiList & getAllActiveNodes() const;
+    NodesGuiList getAllActiveNodes_mt_safe() const;
 
     void moveToTrash(NodeGui* node);
 
@@ -114,15 +114,15 @@ public:
     /**
      * @brief Removes the given node from the nodegraph, using the undo/redo stack.
      **/
-    void removeNode(const boost::shared_ptr<NodeGui> & node);
+    void removeNode(const NodeGuiPtr & node);
 
     void centerOnItem(QGraphicsItem* item);
 
     void setUndoRedoStackLimit(int limit);
 
-    void deleteNodePermanantly(boost::shared_ptr<NodeGui> n);
+    void deleteNodePermanantly(NodeGuiPtr n);
 
-    std::list<boost::shared_ptr<NodeGui> > getNodesWithinBackdrop(const boost::shared_ptr<NodeGui>& node) const;
+    NodesGuiList getNodesWithinBackdrop(const NodeGuiPtr& node) const;
 
     void selectAllNodes(bool onlyInVisiblePortion);
 
@@ -139,9 +139,9 @@ public:
     
     bool areOptionalInputsAutoHidden() const;
     
-    void copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> >& nodes,
+    void copyNodesAndCreateInGroup(const NodesGuiList& nodes,
                                    const boost::shared_ptr<NodeCollection>& group,
-                                   std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >& createdNodes);
+                                   std::list<std::pair<std::string,NodeGuiPtr > >& createdNodes);
 
     virtual void onNodesCleared() OVERRIDE FINAL;
     
@@ -156,13 +156,13 @@ public:
      * It will move the inputs / outputs slightly to fit this node into the nodegraph
      * so they do not overlap.
      **/
-    void moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &n,
-                                   const boost::shared_ptr<NodeGui>& selected,
+    void moveNodesForIdealPosition(const NodeGuiPtr &n,
+                                   const NodeGuiPtr& selected,
                                    bool autoConnect);
     
-    void copyNodes(const std::list<boost::shared_ptr<NodeGui> >& nodes,NodeClipBoard& clipboard);
+    void copyNodes(const NodesGuiList& nodes,NodeClipBoard& clipboard);
     
-    void pasteCliboard(const NodeClipBoard& clipboard,std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >* newNodes);
+    void pasteCliboard(const NodeClipBoard& clipboard,std::list<std::pair<std::string,NodeGuiPtr > >* newNodes);
     
     void duplicateSelectedNodes(const QPointF& pos);
     void pasteNodeClipBoards(const QPointF& pos);
@@ -244,7 +244,7 @@ public Q_SLOTS:
     
 private:
     
-    void checkForHints(bool shiftdown, bool controlDown, const boost::shared_ptr<NodeGui>& selectedNode,const QRectF& visibleSceneR);
+    void checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& selectedNode,const QRectF& visibleSceneR);
     
     void moveSelectedNodesBy(bool shiftdown, bool controlDown, const QPointF& lastMousePosScene, const QPointF& newPos, const QRectF& visibleSceneR, bool userEdit);
     
@@ -325,13 +325,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
-    EditNodeNameDialog(const boost::shared_ptr<NodeGui>& node,QWidget* parent);
+    EditNodeNameDialog(const NodeGuiPtr& node,QWidget* parent);
     
     virtual ~EditNodeNameDialog();
     
     QString getTypedName() const;
     
-    boost::shared_ptr<NodeGui> getNode() const;
+    NodeGuiPtr getNode() const;
     
 private:
     

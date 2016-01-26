@@ -86,7 +86,7 @@ using std::make_pair;
 
 //=============================GROUP_KNOB_GUI===================================
 
-KnobGuiGroup::KnobGuiGroup(boost::shared_ptr<KnobI> knob,
+KnobGuiGroup::KnobGuiGroup(KnobPtr knob,
                              DockablePanel *container)
 : KnobGui(knob, container)
 , _checked(false)
@@ -276,7 +276,7 @@ KnobGuiGroup::setEnabled()
     }
 }
 
-boost::shared_ptr<KnobI> KnobGuiGroup::getKnob() const
+KnobPtr KnobGuiGroup::getKnob() const
 {
     return _knob.lock();
 }

@@ -70,7 +70,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
-    KnobGui(const boost::shared_ptr<KnobI>& knob,
+    KnobGui(const KnobPtr& knob,
             DockablePanel* container);
 
     virtual ~KnobGui() OVERRIDE;
@@ -95,7 +95,7 @@ public:
      * This is virtual as it is easier to hold the knob in the derived class
      * avoiding many dynamic_cast in the deriving class.
      **/
-    virtual boost::shared_ptr<KnobI> getKnob() const = 0;
+    virtual KnobPtr getKnob() const = 0;
 
     bool triggerNewLine() const;
 
@@ -244,7 +244,7 @@ public:
      **/
     bool isSecretRecursive() const;
     
-    boost::shared_ptr<KnobI> createDuplicateOnNode(EffectInstance* effect,
+    KnobPtr createDuplicateOnNode(EffectInstance* effect,
                                                    bool makeAlias,
                                                    const boost::shared_ptr<KnobPage>& page,
                                                    const boost::shared_ptr<KnobGroup>& group,

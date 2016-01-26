@@ -110,7 +110,7 @@ getNumKeys(KnobI* knob,
 
 static
 OfxStatus
-getKeyTime(boost::shared_ptr<KnobI> knob,
+getKeyTime(KnobPtr knob,
            int nth,
            OfxTime & time)
 {
@@ -147,7 +147,7 @@ getKeyTime(boost::shared_ptr<KnobI> knob,
 
 static
 OfxStatus
-getKeyIndex(boost::shared_ptr<KnobI> knob,
+getKeyIndex(KnobPtr knob,
             OfxTime time,
             int direction,
             int & index)
@@ -194,7 +194,7 @@ getKeyIndex(boost::shared_ptr<KnobI> knob,
 
 static
 OfxStatus
-deleteKey(boost::shared_ptr<KnobI> knob,
+deleteKey(KnobPtr knob,
           OfxTime time)
 {
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -206,7 +206,7 @@ deleteKey(boost::shared_ptr<KnobI> knob,
 
 static
 OfxStatus
-deleteAllKeys(boost::shared_ptr<KnobI> knob)
+deleteAllKeys(KnobPtr knob)
 {
     for (int i = 0; i < knob->getDimension(); ++i) {
         knob->removeAnimation(i);
@@ -218,8 +218,8 @@ deleteAllKeys(boost::shared_ptr<KnobI> knob)
 // copy one parameter to another, with a range (NULL means to copy all animation)
 static
 OfxStatus
-copyFrom(const boost::shared_ptr<KnobI> & from,
-         const boost::shared_ptr<KnobI> &to,
+copyFrom(const KnobPtr & from,
+         const KnobPtr &to,
          OfxTime offset,
          const OfxRangeD* range)
 {
@@ -252,7 +252,7 @@ PropertyModified_RAII::~PropertyModified_RAII()
 void
 OfxParamToKnob::connectDynamicProperties()
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     if (!knob) {
         return;
     }
@@ -288,7 +288,7 @@ OfxParamToKnob::onSecretChanged()
 
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     if (!knob) {
         return;
     }
@@ -305,7 +305,7 @@ OfxParamToKnob::onEnabledChanged()
 
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     if (!knob) {
         return;
     }
@@ -321,7 +321,7 @@ OfxParamToKnob::onLabelChanged()
 
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     if (!knob) {
         return;
     }
@@ -368,11 +368,11 @@ OfxParamToKnob::onMinMaxChanged(double min,double max, int index)
 
 ////////////////////////// OfxPushButtonInstance /////////////////////////////////////////////////
 
-OfxPushButtonInstance::OfxPushButtonInstance(OfxEffectInstance* node,
+OfxPushButtonInstance::OfxPushButtonInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                              OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::PushbuttonInstance( descriptor, node->effectInstance() )
 {
-    boost::shared_ptr<KnobButton> k = AppManager::createKnob<KnobButton>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobButton> k = AppManager::createKnob<KnobButton>( node.get(), getParamLabel(this) );
     _knob = k;
     const std::string & iconFilePath = descriptor.getProperties().getStringProperty(kOfxPropIcon,1);
     k->setIconFilePath(iconFilePath);
@@ -408,7 +408,7 @@ OfxPushButtonInstance::setEvaluateOnChange()
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
-boost::shared_ptr<KnobI> OfxPushButtonInstance::getKnob() const
+KnobPtr OfxPushButtonInstance::getKnob() const
 {
     return _knob.lock();
 }
@@ -416,13 +416,13 @@ boost::shared_ptr<KnobI> OfxPushButtonInstance::getKnob() const
 ////////////////////////// OfxIntegerInstance /////////////////////////////////////////////////
 
 
-OfxIntegerInstance::OfxIntegerInstance(OfxEffectInstance* node,
+OfxIntegerInstance::OfxIntegerInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                        OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::IntegerInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    boost::shared_ptr<KnobInt> k = AppManager::createKnob<KnobInt>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobInt> k = AppManager::createKnob<KnobInt>( node.get(), getParamLabel(this) );
     _knob = k;
 
     int min = properties.getIntProperty(kOfxParamPropMin);
@@ -507,7 +507,7 @@ OfxIntegerInstance::setEvaluateOnChange()
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
-boost::shared_ptr<KnobI> OfxIntegerInstance::getKnob() const
+KnobPtr OfxIntegerInstance::getKnob() const
 {
     return _knob.lock();
 }
@@ -590,15 +590,14 @@ OfxIntegerInstance::setRange()
 ////////////////////////// OfxDoubleInstance /////////////////////////////////////////////////
 
 
-OfxDoubleInstance::OfxDoubleInstance(OfxEffectInstance* node,
+OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::DoubleInstance( descriptor,node->effectInstance() )
-      , _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
     const std::string & coordSystem = getDefaultCoordinateSystem();
 
-    boost::shared_ptr<KnobDouble> dblKnob = AppManager::createKnob<KnobDouble>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobDouble> dblKnob = AppManager::createKnob<KnobDouble>( node.get(), getParamLabel(this) );
     _knob = dblKnob;
 
     const std::string & doubleType = getDoubleType();
@@ -752,7 +751,7 @@ OfxDoubleInstance::setRange()
     _knob.lock()->setMaximum(maxi);
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 OfxDoubleInstance::getKnob() const
 {
     return _knob.lock();
@@ -819,13 +818,13 @@ OfxDoubleInstance::onKnobAnimationLevelChanged(int,int lvl)
 
 ////////////////////////// OfxBooleanInstance /////////////////////////////////////////////////
 
-OfxBooleanInstance::OfxBooleanInstance(OfxEffectInstance* node,
+OfxBooleanInstance::OfxBooleanInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                        OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::BooleanInstance( descriptor,node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    boost::shared_ptr<KnobBool> b = AppManager::createKnob<KnobBool>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobBool> b = AppManager::createKnob<KnobBool>( node.get(), getParamLabel(this) );
     _knob = b;
     int def = properties.getIntProperty(kOfxParamPropDefault);
     b->blockValueChanges();
@@ -900,7 +899,7 @@ OfxBooleanInstance::setEvaluateOnChange()
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
-boost::shared_ptr<KnobI> OfxBooleanInstance::getKnob() const
+KnobPtr OfxBooleanInstance::getKnob() const
 {
     return _knob.lock();
 }
@@ -960,14 +959,14 @@ OfxBooleanInstance::onKnobAnimationLevelChanged(int,int lvl)
 
 ////////////////////////// OfxChoiceInstance /////////////////////////////////////////////////
 
-OfxChoiceInstance::OfxChoiceInstance(OfxEffectInstance* node,
+OfxChoiceInstance::OfxChoiceInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::ChoiceInstance( descriptor,node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<KnobChoice> choice = AppManager::createKnob<KnobChoice>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobChoice> choice = AppManager::createKnob<KnobChoice>( node.get(), getParamLabel(this) );
     _knob = choice;
 
     
@@ -1113,7 +1112,7 @@ OfxChoiceInstance::setOption(int num)
     knob->appendChoice(entry,help);
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 OfxChoiceInstance::getKnob() const
 {
     return _knob.lock();
@@ -1174,13 +1173,13 @@ OfxChoiceInstance::onKnobAnimationLevelChanged(int,int lvl)
 
 ////////////////////////// OfxRGBAInstance /////////////////////////////////////////////////
 
-OfxRGBAInstance::OfxRGBAInstance(OfxEffectInstance* node,
+OfxRGBAInstance::OfxRGBAInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                  OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::RGBAInstance( descriptor,node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    boost::shared_ptr<KnobColor> color = AppManager::createKnob<KnobColor>(node, getParamLabel(this),4);
+    boost::shared_ptr<KnobColor> color = AppManager::createKnob<KnobColor>(node.get(), getParamLabel(this),4);
     _knob = color;
 
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
@@ -1332,7 +1331,7 @@ OfxRGBAInstance::setEvaluateOnChange()
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 OfxRGBAInstance::getKnob() const
 {
     return _knob.lock();
@@ -1406,13 +1405,13 @@ OfxRGBAInstance::onKnobAnimationLevelChanged(int,int lvl)
 
 ////////////////////////// OfxRGBInstance /////////////////////////////////////////////////
 
-OfxRGBInstance::OfxRGBInstance(OfxEffectInstance* node,
+OfxRGBInstance::OfxRGBInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::RGBInstance( descriptor,node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
-    boost::shared_ptr<KnobColor> color  = AppManager::createKnob<KnobColor>(node, getParamLabel(this),3);
+    boost::shared_ptr<KnobColor> color  = AppManager::createKnob<KnobColor>(node.get(), getParamLabel(this),3);
     _knob = color;
 
     double defR = properties.getDoubleProperty(kOfxParamPropDefault,0);
@@ -1548,7 +1547,7 @@ OfxRGBInstance::setEvaluateOnChange()
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 OfxRGBInstance::getKnob() const
 {
     return _knob.lock();
@@ -1622,16 +1621,15 @@ OfxRGBInstance::onKnobAnimationLevelChanged(int,int lvl)
 
 ////////////////////////// OfxDouble2DInstance /////////////////////////////////////////////////
 
-OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
+OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                          OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::Double2DInstance( descriptor,node->effectInstance() )
-      , _node(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
     const std::string & coordSystem = getDefaultCoordinateSystem();
     const int dims = 2;
 
-    boost::shared_ptr<KnobDouble> dblKnob = AppManager::createKnob<KnobDouble>(node, getParamLabel(this),dims);
+    boost::shared_ptr<KnobDouble> dblKnob = AppManager::createKnob<KnobDouble>(node.get(), getParamLabel(this),dims);
     _knob = dblKnob;
 
     const std::string & doubleType = getDoubleType();
@@ -1678,7 +1676,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(OfxEffectInstance* node,
     // Only create native overlays if there is no interact or kOfxParamPropUseHostOverlayHandle is set
     // see https://github.com/MrKepzie/Natron/issues/932
     // only create automatic overlay for kOfxParamDoubleTypeXYAbsolute and kOfxParamDoubleTypeNormalisedXYAbsolute
-    if ((!_node->effectInstance()->getOverlayInteractMainEntry() &&
+    if ((!node->effectInstance()->getOverlayInteractMainEntry() &&
          (getDoubleType() == kOfxParamDoubleTypeXYAbsolute ||
           getDoubleType() == kOfxParamDoubleTypeNormalisedXYAbsolute)) ||
         properties.getIntProperty(kOfxParamPropUseHostOverlayHandle) == 1) {
@@ -1831,7 +1829,7 @@ OfxDouble2DInstance::setRange()
 }
 
 
-boost::shared_ptr<KnobI>
+KnobPtr
 OfxDouble2DInstance::getKnob() const
 {
     return _knob.lock();
@@ -1905,16 +1903,15 @@ OfxDouble2DInstance::onKnobAnimationLevelChanged(int,int lvl)
 
 ////////////////////////// OfxInteger2DInstance /////////////////////////////////////////////////
 
-OfxInteger2DInstance::OfxInteger2DInstance(OfxEffectInstance* node,
+OfxInteger2DInstance::OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                            OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::Integer2DInstance( descriptor,node->effectInstance() )
-      , _node(node)
 {
     const int dims = 2;
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<KnobInt> iKnob = AppManager::createKnob<KnobInt>(node, getParamLabel(this), dims);
+    boost::shared_ptr<KnobInt> iKnob = AppManager::createKnob<KnobInt>(node.get(), getParamLabel(this), dims);
     _knob = iKnob;
 
     std::vector<int> minimum(dims);
@@ -2045,7 +2042,7 @@ OfxInteger2DInstance::setEvaluateOnChange()
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 OfxInteger2DInstance::getKnob() const
 {
     return _knob.lock();
@@ -2106,16 +2103,15 @@ OfxInteger2DInstance::onKnobAnimationLevelChanged(int,int lvl)
 
 ////////////////////////// OfxDouble3DInstance /////////////////////////////////////////////////
 
-OfxDouble3DInstance::OfxDouble3DInstance(OfxEffectInstance* node,
+OfxDouble3DInstance::OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                          OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::Double3DInstance( descriptor,node->effectInstance() )
-      , _node(node)
 {
     const int dims = 3;
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<KnobDouble> knob = AppManager::createKnob<KnobDouble>(node, getParamLabel(this),dims);
+    boost::shared_ptr<KnobDouble> knob = AppManager::createKnob<KnobDouble>(node.get(), getParamLabel(this),dims);
     _knob = knob;
 
     std::vector<double> minimum(dims);
@@ -2295,7 +2291,7 @@ OfxDouble3DInstance::setEvaluateOnChange()
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 OfxDouble3DInstance::getKnob() const
 {
     return _knob.lock();
@@ -2369,16 +2365,15 @@ OfxDouble3DInstance::onKnobAnimationLevelChanged(int,int lvl)
 
 ////////////////////////// OfxInteger3DInstance /////////////////////////////////////////////////
 
-OfxInteger3DInstance::OfxInteger3DInstance(OfxEffectInstance*node,
+OfxInteger3DInstance::OfxInteger3DInstance(const boost::shared_ptr<OfxEffectInstance>&node,
                                            OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::Integer3DInstance( descriptor,node->effectInstance() )
-      , _node(node)
 {
     const int dims = 3;
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<KnobInt> knob = AppManager::createKnob<KnobInt>(node, getParamLabel(this), dims);
+    boost::shared_ptr<KnobInt> knob = AppManager::createKnob<KnobInt>(node.get(), getParamLabel(this), dims);
     _knob = knob;
 
     std::vector<int> minimum(dims);
@@ -2523,7 +2518,7 @@ OfxInteger3DInstance::setEvaluateOnChange()
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 OfxInteger3DInstance::getKnob() const
 {
     return _knob.lock();
@@ -2584,7 +2579,7 @@ OfxInteger3DInstance::onKnobAnimationLevelChanged(int,int lvl)
 
 ////////////////////////// OfxGroupInstance /////////////////////////////////////////////////
 
-OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,
+OfxGroupInstance::OfxGroupInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                    OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::GroupInstance( descriptor,node->effectInstance() )
       , _groupKnob()
@@ -2592,7 +2587,7 @@ OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,
     const OFX::Host::Property::Set &properties = getProperties();
     int isTab = properties.getIntProperty(kFnOfxParamPropGroupIsTab);
 
-    boost::shared_ptr<KnobGroup> group = AppManager::createKnob<KnobGroup>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobGroup> group = AppManager::createKnob<KnobGroup>( node.get(), getParamLabel(this) );
     _groupKnob = group;
     int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
     if (isTab) {
@@ -2605,12 +2600,12 @@ OfxGroupInstance::OfxGroupInstance(OfxEffectInstance* node,
 }
 
 void
-OfxGroupInstance::addKnob(boost::shared_ptr<KnobI> k)
+OfxGroupInstance::addKnob(KnobPtr k)
 {
     _groupKnob.lock()->addKnob(k);
 }
 
-boost::shared_ptr<KnobI> OfxGroupInstance::getKnob() const
+KnobPtr OfxGroupInstance::getKnob() const
 {
     return _groupKnob.lock();
 }
@@ -2640,12 +2635,12 @@ OfxGroupInstance::setLabel()
 ////////////////////////// OfxPageInstance /////////////////////////////////////////////////
 
 
-OfxPageInstance::OfxPageInstance(OfxEffectInstance* node,
+OfxPageInstance::OfxPageInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                  OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::PageInstance( descriptor,node->effectInstance() )
       , _pageKnob()
 {
-    _pageKnob = AppManager::createKnob<KnobPage>( node, getParamLabel(this) );
+    _pageKnob = AppManager::createKnob<KnobPage>( node.get(), getParamLabel(this) );
 }
 
 // callback which should set enabled state as appropriate
@@ -2671,7 +2666,7 @@ OfxPageInstance::setLabel()
     _pageKnob.lock()->setLabel(getParamLabel(this));
 }
 
-boost::shared_ptr<KnobI> OfxPageInstance::getKnob() const
+KnobPtr OfxPageInstance::getKnob() const
 {
     return _pageKnob.lock();
 }
@@ -2681,16 +2676,14 @@ boost::shared_ptr<KnobI> OfxPageInstance::getKnob() const
 struct OfxStringInstancePrivate
 {
     
-    OfxEffectInstance* node;
     boost::weak_ptr<KnobFile> fileKnob;
     boost::weak_ptr<KnobOutputFile> outputFileKnob;
     boost::weak_ptr<KnobString> stringKnob;
     boost::weak_ptr<KnobPath> pathKnob;
     boost::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
     
-    OfxStringInstancePrivate(OfxEffectInstance* node)
-    : node(node)
-    , fileKnob()
+    OfxStringInstancePrivate()
+    : fileKnob()
     , outputFileKnob()
     , stringKnob()
     , pathKnob()
@@ -2700,10 +2693,10 @@ struct OfxStringInstancePrivate
     }
 };
 
-OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
+OfxStringInstance::OfxStringInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::StringInstance( descriptor,node->effectInstance() )
-    , _imp(new OfxStringInstancePrivate(node))
+    , _imp(new OfxStringInstancePrivate())
 {
     const OFX::Host::Property::Set &properties = getProperties();
     std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
@@ -2719,7 +2712,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
 
 
         if (!fileIsOutput) {
-            _imp->fileKnob = AppManager::createKnob<KnobFile>( node, getParamLabel(this) );
+            _imp->fileKnob = AppManager::createKnob<KnobFile>( node.get(), getParamLabel(this) );
             if (fileIsImage) {
                 _imp->fileKnob.lock()->setAsInputImage();
             }
@@ -2727,7 +2720,7 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
                 _imp->fileKnob.lock()->setAnimationEnabled(false);
             }
         } else {
-            _imp->outputFileKnob = AppManager::createKnob<KnobOutputFile>( node, getParamLabel(this) );
+            _imp->outputFileKnob = AppManager::createKnob<KnobOutputFile>( node.get(), getParamLabel(this) );
             if (fileIsImage) {
                 _imp->outputFileKnob.lock()->setAsOutputImageFile();
             } else {
@@ -2739,11 +2732,11 @@ OfxStringInstance::OfxStringInstance(OfxEffectInstance* node,
         }
 
     } else if (mode == kOfxParamStringIsDirectoryPath) {
-        _imp->pathKnob = AppManager::createKnob<KnobPath>( node, getParamLabel(this) );
+        _imp->pathKnob = AppManager::createKnob<KnobPath>( node.get(), getParamLabel(this) );
         _imp->pathKnob.lock()->setMultiPath(false);
         
     } else if ( (mode == kOfxParamStringIsSingleLine) || (mode == kOfxParamStringIsLabel) || (mode == kOfxParamStringIsMultiLine) || richText ) {
-        _imp->stringKnob = AppManager::createKnob<KnobString>( node, getParamLabel(this) );
+        _imp->stringKnob = AppManager::createKnob<KnobString>( node.get(), getParamLabel(this) );
         if (mode == kOfxParamStringIsLabel) {
             _imp->stringKnob.lock()->setAllDimensionsEnabled(false);
             _imp->stringKnob.lock()->setAsLabel();
@@ -2792,21 +2785,20 @@ OfxStringInstance::~OfxStringInstance()
 void
 OfxStringInstance::projectEnvVar_getProxy(std::string& str) const
 {
-    _imp->node->getApp()->getProject()->canonicalizePath(str);
+    getKnob()->getHolder()->getApp()->getProject()->canonicalizePath(str);
 }
 
 void
 OfxStringInstance::projectEnvVar_setProxy(std::string& str) const
 {
-    _imp->node->getApp()->getProject()->simplifyPath(str);
+    getKnob()->getHolder()->getApp()->getProject()->simplifyPath(str);
    
 }
 
 OfxStatus
 OfxStringInstance::get(std::string &str)
 {
-    assert( _imp->node->effectInstance() );
-    int currentFrame = _imp->node->getApp()->getTimeLine()->currentFrame();
+    int currentFrame = getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     if (_imp->fileKnob.lock()) {
         str = _imp->fileKnob.lock()->getFileName(currentFrame);
         projectEnvVar_getProxy(str);
@@ -2827,7 +2819,6 @@ OfxStatus
 OfxStringInstance::get(OfxTime time,
                        std::string & str)
 {
-    assert( _imp->node->effectInstance() );
     if (_imp->fileKnob.lock()) {
         str = _imp->fileKnob.lock()->getFileName(std::floor(time + 0.5));
         projectEnvVar_getProxy(str);
@@ -2924,7 +2915,7 @@ OfxStringInstance::getV(OfxTime time,
     return stat;
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 OfxStringInstance::getKnob() const
 {
     if (_imp->fileKnob.lock()) {
@@ -2940,7 +2931,7 @@ OfxStringInstance::getKnob() const
         return _imp->pathKnob.lock();
     }
 
-    return boost::shared_ptr<KnobI>();
+    return KnobPtr();
 }
 
 // callback which should set enabled state as appropriate
@@ -3020,7 +3011,7 @@ OfxStringInstance::setEvaluateOnChange()
 OfxStatus
 OfxStringInstance::getNumKeys(unsigned int &nKeys) const
 {
-    boost::shared_ptr<KnobI> knob;
+    KnobPtr knob;
 
     if (_imp->stringKnob.lock()) {
         knob = boost::dynamic_pointer_cast<KnobI>(_imp->stringKnob.lock());
@@ -3037,7 +3028,7 @@ OfxStatus
 OfxStringInstance::getKeyTime(int nth,
                               OfxTime & time) const
 {
-    boost::shared_ptr<KnobI> knob;
+    KnobPtr knob;
 
     if (_imp->stringKnob.lock()) {
         knob = boost::dynamic_pointer_cast<KnobI>(_imp->stringKnob.lock());
@@ -3055,7 +3046,7 @@ OfxStringInstance::getKeyIndex(OfxTime time,
                                int direction,
                                int & index) const
 {
-    boost::shared_ptr<KnobI> knob;
+    KnobPtr knob;
 
     if (_imp->stringKnob.lock()) {
         knob = boost::dynamic_pointer_cast<KnobI>(_imp->stringKnob.lock());
@@ -3071,7 +3062,7 @@ OfxStringInstance::getKeyIndex(OfxTime time,
 OfxStatus
 OfxStringInstance::deleteKey(OfxTime time)
 {
-    boost::shared_ptr<KnobI> knob;
+    KnobPtr knob;
 
     if (_imp->stringKnob.lock()) {
         knob = boost::dynamic_pointer_cast<KnobI>(_imp->stringKnob.lock());
@@ -3087,7 +3078,7 @@ OfxStringInstance::deleteKey(OfxTime time)
 OfxStatus
 OfxStringInstance::deleteAllKeys()
 {
-    boost::shared_ptr<KnobI> knob;
+    KnobPtr knob;
 
     if (_imp->stringKnob.lock()) {
         knob = boost::dynamic_pointer_cast<KnobI>(_imp->stringKnob.lock());
@@ -3143,14 +3134,12 @@ OfxStringInstance::onKnobAnimationLevelChanged(int,int lvl)
 struct OfxCustomInstancePrivate
 {
     
-    OfxEffectInstance* node;
     boost::weak_ptr<KnobString> knob;
     OfxCustomInstance::customParamInterpolationV1Entry_t customParamInterpolationV1Entry;
     boost::shared_ptr<TLSHolder<OfxParamToKnob::OfxParamTLSData> > tlsData;
 
-    OfxCustomInstancePrivate(OfxEffectInstance* node)
-    : node(node)
-    , knob()
+    OfxCustomInstancePrivate()
+    : knob()
     , customParamInterpolationV1Entry(0)
     , tlsData(new TLSHolder<OfxParamToKnob::OfxParamTLSData>())
     {
@@ -3159,15 +3148,15 @@ struct OfxCustomInstancePrivate
 };
 
 
-OfxCustomInstance::OfxCustomInstance(OfxEffectInstance* node,
+OfxCustomInstance::OfxCustomInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::Param::CustomInstance( descriptor,node->effectInstance() )
-    , _imp(new OfxCustomInstancePrivate(node))
+    , _imp(new OfxCustomInstancePrivate())
 {
     const OFX::Host::Property::Set &properties = getProperties();
 
 
-    boost::shared_ptr<KnobString> knob = AppManager::createKnob<KnobString>( node, getParamLabel(this) );
+    boost::shared_ptr<KnobString> knob = AppManager::createKnob<KnobString>( node.get(), getParamLabel(this) );
     _imp->knob = knob;
 
     knob->setAsCustom();
@@ -3187,8 +3176,7 @@ OfxCustomInstance::~OfxCustomInstance()
 OfxStatus
 OfxCustomInstance::get(std::string &str)
 {
-    assert( _imp->node->effectInstance() );
-    int currentFrame = (int)_imp->node->effectInstance()->timeLineGetTime();
+    double currentFrame = getKnob()->getCurrentTime();
     str = _imp->knob.lock()->getValueAtTime(currentFrame, 0);
 
     return kOfxStatOK;
@@ -3200,7 +3188,6 @@ OfxCustomInstance::get(OfxTime time,
 {
     assert( KnobString::canAnimateStatic() );
     // it should call _customParamInterpolationV1Entry
-    assert( _imp->node->effectInstance() );
     str = _imp->knob.lock()->getValueAtTime(time, 0);
 
     return kOfxStatOK;
@@ -3248,7 +3235,7 @@ OfxCustomInstance::getV(OfxTime time,
     return stat;
 }
 
-boost::shared_ptr<KnobI> OfxCustomInstance::getKnob() const
+KnobPtr OfxCustomInstance::getKnob() const
 {
     return _imp->knob.lock();
 }
@@ -3338,18 +3325,16 @@ OfxCustomInstance::onKnobAnimationLevelChanged(int,int lvl)
 
 ////////////////////////// OfxParametricInstance /////////////////////////////////////////////////
 
-OfxParametricInstance::OfxParametricInstance(OfxEffectInstance* node,
+OfxParametricInstance::OfxParametricInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                              OFX::Host::Param::Descriptor & descriptor)
     : OFX::Host::ParametricParam::ParametricInstance( descriptor,node->effectInstance() )
-      , _descriptor(descriptor)
       , _overlayInteract(NULL)
-      , _effect(node)
 {
     const OFX::Host::Property::Set &properties = getProperties();
     int parametricDimension = properties.getIntProperty(kOfxParamPropParametricDimension);
 
 
-    boost::shared_ptr<KnobParametric> knob = AppManager::createKnob<KnobParametric>(node, getParamLabel(this),parametricDimension);
+    boost::shared_ptr<KnobParametric> knob = AppManager::createKnob<KnobParametric>(node.get(), getParamLabel(this),parametricDimension);
     _knob = knob;
 
     setLabel(); //set label on all curves
@@ -3377,7 +3362,9 @@ OfxParametricInstance::initializeInteract(OverlaySupport* widget)
     OfxPluginEntryPoint* interactEntryPoint = (OfxPluginEntryPoint*)getProperties().getPointerProperty(kOfxParamPropParametricInteractBackground);
 
     if (interactEntryPoint) {
-        _overlayInteract = new OfxOverlayInteract( ( *_effect->effectInstance() ),8,true );
+        OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>(_knob.lock()->getHolder());
+        assert(effect);
+        _overlayInteract = new OfxOverlayInteract( ( *effect->effectInstance() ),8,true );
         _overlayInteract->setCallingViewport(widget);
         _overlayInteract->createInstanceAction();
         QObject::connect( _knob.lock().get(), SIGNAL( customBackgroundRequested() ), this, SLOT( onCustomBackgroundDrawingRequested() ) );
@@ -3389,7 +3376,7 @@ OfxParametricInstance::~OfxParametricInstance()
     delete _overlayInteract;
 }
 
-boost::shared_ptr<KnobI> OfxParametricInstance::getKnob() const
+KnobPtr OfxParametricInstance::getKnob() const
 {
     return _knob.lock();
 }
@@ -3520,7 +3507,10 @@ OfxParametricInstance::addControlPoint(int curveIndex,
     }
     
     StatusEnum stat;
-    if (_effect->getPluginID() == PLUGINID_OFX_COLORCORRECT) {
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(_knob.lock()->getHolder());
+    
+#pragma message WARN("This is a hack, we should extend the parametric suite to add derivatives infos")
+    if (effect && effect->getPluginID() == PLUGINID_OFX_COLORCORRECT) {
         stat = _knob.lock()->addHorizontalControlPoint(curveIndex, key, value);
     } else {
         stat = _knob.lock()->addControlPoint(curveIndex, key, value);
@@ -3564,7 +3554,11 @@ OfxParametricInstance::onCustomBackgroundDrawingRequested()
     if (_overlayInteract) {
         double sx, sy;
         _overlayInteract->getPixelScale(sx, sy);
-        _overlayInteract->drawAction(_effect->getApp()->getTimeLine()->currentFrame(), RenderScale(sx, sy), /*view=*/0);
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(getKnob()->getHolder());
+        assert(effect);
+        if (effect) {
+            _overlayInteract->drawAction(effect->getApp()->getTimeLine()->currentFrame(), RenderScale(sx, sy), /*view=*/0);
+        }
     }
 }
 

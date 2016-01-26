@@ -47,7 +47,7 @@ struct DiskCacheNodePrivate
     }
 };
 
-DiskCacheNode::DiskCacheNode(boost::shared_ptr<Node> node)
+DiskCacheNode::DiskCacheNode(NodePtr node)
 : OutputEffectInstance(node)
 , _imp(new DiskCacheNodePrivate())
 {
@@ -160,7 +160,7 @@ DiskCacheNode::getFrameRange(double *first,double *last)
     int idx = _imp->frameRange.lock()->getValue();
     switch (idx) {
         case 0: {
-            EffectInstance* input = getInput(0);
+            EffectInstPtr input = getInput(0);
             if (input) {
                 input->getFrameRange_public(input->getHash(), first, last);
             }
@@ -180,7 +180,7 @@ DiskCacheNode::getFrameRange(double *first,double *last)
 void
 DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const
 {
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (input) {
         return input->getPreferredDepthAndComponents(-1, comp, depth);
     } else {
@@ -193,7 +193,7 @@ DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,std::list<ImageCom
 ImagePremultiplicationEnum
 DiskCacheNode::getOutputPremultiplication() const
 {
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (input) {
         return input->getOutputPremultiplication();
     } else {
@@ -205,7 +205,7 @@ DiskCacheNode::getOutputPremultiplication() const
 double
 DiskCacheNode::getPreferredAspectRatio() const
 {
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (input) {
         return input->getPreferredAspectRatio();
     } else {
@@ -220,7 +220,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
     
     assert(args.outputPlanes.size() == 1);
     
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (!input) {
         return eStatusFailed;
     }

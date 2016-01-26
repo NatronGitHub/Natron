@@ -66,11 +66,11 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
     
     QPointF lastMousePosScene = mapToScene(_imp->_lastMousePos);
 
-    NodeGuiList nodes = getAllActiveNodes_mt_safe();
+    NodesGuiList nodes = getAllActiveNodes_mt_safe();
     
     ///Matches sorted by depth
     std::map<double,NodeGuiPtr> matches;
-    for (NodeGuiList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesGuiList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         QPointF evpt = (*it)->mapFromScene(lastMousePosScene);
         if ( (*it)->isVisible() && (*it)->isActive() && (*it)->contains(evpt) ) {
             matches.insert(std::make_pair((*it)->zValue(), *it));
@@ -88,7 +88,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
             if (node->getSettingPanel()) {
                 getGui()->putSettingsPanelFirst( node->getSettingPanel() );
             } else {
-                ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getNode()->getLiveInstance());
+                ViewerInstance* isViewer = node->getNode()->isEffectViewer();
                 if (isViewer) {
                     ViewerGL* viewer = dynamic_cast<ViewerGL*>(isViewer->getUiContext());
                     assert(viewer);
@@ -130,7 +130,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
         }
         
         if (modCASIsShift(e)) {
-            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getNode()->getLiveInstance());
+            NodeGroup* isGrp = node->getNode()->isEffectGroup();
             if (isGrp) {
                 NodeGraphI* graph_i = isGrp->getNodeGraph();
                 assert(graph_i);
@@ -284,13 +284,13 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         ///We try to find if the last selected node has an input, if so move selection (or add to selection)
         ///the first valid input node
         if ( !_imp->_selection.empty() ) {
-            boost::shared_ptr<NodeGui> lastSelected = ( *_imp->_selection.rbegin() );
+            NodeGuiPtr lastSelected = ( *_imp->_selection.rbegin() );
             const std::vector<Edge*> & inputs = lastSelected->getInputsArrows();
             for (U32 i = 0; i < inputs.size() ; ++i) {
                 if ( inputs[i]->hasSource() ) {
-                    boost::shared_ptr<NodeGui> input = inputs[i]->getSource();
+                    NodeGuiPtr input = inputs[i]->getSource();
                     if ( input->getIsSelected() && modCASIsShift(e) ) {
-                        std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.begin(),
+                        NodesGuiList::iterator found = std::find(_imp->_selection.begin(),
                                                                                            _imp->_selection.end(),lastSelected);
                         if ( found != _imp->_selection.end() ) {
                             lastSelected->setUserSelected(false);
@@ -308,23 +308,28 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
         ///We try to find if the last selected node has an output, if so move selection (or add to selection)
         ///the first valid output node
         if ( !_imp->_selection.empty() ) {
-            boost::shared_ptr<NodeGui> lastSelected = ( *_imp->_selection.rbegin() );
-            const std::list<Node* > & outputs = lastSelected->getNode()->getGuiOutputs();
-            if ( !outputs.empty() ) {
-                boost::shared_ptr<NodeGuiI> output_i = outputs.front()->getNodeGui();
-                boost::shared_ptr<NodeGui> output = boost::dynamic_pointer_cast<NodeGui>(output_i);
-                if (output) {
-                    if ( output->getIsSelected() && modCASIsShift(e) ) {
-                        std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.begin(),
-                                                                                           _imp->_selection.end(),lastSelected);
-                        if ( found != _imp->_selection.end() ) {
-                            lastSelected->setUserSelected(false);
-                            _imp->_selection.erase(found);
+            NodeGuiPtr lastSelected = ( *_imp->_selection.rbegin() );
+            const NodesWList & outputs = lastSelected->getNode()->getGuiOutputs();
+            if (!outputs.empty()) {
+                
+                NodePtr firstOutput = outputs.front().lock();
+                if (firstOutput) {
+                    boost::shared_ptr<NodeGuiI> output_i = firstOutput->getNodeGui();
+                    NodeGuiPtr output = boost::dynamic_pointer_cast<NodeGui>(output_i);
+                    if (output) {
+                        if ( output->getIsSelected() && modCASIsShift(e) ) {
+                            NodesGuiList::iterator found = std::find(_imp->_selection.begin(),
+                                                                     _imp->_selection.end(),lastSelected);
+                            if ( found != _imp->_selection.end() ) {
+                                lastSelected->setUserSelected(false);
+                                _imp->_selection.erase(found);
+                            }
+                        } else {
+                            selectNode( output, modCASIsShift(e) );
                         }
-                    } else {
-                        selectNode( output, modCASIsShift(e) );
                     }
-                }
+                } // firstOutput
+
             }
         }
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, modifiers, key) ) {
@@ -446,7 +451,7 @@ NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
     _imp->resetSelection();
     if (onlyInVisiblePortion) {
         QRectF r = visibleSceneRect();
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+        for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
             if ( r.intersects(bbox) && (*it)->isActive() && (*it)->isVisible() ) {
                 (*it)->setUserSelected(true);
@@ -455,7 +460,7 @@ NodeGraph::selectAllNodes(bool onlyInVisiblePortion)
         }
   
     } else {
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+        for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             if ( (*it)->isActive() && (*it)->isVisible() ) {
                 (*it)->setUserSelected(true);
                 _imp->_selection.push_back(*it);

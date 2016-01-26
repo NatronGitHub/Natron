@@ -62,13 +62,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+    static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
         return new KnobGuiParametric(knob, container);
     }
 
-    KnobGuiParametric(boost::shared_ptr<KnobI> knob,
+    KnobGuiParametric(KnobPtr knob,
                        DockablePanel *container);
     
     virtual void removeSpecificGui() OVERRIDE FINAL;
@@ -79,7 +79,7 @@ public:
     }
 
     virtual ~KnobGuiParametric() OVERRIDE;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
     virtual void getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection) OVERRIDE FINAL;
 

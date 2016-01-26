@@ -48,7 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 using std::cout; using std::endl;
 
-QtReader::QtReader(boost::shared_ptr<Node> node)
+QtReader::QtReader(NodePtr node)
     : EffectInstance(node)
       , _lut( Color::LutManager::sRGBLut() )
       , _img(0)

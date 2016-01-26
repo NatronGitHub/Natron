@@ -38,12 +38,12 @@ class QtWriter
     : public OutputEffectInstance
 {
 public:
-    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new QtWriter(n);
     }
 
-    QtWriter(boost::shared_ptr<Node> node);
+    QtWriter(NodePtr node);
 
     virtual ~QtWriter();
 

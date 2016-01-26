@@ -50,8 +50,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    explicit InfoViewerWidget(ViewerGL* v,
-                              const QString & description,
+    explicit InfoViewerWidget(const QString & description,
                               QWidget* parent = 0);
     virtual ~InfoViewerWidget() OVERRIDE;
 
@@ -101,7 +100,6 @@ private:
     Label* color;
     Label* hvl_lastOption;
     Label* _fpsLabel;
-    ViewerGL* viewer;
     ImageComponents _comp;
     bool _colorValid;
     bool _colorApprox;

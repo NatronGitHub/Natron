@@ -95,7 +95,6 @@ optimizeRectsToRender(EffectInstance* self,
         std::vector<RectI> splits = it->splitIntoSmallerRects(0);
         EffectInstance::RectToRender nonIdentityRect;
         nonIdentityRect.isIdentity = false;
-        nonIdentityRect.identityInput = 0;
         nonIdentityRect.identityTime = 0;
         nonIdentityRect.rect.x1 = INT_MAX;
         nonIdentityRect.rect.x2 = INT_MIN;
@@ -120,14 +119,14 @@ optimizeRectsToRender(EffectInstance* self,
 
                 //Walk along the identity branch until we find the non identity input, or NULL in we case we will
                 //just render black and transparant
-                EffectInstance* identityInput = self->getInput(identityInputNb);
+                EffectInstPtr identityInput = self->getInput(identityInputNb);
                 if (identityInput) {
                     for (;; ) {
                         identity = identityInput->isIdentity_public(false, 0, time, renderMappedScale, splits[i], view, &identityInputTime, &identityInputNb);
                         if ( !identity || (identityInputNb == -2) ) {
                             break;
                         }
-                        EffectInstance* subIdentityInput = identityInput->getInput(identityInputNb);
+                        EffectInstPtr subIdentityInput = identityInput->getInput(identityInputNb);
                         if (subIdentityInput == identityInput) {
                             break;
                         }
@@ -322,7 +321,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         {
             SequenceTime ptTime;
             int ptView;
-            boost::shared_ptr<Node> ptInput;
+            NodePtr ptInput;
             getComponentsNeededAndProduced_public(true, true, args.time, args.view, neededComps.get(), &processAllComponentsRequested, &ptTime, &ptView, &processChannels, &ptInput);
 
 
@@ -410,7 +409,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 inArgs->components.clear();
                 inArgs->components.push_back(it->first);
                 ImageList inputPlanes;
-                RenderRoIRetCode inputRetCode = node->getLiveInstance()->renderRoI(*inArgs, &inputPlanes);
+                RenderRoIRetCode inputRetCode = node->getEffectInstance()->renderRoI(*inArgs, &inputPlanes);
                 assert( inputPlanes.size() == 1 || inputPlanes.empty() );
                 if ( (inputRetCode == eRenderRoIRetCodeAborted) || (inputRetCode == eRenderRoIRetCodeFailed) || inputPlanes.empty() ) {
                     return inputRetCode;
@@ -498,7 +497,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             //args.roi.toCanonical(args.mipMapLevel, rod, &canonicalRoI);
             args.roi.toCanonical_noClipping(args.mipMapLevel, par,  &canonicalRoI);
 
-            EffectInstance* inputEffectIdentity = getInput(inputNbIdentity);
+            EffectInstPtr inputEffectIdentity = getInput(inputNbIdentity);
             if (inputEffectIdentity) {
                 if ( tls->frameArgs.stats && tls->frameArgs.stats->isInDepthProfilingEnabled() ) {
                     tls->frameArgs.stats->setNodeIdentity( getNode(), inputEffectIdentity->getNode() );
@@ -997,7 +996,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 getNode()->getPaintStrokeRoD(args.time, &inputRod);
                 hasMask = true;
             } else {
-                EffectInstance* input = getInput(i);
+                EffectInstPtr input = getInput(i);
                 if (!input) {
                     continue;
                 }
@@ -1044,7 +1043,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         for (std::list<RectI>::iterator it = rectsLeftToRender.begin(); it != rectsLeftToRender.end(); ++it) {
             RectToRender r;
             r.rect = *it;
-            r.identityInput = 0;
             r.isIdentity = false;
             planesToRender->rectsToRender.push_back(r);
         }
@@ -1099,7 +1097,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
         if ( planesToRender->inputPremult.empty() ) {
             for (InputImagesMap::iterator it2 = it->imgs.begin(); it2 != it->imgs.end(); ++it2) {
-                EffectInstance* input = getInput(it2->first);
+                EffectInstPtr input = getInput(it2->first);
                 if (input) {
                     ImagePremultiplicationEnum inputPremult = input->getOutputPremultiplication();
                     if ( !it2->second.empty() ) {
@@ -1190,7 +1188,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     RectToRender r;
                     r.rect = *it;
                     r.identityTime = 0;
-                    r.identityInput = 0;
                     r.isIdentity = false;
                     planesToRender->rectsToRender.push_back(r);
                 }
@@ -1658,9 +1655,9 @@ EffectInstance::renderRoIInternal(double time,
     }
 
 
-    boost::shared_ptr<std::map<boost::shared_ptr<Node>, ParallelRenderArgs > > tlsCopy;
+    boost::shared_ptr<std::map<NodePtr, ParallelRenderArgs > > tlsCopy;
     if (safety == eRenderSafetyFullySafeFrame) {
-        tlsCopy.reset(new std::map<boost::shared_ptr<Node>, ParallelRenderArgs >);
+        tlsCopy.reset(new std::map<NodePtr, ParallelRenderArgs >);
         /*
          * Since we're about to start new threads potentially, copy all the thread local storage on all nodes (any node may be involved in
          * expressions, and we need to retrieve the exact local time of render).

@@ -537,7 +537,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
         "A:", "B:"
     };
     for (int i = 0; i < 2; ++i) {
-        _imp->infoWidget[i] = new InfoViewerWidget(_imp->viewer,inputNames[i],this);
+        _imp->infoWidget[i] = new InfoViewerWidget(inputNames[i],this);
         _imp->viewerSubContainerLayout->addWidget(_imp->infoWidget[i]);
         _imp->viewer->setInfoViewer(_imp->infoWidget[i],i);
         if (i == 1) {
@@ -920,7 +920,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->previousKeyFrame_Button,SIGNAL( clicked(bool) ),getGui()->getApp(), SLOT( goToPreviousKeyframe() ) );
 
     
-    boost::shared_ptr<Node> wrapperNode = _imp->viewerNode->getNode();
+    NodePtr wrapperNode = _imp->viewerNode->getNode();
     QObject::connect( _imp->viewerNode, SIGNAL(renderStatsAvailable(int,int,double,RenderStatsMap)),
                      this, SLOT(onRenderStatsAvailable(int,int,double,RenderStatsMap)));
     QObject::connect( wrapperNode.get(),SIGNAL( inputChanged(int) ),this,SLOT( onInputChanged(int) ) );

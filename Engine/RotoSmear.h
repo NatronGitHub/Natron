@@ -37,12 +37,12 @@ class RotoSmear : public EffectInstance
 {
 public:
     
-    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new RotoSmear(n);
     }
     
-    RotoSmear(boost::shared_ptr<Node> node);
+    RotoSmear(NodePtr node);
     
     virtual ~RotoSmear();
         

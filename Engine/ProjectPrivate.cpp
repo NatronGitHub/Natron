@@ -131,7 +131,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         autoSetProjectFormat = false;
         
         const std::list< boost::shared_ptr<KnobSerialization> > & projectSerializedValues = obj.getProjectKnobsValues();
-        const std::vector< boost::shared_ptr<KnobI> > & projectKnobs = _publicInterface->getKnobs();
+        const std::vector< KnobPtr > & projectKnobs = _publicInterface->getKnobs();
         
         /// 1) restore project's knobs.
         for (U32 i = 0; i < projectKnobs.size(); ++i) {

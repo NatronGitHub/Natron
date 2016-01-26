@@ -42,9 +42,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef boost::shared_ptr<Node> NodePtr;
-
-typedef std::list<NodePtr> NodeList;
 
 struct NodeCollectionPrivate;
 
@@ -69,12 +66,12 @@ public:
     /**
      * @brief Returns a copy of the nodes within the collection. MT-safe.
      **/
-    NodeList getNodes() const;
+    NodesList getNodes() const;
     
     /**
      * @brief Same as getNodes() except that this function recurse in sub-groups.
      **/
-    void getNodes_recursive(NodeList& nodes, bool onlyActive) const;
+    void getNodes_recursive(NodesList& nodes, bool onlyActive) const;
     
     /**
      * @brief Adds a node to the collection. MT-safe.
@@ -125,19 +122,19 @@ public:
      * of the node 'output'. If 'force' is true, then it will disconnect any previous connection
      * existing on 'inputNumber' and connect the previous input as input of the new 'input' node.
      **/
-    static bool connectNodes(int inputNumber,const NodePtr& input,Node* output,bool force = false);
+    static bool connectNodes(int inputNumber,const NodePtr& input,const NodePtr& output,bool force = false);
     
     /**
      * @brief Same as above where inputName is the name of the node input.
      **/
-    bool connectNodes(int inputNumber,const std::string & inputName,Node* output);
+    bool connectNodes(int inputNumber,const std::string & inputName,const NodePtr& output);
     
     /**
      * @brief Disconnects the node 'input' and 'output' if any connection between them is existing.
      * If autoReconnect is true, after disconnecting 'input' and 'output', if the 'input' had only
      * 1 input, and it was connected, it will connect output to the input of  'input'.
      **/
-    static bool disconnectNodes(Node* input,Node* output,bool autoReconnect = false);
+    static bool disconnectNodes(const NodePtr& input,const NodePtr& output,bool autoReconnect = false);
 
     
     /**
@@ -209,9 +206,9 @@ public:
     /**
      * @brief Get a list of all active nodes
      **/
-    void getActiveNodes(NodeList* nodes) const;
+    void getActiveNodes(NodesList* nodes) const;
     
-    void getActiveNodesExpandGroups(NodeList* nodes) const;
+    void getActiveNodesExpandGroups(NodesList* nodes) const;
     
     /**
      * @brief Get all viewers in the group and sub groups
@@ -248,7 +245,7 @@ public:
     void recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame);
 
     
-    void getParallelRenderArgs(std::map<boost::shared_ptr<Node>,ParallelRenderArgs >& argsMap) const;
+    void getParallelRenderArgs(std::map<NodePtr,ParallelRenderArgs >& argsMap) const;
     
     
     void forceComputeInputDependentDataOnAllTrees();
@@ -256,28 +253,28 @@ public:
     /**
      * @brief Callback called when a node of the collection is being deactivated
      **/
-    virtual void notifyNodeDeactivated(const boost::shared_ptr<Node>& /*node*/) {}
+    virtual void notifyNodeDeactivated(const NodePtr& /*node*/) {}
     
     /**
      * @brief Callback called when a node of the collection is being activated
      **/
-    virtual void notifyNodeActivated(const boost::shared_ptr<Node>& /*node*/) {}
+    virtual void notifyNodeActivated(const NodePtr& /*node*/) {}
     
     /**
      * @brief Callback called when an input of the group changed
      **/
-    virtual void notifyInputOptionalStateChanged(const boost::shared_ptr<Node>& /*node*/) {}
+    virtual void notifyInputOptionalStateChanged(const NodePtr& /*node*/) {}
     
     /**
      * @brief Callback called when an input of the group changed
      **/
-    virtual void notifyInputMaskStateChanged(const boost::shared_ptr<Node>& /*node*/) {}
+    virtual void notifyInputMaskStateChanged(const NodePtr& /*node*/) {}
 
     
     /**
      * @brief Callback called when a node of the collection is being activated
      **/
-    virtual void notifyNodeNameChanged(const boost::shared_ptr<Node>& /*node*/) {}
+    virtual void notifyNodeNameChanged(const NodePtr& /*node*/) {}
     
     void exportGroupToPython(const QString& pluginID,
                              const QString& pluginLabel,
@@ -304,7 +301,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
-    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new NodeGroup(n);
     }
@@ -367,21 +364,21 @@ public:
     virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
-    virtual void notifyNodeDeactivated(const boost::shared_ptr<Node>& node) OVERRIDE FINAL;
-    virtual void notifyNodeActivated(const boost::shared_ptr<Node>& node) OVERRIDE FINAL;
-    virtual void notifyInputOptionalStateChanged(const boost::shared_ptr<Node>& node) OVERRIDE FINAL;
-    virtual void notifyInputMaskStateChanged(const boost::shared_ptr<Node>& node) OVERRIDE FINAL;
-    virtual void notifyNodeNameChanged(const boost::shared_ptr<Node>& node) OVERRIDE FINAL;
+    virtual void notifyNodeDeactivated(const NodePtr& node) OVERRIDE FINAL;
+    virtual void notifyNodeActivated(const NodePtr& node) OVERRIDE FINAL;
+    virtual void notifyInputOptionalStateChanged(const NodePtr& node) OVERRIDE FINAL;
+    virtual void notifyInputMaskStateChanged(const NodePtr& node) OVERRIDE FINAL;
+    virtual void notifyNodeNameChanged(const NodePtr& node) OVERRIDE FINAL;
     
-    boost::shared_ptr<Node> getOutputNode(bool useGuiConnexions) const;
+    NodePtr getOutputNode(bool useGuiConnexions) const;
         
-    boost::shared_ptr<Node> getOutputNodeInput(bool useGuiConnexions) const;
+    NodePtr getOutputNodeInput(bool useGuiConnexions) const;
     
-    boost::shared_ptr<Node> getRealInputForInput(bool useGuiConnexions,const boost::shared_ptr<Node>& input) const;
+    NodePtr getRealInputForInput(bool useGuiConnexions,const NodePtr& input) const;
     
-    void getInputs(std::vector<boost::shared_ptr<Node> >* inputs, bool useGuiConnexions) const;
+    void getInputs(std::vector<NodePtr >* inputs, bool useGuiConnexions) const;
     
-    void getInputsOutputs(std::list<Node* >* nodes, bool useGuiConnexions) const;
+    void getInputsOutputs(NodesList* nodes, bool useGuiConnexions) const;
     
     void dequeueConnexions();
     

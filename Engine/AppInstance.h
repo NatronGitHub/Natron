@@ -156,9 +156,9 @@ public:
 
     /** @brief Create a new node  in the node graph.
      **/
-    boost::shared_ptr<Node> createNode(const CreateNodeArgs & args);
+    NodePtr createNode(const CreateNodeArgs & args);
   
-    boost::shared_ptr<Node> getNodeByFullySpecifiedName(const std::string & name) const;
+    NodePtr getNodeByFullySpecifiedName(const std::string & name) const;
     
     boost::shared_ptr<Project> getProject() const;
     
@@ -306,13 +306,13 @@ public:
     
     void getFrameRange(double* first,double* last) const;
     
-    virtual void setLastViewerUsingTimeline(const boost::shared_ptr<Node>& /*node*/) {}
+    virtual void setLastViewerUsingTimeline(const NodePtr& /*node*/) {}
     
     virtual ViewerInstance* getLastViewerUsingTimeline() const { return 0; }
     
     bool loadPythonScript(const QFileInfo& file);
     
-    boost::shared_ptr<Node> createWriter(const std::string& filename,
+    NodePtr createWriter(const std::string& filename,
                                          CreateNodeReason reason,
                                          const boost::shared_ptr<NodeCollection>& collection,
                                          int firstFrame = INT_MIN, int lastFrame = INT_MAX);
@@ -337,11 +337,11 @@ public:
     
     virtual bool isDraftRenderEnabled() const { return false; }
     
-    virtual void setUserIsPainting(const boost::shared_ptr<Node>& /*rotopaintNode*/,
+    virtual void setUserIsPainting(const NodePtr& /*rotopaintNode*/,
                                    const boost::shared_ptr<RotoStrokeItem>& /*stroke*/,
                                   bool /*isPainting*/) {}
     
-    virtual void getActiveRotoDrawingStroke(boost::shared_ptr<Node>* /*node*/,
+    virtual void getActiveRotoDrawingStroke(NodePtr* /*node*/,
                                             boost::shared_ptr<RotoStrokeItem>* /*stroke*/,
                                             bool* /*isPainting*/) const { }
     
@@ -405,10 +405,10 @@ Q_SIGNALS:
 
 protected:
     
-    virtual void onGroupCreationFinished(const boost::shared_ptr<Node>& node, CreateNodeReason reason);
+    virtual void onGroupCreationFinished(const NodePtr& node, CreateNodeReason reason);
 
-    virtual void createNodeGui(const boost::shared_ptr<Node>& /*node*/,
-                               const boost::shared_ptr<Node>&  /*parentmultiinstance*/,
+    virtual void createNodeGui(const NodePtr& /*node*/,
+                               const NodePtr&  /*parentmultiinstance*/,
                                const CreateNodeArgs& /*args*/)
     {
     }
@@ -419,13 +419,13 @@ private:
     void getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderRequest>& requests);
 
 
-    boost::shared_ptr<Node> createNodeInternal(const CreateNodeArgs& args);
+    NodePtr createNodeInternal(const CreateNodeArgs& args);
     
-    void setGroupLabelIDAndVersion(const boost::shared_ptr<Node>& node,
+    void setGroupLabelIDAndVersion(const NodePtr& node,
                                    const QString& pythonModulePath,
                                    const QString &pythonModule);
     
-    boost::shared_ptr<Node> createNodeFromPythonModule(Plugin* plugin,
+    NodePtr createNodeFromPythonModule(Plugin* plugin,
                                                        const boost::shared_ptr<NodeCollection>& group,
                                                        CreateNodeReason reason,
                                                        const boost::shared_ptr<NodeSerialization>& serialization);

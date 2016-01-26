@@ -115,7 +115,7 @@ private:
         bool modifiedKeyFrame = false;
         int i = 0;
 
-        boost::shared_ptr<KnobI> knob = _knob->getKnob();
+        KnobPtr knob = _knob->getKnob();
         knob->beginChanges();
         
         assert((int)_oldValue.size() == _knob->getKnob()->getDimension() || _dimension != -1);
@@ -174,7 +174,7 @@ private:
     {
         double time = 0;
         
-        boost::shared_ptr<KnobI> knob = _knob->getKnob();
+        KnobPtr knob = _knob->getKnob();
         if ( knob->getHolder() && knob->getHolder()->getApp() ) {
             time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
         }
@@ -324,7 +324,7 @@ public:
     virtual void redo() OVERRIDE FINAL;
     virtual int id() const OVERRIDE FINAL;
     virtual bool mergeWith(const QUndoCommand *command) OVERRIDE FINAL;
-    static boost::shared_ptr<KnobI> createCopyForKnob(const boost::shared_ptr<KnobI> & originalKnob);
+    static KnobPtr createCopyForKnob(const KnobPtr & originalKnob);
 };
 
 class PasteUndoCommand
@@ -360,14 +360,14 @@ class RestoreDefaultsCommand
 {
 public:
 
-    RestoreDefaultsCommand(const std::list<boost::shared_ptr<KnobI> > & knobs,
+    RestoreDefaultsCommand(const std::list<KnobPtr > & knobs,
                            QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
 
 private:
 
-    std::list<boost::shared_ptr<KnobI> > _knobs,_clones;
+    std::list<KnobPtr > _knobs,_clones;
 };
 
 class SetExpressionCommand
@@ -375,7 +375,7 @@ class SetExpressionCommand
 {
 public:
     
-    SetExpressionCommand(const boost::shared_ptr<KnobI> & knob,
+    SetExpressionCommand(const KnobPtr & knob,
                          bool hasRetVar,
                          int dimension,
                          const std::string& expr,

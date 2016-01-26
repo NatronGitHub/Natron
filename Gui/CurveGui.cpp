@@ -231,7 +231,7 @@ CurveGui::drawCurve(int curveIndex,
     bool hasDrawnExpr = false;
     if (isKnobCurve) {
         std::string expr;
-        boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+        KnobPtr knob = isKnobCurve->getInternalKnob();
         assert(knob);
         expr = knob->getExpression(isKnobCurve->getDimension());
         if (!expr.empty()) {
@@ -533,7 +533,7 @@ KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
 
 KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
                            boost::shared_ptr<Curve>  curve,
-                           const boost::shared_ptr<KnobI>& knob,
+                           const KnobPtr& knob,
                            const boost::shared_ptr<RotoContext>& roto,
                            int dimension,
                            const QString & name,
@@ -559,7 +559,7 @@ KnobCurveGui::~KnobCurveGui()
 double
 KnobCurveGui::evaluate(bool useExpr,double x) const
 {
-    boost::shared_ptr<KnobI> knob = getInternalKnob();
+    KnobPtr knob = getInternalKnob();
     if (useExpr) {
         return knob->getValueAtWithExpression(x,_dimension);
     } else {
@@ -576,7 +576,7 @@ KnobCurveGui::evaluate(bool useExpr,double x) const
 boost::shared_ptr<Curve>
 KnobCurveGui::getInternalCurve() const
 {
-    boost::shared_ptr<KnobI> knob = getInternalKnob();
+    KnobPtr knob = getInternalKnob();
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
     if (!knob || !isParametric) {
         return CurveGui::getInternalCurve();
@@ -584,7 +584,7 @@ KnobCurveGui::getInternalCurve() const
     return isParametric->getParametricCurve(_dimension);
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 KnobCurveGui::getInternalKnob() const
 {
     return _knob ? _knob->getKnob() : _internalKnob;

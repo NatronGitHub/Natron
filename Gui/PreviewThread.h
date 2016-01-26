@@ -50,7 +50,7 @@ public:
     
     virtual ~PreviewThread();
     
-    void appendToQueue(const boost::shared_ptr<NodeGui>& node, double time);
+    void appendToQueue(const NodeGuiPtr& node, double time);
     
     void quitThread();
     

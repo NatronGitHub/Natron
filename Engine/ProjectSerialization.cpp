@@ -40,7 +40,7 @@ ProjectSerialization::initialize(const Project* project)
     
     project->getAdditionalFormats(&_additionalFormats);
 
-    std::vector< boost::shared_ptr<KnobI> > knobs = project->getKnobs_mt_safe();
+    std::vector< KnobPtr > knobs = project->getKnobs_mt_safe();
     for (U32 i = 0; i < knobs.size(); ++i) {
         KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[i].get() );
         KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[i].get() );

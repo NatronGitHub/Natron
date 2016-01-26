@@ -141,11 +141,11 @@ NodeGraph::NodeGraph(Gui* gui,
     _imp->_undoStack->setUndoLimit( appPTR->getCurrentSettings()->getMaximumUndoRedoNodeGraph() );
     getGui()->registerNewUndoStack(_imp->_undoStack);
 
-    _imp->_hintInputEdge = new Edge(0,0,boost::shared_ptr<NodeGui>(),_imp->_nodeRoot);
+    _imp->_hintInputEdge = new Edge(0,0,NodeGuiPtr(),_imp->_nodeRoot);
     _imp->_hintInputEdge->setDefaultColor( QColor(0,255,0,100) );
     _imp->_hintInputEdge->hide();
 
-    _imp->_hintOutputEdge = new Edge(0,0,boost::shared_ptr<NodeGui>(),_imp->_nodeRoot);
+    _imp->_hintOutputEdge = new Edge(0,0,NodeGuiPtr(),_imp->_nodeRoot);
     _imp->_hintOutputEdge->setDefaultColor( QColor(0,255,0,100) );
     _imp->_hintOutputEdge->hide();
 
@@ -181,12 +181,12 @@ NodeGraph::NodeGraph(Gui* gui,
 
 NodeGraph::~NodeGraph()
 {
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin();
+    for (NodesGuiList::iterator it = _imp->_nodes.begin();
          it != _imp->_nodes.end();
          ++it) {
         (*it)->discardGraphPointer();
     }
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin();
+    for (NodesGuiList::iterator it = _imp->_nodesTrash.begin();
          it != _imp->_nodesTrash.end();
          ++it) {
         (*it)->discardGraphPointer();
@@ -220,7 +220,7 @@ NodeGraph::isDoingNavigatorRender() const
 }
 
 
-const std::list< boost::shared_ptr<NodeGui> > &
+const std::list< NodeGuiPtr > &
 NodeGraph::getSelectedNodes() const
 {
     return _imp->_selection;
@@ -252,12 +252,12 @@ void
 NodeGraph::onNodesCleared()
 {
     _imp->_selection.clear();
-    std::list<boost::shared_ptr<NodeGui> > nodesCpy;
+    NodesGuiList nodesCpy;
     {
         QMutexLocker l(&_imp->_nodesMutex);
         nodesCpy = _imp->_nodes;
     }
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesCpy.begin(); it != nodesCpy.end(); ++it) {
+    for (NodesGuiList::iterator it = nodesCpy.begin(); it != nodesCpy.end(); ++it) {
         deleteNodePermanantly( *it );
     }
 
@@ -369,14 +369,14 @@ NodeGraph::visibleWidgetRect() const
     return viewport()->rect();
 }
 
-boost::shared_ptr<NodeGui>
-NodeGraph::createNodeGUI(const boost::shared_ptr<Node> & node,
+NodeGuiPtr
+NodeGraph::createNodeGUI(const NodePtr & node,
                          const CreateNodeArgs& args)
 {
-    boost::shared_ptr<NodeGui> node_ui;
-    Dot* isDot = dynamic_cast<Dot*>( node->getLiveInstance() );
-    Backdrop* isBd = dynamic_cast<Backdrop*>(node->getLiveInstance());
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+    NodeGuiPtr node_ui;
+    Dot* isDot = dynamic_cast<Dot*>( node->getEffectInstance().get() );
+    Backdrop* isBd = dynamic_cast<Backdrop*>(node->getEffectInstance().get());
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getEffectInstance().get());
     
     
     ///prevent multiple render requests while creating node and connecting it
@@ -395,11 +395,11 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Node> & node,
     if (isBd) {
         BackdropGui* bd = dynamic_cast<BackdropGui*>(node_ui.get());
         assert(bd);
-        NodeGuiList selectedNodes = _imp->_selection;
+        NodesGuiList selectedNodes = _imp->_selection;
         if ( bd && !selectedNodes.empty() ) {
             ///make the backdrop large enough to contain the selected nodes and position it correctly
             QRectF bbox;
-            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+            for (NodesGuiList::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
                 QRectF nodeBbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
                 bbox = bbox.united(nodeBbox);
             }
@@ -424,7 +424,7 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Node> & node,
 
     NodeGroup* parentIsGroup = dynamic_cast<NodeGroup*>(node->getGroup().get());;
     
-    if (args.reason != eCreateNodeReasonProjectLoad && (!getGui()->getApp()->isCreatingPythonGroup() || dynamic_cast<NodeGroup*>(node->getLiveInstance())) && !parentIsGroup) {
+    if (args.reason != eCreateNodeReasonProjectLoad && (!getGui()->getApp()->isCreatingPythonGroup() || node->isEffectGroup()) && !parentIsGroup) {
         node_ui->ensurePanelCreated();
     }
     

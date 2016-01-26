@@ -188,7 +188,7 @@ AnimationButton::dropEvent(QDropEvent* e)
     if ( formats.contains("Animation") ) {
         QByteArray expr = e->mimeData()->data("Animation");
         std::string expression(expr.data());
-        boost::shared_ptr<KnobI> knob = _knob->getKnob();
+        KnobPtr knob = _knob->getKnob();
         _knob->pushUndoCommand(new SetExpressionCommand(knob,false,-1,expression));
         e->acceptProposedAction();
     }

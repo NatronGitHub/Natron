@@ -42,7 +42,7 @@ class NoOpBase
 {
 public:
 
-    NoOpBase(boost::shared_ptr<Node> n);
+    NoOpBase(NodePtr n);
 
     virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -87,7 +87,7 @@ public:
     virtual StatusEnum getTransform(double time,
                                             const RenderScale & renderScale,
                                             int view,
-                                            EffectInstance** inputToTransform,
+                                            EffectInstPtr* inputToTransform,
                                             Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;

@@ -83,7 +83,7 @@ using std::make_pair;
 
 //=============================SEPARATOR_KNOB_GUI===================================
 
-KnobGuiSeparator::KnobGuiSeparator(boost::shared_ptr<KnobI> knob,
+KnobGuiSeparator::KnobGuiSeparator(KnobPtr knob,
                                      DockablePanel *container)
     : KnobGui(knob, container)
     , _line(0)
@@ -127,7 +127,7 @@ KnobGuiSeparator::_show()
     _line->show();
 }
 
-boost::shared_ptr<KnobI> KnobGuiSeparator::getKnob() const
+KnobPtr KnobGuiSeparator::getKnob() const
 {
     return _knob.lock();
 }

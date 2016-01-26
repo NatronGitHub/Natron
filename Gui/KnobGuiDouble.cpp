@@ -127,7 +127,7 @@ KnobGuiDouble::shouldAddStretch() const
     return _knob.lock()->isSliderDisabled();
 }
 
-KnobGuiDouble::KnobGuiDouble(boost::shared_ptr<KnobI> knob,
+KnobGuiDouble::KnobGuiDouble(KnobPtr knob,
                                DockablePanel *container)
 : KnobGui(knob, container)
 , _container(0)
@@ -753,7 +753,7 @@ KnobGuiDouble::setDirty(bool dirty)
     }
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 KnobGuiDouble::getKnob() const
 {
     return _knob.lock();

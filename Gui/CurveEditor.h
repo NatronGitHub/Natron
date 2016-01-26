@@ -75,7 +75,7 @@ public:
     
     NodeCurveEditorElement(QTreeWidget* tree,
                            CurveEditor* curveWidget,
-                           const boost::shared_ptr<KnobI>& internalKnob,
+                           const KnobPtr& internalKnob,
                            int dimension,
                            QTreeWidgetItem* item,
                            const boost::shared_ptr<CurveGui>& curve);
@@ -114,7 +114,7 @@ public:
         return _knob;
     }
     
-    boost::shared_ptr<KnobI> getInternalKnob() const WARN_UNUSED_RETURN;
+    KnobPtr getInternalKnob() const WARN_UNUSED_RETURN;
     
     void checkVisibleState(bool autoSelectOnShow);
 
@@ -138,7 +138,7 @@ private:
     CurveEditor* _curveWidget;
     QTreeWidget* _treeWidget;
     KnobGui* _knob;
-    boost::shared_ptr<KnobI> _internalKnob;
+    KnobPtr _internalKnob;
     int _dimension;
 };
 
@@ -155,11 +155,11 @@ public:
 
     NodeCurveEditorContext(QTreeWidget *tree,
                            CurveEditor* curveWidget,
-                           const boost::shared_ptr<NodeGui> &node);
+                           const NodeGuiPtr &node);
 
     virtual ~NodeCurveEditorContext() OVERRIDE;
 
-    boost::shared_ptr<NodeGui> getNode() const WARN_UNUSED_RETURN
+    NodeGuiPtr getNode() const WARN_UNUSED_RETURN
     {
         return _node;
     }
@@ -188,7 +188,7 @@ public Q_SLOTS:
 
 private:
     // FIXME: PIMPL
-    boost::shared_ptr<NodeGui> _node;
+    NodeGuiPtr _node;
     Elements _nodeElements;
     QTreeWidgetItem* _nameItem;
 };
@@ -292,11 +292,11 @@ public:
     
     RotoCurveEditorContext(CurveEditor* widget,
                            QTreeWidget *tree,
-                           const boost::shared_ptr<NodeGui> &node);
+                           const NodeGuiPtr &node);
     
     virtual ~RotoCurveEditorContext() OVERRIDE;
     
-    boost::shared_ptr<NodeGui> getNode() const WARN_UNUSED_RETURN;
+    NodeGuiPtr getNode() const WARN_UNUSED_RETURN;
     
     QTreeWidgetItem* getItem() const;
     
@@ -346,7 +346,7 @@ public:
     /**
      * @brief Creates a new NodeCurveEditorContext and stores it until the CurveEditor is destroyed.
      **/
-    void addNode(boost::shared_ptr<NodeGui> node);
+    void addNode(NodeGuiPtr node);
 
     void removeNode(NodeGui* node);
     

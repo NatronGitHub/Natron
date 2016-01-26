@@ -158,13 +158,13 @@ NodeGraph::getFullSceneScreenShot()
     return img;
 } // getFullSceneScreenShot
 
-const std::list<boost::shared_ptr<NodeGui> > &
+const NodesGuiList &
 NodeGraph::getAllActiveNodes() const
 {
     return _imp->_nodes;
 }
 
-std::list<boost::shared_ptr<NodeGui> >
+NodesGuiList
 NodeGraph::getAllActiveNodes_mt_safe() const
 {
     QMutexLocker l(&_imp->_nodesMutex);
@@ -176,7 +176,7 @@ void
 NodeGraph::moveToTrash(NodeGui* node)
 {
     assert(node);
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin();
+    for (NodesGuiList::iterator it = _imp->_selection.begin();
          it != _imp->_selection.end(); ++it) {
         if (it->get() == node) {
             (*it)->setUserSelected(false);
@@ -186,7 +186,7 @@ NodeGraph::moveToTrash(NodeGui* node)
     }
     
     QMutexLocker l(&_imp->_nodesMutex);
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         if ( (*it).get() == node ) {
             _imp->_nodesTrash.push_back(*it);
             _imp->_nodes.erase(it);
@@ -200,7 +200,7 @@ NodeGraph::restoreFromTrash(NodeGui* node)
 {
     assert(node);
     QMutexLocker l(&_imp->_nodesMutex);
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
         if ( (*it).get() == node ) {
             _imp->_nodes.push_back(*it);
             _imp->_nodesTrash.erase(it);
@@ -285,10 +285,10 @@ NodeGraph::toggleKnobLinksVisible()
     _imp->_knobLinksVisible = !_imp->_knobLinksVisible;
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+        for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             (*it)->setKnobLinksVisible(_imp->_knobLinksVisible);
         }
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
+        for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
             (*it)->setKnobLinksVisible(_imp->_knobLinksVisible);
         }
     }
@@ -387,7 +387,7 @@ NodeGraph::showMenu(const QPoint & pos)
     QObject::connect( displayCacheInfoAction,SIGNAL( triggered() ),this,SLOT( toggleCacheInfo() ) );
     _imp->_menu->addAction(displayCacheInfoAction);
     
-    const NodeGuiList& selectedNodes = getSelectedNodes();
+    const NodesGuiList& selectedNodes = getSelectedNodes();
     if (!selectedNodes.empty()) {
         QAction* turnOffPreviewAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphTogglePreview,
                                                                kShortcutDescActionGraphTogglePreview,_imp->_menu);
@@ -544,7 +544,7 @@ NodeGraph::dropEvent(QDropEvent* e)
             args.yPosHint = scenePos.y();
             args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
 
-            boost::shared_ptr<Node>  n = getGui()->getApp()->createNode(args);
+            NodePtr  n = getGui()->getApp()->createNode(args);
             
             //And offset scenePos by the Width of the previous node created if several nodes are created
             double w,h;

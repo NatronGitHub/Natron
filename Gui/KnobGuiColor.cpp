@@ -86,7 +86,7 @@ using std::make_pair;
 
 //=============================RGBA_KNOB_GUI===================================
 
-KnobGuiColor::KnobGuiColor(boost::shared_ptr<KnobI> knob,
+KnobGuiColor::KnobGuiColor(KnobPtr knob,
                              DockablePanel *container)
     : KnobGui(knob, container)
       , mainContainer(NULL)
@@ -1272,7 +1272,7 @@ KnobGuiColor::setDirty(bool dirty)
     }
 }
 
-boost::shared_ptr<KnobI> KnobGuiColor::getKnob() const
+KnobPtr KnobGuiColor::getKnob() const
 {
     return _knob.lock();
 }

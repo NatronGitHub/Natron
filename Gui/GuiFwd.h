@@ -189,6 +189,10 @@ class Menu;
 namespace QtMac {
 bool isHighDPIInternal(const QWidget* w);
 }
+
+typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
+typedef std::list<NodeGuiPtr> NodesGuiList;
+
 NATRON_NAMESPACE_EXIT;
 
 

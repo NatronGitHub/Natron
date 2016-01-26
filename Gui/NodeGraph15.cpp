@@ -54,7 +54,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 NATRON_NAMESPACE_ENTER;
 
-static bool handleConnectionError(const boost::shared_ptr<NodeGui>& outputNode, const boost::shared_ptr<NodeGui>& inputNode, int inputNb)
+static bool handleConnectionError(const NodeGuiPtr& outputNode, const NodeGuiPtr& inputNode, int inputNb)
 {
     Node::CanConnectInputReturnValue linkRetCode = outputNode->getNode()->canConnectInput(inputNode->getNode(), inputNb);
 
@@ -65,8 +65,8 @@ static bool handleConnectionError(const boost::shared_ptr<NodeGui>& outputNode, 
                                     + "%3 / %4 " +  QObject::tr(") and ") + "%1 " + QObject::tr(" doesn't support inputs with different pixel aspect ratio. This might yield unwanted results."))
             .arg(outputNode->getNode()->getLabel().c_str())
             .arg(inputNode->getNode()->getLabel().c_str())
-            .arg(outputNode->getNode()->getLiveInstance()->getPreferredAspectRatio())
-            .arg(inputNode->getNode()->getLiveInstance()->getPreferredAspectRatio());
+            .arg(outputNode->getNode()->getEffectInstance()->getPreferredAspectRatio())
+            .arg(inputNode->getNode()->getEffectInstance()->getPreferredAspectRatio());
             Dialogs::warningDialog(QObject::tr("Different pixel aspect").toStdString(),
                                 error.toStdString());
             return true;
@@ -75,8 +75,8 @@ static bool handleConnectionError(const boost::shared_ptr<NodeGui>& outputNode, 
             QString error = QString("%1" + QObject::tr(" and ") + "%2"  + QObject::tr(" don't have the same frame rate (") + "%3 / %4). " + QObject::tr("This might yield unwanted results. Either change the FPS from the Read node parameters or change the settings of the project."))
             .arg(outputNode->getNode()->getLabel().c_str())
             .arg(inputNode->getNode()->getLabel().c_str())
-            .arg(outputNode->getNode()->getLiveInstance()->getPreferredFrameRate())
-            .arg(inputNode->getNode()->getLiveInstance()->getPreferredFrameRate());
+            .arg(outputNode->getNode()->getEffectInstance()->getPreferredFrameRate())
+            .arg(inputNode->getNode()->getEffectInstance()->getPreferredFrameRate());
             Dialogs::warningDialog(QObject::tr("Different frame rate").toStdString(),
                                 error.toStdString());
             return true;
@@ -100,7 +100,7 @@ static bool handleConnectionError(const boost::shared_ptr<NodeGui>& outputNode, 
         return false;
     }
     
-    if (linkRetCode == Node::eCanConnectInput_ok && outputNode->getNode()->getLiveInstance()->isReader() &&
+    if (linkRetCode == Node::eCanConnectInput_ok && outputNode->getNode()->getEffectInstance()->isReader() &&
         inputNode->getNode()->getPluginID() != PLUGINID_OFX_RUNSCRIPT) {
         Dialogs::warningDialog(QObject::tr("Reader input").toStdString(), QObject::tr("Connecting an input to a Reader node "
                                                                    "is only useful when using the RunScript node "
@@ -126,15 +126,15 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         
         bool foundSrc = false;
         assert(_imp->_arrowSelected);
-        boost::shared_ptr<NodeGui> nodeHoldingEdge = _imp->_arrowSelected->isOutputEdge() ?
+        NodeGuiPtr nodeHoldingEdge = _imp->_arrowSelected->isOutputEdge() ?
                                                      _imp->_arrowSelected->getSource() : _imp->_arrowSelected->getDest();
         assert(nodeHoldingEdge);
         
-        std::list<boost::shared_ptr<NodeGui> > nodes = getAllActiveNodes_mt_safe();
+        NodesGuiList nodes = getAllActiveNodes_mt_safe();
         QPointF ep = mapToScene( e->pos() );
         
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-            boost::shared_ptr<NodeGui> & n = *it;
+        for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+            NodeGuiPtr & n = *it;
             
             BackdropGui* isBd = dynamic_cast<BackdropGui*>(n.get());
             if (isBd) {
@@ -182,7 +182,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
         ///So the user understands some nodes can have output
         if ( !foundSrc && !_imp->_arrowSelected->isOutputEdge() && _imp->_arrowSelected->getSource() ) {
             pushUndoCommand( new ConnectCommand( this,_imp->_arrowSelected,_imp->_arrowSelected->getSource(),
-                                                      boost::shared_ptr<NodeGui>() ) );
+                                                      NodeGuiPtr() ) );
         }
         
         
@@ -192,20 +192,20 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
     } else if (state == eEventStateDraggingNode) {
         if ( !_imp->_selection.empty() ) {
             
-            std::list<NodeGuiPtr> nodesToMove;
-            for (std::list<NodeGuiPtr>::iterator it = _imp->_selection.begin();
+            NodesGuiList nodesToMove;
+            for (NodesGuiList::iterator it = _imp->_selection.begin();
                  it != _imp->_selection.end(); ++it) {
                 
                 const NodeGuiPtr& node = *it;
                 nodesToMove.push_back(node);
                 
-                std::map<NodeGuiPtr,NodeGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
+                std::map<NodeGuiPtr,NodesGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
                 if (!modCASIsControl(e) && foundBd != _imp->_nodesWithinBDAtPenDown.end()) {
-                    for (NodeGuiList::iterator it2 = foundBd->second.begin();
+                    for (NodesGuiList::iterator it2 = foundBd->second.begin();
                          it2 != foundBd->second.end(); ++it2) {
                         ///add it only if it's not already in the list
                         bool found = false;
-                        for (std::list<NodeGuiPtr>::iterator it3 = nodesToMove.begin();
+                        for (NodesGuiList::iterator it3 = nodesToMove.begin();
                              it3 != nodesToMove.end(); ++it3) {
                             if (*it3 == *it2) {
                                 found = true;
@@ -228,7 +228,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                 
                 _imp->_highLightedEdge->setUseHighlight(false);
 
-                boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.front();
+                NodeGuiPtr selectedNode = _imp->_selection.front();
                 
                 _imp->_highLightedEdge->setUseHighlight(false);
                 if ( _imp->_highLightedEdge->isOutputEdge() ) {
@@ -249,7 +249,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                 _imp->_hintOutputEdge->hide();
             } else if (_imp->_mergeHintNode) {
                 _imp->_mergeHintNode->setMergeHintActive(false);
-                boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.front();
+                NodeGuiPtr selectedNode = _imp->_selection.front();
                 selectedNode->setMergeHintActive(false);
                 
                 if (getGui()) {
@@ -277,7 +277,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
 
                 
                     
-                    boost::shared_ptr<Node> mergeNode = getGui()->getApp()->createNode(args);
+                    NodePtr mergeNode = getGui()->getApp()->createNode(args);
                     
                     if (mergeNode) {
                         

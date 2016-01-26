@@ -42,12 +42,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
-    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new Backdrop(n);
     }
     
-    Backdrop(boost::shared_ptr<Node> node);
+    Backdrop(NodePtr node);
     
     virtual ~Backdrop();
   

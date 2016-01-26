@@ -1080,11 +1080,11 @@ ViewerTab::refreshFPSBoxFromClipPreferences()
     int activeInputs[2];
     
     _imp->viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
-    EffectInstance* input0 = activeInputs[0] != - 1 ? _imp->viewerNode->getInput(activeInputs[0]) : 0;
+    EffectInstPtr input0 = activeInputs[0] != - 1 ? _imp->viewerNode->getInput(activeInputs[0]) : EffectInstPtr();
     if (input0) {
         _imp->fpsBox->setValue(input0->getPreferredFrameRate());
     } else {
-        EffectInstance* input1 = activeInputs[1] != - 1 ? _imp->viewerNode->getInput(activeInputs[1]) : 0;
+        EffectInstPtr input1 = activeInputs[1] != - 1 ? _imp->viewerNode->getInput(activeInputs[1]) : EffectInstPtr();
         if (input1) {
             _imp->fpsBox->setValue(input1->getPreferredFrameRate());
         } else {

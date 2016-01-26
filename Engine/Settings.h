@@ -151,7 +151,7 @@ public:
     ///restores the settings from disk
     void restoreSettings();
     
-    void restoreKnobsFromSettings(const std::vector<boost::shared_ptr<KnobI> >& knobs);
+    void restoreKnobsFromSettings(const KnobsVec& knobs);
     void restoreKnobsFromSettings(const std::vector<KnobI*>& knobs);
 
     bool isAutoPreviewOnForNewProjects() const;

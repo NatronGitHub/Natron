@@ -37,12 +37,12 @@ class RotoPaint : public EffectInstance
 {
 public:
     
-    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new RotoPaint(n, true);
     }
     
-    RotoPaint(boost::shared_ptr<Node> node, bool isPaintByDefault);
+    RotoPaint(NodePtr node, bool isPaintByDefault);
     
     virtual ~RotoPaint();
     
@@ -172,13 +172,13 @@ class RotoNode : public RotoPaint
     
 public:
     
-    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new RotoNode(n);
     }
 
     
-    RotoNode(boost::shared_ptr<Node> node) : RotoPaint(node, false) {}
+    RotoNode(NodePtr node) : RotoPaint(node, false) {}
     
     virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN;
     

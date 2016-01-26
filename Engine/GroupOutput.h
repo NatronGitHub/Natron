@@ -40,12 +40,12 @@ class GroupOutput
 {
 public:
     
-    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new GroupOutput(n);
     }
     
-    GroupOutput(boost::shared_ptr<Node> n)
+    GroupOutput(NodePtr n)
     : NoOpBase(n)
     {
     }

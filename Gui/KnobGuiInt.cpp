@@ -85,7 +85,7 @@ using std::make_pair;
 
 
 //==========================INT_KNOB_GUI======================================
-KnobGuiInt::KnobGuiInt(boost::shared_ptr<KnobI> knob,
+KnobGuiInt::KnobGuiInt(KnobPtr knob,
                          DockablePanel *container)
     : KnobGui(knob, container)
       , _container(0)
@@ -651,7 +651,7 @@ KnobGuiInt::setDirty(bool dirty)
     }
 }
 
-boost::shared_ptr<KnobI> KnobGuiInt::getKnob() const
+KnobPtr KnobGuiInt::getKnob() const
 {
     return _knob.lock();
 }

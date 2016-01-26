@@ -131,7 +131,7 @@ public:
     virtual void hideSplashScreen() OVERRIDE FINAL;
     const QCursor & getColorPickerCursor() const;
     virtual void setLoadingStatus(const QString & str) OVERRIDE FINAL;
-    KnobGui* createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
+    KnobGui* createGuiForKnob(KnobPtr knob, DockablePanel *container) const;
     virtual void setUndoRedoStackLimit(int limit) OVERRIDE FINAL;
     virtual void debugImage( const Image* image, const RectI& roi, const QString & filename = QString() ) const OVERRIDE FINAL;
 
@@ -197,7 +197,7 @@ public:
     
     bool handleImageFileOpenRequest(const std::string& imageFile);
     
-    void appendTaskToPreviewThread(const boost::shared_ptr<NodeGui>& node, double time);
+    void appendTaskToPreviewThread(const NodeGuiPtr& node, double time);
     
 
     void setCurrentLogicalDPI(double dpiX,double dpiY);

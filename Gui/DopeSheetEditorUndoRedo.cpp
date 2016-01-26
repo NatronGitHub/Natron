@@ -80,17 +80,17 @@ void moveFrameRange(const NodePtr& node, double dt)
     
 void moveGroupNode(DopeSheetEditor* model, const NodePtr& node, double dt)
 {
-    NodeGroup *group = dynamic_cast<NodeGroup *>(node->getLiveInstance());
+    NodeGroup *group = node->isEffectGroup();
     assert(group);
-    NodeList nodes;
+    NodesList nodes;
     group->getNodes_recursive(nodes,true);
     
-    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>((*it)->getNodeGui());
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>((*it)->getNodeGui());
         assert(nodeGui);
         std::string pluginID = (*it)->getPluginID();
         
-        NodeGroup* isChildGroup = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+        NodeGroup* isChildGroup = (*it)->isEffectGroup();
         
         // Move readers
         if (pluginID == PLUGINID_OFX_READOIIO ||
@@ -106,10 +106,10 @@ void moveGroupNode(DopeSheetEditor* model, const NodePtr& node, double dt)
         }
         
         // Move keyframes
-        const std::vector<boost::shared_ptr<KnobI> > &knobs = (*it)->getKnobs();
+        const KnobsVec &knobs = (*it)->getKnobs();
         
-        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
-            const boost::shared_ptr<KnobI>& knob = *knobIt;
+        for (KnobsVec::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
+            const KnobPtr& knob = *knobIt;
             if (!knob->hasAnimation()) {
                 continue;
             }
@@ -150,7 +150,7 @@ _dt(dt),
 _model(model)
 {
     setText(QObject::tr("Move selected keys"));
-    std::set<boost::shared_ptr<Node> > nodesSet;
+    std::set<NodePtr > nodesSet;
     for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
         DopeSheetItemType type = (*it)->getItemType();
         if (type != eDopeSheetItemTypeReader &&
@@ -162,11 +162,11 @@ _model(model)
         }
         _nodes.push_back(*it);
         nodesSet.insert((*it)->getInternalNode());
-        NodeGroup* isGroup = dynamic_cast<NodeGroup*>((*it)->getInternalNode()->getLiveInstance());
+        NodeGroup* isGroup = (*it)->getInternalNode()->isEffectGroup();
         if (isGroup) {
-            NodeList recurseNodes;
+            NodesList recurseNodes;
             isGroup->getNodes_recursive(recurseNodes, true);
-            for (NodeList::iterator it = recurseNodes.begin(); it!=recurseNodes.end(); ++it) {
+            for (NodesList::iterator it = recurseNodes.begin(); it!=recurseNodes.end(); ++it) {
                 nodesSet.insert(*it);
             }
         }
@@ -181,7 +181,7 @@ _model(model)
         }
     }
     
-    for (std::set<boost::shared_ptr<Node> >::iterator it = nodesSet.begin(); it!=nodesSet.end(); ++it) {
+    for (std::set<NodePtr >::iterator it = nodesSet.begin(); it!=nodesSet.end(); ++it) {
         _allDifferentNodes.push_back(*it);
     }
 }
@@ -205,12 +205,12 @@ void DSMoveKeysAndNodesCommand::moveSelection(double dt)
     DopeSheetView* view = _model->getDopesheetView();
     view->setUpdatesEnabled(false);
     
-    for (std::list<boost::weak_ptr<Node> >::iterator khIt = _allDifferentNodes.begin(); khIt != _allDifferentNodes.end(); ++khIt) {
+    for (NodesWList::iterator khIt = _allDifferentNodes.begin(); khIt != _allDifferentNodes.end(); ++khIt) {
         NodePtr node = khIt->lock();
         if (!node) {
             continue;
         }
-        node->getLiveInstance()->beginChanges();
+        node->getEffectInstance()->beginChanges();
     }
 
     
@@ -223,7 +223,7 @@ void DSMoveKeysAndNodesCommand::moveSelection(double dt)
             continue;
         }
 
-        boost::shared_ptr<KnobI> knob = knobContext->getKnobGui()->getKnob();
+        KnobPtr knob = knobContext->getKnobGui()->getKnob();
 
         knob->moveValueAtTime(eCurveChangeReasonDopeSheet,selectedKey->key.getTime(),
                               knobContext->getDimension(),
@@ -244,12 +244,12 @@ void DSMoveKeysAndNodesCommand::moveSelection(double dt)
     }
     
 
-    for (std::list<boost::weak_ptr<Node> >::const_iterator khIt = _allDifferentNodes.begin(); khIt != _allDifferentNodes.end(); ++khIt) {
+    for (NodesWList::const_iterator khIt = _allDifferentNodes.begin(); khIt != _allDifferentNodes.end(); ++khIt) {
         NodePtr node = khIt->lock();
         if (!node) {
             continue;
         }
-        node->getLiveInstance()->endChanges();
+        node->getEffectInstance()->endChanges();
     }
     
     view->setUpdatesEnabled(true);
@@ -424,7 +424,7 @@ DSTransformKeysCommand::transformKey(const DSKeyPtr& key)
         return;
     }
     
-    boost::shared_ptr<KnobI> knob = knobContext->getKnobGui()->getKnob();
+    KnobPtr knob = knobContext->getKnobGui()->getKnob();
     knob->transformValueAtTime(eCurveChangeReasonDopeSheet,key->key.getTime(), knobContext->getDimension(), _transform, &key->key);
 }
 
@@ -883,7 +883,7 @@ void DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
         }
         int dim = knobContext->getDimension();
         
-        boost::shared_ptr<KnobI> knob = knobContext->getInternalKnob();
+        KnobPtr knob = knobContext->getInternalKnob();
         knob->beginChanges();
 
         double keyTime = _keys[i].key.getTime();

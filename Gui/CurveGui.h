@@ -180,7 +180,7 @@ public:
     
     KnobCurveGui(const CurveWidget *curveWidget,
                  boost::shared_ptr<Curve>  curve,
-                 const boost::shared_ptr<KnobI>& knob,
+                 const KnobPtr& knob,
                  const boost::shared_ptr<RotoContext>& roto,
                  int dimension,
                  const QString & name,
@@ -200,7 +200,7 @@ public:
     
     boost::shared_ptr<RotoContext> getRotoContext() const { return _roto; }
     
-    boost::shared_ptr<KnobI> getInternalKnob() const;
+    KnobPtr getInternalKnob() const;
     
     int getDimension() const
     {
@@ -214,7 +214,7 @@ public:
 private:
     
     boost::shared_ptr<RotoContext> _roto;
-    boost::shared_ptr<KnobI> _internalKnob;
+    KnobPtr _internalKnob;
     KnobGui* _knob; //< ptr to the knob holding this curve
     int _dimension; //< which dimension is this curve representing
 };

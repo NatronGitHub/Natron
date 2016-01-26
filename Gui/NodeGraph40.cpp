@@ -70,7 +70,7 @@ NodeGraph::togglePreviewsForSelectedNodes()
     {
         QMutexLocker l(&_imp->_nodesMutex);
         empty = _imp->_selection.empty();
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin();
+        for (NodesGuiList::iterator it = _imp->_selection.begin();
              it != _imp->_selection.end();
              ++it) {
             (*it)->togglePreview();
@@ -86,7 +86,7 @@ NodeGraph::switchInputs1and2ForSelectedNodes()
 {
     QMutexLocker l(&_imp->_nodesMutex);
 
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin();
+    for (NodesGuiList::iterator it = _imp->_selection.begin();
          it != _imp->_selection.end();
          ++it) {
         (*it)->onSwitchInputActionTriggered();
@@ -101,7 +101,7 @@ NodeGraph::centerOnItem(QGraphicsItem* item)
 }
 
 void
-NodeGraph::copyNodes(const std::list<boost::shared_ptr<NodeGui> >& nodes,NodeClipBoard& clipboard)
+NodeGraph::copyNodes(const NodesGuiList& nodes,NodeClipBoard& clipboard)
 {
     _imp->copyNodesInternal(nodes, clipboard);
 }
@@ -149,7 +149,7 @@ NodeGraph::cutSelectedNodes()
 }
 
 void
-NodeGraph::pasteCliboard(const NodeClipBoard& clipboard,std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >* newNodes)
+NodeGraph::pasteCliboard(const NodeClipBoard& clipboard,std::list<std::pair<std::string,NodeGuiPtr > >* newNodes)
 {
     QPointF position = _imp->_root->mapFromScene(mapToScene(mapFromGlobal(QCursor::pos())));
     _imp->pasteNodesInternal(clipboard,position, false, newNodes);
@@ -165,7 +165,7 @@ NodeGraph::pasteNodeClipBoards(const QPointF& pos)
     }
     QByteArray data = mimedata->data("text/natron-nodes");
     
-    std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
+    std::list<std::pair<std::string,NodeGuiPtr > > newNodes;
     
     
     
@@ -203,7 +203,7 @@ NodeGraph::duplicateSelectedNodes(const QPointF& pos)
     ///Don't use the member clipboard as the user might have something copied
     NodeClipBoard tmpClipboard;
     _imp->copyNodesInternal(_imp->_selection,tmpClipboard);
-    std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
+    std::list<std::pair<std::string,NodeGuiPtr > > newNodes;
     _imp->pasteNodesInternal(tmpClipboard,pos,true,&newNodes);
 
 }
@@ -228,8 +228,8 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     double xmin = INT_MAX;
     double ymin = INT_MAX;
     double ymax = INT_MIN;
-    NodeGuiList nodesToCopy = _imp->_selection;
-    for (NodeGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+    NodesGuiList nodesToCopy = _imp->_selection;
+    for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
         if ( (*it)->getNode()->getMasterNode()) {
             Dialogs::errorDialog( tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString() );
             return;
@@ -252,9 +252,9 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         ///Also copy all nodes within the backdrop
         BackdropGui* isBd = dynamic_cast<BackdropGui*>(it->get());
         if (isBd) {
-            NodeGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
-            for (NodeGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-                NodeGuiList::iterator found = std::find(nodesToCopy.begin(),nodesToCopy.end(),*it2);
+            NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
+            for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
+                NodesGuiList::iterator found = std::find(nodesToCopy.begin(),nodesToCopy.end(),*it2);
                 if ( found == nodesToCopy.end() ) {
                     nodesToCopy.push_back(*it2);
                 }
@@ -262,13 +262,13 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         }
     }
     
-    for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        if ( (*it)->getNode()->getLiveInstance()->isSlave() ) {
+    for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
+        if ( (*it)->getNode()->getEffectInstance()->isSlave() ) {
             Dialogs::errorDialog( tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString() );
             
             return;
         }
-        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>((*it)->getNode()->getLiveInstance());
+        ViewerInstance* isViewer = (*it)->getNode()->isEffectViewer();
         if (isViewer) {
             Dialogs::errorDialog( tr("Clone").toStdString(), tr("Cloning a viewer is not a valid operation.").toStdString() );
             
@@ -284,17 +284,17 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     }
     
     QPointF offset(scenePos.x() - ((xmax + xmin) / 2.), scenePos.y() -  ((ymax + ymin) / 2.));
-    std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > newNodes;
+    std::list<std::pair<std::string,NodeGuiPtr > > newNodes;
     std::list <boost::shared_ptr<NodeSerialization> > serializations;
     
-    std::list <boost::shared_ptr<NodeGui> > newNodesList;
+    std::list <NodeGuiPtr > newNodesList;
     
     std::map<std::string,std::string> oldNewScriptNameMapping;
-    for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
+    for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         boost::shared_ptr<NodeSerialization>  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
         boost::shared_ptr<NodeGuiSerialization> guiSerialization(new NodeGuiSerialization);
         (*it)->serialize(guiSerialization.get());
-        boost::shared_ptr<NodeGui> clone = _imp->pasteNode(internalSerialization, guiSerialization, offset,
+        NodeGuiPtr clone = _imp->pasteNode(internalSerialization, guiSerialization, offset,
                                                            _imp->group.lock(),std::string(),true, &oldNewScriptNameMapping );
         
         newNodes.push_back(std::make_pair(internalSerialization->getNodeScriptName(),clone));
@@ -330,23 +330,23 @@ NodeGraph::decloneSelectedNodes()
 
         return;
     }
-    std::list<boost::shared_ptr<NodeGui> > nodesToDeclone;
+    NodesGuiList nodesToDeclone;
 
 
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
         
         BackdropGui* isBd = dynamic_cast<BackdropGui*>(it->get());
         if (isBd) {
             ///Also copy all nodes within the backdrop
-            NodeGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
-            for (NodeGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-                NodeGuiList::iterator found = std::find(nodesToDeclone.begin(),nodesToDeclone.end(),*it2);
+            NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
+            for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
+                NodesGuiList::iterator found = std::find(nodesToDeclone.begin(),nodesToDeclone.end(),*it2);
                 if ( found == nodesToDeclone.end() ) {
                     nodesToDeclone.push_back(*it2);
                 }
             }
         }
-        if ( (*it)->getNode()->getLiveInstance()->isSlave() ) {
+        if ( (*it)->getNode()->getEffectInstance()->isSlave() ) {
             nodesToDeclone.push_back(*it);
         }
     }
@@ -362,15 +362,15 @@ NodeGraph::setUndoRedoStackLimit(int limit)
 }
 
 void
-NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
+NodeGraph::deleteNodePermanantly(NodeGuiPtr n)
 {
     assert(n);
-    boost::shared_ptr<Node> internalNode = n->getNode();
+    NodePtr internalNode = n->getNode();
 
     if (internalNode) {
-        internalNode->deactivate(std::list< Node* >(),false,false,true,false);
+        internalNode->deactivate(NodesList(),false,false,true,false);
     }
-    std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_nodesTrash.begin(),_imp->_nodesTrash.end(),n);
+    NodesGuiList::iterator it = std::find(_imp->_nodesTrash.begin(),_imp->_nodesTrash.end(),n);
 
     if ( it != _imp->_nodesTrash.end() ) {
         _imp->_nodesTrash.erase(it);
@@ -378,7 +378,7 @@ NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
 
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        std::list<boost::shared_ptr<NodeGui> >::iterator it = std::find(_imp->_nodes.begin(),_imp->_nodes.end(),n);
+        NodesGuiList::iterator it = std::find(_imp->_nodes.begin(),_imp->_nodes.end(),n);
         if ( it != _imp->_nodes.end() ) {
             _imp->_nodes.erase(it);
         }
@@ -403,14 +403,14 @@ NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
 
 
         getGui()->getCurveEditor()->removeNode( n.get() );
-        std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(_imp->_selection.begin(),_imp->_selection.end(),n);
+        NodesGuiList::iterator found = std::find(_imp->_selection.begin(),_imp->_selection.end(),n);
         if ( found != _imp->_selection.end() ) {
             n->setUserSelected(false);
             _imp->_selection.erase(found);
         }
         
-        if (internalNode && internalNode->getLiveInstance()) {
-            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(internalNode->getLiveInstance());
+        if (internalNode && internalNode->getEffectInstance()) {
+            NodeGroup* isGrp = internalNode->isEffectGroup();
             if (isGrp) {
                 NodeGraphI* graph_i = isGrp->getNodeGraph();
                 if (graph_i) {
@@ -448,13 +448,13 @@ NodeGraph::deleteNodePermanantly(boost::shared_ptr<NodeGui> n)
 void
 NodeGraph::invalidateAllNodesParenting()
 {
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         (*it)->setParentItem(NULL);
         if ( (*it)->scene() ) {
             (*it)->scene()->removeItem( it->get() );
         }
     }
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
         (*it)->setParentItem(NULL);
         if ( (*it)->scene() ) {
             (*it)->scene()->removeItem( it->get() );
@@ -476,7 +476,7 @@ NodeGraph::centerOnAllNodes()
     if (_imp->_selection.empty()) {
         QMutexLocker l(&_imp->_nodesMutex);
 
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+        for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             if ( /*(*it)->isActive() &&*/ (*it)->isVisible() ) {
                 QSize size = (*it)->getSize();
                 QPointF pos = (*it)->mapToScene((*it)->mapFromParent((*it)->getPos_mt_safe()));
@@ -488,7 +488,7 @@ NodeGraph::centerOnAllNodes()
         }
         
     } else {
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+        for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
             if ( /*(*it)->isActive() && */(*it)->isVisible() ) {
                 QSize size = (*it)->getSize();
                 QPointF pos = (*it)->mapToScene((*it)->mapFromParent((*it)->getPos_mt_safe()));

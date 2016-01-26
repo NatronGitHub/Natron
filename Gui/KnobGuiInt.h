@@ -64,20 +64,20 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+    static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
         return new KnobGuiInt(knob, container);
     }
 
-    KnobGuiInt(boost::shared_ptr<KnobI> knob,
+    KnobGuiInt(KnobPtr knob,
                 DockablePanel *container);
 
     virtual ~KnobGuiInt() OVERRIDE;
     
     virtual void removeSpecificGui() OVERRIDE FINAL;
 
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
     bool getAllDimensionsVisible() const;
     

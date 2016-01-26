@@ -268,23 +268,23 @@ TrackerGui::drawOverlays(double time,
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
 
         ///For each instance: <pointer,selected ? >
-        const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
-        for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
+        for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             
-            boost::shared_ptr<Node> instance = it->first.lock();
+            NodePtr instance = it->first.lock();
             
             if (instance->isNodeDisabled()) {
                 continue;
             }
             if (it->second) {
                 ///The track is selected, use the plug-ins interact
-                EffectInstance* effect = instance->getLiveInstance();
+                EffectInstPtr effect = instance->getEffectInstance();
                 assert(effect);
                 effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
                 effect->drawOverlay_public(time, renderScale, view);
             } else {
                 ///Draw a custom interact, indicating the track isn't selected
-                boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");
+                KnobPtr newInstanceKnob = instance->getKnobByName("center");
                 assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
                 KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
                 assert(dblKnob);
@@ -377,12 +377,12 @@ TrackerGui::penDown(double time,
 
     _imp->viewer->getViewer()->getPixelScale(pixelScale.first, pixelScale.second);
     bool didSomething = false;
-    const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
+        NodePtr instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            EffectInstance* effect = instance->getLiveInstance();
+            EffectInstPtr effect = instance->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayPenDown_public(time, renderScale, view, viewportPos, pos, pressure);
@@ -390,10 +390,10 @@ TrackerGui::penDown(double time,
     }
 
     double selectionTol = pixelScale.first * 10.;
-    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
-        boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");
+        NodePtr instance = it->first.lock();
+        KnobPtr newInstanceKnob = instance->getKnobByName("center");
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);
@@ -412,8 +412,8 @@ TrackerGui::penDown(double time,
     }
 
     if (_imp->clickToAddTrackEnabled && !didSomething) {
-        boost::shared_ptr<Node> newInstance = _imp->panel->createNewInstance(true);
-        boost::shared_ptr<KnobI> newInstanceKnob = newInstance->getKnobByName("center");
+        NodePtr newInstance = _imp->panel->createNewInstance(true);
+        KnobPtr newInstanceKnob = newInstance->getKnobByName("center");
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);
@@ -458,13 +458,13 @@ TrackerGui::penMotion(double time,
                       QInputEvent* /*e*/)
 {
     bool didSomething = false;
-    const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
+    const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
 
-    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
+        NodePtr instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            EffectInstance* effect = instance->getLiveInstance();
+            EffectInstPtr effect = instance->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             if ( effect->onOverlayPenMotion_public(time, renderScale, view, viewportPos, pos, pressure) ) {
@@ -492,13 +492,13 @@ TrackerGui::penUp(double time,
                   QMouseEvent* /*e*/)
 {
     bool didSomething = false;
-    const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
+    const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
 
-    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
+        NodePtr instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            EffectInstance* effect = instance->getLiveInstance();
+            EffectInstPtr effect = instance->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayPenUp_public(time, renderScale, view, viewportPos, pos, pressure);
@@ -528,12 +528,12 @@ TrackerGui::keyDown(double time,
 
     Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
-    const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
+        NodePtr instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            EffectInstance* effect = instance->getLiveInstance();
+            EffectInstPtr effect = instance->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayKeyDown_public(time, renderScale, view, natronKey, natronMod);
@@ -603,12 +603,12 @@ TrackerGui::keyUp(double time,
 
     Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
-    const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
+        NodePtr instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            EffectInstance* effect = instance->getLiveInstance();
+            EffectInstPtr effect = instance->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething = effect->onOverlayKeyUp_public(time, renderScale, view, natronKey, natronMod);
@@ -637,12 +637,12 @@ TrackerGui::loseFocus(double time,
 
     _imp->controlDown = 0;
 
-    const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
+        NodePtr instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            EffectInstance* effect = instance->getLiveInstance();
+            EffectInstPtr effect = instance->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
             didSomething |= effect->onOverlayFocusLost_public(time, renderScale, view);
@@ -662,11 +662,11 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
     _imp->viewer->getViewer()->getSelectionRectangle(l, r, b, t);
 
     std::list<Node*> currentSelection;
-    const std::list<std::pair<boost::weak_ptr<Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
-        boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");
+        NodePtr instance = it->first.lock();
+        KnobPtr newInstanceKnob = instance->getKnobByName("center");
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);

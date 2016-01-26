@@ -97,7 +97,7 @@ NATRON_NAMESPACE_ENTER;
 ////////////////////////////////////RotoContext////////////////////////////////////
 
 
-RotoContext::RotoContext(const boost::shared_ptr<Node>& node)
+RotoContext::RotoContext(const NodePtr& node)
     : _imp( new RotoContextPrivate(node) )
 {
     QObject::connect(_imp->lifeTime.lock()->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onLifeTimeKnobValueChanged(int,int)));
@@ -114,17 +114,17 @@ RotoContext::setWhileCreatingPaintStrokeOnMergeNodes(bool b)
 {
     getNode()->setWhileCreatingPaintStroke(b);
     QMutexLocker k(&_imp->rotoContextMutex);
-    for (std::list<boost::shared_ptr<Node> >::iterator it = _imp->globalMergeNodes.begin(); it != _imp->globalMergeNodes.end(); ++it) {
+    for (NodesList::iterator it = _imp->globalMergeNodes.begin(); it != _imp->globalMergeNodes.end(); ++it) {
         (*it)->setWhileCreatingPaintStroke(b);
     }
 }
 
-boost::shared_ptr<Node>
+NodePtr
 RotoContext::getRotoPaintBottomMergeNode() const
 {
     std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
     if (items.empty()) {
-        return boost::shared_ptr<Node>();
+        return NodePtr();
     }
     
     if (isRotoPaintTreeConcatenatableInternal(items)) {
@@ -136,21 +136,21 @@ RotoContext::getRotoPaintBottomMergeNode() const
     
     const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
     assert(firstStrokeItem);
-    boost::shared_ptr<Node> bottomMerge = firstStrokeItem->getMergeNode();
+    NodePtr bottomMerge = firstStrokeItem->getMergeNode();
     assert(bottomMerge);
     return bottomMerge;
 }
 
 void
-RotoContext::getRotoPaintTreeNodes(std::list<boost::shared_ptr<Node> >* nodes) const
+RotoContext::getRotoPaintTreeNodes(NodesList* nodes) const
 {
     std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder(false);
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::iterator it = items.begin(); it != items.end(); ++it) {
       
-        boost::shared_ptr<Node> effectNode = (*it)->getEffectNode();
-        boost::shared_ptr<Node> mergeNode = (*it)->getMergeNode();
-        boost::shared_ptr<Node> timeOffsetNode = (*it)->getTimeOffsetNode();
-        boost::shared_ptr<Node> frameHoldNode = (*it)->getFrameHoldNode();
+        NodePtr effectNode = (*it)->getEffectNode();
+        NodePtr mergeNode = (*it)->getMergeNode();
+        NodePtr timeOffsetNode = (*it)->getTimeOffsetNode();
+        NodePtr frameHoldNode = (*it)->getFrameHoldNode();
         if (effectNode) {
             nodes->push_back(effectNode);
         }
@@ -166,7 +166,7 @@ RotoContext::getRotoPaintTreeNodes(std::list<boost::shared_ptr<Node> >* nodes) c
     }
     
     QMutexLocker k(&_imp->rotoContextMutex);
-    for (std::list<boost::shared_ptr<Node> >::const_iterator it = _imp->globalMergeNodes.begin(); it != _imp->globalMergeNodes.end(); ++it) {
+    for (NodesList::const_iterator it = _imp->globalMergeNodes.begin(); it != _imp->globalMergeNodes.end(); ++it) {
         nodes->push_back(*it);
     }
 }
@@ -360,7 +360,7 @@ RotoContext::isRippleEditEnabled() const
     return _imp->rippleEdit;
 }
 
-boost::shared_ptr<Node>
+NodePtr
 RotoContext::getNode() const
 {
     return _imp->node.lock();
@@ -801,7 +801,7 @@ RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoIt
 
     bool rodSet = false;
     
-    boost::shared_ptr<Node> activeRotoPaintNode;
+    NodePtr activeRotoPaintNode;
     boost::shared_ptr<RotoStrokeItem> activeStroke;
     bool isDrawing;
     getNode()->getApp()->getActiveRotoDrawingStroke(&activeRotoPaintNode, &activeStroke,&isDrawing);
@@ -1158,11 +1158,11 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
             }
         }
         
-        const std::list<boost::shared_ptr<KnobI> >& drawableKnobs = isDrawable->getKnobs();
-        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
+        const std::list<KnobPtr >& drawableKnobs = isDrawable->getKnobs();
+        for (std::list<KnobPtr >::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
             
             for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
-                boost::shared_ptr<KnobI> thisKnob = it2->lock();
+                KnobPtr thisKnob = it2->lock();
                 if (thisKnob->getName() == (*it)->getName()) {
                     
                     //Clone current state
@@ -1204,12 +1204,12 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
     ///enable the knobs
     if (nbUnlockedBeziers > 0 || nbUnlockedStrokes > 0) {
         
-        boost::shared_ptr<KnobI> strengthKnob = _imp->brushEffectKnob.lock();
-        boost::shared_ptr<KnobI> sourceTypeKnob = _imp->sourceTypeKnob.lock();
-        boost::shared_ptr<KnobI> timeOffsetKnob = _imp->timeOffsetKnob.lock();
-        boost::shared_ptr<KnobI> timeOffsetModeKnob = _imp->timeOffsetModeKnob.lock();
+        KnobPtr strengthKnob = _imp->brushEffectKnob.lock();
+        KnobPtr sourceTypeKnob = _imp->sourceTypeKnob.lock();
+        KnobPtr timeOffsetKnob = _imp->timeOffsetKnob.lock();
+        KnobPtr timeOffsetModeKnob = _imp->timeOffsetModeKnob.lock();
         for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            boost::shared_ptr<KnobI> k = it->lock();
+            KnobPtr k = it->lock();
             if (!k) {
                 continue;
             }
@@ -1273,9 +1273,9 @@ RotoContext::onSelectedKnobCurveChanged()
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
     if (handler) {
-        boost::shared_ptr<KnobI> knob = handler->getKnob();
+        KnobPtr knob = handler->getKnob();
         for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            boost::shared_ptr<KnobI> k = it->lock();
+            KnobPtr k = it->lock();
             if (k->getName() == knob->getName()) {
                 k->clone(knob.get());
                 break;
@@ -1325,11 +1325,11 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
     if (isDrawable) {
         ///first-off set the context knobs to the value of this bezier
         
-        const std::list<boost::shared_ptr<KnobI> >& drawableKnobs = isDrawable->getKnobs();
-        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
+        const std::list<KnobPtr >& drawableKnobs = isDrawable->getKnobs();
+        for (std::list<KnobPtr >::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
             
             for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
-                boost::shared_ptr<KnobI> knob = it2->lock();
+                KnobPtr knob = it2->lock();
                 if (knob->getName() == (*it)->getName()) {
                     
                     //Clone current state
@@ -1374,7 +1374,7 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
     
     if (nbBeziersUnLockedBezier == 0 || nbStrokesUnlocked == 0) {
         for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            boost::shared_ptr<KnobI> k = it->lock();
+            KnobPtr k = it->lock();
             if (!k) {
                 continue;
             }
@@ -1668,7 +1668,7 @@ RotoContext::goToPreviousKeyframe()
     }
 
     if (minimum != INT_MIN) {
-        getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Node>());
+        getNode()->getApp()->setLastViewerUsingTimeline(NodePtr());
         getNode()->getApp()->getTimeLine()->seekFrame(minimum, false,  NULL, eTimelineChangeReasonOtherSeek);
     }
 }
@@ -1701,7 +1701,7 @@ RotoContext::goToNextKeyframe()
         }
     }
     if (maximum != INT_MAX) {
-        getNode()->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Node>());
+        getNode()->getApp()->setLastViewerUsingTimeline(NodePtr());
         getNode()->getApp()->getTimeLine()->seekFrame(maximum, false, NULL,eTimelineChangeReasonOtherSeek);
         
     }
@@ -1775,7 +1775,7 @@ RotoContext::getCurvesByRenderOrder(bool onlyActivated) const
     std::list< boost::shared_ptr<RotoDrawableItem> > ret;
     
     ///Note this might not be the timeline's current frame if this is a render thread.
-    double time = getNode()->getLiveInstance()->getCurrentTime();
+    double time = getNode()->getEffectInstance()->getCurrentTime();
     {
         QMutexLocker l(&_imp->rotoContextMutex);
         if ( !_imp->layers.empty() ) {
@@ -1866,7 +1866,7 @@ void
 RotoContext::evaluateChange()
 {
     _imp->incrementRotoAge();
-    getNode()->getLiveInstance()->evaluate_public(NULL, true,eValueChangedReasonUserEdited);
+    getNode()->getEffectInstance()->evaluate_public(NULL, true,eValueChangedReasonUserEdited);
 }
 
 void
@@ -1924,7 +1924,7 @@ RotoContext::onItemLockedChanged(const boost::shared_ptr<RotoItem>& item, RotoIt
     bool enabled = nbBeziersUnLockedBezier > 0;
 
     for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
-        boost::shared_ptr<KnobI> knob = it->lock();
+        KnobPtr knob = it->lock();
         if (!knob) {
             continue;
         }
@@ -2627,7 +2627,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
                                   const ImageBitDepthEnum depth,
                                   const unsigned int mipmapLevel)
 {
-    boost::shared_ptr<Node> node = getNode();
+    NodePtr node = getNode();
     
     
     
@@ -2638,7 +2638,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     U64 rotoHash;
     {
         Hash64 hash;
-        U64 mergeNodeHash = stroke->getMergeNode()->getLiveInstance()->getRenderHash();
+        U64 mergeNodeHash = stroke->getMergeNode()->getEffectInstance()->getRenderHash();
         hash.append(mergeNodeHash);
         hash.computeHash();
         rotoHash = hash.value();
@@ -2649,7 +2649,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
     
     {
         QMutexLocker k(&_imp->cacheAccessMutex);
-        node->getLiveInstance()->getImageFromCacheAndConvertIfNeeded(true, false, key, mipmapLevel, NULL, NULL, depth, components, depth, components,EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
+        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, false, key, mipmapLevel, NULL, NULL, depth, components, depth, components,EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
     }
     if (image) {
         return image;
@@ -2758,7 +2758,7 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
 {
  
     
-    boost::shared_ptr<Node> node = getNode();
+    NodePtr node = getNode();
     
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(stroke.get());
     Bezier* isBezier = dynamic_cast<Bezier*>(stroke.get());
@@ -3895,18 +3895,18 @@ RotoContext::removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
     
 }
 
-boost::shared_ptr<Node>
+NodePtr
 RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
 {
     
     
     {
         QMutexLocker k(&_imp->rotoContextMutex);
-        for (std::list<boost::shared_ptr<Node> >::iterator it = _imp->globalMergeNodes.begin(); it!=_imp->globalMergeNodes.end(); ++it) {
-            const std::vector<boost::weak_ptr<Node> > &inputs = (*it)->getInputs();
+        for (NodesList::iterator it = _imp->globalMergeNodes.begin(); it!=_imp->globalMergeNodes.end(); ++it) {
+            const std::vector<NodeWPtr > &inputs = (*it)->getInputs();
             
             //Merge node goes like this: B, A, Mask, A2, A3, A4 ...
-            assert(inputs.size() >= 3 && (*it)->getLiveInstance()->isInputMask(2));
+            assert(inputs.size() >= 3 && (*it)->getEffectInstance()->isInputMask(2));
             if (!inputs[1].lock()) {
                 *availableInputIndex = 1;
                 return *it;
@@ -3922,7 +3922,7 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
         }
     }
     
-    boost::shared_ptr<Node>  node = getNode();
+    NodePtr  node = getNode();
     //We must create a new merge node
     QString fixedNamePrefix(node->getScriptName_mt_safe().c_str());
     fixedNamePrefix.append('_');
@@ -3935,7 +3935,7 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
     args.fixedName = fixedNamePrefix;
     args.createGui = false;
     args.addToProject = false;
-    boost::shared_ptr<Node> mergeNode = node->getApp()->createNode(args);
+    NodePtr mergeNode = node->getApp()->createNode(args);
     if (!mergeNode) {
         return mergeNode;
     }
@@ -3959,17 +3959,17 @@ RotoContext::refreshRotoPaintTree()
     
     bool canConcatenate = isRotoPaintTreeConcatenatable();
     
-    boost::shared_ptr<Node> globalMerge;
+    NodePtr globalMerge;
     int globalMergeIndex = -1;
     
     
-    std::list<boost::shared_ptr<Node> > mergeNodes;
+    NodesList mergeNodes;
     {
         QMutexLocker k(&_imp->rotoContextMutex);
         mergeNodes = _imp->globalMergeNodes;
     }
     //ensure that all global merge nodes are disconnected
-    for (std::list<boost::shared_ptr<Node> >::iterator it = mergeNodes.begin(); it!=mergeNodes.end(); ++it) {
+    for (NodesList::iterator it = mergeNodes.begin(); it!=mergeNodes.end(); ++it) {
         int maxInputs = (*it)->getMaxInputCount();
         for (int i = 0; i < maxInputs; ++i) {
             (*it)->disconnectInput(i);
@@ -3979,7 +3979,7 @@ RotoContext::refreshRotoPaintTree()
         globalMerge = getOrCreateGlobalMergeNode(&globalMergeIndex);
     }
     if (globalMerge) {
-        boost::shared_ptr<Node> rotopaintNodeInput = getNode()->getInput(0);
+        NodePtr rotopaintNodeInput = getNode()->getInput(0);
         //Connect the rotopaint node input to the B input of the Merge
         if (rotopaintNodeInput) {
             globalMerge->connectInput(rotopaintNodeInput, 0);
@@ -3991,14 +3991,14 @@ RotoContext::refreshRotoPaintTree()
         (*it)->refreshNodesConnections();
         
         if (globalMerge) {
-            boost::shared_ptr<Node> effectNode = (*it)->getEffectNode();
+            NodePtr effectNode = (*it)->getEffectNode();
             assert(effectNode);
             //qDebug() << "Connecting" << (*it)->getScriptName().c_str() << "to input" << globalMergeIndex <<
             //"(" << globalMerge->getInputLabel(globalMergeIndex).c_str() << ")" << "of" << globalMerge->getScriptName().c_str();
             globalMerge->connectInput(effectNode, globalMergeIndex);
             
             ///Refresh for next node
-            boost::shared_ptr<Node> nextMerge = getOrCreateGlobalMergeNode(&globalMergeIndex);
+            NodePtr nextMerge = getOrCreateGlobalMergeNode(&globalMergeIndex);
             if (nextMerge != globalMerge) {
                 assert(!nextMerge->getInput(0));
                 nextMerge->connectInput(globalMerge, 0);
@@ -4010,7 +4010,7 @@ RotoContext::refreshRotoPaintTree()
 }
 
 void
-RotoContext::onRotoPaintInputChanged(const boost::shared_ptr<Node>& node)
+RotoContext::onRotoPaintInputChanged(const NodePtr& node)
 {
     
     if (node) {

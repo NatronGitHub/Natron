@@ -161,16 +161,16 @@ struct DockablePanelPrivate
     void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> > & knobs,
                               QWidget* lastRowWidget);
 
-    KnobGui* createKnobGui(const boost::shared_ptr<KnobI> &knob);
+    KnobGui* createKnobGui(const KnobPtr &knob);
 
     /*Search an existing knob GUI in the map, otherwise creates
      the gui for the knob.*/
-    KnobGui* findKnobGuiOrCreate( const boost::shared_ptr<KnobI> &knob,
+    KnobGui* findKnobGuiOrCreate( const KnobPtr &knob,
                                  bool makeNewLine,
                                  QWidget* lastRowWidget,
                                  const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >() );
 
-    PageMap::iterator getDefaultPage(const boost::shared_ptr<KnobI> &knob);
+    PageMap::iterator getDefaultPage(const KnobPtr &knob);
     
     void refreshPagesSecretness();
 };

@@ -1593,7 +1593,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
         boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
         assert(gui_i);
-        boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+        NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
         _imp->viewerTab->getGui()->selectNode(gui);
     }
 
@@ -2480,7 +2480,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
     }
     
     boost::shared_ptr<NodeGuiI> nodeGui_i = _imp->viewerTab->getInternalNode()->getNode()->getNodeGui();
-    boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(nodeGui_i);
+    NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(nodeGui_i);
     gui->selectNode(nodeGui);
 
     const double zoomFactor_min = 0.01;

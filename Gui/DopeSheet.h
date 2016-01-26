@@ -81,7 +81,7 @@ const int QT_ROLE_CONTEXT_DIM = Qt::UserRole + 2;
 const int QT_ROLE_CONTEXT_IS_ANIMATED = Qt::UserRole + 3;
 
 
-bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui);
+bool nodeHasAnimation(const NodeGuiPtr &nodeGui);
 
 
 
@@ -139,14 +139,14 @@ class DSNode
 public:
     DSNode(DopeSheet *model,
            DopeSheetItemType itemType,
-           const boost::shared_ptr<NodeGui> &nodeGui,
+           const NodeGuiPtr &nodeGui,
            QTreeWidgetItem *nameItem);
     ~DSNode();
     
     QTreeWidgetItem *getTreeItem() const;
     
-    boost::shared_ptr<NodeGui> getNodeGui() const;
-    boost::shared_ptr<Node> getInternalNode() const;
+    NodeGuiPtr getNodeGui() const;
+    NodePtr getInternalNode() const;
     
     const DSTreeItemKnobMap& getItemKnobMap() const;
     
@@ -234,7 +234,7 @@ public:
     QTreeWidgetItem *findDimTreeItem(int dimension) const;
     
     KnobGui *getKnobGui() const;
-    boost::shared_ptr<KnobI> getInternalKnob() const;
+    KnobPtr getInternalKnob() const;
     
     bool isMultiDimRoot() const;
     int getDimension() const;
@@ -342,7 +342,7 @@ public:
     // Model specific
     DSTreeItemNodeMap getItemNodeMap() const;
 
-    void addNode(boost::shared_ptr<NodeGui> nodeGui);
+    void addNode(NodeGuiPtr nodeGui);
     void removeNode(NodeGui *node);
 
     boost::shared_ptr<DSNode> mapNameItemToDSNode(QTreeWidgetItem *nodeTreeItem) const;
@@ -350,7 +350,7 @@ public:
 
     boost::shared_ptr<DSNode> findParentDSNode(QTreeWidgetItem *treeItem) const;
     boost::shared_ptr<DSNode> findDSNode(Node *node) const;
-    boost::shared_ptr<DSNode> findDSNode(const boost::shared_ptr<KnobI> &knob) const;
+    boost::shared_ptr<DSNode> findDSNode(const KnobPtr &knob) const;
 
     boost::shared_ptr<DSKnob> findDSKnob(KnobGui *knobGui) const;
 
@@ -403,7 +403,7 @@ Q_SIGNALS:
     void keyframeSetOrRemoved(DSKnob *dsKnob);
 
 private: /* functions */
-    boost::shared_ptr<DSNode> createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, DopeSheetItemType itemType);
+    boost::shared_ptr<DSNode> createDSNode(const NodeGuiPtr &nodeGui, DopeSheetItemType itemType);
 
 private Q_SLOTS:
     void onNodeNameChanged(const QString &name);

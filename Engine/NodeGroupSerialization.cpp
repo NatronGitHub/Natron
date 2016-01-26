@@ -39,12 +39,12 @@ NATRON_NAMESPACE_ENTER;
 void
 NodeCollectionSerialization::initialize(const NodeCollection& group)
 {
-    NodeList nodes;
+    NodesList nodes;
     group.getActiveNodes(&nodes);
     
     _serializedNodes.clear();
     
-    for (NodeList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
         if (!(*it)->getParentMultiInstance()) {
             boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
             _serializedNodes.push_back(state);
@@ -74,7 +74,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     ///If a parent of a multi-instance node doesn't exist anymore but the children do, we must recreate the parent.
     ///Problem: we have lost the nodes connections. To do so we restore them using the serialization of a child.
     ///This map contains all the parents that must be reconnected and an iterator to the child serialization
-    std::map<boost::shared_ptr<Node>, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator > parentsToReconnect;
+    std::map<NodePtr, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator > parentsToReconnect;
     
     std::list< boost::shared_ptr<NodeSerialization> > multiInstancesToRecurse;
     
@@ -114,7 +114,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 if (!foundParent) {
                     
                     CreateNodeArgs args(pluginID.c_str(), eCreateNodeReasonInternal, group);
-                    boost::shared_ptr<Node> parent = group->getApplication()->createNode(args);
+                    NodePtr parent = group->getApplication()->createNode(args);
                     try {
                         parent->setScriptName((*it)->getMultiInstanceParentName().c_str());
                     } catch (...) {
@@ -127,7 +127,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
 
         const std::string& pythonModuleAbsolutePath = (*it)->getPythonModule();
         
-        boost::shared_ptr<Node> n;
+        NodePtr n;
         
         bool usingPythonModule = false;
         if (!pythonModuleAbsolutePath.empty()) {
@@ -264,9 +264,9 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         
         const std::list<boost::shared_ptr<NodeSerialization> >& children = (*it)->getNodesCollection();
         if (!children.empty()) {
-            NodeGroup* isGrp = dynamic_cast<NodeGroup*>(n->getLiveInstance());
+            NodeGroup* isGrp = n->isEffectGroup();
             if (isGrp) {
-                boost::shared_ptr<EffectInstance> sharedEffect = isGrp->shared_from_this();
+                EffectInstPtr sharedEffect = isGrp->shared_from_this();
                 boost::shared_ptr<NodeGroup> sharedGrp = boost::dynamic_pointer_cast<NodeGroup>(sharedEffect);
                 NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp ,!usingPythonModule, moduleUpdatesProcessed);
                 
@@ -288,7 +288,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     
     /// Connect the nodes together
     for (std::map<NodePtr, boost::shared_ptr<NodeSerialization> >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
-        if ( appPTR->isBackground() && (dynamic_cast<ViewerInstance*>((it->first)->getLiveInstance()))) {
+        if ( appPTR->isBackground() && (it->first->isEffectViewer())) {
             //ignore viewers on background mode
             continue;
         }
@@ -303,13 +303,13 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         const std::string & masterNodeName = it->second->getMasterNodeName();
         if ( !masterNodeName.empty() ) {
             ///find such a node
-            boost::shared_ptr<Node> masterNode = it->first->getApp()->getNodeByFullySpecifiedName(masterNodeName);
+            NodePtr masterNode = it->first->getApp()->getNodeByFullySpecifiedName(masterNodeName);
             
             if (!masterNode) {
                 appPTR->writeToOfxLog_mt_safe(QString("Cannot restore the link between " + QString(it->second->getNodeScriptName().c_str()) + " and " + masterNodeName.c_str()));
                 mustShowErrorsLog = true;
             } else {
-                it->first->getLiveInstance()->slaveAllKnobs( masterNode->getLiveInstance(), true );
+                it->first->getEffectInstance()->slaveAllKnobs( masterNode->getEffectInstance().get(), true );
             }
         }
         
@@ -322,7 +322,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             bool isOfxEffect = it->first->isOpenFXNode();
             
             for (U32 j = 0; j < oldInputs.size(); ++j) {
-                if ( !oldInputs[j].empty() && !group->connectNodes(isOfxEffect ? oldInputs.size() - 1 - j : j, oldInputs[j],it->first.get()) ) {
+                if ( !oldInputs[j].empty() && !group->connectNodes(isOfxEffect ? oldInputs.size() - 1 - j : j, oldInputs[j],it->first) ) {
                     if (createNodes) {
                         qDebug() << "Failed to connect node" << it->second->getNodeScriptName().c_str() << "to" << oldInputs[j].c_str()
                         << "[This is normal if loading a PyPlug]";
@@ -340,7 +340,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                     appPTR->writeToOfxLog_mt_safe(QString("Could not find input named ") + it2->first.c_str());
                     continue;
                 }
-                if (!it2->second.empty() && !group->connectNodes(index, it2->second, it->first.get())) {
+                if (!it2->second.empty() && !group->connectNodes(index, it2->second, it->first)) {
                     if (createNodes) {
                         qDebug() << "Failed to connect node" << it->second->getNodeScriptName().c_str() << "to" << it2->second.c_str()
                         << "[This is normal if loading a PyPlug]";
@@ -353,7 +353,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     } // for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
     
     ///Now that the graph is setup, restore expressions
-    NodeList nodes = group->getNodes();
+    NodesList nodes = group->getNodes();
     if (isNodeGroup) {
         nodes.push_back(isNodeGroup->getNode());
     }
@@ -361,7 +361,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     {
         std::map<std::string,std::string> oldNewScriptNamesMapping;
         for (std::map<NodePtr, boost::shared_ptr<NodeSerialization> >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
-            if ( appPTR->isBackground() && (dynamic_cast<ViewerInstance*>((it->first)->getLiveInstance()))) {
+            if ( appPTR->isBackground() && (it->first->isEffectViewer())) {
                 //ignore viewers on background mode
                 continue;
             }
@@ -371,7 +371,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     }
     
     ///Also reconnect parents of multiinstance nodes that were created on the fly
-    for (std::map<boost::shared_ptr<Node>, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator >::const_iterator
+    for (std::map<NodePtr, std::list<boost::shared_ptr<NodeSerialization> >::const_iterator >::const_iterator
          it = parentsToReconnect.begin(); it != parentsToReconnect.end(); ++it) {
         const std::vector<std::string> & oldInputs = (*it->second)->getOldInputs();
         if (!oldInputs.empty()) {
@@ -381,7 +381,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             bool isOfxEffect = it->first->isOpenFXNode();
             
             for (U32 j = 0; j < oldInputs.size(); ++j) {
-                if ( !oldInputs[j].empty() && !group->connectNodes(isOfxEffect ? oldInputs.size() - 1 - j : j, oldInputs[j],it->first.get()) ) {
+                if ( !oldInputs[j].empty() && !group->connectNodes(isOfxEffect ? oldInputs.size() - 1 - j : j, oldInputs[j],it->first) ) {
                     if (createNodes) {
                         qDebug() << "Failed to connect node" << it->first->getPluginLabel().c_str() << "to" << oldInputs[j].c_str()
                         << "[This is normal if loading a PyPlug]";
@@ -400,7 +400,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                     appPTR->writeToOfxLog_mt_safe(QString("Could not find input named ") + it2->first.c_str());
                     continue;
                 }
-                if (!it2->second.empty() && !group->connectNodes(index, it2->second, it->first.get())) {
+                if (!it2->second.empty() && !group->connectNodes(index, it2->second, it->first)) {
                     if (createNodes) {
                         qDebug() << "Failed to connect node" << it->first->getPluginLabel().c_str() << "to" << it2->second.c_str()
                         << "[This is normal if loading a PyPlug]";

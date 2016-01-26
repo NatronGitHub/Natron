@@ -400,7 +400,7 @@ Gui::onDoDialogWithStopAskingCheckbox(int type,
 }
 
 void
-Gui::selectNode(boost::shared_ptr<NodeGui> node)
+Gui::selectNode(NodeGuiPtr node)
 {
     if (!node) {
         return;

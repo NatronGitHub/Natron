@@ -105,7 +105,7 @@ struct LinkToKnobDialogPrivate
     CompleterLineEdit* nodeSelectionCombo;
     ComboBox* knobSelectionCombo;
     QDialogButtonBox* buttons;
-    NodeList allNodes;
+    NodesList allNodes;
     std::map<QString,boost::shared_ptr<KnobI > > allKnobs;
 
     LinkToKnobDialogPrivate(KnobGui* from)
@@ -157,7 +157,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
         _imp->allNodes.push_back(isGroup->getNode());
     }
     QStringList nodeNames;
-    for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
+    for (NodesList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
         QString name( (*it)->getLabel().c_str() );
         nodeNames.push_back(name);
         //_imp->nodeSelectionCombo->addItem(name);
@@ -189,9 +189,9 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     QString index = _imp->nodeSelectionCombo->text();
 
     _imp->knobSelectionCombo->clear();
-    boost::shared_ptr<Node> selectedNode;
+    NodePtr selectedNode;
     std::string currentNodeName = index.toStdString();
-    for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
+    for (NodesList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
         if ((*it)->getLabel() == currentNodeName) {
             selectedNode = *it;
             break;
@@ -201,8 +201,8 @@ LinkToKnobDialog::onNodeComboEditingFinished()
         return;
     }
 
-    const std::vector< boost::shared_ptr<KnobI> > & knobs = selectedNode->getKnobs();
-    boost::shared_ptr<KnobI> from = _imp->fromKnob->getKnob();
+    const std::vector< KnobPtr > & knobs = selectedNode->getKnobs();
+    KnobPtr from = _imp->fromKnob->getKnob();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if ( !knobs[j]->getIsSecret() && (knobs[j] != from) ) {
             KnobButton* isButton = dynamic_cast<KnobButton*>( knobs[j].get() );
@@ -226,15 +226,15 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     }
 }
 
-boost::shared_ptr<KnobI> LinkToKnobDialog::getSelectedKnobs() const
+KnobPtr LinkToKnobDialog::getSelectedKnobs() const
 {
     QString str = _imp->knobSelectionCombo->itemText( _imp->knobSelectionCombo->activeIndex() );
-    std::map<QString,boost::shared_ptr<KnobI> >::const_iterator it = _imp->allKnobs.find(str);
+    std::map<QString,KnobPtr >::const_iterator it = _imp->allKnobs.find(str);
 
     if ( it != _imp->allKnobs.end() ) {
         return it->second;
     } else {
-        return boost::shared_ptr<KnobI>();
+        return KnobPtr();
     }
 }
 

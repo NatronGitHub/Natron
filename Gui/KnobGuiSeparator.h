@@ -57,13 +57,13 @@ class KnobGuiSeparator
     : public KnobGui
 {
 public:
-    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+    static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
         return new KnobGuiSeparator(knob, container);
     }
 
-    KnobGuiSeparator(boost::shared_ptr<KnobI> knob,
+    KnobGuiSeparator(KnobPtr knob,
                       DockablePanel *container);
 
     virtual ~KnobGuiSeparator() OVERRIDE;
@@ -75,7 +75,7 @@ public:
         return false;
     }
     
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
 private:
     virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }

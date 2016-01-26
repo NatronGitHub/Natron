@@ -113,7 +113,7 @@ EditExpressionDialog::getDimension() const
 void
 EditExpressionDialog::setTitle()
 {
-    boost::shared_ptr<KnobI> k = _knob->getKnob();
+    KnobPtr k = _knob->getKnob();
     
     QString title(tr("Set expression on "));
     title.append(k->getName().c_str());

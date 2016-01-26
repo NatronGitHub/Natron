@@ -141,7 +141,7 @@ private:
 private:
     DSKeyPtrList _keys;
     std::vector<boost::shared_ptr<DSNode> > _nodes;
-    std::list<boost::weak_ptr<Node> >  _allDifferentNodes;
+    NodesWList  _allDifferentNodes;
     double _dt;
     DopeSheetEditor *_model;
 };

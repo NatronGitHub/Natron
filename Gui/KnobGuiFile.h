@@ -53,20 +53,20 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+    static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
         return new KnobGuiFile(knob, container);
     }
 
-    KnobGuiFile(boost::shared_ptr<KnobI> knob,
+    KnobGuiFile(KnobPtr knob,
                  DockablePanel *container);
 
     virtual ~KnobGuiFile() OVERRIDE;
     
     virtual void removeSpecificGui() OVERRIDE FINAL;
 
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -126,20 +126,20 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+    static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
         return new KnobGuiOutputFile(knob, container);
     }
 
-    KnobGuiOutputFile(boost::shared_ptr<KnobI> knob,
+    KnobGuiOutputFile(KnobPtr knob,
                        DockablePanel *container);
 
     virtual ~KnobGuiOutputFile() OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
     
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -190,20 +190,20 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+    static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
         return new KnobGuiPath(knob, container);
     }
 
-    KnobGuiPath(boost::shared_ptr<KnobI> knob,
+    KnobGuiPath(KnobPtr knob,
                  DockablePanel *container);
 
     virtual ~KnobGuiPath() OVERRIDE;
     
     virtual void removeSpecificGui() OVERRIDE FINAL;
 
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
 

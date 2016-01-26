@@ -1669,7 +1669,7 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
 void
 Settings::saveAllSettings()
 {
-    const std::vector<boost::shared_ptr<KnobI> > &knobs = getKnobs();
+    const KnobsVec &knobs = getKnobs();
     std::vector<KnobI*> k(knobs.size());
     for (U32 i = 0; i < knobs.size(); ++i) {
         k[i] = knobs[i].get();
@@ -1834,7 +1834,7 @@ Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
 }
 
 void
-Settings::restoreKnobsFromSettings(const std::vector<boost::shared_ptr<KnobI> >& knobs) {
+Settings::restoreKnobsFromSettings(const KnobsVec& knobs) {
     
     std::vector<KnobI*> k(knobs.size());
     for (U32 i = 0; i < knobs.size(); ++i) {
@@ -1848,7 +1848,7 @@ Settings::restoreSettings()
 {
     _restoringSettings = true;
     
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    const KnobsVec& knobs = getKnobs();
     restoreKnobsFromSettings(knobs);
 
     if (!_ocioRestored) {
@@ -2198,7 +2198,7 @@ Settings::getWriterPluginIDForFileType(const std::string & extension)
 void
 Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows)
 {
-    std::vector<boost::shared_ptr<KnobI> > knobs;
+    KnobsVec knobs;
     for (std::map<std::string,std::vector< std::pair<std::string,double> > >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
         boost::shared_ptr<KnobChoice> k = AppManager::createKnob<KnobChoice>(this, it->first);
         k->setName("Reader_" + it->first);
@@ -2231,7 +2231,7 @@ Settings::populateReaderPluginsAndFormats(const std::map<std::string,std::vector
 void
 Settings::populateWriterPluginsAndFormats(const std::map<std::string,std::vector< std::pair<std::string,double> > > & rows)
 {
-    std::vector<boost::shared_ptr<KnobI> > knobs;
+    KnobsVec knobs;
 
     for (std::map<std::string,std::vector< std::pair<std::string,double> > >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
         boost::shared_ptr<KnobChoice> k = AppManager::createKnob<KnobChoice>(this, it->first);
@@ -2347,7 +2347,7 @@ Settings::populatePluginsTab()
     
     const PluginsMap& plugins = appPTR->getPluginsList();
     
-    std::vector<boost::shared_ptr<KnobI> > knobsToRestore;
+    KnobsVec knobsToRestore;
     
     std::map< std::string,std::string > groupNames;
     ///First pass to exctract all groups
@@ -2573,7 +2573,7 @@ Settings::restoreDefault()
     }
 
     beginChanges();
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
+    const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
             knobs[i]->resetToDefaultValue(j);
@@ -3447,7 +3447,7 @@ Settings::isDefaultAppearanceOutdated() const
 void
 Settings::restoreDefaultAppearance()
 {
-    std::vector< boost::shared_ptr<KnobI> > children = _appearanceTab->getChildren();
+    std::vector< KnobPtr > children = _appearanceTab->getChildren();
     for (std::size_t i = 0; i < children.size(); ++i) {
         KnobColor* isColorKnob = dynamic_cast<KnobColor*>(children[i].get());
         if (isColorKnob && isColorKnob->isSimplified()) {

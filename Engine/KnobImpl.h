@@ -618,7 +618,7 @@ Knob<T>::getValue(int dimension,bool clamp) const
     }
     
     ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
+    std::pair<int,KnobPtr > master = getMaster(dimension);
     if (master.second) {
         return getValueFromMaster(master.first, master.second.get(), clamp);
     }
@@ -704,7 +704,7 @@ Knob<T>::getValueAtTime(double time, int dimension,bool clamp ,bool byPassMaster
     }
     
     ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
+    std::pair<int,KnobPtr > master = getMaster(dimension);
     if (!byPassMaster && master.second) {
         return getValueFromMasterAt(time, master.first, master.second.get());
     }
@@ -1399,7 +1399,7 @@ Knob<T>::unSlave(int dimension,
     if ( !isSlave(dimension) ) {
         return;
     }
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
+    std::pair<int,KnobPtr > master = getMaster(dimension);
     boost::shared_ptr<KnobHelper> masterHelper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
 
     if (masterHelper->getSignalSlotHandler() && _signalSlotHandler) {
@@ -1501,7 +1501,7 @@ Knob<T>::getKeyFrameValueByIndex(int dimension,
                                  bool* ok) const
 {
     ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
+    std::pair<int,KnobPtr > master = getMaster(dimension);
 
     if (master.second) {
         Knob<int>* isInt = dynamic_cast<Knob<int>* >( master.second.get() );
@@ -1539,7 +1539,7 @@ Knob<std::string>::getKeyFrameValueByIndex(int dimension,
                                            bool* ok) const
 {
     ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
+    std::pair<int,KnobPtr > master = getMaster(dimension);
 
     if (master.second) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >( master.second.get() );
@@ -1679,7 +1679,7 @@ Knob<double>::isTypePOD() const
 
 template<typename T>
 bool
-Knob<T>::isTypeCompatible(const boost::shared_ptr<KnobI> & other) const
+Knob<T>::isTypeCompatible(const KnobPtr & other) const
 {
     return isTypePOD() == other->isTypePOD();
 }
@@ -1780,7 +1780,7 @@ Knob<T>::getDerivativeAtTime(double time,
     }
 
     ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
+    std::pair<int,KnobPtr > master = getMaster(dimension);
     if (master.second) {
         return master.second->getDerivativeAtTime(time,master.first);
     }
@@ -1856,7 +1856,7 @@ Knob<T>::getIntegrateFromTimeToTime(double time1,
 
 
     ///if the knob is slaved to another knob, returns the other knob value
-    std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(dimension);
+    std::pair<int,KnobPtr > master = getMaster(dimension);
     if (master.second) {
         assert(master.second->isTypePOD()); //< other data types aren't supported
         if (master.second->isTypePOD()) {
@@ -2575,7 +2575,7 @@ void Knob<T>::computeHasModifications()
         }
         
         if (!hasModif) {
-            std::pair<int,boost::shared_ptr<KnobI> > master = getMaster(i);
+            std::pair<int,KnobPtr > master = getMaster(i);
             if (master.second) {
                 hasModif = true;
             }

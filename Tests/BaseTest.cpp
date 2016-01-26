@@ -103,14 +103,14 @@ BaseTest::TearDown()
  
 }
 
-boost::shared_ptr<Node> BaseTest::createNode(const QString & pluginID,
+NodePtr BaseTest::createNode(const QString & pluginID,
                                                      int majorVersion,
                                                      int minorVersion)
 {
     CreateNodeArgs args(pluginID, eCreateNodeReasonInternal, _app->getProject());
     args.majorV = majorVersion;
     args.minorV = minorVersion;
-    boost::shared_ptr<Node> ret =  _app->createNode(args);
+    NodePtr ret =  _app->createNode(args);
                                                     
 
     EXPECT_NE(ret.get(),(Node*)NULL);
@@ -119,8 +119,8 @@ boost::shared_ptr<Node> BaseTest::createNode(const QString & pluginID,
 }
 
 void
-BaseTest::connectNodes(boost::shared_ptr<Node> input,
-                       boost::shared_ptr<Node> output,
+BaseTest::connectNodes(NodePtr input,
+                       NodePtr output,
                        int inputNumber,
                        bool expectedReturnValue)
 {
@@ -147,8 +147,8 @@ BaseTest::connectNodes(boost::shared_ptr<Node> input,
 }
 
 void
-BaseTest::disconnectNodes(boost::shared_ptr<Node> input,
-                          boost::shared_ptr<Node> output,
+BaseTest::disconnectNodes(NodePtr input,
+                          NodePtr output,
                           bool expectedReturnvalue)
 {
     if (expectedReturnvalue) {
@@ -166,7 +166,7 @@ BaseTest::disconnectNodes(boost::shared_ptr<Node> input,
         }
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<boost::shared_ptr<Node> > & inputs = output->getGuiInputs();
+        const std::vector<NodePtr > & inputs = output->getGuiInputs();
         int inputIndex = 0;
         bool foundInput = false;
         for (U32 i = 0; i < inputs.size(); ++i) {
@@ -200,7 +200,7 @@ BaseTest::disconnectNodes(boost::shared_ptr<Node> input,
         }
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<boost::shared_ptr<Node> > & inputs = output->getGuiInputs();
+        const std::vector<NodePtr > & inputs = output->getGuiInputs();
         int inputIndex = 0;
         bool foundInput = false;
         for (U32 i = 0; i < inputs.size(); ++i) {
@@ -222,13 +222,13 @@ BaseTest::disconnectNodes(boost::shared_ptr<Node> input,
 TEST_F(BaseTest,GenerateDot)
 {
     ///create the generator
-    boost::shared_ptr<Node> generator = createNode(_dotGeneratorPluginID);
+    NodePtr generator = createNode(_dotGeneratorPluginID);
     
     ///create the writer and set its output filename
-    boost::shared_ptr<Node> writer = createNode(_writeOIIOPluginID);
+    NodePtr writer = createNode(_writeOIIOPluginID);
     ASSERT_TRUE(generator && writer);
     
-    boost::shared_ptr<KnobI> frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
+    KnobPtr frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
     ASSERT_TRUE(frameRange);
     KnobInt* knob = dynamic_cast<KnobInt*>(frameRange.get());
     ASSERT_TRUE(knob);
@@ -245,7 +245,7 @@ TEST_F(BaseTest,GenerateDot)
     ///and start rendering. This call is blocking.
     std::list<AppInstance::RenderWork> works;
     AppInstance::RenderWork w;
-    w.writer = dynamic_cast<OutputEffectInstance*>(writer->getLiveInstance());
+    w.writer = dynamic_cast<OutputEffectInstance*>(writer->getEffectInstance());
     assert(w.writer);
     w.firstFrame = INT_MIN;
     w.lastFrame = INT_MAX;
@@ -259,9 +259,9 @@ TEST_F(BaseTest,GenerateDot)
 
 TEST_F(BaseTest,SetValues)
 {
-    boost::shared_ptr<Node> generator = createNode(_dotGeneratorPluginID);
+    NodePtr generator = createNode(_dotGeneratorPluginID);
     assert(generator);
-    boost::shared_ptr<KnobI> knob = generator->getKnobByName("radius");
+    KnobPtr knob = generator->getKnobByName("radius");
     KnobDouble* radius = dynamic_cast<KnobDouble*>(knob.get());
     assert(radius);
     radius->setValue(100, 0);
@@ -282,10 +282,10 @@ TEST_F(BaseTest,SetValues)
 ///High level test: simple node connections test
 TEST_F(BaseTest,SimpleNodeConnections) {
     ///create the generator
-    boost::shared_ptr<Node> generator = createNode(_dotGeneratorPluginID);
+    NodePtr generator = createNode(_dotGeneratorPluginID);
 
     ///create the writer and set its output filename
-    boost::shared_ptr<Node> writer = createNode(_writeOIIOPluginID);
+    NodePtr writer = createNode(_writeOIIOPluginID);
     ASSERT_TRUE(writer && generator);
     connectNodes(generator, writer, 0, true);
     connectNodes(generator, writer, 0, false); //< expect it to fail

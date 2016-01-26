@@ -63,7 +63,7 @@ public:
 
     virtual ~LinkToKnobDialog();
 
-    boost::shared_ptr<KnobI> getSelectedKnobs() const;
+    KnobPtr getSelectedKnobs() const;
 
 public Q_SLOTS:
 

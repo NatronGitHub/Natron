@@ -272,7 +272,7 @@ struct EffectInstance::Implementation
                          int view,
                          bool isIdentity,
                          double identityTime,
-                         EffectInstance* identityInput,
+                         const EffectInstPtr& identityInput,
                          const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
                          const EffectInstance::InputImagesMap& inputImages,
                          const RoIMap & roiMap,

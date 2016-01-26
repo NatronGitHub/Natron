@@ -241,7 +241,7 @@ struct OfxEffectInstancePrivate
 };
 
 
-OfxEffectInstance::OfxEffectInstance(boost::shared_ptr<Node> node)
+OfxEffectInstance::OfxEffectInstance(NodePtr node)
 : AbstractOfxEffectInstance(node)
 , _imp(new OfxEffectInstancePrivate())
 {
@@ -322,7 +322,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     try {
         _imp->effect.reset(new OfxImageEffectInstance(plugin,*desc,mapContextToString(context),false));
         assert(_imp->effect);
-        _imp->effect->setOfxEffectInstance( dynamic_cast<OfxEffectInstance*>(this) );
+        
+        boost::shared_ptr<OfxEffectInstance> thisShared = boost::dynamic_pointer_cast<OfxEffectInstance>(shared_from_this());
+        _imp->effect->setOfxEffectInstance(thisShared);
 
         _imp->natronPluginID = plugin->getIdentifier();
         
@@ -538,9 +540,9 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         std::vector<std::string> slaveParams;
         _imp->overlayInteract->getSlaveToParam(slaveParams);
         for (U32 i = 0; i < slaveParams.size(); ++i) {
-            boost::shared_ptr<KnobI> param ;
-            const std::vector< boost::shared_ptr<KnobI> > & knobs = getKnobs();
-            for (std::vector< boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            KnobPtr param ;
+            const std::vector< KnobPtr > & knobs = getKnobs();
+            for (std::vector< KnobPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
                 if ((*it)->getOriginalName() == slaveParams[i]) {
                     param = *it;
                     break;
@@ -569,7 +571,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         assert(paramToKnob);
         OFX::Host::Interact::Descriptor & interactDesc = paramToKnob->getInteractDesc();
         if (interactDesc.getState() == OFX::Host::Interact::eDescribed) {
-            boost::shared_ptr<KnobI> knob = paramToKnob->getKnob();
+            KnobPtr knob = paramToKnob->getKnob();
             boost::shared_ptr<OfxParamOverlayInteract> overlay( new OfxParamOverlayInteract( knob.get(),interactDesc,
                                                                                              effectInstance()->getHandle() ) );
 
@@ -1121,11 +1123,11 @@ clipPrefsProxy(OfxEffectInstance* self,
     int maxInputs = self->getMaxInputCount();
     
     for (int i = 0; i < maxInputs; ++i) {
-        EffectInstance* inputEffect = self->getInput(i);
+        EffectInstPtr inputEffect = self->getInput(i);
         if (inputEffect) {
             inputEffect = inputEffect->getNearestNonIdentity(time);
         }
-        OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>(inputEffect);
+        OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>(inputEffect.get());
         OfxClipInstance* clip = self->getClipCorrespondingToInput(i);
         
         bool hasChanged = false;
@@ -1560,7 +1562,7 @@ OfxEffectInstance::getRegionsOfInterest(double time,
         OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
         assert(clip);
         if (clip) {
-            EffectInstance* inputNode = clip->getAssociatedNode();
+            EffectInstPtr inputNode = clip->getAssociatedNode();
             RectD inputRoi; // input RoI in canonical coordinates
             inputRoi.x1 = it->second.x1;
             inputRoi.x2 = it->second.x2;
@@ -1701,7 +1703,7 @@ OfxEffectInstance::getFrameRange(double *first,
             ///not taking optional inputs into accounts messes it up.
             for (int i = 0; i < inputsCount; ++i) {
                 //if (!isInputOptional(i)) {
-                EffectInstance* inputEffect = getInput(i);
+                EffectInstPtr inputEffect = getInput(i);
                 if (inputEffect) {
                     double f,l;
                     inputEffect->getFrameRange_public(inputEffect->getRenderHash(),&f, &l);
@@ -2643,7 +2645,7 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time, int view,
                                            EffectInstance::ComponentsNeededMap* comps,
                                             SequenceTime* passThroughTime,
                                             int* passThroughView,
-                                            boost::shared_ptr<Node>* passThroughInput) 
+                                            NodePtr* passThroughInput) 
 {
     OfxStatus stat ;
     {
@@ -2845,7 +2847,7 @@ StatusEnum
 OfxEffectInstance::getTransform(double time,
                                 const RenderScale & renderScale, //< the plug-in accepted scale
                                 int view,
-                                EffectInstance** inputToTransform,
+                                EffectInstPtr* inputToTransform,
                                 Transform::Matrix3x3* transform)
 {
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data

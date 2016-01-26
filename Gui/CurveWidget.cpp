@@ -888,7 +888,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
                         rotoToEvaluate.push_back(roto);
                     } else {
                         
-                        boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+                        KnobPtr knob = isKnobCurve->getInternalKnob();
                         assert(knob);
                         KnobHolder* holder = knob->getHolder();
                         assert(holder);
@@ -919,7 +919,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
                     assert(roto);
                     roto->evaluateChange();
                 } else {
-                    boost::shared_ptr<KnobI> toEvaluate = isKnobCurve->getInternalKnob();
+                    KnobPtr toEvaluate = isKnobCurve->getInternalKnob();
                     assert(toEvaluate);
                     toEvaluate->getHolder()->evaluate_public(toEvaluate.get(), true,eValueChangedReasonUserEdited);
                 }
@@ -1068,7 +1068,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
 
     case eEventStateDraggingTimeline:
         _imp->_gui->setDraftRenderEnabled(true);
-        _imp->_gui->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Node>());
+        _imp->_gui->getApp()->setLastViewerUsingTimeline(NodePtr());
         _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  eTimelineChangeReasonCurveEditorSeek );
         break;
     case eEventStateZooming: {
@@ -1825,7 +1825,7 @@ CurveWidget::exportCurveToAscii()
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->get());
         if ( (*it)->isVisible() && isKnobCurve) {
-            boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+            KnobPtr knob = isKnobCurve->getInternalKnob();
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
             if (isString) {
                 Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("String curves cannot be imported/exported.").toStdString() );
@@ -1903,7 +1903,7 @@ CurveWidget::importCurveFromAscii()
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->get());
         if ( (*it)->isVisible() && isKnobCurve ) {
             
-            boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+            KnobPtr knob = isKnobCurve->getInternalKnob();
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
             if (isString) {
                 Dialogs::warningDialog( tr("Curve Editor").toStdString(),tr("String curves cannot be imported/exported.").toStdString() );

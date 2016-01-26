@@ -49,7 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-QtWriter::QtWriter(boost::shared_ptr<Node> node)
+QtWriter::QtWriter(NodePtr node)
     : OutputEffectInstance(node)
       , _lut( Color::LutManager::sRGBLut() )
 {

@@ -105,7 +105,7 @@ NodeGraph::deselect()
 {
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+        for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
             (*it)->setUserSelected(false);
         }
     }

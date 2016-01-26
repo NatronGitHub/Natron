@@ -79,10 +79,10 @@ NodeGraph::toggleAutoHideInputs(bool setSettings)
         bool autoHide = !appPTR->getCurrentSettings()->areOptionalInputsAutoHidden();
         appPTR->getCurrentSettings()->setOptionalInputsAutoHidden(autoHide);
     }
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         (*it)->refreshEdgesVisility();
     }
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
         (*it)->refreshEdgesVisility();
     }
 }
@@ -90,7 +90,7 @@ NodeGraph::toggleAutoHideInputs(bool setSettings)
 void
 NodeGraph::toggleHideInputs()
 {
-    const NodeGuiList& selectedNodes = getSelectedNodes();
+    const NodesGuiList& selectedNodes = getSelectedNodes();
     if (selectedNodes.empty()) {
         Dialogs::warningDialog(tr("Hide Inptus").toStdString(), tr("You must select a node first").toStdString());
         return;
@@ -98,25 +98,25 @@ NodeGraph::toggleHideInputs()
 
     bool hidden = !selectedNodes.front()->getNode()->getHideInputsKnobValue();
     
-    for (NodeGuiList::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+    for (NodesGuiList::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
         (*it)->getNode()->setHideInputsKnobValue(hidden);
         //(*it)->refreshEdgesVisility();
     }
 
 }
 
-std::list<boost::shared_ptr<NodeGui> > NodeGraph::getNodesWithinBackdrop(const boost::shared_ptr<NodeGui>& bd) const
+NodesGuiList NodeGraph::getNodesWithinBackdrop(const NodeGuiPtr& bd) const
 {
     BackdropGui* isBd = dynamic_cast<BackdropGui*>(bd.get());
     if (!isBd) {
-        return std::list<boost::shared_ptr<NodeGui> >();
+        return NodesGuiList();
     }
     
     QRectF bbox = bd->mapToScene( bd->boundingRect() ).boundingRect();
-    std::list<boost::shared_ptr<NodeGui> > ret;
+    NodesGuiList ret;
     QMutexLocker l(&_imp->_nodesMutex);
 
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+    for (NodesGuiList::const_iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         QRectF nodeBbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
         if ( bbox.contains(nodeBbox) ) {
             ret.push_back(*it);
@@ -130,7 +130,7 @@ void
 NodeGraph::refreshNodesKnobsAtTime(SequenceTime time)
 {
     ///Refresh all knobs at the current time
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         (*it)->refreshKnobsAfterTimeChange(time);
     }
 }
@@ -138,12 +138,12 @@ NodeGraph::refreshNodesKnobsAtTime(SequenceTime time)
 void
 NodeGraph::refreshAllKnobsGui()
 {
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         if ((*it)->isSettingsPanelVisible()) {
             const std::map<boost::weak_ptr<KnobI>,KnobGui*> & knobs = (*it)->getKnobs();
             
             for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it2 = knobs.begin(); it2!=knobs.end(); ++it2) {
-                boost::shared_ptr<KnobI> knob = it2->first.lock();
+                KnobPtr knob = it2->first.lock();
                 if (!knob->getIsSecret()) {
                     for (int i = 0; i < knob->getDimension(); ++i) {
                         if (knob->isAnimated(i)) {
@@ -218,7 +218,7 @@ NodeGraph::popFindDialog(const QPoint& p)
 void
 NodeGraph::popRenameDialog(const QPoint& pos)
 {
-    boost::shared_ptr<NodeGui> node;
+    NodeGuiPtr node;
     if (_imp->_selection.size() == 1 ) {
         node = _imp->_selection.front();
     } else {
@@ -264,7 +264,7 @@ struct FindNodeDialogPrivate
     NodeGraph* graph;
     
     QString currentFilter;
-    std::list<boost::shared_ptr<NodeGui> > nodeResults;
+    NodesGuiList nodeResults;
     int currentFindIndex;
     
     QVBoxLayout* mainLayout;
@@ -363,7 +363,7 @@ FindNodeDialog::updateFindResults(const QString& filter)
     }
     Qt::CaseSensitivity sensitivity = _imp->caseSensitivity->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
     
-    const std::list<boost::shared_ptr<NodeGui> >& activeNodes = _imp->graph->getAllActiveNodes();
+    const NodesGuiList& activeNodes = _imp->graph->getAllActiveNodes();
     
     if (_imp->unixWildcards->isChecked()) {
         QRegExp exp(filter,sensitivity,QRegExp::Wildcard);
@@ -373,13 +373,13 @@ FindNodeDialog::updateFindResults(const QString& filter)
         
         
         
-        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        for (NodesGuiList::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
             if ((*it)->isVisible() && exp.exactMatch((*it)->getNode()->getLabel().c_str())) {
                 _imp->nodeResults.push_back(*it);
             }
         }
     } else {
-        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        for (NodesGuiList::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
             if ((*it)->isVisible() && QString((*it)->getNode()->getLabel().c_str()).contains(filter,sensitivity)) {
                 _imp->nodeResults.push_back(*it);
             }
@@ -406,7 +406,7 @@ FindNodeDialog::selectNextResult()
         return;
     }
     
-    std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->nodeResults.begin();
+    NodesGuiList::iterator it = _imp->nodeResults.begin();
     std::advance(it,_imp->currentFindIndex);
     
     _imp->graph->selectNode(*it, false);
@@ -486,9 +486,9 @@ struct EditNodeNameDialogPrivate
 {
     
     LineEdit* field;
-    boost::shared_ptr<NodeGui> node;
+    NodeGuiPtr node;
     
-    EditNodeNameDialogPrivate(const boost::shared_ptr<NodeGui>& node)
+    EditNodeNameDialogPrivate(const NodeGuiPtr& node)
     : field(0)
     , node(node)
     {
@@ -496,7 +496,7 @@ struct EditNodeNameDialogPrivate
     }
 };
 
-EditNodeNameDialog::EditNodeNameDialog(const boost::shared_ptr<NodeGui>& node,QWidget* parent)
+EditNodeNameDialog::EditNodeNameDialog(const NodeGuiPtr& node,QWidget* parent)
 : QDialog(parent)
 , _imp(new EditNodeNameDialogPrivate(node))
 {
@@ -546,7 +546,7 @@ EditNodeNameDialog::getTypedName() const
     return _imp->field->text();
 }
 
-boost::shared_ptr<NodeGui>
+NodeGuiPtr
 EditNodeNameDialog::getNode() const
 {
     return _imp->node;
@@ -583,9 +583,9 @@ NodeGraph::createGroupFromSelection()
 void
 NodeGraph::expandSelectedGroups()
 {
-    NodeGuiList nodes;
-    for (NodeGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-        NodeGroup* isGroup = dynamic_cast<NodeGroup*>((*it)->getNode()->getLiveInstance());
+    NodesGuiList nodes;
+    for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+        NodeGroup* isGroup = (*it)->getNode()->isEffectGroup();
         if (isGroup) {
             nodes.push_back(*it);
         }
@@ -646,9 +646,9 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
 }
 
 void
-NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> >& nodes,
+NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
                                      const boost::shared_ptr<NodeCollection>& group,
-                                     std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >& createdNodes)
+                                     std::list<std::pair<std::string,NodeGuiPtr > >& createdNodes)
 {
     {
         CreatingNodeTreeFlag_RAII createNodeTree(getGui()->getApp());
@@ -660,7 +660,7 @@ NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> 
         std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it, ++itOther) {
-            boost::shared_ptr<NodeGui> node = _imp->pasteNode( *itOther,*it,QPointF(0,0),group,std::string(), false,&oldNewScriptNamesMapping);
+            NodeGuiPtr node = _imp->pasteNode( *itOther,*it,QPointF(0,0),group,std::string(), false,&oldNewScriptNamesMapping);
             assert(node);
             if (node) {
                 oldNewScriptNamesMapping[(*itOther)->getNodeScriptName()] = node->getNode()->getScriptName();

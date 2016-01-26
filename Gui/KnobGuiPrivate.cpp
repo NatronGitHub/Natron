@@ -48,7 +48,7 @@ KnobGuiPrivate::KnobGuiPrivate(DockablePanel* container)
     //copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
 }
 
-void KnobGuiPrivate::removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob)
+void KnobGuiPrivate::removeFromKnobsOnSameLineVector(const KnobPtr& knob)
 {
     for (std::vector< boost::weak_ptr< KnobI > >::iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
         if (it->lock() == knob) {

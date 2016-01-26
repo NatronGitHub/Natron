@@ -38,7 +38,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct PluginMemory::Implementation
 {
-    Implementation(EffectInstance* effect_)
+    Implementation(const EffectInstPtr& effect_)
         : data()
           , locked(0)
           , mutex()
@@ -49,21 +49,22 @@ struct PluginMemory::Implementation
     RamBuffer<char> data;
     int locked;
     QMutex mutex;
-    EffectInstance* effect;
+    EffectInstWPtr effect;
 };
 
-PluginMemory::PluginMemory(EffectInstance* effect)
-    : _imp( new Implementation(effect) )
+PluginMemory::PluginMemory(const EffectInstPtr& effect)
+    : _imp(new Implementation(effect))
 {
     if (effect) {
-        _imp->effect->addPluginMemoryPointer(this);
+        effect->addPluginMemoryPointer(this);
     }
 }
 
 PluginMemory::~PluginMemory()
 {
-    if (_imp->effect) {
-        _imp->effect->removePluginMemoryPointer(this);
+    EffectInstPtr e = _imp->effect.lock();
+    if (e) {
+        e->removePluginMemoryPointer(this);
     }
 }
 
@@ -76,8 +77,9 @@ PluginMemory::alloc(size_t nBytes)
         return false;
     } else {
         _imp->data.resize(nBytes);
-        if (_imp->effect) {
-            _imp->effect->registerPluginMemory( _imp->data.size() );
+        EffectInstPtr e = _imp->effect.lock();
+        if (e) {
+            e->registerPluginMemory( _imp->data.size() );
         }
 
         return true;
@@ -88,8 +90,9 @@ void
 PluginMemory::freeMem()
 {
     QMutexLocker l(&_imp->mutex);
-    if (_imp->effect) {
-        _imp->effect->unregisterPluginMemory( _imp->data.size() );
+    EffectInstPtr e = _imp->effect.lock();
+    if (e) {
+        e->unregisterPluginMemory( _imp->data.size() );
     }
     _imp->data.clear();
     _imp->locked = 0;

@@ -49,7 +49,7 @@ struct RotoSmearPrivate
     }
 };
 
-RotoSmear::RotoSmear(boost::shared_ptr<Node> node)
+RotoSmear::RotoSmear(NodePtr node)
 : EffectInstance(node)
 , _imp(new RotoSmearPrivate())
 {
@@ -79,7 +79,7 @@ RotoSmear::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 void
 RotoSmear::getPreferredDepthAndComponents(int /*inputNb*/,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const
 {
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (input) {
         return input->getPreferredDepthAndComponents(-1, comp, depth);
     } else {
@@ -92,7 +92,7 @@ RotoSmear::getPreferredDepthAndComponents(int /*inputNb*/,std::list<ImageCompone
 ImagePremultiplicationEnum
 RotoSmear::getOutputPremultiplication() const
 {
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (input) {
         return input->getOutputPremultiplication();
     } else {
@@ -110,7 +110,7 @@ RotoSmear::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale
     }
 
     RectD maskRod;
-    boost::shared_ptr<Node> node = getNode();
+    NodePtr node = getNode();
     try {
         node->getPaintStrokeRoD(time, &maskRod);
     } catch (...) {
@@ -127,7 +127,7 @@ RotoSmear::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale
 double
 RotoSmear::getPreferredAspectRatio() const
 {
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (input) {
         return input->getPreferredAspectRatio();
     } else {
@@ -145,7 +145,7 @@ RotoSmear::isIdentity(double time,
                 int* inputNb)
 {
     RectD maskRod;
-    boost::shared_ptr<Node> node = getNode();
+    NodePtr node = getNode();
     node->getPaintStrokeRoD(time, &maskRod);
     
     RectI maskPixelRod;
@@ -233,7 +233,7 @@ static void renderSmearDot(boost::shared_ptr<RotoStrokeItem>& stroke,
 StatusEnum
 RotoSmear::render(const RenderActionArgs& args)
 {
-    boost::shared_ptr<Node> node = getNode();
+    NodePtr node = getNode();
     boost::shared_ptr<RotoDrawableItem> item = node->getAttachedRotoItem();
     boost::shared_ptr<RotoStrokeItem> stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
     boost::shared_ptr<RotoContext> context = stroke->getContext();
@@ -267,7 +267,7 @@ RotoSmear::render(const RenderActionArgs& args)
     std::bitset<4> processChannels;
     SequenceTime ptTime;
     int ptView;
-    boost::shared_ptr<Node> ptInput;
+    NodePtr ptInput;
     getComponentsNeededAndProduced_public(true, true, args.time, args.view, &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
 
     

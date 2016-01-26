@@ -84,7 +84,7 @@ using std::make_pair;
 
 //=============================KnobGuiParametric===================================
 
-KnobGuiParametric::KnobGuiParametric(boost::shared_ptr<KnobI> knob,
+KnobGuiParametric::KnobGuiParametric(KnobPtr knob,
                                        DockablePanel *container)
 : KnobGui(knob, container)
 , treeColumn(NULL)
@@ -286,7 +286,7 @@ KnobGuiParametric::resetSelectedCurves()
     k->evaluateValueChange(0, k->getCurrentTime(), eValueChangedReasonUserEdited);
 }
 
-boost::shared_ptr<KnobI> KnobGuiParametric::getKnob() const
+KnobPtr KnobGuiParametric::getKnob() const
 {
     return _knob.lock();
 }

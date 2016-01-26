@@ -49,8 +49,8 @@ NATRON_NAMESPACE_ENTER;
 
 
 void
-NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
-                                     const boost::shared_ptr<NodeGui> &selected,
+NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
+                                     const NodeGuiPtr &selected,
                                      bool autoConnect)
 {
     BackdropGui* isBd = dynamic_cast<BackdropGui*>(node.get());
@@ -103,7 +103,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
             }
             ///case b)
             else if (node->getNode()->isInputNode()) {
-                if (selected->getNode()->getLiveInstance()->isReader()) {
+                if (selected->getNode()->getEffectInstance()->isReader()) {
                     ///case 2-b) just do default we don't know what else to do
                     behavior = 0;
                 } else {
@@ -118,8 +118,8 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
         }
     }
     
-    boost::shared_ptr<Node> createdNodeInternal = node->getNode();
-    boost::shared_ptr<Node> selectedNodeInternal;
+    NodePtr createdNodeInternal = node->getNode();
+    NodePtr selectedNodeInternal;
     if (selected) {
        selectedNodeInternal = selected->getNode();
     }
@@ -128,7 +128,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
     ///if behaviour is 1 , just check that we can effectively connect the node to avoid moving them for nothing
     ///otherwise fallback on behaviour 0
     if (behavior == 1) {
-        const std::vector<boost::weak_ptr<Node> > & inputs = selected->getNode()->getGuiInputs();
+        const std::vector<NodeWPtr > & inputs = selected->getNode()->getGuiInputs();
         bool oneInputEmpty = false;
         for (std::size_t i = 0; i < inputs.size(); ++i) {
             if (!inputs[i].lock()) {
@@ -159,7 +159,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
         
         const std::vector<Edge*> & selectedNodeInputs = selected->getInputsArrows();
         for (std::vector<Edge*>::const_iterator it = selectedNodeInputs.begin() ; it != selectedNodeInputs.end() ; ++it) {
-            boost::shared_ptr<NodeGui> input;
+            NodeGuiPtr input;
             if (*it) {
                 input = (*it)->getSource();
             }
@@ -195,12 +195,12 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
             
             int selectedInput = selectedNodeInternal->getPreferredInputForConnection();
             if (selectedInput != -1) {
-                (void)proj->connectNodes(selectedInput, createdNodeInternal, selectedNodeInternal.get(),true);
+                (void)proj->connectNodes(selectedInput, createdNodeInternal, selectedNodeInternal,true);
             }
             
         } else {
             
-            ViewerInstance* isSelectedViewer = dynamic_cast<ViewerInstance*>(selectedNodeInternal->getLiveInstance());
+            ViewerInstance* isSelectedViewer = selectedNodeInternal->isEffectViewer();
             if (isSelectedViewer) {
                 //Don't pop a dot, it will most likely annoy the user, just fallback on behavior 0
                 position.setX( ( viewPos.bottomRight().x() + viewPos.topLeft().x() ) / 2. );
@@ -224,7 +224,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
                     
                     CreateNodeArgs args(PLUGINID_NATRON_DOT, eCreateNodeReasonInternal, createdNodeInternal->getGroup());
 
-                    boost::shared_ptr<Node> dotNode = getGui()->getApp()->createNode(args);
+                    NodePtr dotNode = getGui()->getApp()->createNode(args);
                     assert(dotNode);
                     boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
                     assert(dotNodeGui_i);
@@ -242,9 +242,9 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
                     
                     int index = selectedNodeInternal->getPreferredInputForConnection();
                     
-                    bool ok = proj->connectNodes(index, dotNode, selectedNodeInternal.get(), true);
+                    bool ok = proj->connectNodes(index, dotNode, selectedNodeInternal, true);
                     if (ok) {
-                        proj->connectNodes(0, createdNodeInternal, dotNode.get());
+                        proj->connectNodes(0, createdNodeInternal, dotNode);
                     }
                     
                 }
@@ -254,7 +254,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
     } else {
         ///pop it below the selected node
 
-        const std::list<Node*>& outputs = selectedNodeInternal->getGuiOutputs();
+        const NodesWList& outputs = selectedNodeInternal->getGuiOutputs();
         if (!createdNodeInternal->isOutputNode() || outputs.empty()) {
             QSize selectedNodeSize = selected->getSize();
             QSize createdNodeSize = node->getSize();
@@ -268,17 +268,19 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
             QRectF createdNodeRect( position.x(),position.y(),createdNodeSize.width(),createdNodeSize.height() );
             
             ///and move the selected node below recusively
-            const std::list<Node* > & outputs = selected->getNode()->getGuiOutputs();
-            for (std::list<Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-                assert(*it);
-                boost::shared_ptr<NodeGuiI> output_i = (*it)->getNodeGui();
+            for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+                NodePtr output = it->lock();
+                if (!output) {
+                    continue;
+                }
+                boost::shared_ptr<NodeGuiI> output_i = output->getNodeGui();
                 if (!output_i) {
                     continue;
                 }
-                NodeGui* output = dynamic_cast<NodeGui*>(output_i.get());
-                assert(output);
-                if (output) {
-                    output->moveBelowPositionRecursively(createdNodeRect);
+                NodeGui* outputGui = dynamic_cast<NodeGui*>(output_i.get());
+                assert(outputGui);
+                if (outputGui) {
+                    outputGui->moveBelowPositionRecursively(createdNodeRect);
                 }
             }
             
@@ -292,12 +294,12 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
             if ( !createdNodeInternal->isOutputNode() ) {
                 ///we find all the nodes that were previously connected to the selected node,
                 ///and connect them to the created node instead.
-                std::map<Node*,int> outputsConnectedToSelectedNode;
+                std::map<NodePtr,int> outputsConnectedToSelectedNode;
                 selectedNodeInternal->getOutputsConnectedToThisNode(&outputsConnectedToSelectedNode);
                 
-                for (std::map<Node*,int>::iterator it = outputsConnectedToSelectedNode.begin();
+                for (std::map<NodePtr,int>::iterator it = outputsConnectedToSelectedNode.begin();
                      it != outputsConnectedToSelectedNode.end(); ++it) {
-                    if (it->first->getParentMultiInstanceName().empty() && it->first != createdNodeInternal.get()) {
+                    if (it->first->getParentMultiInstanceName().empty() && it->first != createdNodeInternal) {
                     
                         /*
                          Internal rotopaint nodes are connecting to the Rotopaint itself... make sure not to connect
@@ -335,7 +337,7 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
             if (index != -1) {
                 ///Create a dot to make things nicer
                 CreateNodeArgs args(PLUGINID_NATRON_DOT, eCreateNodeReasonInternal, createdNodeInternal->getGroup());
-                boost::shared_ptr<Node> dotNode = getGui()->getApp()->createNode(args);
+                NodePtr dotNode = getGui()->getApp()->createNode(args);
                 assert(dotNode);
                 if (dotNode) {
                     boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
@@ -354,9 +356,9 @@ NodeGraph::moveNodesForIdealPosition(const boost::shared_ptr<NodeGui> &node,
 
                     int index = createdNodeInternal->getPreferredInputForConnection();
 
-                    bool ok = proj->connectNodes(index, dotNode, createdNodeInternal.get(), true);
+                    bool ok = proj->connectNodes(index, dotNode, createdNodeInternal, true);
                     if (ok) {
-                        proj->connectNodes(0, selectedNodeInternal, dotNode.get());
+                        proj->connectNodes(0, selectedNodeInternal, dotNode);
                     }
                 }
             }

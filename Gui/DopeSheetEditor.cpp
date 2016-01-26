@@ -146,7 +146,7 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
 DopeSheetEditor::~DopeSheetEditor()
 {}
 
-void DopeSheetEditor::addNode(boost::shared_ptr<NodeGui> nodeGui)
+void DopeSheetEditor::addNode(NodeGuiPtr nodeGui)
 {
     _imp->model->addNode(nodeGui);
 }

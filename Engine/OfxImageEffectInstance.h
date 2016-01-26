@@ -54,7 +54,7 @@ public:
 
     virtual ~OfxImageEffectInstance();
 
-    void setOfxEffectInstance(OfxEffectInstance* node)
+    void setOfxEffectInstance(const boost::shared_ptr<OfxEffectInstance>& node)
     {
         _ofxEffectInstance = node;
     }
@@ -247,9 +247,9 @@ public:
     //
     // END of OFX::Host::ImageEffect::Instance methods
     //
-    OfxEffectInstance* getOfxEffectInstance() const WARN_UNUSED_RETURN
+    boost::shared_ptr<OfxEffectInstance> getOfxEffectInstance() const WARN_UNUSED_RETURN
     {
-        return _ofxEffectInstance;
+        return _ofxEffectInstance.lock();
     }
 
     /// to be called right away after populate() is called. It adds to their group all the params.
@@ -269,7 +269,7 @@ public:
     const std::map<std::string,OFX::Host::ImageEffect::ClipInstance*>& getClips() const;
     
 private:
-    OfxEffectInstance* _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
+    boost::weak_ptr<OfxEffectInstance> _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                                               Not easy since every Knob need a valid pointer to a node when
                                               AppManager::createKnob() is called. That's why we need to pass a pointer
                                               to an OfxParamInstance. Without this pointer we would be unable

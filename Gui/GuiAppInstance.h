@@ -43,9 +43,9 @@ class FileDialogPreviewProvider
 {
 public:
     ViewerTab* viewerUI;
-    boost::shared_ptr<Node> viewerNodeInternal;
-    boost::shared_ptr<NodeGui> viewerNode;
-    std::map<std::string,std::pair< boost::shared_ptr<Node>, boost::shared_ptr<NodeGui> > > readerNodes;
+    NodePtr viewerNodeInternal;
+    NodeGuiPtr viewerNode;
+    std::map<std::string,std::pair< NodePtr, NodeGuiPtr > > readerNodes;
     
     FileDialogPreviewProvider()
     : viewerUI(0)
@@ -154,7 +154,7 @@ public:
     virtual void printAutoDeclaredVariable(const std::string& str) OVERRIDE FINAL;
     
     virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
-    virtual void setLastViewerUsingTimeline(const boost::shared_ptr<Node>& node) OVERRIDE FINAL;
+    virtual void setLastViewerUsingTimeline(const NodePtr& node) OVERRIDE FINAL;
     
     virtual ViewerInstance* getLastViewerUsingTimeline() const OVERRIDE FINAL;
     
@@ -245,10 +245,10 @@ public:
     
     virtual RectD getPaintStrokeWholeBbox() const OVERRIDE FINAL;
     
-    virtual void setUserIsPainting(const boost::shared_ptr<Node>& rotopaintNode,
+    virtual void setUserIsPainting(const NodePtr& rotopaintNode,
                                    const boost::shared_ptr<RotoStrokeItem>& stroke,
                                    bool isPainting) OVERRIDE FINAL;
-    virtual void getActiveRotoDrawingStroke(boost::shared_ptr<Node>* node,
+    virtual void getActiveRotoDrawingStroke(NodePtr* node,
                                             boost::shared_ptr<RotoStrokeItem>* stroke,
                                             bool* isPainting) const OVERRIDE FINAL;
     
@@ -279,10 +279,10 @@ public:
     
 private:
     
-    virtual void onGroupCreationFinished(const boost::shared_ptr<Node>& node, CreateNodeReason reason) OVERRIDE FINAL;
+    virtual void onGroupCreationFinished(const NodePtr& node, CreateNodeReason reason) OVERRIDE FINAL;
     
-    virtual void createNodeGui(const boost::shared_ptr<Node> &node,
-                               const boost::shared_ptr<Node>&  parentMultiInstance,
+    virtual void createNodeGui(const NodePtr &node,
+                               const NodePtr&  parentMultiInstance,
                                const CreateNodeArgs& args) OVERRIDE FINAL;
     
 

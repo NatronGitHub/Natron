@@ -248,7 +248,7 @@ GuiApp::getSelectedNodes(Group* group) const
     if (group) {
         Effect* isEffect = dynamic_cast<Effect*>(group);
         if (isEffect) {
-            NodeGroup* nodeGrp = dynamic_cast<NodeGroup*>(isEffect->getInternalNode()->getLiveInstance());
+            NodeGroup* nodeGrp = isEffect->getInternalNode()->isEffectGroup();
             if (nodeGrp) {
                 NodeGraphI* graph_i  = nodeGrp->getNodeGraph();
                 if (graph_i) {
@@ -268,8 +268,8 @@ GuiApp::getSelectedNodes(Group* group) const
     if (!graph) {
         throw std::logic_error("");
     }
-    const std::list<boost::shared_ptr<NodeGui> >& nodes = graph->getSelectedNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    const NodesGuiList& nodes = graph->getSelectedNodes();
+    for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodePtr node = (*it)->getNode();
         if (node->isActivated() && !node->getParentMultiInstance()) {
             ret.push_back(new Effect(node));
@@ -290,7 +290,7 @@ GuiApp::selectNode(Effect* effect, bool clearPreviousSelection)
         return;
     }
     
-    boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>(effect->getInternalNode()->getNodeGui());
+    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>(effect->getInternalNode()->getNodeGui());
     if (!nodeUi) {
         return;
     }
@@ -314,11 +314,11 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
     if (appPTR->isBackground()) {
         return;
     }
-    std::list<boost::shared_ptr<NodeGui> > selection;
+    NodesGuiList selection;
     boost::shared_ptr<NodeCollection> collection ;
     bool printWarn = false;
     for (std::list<Effect*>::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>((*it)->getInternalNode()->getNodeGui());
+        NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>((*it)->getInternalNode()->getNodeGui());
         if (!nodeUi) {
             continue;
         }
@@ -391,7 +391,7 @@ GuiApp::deselectNode(Effect* effect)
         return;
     }
     
-    boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>(effect->getInternalNode()->getNodeGui());
+    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>(effect->getInternalNode()->getNodeGui());
     if (!nodeUi) {
         return;
     }
@@ -446,7 +446,7 @@ GuiApp::getViewer(const std::string& scriptName) const
         return 0;
     }
     
-    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(ptr->getLiveInstance());
+    ViewerInstance* viewer = ptr->isEffectViewer();
     if (!viewer) {
         return 0;
     }
@@ -477,10 +477,10 @@ GuiApp::renderBlocking(const std::list<Effect*>& effects,const std::list<int>& f
     renderInternal(true, effects, firstFrames, lastFrames, frameSteps);
 }
 
-PyViewer::PyViewer(const boost::shared_ptr<Node>& node)
+PyViewer::PyViewer(const NodePtr& node)
 : _node(node)
 {
-    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
+    ViewerInstance* viewer = node->isEffectViewer();
     assert(viewer);
     ViewerGL* viewerGL = dynamic_cast<ViewerGL*>(viewer->getUiContext());
     _viewer = viewerGL ? viewerGL->getViewerTab() : NULL;
@@ -630,7 +630,7 @@ PyViewer::setAInput(int index)
     if (!_node->isActivated()) {
         return;
     }
-    EffectInstance* input = _viewer->getInternalNode()->getInput(index);
+    EffectInstPtr input = _viewer->getInternalNode()->getInput(index);
     if (!input) {
         return;
     }
@@ -654,7 +654,7 @@ PyViewer::setBInput(int index)
     if (!_node->isActivated()) {
         return;
     }
-    EffectInstance* input = _viewer->getInternalNode()->getInput(index);
+    EffectInstPtr input = _viewer->getInternalNode()->getInput(index);
     if (!input) {
         return;
     }

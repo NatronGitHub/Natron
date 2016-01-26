@@ -66,7 +66,7 @@ ViewerTab::onInputChanged(int inputNb)
 {
     ///rebuild the name maps
     NodePtr inp;
-    const std::vector<boost::weak_ptr<Node> > &inputs  = _imp->viewerNode->getNode()->getGuiInputs();
+    const std::vector<NodeWPtr > &inputs  = _imp->viewerNode->getNode()->getGuiInputs();
     if (inputNb >= 0 && inputNb < (int)inputs.size()) {
         inp = inputs[inputNb].lock();
     }

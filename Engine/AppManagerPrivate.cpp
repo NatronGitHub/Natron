@@ -307,8 +307,8 @@ AppManagerPrivate::declareSettingsToPython()
 {
     std::stringstream ss;
     ss <<  NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.getSettings()\n";
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = _settings->getKnobs();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    const KnobsVec& knobs = _settings->getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         ss <<  NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings." <<
         (*it)->getName() << " = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings.getParam('" << (*it)->getName() << "')\n";
     }

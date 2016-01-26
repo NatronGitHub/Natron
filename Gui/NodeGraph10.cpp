@@ -104,9 +104,9 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                 e->y() >= (10 - offset) && e->y() <= (10 + ih + offset)) {
                 assert(isGroup);
                 isGroup->getNode()->setPyPlugEdited(true);
-                NodeList nodes = isGroup->getNodes();
-                for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-                    boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>((*it)->getNodeGui());
+                NodesList nodes = isGroup->getNodes();
+                for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+                    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>((*it)->getNodeGui());
                     if (nodeUi) {
                         NodeSettingsPanel* panel = nodeUi->getSettingPanel();
                         if (panel) {
@@ -130,7 +130,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         
         ///Find matches, sorted by depth
         std::map<double,NodeGuiPtr> matches;
-        for (NodeGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
+        for (NodesGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
             QPointF evpt = (*it)->mapFromScene(lastMousePosScene);
             if ( (*it)->isVisible() && (*it)->isActive() ) {
                 
@@ -157,7 +157,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         }
         if (!selected) {
             ///try to find a selected edge
-            for (NodeGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
+            for (NodesGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
                 Edge* bendPointEdge = (*it)->hasBendPointNearbyPoint(lastMousePosScene);
 
                 if (bendPointEdge) {
@@ -186,7 +186,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             if ( !selected->getIsSelected() ) {
                 selectNode( selected, modCASIsShift(e) );
             } else if ( modCASIsShift(e) ) {
-                NodeGuiList::iterator it = std::find(_imp->_selection.begin(),
+                NodesGuiList::iterator it = std::find(_imp->_selection.begin(),
                                                      _imp->_selection.end(),selected);
                 if ( it != _imp->_selection.end() ) {
                     (*it)->setUserSelected(false);
@@ -198,10 +198,10 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             }
             ///build the _nodesWithinBDAtPenDown map
             _imp->_nodesWithinBDAtPenDown.clear();
-            for (NodeGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+            for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
                 BackdropGui* isBd = dynamic_cast<BackdropGui*>(it->get());
                 if (isBd) {
-                    NodeGuiList nodesWithin = getNodesWithinBackdrop(*it);
+                    NodesGuiList nodesWithin = getNodesWithinBackdrop(*it);
                     _imp->_nodesWithinBDAtPenDown.insert(std::make_pair(*it,nodesWithin));
                 }
             }
@@ -215,24 +215,24 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         _imp->setNodesBendPointsVisible(false);
         
         ///Now connect the node to the edge input
-        boost::shared_ptr<Node> inputNode = selectedBendPoint->getSource()->getNode();
+        NodePtr inputNode = selectedBendPoint->getSource()->getNode();
         assert(inputNode);
         ///disconnect previous connection
-        boost::shared_ptr<Node> outputNode = selectedBendPoint->getDest()->getNode();
+        NodePtr outputNode = selectedBendPoint->getDest()->getNode();
         assert(outputNode);
-        int inputNb = outputNode->inputIndex( inputNode.get() );
+        int inputNb = outputNode->inputIndex(inputNode);
         if (inputNb == -1) {
             return;
         }
         
         CreateNodeArgs args(PLUGINID_NATRON_DOT, eCreateNodeReasonUserCreate, _imp->group.lock());
-        boost::shared_ptr<Node> dotNode = getGui()->getApp()->createNode(args);
+        NodePtr dotNode = getGui()->getApp()->createNode(args);
         assert(dotNode);
         boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
-        boost::shared_ptr<NodeGui> dotNodeGui = boost::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
+        NodeGuiPtr dotNodeGui = boost::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
         assert(dotNodeGui);
         
-        std::list<boost::shared_ptr<NodeGui> > nodesList;
+        NodesGuiList nodesList;
         nodesList.push_back(dotNodeGui);
         
        
@@ -243,17 +243,17 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         assert(guiApp);
         boost::shared_ptr<Project> project = guiApp->getProject();
         assert(project);
-        bool ok = project->disconnectNodes(inputNode.get(), outputNode.get());
+        bool ok = project->disconnectNodes(inputNode, outputNode);
         if (!ok) {
             throw std::logic_error("disconnectNodes failed");
         }
         
-        ok = project->connectNodes(0, inputNode, dotNode.get());
+        ok = project->connectNodes(0, inputNode, dotNode);
         if (!ok) {
             throw std::logic_error("connectNodes failed");
         }
 
-        ok = project->connectNodes(inputNb,dotNode,outputNode.get());
+        ok = project->connectNodes(inputNb,dotNode,outputNode);
         if (!ok) {
             throw std::logic_error("connectNodes failed");
         }

@@ -83,7 +83,7 @@ using std::make_pair;
 
 //=============================BUTTON_KNOB_GUI===================================
 
-KnobGuiButton::KnobGuiButton(boost::shared_ptr<KnobI> knob,
+KnobGuiButton::KnobGuiButton(KnobPtr knob,
                                DockablePanel *container)
     : KnobGui(knob, container)
       , _button(0)
@@ -173,7 +173,7 @@ KnobGuiButton::setReadOnly(bool readOnly,
     _button->setEnabled(!readOnly);
 }
 
-boost::shared_ptr<KnobI> KnobGuiButton::getKnob() const
+KnobPtr KnobGuiButton::getKnob() const
 {
     return _knob.lock();
 }

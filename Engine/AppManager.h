@@ -149,7 +149,7 @@ public:
     {
     }
 
-    boost::shared_ptr<EffectInstance> createOFXEffect(boost::shared_ptr<Node> node,
+    EffectInstPtr createOFXEffect(NodePtr node,
                                             const NodeSerialization* serialization,
                                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                             bool allowFileDialogs,

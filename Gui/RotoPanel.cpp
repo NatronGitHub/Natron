@@ -206,7 +206,7 @@ struct RotoPanelPrivate
     bool settingNameFromGui;
 
     RotoPanelPrivate(RotoPanel* publicInter,
-                     const boost::shared_ptr<NodeGui>&   n)
+                     const NodeGuiPtr&   n)
     : publicInterface(publicInter)
     , node(n)
     , context( n->getNode()->getRotoContext())
@@ -308,7 +308,7 @@ struct RotoPanelPrivate
     void setVisibleItemKeyframes(const std::set<double>& keys,bool visible, bool emitSignal);
 };
 
-RotoPanel::RotoPanel(const boost::shared_ptr<NodeGui>&  n,
+RotoPanel::RotoPanel(const NodeGuiPtr&  n,
                      QWidget* parent)
     : QWidget(parent)
       , _imp( new RotoPanelPrivate(this,n) )
@@ -1035,7 +1035,7 @@ RotoPanelPrivate::insertItemRecursively(double time,
     expandRecursively(treeItem);
 } // insertItemRecursively
 
-boost::shared_ptr<NodeGui>
+NodeGuiPtr
 RotoPanel::getNode() const
 {
     return _imp->node.lock();

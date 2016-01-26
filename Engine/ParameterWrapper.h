@@ -49,11 +49,11 @@ protected:
     
 public:
     
-    Param(const boost::shared_ptr<KnobI>& knob);
+    Param(const KnobPtr& knob);
     
     virtual ~Param();
     
-    boost::shared_ptr<KnobI> getInternalKnob() const { return _knob.lock(); }
+    KnobPtr getInternalKnob() const { return _knob.lock(); }
     
     /**
      * @brief Returns the parent of this parameter if any. If the parameter has no parent it is assumed to be a top-level
@@ -197,7 +197,7 @@ class AnimatedParam : public Param
     
 public:
     
-    AnimatedParam(const boost::shared_ptr<KnobI>& knob);
+    AnimatedParam(const KnobPtr& knob);
     
     virtual ~AnimatedParam();
 

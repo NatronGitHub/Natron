@@ -30,6 +30,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 
 #include "Global/Macros.h"
@@ -282,24 +283,24 @@ public:
     
     struct TreeOutput
     {
-        boost::shared_ptr<Node> node;
-        std::list<std::pair<int,Node*> > outputs;
+        NodePtr node;
+        std::list<std::pair<int,NodeWPtr > > outputs;
     };
     
     struct TreeInput
     {
-        boost::shared_ptr<Node> node;
-        std::vector<boost::shared_ptr<Node> > inputs;
+        NodePtr node;
+        std::vector<NodePtr > inputs;
     };
     
     struct NodesTree
     {
         TreeOutput output;
         std::list<TreeInput> inputs;
-        std::list<boost::shared_ptr<Node> > inbetweenNodes;
+        NodesList inbetweenNodes;
     };
     
-    static void extractTreesFromNodes(const std::list<boost::shared_ptr<Node> >& nodes,std::list<Project::NodesTree>& trees);
+    static void extractTreesFromNodes(const NodesList& nodes,std::list<Project::NodesTree>& trees);
     
     void closeProject(bool aboutToQuit)
     {

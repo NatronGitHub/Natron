@@ -36,11 +36,11 @@ NATRON_NAMESPACE_ENTER;
 
 class UpdateViewerParams; // ViewerInstancePrivate
 
-typedef std::map<boost::shared_ptr<Node>,NodeRenderStats > RenderStatsMap;
+typedef std::map<NodePtr,NodeRenderStats > RenderStatsMap;
 
 struct ViewerArgs
 {
-    EffectInstance* activeInputToRender;
+    EffectInstPtr activeInputToRender;
     bool forceRender;
     int activeInputIndex;
     U64 activeInputHash;
@@ -63,9 +63,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     friend class ViewerCurrentFrameRequestScheduler;
     
 public:
-    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n) WARN_UNUSED_RETURN;
+    static EffectInstance* BuildEffect(NodePtr n) WARN_UNUSED_RETURN;
 
-    ViewerInstance(boost::shared_ptr<Node> node);
+    ViewerInstance(NodePtr node);
 
     virtual ~ViewerInstance();
     
@@ -103,7 +103,7 @@ public:
                                                         int view,
                                                         int textureIndex,
                                                         U64 viewerHash,
-                                                        const boost::shared_ptr<Node>& rotoPaintNode,
+                                                        const NodePtr& rotoPaintNode,
                                                         bool useTLS,
                                                         const boost::shared_ptr<RenderStats>& stats,
                                                         ViewerArgs* outArgs);
@@ -119,7 +119,7 @@ private:
                                                         int view,
                                                         int textureIndex,
                                                         U64 viewerHash,
-                                                        const boost::shared_ptr<Node>& rotoPaintNode,
+                                                        const NodePtr& rotoPaintNode,
                                                         bool useTLS,
                                                         U64 renderAge,
                                                         const boost::shared_ptr<RenderStats>& stats,
@@ -141,7 +141,7 @@ public:
     ViewerRenderRetCode renderViewer(int view,bool singleThreaded,bool isSequentialRender,
                                     U64 viewerHash,
                                     bool canAbort,
-                                    const boost::shared_ptr<Node>& rotoPaintNode,
+                                    const NodePtr& rotoPaintNode,
                                     bool useTLS,
                                     boost::shared_ptr<ViewerArgs> args[2],
                                     const boost::shared_ptr<RequestedFrame>& request,
@@ -151,7 +151,7 @@ public:
                                                     bool canAbort,
                                                     int view,
                                                     U64 viewerHash,
-                                                    const boost::shared_ptr<Node>& rotoPaintNode,
+                                                    const NodePtr& rotoPaintNode,
                                                     const boost::shared_ptr<RotoStrokeItem>& strokeItem,
                                                     const boost::shared_ptr<RenderStats>& stats,
                                                     boost::shared_ptr<ViewerArgs>* argsA,
@@ -364,7 +364,7 @@ private:
                                              bool isSequentialRender,
                                              U64 viewerHash,
                                              bool canAbort,
-                                             boost::shared_ptr<Node> rotoPaintNode,
+                                             NodePtr rotoPaintNode,
                                              bool useTLS,
                                              const boost::shared_ptr<RequestedFrame>& request,
                                              const boost::shared_ptr<RenderStats>& stats,

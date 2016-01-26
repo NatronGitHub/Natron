@@ -243,7 +243,7 @@ PyModalDialog::setParamChangedCallback(const std::string& callback)
 Param*
 PyModalDialog::getParam(const std::string& scriptName) const
 {
-    boost::shared_ptr<KnobI> knob =  _imp->holder->getKnobByName(scriptName);
+    KnobPtr knob =  _imp->holder->getKnobByName(scriptName);
     if (!knob) {
         return 0;
     }
@@ -373,7 +373,7 @@ PyPanel::getParam(const std::string& scriptName) const
     if (!_imp->holder) {
         return 0;
     }
-    boost::shared_ptr<KnobI> knob =  _imp->holder->getKnobByName(scriptName);
+    KnobPtr knob =  _imp->holder->getKnobByName(scriptName);
     if (!knob) {
         return 0;
     }
@@ -388,8 +388,8 @@ PyPanel::getParams() const
     if (!_imp->holder) {
         return ret;
     }
-    std::vector<boost::shared_ptr<KnobI> > knobs = _imp->holder->getKnobs_mt_safe();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    KnobsVec knobs = _imp->holder->getKnobs_mt_safe();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         Param* p = Effect::createParamWrapperForKnob(*it);
         if (p) {
             ret.push_back(p);

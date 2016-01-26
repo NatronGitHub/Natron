@@ -76,7 +76,7 @@ class RotoContext
 public:
 
     
-    RotoContext(const boost::shared_ptr<Node>& node);
+    RotoContext(const NodePtr& node);
 
     virtual ~RotoContext();
     
@@ -315,7 +315,7 @@ public:
     
     int getNCurves() const;
     
-    boost::shared_ptr<Node> getNode() const;
+    NodePtr getNode() const;
     
     boost::shared_ptr<RotoLayer> getLayerByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getItemByName(const std::string & n) const;
@@ -384,11 +384,11 @@ public:
      **/
     void refreshRotoPaintTree();
     
-    void onRotoPaintInputChanged(const boost::shared_ptr<Node>& node);
+    void onRotoPaintInputChanged(const NodePtr& node);
         
-    void getRotoPaintTreeNodes(std::list<boost::shared_ptr<Node> >* nodes) const;
+    void getRotoPaintTreeNodes(NodesList* nodes) const;
     
-    boost::shared_ptr<Node> getRotoPaintBottomMergeNode() const;
+    NodePtr getRotoPaintBottomMergeNode() const;
         
     void setWhileCreatingPaintStrokeOnMergeNodes(bool b);
     
@@ -464,7 +464,7 @@ public Q_SLOTS:
 private:
     
     
-    boost::shared_ptr<Node> getOrCreateGlobalMergeNode(int *availableInputIndex);
+    NodePtr getOrCreateGlobalMergeNode(int *availableInputIndex);
     
     void selectInternal(const boost::shared_ptr<RotoItem>& b);
     void deselectInternal(boost::shared_ptr<RotoItem> b);

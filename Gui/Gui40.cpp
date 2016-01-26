@@ -345,13 +345,13 @@ Gui::getViewerTabForInstance(ViewerInstance* node) const
     return NULL;
 }
 
-const std::list<boost::shared_ptr<NodeGui> > &
+const NodesGuiList &
 Gui::getVisibleNodes() const
 {
     return _imp->_nodeGraphArea->getAllActiveNodes();
 }
 
-std::list<boost::shared_ptr<NodeGui> >
+NodesGuiList
 Gui::getVisibleNodes_mt_safe() const
 {
     return _imp->_nodeGraphArea->getAllActiveNodes_mt_safe();
@@ -736,7 +736,7 @@ Gui::onNodeNameChanged(const QString & /*name*/)
     if (!node) {
         return;
     }
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( node->getLiveInstance() );
+    ViewerInstance* isViewer = node->isEffectViewer();
     if (isViewer) {
         Q_EMIT viewersChanged();
     }
@@ -756,16 +756,16 @@ Gui::renderSelectedNode()
         return;
     }
     
-    const std::list<boost::shared_ptr<NodeGui> > & selectedNodes = graph->getSelectedNodes();
+    const NodesGuiList & selectedNodes = graph->getSelectedNodes();
 
     if ( selectedNodes.empty() ) {
         Dialogs::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
     } else {
         std::list<AppInstance::RenderWork> workList;
 
-        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = selectedNodes.begin();
+        for (NodesGuiList::const_iterator it = selectedNodes.begin();
              it != selectedNodes.end(); ++it) {
-            EffectInstance* effect = (*it)->getNode()->getLiveInstance();
+            EffectInstance* effect = (*it)->getNode()->isEffectViewer();
             assert(effect);
             if (effect->isWriter()) {
                 if (!effect->areKnobsFrozen()) {
@@ -782,10 +782,10 @@ Gui::renderSelectedNode()
             } else {
                 if (selectedNodes.size() == 1) {
                     ///create a node and connect it to the node and use it to render
-                    boost::shared_ptr<Node> writer = createWriter();
+                    NodePtr writer = createWriter();
                     if (writer) {
                         AppInstance::RenderWork w;
-                        w.writer = dynamic_cast<OutputEffectInstance*>( writer->getLiveInstance() );
+                        w.writer = dynamic_cast<OutputEffectInstance*>( writer->getEffectInstance().get() );
                         assert(w.writer);
                         w.firstFrame = INT_MIN;
                         w.lastFrame = INT_MAX;
@@ -877,7 +877,7 @@ Gui::onTimeChanged(SequenceTime time,
         for (std::list<DockablePanel*>::const_iterator it = _imp->openedPanels.begin(); it!=_imp->openedPanels.end(); ++it) {
             NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
             if (nodePanel) {
-                nodePanel->getNode()->getNode()->getLiveInstance()->refreshAfterTimeChange(time);
+                nodePanel->getNode()->getNode()->getEffectInstance()->refreshAfterTimeChange(time);
             }
         }
     }

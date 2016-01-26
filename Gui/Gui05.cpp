@@ -189,10 +189,10 @@ Gui::onPropertiesScrolled()
 }
 
 void
-Gui::createGroupGui(const boost::shared_ptr<Node> & group,
+Gui::createGroupGui(const NodePtr & group,
                     CreateNodeReason reason)
 {
-    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getLiveInstance()->shared_from_this() );
+    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
 
     assert(isGrp);
     boost::shared_ptr<NodeCollection> collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);

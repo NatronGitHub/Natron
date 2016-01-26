@@ -161,7 +161,7 @@ DockablePanel::DockablePanel(Gui* gui ,
     }
     MultiInstancePanel* isMultiInstance = dynamic_cast<MultiInstancePanel*>(holder);
     if (isMultiInstance) {
-        isEffect = isMultiInstance->getMainInstance()->getLiveInstance();
+        isEffect = isMultiInstance->getMainInstance()->getEffectInstance().get();
         assert(isEffect);
         if (!isEffect) {
             throw std::logic_error("");
@@ -473,7 +473,7 @@ DockablePanel::~DockablePanel()
     ///normally the onKnobDeletion() function should have cleared them
     for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         if (it->second) {
-            boost::shared_ptr<KnobI> knob = it->first.lock();
+            KnobPtr knob = it->first.lock();
             if (knob) {
                 knob->setKnobGuiPointer(0);
             }
@@ -489,7 +489,7 @@ DockablePanel::onPageLabelChangedInternally()
     if (!handler) {
         return;
     }
-    boost::shared_ptr<KnobI> knob = handler->getKnob();
+    KnobPtr knob = handler->getKnob();
     QString newLabel(knob->getLabel().c_str());
     for (PageMap::iterator it = _imp->_pages.begin(); it != _imp->_pages.end(); ++it) {
         if (it->second.pageKnob.lock() == knob) {
@@ -649,10 +649,10 @@ DockablePanel::onRestoreDefaultsButtonClicked()
     NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(this);
     
     if (!panel) {
-        std::list<boost::shared_ptr<KnobI> > knobsList;
+        std::list<KnobPtr > knobsList;
         
-        const std::vector<boost::shared_ptr<KnobI> > & knobs = _imp->_holder->getKnobs();
-        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        const KnobsVec & knobs = _imp->_holder->getKnobs();
+        for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
             KnobButton* isBtn = dynamic_cast<KnobButton*>( it->get() );
             KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( it->get() );
@@ -677,7 +677,7 @@ DockablePanel::onLineEditNameEditingFinished()
     }
     
     NodeSettingsPanel* panel = dynamic_cast<NodeSettingsPanel*>(this);
-    boost::shared_ptr<NodeGui> node;
+    NodeGuiPtr node;
     
     QString newName = _imp->_nameLineEdit->text();
     
@@ -705,7 +705,7 @@ DockablePanel::onLineEditNameEditingFinished()
 void
 DockablePanel::initializeKnobsInternal()
 {
-    std::vector< boost::shared_ptr<KnobI> > knobs = _imp->_holder->getKnobs();
+    std::vector< KnobPtr > knobs = _imp->_holder->getKnobs();
     _imp->initializeKnobVector(knobs, NULL);
 
     ///add all knobs left  to the default page
@@ -766,7 +766,7 @@ DockablePanel::initializeKnobs()
 }
 
 KnobGui*
-DockablePanel::getKnobGui(const boost::shared_ptr<KnobI> & knob) const
+DockablePanel::getKnobGui(const KnobPtr & knob) const
 {
     for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
         if (it->first.lock() == knob) {
@@ -912,11 +912,11 @@ DockablePanel::setClosedInternal(bool c)
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (nodePanel) {
         
-        nodePanel->getNode()->getNode()->getLiveInstance()->refreshAfterTimeChange(getGui()->getApp()->getTimeLine()->currentFrame());
+        nodePanel->getNode()->getNode()->getEffectInstance()->refreshAfterTimeChange(getGui()->getApp()->getTimeLine()->currentFrame());
         
         
-        boost::shared_ptr<NodeGui> nodeGui = nodePanel->getNode();
-        boost::shared_ptr<Node> internalNode = nodeGui->getNode();
+        NodeGuiPtr nodeGui = nodePanel->getNode();
+        NodePtr internalNode = nodeGui->getNode();
         boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
         Gui* gui = getGui();
         
@@ -924,12 +924,12 @@ DockablePanel::setClosedInternal(bool c)
             gui->addNodeGuiToCurveEditor(nodeGui);
             gui->addNodeGuiToDopeSheetEditor(nodeGui);
             
-            NodeList children;
+            NodesList children;
             internalNode->getChildrenMultiInstance(&children);
-            for (NodeList::iterator it = children.begin() ; it != children.end(); ++it) {
+            for (NodesList::iterator it = children.begin() ; it != children.end(); ++it) {
                 boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
                 assert(gui_i);
-                boost::shared_ptr<NodeGui> childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
                 assert(childGui);
                 gui->addNodeGuiToCurveEditor(childGui);
                 gui->addNodeGuiToDopeSheetEditor(childGui);
@@ -938,12 +938,12 @@ DockablePanel::setClosedInternal(bool c)
             gui->removeNodeGuiFromCurveEditor(nodeGui);
             gui->removeNodeGuiFromDopeSheetEditor(nodeGui);
 
-            NodeList children;
+            NodesList children;
             internalNode->getChildrenMultiInstance(&children);
-            for (NodeList::iterator it = children.begin() ; it != children.end(); ++it) {
+            for (NodesList::iterator it = children.begin() ; it != children.end(); ++it) {
                 boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
                 assert(gui_i);
-                boost::shared_ptr<NodeGui> childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+                NodeGuiPtr childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
                 assert(childGui);
                 gui->removeNodeGuiFromCurveEditor(childGui);
                 gui->removeNodeGuiFromDopeSheetEditor(childGui);
@@ -952,12 +952,12 @@ DockablePanel::setClosedInternal(bool c)
         
         if (panel) {
             ///show all selected instances
-            const std::list<std::pair<boost::weak_ptr<Node>,bool> > & childrenInstances = panel->getInstances();
-            std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator next = childrenInstances.begin();
+            const std::list<std::pair<NodeWPtr,bool> > & childrenInstances = panel->getInstances();
+            std::list<std::pair<NodeWPtr,bool> >::const_iterator next = childrenInstances.begin();
             if (next != childrenInstances.end()) {
                 ++next;
             }
-            for (std::list<std::pair<boost::weak_ptr<Node>,bool> >::const_iterator it = childrenInstances.begin();
+            for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = childrenInstances.begin();
                  it != childrenInstances.end();
                  ++it) {
                 if (c) {
@@ -1088,7 +1088,7 @@ DockablePanel::insertHeaderButton(int headerPosition)
 }
 
 void
-DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
+DockablePanel::deleteKnobGui(const KnobPtr& knob)
 {
     KnobPage* isPage = dynamic_cast<KnobPage*>(knob.get());
     if (isPage && _imp->_pagesEnabled) {
@@ -1102,7 +1102,7 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
                 }
             }
             
-            std::vector<boost::shared_ptr<KnobI> > children = isPage->getChildren();
+            KnobsVec children = isPage->getChildren();
             for (U32 i = 0; i < children.size(); ++i) {
                 deleteKnobGui(children[i]);
             }
@@ -1118,14 +1118,14 @@ DockablePanel::deleteKnobGui(const boost::shared_ptr<KnobI>& knob)
         
         KnobGroup* isGrp = dynamic_cast<KnobGroup*>(knob.get());
         if (isGrp) {
-            std::vector<boost::shared_ptr<KnobI> > children = isGrp->getChildren();
+            KnobsVec children = isGrp->getChildren();
             for (U32 i = 0; i < children.size(); ++i) {
                 deleteKnobGui(children[i]);
             }
         }
         if (isGrp && isGrp->isTab()) {
             //find parent page
-            boost::shared_ptr<KnobI> parent = knob->getParentKnob();
+            KnobPtr parent = knob->getParentKnob();
             KnobPage* isParentPage = dynamic_cast<KnobPage*>(parent.get());
             KnobGroup* isParentGroup = dynamic_cast<KnobGroup*>(parent.get());
             
@@ -1263,7 +1263,7 @@ DockablePanel::onOverlayColorDialogColorChanged(const QColor& color)
     if (!nodePanel) {
         return;
     }
-    boost::shared_ptr<Node> node = nodePanel->getNode()->getNode();
+    NodePtr node = nodePanel->getNode()->getNode();
     if (!node) {
         return;
     }
@@ -1279,9 +1279,9 @@ DockablePanel::onOverlayColorDialogColorChanged(const QColor& color)
             _imp->_hasOverlayColor = true;
         }
 
-        std::list<boost::shared_ptr<Node> > overlayNodes;
+        NodesList overlayNodes;
         getGui()->getNodesEntitledForOverlays(overlayNodes);
-        std::list<boost::shared_ptr<Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
+        NodesList::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
         if (found != overlayNodes.end()) {
             getGui()->getApp()->redrawAllViewers();
         }
@@ -1314,7 +1314,7 @@ DockablePanel::onOverlayButtonClicked()
     if (!nodePanel) {
         return;
     }
-    boost::shared_ptr<Node> node = nodePanel->getNode()->getNode();
+    NodePtr node = nodePanel->getNode()->getNode();
     if (!node) {
         return;
     }
@@ -1347,9 +1347,9 @@ DockablePanel::onOverlayButtonClicked()
             _imp->_overlayButton->setIcon(QIcon(pixOverlay));
         }
     }
-    std::list<boost::shared_ptr<Node> > overlayNodes;
+    NodesList overlayNodes;
     getGui()->getNodesEntitledForOverlays(overlayNodes);
-    std::list<boost::shared_ptr<Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
+    NodesList::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
     if (found != overlayNodes.end()) {
         getGui()->getApp()->redrawAllViewers();
     }
@@ -1384,7 +1384,7 @@ DockablePanel::resetHostOverlayColor()
     if (!nodePanel) {
         return;
     }
-    boost::shared_ptr<Node> node = nodePanel->getNode()->getNode();
+    NodePtr node = nodePanel->getNode()->getNode();
     if (!node) {
         return;
     }
@@ -1396,9 +1396,9 @@ DockablePanel::resetHostOverlayColor()
     appPTR->getIcon(NATRON_PIXMAP_OVERLAY, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixOverlay);
     _imp->_overlayButton->setIcon(QIcon(pixOverlay));
     
-    std::list<boost::shared_ptr<Node> > overlayNodes;
+    NodesList overlayNodes;
     getGui()->getNodesEntitledForOverlays(overlayNodes);
-    std::list<boost::shared_ptr<Node> >::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
+    NodesList::iterator found = std::find(overlayNodes.begin(),overlayNodes.end(),node);
     if (found != overlayNodes.end()) {
         getGui()->getApp()->redrawAllViewers();
     }
@@ -1435,7 +1435,7 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(_imp->_holder);
     if (isEffect) {
         
-        boost::shared_ptr<Node> master = isEffect->getNode()->getMasterNode();
+        NodePtr master = isEffect->getNode()->getMasterNode();
         Menu menu(this);
         //menu.setFont( QFont(appFont,appFontSize) );
 
@@ -1479,7 +1479,7 @@ DockablePanel::setKeyOnAllParameters()
 
     AddKeysCommand::KeysToAddList keys;
     for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-        boost::shared_ptr<KnobI> knob = it->first.lock();
+        KnobPtr knob = it->first.lock();
         if (knob->isAnimationEnabled()) {
             for (int i = 0; i < knob->getDimension(); ++i) {
                 std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(it->second,i);
@@ -1523,7 +1523,7 @@ DockablePanel::removeAnimationOnAllParameters()
 {
     std::map< boost::shared_ptr<CurveGui> ,std::vector<KeyFrame > > keysToRemove;
     for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-        boost::shared_ptr<KnobI> knob = it->first.lock();
+        KnobPtr knob = it->first.lock();
         if (knob->isAnimationEnabled()) {
             for (int i = 0; i < knob->getDimension(); ++i) {
                 std::list<boost::shared_ptr<CurveGui> > curves = getGui()->getCurveEditor()->findCurve(it->second,i);
@@ -1564,17 +1564,17 @@ DockablePanel::onEnterInGroupClicked()
     if (!panel) {
         throw std::logic_error("");
     }
-    boost::shared_ptr<NodeGui> node = panel->getNode();
+    NodeGuiPtr node = panel->getNode();
     assert(node);
     if (!node) {
         throw std::logic_error("");
     }
-    EffectInstance* effect = node->getNode()->getLiveInstance();
+    EffectInstPtr effect = node->getNode()->getEffectInstance();
     assert(effect);
     if (!effect) {
         throw std::logic_error("");
     }
-    NodeGroup* group = dynamic_cast<NodeGroup*>(effect);
+    NodeGroup* group = dynamic_cast<NodeGroup*>(effect.get());
     assert(group);
     if (!group) {
         throw std::logic_error("");
@@ -1617,7 +1617,7 @@ DockablePanel::onHideUnmodifiedButtonClicked(bool checked)
     if (checked) {
         _imp->_knobsVisibilityBeforeHideModif.clear();
         for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator it = _imp->_knobs.begin(); it != _imp->_knobs.end(); ++it) {
-            boost::shared_ptr<KnobI> knob = it->first.lock();
+            KnobPtr knob = it->first.lock();
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>(knob.get());
             KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
             if (!isGroup && !isParametric) {
@@ -1663,8 +1663,8 @@ DockablePanel::scanForNewKnobs(bool restorePageIndex)
         
     } else {
         
-        std::vector<boost::shared_ptr<KnobI> > knobs = _imp->_holder->getKnobs();
-        for (std::vector<boost::shared_ptr<KnobI> >::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        KnobsVec knobs = _imp->_holder->getKnobs();
+        for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
             deleteKnobGui(*it);
         }
         
@@ -1676,10 +1676,10 @@ DockablePanel::scanForNewKnobs(bool restorePageIndex)
     ///Refresh pages order
     if (_imp->_pagesEnabled) {
         std::list<std::pair<QWidget*,QString> > orderedPages;
-        const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->_holder->getKnobs();
+        const KnobsVec& knobs = _imp->_holder->getKnobs();
         
         std::list<KnobPage*> pages;
-        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
             KnobPage* isPage = dynamic_cast<KnobPage*>(it->get());
             if (isPage) {
                 pages.push_back(isPage);
@@ -1722,7 +1722,7 @@ DockablePanel::scanForNewKnobs(bool restorePageIndex)
     
     ///Refresh the curve editor with potential new animated knobs
     if (isNodePanel) {
-        boost::shared_ptr<NodeGui> node = isNodePanel->getNode();
+        NodeGuiPtr node = isNodePanel->getNode();
         getGui()->getCurveEditor()->removeNode(node.get());
         getGui()->getCurveEditor()->addNode(node);
 
@@ -1735,7 +1735,7 @@ namespace {
 struct TreeItem
 {
     QTreeWidgetItem* item;
-    boost::shared_ptr<KnobI> knob;
+    KnobPtr knob;
 };
 
 struct ManageUserParamsDialogPrivate
@@ -1780,7 +1780,7 @@ struct ManageUserParamsDialogPrivate
     
     boost::shared_ptr<KnobPage> getUserPageKnob() const;
     
-    void initializeKnobs(const std::vector<boost::shared_ptr<KnobI> >& knobs,QTreeWidgetItem* parent,std::list<KnobI*>& markedKnobs);
+    void initializeKnobs(const KnobsVec& knobs,QTreeWidgetItem* parent,std::list<KnobI*>& markedKnobs);
     
     void rebuildUserPages();
 };
@@ -1801,8 +1801,8 @@ DockablePanel::getUserPageKnob() const
 void
 DockablePanel::getUserPages(std::list<KnobPage*>& userPages) const
 {
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = getHolder()->getKnobs();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    const KnobsVec& knobs = getHolder()->getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         if ((*it)->isUserKnob()) {
             KnobPage* isPage = dynamic_cast<KnobPage*>(it->get());
             if (isPage) {

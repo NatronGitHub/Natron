@@ -124,7 +124,7 @@ RotoDrawableItem::~RotoDrawableItem()
 }
 
 void
-RotoDrawableItem::addKnob(const boost::shared_ptr<KnobI>& knob)
+RotoDrawableItem::addKnob(const KnobPtr& knob)
 {
     _imp->knobs.push_back(knob);
 }
@@ -159,13 +159,13 @@ void
 RotoDrawableItem::createNodes(bool connectNodes)
 {
     
-    const std::list<boost::shared_ptr<KnobI> >& knobs = getKnobs();
-    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    const std::list<KnobPtr >& knobs = getKnobs();
+    for (std::list<KnobPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onRotoKnobChanged(int,int)));
     }
     
     boost::shared_ptr<RotoContext> context = getContext();
-    boost::shared_ptr<Node> node = context->getNode();
+    NodePtr node = context->getNode();
   
     
     AppInstance* app = node->getApp();
@@ -278,7 +278,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     if (type != eRotoStrokeTypeSolid) {
         int maxInp = _imp->mergeNode->getMaxInputCount();
         for (int i = 0; i < maxInp; ++i) {
-            if (_imp->mergeNode->getLiveInstance()->isInputMask(i)) {
+            if (_imp->mergeNode->getEffectInstance()->isInputMask(i)) {
                 
                 //Connect this rotopaint node as a mask
                 bool ok = _imp->mergeNode->connectInput(node, i);
@@ -288,7 +288,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         }
     }
     
-    boost::shared_ptr<KnobI> mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
+    KnobPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
     assert(mergeOperatorKnob);
     KnobChoice* mergeOp = dynamic_cast<KnobChoice*>(mergeOperatorKnob.get());
     assert(mergeOp);
@@ -309,7 +309,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     if (isStroke) {
         if (type == eRotoStrokeTypeBlur) {
             double strength = isStroke->getBrushEffectKnob()->getValue();
-            boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
+            KnobPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
             KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
             if (isDbl) {
                 isDbl->setValues(strength, strength, eValueChangedReasonNatronInternalEdited);
@@ -375,16 +375,16 @@ void
 RotoDrawableItem::deactivateNodes()
 {
     if (_imp->effectNode) {
-        _imp->effectNode->deactivate(std::list< Node* >(),true,false,false,false);
+        _imp->effectNode->deactivate(std::list< NodePtr >(),true,false,false,false);
     }
     if (_imp->mergeNode) {
-        _imp->mergeNode->deactivate(std::list< Node* >(),true,false,false,false);
+        _imp->mergeNode->deactivate(std::list< NodePtr >(),true,false,false,false);
     }
     if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->deactivate(std::list< Node* >(),true,false,false,false);
+        _imp->timeOffsetNode->deactivate(std::list< NodePtr >(),true,false,false,false);
     }
     if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->deactivate(std::list< Node* >(),true,false,false,false);
+        _imp->frameHoldNode->deactivate(std::list< NodePtr >(),true,false,false,false);
     }
 }
 
@@ -392,14 +392,14 @@ void
 RotoDrawableItem::activateNodes()
 {
     if (_imp->effectNode) {
-        _imp->effectNode->activate(std::list< Node* >(),false,false);
+        _imp->effectNode->activate(std::list< NodePtr >(),false,false);
     }
-    _imp->mergeNode->activate(std::list< Node* >(),false,false);
+    _imp->mergeNode->activate(std::list< NodePtr >(),false,false);
     if (_imp->timeOffsetNode) {
-        _imp->timeOffsetNode->activate(std::list< Node* >(),false,false);
+        _imp->timeOffsetNode->activate(std::list< NodePtr >(),false,false);
     }
     if (_imp->frameHoldNode) {
-        _imp->frameHoldNode->activate(std::list< Node* >(),false,false);
+        _imp->frameHoldNode->activate(std::list< NodePtr >(),false,false);
     }
 }
 
@@ -485,7 +485,7 @@ RotoDrawableItem::onRotoKnobChanged(int /*dimension*/, int reason)
         return;
     }
     
-    boost::shared_ptr<KnobI> triggerKnob = handler->getKnob();
+    KnobPtr triggerKnob = handler->getKnob();
     assert(triggerKnob);
     rotoKnobChanged(triggerKnob, (ValueChangedReasonEnum)reason);
     
@@ -493,7 +493,7 @@ RotoDrawableItem::onRotoKnobChanged(int /*dimension*/, int reason)
 }
 
 void
-RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, ValueChangedReasonEnum reason)
+RotoDrawableItem::rotoKnobChanged(const KnobPtr& knob, ValueChangedReasonEnum reason)
 {
     boost::shared_ptr<KnobChoice> compKnob = getOperatorKnob();
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
@@ -509,7 +509,7 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, ValueCha
     }
     
     if (knob == compKnob) {
-        boost::shared_ptr<KnobI> mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
+        KnobPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
         KnobChoice* mergeOp = dynamic_cast<KnobChoice*>(mergeOperatorKnob.get());
         if (mergeOp) {
             mergeOp->setValueFromLabel(compKnob->getEntry(compKnob->getValue()), 0);
@@ -526,7 +526,7 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, ValueCha
         double strength = _imp->effectStrength->getValue();
         switch (type) {
             case eRotoStrokeTypeBlur: {
-                boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
+                KnobPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
                 KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
                 if (isDbl) {
                     isDbl->setValues(strength, strength, eValueChangedReasonNatronInternalEdited);
@@ -543,7 +543,7 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, ValueCha
     } else if (knob == _imp->timeOffset && _imp->timeOffsetNode) {
         
         int offsetMode_i = _imp->timeOffsetMode->getValue();
-        boost::shared_ptr<KnobI> offsetKnob;
+        KnobPtr offsetKnob;
         
         if (offsetMode_i == 0) {
             offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
@@ -561,62 +561,62 @@ RotoDrawableItem::rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, ValueCha
     
     if (type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal) {
         if (knob == _imp->cloneTranslate) {
-            boost::shared_ptr<KnobI> translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
+            KnobPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
             KnobDouble* translate = dynamic_cast<KnobDouble*>(translateKnob.get());
             if (translate) {
                 translate->clone(_imp->cloneTranslate.get());
             }
         } else if (knob == _imp->cloneRotate) {
-            boost::shared_ptr<KnobI> rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
+            KnobPtr rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
             KnobDouble* rotate = dynamic_cast<KnobDouble*>(rotateKnob.get());
             if (rotate) {
                 rotate->clone(_imp->cloneRotate.get());
             }
         } else if (knob == _imp->cloneScale) {
-            boost::shared_ptr<KnobI> scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
+            KnobPtr scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
             KnobDouble* scale = dynamic_cast<KnobDouble*>(scaleKnob.get());
             if (scale) {
                 scale->clone(_imp->cloneScale.get());
             }
         } else if (knob == _imp->cloneScaleUniform) {
-            boost::shared_ptr<KnobI> uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
+            KnobPtr uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
             KnobBool* uniform = dynamic_cast<KnobBool*>(uniformKnob.get());
             if (uniform) {
                 uniform->clone(_imp->cloneScaleUniform.get());
             }
         } else if (knob == _imp->cloneSkewX) {
-            boost::shared_ptr<KnobI> skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
+            KnobPtr skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
             KnobDouble* skewX = dynamic_cast<KnobDouble*>(skewxKnob.get());
             if (skewX) {
                 skewX->clone(_imp->cloneSkewX.get());
             }
         } else if (knob == _imp->cloneSkewY) {
-            boost::shared_ptr<KnobI> skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
+            KnobPtr skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
             KnobDouble* skewY = dynamic_cast<KnobDouble*>(skewyKnob.get());
             if (skewY) {
                 skewY->clone(_imp->cloneSkewY.get());
             }
         } else if (knob == _imp->cloneSkewOrder) {
-            boost::shared_ptr<KnobI> skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
+            KnobPtr skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
             KnobChoice* skewOrder = dynamic_cast<KnobChoice*>(skewOrderKnob.get());
             if (skewOrder) {
                 skewOrder->clone(_imp->cloneSkewOrder.get());
             }
         } else if (knob == _imp->cloneCenter) {
-            boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
+            KnobPtr centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
             KnobDouble* center = dynamic_cast<KnobDouble*>(centerKnob.get());
             if (center) {
                 center->clone(_imp->cloneCenter.get());
                 
             }
         } else if (knob == _imp->cloneFilter) {
-            boost::shared_ptr<KnobI> filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
+            KnobPtr filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
             KnobChoice* filter = dynamic_cast<KnobChoice*>(filterKnob.get());
             if (filter) {
                 filter->clone(_imp->cloneFilter.get());
             }
         } else if (knob == _imp->cloneBlackOutside) {
-            boost::shared_ptr<KnobI> boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
+            KnobPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
             KnobBool* bo = dynamic_cast<KnobBool*>(boKnob.get());
             if (bo) {
                 bo->clone(_imp->cloneBlackOutside.get());
@@ -651,27 +651,27 @@ RotoDrawableItem::incrementNodesAge()
     }
 }
 
-boost::shared_ptr<Node>
+NodePtr
 RotoDrawableItem::getEffectNode() const
 {
     return _imp->effectNode;
 }
 
 
-boost::shared_ptr<Node>
+NodePtr
 RotoDrawableItem::getMergeNode() const
 {
     return _imp->mergeNode;
 }
 
-boost::shared_ptr<Node>
+NodePtr
 RotoDrawableItem::getTimeOffsetNode() const
 {
     
     return _imp->timeOffsetNode;
 }
 
-boost::shared_ptr<Node>
+NodePtr
 RotoDrawableItem::getFrameHoldNode() const
 {
     return _imp->frameHoldNode;
@@ -681,9 +681,9 @@ void
 RotoDrawableItem::refreshNodesConnections()
 {
     RotoDrawableItem* previous = findPreviousInHierarchy();
-    boost::shared_ptr<Node> rotoPaintInput =  getContext()->getNode()->getInput(0);
+    NodePtr rotoPaintInput =  getContext()->getNode()->getInput(0);
     
-    boost::shared_ptr<Node> upstreamNode = previous ? previous->getMergeNode() : rotoPaintInput;
+    NodePtr upstreamNode = previous ? previous->getMergeNode() : rotoPaintInput;
     
     
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
@@ -706,7 +706,7 @@ RotoDrawableItem::refreshNodesConnections()
          
          */
         
-        boost::shared_ptr<Node> effectInput;
+        NodePtr effectInput;
         if (!_imp->timeOffsetNode) {
             effectInput = _imp->effectNode;
         } else {
@@ -739,7 +739,7 @@ RotoDrawableItem::refreshNodesConnections()
         
         
         int reveal_i = _imp->sourceColor->getValue();
-        boost::shared_ptr<Node> revealInput;
+        NodePtr revealInput;
         bool shouldUseUpstreamForReveal = true;
         if ((type == eRotoStrokeTypeReveal ||
              type == eRotoStrokeTypeClone) && reveal_i > 0) {
@@ -782,7 +782,7 @@ RotoDrawableItem::refreshNodesConnections()
              */
 
             
-            boost::shared_ptr<Node> eraserInput = rotoPaintInput ? rotoPaintInput : _imp->effectNode;
+            NodePtr eraserInput = rotoPaintInput ? rotoPaintInput : _imp->effectNode;
             if (_imp->mergeNode->getInput(1) != eraserInput) {
                 _imp->mergeNode->disconnectInput(1);
                 if (eraserInput) {
@@ -860,13 +860,13 @@ RotoDrawableItem::clone(const RotoItem* other)
     if (!otherDrawable) {
         return;
     }
-    const std::list<boost::shared_ptr<KnobI> >& otherKnobs = otherDrawable->getKnobs();
+    const std::list<KnobPtr >& otherKnobs = otherDrawable->getKnobs();
     assert(otherKnobs.size() == _imp->knobs.size());
     if (otherKnobs.size() != _imp->knobs.size()) {
         return;
     }
-    std::list<boost::shared_ptr<KnobI> >::iterator it = _imp->knobs.begin();
-    std::list<boost::shared_ptr<KnobI> >::const_iterator otherIt = otherKnobs.begin();
+    std::list<KnobPtr >::iterator it = _imp->knobs.begin();
+    std::list<KnobPtr >::const_iterator otherIt = otherKnobs.begin();
     for (; it != _imp->knobs.end(); ++it, ++otherIt) {
         (*it)->clone(*otherIt);
     }
@@ -878,10 +878,10 @@ RotoDrawableItem::clone(const RotoItem* other)
 }
 
 static void
-serializeRotoKnob(const boost::shared_ptr<KnobI> & knob,
+serializeRotoKnob(const KnobPtr & knob,
                   KnobSerialization* serialization)
 {
-    std::pair<int, boost::shared_ptr<KnobI> > master = knob->getMaster(0);
+    std::pair<int, KnobPtr > master = knob->getMaster(0);
     bool wasSlaved = false;
 
     if (master.second) {
@@ -902,7 +902,7 @@ RotoDrawableItem::save(RotoItemSerialization *obj) const
     RotoDrawableItemSerialization* s = dynamic_cast<RotoDrawableItemSerialization*>(obj);
 
     assert(s);
-    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+    for (std::list<KnobPtr >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         boost::shared_ptr<KnobSerialization> k(new KnobSerialization());
         serializeRotoKnob(*it,k.get());
         s->_knobs.push_back(k);
@@ -923,7 +923,7 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
     const RotoDrawableItemSerialization & s = dynamic_cast<const RotoDrawableItemSerialization &>(obj);
     for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = s._knobs.begin(); it!=s._knobs.end(); ++it) {
         
-        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
+        for (std::list<KnobPtr >::const_iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
             if ((*it2)->getName() == (*it)->getName()) {
                 boost::shared_ptr<KnobSignalSlotHandler> s = (*it2)->getSignalSlotHandler();
                 s->blockSignals(true);
@@ -947,60 +947,60 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
     }
 
     boost::shared_ptr<KnobChoice> compKnob = getOperatorKnob();
-    boost::shared_ptr<KnobI> mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
+    KnobPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
     KnobChoice* mergeOp = dynamic_cast<KnobChoice*>(mergeOperatorKnob.get());
     if (mergeOp) {
         mergeOp->setValueFromLabel(compKnob->getEntry(compKnob->getValue()), 0);
     }
 
     if (type == eRotoStrokeTypeClone || type == eRotoStrokeTypeReveal) {
-        boost::shared_ptr<KnobI> translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
+        KnobPtr translateKnob = _imp->effectNode->getKnobByName(kTransformParamTranslate);
         KnobDouble* translate = dynamic_cast<KnobDouble*>(translateKnob.get());
         if (translate) {
             translate->clone(_imp->cloneTranslate.get());
         }
-        boost::shared_ptr<KnobI> rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
+        KnobPtr rotateKnob = _imp->effectNode->getKnobByName(kTransformParamRotate);
         KnobDouble* rotate = dynamic_cast<KnobDouble*>(rotateKnob.get());
         if (rotate) {
             rotate->clone(_imp->cloneRotate.get());
         }
-        boost::shared_ptr<KnobI> scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
+        KnobPtr scaleKnob = _imp->effectNode->getKnobByName(kTransformParamScale);
         KnobDouble* scale = dynamic_cast<KnobDouble*>(scaleKnob.get());
         if (scale) {
             scale->clone(_imp->cloneScale.get());
         }
-        boost::shared_ptr<KnobI> uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
+        KnobPtr uniformKnob = _imp->effectNode->getKnobByName(kTransformParamUniform);
         KnobBool* uniform = dynamic_cast<KnobBool*>(uniformKnob.get());
         if (uniform) {
             uniform->clone(_imp->cloneScaleUniform.get());
         }
-        boost::shared_ptr<KnobI> skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
+        KnobPtr skewxKnob = _imp->effectNode->getKnobByName(kTransformParamSkewX);
         KnobDouble* skewX = dynamic_cast<KnobDouble*>(skewxKnob.get());
         if (skewX) {
             skewX->clone(_imp->cloneSkewX.get());
         }
-        boost::shared_ptr<KnobI> skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
+        KnobPtr skewyKnob = _imp->effectNode->getKnobByName(kTransformParamSkewY);
         KnobDouble* skewY = dynamic_cast<KnobDouble*>(skewyKnob.get());
         if (skewY) {
             skewY->clone(_imp->cloneSkewY.get());
         }
-        boost::shared_ptr<KnobI> skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
+        KnobPtr skewOrderKnob = _imp->effectNode->getKnobByName(kTransformParamSkewOrder);
         KnobChoice* skewOrder = dynamic_cast<KnobChoice*>(skewOrderKnob.get());
         if (skewOrder) {
             skewOrder->clone(_imp->cloneSkewOrder.get());
         }
-        boost::shared_ptr<KnobI> centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
+        KnobPtr centerKnob = _imp->effectNode->getKnobByName(kTransformParamCenter);
         KnobDouble* center = dynamic_cast<KnobDouble*>(centerKnob.get());
         if (center) {
             center->clone(_imp->cloneCenter.get());
             
         }
-        boost::shared_ptr<KnobI> filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
+        KnobPtr filterKnob = _imp->effectNode->getKnobByName(kTransformParamFilter);
         KnobChoice* filter = dynamic_cast<KnobChoice*>(filterKnob.get());
         if (filter) {
             filter->clone(_imp->cloneFilter.get());
         }
-        boost::shared_ptr<KnobI> boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
+        KnobPtr boKnob = _imp->effectNode->getKnobByName(kTransformParamBlackOutside);
         KnobBool* bo = dynamic_cast<KnobBool*>(boKnob.get());
         if (bo) {
             bo->clone(_imp->cloneBlackOutside.get());
@@ -1008,7 +1008,7 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
         }
         
         int offsetMode_i = _imp->timeOffsetMode->getValue();
-        boost::shared_ptr<KnobI> offsetKnob;
+        KnobPtr offsetKnob;
         
         if (offsetMode_i == 0) {
             offsetKnob = _imp->timeOffsetNode->getKnobByName(kTimeOffsetParamOffset);
@@ -1022,7 +1022,7 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
         
         
     } else if (type == eRotoStrokeTypeBlur) {
-        boost::shared_ptr<KnobI> knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
+        KnobPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
         KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
         if (isDbl) {
             isDbl->clone(_imp->effectStrength.get());
@@ -1353,21 +1353,21 @@ RotoDrawableItem::setKeyframeOnAllTransformParameters(double time)
     _imp->skewY->setValueAtTime(time, _imp->skewY->getValue(0), 0);
 }
 
-const std::list<boost::shared_ptr<KnobI> >&
+const std::list<KnobPtr >&
 RotoDrawableItem::getKnobs() const
 {
     return _imp->knobs;
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 RotoDrawableItem::getKnobByName(const std::string& name) const
 {
-    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+    for (std::list<KnobPtr >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         if ((*it)->getName() == name) {
             return *it;
         }
     }
-    return boost::shared_ptr<KnobI>();
+    return KnobPtr();
 }
 
 

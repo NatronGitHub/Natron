@@ -1870,7 +1870,7 @@ RotoGui::drawOverlays(double time,
     glCheckError();
     
     NodePtr node = _imp->node->getNode();
-    node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
+    node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
     node->drawHostOverlay(time, renderScale);
 } // drawOverlays
 
@@ -2238,7 +2238,7 @@ handleControlPointMaximum(double time,
 void
 RotoGui::RotoGuiPrivate::computeSelectedCpsBBOX()
 {
-    boost::shared_ptr<Node> n = node->getNode();
+    NodePtr n = node->getNode();
     if ((n && !n->isActivated()) || !viewer) {
         return;
     }
@@ -2339,7 +2339,7 @@ RotoGui::penDown(double time,
                  QMouseEvent* e)
 {
     NodePtr node = _imp->node->getNode();
-    node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
+    node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
     if (node->onOverlayPenDownDefault(renderScale, viewportPos, pos, pressure)) {
         return true;
     }
@@ -2817,7 +2817,7 @@ RotoGui::penMotion(double time,
                    QInputEvent* e)
 {
     NodePtr node = _imp->node->getNode();
-    node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
+    node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
     if (node->onOverlayPenMotionDefault(renderScale, viewportPos, pos, pressure)) {
         return true;
     }
@@ -3240,7 +3240,7 @@ RotoGui::penUp(double /*time*/,
                QMouseEvent* /*e*/)
 {
     NodePtr node = _imp->node->getNode();
-    node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
+    node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
     if (node->onOverlayPenUpDefault(renderScale, viewportPos, pos, pressure)) {
         return true;
     }
@@ -3357,7 +3357,7 @@ static bool isBranchConnectedToRotoNodeRecursive(Node* node,
 void
 RotoGui::RotoGuiPrivate::checkViewersAreDirectlyConnected()
 {
-    boost::shared_ptr<Node> rotoNode = context->getNode();
+    NodePtr rotoNode = context->getNode();
     std::list<ViewerInstance*> viewers;
     rotoNode->hasViewersConnected(&viewers);
     for (std::list<ViewerInstance*>::iterator it = viewers.begin(); it!=viewers.end(); ++it) {
@@ -3532,7 +3532,7 @@ RotoGui::keyDown(double /*time*/,
     Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     NodePtr node = _imp->node->getNode();
-    node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
+    node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
     if (node->onOverlayKeyDownDefault(renderScale, natronKey, natronMod)) {
         return true;
     }
@@ -3675,7 +3675,7 @@ RotoGui::keyRepeat(double /*time*/,
                    QKeyEvent* e)
 {
     NodePtr node = _imp->node->getNode();
-    node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
+    node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
     Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     if (node->onOverlayKeyRepeatDefault(renderScale, natronKey, natronMod)) {
@@ -3716,7 +3716,7 @@ RotoGui::keyUp(double /*time*/,
     Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     NodePtr node = _imp->node->getNode();
-    node->getLiveInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
+    node->getEffectInstance()->setCurrentViewportForOverlays_public(_imp->viewer);
     if (node->onOverlayKeyUpDefault(renderScale, natronKey, natronMod)) {
         return true;
     }
@@ -4827,12 +4827,12 @@ void
 RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>,boost::shared_ptr<BezierCP> > > & points)
 {
     std::vector< std::pair<std::string,boost::shared_ptr<KnobDouble> > > knobs;
-    NodeList activeNodes;
+    NodesList activeNodes;
     _imp->node->getNode()->getGroup()->getActiveNodes(&activeNodes);
-    for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+    for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         if ( (*it)->isPointTrackerNode() && (*it)->getParentMultiInstance()) {
-            boost::shared_ptr<KnobI> k = (*it)->getKnobByName("center");
-            boost::shared_ptr<KnobI> name = (*it)->getKnobByName(kNatronOfxParamStringSublabelName);
+            KnobPtr k = (*it)->getKnobByName("center");
+            KnobPtr name = (*it)->getKnobByName(kNatronOfxParamStringSublabelName);
             if (k && name) {
                 boost::shared_ptr<KnobDouble> dk = boost::dynamic_pointer_cast<KnobDouble>(k);
                 KnobString* nameKnob = dynamic_cast<KnobString*>( name.get() );

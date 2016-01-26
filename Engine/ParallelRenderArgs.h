@@ -46,12 +46,12 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::map<EffectInstance*,RectD> RoIMap; // RoIs are in canonical coordinates
+typedef std::map<EffectInstPtr ,RectD> RoIMap; // RoIs are in canonical coordinates
 typedef std::map<int, std::map<int, std::vector<OfxRangeD> > > FramesNeededMap;
 
 struct InputMatrix
 {
-    EffectInstance* newInputEffect;
+    EffectInstPtr newInputEffect;
     boost::shared_ptr<Transform::Matrix3x3> cat;
     int newInputNbToFetchFrom;
 };
@@ -99,10 +99,10 @@ struct ParallelRenderArgs
     U64 renderAge;
     
     ///A pointer to the node that requested the current render.
-    boost::shared_ptr<Node> treeRoot;
+    NodePtr treeRoot;
 
     ///List of the nodes in the rotopaint tree
-    std::list<boost::shared_ptr<Node> > rotoPaintNodes;
+    NodesList rotoPaintNodes;
 
     ///Various stats local to the render of a frame
     boost::shared_ptr<RenderStats> stats;
@@ -182,7 +182,7 @@ struct FrameViewRequestGlobalData
 {
     ///The transforms associated to each input branch, set on first request
     boost::shared_ptr<InputMatrixMap> transforms;
-    boost::shared_ptr<std::map<int, EffectInstance*> > reroutesMap;
+    boost::shared_ptr<std::map<int, EffectInstPtr> > reroutesMap;
     
     ///The required frame/views in input, set on first request
     FramesNeededMap frameViewsNeeded;
@@ -257,13 +257,13 @@ struct NodeFrameRequest
 
 };
 
-typedef std::map<boost::shared_ptr<Node>,boost::shared_ptr<NodeFrameRequest> > FrameRequestMap;
+typedef std::map<NodePtr,boost::shared_ptr<NodeFrameRequest> > FrameRequestMap;
 
 
 class ParallelRenderArgsSetter
 {
-    boost::shared_ptr<std::map<boost::shared_ptr<Node>,ParallelRenderArgs > > argsMap;
-    std::list<boost::shared_ptr<Node> > nodes;
+    boost::shared_ptr<std::map<NodePtr,ParallelRenderArgs > > argsMap;
+    NodesList nodes;
     
 public:
     
@@ -280,17 +280,17 @@ public:
                              bool isSequential,
                              bool canAbort,
                              U64 renderAge,
-                             const boost::shared_ptr<Node>& treeRoot,
+                             const NodePtr& treeRoot,
                              const FrameRequestMap* request,
                              int textureIndex,
                              const TimeLine* timeline,
-                             const boost::shared_ptr<Node>& activeRotoPaintNode,
+                             const NodePtr& activeRotoPaintNode,
                              bool isAnalysis,
                              bool draftMode,
                              bool viewerProgressReportEnabled,
                              const boost::shared_ptr<RenderStats>& stats);
     
-    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<boost::shared_ptr<Node>,ParallelRenderArgs > >& args);
+    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr,ParallelRenderArgs > >& args);
     
     virtual ~ParallelRenderArgsSetter();
 };

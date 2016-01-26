@@ -62,14 +62,14 @@ typedef std::pair<QTreeWidgetItem *, DSKnob *> TreeItemAndDSKnob;
 
 ////////////////////////// Helpers //////////////////////////
 
-bool nodeHasAnimation(const boost::shared_ptr<NodeGui> &nodeGui)
+bool nodeHasAnimation(const NodeGuiPtr &nodeGui)
 {
-    const std::vector<boost::shared_ptr<KnobI> > &knobs = nodeGui->getNode()->getKnobs();
+    const KnobsVec &knobs = nodeGui->getNode()->getKnobs();
 
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin();
+    for (KnobsVec::const_iterator it = knobs.begin();
          it != knobs.end();
          ++it) {
-        boost::shared_ptr<KnobI> knob = *it;
+        KnobPtr knob = *it;
 
         if (knob->hasAnimation()) {
             return true;
@@ -84,12 +84,12 @@ namespace {
 
 bool nodeCanAnimate(const NodePtr &node)
 {
-    const std::vector<boost::shared_ptr<KnobI> > &knobs = node->getKnobs();
+    const KnobsVec &knobs = node->getKnobs();
 
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin();
+    for (KnobsVec::const_iterator it = knobs.begin();
          it != knobs.end();
          ++it) {
-        boost::shared_ptr<KnobI> knob = *it;
+        KnobPtr knob = *it;
 
         if (knob->isAnimationEnabled()) {
             return true;
@@ -175,42 +175,42 @@ DopeSheetPrivate::~DopeSheetPrivate()
     delete selectionModel;
 }
 
-Node *DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Node *node,std::list<Node*>& markedNodes) const
+Node* DopeSheetPrivate::getNearestTimeFromOutputs_recursive(Node *node,std::list<Node*>& markedNodes) const
 {
-    const std::list<Node *> &outputs = node->getGuiOutputs();
+    const NodesWList &outputs = node->getGuiOutputs();
     if (std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end()) {
         return 0;
     }
     markedNodes.push_back(node);
-    for (std::list<Node *>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        Node *output = (*it);
+    for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        NodePtr output = it->lock();
 
         std::string pluginID = output->getPluginID();
 
         if (pluginID == PLUGINID_OFX_RETIME
                 || pluginID == PLUGINID_OFX_TIMEOFFSET
                 || pluginID == PLUGINID_OFX_FRAMERANGE) {
-            return output;
+            return output.get();
         }
         else {
-            Node* ret =  getNearestTimeFromOutputs_recursive(output, markedNodes);
+            Node* ret =  getNearestTimeFromOutputs_recursive(output.get(), markedNodes);
             if (ret) {
                 return ret;
             }
         }
     }
 
-    return NULL;
+    return 0;
 }
 
 Node *DopeSheetPrivate::getNearestReaderFromInputs_recursive(Node *node,std::list<Node*>& markedNodes) const
 {
-    const std::vector<boost::weak_ptr<Node> > &inputs = node->getGuiInputs();
+    const std::vector<NodeWPtr > &inputs = node->getGuiInputs();
     if (std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end()) {
         return 0;
     }
     markedNodes.push_back(node);
-    for (std::vector<boost::weak_ptr<Node> >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+    for (std::vector<NodeWPtr >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
         NodePtr input = it->lock();
 
         if (!input) {
@@ -237,9 +237,9 @@ Node *DopeSheetPrivate::getNearestReaderFromInputs_recursive(Node *node,std::lis
 
 void DopeSheetPrivate::getInputsConnected_recursive(Node *node, std::vector<boost::shared_ptr<DSNode> > *result) const
 {
-    const std::vector<boost::weak_ptr<Node> > &inputs = node->getGuiInputs();
+    const std::vector<NodeWPtr > &inputs = node->getGuiInputs();
 
-    for (std::vector<boost::weak_ptr<Node> >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+    for (std::vector<NodeWPtr >::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
         NodePtr input = it->lock();
 
         if (!input) {
@@ -280,7 +280,7 @@ DSTreeItemNodeMap DopeSheet::getItemNodeMap() const
     return _imp->treeItemNodeMap;
 }
 
-void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
+void DopeSheet::addNode(NodeGuiPtr nodeGui)
 {
     // Determinate the node type
     // It will be useful to identify and sort tree items
@@ -293,7 +293,7 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
         return;
     }
     
-    EffectInstance *effectInstance = node->getLiveInstance();
+    EffectInstPtr effectInstance = node->getEffectInstance();
 
 
     std::string pluginID = node->getPluginID();
@@ -303,7 +303,7 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
             || pluginID == PLUGINID_OFX_READPFM) {
         nodeType = eDopeSheetItemTypeReader;
     }
-    else if (dynamic_cast<NodeGroup *>(effectInstance)) {
+    else if (dynamic_cast<NodeGroup *>(effectInstance.get())) {
         nodeType = eDopeSheetItemTypeGroup;
     }
     else if (pluginID == PLUGINID_OFX_RETIME) {
@@ -318,8 +318,8 @@ void DopeSheet::addNode(boost::shared_ptr<NodeGui> nodeGui)
 
     // Discard specific nodes
     if (nodeType == eDopeSheetItemTypeCommon) {
-        if (dynamic_cast<GroupInput *>(effectInstance) ||
-                dynamic_cast<GroupOutput *>(effectInstance)) {
+        if (dynamic_cast<GroupInput *>(effectInstance.get()) ||
+                dynamic_cast<GroupOutput *>(effectInstance.get())) {
             return;
         }
 
@@ -440,7 +440,7 @@ boost::shared_ptr<DSNode> DopeSheet::findDSNode(Node *node) const
     return boost::shared_ptr<DSNode>();
 }
 
-boost::shared_ptr<DSNode> DopeSheet::findDSNode(const boost::shared_ptr<KnobI> &knob) const
+boost::shared_ptr<DSNode> DopeSheet::findDSNode(const KnobPtr &knob) const
 {
     for (DSTreeItemNodeMap::const_iterator it = _imp->treeItemNodeMap.begin(); it != _imp->treeItemNodeMap.end(); ++it) {
         boost::shared_ptr<DSNode>dsNode = (*it).second;
@@ -505,11 +505,11 @@ std::vector<boost::shared_ptr<DSNode> > DopeSheet::getImportantNodes(DSNode *dsN
     DopeSheetItemType nodeType = dsNode->getItemType();
 
     if (nodeType == eDopeSheetItemTypeGroup) {
-        NodeGroup *nodeGroup = dynamic_cast<NodeGroup *>(dsNode->getInternalNode()->getLiveInstance());
+        NodeGroup *nodeGroup = dsNode->getInternalNode()->isEffectGroup();
         assert(nodeGroup);
 
-        NodeList nodes = nodeGroup->getNodes();
-        for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        NodesList nodes = nodeGroup->getNodes();
+        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             NodePtr childNode = (*it);
 
             boost::shared_ptr<DSNode>isInDopeSheet = findDSNode(childNode.get());
@@ -908,7 +908,7 @@ SequenceTime DopeSheet::getCurrentFrame() const
     return _imp->timeline->currentFrame();
 }
 
-boost::shared_ptr<DSNode> DopeSheet::createDSNode(const boost::shared_ptr<NodeGui> &nodeGui, DopeSheetItemType itemType)
+boost::shared_ptr<DSNode> DopeSheet::createDSNode(const NodeGuiPtr &nodeGui, DopeSheetItemType itemType)
 {
     // Determinate the node type
     // It will be useful to identify and sort tree items
@@ -958,7 +958,7 @@ public:
     int dimension;
     QTreeWidgetItem *nameItem;
     KnobGui *knobGui;
-    boost::shared_ptr<KnobI> knob;
+    KnobPtr knob;
 };
 
 DSKnobPrivate::DSKnobPrivate() :
@@ -1044,7 +1044,7 @@ KnobGui *DSKnob::getKnobGui() const
     return _imp->knobGui;
 }
 
-boost::shared_ptr<KnobI> DSKnob::getInternalKnob() const
+KnobPtr DSKnob::getInternalKnob() const
 {
     return _imp->knob;
 }
@@ -1386,22 +1386,22 @@ DSNodePrivate::~DSNodePrivate()
 
 void DSNodePrivate::initGroupNode()
 {
-   /* boost::shared_ptr<NodeGui> node = nodeGui.lock();
+   /* NodeGuiPtr node = nodeGui.lock();
     if (!node) {
         return;
     }
-    boost::shared_ptr<Node> natronnode = node->getNode();
+    NodePtr natronnode = node->getNode();
     assert(natronnode);
-    NodeGroup* nodegroup = dynamic_cast<NodeGroup *>(natronnode->getLiveInstance());
+    NodeGroup* nodegroup = dynamic_cast<NodeGroup *>(natronnode->getEffectInstance());
     assert(nodegroup);
     if (!nodegroup) {
         return;
     }
-    NodeList subNodes = nodegroup->getNodes();
+    NodesList subNodes = nodegroup->getNodes();
 
-    for (NodeList::const_iterator it = subNodes.begin(); it != subNodes.end(); ++it) {
+    for (NodesList::const_iterator it = subNodes.begin(); it != subNodes.end(); ++it) {
         NodePtr subNode = (*it);
-        boost::shared_ptr<NodeGui> subNodeGui = boost::dynamic_pointer_cast<NodeGui>(subNode->getNodeGui());
+        NodeGuiPtr subNodeGui = boost::dynamic_pointer_cast<NodeGui>(subNode->getNodeGui());
 
         if (!subNodeGui || !subNodeGui->getSettingPanel() || !subNodeGui->isSettingsPanelVisible()) {
             continue;
@@ -1411,7 +1411,7 @@ void DSNodePrivate::initGroupNode()
 
 DSNode::DSNode(DopeSheet *model,
                DopeSheetItemType itemType,
-               const boost::shared_ptr<NodeGui> &nodeGui,
+               const NodeGuiPtr &nodeGui,
                QTreeWidgetItem *nameItem) :
     _imp(new DSNodePrivate)
 {
@@ -1425,7 +1425,7 @@ DSNode::DSNode(DopeSheet *model,
 
     for (KnobsAndGuis::const_iterator it = knobs.begin();
          it != knobs.end(); ++it) {
-        boost::shared_ptr<KnobI> knob = it->first.lock();
+        KnobPtr knob = it->first.lock();
         if (!knob) {
             continue;
         }
@@ -1508,14 +1508,14 @@ QTreeWidgetItem *DSNode::getTreeItem() const
  *
  * Returns the associated node.
  */
-boost::shared_ptr<NodeGui> DSNode::getNodeGui() const
+NodeGuiPtr DSNode::getNodeGui() const
 {
     return _imp->nodeGui.lock();
 }
 
-boost::shared_ptr<Node> DSNode::getInternalNode() const
+NodePtr DSNode::getInternalNode() const
 {
-    boost::shared_ptr<NodeGui> node = getNodeGui();
+    NodeGuiPtr node = getNodeGui();
     return node ? node->getNode() : NodePtr();
 }
 

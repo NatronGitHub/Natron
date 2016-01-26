@@ -170,7 +170,7 @@ class KnobSerializationBase;
 struct ValueSerialization
 {
     KnobSerializationBase* _serialization;
-    boost::shared_ptr<KnobI> _knob;
+    KnobPtr _knob;
     int _dimension;
     MasterSerialization _master;
     std::string _expression;
@@ -178,11 +178,11 @@ struct ValueSerialization
     
     ///Load
     ValueSerialization(KnobSerializationBase* serialization,
-                       const boost::shared_ptr<KnobI> & knob,
+                       const KnobPtr & knob,
                        int dimension);
     
     ///Save
-    ValueSerialization(const boost::shared_ptr<KnobI> & knob,
+    ValueSerialization(const KnobPtr & knob,
                        int dimension,
                        bool exprHasRetVar,
                        const std::string& expr);
@@ -383,7 +383,7 @@ public:
     
     virtual const std::string& getName() const = 0;
     
-    virtual boost::shared_ptr<KnobI> getKnob() const = 0;
+    virtual KnobPtr getKnob() const = 0;
     
     virtual void setChoiceExtraString(const std::string& /*label*/) {}
     
@@ -392,7 +392,7 @@ public:
 
 class KnobSerialization : public KnobSerializationBase
 {
-    boost::shared_ptr<KnobI> _knob; //< used when serializing
+    KnobPtr _knob; //< used when serializing
     std::string _typeName;
     int _dimension;
     std::list<MasterSerialization> _masters; //< used when deserializating, we can't restore it before all knobs have been restored.
@@ -538,7 +538,7 @@ class KnobSerialization : public KnobSerializationBase
         ar & ::boost::serialization::make_nvp("Name",name);
         ar & ::boost::serialization::make_nvp("Type",_typeName);
         ar & ::boost::serialization::make_nvp("Dimension",_dimension);
-        boost::shared_ptr<KnobI> created = createKnob(_typeName, _dimension);
+        KnobPtr created = createKnob(_typeName, _dimension);
         if (!created) {
             return;
         } else {
@@ -718,7 +718,7 @@ class KnobSerialization : public KnobSerializationBase
 public:
 
     ///Constructor used to serialize
-    explicit KnobSerialization(const boost::shared_ptr<KnobI> & knob)
+    explicit KnobSerialization(const KnobPtr & knob)
         : _knob()
         , _dimension(0)
         , _masterIsAlias(false)
@@ -737,7 +737,7 @@ public:
 
     ///Doing the empty param constructor + this function is the same
     ///as calling the constructore above
-    void initialize(const boost::shared_ptr<KnobI> & knob)
+    void initialize(const KnobPtr & knob)
     {
         
         _knob = knob;
@@ -845,17 +845,17 @@ public:
     /**
      * @brief This function cannot be called until all knobs of the project have been created.
      **/
-    void restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
-                          const std::list<boost::shared_ptr<Node> > & allNodes,
+    void restoreKnobLinks(const KnobPtr & knob,
+                          const NodesList & allNodes,
                           const std::map<std::string,std::string>& oldNewScriptNamesMapping);
     
     /**
      * @brief This function cannot be called until all knobs of the project have been created.
      **/
-    void restoreExpressions(const boost::shared_ptr<KnobI> & knob,
+    void restoreExpressions(const KnobPtr & knob,
                             const std::map<std::string,std::string>& oldNewScriptNamesMapping);
 
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL
+    virtual KnobPtr getKnob() const OVERRIDE FINAL
     {
         return _knob;
     }
@@ -865,9 +865,9 @@ public:
         return _knob->getName();
     }
 
-    static boost::shared_ptr<KnobI> createKnob(const std::string & typeName,int dimension);
+    static KnobPtr createKnob(const std::string & typeName,int dimension);
 
-    void restoreTracks(const boost::shared_ptr<KnobI> & knob,const std::list<boost::shared_ptr<Node> > & allNodes);
+    void restoreTracks(const KnobPtr & knob,const NodesList & allNodes);
 
     const TypeExtraData* getExtraData() const { return _extraData; }
     
@@ -924,7 +924,7 @@ boost::shared_ptr<KnobSerialization> createDefaultValueForParam(const std::strin
 class GroupKnobSerialization : public KnobSerializationBase
 {
     
-    boost::shared_ptr<KnobI> _knob;
+    KnobPtr _knob;
     std::list <boost::shared_ptr<KnobSerializationBase> > _children;
     std::string _name,_label;
     bool _secret;
@@ -932,7 +932,7 @@ class GroupKnobSerialization : public KnobSerializationBase
     bool _isOpened; //< only for groups
 public:
     
-    GroupKnobSerialization(const boost::shared_ptr<KnobI>& knob)
+    GroupKnobSerialization(const KnobPtr& knob)
     : _knob(knob)
     , _children()
     , _name()
@@ -954,7 +954,7 @@ public:
             _isOpened = isGrp->getValue();
         }
         
-        std::vector<boost::shared_ptr<KnobI> > children;
+        KnobsVec children;
         
         if (isGrp) {
             children = isGrp->getChildren();
@@ -966,7 +966,7 @@ public:
             if (isPage) {
                 ///If page, check that the child is a top level child and not child of a sub-group
                 ///otherwise let the sub group register the child
-                boost::shared_ptr<KnobI> parent = children[i]->getParentKnob();
+                KnobPtr parent = children[i]->getParentKnob();
                 if (parent.get() != isPage) {
                     continue;
                 }
@@ -1006,7 +1006,7 @@ public:
         return _children;
     }
     
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL
+    virtual KnobPtr getKnob() const OVERRIDE FINAL
     {
         return _knob;
     }

@@ -97,7 +97,7 @@ Bool_CheckBox::getBackgroundColor(double *r,double *g,double *b) const
 }
 
 
-KnobGuiBool::KnobGuiBool(boost::shared_ptr<KnobI> knob,
+KnobGuiBool::KnobGuiBool(KnobPtr knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
     , _checkBox(0)
@@ -239,7 +239,7 @@ KnobGuiBool::setDirty(bool dirty)
     _checkBox->setDirty(dirty);
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 KnobGuiBool::getKnob() const
 {
     return _knob.lock();

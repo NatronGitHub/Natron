@@ -61,7 +61,7 @@ NATRON_NAMESPACE_ENTER;
 
 
 //===========================FILE_KNOB_GUI=====================================
-KnobGuiFile::KnobGuiFile(boost::shared_ptr<KnobI> knob,
+KnobGuiFile::KnobGuiFile(KnobPtr knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
     , _lineEdit(0)
@@ -373,7 +373,7 @@ KnobGuiFile::setDirty(bool dirty)
     _lineEdit->setDirty(dirty);
 }
 
-boost::shared_ptr<KnobI> KnobGuiFile::getKnob() const
+KnobPtr KnobGuiFile::getKnob() const
 {
     return _knob.lock();
 }
@@ -463,7 +463,7 @@ KnobGuiFile::updateToolTip()
 }
 
 //============================OUTPUT_FILE_KNOB_GUI====================================
-KnobGuiOutputFile::KnobGuiOutputFile(boost::shared_ptr<KnobI> knob,
+KnobGuiOutputFile::KnobGuiOutputFile(KnobPtr knob,
                                        DockablePanel *container)
     : KnobGui(knob, container)
     , _lineEdit(0)
@@ -618,7 +618,7 @@ KnobGuiOutputFile::setDirty(bool dirty)
     _lineEdit->setDirty(dirty);
 }
 
-boost::shared_ptr<KnobI> KnobGuiOutputFile::getKnob() const
+KnobPtr KnobGuiOutputFile::getKnob() const
 {
     return _knob.lock();
 }
@@ -710,7 +710,7 @@ KnobGuiOutputFile::updateToolTip()
 }
 
 //============================PATH_KNOB_GUI====================================
-KnobGuiPath::KnobGuiPath(boost::shared_ptr<KnobI> knob,
+KnobGuiPath::KnobGuiPath(KnobPtr knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
     , _mainContainer(0)
@@ -1198,7 +1198,7 @@ KnobGuiPath::setDirty(bool /*dirty*/)
     
 }
 
-boost::shared_ptr<KnobI> KnobGuiPath::getKnob() const
+KnobPtr KnobGuiPath::getKnob() const
 {
     return _knob.lock();
 }

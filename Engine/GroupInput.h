@@ -42,12 +42,12 @@ class GroupInput
     
 public:
     
-    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new GroupInput(n);
     }
     
-    GroupInput(boost::shared_ptr<Node> n)
+    GroupInput(NodePtr n)
     : NoOpBase(n)
     {
     }

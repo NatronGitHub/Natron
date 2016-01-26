@@ -49,11 +49,11 @@ class HostOverlay : public NatronOverlayInteractSupport
     
 public:
     
-    HostOverlay(const boost::shared_ptr<NodeGui>& node);
+    HostOverlay(const NodeGuiPtr& node);
     
     ~HostOverlay();
     
-    boost::shared_ptr<NodeGui> getNode() const;
+    NodeGuiPtr getNode() const;
     
     bool addPositionParam(const boost::shared_ptr<KnobDouble>& position);
     

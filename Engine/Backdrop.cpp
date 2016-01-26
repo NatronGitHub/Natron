@@ -40,7 +40,7 @@ struct BackdropPrivate
     
 };
 
-Backdrop::Backdrop(boost::shared_ptr<Node> node)
+Backdrop::Backdrop(NodePtr node)
 : NoOpBase(node)
 , _imp(new BackdropPrivate())
 {

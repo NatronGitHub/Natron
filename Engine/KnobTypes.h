@@ -278,7 +278,7 @@ public:
 
     void serializeTracks(std::list<SerializedTrack>* tracks);
 
-    void restoreTracks(const std::list <SerializedTrack> & tracks,const std::list<boost::shared_ptr<Node> > & activeNodes);
+    void restoreTracks(const std::list <SerializedTrack> & tracks,const NodesList & activeNodes);
 
     void setHasHostOverlayHandle(bool handle);
     
@@ -481,7 +481,7 @@ private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual void handleSignalSlotsForAliasLink(const boost::shared_ptr<KnobI>& alias,bool connect) OVERRIDE FINAL;
+    virtual void handleSignalSlotsForAliasLink(const KnobPtr& alias,bool connect) OVERRIDE FINAL;
     
     
 private:
@@ -730,15 +730,15 @@ public:
                int dimension,
                bool declaredByPlugin);
 
-    void addKnob(boost::shared_ptr<KnobI> k);
+    void addKnob(KnobPtr k);
     void removeKnob(KnobI* k);
     
     bool moveOneStepUp(KnobI* k);
     bool moveOneStepDown(KnobI* k);
     
-    void insertKnob(int index, const boost::shared_ptr<KnobI>& k);
+    void insertKnob(int index, const KnobPtr& k);
 
-    std::vector< boost::shared_ptr<KnobI> > getChildren() const;
+    std::vector< KnobPtr > getChildren() const;
 
     void setAsTab();
 
@@ -780,7 +780,7 @@ public:
               int dimension,
               bool declaredByPlugin);
 
-    void addKnob(const boost::shared_ptr<KnobI>& k);
+    void addKnob(const KnobPtr& k);
     
 
     bool moveOneStepUp(KnobI* k);
@@ -788,9 +788,9 @@ public:
     
     void removeKnob(KnobI* k);
     
-    void insertKnob(int index, const boost::shared_ptr<KnobI>& k);
+    void insertKnob(int index, const KnobPtr& k);
 
-    std::vector< boost::shared_ptr<KnobI> >  getChildren() const;
+    std::vector< KnobPtr >  getChildren() const;
 
     static const std::string & typeNameStatic();
 

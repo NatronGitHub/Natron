@@ -43,12 +43,12 @@ class PrecompNode : public EffectInstance
     
 public:
     
-    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new PrecompNode(n);
     }
     
-    PrecompNode(boost::shared_ptr<Node> n);
+    PrecompNode(NodePtr n);
     
     virtual ~PrecompNode();
     
@@ -105,9 +105,9 @@ public:
 
     virtual double getPreferredFrameRate() const OVERRIDE FINAL;
 
-    boost::shared_ptr<Node> getOutputNode() const;
+    NodePtr getOutputNode() const;
 
-    void getPrecompInputs(std::list<boost::shared_ptr<Node> >* nodes) const;
+    void getPrecompInputs(NodesList* nodes) const;
 
     AppInstance* getPrecompApp() const;
 

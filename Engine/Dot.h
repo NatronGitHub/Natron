@@ -41,12 +41,12 @@ class Dot
 {
 public:
 
-    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new Dot(n);
     }
 
-    Dot(boost::shared_ptr<Node> n)
+    Dot(NodePtr n)
         : NoOpBase(n)
     {
     }

@@ -62,13 +62,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+    static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
         return new KnobGuiButton(knob, container);
     }
 
-    KnobGuiButton(boost::shared_ptr<KnobI> knob,
+    KnobGuiButton(KnobPtr knob,
                    DockablePanel *container);
 
     virtual ~KnobGuiButton() OVERRIDE;
@@ -80,7 +80,7 @@ public:
         return false;
     }
 
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
 

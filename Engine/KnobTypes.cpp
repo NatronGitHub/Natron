@@ -204,7 +204,7 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
         if (!effect->getNode()) {
             return;
         }
-        boost::shared_ptr<KnobI> thisShared = holder->getKnobByName(getName());
+        KnobPtr thisShared = holder->getKnobByName(getName());
         assert(thisShared);
         boost::shared_ptr<KnobDouble> thisSharedDouble = boost::dynamic_pointer_cast<KnobDouble>(thisShared);
         assert(thisSharedDouble);
@@ -332,7 +332,7 @@ KnobDouble::onNodeActivated()
     ///get a shared_ptr to this
     assert( getHolder() );
     boost::shared_ptr<KnobDouble> thisShared;
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = getHolder()->getKnobs();
+    const KnobsVec & knobs = getHolder()->getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         if (knobs[i].get() == this) {
             thisShared = boost::dynamic_pointer_cast<KnobDouble>(knobs[i]);
@@ -373,7 +373,7 @@ KnobDouble::serializeTracks(std::list<SerializedTrack>* tracks)
 
 void
 KnobDouble::restoreTracks(const std::list <SerializedTrack> & tracks,
-                           const std::list<boost::shared_ptr<Node> > & activeNodes)
+                           const NodesList & activeNodes)
 {
     ///get a shared_ptr to this
     assert( getHolder() );
@@ -389,7 +389,7 @@ KnobDouble::restoreTracks(const std::list <SerializedTrack> & tracks,
         if (it->rotoNodeName == lastNodeName || scriptFriendlyRoto == lastNodeName) {
             roto = lastRoto;
         } else {
-            for (std::list<boost::shared_ptr<Node> >::const_iterator it2 = activeNodes.begin(); it2 != activeNodes.end(); ++it2) {
+            for (NodesList::const_iterator it2 = activeNodes.begin(); it2 != activeNodes.end(); ++it2) {
                 if ((*it2)->getScriptName() == it->rotoNodeName || (*it2)->getScriptName() == scriptFriendlyRoto) {
                     lastNodeName = (*it2)->getScriptName();
                     boost::shared_ptr<RotoContext> rotoCtx = (*it2)->getRotoContext();
@@ -877,7 +877,7 @@ KnobChoice::onOriginalKnobEntryAppend(const QString& text,const QString& help)
 }
 
 void
-KnobChoice::handleSignalSlotsForAliasLink(const boost::shared_ptr<KnobI>& alias,bool connect)
+KnobChoice::handleSignalSlotsForAliasLink(const KnobPtr& alias,bool connect)
 {
     assert(alias);
     KnobChoice* aliasIsChoice = dynamic_cast<KnobChoice*>(alias.get());
@@ -1115,7 +1115,7 @@ KnobGroup::typeName() const
 }
 
 void
-KnobGroup::addKnob(boost::shared_ptr<KnobI> k)
+KnobGroup::addKnob(KnobPtr k)
 {
     for (std::size_t i = 0; i < _children.size(); ++i) {
         if (_children[i].lock() == k) {
@@ -1124,7 +1124,7 @@ KnobGroup::addKnob(boost::shared_ptr<KnobI> k)
     }
     
     
-    boost::shared_ptr<KnobI> parent= k->getParentKnob();
+    KnobPtr parent= k->getParentKnob();
     if (parent) {
         KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
         KnobPage* isParentPage = dynamic_cast<KnobPage*>(parent.get());
@@ -1133,7 +1133,7 @@ KnobGroup::addKnob(boost::shared_ptr<KnobI> k)
         } else if (isParentPage) {
             isParentPage->removeKnob(k.get());
         }
-        k->setParentKnob(boost::shared_ptr<KnobI>());
+        k->setParentKnob(KnobPtr());
     }
     
     
@@ -1188,7 +1188,7 @@ KnobGroup::moveOneStepDown(KnobI* k)
 }
 
 void
-KnobGroup::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
+KnobGroup::insertKnob(int index, const KnobPtr& k)
 {
     for (std::size_t i = 0; i < _children.size(); ++i) {
         if (_children[i].lock() == k) {
@@ -1196,7 +1196,7 @@ KnobGroup::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
         }
     }
     
-    boost::shared_ptr<KnobI> parent= k->getParentKnob();
+    KnobPtr parent= k->getParentKnob();
     if (parent) {
         KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
         KnobPage* isParentPage = dynamic_cast<KnobPage*>(parent.get());
@@ -1205,7 +1205,7 @@ KnobGroup::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
         } else if (isParentPage) {
             isParentPage->removeKnob(k.get());
         }
-        k->setParentKnob(boost::shared_ptr<KnobI>());
+        k->setParentKnob(KnobPtr());
     }
 
     if (index >= (int)_children.size()) {
@@ -1218,12 +1218,12 @@ KnobGroup::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
     k->setParentKnob(shared_from_this());
 }
 
-std::vector< boost::shared_ptr<KnobI> >
+std::vector< KnobPtr >
 KnobGroup::getChildren() const
 {
-    std::vector< boost::shared_ptr<KnobI> > ret;
+    std::vector< KnobPtr > ret;
     for (std::size_t i = 0; i < _children.size(); ++i) {
-        boost::shared_ptr<KnobI> k = _children[i].lock();
+        KnobPtr k = _children[i].lock();
         if (k) {
             ret.push_back(k);
         }
@@ -1262,12 +1262,12 @@ KnobPage::typeName() const
 }
 
 
-std::vector< boost::shared_ptr<KnobI> >
+std::vector< KnobPtr >
 KnobPage::getChildren() const
 {
-    std::vector< boost::shared_ptr<KnobI> > ret;
+    std::vector< KnobPtr > ret;
     for (std::size_t i = 0; i < _children.size(); ++i) {
-        boost::shared_ptr<KnobI> k = _children[i].lock();
+        KnobPtr k = _children[i].lock();
         if (k) {
             ret.push_back(k);
         }
@@ -1276,7 +1276,7 @@ KnobPage::getChildren() const
 }
 
 void
-KnobPage::addKnob(const boost::shared_ptr<KnobI> &k)
+KnobPage::addKnob(const KnobPtr &k)
 {
     for (std::size_t i = 0; i < _children.size(); ++i) {
         if (_children[i].lock() == k) {
@@ -1285,7 +1285,7 @@ KnobPage::addKnob(const boost::shared_ptr<KnobI> &k)
     }
     
     
-    boost::shared_ptr<KnobI> parent= k->getParentKnob();
+    KnobPtr parent= k->getParentKnob();
     if (parent) {
         KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
         KnobPage* isParentPage = dynamic_cast<KnobPage*>(parent.get());
@@ -1294,7 +1294,7 @@ KnobPage::addKnob(const boost::shared_ptr<KnobI> &k)
         } else if (isParentPage) {
             isParentPage->removeKnob(k.get());
         }
-        k->setParentKnob(boost::shared_ptr<KnobI>());
+        k->setParentKnob(KnobPtr());
     }
     _children.push_back(k);
     k->setParentKnob(shared_from_this());
@@ -1302,7 +1302,7 @@ KnobPage::addKnob(const boost::shared_ptr<KnobI> &k)
 }
 
 void
-KnobPage::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
+KnobPage::insertKnob(int index, const KnobPtr& k)
 {
     for (std::size_t i = 0; i < _children.size(); ++i) {
         if (_children[i].lock() == k) {
@@ -1310,7 +1310,7 @@ KnobPage::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
         }
     }
     
-    boost::shared_ptr<KnobI> parent= k->getParentKnob();
+    KnobPtr parent= k->getParentKnob();
     if (parent) {
         KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
         KnobPage* isParentPage = dynamic_cast<KnobPage*>(parent.get());
@@ -1319,7 +1319,7 @@ KnobPage::insertKnob(int index, const boost::shared_ptr<KnobI>& k)
         } else if (isParentPage) {
             isParentPage->removeKnob(k.get());
         }
-        k->setParentKnob(boost::shared_ptr<KnobI>());
+        k->setParentKnob(KnobPtr());
     }
     
     
@@ -1479,7 +1479,7 @@ boost::shared_ptr<Curve>
 KnobParametric::getDefaultParametricCurve(int dimension) const
 {
     assert(dimension >= 0 && dimension < (int)_curves.size());
-    std::pair<int,boost::shared_ptr<KnobI> >  master = getMaster(dimension);
+    std::pair<int,KnobPtr >  master = getMaster(dimension);
     if (master.second) {
         KnobParametric* m = dynamic_cast<KnobParametric*>(master.second.get());
         assert(m);
@@ -1495,7 +1495,7 @@ boost::shared_ptr<Curve> KnobParametric::getParametricCurve(int dimension) const
     ///Mt-safe as Curve is MT-safe and the pointer is never deleted
     
     assert( dimension < (int)_curves.size() );
-    std::pair<int,boost::shared_ptr<KnobI> >  master = getMaster(dimension);
+    std::pair<int,KnobPtr >  master = getMaster(dimension);
     if (master.second) {
         KnobParametric* m = dynamic_cast<KnobParametric*>(master.second.get());
         assert(m);

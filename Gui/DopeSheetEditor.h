@@ -91,7 +91,7 @@ public:
      *
      * The model will decide if the node should be accepted or discarded.
      */
-    void addNode(boost::shared_ptr<NodeGui> nodeGui);
+    void addNode(NodeGuiPtr nodeGui);
 
     /**
      * @brief Tells to the dope sheet model to remove 'node' from the dope

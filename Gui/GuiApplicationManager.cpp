@@ -1011,7 +1011,7 @@ GuiApplicationManager::getKnobClipBoard(bool* copyAnimation,
 }
 
 void
-GuiApplicationManager::appendTaskToPreviewThread(const boost::shared_ptr<NodeGui>& node, double time)
+GuiApplicationManager::appendTaskToPreviewThread(const NodeGuiPtr& node, double time)
 {
     _imp->previewRenderThread.appendToQueue(node, time);
 }

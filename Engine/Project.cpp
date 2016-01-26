@@ -1018,14 +1018,14 @@ Project::evaluate(KnobI* /*knob*/,
    /* if (isSignificant && knob != _imp->formatKnob.get()) {
         getCurrentNodes();
     
-        NodeList nodes = getNodes();
+        NodesList nodes = getNodes();
         
-        for (NodeList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
             assert(*it);
             (*it)->incrementKnobsAge();
 
             
-            ViewerInstance* n = dynamic_cast<ViewerInstance*>( (*it)->getLiveInstance() );
+            ViewerInstance* n = dynamic_cast<ViewerInstance*>( (*it)->getEffectInstance() );
             if (n) {
                 n->renderCurrentFrame(true);
             }
@@ -1299,9 +1299,9 @@ Project::onKnobValueChanged(KnobI* knob,
         if (found) {
             if (reason == eValueChangedReasonUserEdited) {
                 ///Increase all nodes age in the project so all cache is invalidated: some effects images might rely on the project format
-                NodeList nodes;
+                NodesList nodes;
                 getNodes_recursive(nodes,true);
-                for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+                for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
                     (*it)->incrementKnobsAge();
                 }
                 
@@ -1560,7 +1560,7 @@ Project::reset(bool aboutToQuit)
         
         Q_EMIT projectNameChanged(NATRON_PROJECT_UNTITLED, false);
         
-        const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
+        const KnobsVec & knobs = getKnobs();
         
         beginChanges();
         for (U32 i = 0; i < knobs.size(); ++i) {
@@ -2165,16 +2165,21 @@ Project::createViewer()
 
 }
     
-static bool hasNodeOutputsInList(const std::list<boost::shared_ptr<Node> >& nodes,const boost::shared_ptr<Node>& node)
+static bool hasNodeOutputsInList(const NodesList& nodes,const NodePtr& node)
 {
-    const std::list<Node*>& outputs = node->getGuiOutputs();
+    const NodesWList& outputs = node->getGuiOutputs();
     
     bool foundOutput = false;
-    for (std::list<boost::shared_ptr<Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if (*it != node) {
-            std::list<Node*>::const_iterator found = std::find(outputs.begin(),outputs.end(),it->get());
-            if (found != outputs.end()) {
-                foundOutput = true;
+            
+            for (NodesWList::const_iterator it2 = outputs.begin(); it2!=outputs.end(); ++it2) {
+                if (it2->lock() == *it) {
+                    foundOutput = true;
+                    break;
+                }
+            }
+            if (foundOutput) {
                 break;
             }
         }
@@ -2182,12 +2187,12 @@ static bool hasNodeOutputsInList(const std::list<boost::shared_ptr<Node> >& node
     return foundOutput;
 }
     
-static bool hasNodeInputsInList(const std::list<boost::shared_ptr<Node> >& nodes,const boost::shared_ptr<Node>& node)
+static bool hasNodeInputsInList(const NodesList& nodes,const NodePtr& node)
 {
-    const std::vector<boost::weak_ptr<Node> >& inputs = node->getGuiInputs();
+    const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
     
     bool foundInput = false;
-    for (std::list<boost::shared_ptr<Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if (*it != node) {
             
             for (std::size_t i = 0; i < inputs.size(); ++i) {
@@ -2205,9 +2210,9 @@ static bool hasNodeInputsInList(const std::list<boost::shared_ptr<Node> >& nodes
     return foundInput;
 }
     
-static void addTreeInputs(const std::list<boost::shared_ptr<Node> >& nodes,const boost::shared_ptr<Node>& node,
+static void addTreeInputs(const NodesList& nodes,const NodePtr& node,
                               Project::NodesTree& tree,
-                              std::list<boost::shared_ptr<Node> >& markedNodes)
+                              NodesList& markedNodes)
 {
     if (std::find(markedNodes.begin(), markedNodes.end(), node) != markedNodes.end()) {
         return;
@@ -2220,7 +2225,7 @@ static void addTreeInputs(const std::list<boost::shared_ptr<Node> >& nodes,const
     if (!hasNodeInputsInList(nodes,node)) {
         Project::TreeInput input;
         input.node = node;
-        const std::vector<boost::weak_ptr<Node> >& inputs = node->getGuiInputs();
+        const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
         input.inputs.resize(inputs.size());
         for (std::size_t i = 0; i < inputs.size(); ++i) {
             input.inputs[i] = inputs[i].lock();
@@ -2230,8 +2235,8 @@ static void addTreeInputs(const std::list<boost::shared_ptr<Node> >& nodes,const
     } else {
         tree.inbetweenNodes.push_back(node);
         markedNodes.push_back(node);
-        const std::vector<boost::weak_ptr<Node> >& inputs = node->getGuiInputs();
-        for (std::vector<boost::weak_ptr<Node> >::const_iterator it2 = inputs.begin() ; it2!=inputs.end(); ++it2) {
+        const std::vector<NodeWPtr >& inputs = node->getGuiInputs();
+        for (std::vector<NodeWPtr >::const_iterator it2 = inputs.begin() ; it2!=inputs.end(); ++it2) {
             NodePtr input = it2->lock();
             if (input) {
                 addTreeInputs(nodes, input, tree, markedNodes);
@@ -2240,22 +2245,26 @@ static void addTreeInputs(const std::list<boost::shared_ptr<Node> >& nodes,const
     }
 }
     
-void Project::extractTreesFromNodes(const std::list<boost::shared_ptr<Node> >& nodes,std::list<Project::NodesTree>& trees)
+void Project::extractTreesFromNodes(const NodesList& nodes,std::list<Project::NodesTree>& trees)
 {
-    std::list<boost::shared_ptr<Node> > markedNodes;
+    NodesList markedNodes;
     
-    for (std::list<boost::shared_ptr<Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         bool isOutput = !hasNodeOutputsInList(nodes, *it);
         if (isOutput) {
             NodesTree tree;
             tree.output.node = *it;
-            const std::list<Node* >& outputs = (*it)->getGuiOutputs();
-            for (std::list<Node*>::const_iterator it2 = outputs.begin(); it2!=outputs.end(); ++it2) {
-                int idx = (*it2)->inputIndex(it->get());
+            const NodesWList& outputs = (*it)->getGuiOutputs();
+            for (NodesWList::const_iterator it2 = outputs.begin(); it2!=outputs.end(); ++it2) {
+                NodePtr output = it2->lock();
+                if (!output) {
+                    continue;
+                }
+                int idx = output->inputIndex(*it);
                 tree.output.outputs.push_back(std::make_pair(idx,*it2));
             }
             
-            const std::vector<boost::weak_ptr<Node> >& inputs = (*it)->getGuiInputs();
+            const std::vector<NodeWPtr >& inputs = (*it)->getGuiInputs();
             for (U32 i = 0; i < inputs.size(); ++i) {
                 NodePtr input = inputs[i].lock();
                 if (input) {
@@ -2267,7 +2276,7 @@ void Project::extractTreesFromNodes(const std::list<boost::shared_ptr<Node> >& n
                 TreeInput input;
                 input.node = *it;
                 
-                const std::vector<boost::weak_ptr<Node> >& inputs = (*it)->getGuiInputs();
+                const std::vector<NodeWPtr >& inputs = (*it)->getGuiInputs();
                 input.inputs.resize(inputs.size());
                 for (std::size_t i = 0; i < inputs.size(); ++i) {
                     input.inputs[i] = inputs[i].lock();

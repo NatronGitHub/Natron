@@ -64,7 +64,7 @@ private:
 
 
     virtual void createGui() OVERRIDE FINAL;
-    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container, const boost::shared_ptr<NodeGui> & thisAsShared) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container, const NodeGuiPtr & thisAsShared) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool canMakePreview() OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;

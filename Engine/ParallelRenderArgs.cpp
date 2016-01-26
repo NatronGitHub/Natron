@@ -36,7 +36,7 @@
 NATRON_NAMESPACE_ENTER;
 
 EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
-                                                                            const boost::shared_ptr<Node>& node,
+                                                                            const NodePtr& node,
                                                                             const FramesNeededMap& framesNeeded,
                                                                             const RoIMap& inputRois,
                                                                             const boost::shared_ptr<InputMatrixMap>& reroutesMap,
@@ -44,7 +44,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
                                                                             unsigned int originalMipMapLevel, // roi functor specific
                                                                             double time,
                                                                             int view,
-                                                                            const boost::shared_ptr<Node>& treeRoot,
+                                                                            const NodePtr& treeRoot,
                                                                             FrameRequestMap* requests,  // roi functor specific
                                                                            EffectInstance::InputImagesMap* inputImages, // render functor specific
                                                                             const EffectInstance::ComponentsNeededMap* neededComps, // render functor specific
@@ -53,11 +53,11 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
 {
     ///For all frames/views needed, call recursively on inputs with the appropriate RoI
 
-    EffectInstance* effect = node->getLiveInstance();
+    EffectInstPtr effect = node->getEffectInstance();
     bool isRoto = node->isRotoPaintingNode();
     
     //Same as FramesNeededMap but we also get a pointer to EffectInstance* as key
-    typedef std::map<EffectInstance*, std::pair<int,std::map<int, std::vector<OfxRangeD> > > > PreRenderFrames;
+    typedef std::map<EffectInstPtr, std::pair<int,std::map<int, std::vector<OfxRangeD> > > > PreRenderFrames;
     
     PreRenderFrames framesToRender;
     //Add frames needed to the frames to render
@@ -68,7 +68,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
         
         ImageComponents maskComps;
         int channelForAlphaInput;
-        boost::shared_ptr<Node> maskInput;
+        NodePtr maskInput;
         // if (inputIsMask) {
         if (!effect->isMaskEnabled(inputNb)) {
             continue;
@@ -83,7 +83,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
         }
         
         //Redirect for transforms if needed
-        EffectInstance* inputEffect = 0;
+        EffectInstPtr inputEffect;
         if (reroutesMap) {
             InputMatrixMap::const_iterator foundReroute = reroutesMap->find(inputNb);
             if (foundReroute != reroutesMap->end()) {
@@ -92,12 +92,12 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
         }
         
         if (!inputEffect) {
-            inputEffect = node->getLiveInstance()->getInput(inputNb);
+            inputEffect = node->getEffectInstance()->getInput(inputNb);
         }
         
         //Redirect the mask input
         if (maskInput) {
-            inputEffect = maskInput->getLiveInstance();
+            inputEffect = maskInput->getEffectInstance();
         }
         
         //Never pre-render the mask if we are rendering a node of the rotopaint tree
@@ -112,7 +112,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
     
     if (isRoto && !isRenderFunctor) {
         //Also add internal rotopaint tree RoIs
-        boost::shared_ptr<Node> btmMerge = effect->getNode()->getRotoContext()->getRotoPaintBottomMergeNode();
+        NodePtr btmMerge = effect->getNode()->getRotoContext()->getRotoPaintBottomMergeNode();
         if (btmMerge) {
             std::map<int,std::vector<OfxRangeD> > frames;
             std::vector<OfxRangeD> vec;
@@ -120,15 +120,15 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
             r.min = r.max = time;
             vec.push_back(r);
             frames[view] = vec;
-            framesToRender[btmMerge->getLiveInstance()] = std::make_pair(-1, frames);
+            framesToRender[btmMerge->getEffectInstance()] = std::make_pair(-1, frames);
         }
     }
     
     for (PreRenderFrames::const_iterator it = framesToRender.begin(); it != framesToRender.end(); ++it) {
         
-        EffectInstance* inputEffect = it->first;
+        const EffectInstPtr& inputEffect = it->first;
         
-        boost::shared_ptr<Node> inputNode = inputEffect->getNode();
+        NodePtr inputNode = inputEffect->getNode();
         assert(inputNode);
         
         int inputNb = it->second.first;
@@ -285,7 +285,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
                                                                      componentsToRender, //< requested comps
                                                                      inputPrefDepth,
                                                                      false,
-                                                                     effect);
+                                                                     effect.get());
                                 
                                 
                                 
@@ -326,16 +326,16 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                 double time,
                                                 int view,
                                                 unsigned originalMipMapLevel,
-                                                const boost::shared_ptr<Node>& node,
-                                                const boost::shared_ptr<Node>& callerNode,
-                                                const boost::shared_ptr<Node>& treeRoot,
+                                                const NodePtr& node,
+                                                const NodePtr& callerNode,
+                                                const NodePtr& treeRoot,
                                                 const RectD& canonicalRenderWindow,
                                                 FrameRequestMap& requests)
 {
     
     boost::shared_ptr<NodeFrameRequest> nodeRequest;
     
-    EffectInstance* effect = node->getLiveInstance();
+    EffectInstPtr effect = node->getEffectInstance();
     assert(effect);
     
     if (effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
@@ -460,7 +460,7 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         
     } else if (fvRequest->globalData.identityInputNb != -1) {
         
-        EffectInstance* inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
+        EffectInstPtr inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
         if (inputEffectIdentity) {
             fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, FrameViewPerRequestData()));
             
@@ -480,9 +480,9 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         //Identity but no input, if it's optional ignore, otherwise fail
         if (callerNode && callerNode != node) {
             
-            int inputIndex = callerNode->getInputIndex(node.get());
-            if (callerNode->getLiveInstance()->isInputOptional(inputIndex)
-                || callerNode->getLiveInstance()->isInputMask(inputIndex)) {
+            int inputIndex = callerNode->getInputIndex(node);
+            if (callerNode->getEffectInstance()->isInputOptional(inputIndex)
+                || callerNode->getEffectInstance()->isInputMask(inputIndex)) {
                 
                 
                 return eStatusOK;
@@ -500,8 +500,8 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     ///Transform Rois and get the reroutes map
     if (useTransforms) {
         if (fvRequest->globalData.transforms) {
-            fvRequest->globalData.reroutesMap.reset(new std::map<int, EffectInstance*>());
-            transformInputRois(effect,fvRequest->globalData.transforms,par,nodeRequest->mappedScale,&fvPerRequestData.inputsRoi,fvRequest->globalData.reroutesMap.get());
+            fvRequest->globalData.reroutesMap.reset(new std::map<int, EffectInstPtr>());
+            transformInputRois(effect.get(),fvRequest->globalData.transforms,par,nodeRequest->mappedScale,&fvPerRequestData.inputsRoi,fvRequest->globalData.reroutesMap.get());
         }
     }
     
@@ -540,7 +540,7 @@ EffectInstance::computeRequestPass(double time,
                                    int view,
                                    unsigned int mipMapLevel,
                                    const RectD& renderWindow,
-                                   const boost::shared_ptr<Node>& treeRoot,
+                                   const NodePtr& treeRoot,
                                    FrameRequestMap& request)
 {
     bool doTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
@@ -670,7 +670,7 @@ static void getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr&
     if (!foundButDidntRecursivelyCallUpstream) {
         
         std::set<NodePtr> expressionsDeps;
-        node->getLiveInstance()->getAllExpressionDependenciesRecursive(expressionsDeps);
+        node->getEffectInstance()->getAllExpressionDependenciesRecursive(expressionsDeps);
         
         //Also add all expression dependencies but mark them as we did not recursed on them yet
         for (std::set<NodePtr>::iterator it = expressionsDeps.begin(); it!=expressionsDeps.end(); ++it) {
@@ -683,7 +683,7 @@ static void getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr&
    
     int maxInputs = node->getMaxInputCount();
     for (int i = 0; i < maxInputs; ++i) {
-        boost::shared_ptr<Node> inputNode = node->getInput(i);
+        NodePtr inputNode = node->getInput(i);
         if (inputNode) {
             getAllUpstreamNodesRecursiveWithDependencies_internal(inputNode, finalNodes);
         }
@@ -691,7 +691,7 @@ static void getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr&
     
 }
 
-static void getAllUpstreamNodesRecursiveWithDependencies(const NodePtr& node, NodeList& finalNodes)
+static void getAllUpstreamNodesRecursiveWithDependencies(const NodePtr& node, NodesList& finalNodes)
 {
     FindDependenciesSet tmp;
     getAllUpstreamNodesRecursiveWithDependencies_internal(node, tmp);
@@ -707,11 +707,11 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                                                    bool isSequential,
                                                    bool canAbort,
                                                    U64 renderAge,
-                                                   const boost::shared_ptr<Node>& treeRoot,
+                                                   const NodePtr& treeRoot,
                                                    const FrameRequestMap* request,
                                                    int textureIndex,
                                                    const TimeLine* timeline,
-                                                   const boost::shared_ptr<Node>& activeRotoPaintNode,
+                                                   const NodePtr& activeRotoPaintNode,
                                                    bool isAnalysis,
                                                    bool draftMode,
                                                    bool viewerProgressReportEnabled,
@@ -724,15 +724,15 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     
     getAllUpstreamNodesRecursiveWithDependencies(treeRoot, nodes);
     
-    for (std::list<boost::shared_ptr<Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         assert(*it);
         
-        EffectInstance* liveInstance = (*it)->getLiveInstance();
+        EffectInstPtr liveInstance = (*it)->getEffectInstance();
         assert(liveInstance);
         bool duringPaintStrokeCreation = activeRotoPaintNode && (*it)->isDuringPaintStrokeCreation();
         RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
         
-        std::list<boost::shared_ptr<Node> > rotoPaintNodes;
+        NodesList rotoPaintNodes;
         boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
         if (roto) {
             roto->getRotoPaintTreeNodes(&rotoPaintNodes);
@@ -757,7 +757,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
             liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash,
                                                    renderAge,treeRoot, nodeRequest,textureIndex, timeline, isAnalysis,duringPaintStrokeCreation, rotoPaintNodes, safety, doNanHandling, draftMode, viewerProgressReportEnabled, stats);
         }
-        for (std::list<boost::shared_ptr<Node> >::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
+        for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
             
             boost::shared_ptr<NodeFrameRequest> childRequest;
             U64 nodeHash = 0;
@@ -774,16 +774,16 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                 nodeHash = (*it2)->getHashValue();
             }
             
-            (*it2)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge, treeRoot, childRequest, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodeList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
+            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge, treeRoot, childRequest, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
         }
         
         if ((*it)->isMultiInstance()) {
             
             ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
             ///on parameters.
-            std::list<boost::shared_ptr<Node> > children;
+            NodesList children;
             (*it)->getChildrenMultiInstance(&children);
-            for (std::list<boost::shared_ptr<Node> >::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+            for (NodesList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
                 
                 boost::shared_ptr<NodeFrameRequest> childRequest;
                 U64 nodeHash = 0;
@@ -801,16 +801,16 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                 }
                 
                 assert(*it2);
-                EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
+                EffectInstPtr childLiveInstance = (*it2)->getEffectInstance();
                 assert(childLiveInstance);
                 RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge,treeRoot, childRequest, textureIndex, timeline, isAnalysis, false, std::list<boost::shared_ptr<Node> >(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled,stats);
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge,treeRoot, childRequest, textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled,stats);
                 
             }
         }
         
         
-       /* NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+       /* NodeGroup* isGrp = (*it)->isEffectGroup();
         if (isGrp) {
             isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, treeRoot, request, textureIndex, timeline, activeRotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats);
         }*/
@@ -819,12 +819,12 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     
 }
 
-ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<boost::shared_ptr<Node>,ParallelRenderArgs > >& args)
+ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr,ParallelRenderArgs > >& args)
 : argsMap(args)
 {
     if (args) {
-        for (std::map<boost::shared_ptr<Node>,ParallelRenderArgs >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
-            it->first->getLiveInstance()->setParallelRenderArgsTLS(it->second);
+        for (std::map<NodePtr,ParallelRenderArgs >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
+            it->first->getEffectInstance()->setParallelRenderArgsTLS(it->second);
         }
     }
 }
@@ -832,33 +832,33 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::
 ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
 {
     
-    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if (!(*it) || !(*it)->getLiveInstance()) {
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if (!(*it) || !(*it)->getEffectInstance()) {
             continue;
         }
-        (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
+        (*it)->getEffectInstance()->invalidateParallelRenderArgsTLS();
         
         if ((*it)->isMultiInstance()) {
             
             ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
             ///on parameters.
-            NodeList children;
+            NodesList children;
             (*it)->getChildrenMultiInstance(&children);
-            for (NodeList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
-                (*it2)->getLiveInstance()->invalidateParallelRenderArgsTLS();
+            for (NodesList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+                (*it2)->getEffectInstance()->invalidateParallelRenderArgsTLS();
                 
             }
         }
 
-       /* NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+       /* NodeGroup* isGrp = (*it)->isEffectGroup();
         if (isGrp) {
             isGrp->invalidateParallelRenderArgs();
         }*/
     }
     
     if (argsMap) {
-        for (std::map<boost::shared_ptr<Node>,ParallelRenderArgs >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
-            it->first->getLiveInstance()->invalidateParallelRenderArgsTLS();
+        for (std::map<NodePtr,ParallelRenderArgs >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
+            it->first->getEffectInstance()->invalidateParallelRenderArgsTLS();
         }
     }
 }

@@ -55,7 +55,7 @@ class AbstractOfxEffectInstance
 {
 public:
 
-    AbstractOfxEffectInstance(boost::shared_ptr<Node> node)
+    AbstractOfxEffectInstance(NodePtr node)
         : OutputEffectInstance(node)
     {
     }
@@ -91,7 +91,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    OfxEffectInstance(boost::shared_ptr<Node> node);
+    OfxEffectInstance(NodePtr node);
 
     virtual ~OfxEffectInstance();
 
@@ -251,7 +251,7 @@ public:
                                                EffectInstance::ComponentsNeededMap* comps,
                                                 SequenceTime* passThroughTime,
                                                 int* passThroughView,
-                                                boost::shared_ptr<Node>* passThroughInput) OVERRIDE;
+                                                NodePtr* passThroughInput) OVERRIDE;
 
 
     virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -268,7 +268,7 @@ public:
     virtual StatusEnum getTransform(double time,
                                             const RenderScale & renderScale,
                                             int view,
-                                            EffectInstance** inputToTransform,
+                                            EffectInstPtr* inputToTransform,
                                             Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool isFrameVarying() const OVERRIDE FINAL WARN_UNUSED_RETURN;

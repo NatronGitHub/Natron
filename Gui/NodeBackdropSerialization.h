@@ -84,7 +84,7 @@ public:
         w = width; h = height;
     }
 
-    boost::shared_ptr<KnobI> getLabelSerialization() const
+    KnobPtr getLabelSerialization() const
     {
         return label->getKnob();
     }

@@ -72,7 +72,7 @@ class OutputEffectInstance
 
 public:
 
-    OutputEffectInstance(boost::shared_ptr<Node> node);
+    OutputEffectInstance(NodePtr node);
 
     virtual ~OutputEffectInstance();
 
@@ -135,7 +135,7 @@ public:
 
     void updateRenderTimeInfos(double lastTimeSpent, double *averageTimePerFrame, double *totalTimeSpent);
 
-    virtual void reportStats(int time, int view, double wallTime, const std::map<boost::shared_ptr<Node>, NodeRenderStats > & stats);
+    virtual void reportStats(int time, int view, double wallTime, const std::map<NodePtr, NodeRenderStats > & stats);
 
 protected:
     

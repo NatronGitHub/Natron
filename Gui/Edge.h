@@ -52,11 +52,11 @@ public:
     ///Used to make an input edge
     Edge(int inputNb,
          double angle,
-         const boost::shared_ptr<NodeGui> & dest,
+         const NodeGuiPtr & dest,
          QGraphicsItem *parent = 0);
 
     ///Used to make an output edge
-    Edge(const boost::shared_ptr<NodeGui> & src,
+    Edge(const NodeGuiPtr & src,
          QGraphicsItem *parent = 0);
 
     virtual ~Edge() OVERRIDE;
@@ -65,16 +65,16 @@ public:
 
     bool contains(const QPointF &point) const OVERRIDE WARN_UNUSED_RETURN;
 
-    void setSource(const boost::shared_ptr<NodeGui> & src);
+    void setSource(const NodeGuiPtr & src);
     
-    void setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,const boost::shared_ptr<NodeGui> & dst);
+    void setSourceAndDestination(const NodeGuiPtr & src,const NodeGuiPtr & dst);
 
     int getInputNumber() const;
 
     void setInputNumber(int i);
 
-    boost::shared_ptr<NodeGui> getDest() const;
-    boost::shared_ptr<NodeGui> getSource() const;
+    NodeGuiPtr getDest() const;
+    NodeGuiPtr getSource() const;
 
     bool hasSource() const;
 

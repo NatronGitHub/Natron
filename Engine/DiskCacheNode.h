@@ -38,12 +38,12 @@ class DiskCacheNode : public OutputEffectInstance
 {
 public:
     
-    static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new DiskCacheNode(n);
     }
     
-    DiskCacheNode(boost::shared_ptr<Node> node);
+    DiskCacheNode(NodePtr node);
     
     virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

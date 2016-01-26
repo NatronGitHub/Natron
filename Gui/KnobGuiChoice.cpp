@@ -85,7 +85,7 @@ using std::make_pair;
 //=============================CHOICE_KNOB_GUI===================================
 
 
-KnobGuiChoice::KnobGuiChoice(boost::shared_ptr<KnobI> knob,
+KnobGuiChoice::KnobGuiChoice(KnobPtr knob,
                                DockablePanel *container)
     : KnobGui(knob, container)
     , _comboBox(0)
@@ -286,7 +286,7 @@ KnobGuiChoice::setDirty(bool dirty)
     _comboBox->setDirty(dirty);
 }
 
-boost::shared_ptr<KnobI> KnobGuiChoice::getKnob() const
+KnobPtr KnobGuiChoice::getKnob() const
 {
     return _knob.lock();
 }

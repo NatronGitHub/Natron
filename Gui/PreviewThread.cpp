@@ -40,7 +40,7 @@ NATRON_NAMESPACE_ENTER;
 struct ComputePreviewRequest
 {
     double time;
-    boost::shared_ptr<NodeGui> node;
+    NodeGuiPtr node;
 };
 
 struct PreviewThreadPrivate
@@ -81,7 +81,7 @@ PreviewThread::~PreviewThread()
 }
 
 void
-PreviewThread::appendToQueue(const boost::shared_ptr<NodeGui>& node, double time)
+PreviewThread::appendToQueue(const NodeGuiPtr& node, double time)
 {
 
     {
@@ -111,7 +111,7 @@ PreviewThread::quitThread()
     {
         QMutexLocker k2(&_imp->previewQueueMutex);
         ComputePreviewRequest r;
-        r.node = boost::shared_ptr<NodeGui>();
+        r.node = NodeGuiPtr();
         r.time = 0;
         _imp->previewQueue.push_back(r);
         _imp->previewQueueNotEmptyCond.wakeOne();
@@ -176,7 +176,7 @@ PreviewThread::run()
                 _imp->data[i] = qRgba(0,0,0,255);
             }
 #endif
-            boost::shared_ptr<Node> internalNode = front.node->getNode();
+            NodePtr internalNode = front.node->getNode();
             if (internalNode) {
                 bool success = internalNode->makePreviewImage(front.time, &w, &h, &_imp->data.front());
                 if (success) {

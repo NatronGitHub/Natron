@@ -44,13 +44,13 @@ struct NodeRenderStatsPrivate
     RectD rod;
     
     //Is identity
-    boost::weak_ptr<Node> isWholeImageIdentity;
+    NodeWPtr isWholeImageIdentity;
     
     //The list of all tiles rendered
     std::list<RectI> rectanglesRendered;
     
     //The list of rectangles for which isIdentity returned true
-    std::list<std::pair<RectI,boost::weak_ptr<Node> > > identityRectangles;
+    std::list<std::pair<RectI,NodeWPtr > > identityRectangles;
     
     //The different mipmaplevels rendered
     std::set<unsigned int> mipmapLevelsAccessed;
@@ -160,12 +160,12 @@ NodeRenderStats::setRoD(const RectD& rod)
 }
 
 void
-NodeRenderStats::setInputImageIdentity(const boost::shared_ptr<Node>& identity)
+NodeRenderStats::setInputImageIdentity(const NodePtr& identity)
 {
     _imp->isWholeImageIdentity = identity;
 }
 
-boost::shared_ptr<Node>
+NodePtr
 NodeRenderStats::getInputImageIdentity() const
 {
     return _imp->isWholeImageIdentity.lock();
@@ -184,17 +184,17 @@ NodeRenderStats::getRenderedRectangles() const
 }
 
 void
-NodeRenderStats::addIdentityRectangle(const boost::shared_ptr<Node>& identity, const RectI& rectangle)
+NodeRenderStats::addIdentityRectangle(const NodePtr& identity, const RectI& rectangle)
 {
     _imp->identityRectangles.push_back(std::make_pair(rectangle,identity));
 }
 
-std::list<std::pair<RectI,boost::shared_ptr<Node> > >
+std::list<std::pair<RectI,NodePtr > >
 NodeRenderStats::getIdentityRectangles() const
 {
-    std::list<std::pair<RectI,boost::shared_ptr<Node> > > ret;
-    for (std::list<std::pair<RectI,boost::weak_ptr<Node> > >::const_iterator it = _imp->identityRectangles.begin(); it!=_imp->identityRectangles.end(); ++it) {
-        boost::shared_ptr<Node> n = it->second.lock();
+    std::list<std::pair<RectI,NodePtr > > ret;
+    for (std::list<std::pair<RectI,NodeWPtr > >::const_iterator it = _imp->identityRectangles.begin(); it!=_imp->identityRectangles.end(); ++it) {
+        NodePtr n = it->second.lock();
         if (n) {
             ret.push_back(std::make_pair(it->first, n));
         }
@@ -306,7 +306,7 @@ struct RenderStatsPrivate
     //When true in-depth profiling will be enabled for all Nodes with detailed infos
     bool doNodesProfiling;
     
-    typedef std::map<boost::weak_ptr<Node>,NodeRenderStats > NodeInfosMap;
+    typedef std::map<NodeWPtr,NodeRenderStats > NodeInfosMap;
     NodeInfosMap nodeInfos;
     
     
@@ -320,7 +320,7 @@ struct RenderStatsPrivate
         
     }
     
-    NodeInfosMap::iterator findNode(const boost::shared_ptr<Node>& node)
+    NodeInfosMap::iterator findNode(const NodePtr& node)
     {
         //Private, shouldn't lock
         assert(!lock.tryLock());
@@ -333,7 +333,7 @@ struct RenderStatsPrivate
         return nodeInfos.end();
     }
     
-    NodeRenderStats& findOrCreateNodeStats(const boost::shared_ptr<Node>& node)
+    NodeRenderStats& findOrCreateNodeStats(const NodePtr& node)
     {
       
         NodeInfosMap::iterator found = findNode(node);
@@ -366,7 +366,7 @@ RenderStats::isInDepthProfilingEnabled() const
 }
 
 void
-RenderStats::setNodeIdentity(const boost::shared_ptr<Node>& node, const boost::shared_ptr<Node>& identity)
+RenderStats::setNodeIdentity(const NodePtr& node, const NodePtr& identity)
 {
     QMutexLocker k(&_imp->lock);
     assert(_imp->doNodesProfiling);
@@ -376,7 +376,7 @@ RenderStats::setNodeIdentity(const boost::shared_ptr<Node>& node, const boost::s
 }
 
 void
-RenderStats::setGlobalRenderInfosForNode(const boost::shared_ptr<Node>& node,
+RenderStats::setGlobalRenderInfosForNode(const NodePtr& node,
                                          const RectD& rod,
                                          ImagePremultiplicationEnum outputPremult,
                                          std::bitset<4> channelsRendered,
@@ -397,7 +397,7 @@ RenderStats::setGlobalRenderInfosForNode(const boost::shared_ptr<Node>& node,
 }
 
 void
-RenderStats::addCacheInfosForNode(const boost::shared_ptr<Node>& node,
+RenderStats::addCacheInfosForNode(const NodePtr& node,
                           bool isCacheMiss,
                           bool hasDownscaled)
 {
@@ -409,8 +409,8 @@ RenderStats::addCacheInfosForNode(const boost::shared_ptr<Node>& node,
 }
 
 void
-RenderStats::addRenderInfosForNode(const boost::shared_ptr<Node>& node,
-                           const boost::shared_ptr<Node>& identity,
+RenderStats::addRenderInfosForNode(const NodePtr& node,
+                           const NodePtr& identity,
                            const std::string& plane,
                            const RectI& rectangle,
                            double timeSpent)
@@ -428,14 +428,14 @@ RenderStats::addRenderInfosForNode(const boost::shared_ptr<Node>& node,
     stats.addPlaneRendered(plane);
 }
 
-std::map<boost::shared_ptr<Node>,NodeRenderStats >
+std::map<NodePtr,NodeRenderStats >
 RenderStats::getStats(double *totalTimeSpent) const
 {
     QMutexLocker k(&_imp->lock);
     
-    std::map<boost::shared_ptr<Node>,NodeRenderStats > ret;
+    std::map<NodePtr,NodeRenderStats > ret;
     for (RenderStatsPrivate::NodeInfosMap::const_iterator it = _imp->nodeInfos.begin(); it!=_imp->nodeInfos.end(); ++it) {
-        boost::shared_ptr<Node> node = it->first.lock();
+        NodePtr node = it->first.lock();
         if (node) {
             ret.insert(std::make_pair(node, it->second));
         }

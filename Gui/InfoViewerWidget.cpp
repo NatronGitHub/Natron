@@ -43,11 +43,9 @@
 using std::cout; using std::endl;
 NATRON_NAMESPACE_ENTER;
 
-InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
-                                   const QString & description,
+InfoViewerWidget::InfoViewerWidget(const QString & description,
                                    QWidget* parent)
 : QWidget(parent)
-, viewer(v)
 , _comp(ImageComponents::getNoneComponents())
 , _colorValid(false)
 , _colorApprox(false)

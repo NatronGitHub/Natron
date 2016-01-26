@@ -71,7 +71,7 @@ public:
 
     explicit NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
                                Gui* gui,
-                               const boost::shared_ptr<NodeGui> &NodeUi,
+                               const NodeGuiPtr &NodeUi,
                                QVBoxLayout* container,
                                QWidget *parent = 0);
 
@@ -84,7 +84,7 @@ public:
         return _selected;
     }
 
-    boost::shared_ptr<NodeGui> getNode() const
+    NodeGuiPtr getNode() const
     {
         return _nodeGUI.lock();
     }

@@ -41,7 +41,7 @@ void
 NodeGuiSerialization::initialize(const NodeGui*  n)
 {
     ////All this code is MT-safe
-    boost::shared_ptr<Node> node = n->getNode();
+    NodePtr node = n->getNode();
     
     
     _nodeName = node->getFullyQualifiedName();
@@ -58,14 +58,14 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
     
     _hasOverlayColor = n->getOverlayColor(&_overlayR, &_overlayG, &_overlayB);
     
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+    NodeGroup* isGrp = node->isEffectGroup();
     if (isGrp) {
-        std::list<boost::shared_ptr<Node> > nodes;
+        NodesList nodes;
         isGrp->getActiveNodes(&nodes);
         
         _children.clear();
         
-        for (std::list<boost::shared_ptr<Node> >::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
             boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
             if (!gui_i) {
                 continue;

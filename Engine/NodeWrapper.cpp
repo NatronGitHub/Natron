@@ -165,15 +165,15 @@ UserParamHolder::setHolder(KnobHolder* holder)
     _holder = holder;
 }
 
-Effect::Effect(const boost::shared_ptr<Node>& node)
+Effect::Effect(const NodePtr& node)
 : Group()
-, UserParamHolder(node ? node->getLiveInstance() : 0)
+, UserParamHolder(node ? node->getEffectInstance().get() : 0)
 , _node(node)
 {
     if (node) {
         boost::shared_ptr<NodeGroup> grp;
-        if (node->getLiveInstance()) {
-            grp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
+        if (node->getEffectInstance()) {
+            grp = boost::dynamic_pointer_cast<NodeGroup>(node->getEffectInstance()->shared_from_this());
             init(boost::dynamic_pointer_cast<NodeCollection>(grp));
         }
         
@@ -185,7 +185,7 @@ Effect::~Effect()
     
 }
 
-boost::shared_ptr<Node>
+NodePtr
 Effect::getInternalNode() const
 {
     return _node;
@@ -239,7 +239,7 @@ Effect::disconnectInput(int inputNumber)
 Effect*
 Effect::getInput(int inputNumber) const
 {
-    boost::shared_ptr<Node> node = _node->getRealInput(inputNumber);
+    NodePtr node = _node->getRealInput(inputNumber);
     if (node) {
         return new Effect(node);
     }
@@ -294,7 +294,7 @@ Effect::getPluginID() const
 }
 
 Param*
-Effect::createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob)
+Effect::createParamWrapperForKnob(const KnobPtr& knob)
 {
     int dims = knob->getDimension();
     boost::shared_ptr<KnobInt> isInt = boost::dynamic_pointer_cast<KnobInt>(knob);
@@ -366,8 +366,8 @@ std::list<Param*>
 Effect::getParams() const
 {
     std::list<Param*> ret;
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = _node->getKnobs();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    const KnobsVec& knobs = _node->getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         Param* p = createParamWrapperForKnob(*it);
         if (p) {
             ret.push_back(p);
@@ -379,7 +379,7 @@ Effect::getParams() const
 Param*
 Effect::getParam(const std::string& name) const
 {
-    boost::shared_ptr<KnobI> knob = _node->getKnobByName(name);
+    KnobPtr knob = _node->getKnobByName(name);
     if (knob) {
         return createParamWrapperForKnob(knob);
     } else {
@@ -390,7 +390,7 @@ Effect::getParam(const std::string& name) const
 int
 Effect::getCurrentTime() const
 {
-    return _node->getLiveInstance()->getCurrentTime();
+    return _node->getEffectInstance()->getCurrentTime();
 }
 
 void
@@ -438,14 +438,14 @@ Effect::isNodeSelected() const
 void
 Effect::beginChanges()
 {
-    _node->getLiveInstance()->beginChanges();
+    _node->getEffectInstance()->beginChanges();
     _node->beginInputEdition();
 }
 
 void
 Effect::endChanges()
 {
-    _node->getLiveInstance()->endChanges();
+    _node->getEffectInstance()->endChanges();
     _node->endInputEdition(true);
 }
 
@@ -675,7 +675,7 @@ UserParamHolder::removeParam(Param* param)
 PageParam*
 Effect::getUserPageParam() const
 {
-    boost::shared_ptr<KnobPage> page = _node->getLiveInstance()->getOrCreateUserPageKnob();
+    boost::shared_ptr<KnobPage> page = _node->getEffectInstance()->getOrCreateUserPageKnob();
     assert(page);
     return new PageParam(page);
 }
@@ -716,13 +716,13 @@ RectD
 Effect::getRegionOfDefinition(double time,int view) const
 {
     RectD rod;
-    if (!_node || !_node->getLiveInstance()) {
+    if (!_node || !_node->getEffectInstance()) {
         return rod;
     }
     U64 hash = _node->getHashValue();
     RenderScale s(1.);
     bool isProject;
-    StatusEnum stat = _node->getLiveInstance()->getRegionOfDefinition_public(hash, time, s, view, &rod, &isProject);
+    StatusEnum stat = _node->getEffectInstance()->getRegionOfDefinition_public(hash, time, s, view, &rod, &isProject);
     if (stat != eStatusOK) {
         return RectD();
     }
@@ -735,7 +735,7 @@ Effect::setSubGraphEditable(bool editable)
     if (!_node) {
         return;
     }
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_node->getLiveInstance());
+    NodeGroup* isGroup = _node->isEffectGroup();
     if (isGroup) {
         isGroup->setSubGraphEditable(editable);
     }
@@ -765,7 +765,7 @@ Effect::getAvailableLayers() const
         return ret;
     }
     EffectInstance::ComponentsAvailableMap availComps;
-    _node->getLiveInstance()->getComponentsAvailable(true, true, _node->getLiveInstance()->getCurrentTime(), &availComps);
+    _node->getEffectInstance()->getComponentsAvailable(true, true, _node->getEffectInstance()->getCurrentTime(), &availComps);
     for (EffectInstance::ComponentsAvailableMap::iterator it = availComps.begin(); it != availComps.end(); ++it) {
         NodePtr node = it->second.lock();
         if (node) {

@@ -44,7 +44,7 @@ public:
      * @brief Must scan for new knobs and rebuild the panel accordingly
      **/
     virtual void scanForNewKnobs(bool restorePageIndex = true) = 0;
-    virtual void deleteKnobGui(const boost::shared_ptr<KnobI>& knob) = 0;
+    virtual void deleteKnobGui(const KnobPtr& knob) = 0;
 
 };
 

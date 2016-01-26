@@ -77,7 +77,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->first.get());
         BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(it->first.get());
         KnobGui* guiKnob = isKnobCurve ? isKnobCurve->getKnobGui() : 0;
-        boost::shared_ptr<KnobI> knob;
+        KnobPtr knob;
         
         if (isKnobCurve) {
             knob = isKnobCurve->getInternalKnob();
@@ -215,7 +215,7 @@ SetKeysCommand::undo()
     BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(_guiCurve.get());
     
     if (isKnobCurve) {
-        boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+        KnobPtr knob = isKnobCurve->getInternalKnob();
         boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
         if (!isParametric) {
             knob->cloneCurve(isKnobCurve->getDimension(), *_oldCurve);
@@ -252,7 +252,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
         BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(it->first.get());
         KnobGui* guiKnob = isKnobCurve ? isKnobCurve->getKnobGui() : 0;
         
-        boost::shared_ptr<KnobI> knob;
+        KnobPtr knob;
         
         if (isKnobCurve) {
             knob = isKnobCurve->getInternalKnob();
@@ -375,7 +375,7 @@ moveKey(KeyPtr &k,
     KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(k->curve.get());
     BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(k->curve.get());
     if (isKnobCurve) {
-        boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+        KnobPtr knob = isKnobCurve->getInternalKnob();
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
         
         if (isParametric) {
@@ -557,7 +557,7 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
         
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->key->curve.get());
         if (isKnobCurve) {
-            boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+            KnobPtr knob = isKnobCurve->getInternalKnob();
             KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
             
             if (isParametric) {
@@ -729,7 +729,7 @@ MoveTangentCommand::setNewDerivatives(bool undo)
 {
     KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(_key->curve.get());
     if (isKnobCurve) {
-        boost::shared_ptr<KnobI> attachedKnob = isKnobCurve->getInternalKnob();
+        KnobPtr attachedKnob = isKnobCurve->getInternalKnob();
         assert(attachedKnob);
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>(attachedKnob.get());
         
@@ -1023,7 +1023,7 @@ TransformKeysCommand::transform(const KeyPtr& k)
     BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(k->curve.get());
     
     if (isKnobCurve) {
-        boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+        KnobPtr knob = isKnobCurve->getInternalKnob();
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
         
         if (isParametric) {

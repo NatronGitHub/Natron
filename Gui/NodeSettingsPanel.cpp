@@ -57,11 +57,11 @@ NATRON_NAMESPACE_ENTER;
 
 NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel> & multiPanel,
                                      Gui* gui,
-                                     const boost::shared_ptr<NodeGui> &NodeUi,
+                                     const NodeGuiPtr &NodeUi,
                                      QVBoxLayout* container,
                                      QWidget *parent)
     : DockablePanel(gui,
-                    multiPanel.get() != NULL ? dynamic_cast<KnobHolder*>( multiPanel.get() ) : NodeUi->getNode()->getLiveInstance(),
+                    multiPanel.get() != NULL ? dynamic_cast<KnobHolder*>( multiPanel.get() ) : NodeUi->getNode()->getEffectInstance().get(),
                     container,
                     DockablePanel::eHeaderModeFullyFeatured,
                     false,
@@ -99,7 +99,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
 
 NodeSettingsPanel::~NodeSettingsPanel()
 {
-    boost::shared_ptr<NodeGui> node = getNode();
+    NodeGuiPtr node = getNode();
     if (node) {
         node->removeSettingsPanel();
     }
@@ -149,8 +149,8 @@ NodeSettingsPanel::onSettingsButtonClicked()
     Menu menu(this);
     //menu.setFont(QFont(appFont,appFontSize));
     
-    boost::shared_ptr<NodeGui> node = getNode();
-    boost::shared_ptr<Node> master = node->getNode()->getMasterNode();
+    NodeGuiPtr node = getNode();
+    NodePtr master = node->getNode()->getMasterNode();
     
     QAction* importPresets = new QAction(tr("Import presets"),&menu);
     QObject::connect(importPresets,SIGNAL(triggered()),this,SLOT(onImportPresetsActionTriggered()));
@@ -222,7 +222,7 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
         Dialogs::errorDialog("Presets",e.what());
         return;
     }
-    boost::shared_ptr<NodeGui> node = getNode();
+    NodeGuiPtr node = getNode();
     if (nodeSerialization.front()->getPluginID() != node->getNode()->getPluginID()) {
         QString err = QString(tr("You cannot load ") + filename.c_str()  + tr(" which are presets for the plug-in ") +
                               nodeSerialization.front()->getPluginID().c_str() + tr(" on the plug-in ") +
@@ -264,7 +264,7 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
         return;
     }
 
-    boost::shared_ptr<NodeGui> node = getNode();
+    NodeGuiPtr node = getNode();
     std::list<boost::shared_ptr<NodeSerialization> > nodeSerialization;
     node->serializeInternal(nodeSerialization);
     try {

@@ -96,7 +96,7 @@ public:
     /**
      * @brief Retur
      **/
-    std::list<boost::shared_ptr<NodeGui> > getVisibleNodes() const;
+    NodesGuiList getVisibleNodes() const;
     Gui* getGui() const
     {
         return _gui;

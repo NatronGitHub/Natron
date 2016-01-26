@@ -90,9 +90,9 @@ using boost::shared_ptr;
 
 namespace { // protect local classes in anonymous namespace
     /*The output node was connected from inputNumber to this...*/
-    typedef std::map<Node*,int > DeactivatedState;
+    typedef std::map<NodeWPtr,int > DeactivatedState;
     typedef std::list<Node::KnobLink> KnobLinkList;
-    typedef std::vector<boost::weak_ptr<Node> > InputsV;
+    typedef std::vector<NodeWPtr> InputsV;
     
    
     
@@ -143,7 +143,7 @@ namespace { // protect local classes in anonymous namespace
         mutable QMutex compsMutex;
         //Stores the components available at build time of the choice menu
       
-        std::vector<std::pair<ImageComponents,boost::weak_ptr<Node> > > compsAvailable;
+        std::vector<std::pair<ImageComponents,NodeWPtr > > compsAvailable;
         
         MaskSelector()
         : enabled()
@@ -321,7 +321,7 @@ struct Node::Implementation
                                    const boost::shared_ptr<KnobPage>& page);
     
     void restoreKnobLinksRecursive(const GroupKnobSerialization* group,
-                                   const std::list<boost::shared_ptr<Node> > & allNodes,
+                                   const NodesList & allNodes,
                                    const std::map<std::string,std::string>& oldNewScriptNamesMapping);
     
     void ifGroupForceHashChangeOfInputs();
@@ -335,7 +335,7 @@ struct Node::Implementation
     void runOnNodeDeleteCBInternal(const std::string& cb);
 
     
-    void appendChild(const boost::shared_ptr<Node>& child);
+    void appendChild(const NodePtr& child);
     
     void runInputChangedCallback(int index,const std::string& script);
     
@@ -360,7 +360,7 @@ struct Node::Implementation
     bool knobsInitialized;
     bool inputsInitialized;
     mutable QMutex outputsMutex;
-    std::list<Node*> outputs,guiOutputs;
+    NodesWList outputs,guiOutputs;
     
     mutable QMutex inputsMutex; //< protects guiInputs so the serialization thread can access them
     
@@ -373,7 +373,7 @@ struct Node::Implementation
     bool mustCopyGuiInputs;
     
     //to the inputs in a thread-safe manner.
-    boost::shared_ptr<EffectInstance>  liveInstance; //< the effect hosted by this node
+    EffectInstPtr  liveInstance; //< the effect hosted by this node
     
     ///These two are also protected by inputsMutex
     std::vector< std::list<ImageComponents> > inputsComponents;
@@ -418,7 +418,7 @@ struct Node::Implementation
     Hash64 hash; //< recomputed everytime knobsAge is changed.
     
     mutable QMutex masterNodeMutex; //< protects masterNode and nodeLinks
-    boost::weak_ptr<Node> masterNode; //< this points to the master when the node is a clone
+    NodeWPtr masterNode; //< this points to the master when the node is a clone
     KnobLinkList nodeLinks; //< these point to the parents of the params links
     
     boost::weak_ptr<KnobInt> frameIncrKnob;
@@ -461,9 +461,9 @@ struct Node::Implementation
     
     ///True when several effect instances are represented under the same node.
     bool isMultiInstance;
-    boost::weak_ptr<Node> multiInstanceParent;
+    NodeWPtr multiInstanceParent;
     mutable QMutex childrenMutex;
-    std::list<boost::weak_ptr<Node> > children;
+    NodesWList children;
     
     ///the name of the parent at the time this node was created
     std::string multiInstanceParentName;
@@ -636,7 +636,7 @@ Node::load(const CreateNodeArgs& args)
     }
     
 
-    boost::shared_ptr<Node> thisShared = shared_from_this();
+    NodePtr thisShared = shared_from_this();
 
     int renderScaleSupportPreference = appPTR->getCurrentSettings()->getRenderScaleSupportPreference(_imp->plugin);
 
@@ -825,9 +825,9 @@ Node::load(const CreateNodeArgs& args)
     
     ///Now that the instance is created, make sure instanceChangedActino is called for all extra default values
     ///that we set
-    double time = getLiveInstance()->getCurrentTime();
+    double time = getEffectInstance()->getCurrentTime();
     for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = args.paramValues.begin(); it != args.paramValues.end(); ++it) {
-        boost::shared_ptr<KnobI> knob = getKnobByName((*it)->getName());
+        KnobPtr knob = getKnobByName((*it)->getName());
         if (knob) {
             for (int i = 0; i < knob->getDimension(); ++i) {
                 knob->evaluateValueChange(i, time, eValueChangedReasonUserEdited);
@@ -838,7 +838,7 @@ Node::load(const CreateNodeArgs& args)
     }
     
     if (hasUsedFileDialog) {
-        boost::shared_ptr<KnobI> fileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
+        KnobPtr fileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
         if (fileNameKnob) {
             fileNameKnob->evaluateValueChange(0, time, eValueChangedReasonUserEdited);
         }
@@ -1138,10 +1138,10 @@ Node::getGroup() const
 }
 
 void
-Node::Implementation::appendChild(const boost::shared_ptr<Node>& child)
+Node::Implementation::appendChild(const NodePtr& child)
 {
     QMutexLocker k(&childrenMutex);
-    for (std::list<boost::weak_ptr<Node> >::iterator it = children.begin(); it != children.end(); ++it) {
+    for (NodesWList::iterator it = children.begin(); it != children.end(); ++it) {
         if (it->lock() == child) {
             return;
         }
@@ -1152,10 +1152,10 @@ Node::Implementation::appendChild(const boost::shared_ptr<Node>& child)
 void
 Node::fetchParentMultiInstancePointer()
 {
-    NodeList nodes = _imp->group.lock()->getNodes();
+    NodesList nodes = _imp->group.lock()->getNodes();
     
     NodePtr thisShared = shared_from_this();
-    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ((*it)->getScriptName() == _imp->multiInstanceParentName) {
             ///no need to store the boost pointer because the main instance lives the same time
             ///as the child
@@ -1168,7 +1168,7 @@ Node::fetchParentMultiInstancePointer()
     
 }
 
-boost::shared_ptr<Node>
+NodePtr
 Node::getParentMultiInstance() const
 {
     return _imp->multiInstanceParent.lock();
@@ -1188,10 +1188,10 @@ Node::getParentMultiInstanceName() const
 }
 
 void
-Node::getChildrenMultiInstance(std::list<boost::shared_ptr<Node> >* children) const
+Node::getChildrenMultiInstance(NodesList* children) const
 {
     QMutexLocker k(&_imp->childrenMutex);
-    for (std::list<boost::weak_ptr<Node> >::const_iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+    for (NodesWList::const_iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
         children->push_back(it->lock());
     }
 }
@@ -1331,9 +1331,9 @@ Node::computeHashRecursive(std::list<Node*>& marked)
     bool isRotoPaint = _imp->liveInstance->isRotoPaintNode();
     
     ///call it on all the outputs
-    std::list<Node*> outputs;
+    NodesList outputs;
     getOutputsWithGroupRedirection(outputs);
-    for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+    for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
         assert(*it);
         
         //Since the rotopaint node is connected to the internal nodes of the tree, don't change their hash
@@ -1347,9 +1347,9 @@ Node::computeHashRecursive(std::list<Node*>& marked)
     
     ///If the node has a rotopaint tree, compute the hash of the nodes in the tree
     if (_imp->rotoContext) {
-        NodeList allItems;
+        NodesList allItems;
         _imp->rotoContext->getRotoPaintTreeNodes(&allItems);
-        for (NodeList::iterator it = allItems.begin(); it!=allItems.end(); ++it) {
+        for (NodesList::iterator it = allItems.begin(); it!=allItems.end(); ++it) {
             (*it)->computeHashRecursive(marked);
         }
         
@@ -1408,13 +1408,13 @@ Node::setValuesFromSerialization(const std::list<boost::shared_ptr<KnobSerializa
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->knobsInitialized);
     
-    const std::vector< boost::shared_ptr<KnobI> > & nodeKnobs = getKnobs();
+    const std::vector< KnobPtr > & nodeKnobs = getKnobs();
     ///for all knobs of the node
     for (U32 j = 0; j < nodeKnobs.size(); ++j) {
         ///try to find a serialized value for this knob
         for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end(); ++it) {
             if ( (*it)->getName() == nodeKnobs[j]->getName() ) {
-                boost::shared_ptr<KnobI> serializedKnob = (*it)->getKnob();
+                KnobPtr serializedKnob = (*it)->getKnob();
                 nodeKnobs[j]->clone(serializedKnob);
                 break;
             }
@@ -1438,7 +1438,7 @@ Node::loadKnobs(const NodeSerialization & serialization,bool updateKnobGui)
         _imp->createdComponents = serialization.getUserCreatedComponents();
     }
     
-    const std::vector< boost::shared_ptr<KnobI> > & nodeKnobs = getKnobs();
+    const std::vector< KnobPtr > & nodeKnobs = getKnobs();
     ///for all knobs of the node
     for (U32 j = 0; j < nodeKnobs.size(); ++j) {
         loadKnob(nodeKnobs[j], serialization.getKnobsValues(),updateKnobGui);
@@ -1456,7 +1456,7 @@ Node::loadKnobs(const NodeSerialization & serialization,bool updateKnobGui)
 }
 
 void
-Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
+Node::loadKnob(const KnobPtr & knob,
                const std::list< boost::shared_ptr<KnobSerialization> > & knobsValues,bool updateKnobGui)
 {
     
@@ -1468,7 +1468,7 @@ Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
             // don't load the value if the Knob is not persistant! (it is just the default value in this case)
             ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
             //if ( knob->getIsPersistant() ) {
-            boost::shared_ptr<KnobI> serializedKnob = (*it)->getKnob();
+            KnobPtr serializedKnob = (*it)->getKnob();
             
             KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knob.get());
             if (isChoice) {
@@ -1513,7 +1513,7 @@ Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
                     (isG && (*it)->getName() == kNatronOfxParamProcessG) ||
                     (isB && (*it)->getName() == kNatronOfxParamProcessB) ||
                     (isA && (*it)->getName() == kNatronOfxParamProcessA)) {
-                    boost::shared_ptr<KnobI> serializedKnob = (*it)->getKnob();
+                    KnobPtr serializedKnob = (*it)->getKnob();
                     if (updateKnobGui) {
                         knob->cloneAndUpdateGui(serializedKnob.get());
                     } else {
@@ -1534,7 +1534,7 @@ Node::loadKnob(const boost::shared_ptr<KnobI> & knob,
 
 void
 Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* group,
-                                                const std::list<boost::shared_ptr<Node> > & allNodes,
+                                                const NodesList & allNodes,
                                                 const std::map<std::string,std::string>& oldNewScriptNamesMapping)
 {
     const std::list <boost::shared_ptr<KnobSerializationBase> >&  children = group->getChildren();
@@ -1545,7 +1545,7 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
         if (isGrp) {
             restoreKnobLinksRecursive(isGrp,allNodes, oldNewScriptNamesMapping);
         } else if (isRegular) {
-            boost::shared_ptr<KnobI> knob =  _publicInterface->getKnobByName( isRegular->getName() );
+            KnobPtr knob =  _publicInterface->getKnobByName( isRegular->getName() );
             if (!knob) {
                 QString err = _publicInterface->getScriptName_mt_safe().c_str();
                 err.append(QObject::tr(": Could not find a parameter named ") );
@@ -1563,7 +1563,7 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
 
 void
 Node::restoreKnobsLinks(const NodeSerialization & serialization,
-                        const std::list<boost::shared_ptr<Node> > & allNodes,
+                        const NodesList & allNodes,
                         const std::map<std::string,std::string>& oldNewScriptNamesMapping)
 {
     ////Only called by the main-thread
@@ -1572,7 +1572,7 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
     const NodeSerialization::KnobValues & knobsValues = serialization.getKnobsValues();
     ///try to find a serialized value for this knob
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
-        boost::shared_ptr<KnobI> knob = getKnobByName( (*it)->getName() );
+        KnobPtr knob = getKnobByName( (*it)->getName() );
         if (!knob) {
             QString err = getScriptName_mt_safe().c_str();
             err.append(QObject::tr(": Could not find a parameter named ") );
@@ -1597,11 +1597,11 @@ void
 Node::setPagesOrder(const std::list<std::string>& pages)
 {
     //re-order the pages
-    std::list<boost::shared_ptr<KnobI> > pagesOrdered;
+    std::list<KnobPtr > pagesOrdered;
     
     for (std::list<std::string>::const_iterator it = pages.begin(); it!=pages.end();++it) {
-        const std::vector<boost::shared_ptr<KnobI> > &knobs = getKnobs();
-        for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+        const KnobsVec &knobs = getKnobs();
+        for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ((*it2)->getName() == *it) {
                 pagesOrdered.push_back(*it2);
                 _imp->liveInstance->removeKnobFromList(it2->get());
@@ -1610,7 +1610,7 @@ Node::setPagesOrder(const std::list<std::string>& pages)
         }
     }
     int index = 0;
-    for (std::list<boost::shared_ptr<KnobI> >::iterator it=  pagesOrdered.begin() ;it!=pagesOrdered.end(); ++it,++index) {
+    for (std::list<KnobPtr >::iterator it=  pagesOrdered.begin() ;it!=pagesOrdered.end(); ++it,++index) {
         _imp->liveInstance->insertKnob(index, *it);
     }
 }
@@ -1618,9 +1618,9 @@ Node::setPagesOrder(const std::list<std::string>& pages)
 std::list<std::string>
 Node::getPagesOrder() const
 {
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    const KnobsVec& knobs = getKnobs();
     std::list<std::string> ret;
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
         KnobPage* ispage = dynamic_cast<KnobPage*>(it->get());
         if (ispage) {
             ret.push_back(ispage->getName());
@@ -1635,7 +1635,7 @@ Node::restoreUserKnobs(const NodeSerialization& serialization)
     const std::list<boost::shared_ptr<GroupKnobSerialization> >& userPages = serialization.getUserPages();
     
     for (std::list<boost::shared_ptr<GroupKnobSerialization> >::const_iterator it = userPages.begin() ; it != userPages.end(); ++it) {
-        boost::shared_ptr<KnobI> found = getKnobByName((*it)->getName());
+        KnobPtr found = getKnobByName((*it)->getName());
         boost::shared_ptr<KnobPage> page;
         if (!found) {
             page = AppManager::createKnob<KnobPage>(_imp->liveInstance.get(), (*it)->getLabel() , 1, false);
@@ -1663,7 +1663,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
         KnobSerialization* isRegular = dynamic_cast<KnobSerialization*>(it->get());
         assert(isGrp || isRegular);
         
-        boost::shared_ptr<KnobI> found = _publicInterface->getKnobByName((*it)->getName());
+        KnobPtr found = _publicInterface->getKnobByName((*it)->getName());
         
         if (isGrp) {
             boost::shared_ptr<KnobGroup> grp;
@@ -1688,8 +1688,8 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             restoreUserKnobsRecursive(isGrp->getChildren(), grp, page);
         } else {
             assert(isRegular->isUserKnob());
-            boost::shared_ptr<KnobI> sKnob = isRegular->getKnob();
-            boost::shared_ptr<KnobI> knob;
+            KnobPtr sKnob = isRegular->getKnob();
+            KnobPtr knob;
             KnobInt* isInt = dynamic_cast<KnobInt*>(sKnob.get());
             KnobDouble* isDbl = dynamic_cast<KnobDouble*>(sKnob.get());
             KnobBool* isBool = dynamic_cast<KnobBool*>(sKnob.get());
@@ -2064,7 +2064,7 @@ Node::Implementation::checkForExitPreview()
 void
 Node::abortAnyProcessing()
 {
-    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getLiveInstance() );
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getEffectInstance().get() );
     
     if (isOutput) {
         isOutput->getRenderEngine()->abortRendering(false,true);
@@ -2081,9 +2081,9 @@ Node::setMustQuitProcessing(bool mustQuit)
         _imp->mustQuitProcessing = mustQuit;
     }
     if (getRotoContext()) {
-        NodeList rotopaintNodes;
+        NodesList rotopaintNodes;
         getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
-        for (NodeList::iterator it = rotopaintNodes.begin(); it!=rotopaintNodes.end(); ++it) {
+        for (NodesList::iterator it = rotopaintNodes.begin(); it!=rotopaintNodes.end(); ++it) {
             (*it)->setMustQuitProcessing(mustQuit);
         }
     }
@@ -2103,7 +2103,7 @@ Node::quitAnyProcessing()
     
     
     //If this effect has a RenderEngine, make sure it is finished
-    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getLiveInstance() );
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(_imp->liveInstance.get());
     if (isOutput) {
         isOutput->getRenderEngine()->quitEngine();
     }
@@ -2112,9 +2112,9 @@ Node::quitAnyProcessing()
     _imp->abortPreview();
     
     if (isRotoPaintingNode()) {
-        NodeList rotopaintNodes;
+        NodesList rotopaintNodes;
         getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
-        for (NodeList::iterator it = rotopaintNodes.begin(); it!=rotopaintNodes.end(); ++it) {
+        for (NodesList::iterator it = rotopaintNodes.begin(); it!=rotopaintNodes.end(); ++it) {
             (*it)->quitAnyProcessing();
         }
     }
@@ -2168,7 +2168,7 @@ Node::getInputLabels() const
     return _imp->inputLabels;
 }
 
-const std::list<Node* > &
+const NodesWList &
 Node::getOutputs() const
 {
     ////Only called by the main-thread
@@ -2177,7 +2177,7 @@ Node::getOutputs() const
     return _imp->outputs;
 }
 
-const std::list<Node* > &
+const NodesWList &
 Node::getGuiOutputs() const
 {
     ////Only called by the main-thread
@@ -2187,7 +2187,7 @@ Node::getGuiOutputs() const
 }
 
 void
-Node::getOutputs_mt_safe(std::list<Node* >& outputs) const
+Node::getOutputs_mt_safe(NodesWList& outputs) const
 {
     QMutexLocker l(&_imp->outputsMutex);
     outputs =  _imp->outputs;
@@ -2345,17 +2345,23 @@ Node::getPreferredInputForConnection() const
 }
 
 void
-Node::getOutputsConnectedToThisNode(std::map<Node*,int>* outputs)
+Node::getOutputsConnectedToThisNode(std::map<NodePtr,int>* outputs)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     
-    for (std::list<Node*>::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-        assert(*it);
-        int indexOfThis = (*it)->inputIndex(this);
+    NodePtr thisSHared = shared_from_this();
+    for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
+        
+        NodePtr output = it->lock();
+        if (!output) {
+            continue;
+        }
+        
+        int indexOfThis = output->inputIndex(thisSHared);
         assert(indexOfThis != -1);
         if (indexOfThis >= 0) {
-            outputs->insert( std::make_pair(*it, indexOfThis) );
+            outputs->insert( std::make_pair(output, indexOfThis) );
         }
     }
 }
@@ -2378,7 +2384,7 @@ Node::getScriptName_mt_safe() const
     return _imp->scriptName;
 }
 
-static void prependGroupNameRecursive(const boost::shared_ptr<Node>& group,std::string& name)
+static void prependGroupNameRecursive(const NodePtr& group,std::string& name)
 {
     name.insert(0,".");
     name.insert(0, group->getScriptName_mt_safe());
@@ -2461,7 +2467,7 @@ Node::setScriptName_no_error_check(const std::string & name)
 
 static void insertDependenciesRecursive(Node* node, KnobI::ListenerDimsMap* dependencies)
 {
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getKnobs();
+    const KnobsVec & knobs = node->getKnobs();
     for (std::size_t i = 0; i < knobs.size(); ++i) {
         KnobI::ListenerDimsMap dimDeps;
         knobs[i]->getListeners(dimDeps);
@@ -2482,10 +2488,10 @@ static void insertDependenciesRecursive(Node* node, KnobI::ListenerDimsMap* depe
         
     }
     
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+    NodeGroup* isGroup = node->isEffectGroup();
     if (isGroup) {
-        NodeList nodes = isGroup->getNodes();
-        for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        NodesList nodes = isGroup->getNodes();
+        for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
             insertDependenciesRecursive(it->get(), dependencies);
         }
     }
@@ -2585,7 +2591,7 @@ Node::setNameInternal(const std::string& name, bool throwErrors, bool declareToP
         KnobI::ListenerDimsMap dependencies;
         insertDependenciesRecursive(this, &dependencies);
         for (KnobI::ListenerDimsMap::iterator it = dependencies.begin(); it!=dependencies.end(); ++it) {
-            boost::shared_ptr<KnobI> listener = it->first.lock();
+            KnobPtr listener = it->first.lock();
             if (!listener) {
                 continue;
             }
@@ -2673,7 +2679,7 @@ Node::makeInfoForInput(int inputNumber) const
     ImageBitDepthEnum depth;
     ImagePremultiplicationEnum premult;
 
-    EffectInstance* input = inputNode->getLiveInstance();
+    EffectInstPtr input = inputNode->getEffectInstance();
     double par = input->getPreferredAspectRatio();
     premult = input->getOutputPremultiplication();
     std::string premultStr;
@@ -2782,7 +2788,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             
             ///find in all knobs a page param to set this param into
             boost::shared_ptr<KnobPage> mainPage;
-            const std::vector< boost::shared_ptr<KnobI> > & knobs = _imp->liveInstance->getKnobs();
+            const std::vector< KnobPtr > & knobs = _imp->liveInstance->getKnobs();
             
             if (!disableNatronKnobs || isWriter) {
                 for (U32 i = 0; i < knobs.size(); ++i) {
@@ -2809,7 +2815,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 frameIncrKnob->setMinimum(1);
                 frameIncrKnob->setDefaultValue(1);
                 if (mainPage) {
-                    std::vector< boost::shared_ptr<KnobI> > children = mainPage->getChildren();
+                    std::vector< KnobPtr > children = mainPage->getChildren();
                     bool foundLastFrame = false;
                     for (std::size_t i = 0; i < children.size(); ++i) {
                         if (children[i]->getName() == "lastFrame") {
@@ -2857,7 +2863,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                 
                 if (useSelectors) {
                     
-                    std::vector<boost::shared_ptr<KnobI> > mainPageChildren = mainPage->getChildren();
+                    KnobsVec mainPageChildren = mainPage->getChildren();
                     bool skipSeparator = !mainPageChildren.empty() && dynamic_cast<KnobSeparator*>(mainPageChildren.back().get());
 
                     if (skipSeparator) {
@@ -2929,9 +2935,9 @@ Node::initializeKnobs(int renderScaleSupportPref)
             } // useChannels
             
             ///Find in the plug-in the Mask/Mix related parameter to re-order them so it is consistent across nodes
-            std::vector<std::pair<std::string,boost::shared_ptr<KnobI> > > foundPluginDefaultKnobsToReorder;
-            foundPluginDefaultKnobsToReorder.push_back(std::make_pair(kOfxMaskInvertParamName, boost::shared_ptr<KnobI>()));
-            foundPluginDefaultKnobsToReorder.push_back(std::make_pair(kOfxMixParamName, boost::shared_ptr<KnobI>()));
+            std::vector<std::pair<std::string,KnobPtr > > foundPluginDefaultKnobsToReorder;
+            foundPluginDefaultKnobsToReorder.push_back(std::make_pair(kOfxMaskInvertParamName, KnobPtr()));
+            foundPluginDefaultKnobsToReorder.push_back(std::make_pair(kOfxMixParamName, KnobPtr()));
             if (mainPage) {
                 ///Insert auto-added knobs before mask invert if found
                 for (std::size_t i = 0; i < knobs.size(); ++i) {
@@ -3128,7 +3134,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
                                                                                   "means that an image will be slow to be rendered, but once rendered it will stick in the cache "
                                                                                   "whichever zoom level you're using on the Viewer, whereas when unchecked it will be much "
                                                                                   "faster to render but will have to be recomputed when zooming in/out in the Viewer.").toStdString());
-            if (renderScaleSupportPref == 0 && getLiveInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) {
+            if (renderScaleSupportPref == 0 && getEffectInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) {
                 useFullScaleImagesWhenRenderScaleUnsupported->setSecretByDefault(true);
             }
             _imp->nodeSettingsPage.lock()->addKnob(useFullScaleImagesWhenRenderScaleUnsupported);
@@ -3390,7 +3396,7 @@ Node::beginEditKnobs()
 
 
 void
-Node::setLiveInstance(const boost::shared_ptr<EffectInstance>& liveInstance)
+Node::setLiveInstance(const EffectInstPtr& liveInstance)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3398,12 +3404,11 @@ Node::setLiveInstance(const boost::shared_ptr<EffectInstance>& liveInstance)
     _imp->liveInstance->initializeData();
 }
 
-EffectInstance*
-Node::getLiveInstance() const
+EffectInstPtr
+Node::getEffectInstance() const
 {
-#pragma message WARN("We should fix it and return a shared_ptr instead, but this is a tedious work since it is used everywhere")
     ///Thread safe as it never changes
-    return _imp->liveInstance.get();
+    return _imp->liveInstance;
 }
 
 void
@@ -3417,10 +3422,10 @@ Node::hasViewersConnected(std::list<ViewerInstance* >* viewers) const
             viewers->push_back(thisViewer);
         }
     } else {
-        std::list<Node*> outputs;
+        NodesList outputs;
         getOutputsWithGroupRedirection(outputs);
      
-        for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
             (*it)->hasViewersConnected(viewers);
         }
@@ -3438,19 +3443,19 @@ static NodePtr applyNodeRedirectionsUpstream(const NodePtr& node, bool useGuiInp
     if (!node) {
         return node;
     }
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+    NodeGroup* isGrp = node->isEffectGroup();
     if (isGrp) {
         //The node is a group, instead jump directly to the output node input of the  group
         return applyNodeRedirectionsUpstream(isGrp->getOutputNodeInput(useGuiInput), useGuiInput);
     }
     
-    PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>(node->getLiveInstance());
+    PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>(node->getEffectInstance().get());
     if (isPrecomp) {
         //The node is a precomp, instead jump directly to the output node of the precomp
         return applyNodeRedirectionsUpstream(isPrecomp->getOutputNode(), useGuiInput);
     }
     
-    GroupInput* isInput = dynamic_cast<GroupInput*>(node->getLiveInstance());
+    GroupInput* isInput = dynamic_cast<GroupInput*>(node->getEffectInstance().get());
     if (isInput) {
         //The node is a group input,  jump to the corresponding input of the group
         boost::shared_ptr<NodeCollection> collection = node->getGroup();
@@ -3470,21 +3475,21 @@ static NodePtr applyNodeRedirectionsUpstream(const NodePtr& node, bool useGuiInp
  * properly visit all nodes in the correct order. Note that one node may translate to several nodes since multiple nodes
  * may be connected to the same node.
  **/
-static void applyNodeRedirectionsDownstream(int recurseCounter, Node* node, bool useGuiOutputs, std::list<Node*>& translated)
+static void applyNodeRedirectionsDownstream(int recurseCounter, const NodePtr& node, bool useGuiOutputs, NodesList& translated)
 {
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+    NodeGroup* isGrp = node->isEffectGroup();
     if (isGrp) {
         //The node is a group, meaning it should not be taken into account, instead jump directly to the input nodes output of the group
-        std::list<Node*> inputNodes;
+        NodesList inputNodes;
         isGrp->getInputsOutputs(&inputNodes, useGuiOutputs);
-        for (std::list<Node*>::iterator it2 = inputNodes.begin(); it2 != inputNodes.end(); ++it2) {
+        for (NodesList::iterator it2 = inputNodes.begin(); it2 != inputNodes.end(); ++it2) {
             //Call recursively on them
             applyNodeRedirectionsDownstream(recurseCounter + 1,*it2, useGuiOutputs, translated);
         }
         return;
     }
     
-    GroupOutput* isOutput = dynamic_cast<GroupOutput*>(node->getLiveInstance());
+    GroupOutput* isOutput = dynamic_cast<GroupOutput*>(node->getEffectInstance().get());
     if (isOutput) {
         //The node is the output of a group, its outputs are the outputs of the group
         boost::shared_ptr<NodeCollection> collection = isOutput->getNode()->getGroup();
@@ -3492,32 +3497,38 @@ static void applyNodeRedirectionsDownstream(int recurseCounter, Node* node, bool
         isGrp = dynamic_cast<NodeGroup*>(collection.get());
         if (isGrp) {
             
-            std::list<Node*> groupOutputs;
+            NodesWList groupOutputs;
             if (useGuiOutputs) {
                 groupOutputs = isGrp->getNode()->getGuiOutputs();
             } else {
                 isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
             }
-            for (std::list<Node*>::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
+            for (NodesWList::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
                 //Call recursively on them
-                applyNodeRedirectionsDownstream(recurseCounter + 1, *it2,useGuiOutputs, translated);
+                NodePtr output = it2->lock();
+                if (output) {
+                    applyNodeRedirectionsDownstream(recurseCounter + 1, output,useGuiOutputs, translated);
+                }
             }
         }
         return;
     }
     
     boost::shared_ptr<PrecompNode> isInPrecomp = node->isPartOfPrecomp();
-    if (isInPrecomp && isInPrecomp->getOutputNode().get() == node) {
+    if (isInPrecomp && isInPrecomp->getOutputNode() == node) {
         //This node is the output of the precomp, its outputs are the outputs of the precomp node
-        std::list<Node*> groupOutputs;
+        NodesWList groupOutputs;
         if (useGuiOutputs) {
             groupOutputs = isInPrecomp->getNode()->getGuiOutputs();
         } else {
             isInPrecomp->getNode()->getOutputs_mt_safe(groupOutputs);
         }
-        for (std::list<Node*>::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
+        for (NodesWList::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
             //Call recursively on them
-            applyNodeRedirectionsDownstream(recurseCounter + 1, *it2,useGuiOutputs, translated);
+            NodePtr output = it2->lock();
+            if (output) {
+                applyNodeRedirectionsDownstream(recurseCounter + 1, output,useGuiOutputs, translated);
+            }
         }
         return;
     }
@@ -3530,15 +3541,21 @@ static void applyNodeRedirectionsDownstream(int recurseCounter, Node* node, bool
 
 
 void
-Node::getOutputsWithGroupRedirection(std::list<Node*>& outputs) const
+Node::getOutputsWithGroupRedirection(NodesList& outputs) const
 {
-    std::list<Node*> redirections;
-    applyNodeRedirectionsDownstream(0, const_cast<Node*>(this), false, redirections);
+    NodesList redirections;
+    NodePtr thisShared = boost::const_pointer_cast<Node>(shared_from_this());
+    applyNodeRedirectionsDownstream(0, thisShared, false, redirections);
     if (!redirections.empty()) {
         outputs.insert(outputs.begin(), redirections.begin(), redirections.end());
     } else {
         QMutexLocker l(&_imp->outputsMutex);
-        outputs.insert(outputs.begin(), _imp->outputs.begin(), _imp->outputs.end());
+        for (NodesWList::const_iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it) {
+            NodePtr output = it->lock();
+            if (output) {
+                outputs.push_back(output);
+            }
+        }
     }
     
 }
@@ -3554,10 +3571,10 @@ Node::hasOutputNodesConnected(std::list<OutputEffectInstance* >* writers) const
             writers->push_back(thisWriter);
         }
     } else {
-        std::list<Node*> outputs;
+        NodesList outputs;
         getOutputsWithGroupRedirection(outputs);
         
-        for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
             assert(*it);
             (*it)->hasOutputNodesConnected(writers);
         }
@@ -3634,7 +3651,7 @@ Node::initializeInputs()
     Q_EMIT inputsInitialized();
 }
 
-boost::shared_ptr<Node>
+NodePtr
 Node::getInput(int index) const
 {
     return getInputInternal(false, true, index);
@@ -3642,7 +3659,7 @@ Node::getInput(int index) const
 
 
 
-boost::shared_ptr<Node>
+NodePtr
 Node::getInputInternal(bool useGuiInput, bool useGroupRedirections, int index) const
 {
     NodePtr parent = _imp->multiInstanceParent.lock();
@@ -3654,48 +3671,48 @@ Node::getInputInternal(bool useGuiInput, bool useGroupRedirections, int index) c
     }
     QMutexLocker l(&_imp->inputsMutex);
     if ( ( index >= (int)_imp->inputs.size() ) || (index < 0) ) {
-        return boost::shared_ptr<Node>();
+        return NodePtr();
     }
     
-    boost::shared_ptr<Node> ret =  useGuiInput ? _imp->guiInputs[index].lock() : _imp->inputs[index].lock();
+    NodePtr ret =  useGuiInput ? _imp->guiInputs[index].lock() : _imp->inputs[index].lock();
     if (ret && useGroupRedirections) {
         ret = applyNodeRedirectionsUpstream(ret, useGuiInput);
     }
     return ret;
 }
 
-boost::shared_ptr<Node>
+NodePtr
 Node::getGuiInput(int index) const
 {
     return getInputInternal(true, true, index);
 }
 
-boost::shared_ptr<Node>
+NodePtr
 Node::getRealInput(int index) const
 {
     return getInputInternal(false, false, index);
 
 }
 
-boost::shared_ptr<Node>
+NodePtr
 Node::getRealGuiInput(int index) const
 {
     return getInputInternal(true, false, index);
 }
 
 int
-Node::getInputIndex(const Node* node) const
+Node::getInputIndex(const NodePtr& node) const
 {
     QMutexLocker l(&_imp->inputsMutex);
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].lock().get() == node) {
+        if (_imp->inputs[i].lock() == node) {
             return i;
         }
     }
     return -1;
 }
 
-const std::vector<boost::weak_ptr<Node> > &
+const std::vector<NodeWPtr > &
 Node::getInputs() const
 {
     ////Only called by the main-thread
@@ -3710,7 +3727,7 @@ Node::getInputs() const
     return _imp->inputs;
 }
 
-const std::vector<boost::weak_ptr<Node> > &
+const std::vector<NodeWPtr > &
 Node::getGuiInputs() const
 {
     ////Only called by the main-thread
@@ -3725,7 +3742,7 @@ Node::getGuiInputs() const
     return _imp->guiInputs;
 }
 
-std::vector<boost::weak_ptr<Node> >
+std::vector<NodeWPtr >
 Node::getInputs_copy() const
 {
     assert(_imp->inputsInitialized);
@@ -3834,7 +3851,8 @@ Node::hasOutputConnected() const
     if ( QThread::currentThread() == qApp->thread() ) {
         if (_imp->outputs.size() == 1) {
 
-            return !(_imp->outputs.front()->isTrackerNode() && _imp->outputs.front()->isMultiInstance());
+            NodePtr output = _imp->outputs.front().lock();
+            return !(output->isTrackerNode() && output->isMultiInstance());
 
         } else if (_imp->outputs.size() > 1) {
 
@@ -3845,7 +3863,8 @@ Node::hasOutputConnected() const
         QMutexLocker l(&_imp->outputsMutex);
         if (_imp->outputs.size() == 1) {
 
-            return !(_imp->outputs.front()->isTrackerNode() && _imp->outputs.front()->isMultiInstance());
+            NodePtr output = _imp->outputs.front().lock();
+            return !(output->isTrackerNode() && output->isMultiInstance());
 
         } else if (_imp->outputs.size() > 1) {
 
@@ -3911,7 +3930,7 @@ static Node::CanConnectInputReturnValue checkCanConnectNoMultiRes(const Node* ou
     RenderScale scale(1.);
     RectD rod;
     bool isProjectFormat;
-    StatusEnum stat = input->getLiveInstance()->getRegionOfDefinition_public(input->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &rod, &isProjectFormat);
+    StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &rod, &isProjectFormat);
     if (stat == eStatusFailed && !rod.isNull()) {
         return Node::eCanConnectInput_givenNodeNotConnectable;
     }
@@ -3920,7 +3939,7 @@ static Node::CanConnectInputReturnValue checkCanConnectNoMultiRes(const Node* ou
     }
     
   /*  RectD outputRod;
-    stat = output->getLiveInstance()->getRegionOfDefinition_public(output->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &outputRod, &isProjectFormat);
+    stat = output->getEffectInstance()->getRegionOfDefinition_public(output->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &outputRod, &isProjectFormat);
     if (stat == eStatusFailed && !outputRod.isNull()) {
         return Node::eCanConnectInput_givenNodeNotConnectable;
     }
@@ -3934,7 +3953,7 @@ static Node::CanConnectInputReturnValue checkCanConnectNoMultiRes(const Node* ou
         if (inputNode) {
             
             RectD inputRod;
-            stat = inputNode->getLiveInstance()->getRegionOfDefinition_public(inputNode->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &inputRod, &isProjectFormat);
+            stat = inputNode->getEffectInstance()->getRegionOfDefinition_public(inputNode->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &inputRod, &isProjectFormat);
             if (stat == eStatusFailed && !inputRod.isNull()) {
                 return Node::eCanConnectInput_givenNodeNotConnectable;
             }
@@ -3948,7 +3967,7 @@ static Node::CanConnectInputReturnValue checkCanConnectNoMultiRes(const Node* ou
 }
 
 Node::CanConnectInputReturnValue
-Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) const
+Node::canConnectInput(const NodePtr& input,int inputNumber) const
 {
    
     
@@ -3969,7 +3988,7 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
         }
     }
     
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(input->getLiveInstance());
+    NodeGroup* isGrp = input->isEffectGroup();
     if (isGrp && !isGrp->getOutputNode(true)) {
         return eCanConnectInput_groupHasNoOutput;
     }
@@ -3999,20 +4018,20 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
         ///Check for invalid pixel aspect ratio if the node doesn't support multiple clip PARs
         if (!_imp->liveInstance->supportsMultipleClipsPAR()) {
             
-            double inputPAR = input->getLiveInstance()->getPreferredAspectRatio();
+            double inputPAR = input->getEffectInstance()->getPreferredAspectRatio();
             
-            double inputFPS = input->getLiveInstance()->getPreferredFrameRate();
+            double inputFPS = input->getEffectInstance()->getPreferredFrameRate();
             
             QMutexLocker l(&_imp->inputsMutex);
 
             for (InputsV::const_iterator it = _imp->guiInputs.begin(); it != _imp->guiInputs.end(); ++it) {
                 NodePtr node = it->lock();
                 if (node) {
-                    if (node->getLiveInstance()->getPreferredAspectRatio() != inputPAR) {
+                    if (node->getEffectInstance()->getPreferredAspectRatio() != inputPAR) {
                         return eCanConnectInput_differentPars;
                     }
                     
-                    if (std::abs(node->getLiveInstance()->getPreferredFrameRate() - inputFPS) > 0.01) {
+                    if (std::abs(node->getEffectInstance()->getPreferredFrameRate() - inputFPS) > 0.01) {
                         return eCanConnectInput_differentFPS;
                     }
                     
@@ -4025,7 +4044,7 @@ Node::canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) cons
 }
 
 bool
-Node::connectInput(const boost::shared_ptr<Node> & input,
+Node::connectInput(const NodePtr & input,
                    int inputNumber)
 {
     ////Only called by the main-thread
@@ -4072,7 +4091,7 @@ Node::connectInput(const boost::shared_ptr<Node> & input,
             _imp->guiInputs[inputNumber] = input;
             _imp->mustCopyGuiInputs = true;
         }
-        input->connectOutput(useGuiInputs,this);
+        input->connectOutput(useGuiInputs,shared_from_this());
     }
     
     ///Get notified when the input name has changed
@@ -4116,9 +4135,9 @@ Node::Implementation::ifGroupForceHashChangeOfInputs()
     ///If the node is a group, force a change of the outputs of the GroupInput nodes so the hash of the tree changes downstream
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>(liveInstance.get());
     if (isGrp && !isGrp->getApp()->isCreatingNodeTree()) {
-        std::list<Node* > inputsOutputs;
+        NodesList inputsOutputs;
         isGrp->getInputsOutputs(&inputsOutputs, false);
-        for (std::list<Node* >::iterator it = inputsOutputs.begin(); it != inputsOutputs.end(); ++it) {
+        for (NodesList::iterator it = inputsOutputs.begin(); it != inputsOutputs.end(); ++it) {
             (*it)->incrementKnobsAge_internal();
             (*it)->computeHash();
         }
@@ -4126,7 +4145,7 @@ Node::Implementation::ifGroupForceHashChangeOfInputs()
 }
 
 bool
-Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
+Node::replaceInput(const NodePtr& input,int inputNumber)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -4169,7 +4188,7 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
             NodePtr curIn = _imp->inputs[inputNumber].lock();
             if (curIn) {
                 QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)));
-                curIn->disconnectOutput(useGuiInputs, this);
+                curIn->disconnectOutput(useGuiInputs, shared_from_this());
             }
             _imp->inputs[inputNumber] = input;
             _imp->guiInputs[inputNumber] = input;
@@ -4177,12 +4196,12 @@ Node::replaceInput(const boost::shared_ptr<Node>& input,int inputNumber)
             NodePtr curIn = _imp->guiInputs[inputNumber].lock();
             if (curIn) {
                 QObject::connect(curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)));
-                curIn->disconnectOutput(useGuiInputs, this);
+                curIn->disconnectOutput(useGuiInputs, shared_from_this());
             }
             _imp->guiInputs[inputNumber] = input;
             _imp->mustCopyGuiInputs = true;
         }
-        input->connectOutput(useGuiInputs, this);
+        input->connectOutput(useGuiInputs, shared_from_this());
     }
     
     ///Get notified when the input name has changed
@@ -4269,7 +4288,7 @@ Node::switchInput0And1()
     {
         QMutexLocker l(&_imp->inputsMutex);
         assert( inputAIndex < (int)_imp->inputs.size() && inputBIndex < (int)_imp->inputs.size() );
-        boost::shared_ptr<Node> input0;
+        NodePtr input0;
         
         if (!useGuiInputs) {
             input0 = _imp->inputs[inputAIndex].lock();
@@ -4342,7 +4361,7 @@ Node::onInputLabelChanged(const QString & name)
 }
 
 void
-Node::connectOutput(bool useGuiValues,Node* output)
+Node::connectOutput(bool useGuiValues,const NodePtr& output)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -4388,7 +4407,7 @@ Node::disconnectInput(int inputNumber)
 
     
     QObject::disconnect( inputShared.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
-    inputShared->disconnectOutput(useGuiValues,this);
+    inputShared->disconnectOutput(useGuiValues,shared_from_this());
     
     {
         QMutexLocker l(&_imp->inputsMutex);
@@ -4431,7 +4450,7 @@ Node::disconnectInput(int inputNumber)
 }
 
 int
-Node::disconnectInput(Node* input)
+Node::disconnectInput(const NodePtr& input)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -4445,7 +4464,7 @@ Node::disconnectInput(Node* input)
         if (!useGuiValues) {
             for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
                 NodePtr curInput = _imp->inputs[i].lock();
-                if (curInput.get() == input) {
+                if (curInput == input) {
                     inputShared = curInput;
                     found = (int)i;
                     break;
@@ -4454,7 +4473,7 @@ Node::disconnectInput(Node* input)
         } else {
             for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
                 NodePtr curInput = _imp->guiInputs[i].lock();
-                if (curInput.get() == input) {
+                if (curInput == input) {
                     inputShared = curInput;
                     found = (int)i;
                     break;
@@ -4474,7 +4493,7 @@ Node::disconnectInput(Node* input)
                 _imp->mustCopyGuiInputs = true;
             }
         }
-        input->disconnectOutput(useGuiValues,this);
+        input->disconnectOutput(useGuiValues,shared_from_this());
         Q_EMIT inputChanged(found);
         bool mustCallEnd = false;
         if (!useGuiValues) {
@@ -4507,7 +4526,7 @@ Node::disconnectInput(Node* input)
 }
 
 int
-Node::disconnectOutput(bool useGuiValues,Node* output)
+Node::disconnectOutput(bool useGuiValues,const NodePtr& output)
 {
     assert(output);
     ////Only called by the main-thread
@@ -4516,20 +4535,22 @@ Node::disconnectOutput(bool useGuiValues,Node* output)
     {
         QMutexLocker l(&_imp->outputsMutex);
         if (!useGuiValues) {
-            std::list<Node*>::iterator it = std::find(_imp->outputs.begin(),_imp->outputs.end(),output);
             
-            if ( it != _imp->outputs.end() ) {
-                ret = std::distance(_imp->outputs.begin(), it);
-                _imp->outputs.erase(it);
+            int ret = 0;
+            for (NodesWList::iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it,++ret) {
+                if (it->lock() == output) {
+                    _imp->outputs.erase(it);
+                    break;
+                }
             }
         }
-        std::list<Node*>::iterator it = std::find(_imp->guiOutputs.begin(),_imp->guiOutputs.end(),output);
-        
-        if ( it != _imp->guiOutputs.end() ) {
-            ret = std::distance(_imp->guiOutputs.begin(), it);
-            _imp->guiOutputs.erase(it);
+        int ret = 0;
+        for (NodesWList::iterator it = _imp->guiOutputs.begin(); it!=_imp->guiOutputs.end(); ++it,++ret) {
+            if (it->lock() == output) {
+                _imp->guiOutputs.erase(it);
+                break;
+            }
         }
-        
         
     }
     
@@ -4541,7 +4562,7 @@ Node::disconnectOutput(bool useGuiValues,Node* output)
 
 
 int
-Node::inputIndex(Node* n) const
+Node::inputIndex(const NodePtr& n) const
 {
     if (!n) {
         return -1;
@@ -4558,7 +4579,7 @@ Node::inputIndex(Node* n) const
     
     ///No need to lock this is only called by the main-thread
     for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].lock().get() == n) {
+        if (_imp->inputs[i].lock() == n) {
             return i;
         }
     }
@@ -4576,7 +4597,7 @@ Node::clearLastRenderedImage()
 /*After this call this node still knows the link to the old inputs/outputs
  but no other node knows this node.*/
 void
-Node::deactivate(const std::list< Node* > & outputsToDisconnect,
+Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                  bool disconnectAll,
                  bool reconnect,
                  bool hideGui,
@@ -4595,12 +4616,12 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     NodeGroup* isParentGroup = dynamic_cast<NodeGroup*>(parentCol.get());
     
     ///For all knobs that have listeners, kill expressions
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
+    const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         KnobI::ListenerDimsMap listeners;
         knobs[i]->getListeners(listeners);
         for (KnobI::ListenerDimsMap::iterator it = listeners.begin(); it != listeners.end(); ++it) {
-            boost::shared_ptr<KnobI> listener = it->first.lock();
+            KnobPtr listener = it->first.lock();
             if (!listener) {
                 continue;
             }
@@ -4620,13 +4641,13 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
             boost::shared_ptr<NodeCollection> effectParent = isEffect->getNode()->getGroup();
             assert(effectParent);
             NodeGroup* isEffectParentGroup = dynamic_cast<NodeGroup*>(effectParent.get());
-            if (isEffectParentGroup && isEffectParentGroup == getLiveInstance()) {
+            if (isEffectParentGroup && isEffectParentGroup == _imp->liveInstance.get()) {
                 continue;
             }
             
             isEffect->beginChanges();
             for (int dim = 0; dim < listener->getDimension(); ++dim) {
-                std::pair<int, boost::shared_ptr<KnobI> > master = listener->getMaster(dim);
+                std::pair<int, KnobPtr > master = listener->getMaster(dim);
                 if (master.second == knobs[i]) {
                     listener->unSlave(dim, true);
                 }
@@ -4642,8 +4663,8 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     
     ///if the node has 1 non-optional input, attempt to connect the outputs to the input of the current node
     ///this node is the node the outputs should attempt to connect to
-    boost::shared_ptr<Node> inputToConnectTo;
-    boost::shared_ptr<Node> firstOptionalInput;
+    NodePtr inputToConnectTo;
+    NodePtr firstOptionalInput;
     int firstNonOptionalInput = -1;
     if (reconnect) {
         bool hasOnlyOneInputConnected = false;
@@ -4682,7 +4703,9 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     _imp->deactivatedState.clear();
     
     
-    std::vector<boost::shared_ptr<Node> > inputsQueueCopy;
+    std::vector<NodePtr > inputsQueueCopy;
+
+    NodePtr thisShared = shared_from_this();
 
     ///For multi-instances, if we deactivate the main instance without hiding the GUI (the default state of the tracker node)
     ///then don't remove it from outputs of the inputs
@@ -4690,7 +4713,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
         for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
             NodePtr input = _imp->guiInputs[i].lock();
             if (input) {
-                input->disconnectOutput(false,this);
+                input->disconnectOutput(false,thisShared);
             }
         }
     }
@@ -4698,37 +4721,41 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     
     ///For each output node we remember that the output node  had its input number inputNb connected
     ///to this node
-    std::list<Node*> outputsQueueCopy;
+    NodesWList outputsQueueCopy;
     {
         QMutexLocker l(&_imp->outputsMutex);
         outputsQueueCopy = _imp->guiOutputs;
     }
     
     
-    for (std::list<Node*>::iterator it = outputsQueueCopy.begin(); it != outputsQueueCopy.end(); ++it) {
-        assert(*it);
+    for (NodesWList::iterator it = outputsQueueCopy.begin(); it != outputsQueueCopy.end(); ++it) {
+        
+        NodePtr output = it->lock();
+        if (!output) {
+            continue;
+        }
         bool dc = false;
         if (disconnectAll) {
             dc = true;
         } else {
             
-            for (std::list<Node* >::const_iterator found = outputsToDisconnect.begin(); found != outputsToDisconnect.end(); ++found) {
-                if (*found == *it) {
+            for (NodesList::const_iterator found = outputsToDisconnect.begin(); found != outputsToDisconnect.end(); ++found) {
+                if (*found == output) {
                     dc = true;
                     break;
                 }
             }
         }
         if (dc) {
-            int inputNb = (*it)->getInputIndex(this);
+            int inputNb = output->getInputIndex(thisShared);
             if (inputNb != -1) {
                 _imp->deactivatedState.insert( make_pair(*it, inputNb) );
                 
                 ///reconnect if inputToConnectTo is not null
                 if (inputToConnectTo) {
-                    (*it)->replaceInput(inputToConnectTo, inputNb);
+                    output->replaceInput(inputToConnectTo, inputNb);
                 } else {
-                    ignore_result((*it)->disconnectInput(this));
+                    ignore_result(output->disconnectInput(thisShared));
                 }
             }
         }
@@ -4761,19 +4788,19 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
     
     
     ///If the node is a group, deactivate all nodes within the group
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
     if (isGrp) {
         isGrp->setIsDeactivatingGroup(true);
-        NodeList nodes = isGrp->getNodes();
-        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->deactivate(std::list< Node* >(),false,false,true,false);
+        NodesList nodes = isGrp->getNodes();
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            (*it)->deactivate(std::list< NodePtr >(),false,false,true,false);
         }
         isGrp->setIsDeactivatingGroup(false);
     }
     
     ///If the node has children (i.e it is a multi-instance), deactivate its children
-    for (std::list<boost::weak_ptr<Node> >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
-        it->lock()->deactivate(std::list< Node* >(),false,false,true,false);
+    for (NodesWList::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+        it->lock()->deactivate(std::list< NodePtr >(),false,false,true,false);
     }
     
 
@@ -4785,7 +4812,7 @@ Node::deactivate(const std::list< Node* > & outputsToDisconnect,
 } // deactivate
 
 void
-Node::activate(const std::list< Node* > & outputsToRestore,
+Node::activate(const std::list< NodePtr > & outputsToRestore,
                bool restoreAll,
                bool triggerRender)
 {
@@ -4797,27 +4824,33 @@ Node::activate(const std::list< Node* > & outputsToRestore,
 
     
     ///No need to lock, guiInputs is only written to by the main-thread
-    
+    NodePtr thisShared = shared_from_this();
+
     ///for all inputs, reconnect their output to this node
     for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
         NodePtr input = _imp->inputs[i].lock();
         if (input) {
-            input->connectOutput(false,this);
+            input->connectOutput(false,thisShared);
         }
     }
     
-    boost::shared_ptr<Node> thisShared = shared_from_this();
     
     
     ///Restore all outputs that was connected to this node
-    for (std::map<Node*,int >::iterator it = _imp->deactivatedState.begin();
+    for (std::map<NodeWPtr,int >::iterator it = _imp->deactivatedState.begin();
          it != _imp->deactivatedState.end(); ++it) {
+        
+        NodePtr output = it->first.lock();
+        if (!output) {
+            continue;
+        }
+        
         bool restore = false;
         if (restoreAll) {
             restore = true;
         } else {
-            for (std::list<Node* >::const_iterator found = outputsToRestore.begin(); found != outputsToRestore.end(); ++found) {
-                if (*found == it->first) {
+            for (NodesList::const_iterator found = outputsToRestore.begin(); found != outputsToRestore.end(); ++found) {
+                if (*found == output) {
                     restore = true;
                     break;
                 }
@@ -4828,15 +4861,15 @@ Node::activate(const std::list< Node* > & outputsToRestore,
             ///before connecting the outputs to this node, disconnect any link that has been made
             ///between the outputs by the user. This should normally never happen as the undo/redo
             ///stack follow always the same order.
-            boost::shared_ptr<Node> outputHasInput = it->first->getInput(it->second);
+            NodePtr outputHasInput = output->getInput(it->second);
             if (outputHasInput) {
-                bool ok = getApp()->getProject()->disconnectNodes(outputHasInput.get(), it->first);
+                bool ok = getApp()->getProject()->disconnectNodes(outputHasInput, output);
                 assert(ok);
                 Q_UNUSED(ok);
             }
             
             ///and connect the output to this node
-            it->first->connectInput(thisShared, it->second);
+            output->connectInput(thisShared, it->second);
         }
     }
     
@@ -4852,19 +4885,19 @@ Node::activate(const std::list< Node* > & outputsToRestore,
     Q_EMIT activated(triggerRender);
     
     ///If the node is a group, activate all nodes within the group first
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
     if (isGrp) {
         isGrp->setIsActivatingGroup(true);
-        NodeList nodes = isGrp->getNodes();
-        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->activate(std::list< Node* >(),false,false);
+        NodesList nodes = isGrp->getNodes();
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            (*it)->activate(std::list< NodePtr >(),false,false);
         }
         isGrp->setIsActivatingGroup(false);
     }
     
     ///If the node has children (i.e it is a multi-instance), activate its children
-    for (std::list<boost::weak_ptr<Node> >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
-        it->lock()->activate(std::list< Node* >(),false,false);
+    for (NodesWList::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+        it->lock()->activate(std::list< NodePtr >(),false,false);
     }
     
     _imp->runOnNodeCreatedCB(true);
@@ -4873,13 +4906,13 @@ Node::activate(const std::list< Node* > & outputsToRestore,
 void
 Node::destroyNode(bool autoReconnect)
 {
-    deactivate(std::list< Node* >(),
+    deactivate(std::list< NodePtr >(),
                true,
                autoReconnect,
                true,
                true);
     
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(getLiveInstance());
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
     if (isGrp) {
         isGrp->clearNodes(true);
     }
@@ -4887,7 +4920,7 @@ Node::destroyNode(bool autoReconnect)
     removeReferences();
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 Node::getKnobByName(const std::string & name) const
 {
     ///MT-safe, never changes
@@ -5039,7 +5072,7 @@ Node::makePreviewImage(SequenceTime time,
     EffectInstance* effect = 0;
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
     if (isGroup) {
-        effect = isGroup->getOutputNode(false)->getLiveInstance();
+        effect = isGroup->getOutputNode(false)->getEffectInstance().get();
     } else {
         effect = _imp->liveInstance.get();
     }
@@ -5098,7 +5131,7 @@ Node::makePreviewImage(SequenceTime time,
         
         std::list<ImageComponents> requestedComps;
         ImageBitDepthEnum depth;
-        getLiveInstance()->getPreferredDepthAndComponents(-1, &requestedComps, &depth);
+        getEffectInstance()->getPreferredDepthAndComponents(-1, &requestedComps, &depth);
         
         
         
@@ -5199,6 +5232,18 @@ Node::isRotoPaintingNode() const
     return _imp->liveInstance ? _imp->liveInstance->isRotoPaintNode() : false;
 }
 
+ViewerInstance*
+Node::isEffectViewer() const
+{
+    return dynamic_cast<ViewerInstance*>(_imp->liveInstance.get());
+}
+
+NodeGroup*
+Node::isEffectGroup() const
+{
+    return dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
+}
+
 boost::shared_ptr<RotoContext>
 Node::getRotoContext() const
 {
@@ -5221,7 +5266,7 @@ Node::getRotoAge() const
 }
 
 
-const std::vector<boost::shared_ptr<KnobI> > &
+const KnobsVec &
 Node::getKnobs() const
 {
     ///MT-safe from EffectInstance::getKnobs()
@@ -5604,7 +5649,7 @@ static void refreshPreviewsRecursivelyUpstreamInternal(double time,Node* node,st
     
     marked.push_back(node);
     
-    std::vector<boost::weak_ptr<Node> > inputs = node->getInputs_copy();
+    std::vector<NodeWPtr > inputs = node->getInputs_copy();
     
     for (std::size_t i = 0; i < inputs.size(); ++i) {
         NodePtr input = inputs[i].lock();
@@ -5634,11 +5679,13 @@ static void refreshPreviewsRecursivelyDownstreamInternal(double time,Node* node,
     
     marked.push_back(node);
     
-    std::list<Node*> outputs;
+    NodesWList outputs;
     node->getOutputs_mt_safe(outputs);
-    for (std::list<Node*>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        assert(*it);
-        (*it)->refreshPreviewsRecursivelyDownstream(time);
+    for (NodesWList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        NodePtr output = it->lock();
+        if (output) {
+            output->refreshPreviewsRecursivelyDownstream(time);
+        }
     }
 
 }
@@ -5663,7 +5710,7 @@ Node::onAllKnobsSlaved(bool isSlave,
     if (isSlave) {
         EffectInstance* effect = dynamic_cast<EffectInstance*>(master);
         assert(effect);
-        boost::shared_ptr<Node> masterNode = effect->getNode();
+        NodePtr masterNode = effect->getNode();
         {
             QMutexLocker l(&_imp->masterNodeMutex);
             _imp->masterNode = masterNode;
@@ -5707,7 +5754,7 @@ Node::onKnobSlaved(KnobI* slave,KnobI* master,
     if (!isEffect) {
         return;
     }
-    boost::shared_ptr<Node> parentNode  = isEffect->getNode();
+    NodePtr parentNode  = isEffect->getNode();
     bool changed = false;
     {
         QMutexLocker l(&_imp->masterNodeMutex);
@@ -5768,7 +5815,7 @@ Node::onMasterNodeDeactivated()
     _imp->liveInstance->unslaveAllKnobs();
 }
 
-boost::shared_ptr<Node>
+NodePtr
 Node::getMasterNode() const
 {
     QMutexLocker l(&_imp->masterNodeMutex);
@@ -5858,7 +5905,7 @@ Node::findClosestSupportedComponents(int inputNb,
 
 
 int
-Node::getMaskChannel(int inputNb,ImageComponents* comps,boost::shared_ptr<Node>* maskInput) const
+Node::getMaskChannel(int inputNb,ImageComponents* comps,NodePtr* maskInput) const
 {
     std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
     if ( it != _imp->maskSelectors.end() ) {
@@ -6075,9 +6122,9 @@ Node::onInputChanged(int inputNb)
         std::vector<NodePtr> groupInputs;
         isGroup->getInputs(&groupInputs, false);
         if (inputNb >= 0 && inputNb < (int)groupInputs.size() && groupInputs[inputNb]) {
-            std::map<Node*,int> inputOutputs;
+            std::map<NodePtr,int> inputOutputs;
             groupInputs[inputNb]->getOutputsConnectedToThisNode(&inputOutputs);
-            for (std::map<Node*,int> ::iterator it = inputOutputs.begin(); it!=inputOutputs.end(); ++it) {
+            for (std::map<NodePtr,int> ::iterator it = inputOutputs.begin(); it!=inputOutputs.end(); ++it) {
                 it->first->onInputChanged(it->second);
             }
         }
@@ -6090,9 +6137,9 @@ Node::onInputChanged(int inputNb)
     if (isOutput) {
         NodeGroup* containerGroup = dynamic_cast<NodeGroup*>(isOutput->getNode()->getGroup().get());
         if (containerGroup) {
-            std::map<Node*,int> groupOutputs;
+            std::map<NodePtr,int> groupOutputs;
             containerGroup->getNode()->getOutputsConnectedToThisNode(&groupOutputs);
-            for (std::map<Node*,int> ::iterator it = groupOutputs.begin(); it!=groupOutputs.end(); ++it) {
+            for (std::map<NodePtr,int> ::iterator it = groupOutputs.begin(); it!=groupOutputs.end(); ++it) {
                 it->first->onInputChanged(it->second);
             }
         }
@@ -6103,9 +6150,9 @@ Node::onInputChanged(int inputNb)
      */
     boost::shared_ptr<PrecompNode> isInPrecomp = isPartOfPrecomp();
     if (isInPrecomp && isInPrecomp->getOutputNode().get() == this) {
-        std::map<Node*,int> inputOutputs;
+        std::map<NodePtr,int> inputOutputs;
         isInPrecomp->getNode()->getOutputsConnectedToThisNode(&inputOutputs);
-        for (std::map<Node*,int> ::iterator it = inputOutputs.begin(); it!=inputOutputs.end(); ++it) {
+        for (std::map<NodePtr,int> ::iterator it = inputOutputs.begin(); it!=inputOutputs.end(); ++it) {
             it->first->onInputChanged(it->second);
         }
 
@@ -6140,7 +6187,7 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
     int leftBound = INT_MIN;
     int rightBound = INT_MAX;
     ///Set the originalFrameRange parameter of the reader if it has one.
-    boost::shared_ptr<KnobI> knob = getKnobByName("originalFrameRange");
+    KnobPtr knob = getKnobByName("originalFrameRange");
     if (knob) {
         KnobInt* originalFrameRange = dynamic_cast<KnobInt*>(knob.get());
         if (originalFrameRange && originalFrameRange->getDimension() == 2) {
@@ -6468,7 +6515,7 @@ Node::getCreatedViews() const
 void
 Node::refreshCreatedViews()
 {
-    boost::shared_ptr<KnobI> knob = getKnobByName(kReadOIIOAvailableViewsKnobName);
+    KnobPtr knob = getKnobByName(kReadOIIOAvailableViewsKnobName);
     if (knob) {
         refreshCreatedViews(knob.get());
     }
@@ -6505,7 +6552,7 @@ Node::refreshCreatedViews(KnobI* knob)
     if (!missingViews.isEmpty()) {
         
         
-        boost::shared_ptr<KnobI> fileKnob = getKnobByName(kOfxImageEffectFileParamName);
+        KnobPtr fileKnob = getKnobByName(kOfxImageEffectFileParamName);
         KnobFile* inputFileKnob = dynamic_cast<KnobFile*>(fileKnob.get());
         if (inputFileKnob) {
             
@@ -6654,13 +6701,13 @@ Node::onEffectKnobValueChanged(KnobI* what,
     } else if ( ( what == _imp->disableNodeKnob.lock().get() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent.lock() ) {
         Q_EMIT disabledKnobToggled( _imp->disableNodeKnob.lock()->getValue() );
         getApp()->redrawAllViewers();
-        NodeGroup* isGroup = dynamic_cast<NodeGroup*>(getLiveInstance());
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
         if (isGroup) {
             ///When a group is disabled we have to force a hash change of all nodes inside otherwise the image will stay cached
             
-            NodeList nodes = isGroup->getNodes();
+            NodesList nodes = isGroup->getNodes();
             std::list<Node*> markedNodes;
-            for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
                 //This will not trigger a hash recomputation
                 (*it)->incrementKnobsAge_internal();
                 (*it)->computeHashRecursive(markedNodes);
@@ -6715,7 +6762,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
                 }
                 if (foundViewPattern != std::string::npos) {
                     //We found view pattern
-                    boost::shared_ptr<KnobI> viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
+                    KnobPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
                     if (viewsKnob) {
                         KnobChoice* viewsSelector = dynamic_cast<KnobChoice*>(viewsKnob.get());
                         if (viewsSelector) {
@@ -6860,7 +6907,7 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
         ///Disable all input selectors as it doesn't make sense to edit them whilst output is All
         for (std::map<int,ChannelSelector>::iterator it = channelsSelectors.begin(); it != channelsSelectors.end(); ++it) {
             if (it->first >= 0) {
-                boost::shared_ptr<Node> inp = _publicInterface->getInput(it->first);
+                NodePtr inp = _publicInterface->getInput(it->first);
                 bool mustBeSecret = !inp.get() || outputIsAll;
                 it->second.layer.lock()->setSecret(mustBeSecret);
             }
@@ -7127,7 +7174,7 @@ void
 Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
 {
     assert(keyframes);
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = getKnobs();
+    const KnobsVec & knobs = getKnobs();
     
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->getIsSecret() || !knobs[i]->getIsPersistant()) {
@@ -7252,7 +7299,7 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
         
         for (InputsV::iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
             NodePtr input = it->lock();
-            if (input && input->hasSequentialOnlyNodeUpstream(nodeName) && input->getLiveInstance()->isWriter() ) {
+            if (input && input->hasSequentialOnlyNodeUpstream(nodeName) && input->getEffectInstance()->isWriter() ) {
                 nodeName = input->getScriptName_mt_safe();
                 
                 return true;
@@ -7287,7 +7334,7 @@ Node::updateEffectLabelKnob(const QString & name)
     if (!_imp->liveInstance) {
         return;
     }
-    boost::shared_ptr<KnobI> knob = getKnobByName(kNatronOfxParamStringSublabelName);
+    KnobPtr knob = getKnobByName(kNatronOfxParamStringSublabelName);
     KnobString* strKnob = dynamic_cast<KnobString*>( knob.get() );
     if (strKnob) {
         strKnob->setValue(name.toStdString(), 0);
@@ -7353,7 +7400,7 @@ Node::setNodeIsRenderingInternal(std::list<Node*>& markedNodes)
     
     int maxInpu = getMaxInputCount();
     for (int i = 0; i < maxInpu; ++i) {
-        boost::shared_ptr<Node> input = getInput(i);
+        NodePtr input = getInput(i);
         if (input) {
             input->setNodeIsRenderingInternal(markedNodes);
             
@@ -7402,7 +7449,7 @@ Node::setNodeIsNoLongerRenderingInternal(std::list<Node*>& markedNodes)
     
     int maxInpu = getMaxInputCount();
     for (int i = 0; i < maxInpu; ++i) {
-        boost::shared_ptr<Node> input = getInput(i);
+        NodePtr input = getInput(i);
         if (input) {
             input->setNodeIsNoLongerRenderingInternal(markedNodes);
             
@@ -7510,7 +7557,7 @@ static void addIdentityNodesRecursively(const Node* caller,
     
     if (caller != node) {
         
-        const ParallelRenderArgs* inputFrameArgs = node->getLiveInstance()->getParallelRenderArgsTLS();
+        const ParallelRenderArgs* inputFrameArgs = node->getEffectInstance()->getParallelRenderArgsTLS();
         const FrameViewRequest* request = 0;
         bool isIdentity = false;
         if (inputFrameArgs && inputFrameArgs->request) {
@@ -7530,17 +7577,17 @@ static void addIdentityNodesRecursively(const Node* caller,
             int inputNbId;
             U64 renderHash;
             
-            renderHash = node->getLiveInstance()->getRenderHash();
+            renderHash = node->getEffectInstance()->getRenderHash();
             
             RectD rod;
             bool isProj;
-            StatusEnum stat = node->getLiveInstance()->getRegionOfDefinition_public(renderHash, time, scale, view, &rod, &isProj);
+            StatusEnum stat = node->getEffectInstance()->getRegionOfDefinition_public(renderHash, time, scale, view, &rod, &isProj);
             if (stat == eStatusFailed) {
                 isIdentity = false;
             } else {
                 RectI pixelRod;
-                rod.toPixelEnclosing(scale, node->getLiveInstance()->getPreferredAspectRatio(), &pixelRod);
-                isIdentity = node->getLiveInstance()->isIdentity_public(true, renderHash, time, scale, pixelRod, view, &inputTimeId, &inputNbId);
+                rod.toPixelEnclosing(scale, node->getEffectInstance()->getPreferredAspectRatio(), &pixelRod);
+                isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, scale, pixelRod, view, &inputTimeId, &inputNbId);
             }
         }
         
@@ -7552,28 +7599,36 @@ static void addIdentityNodesRecursively(const Node* caller,
     }
     
     ///Append outputs of this node instead
-    std::list<Node*> nodeOutputs;
+    NodesWList nodeOutputs;
     node->getOutputs_mt_safe(nodeOutputs);
-    std::list<Node*> outputsToAdd;
-    for (std::list<Node*>::iterator it = nodeOutputs.begin(); it != nodeOutputs.end(); ++it) {
-        GroupOutput* isOutputNode = dynamic_cast<GroupOutput*>((*it)->getLiveInstance());
+    NodesWList outputsToAdd;
+    for (NodesWList::iterator it = nodeOutputs.begin(); it != nodeOutputs.end(); ++it) {
+        
+        NodePtr output = it->lock();
+        if (!output) {
+            continue;
+        }
+        GroupOutput* isOutputNode = dynamic_cast<GroupOutput*>(output->getEffectInstance().get());
         //If the node is an output node, add all the outputs of the group node instead
         if (isOutputNode) {
-            boost::shared_ptr<NodeCollection> collection = (*it)->getGroup();
+            boost::shared_ptr<NodeCollection> collection = output->getGroup();
             assert(collection);
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>(collection.get());
             if (isGrp) {
-                std::list<Node*> groupOutputs;
+                NodesWList groupOutputs;
                 isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
-                for (std::list<Node*>::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
+                for (NodesWList::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
                     outputsToAdd.push_back(*it2);
                 }
             }
         }
     }
     nodeOutputs.insert(nodeOutputs.end(), outputsToAdd.begin(),outputsToAdd.end());
-    for (std::list<Node*>::iterator it = nodeOutputs.begin(); it!=nodeOutputs.end(); ++it) {
-        addIdentityNodesRecursively(caller,*it,time,view,outputs, markedNodes);
+    for (NodesWList::iterator it = nodeOutputs.begin(); it!=nodeOutputs.end(); ++it) {
+        NodePtr node = it->lock();
+        if (node) {
+            addIdentityNodesRecursively(caller,node.get(),time,view,outputs, markedNodes);
+        }
     }
 }
 
@@ -7611,7 +7666,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, int view) co
           
             const Node* output = outputs.front();
             
-            ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(output->getLiveInstance());
+            ViewerInstance* isViewer = output->isEffectViewer();
             if (isViewer) {
                 int activeInputs[2];
                 isViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
@@ -7692,7 +7747,7 @@ bool
 Node::refreshLayersChoiceSecretness(int inputNb)
 {
     std::map<int,ChannelSelector>::iterator foundChan = _imp->channelsSelectors.find(inputNb);
-    boost::shared_ptr<Node> inp = getInput(inputNb);
+    NodePtr inp = getInput(inputNb);
     if ( foundChan != _imp->channelsSelectors.end() ) {
         std::map<int,ChannelSelector>::iterator foundOuptut = _imp->channelsSelectors.find(-1);
         bool outputIsAll = false;
@@ -7720,7 +7775,7 @@ bool
 Node::refreshMaskEnabledNess(int inputNb)
 {
     std::map<int,MaskSelector>::iterator found = _imp->maskSelectors.find(inputNb);
-    boost::shared_ptr<Node> inp = getInput(inputNb);
+    NodePtr inp = getInput(inputNb);
     bool changed = false;
     if ( found != _imp->maskSelectors.end() ) {
         boost::shared_ptr<KnobBool> enabled = found->second.enabled.lock();
@@ -7738,7 +7793,7 @@ Node::refreshMaskEnabledNess(int inputNb)
 }
 
 bool
-Node::refreshDraftFlagInternal(const std::vector<boost::weak_ptr<Node> >& inputs)
+Node::refreshDraftFlagInternal(const std::vector<NodeWPtr >& inputs)
 {
     bool hasDraftInput = false;
     for (std::size_t i = 0; i < inputs.size(); ++i) {
@@ -7764,7 +7819,7 @@ Node::refreshAllInputRelatedData(bool canChangeValues)
 }
 
 bool
-Node::refreshAllInputRelatedData(bool /*canChangeValues*/,const std::vector<boost::weak_ptr<Node> >& inputs)
+Node::refreshAllInputRelatedData(bool /*canChangeValues*/,const std::vector<NodeWPtr >& inputs)
 {
     bool hasChanged = false;
     hasChanged |= refreshDraftFlagInternal(inputs);
@@ -7838,7 +7893,7 @@ Node::refreshInputRelatedDataInternal(std::list<Node*>& markedNodes)
     ///Check if inputs must be refreshed first
  
     int maxInputs = getMaxInputCount();
-    std::vector<boost::weak_ptr<Node> > inputsCopy(maxInputs);
+    std::vector<NodeWPtr > inputsCopy(maxInputs);
     for (int i = 0; i < maxInputs; ++i) {
         NodePtr input = getInput(i);
         inputsCopy[i] = input;
@@ -7855,7 +7910,7 @@ Node::refreshInputRelatedDataInternal(std::list<Node*>& markedNodes)
     if (isRotoPaintingNode()) {
         boost::shared_ptr<RotoContext> roto = getRotoContext();
         assert(roto);
-        boost::shared_ptr<Node> bottomMerge = roto->getRotoPaintBottomMergeNode();
+        NodePtr bottomMerge = roto->getRotoPaintBottomMergeNode();
         if (bottomMerge) {
             bottomMerge->refreshInputRelatedDataRecursiveInternal(markedNodes);
         }
@@ -7879,9 +7934,9 @@ Node::forceRefreshAllInputRelatedData()
     
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->liveInstance.get());
     if (isGroup) {
-        std::list<Node*> inputs;
+        NodesList inputs;
         isGroup->getInputsOutputs(&inputs, false);
-        for (std::list<Node*>::iterator it = inputs.begin(); it != inputs.end(); ++it) {
+        for (NodesList::iterator it = inputs.begin(); it != inputs.end(); ++it) {
             if ((*it)) {
                 (*it)->refreshInputRelatedDataRecursive();
             }
@@ -7901,9 +7956,9 @@ Node::markAllInputRelatedDataDirty()
     if (isRotoPaintingNode()) {
         boost::shared_ptr<RotoContext> roto = getRotoContext();
         assert(roto);
-        std::list<NodePtr> rotoNodes;
+        NodesList rotoNodes;
         roto->getRotoPaintTreeNodes(&rotoNodes);
-        for (std::list<NodePtr>::iterator it = rotoNodes.begin(); it!=rotoNodes.end(); ++it) {
+        for (NodesList::iterator it = rotoNodes.begin(); it!=rotoNodes.end(); ++it) {
             (*it)->markAllInputRelatedDataDirty();
         }
     }
@@ -7919,9 +7974,9 @@ Node::markInputRelatedDataDirtyRecursiveInternal(std::list<Node*>& markedNodes,b
     markAllInputRelatedDataDirty();
     markedNodes.push_back(this);
     if (recurse) {
-        std::list<Node*>  outputs;
+        NodesList  outputs;
         getOutputsWithGroupRedirection(outputs);
-        for (std::list<Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+        for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
             (*it)->markInputRelatedDataDirtyRecursiveInternal( markedNodes, true );
         }
     }
@@ -7946,9 +8001,9 @@ Node::refreshInputRelatedDataRecursiveInternal(std::list<Node*>& markedNodes)
     refreshInputRelatedDataInternal(markedNodes);
     
     ///Now notify outputs we have changed
-    std::list<Node*>  outputs;
+    NodesList  outputs;
     getOutputsWithGroupRedirection(outputs);
-    for (std::list<Node*>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+    for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
         (*it)->refreshInputRelatedDataRecursiveInternal( markedNodes );
     }
     
@@ -8232,7 +8287,7 @@ Node::declarePythonFields()
     
     
     std::stringstream ss;
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = getKnobs();
+    const KnobsVec& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         const std::string& knobName = knobs[i]->getName();
         if (!knobName.empty() && knobName.find(" ") == std::string::npos && !std::isdigit(knobName[0],locale)) {
@@ -8570,7 +8625,7 @@ Node::getChannelSelectorKnob(int inputNb) const
     if (found == _imp->channelsSelectors.end()) {
         if (inputNb == -1) {
             ///The effect might be multi-planar and supply its own
-            boost::shared_ptr<KnobI> knob = getKnobByName(kNatronOfxParamOutputChannels);
+            KnobPtr knob = getKnobByName(kNatronOfxParamOutputChannels);
             if (!knob) {
                 return boost::shared_ptr<KnobChoice>();
             }
@@ -8642,7 +8697,7 @@ Node::refreshChannelSelectors()
         
         if (node) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
-            node->getLiveInstance()->getComponentsAvailable(it->first != -1, true, time, &compsAvailable);
+            node->getEffectInstance()->getComponentsAvailable(it->first != -1, true, time, &compsAvailable);
             {
                 QMutexLocker k(&it->second.compsMutex);
                 it->second.compsAvailable = compsAvailable;
@@ -8844,14 +8899,14 @@ Node::refreshChannelSelectors()
         EffectInstance::ComponentsAvailableMap compsAvailable;
         std::list<EffectInstance*> markedNodes;
         if (node) {
-            node->getLiveInstance()->getComponentsAvailable(true, true, time, &compsAvailable,&markedNodes);
+            node->getEffectInstance()->getComponentsAvailable(true, true, time, &compsAvailable,&markedNodes);
         }
         
         //Also get the node's preferred input (the "main" input) components
         EffectInstance::ComponentsAvailableMap prefInputAvailComps;
         
         if (prefInputNode) {
-            prefInputNode->getLiveInstance()->getComponentsAvailable(true, true, time, &prefInputAvailComps, &markedNodes);
+            prefInputNode->getEffectInstance()->getComponentsAvailable(true, true, time, &prefInputAvailComps, &markedNodes);
             
             //Merge the 2 components available maps, but preferring channels coming from the Mask input
             for (EffectInstance::ComponentsAvailableMap::iterator it = prefInputAvailComps.begin(); it != prefInputAvailComps.end(); ++it) {
@@ -8878,7 +8933,7 @@ Node::refreshChannelSelectors()
         } // if (prefInputNode)
         
         
-        std::vector<std::pair<ImageComponents,boost::weak_ptr<Node> > > compsOrdered;
+        std::vector<std::pair<ImageComponents,NodeWPtr > > compsOrdered;
         for (EffectInstance::ComponentsAvailableMap::iterator comp = compsAvailable.begin(); comp != compsAvailable.end(); ++comp) {
             if (comp->first.isColorPlane()) {
                 compsOrdered.insert(compsOrdered.begin(), std::make_pair(comp->first,comp->second));
@@ -8895,7 +8950,7 @@ Node::refreshChannelSelectors()
         if (curLayer == "None") {
             foundLastLayerChoice = 0;
         }
-        for (std::vector<std::pair<ImageComponents,boost::weak_ptr<Node> > >::iterator it2 = compsOrdered.begin(); it2!= compsOrdered.end(); ++it2) {
+        for (std::vector<std::pair<ImageComponents,NodeWPtr > >::iterator it2 = compsOrdered.begin(); it2!= compsOrdered.end(); ++it2) {
             
             const std::vector<std::string>& channels = it2->first.getComponentsNames();
             const std::string& layerName = it2->first.isColorPlane() ? it2->first.getComponentsGlobalName() : it2->first.getLayerName();
@@ -8980,7 +9035,7 @@ bool
 Node::addUserComponents(const ImageComponents& comps)
 {
     ///The node has node channel selector, don't allow adding a custom plane.
-    boost::shared_ptr<KnobI> outputLayerKnob = getKnobByName(kNatronOfxParamOutputChannels);
+    KnobPtr outputLayerKnob = getKnobByName(kNatronOfxParamOutputChannels);
     if (_imp->channelsSelectors.empty() && !outputLayerKnob) {
         return false;
     }
@@ -9007,7 +9062,7 @@ Node::addUserComponents(const ImageComponents& comps)
     {
         ///Clip preferences have changed
         RenderScale s(1.);
-        getLiveInstance()->refreshClipPreferences_public(getApp()->getTimeLine()->currentFrame(),
+        getEffectInstance()->refreshClipPreferences_public(getApp()->getTimeLine()->currentFrame(),
                                                           s,
                                                           eValueChangedReasonUserEdited,
                                                           true, true);
@@ -9052,13 +9107,13 @@ InspectorNode::~InspectorNode()
 }
 
 bool
-InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
+InspectorNode::connectInput(const NodePtr& input,
                             int inputNumber)
 {
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     
-    if (!dynamic_cast<ViewerInstance*>(getLiveInstance())) {
+    if (!isEffectViewer()) {
         return connectInputBase(input, inputNumber);
     }
     
@@ -9067,13 +9122,13 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
     
     assert(input);
     
-    if ( !checkIfConnectingInputIsOk( input.get() ) ) {
+    if (!checkIfConnectingInputIsOk(input.get())) {
         return false;
     }
     
     ///For effects that do not support multi-resolution, make sure the input effect is correct
     ///otherwise the rendering might crash
-    if (!getLiveInstance()->supportsMultiResolution()) {
+    if (!getEffectInstance()->supportsMultiResolution()) {
         CanConnectInputReturnValue ret = checkCanConnectNoMultiRes(this, input);
         if (ret != eCanConnectInput_ok) {
             return false;
@@ -9083,7 +9138,7 @@ InspectorNode::connectInput(const boost::shared_ptr<Node>& input,
     ///If the node 'input' is already to an input of the inspector, find it.
     ///If it has the same input number as what we want just return, otherwise
     ///disconnect it and continue as usual.
-    int inputAlreadyConnected = inputIndex( input.get() );
+    int inputAlreadyConnected = inputIndex(input);
     if (inputAlreadyConnected != -1) {
         if (inputAlreadyConnected == inputNumber) {
             return false;
@@ -9127,7 +9182,7 @@ InspectorNode::setActiveInputAndRefresh(int inputNb, bool /*fromViewer*/)
     
     
     if ( isOutputNode() ) {
-        OutputEffectInstance* oei = dynamic_cast<OutputEffectInstance*>( getLiveInstance() );
+        OutputEffectInstance* oei = dynamic_cast<OutputEffectInstance*>( getEffectInstance().get() );
         assert(oei);
         if (oei) {
             oei->renderCurrentFrame(true);

@@ -114,7 +114,7 @@ public:
     void appendHeaderWidget(QWidget* widget);
 
     QWidget* getHeaderWidget() const;
-    KnobGui* getKnobGui(const boost::shared_ptr<KnobI> & knob) const;
+    KnobGui* getKnobGui(const KnobPtr & knob) const;
 
     ///MT-safe
     virtual QColor getCurrentColor() const {
@@ -152,7 +152,7 @@ public:
     
     void getUserPages(std::list<KnobPage*>& userPages) const;
     
-    virtual void deleteKnobGui(const boost::shared_ptr<KnobI>& knob) OVERRIDE FINAL;
+    virtual void deleteKnobGui(const KnobPtr& knob) OVERRIDE FINAL;
     
     int getPagesCount() const;
         

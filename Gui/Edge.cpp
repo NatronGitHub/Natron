@@ -115,7 +115,7 @@ struct EdgePrivate
 
 Edge::Edge(int inputNb_,
            double angle_,
-           const boost::shared_ptr<NodeGui> & dest_,
+           const NodeGuiPtr & dest_,
            QGraphicsItem *parent)
 : QGraphicsLineItem(parent)
 , _imp(new EdgePrivate(this, inputNb_, angle_))
@@ -134,7 +134,7 @@ Edge::Edge(int inputNb_,
 void
 EdgePrivate::initLabel()
 {
-    boost::shared_ptr<NodeGui> dst = dest.lock();
+    NodeGuiPtr dst = dest.lock();
     if ((inputNb != -1) && dst) {
         label = new NodeGraphSimpleTextItem(dst->getDagGui(), _publicInterface, false);
         label->setText(QString(dst->getNode()->getInputLabel(inputNb).c_str()));
@@ -153,7 +153,7 @@ EdgePrivate::initLabel()
     }
 }
 
-Edge::Edge(const boost::shared_ptr<NodeGui> & src,
+Edge::Edge(const NodeGuiPtr & src,
            QGraphicsItem *parent)
 : QGraphicsLineItem(parent)
 , _imp(new EdgePrivate(this, -1, M_PI_2))
@@ -169,14 +169,14 @@ Edge::Edge(const boost::shared_ptr<NodeGui> & src,
 
 Edge::~Edge()
 {
-    boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
+    NodeGuiPtr dst = _imp->dest.lock();
     if (dst) {
         dst->markInputNull(this);
     }
 }
 
 void
-Edge::setSource(const boost::shared_ptr<NodeGui> & src)
+Edge::setSource(const NodeGuiPtr & src)
 {
     _imp->source = src;
     initLine();
@@ -195,13 +195,13 @@ Edge::setInputNumber(int i)
     _imp->inputNb = i;
 }
 
-boost::shared_ptr<NodeGui>
+NodeGuiPtr
 Edge::getDest() const
 {
     return _imp->dest.lock();
 }
 
-boost::shared_ptr<NodeGui>
+NodeGuiPtr
 Edge::getSource() const
 {
     return _imp->source.lock();
@@ -265,13 +265,13 @@ Edge::isMask() const
 bool
 Edge::areOptionalInputsAutoHidden() const
 {
-    boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
+    NodeGuiPtr dst = _imp->dest.lock();
     return dst ? dst->getDagGui()->areOptionalInputsAutoHidden() : false;
 }
 
 void
-Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
-                              const boost::shared_ptr<NodeGui> & dst)
+Edge::setSourceAndDestination(const NodeGuiPtr & src,
+                              const NodeGuiPtr & dst)
 {
     _imp->source = src;
     _imp->dest = dst;
@@ -289,9 +289,9 @@ Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
 void
 Edge::refreshState(bool hovered)
 {
-    boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
+    NodeGuiPtr dst = _imp->dest.lock();
     
-    EffectInstance* effect = dst ? dst->getNode()->getLiveInstance() : 0;
+    EffectInstPtr effect = dst ? dst->getNode()->getEffectInstance() : EffectInstPtr();
     
     if (effect) {
         
@@ -313,10 +313,10 @@ Edge::refreshState(bool hovered)
                 show();
             } else {
                 
-                boost::shared_ptr<NodeGui> src = _imp->source.lock();
+                NodeGuiPtr src = _imp->source.lock();
                 
                 //The viewer does not hide its optional edges
-                bool isViewer = effect ? dynamic_cast<ViewerInstance*>(effect) != 0 : false;
+                bool isViewer = effect ? dynamic_cast<ViewerInstance*>(effect.get()) != 0 : false;
                 bool isReader = effect ? effect->isReader() : false;
                 bool autoHide = areOptionalInputsAutoHidden();
                 bool isSelected = dst->getIsSelected();
@@ -386,8 +386,8 @@ void
 Edge::initLine()
 {
 
-    boost::shared_ptr<NodeGui> source = _imp->source.lock();
-    boost::shared_ptr<NodeGui> dest = _imp->dest.lock();
+    NodeGuiPtr source = _imp->source.lock();
+    NodeGuiPtr dest = _imp->dest.lock();
     if (!source && !dest) {
         return;
     }
@@ -714,7 +714,7 @@ Edge::paint(QPainter *painter,
     
     QPen myPen = pen();
     
-    boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
+    NodeGuiPtr dst = _imp->dest.lock();
     if (dst) {
         if (dst->getDagGui()->isDoingNavigatorRender()) {
             return;

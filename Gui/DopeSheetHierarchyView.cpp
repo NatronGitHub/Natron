@@ -351,7 +351,7 @@ void HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
  */
 void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
 {
-    boost::shared_ptr<NodeGui> nodeGui = dsNode->getNodeGui();
+    NodeGuiPtr nodeGui = dsNode->getNodeGui();
 
 
     DopeSheetItemType nodeType = dsNode->getItemType();
@@ -1035,7 +1035,7 @@ void HierarchyView::onItemDoubleClicked(QTreeWidgetItem *item, int column)
 
     boost::shared_ptr<DSNode> itemDSNode = _imp->dopeSheetModel->findParentDSNode(item);
 
-    boost::shared_ptr<NodeGui> nodeGui = itemDSNode->getNodeGui();
+    NodeGuiPtr nodeGui = itemDSNode->getNodeGui();
 
     // Move the nodeGui's settings panel on top
     DockablePanel *panel = 0;

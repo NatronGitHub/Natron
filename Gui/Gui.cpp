@@ -270,8 +270,8 @@ Gui::closeEvent(QCloseEvent* e)
     }
 }
 
-boost::shared_ptr<NodeGui>
-Gui::createNodeGUI(boost::shared_ptr<Node> node,
+NodeGuiPtr
+Gui::createNodeGUI(NodePtr node,
                    const CreateNodeArgs& args)
 {
     assert(_imp->_nodeGraphArea);
@@ -289,7 +289,7 @@ Gui::createNodeGUI(boost::shared_ptr<Node> node,
     if (!graph) {
         throw std::logic_error("");
     }
-    boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(node, args);
+    NodeGuiPtr nodeGui = graph->createNodeGUI(node, args);
     QObject::connect( node.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
 
@@ -297,31 +297,31 @@ Gui::createNodeGUI(boost::shared_ptr<Node> node,
 }
 
 void
-Gui::addNodeGuiToCurveEditor(const boost::shared_ptr<NodeGui> &node)
+Gui::addNodeGuiToCurveEditor(const NodeGuiPtr &node)
 {
     _imp->_curveEditor->addNode(node);
 }
 
 void
-Gui::removeNodeGuiFromCurveEditor(const boost::shared_ptr<NodeGui>& node)
+Gui::removeNodeGuiFromCurveEditor(const NodeGuiPtr& node)
 {
     _imp->_curveEditor->removeNode(node.get());
 }
 
 void
-Gui::addNodeGuiToDopeSheetEditor(const boost::shared_ptr<NodeGui> &node)
+Gui::addNodeGuiToDopeSheetEditor(const NodeGuiPtr &node)
 {
     _imp->_dopeSheetEditor->addNode(node);
 }
 
 void
-Gui::removeNodeGuiFromDopeSheetEditor(const boost::shared_ptr<NodeGui> &node)
+Gui::removeNodeGuiFromDopeSheetEditor(const NodeGuiPtr &node)
 {
     _imp->_dopeSheetEditor->removeNode(node.get());
 }
 
 void
-Gui::createViewerGui(boost::shared_ptr<Node> viewer)
+Gui::createViewerGui(NodePtr viewer)
 {
     TabWidget* where = _imp->_nextViewerTabPlace;
 
@@ -332,7 +332,7 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
     }
     assert(where);
 
-    ViewerInstance* v = dynamic_cast<ViewerInstance*>( viewer->getLiveInstance() );
+    ViewerInstance* v = viewer->isEffectViewer();
     assert(v);
 
     ViewerTab* tab = addNewViewerTab(v, where);
@@ -357,7 +357,7 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
     graph->setLastSelectedViewer(tab);
 }
 
-const std::list<boost::shared_ptr<NodeGui> > &
+const NodesGuiList &
 Gui::getSelectedNodes() const
 {
     assert(_imp->_nodeGraphArea);

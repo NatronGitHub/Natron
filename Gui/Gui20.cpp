@@ -45,7 +45,7 @@
 #include "Engine/KnobSerialization.h" // createDefaultValueForParam
 #include "Engine/Lut.h" // Color, floatToInt
 #include "Engine/Node.h"
-#include "Engine/NodeGroup.h" // NodeGroup, NodeCollection, NodeList
+#include "Engine/NodeGroup.h" // NodeGroup, NodeCollection, NodesList
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
@@ -308,8 +308,8 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
             ( *_imp->_viewerTabs.begin() )->getRotoContext(&rotoNodes, &currentRoto);
             ( *_imp->_viewerTabs.begin() )->getTrackerContext(&trackerNodes, &currentTracker);
         } else {
-            const std::list<boost::shared_ptr<NodeGui> > & allNodes = _imp->_nodeGraphArea->getAllActiveNodes();
-            for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
+            const NodesGuiList & allNodes = _imp->_nodeGraphArea->getAllActiveNodes();
+            for (NodesGuiList::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
                 if ( (*it)->getNode()->getRotoContext() ) {
                     rotoNodesList.push_back( it->get() );
                     if (!currentRoto.first) {
@@ -465,12 +465,12 @@ Gui::removeViewerTab(ViewerTab* tab,
 
     if (lastSelectedViewer == tab) {
         bool foundOne = false;
-        NodeList nodes;
+        NodesList nodes;
         if (collection) {
             nodes = collection->getNodes();
         }
-        for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( (*it)->getLiveInstance() );
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            ViewerInstance* isViewer = (*it)->isEffectViewer();
             if ( !isViewer || ( isViewer == tab->getInternalNode() ) || !(*it)->isActivated() ) {
                 continue;
             }
@@ -499,7 +499,7 @@ Gui::removeViewerTab(ViewerTab* tab,
         ///call the deleteNode which will call this function again when the node will be deactivated.
         NodePtr internalNode = tab->getInternalNode()->getNode();
         boost::shared_ptr<NodeGuiI> guiI = internalNode->getNodeGui();
-        boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(guiI);
+        NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(guiI);
         assert(gui);
         NodeGraphI* graph_i = internalNode->getGroup()->getNodeGraph();
         assert(graph_i);
@@ -1190,10 +1190,10 @@ Gui::createNewViewer()
     ignore_result(_imp->_appInstance->createNode(CreateNodeArgs(PLUGINID_NATRON_VIEWER, eCreateNodeReasonUserCreate, graph->getGroup())));
 }
 
-boost::shared_ptr<Node>
+NodePtr
 Gui::createReader()
 {
-    boost::shared_ptr<Node> ret;
+    NodePtr ret;
     std::map<std::string, std::string> readersForFormat;
 
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
@@ -1237,10 +1237,10 @@ Gui::createReader()
     return ret;
 }
 
-boost::shared_ptr<Node>
+NodePtr
 Gui::createWriter()
 {
-    boost::shared_ptr<Node> ret;
+    NodePtr ret;
     std::map<std::string, std::string> writersForFormat;
 
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);

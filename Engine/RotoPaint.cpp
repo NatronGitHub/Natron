@@ -59,7 +59,7 @@ RotoPaint::getPluginDescription() const
     return "RotoPaint is a vector based free-hand drawing node that helps for tasks such as rotoscoping, matting, etc...";
 }
 
-RotoPaint::RotoPaint(boost::shared_ptr<Node> node, bool isPaintByDefault)
+RotoPaint::RotoPaint(NodePtr node, bool isPaintByDefault)
 : EffectInstance(node)
 , _imp(new RotoPaintPrivate(isPaintByDefault))
 {
@@ -206,7 +206,7 @@ RotoPaint::getPreferredDepthAndComponents(int inputNb,std::list<ImageComponents>
 {
 
     if (inputNb != ROTOPAINT_MASK_INPUT_INDEX) {
-        EffectInstance* input = getInput(inputNb);
+        EffectInstPtr input = getInput(inputNb);
         if (input) {
             std::list<ImageComponents> ic;
             ImageBitDepthEnum id;
@@ -226,7 +226,7 @@ ImagePremultiplicationEnum
 RotoPaint::getOutputPremultiplication() const
 {
   
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     
     boost::shared_ptr<KnobBool> premultKnob = _imp->premultKnob.lock();
     assert(premultKnob);
@@ -248,7 +248,7 @@ RotoPaint::getOutputPremultiplication() const
 double
 RotoPaint::getPreferredAspectRatio() const
 {
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (input) {
         return input->getPreferredAspectRatio();
     } else {
@@ -261,7 +261,7 @@ void
 RotoPaint::onInputChanged(int inputNb)
 {
     
-    boost::shared_ptr<Node> inputNode = getNode()->getInput(0);
+    NodePtr inputNode = getNode()->getInput(0);
     getNode()->getRotoContext()->onRotoPaintInputChanged(inputNode);
     EffectInstance::onInputChanged(inputNb);
     
@@ -306,9 +306,9 @@ RotoPaint::getRegionsOfInterest(double time,
                           RoIMap* ret)
 {
     boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
-    boost::shared_ptr<Node> bottomMerge = roto->getRotoPaintBottomMergeNode();
+    NodePtr bottomMerge = roto->getRotoPaintBottomMergeNode();
     if (bottomMerge) {
-        ret->insert(std::make_pair(bottomMerge->getLiveInstance(), renderWindow));
+        ret->insert(std::make_pair(bottomMerge->getEffectInstance(), renderWindow));
     }
     EffectInstance::getRegionsOfInterest(time, scale, outputRoD, renderWindow, view, ret);
 }
@@ -321,8 +321,8 @@ RotoPaint::isIdentity(double time,
                       double* inputTime,
                       int* inputNb)
 {
-    boost::shared_ptr<Node> node = getNode();
-    EffectInstance* maskInput = getInput(ROTOPAINT_MASK_INPUT_INDEX);
+    NodePtr node = getNode();
+    EffectInstPtr maskInput = getInput(ROTOPAINT_MASK_INPUT_INDEX);
     if (maskInput) {
         
         RectD maskRod;
@@ -403,7 +403,7 @@ RotoPaint::render(const RenderActionArgs& args)
     } else {
         
         
-        NodeList rotoPaintNodes;
+        NodesList rotoPaintNodes;
         {
             bool ok = getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
             if (!ok) {
@@ -411,7 +411,7 @@ RotoPaint::render(const RenderActionArgs& args)
             }
         }
         
-        boost::shared_ptr<Node> bottomMerge = roto->getRotoPaintBottomMergeNode();
+        NodePtr bottomMerge = roto->getRotoPaintBottomMergeNode();
         
         
         RenderingFlagSetter flagIsRendering(bottomMerge.get());
@@ -430,7 +430,7 @@ RotoPaint::render(const RenderActionArgs& args)
                                     false,
                                     this);
         ImageList rotoPaintImages;
-        RenderRoIRetCode code = bottomMerge->getLiveInstance()->renderRoI(rotoPaintArgs, &rotoPaintImages);
+        RenderRoIRetCode code = bottomMerge->getEffectInstance()->renderRoI(rotoPaintArgs, &rotoPaintImages);
         if (code == eRenderRoIRetCodeFailed) {
             return eStatusFailed;
         } else if (code == eRenderRoIRetCodeAborted) {
@@ -551,11 +551,11 @@ void
 RotoPaint::clearLastRenderedImage()
 {
     EffectInstance::clearLastRenderedImage();
-    NodeList rotoPaintNodes;
+    NodesList rotoPaintNodes;
     boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
     assert(roto);
     roto->getRotoPaintTreeNodes(&rotoPaintNodes);
-    for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
+    for (NodesList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
         (*it)->clearLastRenderedImage();
     }
 }

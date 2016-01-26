@@ -289,14 +289,14 @@ void loadNodeGuiSerialization(Gui* gui,
                               const NodeGuiSerialization& serialization)
 {
     const std::string & name = serialization.getFullySpecifiedName();
-    boost::shared_ptr<Node> internalNode = gui->getApp()->getProject()->getNodeByFullySpecifiedName(name);
+    NodePtr internalNode = gui->getApp()->getProject()->getNodeByFullySpecifiedName(name);
     if (!internalNode) {
         return;
     }
     
     boost::shared_ptr<NodeGuiI> nGui_i = internalNode->getNodeGui();
     assert(nGui_i);
-    boost::shared_ptr<NodeGui> nGui = boost::dynamic_pointer_cast<NodeGui>(nGui_i);
+    NodeGuiPtr nGui = boost::dynamic_pointer_cast<NodeGui>(nGui_i);
     
     nGui->refreshPosition( serialization.getX(),serialization.getY(), true );
     
@@ -305,7 +305,7 @@ void loadNodeGuiSerialization(Gui* gui,
         nGui->togglePreview();
     }
     
-    EffectInstance* iseffect = nGui->getNode()->getLiveInstance();
+    EffectInstPtr iseffect = nGui->getNode()->getEffectInstance();
     
     if ( serialization.colorWasFound() ) {
         std::list<std::string> grouping;
@@ -372,7 +372,7 @@ void loadNodeGuiSerialization(Gui* gui,
         }
     }
     
-    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( nGui->getNode()->getLiveInstance() );
+    ViewerInstance* viewer = nGui->getNode()->isEffectViewer();
     if (viewer) {
         std::map<std::string, ViewerData >::const_iterator found = viewersProjections.find(name);
         if ( found != viewersProjections.end() ) {
@@ -451,8 +451,8 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
     }
 
 
-    const std::list<boost::shared_ptr<NodeGui> > nodesGui = getVisibleNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodesGui.begin(); it != nodesGui.end(); ++it) {
+    const NodesGuiList nodesGui = getVisibleNodes();
+    for (NodesGuiList::const_iterator it = nodesGui.begin(); it != nodesGui.end(); ++it) {
         (*it)->refreshEdges();
         (*it)->refreshKnobLinks();
     }
@@ -466,11 +466,11 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         int w,h;
         it->getSize(w, h);
         
-        boost::shared_ptr<KnobI> labelSerialization = it->getLabelSerialization();
+        KnobPtr labelSerialization = it->getLabelSerialization();
         
         CreateNodeArgs args(PLUGINID_NATRON_BACKDROP, eCreateNodeReasonInternal, _project.lock());
 
-        boost::shared_ptr<Node> node = getGui()->getApp()->createNode(args);
+        NodePtr node = getGui()->getApp()->createNode(args);
         boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
         assert(gui_i);
         BackdropGui* bd = dynamic_cast<BackdropGui*>(gui_i.get());
@@ -582,7 +582,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
     _gui->centerAllNodeGraphsWithTimer();
 } // load
 
-std::list<boost::shared_ptr<NodeGui> > ProjectGui::getVisibleNodes() const
+NodesGuiList ProjectGui::getVisibleNodes() const
 {
     return _gui->getVisibleNodes_mt_safe();
 }

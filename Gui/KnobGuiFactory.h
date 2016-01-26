@@ -53,7 +53,7 @@ public:
     ~KnobGuiFactory();
 
 
-    KnobGui * createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
+    KnobGui * createGuiForKnob(KnobPtr knob, DockablePanel *container) const;
 
 private:
     const std::map<std::string, LibraryBinary *> &getLoadedKnobs() const

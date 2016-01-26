@@ -56,7 +56,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
-#include "Engine/NodeGroup.h" // NodeList, NodeCollection
+#include "Engine/NodeGroup.h" // NodesList, NodeCollection
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
@@ -676,7 +676,7 @@ Gui::addShortcut(BoundAction* action)
 }
 
 void
-Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Node> > & nodes) const
+Gui::getNodesEntitledForOverlays(NodesList & nodes) const
 {
     std::list<DockablePanel*> panels;
     {
@@ -690,8 +690,8 @@ Gui::getNodesEntitledForOverlays(std::list<boost::shared_ptr<Node> > & nodes) co
         if (!panel) {
             continue;
         }
-        boost::shared_ptr<NodeGui> node = panel->getNode();
-        boost::shared_ptr<Node> internalNode = node->getNode();
+        NodeGuiPtr node = panel->getNode();
+        NodePtr internalNode = node->getNode();
         if (node && internalNode) {
             boost::shared_ptr<MultiInstancePanel> multiInstance = node->getMultiInstancePanel();
             if (multiInstance) {
@@ -827,10 +827,10 @@ void
 Gui::exportGroupAsPythonScript(NodeCollection* collection)
 {
     assert(collection);
-    NodeList nodes = collection->getNodes();
+    NodesList nodes = collection->getNodes();
     bool hasOutput = false;
-    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() && dynamic_cast<GroupOutput*>( (*it)->getLiveInstance() ) ) {
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if ( (*it)->isActivated() && dynamic_cast<GroupOutput*>( (*it)->getEffectInstance().get() ) ) {
             hasOutput = true;
             break;
         }

@@ -207,15 +207,15 @@ public:
 
 class Effect : public Group, public UserParamHolder
 {
-    boost::shared_ptr<Node> _node;
+    NodePtr _node;
     
 public:
     
-    Effect(const boost::shared_ptr<Node>& node);
+    Effect(const NodePtr& node);
     
     ~Effect();
     
-    boost::shared_ptr<Node> getInternalNode() const;
+    NodePtr getInternalNode() const;
     
     
     /**
@@ -352,7 +352,7 @@ public:
     
     RectD getRegionOfDefinition(double time,int view) const;
     
-    static Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob);
+    static Param* createParamWrapperForKnob(const KnobPtr& knob);
     
     void setSubGraphEditable(bool editable);
     

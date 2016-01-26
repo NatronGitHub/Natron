@@ -300,10 +300,10 @@ RotoStrokeItem::setStrokeFinished()
     
     getContext()->resetTransformCenter();
     
-    boost::shared_ptr<Node> effectNode = getEffectNode();
-    boost::shared_ptr<Node> mergeNode = getMergeNode();
-    boost::shared_ptr<Node> timeOffsetNode = getTimeOffsetNode();
-    boost::shared_ptr<Node> frameHoldNode = getFrameHoldNode();
+    NodePtr effectNode = getEffectNode();
+    NodePtr mergeNode = getMergeNode();
+    NodePtr timeOffsetNode = getTimeOffsetNode();
+    NodePtr frameHoldNode = getFrameHoldNode();
     
     if (effectNode) {
         effectNode->setWhileCreatingPaintStroke(false);

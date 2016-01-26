@@ -77,7 +77,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 NATRON_NAMESPACE_ENTER;
 
 
-OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
+OutputEffectInstance::OutputEffectInstance(NodePtr node)
     : EffectInstance(node)
     , _outputEffectDataLock()
     , _renderSequenceRequests()
@@ -174,7 +174,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
     
     if (isViewAware()) {
         //If the Writer is view aware, check if it wants to render all views at once or not
-        boost::shared_ptr<KnobI> outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
+        KnobPtr outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
         if (outputFileNameKnob) {
             KnobOutputFile* outputFileName = dynamic_cast<KnobOutputFile*>(outputFileNameKnob.get());
             assert(outputFileName);
@@ -189,7 +189,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
                     ///all views will be overwritten to the same file
                     ///If this is WriteOIIO, check the parameter "viewsSelector" to determine if the user wants to encode all
                     ///views to a single file or not
-                    boost::shared_ptr<KnobI> viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
+                    KnobPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
                     bool hasViewChoice = false;
                     if (viewsKnob && !viewsKnob->getIsSecret()) {
                         KnobChoice* viewsChoice = dynamic_cast<KnobChoice*>(viewsKnob.get());
@@ -301,7 +301,7 @@ void
 OutputEffectInstance::createWriterPath()
 {
     ///Make sure that the file path exists
-    boost::shared_ptr<KnobI> fileParam = getKnobByName(kOfxImageEffectFileParamName);
+    KnobPtr fileParam = getKnobByName(kOfxImageEffectFileParamName);
     if (fileParam) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( fileParam.get() );
         if (isString) {
@@ -425,7 +425,10 @@ OutputEffectInstance::initializeData()
 RenderEngine*
 OutputEffectInstance::createRenderEngine()
 {
-    return new RenderEngine(this);
+    
+    boost::shared_ptr<OutputEffectInstance> thisShared = boost::dynamic_pointer_cast<OutputEffectInstance>(shared_from_this());
+    assert(thisShared);
+    return new RenderEngine(thisShared);
 }
 
 void
@@ -459,10 +462,10 @@ void
 OutputEffectInstance::reportStats(int time,
                                   int view,
                                   double wallTime,
-                                  const std::map<boost::shared_ptr<Node>, NodeRenderStats > & stats)
+                                  const std::map<NodePtr, NodeRenderStats > & stats)
 {
     std::string filename;
-    boost::shared_ptr<KnobI> fileKnob = getKnobByName(kOfxImageEffectFileParamName);
+    KnobPtr fileKnob = getKnobByName(kOfxImageEffectFileParamName);
 
     if (fileKnob) {
         KnobOutputFile* strKnob = dynamic_cast<KnobOutputFile*>( fileKnob.get() );
@@ -499,7 +502,7 @@ OutputEffectInstance::reportStats(int time,
     }
 
     ofile << "Time spent to render frame (wall clock time): " << Timer::printAsTime(wallTime, false).toStdString() << std::endl;
-    for (std::map<boost::shared_ptr<Node>, NodeRenderStats >::const_iterator it = stats.begin(); it != stats.end(); ++it) {
+    for (std::map<NodePtr, NodeRenderStats >::const_iterator it = stats.begin(); it != stats.end(); ++it) {
         ofile << "------------------------------- " << it->first->getScriptName_mt_safe() << "------------------------------- " << std::endl;
         ofile << "Time spent rendering: " << Timer::printAsTime(it->second.getTotalTimeSpentRendering(), false).toStdString() << std::endl;
         const RectD & rod = it->second.getRoD();
@@ -574,11 +577,11 @@ OutputEffectInstance::reportStats(int time,
         }
         ofile << std::endl;
 
-        std::list<std::pair<RectI, boost::shared_ptr<Node> > > identityRectangles = it->second.getIdentityRectangles();
+        std::list<std::pair<RectI, NodePtr > > identityRectangles = it->second.getIdentityRectangles();
         const std::list<RectI> & renderedRectangles = it->second.getRenderedRectangles();
 
         ofile << "Identity rectangles: " << identityRectangles.size() << std::endl;
-        for (std::list<std::pair<RectI, boost::shared_ptr<Node> > > ::iterator it2 = identityRectangles.begin(); it2 != identityRectangles.end(); ++it2) {
+        for (std::list<std::pair<RectI, NodePtr > > ::iterator it2 = identityRectangles.begin(); it2 != identityRectangles.end(); ++it2) {
             ofile << "Origin: " << it2->second->getScriptName_mt_safe() << ", rect: x1 = " << it2->first.x1
                   << " y1 = " << it2->first.y1 << " x2 = " << it2->first.x2 << " y2 = " << it2->first.y2 << std::endl;
         }

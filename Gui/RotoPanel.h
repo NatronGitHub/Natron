@@ -55,7 +55,7 @@ class RotoPanel
 public:
 
 
-    RotoPanel(const boost::shared_ptr<NodeGui>& n,
+    RotoPanel(const NodeGuiPtr& n,
               QWidget* parent = 0);
 
     virtual ~RotoPanel();
@@ -80,7 +80,7 @@ public:
     void makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& item,
                                   QTreeWidgetItem* treeItem = NULL);
     
-    boost::shared_ptr<NodeGui> getNode() const;
+    NodeGuiPtr getNode() const;
 
 public Q_SLOTS:
 

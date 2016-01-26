@@ -107,7 +107,6 @@ SpinBox::SpinBox(QWidget* parent,
 : LineEdit(parent)
 , animation(0)
 , dirty(false)
-, altered(false)
 , _imp( new SpinBoxPrivate(type) )
 {
     QObject::connect( this, SIGNAL( returnPressed() ), this, SLOT( interpretReturn() ) );

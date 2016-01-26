@@ -56,9 +56,9 @@ NATRON_NAMESPACE_ENTER;
 
 struct AddKnobDialogPrivate
 {
-    boost::shared_ptr<KnobI> knob;
+    KnobPtr knob;
     boost::shared_ptr<KnobSerialization> originalKnobSerialization;
-    boost::shared_ptr<KnobI> isKnobAlias;
+    KnobPtr isKnobAlias;
     
     DockablePanel* panel;
     
@@ -422,7 +422,7 @@ static ParamDataTypeEnum getChoiceIndexFromKnobType(KnobI* knob)
 }
 
 AddKnobDialog::AddKnobDialog(DockablePanel* panel,
-                             const boost::shared_ptr<KnobI>& knob,
+                             const KnobPtr& knob,
                              const std::string& selectedPageName,
                              const std::string& selectedGroupName,
                              QWidget* parent)
@@ -469,8 +469,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     _imp->vLayout->addWidget(_imp->mainContainer);
     
     {
-        boost::shared_ptr<KnobI> isAlias;
-        boost::shared_ptr<KnobI> listener;
+        KnobPtr isAlias;
+        KnobPtr listener;
         if (knob) {
             KnobI::ListenerDimsMap listeners;
             knob->getListeners(listeners);
@@ -535,12 +535,12 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
             
             // get the flag on the previous knob
             bool startNewLine = true;
-            boost::shared_ptr<KnobI> parentKnob = _imp->knob->getParentKnob();
+            KnobPtr parentKnob = _imp->knob->getParentKnob();
             if (parentKnob) {
                 KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>(parentKnob.get());
                 KnobPage* parentIsPage = dynamic_cast<KnobPage*>(parentKnob.get());
                 assert(parentIsGrp || parentIsPage);
-                std::vector<boost::shared_ptr<KnobI> > children;
+                KnobsVec children;
                 if (parentIsGrp) {
                     children = parentIsGrp->getChildren();
                 } else if (parentIsPage) {
@@ -907,7 +907,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     
     const std::map<boost::weak_ptr<KnobI>,KnobGui*>& knobs = _imp->panel->getKnobs();
     for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        boost::shared_ptr<KnobI> knob = it->first.lock();
+        KnobPtr knob = it->first.lock();
         if (!knob) {
             continue;
         }
@@ -942,8 +942,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     _imp->parentPage = new ComboBox(optContainer);
     
     QObject::connect(_imp->parentPage,SIGNAL(currentIndexChanged(int)),this,SLOT(onPageCurrentIndexChanged(int)));
-    const std::vector<boost::shared_ptr<KnobI> >& internalKnobs = _imp->panel->getHolder()->getKnobs();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = internalKnobs.begin() ; it != internalKnobs.end(); ++it) {
+    const KnobsVec& internalKnobs = _imp->panel->getHolder()->getKnobs();
+    for (KnobsVec::const_iterator it = internalKnobs.begin() ; it != internalKnobs.end(); ++it) {
         if ((*it)->isUserKnob()) {
             boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
             if (isPage) {
@@ -1000,7 +1000,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     if (_imp->parentGroup && knob) {
         boost::shared_ptr<KnobPage> topLvlPage = knob->getTopLevelPage();
         assert(topLvlPage);
-        boost::shared_ptr<KnobI> parent = knob->getParentKnob();
+        KnobPtr parent = knob->getParentKnob();
         KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
         if (isParentGrp) {
             for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
@@ -1325,7 +1325,7 @@ AddKnobDialog::~AddKnobDialog()
     
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 AddKnobDialog::getKnob() const
 {
     return _imp->knob;
@@ -1647,8 +1647,8 @@ AddKnobDialog::onOkClicked()
     
     //check if another knob has the same script name
     std::string stdName = name.toStdString();
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->panel->getHolder()->getKnobs();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin() ; it != knobs.end(); ++it) {
+    const KnobsVec& knobs = _imp->panel->getHolder()->getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin() ; it != knobs.end(); ++it) {
         if ((*it)->getName() == stdName && (*it) != _imp->knob) {
             badFormat = true;
             break;
@@ -1674,8 +1674,8 @@ AddKnobDialog::onOkClicked()
         if (isHolderGroup) {
             //Check if the group has a node with the exact same script name as the param script name, in which case we error
             //otherwise the attribute on the python object would be overwritten
-            NodeList nodes = isHolderGroup->getNodes();
-            for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+            NodesList nodes = isHolderGroup->getNodes();
+            for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
                 if ((*it)->getScriptName() == stdName) {
                     Dialogs::errorDialog(tr("Error").toStdString(), tr("A parameter on a group cannot have the same script-name as a node within "
                                                                       "the group for scripting purposes.")
@@ -1700,7 +1700,7 @@ AddKnobDialog::onOkClicked()
     
     std::string oldKnobScriptName;
     std::vector<std::pair<std::string,bool> > expressions;
-    std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > > listenersExpressions;
+    std::map<KnobPtr,std::vector<std::pair<std::string,bool> > > listenersExpressions;
     
     boost::shared_ptr<KnobPage> oldKnobIsPage ;
     bool wasNewLineActivated = true;
@@ -1714,10 +1714,10 @@ AddKnobDialog::onOkClicked()
         oldParentPage = _imp->knob->getTopLevelPage();
         wasNewLineActivated = _imp->knob->isNewLineActivated();
         t = getChoiceIndexFromKnobType(_imp->knob.get());
-        boost::shared_ptr<KnobI> parent = _imp->knob->getParentKnob();
+        KnobPtr parent = _imp->knob->getParentKnob();
         KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
         if (isParentGrp && isParentGrp == _imp->getSelectedGroup()) {
-            std::vector<boost::shared_ptr<KnobI> > children = isParentGrp->getChildren();
+            KnobsVec children = isParentGrp->getChildren();
             for (U32 i = 0; i < children.size(); ++i) {
                 if (children[i] == _imp->knob) {
                     oldIndexInParent = i;
@@ -1725,7 +1725,7 @@ AddKnobDialog::onOkClicked()
                 }
             }
         } else {
-            std::vector<boost::shared_ptr<KnobI> > children;
+            KnobsVec children;
             if (oldParentPage && oldParentPage == _imp->getSelectedPage()) {
                 children = oldParentPage->getChildren();
             }
@@ -1748,7 +1748,7 @@ AddKnobDialog::onOkClicked()
         KnobI::ListenerDimsMap listeners;
         _imp->knob->getListeners(listeners);
         for (KnobI::ListenerDimsMap::iterator it = listeners.begin(); it != listeners.end(); ++it) {
-            boost::shared_ptr<KnobI> listener = it->first.lock();
+            KnobPtr listener = it->first.lock();
             if (!listener) {
                 continue;
             }
@@ -1891,12 +1891,12 @@ AddKnobDialog::onOkClicked()
     
     //If startsNewLine is false, set the flag on the previous knob
     bool startNewLine = _imp->startNewLineBox->isChecked();
-    boost::shared_ptr<KnobI> parentKnob = _imp->knob->getParentKnob();
+    KnobPtr parentKnob = _imp->knob->getParentKnob();
     if (parentKnob) {
         KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>(parentKnob.get());
         KnobPage* parentIsPage = dynamic_cast<KnobPage*>(parentKnob.get());
         assert(parentIsGrp || parentIsPage);
-        std::vector<boost::shared_ptr<KnobI> > children;
+        KnobsVec children;
         if (parentIsGrp) {
             children = parentIsGrp->getChildren();
         } else if (parentIsPage) {
@@ -1917,7 +1917,7 @@ AddKnobDialog::onOkClicked()
     }
     
     //Recover listeners expressions
-    for (std::map<boost::shared_ptr<KnobI>,std::vector<std::pair<std::string,bool> > >::iterator it = listenersExpressions.begin();it != listenersExpressions.end(); ++it) {
+    for (std::map<KnobPtr,std::vector<std::pair<std::string,bool> > >::iterator it = listenersExpressions.begin();it != listenersExpressions.end(); ++it) {
         assert(it->first->getDimension() == (int)it->second.size());
         for (int i = 0; i < it->first->getDimension(); ++i) {
             try {

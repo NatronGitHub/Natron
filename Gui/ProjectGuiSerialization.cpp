@@ -60,16 +60,16 @@ NATRON_NAMESPACE_ENTER;
 void
 ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 {
-    NodeList activeNodes;
+    NodesList activeNodes;
     projectGui->getInternalProject()->getActiveNodesExpandGroups(&activeNodes);
     
     _serializedNodes.clear();
-    for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+    for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         boost::shared_ptr<NodeGuiI> nodegui_i = (*it)->getNodeGui();
         if (!nodegui_i) {
             continue;
         }
-        boost::shared_ptr<NodeGui> nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
+        NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
         
         if (nodegui->isVisible()) {
             
@@ -81,7 +81,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 nodegui->serialize(&state);
                 _serializedNodes.push_back(state);
             }
-            ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( (*it)->getLiveInstance() );
+            ViewerInstance* viewer = (*it)->isEffectViewer();
             if (viewer) {
                 ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
                 assert(tab);
@@ -283,7 +283,7 @@ PythonPanelSerialization::initialize(PyPanel* tab,const std::string& func)
     std::list<Param*> parameters = tab->getParams();
     for (std::list<Param*>::iterator it = parameters.begin(); it != parameters.end(); ++it) {
         
-        boost::shared_ptr<KnobI> knob = (*it)->getInternalKnob();
+        KnobPtr knob = (*it)->getInternalKnob();
         KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );
         KnobPage* isPage = dynamic_cast<KnobPage*>( knob.get() );
         KnobButton* isButton = dynamic_cast<KnobButton*>( knob.get() );

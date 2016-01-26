@@ -72,7 +72,7 @@ ViewerTab::drawOverlays(double time,
                         const RenderScale & renderScale) const
 {
 
-    boost::shared_ptr<Node> rotoPaintNode;
+    NodePtr rotoPaintNode;
     boost::shared_ptr<RotoStrokeItem> curStroke;
     bool isDrawing;
     getGui()->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke,&isDrawing);
@@ -89,17 +89,17 @@ ViewerTab::drawOverlays(double time,
     
     int view = getCurrentView();
     
-    std::list<boost::shared_ptr<Node> >  nodes;
+    NodesList  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
     ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
-    for (std::list<boost::shared_ptr<Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
         
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
         
-        boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>((*it)->getNodeGui());
+        NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>((*it)->getNodeGui());
         if (!nodeUi) {
             continue;
         }
@@ -139,7 +139,7 @@ ViewerTab::drawOverlays(double time,
             }
         } else {
             
-            EffectInstance* effect = (*it)->getLiveInstance();
+            EffectInstPtr effect = (*it)->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
             effect->drawOverlay_public(time, renderScale, view);
@@ -154,7 +154,7 @@ ViewerTab::drawOverlays(double time,
 }
 
 bool
-ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Node>& node,
+ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
                                           const RenderScale & renderScale,
                                           PenType pen,
                                           bool isTabletEvent,
@@ -239,7 +239,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const boost::shared_ptr<Node>& node,
         }
     } else {
         
-        EffectInstance* effect = node->getLiveInstance();
+        EffectInstPtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, transformViewportPos, transformPos, pressure);
@@ -274,13 +274,13 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
     _imp->hasPenDown = true;
     _imp->hasCaughtPenMotionWhileDragging = false;
     
-    std::list<boost::shared_ptr<Node> >  nodes;
+    NodesList  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
     
-    boost::shared_ptr<Node> lastOverlay = _imp->lastOverlayNode.lock();
+    NodePtr lastOverlay = _imp->lastOverlayNode.lock();
     if (lastOverlay) {
-        for (std::list<boost::shared_ptr<Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
                 
                 if (notifyOverlaysPenDown_internal(*it, renderScale, pen, isTabletEvent, viewportPos, pos, pressure, timestamp, e)) {
@@ -293,7 +293,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
         }
     }
     
-    for (std::list<boost::shared_ptr<Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
         if (notifyOverlaysPenDown_internal(*it, renderScale, pen, isTabletEvent, viewportPos, pos, pressure, timestamp, e)) {
             return true;
         }
@@ -317,11 +317,11 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
         return false;
     }
     
-    std::list<boost::shared_ptr<Node> >  nodes;
+    NodesList  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
 
-    for (std::list<boost::shared_ptr<Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
         QPointF transformViewportPos;
         QPointF transformPos;
         double time = getGui()->getApp()->getTimeLine()->currentFrame();
@@ -387,7 +387,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
 }
 
 bool
-ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Node>& node,
+ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
                                             const RenderScale & renderScale,
                                             const QPointF & viewportPos,
                                             const QPointF & pos,
@@ -472,7 +472,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const boost::shared_ptr<Node>& node,
             getGui()->setDraftRenderEnabled(true);
         }
         
-        EffectInstance* effect = node->getLiveInstance();
+        EffectInstPtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayPenMotion_public(time, renderScale, view, transformViewportPos, transformPos, pressure);
@@ -507,13 +507,13 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
         return false;
     }
     
-    std::list<boost::shared_ptr<Node> >  nodes;
+    NodesList  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
     
-    boost::shared_ptr<Node> lastOverlay = _imp->lastOverlayNode.lock();
+    NodePtr lastOverlay = _imp->lastOverlayNode.lock();
     if (lastOverlay) {
-        for (std::list<boost::shared_ptr<Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
                 if (notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp, e)) {
                     return true;
@@ -526,7 +526,7 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
     }
 
     
-    for (std::list<boost::shared_ptr<Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
         if (notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp, e)) {
             return true;
         }
@@ -569,14 +569,14 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
   
     _imp->lastOverlayNode.reset();
     
-    std::list<boost::shared_ptr<Node> >  nodes;
+    NodesList  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
 
     int view = getCurrentView();
 
-    for (std::list<boost::shared_ptr<Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         
         
         QPointF transformViewportPos;
@@ -645,7 +645,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
             }
         }
         
-        EffectInstance* effect = (*it)->getLiveInstance();
+        EffectInstPtr effect = (*it)->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         didSomething |= effect->onOverlayPenUp_public(time, renderScale, view, transformViewportPos, transformPos, pressure);
@@ -671,7 +671,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
 }
 
 bool
-ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Node>& node,
+ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
                                           const RenderScale & renderScale,
                                           QKeyEvent* e,
                                           Key k,
@@ -715,7 +715,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const boost::shared_ptr<Node>& node,
         
     } else {
    
-        EffectInstance* effect = node->getLiveInstance();
+        EffectInstPtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayKeyDown_public(time, renderScale, view, k, km);
@@ -755,12 +755,12 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     
-    std::list<boost::shared_ptr<Node> >  nodes;
+    NodesList  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
-    boost::shared_ptr<Node> lastOverlay = _imp->lastOverlayNode.lock();
+    NodePtr lastOverlay = _imp->lastOverlayNode.lock();
     if (lastOverlay) {
-        for (std::list<boost::shared_ptr<Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
                 if (notifyOverlaysKeyDown_internal(*it, renderScale, e, natronKey, natronMod)) {
                     if (isModifier) {
@@ -778,7 +778,7 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
 
     
     
-    for (std::list<boost::shared_ptr<Node> >::reverse_iterator it = nodes.rbegin();
+    for (NodesList::reverse_iterator it = nodes.rbegin();
          it != nodes.rend();
          ++it) {
         if (notifyOverlaysKeyDown_internal(*it, renderScale, e, natronKey, natronMod)) {
@@ -811,10 +811,10 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
     
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     int view = getCurrentView();
-    std::list<boost::shared_ptr<Node> >  nodes;
+    NodesList  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
-    for (std::list<boost::shared_ptr<Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        EffectInstance* effect = (*it)->getLiveInstance();
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        EffectInstPtr effect = (*it)->getEffectInstance();
         assert(effect);
         
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -869,7 +869,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
 }
 
 bool
-ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Node>& node,
+ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
                                             const RenderScale & renderScale,
                                             QKeyEvent* e,
                                             Key k,
@@ -907,7 +907,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const boost::shared_ptr<Node>& node,
         //        return true;
         //    }
         //}
-        EffectInstance* effect = node->getLiveInstance();
+        EffectInstPtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayKeyRepeat_public(time, renderScale, view, k, km);
@@ -934,12 +934,12 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
     Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
     
-    std::list<boost::shared_ptr<Node> >  nodes;
+    NodesList  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
-    boost::shared_ptr<Node> lastOverlay = _imp->lastOverlayNode.lock();
+    NodePtr lastOverlay = _imp->lastOverlayNode.lock();
     if (lastOverlay) {
-        for (std::list<boost::shared_ptr<Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
                 if (notifyOverlaysKeyRepeat_internal(*it, renderScale, e, natronKey, natronMod)) {
                     return true;
@@ -953,7 +953,7 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
     
 
     
-    for (std::list<boost::shared_ptr<Node> >::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+    for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
         if (notifyOverlaysKeyRepeat_internal(*it, renderScale, e, natronKey, natronMod)) {
             return true;
         }
@@ -979,10 +979,10 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
     int view = getCurrentView();
     
     bool ret = false;
-    std::list<boost::shared_ptr<Node> >  nodes;
+    NodesList  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
-    for (std::list<boost::shared_ptr<Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        EffectInstance* effect = (*it)->getLiveInstance();
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        EffectInstPtr effect = (*it)->getEffectInstance();
         assert(effect);
         
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -1020,9 +1020,9 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
     int view = getCurrentView();
     
     bool ret = false;
-    std::list<boost::shared_ptr<Node> >  nodes;
+    NodesList  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
-    for (std::list<boost::shared_ptr<Node> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         double transformedTime;
@@ -1045,7 +1045,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
             }
         }
         
-        EffectInstance* effect = (*it)->getLiveInstance();
+        EffectInstPtr effect = (*it)->getEffectInstance();
         assert(effect);
         
         effect->setCurrentViewportForOverlays_public(_imp->viewer);

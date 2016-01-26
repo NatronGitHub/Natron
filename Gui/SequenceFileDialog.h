@@ -547,7 +547,7 @@ private:
     
     void teardownPreview();
     
-    boost::shared_ptr<NodeGui> findOrCreatePreviewReader(const std::string& filetype);
+    NodeGuiPtr findOrCreatePreviewReader(const std::string& filetype);
     
     void refreshPreviewAfterSelectionChange();
     

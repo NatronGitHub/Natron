@@ -53,9 +53,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 NATRON_NAMESPACE_ENTER;
 
 void
-NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_ptr<NodeGui>& selectedNode, const QRectF& visibleSceneR)
+NodeGraph::checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& selectedNode, const QRectF& visibleSceneR)
 {
-    boost::shared_ptr<Node> internalNode = selectedNode->getNode();
+    NodePtr internalNode = selectedNode->getNode();
     
     bool doMergeHints = shiftdown && controlDown;
     bool doConnectionHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
@@ -83,19 +83,23 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
     double tolerance = 10;
     selectedNodeBbox.adjust(-tolerance, -tolerance, tolerance, tolerance);
     
-    boost::shared_ptr<NodeGui> nodeToShowMergeRect;
+    NodeGuiPtr nodeToShowMergeRect;
     
-    boost::shared_ptr<Node> selectedNodeInternalNode = selectedNode->getNode();
-    bool selectedNodeIsReader = selectedNodeInternalNode->getLiveInstance()->isReader() || selectedNodeInternalNode->getMaxInputCount() == 0;
+    NodePtr selectedNodeInternalNode = selectedNode->getNode();
+    bool selectedNodeIsReader = selectedNodeInternalNode->getEffectInstance()->isReader() || selectedNodeInternalNode->getMaxInputCount() == 0;
     Edge* edge = 0;
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        for (NodeGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+        for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             
             bool isAlreadyAnOutput = false;
-            const std::list<Node*>& outputs = internalNode->getGuiOutputs();
-            for (std::list<Node*>::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-                if (*it2 == (*it)->getNode().get()) {
+            const NodesWList& outputs = internalNode->getGuiOutputs();
+            for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+                NodePtr node = it2->lock();
+                if (!node) {
+                    continue;
+                }
+                if (node == (*it)->getNode()) {
                     isAlreadyAnOutput = true;
                     break;
                 }
@@ -110,7 +114,7 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
                     
                     //QRectF nodeRect = (*it)->mapToParent((*it)->boundingRect()).boundingRect();
                     
-                    boost::shared_ptr<Node> internalNode = (*it)->getNode();
+                    NodePtr internalNode = (*it)->getNode();
                     
                     
                     if (!internalNode->isOutputNode() && nodeBbox.intersects(selectedNodeBbox)) {
@@ -119,10 +123,10 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
                         int nMaxInput = internalNode->getMaxInputCount();
                         bool selectedHasInput = selectedNodeInternalNode->hasInputConnected();
                         int selectedMaxInput = selectedNodeInternalNode->getMaxInputCount();
-                        double nPAR = internalNode->getLiveInstance()->getPreferredAspectRatio();
-                        double selectedPAR = selectedNodeInternalNode->getLiveInstance()->getPreferredAspectRatio();
-                        double nFPS = internalNode->getLiveInstance()->getPreferredFrameRate();
-                        double selectedFPS = selectedNodeInternalNode->getLiveInstance()->getPreferredFrameRate();
+                        double nPAR = internalNode->getEffectInstance()->getPreferredAspectRatio();
+                        double selectedPAR = selectedNodeInternalNode->getEffectInstance()->getPreferredAspectRatio();
+                        double nFPS = internalNode->getEffectInstance()->getPreferredFrameRate();
+                        double selectedFPS = selectedNodeInternalNode->getEffectInstance()->getPreferredFrameRate();
                         
                         bool isValid = true;
                         
@@ -170,13 +174,13 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
                     
                     if ( edge && !edge->isOutputEdge() ) {
                         
-                        if ((*it)->getNode()->getLiveInstance()->isReader() ||
+                        if ((*it)->getNode()->getEffectInstance()->isReader() ||
                             (*it)->getNode()->getMaxInputCount() == 0) {
                             edge = 0;
                             continue;
                         }
                         
-                        if ((*it)->getNode()->getLiveInstance()->isInputRotoBrush(edge->getInputNumber())) {
+                        if ((*it)->getNode()->getEffectInstance()->isInputRotoBrush(edge->getInputNumber())) {
                             edge = 0;
                             continue;
                         }
@@ -238,7 +242,7 @@ NodeGraph::checkForHints(bool shiftdown, bool controlDown, const boost::shared_p
         
         ///find out if the node is already connected to what the edge is connected
         bool alreadyConnected = false;
-        const std::vector<boost::weak_ptr<Node> > & inpNodes = selectedNode->getNode()->getGuiInputs();
+        const std::vector<NodeWPtr > & inpNodes = selectedNode->getNode()->getGuiInputs();
         for (std::size_t i = 0; i < inpNodes.size(); ++i) {
             if ( inpNodes[i].lock() == edge->getSource()->getNode() ) {
                 alreadyConnected = true;
@@ -300,15 +304,15 @@ NodeGraph::moveSelectedNodesBy(bool shiftdown, bool controlDown, const QPointF& 
     
     //Get the nodes to move, taking into account the backdrops
     std::list<std::pair<NodeGuiPtr,bool> > nodesToMove;
-    for (std::list<NodeGuiPtr>::iterator it = _imp->_selection.begin();
+    for (NodesGuiList::iterator it = _imp->_selection.begin();
          it != _imp->_selection.end(); ++it) {
         
         const NodeGuiPtr& node = *it;
         nodesToMove.push_back(std::make_pair(node,false));
         
-        std::map<NodeGuiPtr,NodeGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
+        std::map<NodeGuiPtr,NodesGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
         if (!controlDown && foundBd != _imp->_nodesWithinBDAtPenDown.end()) {
-            for (NodeGuiList::iterator it2 = foundBd->second.begin();
+            for (NodesGuiList::iterator it2 = foundBd->second.begin();
                  it2 != foundBd->second.end(); ++it2) {
                 ///add it only if it's not already in the list
                 bool found = false;
@@ -425,12 +429,12 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     QRectF sceneR = visibleSceneRect();
     if (groupEdited && _imp->_evtState != eEventStateSelectionRect && _imp->_evtState != eEventStateDraggingArrow) {
         ///set cursor
-        boost::shared_ptr<NodeGui> selected;
+        NodeGuiPtr selected;
         Edge* selectedEdge = 0;
         {
             bool optionalInputsAutoHidden = areOptionalInputsAutoHidden();
             QMutexLocker l(&_imp->_nodesMutex);
-            for (NodeGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+            for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
                 QPointF evpt = (*it)->mapFromScene(newPos);
                 
                 QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();

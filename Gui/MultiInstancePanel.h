@@ -58,7 +58,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    MultiInstancePanel(const boost::shared_ptr<NodeGui> & node);
+    MultiInstancePanel(const NodeGuiPtr & node);
 
     virtual ~MultiInstancePanel();
 
@@ -66,44 +66,44 @@ public:
 
     bool isGuiCreated() const;
 
-    void addRow(const boost::shared_ptr<Node> & node);
+    void addRow(const NodePtr & node);
 
     void removeRow(int index);
 
-    int getNodeIndex(const boost::shared_ptr<Node> & node) const;
+    int getNodeIndex(const NodePtr & node) const;
 
-    const std::list< std::pair<boost::weak_ptr<Node>,bool > > & getInstances() const;
+    const std::list< std::pair<NodeWPtr,bool > > & getInstances() const;
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
-    boost::shared_ptr<Node> getMainInstance() const;
+    NodePtr getMainInstance() const;
     
-    boost::shared_ptr<NodeGui> getMainInstanceGui() const;
+    NodeGuiPtr getMainInstanceGui() const;
 
     void getSelectedInstances(std::list<Node*>* instances) const;
 
     void resetAllInstances();
 
-    boost::shared_ptr<KnobI> getKnobForItem(TableItem* item,int* dimension) const;
+    KnobPtr getKnobForItem(TableItem* item,int* dimension) const;
     Gui* getGui() const;
     virtual void setIconForButton(KnobButton* /*knob*/)
     {
     }
 
-    boost::shared_ptr<Node> createNewInstance(bool useUndoRedoStack);
+    NodePtr createNewInstance(bool useUndoRedoStack);
 
-    void selectNode(const boost::shared_ptr<Node> & node,bool addToSelection);
+    void selectNode(const NodePtr & node,bool addToSelection);
 
     void selectNodes(const std::list<Node*> & nodes,bool addToSelection);
 
-    void removeNodeFromSelection(const boost::shared_ptr<Node> & node);
+    void removeNodeFromSelection(const NodePtr & node);
 
     void clearSelection();
 
     bool isSettingsPanelVisible() const;
         
-    void removeInstances(const std::list<boost::shared_ptr<Node> >& instances);
-    void addInstances(const std::list<boost::shared_ptr<Node> >& instances);
+    void removeInstances(const NodesList& instances);
+    void addInstances(const NodesList& instances);
 
-    void onChildCreated(const boost::shared_ptr<Node>& node);
+    void onChildCreated(const NodePtr& node);
     
     void setRedrawOnSelectionChanged(bool redraw);
     
@@ -141,7 +141,7 @@ protected:
     {
     }
 
-    boost::shared_ptr<Node> addInstanceInternal(bool useUndoRedoStack);
+    NodePtr addInstanceInternal(bool useUndoRedoStack);
     virtual void initializeExtraKnobs()
     {
     }
@@ -175,7 +175,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    TrackerPanel(const boost::shared_ptr<NodeGui> & node);
+    TrackerPanel(const NodeGuiPtr & node);
 
     virtual ~TrackerPanel();
 

@@ -61,13 +61,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+    static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
         return new KnobGuiGroup(knob, container);
     }
 
-    KnobGuiGroup(boost::shared_ptr<KnobI> knob,
+    KnobGuiGroup(KnobPtr knob,
                   DockablePanel *container);
 
     virtual ~KnobGuiGroup() OVERRIDE;
@@ -80,7 +80,7 @@ public:
 
     bool isChecked() const;
 
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     
     TabGroup* getOrCreateTabWidget();
     

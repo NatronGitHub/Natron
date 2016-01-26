@@ -84,7 +84,7 @@ BackdropGui::~BackdropGui()
 std::string
 BackdropGuiPrivate::getLabelValue() const
 {
-    boost::shared_ptr<KnobI> k = _publicInterface->getNode()->getKnobByName("Label");
+    KnobPtr k = _publicInterface->getNode()->getKnobByName("Label");
     assert(k);
     KnobString* isStr = dynamic_cast<KnobString*>(k.get());
     assert(isStr);
@@ -107,9 +107,9 @@ BackdropGui::createGui()
     _imp->label->setDefaultTextColor( QColor(0,0,0,255) );
     _imp->label->setZValue(getBaseDepth() + 1);
     
-    EffectInstance* effect = dynamic_cast<EffectInstance*>(getNode()->getLiveInstance());
+    EffectInstPtr effect = getNode()->getEffectInstance();
     assert(effect);
-    Backdrop* isBd = dynamic_cast<Backdrop*>(effect);
+    Backdrop* isBd = dynamic_cast<Backdrop*>(effect.get());
     assert(isBd);
     
     QObject::connect(isBd,SIGNAL(labelChanged(QString)),this, SLOT(onLabelChanged(QString)));

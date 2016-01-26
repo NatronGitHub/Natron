@@ -161,7 +161,7 @@ public:
 
 
 EffectInstance*
-ViewerInstance::BuildEffect(boost::shared_ptr<Node> n)
+ViewerInstance::BuildEffect(NodePtr n)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -169,7 +169,7 @@ ViewerInstance::BuildEffect(boost::shared_ptr<Node> n)
     return new ViewerInstance(n);
 }
 
-ViewerInstance::ViewerInstance(boost::shared_ptr<Node> node)
+ViewerInstance::ViewerInstance(NodePtr node)
     : OutputEffectInstance(node)
       , _imp( new ViewerInstancePrivate(this) )
 {
@@ -205,7 +205,8 @@ ViewerInstance::~ViewerInstance()
 RenderEngine*
 ViewerInstance::createRenderEngine()
 {
-    return new ViewerRenderEngine(this);
+    boost::shared_ptr<ViewerInstance> thisShared = boost::dynamic_pointer_cast<ViewerInstance>(shared_from_this());
+    return new ViewerRenderEngine(thisShared);
 }
 
 void
@@ -287,7 +288,7 @@ ViewerInstance::getFrameRange(double *first,
     double inpFirst = 1,inpLast = 1;
     int activeInputs[2];
     getActiveInputs(activeInputs[0], activeInputs[1]);
-    EffectInstance* n1 = getInput(activeInputs[0]);
+    EffectInstPtr n1 = getInput(activeInputs[0]);
     if (n1) {
         n1->getFrameRange_public(n1->getRenderHash(),&inpFirst,&inpLast);
     }
@@ -297,7 +298,7 @@ ViewerInstance::getFrameRange(double *first,
     inpFirst = 1;
     inpLast = 1;
 
-    EffectInstance* n2 = getInput(activeInputs[1]);
+    EffectInstPtr n2 = getInput(activeInputs[1]);
     if (n2) {
         n2->getFrameRange_public(n2->getRenderHash(),&inpFirst,&inpLast);
         if (inpFirst < *first) {
@@ -379,7 +380,7 @@ public:
                                    bool isSequential,
                                    bool canAbort,
                                    U64 renderAge,
-                                   const boost::shared_ptr<Node>& treeRoot,
+                                   const NodePtr& treeRoot,
                                    const FrameRequestMap* request,
                                    int textureIndex,
                                    const TimeLine* timeline,
@@ -417,7 +418,7 @@ public:
                 nodeHash = viewerInput->getHashValue();
             }
             
-            viewerInput->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash,  renderAge, treeRoot, nodeRequest, textureIndex, timeline, isAnalysis, false, NodeList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
+            viewerInput->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash,  renderAge, treeRoot, nodeRequest, textureIndex, timeline, isAnalysis, false, NodesList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
         }
     }
     
@@ -427,7 +428,7 @@ public:
             updateLastStrokeDataRecursively(viewerNode.get(), rotoNode, RectD(), true);
         }
         if (viewerInputNode) {
-            viewerInputNode->getLiveInstance()->invalidateParallelRenderArgsTLS();
+            viewerInputNode->getEffectInstance()->invalidateParallelRenderArgsTLS();
         }
     }
 };
@@ -439,7 +440,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                              bool canAbort,
                                              int view,
                                              U64 viewerHash,
-                                             const boost::shared_ptr<Node>& rotoPaintNode,
+                                             const NodePtr& rotoPaintNode,
                                              const boost::shared_ptr<RotoStrokeItem>& activeStroke,
                                              const boost::shared_ptr<RenderStats>& stats,
                                              boost::shared_ptr<ViewerArgs>* argsA,
@@ -448,10 +449,10 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
     ///This is used only by the rotopaint while drawing. We must clear the action cache of the rotopaint node before calling
     ///getRoD or this will not work
     assert(rotoPaintNode);
-    if (!rotoPaintNode->getLiveInstance()) {
+    if (!rotoPaintNode->getEffectInstance()) {
         return eViewerRenderRetCodeFail;
     }
-    rotoPaintNode->getLiveInstance()->clearActionsCache();
+    rotoPaintNode->getEffectInstance()->clearActionsCache();
     
     ViewerRenderRetCode status[2] = {
         eViewerRenderRetCodeFail, eViewerRenderRetCodeFail
@@ -502,10 +503,10 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                            false,
                                            stats);
         
-        NodeList rotoPaintNodes;
+        NodesList rotoPaintNodes;
         if (rotoPaintNode) {
             if (activeStroke) {
-                EffectInstance* rotoLive = rotoPaintNode->getLiveInstance();
+                EffectInstPtr rotoLive = rotoPaintNode->getEffectInstance();
                 assert(rotoLive);
                 bool ok = rotoLive->getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
                 assert(ok);
@@ -550,7 +551,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
 
                     
                     getApp()->updateLastPaintStrokeData(newAge, lastStrokePoints, lastStrokeBbox, strokeIndex);
-                    for (NodeList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
+                    for (NodesList::iterator it = rotoPaintNodes.begin(); it!=rotoPaintNodes.end(); ++it) {
                         (*it)->prepareForNextPaintStrokeRender();
                         
                     }
@@ -646,7 +647,7 @@ ViewerInstance::renderViewer(int view,
                              bool isSequentialRender,
                              U64 viewerHash,
                              bool canAbort,
-                             const boost::shared_ptr<Node>& rotoPaintNode,
+                             const NodePtr& rotoPaintNode,
                              bool useTLS,
                              boost::shared_ptr<ViewerArgs> args[2],
                              const boost::shared_ptr<RequestedFrame>& request,
@@ -738,7 +739,7 @@ static bool checkTreeCanRender_internal(Node* node, std::list<Node*>& marked)
     int maxInput = node->getMaxInputCount();
     for (int i = 0; i < maxInput; ++i) {
         NodePtr input = node->getInput(i);
-        bool optional = node->getLiveInstance()->isInputOptional(i);
+        bool optional = node->getEffectInstance()->isInputOptional(i);
         if (optional) {
             continue;
         }
@@ -827,7 +828,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                            int view,
                                                            int textureIndex,
                                                            U64 viewerHash,
-                                                           const boost::shared_ptr<Node>& rotoPaintNode,
+                                                           const NodePtr& rotoPaintNode,
                                                            bool useTLS,
                                                            const boost::shared_ptr<RenderStats>& stats,
                                                            ViewerArgs* outArgs)
@@ -852,7 +853,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  int view,
                                                  int textureIndex,
                                                  U64 viewerHash,
-                                                 const boost::shared_ptr<Node>& rotoPaintNode,
+                                                 const NodePtr& rotoPaintNode,
                                                  bool useTLS,
                                                  U64 renderAge,
                                                  const boost::shared_ptr<RenderStats>& stats,
@@ -869,7 +870,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     }
     
     
-    EffectInstance* upstreamInput = getInput(outArgs->activeInputIndex);
+    EffectInstPtr upstreamInput = getInput(outArgs->activeInputIndex);
     
     if (upstreamInput) {
         outArgs->activeInputToRender = upstreamInput->getNearestNonDisabled();
@@ -1186,7 +1187,7 @@ ViewerInstance::renderViewer_internal(int view,
                                       bool isSequentialRender,
                                       U64 /*viewerHash*/,
                                       bool canAbort,
-                                      boost::shared_ptr<Node> rotoPaintNode,
+                                      NodePtr rotoPaintNode,
                                       bool useTLS,
                                       const boost::shared_ptr<RequestedFrame>& request,
                                       const boost::shared_ptr<RenderStats>& stats,
@@ -2685,7 +2686,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
                                               params->updateOnlyRoi);
         updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;
         
-        boost::shared_ptr<Node> rotoPaintNode;
+        NodePtr rotoPaintNode;
         boost::shared_ptr<RotoStrokeItem> curStroke;
         bool isDrawing;
         instance->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke,&isDrawing);

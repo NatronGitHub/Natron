@@ -156,7 +156,7 @@ AnimatingTextEdit::paintEvent(QPaintEvent* e)
     QTextEdit::paintEvent(e);
 }
 
-KnobGuiString::KnobGuiString(boost::shared_ptr<KnobI> knob,
+KnobGuiString::KnobGuiString(KnobPtr knob,
                                DockablePanel *container)
     : KnobGui(knob, container)
       , _lineEdit(0)
@@ -415,7 +415,7 @@ KnobGuiString::restoreTextInfoFromString()
         EffectInstance* effect = dynamic_cast<EffectInstance*>( knob->getHolder() );
         /// If the node has a sublabel, restore it in the label
         if ( effect && (knob->getName() == kUserLabelKnobName) ) {
-            boost::shared_ptr<KnobI> knob = effect->getKnobByName(kNatronOfxParamStringSublabelName);
+            KnobPtr knob = effect->getKnobByName(kNatronOfxParamStringSublabelName);
             if (knob) {
                 KnobString* strKnob = dynamic_cast<KnobString*>( knob.get() );
                 if (strKnob) {
@@ -1059,7 +1059,7 @@ KnobGuiString::setDirty(bool dirty)
     }
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 KnobGuiString::getKnob() const
 {
     return _knob.lock();

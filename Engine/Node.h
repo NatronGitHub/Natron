@@ -125,7 +125,7 @@ public:
 
 
 private:
-    void loadKnob(const boost::shared_ptr<KnobI> & knob,const std::list< boost::shared_ptr<KnobSerialization> > & serialization,
+    void loadKnob(const KnobPtr & knob,const std::list< boost::shared_ptr<KnobSerialization> > & serialization,
                   bool updateKnobGui = false);
 public:
     
@@ -149,13 +149,13 @@ public:
                                     int dimension = 1,
                                     bool declaredByPlugin = true)
     {
-        return appPTR->getKnobFactory().createKnob<K>(getLiveInstance(),description,dimension,declaredByPlugin);
+        return appPTR->getKnobFactory().createKnob<K>(getEffectInstance(),description,dimension,declaredByPlugin);
     }
 
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
     void restoreKnobsLinks(const NodeSerialization & serialization,
-                           const std::list<boost::shared_ptr<Node> > & allNodes,
+                           const NodesList & allNodes,
                            const std::map<std::string,std::string>& oldNewScriptNamesMapping);
     
     void restoreUserKnobs(const NodeSerialization& serialization);
@@ -187,9 +187,9 @@ public:
     /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
      * is set earlier.
      */
-    void setLiveInstance(const boost::shared_ptr<EffectInstance>& liveInstance);
+    void setLiveInstance(const EffectInstPtr& liveInstance);
 
-    EffectInstance* getLiveInstance() const;
+    EffectInstPtr getEffectInstance() const;
 
     /**
      * @brief Returns true if the node is a multi-instance node, that is, holding several other nodes.
@@ -197,12 +197,12 @@ public:
      **/
     bool isMultiInstance() const;
     
-    boost::shared_ptr<Node> getParentMultiInstance() const;
+    NodePtr getParentMultiInstance() const;
 
     ///Accessed by the serialization thread, but mt safe since never changed
     std::string getParentMultiInstanceName() const;
     
-    void getChildrenMultiInstance(std::list<boost::shared_ptr<Node> >* children) const;
+    void getChildrenMultiInstance(NodesList* children) const;
 
     /**
      * @brief Returns the hash value of the node, or 0 if it has never been computed.
@@ -219,7 +219,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    const std::vector< boost::shared_ptr<KnobI> > & getKnobs() const;
+    const std::vector< KnobPtr > & getKnobs() const;
 
     /**
      * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
@@ -280,6 +280,9 @@ public:
      * @brief Returns true if the node is a rotopaint node
      **/
     bool isRotoPaintingNode() const;
+    
+    ViewerInstance* isEffectViewer() const;
+    NodeGroup* isEffectGroup() const;
 
     /**
      * @brief Returns a pointer to the rotoscoping context if the node is in the paint context, otherwise NULL.
@@ -320,7 +323,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb,ImageComponents* comps, boost::shared_ptr<Node>* maskInput) const;
+    int getMaskChannel(int inputNb,ImageComponents* comps, NodePtr* maskInput) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -337,30 +340,30 @@ public:
      *
      * DO NOT CALL THIS ON THE SERIALIZATION THREAD, INSTEAD PREFER USING getInputNames()
      **/
-    boost::shared_ptr<Node> getInput(int index) const;
+    NodePtr getInput(int index) const;
     
     /**
      * @brief Returns the input as seen on the gui. This is not necessarily the same as the value returned by getInput.
      **/
-    boost::shared_ptr<Node> getGuiInput(int index) const;
+    NodePtr getGuiInput(int index) const;
     
     /**
      * @brief Same as getInput except that it doesn't do group redirections for Inputs/Outputs
      **/
-    boost::shared_ptr<Node> getRealInput(int index) const;
+    NodePtr getRealInput(int index) const;
     
-    boost::shared_ptr<Node> getRealGuiInput(int index) const;
+    NodePtr getRealGuiInput(int index) const;
     
 private:
     
-    boost::shared_ptr<Node> getInputInternal(bool useGuiInput, bool useGroupRedirections, int index) const;
+    NodePtr getInputInternal(bool useGuiInput, bool useGroupRedirections, int index) const;
     
 public:
     
     /**
      * @brief Returns the input index of the node if it is an input of this node, -1 otherwise.
      **/
-    int getInputIndex(const Node* node) const;
+    int getInputIndex(const NodePtr& node) const;
 
     /**
      * @brief Returns true if the node is currently executing the onInputChanged handler.
@@ -372,15 +375,15 @@ public:
      * The vector might be different from what getInputs_other_thread() could return.
      * This can only be called by the main thread.
      **/
-    const std::vector<boost::weak_ptr<Node> > & getInputs() const WARN_UNUSED_RETURN;
-    const std::vector<boost::weak_ptr<Node> > & getGuiInputs() const WARN_UNUSED_RETURN;
-    std::vector<boost::weak_ptr<Node> > getInputs_copy() const WARN_UNUSED_RETURN;
+    const std::vector<NodeWPtr > & getInputs() const WARN_UNUSED_RETURN;
+    const std::vector<NodeWPtr > & getGuiInputs() const WARN_UNUSED_RETURN;
+    std::vector<NodeWPtr > getInputs_copy() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the input index of the node n if it exists,
      * -1 otherwise.
      **/
-    int inputIndex(Node* n) const;
+    int inputIndex(const NodePtr& n) const;
 
     const std::vector<std::string> & getInputLabels() const;
     std::string getInputLabel(int inputNb) const;
@@ -468,16 +471,16 @@ public:
      * where the value of the map is the input index from which these outputs
      * are connected to this node.
      **/
-    void getOutputsConnectedToThisNode(std::map<Node*,int>* outputs);
+    void getOutputsConnectedToThisNode(std::map<NodePtr,int>* outputs);
 
-    const std::list<Node* > & getOutputs() const;
-    const std::list<Node* > & getGuiOutputs() const;
-    void getOutputs_mt_safe(std::list<Node*>& outputs) const;
+    const NodesWList & getOutputs() const;
+    const NodesWList & getGuiOutputs() const;
+    void getOutputs_mt_safe(NodesWList& outputs) const;
     
     /**
      * @brief Same as above but enters into subgroups
      **/
-    void getOutputsWithGroupRedirection(std::list<Node*>& outputs) const;
+    void getOutputsWithGroupRedirection(NodesList& outputs) const;
 
     /**
      * @brief Each input name is appended to the vector, in the same order
@@ -502,7 +505,7 @@ public:
      * @brief Returns true if a connection is possible for the given input number of the current node 
      * to the given input.
      **/
-    Node::CanConnectInputReturnValue canConnectInput(const boost::shared_ptr<Node>& input,int inputNumber) const;
+    Node::CanConnectInputReturnValue canConnectInput(const NodePtr& input,int inputNumber) const;
     
 
     /** @brief Adds the node parent to the input inputNumber of the
@@ -511,9 +514,9 @@ public:
      * connected for this inputNumber. It should be removed
      * beforehand.
      */
-    virtual bool connectInput(const boost::shared_ptr<Node>& input,int inputNumber);
+    virtual bool connectInput(const NodePtr& input,int inputNumber);
 
-    bool connectInputBase(const boost::shared_ptr<Node>& input,int inputNumber)
+    bool connectInputBase(const NodePtr& input,int inputNumber)
     {
         return Node::connectInput(input, inputNumber);
     }
@@ -527,7 +530,7 @@ public:
     /** @brief Removes the node input of the
      * node inputs. Returns the inputNumber if it could remove it, otherwise returns
        -1.*/
-    virtual int disconnectInput(Node* input);
+    virtual int disconnectInput(const NodePtr& input);
     
     /**
      * @brief Same as:
@@ -535,7 +538,7 @@ public:
       connectInput(input,inputNumber);
      * Except that it is atomic
      **/
-    bool replaceInput(const boost::shared_ptr<Node>& input,int inputNumber);
+    bool replaceInput(const NodePtr& input,int inputNumber);
     
     void setNodeGuiPointer(const boost::shared_ptr<NodeGuiI>& gui);
 
@@ -596,12 +599,12 @@ private:
     /**
      * @brief Adds an output to this node.
      **/
-    void connectOutput(bool useGuiValues,Node* output);
+    void connectOutput(bool useGuiValues,const NodePtr& output);
 
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
        otherwise returns -1.*/
-    int disconnectOutput(bool useGuiValues,Node*output);
+    int disconnectOutput(bool useGuiValues,const NodePtr& output);
     
 public:
     
@@ -644,7 +647,7 @@ public:
        @param reconnect If set to true Natron will attempt to re-connect disconnected output to an input of this node
        @param hideGui When true, the node gui will be notified so it gets hidden
      */
-    void deactivate(const std::list< Node* > & outputsToDisconnect = std::list< Node* >()
+    void deactivate(const std::list< NodePtr > & outputsToDisconnect = std::list< NodePtr >()
                     , bool disconnectAll = true
                     , bool reconnect = true
                     , bool hideGui = true
@@ -660,7 +663,7 @@ public:
      * deactivate() will be reconnected as output to this node.
      * @param restoreAll If true, the parameter outputsToRestore will be ignored.
      */
-    void activate(const std::list< Node* > & outputsToRestore = std::list< Node* >(),
+    void activate(const std::list< NodePtr > & outputsToRestore = std::list< NodePtr >(),
                   bool restoreAll = true,
                   bool triggerRender = true);
     
@@ -674,7 +677,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    boost::shared_ptr<KnobI> getKnobByName(const std::string & name) const;
+    KnobPtr getKnobByName(const std::string & name) const;
 
     /*@brief The derived class should query this to abort any long process
        in the engine function.*/
@@ -804,7 +807,7 @@ public:
 
     void onKnobSlaved(KnobI* slave,KnobI* master,int dimension,bool isSlave);
 
-    boost::shared_ptr<Node> getMasterNode() const;
+    NodePtr getMasterNode() const;
 
     /**
      * @brief Attemps to lock an image for render. If it successfully obtained the lock,
@@ -902,7 +905,7 @@ public:
         KnobI* master;
 
         ///The master node to which the knob is slaved to
-        boost::weak_ptr<Node> masterNode;
+        NodeWPtr masterNode;
 
         ///The dimension being slaved, -1 if irrelevant
         int dimension;
@@ -1124,11 +1127,11 @@ private:
     
     void markInputRelatedDataDirtyRecursiveInternal(std::list<Node*>& markedNodes,bool recurse);
     
-    bool refreshAllInputRelatedData(bool hasSerializationData,const std::vector<boost::weak_ptr<Node> >& inputs);
+    bool refreshAllInputRelatedData(bool hasSerializationData,const std::vector<NodeWPtr >& inputs);
     
     bool refreshInputRelatedDataInternal(std::list<Node*>& markedNodes);
     
-    bool refreshDraftFlagInternal(const std::vector<boost::weak_ptr<Node> >& inputs);
+    bool refreshDraftFlagInternal(const std::vector<NodeWPtr >& inputs);
     
     void setNameInternal(const std::string& name, bool throwErrors, bool declareToPython);
     
@@ -1327,7 +1330,7 @@ public:
      * @brief Same as connectInputBase but if another input is already connected to 'input' then
      * it will disconnect it prior to connecting the input of the given number.
      **/
-    virtual bool connectInput(const boost::shared_ptr<Node>& input,int inputNumber) OVERRIDE;
+    virtual bool connectInput(const NodePtr& input,int inputNumber) OVERRIDE;
 
     virtual int getPreferredInputForConnection() const OVERRIDE FINAL;
     virtual int getPreferredInput() const OVERRIDE FINAL;

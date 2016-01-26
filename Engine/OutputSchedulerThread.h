@@ -95,7 +95,7 @@ class RenderThreadTask :  public QThread
     
 public:
     
-    RenderThreadTask(OutputEffectInstance* output,OutputSchedulerThread* scheduler);
+    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,OutputSchedulerThread* scheduler);
     
     virtual ~RenderThreadTask();
     
@@ -149,7 +149,7 @@ public:
         eProcessFrameByMainThread //< the processFrame function will be called by the application's main-thread.
     };
     
-    OutputSchedulerThread(RenderEngine* engine,OutputEffectInstance* effect,ProcessFrameModeEnum mode);
+    OutputSchedulerThread(RenderEngine* engine,const boost::shared_ptr<OutputEffectInstance>& effect,ProcessFrameModeEnum mode);
     
     virtual ~OutputSchedulerThread();
     
@@ -459,7 +459,7 @@ class DefaultScheduler : public OutputSchedulerThread
 {
 public:
     
-    DefaultScheduler(RenderEngine* engine,OutputEffectInstance* effect);
+    DefaultScheduler(RenderEngine* engine,const boost::shared_ptr<OutputEffectInstance>& effect);
     
     virtual ~DefaultScheduler();
     
@@ -488,7 +488,7 @@ private:
     
 
     
-    OutputEffectInstance* _effect;
+    boost::weak_ptr<OutputEffectInstance> _effect;
 };
 
 
@@ -498,7 +498,7 @@ class ViewerDisplayScheduler : public OutputSchedulerThread
     
 public:
     
-    ViewerDisplayScheduler(RenderEngine* engine,ViewerInstance* viewer);
+    ViewerDisplayScheduler(RenderEngine* engine, const boost::shared_ptr<ViewerInstance>& viewer);
     
     virtual ~ViewerDisplayScheduler();
     
@@ -527,7 +527,7 @@ private:
     
     virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
     
-    ViewerInstance* _viewer;
+    boost::weak_ptr<ViewerInstance> _viewer;
 };
 
 /**
@@ -621,7 +621,7 @@ class RenderEngine : public QObject
     
 public:
     
-    RenderEngine(OutputEffectInstance* output);
+    RenderEngine(const boost::shared_ptr<OutputEffectInstance>& output);
     
     virtual ~RenderEngine();
    
@@ -757,7 +757,7 @@ protected:
     /**
      * @brief Must create the main-scheduler that will be used for scheduling playback/writing on disk.
      **/
-    virtual OutputSchedulerThread* createScheduler(OutputEffectInstance* effect) ;
+    virtual OutputSchedulerThread* createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect) ;
     
 private:
     
@@ -788,7 +788,7 @@ class ViewerRenderEngine : public RenderEngine
     
 public:
     
-    ViewerRenderEngine(OutputEffectInstance* output)
+    ViewerRenderEngine(const boost::shared_ptr<OutputEffectInstance>& output)
     : RenderEngine(output)
     {}
     
@@ -796,7 +796,7 @@ public:
     
 private:
     
-    virtual OutputSchedulerThread* createScheduler(OutputEffectInstance* effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual OutputSchedulerThread* createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 NATRON_NAMESPACE_EXIT;

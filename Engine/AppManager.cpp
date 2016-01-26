@@ -1048,7 +1048,7 @@ template <typename PLUGIN>
 void
 AppManager::registerBuiltInPlugin(const QString& iconPath, bool isDeprecated, bool internalUseOnly)
 {
-    boost::shared_ptr<EffectInstance> node( PLUGIN::BuildEffect( boost::shared_ptr<Node>() ) );
+    EffectInstPtr node( PLUGIN::BuildEffect( NodePtr() ) );
     std::map<std::string,void(*)()> functions;
     functions.insert( std::make_pair("BuildEffect", (void(*)())&PLUGIN::BuildEffect) );
     LibraryBinary *binary = new LibraryBinary(functions);
@@ -1651,8 +1651,8 @@ AppManager::getPluginBinary(const QString & pluginId,
     
 }
 
-boost::shared_ptr<EffectInstance>
-AppManager::createOFXEffect(boost::shared_ptr<Node> node,
+EffectInstPtr
+AppManager::createOFXEffect(NodePtr node,
                             const NodeSerialization* serialization,
                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                             bool allowFileDialogs,
@@ -1706,7 +1706,7 @@ AppManager::getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
     
     const Node* isNode = dynamic_cast<const Node*>(holder);
     if (isNode) {
-        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(isNode->getLiveInstance());
+        ViewerInstance* isViewer = isNode->isEffectViewer();
         if (isViewer) {
             _imp->_viewerCache->getMemoryStatsForCacheEntryHolder(holder, &viewerCacheMem, &viewerCacheDisk);
         }

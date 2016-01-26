@@ -156,15 +156,15 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 bool
 ViewerTabPrivate::getOverlayTransform(double time,
                                       int view,
-                                      const boost::shared_ptr<Node>& target,
+                                      const NodePtr& target,
                                       EffectInstance* currentNode,
                                       Transform::Matrix3x3* transform) const
 {
-    if (currentNode == target->getLiveInstance()) {
+    if (currentNode == target->getEffectInstance().get()) {
         return true;
     }
     RenderScale s(1.);
-    EffectInstance* input = 0;
+    EffectInstPtr input;
     StatusEnum stat = eStatusReplyDefault;
     Transform::Matrix3x3 mat;
     if (!currentNode->getNode()->isNodeDisabled() && currentNode->getNode()->getCurrentCanTransform()) {
@@ -183,13 +183,13 @@ ViewerTabPrivate::getOverlayTransform(double time,
         ///We cycle in reverse by default. It should be a setting of the application.
         ///In this case it will return input B instead of input A of a merge for example.
         for (int i = maxInp - 1; i >= 0; --i) {
-            EffectInstance* inp = currentNode->getInput(i);
+            EffectInstPtr inp = currentNode->getInput(i);
             bool optional = currentNode->isInputOptional(i);
             if (inp) {
                 if (optional) {
-                    optionalInputs.push_back(inp);
+                    optionalInputs.push_back(inp.get());
                 } else {
-                    nonOptionalInputs.push_back(inp);
+                    nonOptionalInputs.push_back(inp.get());
                 }
             }
         }
@@ -228,7 +228,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
         mat = Transform::matMul(Transform::matPixelToCanonical(par, 1, 1, false),mat);
         mat = Transform::matMul(mat,Transform::matCanonicalToPixel(par, 1, 1, false));
         *transform = Transform::matMul(*transform, mat);
-        bool isOk = getOverlayTransform(time, view, target, input, transform);
+        bool isOk = getOverlayTransform(time, view, target, input.get(), transform);
         return isOk;
     }
     return false;
@@ -259,11 +259,11 @@ static double transformTimeForNode(EffectInstance* currentNode, double inTime)
 bool
 ViewerTabPrivate::getTimeTransform(double time,
                                    int view,
-                                   const boost::shared_ptr<Node>& target,
+                                   const NodePtr& target,
                                    EffectInstance* currentNode,
                                    double *newTime) const
 {
-    if (currentNode == target->getLiveInstance()) {
+    if (currentNode == target->getEffectInstance().get()) {
         *newTime = time;
         return true;
     }
@@ -282,13 +282,13 @@ ViewerTabPrivate::getTimeTransform(double time,
     ///We cycle in reverse by default. It should be a setting of the application.
     ///In this case it will return input B instead of input A of a merge for example.
     for (int i = maxInp - 1; i >= 0; --i) {
-        EffectInstance* inp = currentNode->getInput(i);
+        EffectInstPtr inp = currentNode->getInput(i);
         bool optional = currentNode->isInputOptional(i);
         if (inp) {
             if (optional) {
-                optionalInputs.push_back(inp);
+                optionalInputs.push_back(inp.get());
             } else {
-                nonOptionalInputs.push_back(inp);
+                nonOptionalInputs.push_back(inp.get());
             }
         }
     }
@@ -327,7 +327,7 @@ ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
 {
     int activeInputIdx[2];
     viewerNode->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
-    EffectInstance* activeInput[2] = {0, 0};
+    EffectInstPtr activeInput[2] = {EffectInstPtr(), EffectInstPtr()};
     for (int i = 0; i < 2; ++i) {
         activeInput[i] = viewerNode->getInput(activeInputIdx[i]);
         if (activeInput[i]) {

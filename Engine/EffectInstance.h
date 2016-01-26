@@ -103,8 +103,8 @@ class EffectInstance
 public:
 
 
-    typedef std::map<ImageComponents, boost::weak_ptr<Node> > ComponentsAvailableMap;
-    typedef std::list<std::pair<ImageComponents, boost::weak_ptr<Node> > > ComponentsAvailableList;
+    typedef std::map<ImageComponents, NodeWPtr > ComponentsAvailableMap;
+    typedef std::list<std::pair<ImageComponents, NodeWPtr > > ComponentsAvailableList;
     typedef std::map<int, std::list< boost::shared_ptr<Image> > > InputImagesMap;
     typedef std::map<int, std::vector<ImageComponents> > ComponentsNeededMap;
     
@@ -189,7 +189,7 @@ public:
      * called just to be able to call a few virtuals fonctions.
      * The constructor is always called by the main thread of the application.
      **/
-    explicit EffectInstance(boost::shared_ptr<Node> node);
+    explicit EffectInstance(NodePtr node);
 
     virtual ~EffectInstance();
 
@@ -211,7 +211,7 @@ public:
     /**
      * @brief Returns a pointer to the node holding this effect.
      **/
-    boost::shared_ptr<Node> getNode() const WARN_UNUSED_RETURN
+    NodePtr getNode() const WARN_UNUSED_RETURN
     {
         return _node.lock();
     }
@@ -259,7 +259,7 @@ public:
      * @brief Returns input n. It might be NULL if the input is not connected.
      * MT-Safe
      **/
-    EffectInstance* getInput(int n) const WARN_UNUSED_RETURN;
+    EffectInstPtr getInput(int n) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Forwarded to the node holding the effect
@@ -385,7 +385,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb, ImageComponents* comps, boost::shared_ptr<Node>* maskInput) const;
+    int getMaskChannel(int inputNb, ImageComponents* comps, NodePtr* maskInput) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -542,13 +542,13 @@ public:
                                   bool canAbort,
                                   U64 nodeHash,
                                   U64 renderAge,
-                                  const boost::shared_ptr<Node> & treeRoot,
+                                  const NodePtr & treeRoot,
                                   const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
                                   int textureIndex,
                                   const TimeLine* timeline,
                                   bool isAnalysis,
                                   bool isDuringPaintStrokeCreation,
-                                  const std::list<boost::shared_ptr<Node> > & rotoPaintNodes,
+                                  const NodesList & rotoPaintNodes,
                                   RenderSafetyEnum currentThreadSafety,
                                   bool doNanHandling,
                                   bool draftMode,
@@ -571,9 +571,9 @@ public:
                                            double time,
                                            int view,
                                            unsigned originalMipMapLevel,
-                                           const boost::shared_ptr<Node> & node,
-                                           const boost::shared_ptr<Node>& callerNode,
-                                           const boost::shared_ptr<Node> & treeRoot,
+                                           const NodePtr & node,
+                                           const NodePtr& callerNode,
+                                           const NodePtr & treeRoot,
                                            const RectD & canonicalRenderWindow,
                                            FrameRequestMap & requests);
 
@@ -586,12 +586,12 @@ public:
                                                  int view,
                                                  unsigned int mipMapLevel,
                                                  const RectD & renderWindow,
-                                                 const boost::shared_ptr<Node> & treeRoot,
+                                                 const NodePtr & treeRoot,
                                                  FrameRequestMap & request);
 
     // Implem is in ParallelRenderArgs.cpp
     static EffectInstance::RenderRoIRetCode treeRecurseFunctor(bool isRenderFunctor,
-                                                                       const boost::shared_ptr<Node> & node,
+                                                                       const NodePtr & node,
                                                                        const FramesNeededMap & framesNeeded,
                                                                        const RoIMap & inputRois,
                                                                        const boost::shared_ptr<InputMatrixMap> & reroutesMap,
@@ -599,7 +599,7 @@ public:
                                                                        unsigned int originalMipMapLevel, // roi functor specific
                                                                        double time,
                                                                        int view,
-                                                                       const boost::shared_ptr<Node> & treeRoot,
+                                                                       const NodePtr & treeRoot,
                                                                        FrameRequestMap* requests,  // roi functor specific
                                                                        EffectInstance::InputImagesMap* inputImages, // render functor specific
                                                                        const EffectInstance::ComponentsNeededMap* neededComps, // render functor specific
@@ -624,19 +624,19 @@ public:
      * from last to first.
      * If this not is not disabled, it will return a pointer to this.
      **/
-    EffectInstance* getNearestNonDisabled() const;
+    EffectInstPtr getNearestNonDisabled() const;
 
     /**
      * @brief Same as getNearestNonDisabled() except that it returns the *last* disabled node before the nearest non disabled node.
      * @param inputNb[out] The inputNb of the node that is non disabled.
      **/
-    EffectInstance* getNearestNonDisabledPrevious(int* inputNb);
+    EffectInstPtr getNearestNonDisabledPrevious(int* inputNb);
 
     /**
      * @brief Same as getNearestNonDisabled except that it looks for the nearest non identity node.
      * This function calls the action isIdentity and getRegionOfDefinition and can be expensive!
      **/
-    EffectInstance* getNearestNonIdentity(double time);
+    EffectInstPtr getNearestNonIdentity(double time);
 
     /**
      * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
@@ -726,7 +726,7 @@ public:
 
     void addThreadLocalInputImageTempPointer(int inputNb, const boost::shared_ptr<Image> & img);
 
-    bool getThreadLocalRotoPaintTreeNodes(std::list<boost::shared_ptr<Node> >* nodes) const;
+    bool getThreadLocalRotoPaintTreeNodes(NodesList* nodes) const;
 
     /**
      * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
@@ -808,7 +808,7 @@ protected:
     virtual StatusEnum getTransform(double /*time*/,
                                             const RenderScale & /*renderScale*/,
                                             int /*view*/,
-                                            EffectInstance** /*inputToTransform*/,
+                                            EffectInstPtr* /*inputToTransform*/,
                                             Transform::Matrix3x3* /*transform*/) WARN_UNUSED_RETURN
     {
         return eStatusReplyDefault;
@@ -821,7 +821,7 @@ public:
     StatusEnum getTransform_public(double time,
                                            const RenderScale & renderScale,
                                            int view,
-                                           EffectInstance** inputToTransform,
+                                           EffectInstPtr* inputToTransform,
                                            Transform::Matrix3x3* transform) WARN_UNUSED_RETURN;
 
 protected:
@@ -1233,7 +1233,7 @@ public:
 
     struct RectToRender
     {
-        EffectInstance* identityInput;
+        EffectInstPtr identityInput;
         RectI rect;
         RoIMap inputRois;
         EffectInstance::InputImagesMap imgs;
@@ -1505,7 +1505,7 @@ public:
                                                SequenceTime* passThroughTime,
                                                int* passThroughView,
                                                std::bitset<4> *processChannels,
-                                               boost::shared_ptr<Node>* passThroughInput);
+                                               NodePtr* passThroughInput);
 
     void setComponentsAvailableDirty(bool dirty);
 
@@ -1519,12 +1519,12 @@ public:
                                   InputMatrixMap* inputTransforms);
 
 
-    static void transformInputRois(EffectInstance* self,
+    static void transformInputRois(const EffectInstance* self,
                                    const boost::shared_ptr<InputMatrixMap>& inputTransforms,
                                    double par,
                                    const RenderScale & scale,
                                    RoIMap* inputRois,
-                                   std::map<int, EffectInstance*>* reroutesMap);
+                                   std::map<int, EffectInstPtr>* reroutesMap);
 
     struct RenderArgs
     {
@@ -1536,7 +1536,7 @@ public:
         bool validArgs; //< are the args valid ?
         bool isIdentity;
         double identityTime;
-        EffectInstance* identityInput;
+        EffectInstPtr identityInput;
         
         EffectInstance::InputImagesMap inputImages;
         std::map<ImageComponents, PlaneToRender> outputPlanes;
@@ -1667,7 +1667,7 @@ protected:
                                                EffectInstance::ComponentsNeededMap* comps,
                                                 SequenceTime* passThroughTime,
                                                 int* passThroughView,
-                                                boost::shared_ptr<Node>* passThroughInput);
+                                                NodePtr* passThroughInput);
 
 
     /**
@@ -1755,7 +1755,7 @@ protected:
         return false;
     }
 
-    boost::weak_ptr<Node> _node; //< the node holding this effect
+    NodeWPtr _node; //< the node holding this effect
 
 private:
 
@@ -1852,7 +1852,7 @@ private:
                                          U64* nodeHash_p,
                                          bool* isIdentity_p,
                                          double* identityTime,
-                                         EffectInstance** identityInput_p,
+                                         EffectInstPtr* identityInput_p,
                                          bool* duringPaintStroke_p,
                                          RectD* rod_p,
                                          RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
@@ -1899,7 +1899,7 @@ private:
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.
      **/
-    int getInputNumber(EffectInstance* inputEffect) const;
+    int getInputNumber(const EffectInstance* inputEffect) const;
 
 
 };
@@ -1910,7 +1910,7 @@ private:
  * @typedef Any plug-in should have a static function called BuildEffect with the following signature.
  * It is used to build a new instance of an effect. Basically it should just call the constructor.
  **/
-typedef EffectInstance* (*EffectBuilder)(boost::shared_ptr<Node>);
+typedef EffectInstance* (*EffectBuilder)(NodePtr);
 
 NATRON_NAMESPACE_EXIT;
 

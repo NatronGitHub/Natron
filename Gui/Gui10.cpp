@@ -256,9 +256,9 @@ Gui::restoreLayout(bool wipePrevious,
                 _imp->_projectGui->getPanel()->floatPanel();
             } else {
                 ///Find a node with the dockable panel name
-                const std::list<boost::shared_ptr<NodeGui> > & nodes = getNodeGraph()->getAllActiveNodes();
+                const NodesGuiList & nodes = getNodeGraph()->getAllActiveNodes();
                 DockablePanel* panel = 0;
-                for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
+                for (NodesGuiList::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
                     if ( (*it2)->getNode()->getScriptName() == (*it)->child_asDockablePanel ) {
                         (*it2)->ensurePanelCreated();
                         NodeSettingsPanel* nodeSettings = (*it2)->getSettingPanel();

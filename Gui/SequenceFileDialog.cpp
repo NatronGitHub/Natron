@@ -2955,7 +2955,7 @@ SequenceFileDialog::createViewerPreviewNode()
     assert(_preview->viewerNode);
     _preview->viewerNode->hideGui();
     
-    ViewerInstance* viewerInstance = dynamic_cast<ViewerInstance*>(_preview->viewerNodeInternal->getLiveInstance());
+    ViewerInstance* viewerInstance = _preview->viewerNodeInternal->isEffectViewer();
     assert(viewerInstance);
     if (!viewerInstance) {
         // coverity[dead_error_line]
@@ -2990,7 +2990,7 @@ SequenceFileDialog::createViewerPreviewNode()
     _preview->viewerUI->setParent(NULL);
 }
 
-boost::shared_ptr<NodeGui>
+NodeGuiPtr
 SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
 {
     std::map<std::string,std::string> readersForFormat;
@@ -2998,18 +2998,18 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
     if ( !filetype.empty() ) {
         std::map<std::string,std::string>::iterator found = readersForFormat.find(filetype);
         if ( found == readersForFormat.end() ) {
-            return boost::shared_ptr<NodeGui>();
+            return NodeGuiPtr();
         }
-        std::map<std::string,std::pair< boost::shared_ptr<Node>, boost::shared_ptr<NodeGui> > >::iterator foundReader = _preview->readerNodes.find(found->second);
+        std::map<std::string,std::pair< NodePtr, NodeGuiPtr > >::iterator foundReader = _preview->readerNodes.find(found->second);
         if (foundReader == _preview->readerNodes.end()) {
             
             CreateNodeArgs args(found->second.c_str(), eCreateNodeReasonInternal, _gui->getApp()->getProject());
             args.fixedName = QString(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) +  QString(found->first.c_str());
             
             
-            boost::shared_ptr<Node> reader = _gui->getApp()->createNode(args);
+            NodePtr reader = _gui->getApp()->createNode(args);
             boost::shared_ptr<NodeGuiI> readerGui_i = reader->getNodeGui();
-            boost::shared_ptr<NodeGui> readerGui = boost::dynamic_pointer_cast<NodeGui>(readerGui_i);
+            NodeGuiPtr readerGui = boost::dynamic_pointer_cast<NodeGui>(readerGui_i);
             assert(readerGui);
             readerGui->hideGui();
             _preview->readerNodes.insert(std::make_pair(found->second,std::make_pair(reader,readerGui)));
@@ -3018,7 +3018,7 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
             return foundReader->second.second;
         }
     }
-    return  boost::shared_ptr<NodeGui>();
+    return  NodeGuiPtr();
 }
 
 void
@@ -3033,16 +3033,16 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     assert(_preview->viewerNode);
     
-    boost::shared_ptr<Node> currentInput = _preview->viewerNode->getNode()->getInput(0);
+    NodePtr currentInput = _preview->viewerNode->getNode()->getInput(0);
     if (currentInput) {
         _preview->viewerNode->getNode()->disconnectInput(0);
     }
     
     _gui->getApp()->getProject()->setAutoSetProjectFormatEnabled(false);
 
-    boost::shared_ptr<NodeGui> reader = findOrCreatePreviewReader(ext);
+    NodeGuiPtr reader = findOrCreatePreviewReader(ext);
     if (reader) {
-        const std::vector<boost::shared_ptr<KnobI> > & knobs = reader->getNode()->getKnobs();
+        const KnobsVec & knobs = reader->getNode()->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             KnobFile* fileKnob = dynamic_cast<KnobFile*>(knobs[i].get());
             if ( fileKnob && fileKnob->isInputImageFile() ) {
@@ -3052,7 +3052,7 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
         _preview->viewerNode->getNode()->connectInput(reader->getNode(), 0);
         
         double firstFrame,lastFrame;
-        reader->getNode()->getLiveInstance()->getFrameRange_public(reader->getNode()->getHashValue(), &firstFrame, &lastFrame);
+        reader->getNode()->getEffectInstance()->getFrameRange_public(reader->getNode()->getHashValue(), &firstFrame, &lastFrame);
         _preview->viewerUI->setTimelineBounds(firstFrame, lastFrame);
         _preview->viewerUI->centerOn(firstFrame,lastFrame);
 

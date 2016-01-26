@@ -53,7 +53,7 @@ Group::getNode(const std::string& fullySpecifiedName) const
     if (!_collection.lock()) {
         return 0;
     }
-    boost::shared_ptr<Node> node = _collection.lock()->getNodeByFullySpecifiedName(fullySpecifiedName);
+    NodePtr node = _collection.lock()->getNodeByFullySpecifiedName(fullySpecifiedName);
     if (node && node->isActivated()) {
         return new Effect(node);
     } else {
@@ -69,9 +69,9 @@ Group::getChildren() const
         return ret;
     }
 
-    NodeList nodes = _collection.lock()->getNodes();
+    NodesList nodes = _collection.lock()->getNodes();
     
-    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ((*it)->isActivated() && (*it)->getParentMultiInstanceName().empty()) {
             ret.push_back(new Effect(*it));
         }

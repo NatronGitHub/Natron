@@ -39,7 +39,7 @@
 NATRON_NAMESPACE_ENTER;
 
 ValueSerialization::ValueSerialization(KnobSerializationBase* serialization,
-                                       const boost::shared_ptr<KnobI> & knob,
+                                       const KnobPtr & knob,
                                        int dimension)
 : _serialization(serialization)
 , _knob(knob)
@@ -50,7 +50,7 @@ ValueSerialization::ValueSerialization(KnobSerializationBase* serialization,
 {
 }
 
-ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI> & knob,
+ValueSerialization::ValueSerialization(const KnobPtr & knob,
                                        int dimension,
                                        bool exprHasRetVar,
                                        const std::string& expr)
@@ -61,7 +61,7 @@ ValueSerialization::ValueSerialization(const boost::shared_ptr<KnobI> & knob,
 , _expression(expr)
 , _exprHasRetVar(exprHasRetVar)
 {
-    std::pair< int, boost::shared_ptr<KnobI> > m = knob->getMaster(dimension);
+    std::pair< int, KnobPtr > m = knob->getMaster(dimension);
     if ( m.second && !knob->isMastersPersistenceIgnored() ) {
         _master.masterDimension = m.first;
         NamedKnobHolder* holder = dynamic_cast<NamedKnobHolder*>( m.second->getHolder() );
@@ -82,10 +82,10 @@ ValueSerialization::setChoiceExtraLabel(const std::string& label)
     _serialization->setChoiceExtraString(label);
 }
 
-boost::shared_ptr<KnobI> KnobSerialization::createKnob(const std::string & typeName,
+KnobPtr KnobSerialization::createKnob(const std::string & typeName,
                                                        int dimension)
 {
-    boost::shared_ptr<KnobI> ret;
+    KnobPtr ret;
 
     if ( typeName == KnobInt::typeNameStatic() ) {
         ret.reset( new KnobInt(NULL,"",dimension,false) );
@@ -120,14 +120,14 @@ boost::shared_ptr<KnobI> KnobSerialization::createKnob(const std::string & typeN
     return ret;
 }
 
-static boost::shared_ptr<KnobI> findMaster(const boost::shared_ptr<KnobI> & knob,
-                                           const std::list<boost::shared_ptr<Node> > & allNodes,
+static KnobPtr findMaster(const KnobPtr & knob,
+                                           const NodesList & allNodes,
                                            const std::string& masterKnobName,
                                            const std::string& masterNodeName,
                                            const std::map<std::string,std::string>& oldNewScriptNamesMapping)
 {
     ///we need to cycle through all the nodes of the project to find the real master
-    boost::shared_ptr<Node> masterNode;
+    NodePtr masterNode;
     
     std::string masterNodeNameToFind = masterNodeName;
     
@@ -140,7 +140,7 @@ static boost::shared_ptr<KnobI> findMaster(const boost::shared_ptr<KnobI> & knob
         masterNodeNameToFind = foundMapping->second;
     }
     
-    for (std::list<boost::shared_ptr<Node> >::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
+    for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
         if ((*it2)->getScriptName() == masterNodeNameToFind) {
             masterNode = *it2;
             break;
@@ -148,11 +148,11 @@ static boost::shared_ptr<KnobI> findMaster(const boost::shared_ptr<KnobI> & knob
     }
     if (!masterNode) {
         qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeNameToFind.c_str();
-        return boost::shared_ptr<KnobI>();
+        return KnobPtr();
     }
     
     ///now that we have the master node, find the corresponding knob
-    const std::vector< boost::shared_ptr<KnobI> > & otherKnobs = masterNode->getKnobs();
+    const std::vector< KnobPtr > & otherKnobs = masterNode->getKnobs();
     int found = -1;
     for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
         if ( (otherKnobs[j]->getName() == masterKnobName) && otherKnobs[j]->getIsPersistant() ) {
@@ -165,12 +165,12 @@ static boost::shared_ptr<KnobI> findMaster(const boost::shared_ptr<KnobI> & knob
     } else {
         return otherKnobs[found];
     }
-    return boost::shared_ptr<KnobI>();
+    return KnobPtr();
 }
 
 void
-KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
-                                    const std::list<boost::shared_ptr<Node> > & allNodes,
+KnobSerialization::restoreKnobLinks(const KnobPtr & knob,
+                                    const NodesList & allNodes,
                                     const std::map<std::string,std::string>& oldNewScriptNamesMapping)
 {
     int i = 0;
@@ -182,7 +182,7 @@ KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
         if (!_masters.empty()) {
             const std::string& aliasKnobName = _masters.front().masterKnobName;
             const std::string& aliasNodeName = _masters.front().masterNodeName;
-            boost::shared_ptr<KnobI> alias = findMaster(knob, allNodes, aliasKnobName, aliasNodeName, oldNewScriptNamesMapping);
+            KnobPtr alias = findMaster(knob, allNodes, aliasKnobName, aliasNodeName, oldNewScriptNamesMapping);
             if (alias) {
                 knob->setKnobAsAliasOfThis(alias, true);
             }
@@ -191,7 +191,7 @@ KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
         
         for (std::list<MasterSerialization>::iterator it = _masters.begin(); it != _masters.end(); ++it) {
             if (it->masterDimension != -1) {
-                boost::shared_ptr<KnobI> master = findMaster(knob, allNodes, it->masterKnobName, it->masterNodeName, oldNewScriptNamesMapping);
+                KnobPtr master = findMaster(knob, allNodes, it->masterKnobName, it->masterNodeName, oldNewScriptNamesMapping);
                 if (master) {
                     knob->slaveTo(i, master, it->masterDimension);
                 }
@@ -202,8 +202,8 @@ KnobSerialization::restoreKnobLinks(const boost::shared_ptr<KnobI> & knob,
 }
 
 void
-KnobSerialization::restoreTracks(const boost::shared_ptr<KnobI> & knob,
-                                 const std::list<boost::shared_ptr<Node> > & allNodes)
+KnobSerialization::restoreTracks(const KnobPtr & knob,
+                                 const NodesList & allNodes)
 {
     KnobDouble* isDouble = dynamic_cast<KnobDouble*>( knob.get() );
 
@@ -213,7 +213,7 @@ KnobSerialization::restoreTracks(const boost::shared_ptr<KnobI> & knob,
 }
 
 void
-KnobSerialization::restoreExpressions(const boost::shared_ptr<KnobI> & knob,
+KnobSerialization::restoreExpressions(const KnobPtr & knob,
                                       const std::map<std::string,std::string>& oldNewScriptNamesMapping)
 {
     int dims = std::min(knob->getDimension(), _knob->getDimension());

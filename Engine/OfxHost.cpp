@@ -640,7 +640,7 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
 }
 
 boost::shared_ptr<AbstractOfxEffectInstance>
-OfxHost::createOfxEffect(boost::shared_ptr<Node> node,
+OfxHost::createOfxEffect(NodePtr node,
                                  const NodeSerialization* serialization,
                                  const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                  bool allowFileDialogs,
@@ -657,7 +657,7 @@ OfxHost::createOfxEffect(boost::shared_ptr<Node> node,
     
 
     boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect(new OfxEffectInstance(node));
-    if ( node && !node->getLiveInstance() ) {
+    if ( node && !node->getEffectInstance() ) {
         node->setLiveInstance(hostSideEffect);
     }
 
@@ -948,7 +948,7 @@ OfxHost::fetchSuite(const char *suiteName,
 OFX::Host::Memory::Instance*
 OfxHost::newMemoryInstance(size_t nBytes)
 {
-    OfxMemory* ret = new OfxMemory(NULL);
+    OfxMemory* ret = new OfxMemory(boost::shared_ptr<OfxEffectInstance>());
     bool allocated = ret->alloc(nBytes);
     
     if ((nBytes != 0 && !ret->getPtr()) || !allocated) {

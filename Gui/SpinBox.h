@@ -146,7 +146,6 @@ private:
     ///Used by the stylesheet , they are Q_PROPERTIES
     int animation; // 0 = no animation, 1 = interpolated, 2 = equals keyframe value
     bool dirty;
-    bool altered;
     boost::scoped_ptr<SpinBoxPrivate> _imp;
 };
 

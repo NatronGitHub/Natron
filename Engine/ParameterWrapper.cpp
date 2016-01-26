@@ -28,7 +28,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-Param::Param(const boost::shared_ptr<KnobI>& knob)
+Param::Param(const KnobPtr& knob)
 : _knob(knob)
 {
     
@@ -42,7 +42,7 @@ Param::~Param()
 Param*
 Param::getParent() const
 {
-    boost::shared_ptr<KnobI> parent = getInternalKnob()->getParentKnob();
+    KnobPtr parent = getInternalKnob()->getParentKnob();
     if (parent) {
         return new Param(parent);
     } else {
@@ -186,17 +186,17 @@ Param::getAddNewLine()
 void
 Param::setAddNewLine(bool a)
 {
-    boost::shared_ptr<KnobI> knob = getInternalKnob();
+    KnobPtr knob = getInternalKnob();
     if (!knob || !knob->isUserKnob()) {
         return;
     }
     
-    boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
+    KnobPtr parentKnob = knob->getParentKnob();
     if (parentKnob) {
         KnobGroup* parentIsGrp = dynamic_cast<KnobGroup*>(parentKnob.get());
         KnobPage* parentIsPage = dynamic_cast<KnobPage*>(parentKnob.get());
         assert(parentIsGrp || parentIsPage);
-        std::vector<boost::shared_ptr<KnobI> > children;
+        KnobsVec children;
         if (parentIsGrp) {
             children = parentIsGrp->getChildren();
         } else if (parentIsPage) {
@@ -216,8 +216,8 @@ Param::setAddNewLine(bool a)
 bool
 Param::copy(Param* other, int dimension)
 {
-    boost::shared_ptr<KnobI> thisKnob = _knob.lock();
-    boost::shared_ptr<KnobI> otherKnob = other->_knob.lock();
+    KnobPtr thisKnob = _knob.lock();
+    KnobPtr otherKnob = other->_knob.lock();
     if (!thisKnob->isTypeCompatible(otherKnob)) {
         return false;
     }
@@ -276,8 +276,8 @@ Param::setAsAlias(Param* other)
     if (!other) {
         return false;
     }
-    boost::shared_ptr<KnobI> otherKnob = other->_knob.lock();
-    boost::shared_ptr<KnobI> thisKnob = getInternalKnob();
+    KnobPtr otherKnob = other->_knob.lock();
+    KnobPtr thisKnob = getInternalKnob();
     if (!otherKnob || !thisKnob || otherKnob->typeName() != thisKnob->typeName() ||
         otherKnob->getDimension() != thisKnob->getDimension()) {
         return false;
@@ -285,7 +285,7 @@ Param::setAsAlias(Param* other)
     return otherKnob->setKnobAsAliasOfThis(thisKnob, true);
 }
 
-AnimatedParam::AnimatedParam(const boost::shared_ptr<KnobI>& knob)
+AnimatedParam::AnimatedParam(const KnobPtr& knob)
 : Param(knob)
 {
     
@@ -358,8 +358,8 @@ Param::_addAsDependencyOf(int fromExprDimension,Param* param,int thisDimension)
     //from expr is in the dimension of expressionKnob
     //thisDimension is in the dimesnion of getValueCallerKnob
     
-    boost::shared_ptr<KnobI> expressionKnob = param->_knob.lock();
-    boost::shared_ptr<KnobI> getValueCallerKnob = _knob.lock();
+    KnobPtr expressionKnob = param->_knob.lock();
+    KnobPtr getValueCallerKnob = _knob.lock();
     if (fromExprDimension < 0 || fromExprDimension >= expressionKnob->getDimension()) {
         return;
     }

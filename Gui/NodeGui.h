@@ -136,7 +136,7 @@ public:
     NodeGui(QGraphicsItem *parent = 0);
 
     void initialize(NodeGraph* dag,
-                    const boost::shared_ptr<Node> & internalNode);
+                    const NodePtr & internalNode);
 
     //Creates panel if needed, might be expensive
     void ensurePanelCreated();
@@ -159,7 +159,7 @@ public:
     void copyFrom(const NodeGuiSerialization & obj);
 
 
-    boost::shared_ptr<Node> getNode() const
+    NodePtr getNode() const
     {
         return _internalNode.lock();
     }
@@ -313,9 +313,9 @@ public:
     
     boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const;
 
-    void setParentMultiInstance(const boost::shared_ptr<NodeGui> & parent);
+    void setParentMultiInstance(const NodeGuiPtr & parent);
 
-    boost::shared_ptr<NodeGui> getParentMultiInstance() const
+    NodeGuiPtr getParentMultiInstance() const
     {
         return _parentMultiInstance.lock();
     }
@@ -328,7 +328,7 @@ public:
      * be serialized, hence the list.
      **/
     void serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) const;
-    void restoreInternal(const boost::shared_ptr<NodeGui>& thisShared,
+    void restoreInternal(const NodeGuiPtr& thisShared,
                          const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) ;
         
     void setMergeHintActive(bool active);
@@ -532,7 +532,7 @@ Q_SIGNALS:
 protected:
 
     virtual void createGui();
-    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container,const boost::shared_ptr<NodeGui> & thisAsShared);
+    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container,const NodeGuiPtr & thisAsShared);
     virtual bool canMakePreview()
     {
         return true;
@@ -569,7 +569,7 @@ private:
     NodeGraph* _graph;
 
     /*pointer to the internal node*/
-    boost::weak_ptr<Node> _internalNode;
+    NodeWPtr _internalNode;
 
     /*true if the node is selected by the user*/
     bool _selected;
@@ -639,7 +639,7 @@ private:
         LinkArrow* arrow;
     };
 
-    typedef std::map<boost::weak_ptr<Node>,LinkedDim> KnobGuiLinks;
+    typedef std::map<NodeWPtr,LinkedDim> KnobGuiLinks;
     KnobGuiLinks _knobsLinks;
     boost::shared_ptr<NodeGuiIndicator> _expressionIndicator;
     QPoint _magnecEnabled; //<enabled in X or/and Y
@@ -665,7 +665,7 @@ private:
     
     boost::shared_ptr<NodeGuiIndicator> _availableViewsIndicator;
     boost::shared_ptr<NodeGuiIndicator> _passThroughIndicator;
-    boost::weak_ptr<Node> _identityInput;
+    NodeWPtr _identityInput;
     
 };
 

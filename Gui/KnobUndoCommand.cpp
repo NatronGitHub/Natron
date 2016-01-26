@@ -54,7 +54,7 @@ PasteUndoCommand::PasteUndoCommand(KnobGui* knob,
     assert( !appPTR->isClipBoardEmpty() );
     assert( ( !copyAnimation && newCurves.empty() ) || copyAnimation );
 
-    boost::shared_ptr<KnobI> internalKnob = knob->getKnob();
+    KnobPtr internalKnob = knob->getKnob();
     Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
     Knob<double>* isDouble = dynamic_cast<Knob<double>*>( internalKnob.get() );
@@ -96,7 +96,7 @@ PasteUndoCommand::PasteUndoCommand(KnobGui* knob,
 void
 PasteUndoCommand::undo()
 {
-    boost::shared_ptr<KnobI> internalKnob = _knob->getKnob();
+    KnobPtr internalKnob = _knob->getKnob();
     int targetDimension = internalKnob->getDimension();
 
     Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
@@ -169,7 +169,7 @@ void
 PasteUndoCommand::redo()
 {
     
-    boost::shared_ptr<KnobI> internalKnob = _knob->getKnob();
+    KnobPtr internalKnob = _knob->getKnob();
     
     Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
@@ -277,10 +277,10 @@ MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
 {
 }
 
-boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const boost::shared_ptr<KnobI> & originalKnob)
+KnobPtr MultipleKnobEditsUndoCommand::createCopyForKnob(const KnobPtr & originalKnob)
 {
     const std::string & typeName = originalKnob->typeName();
-    boost::shared_ptr<KnobI> copy;
+    KnobPtr copy;
     int dimension = originalKnob->getDimension();
 
     if ( typeName == KnobInt::typeNameStatic() ) {
@@ -308,7 +308,7 @@ boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const b
     ///If this is another type of knob this is wrong since they do not hold any value
     assert(copy);
     if (!copy) {
-        return boost::shared_ptr<KnobI>();
+        return KnobPtr();
     }
     copy->populate();
 
@@ -329,7 +329,7 @@ MultipleKnobEditsUndoCommand::undo()
     }
 
     for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        boost::shared_ptr<KnobI> knob = it->first->getKnob();
+        KnobPtr knob = it->first->getKnob();
         if (!knob) {
             continue;
         }
@@ -397,7 +397,7 @@ MultipleKnobEditsUndoCommand::redo()
     ///this is the first redo command, set values
     for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
         
-        boost::shared_ptr<KnobI> knob = it->first->getKnob();
+        KnobPtr knob = it->first->getKnob();
         if (!knob) {
             continue;
         }
@@ -524,12 +524,12 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
     return true;
 }
 
-RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<boost::shared_ptr<KnobI> > & knobs,
+RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<KnobPtr > & knobs,
                                                QUndoCommand *parent)
     : QUndoCommand(parent)
       , _knobs(knobs)
 {
-    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    for (std::list<KnobPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         _clones.push_back( MultipleKnobEditsUndoCommand::createCopyForKnob(*it) );
     }
 }
@@ -540,11 +540,11 @@ RestoreDefaultsCommand::undo()
     assert( _clones.size() == _knobs.size() );
 
     std::list<SequenceTime> times;
-    const boost::shared_ptr<KnobI> & first = _knobs.front();
+    const KnobPtr & first = _knobs.front();
     AppInstance* app = first->getHolder()->getApp();
     assert(app);
-    std::list<boost::shared_ptr<KnobI> >::const_iterator itClone = _clones.begin();
-    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
+    std::list<KnobPtr >::const_iterator itClone = _clones.begin();
+    for (std::list<KnobPtr >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
         (*it)->cloneAndUpdateGui( itClone->get() );
 
         if ( (*it)->getHolder()->getApp() ) {
@@ -575,7 +575,7 @@ void
 RestoreDefaultsCommand::redo()
 {
     std::list<SequenceTime> times;
-    const boost::shared_ptr<KnobI> & first = _knobs.front();
+    const KnobPtr & first = _knobs.front();
     
     AppInstance* app = 0;
     
@@ -589,7 +589,7 @@ RestoreDefaultsCommand::redo()
     /*
      First reset all knobs values, this will not call instanceChanged action
      */
-    for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+    for (std::list<KnobPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         if ( (*it)->getHolder() && (*it)->getHolder()->getApp() ) {
             int dim = (*it)->getDimension();
             for (int i = 0; i < dim; ++i) {
@@ -628,7 +628,7 @@ RestoreDefaultsCommand::redo()
     if (app) {
         time = app->getTimeLine()->currentFrame();
     }
-    for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+    for (std::list<KnobPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         if ((*it)->getHolder()) {
             (*it)->getHolder()->onKnobValueChanged_public(it->get(), eValueChangedReasonRestoreDefault, time, true);
         }
@@ -654,7 +654,7 @@ RestoreDefaultsCommand::redo()
 }
 
 
-SetExpressionCommand::SetExpressionCommand(const boost::shared_ptr<KnobI> & knob,
+SetExpressionCommand::SetExpressionCommand(const KnobPtr & knob,
                      bool hasRetVar,
                      int dimension,
                      const std::string& expr,

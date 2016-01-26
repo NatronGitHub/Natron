@@ -620,7 +620,7 @@ std::vector<DopeSheetKey> DopeSheetViewPrivate::isNearByKeyframe(const boost::sh
 
     std::vector<DopeSheetKey> ret;
 
-    boost::shared_ptr<KnobI> knob = dsKnob->getKnobGui()->getKnob();
+    KnobPtr knob = dsKnob->getKnobGui()->getKnob();
 
     int dim = dsKnob->getDimension();
 
@@ -1882,10 +1882,10 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
         
         U64 nodeHash = node->getHashValue();
         double inputFirst,inputLast;
-        input->getLiveInstance()->getFrameRange_public(input->getHashValue(), &inputFirst, &inputLast);
+        input->getEffectInstance()->getFrameRange_public(input->getHashValue(), &inputFirst, &inputLast);
 
-        FramesNeededMap framesFirst = node->getLiveInstance()->getFramesNeeded_public(nodeHash, inputFirst, 0, 0);
-        FramesNeededMap framesLast = node->getLiveInstance()->getFramesNeeded_public(nodeHash, inputLast, 0, 0);
+        FramesNeededMap framesFirst = node->getEffectInstance()->getFramesNeeded_public(nodeHash, inputFirst, 0, 0);
+        FramesNeededMap framesLast = node->getEffectInstance()->getFramesNeeded_public(nodeHash, inputLast, 0, 0);
         assert(!framesFirst.empty() && !framesLast.empty());
         
         FrameRange range;
@@ -1997,7 +1997,7 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
     FrameRange range;
     std::set<double> times;
     
-    NodeGroup* nodegroup = dynamic_cast<NodeGroup *>(node->getLiveInstance());
+    NodeGroup* nodegroup = node->isEffectGroup();
     assert(nodegroup);
     if (!nodegroup) {
         throw std::logic_error("DopeSheetViewPrivate::computeGroupRange: node is not a group");
@@ -2007,9 +2007,9 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
     ++rangeComputationRecursion;
     
     
-    NodeList nodes = nodegroup->getNodes();
+    NodesList nodes = nodegroup->getNodes();
 
-    for (NodeList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodePtr node = (*it);
 
         boost::shared_ptr<DSNode> dsNode = model->findDSNode(node.get());
@@ -2018,7 +2018,7 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
             continue;
         }
 
-        boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
+        NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(node->getNodeGui());
 
         if (!nodeGui->getSettingPanel() || !nodeGui->isSettingsPanelVisible()) {
             continue;
@@ -2038,7 +2038,7 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
              it != knobs.end();
              ++it) {
             KnobGui *knobGui = (*it).second;
-            boost::shared_ptr<KnobI> knob = knobGui->getKnob();
+            KnobPtr knob = knobGui->getKnob();
 
             if (!knob->isAnimationEnabled() || !knob->hasAnimation()) {
                 continue;
@@ -2238,7 +2238,7 @@ void DopeSheetViewPrivate::createSelectionFromRect(const RectD &zoomCoordsRect, 
 
 void DopeSheetViewPrivate::moveCurrentFrameIndicator(double dt)
 {
-    gui->getApp()->setLastViewerUsingTimeline(boost::shared_ptr<Node>());
+    gui->getApp()->setLastViewerUsingTimeline(NodePtr());
 
     double toTime = timeline->currentFrame() + dt;
     
@@ -2792,7 +2792,7 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
             const KnobsAndGuis &knobs = dsNode->getNodeGui()->getKnobs();
 
             for (KnobsAndGuis::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
-                boost::shared_ptr<KnobI> knob = knobIt->first.lock();
+                KnobPtr knob = knobIt->first.lock();
                 KnobGui *knobGui = knobIt->second;
                 connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,double,double)),
                         this, SLOT(onKeyframeChanged()));
@@ -3399,7 +3399,7 @@ DopeSheetView::mouseDoubleClickEvent(QMouseEvent *e)
             double keyframeTime = std::floor(_imp->zoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
             int dim = dsKnob->getDimension();
             
-            boost::shared_ptr<KnobI> knob = dsKnob->getInternalKnob();
+            KnobPtr knob = dsKnob->getInternalKnob();
             
             bool hasKeyframe = false;
             for (int i = 0; i < knob->getDimension(); ++i) {

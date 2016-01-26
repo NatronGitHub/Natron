@@ -103,7 +103,7 @@ GroupInput::getOutputPremultiplication() const
     }
     assert(inputNb != -1);
     if (inputNb != -1) {
-        EffectInstance* input = isGroup->getInput(inputNb);
+        EffectInstPtr input = isGroup->getInput(inputNb);
         if (input) {
             return input->getOutputPremultiplication();
         }

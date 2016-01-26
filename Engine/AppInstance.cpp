@@ -378,7 +378,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderR
             if (!output) {
                 throw std::invalid_argument(it->name.toStdString() + tr(" is not the name of a valid Output node of the script").toStdString());
             }
-            GroupOutput* isGrpOutput = dynamic_cast<GroupOutput*>(output->getLiveInstance());
+            GroupOutput* isGrpOutput = dynamic_cast<GroupOutput*>(output->getEffectInstance().get());
             if (!isGrpOutput) {
                 throw std::invalid_argument(it->name.toStdString() + tr(" is not the name of a valid Output node of the script").toStdString());
             }
@@ -656,7 +656,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     return true;
 }
 
-boost::shared_ptr<Node>
+NodePtr
 AppInstance::createNodeFromPythonModule(Plugin* plugin,
                                         const boost::shared_ptr<NodeCollection>& group,
                                         CreateNodeReason reason,
@@ -665,7 +665,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
 {
    
     
-    boost::shared_ptr<Node> node;
+    NodePtr node;
     
     {
         FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
@@ -733,7 +733,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
 
 
 void
-AppInstance::setGroupLabelIDAndVersion(const boost::shared_ptr<Node>& node,
+AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
                                        const QString& pythonModulePath,
                                const QString &pythonModule)
 {
@@ -788,11 +788,11 @@ static int isEntitledForInspector(Plugin* plugin,OFX::Host::ImageEffect::Descrip
     return 0;
 }
 
-boost::shared_ptr<Node>
+NodePtr
 AppInstance::createNodeInternal(const CreateNodeArgs& args)
 {
     
-    boost::shared_ptr<Node> node;
+    NodePtr node;
     Plugin* plugin = 0;
     QString findId;
     
@@ -939,7 +939,7 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
         qDebug() << message.c_str();
         errorDialog(title, message, false);
 
-        return boost::shared_ptr<Node>();
+        return NodePtr();
     } catch (...) {
         if (args.group) {
             args.group->removeNode(node);
@@ -949,10 +949,10 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
         qDebug() << message.c_str();
         errorDialog(title, message, false);
 
-        return boost::shared_ptr<Node>();
+        return NodePtr();
     }
 
-    boost::shared_ptr<Node> multiInstanceParent = node->getParentMultiInstance();
+    NodePtr multiInstanceParent = node->getParentMultiInstance();
     
     if (args.createGui) {
         // createNodeGui also sets the filename parameter for reader or writers
@@ -969,7 +969,7 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
         }
     }
     
-    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
+    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getEffectInstance()->shared_from_this());
 
     if (isGrp) {
         
@@ -1026,7 +1026,7 @@ AppInstance::createNodeInternal(const CreateNodeArgs& args)
     return node;
 } // createNodeInternal
 
-boost::shared_ptr<Node>
+NodePtr
 AppInstance::createNode(const CreateNodeArgs & args)
 {
     return createNodeInternal(args);
@@ -1039,7 +1039,7 @@ AppInstance::getAppID() const
     return _imp->_appID;
 }
 
-boost::shared_ptr<Node>
+NodePtr
 AppInstance::getNodeByFullySpecifiedName(const std::string & name) const
 {
     return _imp->_currentProject->getNodeByFullySpecifiedName(name);
@@ -1149,13 +1149,13 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
                     exc.append(" is not an output node! It cannot render anything.");
                     throw std::invalid_argument(exc);
                 }
-                ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
+                ViewerInstance* isViewer = node->isEffectViewer();
                 if (isViewer) {
                     throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
                 }
                 
                 RenderWork w;
-                w.writer = dynamic_cast<OutputEffectInstance*>( node->getLiveInstance() );
+                w.writer = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
                 assert(w.writer);
                 w.firstFrame = it->firstFrame;
                 w.lastFrame = it->lastFrame;
@@ -1262,10 +1262,10 @@ AppInstance::getFrameRange(double* first,double* last) const
 void
 AppInstance::clearOpenFXPluginsCaches()
 {
-    NodeList activeNodes;
+    NodesList activeNodes;
     _imp->_currentProject->getActiveNodes(&activeNodes);
 
-    for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+    for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         (*it)->purgeAllInstancesCaches();
     }
 }
@@ -1273,10 +1273,10 @@ AppInstance::clearOpenFXPluginsCaches()
 void
 AppInstance::clearAllLastRenderedImages()
 {
-    NodeList activeNodes;
+    NodesList activeNodes;
     _imp->_currentProject->getActiveNodes(&activeNodes);
     
-    for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+    for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         (*it)->clearLastRenderedImage();
     }
 }
@@ -1315,8 +1315,8 @@ AppInstance::declareCurrentAppVariable_Python()
     /// define the app variable
     std::stringstream ss;
     ss << "app" << _imp->_appID + 1 << " = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.getInstance(" << _imp->_appID << ") \n";
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->_currentProject->getKnobs();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    const KnobsVec& knobs = _imp->_currentProject->getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         ss << "app" << _imp->_appID + 1 << "." << (*it)->getName() << " = app" << _imp->_appID + 1 << ".getProjectParam('" <<
         (*it)->getName() << "')\n";
     }
@@ -1437,12 +1437,12 @@ AppInstance::getAppIDString() const
 }
 
 void
-AppInstance::onGroupCreationFinished(const boost::shared_ptr<Node>& node,
+AppInstance::onGroupCreationFinished(const NodePtr& node,
                                      CreateNodeReason reason)
 {
     assert(node);
     if (!_imp->_currentProject->isLoadingProject() && reason != eCreateNodeReasonProjectLoad && reason != eCreateNodeReasonCopyPaste) {
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+        NodeGroup* isGrp = node->isEffectGroup();
         assert(isGrp);
         if (!isGrp) {
             return;

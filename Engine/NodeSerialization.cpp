@@ -34,7 +34,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-NodeSerialization::NodeSerialization(const boost::shared_ptr<Node> & n,bool serializeInputs)
+NodeSerialization::NodeSerialization(const NodePtr & n,bool serializeInputs)
     : _isNull(true)
     , _nbKnobs(0)
     , _knobsValues()
@@ -57,12 +57,12 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Node> & n,bool seri
         _inputs.clear();
 
         if ( n->isOpenFXNode() ) {
-            dynamic_cast<OfxEffectInstance*>( n->getLiveInstance() )->syncPrivateData_other_thread();
+            dynamic_cast<OfxEffectInstance*>( n->getEffectInstance().get() )->syncPrivateData_other_thread();
         }
 
-        std::vector< boost::shared_ptr<KnobI> >  knobs = n->getLiveInstance()->getKnobs_mt_safe();
+        std::vector< KnobPtr >  knobs = n->getEffectInstance()->getKnobs_mt_safe();
 
-        std::list<boost::shared_ptr<KnobI> > userPages;
+        std::list<KnobPtr > userPages;
         for (U32 i  = 0; i < knobs.size(); ++i) {
             KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[i].get() );
             KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[i].get() );
@@ -89,7 +89,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Node> & n,bool seri
         
         _nbKnobs = (int)_knobsValues.size();
         
-        for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
+        for (std::list<KnobPtr >::const_iterator it = userPages.begin(); it != userPages.end(); ++it) {
             boost::shared_ptr<GroupKnobSerialization> s(new GroupKnobSerialization(*it));
             _userPages.push_back(s);
         }
@@ -117,7 +117,7 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Node> & n,bool seri
             n->getInputNames(_inputs);
         }
 
-        boost::shared_ptr<Node> masterNode = n->getMasterNode();
+        NodePtr masterNode = n->getMasterNode();
         if (masterNode) {
             _masterNodeName = masterNode->getFullyQualifiedName();
         }
@@ -131,14 +131,14 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Node> & n,bool seri
         }
 
         
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(n->getLiveInstance());
+        NodeGroup* isGrp = n->isEffectGroup();
         if (isGrp) {
-            NodeList nodes;
+            NodesList nodes;
             isGrp->getActiveNodes(&nodes);
             
             _children.clear();
             
-            for (NodeList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
+            for (NodesList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
                 boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));
                 _children.push_back(state);
             }
@@ -147,11 +147,11 @@ NodeSerialization::NodeSerialization(const boost::shared_ptr<Node> & n,bool seri
 
          _multiInstanceParentName = n->getParentMultiInstanceName();
         
-        std::list<NodePtr> childrenMultiInstance;
+        NodesList childrenMultiInstance;
         _node->getChildrenMultiInstance(&childrenMultiInstance);
         if (!childrenMultiInstance.empty()) {
             assert(!isGrp);
-            for (NodeList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end() ; ++it) {
+            for (NodesList::iterator it = childrenMultiInstance.begin(); it != childrenMultiInstance.end() ; ++it) {
                 assert((*it)->getParentMultiInstance());
                 if ((*it)->isActivated()) {
                     boost::shared_ptr<NodeSerialization> state(new NodeSerialization(*it));

@@ -25,7 +25,16 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <list>
+
 #include "Global/Macros.h"
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#endif
 
 // boost
 
@@ -148,6 +157,7 @@ class KnobString;
 class LibraryBinary;
 class Node;
 class NodeCollection;
+class NodeGroup;
 class NodeGraphI;
 class NodeGuiI;
 class NodeSerialization;
@@ -208,6 +218,20 @@ class Lut;
 namespace Transform {
 struct Matrix3x3;
 }
+
+typedef boost::shared_ptr<Node> NodePtr;
+typedef std::list<NodePtr> NodesList;
+
+typedef boost::weak_ptr<Node> NodeWPtr;
+typedef std::list<NodeWPtr> NodesWList;
+
+typedef boost::shared_ptr<KnobI> KnobPtr;
+typedef std::vector<KnobPtr> KnobsVec;
+
+
+typedef boost::shared_ptr<EffectInstance> EffectInstPtr;
+typedef boost::weak_ptr<EffectInstance> EffectInstWPtr;
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_EngineFwd_h

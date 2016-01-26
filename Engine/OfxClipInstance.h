@@ -59,7 +59,7 @@ class OfxClipInstance
     : public OFX::Host::ImageEffect::ClipInstance
 {
 public:
-    OfxClipInstance(OfxEffectInstance* node,
+    OfxClipInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                     OfxImageEffectInstance* effect,
                     int index,
                     OFX::Host::ImageEffect::ClipDescriptor* desc);
@@ -209,7 +209,7 @@ public:
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
 
-    EffectInstance* getAssociatedNode() const WARN_UNUSED_RETURN;
+    EffectInstPtr getAssociatedNode() const WARN_UNUSED_RETURN;
     
     ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
     static std::string natronsPlaneToOfxPlane(const ImageComponents& plane);

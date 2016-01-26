@@ -168,7 +168,7 @@ DotGui::applyBrush(const QBrush & brush)
 
 NodeSettingsPanel*
 DotGui::createPanel(QVBoxLayout* container,
-                    const boost::shared_ptr<NodeGui> & thisAsShared)
+                    const NodeGuiPtr & thisAsShared)
 {
     NodeSettingsPanel* panel = new NodeSettingsPanel( boost::shared_ptr<MultiInstancePanel>(),
                                                       getDagGui()->getGui(),

@@ -299,7 +299,7 @@ EffectInstance::RenderArgs::RenderArgs()
 , validArgs(false)
 , isIdentity(false)
 , identityTime(0)
-, identityInput(0)
+, identityInput()
 , inputImages()
 , outputPlanes()
 , outputPlaneBeingRendered()
@@ -553,7 +553,7 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
                                                                    int view,
                                                                    bool isIdentity,
                                                                    double identityTime,
-                                                                   EffectInstance* identityInput,
+                                                                   const EffectInstPtr& identityInput,
                                                                    const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
                                                                    const EffectInstance::InputImagesMap& inputImages,
                                                                    const RoIMap & roiMap,

@@ -299,9 +299,9 @@ GuiPrivate::notifyGuiClosing()
         }
     }
 
-    const std::list<boost::shared_ptr<NodeGui> > allNodes = _nodeGraphArea->getAllActiveNodes();
+    const NodesGuiList allNodes = _nodeGraphArea->getAllActiveNodes();
 
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
+    for (NodesGuiList::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
         DockablePanel* panel = (*it)->getSettingPanel();
         if (panel) {
             panel->onGuiClosing();

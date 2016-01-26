@@ -54,11 +54,11 @@ KnobGui::onCreateAliasOnGroupActionTriggered()
 void
 KnobGui::onRemoveAliasLinkActionTriggered()
 {
-    boost::shared_ptr<KnobI> thisKnob = getKnob();
+    KnobPtr thisKnob = getKnob();
     KnobI::ListenerDimsMap listeners;
     thisKnob->getListeners(listeners);
-    boost::shared_ptr<KnobI> aliasMaster;
-    boost::shared_ptr<KnobI> listener;
+    KnobPtr aliasMaster;
+    KnobPtr listener;
     if (!listeners.empty()) {
         listener = listeners.begin()->first.lock();
         if (listener) {
@@ -81,17 +81,17 @@ KnobGui::onUnlinkActionTriggered()
         return;
     }
     int dim = action->data().toInt();
-    boost::shared_ptr<KnobI> thisKnob = getKnob();
+    KnobPtr thisKnob = getKnob();
     int dims = thisKnob->getDimension();
     
-    boost::shared_ptr<KnobI> aliasMaster = thisKnob->getAliasMaster();
+    KnobPtr aliasMaster = thisKnob->getAliasMaster();
     if (aliasMaster) {
         thisKnob->setKnobAsAliasOfThis(aliasMaster, false);
     } else {
         thisKnob->beginChanges();
         for (int i = 0; i < dims; ++i) {
             if (dim == -1 || i == dim) {
-                std::pair<int,boost::shared_ptr<KnobI> > other = thisKnob->getMaster(i);
+                std::pair<int,KnobPtr > other = thisKnob->getMaster(i);
                 thisKnob->onKnobUnSlaved(i);
                 onKnobSlavedChanged(i, false);
             }
@@ -183,9 +183,9 @@ KnobGui::isSecretRecursive() const
     // try TuttlePinning: fold all groups, then switch from perspective to affine to perspective.
     //  VISIBILITY is different from SECRETNESS. The code considers that both things are equivalent, which is wrong.
     // Of course, this check has to be *recursive* (in case the group is within a folded group)
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     bool showit = !knob->getIsSecret();
-    boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
+    KnobPtr parentKnob = knob->getParentKnob();
     
     while (showit && parentKnob && parentKnob->typeName() == "Group") {
         KnobGuiGroup* parentGui = dynamic_cast<KnobGuiGroup*>( _imp->container->getKnobGui(parentKnob) );
@@ -210,7 +210,7 @@ KnobGui::showAnimationMenu()
 void
 KnobGui::onShowInCurveEditorActionTriggered()
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
 
     assert( knob->getHolder()->getApp() );
     getGui()->setCurveEditorOnTop();
@@ -233,7 +233,7 @@ KnobGui::onRemoveAnimationActionTriggered()
     assert(action);
     int dim = action->data().toInt();
     
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     std::map<boost::shared_ptr<CurveGui> , std::vector<KeyFrame > > toRemove;
     
     
@@ -263,7 +263,7 @@ void
 KnobGui::setInterpolationForDimensions(const std::vector<int> & dimensions,
                                        KeyframeTypeEnum interp)
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     
     for (U32 i = 0; i < dimensions.size(); ++i) {
         boost::shared_ptr<Curve> c = knob->getCurve(dimensions[i]);
@@ -288,7 +288,7 @@ KnobGui::setInterpolationForDimensions(const std::vector<int> & dimensions,
 void
 KnobGui::onConstantInterpActionTriggered()
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     std::vector<int> dims;
 
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -300,7 +300,7 @@ KnobGui::onConstantInterpActionTriggered()
 void
 KnobGui::onLinearInterpActionTriggered()
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     std::vector<int> dims;
 
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -312,7 +312,7 @@ KnobGui::onLinearInterpActionTriggered()
 void
 KnobGui::onSmoothInterpActionTriggered()
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     std::vector<int> dims;
 
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -324,7 +324,7 @@ KnobGui::onSmoothInterpActionTriggered()
 void
 KnobGui::onCatmullromInterpActionTriggered()
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     std::vector<int> dims;
 
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -336,7 +336,7 @@ KnobGui::onCatmullromInterpActionTriggered()
 void
 KnobGui::onCubicInterpActionTriggered()
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     std::vector<int> dims;
 
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -348,7 +348,7 @@ KnobGui::onCubicInterpActionTriggered()
 void
 KnobGui::onHorizontalInterpActionTriggered()
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     std::vector<int> dims;
 
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -361,7 +361,7 @@ void
 KnobGui::setKeyframe(double time,
                      int dimension)
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
 
     assert( knob->getHolder()->getApp() );
     
@@ -377,7 +377,7 @@ KnobGui::setKeyframe(double time,
 void
 KnobGui::setKeyframe(double time,const KeyFrame& key,int dimension)
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     
     assert( knob->getHolder()->getApp() );
     
@@ -396,7 +396,7 @@ KnobGui::onSetKeyActionTriggered()
     assert(action);
     int dim = action->data().toInt();
 
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
 
     assert( knob->getHolder()->getApp() );
     //get the current time on the global timeline
@@ -443,7 +443,7 @@ void
 KnobGui::removeKeyFrame(double time,
                         int dimension)
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     knob->onKeyFrameRemoved(time, dimension);
     Q_EMIT keyFrameRemoved();
     
@@ -458,7 +458,7 @@ KnobGui::removeKeyFrame(double time,
 void
 KnobGui::setKeyframes(const std::vector<KeyFrame>& keys, int dimension)
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     
     assert( knob->getHolder()->getApp() );
     
@@ -478,7 +478,7 @@ KnobGui::setKeyframes(const std::vector<KeyFrame>& keys, int dimension)
 void
 KnobGui::removeKeyframes(const std::vector<KeyFrame>& keys, int dimension)
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     for (std::size_t i = 0; i < keys.size(); ++i) {
         knob->onKeyFrameRemoved(keys[i].getTime(), dimension);
     }
@@ -505,7 +505,7 @@ KnobGui::getScriptNameHtml() const
 QString
 KnobGui::toolTip() const
 {
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knob.get());
     QString tt = getScriptNameHtml();
     
@@ -564,7 +564,7 @@ KnobGui::onRemoveKeyActionTriggered()
     assert(action);
     int dim = action->data().toInt();
     
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     
     assert( knob->getHolder()->getApp() );
     //get the current time on the global timeline
@@ -611,7 +611,7 @@ KnobGui::hide()
     }
     //also  hide the curve from the curve editor if there's any and the knob is not inside a group
     if ( getKnob()->getHolder()->getApp() ) {
-        boost::shared_ptr<KnobI> parent = getKnob()->getParentKnob();
+        KnobPtr parent = getKnob()->getParentKnob();
         bool isSecret = true;
         while (parent) {
             if (!parent->getIsSecret()) {
@@ -714,7 +714,7 @@ KnobGui::setEnabledSlot()
     if (!_imp->customInteract) {
         setEnabled();
     }
-    boost::shared_ptr<KnobI> knob = getKnob();
+    KnobPtr knob = getKnob();
     if (_imp->descriptionLabel) {
         _imp->descriptionLabel->setReadOnly( !knob->isEnabled(0) );
     }

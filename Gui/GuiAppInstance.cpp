@@ -61,7 +61,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct RotoPaintData
 {
-    boost::shared_ptr<Node> rotoPaintNode;
+    NodePtr rotoPaintNode;
     
     boost::shared_ptr<RotoStrokeItem> stroke;
     
@@ -124,7 +124,7 @@ struct GuiAppInstancePrivate
     boost::shared_ptr<FileDialogPreviewProvider> _previewProvider;
 
     mutable QMutex lastTimelineViewerMutex;
-    boost::shared_ptr<Node> lastTimelineViewer;
+    NodePtr lastTimelineViewer;
 
     LoadProjectSplashScreen* loadProjectSplash;
 
@@ -182,11 +182,11 @@ GuiAppInstance::deletePreviewProvider()
     if (_imp->_previewProvider) {
         if (_imp->_previewProvider->viewerNode) {
             _imp->_gui->removeViewerTab(_imp->_previewProvider->viewerUI, true, true);
-            boost::shared_ptr<Node> node = _imp->_previewProvider->viewerNodeInternal;
+            NodePtr node = _imp->_previewProvider->viewerNodeInternal;
             if (node) {
-                ViewerInstance* liveInstance = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
+                ViewerInstance* liveInstance = node->isEffectViewer();
                 if (liveInstance) {
-                    node->deactivate(std::list< Node* > (),false,false,true,false);
+                    node->deactivate(std::list< NodePtr > (),false,false,true,false);
                     liveInstance->invalidateUiContext();
                     node->removeReferences();
                     _imp->_previewProvider->viewerNode->deleteReferences();
@@ -196,7 +196,7 @@ GuiAppInstance::deletePreviewProvider()
 
         }
 
-        for (std::map<std::string,std::pair< boost::shared_ptr<Node>, boost::shared_ptr<NodeGui> > >::iterator it =
+        for (std::map<std::string,std::pair< NodePtr, NodeGuiPtr > >::iterator it =
              _imp->_previewProvider->readerNodes.begin();
              it != _imp->_previewProvider->readerNodes.end(); ++it) {
             it->second.second->getNode()->removeReferences();
@@ -458,8 +458,8 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
 
 
 void
-GuiAppInstance::createNodeGui(const boost::shared_ptr<Node> &node,
-                              const boost::shared_ptr<Node>& parentMultiInstance,
+GuiAppInstance::createNodeGui(const NodePtr &node,
+                              const NodePtr& parentMultiInstance,
                               const CreateNodeArgs& args)
 {
 
@@ -479,9 +479,9 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Node> &node,
         throw std::logic_error("");
     }
 
-    std::list<boost::shared_ptr<NodeGui> >  selectedNodes = graph->getSelectedNodes();
+    NodesGuiList  selectedNodes = graph->getSelectedNodes();
 
-    boost::shared_ptr<NodeGui> nodegui = _imp->_gui->createNodeGUI(node,args);
+    NodeGuiPtr nodegui = _imp->_gui->createNodeGUI(node,args);
 
     assert(nodegui);
     if ( parentMultiInstance && nodegui) {
@@ -494,7 +494,7 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Node> &node,
     }
 
     ///It needs to be here because we rely on the _nodeMapping member
-    bool isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
+    bool isViewer = node->isEffectViewer() != 0;
     if (isViewer) {
         _imp->_gui->createViewerGui(node);
     }
@@ -508,7 +508,7 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Node> &node,
         _imp->_gui->createNewTrackerInterface( nodegui.get() );
     }
 
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+    NodeGroup* isGroup = node->isEffectGroup();
     if (isGroup) {
         _imp->_gui->createGroupGui(node, args.reason);
     }
@@ -539,7 +539,7 @@ GuiAppInstance::createNodeGui(const boost::shared_ptr<Node> &node,
         } else {
             BackdropGui* isBd = dynamic_cast<BackdropGui*>(nodegui.get());
             if (!isBd && !isGroup) {
-                boost::shared_ptr<NodeGui> selectedNode;
+                NodeGuiPtr selectedNode;
                 if (args.reason == eCreateNodeReasonUserCreate && selectedNodes.size() == 1) {
                     selectedNode = selectedNodes.front();
                     BackdropGui* isBackdropGui = dynamic_cast<BackdropGui*>(selectedNode.get());
@@ -836,7 +836,7 @@ GuiAppInstance::startRenderingFullSequence(bool enableRenderStats,const AppInsta
     if (isDiskCache) {
         outputFileSequence = isDiskCache->getNode()->getLabel_mt_safe().c_str();
     } else {
-        boost::shared_ptr<KnobI> fileKnob = w.writer->getKnobByName(kOfxImageEffectFileParamName);
+        KnobPtr fileKnob = w.writer->getKnobByName(kOfxImageEffectFileParamName);
         if (fileKnob) {
             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(fileKnob.get());
             assert(isString);
@@ -1018,14 +1018,14 @@ GuiAppInstance::printAutoDeclaredVariable(const std::string& str)
 }
 
 void
-GuiAppInstance::setLastViewerUsingTimeline(const boost::shared_ptr<Node>& node)
+GuiAppInstance::setLastViewerUsingTimeline(const NodePtr& node)
 {
     if (!node) {
         QMutexLocker k(&_imp->lastTimelineViewerMutex);
         _imp->lastTimelineViewer.reset();
         return;
     }
-    if (dynamic_cast<ViewerInstance*>(node->getLiveInstance())) {
+    if (node->isEffectViewer()) {
         QMutexLocker k(&_imp->lastTimelineViewerMutex);
         _imp->lastTimelineViewer = node;
     }
@@ -1038,7 +1038,7 @@ GuiAppInstance::getLastViewerUsingTimeline() const
     if (!_imp->lastTimelineViewer) {
         return 0;
     }
-    return dynamic_cast<ViewerInstance*>(_imp->lastTimelineViewer->getLiveInstance());
+    return _imp->lastTimelineViewer->isEffectViewer();
 }
 
 void
@@ -1056,8 +1056,8 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     /// define the app variable
     std::stringstream ss;
     ss << appIDStr << " = " << NATRON_GUI_PYTHON_MODULE_NAME << ".natron.getGuiInstance(" << getAppID() << ") \n";
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = getProject()->getKnobs();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    const KnobsVec& knobs = getProject()->getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         ss << appIDStr << "." << (*it)->getName() << " = "  << appIDStr  << ".getProjectParam('" <<
         (*it)->getName() << "')\n";
     }
@@ -1137,7 +1137,7 @@ GuiAppInstance::clearOverlayRedrawRequests()
 }
 
 void
-GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Node>& node, CreateNodeReason reason)
+GuiAppInstance::onGroupCreationFinished(const NodePtr& node, CreateNodeReason reason)
 {
     if (reason == eCreateNodeReasonUserCreate) {
         NodeGraph* graph = 0;
@@ -1155,8 +1155,8 @@ GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Node>& node, Cre
         if (!graph) {
             throw std::logic_error("");
         }
-        std::list<boost::shared_ptr<NodeGui> > selectedNodes = graph->getSelectedNodes();
-        boost::shared_ptr<NodeGui> selectedNode;
+        NodesGuiList selectedNodes = graph->getSelectedNodes();
+        NodeGuiPtr selectedNode;
         if (!selectedNodes.empty()) {
             selectedNode = selectedNodes.front();
             if (dynamic_cast<BackdropGui*>(selectedNode.get())) {
@@ -1165,7 +1165,7 @@ GuiAppInstance::onGroupCreationFinished(const boost::shared_ptr<Node>& node, Cre
         }
         boost::shared_ptr<NodeGuiI> node_gui_i = node->getNodeGui();
         assert(node_gui_i);
-        boost::shared_ptr<NodeGui> nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
+        NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
         graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
     }
    
@@ -1185,7 +1185,7 @@ GuiAppInstance::isDraftRenderEnabled() const
 }
 
 void
-GuiAppInstance::setUserIsPainting(const boost::shared_ptr<Node>& rotopaintNode,
+GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
                                   const boost::shared_ptr<RotoStrokeItem>& stroke,
                                   bool isPainting)
 {
@@ -1216,7 +1216,7 @@ GuiAppInstance::setUserIsPainting(const boost::shared_ptr<Node>& rotopaintNode,
 }
 
 void
-GuiAppInstance::getActiveRotoDrawingStroke(boost::shared_ptr<Node>* node,
+GuiAppInstance::getActiveRotoDrawingStroke(NodePtr* node,
                                 boost::shared_ptr<RotoStrokeItem>* stroke,
                                            bool *isPainting) const
 {

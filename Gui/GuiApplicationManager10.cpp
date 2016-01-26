@@ -141,7 +141,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
     {
         QStringList pgrp = grouping;
         pgrp.push_back("Readers");
-        std::auto_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( boost::shared_ptr<Node>() ) ) );
+        std::auto_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( NodePtr() ) ) );
         assert(reader.get());
         std::map<std::string,void(*)()> readerFunctions;
         readerFunctions.insert( std::make_pair("BuildEffect", (void(*)())&QtReader::BuildEffect) );
@@ -168,7 +168,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
     {
         QStringList pgrp = grouping;
         pgrp.push_back("Writers");
-        std::auto_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( boost::shared_ptr<Node>() ) ) );
+        std::auto_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( NodePtr() ) ) );
         assert(writer.get());
         std::map<std::string,void(*)()> writerFunctions;
         writerFunctions.insert( std::make_pair("BuildEffect", (void(*)())&QtWriter::BuildEffect) );
@@ -209,7 +209,7 @@ GuiApplicationManager::makeNewInstance(int appID) const
 }
 
 KnobGui*
-GuiApplicationManager::createGuiForKnob(boost::shared_ptr<KnobI> knob,
+GuiApplicationManager::createGuiForKnob(KnobPtr knob,
                                         DockablePanel *container) const
 {
     return _imp->_knobGuiFactory->createGuiForKnob(knob,container);
@@ -380,10 +380,10 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
     }
     
     ///Find and connect the viewer
-    NodeList allNodes = mainInstance->getProject()->getNodes();
+    NodesList allNodes = mainInstance->getProject()->getNodes();
     NodePtr viewerFound ;
-    for (NodeList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
-        if (dynamic_cast<ViewerInstance*>((*it)->getLiveInstance())) {
+    for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+        if ((*it)->isEffectViewer()) {
             viewerFound = *it;
             break;
         }

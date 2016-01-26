@@ -109,7 +109,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
 
     ///get a ptr to the NodeGui
     boost::shared_ptr<NodeGuiI> gui_i = v->getNodeGui();
-    boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+    NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
 
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
@@ -121,7 +121,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
         return;
     }
 
-    boost::shared_ptr<NodeGui> selected = _imp->_selection.front();
+    NodeGuiPtr selected = _imp->_selection.front();
 
 
     if ( !selected->getNode()->canOthersConnectToThisNode() ) {
@@ -223,11 +223,11 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
 }
 
 void
-NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
+NodeGraph::removeNode(const NodeGuiPtr & node)
 {
  
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getNode()->getLiveInstance());
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getNode()->getKnobs();
+    NodeGroup* isGrp = node->getNode()->isEffectGroup();
+    const KnobsVec & knobs = node->getNode()->getKnobs();
 
     
     for (U32 i = 0; i < knobs.size(); ++i) {
@@ -236,7 +236,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
         ///For all listeners make sure they belong to a node
         bool foundEffect = false;
         for (KnobI::ListenerDimsMap::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
-            boost::shared_ptr<KnobI> listener = it2->first.lock();
+            KnobPtr listener = it2->first.lock();
             if (!listener) {
                 continue;
             }
@@ -248,7 +248,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
                 continue;
             }
             
-            if ( isEffect && ( isEffect != node->getNode()->getLiveInstance() ) ) {
+            if ( isEffect && ( isEffect != node->getNode()->getEffectInstance().get() ) ) {
                 foundEffect = true;
                 break;
             }
@@ -270,7 +270,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
     }
 
     node->setUserSelected(false);
-    std::list<boost::shared_ptr<NodeGui> > nodesToRemove;
+    NodesGuiList nodesToRemove;
     nodesToRemove.push_back(node);
     pushUndoCommand( new RemoveMultipleNodesCommand(this,nodesToRemove) );
 }
@@ -279,14 +279,14 @@ void
 NodeGraph::deleteSelection()
 {
     if ( !_imp->_selection.empty()) {
-        NodeGuiList nodesToRemove = _imp->_selection;
+        NodesGuiList nodesToRemove = _imp->_selection;
 
         
         ///For all backdrops also move all the nodes contained within it
-        for (NodeGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
-            NodeGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
-            for (NodeGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-                NodeGuiList::iterator found = std::find(nodesToRemove.begin(),nodesToRemove.end(),*it2);
+        for (NodesGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
+            NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
+            for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
+                NodesGuiList::iterator found = std::find(nodesToRemove.begin(),nodesToRemove.end(),*it2);
                 if ( found == nodesToRemove.end()) {
                     nodesToRemove.push_back(*it2);
                 }
@@ -294,12 +294,12 @@ NodeGraph::deleteSelection()
         }
 
 
-        for (NodeGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
+        for (NodesGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
             
-            const std::vector<boost::shared_ptr<KnobI> > & knobs = (*it)->getNode()->getKnobs();
+            const KnobsVec & knobs = (*it)->getNode()->getKnobs();
             bool mustBreak = false;
             
-            NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getNode()->getLiveInstance());
+            NodeGroup* isGrp = (*it)->getNode()->isEffectGroup();
             
             for (U32 i = 0; i < knobs.size(); ++i) {
                 KnobI::ListenerDimsMap listeners;
@@ -308,7 +308,7 @@ NodeGraph::deleteSelection()
                 ///For all listeners make sure they belong to a node
                 bool foundEffect = false;
                 for (KnobI::ListenerDimsMap::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
-                    boost::shared_ptr<KnobI> listener = it2->first.lock();
+                    KnobPtr listener = it2->first.lock();
                     if (!listener) {
                         continue;
                     }
@@ -321,7 +321,7 @@ NodeGraph::deleteSelection()
                         continue;
                     }
                     
-                    if ( isEffect && ( isEffect != (*it)->getNode()->getLiveInstance() ) ) {
+                    if ( isEffect && ( isEffect != (*it)->getNode()->getEffectInstance().get() ) ) {
                         foundEffect = true;
                         break;
                     }
@@ -349,7 +349,7 @@ NodeGraph::deleteSelection()
         }
 
 
-        for (NodeGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
+        for (NodesGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
             (*it)->setUserSelected(false);
         }
 
@@ -360,13 +360,13 @@ NodeGraph::deleteSelection()
 } // deleteSelection
 
 void
-NodeGraph::deselectNode(const boost::shared_ptr<NodeGui>& n)
+NodeGraph::deselectNode(const NodeGuiPtr& n)
 {
     
     
     {
         QMutexLocker k(&_imp->_nodesMutex);
-        NodeGuiList::iterator it = std::find(_imp->_selection.begin(), _imp->_selection.end(), n);
+        NodesGuiList::iterator it = std::find(_imp->_selection.begin(), _imp->_selection.end(), n);
         if (it != _imp->_selection.end()) {
             _imp->_selection.erase(it);
         }
@@ -382,7 +382,7 @@ NodeGraph::deselectNode(const boost::shared_ptr<NodeGui>& n)
 }
 
 void
-NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
+NodeGraph::selectNode(const NodeGuiPtr & n,
                       bool addToSelection)
 {
     if ( !n->isVisible() ) {
@@ -401,7 +401,7 @@ NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
 
     n->setUserSelected(true);
 
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( n->getNode()->getLiveInstance() );
+    ViewerInstance* isViewer =  n->getNode()->isEffectViewer();
     if (isViewer) {
         OpenGLViewerI* viewer = isViewer->getUiContext();
         const std::list<ViewerTab*> & viewerTabs = getGui()->getViewersList();
@@ -436,10 +436,10 @@ NodeGraph::getLastSelectedViewer() const
 }
 
 void
-NodeGraph::setSelection(const std::list<boost::shared_ptr<NodeGui> >& nodes)
+NodeGraph::setSelection(const NodesGuiList& nodes)
 {
     clearSelection();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         selectNode(*it, true);
     }
 }
@@ -449,7 +449,7 @@ NodeGraph::clearSelection()
 {
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+        for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
             (*it)->setUserSelected(false);
         }
     }
@@ -475,7 +475,7 @@ NodeGraph::areAllNodesVisible()
     QRectF rect = visibleSceneRect();
     QMutexLocker l(&_imp->_nodesMutex);
 
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         if ( (*it)->isVisible() ) {
             if ( !rect.contains( (*it)->boundingRectWithEdges() ) ) {
                 return false;

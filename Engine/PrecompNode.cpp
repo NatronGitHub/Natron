@@ -67,7 +67,7 @@ struct PrecompNodePrivate
     
     QMutex dataMutex;
     
-    std::list<boost::weak_ptr<Node> > precompInputs;
+    NodesWList precompInputs;
     
     //To read-back the pre-comp image sequence/video
     NodePtr readNode;
@@ -118,7 +118,7 @@ struct PrecompNodePrivate
     void launchPreRender();
 };
 
-PrecompNode::PrecompNode(boost::shared_ptr<Node> n)
+PrecompNode::PrecompNode(NodePtr n)
 : EffectInstance(n)
 , _imp(new PrecompNodePrivate(this))
 {
@@ -133,7 +133,7 @@ PrecompNode::~PrecompNode()
     
 }
 
-boost::shared_ptr<Node>
+NodePtr
 PrecompNode::getOutputNode() const
 {
     bool enablePrecomp = _imp->enablePreRenderKnob.lock()->getValue();
@@ -198,7 +198,7 @@ PrecompNode::getOutputPremultiplication() const
 {
     NodePtr output = getOutputNode();
     if (output) {
-        return output->getLiveInstance()->getOutputPremultiplication();
+        return output->getEffectInstance()->getOutputPremultiplication();
     } else {
         return eImagePremultiplicationPremultiplied;
     }
@@ -211,7 +211,7 @@ PrecompNode::getPreferredDepthAndComponents(int inputNb,
 {
     NodePtr output = getOutputNode();
     if (output) {
-        output->getLiveInstance()->getPreferredDepthAndComponents(inputNb,comp,depth);
+        output->getEffectInstance()->getPreferredDepthAndComponents(inputNb,comp,depth);
     } else {
         EffectInstance::getPreferredDepthAndComponents(inputNb, comp, depth);
     }
@@ -222,7 +222,7 @@ PrecompNode::getPreferredAspectRatio() const
 {
     NodePtr output = getOutputNode();
     if (output) {
-        return output->getLiveInstance()->getPreferredAspectRatio();
+        return output->getEffectInstance()->getPreferredAspectRatio();
     } else {
         return EffectInstance::getPreferredAspectRatio();
     }
@@ -233,7 +233,7 @@ PrecompNode::getPreferredFrameRate() const
 {
     NodePtr output = getOutputNode();
     if (output) {
-        return output->getLiveInstance()->getPreferredFrameRate();
+        return output->getEffectInstance()->getPreferredFrameRate();
     } else {
         return EffectInstance::getPreferredFrameRate();
     }
@@ -411,7 +411,7 @@ PrecompNodePrivate::setReadNodeErrorChoice()
         read = readNode;
     }
     if (read) {
-        boost::shared_ptr<KnobI> knob = read->getKnobByName("onMissingFrame");
+        KnobPtr knob = read->getKnobByName("onMissingFrame");
         if (knob) {
             KnobChoice* choice = dynamic_cast<KnobChoice*>(knob.get());
             if (choice) {
@@ -483,7 +483,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp, bool setWrit
     std::vector<std::string> choices;
     choices.push_back("None");
     
-    NodeList nodes;
+    NodesList nodes;
     app->getProject()->getNodes_recursive(nodes, true);
     boost::shared_ptr<PrecompNode> precomp;
     if (setPartOfPrecomp) {
@@ -501,11 +501,11 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp, bool setWrit
     }
     
    
-    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if (setPartOfPrecomp) {
             (*it)->setPrecompNode(precomp);
         }
-        if ((*it)->getLiveInstance()->isWriter()) {
+        if ((*it)->getEffectInstance()->isWriter()) {
             choices.push_back((*it)->getFullyQualifiedName());
         }
     }
@@ -539,10 +539,10 @@ PrecompNodePrivate::getWriteNodeFromPreComp() const
 }
 
 void
-PrecompNode::getPrecompInputs(std::list<boost::shared_ptr<Node> >* nodes) const
+PrecompNode::getPrecompInputs(NodesList* nodes) const
 {
     QMutexLocker k(&_imp->dataMutex);
-    for (std::list<boost::weak_ptr<Node> >::const_iterator it = _imp->precompInputs.begin(); it!=_imp->precompInputs.end(); ++it) {
+    for (NodesWList::const_iterator it = _imp->precompInputs.begin(); it!=_imp->precompInputs.end(); ++it) {
         NodePtr node = it->lock();
         if (!node) {
             continue;
@@ -577,7 +577,7 @@ PrecompNodePrivate::createReadNode()
         return;
     }
     
-    boost::shared_ptr<KnobI> fileNameKnob = writeNode->getKnobByName(kOfxImageEffectFileParamName);
+    KnobPtr fileNameKnob = writeNode->getKnobByName(kOfxImageEffectFileParamName);
     if (!fileNameKnob) {
         return;
     }
@@ -619,7 +619,7 @@ PrecompNodePrivate::createReadNode()
     args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern) );
 
     
-    boost::shared_ptr<Node> read = app->createNode(args);
+    NodePtr read = app->createNode(args);
     if (!read) {
         return ;
     }
@@ -657,11 +657,11 @@ PrecompNodePrivate::refreshOutputNode()
     }
     
     ///Notify outputs that the node has changed
-    std::map<Node*, int> outputs;
+    std::map<NodePtr, int> outputs;
     NodePtr thisNode = _publicInterface->getNode();
     thisNode->getOutputsConnectedToThisNode(&outputs);
 
-    for (std::map<Node*, int>::iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+    for (std::map<NodePtr, int>::iterator it = outputs.begin(); it!=outputs.end(); ++it) {
         it->first->onInputChanged(it->second);
     }
 }
@@ -673,8 +673,8 @@ PrecompNodePrivate::setFirstAndLastFrame()
     if (!writeNode) {
         return;
     }
-    boost::shared_ptr<KnobI> writefirstFrameKnob = writeNode->getKnobByName("firstFrame");
-    boost::shared_ptr<KnobI> writelastFrameKnob = writeNode->getKnobByName("lastFrame");
+    KnobPtr writefirstFrameKnob = writeNode->getKnobByName("firstFrame");
+    KnobPtr writelastFrameKnob = writeNode->getKnobByName("lastFrame");
     KnobInt* firstFrame = dynamic_cast<KnobInt*>(writefirstFrameKnob.get());
     KnobInt* lastFrame = dynamic_cast<KnobInt*>(writelastFrameKnob.get());
     if (firstFrame) {
@@ -690,7 +690,7 @@ void
 PrecompNodePrivate::refreshReadNodeInput()
 {
     assert(readNode);
-    boost::shared_ptr<KnobI> fileNameKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
+    KnobPtr fileNameKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
     if (!fileNameKnob) {
         return;
     }
@@ -713,7 +713,7 @@ PrecompNodePrivate::launchPreRender()
         return;
     }
     AppInstance::RenderWork w;
-    w.writer = dynamic_cast<OutputEffectInstance*>(output->getLiveInstance());
+    w.writer = dynamic_cast<OutputEffectInstance*>(output->getEffectInstance().get());
     w.firstFrame = firstFrameKnob.lock()->getValue();
     w.lastFrame = lastFrameKnob.lock()->getValue();
     w.frameStep = 1;
@@ -734,7 +734,7 @@ PrecompNode::onPreRenderFinished()
     if (!output) {
         return;
     }
-    OutputEffectInstance* writer = dynamic_cast<OutputEffectInstance*>(output->getLiveInstance());
+    OutputEffectInstance* writer = dynamic_cast<OutputEffectInstance*>(output->getEffectInstance().get());
     assert(writer);
     RenderEngine* engine = writer->getRenderEngine();
     if (engine) {

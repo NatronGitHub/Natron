@@ -282,7 +282,7 @@ struct HostOverlayPrivate
     
     bool interactiveDrag;
     
-    HostOverlayPrivate(HostOverlay* publicInterface, const boost::shared_ptr<NodeGui>& node)
+    HostOverlayPrivate(HostOverlay* publicInterface, const NodeGuiPtr& node)
     : _publicInterface(publicInterface)
     , positions()
     , transforms()
@@ -428,7 +428,7 @@ struct HostOverlayPrivate
     
 };
 
-HostOverlay::HostOverlay(const boost::shared_ptr<NodeGui>& node)
+HostOverlay::HostOverlay(const NodeGuiPtr& node)
 : _imp(new HostOverlayPrivate(this, node))
 {
 }
@@ -438,7 +438,7 @@ HostOverlay::~HostOverlay()
     
 }
 
-boost::shared_ptr<NodeGui>
+NodeGuiPtr
 HostOverlay::getNode() const
 {
     return _imp->node.lock();
@@ -1557,7 +1557,7 @@ HostOverlayPrivate::penMotion(double time,
     
     if (it->_mouseState != TransformInteract::eReleased && it->_interactiveDrag && valuesChanged) {
         // no need to redraw overlay since it is slave to the paramaters
-        KnobHolder* holder = node.lock()->getNode()->getLiveInstance();
+        EffectInstPtr holder = node.lock()->getNode()->getEffectInstance();
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
         if (centerChanged) {
             boost::shared_ptr<KnobDouble> knob = it->center.lock();
@@ -1682,7 +1682,7 @@ HostOverlayPrivate::penUp(double /*time*/,
          Give eValueChangedReasonPluginEdited reason so that the command uses the undo/redo stack
          see Knob::setValue
          */
-        KnobHolder* holder = node.lock()->getNode()->getLiveInstance();
+        EffectInstPtr holder = node.lock()->getNode()->getEffectInstance();
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
         {
             boost::shared_ptr<KnobDouble> knob = it->center.lock();

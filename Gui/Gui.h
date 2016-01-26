@@ -86,21 +86,21 @@ public:
      **/
     void createGui();
 
-    boost::shared_ptr<NodeGui> createNodeGUI(boost::shared_ptr<Node> node,
+    NodeGuiPtr createNodeGUI(NodePtr node,
                                              const CreateNodeArgs& args);
 
-    void addNodeGuiToCurveEditor(const boost::shared_ptr<NodeGui> &node);
+    void addNodeGuiToCurveEditor(const NodeGuiPtr &node);
     
-    void removeNodeGuiFromCurveEditor(const boost::shared_ptr<NodeGui>& node);
+    void removeNodeGuiFromCurveEditor(const NodeGuiPtr& node);
 
-    void addNodeGuiToDopeSheetEditor(const boost::shared_ptr<NodeGui> &node);
-    void removeNodeGuiFromDopeSheetEditor(const boost::shared_ptr<NodeGui>& node);
+    void addNodeGuiToDopeSheetEditor(const NodeGuiPtr &node);
+    void removeNodeGuiFromDopeSheetEditor(const NodeGuiPtr& node);
 
-    const std::list<boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
+    const NodesGuiList & getSelectedNodes() const;
 
-    void createViewerGui(boost::shared_ptr<Node> viewer);
+    void createViewerGui(NodePtr viewer);
 
-    void createGroupGui(const boost::shared_ptr<Node>& group, CreateNodeReason reason);
+    void createGroupGui(const NodePtr& group, CreateNodeReason reason);
 
     void addGroupGui(NodeGraph* tab,TabWidget* where);
 
@@ -207,7 +207,7 @@ public:
     /**
      * @brief Selects the given node on the node graph, wiping any previous selection.
      **/
-    void selectNode(boost::shared_ptr<NodeGui> node);
+    void selectNode(NodeGuiPtr node);
 
     GuiAppInstance* getApp() const;
 
@@ -339,8 +339,8 @@ public:
     void deactivateViewerTab(ViewerInstance* viewer);
 
     ViewerTab* getViewerTabForInstance(ViewerInstance* node) const;
-    const std::list<boost::shared_ptr<NodeGui> > & getVisibleNodes() const;
-    std::list<boost::shared_ptr<NodeGui> > getVisibleNodes_mt_safe() const;
+    const NodesGuiList & getVisibleNodes() const;
+    NodesGuiList getVisibleNodes_mt_safe() const;
 
     void deselectAllNodes() const;
 
@@ -462,7 +462,7 @@ public:
     /**
      * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.
      **/
-    void getNodesEntitledForOverlays(std::list<boost::shared_ptr<Node> >& nodes) const;
+    void getNodesEntitledForOverlays(NodesList& nodes) const;
 
     bool isLeftToolBarDisplayedOnMouseHoverOnly() const;
 
@@ -647,8 +647,8 @@ public Q_SLOTS:
 
     void onViewerImageChanged(int texIndex,bool hasImageBackend);
 
-    boost::shared_ptr<Node> createReader();
-    boost::shared_ptr<Node> createWriter();
+    NodePtr createReader();
+    NodePtr createWriter();
 
     void renderAllWriters();
 

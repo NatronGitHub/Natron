@@ -175,9 +175,9 @@ public:
     
     void setKeyframeOnAllTransformParameters(double time);
 
-    const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
+    const std::list<KnobPtr >& getKnobs() const;
     
-    boost::shared_ptr<KnobI> getKnobByName(const std::string& name) const;
+    KnobPtr getKnobByName(const std::string& name) const;
     
     virtual RectD getBoundingBox(double time) const = 0;
 
@@ -188,10 +188,10 @@ public:
      **/
     void setTransform(double time, double tx, double ty, double sx, double sy, double centerX, double centerY, double rot, double skewX, double skewY);
     
-    boost::shared_ptr<Node> getEffectNode() const;
-    boost::shared_ptr<Node> getMergeNode() const;
-    boost::shared_ptr<Node> getTimeOffsetNode() const;
-    boost::shared_ptr<Node> getFrameHoldNode() const;
+    NodePtr getEffectNode() const;
+    NodePtr getMergeNode() const;
+    NodePtr getTimeOffsetNode() const;
+    NodePtr getFrameHoldNode() const;
     
     void resetNodesThreadSafety();
     void deactivateNodes();
@@ -218,11 +218,11 @@ public Q_SLOTS:
     
 protected:
     
-    void rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, ValueChangedReasonEnum reason);
+    void rotoKnobChanged(const KnobPtr& knob, ValueChangedReasonEnum reason);
     
     virtual void onTransformSet(double /*time*/) {}
     
-    void addKnob(const boost::shared_ptr<KnobI>& knob);
+    void addKnob(const KnobPtr& knob);
 
 private:
     
