@@ -297,6 +297,7 @@ struct Node::Implementation
     , lastStrokeMovementMutex()
     , strokeBitmapCleared(false)
     , useAlpha0ToConvertFromRGBToRGBA(false)
+    , isBeingDestroyedMutex()
     , isBeingDestroyed(false)
     , inputModifiedRecursion(0)
     , inputsModified()
@@ -528,6 +529,7 @@ struct Node::Implementation
     //won't be able to paint the alpha channel
     bool useAlpha0ToConvertFromRGBToRGBA;
     
+    mutable QMutex isBeingDestroyedMutex;
     bool isBeingDestroyed;
     
     /*
@@ -4359,7 +4361,12 @@ Node::disconnectInput(int inputNumber)
     NodePtr inputShared;
     bool useGuiValues = isNodeRendering();
     
-    if (!_imp->isBeingDestroyed) {
+    bool destroyed;
+    {
+        QMutexLocker k(&_imp->isBeingDestroyedMutex);
+        destroyed = _imp->isBeingDestroyed;
+    }
+    if (!destroyed) {
         _imp->effect->abortAnyEvaluation();
     }
     
@@ -4390,8 +4397,11 @@ Node::disconnectInput(int inputNumber)
         }
     }
     
-    if (_imp->isBeingDestroyed) {
-        return -1;
+    {
+        QMutexLocker k(&_imp->isBeingDestroyedMutex);
+        if (_imp->isBeingDestroyed) {
+            return -1;
+        }
     }
     
     Q_EMIT inputChanged(inputNumber);
@@ -4884,7 +4894,12 @@ Node::destroyNode(bool autoReconnect)
         return;
     }
     
-    _imp->isBeingDestroyed = true;
+    {
+        QMutexLocker k(&_imp->activatedMutex);
+        _imp->isBeingDestroyed = true;
+    }
+    
+    quitAnyProcessing();
 
     
     ///Remove the node from the project
@@ -5077,6 +5092,13 @@ Node::makePreviewImage(SequenceTime time,
 {
     assert(_imp->knobsInitialized);
     
+    
+    {
+        QMutexLocker k(&_imp->isBeingDestroyedMutex);
+        if (_imp->isBeingDestroyed) {
+            return false;
+        }
+    }
     
     if (_imp->checkForExitPreview()) {
         return false;
