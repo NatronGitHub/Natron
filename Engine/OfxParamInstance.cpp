@@ -2039,6 +2039,7 @@ OfxInteger2DInstance::setRange()
 void
 OfxInteger2DInstance::setEvaluateOnChange()
 {
+    SET_DYNAMIC_PROPERTY_EDITED();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 

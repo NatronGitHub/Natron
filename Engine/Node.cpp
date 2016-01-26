@@ -180,6 +180,12 @@ namespace { // protect local classes in anonymous namespace
         boost::shared_ptr<KnobChoice> skewOrder;
         boost::shared_ptr<KnobDouble> center;
     };
+    
+    struct FormatKnob {
+        boost::weak_ptr<KnobInt> size;
+        boost::weak_ptr<KnobDouble> par;
+        boost::weak_ptr<KnobChoice> formatChoice;
+    };
 }
 
 
@@ -448,6 +454,8 @@ struct Node::Implementation
     
     boost::weak_ptr<KnobBool> enabledChan[4];
     boost::weak_ptr<KnobDouble> mixWithSource;
+    
+    FormatKnob pluginFormatKnobs;
     
     std::map<int,ChannelSelector> channelsSelectors;
     std::map<int,MaskSelector> maskSelectors;
@@ -2758,12 +2766,52 @@ Node::initializeKnobs(int renderScaleSupportPref)
             
             bool useChannels = !_imp->effect->isMultiPlanar() && !disableNatronKnobs && !isDiskCache;
             
+            
             ///find in all knobs a page param to set this param into
             boost::shared_ptr<KnobPage> mainPage;
-            const std::vector< KnobPtr > & knobs = _imp->effect->getKnobs();
+            const KnobsVec & knobs = _imp->effect->getKnobs();
+            
+            
+            {
+                ///Try to find a format param and hijack it to handle it ourselves with the project's formats
+                KnobPtr formatKnob;
+                for (std::size_t i = 0; i < knobs.size(); ++i) {
+                    if (knobs[i]->getName() == kNatronParamFormatChoice) {
+                        formatKnob = knobs[i];
+                        break;
+                    }
+                }
+                if (formatKnob) {
+                    KnobPtr formatSize;
+                    for (std::size_t i = 0; i < knobs.size(); ++i) {
+                        if (knobs[i]->getName() == kNatronParamFormatSize) {
+                            formatSize = knobs[i];
+                            break;
+                        }
+                    }
+                    KnobPtr formatPar;
+                    for (std::size_t i = 0; i < knobs.size(); ++i) {
+                        if (knobs[i]->getName() == kNatronParamFormatPar) {
+                            formatPar = knobs[i];
+                            break;
+                        }
+                    }
+                    if (formatSize && formatPar) {
+                        _imp->pluginFormatKnobs.formatChoice = boost::dynamic_pointer_cast<KnobChoice>(formatKnob);
+                        formatSize->setEvaluateOnChange(false);
+                        formatPar->setEvaluateOnChange(false);
+                        formatSize->setSecret(true);
+                        formatSize->setSecretByDefault(true);
+                        formatPar->setSecret(true);
+                        formatPar->setSecretByDefault(true);
+                        _imp->pluginFormatKnobs.size = boost::dynamic_pointer_cast<KnobInt>(formatSize);
+                        _imp->pluginFormatKnobs.par = boost::dynamic_pointer_cast<KnobDouble>(formatPar);
+                    }
+                }
+            }
             
             if (!disableNatronKnobs || isWriter) {
-                for (U32 i = 0; i < knobs.size(); ++i) {
+                for (std::size_t i = 0; i < knobs.size(); ++i) {
                     boost::shared_ptr<KnobPage> p = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
                     if ( p && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_INFO) &&
                         (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
@@ -3334,6 +3382,51 @@ Node::getFrameStepKnobValue() const
         int v = k->getValue();
         return std::max(1, v);
     }
+}
+
+bool
+Node::handleFormatKnob(KnobI* knob)
+{
+    boost::shared_ptr<KnobChoice> choice = _imp->pluginFormatKnobs.formatChoice.lock();
+    if (!choice) {
+        return false;
+    }
+    if (knob != choice.get()) {
+        return false;
+    }
+    int curIndex = choice->getValue();
+    Format f;
+    if (!getApp()->getProject()->getProjectFormatAtIndex(curIndex, &f)) {
+        assert(false);
+        return true;
+    }
+    
+    boost::shared_ptr<KnobInt> size = _imp->pluginFormatKnobs.size.lock();
+    boost::shared_ptr<KnobDouble> par = _imp->pluginFormatKnobs.par.lock();
+    assert(size && par);
+    
+    _imp->effect->beginChanges();
+    size->setValues(f.width(), f.height(), Natron::eValueChangedReasonNatronInternalEdited);
+    par->setValue(f.getPixelAspectRatio(),0);
+    _imp->effect->endChanges();
+    return true;
+}
+
+void
+Node::refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue)
+{
+    boost::shared_ptr<KnobChoice> choice = _imp->pluginFormatKnobs.formatChoice.lock();
+    if (!choice) {
+        return;
+    }
+    int curIndex = choice->getValue();
+    choice->populateChoices(entries);
+    choice->beginChanges();
+    choice->setDefaultValue(defValue);
+    if (curIndex < (int)entries.size()) {
+        choice->setValue(curIndex,0);
+    }
+    choice->endChanges();
 }
 
 bool

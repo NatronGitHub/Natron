@@ -135,6 +135,10 @@ public:
     //QDateTime getProjectAgeSinceLastAutosave() const WARN_UNUSED_RETURN;
 
     void getProjectDefaultFormat(Format *f) const;
+    
+    bool getProjectFormatAtIndex(int index, Format* f) const;
+    
+    void getProjectFormatEntries(std::vector<std::string>* formatStrings, int* currentValue) const;
 
     void getAdditionalFormats(std::list<Format> *formats) const;
 
@@ -322,6 +326,8 @@ public Q_SLOTS:
     }
     
     void onAutoSaveFutureFinished();
+
+    void onProjectFormatPopulated();
 
 Q_SIGNALS:
 

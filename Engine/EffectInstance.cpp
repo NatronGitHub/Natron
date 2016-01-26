@@ -3856,6 +3856,10 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         node->computeFrameRangeForReader(k);
     }
 
+    if (node->handleFormatKnob(k)) {
+        return;
+    }
+    
 
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
     assert(kh);

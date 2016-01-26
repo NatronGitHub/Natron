@@ -1103,6 +1103,10 @@ public:
     
     int getFrameStepKnobValue() const;
     
+    void refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue);
+    
+    bool handleFormatKnob(KnobI* knob);
+    
 private:
     
     void computeHashRecursive(std::list<Node*>& marked);
@@ -1272,6 +1276,7 @@ protected:
     void computeHash();
 
 private:
+    
     
     
     void declareRotoPythonField();

@@ -755,6 +755,9 @@ Project::initializeKnobs()
     _imp->formatKnob->populateChoices(entries);
     _imp->formatKnob->setAnimationEnabled(false);
     page->addKnob(_imp->formatKnob);
+    
+    QObject::connect(_imp->formatKnob.get(), SIGNAL(populated()), this, SLOT(onProjectFormatPopulated()));
+    
     _imp->addFormatKnob = AppManager::createKnob<KnobButton>(this, "New Format...");
     _imp->addFormatKnob->setName("newFormat");
     page->addKnob(_imp->addFormatKnob);
@@ -1043,6 +1046,14 @@ Project::getProjectDefaultFormat(Format *f) const
     _imp->findFormat(index, f);
 }
 
+bool
+Project::getProjectFormatAtIndex(int index, Format* f) const
+{
+    assert(f);
+    QMutexLocker l(&_imp->formatMutex);
+    return _imp->findFormat(index, f);
+}
+
 
 int
 Project::currentFrame() const
@@ -1096,6 +1107,13 @@ Project::setProjectDefaultFormat(const Format & f)
     _imp->formatKnob->setValue(index,0);
     ///if locked it will trigger a deadlock because some parameters
     ///might respond to this signal by checking the content of the project format.
+}
+
+void
+Project::getProjectFormatEntries(std::vector<std::string>* formatStrings,int* currentValue) const
+{
+    *formatStrings = _imp->formatKnob->getEntries_mt_safe();
+    *currentValue = _imp->formatKnob->getValue();
 }
 
 int
@@ -1296,11 +1314,16 @@ Project::onKnobValueChanged(KnobI* knob,
         int index = _imp->formatKnob->getValue();
         Format frmt;
         bool found = _imp->findFormat(index, &frmt);
+        NodesList nodes;
+        getNodes_recursive(nodes,true);
+
+        std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            (*it)->refreshFormatParamChoice(entries, index);
+        }
         if (found) {
             if (reason == eValueChangedReasonUserEdited) {
                 ///Increase all nodes age in the project so all cache is invalidated: some effects images might rely on the project format
-                NodesList nodes;
-                getNodes_recursive(nodes,true);
                 for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
                     (*it)->incrementKnobsAge();
                 }
@@ -2301,7 +2324,19 @@ bool Project::addFormat(const std::string& formatSpec)
         return false;
     }
 }
-    
+
+void
+Project::onProjectFormatPopulated()
+{
+    int index = _imp->formatKnob->getValue();
+    NodesList nodes;
+    getNodes_recursive(nodes,true);
+    std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        (*it)->refreshFormatParamChoice(entries, index);
+    }
+}
+
 void
 Project::setTimeLine(const boost::shared_ptr<TimeLine>& timeline)
 {
