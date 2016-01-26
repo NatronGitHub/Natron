@@ -987,7 +987,7 @@ NodeCollection::forceComputeInputDependentDataOnAllTrees()
 
 
 void
-NodeCollection::getParallelRenderArgs(std::map<NodePtr,ParallelRenderArgs >& argsMap) const
+NodeCollection::getParallelRenderArgs(std::map<NodePtr,boost::shared_ptr<ParallelRenderArgs> >& argsMap) const
 {
     NodesList nodes = getNodes();
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -995,9 +995,9 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr,ParallelRenderArgs >& arg
         if (!(*it)->isActivated()) {
             continue;
         }
-        const ParallelRenderArgs* args = (*it)->getEffectInstance()->getParallelRenderArgsTLS();
-        if (args && args->validArgs) {
-            argsMap.insert(std::make_pair(*it, *args));
+        boost::shared_ptr<ParallelRenderArgs> args = (*it)->getEffectInstance()->getParallelRenderArgsTLS();
+        if (args) {
+            argsMap.insert(std::make_pair(*it, args));
         }
         
         if ((*it)->isMultiInstance()) {
@@ -1007,9 +1007,9 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr,ParallelRenderArgs >& arg
             NodesList children;
             (*it)->getChildrenMultiInstance(&children);
             for (NodesList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
-                const ParallelRenderArgs* childArgs = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
-                if (childArgs && childArgs->validArgs) {
-                    argsMap.insert(std::make_pair(*it2, *childArgs));
+                boost::shared_ptr<ParallelRenderArgs> childArgs = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
+                if (childArgs) {
+                    argsMap.insert(std::make_pair(*it2, childArgs));
                 }
             }
         }
@@ -1018,9 +1018,9 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr,ParallelRenderArgs >& arg
         boost::shared_ptr<RotoContext> rotoContext = (*it)->getRotoContext();
         if (args && rotoContext) {
             for (NodesList::const_iterator it2 = args->rotoPaintNodes.begin(); it2 != args->rotoPaintNodes.end(); ++it2) {
-                const ParallelRenderArgs* args2 = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
-                if (args2 && args2->validArgs) {
-                    argsMap.insert(std::make_pair(*it2, *args2));
+                boost::shared_ptr<ParallelRenderArgs> args2 = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
+                if (args2) {
+                    argsMap.insert(std::make_pair(*it2, args2));
                 }
             }
         }

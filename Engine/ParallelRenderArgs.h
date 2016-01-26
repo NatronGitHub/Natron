@@ -92,8 +92,6 @@ struct ParallelRenderArgs
     ///to a frame being rendered by the tree.
     int view;
 
-    ///> 0 if the args were set for the current thread
-    int validArgs;
 
     ///A number identifying the current frame render to determine if we can really abort for abortable renders
     U64 renderAge;
@@ -149,7 +147,6 @@ struct ParallelRenderArgs
     , nodeHash(0)
     , request()
     , view(0)
-    , validArgs(0)
     , renderAge(0)
     , treeRoot()
     , rotoPaintNodes()
@@ -262,7 +259,7 @@ typedef std::map<NodePtr,boost::shared_ptr<NodeFrameRequest> > FrameRequestMap;
 
 class ParallelRenderArgsSetter
 {
-    boost::shared_ptr<std::map<NodePtr,ParallelRenderArgs > > argsMap;
+    boost::shared_ptr<std::map<NodePtr,boost::shared_ptr<ParallelRenderArgs> > > argsMap;
     NodesList nodes;
     
 public:
@@ -290,7 +287,7 @@ public:
                              bool viewerProgressReportEnabled,
                              const boost::shared_ptr<RenderStats>& stats);
     
-    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr,ParallelRenderArgs > >& args);
+    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > >& args);
     
     virtual ~ParallelRenderArgsSetter();
 };

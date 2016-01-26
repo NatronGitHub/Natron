@@ -7600,7 +7600,7 @@ static void addIdentityNodesRecursively(const Node* caller,
     
     if (caller != node) {
         
-        const ParallelRenderArgs* inputFrameArgs = node->getEffectInstance()->getParallelRenderArgsTLS();
+        boost::shared_ptr<ParallelRenderArgs> inputFrameArgs = node->getEffectInstance()->getParallelRenderArgsTLS();
         const FrameViewRequest* request = 0;
         bool isIdentity = false;
         if (inputFrameArgs && inputFrameArgs->request) {

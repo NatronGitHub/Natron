@@ -155,7 +155,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
         RectD roi;
         
         bool roiIsInRequestPass = false;
-        const ParallelRenderArgs* frameArgs = 0;
+        boost::shared_ptr<ParallelRenderArgs> frameArgs;
         if (isRenderFunctor) {
             frameArgs = inputEffect->getParallelRenderArgsTLS();
             if (frameArgs && frameArgs->request) {
@@ -819,11 +819,11 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     
 }
 
-ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr,ParallelRenderArgs > >& args)
+ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr,boost::shared_ptr<ParallelRenderArgs> > >& args)
 : argsMap(args)
 {
     if (args) {
-        for (std::map<NodePtr,ParallelRenderArgs >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
+        for (std::map<NodePtr,boost::shared_ptr<ParallelRenderArgs> >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
             it->first->getEffectInstance()->setParallelRenderArgsTLS(it->second);
         }
     }
@@ -857,7 +857,7 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
     }
     
     if (argsMap) {
-        for (std::map<NodePtr,ParallelRenderArgs >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
+        for (std::map<NodePtr,boost::shared_ptr<ParallelRenderArgs> >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
             it->first->getEffectInstance()->invalidateParallelRenderArgsTLS();
         }
     }

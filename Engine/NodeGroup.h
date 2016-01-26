@@ -245,7 +245,7 @@ public:
     void recomputeFrameRangeForAllReaders(int* firstFrame,int* lastFrame);
 
     
-    void getParallelRenderArgs(std::map<NodePtr,ParallelRenderArgs >& argsMap) const;
+    void getParallelRenderArgs(std::map<NodePtr,boost::shared_ptr<ParallelRenderArgs> >& argsMap) const;
     
     
     void forceComputeInputDependentDataOnAllTrees();

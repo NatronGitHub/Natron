@@ -557,14 +557,14 @@ public:
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
 
-    void setParallelRenderArgsTLS(const ParallelRenderArgs & args);
+    void setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderArgs> & args);
 
     /**
      *@returns whether the effect was flagged with canSetValue = true or false
      **/
     void invalidateParallelRenderArgsTLS();
 
-    const ParallelRenderArgs* getParallelRenderArgsTLS() const;
+    boost::shared_ptr<ParallelRenderArgs> getParallelRenderArgsTLS() const;
 
     //Implem in ParallelRenderArgs.cpp
     static StatusEnum getInputsRoIsFunctor(bool useTransforms,
@@ -607,11 +607,6 @@ public:
                                                                        bool byPassCache); // render functor specific
 
 
-    /**
-     * @brief If the current thread is rendering and this was started by the knobChanged (instanceChangedAction) function
-     * then this will return true
-     **/
-    bool isCurrentRenderInAnalysis() const;
 
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
@@ -1592,8 +1587,11 @@ public:
 #ifdef DEBUG
         std::list<bool> canSetValue;
 #endif
-        
-        ParallelRenderArgs frameArgs;
+      
+        ///Recursive because it may be set recursively in such situation:
+        ///knobChanged : set ParallelRenderArgs TLS for analysis
+        ///timelineGoTo calls getRenderviewerArgs on the MT which overrides this TLS
+        std::list<boost::shared_ptr<ParallelRenderArgs> > frameArgs;
         EffectInstance::RenderArgs currentRenderArgs;
         
         EffectTLSData()
@@ -1795,7 +1793,7 @@ private:
      * @returns True if the render call succeeded, false otherwise.
      **/
     RenderRoIStatusEnum renderRoIInternal(double time,
-                                          const ParallelRenderArgs & frameArgs,
+                                          const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
                                           RenderSafetyEnum safety,
                                           unsigned int mipMapLevel,
                                           int view,

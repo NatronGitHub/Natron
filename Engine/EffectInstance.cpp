@@ -203,33 +203,35 @@ EffectInstance::setParallelRenderArgsTLS(double time,
                                          const boost::shared_ptr<RenderStats> & stats)
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-    ParallelRenderArgs& args = tls->frameArgs;
+    std::list<boost::shared_ptr<ParallelRenderArgs> >& argsList = tls->frameArgs;
 
-    args.time = time;
-    args.timeline = timeline;
-    args.view = view;
-    args.isRenderResponseToUserInteraction = isRenderUserInteraction;
-    args.isSequentialRender = isSequential;
-    args.request = nodeRequest;
+    boost::shared_ptr<ParallelRenderArgs> args(new ParallelRenderArgs);
+    
+    args->time = time;
+    args->timeline = timeline;
+    args->view = view;
+    args->isRenderResponseToUserInteraction = isRenderUserInteraction;
+    args->isSequentialRender = isSequential;
+    args->request = nodeRequest;
     if (nodeRequest) {
-        args.nodeHash = nodeRequest->nodeHash;
+        args->nodeHash = nodeRequest->nodeHash;
     } else {
-        args.nodeHash = nodeHash;
+        args->nodeHash = nodeHash;
     }
-    args.canAbort = canAbort;
-    args.renderAge = renderAge;
-    args.treeRoot = treeRoot;
-    args.textureIndex = textureIndex;
-    args.isAnalysis = isAnalysis;
-    args.isDuringPaintStrokeCreation = isDuringPaintStrokeCreation;
-    args.currentThreadSafety = currentThreadSafety;
-    args.rotoPaintNodes = rotoPaintNodes;
-    args.doNansHandling = doNanHandling;
-    args.draftMode = draftMode;
-    args.tilesSupported = getNode()->getCurrentSupportTiles();
-    args.viewerProgressReportEnabled = viewerProgressReportEnabled;
-    args.stats = stats;
-    ++args.validArgs;
+    args->canAbort = canAbort;
+    args->renderAge = renderAge;
+    args->treeRoot = treeRoot;
+    args->textureIndex = textureIndex;
+    args->isAnalysis = isAnalysis;
+    args->isDuringPaintStrokeCreation = isDuringPaintStrokeCreation;
+    args->currentThreadSafety = currentThreadSafety;
+    args->rotoPaintNodes = rotoPaintNodes;
+    args->doNansHandling = doNanHandling;
+    args->draftMode = draftMode;
+    args->tilesSupported = getNode()->getCurrentSupportTiles();
+    args->viewerProgressReportEnabled = viewerProgressReportEnabled;
+    args->stats = stats;
+    argsList.push_back(args);
 }
 
 bool
@@ -239,10 +241,10 @@ EffectInstance::getThreadLocalRotoPaintTreeNodes(NodesList* nodes) const
     if (!tls) {
         return false;
     }
-    if (!tls->frameArgs.validArgs) {
+    if (tls->frameArgs.empty()) {
         return false;
     }
-    *nodes = tls->frameArgs.rotoPaintNodes;
+    *nodes = tls->frameArgs.back()->rotoPaintNodes;
     return true;
 }
 
@@ -250,17 +252,14 @@ void
 EffectInstance::setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke)
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-    tls->frameArgs.isDuringPaintStrokeCreation = duringPaintStroke;
+    tls->frameArgs.back()->isDuringPaintStrokeCreation = duringPaintStroke;
 }
 
 void
-EffectInstance::setParallelRenderArgsTLS(const ParallelRenderArgs & args)
+EffectInstance::setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderArgs> & args)
 {
-    assert(args.validArgs);
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-    int curValid = tls->frameArgs.validArgs;
-    tls->frameArgs = args;
-    tls->frameArgs.validArgs = curValid + 1;
+    tls->frameArgs.push_back(args);
 }
 
 void
@@ -270,33 +269,24 @@ EffectInstance::invalidateParallelRenderArgsTLS()
     if (!tls) {
         return;
     }
-    --tls->frameArgs.validArgs;
-    if (tls->frameArgs.validArgs < 0) {
-        tls->frameArgs.validArgs = 0;
-    }
-    for (NodesList::iterator it = tls->frameArgs.rotoPaintNodes.begin(); it != tls->frameArgs.rotoPaintNodes.end(); ++it) {
+    
+    assert(!tls->frameArgs.empty());
+    const boost::shared_ptr<ParallelRenderArgs>& back = tls->frameArgs.back();
+    for (NodesList::iterator it = back->rotoPaintNodes.begin(); it != back->rotoPaintNodes.end(); ++it) {
         (*it)->getEffectInstance()->invalidateParallelRenderArgsTLS();
     }
+    tls->frameArgs.pop_back();
+   
 }
 
-const ParallelRenderArgs*
+boost::shared_ptr<ParallelRenderArgs>
 EffectInstance::getParallelRenderArgsTLS() const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    if (!tls) {
-        return 0;
+    if (!tls || tls->frameArgs.empty()) {
+        return boost::shared_ptr<ParallelRenderArgs>();
     }
-    return &tls->frameArgs;
-}
-
-bool
-EffectInstance::isCurrentRenderInAnalysis() const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    if (!tls) {
-        return false;
-    }
-    return tls->frameArgs.validArgs && tls->frameArgs.isAnalysis;
+    return tls->frameArgs.back();
 }
 
 U64
@@ -312,76 +302,75 @@ U64
 EffectInstance::getRenderHash() const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    if (!tls) {
+    if (!tls || tls->frameArgs.empty()) {
         //No tls: get the GUI hash
         return getHash();
     }
-    if (!tls->frameArgs.validArgs) {
-        //No valid tls: get the GUI hash
-        return getHash();
-    }
-    if (tls->frameArgs.request) {
+    
+    const boost::shared_ptr<ParallelRenderArgs> &args = tls->frameArgs.back();
+
+    if (args->request) {
         //A request pass was made, Hash for this thread was already computed, use it
-        return tls->frameArgs.request->nodeHash;
+        return args->request->nodeHash;
     }
     //Use the hash that was computed when we set the ParallelRenderArgs TLS
-    return tls->frameArgs.nodeHash;
+    return args->nodeHash;
 }
 
 bool
 EffectInstance::Implementation::aborted(const EffectDataTLSPtr& tls) const
 {
-    const ParallelRenderArgs & args = tls->frameArgs;
-    if (!args.validArgs) {
-        ///No valid args, probably not rendering
+    if (tls->frameArgs.empty()) {
         return false;
-    } else {
-        if (args.isRenderResponseToUserInteraction) {
-            //Don't allow the plug-in to abort while in analysis.
-            //Need to work on this for the tracker in order to be abortable.
-            if (args.isAnalysis) {
-                return false;
-            }
-            ViewerInstance* isViewer  = 0;
-            if (args.treeRoot) {
-                isViewer = args.treeRoot->isEffectViewer();
-                //If the viewer is already doing a sequential render, abort
-                if ( isViewer && isViewer->isDoingSequentialRender() ) {
-                    return true;
-                }
-            }
-            
-            if (args.canAbort) {
-                if ( isViewer && isViewer->isRenderAbortable(args.textureIndex, args.renderAge) ) {
-                    return true;
-                }
-                
-                if (args.draftMode && args.timeline && args.time != args.timeline->currentFrame()) {
-                    return true;
-                }
-                
-                ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
-                bool ret = !_publicInterface->getNode()->isActivated();
-                
-                return ret;
-            } else {
-                bool deactivated = !_publicInterface->getNode()->isActivated();
-                
-                return deactivated;
-            }
-        } else {
-            ///Rendering is playback or render on disk, we rely on the flag set on the node that requested the render
-            if (args.treeRoot) {
-                OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>(args.treeRoot->getEffectInstance().get());
-                assert(effect);
-                
-                return effect ? effect->isSequentialRenderBeingAborted() : false;
-            } else {
-                return false;
+    }
+    const boost::shared_ptr<ParallelRenderArgs> & args = tls->frameArgs.back();
+    
+    if (args->isRenderResponseToUserInteraction) {
+        //Don't allow the plug-in to abort while in analysis.
+        //Need to work on this for the tracker in order to be abortable.
+        if (args->isAnalysis) {
+            return false;
+        }
+        ViewerInstance* isViewer  = 0;
+        if (args->treeRoot) {
+            isViewer = args->treeRoot->isEffectViewer();
+            //If the viewer is already doing a sequential render, abort
+            if ( isViewer && isViewer->isDoingSequentialRender() ) {
+                return true;
             }
         }
+        
+        if (args->canAbort) {
+            if ( isViewer && isViewer->isRenderAbortable(args->textureIndex, args->renderAge) ) {
+                return true;
+            }
+            
+            if (args->draftMode && args->timeline && args->time != args->timeline->currentFrame()) {
+                return true;
+            }
+            
+            ///Rendering issued by RenderEngine::renderCurrentFrame, if time or hash changed, abort
+            bool ret = !_publicInterface->getNode()->isActivated();
+            
+            return ret;
+        } else {
+            bool deactivated = !_publicInterface->getNode()->isActivated();
+            
+            return deactivated;
+        }
+    } else {
+        ///Rendering is playback or render on disk, we rely on the flag set on the node that requested the render
+        if (args->treeRoot) {
+            OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>(args->treeRoot->getEffectInstance().get());
+            assert(effect);
+            
+            return effect ? effect->isSequentialRenderBeingAborted() : false;
+        } else {
+            return false;
+        }
     }
-
+    
+    
 }
 
 bool
@@ -698,16 +687,16 @@ EffectInstance::getImage(int inputNb,
     ///Try to find in the input images thread local storage if we already pre-computed the image
     EffectInstance::InputImagesMap inputImagesThreadLocal;
     
-    if (!tls || !tls->currentRenderArgs.validArgs || !tls->frameArgs.validArgs) {
+    if (!tls || !tls->currentRenderArgs.validArgs || tls->frameArgs.empty()) {
         if (!retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &identityInput, &duringPaintStroke, &rod, &inputsRoI, &optionalBounds)) {
             return ImagePtr();
         }
     } else {
         const RenderArgs& renderArgs = tls->currentRenderArgs;
-        const ParallelRenderArgs& frameRenderArgs = tls->frameArgs;
+        const boost::shared_ptr<ParallelRenderArgs>& frameRenderArgs = tls->frameArgs.back();
         
         if (inputEffect) {
-            const ParallelRenderArgs* inputFrameArgs = inputEffect->getParallelRenderArgsTLS();
+            boost::shared_ptr<ParallelRenderArgs> inputFrameArgs = inputEffect->getParallelRenderArgsTLS();
             const FrameViewRequest* request = 0;
             if (inputFrameArgs && inputFrameArgs->request) {
                 request = inputFrameArgs->request->getFrameViewRequest(time, view);
@@ -726,8 +715,8 @@ EffectInstance::getImage(int inputNb,
         identityInput = renderArgs.identityInput;
         inputImagesThreadLocal = renderArgs.inputImages;
         
-        nodeHash = frameRenderArgs.nodeHash;
-        duringPaintStroke = frameRenderArgs.isDuringPaintStrokeCreation;
+        nodeHash = frameRenderArgs->nodeHash;
+        duringPaintStroke = frameRenderArgs->isDuringPaintStrokeCreation;
     }
 
     if (optionalBoundsParam) {
@@ -1834,13 +1823,15 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     // check the bitmap!
     
     bool bitmapMarkedForRendering = false;
-    if (tls->frameArgs.tilesSupported) {
+    
+    const boost::shared_ptr<ParallelRenderArgs>& frameArgs = tls->frameArgs.back();
+    if (frameArgs->tilesSupported) {
         if (renderFullScaleThenDownscale) {
            
             RectI initialRenderRect = renderMappedRectToRender;
 
 #if NATRON_ENABLE_TRIMAP
-            if (!tls->frameArgs.canAbort && tls->frameArgs.isRenderResponseToUserInteraction) {
+            if (!frameArgs->canAbort && frameArgs->isRenderResponseToUserInteraction) {
                 bitmapMarkedForRendering = true;
                 renderMappedRectToRender = firstPlaneToRender.renderMappedImage->getMinimalRectAndMarkForRendering_trimap(renderMappedRectToRender, &isBeingRenderedElseWhere);
             } else {
@@ -1867,7 +1858,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
             //The downscaled image is cached, read bitmap from it
 #if NATRON_ENABLE_TRIMAP
             RectI rectToRenderMinimal;
-            if (!tls->frameArgs.canAbort && tls->frameArgs.isRenderResponseToUserInteraction) {
+            if (!frameArgs->canAbort && frameArgs->isRenderResponseToUserInteraction) {
                 bitmapMarkedForRendering = true;
                 rectToRenderMinimal = firstPlaneToRender.downscaleImage->getMinimalRectAndMarkForRendering_trimap(renderMappedRectToRender, &isBeingRenderedElseWhere);
             } else {
@@ -1940,7 +1931,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     RectI dstBounds;
     dstRodCanonical.toPixelEnclosing(firstPlaneToRender.renderMappedImage->getMipMapLevel(), par, &dstBounds); // compute dstRod at level 0
     RectI dstRealBounds = firstPlaneToRender.renderMappedImage->getBounds();
-    if (!tls->frameArgs.tilesSupported) {
+    if (!frameArgs->tilesSupported) {
         assert(dstRealBounds.x1 == dstBounds.x1);
         assert(dstRealBounds.x2 == dstBounds.x2);
         assert(dstRealBounds.y1 == dstBounds.y1);
@@ -1955,7 +1946,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
             RectI srcBounds;
             srcRodCanonical.toPixelEnclosing( (*it2)->getMipMapLevel(), (*it2)->getPixelAspectRatio(), &srcBounds ); // compute srcRod at level 0
 
-            if (!tls->frameArgs.tilesSupported) {
+            if (!frameArgs->tilesSupported) {
                 // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
                 //  If a clip or plugin does not support tiled images, then the host should supply full RoD images to the effect whenever it fetches one.
 
@@ -2048,7 +2039,8 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 {
     boost::shared_ptr<TimeLapse> timeRecorder;
 
-    if (tls->frameArgs.stats) {
+    const boost::shared_ptr<ParallelRenderArgs>& frameArgs = tls->frameArgs.back();
+    if (frameArgs->stats) {
         timeRecorder.reset( new TimeLapse() );
     }
 
@@ -2070,7 +2062,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
     assert( !( (_publicInterface->supportsRenderScaleMaybe() == eSupportsNo) && !(actionArgs.mappedScale.x == 1. && actionArgs.mappedScale.y == 1.) ) );
     actionArgs.originalScale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     actionArgs.originalScale.y = actionArgs.originalScale.x;
-    actionArgs.draftMode = tls->frameArgs.draftMode;
+    actionArgs.draftMode = frameArgs->draftMode;
 
     std::list<std::pair<ImageComponents, ImagePtr> > tmpPlanes;
     bool multiPlanar = _publicInterface->isMultiPlanar();
@@ -2112,8 +2104,8 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                 it->second.renderMappedImage->fillZero(renderMappedRectToRender);
                 it->second.renderMappedImage->markForRendered(renderMappedRectToRender);
                 
-                if ( tls->frameArgs.stats && tls->frameArgs.stats->isInDepthProfilingEnabled() ) {
-                    tls->frameArgs.stats->addRenderInfosForNode( _publicInterface->getNode(),  NodePtr(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
+                if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
+                    frameArgs->stats->addRenderInfosForNode( _publicInterface->getNode(),  NodePtr(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
                 }
             }
 
@@ -2129,8 +2121,8 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                     it->second.renderMappedImage->fillZero(renderMappedRectToRender);
                     it->second.renderMappedImage->markForRendered(renderMappedRectToRender);
                     
-                    if ( tls->frameArgs.stats && tls->frameArgs.stats->isInDepthProfilingEnabled() ) {
-                        tls->frameArgs.stats->addRenderInfosForNode( _publicInterface->getNode(),  tls->currentRenderArgs.identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
+                    if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
+                        frameArgs->stats->addRenderInfosForNode( _publicInterface->getNode(),  tls->currentRenderArgs.identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
                     }
                 }
 
@@ -2186,8 +2178,8 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                         it->second.downscaleImage->markForRendered(downscaledRectToRender);
                     }
 
-                    if ( tls->frameArgs.stats && tls->frameArgs.stats->isInDepthProfilingEnabled() ) {
-                        tls->frameArgs.stats->addRenderInfosForNode( _publicInterface->getNode(),  tls->currentRenderArgs.identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
+                    if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
+                        frameArgs->stats->addRenderInfosForNode( _publicInterface->getNode(),  tls->currentRenderArgs.identityInput->getNode(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
                     }
                 }
 
@@ -2227,7 +2219,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
 
 #if NATRON_ENABLE_TRIMAP
-    if (!bitmapMarkedForRendering && !tls->frameArgs.canAbort && tls->frameArgs.isRenderResponseToUserInteraction) {
+    if (!bitmapMarkedForRendering && !frameArgs->canAbort && frameArgs->isRenderResponseToUserInteraction) {
         for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = tls->currentRenderArgs.outputPlanes.begin(); it != tls->currentRenderArgs.outputPlanes.end(); ++it) {
             it->second.renderMappedImage->markForRendering(renderMappedRectToRender);
         }
@@ -2279,7 +2271,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
         if ( (st != eStatusOK) || renderAborted ) {
 #if NATRON_ENABLE_TRIMAP
-            if (!tls->frameArgs.canAbort && tls->frameArgs.isRenderResponseToUserInteraction) {
+            if (!frameArgs->canAbort && frameArgs->isRenderResponseToUserInteraction) {
                 /*
                    At this point, another thread might have already gotten this image from the cache and could end-up
                    using it while it has still pixels marked to PIXEL_UNAVAILABLE, hence clear the bitmap
@@ -2306,7 +2298,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
     for (std::map<ImageComponents, EffectInstance::PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
         bool unPremultRequired = unPremultIfNeeded && it->second.tmpImage->getComponentsCount() == 4 && it->second.renderMappedImage->getComponentsCount() == 3;
 
-        if ( tls->frameArgs.doNansHandling && it->second.tmpImage->checkForNaNs(actionArgs.roi) ) {
+        if ( frameArgs->doNansHandling && it->second.tmpImage->checkForNaNs(actionArgs.roi) ) {
             QString warning( _publicInterface->getNode()->getScriptName_mt_safe().c_str() );
             warning.append(": ");
             warning.append( tr("rendered rectangle (") );
@@ -2427,8 +2419,8 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             } // if (renderFullScaleThenDownscale) {
         } // if (it->second.isAllocatedOnTheFly) {
 
-        if ( tls->frameArgs.stats && tls->frameArgs.stats->isInDepthProfilingEnabled() ) {
-            tls->frameArgs.stats->addRenderInfosForNode( _publicInterface->getNode(),  NodePtr(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
+        if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
+            frameArgs->stats->addRenderInfosForNode( _publicInterface->getNode(),  NodePtr(), it->first.getComponentsGlobalName(), renderMappedRectToRender, timeRecorder->getTimeSinceCreation() );
         }
     } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
 
@@ -3821,8 +3813,8 @@ bool
 EffectInstance::isDuringPaintStrokeCreationThreadLocal() const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    if (tls && tls->frameArgs.validArgs) {
-        return tls->frameArgs.isDuringPaintStrokeCreation;
+    if (tls && !tls->frameArgs.empty()) {
+        return tls->frameArgs.back()->isDuringPaintStrokeCreation;
     }
 
     return getNode()->isDuringPaintStrokeCreation();
@@ -3868,29 +3860,35 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
     assert(kh);
     if (kh && kh->isDeclaredByPlugin()) {
+        
+        /*
+         For now since knobs are not view aware, use view=0 always
+         */
+        const int view = 0;
+        
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
         boost::shared_ptr<ParallelRenderArgsSetter> setter;
         if (reason != eValueChangedReasonTimeChanged) {
             setter.reset(new ParallelRenderArgsSetter(time,
-                                                      0, /*view*/
-                                                      true,
-                                                      false,
-                                                      false,
-                                                      0,
-                                                      node,
+                                                      view, //view
+                                                      true, // isRenderUserInteraction
+                                                      false, // isSequential
+                                                      false, // canAbort
+                                                      0, // renderAge
+                                                      node, // treeRoot
                                                       0, // request
                                                       0, //texture index
                                                       getApp()->getTimeLine().get(),
-                                                      NodePtr(),
-                                                      true,
-                                                      false,
-                                                      false,
+                                                      NodePtr(), // activeRotoPaintNode
+                                                      true, // isAnalysis
+                                                      false, // draftMode
+                                                      false, // viewerProgressReportEnabled
                                                       boost::shared_ptr<RenderStats>()));
         }
         {
             RECURSIVE_ACTION();
-            knobChanged(k, reason, /*view*/ 0, time, originatedFromMainThread);
+            knobChanged(k, reason, view, time, originatedFromMainThread);
         }
         
         
@@ -4249,8 +4247,8 @@ EffectInstance::getCurrentTime() const
     }
     
 
-    if (tls->frameArgs.validArgs) {
-        return tls->frameArgs.time;
+    if (!tls->frameArgs.empty()) {
+        return tls->frameArgs.back()->time;
     }
     return getApp()->getTimeLine()->currentFrame();
 }
@@ -4270,22 +4268,22 @@ SequenceTime
 EffectInstance::getFrameRenderArgsCurrentTime() const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    if (!tls || !tls->frameArgs.validArgs) {
+    if (!tls || tls->frameArgs.empty()) {
         return getApp()->getTimeLine()->currentFrame();
     }
 
-    return tls->frameArgs.time;
+    return tls->frameArgs.back()->time;
 }
 
 int
 EffectInstance::getFrameRenderArgsCurrentView() const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    if (!tls || !tls->frameArgs.validArgs) {
+    if (!tls || tls->frameArgs.empty()) {
         return 0;
     }
     
-    return tls->frameArgs.view;
+    return tls->frameArgs.back()->view;
 }
 
 #ifdef DEBUG
