@@ -45,6 +45,10 @@ Note that several *-w* options can be set to specify multiple Write nodes to ren
 
 	Note that if specified, then the frame range will be the same for all Write nodes that will render.
 	
+**[ --reader ]* or **[-i]** <reader node script name> <filename> :
+Specify the input file/sequence/video to load for the given Reader node.
+ If the specified reader node cannot be found, the process will abort.
+
 
 **[--onload]** or **[-l]** *<python script file path>* specifies a Python script to be executed
 after a project is created or loaded.
@@ -112,7 +116,10 @@ If this function is not found the whole content of the script will be interprete
 
 Either cases, the \"app\" variable will always be defined and pointing to the correct application instance.
 Note that if you are using Natron in GUI mode, it will source the script before creating the graphical user interface and will not start rendering.
-When in command-line mode (*-b* option or NatronRenderer) you must specify the nodes to render either with the *-w* option as described above or with the following option:
+When in command-line mode (*-b* option or NatronRenderer) you must specify the nodes to render.
+If nothing is specified, all Write nodes that were created in the Python script will be rendered.
+
+You can render specific Write nodes either with the *-w* option as described above or with the following option:
 
 **[--output]** or **[-o]** *<filename>* *<frameRange>* specifies an *Output* node in the script that should be replaced with a *Write* node.
 
@@ -129,6 +136,11 @@ This option can also be used to render out multiple Output nodes, in which case 
 
 etc...
 
+**-c** or **[ --cmd ]** "PythonCommand" : 
+Execute custom Python code passed as a script prior to executing the Python script passed in parameter.
+This option may be used multiple times and each python command will be executed in the order they were given to the command-line.
+
+
 Some examples of usage of the tool::
 
 	Natron /Users/Me/MyNatronScripts/MyScript.py
@@ -142,6 +154,9 @@ Some examples of usage of the tool::
 	NatronRenderer -o1 /FastDisk/Pictures/sequence###.exr -o2 /FastDisk/Pictures/test###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py
 	
 	NatronRenderer -w MyWriter -o /FastDisk/Pictures/sequence###.exr 1-100 /Users/Me/MyNatronScripts/MyScript.py
+
+	NatronRenderer -w MyWriter /FastDisk/Pictures/sequence.mov 1-100 /Users/Me/MyNatronScripts/MyScript.py -e "print \"Now executing MyScript.py...\""
+
 
 
 Options for the execution of the interpreter mode:
@@ -161,3 +176,127 @@ Some examples of usage of the tool::
 	NatronRenderer -t
 	
 	NatronRenderer -t /Users/Me/MyNatronScripts/MyScript.py
+
+
+
+Example
+=======
+
+A typical example would be to convert an input image sequence to another format. There are
+multiple ways to do it from the command-line in Natron and we are going to show them all:
+
+- Passing a .ntp file to the command line and passing the correct arguments
+- Passing a Python script file to the command-line to setup the graph and render
+
+With a Natron project (.ntp) file
+----------------------------------
+
+
+With a Python script file
+--------------------------
+
+We would write a customized Python script that we pass to the command-line::
+	
+	#This is the content of myStartupScript.py
+
+	reader = app.createNode("fr.inria.openfx.ReadOIIO")
+	writer = app.createNode("fr.inria.openfx.WriteFFmpeg")
+	
+	#The node will be accessible via app.MyWriter after this call
+	#We do this so that we can reference it from the command-line arguments
+	writer.setScriptName("MyWriter")
+	
+	#The node will be accessible via app.MyReader after this call
+	reader.setScriptName("MyReader")
+	
+	#Set the input sequence value
+	fileparam =  reader.getParam("filename")
+	fileparam.setValue("/Users/Toto/Sequences/Sequence__####.exr");
+
+
+	#Set the output video
+	outfileparam =  writer.getParam("filename")
+	outfileparam.setValue("/Users/Toto/Sequences/Sequence.mov")
+
+	#Set the format type parameter of the Write node to Input Stream Format so that the video
+	#is written to the size of the input images and not to the size of the project
+	formatType =  writer.getParam("formatType")
+	formatType.setValue(0)
+	
+	#Connect the Writer to the Reader
+	writer.connectInput(0,reader)
+
+	#When using Natron (Gui) then the render must explicitly be requested.
+	#Otherwise if using NatronRenderer or Natron -b the render will be automatically started
+	#using the command-line arguments
+
+	#To use with Natron (Gui) to start render
+	#app.render(writer, 10, 20)
+
+
+To launch this script in the background, you can do it like this::
+	
+	NatronRenderer /path/to/myStartupScript.py -w MyWriter 10-20
+
+For now the output filename and the input sequence are *static* and would need to be changed
+by hand to execute this script on another sequence.
+
+We can customize the Reader filename and Writer filename parameters using the command-line
+arguments::
+
+	NatronRenderer /path/to/myStartupScript.py -i MyReader /Users/Toto/Sequences/AnotherSequence__####.exr -w MyWriter /Users/Toto/Sequences/mySequence.mov 10-20
+
+Let's imagine that now we would need to also set the frame-rate of the video in output and
+we would need it to vary for each different sequence we are going to transcode.
+This is for the sake of this example, you could also need to modify other parameters in 
+a real use-case.
+
+Since the fps cannot be specified from the command-line arguments, we could do it in Python with::
+
+	MyWriter.getParam("fps").set(48)
+	
+And change the value in the Python script for each call to the command-line, but that would 
+require manual intervention. 
+
+That's where another option from the command-line comes into play: the **-c** option 
+(or --cmd): It allows to pass custom Python code in form of a string that will be
+executed before the actual script::
+
+To set the fps from the command-line we could do as such now::
+
+	NatronRenderer /path/to/myStartupScript.py -c "fpsValue=60" -w MyWriter 10-20 
+
+Which would require the following modifications to the Python script::
+
+	MyWriter.getParam("fps").set(fpsValue)
+	
+We could also set the same way the Reader and Writer file names::
+
+	NatronRenderer /path/to/myStartupScript.py -c "fpsValue=60; readFileName=\"/Users/Toto/Sequences/AnotherSequence__####.exr\"; writeFileName=\"/Users/Toto/Sequences/mySequence.mov\""	
+
+And modify the Python script to take into account the new *readFileName* and *writeFileName* parameters::
+
+	...
+	fileparam.setValue(readFileName)
+	...
+	outfileparam.setValue(writeFileName)
+	
+The -c option can be given multiple times to the command-line and each command passed will 
+be executed once, in the order they were given.
+
+With a Natron project file:
+---------------------------
+
+Let's suppose the user already setup the project via the GUI as such:
+
+MyReader--->MyWriter
+
+We can then launch the render from the command-line this way::
+
+	NatronRenderer /path/to/myProject.ntp -w MyWriter 10-20
+	
+We can customize the Reader filename and Writer filename parameters using the command-line
+arguments::
+
+	NatronRenderer  /path/to/myProject.ntp -i MyReader /Users/Toto/Sequences/AnotherSequence__####.exr -w MyWriter /Users/Toto/Sequences/mySequence.mov 10-20
+	

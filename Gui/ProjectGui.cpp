@@ -79,11 +79,11 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 ProjectGui::ProjectGui(Gui* gui)
-    : _gui(gui)
-      , _project()
-      , _panel(NULL)
-      , _created(false)
-      , _colorPickersEnabled()
+: _gui(gui)
+, _project()
+, _panel(NULL)
+, _created(false)
+, _colorPickersEnabled()
 {
 }
 
@@ -144,16 +144,15 @@ ProjectGui::createNewFormat()
     boost::shared_ptr<Project> project = _project.lock();
     AddFormatDialog dialog( project.get(),_gui->getApp()->getGui() );
 
-    if ( dialog.exec() ) {
+    if (dialog.exec()) {
         project->setOrAddProjectFormat( dialog.getFormat() );
     }
 }
 
 AddFormatDialog::AddFormatDialog(Project *project,
                                  Gui* gui)
-    : QDialog(gui),
-      _gui(gui),
-      _project(project)
+    : QDialog(gui)
+    , _gui(gui)
 {
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setSpacing(0);

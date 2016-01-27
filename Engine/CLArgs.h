@@ -60,6 +60,12 @@ public:
         }
     };
     
+    struct ReaderArg
+    {
+        QString name;
+        QString filename;
+    };
+    
     CLArgs();
     
     CLArgs(int& argc,char* argv[],bool forceBackground);
@@ -81,6 +87,10 @@ public:
     int getError() const;
     
     const std::list<CLArgs::WriterArg>& getWriterArgs() const;
+    
+    const std::list<CLArgs::ReaderArg>& getReaderArgs() const;
+    
+    const std::list<std::string>& getPythonCommands() const;
     
     bool hasFrameRange() const;
     

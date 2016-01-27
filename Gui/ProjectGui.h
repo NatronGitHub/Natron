@@ -145,7 +145,6 @@ public Q_SLOTS:
 private:
 
     Gui* _gui;
-    Project* _project;
     
     std::list<ViewerInstance*> _viewers;
     

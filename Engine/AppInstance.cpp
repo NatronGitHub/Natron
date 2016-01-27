@@ -121,6 +121,9 @@ struct AppInstancePrivate
     
     void declareCurrentAppVariable_Python();
     
+    
+    void executeCommandLinePythonCommands(const CLArgs& args);
+    
 };
 
 AppInstance::AppInstance(int appID)
@@ -470,6 +473,28 @@ AppInstance::createWriter(const std::string& filename,
 }
 
 void
+AppInstancePrivate::executeCommandLinePythonCommands(const CLArgs& args)
+{
+    const std::list<std::string>& commands = args.getPythonCommands();
+    
+    for (std::list<std::string>::const_iterator it = commands.begin(); it!=commands.end(); ++it) {
+        std::string err;
+        std::string output;
+        bool ok  = Python::interpretPythonScript(*it, &err, &output);
+        if (!ok) {
+            QString m = QObject::tr("Failed to execute given command-line Python command: ");
+            m.append(it->c_str());
+            m.append(" Error: ");
+            m.append(err.c_str());
+            throw std::runtime_error(m.toStdString());
+        } else if (!output.empty()) {
+            std::cout << output << std::endl;
+        }
+
+    }
+}
+
+void
 AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
 {
     
@@ -480,6 +505,9 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
     }
     
     const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
+    
+    _imp->executeCommandLinePythonCommands(cl);
+
     
     ///if the app is a background project autorun and the project name is empty just throw an exception.
     if ( (appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRun ||
@@ -497,9 +525,11 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
         }
         
         std::list<AppInstance::RenderWork> writersWork;
+        
 
         if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
             
+            ///Load the project
             if ( !_imp->_currentProject->loadProject(info.path(),info.fileName()) ) {
                 throw std::invalid_argument(tr("Project file loading failed.").toStdString());
             }
@@ -508,6 +538,7 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
 
         } else if (info.suffix() == "py") {
             
+            ///Load the python script
             loadPythonScript(info);
             getWritersWorkForCL(cl, writersWork);
 
@@ -515,6 +546,8 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
             throw std::invalid_argument(tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString());
         }
         
+        
+        ///exec the python script specified via --onload
         if (!extraOnProjectCreatedScript.isEmpty()) {
             QFileInfo cbInfo(extraOnProjectCreatedScript);
             if (cbInfo.exists()) {
@@ -522,7 +555,41 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
             }
         }
         
+        
+        ///Set reader parameters if specified from the command-line
+        const std::list<CLArgs::ReaderArg>& readerArgs = cl.getReaderArgs();
+        for (std::list<CLArgs::ReaderArg>::const_iterator it = readerArgs.begin(); it!=readerArgs.end(); ++it) {
+            std::string readerName = it->name.toStdString();
+            NodePtr readNode = getNodeByFullySpecifiedName(readerName);
+            
+            if (!readNode) {
+                std::string exc(readerName);
+                exc.append(tr(" does not belong to the project file. Please enter a valid Read node script-name.").toStdString());
+                throw std::invalid_argument(exc);
+            } else {
+                if (!readNode->getEffectInstance()->isReader()) {
+                    std::string exc(readerName);
+                    exc.append(tr(" is not a Read node! It cannot render anything.").toStdString());
+                    throw std::invalid_argument(exc);
+                }
+            }
+            
+            if (it->filename.isEmpty()) {
+                std::string exc(readerName);
+                exc.append(tr(": Filename specified is empty but [-i] or [--reader] was passed to the command-line").toStdString());
+                throw std::invalid_argument(exc);
+            }
+            KnobPtr fileKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
+            if (fileKnob) {
+                KnobFile* outFile = dynamic_cast<KnobFile*>(fileKnob.get());
+                if (outFile) {
+                    outFile->setValue(it->filename.toStdString(), 0);
+                }
+            }
+
+        }
        
+        ///launch renders
         if (!writersWork.empty()) {
             startWritersRendering(cl.areRenderStatsEnabled(), false, writersWork);
         } else {
