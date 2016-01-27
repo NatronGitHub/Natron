@@ -480,7 +480,7 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         //Identity but no input, if it's optional ignore, otherwise fail
         if (callerNode && callerNode != node) {
             
-            int inputIndex = callerNode->getInputIndex(node);
+            int inputIndex = callerNode->getInputIndex(node.get());
             if (callerNode->getEffectInstance()->isInputOptional(inputIndex)
                 || callerNode->getEffectInstance()->isInputMask(inputIndex)) {
                 

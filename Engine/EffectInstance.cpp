@@ -3856,14 +3856,12 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         node->computeFrameRangeForReader(k);
     }
 
-    if (node->handleFormatKnob(k)) {
-        return;
-    }
     
-
+    bool wasFormatKnobCaught = node->handleFormatKnob(k);
+   
     KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
     assert(kh);
-    if (kh && kh->isDeclaredByPlugin()) {
+    if (kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught) {
         
         /*
          For now since knobs are not view aware, use view=0 always

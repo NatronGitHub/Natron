@@ -3771,11 +3771,11 @@ Node::getRealGuiInput(int index) const
 }
 
 int
-Node::getInputIndex(const NodePtr& node) const
+Node::getInputIndex(const Node* node) const
 {
     QMutexLocker l(&_imp->inputsMutex);
     for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-        if (_imp->inputs[i].lock() == node) {
+        if (_imp->inputs[i].lock().get() == node) {
             return i;
         }
     }
@@ -4258,7 +4258,7 @@ Node::replaceInput(const NodePtr& input,int inputNumber)
             NodePtr curIn = _imp->inputs[inputNumber].lock();
             if (curIn) {
                 QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)));
-                curIn->disconnectOutput(useGuiInputs, shared_from_this());
+                curIn->disconnectOutput(useGuiInputs, this);
             }
             _imp->inputs[inputNumber] = input;
             _imp->guiInputs[inputNumber] = input;
@@ -4266,7 +4266,7 @@ Node::replaceInput(const NodePtr& input,int inputNumber)
             NodePtr curIn = _imp->guiInputs[inputNumber].lock();
             if (curIn) {
                 QObject::connect(curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)));
-                curIn->disconnectOutput(useGuiInputs, shared_from_this());
+                curIn->disconnectOutput(useGuiInputs, this);
             }
             _imp->guiInputs[inputNumber] = input;
             _imp->mustCopyGuiInputs = true;
@@ -4482,7 +4482,7 @@ Node::disconnectInput(int inputNumber)
 
     
     QObject::disconnect( inputShared.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
-    inputShared->disconnectOutput(useGuiValues,shared_from_this());
+    inputShared->disconnectOutput(useGuiValues,this);
     
     {
         QMutexLocker l(&_imp->inputsMutex);
@@ -4528,7 +4528,7 @@ Node::disconnectInput(int inputNumber)
 }
 
 int
-Node::disconnectInput(const NodePtr& input)
+Node::disconnectInput(Node* input)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -4542,7 +4542,7 @@ Node::disconnectInput(const NodePtr& input)
         if (!useGuiValues) {
             for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
                 NodePtr curInput = _imp->inputs[i].lock();
-                if (curInput == input) {
+                if (curInput.get() == input) {
                     inputShared = curInput;
                     found = (int)i;
                     break;
@@ -4551,7 +4551,7 @@ Node::disconnectInput(const NodePtr& input)
         } else {
             for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
                 NodePtr curInput = _imp->guiInputs[i].lock();
-                if (curInput == input) {
+                if (curInput.get() == input) {
                     inputShared = curInput;
                     found = (int)i;
                     break;
@@ -4571,7 +4571,7 @@ Node::disconnectInput(const NodePtr& input)
                 _imp->mustCopyGuiInputs = true;
             }
         }
-        input->disconnectOutput(useGuiValues,shared_from_this());
+        input->disconnectOutput(useGuiValues,this);
         Q_EMIT inputChanged(found);
         bool mustCallEnd = false;
         if (!useGuiValues) {
@@ -4606,7 +4606,7 @@ Node::disconnectInput(const NodePtr& input)
 }
 
 int
-Node::disconnectOutput(bool useGuiValues,const NodePtr& output)
+Node::disconnectOutput(bool useGuiValues,const Node* output)
 {
     assert(output);
     ////Only called by the main-thread
@@ -4618,7 +4618,7 @@ Node::disconnectOutput(bool useGuiValues,const NodePtr& output)
             
             int ret = 0;
             for (NodesWList::iterator it = _imp->outputs.begin(); it!=_imp->outputs.end(); ++it,++ret) {
-                if (it->lock() == output) {
+                if (it->lock().get() == output) {
                     _imp->outputs.erase(it);
                     break;
                 }
@@ -4626,7 +4626,7 @@ Node::disconnectOutput(bool useGuiValues,const NodePtr& output)
         }
         int ret = 0;
         for (NodesWList::iterator it = _imp->guiOutputs.begin(); it!=_imp->guiOutputs.end(); ++it,++ret) {
-            if (it->lock() == output) {
+            if (it->lock().get() == output) {
                 _imp->guiOutputs.erase(it);
                 break;
             }
@@ -4785,7 +4785,6 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     
     std::vector<NodePtr > inputsQueueCopy;
 
-    NodePtr thisShared = shared_from_this();
 
     ///For multi-instances, if we deactivate the main instance without hiding the GUI (the default state of the tracker node)
     ///then don't remove it from outputs of the inputs
@@ -4793,7 +4792,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
         for (std::size_t i = 0; i < _imp->guiInputs.size(); ++i) {
             NodePtr input = _imp->guiInputs[i].lock();
             if (input) {
-                input->disconnectOutput(false,thisShared);
+                input->disconnectOutput(false,this);
             }
         }
     }
@@ -4827,7 +4826,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
             }
         }
         if (dc) {
-            int inputNb = output->getInputIndex(thisShared);
+            int inputNb = output->getInputIndex(this);
             if (inputNb != -1) {
                 _imp->deactivatedState.insert( make_pair(*it, inputNb) );
                 
@@ -4835,7 +4834,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                 if (inputToConnectTo) {
                     output->replaceInput(inputToConnectTo, inputNb);
                 } else {
-                    ignore_result(output->disconnectInput(thisShared));
+                    ignore_result(output->disconnectInput(this));
                 }
             }
         }

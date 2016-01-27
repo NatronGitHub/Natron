@@ -416,7 +416,7 @@ protected:
 private:
     
     
-    void getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderRequest>& requests);
+    void getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderWork>& requests);
 
 
     NodePtr createNodeInternal(const CreateNodeArgs& args);

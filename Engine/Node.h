@@ -360,7 +360,7 @@ public:
     /**
      * @brief Returns the input index of the node if it is an input of this node, -1 otherwise.
      **/
-    int getInputIndex(const NodePtr& node) const;
+    int getInputIndex(const Node* node) const;
 
     /**
      * @brief Returns true if the node is currently executing the onInputChanged handler.
@@ -527,7 +527,7 @@ public:
     /** @brief Removes the node input of the
      * node inputs. Returns the inputNumber if it could remove it, otherwise returns
        -1.*/
-    virtual int disconnectInput(const NodePtr& input);
+    virtual int disconnectInput(Node* input);
     
     /**
      * @brief Same as:
@@ -601,7 +601,7 @@ private:
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
        otherwise returns -1.*/
-    int disconnectOutput(bool useGuiValues,const NodePtr& output);
+    int disconnectOutput(bool useGuiValues,const Node* output);
     
 public:
     

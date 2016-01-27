@@ -362,16 +362,39 @@ AppInstance::newVersionCheckError()
 }
 
 void
-AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderRequest>& requests)
+AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderWork>& requests)
 {
     const std::list<CLArgs::WriterArg>& writers = cl.getWriterArgs();
     for (std::list<CLArgs::WriterArg>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
         
-        QString writerName;
+        NodePtr writerNode;
         if (!it->mustCreate) {
-            writerName = it->name;
+            std::string writerName = it->name.toStdString();
+            writerNode = getNodeByFullySpecifiedName(writerName);
+            
+            if (!writerNode) {
+                std::string exc(writerName);
+                exc.append(tr(" does not belong to the project file. Please enter a valid Write node script-name.").toStdString());
+                throw std::invalid_argument(exc);
+            } else {
+                if (!writerNode->isOutputNode()) {
+                    std::string exc(writerName);
+                    exc.append(tr(" is not an output node! It cannot render anything.").toStdString());
+                    throw std::invalid_argument(exc);
+                }
+            }
+            
+            if (!it->filename.isEmpty()) {
+                KnobPtr fileKnob = writerNode->getKnobByName(kOfxImageEffectFileParamName);
+                if (fileKnob) {
+                    KnobOutputFile* outFile = dynamic_cast<KnobOutputFile*>(fileKnob.get());
+                    if (outFile) {
+                        outFile->setValue(it->filename.toStdString(), 0);
+                    }
+                }
+            }
         } else {
-            NodePtr writer = createWriter(it->filename.toStdString(), eCreateNodeReasonInternal, getProject());
+            writerNode = createWriter(it->filename.toStdString(), eCreateNodeReasonInternal, getProject());
             
             //Connect the writer to the corresponding Output node input
             NodePtr output = getProject()->getNodeByFullySpecifiedName(it->name.toStdString());
@@ -384,28 +407,31 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderR
             }
             NodePtr outputInput = output->getRealInput(0);
             if (outputInput) {
-                writer->connectInput(outputInput, 0);
+                writerNode->connectInput(outputInput, 0);
             }
             
-            writerName = writer->getScriptName().c_str();
+            writerNode->getScriptName().c_str();
         }
+        
+        assert(writerNode);
+        OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>(writerNode->getEffectInstance().get());
 
         if (cl.hasFrameRange()) {
             const std::list<std::pair<int,std::pair<int,int> > >& frameRanges = cl.getFrameRanges();
             for (std::list<std::pair<int,std::pair<int,int> > >::const_iterator it2 = frameRanges.begin(); it2 != frameRanges.end(); ++it2) {
-                AppInstance::RenderRequest r;
+                AppInstance::RenderWork r;
                 r.firstFrame = it2->second.first;
                 r.lastFrame = it2->second.second;
                 r.frameStep = it2->first;
-                r.writerName = writerName;
+                r.writer = effect;
                 requests.push_back(r);
             }
         } else {
-            AppInstance::RenderRequest r;
+            AppInstance::RenderWork r;
             r.firstFrame = INT_MIN;
             r.lastFrame = INT_MAX;
             r.frameStep = INT_MIN;
-            r.writerName = writerName;
+            r.writer = effect;
             requests.push_back(r);
         }
     
@@ -470,7 +496,7 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
             throw std::invalid_argument(tr("Specified project file does not exist").toStdString());
         }
         
-        std::list<AppInstance::RenderRequest> writersWork;
+        std::list<AppInstance::RenderWork> writersWork;
 
         if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
             
@@ -1146,7 +1172,7 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
             } else {
                 if ( !node->isOutputNode() ) {
                     std::string exc(writerName);
-                    exc.append(" is not an output node! It cannot render anything.");
+                    exc.append(tr(" is not an output node! It cannot render anything.").toStdString());
                     throw std::invalid_argument(exc);
                 }
                 ViewerInstance* isViewer = node->isEffectViewer();

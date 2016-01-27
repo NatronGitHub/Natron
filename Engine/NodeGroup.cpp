@@ -625,7 +625,7 @@ NodeCollection::disconnectNodes(const NodePtr& input,const NodePtr& output,bool 
     }
     
     
-    if (output->disconnectInput(input) < 0) {
+    if (output->disconnectInput(input.get()) < 0) {
         return false;
     }
     
@@ -1304,7 +1304,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
         if (!output) {
             continue;
         }
-        int idx = output->getInputIndex(thisNode);
+        int idx = output->getInputIndex(thisNode.get());
         assert(idx != -1);
         output->onInputChanged(idx);
     }
@@ -1342,7 +1342,7 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
         if (!output) {
             continue;
         }
-        int idx = output->getInputIndex(thisNode);
+        int idx = output->getInputIndex(thisNode.get());
         assert(idx != -1);
         output->onInputChanged(idx);
     }
