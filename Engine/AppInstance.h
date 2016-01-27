@@ -138,10 +138,6 @@ public:
     
     virtual bool isBackground() const { return true; }
     
-    struct RenderRequest {
-        QString writerName;
-        int firstFrame,lastFrame,frameStep;
-    };
     
     struct RenderWork {
         OutputEffectInstance* writer;
@@ -274,8 +270,14 @@ public:
     void onOCIOConfigPathChanged(const std::string& path);
     
   
-    
-    void startWritersRendering(bool enableRenderStats, bool doBlockingRender, const std::list<RenderRequest>& writers);
+    /**
+     * @brief Given writer names, start rendering the given RenderRequest. If empty all Writers in the project
+     * will be rendered using the frame ranges.
+     **/
+    void startWritersRendering(bool enableRenderStats,
+                               bool doBlockingRender,
+                               const std::list<std::string>& writers,
+                               const std::list<std::pair<int,std::pair<int,int> > >& frameRanges);
     void startWritersRendering(bool enableRenderStats, bool doBlockingRender, const std::list<RenderWork>& writers);
 
     void startRenderingBlockingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool renderInSeparateProcess,const QString& savePath);

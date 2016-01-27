@@ -523,7 +523,12 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
         }
         
        
-        startWritersRendering(cl.areRenderStatsEnabled(), false, writersWork);
+        if (!writersWork.empty()) {
+            startWritersRendering(cl.areRenderStatsEnabled(), false, writersWork);
+        } else {
+            std::list<std::string> writers;
+            startWritersRendering(cl.areRenderStatsEnabled(), false, writers, cl.getFrameRanges());
+        }
        
         
         
@@ -1153,15 +1158,17 @@ AppInstance::triggerAutoSave()
 
 
 void
-AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender, const std::list<RenderRequest>& writers)
+AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
+                                   const std::list<std::string>& writers,
+                                   const std::list<std::pair<int,std::pair<int,int> > >& frameRanges)
 {
     
     std::list<RenderWork> renderers;
 
-    if ( !writers.empty() ) {
-        for (std::list<RenderRequest>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
+    if (!writers.empty()) {
+        for (std::list<std::string>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
             
-            std::string writerName =  it->writerName.toStdString();
+            const std::string& writerName = *it;
             
             NodePtr node = getNodeByFullySpecifiedName(writerName);
            
@@ -1180,13 +1187,26 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
                     throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
                 }
                 
-                RenderWork w;
-                w.writer = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
-                assert(w.writer);
-                w.firstFrame = it->firstFrame;
-                w.lastFrame = it->lastFrame;
-                w.frameStep = it->frameStep;
-                renderers.push_back(w);
+                OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
+                assert(effect);
+                
+                for (std::list<std::pair<int,std::pair<int,int> > >::const_iterator it2 = frameRanges.begin(); it2!=frameRanges.end();++it2) {
+                    RenderWork w;
+                    w.writer = effect;
+                    w.firstFrame = it2->second.first;
+                    w.lastFrame = it2->second.second;
+                    w.frameStep = it2->first;
+                    renderers.push_back(w);
+                }
+                
+                if (frameRanges.empty()) {
+                    RenderWork r;
+                    r.firstFrame = INT_MIN;
+                    r.lastFrame = INT_MAX;
+                    r.frameStep = INT_MIN;
+                    r.writer = effect;
+                    renderers.push_back(r);
+                }
             }
         }
     } else {
@@ -1197,14 +1217,24 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
         for (std::list<OutputEffectInstance*>::const_iterator it2 = writers.begin(); it2 != writers.end(); ++it2) {
             assert(*it2);
             if (*it2) {
-                RenderWork w;
-                w.writer = *it2;
-                double f, l;
-                w.writer->getFrameRange_public(w.writer->getHash(), &f, &l);
-                w.firstFrame = std::floor(f);
-                w.lastFrame = std::ceil(l);
-                w.frameStep = w.writer->getNode()->getFrameStepKnobValue();
-                renderers.push_back(w);
+                
+                for (std::list<std::pair<int,std::pair<int,int> > >::const_iterator it3 = frameRanges.begin(); it3!=frameRanges.end();++it3) {
+                    RenderWork w;
+                    w.writer = *it2;
+                    w.firstFrame = it3->second.first;
+                    w.lastFrame = it3->second.second;
+                    w.frameStep = it3->first;
+                    renderers.push_back(w);
+                }
+                
+                if (frameRanges.empty()) {
+                    RenderWork r;
+                    r.firstFrame = INT_MIN;
+                    r.lastFrame = INT_MAX;
+                    r.frameStep = INT_MIN;
+                    r.writer = *it2;
+                    renderers.push_back(r);
+                }
             }
         }
     }
