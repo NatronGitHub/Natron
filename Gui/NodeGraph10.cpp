@@ -225,7 +225,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             return;
         }
         
-        CreateNodeArgs args(PLUGINID_NATRON_DOT, eCreateNodeReasonUserCreate, _imp->group.lock());
+        CreateNodeArgs args(PLUGINID_NATRON_DOT, eCreateNodeReasonInternal, _imp->group.lock());
         NodePtr dotNode = getGui()->getApp()->createNode(args);
         assert(dotNode);
         boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
