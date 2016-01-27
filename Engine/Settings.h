@@ -376,6 +376,7 @@ private:
   
     boost::shared_ptr<KnobBool> _checkForUpdates;
     boost::shared_ptr<KnobBool> _enableCrashReports;
+    boost::shared_ptr<KnobButton> _testCrashReportButton;
     boost::shared_ptr<KnobBool> _notifyOnFileChange;
     boost::shared_ptr<KnobBool> _autoSaveUnSavedProjects;
     boost::shared_ptr<KnobInt> _autoSaveDelay;

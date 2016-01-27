@@ -143,6 +143,15 @@ Settings::initializeKnobsGeneral()
                                         "Note that when using the application in command-line mode, if crash reports are "
                                         "enabled, they will be automatically uploaded.\n"
                                         "Changing this requires a restart of the application to take effect.");
+    _enableCrashReports->setAddNewLine(false);
+    _generalTab->addKnob(_enableCrashReports);
+    
+    _testCrashReportButton = AppManager::createKnob<KnobButton>(this, "Test Crash Reporting");
+    _testCrashReportButton->setHintToolTip("This button is for developers only to test whether the crash reporting system "
+                                           "works correctly. Do not use this.");
+    _generalTab->addKnob(_testCrashReportButton);
+    
+    
     
     _notifyOnFileChange = AppManager::createKnob<KnobBool>(this, "Warn when a file changes externally");
     _notifyOnFileChange->setName("warnOnExternalChange");
@@ -1960,6 +1969,17 @@ Settings::tryLoadOpenColorIOConfig()
     return true;
 } // tryLoadOpenColorIOConfig
 
+
+inline
+void crash_application()
+{
+    std::cerr << "CRASHING APPLICATION NOW UPON USER REQUEST!" << std::endl;
+    volatile int* a = (int*)(NULL);
+    // coverity[var_deref_op]
+    *a = 1;
+}
+
+
 void
 Settings::onKnobValueChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
@@ -2079,6 +2099,15 @@ Settings::onKnobValueChanged(KnobI* k,
         std::string hostName = _hostName->getActiveEntryText_mt_safe();
         bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
         _customHostName->setSecret(!isCustom);
+    } else if (k == _testCrashReportButton.get() && reason == eValueChangedReasonUserEdited) {
+        StandardButtonEnum reply = Dialogs::questionDialog(QObject::tr("Crash Test").toStdString(),
+                                                           QObject::tr("You are about to make " NATRON_APPLICATION_NAME
+                                                                       " crash to test the reporting system. "
+                                                                       "Do you really want to crash?").toStdString(), false,
+                                                           StandardButtons(eStandardButtonYes | eStandardButtonNo));
+        if (reply == eStandardButtonYes) {
+            crash_application();
+        }
     }
     if ((k == _hostName.get() || k == _customHostName.get()) && !_restoringSettings) {
         Dialogs::warningDialog(tr("Host-name change").toStdString(), tr("Changing this requires a restart of " NATRON_APPLICATION_NAME

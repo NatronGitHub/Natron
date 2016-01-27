@@ -67,24 +67,7 @@ BOOST_CLASS_EXPORT(NATRON_NAMESPACE::ImageParams)
 NATRON_NAMESPACE_ENTER;
 
 
-#if defined(NATRON_USE_BREAKPAD) || defined(Q_OS_LINUX)
-#ifdef DEBUG
-inline
-void crash_application()
-{
-#pragma message WARN("crash_application() defined, make sure it is not used anywhere!")
-#ifdef __NATRON_UNIX__
-    sleep(2);
-#endif
-	std::cerr << "CRASHING APPLICATION NOW!" << std::endl;
-    volatile int* a = (int*)(NULL);
-    // coverity[var_deref_op]
-    *a = 1;
-}
-//#else
-//inline void crash_application() {}
-#endif // DEBUG
-#endif // NATRON_USE_BREAKPAD
+
 
 
 AppManagerPrivate::AppManagerPrivate()
@@ -205,9 +188,6 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath, int br
         return;
     }
     
- /*#pragma message WARN("USING CRASH APPLICATION HERE, COMMENT OUT BEFORE COMMITING")
-    crash_application();
-  */
 }
 #endif // NATRON_USE_BREAKPAD
 
