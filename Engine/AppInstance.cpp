@@ -841,7 +841,7 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
         node->setPluginIconFilePath(iconFilePath);
         node->setPluginDescription(description);
         node->setPluginIDAndVersionForGui(pluginLabel, pluginID, version);
-        node->setPluginPythonModule(QString(pythonModulePath + pythonModule + ".py").toStdString(), version);
+        node->setPluginPythonModule(QString(pythonModulePath + pythonModule + ".py").toStdString());
     }
     
 }

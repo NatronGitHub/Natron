@@ -35,6 +35,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include <QFile>
+#include <QTextStream>
+#include <QDesktopServices>
 
 #include <ofxNatron.h>
 
@@ -873,6 +876,13 @@ DockablePanel::showHelp()
         if (plugin) {
             Dialogs::informationDialog(plugin->getPluginLabel().toStdString(), helpString().toStdString(), true);
         }
+        
+        //Todo here: request to the local webserver the html page for this plug-in ID
+        //QString str = iseffect->getNode()->makeHTMLDocumentation();
+        //QUrl url = QUrl::fromEncoded(url);
+        //QDesktopServices::openUrl(url)
+
+        
     }
 }
 

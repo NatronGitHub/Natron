@@ -1052,15 +1052,13 @@ public:
     
     void setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::string& pluginID,unsigned int version);
     
-    void setPluginPythonModule(const std::string& pythonModule, unsigned int version);
+    void setPluginPythonModule(const std::string& pythonModule);
     
     bool hasPyPlugBeenEdited() const;
     void setPyPlugEdited(bool edited);
     
     std::string getPluginPythonModule() const;
-    
-    unsigned int getPluginPythonModuleVersion() const;
-  
+      
     //Returns true if changed
     bool refreshChannelSelectors();
     
@@ -1106,6 +1104,8 @@ public:
     void refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue);
     
     bool handleFormatKnob(KnobI* knob);
+    
+    QString makeHTMLDocumentation() const;
     
 private:
     

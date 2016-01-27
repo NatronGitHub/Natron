@@ -106,7 +106,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,bool serializeInputs)
         
         if(!n->hasPyPlugBeenEdited()) {
             _pythonModule = n->getPluginPythonModule();
-            _pythonModuleVersion = n->getPluginPythonModuleVersion();
+            _pythonModuleVersion = n->getMajorVersion();
         }
 
         _pluginMajorVersion = n->getMajorVersion();

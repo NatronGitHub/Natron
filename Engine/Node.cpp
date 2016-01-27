@@ -34,6 +34,7 @@
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QWaitCondition>
+#include <QtCore/QTextStream>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
@@ -222,7 +223,12 @@ struct Node::Implementation
     , activatedMutex()
     , activated(true)
     , plugin(plugin_)
+    , pluginPythonModuleMutex()
+    , pluginPythonModule()
+    , pyplugChangedSinceScript(false)
     , pyPlugID()
+    , pyPlugLabel()
+    , pyPlugDesc()
     , pyPlugVersion(0)
     , computingPreview(false)
     , computingPreviewMutex()
@@ -282,10 +288,6 @@ struct Node::Implementation
     , guiPointer()
     , nativePositionOverlays()
     , nativeTransformOverlays()
-    , pluginPythonModuleMutex()
-    , pluginPythonModule()
-    , pluginPythonModuleVersion(0)
-    , pyplugChangedSinceScript(false)
     , nodeCreated(false)
     , createdComponentsMutex()
     , createdComponents()
@@ -403,7 +405,15 @@ struct Node::Implementation
     bool activated;
     
     Plugin* plugin; //< the plugin which stores the function to instantiate the effect
+    
+    mutable QMutex pluginPythonModuleMutex;
+    std::string pluginPythonModule; // the filename of the python script
+    
+    //Set to true when the user has edited a PyPlug
+    bool pyplugChangedSinceScript;
     std::string pyPlugID; //< if this is a pyplug, this is the ID of the Plug-in. This is because the plugin handle will be the one of the Group
+    std::string pyPlugLabel;
+    std::string pyPlugDesc;
     int pyPlugVersion;
     
     bool computingPreview;
@@ -504,12 +514,6 @@ struct Node::Implementation
     std::list<boost::shared_ptr<KnobDouble> > nativePositionOverlays;
     std::list<NativeTransformOverlayKnobs> nativeTransformOverlays;
     
-    mutable QMutex pluginPythonModuleMutex;
-    std::string pluginPythonModule;
-    unsigned int pluginPythonModuleVersion;
-    
-    //Set to true when the user has edited a PyPlug
-    bool pyplugChangedSinceScript;
     
     bool nodeCreated;
     
@@ -3434,6 +3438,155 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries, int defV
     choice->endChanges();
 }
 
+QString
+Node::makeHTMLDocumentation() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    QString ret;
+    QTextStream ts(&ret);
+    
+    bool isPyPlug;
+    QString pluginID,pluginLabel,pluginDescription;
+    int majorVersion = getMajorVersion();
+    int minorVersion = getMinorVersion();
+    
+    {
+        QMutexLocker k(&_imp->pluginPythonModuleMutex);
+        isPyPlug = !_imp->pyPlugID.empty();
+        pluginID = _imp->pyPlugID.empty() ? _imp->plugin->getPluginID() : _imp->pyPlugID.c_str();
+        pluginLabel = _imp->pyPlugLabel.empty() ? _imp->plugin->getPluginLabel() : _imp->pyPlugLabel.c_str();
+        pluginDescription = _imp->pyPlugDesc.empty() ? _imp->effect->getPluginDescription().c_str() : _imp->pyPlugDesc.c_str();
+    }
+    
+    ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
+    ts << "<html>";
+    ts << "<head>";
+    ts << "<title>" << pluginLabel << "</title>";
+    
+    ///Stylesheet
+    ts << "<style>";
+    ts << "body {margin:0;padding:0;}";
+    ts << "h3 {font-weight:normal;font-size:xx-large;}";
+    ts << "p {text-align:justify;}";
+    ts << "table.myTable {width:100%;}";
+    ts << "td.myTableValue {background-color:#d3d3d3;}";
+    ts << "td.myTableHeader";
+    ts << "{font-weight:bold;color:white;background-color:#000;text-align:center;}";
+    ts << "div#myFooter {text-align:center;margin:10px;font-size:small;}";
+    ts << "div#myHeader {height:150px;background:black;}";
+    ts << "div#myHeaderLeft";
+    ts << "{height:150px;width:150px;float:left;background:url(natron.png) no-repeat #fff;}";
+    ts << "div#myHeaderLeft span {display:none;}";
+    ts << "div#myHeaderRight {height:150px;width:200px;float:right;background:green;}";
+    ts << "div#myContainer {margin-left:300px;margin-right:30px;}";
+    ts << "div#myLeftMenu {float:left;width:250px;background:yellow;}";
+    ts << "div#myleftMenu h4 {font-weight:normal;margin-left:5px;}";
+    ts << "</style>";
+    ts << "</head>";
+    
+    ts << "<body>";
+    ts << "<h3>" << pluginLabel << " version " << majorVersion << "." << minorVersion << "</h3>";
+    ts << "<p>" << pluginDescription << "</p>";
+    ts << "<h3>" << "Inputs & Controls" << "</h3>";
+    
+    ts << "<table class=\"knobsTable\">";
+    ts << "<td class=\"knobsTableHeader\">Label (UI Name)</td>";
+    ts << "<td class=\"knobsTableHeader\">Script-Name</td>";
+    ts << "<td class=\"knobsTableHeader\">Default-Value</td>";
+    ts << "<td class=\"knobsTableHeader\">Function</td>";
+    
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        
+        ts << "<tr>";
+
+        if ((*it)->getDefaultIsSecret()) {
+            continue;
+        }
+        QString knobScriptName((*it)->getName().c_str());
+        QString knobLabel((*it)->getLabel().c_str());
+        QString knobHint((*it)->getHintToolTip().c_str());
+        
+        ts << "<td class=\"knobsTableValue\">" << knobLabel << "</td>";
+        ts << "<td class=\"knobsTableValue\">" << knobScriptName << "</td>";
+        
+        QString defValuesStr;
+
+        std::vector<std::pair<QString,QString> > dimsDefaultValueStr;
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>(it->get());
+        KnobChoice* isChoice = dynamic_cast<KnobChoice*>(it->get());
+        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(it->get());
+        Knob<double>* isDbl = dynamic_cast<Knob<double>*>(it->get());
+        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(it->get());
+        KnobSeparator* isSep = dynamic_cast<KnobSeparator*>(it->get());
+        KnobButton* isBtn = dynamic_cast<KnobButton*>(it->get());
+        KnobParametric* isParametric = dynamic_cast<KnobParametric*>(it->get());
+        KnobGroup* isGroup = dynamic_cast<KnobGroup*>(it->get());
+        KnobPage* isPage = dynamic_cast<KnobPage*>(it->get());
+        
+        if (!isGroup && !isPage) {
+            for (int i = 0; i < (*it)->getDimension(); ++i) {
+                QString valueStr;
+                
+                if (!isBtn && !isSep && !isParametric) {
+                    if (isChoice) {
+                        int index = isChoice->getDefaultValue(i);
+                        std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+                        if (index >= 0 && index < (int)entries.size()) {
+                            valueStr = entries[index].c_str();
+                        }
+                    } else if (isInt) {
+                        valueStr = QString::number(isInt->getDefaultValue(i));
+                    } else if (isDbl) {
+                        valueStr = QString::number(isDbl->getDefaultValue(i));
+                    } else if (isBool) {
+                        valueStr = isBool->getDefaultValue(i) ? "On" : "Off";
+                    } else if (isString) {
+                        valueStr = isString->getDefaultValue(i).c_str();
+                    }
+                }
+                
+                dimsDefaultValueStr.push_back(std::make_pair((*it)->getDimensionName(i).c_str(), valueStr));
+            }
+            
+            for (std::size_t i = 0; i < dimsDefaultValueStr.size(); ++i) {
+                if (!dimsDefaultValueStr[i].second.isEmpty()) {
+                    if (dimsDefaultValueStr.size() > 1) {
+                        defValuesStr.append(dimsDefaultValueStr[i].first);
+                        defValuesStr.append(": ");
+                    }
+                    defValuesStr.append(dimsDefaultValueStr[i].second);
+                    if (i < dimsDefaultValueStr.size() -1) {
+                        defValuesStr.append(" ");
+                    }
+                }
+            }
+            if (defValuesStr.isEmpty()) {
+                defValuesStr = "N/A";
+            }
+        }
+        
+        
+      
+        
+        ts << "<td class=\"knobsTableValue\">" << defValuesStr << "</td>";
+        ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
+
+        
+        ts << "</tr>";
+
+    } // for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+    
+    ts << "</table>";
+
+    //ts << "<div id=\"myFooter\">&copy; 2016 foobar</div>";
+    
+    ts << "</body>";
+    ts << "</html>";
+    return ret;
+}
+
 bool
 Node::isForceCachingEnabled() const
 {
@@ -3654,9 +3807,11 @@ Node::hasOutputNodesConnected(std::list<OutputEffectInstance* >* writers) const
 int
 Node::getMajorVersion() const
 {
-    ///Thread safe as it never changes
-    if (!_imp->pyPlugID.empty()) {
-        return _imp->pyPlugVersion;
+    {
+        QMutexLocker k(&_imp->pluginPythonModuleMutex);
+        if (!_imp->pyPlugID.empty()) {
+            return _imp->pyPlugVersion;
+        }
     }
     if (!_imp->plugin) {
         return 0;
@@ -3670,6 +3825,12 @@ Node::getMinorVersion() const
     ///Thread safe as it never changes
     if (!_imp->plugin) {
         return 0;
+    }
+    {
+        QMutexLocker k(&_imp->pluginPythonModuleMutex);
+        if (!_imp->pyPlugID.empty()) {
+            return 0;
+        }
     }
     return _imp->plugin->getMinorVersion();
 }
@@ -5447,28 +5608,42 @@ Node::getPluginIconFilePath() const
 std::string
 Node::getPluginID() const
 {
-    ///MT-safe, never changes
     if (!_imp->plugin) {
         return std::string();
     }
-    if (!_imp->pyPlugID.empty()) {
-        return _imp->pyPlugID;
-    } else {
-        return _imp->plugin->getPluginID().toStdString();
+    
+    {
+        QMutexLocker k(&_imp->pluginPythonModuleMutex);
+        if (!_imp->pyPlugID.empty()) {
+            return _imp->pyPlugID;
+        }
     }
+    
+    return _imp->plugin->getPluginID().toStdString();
+    
 }
 
 std::string
 Node::getPluginLabel() const
 {
-    ///MT-safe, never changes
+    {
+        QMutexLocker k(&_imp->pluginPythonModuleMutex);
+        if (!_imp->pyPlugLabel.empty()) {
+            return _imp->pyPlugLabel;
+        }
+    }
     return _imp->effect->getPluginLabel();
 }
 
 std::string
 Node::getPluginDescription() const
 {
-    ///MT-safe, never changes
+    {
+        QMutexLocker k(&_imp->pluginPythonModuleMutex);
+        if (!_imp->pyPlugDesc.empty()) {
+            return _imp->pyPlugDesc;
+        }
+    }
     return _imp->effect->getPluginDescription();
 }
 
@@ -6580,12 +6755,16 @@ Node::setPluginIDAndVersionForGui(const std::string& pluginLabel,const std::stri
     if (!nodeGui) {
         return;
     }
-
-    _imp->pyPlugVersion = version;
-    _imp->pyPlugID = pluginID;
+    
+    {
+        QMutexLocker k(&_imp->pluginPythonModuleMutex);
+        _imp->pyPlugVersion = version;
+        _imp->pyPlugID = pluginID;
+        _imp->pyPlugLabel = pluginLabel;
+    }
     
     nodeGui->setPluginIDAndVersion(pluginLabel,pluginID, version);
-
+    
 }
 
 bool
@@ -6601,14 +6780,15 @@ Node::setPyPlugEdited(bool edited)
     QMutexLocker k(&_imp->pluginPythonModuleMutex);
     _imp->pyplugChangedSinceScript = edited;
     _imp->pyPlugID.clear();
+    _imp->pyPlugLabel.clear();
+    _imp->pyPlugDesc.clear();
 }
 
 void
-Node::setPluginPythonModule(const std::string& pythonModule, unsigned int version)
+Node::setPluginPythonModule(const std::string& pythonModule)
 {
     QMutexLocker k(&_imp->pluginPythonModuleMutex);
     _imp->pluginPythonModule = pythonModule;
-    _imp->pluginPythonModuleVersion = version;
 }
 
 std::string
@@ -6618,12 +6798,6 @@ Node::getPluginPythonModule() const
     return _imp->pluginPythonModule;
 }
 
-unsigned int
-Node::getPluginPythonModuleVersion() const
-{
-    QMutexLocker k(&_imp->pluginPythonModuleMutex);
-    return _imp->pluginPythonModuleVersion;
-}
 
 bool
 Node::hasHostOverlayForParam(const KnobI* knob) const
