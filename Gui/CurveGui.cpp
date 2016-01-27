@@ -329,6 +329,10 @@ CurveGui::drawCurve(int curveIndex,
         if (hasDrawnExpr) {
             glBegin(GL_LINE_STRIP);
             for (int i = 0; i < (int)exprVertices.size(); i += 2) {
+                if (exprVertices[i] < btmLeft.x() || exprVertices[i] > topRight.x() ||
+                    exprVertices[i+1] < btmLeft.y() || exprVertices[i+1] > topRight.y()) {
+                    continue;
+                }
                 glVertex2f(exprVertices[i],exprVertices[i + 1]);
             }
             glEnd();
@@ -339,6 +343,10 @@ CurveGui::drawCurve(int curveIndex,
         }
         glBegin(GL_LINE_STRIP);
         for (int i = 0; i < (int)vertices.size(); i += 2) {
+            if (vertices[i] < btmLeft.x() || vertices[i] > topRight.x() ||
+                vertices[i+1] < btmLeft.y() || vertices[i+1] > topRight.y()) {
+                continue;
+            }
             glVertex2f(vertices[i],vertices[i + 1]);
         }
         glEnd();
