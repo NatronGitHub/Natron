@@ -745,7 +745,7 @@ Gui::onNodeNameChanged(const QString & /*name*/)
 void
 Gui::renderAllWriters()
 {
-    _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(), false, std::list<AppInstance::RenderRequest>() );
+    _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(), false, std::list<std::string>(), std::list<std::pair<int,std::pair<int,int> > >() );
 }
 
 void
