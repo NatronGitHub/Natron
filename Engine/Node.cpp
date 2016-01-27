@@ -2806,6 +2806,11 @@ Node::initializeKnobs(int renderScaleSupportPref)
                         formatPar->setSecretByDefault(true);
                         _imp->pluginFormatKnobs.size = boost::dynamic_pointer_cast<KnobInt>(formatSize);
                         _imp->pluginFormatKnobs.par = boost::dynamic_pointer_cast<KnobDouble>(formatPar);
+                        
+                        std::vector<std::string> formats;
+                        int defValue;
+                        getApp()->getProject()->getProjectFormatEntries(&formats, &defValue);
+                        refreshFormatParamChoice(formats, defValue);
                     }
                 }
             }

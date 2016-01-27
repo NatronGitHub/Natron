@@ -245,17 +245,17 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         assert(project);
         bool ok = project->disconnectNodes(inputNode, outputNode);
         if (!ok) {
-            throw std::logic_error("disconnectNodes failed");
+            return;
         }
         
         ok = project->connectNodes(0, inputNode, dotNode);
         if (!ok) {
-            throw std::logic_error("connectNodes failed");
+            return;
         }
 
         ok = project->connectNodes(inputNb,dotNode,outputNode);
         if (!ok) {
-            throw std::logic_error("connectNodes failed");
+            return;
         }
 
         QPointF pos = dotNodeGui->mapToParent( dotNodeGui->mapFromScene(lastMousePosScene) );

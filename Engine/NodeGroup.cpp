@@ -565,12 +565,12 @@ NodeCollection::connectNodes(int inputNumber,const NodePtr& input,const NodePtr&
     if (force && existingInput) {
         bool ok = disconnectNodes(existingInput, output);
         if (!ok) {
-            throw std::runtime_error("NodeCollection::connectNodes() failed");
+            return false;
         }
         if (input && input->getMaxInputCount() > 0) {
             ok = connectNodes(input->getPreferredInputForConnection(), existingInput, input);
             if (!ok) {
-                throw std::runtime_error("NodeCollection::connectNodes() failed");
+                return false;
             }
         }
     }
