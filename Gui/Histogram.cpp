@@ -631,6 +631,8 @@ Histogram::onViewerImageChanged(ViewerGL* viewer,
                 if ( currentInput && (currentInput->data().toInt() == texIndex) ) {
                     computeHistogramAndRefresh();
                     return;
+                } else {
+                    return;
                 }
             }
         }
