@@ -126,7 +126,7 @@ cd ..
 
 #Dump symbols for breakpad before stripping
 for bin in IO Misc CImg Arena; do
-    binary="$PLUGINDIR"/${bin}.ofx.bundle/Contents/MacOS/${bin}.ofx
+    binary="$PLUGINDIR/OFX/Natron"/${bin}.ofx.bundle/Contents/MacOS/${bin}.ofx
 
     #Strip binary
     if [ -x "$binary" ]; then
@@ -160,7 +160,7 @@ for bin in IO Misc CImg Arena; do
 done
 
 # move all libraries to the same place, put symbolic links instead
-for plugin in "$PLUGINDIR"/*.ofx.bundle; do
+for plugin in "$PLUGINDIR/OFX/Natron"/*.ofx.bundle; do
     cd $plugin/Contents/Libraries
     for lib in lib*.dylib; do
         if [ -f "../../../../Frameworks/$lib" ]; then
