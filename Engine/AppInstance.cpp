@@ -526,7 +526,7 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
         
         std::list<AppInstance::RenderWork> writersWork;
         
-
+        
         if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
             
             ///Load the project
@@ -534,13 +534,10 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
                 throw std::invalid_argument(tr("Project file loading failed.").toStdString());
             }
             
-            getWritersWorkForCL(cl, writersWork);
-
         } else if (info.suffix() == "py") {
             
             ///Load the python script
             loadPythonScript(info);
-            getWritersWorkForCL(cl, writersWork);
 
         } else {
             throw std::invalid_argument(tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString());
@@ -555,6 +552,9 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
             }
         }
         
+        
+        getWritersWorkForCL(cl, writersWork);
+
         
         ///Set reader parameters if specified from the command-line
         const std::list<CLArgs::ReaderArg>& readerArgs = cl.getReaderArgs();
