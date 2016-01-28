@@ -178,6 +178,7 @@ SVG_TAR=librsvg-2.40.10.tar.xz
 GDK_TAR=gdk-pixbuf-2.32.1.tar.xz
 ELF_TAR=patchelf-0.8.tar.bz2
 ZIP_TAR=libzip-1.0.1.tar.xz
+GIF_TAR=giflib-5.1.2.tar.bz2
 
 TC_GCC=4.8.5
 TC_MPC=1.0.1
