@@ -162,7 +162,7 @@ fi
 
 # move all libraries to the same place, put symbolic links instead
 for plugin in "$PLUGINDIR"/*.ofx.bundle; do
-    cd "$plugin/Contents/Libraries"
+    cd $plugin/Contents/Libraries
     for lib in lib*.dylib; do
         if [ -f "../../../../Frameworks/$lib" ]; then
             rm "$lib"
