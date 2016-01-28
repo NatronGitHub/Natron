@@ -125,40 +125,39 @@ cp -r Bundle/$OS-$BITS-$CONFIG/Arena.ofx.bundle "$PLUGINDIR/OFX/Natron" || exit 
 cd ..
 
 #Dump symbols for breakpad before stripping
-if [ "$DISABLE_BREAKPAD" != "1" ]; then
-    for bin in IO Misc CImg Arena; do
-        binary="$PLUGINDIR"/${bin}.ofx.bundle/Contents/MacOS/${bin}.ofx
+for bin in IO Misc CImg Arena; do
+    binary="$PLUGINDIR"/${bin}.ofx.bundle/Contents/MacOS/${bin}.ofx
 
-        #Strip binary
-        if [ -x "$binary" ]; then
-
+    #Strip binary
+    if [ -x "$binary" ]; then
+        if [ "$DISABLE_BREAKPAD" != "1" ]; then
             $DUMP_SYMS -a x86_64 $binary > "$CWD/build/symbols/${bin}.ofx-${TAG}${BPAD_TAG}-Mac-x86_64.sym"
             $DUMP_SYMS -a i386 $binary > "$CWD/build/symbols/${bin}.ofx-${TAG}${BPAD_TAG}-Mac-i386.sym"
-
-            echo "* stripping $binary";
-            # Retain the original binary for QA and use with the util 'atos'
-            #mv -f "$binary" "${binary}_FULL";
-            if lipo "$binary" -verify_arch i386 x86_64; then
-                # Extract each arch into a "thin" binary for stripping
-                lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
-                lipo "$binary" -thin i386   -output "${binary}_i386";
-
-
-                # Perform desired stripping on each thin binary.
-                strip -S -x -r "${binary}_i386";
-                strip -S -x -r "${binary}_x86_64";
-
-                # Make the new universal binary from our stripped thin pieces.
-                lipo -arch i386 "${binary}_i386" -arch x86_64 "${binary}_x86_64" -create -output "${binary}";
-
-                # We're now done with the temp thin binaries, so chuck them.
-                rm -f "${binary}_i386";
-                rm -f "${binary}_x86_64";
-            fi
-            #rm -f "${binary}_FULL";
         fi
-    done
-fi
+
+        echo "* stripping $binary";
+        # Retain the original binary for QA and use with the util 'atos'
+        #mv -f "$binary" "${binary}_FULL";
+        if lipo "$binary" -verify_arch i386 x86_64; then
+            # Extract each arch into a "thin" binary for stripping
+            lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
+            lipo "$binary" -thin i386   -output "${binary}_i386";
+
+            # Perform desired stripping on each thin binary.
+            strip -S -x -r "${binary}_i386";
+            strip -S -x -r "${binary}_x86_64";
+            # Make the new universal binary from our stripped thin pieces.
+            lipo -arch i386 "${binary}_i386" -arch x86_64 "${binary}_x86_64" -create -output "${binary}";
+
+            # We're now done with the temp thin binaries, so chuck them.
+            rm -f "${binary}_i386";
+            rm -f "${binary}_x86_64";
+        fi
+        #rm -f "${binary}_FULL";
+    else
+        echo "$binary not found for stripping"
+    fi
+done
 
 # move all libraries to the same place, put symbolic links instead
 for plugin in "$PLUGINDIR"/*.ofx.bundle; do
