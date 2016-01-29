@@ -137,13 +137,15 @@ struct ProjectPrivate
         QString formatStr;
 
         formatStr.append(f.getName().c_str());
-        formatStr.append("  ");
+        formatStr.append(' ');
         formatStr.append(QString::number(f.width()));
-        formatStr.append(" x ");
+        formatStr.append('x');
         formatStr.append(QString::number(f.height()));
-        formatStr.append("  ");
-        formatStr.append(QString::number(f.getPixelAspectRatio()));
-
+        double par = f.getPixelAspectRatio();
+        if (par != 1.) {
+            formatStr.append(' ');
+            formatStr.append(QString::number(f.getPixelAspectRatio()));
+        }
         return formatStr;
     }
 

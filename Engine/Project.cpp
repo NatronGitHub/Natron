@@ -744,7 +744,7 @@ Project::initializeKnobs()
     for (U32 i = 0; i < appFormats.size(); ++i) {
         Format* f = appFormats[i];
         QString formatStr = ProjectPrivate::generateStringFromFormat(*f);
-        if ( (f->width() == 1920) && (f->height() == 1080) ) {
+        if ( (f->width() == 1920) && (f->height() == 1080) && (f->getPixelAspectRatio() == 1) ) {
             _imp->formatKnob->setDefaultValue(i,0);
         }
         entries.push_back( formatStr.toStdString() );
