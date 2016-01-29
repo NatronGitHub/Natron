@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,20 +41,20 @@
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 class FrameEntry
-    : public CacheEntryHelper<U8,Natron::FrameKey,Natron::FrameParams>
+    : public CacheEntryHelper<U8,FrameKey,FrameParams>
 {
 public:
     FrameEntry(const FrameKey & key,
                const boost::shared_ptr<FrameParams> &  params,
-               const Natron::CacheAPI* cache,
-               Natron::StorageModeEnum storage,
+               const CacheAPI* cache,
+               StorageModeEnum storage,
                const std::string & path)
         : CacheEntryHelper<U8,FrameKey,FrameParams>(key,params,cache,storage,path)
-        , _aborted(false)
         , _abortedMutex()
+        , _aborted(false)
     {
     }
 
@@ -67,7 +67,7 @@ public:
                                                      int bitDepth,
                                                      int texW,
                                                      int texH,
-                                                     const boost::shared_ptr<Natron::Image>& image) WARN_UNUSED_RETURN;
+                                                     const boost::shared_ptr<Image>& image) WARN_UNUSED_RETURN;
     const U8* data() const WARN_UNUSED_RETURN
     {
         return _data.readable();
@@ -92,13 +92,13 @@ public:
         return _aborted;
     }
 
-    void getOriginalTiles(std::list<boost::shared_ptr<Natron::Image> >* ret) const
+    void getOriginalTiles(std::list<boost::shared_ptr<Image> >* ret) const
     {
         QReadLocker k(&_entryLock);
         _params->getOriginalTiles(ret);
     }
 
-    void addOriginalTile(const boost::shared_ptr<Natron::Image>& image)
+    void addOriginalTile(const boost::shared_ptr<Image>& image)
     {
         QWriteLocker k(&_entryLock);
         _params->addOriginalTile(image);
@@ -109,10 +109,10 @@ private:
     ///The thread rendering the frame entry might have been aborted and the entry removed from the cache
     ///but another thread might successfully have found it in the cache. This flag is to notify it the frame
     ///is invalid.
-    bool _aborted;
     mutable QMutex _abortedMutex;
+    bool _aborted;
 };
-}
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_FRAMEENTRY_H

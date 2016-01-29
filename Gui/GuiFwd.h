@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -79,6 +79,7 @@ class QSplitter;
 class QStyleOptionViewItem;
 class QTabWidget;
 class QTextBrowser;
+class QTextCharFormat;
 class QToolBar;
 class QToolButton;
 class QTreeWidget;
@@ -91,7 +92,7 @@ class QWidget;
 
 
 // Natron Gui
-
+NATRON_NAMESPACE_ENTER;
 class AboutWindow;
 class ActionWithShortcut;
 class AnimatedCheckBox;
@@ -133,7 +134,7 @@ class LineEdit;
 class LinkArrow;
 class MenuWithToolTips;
 class MultiInstancePanel;
-class NodeBackDropSerialization;
+class NodeBackdropSerialization;
 class NodeClipBoard;
 class NodeCollection;
 class NodeCurveEditorElement;
@@ -180,15 +181,19 @@ class TrackerPanel;
 class VerticalColorBar;
 class ViewerGL;
 class ViewerTab;
-
-namespace Natron {
 class ClickableLabel;
 class GroupBoxLabel;
 class Label;
 class Menu;
 //Implementation in Gui/QtMac.mm
+namespace QtMac {
 bool isHighDPIInternal(const QWidget* w);
 }
+
+typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
+typedef std::list<NodeGuiPtr> NodesGuiList;
+
+NATRON_NAMESPACE_EXIT;
 
 
 #endif // Natron_Gui_GuiFwd_h

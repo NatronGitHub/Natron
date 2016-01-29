@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 CurveGui::CurveGui(const CurveWidget *curveWidget,
                    boost::shared_ptr<Curve> curve,
@@ -231,7 +231,7 @@ CurveGui::drawCurve(int curveIndex,
     bool hasDrawnExpr = false;
     if (isKnobCurve) {
         std::string expr;
-        boost::shared_ptr<KnobI> knob = isKnobCurve->getInternalKnob();
+        KnobPtr knob = isKnobCurve->getInternalKnob();
         assert(knob);
         expr = knob->getExpression(isKnobCurve->getDimension());
         if (!expr.empty()) {
@@ -329,6 +329,10 @@ CurveGui::drawCurve(int curveIndex,
         if (hasDrawnExpr) {
             glBegin(GL_LINE_STRIP);
             for (int i = 0; i < (int)exprVertices.size(); i += 2) {
+                if (exprVertices[i] < btmLeft.x() || exprVertices[i] > topRight.x() ||
+                    exprVertices[i+1] < btmLeft.y() || exprVertices[i+1] > topRight.y()) {
+                    continue;
+                }
                 glVertex2f(exprVertices[i],exprVertices[i + 1]);
             }
             glEnd();
@@ -339,6 +343,10 @@ CurveGui::drawCurve(int curveIndex,
         }
         glBegin(GL_LINE_STRIP);
         for (int i = 0; i < (int)vertices.size(); i += 2) {
+            if (vertices[i] < btmLeft.x() || vertices[i] > topRight.x() ||
+                vertices[i+1] < btmLeft.y() || vertices[i+1] > topRight.y()) {
+                continue;
+            }
             glVertex2f(vertices[i],vertices[i + 1]);
         }
         glEnd();
@@ -533,7 +541,7 @@ KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
 
 KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
                            boost::shared_ptr<Curve>  curve,
-                           const boost::shared_ptr<KnobI>& knob,
+                           const KnobPtr& knob,
                            const boost::shared_ptr<RotoContext>& roto,
                            int dimension,
                            const QString & name,
@@ -559,7 +567,7 @@ KnobCurveGui::~KnobCurveGui()
 double
 KnobCurveGui::evaluate(bool useExpr,double x) const
 {
-    boost::shared_ptr<KnobI> knob = getInternalKnob();
+    KnobPtr knob = getInternalKnob();
     if (useExpr) {
         return knob->getValueAtWithExpression(x,_dimension);
     } else {
@@ -576,7 +584,7 @@ KnobCurveGui::evaluate(bool useExpr,double x) const
 boost::shared_ptr<Curve>
 KnobCurveGui::getInternalCurve() const
 {
-    boost::shared_ptr<KnobI> knob = getInternalKnob();
+    KnobPtr knob = getInternalKnob();
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
     if (!knob || !isParametric) {
         return CurveGui::getInternalCurve();
@@ -584,7 +592,7 @@ KnobCurveGui::getInternalCurve() const
     return isParametric->getParametricCurve(_dimension);
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 KnobCurveGui::getInternalKnob() const
 {
     return _knob ? _knob->getKnob() : _internalKnob;
@@ -597,7 +605,7 @@ KnobCurveGui::getKeyFrameIndex(double time) const
 }
 
 KeyFrame
-KnobCurveGui::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
+KnobCurveGui::setKeyFrameInterpolation(KeyframeTypeEnum interp,int index)
 {
     return getInternalCurve()->setKeyFrameInterpolation(interp, index);
 }
@@ -632,12 +640,12 @@ BezierCPCurveGui::~BezierCPCurveGui()
 double
 BezierCPCurveGui::evaluate(bool /*useExpr*/,double x) const
 {
-    std::list<std::pair<double,Natron::KeyframeTypeEnum> > keys;
+    std::list<std::pair<double,KeyframeTypeEnum> > keys;
     _bezier->getKeyframeTimesAndInterpolation(&keys);
     
-    std::list<std::pair<double,Natron::KeyframeTypeEnum> >::iterator upb = keys.end();
+    std::list<std::pair<double,KeyframeTypeEnum> >::iterator upb = keys.end();
     int dist = 0;
-    for (std::list<std::pair<double,Natron::KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it, ++dist) {
+    for (std::list<std::pair<double,KeyframeTypeEnum> >::iterator it = keys.begin(); it != keys.end(); ++it, ++dist) {
         if (it->first > x) {
             upb = it;
             break;
@@ -649,11 +657,11 @@ BezierCPCurveGui::evaluate(bool /*useExpr*/,double x) const
     } else if (upb == keys.begin()) {
         return 0;
     } else {
-        std::list<std::pair<double,Natron::KeyframeTypeEnum> >::iterator prev = upb;
+        std::list<std::pair<double,KeyframeTypeEnum> >::iterator prev = upb;
         if (prev != keys.begin()) {
             --prev;
         }
-        if (prev->second == Natron::eKeyframeTypeConstant) {
+        if (prev->second == eKeyframeTypeConstant) {
             return dist - 1;
         } else {
             ///Always linear for bezier interpolation
@@ -690,9 +698,13 @@ BezierCPCurveGui::getKeyFrameIndex(double time) const
 }
 
 KeyFrame
-BezierCPCurveGui::setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index)
+BezierCPCurveGui::setKeyFrameInterpolation(KeyframeTypeEnum interp,int index)
 {
     _bezier->setKeyFrameInterpolation(interp, index);
     return KeyFrame();
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_CurveGui.cpp"

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoStrokeItem.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 struct RotoSmearPrivate
 {
@@ -49,7 +49,7 @@ struct RotoSmearPrivate
     }
 };
 
-RotoSmear::RotoSmear(boost::shared_ptr<Natron::Node> node)
+RotoSmear::RotoSmear(NodePtr node)
 : EffectInstance(node)
 , _imp(new RotoSmearPrivate())
 {
@@ -62,7 +62,7 @@ RotoSmear::~RotoSmear()
 }
 
 void
-RotoSmear::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
+RotoSmear::addAcceptedComponents(int /*inputNb*/,std::list<ImageComponents>* comps)
 {
     comps->push_back(ImageComponents::getRGBAComponents());
     comps->push_back(ImageComponents::getRGBComponents());
@@ -71,15 +71,15 @@ RotoSmear::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponen
 }
 
 void
-RotoSmear::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+RotoSmear::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
-    depths->push_back(Natron::eImageBitDepthFloat);
+    depths->push_back(eImageBitDepthFloat);
 }
 
 void
-RotoSmear::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const
+RotoSmear::getPreferredDepthAndComponents(int /*inputNb*/,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const
 {
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (input) {
         return input->getPreferredDepthAndComponents(-1, comp, depth);
     } else {
@@ -89,10 +89,10 @@ RotoSmear::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::Imag
 }
 
 
-Natron::ImagePremultiplicationEnum
+ImagePremultiplicationEnum
 RotoSmear::getOutputPremultiplication() const
 {
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (input) {
         return input->getOutputPremultiplication();
     } else {
@@ -101,16 +101,16 @@ RotoSmear::getOutputPremultiplication() const
     
 }
 
-Natron::StatusEnum
+StatusEnum
 RotoSmear::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod)
 {
-    Natron::StatusEnum st = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
+    StatusEnum st = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
     if (st != eStatusOK) {
         rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
     }
 
     RectD maskRod;
-    boost::shared_ptr<Node> node = getNode();
+    NodePtr node = getNode();
     try {
         node->getPaintStrokeRoD(time, &maskRod);
     } catch (...) {
@@ -121,13 +121,13 @@ RotoSmear::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale
     } else {
         rod->merge(maskRod);
     }
-    return Natron::eStatusOK;
+    return eStatusOK;
 }
 
 double
 RotoSmear::getPreferredAspectRatio() const
 {
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (input) {
         return input->getPreferredAspectRatio();
     } else {
@@ -145,7 +145,7 @@ RotoSmear::isIdentity(double time,
                 int* inputNb)
 {
     RectD maskRod;
-    boost::shared_ptr<Node> node = getNode();
+    NodePtr node = getNode();
     node->getPaintStrokeRoD(time, &maskRod);
     
     RectI maskPixelRod;
@@ -230,10 +230,10 @@ static void renderSmearDot(boost::shared_ptr<RotoStrokeItem>& stroke,
 
 }
 
-Natron::StatusEnum
+StatusEnum
 RotoSmear::render(const RenderActionArgs& args)
 {
-    boost::shared_ptr<Node> node = getNode();
+    NodePtr node = getNode();
     boost::shared_ptr<RotoDrawableItem> item = node->getAttachedRotoItem();
     boost::shared_ptr<RotoStrokeItem> stroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
     boost::shared_ptr<RotoContext> context = stroke->getContext();
@@ -243,7 +243,7 @@ RotoSmear::render(const RenderActionArgs& args)
     
     unsigned int mipmapLevel = Image::getLevelFromScale(args.originalScale.x);
     
-    std::list<std::list<std::pair<Natron::Point,double> > > strokes;
+    std::list<std::list<std::pair<Point,double> > > strokes;
     int strokeIndex;
     node->getLastPaintStrokePoints(args.time, &strokes, &strokeIndex);
 
@@ -262,16 +262,17 @@ RotoSmear::render(const RenderActionArgs& args)
     }
     
     
-    ComponentsNeededMap neededComps;
+    EffectInstance::ComponentsNeededMap neededComps;
     bool processAll;
-    bool processComponents[4];
+    std::bitset<4> processChannels;
     SequenceTime ptTime;
     int ptView;
-    boost::shared_ptr<Node> ptInput;
-    getComponentsNeededAndProduced_public(true, args.time, args.view, &neededComps, &processAll, &ptTime, &ptView, processComponents, &ptInput);
+    NodePtr ptInput;
+    getComponentsNeededAndProduced_public(true, true, args.time, args.view, &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
+
     
-    ComponentsNeededMap::iterator foundBg = neededComps.find(0);
-    assert(foundBg != neededComps.end() && !foundBg->second.empty());
+    EffectInstance::ComponentsNeededMap::iterator foundBg = neededComps.find(0);
+   
     
     double par = getPreferredAspectRatio();
     RectI bgImgRoI;
@@ -301,7 +302,7 @@ RotoSmear::render(const RenderActionArgs& args)
     
     bool bgInitialized = false;
 
-    for (std::list<std::list<std::pair<Natron::Point,double> > >::const_iterator itStroke = strokes.begin(); itStroke!=strokes.end(); ++itStroke) {
+    for (std::list<std::list<std::pair<Point,double> > >::const_iterator itStroke = strokes.begin(); itStroke!=strokes.end(); ++itStroke) {
         int firstPoint = (int)std::floor((itStroke->size() * writeOnStart));
         int endPoint = (int)std::ceil((itStroke->size() * writeOnEnd));
         assert(firstPoint >= 0 && firstPoint < (int)itStroke->size() && endPoint > firstPoint && endPoint <= (int)itStroke->size());
@@ -322,11 +323,13 @@ RotoSmear::render(const RenderActionArgs& args)
         
         if (strokeIndex == 0) {
             ///For the first multi-stroke, init background
-            bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), Natron::eImageBitDepthFloat, par, false, &bgImgRoI);
+            if (foundBg != neededComps.end()) {
+                bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), eImageBitDepthFloat, par, false, true, &bgImgRoI);
+            }
         }
-
         
-        for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
+        
+        for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
             
             distToNext = 0.;
@@ -354,7 +357,7 @@ RotoSmear::render(const RenderActionArgs& args)
             }
             
             
-            std::list<std::pair<Natron::Point,double> >::iterator it = visiblePortion.begin();
+            std::list<std::pair<Point,double> >::iterator it = visiblePortion.begin();
             
             
             
@@ -434,7 +437,7 @@ RotoSmear::render(const RenderActionArgs& args)
                 
             } // while (it!=visiblePortion.end()) {
 
-        } // for (std::list<std::pair<Natron::ImageComponents,boost::shared_ptr<Natron::Image> > >::const_iterator plane = args.outputPlanes.begin();
+        } // for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
         
         if (duringPainting && didPaint) {
             QMutexLocker k(&_imp->smearDataMutex);
@@ -442,6 +445,8 @@ RotoSmear::render(const RenderActionArgs& args)
             _imp->lastDistToNext = distToNext;
             _imp->lastCur = cur;
         }
-    } // for (std::list<std::list<std::pair<Natron::Point,double> > >::const_iterator itStroke = strokes.begin(); itStroke!=strokes.end(); ++itStroke) {
-    return Natron::eStatusOK;
+    } // for (std::list<std::list<std::pair<Point,double> > >::const_iterator itStroke = strokes.begin(); itStroke!=strokes.end(); ++itStroke) {
+    return eStatusOK;
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -1,7 +1,7 @@
 #!/bin/bash
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,10 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
+# TAG=...: Date to timestamp symbols
+# DUMP_SYMS=...: Absolute path to binary of dump_syms
+# SYMBOLS_PATH=...: Absolute path to the dst symbols
+# DISABLE_BREAKPAD=1: When set, automatic crash reporting (google-breakpad support) will be disabled
 if [ $# -ne 1 ]; then
     echo "$0: Make a Natron.app that doesn't depend on MacPorts (can be used out of the build system too)"
     echo "Usage: $0 App/Natron.app"
@@ -26,6 +30,11 @@ package="$1"
 if [ ! -d "$package" ]; then
     echo "Error: application directory '$package' does not exist"
     exit 1
+fi
+
+# tag symbols we want to keep with 'release'
+if [ "$BUILD_CONFIG" != "" ] && [ "$BUILD_CONFIG" != "SNAPSHOT" ]; then
+  BPAD_TAG="-release"
 fi
 
 MACPORTS="/opt/local"
@@ -122,7 +131,7 @@ if [ ! -d "${package}/Contents/PlugIns" -a -d "$QTDIR/share/plugins" ]; then
     cp -r "$QTDIR/share/plugins" "${package}/Contents/PlugIns" || exit 1
     for binary in "${package}/Contents/PlugIns"/*/*.dylib; do
         chmod +w "$binary"
-        for lib in libjpeg.9.dylib libmng.1.dylib libtiff.5.dylib libQGLViewer.2.dylib; do
+        for lib in libjpeg.9.dylib libmng.2.dylib libtiff.5.dylib libQGLViewer.2.dylib; do
             install_name_tool -change "${MACPORTS}/lib/$lib" "@executable_path/../Frameworks/$lib" "$binary"
         done
         for f in $QT_LIBS; do
@@ -230,9 +239,9 @@ fi
 
 
 #Do the same for crash reporter
-if [ -f "CrashReporter/NatronCrashReporter" ]; then
+if [ -f "CrashReporter/NatronCrashReporter.app/Contents/MacOS/NatronCrashReporter" ]; then
     binary="${package}/Contents/MacOS/NatronCrashReporter"
-    cp "CrashReporter/NatronCrashReporter" "$binary"
+    cp "CrashReporter/NatronCrashReporter.app/Contents/MacOS/NatronCrashReporter" "$binary"
     for f in $QT_LIBS; do
         install_name_tool -change "${QTDIR}/Library/Frameworks/${f}.framework/Versions/4/${f}" "@executable_path/../Frameworks/${f}.framework/Versions/4/${f}" "$binary"
     done
@@ -412,17 +421,43 @@ done
 
 find $pkglib -type f -exec sed -e "s@$MACPORTS@$MACRAND@g" -e "s@$HOMEBREW@$HOMEBREWRAND@g" -e "s@$LOCAL@$LOCALRAND@g" -i "" {} \;
 
+if [ "$DISABLE_BREAKPAD" != "1" ]; then
+    mv "$package/Contents/MacOS/Natron" "$package/Contents/MacOS/Natron-bin" || exit 1
+    mv "$package/Contents/MacOS/NatronCrashReporter" "$package/Contents/MacOS/Natron" || exit 1
+    mv "$package/Contents/MacOS/NatronRenderer" "$package/Contents/MacOS/NatronRenderer-bin" || exit 1
+    mv "$package/Contents/MacOS/NatronRendererCrashReporter" "$package/Contents/MacOS/NatronRenderer" || exit 1
+fi
+
+for bin in Natron-bin NatronRenderer-bin; do
+
+    binary="$package/Contents/MacOS/$bin";
+    #Dump symbols for breakpad before stripping
+    if [ "$DISABLE_BREAKPAD" != "1" ]; then
+#		DSYM_64=${bin}x86_64.dSYM
+#		DSYM_32=${bin}i386.dSYM
+#        dsymutil -arch x86_64 -o $DSYM_64 "$binary"
+#        dsymutil -arch i386 -o $DSYM_32 "$binary"
+        if [ -x "$binary" ]; then
+            $DUMP_SYMS -a x86_64 "$binary"  > "$SYMBOLS_PATH/${bin}-${TAG}${BPAD_TAG}-Mac-x86_64.sym"
+            $DUMP_SYMS -a i386 "$binary"  > "$SYMBOLS_PATH/${bin}-${TAG}${BPAD_TAG}-Mac-i386.sym"
+        fi
+#       rm -rf $DSYM_64;
+#		rm -rf $DSYM_32;
+    fi
+done
+
 if [ "$STRIP" = 1 ]; then
-    for bin in Natron NatronRenderer NatronCrashReporter NatronRendererCrashReporter; do
+    for bin in Natron NatronRenderer Natron-bin NatronRenderer-bin; do
         binary="$package/Contents/MacOS/$bin";
+
         if [ -x "$binary" ]; then
             echo "* stripping $binary";
             # Retain the original binary for QA and use with the util 'atos'
             #mv -f "$binary" "${binary}_FULL";
             if lipo "$binary" -verify_arch i386 x86_64; then
                 # Extract each arch into a "thin" binary for stripping
-		lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
-		lipo "$binary" -thin i386   -output "${binary}_i386";
+                lipo "$binary" -thin x86_64 -output "${binary}_x86_64";
+                lipo "$binary" -thin i386   -output "${binary}_i386";
 
 
                 # Perform desired stripping on each thin binary.  
@@ -440,3 +475,5 @@ if [ "$STRIP" = 1 ]; then
         fi
     done
 fi
+
+

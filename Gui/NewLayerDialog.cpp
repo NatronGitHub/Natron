@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -77,23 +77,24 @@ CLANG_DIAG_ON(uninitialized)
 #include "ofxNatron.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
+
 using std::make_pair;
 
 struct NewLayerDialogPrivate
 {
     QGridLayout* mainLayout;
-    Natron::Label* layerLabel;
+    Label* layerLabel;
     LineEdit* layerEdit;
-    Natron::Label* numCompsLabel;
+    Label* numCompsLabel;
     SpinBox* numCompsBox;
-    Natron::Label* rLabel;
+    Label* rLabel;
     LineEdit* rEdit;
-    Natron::Label* gLabel;
+    Label* gLabel;
     LineEdit* gEdit;
-    Natron::Label* bLabel;
+    Label* bLabel;
     LineEdit* bEdit;
-    Natron::Label* aLabel;
+    Label* aLabel;
     LineEdit* aEdit;
     
     Button* setRgbaButton;
@@ -125,23 +126,23 @@ NewLayerDialog::NewLayerDialog(QWidget* parent)
 , _imp(new NewLayerDialogPrivate())
 {
     _imp->mainLayout = new QGridLayout(this);
-    _imp->layerLabel = new Natron::Label(tr("Layer Name"),this);
+    _imp->layerLabel = new Label(tr("Layer Name"),this);
     _imp->layerEdit = new LineEdit(this);
     
-    _imp->numCompsLabel = new Natron::Label(tr("No. Channels"),this);
+    _imp->numCompsLabel = new Label(tr("No. Channels"),this);
     _imp->numCompsBox = new SpinBox(this,SpinBox::eSpinBoxTypeInt);
     QObject::connect(_imp->numCompsBox, SIGNAL(valueChanged(double)), this, SLOT(onNumCompsChanged(double)));
     _imp->numCompsBox->setMinimum(1);
     _imp->numCompsBox->setMaximum(4);
     _imp->numCompsBox->setValue(4);
     
-    _imp->rLabel = new Natron::Label(tr("1st Channel"),this);
+    _imp->rLabel = new Label(tr("1st Channel"),this);
     _imp->rEdit = new LineEdit(this);
-    _imp->gLabel = new Natron::Label(tr("2nd Channel"),this);
+    _imp->gLabel = new Label(tr("2nd Channel"),this);
     _imp->gEdit = new LineEdit(this);
-    _imp->bLabel = new Natron::Label(tr("3rd Channel"),this);
+    _imp->bLabel = new Label(tr("3rd Channel"),this);
     _imp->bEdit = new LineEdit(this);
-    _imp->aLabel = new Natron::Label(tr("4th Channel"),this);
+    _imp->aLabel = new Label(tr("4th Channel"),this);
     _imp->aEdit = new LineEdit(this);
     
     _imp->setRgbaButton = new Button(this);
@@ -227,7 +228,7 @@ NewLayerDialog::onNumCompsChanged(double value)
     }
 }
 
-Natron::ImageComponents
+ImageComponents
 NewLayerDialog::getComponents() const
 {
     QString layer = _imp->layerEdit->text();
@@ -236,23 +237,23 @@ NewLayerDialog::getComponents() const
     QString g = _imp->gEdit->text();
     QString b = _imp->bEdit->text();
     QString a = _imp->aEdit->text();
-    std::string layerFixed = Natron::makeNameScriptFriendly(layer.toStdString());
+    std::string layerFixed = Python::makeNameScriptFriendly(layer.toStdString());
     if (layerFixed.empty()) {
-        return Natron::ImageComponents::getNoneComponents();
+        return ImageComponents::getNoneComponents();
     }
     
     if (nComps == 1) {
         if (a.isEmpty()) {
-            return Natron::ImageComponents::getNoneComponents();
+            return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
         std::string compsGlobal;
         comps.push_back(a.toStdString());
         compsGlobal.append(a.toStdString());
-        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+        return ImageComponents(layerFixed,compsGlobal,comps);
     } else if (nComps == 2) {
         if (r.isEmpty() || g.isEmpty()) {
-            return Natron::ImageComponents::getNoneComponents();
+            return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
         std::string compsGlobal;
@@ -260,10 +261,10 @@ NewLayerDialog::getComponents() const
         compsGlobal.append(r.toStdString());
         comps.push_back(g.toStdString());
         compsGlobal.append(g.toStdString());
-        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+        return ImageComponents(layerFixed,compsGlobal,comps);
     } else if (nComps == 3) {
         if (r.isEmpty() || g.isEmpty() || b.isEmpty()) {
-            return Natron::ImageComponents::getNoneComponents();
+            return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
         std::string compsGlobal;
@@ -273,10 +274,10 @@ NewLayerDialog::getComponents() const
         compsGlobal.append(g.toStdString());
         comps.push_back(b.toStdString());
         compsGlobal.append(b.toStdString());
-        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+        return ImageComponents(layerFixed,compsGlobal,comps);
     } else if (nComps == 4) {
         if (r.isEmpty() || g.isEmpty() || b.isEmpty() | a.isEmpty())  {
-            return Natron::ImageComponents::getNoneComponents();
+            return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
         std::string compsGlobal;
@@ -288,9 +289,9 @@ NewLayerDialog::getComponents() const
         compsGlobal.append(b.toStdString());
         comps.push_back(a.toStdString());
         compsGlobal.append(a.toStdString());
-        return Natron::ImageComponents(layerFixed,compsGlobal,comps);
+        return ImageComponents(layerFixed,compsGlobal,comps);
     }
-    return Natron::ImageComponents::getNoneComponents();
+    return ImageComponents::getNoneComponents();
 }
 
 void
@@ -311,3 +312,8 @@ NewLayerDialog::onRGBAButtonClicked()
     _imp->aEdit->setVisible(true);
 
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_NewLayerDialog.cpp"

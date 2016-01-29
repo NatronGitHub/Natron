@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,11 +25,16 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "Engine/NoOpBase.h"
 #include "Engine/EngineFwd.h"
 
-struct BackDropPrivate;
-class BackDrop : public NoOpBase
+NATRON_NAMESPACE_ENTER;
+
+struct BackdropPrivate;
+
+class Backdrop : public NoOpBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -37,14 +42,14 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
-        return new BackDrop(n);
+        return new Backdrop(n);
     }
     
-    BackDrop(boost::shared_ptr<Natron::Node> node);
+    Backdrop(NodePtr node);
     
-    virtual ~BackDrop();
+    virtual ~Backdrop();
   
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -53,7 +58,7 @@ public:
     
     virtual std::string getPluginLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return "BackDrop";
+        return "Backdrop";
     }
     
     virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -75,14 +80,16 @@ Q_SIGNALS:
 private:
     
     virtual void knobChanged(KnobI* k,
-                             Natron::ValueChangedReasonEnum /*reason*/,
+                             ValueChangedReasonEnum /*reason*/,
                              int /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
 
     virtual void initializeKnobs() OVERRIDE FINAL;
     
-    boost::scoped_ptr<BackDropPrivate> _imp;
+    boost::scoped_ptr<BackdropPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // BACKDROP_H

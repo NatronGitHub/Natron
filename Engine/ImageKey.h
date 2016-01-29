@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,19 +28,20 @@
 #include "Engine/KeyHelper.h"
 #include "Engine/EngineFwd.h"
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 class ImageKey
         :  public KeyHelper<U64>
 {
 public:
 
     U64 _nodeHashKey;
-    bool _frameVaryingOrAnimated;
     double _time;
-    int _view;
     double _pixelAspect;
+    int _view;
     bool _draftMode;
-    
+    bool _frameVaryingOrAnimated;
+
     //When true that means the image has been computed based on inputs using a mipmaplevel != 0
     //hence it is probably not very high quality, even though the mipmap level is 0
     bool _fullScaleWithDownscaleInputs;
@@ -74,9 +75,6 @@ public:
     void serialize(Archive & ar, const unsigned int version);
 };
 
-
-
-
-}
+NATRON_NAMESPACE_EXIT;
 
 #endif // IMAGEKEY_H

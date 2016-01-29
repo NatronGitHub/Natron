@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@
 #include <dlfcn.h>
 #endif
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 LibraryBinary::LibraryBinary(LibraryBinary::LibraryTypeEnum type)
     : _type(type)
@@ -90,7 +90,7 @@ LibraryBinary::loadBinary(const std::string & binaryPath)
     _binaryPath = binaryPath;
 #ifdef __NATRON_WIN32__
 #ifdef UNICODE
-    std::wstring ws = Natron::s2ws(binaryPath);
+    std::wstring ws = Global::s2ws(binaryPath);
     _library = LoadLibrary(ws.c_str());
 #else
     _library = LoadLibrary( binaryPath.c_str() );
@@ -162,4 +162,6 @@ LibraryBinary::~LibraryBinary()
     dlclose(_library);
 #endif
 }
+
+NATRON_NAMESPACE_EXIT;
 

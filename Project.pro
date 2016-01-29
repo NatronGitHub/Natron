@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,10 @@ TEMPLATE = subdirs
 # build things in the order we give
 CONFIG += ordered
 
+!disable-breakpad {
+SUBDIRS += BreakpadClient CrashReporter CrashReporterCLI
+}
+
 SUBDIRS += \
     HostSupport \
     Engine \
@@ -29,8 +33,6 @@ SUBDIRS += \
     Tests \
     App
 
-gbreakpad: SUBDIRS += BreakpadClient CrashReporter CrashReporterCLI
-
 OTHER_FILES += \
     Global/Enums.h \
     Global/GLIncludes.h \
@@ -38,6 +40,7 @@ OTHER_FILES += \
     Global/KeySymbols.h \
     Global/Macros.h \
     Global/MemoryInfo.h \
+    Global/ProcInfo.h \
     Global/QtCompat.h \
     global.pri \
     config.pri

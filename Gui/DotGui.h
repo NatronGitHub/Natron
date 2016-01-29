@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,6 +51,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGui.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 class DotGui
     : public NodeGui
 {
@@ -62,7 +64,7 @@ private:
 
 
     virtual void createGui() OVERRIDE FINAL;
-    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container, const boost::shared_ptr<NodeGui> & thisAsShared) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual NodeSettingsPanel* createPanel(QVBoxLayout* container, const NodeGuiPtr & thisAsShared) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool canMakePreview() OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
@@ -80,28 +82,6 @@ private:
     QGraphicsEllipseItem* ellipseIndicator;
 };
 
-struct ExportGroupTemplateDialogPrivate;
-class ExportGroupTemplateDialog : public QDialog
-{
-    Q_OBJECT
-    
-public:
-    
-    ExportGroupTemplateDialog(NodeCollection* group,Gui* gui,QWidget* parent);
-    
-    virtual ~ExportGroupTemplateDialog();
-    
-public Q_SLOTS:
-
-    void onButtonClicked();
-    
-    void onOkClicked();
-    
-    void onLabelEditingFinished();
-    
-private:
-    
-    boost::scoped_ptr<ExportGroupTemplateDialogPrivate> _imp;
-};
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_GUI_NODEGUI_H

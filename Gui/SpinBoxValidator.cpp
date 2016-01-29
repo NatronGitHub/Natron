@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,8 @@
 #include "Gui/KnobGuiColor.h"
 #include "Gui/SpinBox.h"
 
+NATRON_NAMESPACE_ENTER;
+
 struct NumericKnobValidatorPrivate
 {
     
@@ -54,7 +56,7 @@ struct NumericKnobValidatorPrivate
     , isColorGui(dynamic_cast<KnobGuiColor*>(knob))
     , isIntGui(dynamic_cast<KnobGuiInt*>(knob))
     {
-        boost::shared_ptr<KnobI> internalKnob = knob->getKnob();
+        KnobPtr internalKnob = knob->getKnob();
         isDouble = boost::dynamic_pointer_cast<Knob<double> >(internalKnob);
         isInt = boost::dynamic_pointer_cast<Knob<int> >(internalKnob);
         assert(isDouble.lock() || isInt.lock());
@@ -127,3 +129,5 @@ NumericKnobValidator::validateInput(const QString& userText, double* valueToDisp
     }
     return true;
 }
+
+NATRON_NAMESPACE_EXIT;

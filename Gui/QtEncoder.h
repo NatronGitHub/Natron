@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,20 +27,23 @@
 
 #include "Global/Macros.h"
 
+#ifdef NATRON_ENABLE_QT_IO_NODES
+
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class QtWriter
-    : public Natron::OutputEffectInstance
+    : public OutputEffectInstance
 {
 public:
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new QtWriter(n);
     }
 
-    QtWriter(boost::shared_ptr<Natron::Node> node);
+    QtWriter(NodePtr node);
 
     virtual ~QtWriter();
 
@@ -76,24 +79,24 @@ public:
         return 1;
     }
 
-    void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, double time,
+    void knobChanged(KnobI* k, ValueChangedReasonEnum reason, int view, double time,
                      bool originatedFromMainThread) OVERRIDE FINAL;
-    virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE;
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
 protected:
 
 
     virtual void initializeKnobs() OVERRIDE;
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {
-        return Natron::eRenderSafetyInstanceSafe;
+        return eRenderSafetyInstanceSafe;
     }
 
 private:
 
-    const Natron::Color::Lut* _lut;
+    const Color::Lut* _lut;
     boost::shared_ptr<KnobBool> _premultKnob;
     boost::shared_ptr<KnobOutputFile> _fileKnob;
     boost::shared_ptr<KnobChoice> _frameRangeChoosal;
@@ -101,5 +104,9 @@ private:
     boost::shared_ptr<KnobInt> _lastFrameKnob;
     boost::shared_ptr<KnobButton> _renderKnob;
 };
+
+NATRON_NAMESPACE_EXIT;
+
+#endif // NATRON_ENABLE_QT_IO_NODES
 
 #endif /* defined(NATRON_WRITERS_WRITEQT_H_) */

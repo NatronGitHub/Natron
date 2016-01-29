@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kMainSplitterObjectName "ToolbarSplitter"
 
+NATRON_NAMESPACE_ENTER;
 
 struct GuiPrivate;
 
@@ -85,23 +86,21 @@ public:
      **/
     void createGui();
 
-    boost::shared_ptr<NodeGui> createNodeGUI(boost::shared_ptr<Natron::Node> node,
-                                             bool requestedByLoad,
-                                             bool userEdited,
-                                             bool pushUndoRedoCommand);
+    NodeGuiPtr createNodeGUI(NodePtr node,
+                                             const CreateNodeArgs& args);
 
-    void addNodeGuiToCurveEditor(const boost::shared_ptr<NodeGui> &node);
+    void addNodeGuiToCurveEditor(const NodeGuiPtr &node);
     
-    void removeNodeGuiFromCurveEditor(const boost::shared_ptr<NodeGui>& node);
+    void removeNodeGuiFromCurveEditor(const NodeGuiPtr& node);
 
-    void addNodeGuiToDopeSheetEditor(const boost::shared_ptr<NodeGui> &node);
-    void removeNodeGuiFromDopeSheetEditor(const boost::shared_ptr<NodeGui>& node);
+    void addNodeGuiToDopeSheetEditor(const NodeGuiPtr &node);
+    void removeNodeGuiFromDopeSheetEditor(const NodeGuiPtr& node);
 
-    const std::list<boost::shared_ptr<NodeGui> > & getSelectedNodes() const;
+    const NodesGuiList & getSelectedNodes() const;
 
-    void createViewerGui(boost::shared_ptr<Natron::Node> viewer);
+    void createViewerGui(NodePtr viewer);
 
-    void createGroupGui(const boost::shared_ptr<Natron::Node>& group, bool requestedByLoad);
+    void createGroupGui(const NodePtr& group, CreateNodeReason reason);
 
     void addGroupGui(NodeGraph* tab,TabWidget* where);
 
@@ -189,17 +188,17 @@ public:
                            bool* stopAsking,
                            bool useHtml);
 
-    Natron::StandardButtonEnum questionDialog(const std::string & title,
+    StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
                                               bool useHtml,
-                                              Natron::StandardButtons buttons = Natron::StandardButtons(Natron::eStandardButtonYes | Natron::eStandardButtonNo),
-                                              Natron::StandardButtonEnum defaultButton = Natron::eStandardButtonNoButton);
+                                              StandardButtons buttons = StandardButtons(eStandardButtonYes | eStandardButtonNo),
+                                              StandardButtonEnum defaultButton = eStandardButtonNoButton);
 
-    Natron::StandardButtonEnum questionDialog(const std::string & title,
+    StandardButtonEnum questionDialog(const std::string & title,
                                               const std::string & message,
                                               bool useHtml,
-                                              Natron::StandardButtons buttons,
-                                              Natron::StandardButtonEnum defaultButton,
+                                              StandardButtons buttons,
+                                              StandardButtonEnum defaultButton,
                                               bool* stopAsking);
 
 
@@ -208,7 +207,7 @@ public:
     /**
      * @brief Selects the given node on the node graph, wiping any previous selection.
      **/
-    void selectNode(boost::shared_ptr<NodeGui> node);
+    void selectNode(NodeGuiPtr node);
 
     GuiAppInstance* getApp() const;
 
@@ -340,8 +339,8 @@ public:
     void deactivateViewerTab(ViewerInstance* viewer);
 
     ViewerTab* getViewerTabForInstance(ViewerInstance* node) const;
-    const std::list<boost::shared_ptr<NodeGui> > & getVisibleNodes() const;
-    std::list<boost::shared_ptr<NodeGui> > getVisibleNodes_mt_safe() const;
+    const NodesGuiList & getVisibleNodes() const;
+    NodesGuiList getVisibleNodes_mt_safe() const;
 
     void deselectAllNodes() const;
 
@@ -349,7 +348,7 @@ public:
                                  const boost::shared_ptr<ProcessHandler> & process);
 
     void onWriterRenderStarted(const QString & sequenceName,int firstFrame,int lastFrame,int frameStep,
-                               Natron::OutputEffectInstance* writer);
+                               OutputEffectInstance* writer);
 
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
@@ -418,7 +417,7 @@ public:
 
     /*Useful function that saves on disk the image in png format.
        The name of the image will be the hash key of the image.*/
-    static void debugImage( const Natron::Image* image, const RectI& roi, const QString & filename = QString() );
+    static void debugImage( const Image* image, const RectI& roi, const QString & filename = QString() );
 
     void addVisibleDockablePanel(DockablePanel* panel);
     void removeVisibleDockablePanel(DockablePanel* panel);
@@ -436,7 +435,7 @@ public:
     void disconnectViewersFromViewerCache();
 
     ///Close the application instance, asking questions to the user
-    bool closeInstance();
+    bool closeInstance(bool warnUserIfSaveNeeded);
 
     void checkNumberOfNonFloatingPanes();
 
@@ -463,7 +462,7 @@ public:
     /**
      * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.
      **/
-    void getNodesEntitledForOverlays(std::list<boost::shared_ptr<Natron::Node> >& nodes) const;
+    void getNodesEntitledForOverlays(NodesList& nodes) const;
 
     bool isLeftToolBarDisplayedOnMouseHoverOnly() const;
 
@@ -523,7 +522,7 @@ public:
 #ifndef Q_OS_MAC
     bool isHighDPI() const { return false; }
 #else
-    bool isHighDPI() const { return Natron::isHighDPIInternal(this); }
+    bool isHighDPI() const { return QtMac::isHighDPIInternal(this); }
 #endif
     
     AppInstance* createNewProject();
@@ -532,7 +531,7 @@ public:
      * @brief Close project right away, without any user interaction.
      * @param quitApp If true, the application will exit, otherwise the main window will stay active.
      **/
-    bool abortProject(bool quitApp);
+    bool abortProject(bool quitApp, bool warnUserIfSaveNeeded);
     
     void setGuiAboutToClose(bool about);
     
@@ -547,7 +546,8 @@ public:
     PanelWidget* getCurrentPanelFocus() const;
     
     void setLastKeyPressVisitedClickFocus(bool visited);
-
+    void setLastKeyUpVisitedClickFocus(bool visited);
+    
     void setApplicationConsoleActionVisible(bool visible);
 
 protected:
@@ -560,9 +560,9 @@ protected:
 Q_SIGNALS:
 
 
-    void doDialog(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
+    void doDialog(int type,const QString & title,const QString & content,bool useHtml,StandardButtons buttons,int defaultB);
 
-    void doDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
+    void doDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,StandardButtons buttons,int defaultB);
 
     ///emitted when a viewer changes its name or is deleted/added
     void viewersChanged();
@@ -578,6 +578,9 @@ public Q_SLOTS:
 
     ///Close the project instance, asking questions to the user and leaving the main window intact
     void closeProject();
+    
+    //Same as close + open same project to discard unsaved changes
+    void reloadProject();
     void toggleFullScreen();
     void closeEvent(QCloseEvent* e) OVERRIDE;
     void newProject();
@@ -607,9 +610,9 @@ public Q_SLOTS:
     void showView8();
     void showView9();
 
-    void onDoDialog(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
+    void onDoDialog(int type,const QString & title,const QString & content,bool useHtml,StandardButtons buttons,int defaultB);
 
-    void onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,Natron::StandardButtons buttons,int defaultB);
+    void onDoDialogWithStopAskingCheckbox(int type,const QString & title,const QString & content,bool useHtml,StandardButtons buttons,int defaultB);
     /*Returns a code from the save dialog:
      * -1  = unrecognized code
      * 0 = Save
@@ -644,8 +647,8 @@ public Q_SLOTS:
 
     void onViewerImageChanged(int texIndex,bool hasImageBackend);
 
-    boost::shared_ptr<Natron::Node> createReader();
-    boost::shared_ptr<Natron::Node> createWriter();
+    NodePtr createReader();
+    NodePtr createWriter();
 
     void renderAllWriters();
 
@@ -670,6 +673,8 @@ public Q_SLOTS:
     void restoreDefaultLayout();
 
     void onFreezeUIButtonClicked(bool clicked);
+    
+    void refreshAllTimeEvaluationParams();
 
     void onPropertiesScrolled();
 
@@ -687,11 +692,17 @@ public Q_SLOTS:
     
     void onShowApplicationConsoleActionTriggered();
 
+    void openHelpWebsite();
+    void openHelpForum();
+    void openHelpIssues();
+    void openHelpPython();
+    void openHelpWiki();
+
 private:
 
     void setCurrentPanelFocus(PanelWidget* widget);
     
-    AppInstance* openProjectInternal(const std::string & absoluteFileName) WARN_UNUSED_RETURN;
+    AppInstance* openProjectInternal(const std::string & absoluteFileName, bool attemptToLoadAutosave) WARN_UNUSED_RETURN;
 
     void setupUi();
 
@@ -705,7 +716,11 @@ private:
     //virtual bool event(QEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
     boost::scoped_ptr<GuiPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // Gui_Gui_h

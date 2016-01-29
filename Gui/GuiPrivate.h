@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,6 +49,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #define kPropertiesBinName "properties"
 
+NATRON_NAMESPACE_ENTER;
+
 struct GuiPrivate
 {
     Gui* _gui; //< ptr to the public interface
@@ -60,7 +62,7 @@ struct GuiPrivate
     QWaitCondition _uiUsingMainThreadCond; //< used with _uiUsingMainThread
     bool _uiUsingMainThread; //< true when the Gui is showing a dialog in the main thread
     mutable QMutex _uiUsingMainThreadMutex; //< protects _uiUsingMainThread
-    Natron::StandardButtonEnum _lastQuestionDialogAnswer; //< stores the last question answer
+    StandardButtonEnum _lastQuestionDialogAnswer; //< stores the last question answer
     bool _lastStopAskingAnswer;
 
     ///ptrs to the undo/redo actions from the active stack.
@@ -86,6 +88,7 @@ struct GuiPrivate
     ActionWithShortcut *actionNew_project;
     ActionWithShortcut *actionOpen_project;
     ActionWithShortcut *actionClose_project;
+    ActionWithShortcut *actionReload_project;
     ActionWithShortcut *actionSave_project;
     ActionWithShortcut *actionSaveAs_project;
     ActionWithShortcut *actionExportAsGroup;
@@ -117,6 +120,12 @@ struct GuiPrivate
     ActionWithShortcut* actionNextTab;
     ActionWithShortcut* actionPrevTab;
     ActionWithShortcut* actionCloseTab;
+
+    QAction* actionHelpWebsite;
+    QAction* actionHelpForum;
+    QAction* actionHelpIssues;
+    QAction* actionHelpPython;
+    QAction* actionHelpWiki;
 
     ///the main "central" widget
     QWidget *_centralWidget;
@@ -182,16 +191,17 @@ struct GuiPrivate
 
     ///The menu bar and all the menus
     QMenuBar *menubar;
-    Natron::Menu *menuFile;
-    Natron::Menu *menuRecentFiles;
-    Natron::Menu *menuEdit;
-    Natron::Menu *menuLayout;
-    Natron::Menu *menuDisplay;
-    Natron::Menu *menuRender;
-    Natron::Menu *viewersMenu;
-    Natron::Menu *viewerInputsMenu;
-    Natron::Menu *viewersViewMenu;
-    Natron::Menu *cacheMenu;
+    Menu *menuFile;
+    Menu *menuRecentFiles;
+    Menu *menuEdit;
+    Menu *menuLayout;
+    Menu *menuDisplay;
+    Menu *menuRender;
+    Menu *viewersMenu;
+    Menu *viewerInputsMenu;
+    Menu *viewersViewMenu;
+    Menu *cacheMenu;
+    Menu *menuHelp;
 
 
     ///all TabWidget's : used to know what to hide/show for fullscreen mode
@@ -240,6 +250,7 @@ struct GuiPrivate
     //To prevent recursion when we forward an uncaught event to the click focus widget
     int currentPanelFocusEventRecursion;
     bool keyPressEventHasVisitedFocusWidget;
+    bool keyUpEventHasVisitedFocusWidget;
     
     bool wasLaskUserSeekDuringPlayback;
     
@@ -280,5 +291,7 @@ struct GuiPrivate
     ///True= yes overwrite
     bool checkProjectLockAndWarn(const QString& projectPath,const QString& projectName);
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_GuiPrivate_h

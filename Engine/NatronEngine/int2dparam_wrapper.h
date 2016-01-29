@@ -5,6 +5,7 @@
 
 #include <ParameterWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class Int2DParamWrapper : public Int2DParam
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~Int2DParamWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_INT2DPARAMWRAPPER_H
 

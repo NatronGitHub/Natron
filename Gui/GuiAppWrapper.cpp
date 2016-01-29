@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,6 +50,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
+
+NATRON_NAMESPACE_ENTER;
 
 GuiApp::GuiApp(AppInstance* app)
 : App(app)
@@ -246,7 +248,7 @@ GuiApp::getSelectedNodes(Group* group) const
     if (group) {
         Effect* isEffect = dynamic_cast<Effect*>(group);
         if (isEffect) {
-            NodeGroup* nodeGrp = dynamic_cast<NodeGroup*>(isEffect->getInternalNode()->getLiveInstance());
+            NodeGroup* nodeGrp = isEffect->getInternalNode()->isEffectGroup();
             if (nodeGrp) {
                 NodeGraphI* graph_i  = nodeGrp->getNodeGraph();
                 if (graph_i) {
@@ -266,8 +268,8 @@ GuiApp::getSelectedNodes(Group* group) const
     if (!graph) {
         throw std::logic_error("");
     }
-    const std::list<boost::shared_ptr<NodeGui> >& nodes = graph->getSelectedNodes();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    const NodesGuiList& nodes = graph->getSelectedNodes();
+    for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodePtr node = (*it)->getNode();
         if (node->isActivated() && !node->getParentMultiInstance()) {
             ret.push_back(new Effect(node));
@@ -288,7 +290,7 @@ GuiApp::selectNode(Effect* effect, bool clearPreviousSelection)
         return;
     }
     
-    boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>(effect->getInternalNode()->getNodeGui());
+    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>(effect->getInternalNode()->getNodeGui());
     if (!nodeUi) {
         return;
     }
@@ -312,11 +314,11 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
     if (appPTR->isBackground()) {
         return;
     }
-    std::list<boost::shared_ptr<NodeGui> > selection;
+    NodesGuiList selection;
     boost::shared_ptr<NodeCollection> collection ;
     bool printWarn = false;
     for (std::list<Effect*>::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-        boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>((*it)->getInternalNode()->getNodeGui());
+        NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>((*it)->getInternalNode()->getNodeGui());
         if (!nodeUi) {
             continue;
         }
@@ -389,7 +391,7 @@ GuiApp::deselectNode(Effect* effect)
         return;
     }
     
-    boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>(effect->getInternalNode()->getNodeGui());
+    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>(effect->getInternalNode()->getNodeGui());
     if (!nodeUi) {
         return;
     }
@@ -444,7 +446,7 @@ GuiApp::getViewer(const std::string& scriptName) const
         return 0;
     }
     
-    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(ptr->getLiveInstance());
+    ViewerInstance* viewer = ptr->isEffectViewer();
     if (!viewer) {
         return 0;
     }
@@ -475,10 +477,10 @@ GuiApp::renderBlocking(const std::list<Effect*>& effects,const std::list<int>& f
     renderInternal(true, effects, firstFrames, lastFrames, frameSteps);
 }
 
-PyViewer::PyViewer(const boost::shared_ptr<Natron::Node>& node)
+PyViewer::PyViewer(const NodePtr& node)
 : _node(node)
 {
-    ViewerInstance* viewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
+    ViewerInstance* viewer = node->isEffectViewer();
     assert(viewer);
     ViewerGL* viewerGL = dynamic_cast<ViewerGL*>(viewer->getUiContext());
     _viewer = viewerGL ? viewerGL->getViewerTab() : NULL;
@@ -576,7 +578,7 @@ PyViewer::getFrameRange(int* firstFrame,int* lastFrame) const
 }
 
 void
-PyViewer::setPlaybackMode(Natron::PlaybackModeEnum mode)
+PyViewer::setPlaybackMode(PlaybackModeEnum mode)
 {
     if (!_node->isActivated()) {
         return;
@@ -584,26 +586,26 @@ PyViewer::setPlaybackMode(Natron::PlaybackModeEnum mode)
     _viewer->setPlaybackMode(mode);
 }
 
-Natron::PlaybackModeEnum
+PlaybackModeEnum
 PyViewer::getPlaybackMode() const
 {
     if (!_node->isActivated()) {
-        return Natron::ePlaybackModeLoop;
+        return ePlaybackModeLoop;
     }
     return _viewer->getPlaybackMode();
 }
 
-Natron::ViewerCompositingOperatorEnum
+ViewerCompositingOperatorEnum
 PyViewer::getCompositingOperator() const
 {
     if (!_node->isActivated()) {
-        return Natron::eViewerCompositingOperatorNone;
+        return eViewerCompositingOperatorNone;
     }
     return _viewer->getCompositingOperator();
 }
 
 void
-PyViewer::setCompositingOperator(Natron::ViewerCompositingOperatorEnum op)
+PyViewer::setCompositingOperator(ViewerCompositingOperatorEnum op)
 {
     if (!_node->isActivated()) {
         return;
@@ -628,7 +630,7 @@ PyViewer::setAInput(int index)
     if (!_node->isActivated()) {
         return;
     }
-    Natron::EffectInstance* input = _viewer->getInternalNode()->getInput(index);
+    EffectInstPtr input = _viewer->getInternalNode()->getInput(index);
     if (!input) {
         return;
     }
@@ -652,7 +654,7 @@ PyViewer::setBInput(int index)
     if (!_node->isActivated()) {
         return;
     }
-    Natron::EffectInstance* input = _viewer->getInternalNode()->getInput(index);
+    EffectInstPtr input = _viewer->getInternalNode()->getInput(index);
     if (!input) {
         return;
     }
@@ -661,7 +663,7 @@ PyViewer::setBInput(int index)
 }
 
 void
-PyViewer::setChannels(Natron::DisplayChannelsEnum channels)
+PyViewer::setChannels(DisplayChannelsEnum channels)
 {
     if (!_node->isActivated()) {
         return;
@@ -670,11 +672,11 @@ PyViewer::setChannels(Natron::DisplayChannelsEnum channels)
     _viewer->setChannels(c);
 }
 
-Natron::DisplayChannelsEnum
+DisplayChannelsEnum
 PyViewer::getChannels() const
 {
     if (!_node->isActivated()) {
-        return Natron::eDisplayChannelsRGB;
+        return eDisplayChannelsRGB;
     }
     return _viewer->getChannels();
 }
@@ -735,3 +737,5 @@ PyViewer::getCurrentView() const
     }
     return _viewer->getCurrentView();
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 #define TEXTURE_SIZE 256
 
@@ -68,7 +68,7 @@ struct TextRendererPrivate
 
     ~TextRendererPrivate();
 
-    void newTransparantTexture();
+    void newTransparentTexture();
 
     CharBitmap * createCharacter(QChar c);
 
@@ -131,7 +131,7 @@ TextRendererPrivate::clearBitmapCache()
 }
 
 void
-TextRendererPrivate::newTransparantTexture()
+TextRendererPrivate::newTransparentTexture()
 {
     GLuint savedTexture;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
@@ -167,7 +167,7 @@ TextRendererPrivate::createCharacter(QChar c)
 #endif
 
     if ( _usedTextures.empty() ) {
-        newTransparantTexture();
+        newTransparentTexture();
     }
 
     GLuint texture = _usedTextures.back();
@@ -225,7 +225,7 @@ TextRendererPrivate::createCharacter(QChar c)
         _yOffset += height;
     }
     if (_yOffset + height >= TEXTURE_SIZE) {
-        newTransparantTexture();
+        newTransparentTexture();
         _yOffset = 1;
     }
 
@@ -320,4 +320,6 @@ TextRenderer::renderText(float x,
 
     glCheckError();
 } // renderText
+
+NATRON_NAMESPACE_EXIT;
 

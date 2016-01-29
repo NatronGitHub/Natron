@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,8 +53,7 @@ NSURL *toNSURL(const QUrl &url)
     return [NSURL URLWithString:toNSString(url.toEncoded())];
 }
 
-namespace Natron {
-QUrl toLocalFileUrlFixed(const QUrl& url)
+QUrl NATRON_NAMESPACE::QtCompat::toLocalFileUrlFixed(const QUrl& url)
 {
 #if QT_VERSION >= 0x050000
     return url;
@@ -66,6 +65,5 @@ QUrl toLocalFileUrlFixed(const QUrl& url)
         ret = fromNSURL([nsurl filePathURL]);
     [pool release];
     return ret;
-}
 }
 #endif

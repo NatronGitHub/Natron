@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  *@class ViewerGL
@@ -104,7 +105,7 @@ public:
     virtual bool isClippingImageToProjectWindow() const OVERRIDE FINAL;
 
 
-    virtual Natron::ImageBitDepthEnum getBitDepth() const OVERRIDE FINAL;
+    virtual ImageBitDepthEnum getBitDepth() const OVERRIDE FINAL;
 
     /**
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
@@ -168,13 +169,13 @@ public:
      * 4) glTexSubImage2D or glTexImage2D depending whether we resize the texture or not.
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                            const std::list<boost::shared_ptr<Natron::Image> >& tiles,
-                                            Natron::ImageBitDepthEnum depth,
+                                            const std::list<boost::shared_ptr<Image> >& tiles,
+                                            ImageBitDepthEnum depth,
                                             int time,
                                             const RectD& rod,
                                             size_t bytesCount, const TextureRect & region,
                                             double gain, double gamma, double offset, int lut, int pboIndex,
-                                            unsigned int mipMapLevel,Natron::ImagePremultiplicationEnum premult,
+                                            unsigned int mipMapLevel,ImagePremultiplicationEnum premult,
                                             int textureIndex,
                                             const RectI& roi,
                                             bool updateOnlyRoi) OVERRIDE FINAL;
@@ -324,8 +325,8 @@ public:
 
     bool getZoomOrPannedSinceLastFit() const;
 
-    virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const OVERRIDE FINAL;
-    virtual void setCompositingOperator(Natron::ViewerCompositingOperatorEnum op) OVERRIDE FINAL;
+    virtual ViewerCompositingOperatorEnum getCompositingOperator() const OVERRIDE FINAL;
+    virtual void setCompositingOperator(ViewerCompositingOperatorEnum op) OVERRIDE FINAL;
 
     ///Not MT-Safe
     void getSelectionRectangle(double &left,double &right,double &bottom,double &top) const;
@@ -344,9 +345,9 @@ public:
      * @brief Called by the Histogram when it wants to refresh. It returns a pointer to the last
      * rendered image by the viewer. It doesn't re-render the image if it is not present.
      **/
-    void getLastRenderedImage(int textureIndex, std::list<boost::shared_ptr<Natron::Image> >* ret) const;
+    void getLastRenderedImage(int textureIndex, std::list<boost::shared_ptr<Image> >* ret) const;
     
-    void getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel, std::list<boost::shared_ptr<Natron::Image> >* ret) const;
+    void getLastRenderedImageByMipMapLevel(int textureIndex,unsigned int mipMapLevel, std::list<boost::shared_ptr<Image> >* ret) const;
 
     /**
      * @brief Get the color of the currently displayed image at position x,y.
@@ -540,5 +541,6 @@ private:
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // GLVIEWER_H

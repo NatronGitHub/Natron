@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveGui.h" // CurveGui
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class ImportExportCurveDialog
     : public QDialog
@@ -87,26 +88,26 @@ private:
     //////File
     QWidget* _fileContainer;
     QHBoxLayout* _fileLayout;
-    Natron::Label* _fileLabel;
+    Label* _fileLabel;
     LineEdit* _fileLineEdit;
     Button* _fileBrowseButton;
 
     //////x start value
     QWidget* _startContainer;
     QHBoxLayout* _startLayout;
-    Natron::Label* _startLabel;
+    Label* _startLabel;
     SpinBox* _startSpinBox;
 
     //////x increment
     QWidget* _incrContainer;
     QHBoxLayout* _incrLayout;
-    Natron::Label* _incrLabel;
+    Label* _incrLabel;
     SpinBox* _incrSpinBox;
 
     //////x end value
     QWidget* _endContainer;
     QHBoxLayout* _endLayout;
-    Natron::Label* _endLabel;
+    Label* _endLabel;
     SpinBox* _endSpinBox;
 
 
@@ -116,7 +117,7 @@ private:
         boost::shared_ptr<CurveGui> _curve;
         QWidget* _curveContainer;
         QHBoxLayout* _curveLayout;
-        Natron::Label* _curveLabel;
+        Label* _curveLabel;
         SpinBox* _curveSpinBox;
     };
 
@@ -170,5 +171,7 @@ private:
     
     boost::scoped_ptr<EditKeyFrameDialogPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_CurveGuiDialogs_h

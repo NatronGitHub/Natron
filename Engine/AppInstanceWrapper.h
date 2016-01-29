@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,8 @@
 * Engine module.
 **/
 
-#ifndef APPINSTANCEWRAPPER_H
-#define APPINSTANCEWRAPPER_H
+#ifndef Engine_AppInstanceWrapper_h
+#define Engine_AppInstanceWrapper_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -30,8 +30,12 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "Engine/NodeWrapper.h"
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 class AppSettings
 {
@@ -117,5 +121,6 @@ protected:
     
 };
 
+NATRON_NAMESPACE_EXIT;
 
-#endif // APPINSTANCEWRAPPER_H
+#endif // Engine_AppInstanceWrapper_h

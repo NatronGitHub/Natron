@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,7 +44,8 @@
  */
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 namespace Color {
 // compile-time endianness checking found on:
 // http://stackoverflow.com/questions/2100331/c-macro-definition-to-determine-big-endian-or-little-endian-machine
@@ -1506,5 +1507,5 @@ rgb_to_hsv( float r,
     }
 }
 }     // namespace Color {
-} // namespace Natron {
+NATRON_NAMESPACE_EXIT;
 

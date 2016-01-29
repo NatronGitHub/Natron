@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@
 #include "Engine/AppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 
+NATRON_NAMESPACE_ENTER;
+
 PasteUndoCommand::PasteUndoCommand(KnobGui* knob,
                                    bool copyAnimation,
                                    const std::list<Variant> & values,
@@ -52,7 +54,7 @@ PasteUndoCommand::PasteUndoCommand(KnobGui* knob,
     assert( !appPTR->isClipBoardEmpty() );
     assert( ( !copyAnimation && newCurves.empty() ) || copyAnimation );
 
-    boost::shared_ptr<KnobI> internalKnob = knob->getKnob();
+    KnobPtr internalKnob = knob->getKnob();
     Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
     Knob<double>* isDouble = dynamic_cast<Knob<double>*>( internalKnob.get() );
@@ -94,7 +96,7 @@ PasteUndoCommand::PasteUndoCommand(KnobGui* knob,
 void
 PasteUndoCommand::undo()
 {
-    boost::shared_ptr<KnobI> internalKnob = _knob->getKnob();
+    KnobPtr internalKnob = _knob->getKnob();
     int targetDimension = internalKnob->getDimension();
 
     Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
@@ -114,7 +116,7 @@ PasteUndoCommand::undo()
             }
         }
         ///parameters are meaningless here, we just want to update the curve editor.
-        _knob->onInternalKeySet(0, 0,Natron::eValueChangedReasonNatronGuiEdited,false);
+        _knob->onInternalKeySet(0, 0,eValueChangedReasonNatronGuiEdited,false);
         _knob->setAllKeyframeMarkersOnTimeline(-1);
 
         if (hasKeyframes) {
@@ -167,7 +169,7 @@ void
 PasteUndoCommand::redo()
 {
     
-    boost::shared_ptr<KnobI> internalKnob = _knob->getKnob();
+    KnobPtr internalKnob = _knob->getKnob();
     
     Knob<int>* isInt = dynamic_cast<Knob<int>*>( internalKnob.get() );
     Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( internalKnob.get() );
@@ -237,7 +239,7 @@ PasteUndoCommand::redo()
 } // redo
 
 MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
-                                                           Natron::ValueChangedReasonEnum reason,
+                                                           ValueChangedReasonEnum reason,
                                                            bool createNew,
                                                            bool setKeyFrame,
                                                            const Variant & value,
@@ -250,25 +252,35 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(KnobGui* knob,
       , _reason(reason)
 {
     assert(knob);
-    boost::shared_ptr<KnobI> originalKnob = knob->getKnob();
-    boost::shared_ptr<KnobI> copy = createCopyForKnob(originalKnob);
+    std::list<ValueToSet>& vlist = knobs[knob];
     ValueToSet v;
     v.newValue = value;
     v.dimension = dimension;
+    assert(dimension != -1);
     v.time = time;
-    v.copy = copy;
     v.setKeyFrame = setKeyFrame;
-    knobs.insert( std::make_pair(knob, v) );
+    v.setValueRetCode = -1;
+    vlist.push_back(v);
+    
+    KnobHolder* holder = knob->getKnob()->getHolder();
+    EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
+    QString holderName;
+    if (effect) {
+        holderName = effect->getNode()->getLabel().c_str();
+    }
+
+    setText( QObject::tr("Multiple edits for %1").arg(holderName) );
+
 }
 
 MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
 {
 }
 
-boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const boost::shared_ptr<KnobI> & originalKnob)
+KnobPtr MultipleKnobEditsUndoCommand::createCopyForKnob(const KnobPtr & originalKnob)
 {
     const std::string & typeName = originalKnob->typeName();
-    boost::shared_ptr<KnobI> copy;
+    KnobPtr copy;
     int dimension = originalKnob->getDimension();
 
     if ( typeName == KnobInt::typeNameStatic() ) {
@@ -296,7 +308,7 @@ boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const b
     ///If this is another type of knob this is wrong since they do not hold any value
     assert(copy);
     if (!copy) {
-        return boost::shared_ptr<KnobI>();
+        return KnobPtr();
     }
     copy->populate();
 
@@ -309,42 +321,68 @@ boost::shared_ptr<KnobI> MultipleKnobEditsUndoCommand::createCopyForKnob(const b
 void
 MultipleKnobEditsUndoCommand::undo()
 {
-    ///keep track of all different knobs and call instance changed action only once for all of them
-    std::set <KnobI*> knobsUnique;
-
-    for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        ///clone the copy for all knobs
-        boost::shared_ptr<KnobI> originalKnob = it->first->getKnob();
-        boost::shared_ptr<KnobI> copyWithNewValues = createCopyForKnob(originalKnob);
-
-        ///clone the original knob back to its old state
-        originalKnob->clone(it->second.copy);
-
-        ///clone the copy to the new values
-        it->second.copy->clone(copyWithNewValues);
-
-        knobsUnique.insert( originalKnob.get() );
+    
+    assert(!knobs.empty());
+    KnobHolder* holder = knobs.begin()->first->getKnob()->getHolder();
+    if (holder) {
+        holder->beginChanges();
     }
 
-
-    assert( !knobs.empty() );
-    KnobHolder* holder = knobs.begin()->first->getKnob()->getHolder();
-    QString holderName;
+    for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        KnobPtr knob = it->first->getKnob();
+        if (!knob) {
+            continue;
+        }
+        knob->beginChanges();
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
+        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
+        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+        KeyFrame k;
+        for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            KnobHelper::ValueChangedReturnCodeEnum retCode = (KnobHelper::ValueChangedReturnCodeEnum)it2->setValueRetCode;
+            
+            if (retCode == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
+                it->first->removeKeyFrame(it2->time, it2->dimension);
+            } else {
+                if (it2->setKeyFrame) {
+                    
+                    bool refreshGui =  it2->time == knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+                    if (isInt) {
+                        it->first->setValueAtTime<int>(it2->dimension, it2->oldValue.toInt(), it2->time, &k,refreshGui,_reason);
+                    } else if (isBool) {
+                        it->first->setValueAtTime<bool>(it2->dimension, it2->oldValue.toBool(), it2->time, &k,refreshGui,_reason);
+                    } else if (isDouble) {
+                        it->first->setValueAtTime<double>(it2->dimension,it2->oldValue.toDouble(), it2->time, &k,refreshGui,_reason);
+                    } else if (isString) {
+                        it->first->setValueAtTime<std::string>(it2->dimension, it2->oldValue.toString().toStdString(), it2->time,
+                                                               &k,refreshGui,_reason);
+                    } else {
+                        assert(false);
+                    }
+                } else {
+                    if (isInt) {
+                        it->first->setValue<int>(it2->dimension, it2->oldValue.toInt(), &k,true,_reason);
+                    } else if (isBool) {
+                        it->first->setValue<bool>(it2->dimension, it2->oldValue.toBool(), &k,true,_reason);
+                    } else if (isDouble) {
+                        it->first->setValue<double>(it2->dimension, it2->oldValue.toDouble(), &k,true,_reason);
+                    } else if (isString) {
+                        it->first->setValue<std::string>(it2->dimension, it2->oldValue.toString().toStdString(),
+                                                         &k,true,_reason);
+                    } else {
+                        assert(false);
+                    }
+                }
+            }
+        }
+        knob->endChanges();
+    }
 
 
     if (holder) {
-        holder->beginChanges();
-        double time = holder->getCurrentTime();
-        for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
-            (*it)->evaluateValueChange(0,time,  _reason);
-        }
         holder->endChanges();
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
-        if (effect) {
-            holderName = effect->getNode()->getLabel().c_str();
-        }
     }
-    setText( QObject::tr("Multiple edits for %1").arg(holderName) );
 }
 
 void
@@ -355,90 +393,80 @@ MultipleKnobEditsUndoCommand::redo()
     if (holder) {
         holder->beginChanges();
     }
-    if (firstRedoCalled) {
-        ///just clone
-        std::set <KnobI*> knobsUnique;
-        double time = -1;
-        if (holder) {
-            time = holder->getCurrentTime();
+    
+    ///this is the first redo command, set values
+    for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        
+        KnobPtr knob = it->first->getKnob();
+        if (!knob) {
+            continue;
         }
-        for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            boost::shared_ptr<KnobI> originalKnob = it->first->getKnob();
-            boost::shared_ptr<KnobI> copyWithOldValues = createCopyForKnob(originalKnob);
-
-            ///clone the original knob back to its old state
-            originalKnob->clone(it->second.copy);
-
-            ///clone the copy to the old values
-            it->second.copy->clone(copyWithOldValues);
-
-            knobsUnique.insert( originalKnob.get() );
-
+        knob->beginChanges();
+        Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
+        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+        Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
+        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+        
+        for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            KeyFrame k;
             
-            for (std::set <KnobI*>::iterator it = knobsUnique.begin(); it != knobsUnique.end(); ++it) {
-                if (holder) {
-                    (*it)->evaluateValueChange(0, time, _reason);
+            if (!firstRedoCalled) {
+                if (isInt) {
+                    it2->oldValue.setValue(isInt->getValueAtTime(it2->time, it2->dimension));
+                } else if (isBool) {
+                    it2->oldValue.setValue(isBool->getValueAtTime(it2->time, it2->dimension));
+                } else if (isDouble) {
+                    it2->oldValue.setValue(isDouble->getValueAtTime(it2->time, it2->dimension));
+                } else if (isString) {
+                    it2->oldValue.setValue(isString->getValueAtTime(it2->time, it2->dimension));
                 }
             }
-        }
-    } else {
-        ///this is the first redo command, set values
-        for (ParamsMap::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            boost::shared_ptr<KnobI> knob = it->first->getKnob();
-            KeyFrame k;
-            Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-            Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-            Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
             
-            
-            if (it->second.setKeyFrame) {
-                bool refreshGui =  it->second.time == knob->getHolder()->getApp()->getTimeLine()->currentFrame();
+            if (it2->setKeyFrame) {
+                
+                bool keyAdded = false;
+                bool refreshGui =  it2->time == knob->getHolder()->getApp()->getTimeLine()->currentFrame();
                 if (isInt) {
-                    it->first->setValueAtTime<int>(it->second.dimension, it->second.newValue.toInt(), it->second.time, &k,refreshGui,_reason);
+                    keyAdded = it->first->setValueAtTime<int>(it2->dimension, it2->newValue.toInt(), it2->time, &k,refreshGui,_reason);
                 } else if (isBool) {
-                    it->first->setValueAtTime<bool>(it->second.dimension, it->second.newValue.toBool(), it->second.time, &k,refreshGui,_reason);
+                    keyAdded = it->first->setValueAtTime<bool>(it2->dimension, it2->newValue.toBool(), it2->time, &k,refreshGui,_reason);
                 } else if (isDouble) {
-                    it->first->setValueAtTime<double>(it->second.dimension,it->second.newValue.toDouble(), it->second.time, &k,refreshGui,_reason);
+                    keyAdded = it->first->setValueAtTime<double>(it2->dimension,it2->newValue.toDouble(), it2->time, &k,refreshGui,_reason);
                 } else if (isString) {
-                    it->first->setValueAtTime<std::string>(it->second.dimension, it->second.newValue.toString().toStdString(), it->second.time,
-                                                     &k,refreshGui,_reason);
+                    keyAdded = it->first->setValueAtTime<std::string>(it2->dimension, it2->newValue.toString().toStdString(), it2->time,
+                                                           &k,refreshGui,_reason);
                 } else {
                     assert(false);
                 }
+                it2->setValueRetCode = keyAdded ? KnobHelper::eValueChangedReturnCodeKeyframeAdded : KnobHelper::eValueChangedReturnCodeKeyframeModified;
             } else {
                 if (isInt) {
-                    it->first->setValue<int>(it->second.dimension, it->second.newValue.toInt(), &k,true,_reason);
+                    it2->setValueRetCode = it->first->setValue<int>(it2->dimension, it2->newValue.toInt(), &k,true,_reason);
                 } else if (isBool) {
-                    it->first->setValue<bool>(it->second.dimension, it->second.newValue.toBool(), &k,true,_reason);
+                    it2->setValueRetCode = it->first->setValue<bool>(it2->dimension, it2->newValue.toBool(), &k,true,_reason);
                 } else if (isDouble) {
-                    it->first->setValue<double>(it->second.dimension, it->second.newValue.toDouble(), &k,true,_reason);
+                    it2->setValueRetCode = it->first->setValue<double>(it2->dimension, it2->newValue.toDouble(), &k,true,_reason);
                 } else if (isString) {
-                    it->first->setValue<std::string>(it->second.dimension, it->second.newValue.toString().toStdString(),
+                    it2->setValueRetCode = it->first->setValue<std::string>(it2->dimension, it2->newValue.toString().toStdString(),
                                                      &k,true,_reason);
                 } else {
                     assert(false);
                 }
+                if (!firstRedoCalled && !it2->setKeyFrame) {
+                    it2->time = knob->getCurrentTime();
+                }
             }
+
         }
+        knob->endChanges();
     }
+    
     if (holder) {
         holder->endChanges();
     }
-    assert( !knobs.empty() );
-    QString holderName;
-    if (holder) {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
-        if (effect) {
-            if (!firstRedoCalled) {
-                effect->getApp()->triggerAutoSave();
-            }
-            holderName = effect->getNode()->getLabel().c_str();
-        }
-    }
+    
     firstRedoCalled = true;
 
-    setText( QObject::tr("Multiple edits for %1").arg(holderName) );
 } // redo
 
 int
@@ -450,6 +478,10 @@ MultipleKnobEditsUndoCommand::id() const
 bool
 MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
 {
+    /*
+     * The command in parameter just had its redo() function call and we attempt to merge it with a previous 
+     * command that has been redone already
+     */
     const MultipleKnobEditsUndoCommand *knobCommand = dynamic_cast<const MultipleKnobEditsUndoCommand *>(command);
 
     if ( !knobCommand || ( command->id() != id() ) ) {
@@ -477,17 +509,29 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
         return false;
     }
 
-    knobs.insert( knobCommand->knobs.begin(), knobCommand->knobs.end() );
+    for (ParamsMap::const_iterator otherIt = knobCommand->knobs.begin(); otherIt != knobCommand->knobs.end(); ++otherIt) {
+        ParamsMap::iterator foundExistinKnob =  knobs.find(otherIt->first);
+        if (foundExistinKnob == knobs.end()) {
+            knobs.insert(*otherIt);
+        } else {
+            //copy the other dimension of that knob which changed and set the dimension to -1 so
+            //that subsequent calls to undo() and redo() clone all dimensions at once
+            //foundExistinKnob->second.copy->clone(otherIt->second.copy,otherIt->second.dimension);
+            foundExistinKnob->second.insert(foundExistinKnob->second.end(), otherIt->second.begin(), otherIt->second.end());
+        }
+    }
 
     return true;
 }
 
-RestoreDefaultsCommand::RestoreDefaultsCommand(const std::list<boost::shared_ptr<KnobI> > & knobs,
+RestoreDefaultsCommand::RestoreDefaultsCommand(bool isNodeReset,
+                                               const std::list<KnobPtr > & knobs,
                                                QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _knobs(knobs)
+    , _isNodeReset(isNodeReset)
+    , _knobs(knobs)
 {
-    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    for (std::list<KnobPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         _clones.push_back( MultipleKnobEditsUndoCommand::createCopyForKnob(*it) );
     }
 }
@@ -498,10 +542,11 @@ RestoreDefaultsCommand::undo()
     assert( _clones.size() == _knobs.size() );
 
     std::list<SequenceTime> times;
-    const boost::shared_ptr<KnobI> & first = _knobs.front();
-    boost::shared_ptr<TimeLine> timeline = first->getHolder()->getApp()->getTimeLine();
-    std::list<boost::shared_ptr<KnobI> >::const_iterator itClone = _clones.begin();
-    for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
+    const KnobPtr & first = _knobs.front();
+    AppInstance* app = first->getHolder()->getApp();
+    assert(app);
+    std::list<KnobPtr >::const_iterator itClone = _clones.begin();
+    for (std::list<KnobPtr >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
         (*it)->cloneAndUpdateGui( itClone->get() );
 
         if ( (*it)->getHolder()->getApp() ) {
@@ -517,10 +562,10 @@ RestoreDefaultsCommand::undo()
             }
         }
     }
-    timeline->addMultipleKeyframeIndicatorsAdded(times,true);
+    app->addMultipleKeyframeIndicatorsAdded(times,true);
 
-    _knobs.front()->getHolder()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
-    first->getHolder()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
+    _knobs.front()->getHolder()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
+    first->getHolder()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
     if ( first->getHolder()->getApp() ) {
         first->getHolder()->getApp()->redrawAllViewers();
     }
@@ -532,17 +577,22 @@ void
 RestoreDefaultsCommand::redo()
 {
     std::list<SequenceTime> times;
-    const boost::shared_ptr<KnobI> & first = _knobs.front();
+    const KnobPtr & first = _knobs.front();
     
-    boost::shared_ptr<TimeLine> timeline;
+    AppInstance* app = 0;
     
     KnobHolder* holder = first->getHolder();
-    if (holder && holder->getApp()) {
-        timeline = holder->getApp()->getTimeLine();
+    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+    if (holder) {
+        app = holder->getApp();
         holder->beginChanges();
     }
     
-    for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+    
+    /*
+     First reset all knobs values, this will not call instanceChanged action
+     */
+    for (std::list<KnobPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         if ( (*it)->getHolder() && (*it)->getHolder()->getApp() ) {
             int dim = (*it)->getDimension();
             for (int i = 0; i < dim; ++i) {
@@ -578,26 +628,31 @@ RestoreDefaultsCommand::redo()
      in a correct state
      */
     double time = 0;
-    if (timeline) {
-        time = timeline->currentFrame();
+    if (app) {
+        time = app->getTimeLine()->currentFrame();
     }
-   for (std::list<boost::shared_ptr<KnobI> >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
-       if ((*it)->getHolder()) {
-           (*it)->getHolder()->onKnobValueChanged_public(it->get(), Natron::eValueChangedReasonRestoreDefault, time, true);
+    for (std::list<KnobPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+        if ((*it)->getHolder()) {
+            (*it)->getHolder()->onKnobValueChanged_public(it->get(), eValueChangedReasonRestoreDefault, time, true);
         }
     }
+    
+    if (app) {
+        app->removeMultipleKeyframeIndicator(times,true);
+    }
+    
     
     if (holder && holder->getApp()) {
         holder->endChanges();
     }
     
-    
-    if (timeline) {
-        timeline->removeMultipleKeyframeIndicator(times,true);
+    if (_isNodeReset && isEffect) {
+        isEffect->purgeCaches();
     }
     
+    
     if (first->getHolder()) {
-        first->getHolder()->evaluate_public(NULL, true, Natron::eValueChangedReasonUserEdited);
+        first->getHolder()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
         if (first->getHolder()->getApp() ) {
             first->getHolder()->getApp()->redrawAllViewers();
         }
@@ -606,7 +661,7 @@ RestoreDefaultsCommand::redo()
 }
 
 
-SetExpressionCommand::SetExpressionCommand(const boost::shared_ptr<KnobI> & knob,
+SetExpressionCommand::SetExpressionCommand(const KnobPtr & knob,
                      bool hasRetVar,
                      int dimension,
                      const std::string& expr,
@@ -632,12 +687,12 @@ SetExpressionCommand::undo()
         try {
             _knob->setExpression(i, _oldExprs[i], _hadRetVar[i]);
         } catch (...) {
-            Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+            Dialogs::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
             break;
         }
     }
     
-    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), Natron::eValueChangedReasonNatronGuiEdited);
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), eValueChangedReasonNatronGuiEdited);
     setText( QObject::tr("Set expression") );
 }
 
@@ -649,7 +704,7 @@ SetExpressionCommand::redo()
             try {
                _knob->setExpression(i, _newExpr, _hasRetVar);
             } catch (...) {
-                Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+                Dialogs::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
                 break;
             }
         }
@@ -657,9 +712,11 @@ SetExpressionCommand::redo()
         try {
             _knob->setExpression(_dimension, _newExpr, _hasRetVar);
         } catch (...) {
-            Natron::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
+            Dialogs::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
         }
     }
-    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), Natron::eValueChangedReasonNatronGuiEdited);
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), eValueChangedReasonNatronGuiEdited);
     setText( QObject::tr("Set expression") );
 }
+
+NATRON_NAMESPACE_EXIT;

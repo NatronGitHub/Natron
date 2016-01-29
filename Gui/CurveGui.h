@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/CurveGui.h" // Curves
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class CurveGui
     : public QObject
@@ -133,7 +134,7 @@ public:
     virtual bool isYComponentMovable() const;
     virtual KeyFrameSet getKeyFrames() const;
     virtual int getKeyFrameIndex(double time) const = 0;
-    virtual KeyFrame setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) = 0;
+    virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp,int index) = 0;
     
 Q_SIGNALS:
 
@@ -179,7 +180,7 @@ public:
     
     KnobCurveGui(const CurveWidget *curveWidget,
                  boost::shared_ptr<Curve>  curve,
-                 const boost::shared_ptr<KnobI>& knob,
+                 const KnobPtr& knob,
                  const boost::shared_ptr<RotoContext>& roto,
                  int dimension,
                  const QString & name,
@@ -199,7 +200,7 @@ public:
     
     boost::shared_ptr<RotoContext> getRotoContext() const { return _roto; }
     
-    boost::shared_ptr<KnobI> getInternalKnob() const;
+    KnobPtr getInternalKnob() const;
     
     int getDimension() const
     {
@@ -207,13 +208,13 @@ public:
     }
     
     virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual KeyFrame setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
+    virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
 
     
 private:
     
     boost::shared_ptr<RotoContext> _roto;
-    boost::shared_ptr<KnobI> _internalKnob;
+    KnobPtr _internalKnob;
     KnobGui* _knob; //< ptr to the knob holding this curve
     int _dimension; //< which dimension is this curve representing
 };
@@ -245,7 +246,7 @@ public:
     virtual KeyFrameSet getKeyFrames() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual int getKeyFrameIndex(double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual KeyFrame setKeyFrameInterpolation(Natron::KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
+    virtual KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp,int index) OVERRIDE FINAL;
 
 private:
     
@@ -254,5 +255,6 @@ private:
     boost::shared_ptr<RotoContext> _rotoContext;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_CurveGui_h

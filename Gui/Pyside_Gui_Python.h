@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,13 +29,21 @@
 #define SBK_RUN
 
 #include <pyside_global.h>
+#include <QtGui/qpytextobject.h>
+
+//Global
+#include <GlobalDefines.h>
+#include <Enums.h>
 
 //Engine
-#include "AppInstanceWrapper.h"
-#include "NodeGroupWrapper.h"
 #include "GlobalFunctionsWrapper.h"
+#include "NodeGroupWrapper.h"
+#include "AppInstanceWrapper.h"
+#include "RotoWrapper.h"
 #include "NodeWrapper.h"
 #include "ParameterWrapper.h"
+#include "RectI.h"
+#include "RectD.h"
 
 //Gui
 #include "GlobalGuiWrapper.h"

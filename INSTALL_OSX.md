@@ -145,7 +145,11 @@ And install (after making sure `/opt/qt4` is user-writable) using:
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
 to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz).
-Place it at the root of Natron repository.
+Place it at the root of Natron source tree:
+
+    curl -k -L https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz | tar zxf -
+    mv OpenColorIO-Configs-Natron-v2.0 OpenColorIO-Configs
+
 
 ## Add the config.pri file
 
@@ -242,19 +246,30 @@ On MacPorts, this would look like:
 This is not required as generated files are already in the repository. You would need to run it if you were to extend or modify the Python bindings via the
 typesystem.xml file. See the documentation of shiboken-3.4 for an explanation of the command line arguments.
 
-
+On MacPorts:
 ```Shell
+rm Engine/NatronEngine/* Gui/NatronGui/*
+
 shiboken-3.4 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
 
 shiboken-3.4 --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:/opt/local/include:/opt/local/include/PySide-3.4  --typesystem-paths=/opt/local/share/PySide-3.4/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+
+tools/utils/runPostShiboken.sh
 ```
-**Note**
-Shiboken has some glitchs which needs fixing with some sed commands, run tools/runPostShiboken.sh once shiboken is called
 
 on HomeBrew:
 ```Shell
-shiboken --enable-pyside-extensions --include-paths=../Global:`pkg-config --variable=prefix QtCore`/include:`pkg-config --variable=includedir pyside`  --typesystem-paths=`pkg-config --variable=typesystemdir pyside` --output-directory=Engine Engine/Pyside_Engine_Python.h Engine/typesystem_engine.xml
- ```
+rm Engine/NatronEngine/* Gui/NatronGui/*
+
+shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Global:/usr/local/include:/usr/local/include/PySide  --typesystem-paths=/usr/local/share/PySide/typesystems --output-directory=Engine Engine/Pyside_Engine_Python.h  Engine/typesystem_engine.xml
+
+shiboken --avoid-protected-hack --enable-pyside-extensions --include-paths=../Engine:../Gui:../Global:/usr/local/include:/usr/local/include/PySide  --typesystem-paths=/usr/local/share/PySide/typesystems:Engine --output-directory=Gui Gui/Pyside_Gui_Python.h  Gui/typesystem_natronGui.xml
+
+tools/utils/runPostShiboken.sh
+```
+
+**Note**
+Shiboken has a few glitches which needs fixing with some sed commands, run tools/utils/runPostShiboken.sh once shiboken is called
  
 ## OpenFX plugins
 

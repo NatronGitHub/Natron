@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,9 +41,10 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Global/Enums.h"
 #include "Engine/EngineFwd.h"
 
+
 //#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
     
 struct OfxHostPrivate;
 class OfxHost
@@ -133,7 +134,7 @@ public:
 
     virtual OFX::Host::Memory::Instance* newMemoryInstance(size_t nBytes) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    boost::shared_ptr<AbstractOfxEffectInstance> createOfxEffect(boost::shared_ptr<Node> node,
+    boost::shared_ptr<AbstractOfxEffectInstance> createOfxEffect(NodePtr node,
                                                const NodeSerialization* serialization,
                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
                                                 bool allowFileDialogs,
@@ -148,13 +149,33 @@ public:
 
     void clearPluginsLoadedCache();
 
-    void setThreadAsActionCaller(Natron::OfxImageEffectInstance* instance, bool actionCaller);
+    void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
     
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
-                                                                    Natron::ContextEnum* ctx);
+                                                                    ContextEnum* ctx);
     
-    GlobalOFXTLS& getCurrentThreadTLS();
-
+    
+    /**
+     * @brief A application-wide TLS struct containing all stuff needed to workaround OFX poor specs:
+     * missing image effect handles etc...
+     **/
+    struct OfxHostTLSData
+    {
+        OfxImageEffectInstance* lastEffectCallingMainEntry;
+        
+        ///Stored as int, because we need -1; list because we need it recursive for the multiThread func
+        std::list<int> threadIndexes;
+        
+        OfxHostTLSData()
+        : lastEffectCallingMainEntry(0)
+        , threadIndexes()
+        {
+            
+        }
+    };
+    typedef boost::shared_ptr<OfxHostTLSData> OfxHostDataTLSPtr;
+    
+    OfxHostDataTLSPtr getTLSData() const;
     
 private:
     
@@ -167,6 +188,6 @@ private:
 
     boost::scoped_ptr<OfxHostPrivate> _imp;
 };
-} // namespace Natron
+NATRON_NAMESPACE_EXIT;
 
 #endif // ifndef NATRON_ENGINE_OFXHOST_H

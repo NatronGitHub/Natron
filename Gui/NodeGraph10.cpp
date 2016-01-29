@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
@@ -50,7 +50,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -104,9 +104,9 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
                 e->y() >= (10 - offset) && e->y() <= (10 + ih + offset)) {
                 assert(isGroup);
                 isGroup->getNode()->setPyPlugEdited(true);
-                NodeList nodes = isGroup->getNodes();
-                for (NodeList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
-                    boost::shared_ptr<NodeGui> nodeUi = boost::dynamic_pointer_cast<NodeGui>((*it)->getNodeGui());
+                NodesList nodes = isGroup->getNodes();
+                for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+                    NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>((*it)->getNodeGui());
                     if (nodeUi) {
                         NodeSettingsPanel* panel = nodeUi->getSettingPanel();
                         if (panel) {
@@ -130,11 +130,11 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         
         ///Find matches, sorted by depth
         std::map<double,NodeGuiPtr> matches;
-        for (NodeGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
+        for (NodesGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
             QPointF evpt = (*it)->mapFromScene(lastMousePosScene);
             if ( (*it)->isVisible() && (*it)->isActive() ) {
                 
-                BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
+                BackdropGui* isBd = dynamic_cast<BackdropGui*>(it->get());
                 if (isBd) {
                     if (isBd->isNearbyNameFrame(evpt)) {
                         matches.insert(std::make_pair((*it)->zValue(),*it));
@@ -157,7 +157,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         }
         if (!selected) {
             ///try to find a selected edge
-            for (NodeGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
+            for (NodesGuiList::reverse_iterator it = _imp->_nodes.rbegin(); it != _imp->_nodes.rend(); ++it) {
                 Edge* bendPointEdge = (*it)->hasBendPointNearbyPoint(lastMousePosScene);
 
                 if (bendPointEdge) {
@@ -178,7 +178,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         didSomething = true;
         if ( buttonDownIsLeft(e) ) {
             
-            BackDropGui* isBd = dynamic_cast<BackDropGui*>(selected.get());
+            BackdropGui* isBd = dynamic_cast<BackdropGui*>(selected.get());
             if (!isBd) {
                 _imp->_magnifiedNode = selected;
             }
@@ -186,7 +186,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             if ( !selected->getIsSelected() ) {
                 selectNode( selected, modCASIsShift(e) );
             } else if ( modCASIsShift(e) ) {
-                NodeGuiList::iterator it = std::find(_imp->_selection.begin(),
+                NodesGuiList::iterator it = std::find(_imp->_selection.begin(),
                                                      _imp->_selection.end(),selected);
                 if ( it != _imp->_selection.end() ) {
                     (*it)->setUserSelected(false);
@@ -198,10 +198,10 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             }
             ///build the _nodesWithinBDAtPenDown map
             _imp->_nodesWithinBDAtPenDown.clear();
-            for (NodeGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-                BackDropGui* isBd = dynamic_cast<BackDropGui*>(it->get());
+            for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+                BackdropGui* isBd = dynamic_cast<BackdropGui*>(it->get());
                 if (isBd) {
-                    NodeGuiList nodesWithin = getNodesWithinBackDrop(*it);
+                    NodesGuiList nodesWithin = getNodesWithinBackdrop(*it);
                     _imp->_nodesWithinBDAtPenDown.insert(std::make_pair(*it,nodesWithin));
                 }
             }
@@ -215,36 +215,24 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         _imp->setNodesBendPointsVisible(false);
         
         ///Now connect the node to the edge input
-        boost::shared_ptr<Natron::Node> inputNode = selectedBendPoint->getSource()->getNode();
+        NodePtr inputNode = selectedBendPoint->getSource()->getNode();
         assert(inputNode);
         ///disconnect previous connection
-        boost::shared_ptr<Natron::Node> outputNode = selectedBendPoint->getDest()->getNode();
+        NodePtr outputNode = selectedBendPoint->getDest()->getNode();
         assert(outputNode);
-        int inputNb = outputNode->inputIndex( inputNode.get() );
+        int inputNb = outputNode->inputIndex(inputNode);
         if (inputNb == -1) {
             return;
         }
         
-        CreateNodeArgs args(PLUGINID_NATRON_DOT,
-                            std::string(),
-                            -1,
-                            -1,
-                            false, //< don't autoconnect
-                            INT_MIN,
-                            INT_MIN,
-                            false, //<< don't push an undo command
-                            true,
-                            true,
-                            QString(),
-                            CreateNodeArgs::DefaultValuesList(),
-                            _imp->group.lock());
-        boost::shared_ptr<Natron::Node> dotNode = getGui()->getApp()->createNode(args);
+        CreateNodeArgs args(PLUGINID_NATRON_DOT, eCreateNodeReasonInternal, _imp->group.lock());
+        NodePtr dotNode = getGui()->getApp()->createNode(args);
         assert(dotNode);
         boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
-        boost::shared_ptr<NodeGui> dotNodeGui = boost::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
+        NodeGuiPtr dotNodeGui = boost::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
         assert(dotNodeGui);
         
-        std::list<boost::shared_ptr<NodeGui> > nodesList;
+        NodesGuiList nodesList;
         nodesList.push_back(dotNodeGui);
         
        
@@ -253,21 +241,21 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         assert(getGui());
         GuiAppInstance* guiApp = getGui()->getApp();
         assert(guiApp);
-        boost::shared_ptr<Natron::Project> project = guiApp->getProject();
+        boost::shared_ptr<Project> project = guiApp->getProject();
         assert(project);
-        bool ok = project->disconnectNodes(inputNode.get(), outputNode.get());
+        bool ok = project->disconnectNodes(inputNode, outputNode);
         if (!ok) {
-            throw std::logic_error("disconnectNodes failed");
+            return;
         }
         
-        ok = project->connectNodes(0, inputNode, dotNode.get());
+        ok = project->connectNodes(0, inputNode, dotNode);
         if (!ok) {
-            throw std::logic_error("connectNodes failed");
+            return;
         }
 
-        ok = project->connectNodes(inputNb,dotNode,outputNode.get());
+        ok = project->connectNodes(inputNb,dotNode,outputNode);
         if (!ok) {
-            throw std::logic_error("connectNodes failed");
+            return;
         }
 
         QPointF pos = dotNodeGui->mapToParent( dotNodeGui->mapFromScene(lastMousePosScene) );
@@ -323,3 +311,5 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         }
     }
 } // mousePressEvent
+
+NATRON_NAMESPACE_EXIT;

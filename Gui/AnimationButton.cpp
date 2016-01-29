@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QDrag>
 #include <QPainter>
 #include <QMimeData>
+#include <QKeyEvent>
 CLANG_DIAG_ON(deprecated)
 
 #include "Engine/Project.h"
@@ -51,6 +52,9 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/GuiApplicationManager.h"
+
+NATRON_NAMESPACE_ENTER;
+
 void
 AnimationButton::mousePressEvent(QMouseEvent* e)
 {
@@ -58,7 +62,32 @@ AnimationButton::mousePressEvent(QMouseEvent* e)
         _dragPos = e->pos();
         _dragging = true;
     }
+
     QPushButton::mousePressEvent(e);
+}
+
+void
+AnimationButton::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Control) {
+        QPixmap p;
+        appPTR->getIcon(NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
+        QCursor c(p);
+        setCursor(c);
+    }
+    QPushButton::keyPressEvent(e);
+}
+
+void
+AnimationButton::keyReleaseEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Control) {
+        QPixmap p;
+        appPTR->getIcon(NATRON_PIXMAP_LINK_CURSOR, &p);
+        QCursor c(p);
+        setCursor(c);
+    }
+    QPushButton::keyReleaseEvent(e);
 }
 
 void
@@ -74,12 +103,13 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
             return;
         }
         
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(_knob->getKnob()->getHolder());
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(_knob->getKnob()->getHolder());
         if (!effect) {
             return;
         }
         boost::shared_ptr<NodeCollection> group = effect->getNode()->getGroup();
         NodeGroup* isGroup = dynamic_cast<NodeGroup*>(group.get());
+        
         
         std::stringstream expr;
         if (isGroup) {
@@ -87,12 +117,14 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
         } else {
             expr << effect->getApp()->getAppIDString() << ".";
         }
-        expr << effect->getNode()->getFullyQualifiedName() << "." << _knob->getKnob()->getName()
-        << ".get()";
-        if (_knob->getKnob()->getDimension() > 1) {
-            expr << "[dimension]";
-        }
+        expr << effect->getNode()->getScriptName_mt_safe() << "." << _knob->getKnob()->getName()
+        << ".getValue(dimension)";
 
+        Qt::KeyboardModifiers modifiers = qApp->keyboardModifiers();
+        bool useMult = modifiers.testFlag(Qt::ControlModifier);
+        if (useMult) {
+            expr << " * curve(frame,dimension)";
+        }
 
         // initiate Drag
 
@@ -156,7 +188,7 @@ AnimationButton::dropEvent(QDropEvent* e)
     if ( formats.contains("Animation") ) {
         QByteArray expr = e->mimeData()->data("Animation");
         std::string expression(expr.data());
-        boost::shared_ptr<KnobI> knob = _knob->getKnob();
+        KnobPtr knob = _knob->getKnob();
         _knob->pushUndoCommand(new SetExpressionCommand(knob,false,-1,expression));
         e->acceptProposedAction();
     }
@@ -177,7 +209,12 @@ AnimationButton::enterEvent(QEvent* /*e*/)
 {
     if (cursor().shape() != Qt::OpenHandCursor) {
         QPixmap p;
-        appPTR->getIcon(Natron::NATRON_PIXMAP_LINK_CURSOR, &p);
+        Qt::KeyboardModifiers modifiers = qApp->keyboardModifiers();
+        if (modifiers.testFlag(Qt::ControlModifier)) {
+            appPTR->getIcon(NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
+        } else {
+            appPTR->getIcon(NATRON_PIXMAP_LINK_CURSOR, &p);
+        }
         QCursor c(p);
         setCursor(c);
     }
@@ -191,3 +228,7 @@ AnimationButton::leaveEvent(QEvent* /*e*/)
     }
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_AnimationButton.cpp"

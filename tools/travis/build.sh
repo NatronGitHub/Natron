@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@ set -e
 # Print commands and their arguments as they are executed.
 set -x
 
-BREAKPAD=
-#BREAKPAD=gbreakpad # doesn't compile on linux yet
+BREAKPAD=disable-breakpad
+#BREAKPAD= # doesn't compile on linux yet
 SILENT=silent
 
 # enable testing locally or on forks without multi-os enabled

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 #include "Engine/LibraryBinary.h"
 #include "Engine/Settings.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 Plugin::~Plugin()
 {
@@ -83,8 +83,8 @@ Plugin::getLabelVersionMajorMinorEncoded() const
 QString
 Plugin::makeLabelWithoutSuffix(const QString& label)
 {
-    if (label.endsWith("OIIOOFX")) {
-        return label.mid(0,label.size() - 7);
+    if (label.startsWith("Read") || label.startsWith("Write")) {
+        return label;
     } else if (label.endsWith("OFX")) {
         return label.mid(0,label.size() - 3);
     } else if (label.endsWith("CImg")) {
@@ -158,7 +158,7 @@ Plugin::getPluginLock() const
     return _lock;
 }
 
-Natron::LibraryBinary*
+LibraryBinary*
 Plugin::getLibraryBinary() const
 {
     return _binary;
@@ -196,7 +196,19 @@ Plugin::setPythonModule(const QString& module)
 
 const QString&
 Plugin::getPythonModule() const {
-    return _pythonModule;
+    return _pythonModule; // < does not end with .py
+}
+
+void
+Plugin::getPythonModuleNameAndPath(QString* moduleName, QString* modulePath) const
+{
+    int foundLastSlash = _pythonModule.lastIndexOf('/');
+    if (foundLastSlash != -1) {
+        *modulePath = _pythonModule.mid(0,foundLastSlash + 1);
+        *moduleName = _pythonModule.mid(foundLastSlash + 1);
+    } else {
+        *moduleName = _pythonModule;
+    }
 }
 
 void
@@ -231,7 +243,7 @@ Plugin::getIsUserCreatable() const
 void
 Plugin::setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,ContextEnum ctx)
 {
-    assert(ctx != Natron::eContextNone);
+    assert(ctx != eContextNone);
     _ofxDescriptor = desc;
     _ofxContext = ctx;
 }
@@ -258,3 +270,4 @@ PluginGroupNode::tryRemoveChild(PluginGroupNode* plugin)
     }
 }
 
+NATRON_NAMESPACE_EXIT;

@@ -1,5 +1,5 @@
 Natron, an open source compositing software
-Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

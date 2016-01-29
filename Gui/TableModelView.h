@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,9 +27,12 @@
 
 #include "Global/Macros.h"
 
+#include <vector>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
+
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -41,6 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class TableItem
 {
@@ -244,7 +248,6 @@ TableItem::setFont(const QFont &afont)
     setData(Qt::FontRole, afont);
 }
 
-Q_DECLARE_METATYPE(TableItem*)
 
 struct TableViewPrivate;
 class TableView
@@ -345,7 +348,7 @@ public:
     virtual bool removeRows( int row, int count = 1, const QModelIndex &parent = QModelIndex() ) OVERRIDE FINAL;
     virtual bool removeColumns( int column, int count = 1, const QModelIndex &parent = QModelIndex() ) OVERRIDE FINAL;
 
-    void setTable(const QVector<TableItem*>& items);
+    void setTable(const std::vector<TableItem*>& items);
     void setItem(int row, int column, TableItem *item);
     TableItem * takeItem(int row, int column);
     TableItem * item(int row, int column) const;
@@ -405,5 +408,8 @@ private:
     boost::scoped_ptr<TableModelPrivate> _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
+
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::TableItem*)
 
 #endif // TABLEMODELVIEW_H

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,20 +60,20 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ViewerGL.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 void
 ViewerTab::onColorSpaceComboBoxChanged(int v)
 {
-    Natron::ViewerColorSpaceEnum colorspace = Natron::eViewerColorSpaceSRGB;
+    ViewerColorSpaceEnum colorspace = eViewerColorSpaceSRGB;
 
     if (v == 0) {
-        colorspace = Natron::eViewerColorSpaceLinear;
+        colorspace = eViewerColorSpaceLinear;
     } else if (v == 1) {
-        colorspace = Natron::eViewerColorSpaceSRGB;
+        colorspace = eViewerColorSpaceSRGB;
     } else if (v == 2) {
-        colorspace = Natron::eViewerColorSpaceRec709;
+        colorspace = eViewerColorSpaceRec709;
     } else {
         assert(false);
         throw std::logic_error("ViewerTab::onColorSpaceComboBoxChanged(): unknown colorspace");
@@ -151,17 +151,17 @@ ViewerTab::getCurrentView() const
 }
 
 void
-ViewerTab::setPlaybackMode(Natron::PlaybackModeEnum mode)
+ViewerTab::setPlaybackMode(PlaybackModeEnum mode)
 {
     QPixmap pix;
     switch (mode) {
-        case Natron::ePlaybackModeLoop:
+        case ePlaybackModeLoop:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE, &pix);
             break;
-        case Natron::ePlaybackModeBounce:
+        case ePlaybackModeBounce:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_BOUNCE, &pix);
             break;
-        case Natron::ePlaybackModeOnce:
+        case ePlaybackModeOnce:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ONCE, &pix);
             break;
         default:
@@ -176,7 +176,7 @@ ViewerTab::setPlaybackMode(Natron::PlaybackModeEnum mode)
 
 }
 
-Natron::PlaybackModeEnum
+PlaybackModeEnum
 ViewerTab::getPlaybackMode() const
 {
     QMutexLocker k(&_imp->playbackModeMutex);
@@ -186,17 +186,17 @@ ViewerTab::getPlaybackMode() const
 void
 ViewerTab::togglePlaybackMode()
 {
-    Natron::PlaybackModeEnum mode = _imp->viewerNode->getRenderEngine()->getPlaybackMode();
-    mode = (Natron::PlaybackModeEnum)(((int)mode + 1) % 3);
+    PlaybackModeEnum mode = _imp->viewerNode->getRenderEngine()->getPlaybackMode();
+    mode = (PlaybackModeEnum)(((int)mode + 1) % 3);
     QPixmap pix;
     switch (mode) {
-        case Natron::ePlaybackModeLoop:
+        case ePlaybackModeLoop:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_LOOP_MODE, &pix);
             break;
-        case Natron::ePlaybackModeBounce:
+        case ePlaybackModeBounce:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_BOUNCE, &pix);
             break;
-        case Natron::ePlaybackModeOnce:
+        case ePlaybackModeOnce:
             appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ONCE, &pix);
             break;
         default:
@@ -325,6 +325,10 @@ ViewerTab::onEngineStopped()
     }
     if (getGui() && getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled()) {
         getGui()->onFreezeUIButtonClicked(false);
+    } else {
+        if (getGui()) {
+            getGui()->refreshAllTimeEvaluationParams();
+        }
     }
 }
 
@@ -421,7 +425,7 @@ ViewerTab::centerViewer()
 {
     _imp->viewer->fitImageToFormat();
     if ( _imp->viewer->displayingImage() ) {
-        _imp->viewerNode->renderCurrentFrame(false);
+        _imp->viewerNode->renderCurrentFrame(true);
     } else {
         _imp->viewer->update();
     }
@@ -432,7 +436,7 @@ ViewerTab::refresh(bool enableRenderStats)
 {
     _imp->viewerNode->forceFullComputationOnNextFrame();
     if (!enableRenderStats) {
-        _imp->viewerNode->renderCurrentFrame(false);
+        _imp->viewerNode->renderCurrentFrame(true);
     } else {
         getGui()->getOrCreateRenderStatsDialog()->show();
         _imp->viewerNode->renderCurrentFrameWithRenderStats(false);
@@ -655,10 +659,10 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         lastFrame();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, modifiers, key) ) {
         //prev key
-        getGui()->getApp()->getTimeLine()->goToPreviousKeyframe();
+        getGui()->getApp()->goToPreviousKeyframe();
     } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, modifiers, key) ) {
         //next key
-        getGui()->getApp()->getTimeLine()->goToNextKeyframe();
+        getGui()->getApp()->goToNextKeyframe();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionFitViewer, modifiers, key) ) {
         centerViewer();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionClipEnabled, modifiers, key) ) {
@@ -742,9 +746,9 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
         QWheelEvent e(mapFromGlobal(QCursor::pos()), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
-    } else if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(scale, scale, e) ) {
+    } else if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale(scale), e) ) {
         update();
-    } else if ( notifyOverlaysKeyDown(scale, scale, e) ) {
+    } else if ( notifyOverlaysKeyDown(RenderScale(scale), e) ) {
         update();
     } else if (isKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, modifiers, key) ) {
         ///Put it after notifyOverlaysKeyDown() because Roto may intercept Enter
@@ -757,13 +761,13 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         showView(1);
     } else {
         accept = false;
-        QWidget::keyPressEvent(e);
     }
     if (accept) {
         takeClickFocus();
         e->accept();
     } else {
         handleUnCaughtKeyPressEvent(e);
+        QWidget::keyPressEvent(e);
     }
 } // keyPressEvent
 
@@ -778,9 +782,10 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
         return QWidget::keyPressEvent(e);
     }
     double scale = 1. / (1 << _imp->viewer->getCurrentRenderScale());
-    if ( notifyOverlaysKeyUp(scale, scale, e) ) {
+    if ( notifyOverlaysKeyUp(RenderScale(scale), e) ) {
         _imp->viewer->redraw();
     } else {
+        handleUnCaughtKeyUpEvent(e);
         QWidget::keyReleaseEvent(e);
     }
 }
@@ -788,32 +793,32 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
 void
 ViewerTab::setDisplayChannels(int i, bool setBothInputs)
 {
-    Natron::DisplayChannelsEnum channels;
+    DisplayChannelsEnum channels;
     
     switch (i) {
         case 0:
-            channels = Natron::eDisplayChannelsY;
+            channels = eDisplayChannelsY;
             break;
         case 1:
-            channels = Natron::eDisplayChannelsRGB;
+            channels = eDisplayChannelsRGB;
             break;
         case 2:
-            channels = Natron::eDisplayChannelsR;
+            channels = eDisplayChannelsR;
             break;
         case 3:
-            channels = Natron::eDisplayChannelsG;
+            channels = eDisplayChannelsG;
             break;
         case 4:
-            channels = Natron::eDisplayChannelsB;
+            channels = eDisplayChannelsB;
             break;
         case 5:
-            channels = Natron::eDisplayChannelsA;
+            channels = eDisplayChannelsA;
             break;
         case 6:
-            channels = Natron::eDisplayChannelsMatte;
+            channels = eDisplayChannelsMatte;
             break;
         default:
-            channels = Natron::eDisplayChannelsRGB;
+            channels = eDisplayChannelsRGB;
             break;
     }
     _imp->viewerNode->setDisplayChannels(channels, setBothInputs);
@@ -833,7 +838,7 @@ ViewerTab::eventFilter(QObject *target,
         if (getGui() && getGui()->getApp()) {
             boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerNode->getNode()->getNodeGui();
             assert(gui_i);
-            boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+            NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
             getGui()->selectNode(gui);
         }
     }
@@ -877,3 +882,5 @@ ViewerTab::showView(int view)
     abortRendering();
     _imp->viewerNode->renderCurrentFrame(true);
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 #include "Gui/Button.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class AnimationButton
     : public Button
@@ -89,9 +90,13 @@ private:
     virtual void dropEvent(QDropEvent* e);
     virtual void enterEvent(QEvent* e);
     virtual void leaveEvent(QEvent* e);
+    virtual void keyPressEvent(QKeyEvent* e);
+    virtual void keyReleaseEvent(QKeyEvent* e);
     QPoint _dragPos;
     bool _dragging;
     KnobGui* _knob;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // ANIMATIONBUTTON_H

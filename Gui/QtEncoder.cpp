@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@
 
 #include "QtEncoder.h"
 
+#ifdef NATRON_ENABLE_QT_IO_NODES
+
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -45,11 +47,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TimeLine.h"
 #include "Engine/Node.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
-QtWriter::QtWriter(boost::shared_ptr<Natron::Node> node)
-    : Natron::OutputEffectInstance(node)
-      , _lut( Natron::Color::LutManager::sRGBLut() )
+QtWriter::QtWriter(NodePtr node)
+    : OutputEffectInstance(node)
+      , _lut( Color::LutManager::sRGBLut() )
 {
 }
 
@@ -130,7 +132,7 @@ QtWriter::getFrameRange(double *first,
 void
 QtWriter::initializeKnobs()
 {
-    Natron::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developpers team to test %1"
+    Dialogs::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developpers team to test %1"
                                                   ". You cannot use it to render a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 
@@ -164,7 +166,7 @@ QtWriter::initializeKnobs()
 
 void
 QtWriter::knobChanged(KnobI* k,
-                      Natron::ValueChangedReasonEnum /*reason*/,
+                      ValueChangedReasonEnum /*reason*/,
                       int /*view*/,
                       double /*time*/,
                       bool/* originatedFromMainThread*/)
@@ -243,13 +245,13 @@ filenameFromPattern(const std::string & pattern,
     return ret;
 }
 
-Natron::StatusEnum
+StatusEnum
 QtWriter::render(const RenderActionArgs& args)
 {
     assert(args.outputPlanes.size() == 1);
-    const std::pair<Natron::ImageComponents,ImagePtr>& output = args.outputPlanes.front();
+    const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
     
-    boost::shared_ptr<Natron::Image> src = getImage(0, args.time, args.mappedScale, args.view, NULL, output.second->getComponents(), output.second->getBitDepth(),1, false,NULL);
+    boost::shared_ptr<Image> src = getImage(0, args.time, args.mappedScale, args.view, NULL, output.second->getComponents(), output.second->getBitDepth(),1, false,NULL);
 
     if ( hasOutputConnected() ) {
         output.second->pasteFrom( *src, src->getBounds() );
@@ -265,10 +267,10 @@ QtWriter::render(const RenderActionArgs& args)
         type = QImage::Format_ARGB32;
     }
     
-    Natron::Image::WriteAccess acc = output.second->getWriteRights();
+    Image::WriteAccess acc = output.second->getWriteRights();
 
     _lut->to_byte_packed(buf, (const float*)acc.pixelAt(0, 0), args.roi, src->getBounds(), args.roi,
-                         Natron::Color::ePixelPackingRGBA, Natron::Color::ePixelPackingBGRA, true, premult);
+                         Color::ePixelPackingRGBA, Color::ePixelPackingBGRA, true, premult);
 
     QImage img(buf,args.roi.width(),args.roi.height(),type);
     std::string filename = _fileKnob->getValue();
@@ -282,15 +284,19 @@ QtWriter::render(const RenderActionArgs& args)
 
 void
 QtWriter::addAcceptedComponents(int /*inputNb*/,
-                                std::list<Natron::ImageComponents>* comps)
+                                std::list<ImageComponents>* comps)
 {
     ///QtWriter only supports RGBA for now.
     comps->push_back(ImageComponents::getRGBAComponents());
 }
 
 void
-QtWriter::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+QtWriter::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
     depths->push_back(eImageBitDepthFloat);
 }
+
+NATRON_NAMESPACE_EXIT;
+
+#endif //NATRON_ENABLE_QT_IO_NODES
 

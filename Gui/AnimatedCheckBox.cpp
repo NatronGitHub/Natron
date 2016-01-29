@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,6 +38,8 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Gui/GuiApplicationManager.h"
 #include "Engine/Settings.h"
 
+NATRON_NAMESPACE_ENTER;
+
 AnimatedCheckBox::AnimatedCheckBox(QWidget *parent)
 : QFrame(parent), animation(0), readOnly(false), dirty(false), altered(false) ,checked(false)
 {
@@ -66,6 +68,18 @@ AnimatedCheckBox::setDirty(bool b)
 {
     dirty = b;
     update();
+}
+
+QSize
+AnimatedCheckBox::minimumSizeHint() const
+{
+    return QSize(TO_DPIX(15),TO_DPIY(15));
+}
+
+QSize
+AnimatedCheckBox::sizeHint() const
+{
+    return QSize(TO_DPIX(15),TO_DPIY(15));
 }
 
 void
@@ -193,3 +207,7 @@ AnimatedCheckBox::paintEvent(QPaintEvent* e)
     }
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_AnimatedCheckBox.cpp"

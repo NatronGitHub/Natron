@@ -5,6 +5,7 @@
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
+# DISABLE_BREAKPAD=1: Disable automatic crash report
 # Usage: BUILD_CONFIG=SNAPSHOT build-natron.sh BIT "branch"
 
 source `pwd`/common.sh || exit 1
@@ -132,17 +133,20 @@ elif [ "$BUILD_CONFIG" = "CUSTOM" ]; then
 	fi
 	EXTRA_QMAKE_FLAG="CONFIG+=stable BUILD_USER_NAME=$CUSTOM_BUILD_USER_NAME"
 fi
-#EXTRA_QMAKE_FLAG="CONFIG+=gbreakpad" Enable when ready
-$INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo CONFIG+=silent ${EXTRA_QMAKE_FLAG} CONFIG+=${BIT}bit DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
+
+if [ "$DISABLE_BREAKPAD" = "1" ]; then
+    CONFIG_BREAKPAD_FLAG="CONFIG+=disable-breakpad"
+fi
+
+$INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${CONFIG_BREAKPAD_FLAG} CONFIG+=silent CONFIG+=${BIT}bit DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
 make -j${MKJOBS} || exit 1
 
 cp App/release/Natron.exe $INSTALL_PATH/bin/ || exit 1
 cp Renderer/release/NatronRenderer.exe $INSTALL_PATH/bin/ || exit 1
-if [ -f CrashReporter/release/NatronCrashReporter.exe ]; then
+if [ "$DISABLE_BREAKPAD" != "1" ]; then
     cp CrashReporter/release/NatronCrashReporter.exe $INSTALL_PATH/bin/ || exit 1
     cp CrashReporterCLI/release/NatronRendererCrashReporter.exe $INSTALL_PATH/bin/ || exit 1
 fi
-
 
 #If OpenColorIO-Configs do not exist, download them
 if [ ! -d "$SRC_PATH/OpenColorIO-Configs" ]; then

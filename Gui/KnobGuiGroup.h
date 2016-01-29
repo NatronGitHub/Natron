@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class KnobGuiGroup
     : public KnobGui
@@ -60,13 +61,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+    static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
         return new KnobGuiGroup(knob, container);
     }
 
-    KnobGuiGroup(boost::shared_ptr<KnobI> knob,
+    KnobGuiGroup(KnobPtr knob,
                   DockablePanel *container);
 
     virtual ~KnobGuiGroup() OVERRIDE;
@@ -79,7 +80,7 @@ public:
 
     bool isChecked() const;
 
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     
     TabGroup* getOrCreateTabWidget();
     
@@ -109,7 +110,7 @@ private:
 
 private:
     bool _checked;
-    Natron::GroupBoxLabel *_button;
+    GroupBoxLabel *_button;
     std::list<KnobGui*> _children;
     std::vector< std::pair<KnobGui*,std::vector<int> > > _childrenToEnable; //< when re-enabling a group, what are the children that we should set
     TabGroup* _tabGroup;
@@ -117,5 +118,6 @@ private:
     boost::weak_ptr<KnobGroup> _knob;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_KnobGuiGroup_h

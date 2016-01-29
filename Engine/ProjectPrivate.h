@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,54 +43,16 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobFactory.h"
-#include "Engine/ThreadStorage.h"
+#include "Engine/TLSHolder.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/Project.h"
 
-namespace Natron {
 
-inline QString
-generateStringFromFormat(const Format & f)
-{
-    QString formatStr;
-
-    formatStr.append(f.getName().c_str());
-    formatStr.append("  ");
-    formatStr.append(QString::number(f.width()));
-    formatStr.append(" x ");
-    formatStr.append(QString::number(f.height()));
-    formatStr.append("  ");
-    formatStr.append(QString::number(f.getPixelAspectRatio()));
-
-    return formatStr;
-}
-    
-    
-inline bool
-generateFormatFromString(const QString& spec, Format* f)
-{
-    QStringList splits = spec.split(' ');
-    if (splits.size() != 3) {
-        return false;
-    }
-    
-    QStringList sizes = splits[1].split('x');
-    if (sizes.size() != 2) {
-        return false;
-    }
-    
-    f->setName(splits[0].toStdString());
-    f->x1 = 0;
-    f->y1 = 0;
-    f->x2 = sizes[0].toInt();
-    f->y2 = sizes[1].toInt();
-    
-    f->setPixelAspectRatio(splits[2].toDouble());
-    return true;
-}
+NATRON_NAMESPACE_ENTER;
 
 struct ProjectPrivate
 {
-    Natron::Project* _publicInterface;
+    Project* _publicInterface;
     mutable QMutex projectLock; //< protects the whole project
     QString lastAutoSaveFilePath; //< absolute file path of the last auto-save file
     bool hasProjectBeenSavedByUser; //< has this project ever been saved by the user?
@@ -144,9 +106,9 @@ struct ProjectPrivate
     mutable QMutex projectClosingMutex;
     bool projectClosing;
     
-    ThreadStorage<std::vector<std::string> > viewNamesTLS;
+    boost::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
     
-    ProjectPrivate(Natron::Project* project);
+    ProjectPrivate(Project* project);
 
     bool restoreFromSerialization(const ProjectSerialization & obj,const QString& name,const QString& path, bool* mustSave);
 
@@ -168,8 +130,52 @@ struct ProjectPrivate
     
     void setProjectPath(const std::string& path);
     std::string getProjectPath() const;
+
+    static QString
+    generateStringFromFormat(const Format & f)
+    {
+        QString formatStr;
+
+        formatStr.append(f.getName().c_str());
+        formatStr.append(' ');
+        formatStr.append(QString::number(f.width()));
+        formatStr.append('x');
+        formatStr.append(QString::number(f.height()));
+        double par = f.getPixelAspectRatio();
+        if (par != 1.) {
+            formatStr.append(' ');
+            formatStr.append(QString::number(f.getPixelAspectRatio()));
+        }
+        return formatStr;
+    }
+
+
+    static bool
+    generateFormatFromString(const QString& spec, Format* f)
+    {
+        QStringList splits = spec.split(' ');
+        if (splits.size() != 3) {
+            return false;
+        }
+
+        QStringList sizes = splits[1].split('x');
+        if (sizes.size() != 2) {
+            return false;
+        }
+
+        f->setName(splits[0].toStdString());
+        f->x1 = 0;
+        f->y1 = 0;
+        f->x2 = sizes[0].toInt();
+        f->y2 = sizes[1].toInt();
+        
+        f->setPixelAspectRatio(splits[2].toDouble());
+        return true;
+    }
     
+
 };
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PROJECTPRIVATE_H

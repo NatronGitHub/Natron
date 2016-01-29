@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A base class for all items made by the roto context
@@ -62,7 +63,7 @@ class RotoStrokeItem : public RotoDrawableItem
 {
 public:
     
-    RotoStrokeItem(Natron::RotoStrokeType type,
+    RotoStrokeItem(RotoStrokeType type,
                    const boost::shared_ptr<RotoContext>& context,
                    const std::string & name,
                    const boost::shared_ptr<RotoLayer>& parent);
@@ -70,7 +71,7 @@ public:
     virtual ~RotoStrokeItem();
     
     
-    Natron::RotoStrokeType getBrushType() const;
+    RotoStrokeType getBrushType() const;
     
     bool isEmpty() const;
     
@@ -96,17 +97,20 @@ public:
     
     double renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
                               const RectD& rod,
-                              const std::list<std::pair<Natron::Point,double> >& points,
+                              const std::list<std::pair<Point,double> >& points,
                               unsigned int mipmapLevel,
                               double par,
-                              const Natron::ImageComponents& components,
-                              Natron::ImageBitDepthEnum depth,
+                              const ImageComponents& components,
+                              ImageBitDepthEnum depth,
                               double distToNext,
-                              boost::shared_ptr<Natron::Image> *wholeStrokeImage);
+                              boost::shared_ptr<Image> *wholeStrokeImage);
 
     
     
-    bool getMostRecentStrokeChangesSinceAge(double time,int lastAge, std::list<std::pair<Natron::Point,double> >* points,
+    bool getMostRecentStrokeChangesSinceAge(double time,
+                                            int lastAge,
+                                            int lastMultiStrokeIndex,
+                                            std::list<std::pair<Point,double> >* points,
                                             RectD* pointsBbox,
                                             RectD* wholeStrokeBbox,
                                             int* newAge,
@@ -138,7 +142,7 @@ public:
     
     ///bbox is in canonical coords
     void evaluateStroke(unsigned int mipMapLevel, double time,
-                        std::list<std::list<std::pair<Natron::Point,double> > >* strokes,
+                        std::list<std::list<std::pair<Point,double> > >* strokes,
                         RectD* bbox = 0) const;
     
     std::list<boost::shared_ptr<Curve> > getXControlPoints() const;
@@ -147,10 +151,11 @@ private:
     
     RectD computeBoundingBox(double time) const;
     
+    RectD computeBoundingBoxInternal(double time) const;
     
     boost::scoped_ptr<RotoStrokeItemPrivate> _imp;
 };
 
-
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_RotoStrokeItem_h

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,12 +60,17 @@ CLANG_DIAG_ON(deprecated)
 #define M_PI 3.14159265358979323846264338327950288419717
 #endif
 
+NATRON_NAMESPACE_ENTER;
+
+namespace {
+
 enum PositionInteractState
 {
     ePositionInteractStateInactive,
     ePositionInteractStatePoised,
     ePositionInteractStatePicked
 };
+
 
 struct PositionInteract
 {
@@ -86,6 +91,7 @@ struct PositionInteract
     
     
 };
+
 
 struct TransformInteract
 {
@@ -140,9 +146,9 @@ struct TransformInteract
     int _modifierStateShift;
     OrientationEnum _orientation;
     
-    Natron::Point _centerDrag;
-    Natron::Point _translateDrag;
-    Natron::Point _scaleParamDrag;
+    Point _centerDrag;
+    Point _translateDrag;
+    Point _scaleParamDrag;
     bool _scaleUniformDrag;
     double _rotateDrag;
     double _skewXDrag;
@@ -246,8 +252,6 @@ struct TransformInteract
 
 };
 
-namespace {
-
 // round to the closest int, 1/10 int, etc
 // this make parameter editing easier
 // pscale is args.pixelScale.x / args.renderScale.x;
@@ -274,11 +278,11 @@ struct HostOverlayPrivate
     
     QPointF lastPenPos;
     
-    Natron::TextRenderer textRenderer;
+    TextRenderer textRenderer;
     
     bool interactiveDrag;
     
-    HostOverlayPrivate(HostOverlay* publicInterface, const boost::shared_ptr<NodeGui>& node)
+    HostOverlayPrivate(HostOverlay* publicInterface, const NodeGuiPtr& node)
     : _publicInterface(publicInterface)
     , positions()
     , transforms()
@@ -424,7 +428,7 @@ struct HostOverlayPrivate
     
 };
 
-HostOverlay::HostOverlay(const boost::shared_ptr<NodeGui>& node)
+HostOverlay::HostOverlay(const NodeGuiPtr& node)
 : _imp(new HostOverlayPrivate(this, node))
 {
 }
@@ -434,7 +438,7 @@ HostOverlay::~HostOverlay()
     
 }
 
-boost::shared_ptr<NodeGui>
+NodeGuiPtr
 HostOverlay::getNode() const
 {
     return _imp->node.lock();
@@ -1009,7 +1013,7 @@ HostOverlayPrivate::drawTransform(const TransformInteract& p,
 }
 
 void
-HostOverlay::draw(double time,const RenderScale& /*renderScale*/)
+HostOverlay::draw(double time,const RenderScale & /*renderScale*/)
 {
     OfxRGBColourD color;
     if (!getNode()->getOverlayColor(&color.r, &color.g, &color.b)) {
@@ -1118,7 +1122,7 @@ HostOverlayPrivate::penMotion(double time,
                 }
             }
 
-            knob->setValues(p[0], p[1], Natron::eValueChangedReasonNatronGuiEdited);
+            knob->setValues(p[0], p[1], eValueChangedReasonNatronGuiEdited);
         }
     }
     return (didSomething || valuesChanged);
@@ -1553,31 +1557,31 @@ HostOverlayPrivate::penMotion(double time,
     
     if (it->_mouseState != TransformInteract::eReleased && it->_interactiveDrag && valuesChanged) {
         // no need to redraw overlay since it is slave to the paramaters
-        KnobHolder* holder = node.lock()->getNode()->getLiveInstance();
+        EffectInstPtr holder = node.lock()->getNode()->getEffectInstance();
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
         if (centerChanged) {
             boost::shared_ptr<KnobDouble> knob = it->center.lock();
-            knob->setValues(center.x, center.y, Natron::eValueChangedReasonNatronGuiEdited);
+            knob->setValues(center.x, center.y, eValueChangedReasonNatronGuiEdited);
         }
         if (translateChanged) {
             boost::shared_ptr<KnobDouble> knob = it->translate.lock();
-            knob->setValues(translate.x, translate.y, Natron::eValueChangedReasonNatronGuiEdited);
+            knob->setValues(translate.x, translate.y, eValueChangedReasonNatronGuiEdited);
         }
         if (scaleChanged) {
             boost::shared_ptr<KnobDouble> knob = it->scale.lock();
-            knob->setValues(scale.x, scale.y, Natron::eValueChangedReasonNatronGuiEdited);
+            knob->setValues(scale.x, scale.y, eValueChangedReasonNatronGuiEdited);
         }
         if (rotateChanged) {
             boost::shared_ptr<KnobDouble> knob = it->rotate.lock();
-            knob->setValue(rotate, 0, Natron::eValueChangedReasonNatronGuiEdited);
+            knob->setValue(rotate, 0, eValueChangedReasonNatronGuiEdited);
         }
         if (skewXChanged) {
             boost::shared_ptr<KnobDouble> knob = it->skewX.lock();
-            knob->setValue(skewX, 0, Natron::eValueChangedReasonNatronGuiEdited);
+            knob->setValue(skewX, 0, eValueChangedReasonNatronGuiEdited);
         }
         if (skewYChanged) {
             boost::shared_ptr<KnobDouble> knob = it->skewY.lock();
-            knob->setValue(skewY, 0, Natron::eValueChangedReasonNatronGuiEdited);
+            knob->setValue(skewY, 0, eValueChangedReasonNatronGuiEdited);
         }
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
     } else if (didSomething || valuesChanged) {
@@ -1646,7 +1650,7 @@ HostOverlayPrivate::penUp(double time,
                     }
                 }
 
-                knob->setValues(p[0], p[1], Natron::eValueChangedReasonNatronGuiEdited);
+                knob->setValues(p[0], p[1], eValueChangedReasonNatronGuiEdited);
             }
         }
 
@@ -1678,34 +1682,34 @@ HostOverlayPrivate::penUp(double /*time*/,
          Give eValueChangedReasonPluginEdited reason so that the command uses the undo/redo stack
          see Knob::setValue
          */
-        KnobHolder* holder = node.lock()->getNode()->getLiveInstance();
+        EffectInstPtr holder = node.lock()->getNode()->getEffectInstance();
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
         {
             boost::shared_ptr<KnobDouble> knob = it->center.lock();
-            knob->setValues(it->_centerDrag.x, it->_centerDrag.y, Natron::eValueChangedReasonPluginEdited);
+            knob->setValues(it->_centerDrag.x, it->_centerDrag.y, eValueChangedReasonPluginEdited);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->translate.lock();
-            knob->setValues(it->_translateDrag.x, it->_translateDrag.y, Natron::eValueChangedReasonPluginEdited);
+            knob->setValues(it->_translateDrag.x, it->_translateDrag.y, eValueChangedReasonPluginEdited);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->scale.lock();
-            knob->setValues(it->_scaleParamDrag.x, it->_scaleParamDrag.y, Natron::eValueChangedReasonPluginEdited);
+            knob->setValues(it->_scaleParamDrag.x, it->_scaleParamDrag.y, eValueChangedReasonPluginEdited);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->rotate.lock();
             KeyFrame k;
-            knob->setValue(it->_rotateDrag, 0, Natron::eValueChangedReasonPluginEdited, &k);
+            knob->setValue(it->_rotateDrag, 0, eValueChangedReasonPluginEdited, &k);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->skewX.lock();
             KeyFrame k;
-            knob->setValue(it->_skewXDrag, 0, Natron::eValueChangedReasonPluginEdited, &k);
+            knob->setValue(it->_skewXDrag, 0, eValueChangedReasonPluginEdited, &k);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->skewY.lock();
             KeyFrame k;
-            knob->setValue(it->_skewYDrag, 0, Natron::eValueChangedReasonPluginEdited,&k);
+            knob->setValue(it->_skewYDrag, 0, eValueChangedReasonPluginEdited,&k);
         }
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
         
@@ -2245,3 +2249,5 @@ HostOverlay::isEmpty() const
     }
     return false;
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -7,6 +7,7 @@
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
+# DISABLE_BREAKPAD=1: Disable automatic crash report
 # NO_ZIP=1: Do not produce a zip self-contained archive with Natron distribution.
 # OFFLINE=1 : Make the offline installer too
 # NO_INSTALLER: Do not make any installer, only zip if NO_ZIP!=1
@@ -34,6 +35,11 @@ if [ "$NATRON_LICENSE" = "GPL" ]; then
 elif [ "$NATRON_LICENSE" = "COMMERCIAL" ]; then
     FFMPEG_BIN_PATH=$INSTALL_PATH/ffmpeg-LGPL
 fi
+
+if [ -d "$INSTALL_PATH/symbols" ]; then
+  rm -rf $INSTALL_PATH/symbols || exit 1
+fi
+mkdir -p $INSTALL_PATH/symbols || exit 1
 
 
 if [ "$BUILD_CONFIG" = "ALPHA" ]; then
@@ -96,6 +102,10 @@ fi
 mkdir -p $TMP_BUILD_DIR || exit 1
 
 
+# tag symbols we want to keep with 'release'
+if [ "$BUILD_CONFIG" != "" ] && [ "$BUILD_CONFIG" != "SNAPSHOT" ]; then
+  BPAD_TAG="-release"
+fi
 
 # SETUP
 INSTALLER="$TMP_BUILD_DIR/Natron-installer"
@@ -106,23 +116,30 @@ mkdir -p "$INSTALLER/config" "$INSTALLER/packages" || exit 1
 cat "$INC_PATH/config/config.xml" | sed -e "s/_VERSION_/${NATRON_VERSION_NUMBER}/;s#_OS_BRANCH_BIT_#${REPO_OS}#g;s#_URL_#${REPO_URL}#g;s#_APP_INSTALL_SUFFIX_#${APP_INSTALL_SUFFIX}#g" > "$INSTALLER/config/config.xml" || exit 1
 cp "$INC_PATH/config/"*.png "$INSTALLER/config/" || exit 1
 
+
 # OFX IO
 if [ "$BUNDLE_IO" = "1" ]; then         
-    IO_DLL="LIBICUDT55.DLL LIBICUUC55.DLL LIBLCMS2-2.DLL LIBJASPER-1.DLL LIBLZMA-5.DLL LIBOPENJPEG-5.DLL LIBHALF-2_2.DLL LIBILMIMF-2_2.DLL LIBIEX-2_2.DLL LIBILMTHREAD-2_2.DLL LIBIMATH-2_2.DLL LIBOPENIMAGEIO.DLL LIBRAW_R-10.DLL LIBWEBP-5.DLL LIBBOOST_THREAD-MT.DLL LIBBOOST_SYSTEM-MT.DLL LIBBOOST_REGEX-MT.DLL LIBBOOST_FILESYSTEM-MT.DLL"
+    IO_DLL="LIBICUDT56.DLL LIBICUUC56.DLL LIBLCMS2-2.DLL LIBJASPER-1.DLL LIBLZMA-5.DLL LIBOPENJPEG-5.DLL LIBHALF-2_2.DLL LIBILMIMF-2_2.DLL LIBIEX-2_2.DLL LIBILMTHREAD-2_2.DLL LIBIMATH-2_2.DLL LIBOPENIMAGEIO.DLL LIBRAW_R-10.DLL LIBWEBP-6.DLL LIBBOOST_THREAD-MT.DLL LIBBOOST_SYSTEM-MT.DLL LIBBOOST_REGEX-MT.DLL LIBBOOST_FILESYSTEM-MT.DLL"
     OFX_IO_VERSION="$TAG"
     OFX_IO_PATH="$INSTALLER/packages/$IOPLUG_PKG"
-    mkdir -p "$OFX_IO_PATH/data" "$OFX_IO_PATH/meta" "$OFX_IO_PATH/data/Plugins" || exit 1
+    mkdir -p "$OFX_IO_PATH/data" "$OFX_IO_PATH/meta" "$OFX_IO_PATH/data/Plugins/OFX/Natron" || exit 1
     cat "$XML/openfx-io.xml" | sed -e "s/_VERSION_/${OFX_IO_VERSION}/;s/_DATE_/${DATE}/" > "$OFX_IO_PATH/meta/package.xml" || exit 1
     cat "$QS/openfx-io.qs" > "$OFX_IO_PATH/meta/installscript.qs" || exit 1
-    cat "$INSTALL_PATH/docs/openfx-io/VERSION" > "$OFX_IO_PATH/meta/ofx-io-license.txt" || exit 1
-    echo "" >> "$OFX_IO_PATH/meta/ofx-io-license.txt" || exit 1
-    cat "$INSTALL_PATH/docs/openfx-io/LICENSE" >> "$OFX_IO_PATH/meta/ofx-io-license.txt" || exit 1
-    cp -a "$INSTALL_PATH/Plugins/IO.ofx.bundle" "$OFX_IO_PATH/data/Plugins/" || exit 1
+    #cat "$INSTALL_PATH/docs/openfx-io/VERSION" > "$OFX_IO_PATH/meta/ofx-io-license.txt" || exit 1
+    #echo "" >> "$OFX_IO_PATH/meta/ofx-io-license.txt" || exit 1
+    #cat "$INSTALL_PATH/docs/openfx-io/LICENSE" >> "$OFX_IO_PATH/meta/ofx-io-license.txt" || exit 1
+    cp -a "$INSTALL_PATH/Plugins/IO.ofx.bundle" "$OFX_IO_PATH/data/Plugins/OFX/Natron/" || exit 1
     for depend in $IO_DLL; do
-        cp "$INSTALL_PATH/bin/$depend" "$OFX_IO_PATH/data/Plugins/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
+        cp "$INSTALL_PATH/bin/$depend" "$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
     done
-    cp $INSTALL_PATH/lib/{LIBOPENCOLORIO.DLL,LIBSEEXPR.DLL} "$OFX_IO_PATH/data/Plugins/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
-    strip -s $OFX_IO_PATH/data/Plugins/*/*/*/*
+	#OpenColorIO and SeExpr are located in $INSTALL_PATH/lib and not bin
+	cp $INSTALL_PATH/lib/{LIBOPENCOLORIO.DLL,LIBSEEXPR.DLL} "$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT/" || exit 1
+	
+
+    if [ "$DISABLE_BREAKPAD" != "1" ]; then
+        $INSTALL_PATH/bin/dump_syms.exe $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/IO.ofx > $INSTALL_PATH/symbols/IO.ofx-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
+    fi
+    strip -s $OFX_IO_PATH/data/Plugins/OFX/Natron/*/*/*/*
 	
 fi
 
@@ -131,42 +148,56 @@ if [ "$BUNDLE_MISC" = "1" ]; then
     CIMG_DLL="LIBGOMP-1.DLL"
     OFX_MISC_VERSION=$TAG
     OFX_MISC_PATH=$INSTALLER/packages/$MISCPLUG_PKG
-    mkdir -p $OFX_MISC_PATH/data $OFX_MISC_PATH/meta $OFX_MISC_PATH/data/Plugins || exit 1
+    mkdir -p $OFX_MISC_PATH/data $OFX_MISC_PATH/meta $OFX_MISC_PATH/data/Plugins/OFX/Natron || exit 1
     cat $XML/openfx-misc.xml | sed "s/_VERSION_/${OFX_MISC_VERSION}/;s/_DATE_/${DATE}/" > $OFX_MISC_PATH/meta/package.xml || exit 1
     cat $QS/openfx-misc.qs > $OFX_MISC_PATH/meta/installscript.qs || exit 1
-    cat $INSTALL_PATH/docs/openfx-misc/VERSION > $OFX_MISC_PATH/meta/ofx-misc-license.txt || exit 1
-    echo "" >> $OFX_MISC_PATH/meta/ofx-misc-license.txt || exit 1
-    cat $INSTALL_PATH/docs/openfx-misc/LICENSE >> $OFX_MISC_PATH/meta/ofx-misc-license.txt || exit 1
-    cp -a $INSTALL_PATH/Plugins/{CImg,Misc}.ofx.bundle $OFX_MISC_PATH/data/Plugins/ || exit 1
+    #cat $INSTALL_PATH/docs/openfx-misc/VERSION > $OFX_MISC_PATH/meta/ofx-misc-license.txt || exit 1
+    #echo "" >> $OFX_MISC_PATH/meta/ofx-misc-license.txt || exit 1
+    #cat $INSTALL_PATH/docs/openfx-misc/LICENSE >> $OFX_MISC_PATH/meta/ofx-misc-license.txt || exit 1
+    cp -a $INSTALL_PATH/Plugins/{CImg,Misc}.ofx.bundle $OFX_MISC_PATH/data/Plugins/OFX/Natron/ || exit 1
     
     for depend in $CIMG_DLL; do
-        cp $INSTALL_PATH/bin/$depend  $OFX_MISC_PATH/data/Plugins/CImg.ofx.bundle/Contents/Win$BIT/ || exit 1
+        cp $INSTALL_PATH/bin/$depend  $OFX_MISC_PATH/data/Plugins/OFX/Natron/CImg.ofx.bundle/Contents/Win$BIT/ || exit 1
     done
-    
-    strip -s $OFX_MISC_PATH/data/Plugins/*/*/*/*
+
+    if [ "$DISABLE_BREAKPAD" != "1" ]; then
+        $INSTALL_PATH/bin/dump_syms.exe $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/CImg.ofx > $INSTALL_PATH/symbols/CImg.ofx-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
+        $INSTALL_PATH/bin/dump_syms.exe $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/Misc.ofx > $INSTALL_PATH/symbols/Misc.ofx-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
+    fi
+    strip -s $OFX_MISC_PATH/data/Plugins/OFX/Natron/*/*/*/*
 	
 fi
 
 # NATRON
 NATRON_PATH=$INSTALLER/packages/$NATRON_PKG
-mkdir -p $NATRON_PATH/meta $NATRON_PATH/data/docs $NATRON_PATH/data/bin $NATRON_PATH/data/share || exit 1
+mkdir -p $NATRON_PATH/meta $NATRON_PATH/data/docs $NATRON_PATH/data/bin $NATRON_PATH/data/share $NATRON_PATH/data/Plugins/PyPlugs || exit 1
 cat $XML/natron.xml | sed "s/_VERSION_/${TAG}/;s/_DATE_/${DATE}/" > $NATRON_PATH/meta/package.xml || exit 1
 cat $QS/natron.qs > $NATRON_PATH/meta/installscript.qs || exit 1
 cp -a $INSTALL_PATH/docs/natron/* $NATRON_PATH/data/docs/ || exit 1
 cat $INSTALL_PATH/docs/natron/LICENSE.txt > $NATRON_PATH/meta/natron-license.txt || exit 1
-cp $INSTALL_PATH/bin/Natron.exe $NATRON_PATH/data/bin/ || exit 1
-cp $INSTALL_PATH/bin/NatronRenderer.exe $NATRON_PATH/data/bin/ || exit 1
-if [ -f "$INSTALL_PATH/bin/NatronCrashReporter.exe" ]; then
-    cp $INSTALL_PATH/bin/NatronCrashReporter.exe $NATRON_PATH/data/bin/
-    cp $INSTALL_PATH/bin/NatronRendererCrashReporter.exe $NATRON_PATH/data/bin/
+
+if [ "$DISABLE_BREAKPAD" != "1" ]; then
+    cp $INSTALL_PATH/bin/Natron.exe $NATRON_PATH/data/bin/Natron-bin.exe || exit 1
+    cp $INSTALL_PATH/bin/NatronRenderer.exe $NATRON_PATH/data/bin/NatronRenderer-bin.exe || exit 1
+    cp $INSTALL_PATH/bin/NatronCrashReporter.exe $NATRON_PATH/data/bin/Natron.exe || exit 1
+    cp $INSTALL_PATH/bin/NatronRendererCrashReporter.exe $NATRON_PATH/data/bin/NatronRenderer.exe || exit 1
+else
+    cp $INSTALL_PATH/bin/Natron.exe $NATRON_PATH/data/bin/Natron.exe || exit 1
+    cp $INSTALL_PATH/bin/NatronRenderer.exe $NATRON_PATH/data/bin/NatronRenderer.exe || exit 1
 fi
-strip -s $NATRON_PATH/data/bin/Natron*
+
 wget --no-check-certificate $NATRON_API_DOC || exit 1
 mv natron.pdf $NATRON_PATH/data/docs/Natron_Python_API_Reference.pdf || exit 1
 rm $NATRON_PATH/data/docs/TuttleOFX-README.txt || exit 1
 mkdir -p $NATRON_PATH/data/share/pixmaps || exit 1
 cp $CWD/include/config/natronProjectIcon_windows.ico $NATRON_PATH/data/share/pixmaps/ || exit 1
 cp $INSTALL_PATH/share/stylesheets/mainstyle.qss $NATRON_PATH/data/share/ || exit 1
+
+if [ "$DISABLE_BREAKPAD" != "1" ]; then
+    $INSTALL_PATH/bin/dump_syms.exe $NATRON_PATH/data/bin/Natron-bin.exe > $INSTALL_PATH/symbols/Natron-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
+    $INSTALL_PATH/bin/dump_syms.exe $NATRON_PATH/data/bin/NatronRenderer-bin.exe > $INSTALL_PATH/symbols/NatronRenderer-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
+fi
+
 strip -s $NATRON_PATH/data/bin/*
 
 if [ "$NO_ZIP" != "1" ]; then
@@ -188,7 +219,7 @@ if [ "$NO_ZIP" != "1" ]; then
 fi
 
 # CORE LIBS
-CLIBS_VERSION=$NATRON_VERSION_NUMBER
+CLIBS_VERSION=$CORELIBS_VERSION
 CLIBS_PATH=$INSTALLER/packages/$CORELIBS_PKG
 mkdir -p $CLIBS_PATH/meta $CLIBS_PATH/data/bin $CLIBS_PATH/data/lib $CLIBS_PATH/data/share/pixmaps $CLIBS_PATH/data/Resources/etc/fonts || exit 1
 cat $XML/corelibs.xml | sed "s/_VERSION_/${CLIBS_VERSION}/;s/_DATE_/${DATE}/" > $CLIBS_PATH/meta/package.xml || exit 1
@@ -225,14 +256,12 @@ done
 #cp $FFMPEG_BIN_PATH/bin/ffmpeg.exe $CLIBS_PATH/data/bin || exit 1
 #cp $FFMPEG_BIN_PATH/bin/ffprobe.exe $CLIBS_PATH/data/bin || exit 1
 
-# TODO: At this point send unstripped binaries (and debug binaries?) to Socorro server for breakpad
-
 strip -s $CLIBS_PATH/data/bin/*
 strip -s $CLIBS_PATH/data/bin/*/*
 
 CORE_DOC=$CLIBS_PATH
-echo "" >> $CORE_DOC/meta/3rdparty-license.txt 
-cat $CWD/include/natron/3rdparty.txt >> $CORE_DOC/meta/3rdparty-license.txt || exit 1
+#echo "" >> $CORE_DOC/meta/3rdparty-license.txt 
+#cat $CWD/include/natron/3rdparty.txt >> $CORE_DOC/meta/3rdparty-license.txt || exit 1
 
 
 #Copy Python distrib
@@ -265,25 +294,28 @@ fi
 
 # OFX ARENA
 if [ "$BUNDLE_ARENA" = "1" ]; then 
-    ARENA_DLL="LIBCROCO-0.6-3.DLL LIBGOMP-1.DLL LIBGMODULE-2.0-0.DLL LIBGDK_PIXBUF-2.0-0.DLL LIBGOBJECT-2.0-0.DLL LIBGIO-2.0-0.DLL LIBLCMS2-2.DLL LIBPANGO-1.0-0.DLL LIBPANGOCAIRO-1.0-0.DLL LIBPANGOWIN32-1.0-0.DLL LIBPANGOFT2-1.0-0.DLL LIBRSVG-2-2.DLL LIBXML2-2.DLL"
+    ARENA_DLL="LIBZIP-4.DLL LIBCROCO-0.6-3.DLL LIBGOMP-1.DLL LIBGMODULE-2.0-0.DLL LIBGDK_PIXBUF-2.0-0.DLL LIBGOBJECT-2.0-0.DLL LIBGIO-2.0-0.DLL LIBLCMS2-2.DLL LIBPANGO-1.0-0.DLL LIBPANGOCAIRO-1.0-0.DLL LIBPANGOWIN32-1.0-0.DLL LIBPANGOFT2-1.0-0.DLL LIBRSVG-2-2.DLL LIBXML2-2.DLL"
     OFX_ARENA_VERSION=$TAG
     OFX_ARENA_PATH=$INSTALLER/packages/$ARENAPLUG_PKG
-    mkdir -p $OFX_ARENA_PATH/meta $OFX_ARENA_PATH/data/Plugins || exit 1
+    mkdir -p $OFX_ARENA_PATH/meta $OFX_ARENA_PATH/data/Plugins/OFX/Natron || exit 1
     cat $XML/openfx-arena.xml | sed "s/_VERSION_/${OFX_ARENA_VERSION}/;s/_DATE_/${DATE}/" > $OFX_ARENA_PATH/meta/package.xml || exit 1
     cat $QS/openfx-arena.qs > $OFX_ARENA_PATH/meta/installscript.qs || exit 1
-    cat $INSTALL_PATH/docs/openfx-arena/VERSION > $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
-    echo "" >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
-    cat $INSTALL_PATH/docs/openfx-arena/LICENSE >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
-    cp -av $INSTALL_PATH/Plugins/Arena.ofx.bundle $OFX_ARENA_PATH/data/Plugins/ || exit 1
+    #cat $INSTALL_PATH/docs/openfx-arena/VERSION > $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
+    #echo "" >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
+    #cat $INSTALL_PATH/docs/openfx-arena/LICENSE >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
+    cp -av $INSTALL_PATH/Plugins/Arena.ofx.bundle $OFX_ARENA_PATH/data/Plugins/OFX/Natron/ || exit 1
     for depend in $ARENA_DLL; do
-        cp $INSTALL_PATH/bin/$depend  $OFX_ARENA_PATH/data/Plugins/Arena.ofx.bundle/Contents/Win$BIT/ || exit 1
+        cp $INSTALL_PATH/bin/$depend  $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT/ || exit 1
     done
-    cp $INSTALL_PATH/lib/LIBOPENCOLORIO.DLL $OFX_ARENA_PATH/data/Plugins/Arena.ofx.bundle/Contents/Win$BIT/ || exit 1
-    strip -s $OFX_ARENA_PATH/data/Plugins/*/*/*/*
-    echo "ImageMagick License:" >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
-    cat $INSTALL_PATH/docs/imagemagick/LICENSE >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
 	
-	
+	#OpenColorIO is located in $INSTALL_PATH/lib and not bin
+	cp $INSTALL_PATH/lib/LIBOPENCOLORIO.DLL $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT/ || exit 1
+    if [ "$DISABLE_BREAKPAD" != "1" ]; then
+        $INSTALL_PATH/bin/dump_syms.exe $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/Arena.ofx > $INSTALL_PATH/symbols/Arena.ofx-${TAG}${BPAD_TAG}-${PKGOS}.sym || exit 1
+    fi
+    strip -s $OFX_ARENA_PATH/data/Plugins/OFX/Natron/*/*/*/*
+    #echo "ImageMagick License:" >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
+    #cat $INSTALL_PATH/docs/imagemagick/LICENSE >> $OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
 fi
 
 #echo "LCMS License:" >>$OFX_ARENA_PATH/meta/ofx-extra-license.txt || exit 1
@@ -295,20 +327,20 @@ if [ "$BUNDLE_CV" = "1" ]; then
     SEGMENT_DLL="LIBLZMA-5.DLL LIBOPENCV_FLANN2411.DLL LIBJASPER-1.DLL LIBOPENCV_CALIB3D2411.DLL LIBOPENCV_FEATURES2D2411.DLL LIBOPENCV_HIGHGUI2411.DLL LIBOPENCV_ML2411.DLL LIBOPENCV_VIDEO2411.DLL LIBOPENCV_LEGACY2411.DLL"
     OFX_CV_VERSION=$TAG
     OFX_CV_PATH=$INSTALLER/packages/$CVPLUG_PKG
-    mkdir -p $OFX_CV_PATH/{data,meta} $OFX_CV_PATH/data/Plugins $OFX_CV_PATH/data/docs/openfx-opencv || exit 1
+    mkdir -p $OFX_CV_PATH/{data,meta} $OFX_CV_PATH/data/Plugins/OFX/Natron $OFX_CV_PATH/data/docs/openfx-opencv || exit 1
     cat $XML/openfx-opencv.xml | sed "s/_VERSION_/${OFX_CV_VERSION}/;s/_DATE_/${DATE}/" > $OFX_CV_PATH/meta/package.xml || exit 1
     cat $QS/openfx-opencv.qs > $OFX_CV_PATH/meta/installscript.qs || exit 1
     cp -a $INSTALL_PATH/docs/openfx-opencv $OFX_CV_PATH/data/docs/ || exit 1
-    cat $OFX_CV_PATH/data/docs/openfx-opencv/README > $OFX_CV_PATH/meta/ofx-cv-license.txt || exit 1
-    cp -a $INSTALL_PATH/Plugins/{inpaint,segment}.ofx.bundle $OFX_CV_PATH/data/Plugins/ || exit 1
+    #cat $OFX_CV_PATH/data/docs/openfx-opencv/README > $OFX_CV_PATH/meta/ofx-cv-license.txt || exit 1
+    cp -a $INSTALL_PATH/Plugins/{inpaint,segment}.ofx.bundle $OFX_CV_PATH/data/Plugins/OFX/Natron/ || exit 1
     for depend in $CV_DLL; do
-        cp -v $INSTALL_PATH/bin/$depend $OFX_CV_PATH/data/Plugins/inpaint.ofx.bundle/Contents/Win$BIT/ || exit 1
-        cp -v $INSTALL_PATH/bin/$depend $OFX_CV_PATH/data/Plugins/segment.ofx.bundle/Contents/Win$BIT/ || exit 1
+        cp -v $INSTALL_PATH/bin/$depend $OFX_CV_PATH/data/Plugins/OFX/Natron/inpaint.ofx.bundle/Contents/Win$BIT/ || exit 1
+        cp -v $INSTALL_PATH/bin/$depend $OFX_CV_PATH/data/Plugins/OFX/Natron/segment.ofx.bundle/Contents/Win$BIT/ || exit 1
     done
     for depend in $SEGMENT_DLL; do
-        cp -v $INSTALL_PATH/bin/$depend $OFX_CV_PATH/data/Plugins/segment.ofx.bundle/Contents/Win$BIT/ || exit 1
+        cp -v $INSTALL_PATH/bin/$depend $OFX_CV_PATH/data/Plugins/OFX/Natron/segment.ofx.bundle/Contents/Win$BIT/ || exit 1
     done
-    strip -s $OFX_CV_PATH/data/Plugins/*/*/*/*
+    strip -s $OFX_CV_PATH/data/Plugins/OFX/Natron/*/*/*/*
     
     #$BUNDLE_CV
 fi
@@ -316,7 +348,7 @@ fi
 # manifests
 
 if [ "$BUNDLE_MISC" = "1" ]; then 
-    CIMG_MANIFEST=$OFX_MISC_PATH/data/Plugins/CImg.ofx.bundle/Contents/Win$BIT/manifest
+    CIMG_MANIFEST=$OFX_MISC_PATH/data/Plugins/OFX/Natron/CImg.ofx.bundle/Contents/Win$BIT/manifest
     echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" > $CIMG_MANIFEST
     echo "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">" >> $CIMG_MANIFEST
     echo "<assemblyIdentity name=\"CImg.ofx\" version=\"1.0.0.0\" type=\"win32\" processorArchitecture=\"amd64\"/>" >> $CIMG_MANIFEST
@@ -325,37 +357,38 @@ if [ "$BUNDLE_MISC" = "1" ]; then
         echo "<file name=\"${depend}\"></file>" >> $CIMG_MANIFEST || exit 1
     done
     echo "</assembly>" >> $CIMG_MANIFEST || exit 1
-    cd $OFX_MISC_PATH/data/Plugins/CImg.ofx.bundle/Contents/Win$BIT || exit 1
+    cd $OFX_MISC_PATH/data/Plugins/OFX/Natron/CImg.ofx.bundle/Contents/Win$BIT || exit 1
     mt -manifest manifest -outputresource:"CImg.ofx;2"
 	
 	if [ "$NO_ZIP" != "1" ]; then
 		mkdir -p $ARCHIVE_DATA_DIR/Plugins
-		cp -r $OFX_MISC_PATH/data/Plugins/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+		cp -r $OFX_MISC_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins || exit 1
 	fi
 fi
 
 if [ "$BUNDLE_IO" = "1" ]; then 
-    IO_MANIFEST=$OFX_IO_PATH/data/Plugins/IO.ofx.bundle/Contents/Win$BIT/manifest
+    IO_MANIFEST=$OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT/manifest
     echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" > $IO_MANIFEST
     echo "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">" >> $IO_MANIFEST
     echo "<assemblyIdentity name=\"IO.ofx\" version=\"1.0.0.0\" type=\"win32\" processorArchitecture=\"amd64\"/>" >> $IO_MANIFEST
     for depend in $IO_DLL; do
         echo "<file name=\"${depend}\"></file>" >> $IO_MANIFEST || exit 1
     done
-    echo "<file name=\"LIBOPENCOLORIO.DLL\"></file>" >> $IO_MANIFEST || exit 1
+	#OpenColorIO and SeExpr are located in /lib and not /bin thats why they are not in $IO_DLL
+	echo "<file name=\"LIBOPENCOLORIO.DLL\"></file>" >> $IO_MANIFEST || exit 1
     echo "<file name=\"LIBSEEXPR.DLL\"></file>" >> $IO_MANIFEST || exit 1
     echo "</assembly>" >> $IO_MANIFEST || exit 1
-    cd $OFX_IO_PATH/data/Plugins/IO.ofx.bundle/Contents/Win$BIT || exit 1
+    cd $OFX_IO_PATH/data/Plugins/OFX/Natron/IO.ofx.bundle/Contents/Win$BIT || exit 1
     mt -manifest manifest -outputresource:"IO.ofx;2"
 	
 	if [ "$NO_ZIP" != "1" ]; then
 		mkdir -p $ARCHIVE_DATA_DIR/Plugins
-		cp -r $OFX_IO_PATH/data/Plugins/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+		cp -r $OFX_IO_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins || exit 1
 	fi
 fi
 
 if [ "$BUNDLE_ARENA" = "1" ]; then 
-    ARENA_MANIFEST=$OFX_ARENA_PATH/data/Plugins/Arena.ofx.bundle/Contents/Win$BIT/manifest
+    ARENA_MANIFEST=$OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT/manifest
     
     echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" > $ARENA_MANIFEST
     echo "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">" >> $ARENA_MANIFEST
@@ -363,19 +396,20 @@ if [ "$BUNDLE_ARENA" = "1" ]; then
     for depend in $ARENA_DLL; do
         echo "<file name=\"${depend}\"></file>" >> $ARENA_MANIFEST || exit 1
     done
-    echo "<file name=\"LIBOPENCOLORIO.DLL\"></file>" >> $ARENA_MANIFEST || exit 1
+	#OpenColorIO is located in /lib and not /bin thats why they are not in $IO_DLL
+	echo "<file name=\"LIBOPENCOLORIO.DLL\"></file>" >> $ARENA_MANIFEST || exit 1
     echo "</assembly>" >> $ARENA_MANIFEST || exit 1
-    cd $OFX_ARENA_PATH/data/Plugins/Arena.ofx.bundle/Contents/Win$BIT || exit 1
+    cd $OFX_ARENA_PATH/data/Plugins/OFX/Natron/Arena.ofx.bundle/Contents/Win$BIT || exit 1
     mt -manifest manifest -outputresource:"Arena.ofx;2"
 	
 	if [ "$NO_ZIP" != "1" ]; then
 		mkdir -p $ARCHIVE_DATA_DIR/Plugins
-		cp -r $OFX_ARENA_PATH/data/Plugins/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+		cp -r $OFX_ARENA_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins || exit 1
 	fi
 fi
 
 if [ "$BUNDLE_CV" = "1" ]; then 
-    INPAINT_MANIFEST=$OFX_CV_PATH/data/Plugins/inpaint.ofx.bundle/Contents/Win$BIT/manifest
+    INPAINT_MANIFEST=$OFX_CV_PATH/data/Plugins/OFX/Natron/inpaint.ofx.bundle/Contents/Win$BIT/manifest
     echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" > $INPAINT_MANIFEST
     echo "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">" >> $INPAINT_MANIFEST
     echo "<assemblyIdentity name=\"inpaint.ofx\" version=\"1.0.0.0\" type=\"win32\" processorArchitecture=\"amd64\"/>" >> $INPAINT_MANIFEST
@@ -384,10 +418,10 @@ if [ "$BUNDLE_CV" = "1" ]; then
         echo "<file name=\"${depend}\"></file>" >> $INPAINT_MANIFEST || exit 1
     done
     echo "</assembly>" >> $INPAINT_MANIFEST || exit 1
-    cd $OFX_CV_PATH/data/Plugins/inpaint.ofx.bundle/Contents/Win$BIT || exit 1
+    cd $OFX_CV_PATH/data/Plugins/OFX/Natron/inpaint.ofx.bundle/Contents/Win$BIT || exit 1
     mt -manifest manifest -outputresource:"inpaint.ofx;2"
 
-    SEGMENT_MANIFEST=$OFX_CV_PATH/data/Plugins/segment.ofx.bundle/Contents/Win$BIT/manifest
+    SEGMENT_MANIFEST=$OFX_CV_PATH/data/Plugins/OFX/Natron/segment.ofx.bundle/Contents/Win$BIT/manifest
     echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" > $SEGMENT_MANIFEST
     echo "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">" >> $SEGMENT_MANIFEST
     echo "<assemblyIdentity name=\"segment.ofx\" version=\"1.0.0.0\" type=\"win32\" processorArchitecture=\"amd64\"/>" >> $SEGMENT_MANIFEST
@@ -399,12 +433,12 @@ if [ "$BUNDLE_CV" = "1" ]; then
         echo "<file name=\"${depend}\"></file>" >> $SEGMENT_MANIFEST || exit 1
     done
     echo "</assembly>" >> $SEGMENT_MANIFEST || exit 1
-    cd $OFX_CV_PATH/data/Plugins/segment.ofx.bundle/Contents/Win$BIT || exit 1
+    cd $OFX_CV_PATH/data/Plugins/OFX/Natron/segment.ofx.bundle/Contents/Win$BIT || exit 1
     mt -manifest manifest -outputresource:"segment.ofx;2"
 	
 	if [ "$NO_ZIP" != "1" ]; then
 		mkdir -p $ARCHIVE_DATA_DIR/Plugins
-		cp -r $OFX_CV_PATH/data/Plugins/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+		cp -r $OFX_CV_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins || exit 1
 	fi
 fi
 

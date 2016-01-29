@@ -5,6 +5,7 @@
 
 #include <ParameterWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class ChoiceParamWrapper : public ChoiceParam
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~ChoiceParamWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_CHOICEPARAMWRAPPER_H
 

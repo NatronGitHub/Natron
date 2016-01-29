@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ CLANG_DIAG_ON(uninitialized)
 #define CROSS_SIZE 6
 #define ADDTRACK_SIZE 5
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 struct TrackerGuiPrivate
 {
@@ -118,14 +118,14 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     _imp->buttonsLayout->setContentsMargins(3, 2, 0, 0);
 
     QPixmap pixAdd;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_ADD_TRACK,&pixAdd);
+    appPTR->getIcon(NATRON_PIXMAP_ADD_TRACK,&pixAdd);
     
     _imp->addTrackButton = new Button(QIcon(pixAdd),"",_imp->buttonsBar);
     _imp->addTrackButton->setCheckable(true);
     _imp->addTrackButton->setChecked(false);
     _imp->addTrackButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->addTrackButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    _imp->addTrackButton->setToolTip(Natron::convertFromPlainText(tr("When enabled you can add new tracks "
+    _imp->addTrackButton->setToolTip(GuiUtils::convertFromPlainText(tr("When enabled you can add new tracks "
                                                                  "by clicking on the Viewer. "
                                                                  "Holding the Control + Alt keys is the "
                                                                  "same as pressing this button."),
@@ -134,18 +134,18 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     QObject::connect( _imp->addTrackButton, SIGNAL( clicked(bool) ), this, SLOT( onAddTrackClicked(bool) ) );
     QPixmap pixPrev,pixNext,pixClearAll,pixClearBw,pixClearFw,pixUpdateViewerEnabled,pixUpdateViewerDisabled,pixStop;
     QPixmap bwEnabled,bwDisabled,fwEnabled,fwDisabled;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_REWIND_DISABLED, &bwDisabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_REWIND_ENABLED, &bwEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PREVIOUS, &pixPrev);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_NEXT, &pixNext);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY_DISABLED, &fwDisabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_PLAY_ENABLED, &fwEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_ALL_ANIMATION, &pixClearAll);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION, &pixClearBw);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION, &pixClearFw);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE, &pixUpdateViewerEnabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_VIEWER_REFRESH, &pixUpdateViewerDisabled);
-    appPTR->getIcon(Natron::NATRON_PIXMAP_PLAYER_STOP, &pixStop);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_DISABLED, &bwDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_ENABLED, &bwEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS, &pixPrev);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT, &pixNext);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_DISABLED, &fwDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ENABLED, &fwEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_CLEAR_ALL_ANIMATION, &pixClearAll);
+    appPTR->getIcon(NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION, &pixClearBw);
+    appPTR->getIcon(NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION, &pixClearFw);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE, &pixUpdateViewerEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, &pixUpdateViewerDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP, &pixStop);
 
     QIcon bwIcon;
     bwIcon.addPixmap(bwEnabled,QIcon::Normal,QIcon::On);
@@ -201,21 +201,21 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     _imp->clearAllAnimationButton = new Button(QIcon(pixClearAll),"",_imp->buttonsBar);
     _imp->clearAllAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearAllAnimationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    _imp->clearAllAnimationButton->setToolTip(Natron::convertFromPlainText(tr("Clear all animation for selected tracks."), Qt::WhiteSpaceNormal));
+    _imp->clearAllAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear all animation for selected tracks."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearAllAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearAllAnimationClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->clearAllAnimationButton);
 
     _imp->clearBwAnimationButton = new Button(QIcon(pixClearBw),"",_imp->buttonsBar);
     _imp->clearBwAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearBwAnimationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    _imp->clearBwAnimationButton->setToolTip(Natron::convertFromPlainText(tr("Clear animation backward from the current frame."), Qt::WhiteSpaceNormal));
+    _imp->clearBwAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear animation backward from the current frame."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearBwAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearBwAnimationClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->clearBwAnimationButton);
 
     _imp->clearFwAnimationButton = new Button(QIcon(pixClearFw),"",_imp->buttonsBar);
     _imp->clearFwAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearFwAnimationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
-    _imp->clearFwAnimationButton->setToolTip(Natron::convertFromPlainText(tr("Clear animation forward from the current frame."), Qt::WhiteSpaceNormal));
+    _imp->clearFwAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear animation forward from the current frame."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearFwAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearFwAnimationClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->clearFwAnimationButton);
 
@@ -228,7 +228,7 @@ TrackerGui::TrackerGui(const boost::shared_ptr<TrackerPanel> & panel,
     _imp->updateViewerButton->setCheckable(true);
     _imp->updateViewerButton->setChecked(true);
     _imp->updateViewerButton->setDown(true);
-    _imp->updateViewerButton->setToolTip(Natron::convertFromPlainText(tr("Update viewer during tracking for each frame instead of just the tracks."), Qt::WhiteSpaceNormal));
+    _imp->updateViewerButton->setToolTip(GuiUtils::convertFromPlainText(tr("Update viewer during tracking for each frame instead of just the tracks."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->updateViewerButton,SIGNAL( clicked(bool) ),this,SLOT( onUpdateViewerClicked(bool) ) );
     _imp->buttonsLayout->addWidget(_imp->updateViewerButton);
 
@@ -257,8 +257,8 @@ TrackerGui::onAddTrackClicked(bool clicked)
 
 void
 TrackerGui::drawOverlays(double time,
-                         double scaleX,
-                         double scaleY) const
+                         const RenderScale & renderScale,
+                         int view) const
 {
     double pixelScaleX, pixelScaleY;
 
@@ -268,23 +268,23 @@ TrackerGui::drawOverlays(double time,
         GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_ENABLE_BIT | GL_HINT_BIT | GL_TRANSFORM_BIT);
 
         ///For each instance: <pointer,selected ? >
-        const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-        for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
+        for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
             
-            boost::shared_ptr<Natron::Node> instance = it->first.lock();
+            NodePtr instance = it->first.lock();
             
             if (instance->isNodeDisabled()) {
                 continue;
             }
             if (it->second) {
                 ///The track is selected, use the plug-ins interact
-                Natron::EffectInstance* effect = instance->getLiveInstance();
+                EffectInstPtr effect = instance->getEffectInstance();
                 assert(effect);
                 effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-                effect->drawOverlay_public(time, scaleX,scaleY);
+                effect->drawOverlay_public(time, renderScale, view);
             } else {
                 ///Draw a custom interact, indicating the track isn't selected
-                boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");
+                KnobPtr newInstanceKnob = instance->getKnobByName("center");
                 assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
                 KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
                 assert(dblKnob);
@@ -366,8 +366,8 @@ TrackerGui::drawOverlays(double time,
 
 bool
 TrackerGui::penDown(double time,
-                    double scaleX,
-                    double scaleY,
+                    const RenderScale & renderScale,
+                    int view,
                     const QPointF & viewportPos,
                     const QPointF & pos,
                     double pressure,
@@ -377,23 +377,23 @@ TrackerGui::penDown(double time,
 
     _imp->viewer->getViewer()->getPixelScale(pixelScale.first, pixelScale.second);
     bool didSomething = false;
-    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
+        NodePtr instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = instance->getLiveInstance();
+            EffectInstPtr effect = instance->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            didSomething = effect->onOverlayPenDown_public(time, scaleX, scaleY, viewportPos, pos, pressure);
+            didSomething = effect->onOverlayPenDown_public(time, renderScale, view, viewportPos, pos, pressure);
         }
     }
 
     double selectionTol = pixelScale.first * 10.;
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
-        boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");
+        NodePtr instance = it->first.lock();
+        KnobPtr newInstanceKnob = instance->getKnobByName("center");
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);
@@ -412,8 +412,8 @@ TrackerGui::penDown(double time,
     }
 
     if (_imp->clickToAddTrackEnabled && !didSomething) {
-        boost::shared_ptr<Node> newInstance = _imp->panel->createNewInstance(true);
-        boost::shared_ptr<KnobI> newInstanceKnob = newInstance->getKnobByName("center");
+        NodePtr newInstance = _imp->panel->createNewInstance(true);
+        KnobPtr newInstanceKnob = newInstance->getKnobByName("center");
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);
@@ -437,8 +437,8 @@ TrackerGui::penDown(double time,
 
 bool
 TrackerGui::penDoubleClicked(double /*time*/,
-                             double /*scaleX*/,
-                             double /*scaleY*/,
+                             const RenderScale & /*renderScale*/,
+                             int /*view*/,
                              const QPointF & /*viewportPos*/,
                              const QPointF & /*pos*/,
                              QMouseEvent* /*e*/)
@@ -450,24 +450,24 @@ TrackerGui::penDoubleClicked(double /*time*/,
 
 bool
 TrackerGui::penMotion(double time,
-                      double scaleX,
-                      double scaleY,
+                      const RenderScale & renderScale,
+                      int view,
                       const QPointF & viewportPos,
                       const QPointF & pos,
                       double pressure,
                       QInputEvent* /*e*/)
 {
     bool didSomething = false;
-    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
+    const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
 
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
+        NodePtr instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = instance->getLiveInstance();
+            EffectInstPtr effect = instance->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            if ( effect->onOverlayPenMotion_public(time, scaleX, scaleY, viewportPos, pos, pressure) ) {
+            if ( effect->onOverlayPenMotion_public(time, renderScale, view, viewportPos, pos, pressure) ) {
                 didSomething = true;
             }
         }
@@ -484,24 +484,24 @@ TrackerGui::penMotion(double time,
 
 bool
 TrackerGui::penUp(double time,
-                  double scaleX,
-                  double scaleY,
+                  const RenderScale & renderScale,
+                  int view,
                   const QPointF & viewportPos,
                   const QPointF & pos,
                   double pressure,
                   QMouseEvent* /*e*/)
 {
     bool didSomething = false;
-    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
+    const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
 
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
+        NodePtr instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = instance->getLiveInstance();
+            EffectInstPtr effect = instance->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            didSomething = effect->onOverlayPenUp_public(time, scaleX, scaleY, viewportPos, pos, pressure);
+            didSomething = effect->onOverlayPenUp_public(time, renderScale, view, viewportPos, pos, pressure);
             if (didSomething) {
                 return true;
             }
@@ -513,8 +513,8 @@ TrackerGui::penUp(double time,
 
 bool
 TrackerGui::keyDown(double time,
-                    double scaleX,
-                    double scaleY,
+                    const RenderScale & renderScale,
+                    int view,
                     QKeyEvent* e)
 {
     bool didSomething = false;
@@ -526,17 +526,17 @@ TrackerGui::keyDown(double time,
         ++_imp->controlDown;
     }
 
-    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
-    Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
-    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
+        NodePtr instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = instance->getLiveInstance();
+            EffectInstPtr effect = instance->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            didSomething = effect->onOverlayKeyDown_public(time, scaleX, scaleY, natronKey, natronMod);
+            didSomething = effect->onOverlayKeyDown_public(time, renderScale, view, natronKey, natronMod);
             if (didSomething) {
                 return true;
             }
@@ -550,12 +550,12 @@ TrackerGui::keyDown(double time,
         didSomething = true;
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingSelectAll, modifiers, key) ) {
         _imp->panel->onSelectAllButtonClicked();
-        std::list<Natron::Node*> selectedInstances;
+        std::list<Node*> selectedInstances;
         _imp->panel->getSelectedInstances(&selectedInstances);
         didSomething = !selectedInstances.empty();
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingDelete, modifiers, key) ) {
         _imp->panel->onDeleteKeyPressed();
-        std::list<Natron::Node*> selectedInstances;
+        std::list<Node*> selectedInstances;
         _imp->panel->getSelectedInstances(&selectedInstances);
         didSomething = !selectedInstances.empty();
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingBackward, modifiers, key) ) {
@@ -589,8 +589,8 @@ TrackerGui::keyDown(double time,
 
 bool
 TrackerGui::keyUp(double time,
-                  double scaleX,
-                  double scaleY,
+                  const RenderScale & renderScale,
+                  int view,
                   QKeyEvent* e)
 {
     bool didSomething = false;
@@ -601,17 +601,17 @@ TrackerGui::keyUp(double time,
         }
     }
 
-    Natron::Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
-    Natron::KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
-    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
+        NodePtr instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = instance->getLiveInstance();
+            EffectInstPtr effect = instance->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            didSomething = effect->onOverlayKeyUp_public(time, scaleX, scaleY, natronKey, natronMod);
+            didSomething = effect->onOverlayKeyUp_public(time, renderScale, view, natronKey, natronMod);
             if (didSomething) {
                 return true;
             }
@@ -630,22 +630,22 @@ TrackerGui::keyUp(double time,
 
 bool
 TrackerGui::loseFocus(double time,
-                      double scaleX,
-                      double scaleY)
+                      const RenderScale & renderScale,
+                      int view)
 {
     bool didSomething = false;
 
     _imp->controlDown = 0;
 
-    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
+        NodePtr instance = it->first.lock();
         if ( it->second && !instance->isNodeDisabled() ) {
-            Natron::EffectInstance* effect = instance->getLiveInstance();
+            EffectInstPtr effect = instance->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public( _imp->viewer->getViewer() );
-            didSomething |= effect->onOverlayFocusLost_public(time, scaleX, scaleY);
+            didSomething |= effect->onOverlayFocusLost_public(time, renderScale, view);
         }
     }
 
@@ -661,12 +661,12 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
     double l,r,b,t;
     _imp->viewer->getViewer()->getSelectionRectangle(l, r, b, t);
 
-    std::list<Natron::Node*> currentSelection;
-    const std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> > & instances = _imp->panel->getInstances();
-    for (std::list<std::pair<boost::weak_ptr<Natron::Node>,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+    std::list<Node*> currentSelection;
+    const std::list<std::pair<NodeWPtr,bool> > & instances = _imp->panel->getInstances();
+    for (std::list<std::pair<NodeWPtr,bool> >::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         
-        boost::shared_ptr<Node> instance = it->first.lock();
-        boost::shared_ptr<KnobI> newInstanceKnob = instance->getKnobByName("center");
+        NodePtr instance = it->first.lock();
+        KnobPtr newInstanceKnob = instance->getKnobByName("center");
         assert(newInstanceKnob); //< if it crashes here that means the parameter's name changed in the OpenFX plug-in.
         KnobDouble* dblKnob = dynamic_cast<KnobDouble*>( newInstanceKnob.get() );
         assert(dblKnob);
@@ -765,3 +765,7 @@ TrackerGui::onClearFwAnimationClicked()
     _imp->panel->clearForwardAnimationForSelection();
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_TrackerGui.cpp"

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER
 
 class BaseTest
     : public testing::Test
@@ -54,19 +55,19 @@ protected:
 
     ///Useful function to create a node for all the tests.
     ///You should not call this function
-    boost::shared_ptr<Natron::Node> createNode(const QString & pluginID,int majorVersion = -1,int minorVersion = -1);
+    NodePtr createNode(const QString & pluginID,int majorVersion = -1,int minorVersion = -1);
 
     ///Useful function to connect 2 nodes together. It connects the input number inputNumber of
     ///output to the node input. expectedReturnValue is expected to have the same value as the return
     ///value of the underlying connect call. That means that if expectedReturnValue is true, the
     ///connection is expected to succeed, and vice versa.
-    void connectNodes(boost::shared_ptr<Natron::Node> input,boost::shared_ptr<Natron::Node> output,
+    void connectNodes(NodePtr input,NodePtr output,
                       int inputNumber,bool expectedReturnValue);
 
     ///Useful function to disconnect 2 nodes together. expectedReturnValue is expected to have the same value as the return
     ///value of the underlying disconnect call. That means that if expectedReturnValue is true, the
     ///disconnection is expected to succeed, and vice versa.
-    void disconnectNodes(boost::shared_ptr<Natron::Node> input,boost::shared_ptr<Natron::Node> output,bool expectedReturnvalue);
+    void disconnectNodes(NodePtr input,NodePtr output,bool expectedReturnvalue);
 
     void registerTestPlugins();
 
@@ -84,5 +85,7 @@ protected:
     std::vector<QString> _allTestPluginIDs;
     AppInstance* _app;
 };
+
+NATRON_NAMESPACE_EXIT
 
 #endif // BASETEST_H

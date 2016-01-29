@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <cmath>
 #include <map>
 #include <string>
@@ -42,7 +44,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 namespace Color {
 /// @enum An enum describing supported pixels packing formats
 enum PixelPackingEnum
@@ -574,7 +576,7 @@ charToUint8xx(unsigned char quantum)
     return (unsigned short) (quantum << 8);
 }
 }     //namespace Color
-} //namespace Natron
 
+NATRON_NAMESPACE_EXIT;
 
 #endif //NATRON_ENGINE_LUT_H

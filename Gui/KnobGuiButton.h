@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 //================================
 class KnobGuiButton
@@ -61,13 +62,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+    static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
         return new KnobGuiButton(knob, container);
     }
 
-    KnobGuiButton(boost::shared_ptr<KnobI> knob,
+    KnobGuiButton(KnobPtr knob,
                    DockablePanel *container);
 
     virtual ~KnobGuiButton() OVERRIDE;
@@ -79,7 +80,7 @@ public:
         return false;
     }
 
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
 public Q_SLOTS:
 
@@ -104,5 +105,7 @@ private:
     Button *_button;
     boost::weak_ptr<KnobButton> _knob;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_KnobGuiButton_h

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@
 
 #include "Engine/AppManager.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 #define BM_GET(i,j) &_map[( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )]
 
@@ -526,7 +526,7 @@ Bitmap::minimalNonMarkedRects_trimap(const RectI & roi,std::list<RectI>& ret,boo
 #endif
 
 void
-Natron::Bitmap::markForRendered(const RectI & roi)
+Bitmap::markForRendered(const RectI & roi)
 {
     char* buf = BM_GET(roi.bottom(), roi.left());
     int w = _bounds.width();
@@ -538,7 +538,7 @@ Natron::Bitmap::markForRendered(const RectI & roi)
 
 #if NATRON_ENABLE_TRIMAP
 void
-Natron::Bitmap::markForRendering(const RectI & roi)
+Bitmap::markForRendering(const RectI & roi)
 {
     char* buf = BM_GET(roi.bottom(), roi.left());
     int w = _bounds.width();
@@ -550,7 +550,7 @@ Natron::Bitmap::markForRendering(const RectI & roi)
 #endif
 
 void
-Natron::Bitmap::clear(const RectI& roi)
+Bitmap::clear(const RectI& roi)
 {
     char* buf = BM_GET(roi.bottom(), roi.left());
     int w = _bounds.width();
@@ -561,7 +561,7 @@ Natron::Bitmap::clear(const RectI& roi)
 }
 
 void
-Natron::Bitmap::swap(Bitmap& other)
+Bitmap::swap(Bitmap& other)
 {
     _map.swap(other._map);
     _bounds = other._bounds;
@@ -570,7 +570,7 @@ Natron::Bitmap::swap(Bitmap& other)
 }
 
 const char*
-Natron::Bitmap::getBitmapAt(int x,
+Bitmap::getBitmapAt(int x,
                             int y) const
 {
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
@@ -581,7 +581,7 @@ Natron::Bitmap::getBitmapAt(int x,
 }
 
 char*
-Natron::Bitmap::getBitmapAt(int x,
+Bitmap::getBitmapAt(int x,
                             int y)
 {
     if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
@@ -604,23 +604,63 @@ Image::printUnrenderedPixels(const RectI& roi) const
     int roiw = roi.x2 - roi.x1;
     int boundsW = _bitmap.getBounds().width();
     
+    RectD bboxUnrendered;
+    bboxUnrendered.setupInfinity();
+    RectD bboxUnavailable;
+    bboxUnavailable.setupInfinity();
+    
+    bool hasUnrendered = false;
+    bool hasUnavailable = false;
+    
     for (int y = roi.y1; y < roi.y2; ++y,
          bm += (boundsW - roiw)) {
         for (int x = roi.x1; x < roi.x2; ++x,++bm) {
             if (*bm == 0) {
-                qDebug() << '(' << x << ',' << y << ") = 0";
+                if (x < bboxUnrendered.x1) {
+                    bboxUnrendered.x1 = x;
+                }
+                if (x > bboxUnrendered.x2) {
+                    bboxUnrendered.x2 = x;
+                }
+                if (y < bboxUnrendered.y1) {
+                    bboxUnrendered.y1 = y;
+                }
+                if (y > bboxUnrendered.y2) {
+                    bboxUnrendered.y2 = y;
+                }
+                hasUnrendered = true;
             } else if (*bm == PIXEL_UNAVAILABLE) {
-                qDebug() << '(' << x << ',' << y << ") = PIXEL_UNAVAILABLE";
+                if (x < bboxUnavailable.x1) {
+                    bboxUnavailable.x1 = x;
+                }
+                if (x > bboxUnavailable.x2) {
+                    bboxUnavailable.x2 = x;
+                }
+                if (y < bboxUnavailable.y1) {
+                    bboxUnavailable.y1 = y;
+                }
+                if (y > bboxUnavailable.y2) {
+                    bboxUnavailable.y2 = y;
+                }
+                hasUnavailable = true;
             }
-        }
+        } // for x
+    } // for y
+    if (hasUnrendered) {
+        qDebug() << "Unrenderer pixels in the following region:";
+        bboxUnrendered.debug();
+    }
+    if (hasUnavailable) {
+        qDebug() << "Unavailable pixels in the following region:";
+        bboxUnavailable.debug();
     }
 }
 #endif
 
 Image::Image(const ImageKey & key,
-             const boost::shared_ptr<Natron::ImageParams>& params,
-             const Natron::CacheAPI* cache,
-             Natron::StorageModeEnum storage,
+             const boost::shared_ptr<ImageParams>& params,
+             const CacheAPI* cache,
+             StorageModeEnum storage,
              const std::string & path)
     : CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, cache,storage,path)
     , _useBitmap(true)
@@ -633,8 +673,8 @@ Image::Image(const ImageKey & key,
 }
 
 Image::Image(const ImageKey & key,
-             const boost::shared_ptr<Natron::ImageParams>& params)
-: CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, NULL,Natron::eStorageModeRAM,std::string())
+             const boost::shared_ptr<ImageParams>& params)
+: CacheEntryHelper<unsigned char, ImageKey,ImageParams>(key, params, NULL,eStorageModeRAM,std::string())
 , _useBitmap(false)
 {
     _bitDepth = params->getBitDepth();
@@ -654,7 +694,7 @@ Image::Image(const ImageComponents& components,
              const RectI & bounds, //!< bounds in pixel coordinates
              unsigned int mipMapLevel,
              double par,
-             Natron::ImageBitDepthEnum bitdepth,
+             ImageBitDepthEnum bitdepth,
              bool useBitmap)
     : CacheEntryHelper<unsigned char,ImageKey,ImageParams>()
     , _useBitmap(useBitmap)
@@ -671,7 +711,7 @@ Image::Image(const ImageComponents& components,
                                                                    components,
                                                                    std::map<int, std::map<int,std::vector<RangeD> > >() ) ),
                   NULL,
-                  Natron::eStorageModeRAM,
+                  eStorageModeRAM,
                   std::string()
                   );
 
@@ -734,7 +774,7 @@ Image::makeParams(int cost,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
                   const ImageComponents& components,
-                  Natron::ImageBitDepthEnum bitdepth,
+                  ImageBitDepthEnum bitdepth,
                   const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded)
 {
     RectI bounds;
@@ -760,7 +800,7 @@ Image::makeParams(int cost,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
                   const ImageComponents& components,
-                  Natron::ImageBitDepthEnum bitdepth,
+                  ImageBitDepthEnum bitdepth,
                   const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded)
 {
 #ifdef DEBUG
@@ -786,7 +826,7 @@ Image::makeParams(int cost,
 // code proofread and fixed by @devernay on 8/8/2014
 template<typename PIX>
 void
-Image::pasteFromForDepth(const Natron::Image & srcImg,
+Image::pasteFromForDepth(const Image & srcImg,
                          const RectI & srcRoi,
                          bool copyBitmap,
                          bool takeSrcLock)
@@ -859,7 +899,7 @@ void
 Image::resizeInternal(const Image* srcImg,
                       const RectI& srcBounds,
                       const RectI& merge,
-                      bool fillWithBlackAndTransparant,
+                      bool fillWithBlackAndTransparent,
                       bool setBitmapTo1,
                       bool createInCache,
                       boost::shared_ptr<Image>* outputImage)
@@ -876,12 +916,12 @@ Image::resizeInternal(const Image* srcImg,
     } else {
         boost::shared_ptr<ImageParams> params(new ImageParams(*srcImg->getParams()));
         params->setBounds(merge);
-        outputImage->reset(new Image(srcImg->getKey(), params, srcImg->getCacheAPI(), Natron::eStorageModeRAM,std::string()));
+        outputImage->reset(new Image(srcImg->getKey(), params, srcImg->getCacheAPI(), eStorageModeRAM,std::string()));
         (*outputImage)->allocateMemory();
     }
-    Natron::ImageBitDepthEnum depth = srcImg->getBitDepth();
+    ImageBitDepthEnum depth = srcImg->getBitDepth();
     
-    if (fillWithBlackAndTransparant) {
+    if (fillWithBlackAndTransparent) {
         
         /*
          Compute the rectangles (A,B,C,D) where to set the image to 0
@@ -984,7 +1024,7 @@ Image::resizeInternal(const Image* srcImg,
         }
         
         
-    } // fillWithBlackAndTransparant
+    } // fillWithBlackAndTransparent
     
     
     switch (depth) {
@@ -1008,7 +1048,7 @@ Image::resizeInternal(const Image* srcImg,
 }
 
 bool
-Image::copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparant, bool setBitmapTo1, boost::shared_ptr<Image>* output)
+Image::copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, boost::shared_ptr<Image>* output)
 {
     if (getBounds().contains(newBounds)) {
         return false;
@@ -1020,12 +1060,12 @@ Image::copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransp
     RectI merge = newBounds;
     merge.merge(_bounds);
     
-    resizeInternal(this, _bounds, merge, fillWithBlackAndTransparant, setBitmapTo1, usesBitMap(), output);
+    resizeInternal(this, _bounds, merge, fillWithBlackAndTransparent, setBitmapTo1, usesBitMap(), output);
     return true;
 }
 
 bool
-Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant, bool setBitmapTo1)
+Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1)
 {
     
     
@@ -1039,7 +1079,7 @@ Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant, bo
     merge.merge(_bounds);
     
     ImagePtr tmpImg;
-    resizeInternal(this, _bounds, merge, fillWithBlackAndTransparant, setBitmapTo1, false, &tmpImg);
+    resizeInternal(this, _bounds, merge, fillWithBlackAndTransparent, setBitmapTo1, false, &tmpImg);
     
     
     ///Change the size of the current buffer
@@ -1056,13 +1096,13 @@ Image::ensureBounds(const RectI& newBounds, bool fillWithBlackAndTransparant, bo
 
 // code proofread and fixed by @devernay on 8/8/2014
 void
-Image::pasteFrom(const Natron::Image & src,
+Image::pasteFrom(const Image & src,
                  const RectI & srcRoi,
                  bool copyBitmap)
 {
     
     
-    Natron::ImageBitDepthEnum depth = getBitDepth();
+    ImageBitDepthEnum depth = getBitDepth();
 
     switch (depth) {
     case eImageBitDepthByte:
@@ -1294,8 +1334,8 @@ Image::getComponentsCount() const
 }
 
 bool
-Image::hasEnoughDataToConvert(Natron::ImageComponentsEnum from,
-                              Natron::ImageComponentsEnum to)
+Image::hasEnoughDataToConvert(ImageComponentsEnum from,
+                              ImageComponentsEnum to)
 {
     switch (from) {
     case eImageComponentRGBA:
@@ -1343,8 +1383,8 @@ Image::hasEnoughDataToConvert(Natron::ImageComponentsEnum from,
 }
 
 std::string
-Image::getFormatString(const Natron::ImageComponents& comps,
-                       Natron::ImageBitDepthEnum depth)
+Image::getFormatString(const ImageComponents& comps,
+                       ImageBitDepthEnum depth)
 {
     std::string s = comps.getLayerName() + '.' + comps.getComponentsGlobalName();
     s.append( getDepthString(depth) );
@@ -1353,24 +1393,24 @@ Image::getFormatString(const Natron::ImageComponents& comps,
 }
 
 std::string
-Image::getDepthString(Natron::ImageBitDepthEnum depth)
+Image::getDepthString(ImageBitDepthEnum depth)
 {
     std::string s;
 
     switch (depth) {
-    case Natron::eImageBitDepthByte:
+    case eImageBitDepthByte:
         s += "8u";
         break;
-    case Natron::eImageBitDepthShort:
+    case eImageBitDepthShort:
         s += "16u";
         break;
-    case Natron::eImageBitDepthHalf:
+    case eImageBitDepthHalf:
         s += "16f";
         break;
-    case Natron::eImageBitDepthFloat:
+    case eImageBitDepthFloat:
         s += "32f";
         break;
-    case Natron::eImageBitDepthNone:
+    case eImageBitDepthNone:
         break;
     }
 
@@ -1379,8 +1419,8 @@ Image::getDepthString(Natron::ImageBitDepthEnum depth)
 
 
 bool
-Image::isBitDepthConversionLossy(Natron::ImageBitDepthEnum from,
-                                 Natron::ImageBitDepthEnum to)
+Image::isBitDepthConversionLossy(ImageBitDepthEnum from,
+                                 ImageBitDepthEnum to)
 {
     int sizeOfFrom = getSizeOfForBitDepth(from);
     int sizeOfTo = getSizeOfForBitDepth(to);
@@ -1407,7 +1447,7 @@ template <typename PIX, int maxValue>
 void
 Image::halveRoIForDepth(const RectI & roi,
                         bool copyBitMap,
-                        Natron::Image* output) const
+                        Image* output) const
 {
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) ||
            (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) ||
@@ -1572,7 +1612,7 @@ Image::halveRoIForDepth(const RectI & roi,
 void
 Image::halveRoI(const RectI & roi,
                 bool copyBitMap,
-                Natron::Image* output) const
+                Image* output) const
 {
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
@@ -1596,7 +1636,7 @@ Image::halveRoI(const RectI & roi,
 template <typename PIX, int maxValue>
 void
 Image::halve1DImageForDepth(const RectI & roi,
-                            Natron::Image* output) const
+                            Image* output) const
 {
     int width = roi.width();
     int height = roi.height();
@@ -1655,7 +1695,7 @@ Image::halve1DImageForDepth(const RectI & roi,
 // code proofread and fixed by @devernay on 8/8/2014
 void
 Image::halve1DImage(const RectI & roi,
-                    Natron::Image* output) const
+                    Image* output) const
 {
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
@@ -1682,7 +1722,7 @@ Image::downscaleMipMap(const RectD& dstRod,
                        unsigned int fromLevel,
                        unsigned int toLevel,
                        bool copyBitMap,
-                       Natron::Image* output) const
+                       Image* output) const
 {
     ///You should not call this function with a level equal to 0.
     assert(toLevel >  fromLevel);
@@ -1700,7 +1740,7 @@ Image::downscaleMipMap(const RectD& dstRod,
     
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
     
-    ImagePtr tmpImg( new Natron::Image( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth() , true) );
+    ImagePtr tmpImg( new Image( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth() , true) );
 
     buildMipMapLevel( dstRod, roi, downscaleLvls, copyBitMap, tmpImg.get() );
 
@@ -1751,7 +1791,7 @@ void
 Image::upscaleMipMapForDepth(const RectI & roi,
                              unsigned int fromLevel,
                              unsigned int toLevel,
-                             Natron::Image* output) const
+                             Image* output) const
 {
     assert( getBitDepth() == output->getBitDepth() );
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
@@ -1832,7 +1872,7 @@ void
 Image::upscaleMipMap(const RectI & roi,
                      unsigned int fromLevel,
                      unsigned int toLevel,
-                     Natron::Image* output) const
+                     Image* output) const
 {
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
@@ -1858,7 +1898,7 @@ Image::upscaleMipMap(const RectI & roi,
 template<typename PIX>
 void
 Image::scaleBoxForDepth(const RectI & roi,
-                        Natron::Image* output) const
+                        Image* output) const
 {
     assert( getBitDepth() == output->getBitDepth() );
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
@@ -1886,10 +1926,8 @@ Image::scaleBoxForDepth(const RectI & roi,
     }
    
 
-    RenderScale scale;
     // FIXME: should use the RoD instead of RoI/bounds !
-    scale.x = (double) srcRoi.width() / dstBounds.width();
-    scale.y = (double) srcRoi.height() / dstBounds.height();
+    RenderScale scale((double) srcRoi.width() / dstBounds.width(), (double) srcRoi.height() / dstBounds.height());
 
     int convx_int = std::floor(scale.x);
     int convy_int = std::floor(scale.y);
@@ -2087,7 +2125,7 @@ Image::scaleBoxForDepth(const RectI & roi,
 // FIXME: this function has many bugs (see scaleBoxForDepth())
 void
 Image::scaleBox(const RectI & roi,
-                Natron::Image* output) const
+                Image* output) const
 {
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
@@ -2113,7 +2151,7 @@ Image::buildMipMapLevel(const RectD& dstRoD,
                         const RectI & roi,
                         unsigned int level,
                         bool copyBitMap,
-                        Natron::Image* output) const
+                        Image* output) const
 {
     ///The last mip map level we will make with closestPo2
     RectI lastLevelRoI = roi.downscalePowerOfTwoSmallestEnclosing(level);
@@ -2130,8 +2168,8 @@ Image::buildMipMapLevel(const RectD& dstRoD,
         return;
     }
 
-    const Natron::Image* srcImg = this;
-    Natron::Image* dstImg = NULL;
+    const Image* srcImg = this;
+    Image* dstImg = NULL;
     bool mustFreeSrc = false;
     RectI previousRoI = roi;
     ///Build all the mipmap levels until we reach the one we are interested in
@@ -2140,7 +2178,7 @@ Image::buildMipMapLevel(const RectD& dstRoD,
         RectI halvedRoI = previousRoI.downscalePowerOfTwoSmallestEnclosing(1);
 
         ///Allocate an image with half the size of the source image
-        dstImg = new Natron::Image( getComponents(), dstRoD, halvedRoI, getMipMapLevel() + i, getPixelAspectRatio(),getBitDepth() , true);
+        dstImg = new Image( getComponents(), dstRoD, halvedRoI, getMipMapLevel() + i, getPixelAspectRatio(),getBitDepth() , true);
 
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image
@@ -2284,15 +2322,15 @@ Image::premultForDepth(const RectI& roi)
     if (getComponentsCount() != 4) {
         return;
     }
-    Natron::ImageBitDepthEnum depth = getBitDepth();
+    ImageBitDepthEnum depth = getBitDepth();
     switch (depth) {
-        case Natron::eImageBitDepthByte:
+        case eImageBitDepthByte:
             premultInternal<unsigned char, doPremult>(roi);
             break;
-        case Natron::eImageBitDepthShort:
+        case eImageBitDepthShort:
             premultInternal<unsigned short, doPremult>(roi);
             break;
-        case Natron::eImageBitDepthFloat:
+        case eImageBitDepthFloat:
             premultInternal<float, doPremult>(roi);
             break;
         default:
@@ -2312,3 +2350,5 @@ Image::unpremultImage(const RectI& roi)
 {
     premultForDepth<false>(roi);
 }
+
+NATRON_NAMESPACE_EXIT;

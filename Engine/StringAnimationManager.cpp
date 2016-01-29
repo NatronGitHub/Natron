@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,10 @@
 
 #include "Engine/Knob.h"
 
+NATRON_NAMESPACE_ENTER;
+
+namespace {
+
 struct StringKeyFrame
 {
     std::string value;
@@ -47,6 +51,7 @@ struct StringKeyFrame_compare_time
 
 typedef std::set<StringKeyFrame,StringKeyFrame_compare_time> Keyframes;
 
+}
 
 struct StringAnimationManagerPrivate
 {
@@ -330,3 +335,4 @@ StringAnimationManager::save(std::map<int,std::string>* keyframes) const
     }
 }
 
+NATRON_NAMESPACE_EXIT;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
@@ -32,18 +34,19 @@
 #include "Engine/NoOpBase.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class Dot
     : public NoOpBase
 {
 public:
 
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new Dot(n);
     }
 
-    Dot(boost::shared_ptr<Natron::Node> n)
+    Dot(NodePtr n)
         : NoOpBase(n)
     {
     }
@@ -65,5 +68,6 @@ public:
     }
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_Dot_h

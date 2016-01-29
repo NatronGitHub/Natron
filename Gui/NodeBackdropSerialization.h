@@ -1,7 +1,7 @@
 
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,15 +50,17 @@ GCC_DIAG_ON(unused-parameter)
 #define NODE_BACKDROP_INTRODUCES_SELECTED 2
 #define NODE_BACKDROP_SERIALIZATION_VERSION NODE_BACKDROP_INTRODUCES_SELECTED
 
+NATRON_NAMESPACE_ENTER;
+
 /**
   This class is completly deprecated do not use it.
   We keep it for backward compatibility with old projects prior to Natron v1.1
  **/
 
-class NodeBackDropSerialization
+class NodeBackdropSerialization
 {
 public:
-    NodeBackDropSerialization();
+    NodeBackdropSerialization();
 
     std::string getFullySpecifiedName() const
     {
@@ -82,7 +84,7 @@ public:
         w = width; h = height;
     }
 
-    boost::shared_ptr<KnobI> getLabelSerialization() const
+    KnobPtr getLabelSerialization() const
     {
         return label->getKnob();
     }
@@ -116,42 +118,42 @@ private:
     bool selected;
     bool _isNull;
 
-    friend class boost::serialization::access;
+    friend class ::boost::serialization::access;
     template<class Archive>
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        ar & boost::serialization::make_nvp("X_position",posX);
-        ar & boost::serialization::make_nvp("Y_position",posY);
-        ar & boost::serialization::make_nvp("Width",width);
-        ar & boost::serialization::make_nvp("Height",height);
-        ar & boost::serialization::make_nvp("Name",name);
-        ar & boost::serialization::make_nvp("MasterName",masterBackdropName);
-        ar & boost::serialization::make_nvp("Label",*label);
-        ar & boost::serialization::make_nvp("r",r);
-        ar & boost::serialization::make_nvp("g",g);
-        ar & boost::serialization::make_nvp("b",b);
-        ar & boost::serialization::make_nvp("Selected",selected);
+        ar & ::boost::serialization::make_nvp("X_position",posX);
+        ar & ::boost::serialization::make_nvp("Y_position",posY);
+        ar & ::boost::serialization::make_nvp("Width",width);
+        ar & ::boost::serialization::make_nvp("Height",height);
+        ar & ::boost::serialization::make_nvp("Name",name);
+        ar & ::boost::serialization::make_nvp("MasterName",masterBackdropName);
+        ar & ::boost::serialization::make_nvp("Label",*label);
+        ar & ::boost::serialization::make_nvp("r",r);
+        ar & ::boost::serialization::make_nvp("g",g);
+        ar & ::boost::serialization::make_nvp("b",b);
+        ar & ::boost::serialization::make_nvp("Selected",selected);
     }
 
     template<class Archive>
     void load(Archive & ar,
               const unsigned int version)
     {
-        ar & boost::serialization::make_nvp("X_position",posX);
-        ar & boost::serialization::make_nvp("Y_position",posY);
-        ar & boost::serialization::make_nvp("Width",width);
-        ar & boost::serialization::make_nvp("Height",height);
-        ar & boost::serialization::make_nvp("Name",name);
-        ar & boost::serialization::make_nvp("MasterName",masterBackdropName);
+        ar & ::boost::serialization::make_nvp("X_position",posX);
+        ar & ::boost::serialization::make_nvp("Y_position",posY);
+        ar & ::boost::serialization::make_nvp("Width",width);
+        ar & ::boost::serialization::make_nvp("Height",height);
+        ar & ::boost::serialization::make_nvp("Name",name);
+        ar & ::boost::serialization::make_nvp("MasterName",masterBackdropName);
 
         label.reset(new KnobSerialization);
-        ar & boost::serialization::make_nvp("Label",*label);
-        ar & boost::serialization::make_nvp("r",r);
-        ar & boost::serialization::make_nvp("g",g);
-        ar & boost::serialization::make_nvp("b",b);
+        ar & ::boost::serialization::make_nvp("Label",*label);
+        ar & ::boost::serialization::make_nvp("r",r);
+        ar & ::boost::serialization::make_nvp("g",g);
+        ar & ::boost::serialization::make_nvp("b",b);
         if (version >= NODE_BACKDROP_INTRODUCES_SELECTED) {
-            ar & boost::serialization::make_nvp("Selected",selected);
+            ar & ::boost::serialization::make_nvp("Selected",selected);
         }
         _isNull = false;
     }
@@ -159,6 +161,8 @@ private:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
-BOOST_CLASS_VERSION(NodeBackDropSerialization, NODE_BACKDROP_SERIALIZATION_VERSION)
+NATRON_NAMESPACE_EXIT;
+
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::NodeBackdropSerialization, NODE_BACKDROP_SERIALIZATION_VERSION)
 
 #endif // NODEBACKDROPSERIALIZATION_H

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 #define TICK_HEIGHT 7
 #define CURSOR_WIDTH 15
@@ -119,11 +119,11 @@ struct TimelineGuiPrivate
     Gui* gui; //< ptr to the gui
     bool alphaCursor; // should cursor be drawn semi-transparant
     QPoint lastMouseEventWidgetCoord;
-    Natron::TimelineStateEnum state; //state machine for mouse events
+    TimelineStateEnum state; //state machine for mouse events
     int mousePressX; // widget X coordinate of last click
     int mouseMoveX; // widget X coordinate of last mousemove position
     TimeLineZoomContext tlZoomCtx;
-    Natron::TextRenderer textRenderer;
+    TextRenderer textRenderer;
     QFont font;
     bool firstPaint;
     CachedFrames cachedFrames;
@@ -207,13 +207,13 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
         QObject::disconnect( _imp->timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
 
         //connect the gui to the internal timeline
-        QObject::disconnect( _imp->timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
+        QObject::disconnect( _imp->gui->getApp(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
     }
 
     //connect the internal timeline to the gui
     QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime,int) ), this, SLOT( onFrameChanged(SequenceTime,int) ) );
     
-    QObject::connect( timeline.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
+    QObject::connect( _imp->gui->getApp(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
 
     _imp->timeline = timeline;
 
@@ -229,7 +229,7 @@ TimeLineGui::getTimeline() const
 QSize
 TimeLineGui::sizeHint() const
 {
-    return QSize(1000,45);
+    return QSize(TO_DPIX(1000),TO_DPIY(45));
 }
 
 void
@@ -365,9 +365,9 @@ TimeLineGui::paintGL()
         }
 
 
-        QFontMetrics fontM(_imp->font);
+        QFontMetrics fontM(_imp->font, 0);
 
-        double lineYPosWidget = height() - 1 - fontM.height()  - TICK_HEIGHT / 2.;
+        double lineYPosWidget = height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT) / 2.;
         double lineYpos = toTimeLineCoordinates(0,lineYPosWidget).y();
         double cachedLineYPos = toTimeLineCoordinates(0,lineYPosWidget + 1).y();
 
@@ -398,7 +398,7 @@ TimeLineGui::paintGL()
         glCheckErrorIgnoreOSXBug();
 
         double tickBottom = toTimeLineCoordinates( 0,height() - 1 - fontM.height() ).y();
-        double tickTop = toTimeLineCoordinates(0,height() - 1 - fontM.height()  - TICK_HEIGHT).y();
+        double tickTop = toTimeLineCoordinates(0,height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT)).y();
         const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
         const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
         std::vector<double> acceptedDistances;
@@ -459,9 +459,9 @@ TimeLineGui::paintGL()
                         alphaText *= (tickSizePixel - sSizePixel) / (double)minTickSizeTextPixel;
                     }
                     QColor c;
-                    c.setRgbF(Natron::clamp<qreal>(txtR, 0., 1.),
-                              Natron::clamp<qreal>(txtG, 0., 1.),
-                              Natron::clamp<qreal>(txtB, 0., 1.));
+                    c.setRgbF(Image::clamp<qreal>(txtR, 0., 1.),
+                              Image::clamp<qreal>(txtG, 0., 1.),
+                              Image::clamp<qreal>(txtB, 0., 1.));
                     c.setAlpha(255 * alphaText);
                     glCheckError();
                     renderText(value, btmLeft.y(), s, c, _imp->font);
@@ -470,26 +470,38 @@ TimeLineGui::paintGL()
         }
         glCheckError();
 
+        int cursorWidth = TO_DPIX(CURSOR_WIDTH);
+        int cursorHeight = TO_DPIY(CURSOR_HEIGHT);
+
         QPointF cursorBtm(_imp->timeline->currentFrame(),lineYpos);
         QPointF cursorBtmWidgetCoord = toWidgetCoordinates( cursorBtm.x(),cursorBtm.y() );
-        QPointF cursorTopLeft = toTimeLineCoordinates(cursorBtmWidgetCoord.x() - CURSOR_WIDTH / 2.,
-                                                      cursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
-        QPointF cursorTopRight = toTimeLineCoordinates(cursorBtmWidgetCoord.x() + CURSOR_WIDTH / 2.,
-                                                       cursorBtmWidgetCoord.y() - CURSOR_HEIGHT);
+        QPointF cursorTopLeft = toTimeLineCoordinates(cursorBtmWidgetCoord.x() - cursorWidth / 2.,
+                                                      cursorBtmWidgetCoord.y() - cursorHeight);
+        QPointF cursorTopRight = toTimeLineCoordinates(cursorBtmWidgetCoord.x() + cursorWidth / 2.,
+                                                       cursorBtmWidgetCoord.y() - cursorHeight);
         QPointF leftBoundBtm(leftBound,lineYpos);
         QPointF leftBoundWidgetCoord = toWidgetCoordinates( leftBoundBtm.x(),leftBoundBtm.y() );
-        QPointF leftBoundBtmRight = toTimeLineCoordinates( leftBoundWidgetCoord.x() + CURSOR_WIDTH / 2.,
+        QPointF leftBoundBtmRight = toTimeLineCoordinates( leftBoundWidgetCoord.x() + cursorWidth / 2.,
                                                            leftBoundWidgetCoord.y() );
         QPointF leftBoundTop = toTimeLineCoordinates(leftBoundWidgetCoord.x(),
-                                                     leftBoundWidgetCoord.y() - CURSOR_HEIGHT);
+                                                     leftBoundWidgetCoord.y() - cursorHeight);
         QPointF rightBoundBtm(rightBound,lineYpos);
         QPointF rightBoundWidgetCoord = toWidgetCoordinates( rightBoundBtm.x(),rightBoundBtm.y() );
-        QPointF rightBoundBtmLeft = toTimeLineCoordinates( rightBoundWidgetCoord.x() - CURSOR_WIDTH / 2.,
+        QPointF rightBoundBtmLeft = toTimeLineCoordinates( rightBoundWidgetCoord.x() - cursorWidth / 2.,
                                                            rightBoundWidgetCoord.y() );
         QPointF rightBoundTop = toTimeLineCoordinates(rightBoundWidgetCoord.x(),
-                                                      rightBoundWidgetCoord.y() - CURSOR_HEIGHT);
-        std::list<SequenceTime> keyframes;
-        _imp->timeline->getKeyframes(&keyframes);
+                                                      rightBoundWidgetCoord.y() - cursorHeight);
+        
+        std::set<SequenceTime> keyframes;
+        {
+            
+            ///THere may be duplicates in this list
+            std::list<SequenceTime> keyframesList;
+            _imp->gui->getApp()->getKeyframes(&keyframesList);
+            for (std::list<SequenceTime>::iterator it = keyframesList.begin(); it!=keyframesList.end(); ++it) {
+                keyframes.insert(*it);
+            }
+        }
 
         //draw an alpha cursor if the mouse is hovering the timeline
         glEnable(GL_POLYGON_SMOOTH);
@@ -499,27 +511,27 @@ TimeLineGui::paintGL()
             int currentPosBtmWidgetCoordX = _imp->lastMouseEventWidgetCoord.x();
             int currentPosBtmWidgetCoordY = toWidgetCoordinates(0,lineYpos).y();
             QPointF currentPosBtm = toTimeLineCoordinates(currentPosBtmWidgetCoordX,currentPosBtmWidgetCoordY);
-            QPointF currentPosTopLeft = toTimeLineCoordinates(currentPosBtmWidgetCoordX - CURSOR_WIDTH / 2.,
-                                                              currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
-            QPointF currentPosTopRight = toTimeLineCoordinates(currentPosBtmWidgetCoordX + CURSOR_WIDTH / 2.,
-                                                               currentPosBtmWidgetCoordY - CURSOR_HEIGHT);
+            QPointF currentPosTopLeft = toTimeLineCoordinates(currentPosBtmWidgetCoordX - cursorWidth / 2.,
+                                                              currentPosBtmWidgetCoordY - cursorHeight);
+            QPointF currentPosTopRight = toTimeLineCoordinates(currentPosBtmWidgetCoordX + cursorWidth / 2.,
+                                                               currentPosBtmWidgetCoordY - cursorHeight);
             int hoveredTime = std::floor(currentPosBtm.x() + 0.5);
             QString mouseNumber( QString::number(hoveredTime) );
             QPoint mouseNumberWidgetCoord(currentPosBtmWidgetCoordX - fontM.width(mouseNumber) / 2,
-                                          currentPosBtmWidgetCoordY - CURSOR_HEIGHT - 2);
+                                          currentPosBtmWidgetCoordY - cursorHeight - 2);
             QPointF mouseNumberPos = toTimeLineCoordinates( mouseNumberWidgetCoord.x(),mouseNumberWidgetCoord.y() );
-            std::list<SequenceTime>::iterator foundHoveredAsKeyframe = std::find(keyframes.begin(),keyframes.end(),hoveredTime);
+            std::set<SequenceTime>::iterator foundHoveredAsKeyframe = keyframes.find(hoveredTime);
             QColor currentColor;
             if ( foundHoveredAsKeyframe != keyframes.end() ) {
                 glColor4f(kfR, kfG, kfB, 0.4);
-                currentColor.setRgbF(Natron::clamp<qreal>(kfR, 0., 1.),
-                                     Natron::clamp<qreal>(kfG, 0., 1.),
-                                     Natron::clamp<qreal>(kfB, 0., 1.));
+                currentColor.setRgbF(Image::clamp<qreal>(kfR, 0., 1.),
+                                     Image::clamp<qreal>(kfG, 0., 1.),
+                                     Image::clamp<qreal>(kfB, 0., 1.));
             } else {
                 glColor4f(cursorR, cursorG, cursorB, 0.4);
-                currentColor.setRgbF(Natron::clamp<qreal>(cursorR, 0., 1.),
-                                     Natron::clamp<qreal>(cursorG, 0., 1.),
-                                     Natron::clamp<qreal>(cursorB, 0., 1.));
+                currentColor.setRgbF(Image::clamp<qreal>(cursorR, 0., 1.),
+                                     Image::clamp<qreal>(cursorG, 0., 1.),
+                                     Image::clamp<qreal>(cursorB, 0., 1.));
             }
             currentColor.setAlpha(100);
 
@@ -535,18 +547,18 @@ TimeLineGui::paintGL()
         }
 
         //draw the bounds and the current time cursor
-        std::list<SequenceTime>::iterator isCurrentTimeAKeyframe = std::find( keyframes.begin(),keyframes.end(),_imp->timeline->currentFrame() );
+        std::set<SequenceTime>::iterator isCurrentTimeAKeyframe = keyframes.find(_imp->timeline->currentFrame());
         QColor actualCursorColor;
         if ( isCurrentTimeAKeyframe != keyframes.end() ) {
             glColor4f(kfR, kfG, kfB, 1.);
-            actualCursorColor.setRgbF(Natron::clamp<qreal>(kfR, 0., 1.),
-                                      Natron::clamp<qreal>(kfG, 0., 1.),
-                                      Natron::clamp<qreal>(kfB, 0., 1.));
+            actualCursorColor.setRgbF(Image::clamp<qreal>(kfR, 0., 1.),
+                                      Image::clamp<qreal>(kfG, 0., 1.),
+                                      Image::clamp<qreal>(kfB, 0., 1.));
         } else {
             glColor4f(cursorR, cursorG, cursorB,1.);
-            actualCursorColor.setRgbF(Natron::clamp<qreal>(cursorR, 0., 1.),
-                                      Natron::clamp<qreal>(cursorG, 0., 1.),
-                                      Natron::clamp<qreal>(cursorB, 0., 1.));
+            actualCursorColor.setRgbF(Image::clamp<qreal>(cursorR, 0., 1.),
+                                      Image::clamp<qreal>(cursorG, 0., 1.),
+                                      Image::clamp<qreal>(cursorB, 0., 1.));
         }
 
         QString currentFrameStr( QString::number( _imp->timeline->currentFrame() ) );
@@ -561,9 +573,9 @@ TimeLineGui::paintGL()
         glCheckErrorIgnoreOSXBug();
 
         QColor boundsColor;
-        boundsColor.setRgbF(Natron::clamp<qreal>(boundsR, 0., 1.),
-                            Natron::clamp<qreal>(boundsG, 0., 1.),
-                            Natron::clamp<qreal>(boundsB, 0., 1.));
+        boundsColor.setRgbF(Image::clamp<qreal>(boundsR, 0., 1.),
+                            Image::clamp<qreal>(boundsG, 0., 1.),
+                            Image::clamp<qreal>(boundsB, 0., 1.));
         
         if ( leftBound != _imp->timeline->currentFrame() ) {
             QString leftBoundStr( QString::number(leftBound) );
@@ -618,14 +630,10 @@ TimeLineGui::paintGL()
         
         ///now draw keyframes
         glColor4f(kfR,kfG,kfB,1.);
-        std::set<SequenceTime> alreadyDrawnKeyframes;
         glBegin(GL_LINES);
-        for (std::list<SequenceTime>::const_iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
-            std::pair<std::set<SequenceTime>::iterator,bool> success = alreadyDrawnKeyframes.insert(*i);
-            if (success.second) {
-                glVertex2f(*i,lineYpos);
-                glVertex2f(*i+1,lineYpos);
-            }
+        for (std::set<SequenceTime>::const_iterator i = keyframes.begin(); i != keyframes.end(); ++i) {
+            glVertex2f(*i,lineYpos);
+            glVertex2f(*i+1,lineYpos);
         }
         glEnd();
         glCheckErrorIgnoreOSXBug();
@@ -667,7 +675,7 @@ void
 TimeLineGui::onFrameChanged(SequenceTime,
                             int reason)
 {
-    Natron::TimelineChangeReasonEnum r = (Natron::TimelineChangeReasonEnum)reason;
+    TimelineChangeReasonEnum r = (TimelineChangeReasonEnum)reason;
     if (r == eTimelineChangeReasonUserSeek) {
         return;
     }
@@ -1053,7 +1061,7 @@ TimeLineGui::connectSlotsToViewerCache()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    Natron::CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
+    CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
     QObject::connect( emitter, SIGNAL( addedEntry(SequenceTime) ), this, SLOT( onCachedFrameAdded(SequenceTime) ) );
     QObject::connect( emitter, SIGNAL( removedEntry(SequenceTime,int) ), this, SLOT( onCachedFrameRemoved(SequenceTime,int) ) );
     QObject::connect( emitter, SIGNAL( entryStorageChanged(SequenceTime,int,int) ), this,
@@ -1068,7 +1076,7 @@ TimeLineGui::disconnectSlotsFromViewerCache()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    Natron::CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
+    CacheSignalEmitter* emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
     QObject::disconnect( emitter, SIGNAL( addedEntry(SequenceTime) ), this, SLOT( onCachedFrameAdded(SequenceTime) ) );
     QObject::disconnect( emitter, SIGNAL( removedEntry(SequenceTime,int) ), this, SLOT( onCachedFrameRemoved(SequenceTime,int) ) );
     QObject::disconnect( emitter, SIGNAL( entryStorageChanged(SequenceTime,int,int) ), this,
@@ -1173,3 +1181,8 @@ TimeLineGui::onProjectFrameRangeChanged(int left,int right)
     }
     update();
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_TimeLineGui.cpp"

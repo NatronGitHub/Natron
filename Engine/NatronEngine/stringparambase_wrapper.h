@@ -5,6 +5,7 @@
 
 #include <ParameterWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class StringParamBaseWrapper : public StringParamBase
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~StringParamBaseWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_STRINGPARAMBASEWRAPPER_H
 

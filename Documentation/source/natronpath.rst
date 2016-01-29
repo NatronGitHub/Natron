@@ -6,23 +6,21 @@ Natron plug-in paths
 When looking for startup scripts or Python group plug-ins, Natron will look into
 the following search paths in order:
 
-	* The bundled plug-ins path. This is a directory relative to your Natron installation.
-	Usually this is the directory "Plugins" one level up where the executable of Natron is.
+	* The bundled plug-ins path. There are 2 kinds of plug-ins: PyPlugs and OpenFX plug-ins.
+	The bundled OpenFX plug-ins are located in Plugins/OFX/Natron in your Natron installation and
+	the bundled PyPlugs in the directory Plugins/PyPlugs.
 
-	* The standard location for Natron non-OpenFX plug-ins. This is platform dependant.
-		On MacOSX that would return::
+	* The standard location for non OpenFX plug-ins (i.e PyPlugs): that is the directory
+	.Natron in the home directory, e.g:
 	
-			/Users/<username>/Library/Application Support/INRIA/Natron/Plugins
-		
-		On Windows::
-	
-			C:\Users\<username>\AppData\Local\INRIA\Natron\Plugins
-		
-		On Linux::
-	
-			/home/<username>/.local/share/INRIA/Natron/Plugins
-		
-	
+			On Windows that would be::
+			
+				C:\Users\<username>\.Natron
+				
+			On OS X & Linux that would be::
+			
+				/home/<username>/.Natron
+
 	* All the paths indicated by the **NATRON_PLUGIN_PATH** environment variable. This 
 	environment variable should contain the separator *;* between each path, such as::
 	

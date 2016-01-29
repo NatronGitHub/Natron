@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 FlagSetter::FlagSetter(bool initialValue,bool* p)
 : p(p)
@@ -92,7 +92,7 @@ FlagSetter::~FlagSetter()
 
 struct AppInstancePrivate
 {
-    boost::shared_ptr<Natron::Project> _currentProject; //< ptr to the project
+    boost::shared_ptr<Project> _currentProject; //< ptr to the project
     int _appID; //< the unique ID of this instance (or window)
     bool _projectCreatedWithLowerCaseIDs;
     
@@ -105,21 +105,24 @@ struct AppInstancePrivate
     bool _creatingNode;
     
     //When a node tree is created
-    bool _creatingTree;
+    int _creatingTree;
     
     AppInstancePrivate(int appID,
                        AppInstance* app)
-    : _currentProject( new Natron::Project(app) )
+    : _currentProject( new Project(app) )
     , _appID(appID)
     , _projectCreatedWithLowerCaseIDs(false)
     , creatingGroupMutex()
     , _creatingGroup(false)
     , _creatingNode(false)
-    , _creatingTree(false)
+    , _creatingTree(0)
     {
     }
     
     void declareCurrentAppVariable_Python();
+    
+    
+    void executeCommandLinePythonCommands(const CLArgs& args);
     
 };
 
@@ -167,7 +170,15 @@ void
 AppInstance::setIsCreatingNodeTree(bool b)
 {
     QMutexLocker k(&_imp->creatingGroupMutex);
-    _imp->_creatingTree = b;
+    if (b) {
+        ++_imp->_creatingTree;
+    } else {
+        if (_imp->_creatingTree >= 1) {
+            --_imp->_creatingTree;
+        } else {
+            _imp->_creatingTree = 0;
+        }
+    }
 }
 
 void
@@ -338,7 +349,7 @@ AppInstance::newVersionCheckDownloaded()
 
             }
         
-            Natron::informationDialog( "New version",text.toStdString(), true );
+            Dialogs::informationDialog( "New version", text.toStdString(), true );
     }
     downloader->deleteLater();
 }
@@ -354,50 +365,76 @@ AppInstance::newVersionCheckError()
 }
 
 void
-AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderRequest>& requests)
+AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderWork>& requests)
 {
     const std::list<CLArgs::WriterArg>& writers = cl.getWriterArgs();
     for (std::list<CLArgs::WriterArg>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
         
-        QString writerName;
+        NodePtr writerNode;
         if (!it->mustCreate) {
-            writerName = it->name;
+            std::string writerName = it->name.toStdString();
+            writerNode = getNodeByFullySpecifiedName(writerName);
+            
+            if (!writerNode) {
+                std::string exc(writerName);
+                exc.append(tr(" does not belong to the project file. Please enter a valid Write node script-name.").toStdString());
+                throw std::invalid_argument(exc);
+            } else {
+                if (!writerNode->isOutputNode()) {
+                    std::string exc(writerName);
+                    exc.append(tr(" is not an output node! It cannot render anything.").toStdString());
+                    throw std::invalid_argument(exc);
+                }
+            }
+            
+            if (!it->filename.isEmpty()) {
+                KnobPtr fileKnob = writerNode->getKnobByName(kOfxImageEffectFileParamName);
+                if (fileKnob) {
+                    KnobOutputFile* outFile = dynamic_cast<KnobOutputFile*>(fileKnob.get());
+                    if (outFile) {
+                        outFile->setValue(it->filename.toStdString(), 0);
+                    }
+                }
+            }
         } else {
-            NodePtr writer = createWriter(it->filename.toStdString(), getProject(), INT_MIN, INT_MAX);
+            writerNode = createWriter(it->filename.toStdString(), eCreateNodeReasonInternal, getProject());
             
             //Connect the writer to the corresponding Output node input
             NodePtr output = getProject()->getNodeByFullySpecifiedName(it->name.toStdString());
             if (!output) {
                 throw std::invalid_argument(it->name.toStdString() + tr(" is not the name of a valid Output node of the script").toStdString());
             }
-            GroupOutput* isGrpOutput = dynamic_cast<GroupOutput*>(output->getLiveInstance());
+            GroupOutput* isGrpOutput = dynamic_cast<GroupOutput*>(output->getEffectInstance().get());
             if (!isGrpOutput) {
                 throw std::invalid_argument(it->name.toStdString() + tr(" is not the name of a valid Output node of the script").toStdString());
             }
             NodePtr outputInput = output->getRealInput(0);
             if (outputInput) {
-                writer->connectInput(outputInput, 0);
+                writerNode->connectInput(outputInput, 0);
             }
             
-            writerName = writer->getScriptName().c_str();
+            writerNode->getScriptName().c_str();
         }
+        
+        assert(writerNode);
+        OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>(writerNode->getEffectInstance().get());
 
         if (cl.hasFrameRange()) {
             const std::list<std::pair<int,std::pair<int,int> > >& frameRanges = cl.getFrameRanges();
             for (std::list<std::pair<int,std::pair<int,int> > >::const_iterator it2 = frameRanges.begin(); it2 != frameRanges.end(); ++it2) {
-                AppInstance::RenderRequest r;
+                AppInstance::RenderWork r;
                 r.firstFrame = it2->second.first;
                 r.lastFrame = it2->second.second;
                 r.frameStep = it2->first;
-                r.writerName = writerName;
+                r.writer = effect;
                 requests.push_back(r);
             }
         } else {
-            AppInstance::RenderRequest r;
+            AppInstance::RenderWork r;
             r.firstFrame = INT_MIN;
             r.lastFrame = INT_MAX;
             r.frameStep = INT_MIN;
-            r.writerName = writerName;
+            r.writer = effect;
             requests.push_back(r);
         }
     
@@ -406,53 +443,71 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderR
 
 NodePtr
 AppInstance::createWriter(const std::string& filename,
+                          CreateNodeReason reason,
                           const boost::shared_ptr<NodeCollection>& collection,
-                          bool userEdited,
                           int firstFrame, int lastFrame)
 {
     std::map<std::string,std::string> writersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
     
     QString fileCpy(filename.c_str());
-    std::string ext = Natron::removeFileExtension(fileCpy).toStdString();
+    std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
     std::map<std::string,std::string>::iterator found = writersForFormat.find(ext);
     if ( found == writersForFormat.end() ) {
-        Natron::errorDialog( tr("Writer").toStdString(),
+        Dialogs::errorDialog( tr("Writer").toStdString(),
                             tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString(),false );
         return NodePtr();
     }
     
     
-    CreateNodeArgs::DefaultValuesList defaultValues;
-    defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename));
+    CreateNodeArgs args(found->second.c_str(), reason, collection);
+    args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename));
     if (firstFrame != INT_MIN && lastFrame != INT_MAX) {
-        defaultValues.push_back(createDefaultValueForParam<int>("frameRange", 2));
-        defaultValues.push_back(createDefaultValueForParam<int>("firstFrame", firstFrame));
-        defaultValues.push_back(createDefaultValueForParam<int>("lastFrame", lastFrame));
+        args.paramValues.push_back(createDefaultValueForParam<int>("frameRange", 2));
+        args.paramValues.push_back(createDefaultValueForParam<int>("firstFrame", firstFrame));
+        args.paramValues.push_back(createDefaultValueForParam<int>("lastFrame", lastFrame));
     }
-    CreateNodeArgs args(found->second.c_str(),
-                        "",
-                        -1,
-                        -1,
-                        true,
-                        INT_MIN,INT_MIN,
-                        true,
-                        true,
-                        userEdited,
-                        QString(),
-                        defaultValues,
-                        collection);
+  
     return createNode(args);
     
 }
 
 void
-AppInstance::load(const CLArgs& cl)
+AppInstancePrivate::executeCommandLinePythonCommands(const CLArgs& args)
+{
+    const std::list<std::string>& commands = args.getPythonCommands();
+    
+    for (std::list<std::string>::const_iterator it = commands.begin(); it!=commands.end(); ++it) {
+        std::string err;
+        std::string output;
+        bool ok  = Python::interpretPythonScript(*it, &err, &output);
+        if (!ok) {
+            QString m = QObject::tr("Failed to execute given command-line Python command: ");
+            m.append(it->c_str());
+            m.append(" Error: ");
+            m.append(err.c_str());
+            throw std::runtime_error(m.toStdString());
+        } else if (!output.empty()) {
+            std::cout << output << std::endl;
+        }
+
+    }
+}
+
+void
+AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
 {
     
     declareCurrentAppVariable_Python();
 
+    if (makeEmptyInstance) {
+        return;
+    }
+    
     const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
+    
+    _imp->executeCommandLinePythonCommands(cl);
+
     
     ///if the app is a background project autorun and the project name is empty just throw an exception.
     if ( (appPTR->getAppType() == AppManager::eAppTypeBackgroundAutoRun ||
@@ -469,25 +524,27 @@ AppInstance::load(const CLArgs& cl)
             throw std::invalid_argument(tr("Specified project file does not exist").toStdString());
         }
         
-        std::list<AppInstance::RenderRequest> writersWork;
-
+        std::list<AppInstance::RenderWork> writersWork;
+        
+        
         if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
             
+            ///Load the project
             if ( !_imp->_currentProject->loadProject(info.path(),info.fileName()) ) {
                 throw std::invalid_argument(tr("Project file loading failed.").toStdString());
             }
             
-            getWritersWorkForCL(cl, writersWork);
-
         } else if (info.suffix() == "py") {
             
+            ///Load the python script
             loadPythonScript(info);
-            getWritersWorkForCL(cl, writersWork);
 
         } else {
             throw std::invalid_argument(tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString());
         }
         
+        
+        ///exec the python script specified via --onload
         if (!extraOnProjectCreatedScript.isEmpty()) {
             QFileInfo cbInfo(extraOnProjectCreatedScript);
             if (cbInfo.exists()) {
@@ -495,16 +552,65 @@ AppInstance::load(const CLArgs& cl)
             }
         }
         
+        
+        getWritersWorkForCL(cl, writersWork);
+
+        
+        ///Set reader parameters if specified from the command-line
+        const std::list<CLArgs::ReaderArg>& readerArgs = cl.getReaderArgs();
+        for (std::list<CLArgs::ReaderArg>::const_iterator it = readerArgs.begin(); it!=readerArgs.end(); ++it) {
+            std::string readerName = it->name.toStdString();
+            NodePtr readNode = getNodeByFullySpecifiedName(readerName);
+            
+            if (!readNode) {
+                std::string exc(readerName);
+                exc.append(tr(" does not belong to the project file. Please enter a valid Read node script-name.").toStdString());
+                throw std::invalid_argument(exc);
+            } else {
+                if (!readNode->getEffectInstance()->isReader()) {
+                    std::string exc(readerName);
+                    exc.append(tr(" is not a Read node! It cannot render anything.").toStdString());
+                    throw std::invalid_argument(exc);
+                }
+            }
+            
+            if (it->filename.isEmpty()) {
+                std::string exc(readerName);
+                exc.append(tr(": Filename specified is empty but [-i] or [--reader] was passed to the command-line").toStdString());
+                throw std::invalid_argument(exc);
+            }
+            KnobPtr fileKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
+            if (fileKnob) {
+                KnobFile* outFile = dynamic_cast<KnobFile*>(fileKnob.get());
+                if (outFile) {
+                    outFile->setValue(it->filename.toStdString(), 0);
+                }
+            }
+
+        }
        
-        startWritersRendering(cl.areRenderStatsEnabled(), false, writersWork);
+        ///launch renders
+        if (!writersWork.empty()) {
+            startWritersRendering(cl.areRenderStatsEnabled(), false, writersWork);
+        } else {
+            std::list<std::string> writers;
+            startWritersRendering(cl.areRenderStatsEnabled(), false, writers, cl.getFrameRanges());
+        }
        
         
         
         
     } else if (appPTR->getAppType() == AppManager::eAppTypeInterpreter) {
         QFileInfo info(cl.getScriptFilename());
-        if (info.exists() && info.suffix() == "py") {
-            loadPythonScript(info);
+        if (info.exists()) {
+            
+            if (info.suffix() == "py") {
+                loadPythonScript(info);
+            } else if (info.suffix() == NATRON_PROJECT_FILE_EXT) {
+                if ( !_imp->_currentProject->loadProject(info.path(),info.fileName()) ) {
+                    throw std::invalid_argument(tr("Project file loading failed.").toStdString());
+                }
+            }
         }
         
         if (!extraOnProjectCreatedScript.isEmpty()) {
@@ -538,14 +644,14 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     addToPythonPath += "\")\n";
     
     std::string err;
-    bool ok  = interpretPythonScript(addToPythonPath, &err, 0);
+    bool ok  = Python::interpretPythonScript(addToPythonPath, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("AppInstance::loadPythonScript(" + file.path().toStdString() + "): interpretPythonScript("+addToPythonPath+" failed!");
     }
 
     std::string s = "app = app1\n";
-    ok = Natron::interpretPythonScript(s, &err, 0);
+    ok = Python::interpretPythonScript(s, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("AppInstance::loadPythonScript(" + file.path().toStdString() + "): interpretPythonScript("+s+" failed!");
@@ -568,7 +674,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         "    ret = False\n").arg(filename);
      
      
-        ok = Natron::interpretPythonScript(hasCreateInstanceScript.toStdString(), &err, 0);
+        ok = interpretPythonScript(hasCreateInstanceScript.toStdString(), &err, 0);
 
      
      which is wrong because it will try to import the script first.
@@ -593,9 +699,9 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         std::string output;
         FlagSetter flag(true, &_imp->_creatingGroup, &_imp->creatingGroupMutex);
         CreatingNodeTreeFlag_RAII createNodeTree(this);
-        if (!Natron::interpretPythonScript(ss.str(), &err, &output)) {
+        if (!Python::interpretPythonScript(ss.str(), &err, &output)) {
             if (!err.empty()) {
-                Natron::errorDialog(tr("Python").toStdString(), err);
+                Dialogs::errorDialog(tr("Python").toStdString(), err);
             }
             return false;
         } else {
@@ -613,7 +719,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         QFile f(file.absoluteFilePath());
         PyRun_SimpleString(content.toStdString().c_str());
         
-        PyObject* mainModule = getMainModule();
+        PyObject* mainModule = Python::getMainModule();
         std::string error;
         ///Gui session, do stdout, stderr redirection
         PyObject *errCatcher = 0;
@@ -628,7 +734,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
         if (errCatcher) {
             errorObj = PyObject_GetAttrString(errCatcher,"value"); //get the  stderr from our catchErr object, new ref
             assert(errorObj);
-            error = PY3String_asString(errorObj);
+            error = Python::PY3String_asString(errorObj);
             PyObject* unicode = PyUnicode_FromString("");
             PyObject_SetAttrString(errCatcher, "value", unicode);
             Py_DECREF(errorObj);
@@ -648,68 +754,47 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     return true;
 }
 
-boost::shared_ptr<Natron::Node>
-AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
+NodePtr
+AppInstance::createNodeFromPythonModule(Plugin* plugin,
                                         const boost::shared_ptr<NodeCollection>& group,
-                                        bool requestedByLoad,
-                                        bool userEdited,
-                                        const NodeSerialization & serialization)
+                                        CreateNodeReason reason,
+                                        const boost::shared_ptr<NodeSerialization>& serialization)
 
 {
-    QString pythonModulePath = plugin->getPythonModule();
-    QString moduleName;
-    QString modulePath;
-    int foundLastSlash = pythonModulePath.lastIndexOf('/');
-    if (foundLastSlash != -1) {
-        modulePath = pythonModulePath.mid(0,foundLastSlash + 1);
-        moduleName = pythonModulePath.remove(0,foundLastSlash + 1);
-    }
+   
     
-    boost::shared_ptr<Natron::Node> node;
+    NodePtr node;
     
     {
         FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
         CreatingNodeTreeFlag_RAII createNodeTree(this);
         
         NodePtr containerNode;
-        if (!requestedByLoad) {
-            CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
-                                     "",
-                                     -1,-1,
-                                     true, //< autoconnect
-                                     INT_MIN,INT_MIN,
-                                     true, //< push undo/redo command
-                                     true, // add to project
-                                     true,
-                                     QString(),
-                                     CreateNodeArgs::DefaultValuesList(),
-                                     group);
-            containerNode = createNode(groupArgs);
-            std::string containerName;
-            try {
-                group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
-                containerNode->setScriptName(containerName);
-            } catch (...) {
-                
-            }
-            
-            
-        } else {
-            
-            LoadNodeArgs groupArgs(PLUGINID_NATRON_GROUP,
-                                   "",
-                                   -1,-1,
-                                   &serialization,
-                                   false,
-                                   group);
-            containerNode = loadNode(groupArgs);
-        }
+        CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP, reason, group);
+        groupArgs.serialization = serialization;
+        containerNode = createNode(groupArgs);
         if (!containerNode) {
             return containerNode;
         }
         
+        if (reason == eCreateNodeReasonUserCreate || reason == eCreateNodeReasonInternal) {
+            std::string containerName;
+            try {
+                group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
+                containerNode->setScriptName(containerName);
+                containerNode->setLabel(containerName);
+            } catch (...) {
+                
+            }
+        }
+        
+        
         
         std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
+        
+        QString moduleName;
+        QString modulePath;
+        plugin->getPythonModuleNameAndPath(&moduleName, &modulePath);
         
         int appID = getAppID() + 1;
         
@@ -720,8 +805,8 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
         ss << ")\n";
         std::string err;
         std::string output;
-        if (!Natron::interpretPythonScript(ss.str(), &err, &output)) {
-            Natron::errorDialog(tr("Group plugin creation error").toStdString(), err);
+        if (!Python::interpretPythonScript(ss.str(), &err, &output)) {
+            Dialogs::errorDialog(tr("Group plugin creation error").toStdString(), err);
             containerNode->destroyNode(false);
             return node;
         } else {
@@ -739,24 +824,24 @@ AppInstance::createNodeFromPythonModule(Natron::Plugin* plugin,
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
     
     ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-    onGroupCreationFinished(node, requestedByLoad, userEdited);
+    onGroupCreationFinished(node, reason);
     
     return node;
 }
 
 
 void
-AppInstance::setGroupLabelIDAndVersion(const boost::shared_ptr<Natron::Node>& node,
+AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
                                        const QString& pythonModulePath,
                                const QString &pythonModule)
 {
     std::string pluginID,pluginLabel,iconFilePath,pluginGrouping,description;
     unsigned int version;
-    if (Natron::getGroupInfos(pythonModulePath.toStdString(),pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &version)) {
+    if (Python::getGroupInfos(pythonModulePath.toStdString(),pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &version)) {
         node->setPluginIconFilePath(iconFilePath);
         node->setPluginDescription(description);
         node->setPluginIDAndVersionForGui(pluginLabel, pluginID, version);
-        node->setPluginPythonModule(QString(pythonModulePath + pythonModule + ".py").toStdString(), version);
+        node->setPluginPythonModule(QString(pythonModulePath + pythonModule + ".py").toStdString());
     }
     
 }
@@ -767,7 +852,7 @@ AppInstance::setGroupLabelIDAndVersion(const boost::shared_ptr<Natron::Node>& no
  * @brief An inspector node is like a viewer node with hidden inputs that unfolds one after another.
  * This functions returns the number of inputs to use for inspectors or 0 for a regular node.
  **/
-static int isEntitledForInspector(Natron::Plugin* plugin,OFX::Host::ImageEffect::Descriptor* ofxDesc)  {
+static int isEntitledForInspector(Plugin* plugin,OFX::Host::ImageEffect::Descriptor* ofxDesc)  {
     
     if (plugin->getPluginID() == PLUGINID_NATRON_VIEWER) {
         return 10;
@@ -801,46 +886,31 @@ static int isEntitledForInspector(Natron::Plugin* plugin,OFX::Host::ImageEffect:
     return 0;
 }
 
-boost::shared_ptr<Natron::Node>
-AppInstance::createNodeInternal(const QString & pluginID,
-                                const std::string & multiInstanceParentName,
-                                int majorVersion,
-                                int minorVersion,
-                                bool requestedByLoad,
-                                const NodeSerialization & serialization,
-                                bool dontLoadName,
-                                bool autoConnect,
-                                double xPosHint,
-                                double yPosHint,
-                                bool pushUndoRedoCommand,
-                                bool addToProject,
-                                bool userEdited,
-                                bool createGui,
-                                const QString& fixedName,
-                                const CreateNodeArgs::DefaultValuesList& paramValues,
-                                const boost::shared_ptr<NodeCollection>& group)
+NodePtr
+AppInstance::createNodeInternal(const CreateNodeArgs& args)
 {
     
-    boost::shared_ptr<Node> node;
-    Natron::Plugin* plugin = 0;
+    NodePtr node;
+    Plugin* plugin = 0;
     QString findId;
+    
     //Roto has moved to a built-in plugin
-    if ((userEdited || requestedByLoad) &&
-        ((!_imp->_projectCreatedWithLowerCaseIDs && pluginID == PLUGINID_OFX_ROTO) || (_imp->_projectCreatedWithLowerCaseIDs && pluginID == QString(PLUGINID_OFX_ROTO).toLower()))) {
+    if ((args.reason == eCreateNodeReasonUserCreate || args.reason == eCreateNodeReasonProjectLoad) &&
+        ((!_imp->_projectCreatedWithLowerCaseIDs && args.pluginID == PLUGINID_OFX_ROTO) || (_imp->_projectCreatedWithLowerCaseIDs && args.pluginID == QString(PLUGINID_OFX_ROTO).toLower()))) {
         findId = PLUGINID_NATRON_ROTO;
     } else {
-        findId = pluginID;
+        findId = args.pluginID;
     }
     
     try {
-        plugin = appPTR->getPluginBinary(findId,majorVersion,minorVersion,_imp->_projectCreatedWithLowerCaseIDs && requestedByLoad);
+        plugin = appPTR->getPluginBinary(findId,args.majorV,args.minorV,_imp->_projectCreatedWithLowerCaseIDs && args.reason == eCreateNodeReasonProjectLoad);
     } catch (const std::exception & e1) {
         
         ///Ok try with the old Ids we had in Natron prior to 1.0
         try {
-            plugin = appPTR->getPluginBinaryFromOldID(pluginID, majorVersion, minorVersion);
+            plugin = appPTR->getPluginBinaryFromOldID(args.pluginID, args.majorV, args.minorV);
         } catch (const std::exception& e2) {
-            Natron::errorDialog(tr("Plugin error").toStdString(),
+            Dialogs::errorDialog(tr("Plugin error").toStdString(),
                                 tr("Cannot load plugin executable").toStdString() + ": " + e2.what(), false );
             return node;
         }
@@ -852,20 +922,33 @@ AppInstance::createNodeInternal(const QString & pluginID,
         return node;
     }
     
-    if (!plugin->getIsUserCreatable() && userEdited) {
+    if (!plugin->getIsUserCreatable() && args.reason == eCreateNodeReasonUserCreate) {
         //The plug-in should not be instantiable by the user
-        qDebug() << "Attempt to create" << pluginID << "which is not user creatable";
+        qDebug() << "Attempt to create" << args.pluginID << "which is not user creatable";
         return node;
     }
 
+    
+    /*
+     If the plug-in is a PyPlug create it with createNodeFromPythonModule() except in the following situations:
+     - The user speicifed in the Preferences that he/she prefers loading PyPlugs from their serialization in the .ntp
+     file rather than load the Python script
+     - The user is copy/pasting in which case we don't want to run the Python code which could override modifications
+     made by the user on the original node
+     */
     const QString& pythonModule = plugin->getPythonModule();
     if (!pythonModule.isEmpty()) {
-        try {
-            return createNodeFromPythonModule(plugin, group, requestedByLoad, userEdited, serialization);
-        } catch (const std::exception& e) {
-            Natron::errorDialog(tr("Plugin error").toStdString(),
-                                tr("Cannot create PyPlug:").toStdString()+ e.what(), false );
-            return node;
+        if (args.reason != eCreateNodeReasonCopyPaste) {
+            try {
+                return createNodeFromPythonModule(plugin, args.group, args.reason, args.serialization);
+            } catch (const std::exception& e) {
+                Dialogs::errorDialog(tr("Plugin error").toStdString(),
+                                     tr("Cannot create PyPlug:").toStdString()+ e.what(), false );
+                return node;
+            }
+        } else {
+            plugin = appPTR->getPluginBinary(PLUGINID_NATRON_GROUP,-1,-1, false);
+            assert(plugin);
         }
     }
 
@@ -884,7 +967,7 @@ AppInstance::createNodeInternal(const QString & pluginID,
                 ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin,&ctx);
             } catch (const std::exception& e) {
                 errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of ").toStdString()
-                            + pluginID.toStdString() + ": " + e.what(), false);
+                            + args.pluginID.toStdString() + ": " + e.what(), false);
                 return NodePtr();
             }
             assert(ofxDesc);
@@ -895,9 +978,9 @@ AppInstance::createNodeInternal(const QString & pluginID,
     int nInputsForInspector = isEntitledForInspector(plugin,ofxDesc);
     
     if (!nInputsForInspector) {
-        node.reset( new Node(this, addToProject ? group : boost::shared_ptr<NodeCollection>(), plugin) );
+        node.reset( new Node(this, args.addToProject ? args.group : boost::shared_ptr<NodeCollection>(), plugin) );
     } else {
-        node.reset( new InspectorNode(this, addToProject ? group : boost::shared_ptr<NodeCollection>(), plugin,nInputsForInspector) );
+        node.reset( new InspectorNode(this, args.addToProject ? args.group : boost::shared_ptr<NodeCollection>(), plugin,nInputsForInspector) );
     }
     
     {
@@ -905,27 +988,27 @@ AppInstance::createNodeInternal(const QString & pluginID,
         boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
         if (foundPluginID.find("uk.co.thefoundry.furnace") != std::string::npos &&
             (settings->useGlobalThreadPool() || settings->getNumberOfParallelRenders() != 1)) {
-            Natron::StandardButtonEnum reply = Natron::questionDialog(tr("Warning").toStdString(),
+            StandardButtonEnum reply = Dialogs::questionDialog(tr("Warning").toStdString(),
                                                                   tr("The settings of the application are currently set to use "
                                                                      "the global thread-pool for rendering effects. The Foundry Furnace "
                                                                      "is known not to work well when this setting is checked. "
                                                                      "Would you like to turn it off ? ").toStdString(), false);
-            if (reply == Natron::eStandardButtonYes) {
+            if (reply == eStandardButtonYes) {
                 settings->setUseGlobalThreadPool(false);
                 settings->setNumberOfParallelRenders(1);
             }
         }
         
         ///If this is a stereo plug-in, check that the project has been set for multi-view
-        if (userEdited && !requestedByLoad) {
+        if (args.reason == eCreateNodeReasonUserCreate) {
             const QStringList& grouping = plugin->getGrouping();
             if (!grouping.isEmpty() && grouping[0] == PLUGIN_GROUP_MULTIVIEW) {
                 int nbViews = getProject()->getProjectViewsCount();
                 if (nbViews < 2) {
-                    Natron::StandardButtonEnum reply = Natron::questionDialog(tr("Multi-View").toStdString(),
+                    StandardButtonEnum reply = Dialogs::questionDialog(tr("Multi-View").toStdString(),
                                                                               tr("Using a multi-view node requires the project settings to be setup "
                                                                                  "for multi-view. Would you like to setup the project for stereo?").toStdString(), false);
-                    if (reply == Natron::eStandardButtonYes) {
+                    if (reply == eStandardButtonYes) {
                         getProject()->setupProjectForStereo();
                     }
                 }
@@ -934,61 +1017,64 @@ AppInstance::createNodeInternal(const QString & pluginID,
     }
     
     
-    if (addToProject) {
+    if (args.addToProject) {
         //Add the node to the project before loading it so it is present when the python script that registers a variable of the name
         //of the node works
-        assert(group);
-        if (group) {
-            group->addNode(node);
+        assert(args.group);
+        if (args.group) {
+            args.group->addNode(node);
         }
     }
     assert(node);
     try {
-        node->load(multiInstanceParentName, serialization,dontLoadName, userEdited, addToProject, fixedName,paramValues);
+        node->load(args);
     } catch (const std::exception & e) {
-        if (group) {
-            group->removeNode(node);
+        if (args.group) {
+            args.group->removeNode(node);
         }
         std::string title("Error while creating node");
         std::string message = title + " " + foundPluginID + ": " + e.what();
         qDebug() << message.c_str();
         errorDialog(title, message, false);
 
-        return boost::shared_ptr<Natron::Node>();
+        return NodePtr();
     } catch (...) {
-        if (group) {
-            group->removeNode(node);
+        if (args.group) {
+            args.group->removeNode(node);
         }
         std::string title("Error while creating node");
         std::string message = title + " " + foundPluginID;
         qDebug() << message.c_str();
         errorDialog(title, message, false);
 
-        return boost::shared_ptr<Natron::Node>();
+        return NodePtr();
     }
 
-    boost::shared_ptr<Natron::Node> multiInstanceParent = node->getParentMultiInstance();
+    NodePtr multiInstanceParent = node->getParentMultiInstance();
     
-    if (createGui) {
+    if (args.createGui) {
         // createNodeGui also sets the filename parameter for reader or writers
-        createNodeGui(node,
-                      multiInstanceParent,
-                      requestedByLoad,
-                      autoConnect,
-                      userEdited,
-                      xPosHint,
-                      yPosHint,
-                      pushUndoRedoCommand);
+        try {
+            createNodeGui(node, multiInstanceParent, args);
+        } catch (const std::exception& e) {
+            node->destroyNode(false);
+            std::string title("Error while creating node");
+            std::string message = title + " " + foundPluginID + ": " + e.what();
+            qDebug() << message.c_str();
+            errorDialog(title, message, false);
+            
+            return boost::shared_ptr<Natron::Node>();
+        }
     }
     
-    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
+    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getEffectInstance()->shared_from_this());
 
     if (isGrp) {
         
-        if (requestedByLoad) {
-            if (!serialization.isNull() && !serialization.getPythonModule().empty()) {
+        if (args.reason == eCreateNodeReasonProjectLoad || args.reason == eCreateNodeReasonCopyPaste) {
+            if (args.serialization && !args.serialization->getPythonModule().empty()) {
                 
-                QString pythonModulePath(serialization.getPythonModule().c_str());
+                QString pythonModulePath(args.serialization->getPythonModule().c_str());
                 QString moduleName;
                 QString modulePath;
                 int foundLastSlash = pythonModulePath.lastIndexOf('/');
@@ -996,27 +1082,17 @@ AppInstance::createNodeInternal(const QString & pluginID,
                     modulePath = pythonModulePath.mid(0,foundLastSlash + 1);
                     moduleName = pythonModulePath.remove(0,foundLastSlash + 1);
                 }
-                Natron::removeFileExtension(moduleName);
+                QtCompat::removeFileExtension(moduleName);
                 setGroupLabelIDAndVersion(node, modulePath, moduleName);
             }
-        } else if (!requestedByLoad && !_imp->_creatingGroup && userEdited) {
+            onGroupCreationFinished(node, args.reason);
+
+        } else if (args.reason == eCreateNodeReasonUserCreate && !_imp->_creatingGroup) {
             //if the node is a group and we're not loading the project, create one input and one output
             NodePtr input,output;
             
             {
-                CreateNodeArgs args(PLUGINID_NATRON_OUTPUT,
-                                    std::string(),
-                                    -1,
-                                    -1,
-                                    false, //< don't autoconnect
-                                    INT_MIN,
-                                    INT_MIN,
-                                    false, //<< don't push an undo command
-                                    true,
-                                    true,
-                                    QString(),
-                                    CreateNodeArgs::DefaultValuesList(),
-                                    isGrp);
+                CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, eCreateNodeReasonInternal, isGrp);
                 output = createNode(args);
                 try {
                     output->setScriptName("Output");
@@ -1026,70 +1102,34 @@ AppInstance::createNodeInternal(const QString & pluginID,
                 assert(output);
             }
             {
-                CreateNodeArgs args(PLUGINID_NATRON_INPUT,
-                                    std::string(),
-                                    -1,
-                                    -1,
-                                    true, // autoconnect
-                                    INT_MIN,
-                                    INT_MIN,
-                                    false, //<< don't push an undo command
-                                    true,
-                                    true,
-                                    QString(),
-                                    CreateNodeArgs::DefaultValuesList(),
-                                    isGrp);
+                CreateNodeArgs args(PLUGINID_NATRON_INPUT, eCreateNodeReasonInternal, isGrp);
                 input = createNode(args);
                 assert(input);
             }
-            
+            if (input && output && !output->getInput(0)) {
+                output->connectInput(input, 0);
+                
+                double x,y;
+                output->getPosition(&x, &y);
+                y -= 100;
+                input->setPosition(x, y);
+            }
+            onGroupCreationFinished(node, args.reason);
+
             ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-            onGroupCreationFinished(node, false, userEdited);
         }
+
     }
     
     return node;
 } // createNodeInternal
 
-boost::shared_ptr<Natron::Node>
+NodePtr
 AppInstance::createNode(const CreateNodeArgs & args)
 {
-    return createNodeInternal(args.pluginID,
-                              args.multiInstanceParentName,
-                              args.majorV, args.minorV,
-                              false,
-                              NodeSerialization( boost::shared_ptr<Natron::Node>() ),
-                              !args.fixedName.isEmpty(),
-                              args.autoConnect,
-                              args.xPosHint,args.yPosHint,
-                              args.pushUndoRedoCommand,
-                              args.addToProject,
-                              args.userEdited,
-                              args.createGui,
-                              args.fixedName,
-                              args.paramValues,
-                              args.group);
+    return createNodeInternal(args);
 }
 
-boost::shared_ptr<Natron::Node>
-AppInstance::loadNode(const LoadNodeArgs & args)
-{
-    return createNodeInternal(args.pluginID,
-                              args.multiInstanceParentName,
-                              args.majorV, args.minorV,
-                              true,
-                              *args.serialization,
-                              args.dontLoadName,
-                              false,
-                              INT_MIN,INT_MIN,
-                              false,
-                              true,
-                              false,
-                              true,
-                              QString(),
-                              CreateNodeArgs::DefaultValuesList(),
-                              args.group);
-}
 
 int
 AppInstance::getAppID() const
@@ -1097,13 +1137,13 @@ AppInstance::getAppID() const
     return _imp->_appID;
 }
 
-boost::shared_ptr<Natron::Node>
+NodePtr
 AppInstance::getNodeByFullySpecifiedName(const std::string & name) const
 {
     return _imp->_currentProject->getNodeByFullySpecifiedName(name);
 }
 
-boost::shared_ptr<Natron::Project>
+boost::shared_ptr<Project>
 AppInstance::getProject() const
 {
     return _imp->_currentProject;
@@ -1164,15 +1204,15 @@ AppInstance::informationDialog(const std::string & title,const std::string & mes
 }
 
 
-Natron::StandardButtonEnum
+StandardButtonEnum
 AppInstance::questionDialog(const std::string & title,
                             const std::string & message,
                             bool /*useHtml*/,
-                            Natron::StandardButtons /*buttons*/,
-                            Natron::StandardButtonEnum /*defaultButton*/) const
+                            StandardButtons /*buttons*/,
+                            StandardButtonEnum /*defaultButton*/) const
 {
     std::cout << "QUESTION: " << title + ": " << message << std::endl;
-    return Natron::eStandardButtonYes;
+    return eStandardButtonYes;
 }
 
 
@@ -1185,15 +1225,17 @@ AppInstance::triggerAutoSave()
 
 
 void
-AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender, const std::list<RenderRequest>& writers)
+AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
+                                   const std::list<std::string>& writers,
+                                   const std::list<std::pair<int,std::pair<int,int> > >& frameRanges)
 {
     
     std::list<RenderWork> renderers;
 
-    if ( !writers.empty() ) {
-        for (std::list<RenderRequest>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
+    if (!writers.empty()) {
+        for (std::list<std::string>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
             
-            std::string writerName =  it->writerName.toStdString();
+            const std::string& writerName = *it;
             
             NodePtr node = getNodeByFullySpecifiedName(writerName);
            
@@ -1204,41 +1246,69 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
             } else {
                 if ( !node->isOutputNode() ) {
                     std::string exc(writerName);
-                    exc.append(" is not an output node! It cannot render anything.");
+                    exc.append(tr(" is not an output node! It cannot render anything.").toStdString());
                     throw std::invalid_argument(exc);
                 }
-                ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(node->getLiveInstance());
+                ViewerInstance* isViewer = node->isEffectViewer();
                 if (isViewer) {
                     throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
                 }
                 
-                RenderWork w;
-                w.writer = dynamic_cast<OutputEffectInstance*>( node->getLiveInstance() );
-                assert(w.writer);
-                w.firstFrame = it->firstFrame;
-                w.lastFrame = it->lastFrame;
-                w.frameStep = it->frameStep;
-                renderers.push_back(w);
+                OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
+                assert(effect);
+                
+                for (std::list<std::pair<int,std::pair<int,int> > >::const_iterator it2 = frameRanges.begin(); it2!=frameRanges.end();++it2) {
+                    RenderWork w;
+                    w.writer = effect;
+                    w.firstFrame = it2->second.first;
+                    w.lastFrame = it2->second.second;
+                    w.frameStep = it2->first;
+                    renderers.push_back(w);
+                }
+                
+                if (frameRanges.empty()) {
+                    RenderWork r;
+                    r.firstFrame = INT_MIN;
+                    r.lastFrame = INT_MAX;
+                    r.frameStep = INT_MIN;
+                    r.writer = effect;
+                    renderers.push_back(r);
+                }
             }
         }
     } else {
         //start rendering for all writers found in the project
-        std::list<Natron::OutputEffectInstance*> writers;
+        std::list<OutputEffectInstance*> writers;
         getProject()->getWriters(&writers);
         
-        for (std::list<Natron::OutputEffectInstance*>::const_iterator it2 = writers.begin(); it2 != writers.end(); ++it2) {
+        for (std::list<OutputEffectInstance*>::const_iterator it2 = writers.begin(); it2 != writers.end(); ++it2) {
             assert(*it2);
             if (*it2) {
-                RenderWork w;
-                w.writer = *it2;
-                double f, l;
-                w.writer->getFrameRange_public(w.writer->getHash(), &f, &l);
-                w.firstFrame = std::floor(f);
-                w.lastFrame = std::ceil(l);
-                w.frameStep = w.writer->getNode()->getFrameStepKnobValue();
-                renderers.push_back(w);
+                
+                for (std::list<std::pair<int,std::pair<int,int> > >::const_iterator it3 = frameRanges.begin(); it3!=frameRanges.end();++it3) {
+                    RenderWork w;
+                    w.writer = *it2;
+                    w.firstFrame = it3->second.first;
+                    w.lastFrame = it3->second.second;
+                    w.frameStep = it3->first;
+                    renderers.push_back(w);
+                }
+                
+                if (frameRanges.empty()) {
+                    RenderWork r;
+                    r.firstFrame = INT_MIN;
+                    r.lastFrame = INT_MAX;
+                    r.frameStep = INT_MIN;
+                    r.writer = *it2;
+                    renderers.push_back(r);
+                }
             }
         }
+    }
+    
+    
+    if (renderers.empty()) {
+        throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
     }
     
     startWritersRendering(enableRenderStats, doBlockingRender, renderers);
@@ -1315,10 +1385,10 @@ AppInstance::getFrameRange(double* first,double* last) const
 void
 AppInstance::clearOpenFXPluginsCaches()
 {
-    NodeList activeNodes;
+    NodesList activeNodes;
     _imp->_currentProject->getActiveNodes(&activeNodes);
 
-    for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+    for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         (*it)->purgeAllInstancesCaches();
     }
 }
@@ -1326,10 +1396,10 @@ AppInstance::clearOpenFXPluginsCaches()
 void
 AppInstance::clearAllLastRenderedImages()
 {
-    NodeList activeNodes;
+    NodesList activeNodes;
     _imp->_currentProject->getActiveNodes(&activeNodes);
     
-    for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+    for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         (*it)->clearLastRenderedImage();
     }
 }
@@ -1350,8 +1420,8 @@ AppInstance::quit()
     appPTR->quit(this);
 }
 
-Natron::ViewerColorSpaceEnum
-AppInstance::getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const
+ViewerColorSpaceEnum
+AppInstance::getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const
 {
     return _imp->_currentProject->getDefaultColorSpaceForBitDepth(bitdepth);
 }
@@ -1368,15 +1438,15 @@ AppInstance::declareCurrentAppVariable_Python()
     /// define the app variable
     std::stringstream ss;
     ss << "app" << _imp->_appID + 1 << " = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.getInstance(" << _imp->_appID << ") \n";
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = _imp->_currentProject->getKnobs();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    const KnobsVec& knobs = _imp->_currentProject->getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         ss << "app" << _imp->_appID + 1 << "." << (*it)->getName() << " = app" << _imp->_appID + 1 << ".getProjectParam('" <<
         (*it)->getName() << "')\n";
     }
     std::string script = ss.str();
     std::string err;
     
-    bool ok = Natron::interpretPythonScript(script, &err, 0);
+    bool ok = Python::interpretPythonScript(script, &err, 0);
     assert(ok);
     if (!ok) {
         throw std::runtime_error("AppInstance::declareCurrentAppVariable_Python() failed!");
@@ -1384,7 +1454,7 @@ AppInstance::declareCurrentAppVariable_Python()
 
     if (appPTR->isBackground()) {
         std::string err;
-        ok = Natron::interpretPythonScript("app = app1\n", &err, 0);
+        ok = Python::interpretPythonScript("app = app1\n", &err, 0);
         assert(ok);
     }
 }
@@ -1439,7 +1509,7 @@ AppInstance::execOnProjectCreatedCallback()
     std::vector<std::string> args;
     std::string error;
     try {
-        Natron::getFunctionArguments(cb, &error, &args);
+        Python::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
         appendToScriptEditor(std::string("Failed to run onProjectCreated callback: ")
                                                          + e.what());
@@ -1469,7 +1539,7 @@ AppInstance::execOnProjectCreatedCallback()
     script = script + "\n" + cb + "(" + appID + ")\n";
     std::string err;
     std::string output;
-    if (!Natron::interpretPythonScript(script, &err, &output)) {
+    if (!Python::interpretPythonScript(script, &err, &output)) {
         appendToScriptEditor("Failed to run onProjectCreated callback: " + err);
     } else {
         if (!output.empty()) {
@@ -1490,13 +1560,12 @@ AppInstance::getAppIDString() const
 }
 
 void
-AppInstance::onGroupCreationFinished(const boost::shared_ptr<Natron::Node>& node,
-                                     bool requestedByLoad,
-                                     bool /*userEdited*/)
+AppInstance::onGroupCreationFinished(const NodePtr& node,
+                                     CreateNodeReason reason)
 {
     assert(node);
-    if (!_imp->_currentProject->isLoadingProject() && !requestedByLoad) {
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+    if (!_imp->_currentProject->isLoadingProject() && reason != eCreateNodeReasonProjectLoad && reason != eCreateNodeReasonCopyPaste) {
+        NodeGroup* isGrp = node->isEffectGroup();
         assert(isGrp);
         if (!isGrp) {
             return;
@@ -1510,14 +1579,14 @@ AppInstance::saveTemp(const std::string& filename)
 {
     std::string outFile = filename;
     std::string path = SequenceParsing::removePath(outFile);
-    boost::shared_ptr<Natron::Project> project= getProject();
+    boost::shared_ptr<Project> project= getProject();
     return project->saveProject_imp(path.c_str(), outFile.c_str(), false, false,0);
 }
 
 bool
 AppInstance::save(const std::string& filename)
 {
-    boost::shared_ptr<Natron::Project> project= getProject();
+    boost::shared_ptr<Project> project= getProject();
     if (project->hasProjectBeenSavedByUser()) {
         QString projectFilename = project->getProjectFilename();
         QString projectPath = project->getProjectPath();
@@ -1546,16 +1615,16 @@ AppInstance::loadProject(const std::string& filename)
     QString fileUnPathed = file.fileName();
     QString path = file.path() + "/";
     
-    CLArgs cl;
-    AppInstance* app = appPTR->newAppInstance(cl);
-    
-    bool ok  = app->getProject()->loadProject( path, fileUnPathed);
+    //We are in background mode, there can only be 1 instance active, wipe the current project
+    boost::shared_ptr<Project> project = getProject();
+    project->resetProject();
+ 
+    bool ok  = project->loadProject( path, fileUnPathed);
     if (ok) {
-        return app;
+        return this;
     }
     
-    app->getProject()->closeProject(true);
-    app->quit();
+    project->resetProject();
     
     return 0;
 }
@@ -1582,6 +1651,11 @@ AppInstance*
 AppInstance::newProject()
 {
     CLArgs cl;
-    AppInstance* app = appPTR->newAppInstance(cl);
+    AppInstance* app = appPTR->newAppInstance(cl, false);
     return app;
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_AppInstance.cpp"

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,13 +78,13 @@ CLANG_DIAG_ON(uninitialized)
 #include "ofxNatron.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 
 
 //=============================KnobGuiParametric===================================
 
-KnobGuiParametric::KnobGuiParametric(boost::shared_ptr<KnobI> knob,
+KnobGuiParametric::KnobGuiParametric(KnobPtr knob,
                                        DockablePanel *container)
 : KnobGui(knob, container)
 , treeColumn(NULL)
@@ -129,7 +129,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     treeColumnLayout->addWidget(_tree);
 
     _resetButton = new Button("Reset",treeColumn);
-    _resetButton->setToolTip( Natron::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape."), Qt::WhiteSpaceNormal) );
+    _resetButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape."), Qt::WhiteSpaceNormal) );
     QObject::connect( _resetButton, SIGNAL( clicked() ), this, SLOT( resetSelectedCurves() ) );
     treeColumnLayout->addWidget(_resetButton);
 
@@ -283,11 +283,15 @@ KnobGuiParametric::resetSelectedCurves()
             }
         }
     }
-    k->evaluateValueChange(0, k->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+    k->evaluateValueChange(0, k->getCurrentTime(), eValueChangedReasonUserEdited);
 }
 
-boost::shared_ptr<KnobI> KnobGuiParametric::getKnob() const
+KnobPtr KnobGuiParametric::getKnob() const
 {
     return _knob.lock();
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_KnobGuiParametric.cpp"

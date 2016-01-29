@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,21 +39,21 @@
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 // defined below:
-struct PositionInteract;
 struct HostOverlayPrivate;
 
-class HostOverlay : public Natron::NatronOverlayInteractSupport
+class HostOverlay : public NatronOverlayInteractSupport
 {
     
 public:
     
-    HostOverlay(const boost::shared_ptr<NodeGui>& node);
+    HostOverlay(const NodeGuiPtr& node);
     
     ~HostOverlay();
     
-    boost::shared_ptr<NodeGui> getNode() const;
+    NodeGuiPtr getNode() const;
     
     bool addPositionParam(const boost::shared_ptr<KnobDouble>& position);
     
@@ -66,7 +66,7 @@ public:
                               const boost::shared_ptr<KnobChoice>& skewOrder,
                               const boost::shared_ptr<KnobDouble>& center);
     
-    void draw(double time,const RenderScale& renderScale);
+    void draw(double time,const RenderScale & renderScale);
     
     
 
@@ -126,5 +126,7 @@ private:
     
     boost::scoped_ptr<HostOverlayPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_HostOverlay_h

@@ -5,6 +5,7 @@
 
 #include <ParameterWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class GroupParamWrapper : public GroupParam
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~GroupParamWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_GROUPPARAMWRAPPER_H
 

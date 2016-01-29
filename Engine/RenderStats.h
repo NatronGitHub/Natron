@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <bitset>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -42,6 +43,7 @@
 #include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief Holds render infos for one frame for one node. Not MT-safe: MT-safety is handled by RenderStats.
@@ -65,14 +67,14 @@ public:
     const RectD& getRoD() const;
     void setRoD(const RectD& rod);
     
-    void setInputImageIdentity(const boost::shared_ptr<Natron::Node>& identity);
-    boost::shared_ptr<Natron::Node> getInputImageIdentity() const;
+    void setInputImageIdentity(const NodePtr& identity);
+    NodePtr getInputImageIdentity() const;
     
     void addRenderedRectangle(const RectI& rectangle);
     const std::list<RectI>& getRenderedRectangles() const;
     
-    void addIdentityRectangle(const boost::shared_ptr<Natron::Node>& identity, const RectI& rectangle);
-    std::list<std::pair<RectI,boost::shared_ptr<Natron::Node> > > getIdentityRectangles() const;
+    void addIdentityRectangle(const NodePtr& identity, const RectI& rectangle);
+    std::list<std::pair<RectI,NodePtr > > getIdentityRectangles() const;
     
     void addMipMapLevelRendered(unsigned int level);
     const std::set<unsigned int>& getMipMapLevelsRendered() const;
@@ -89,11 +91,11 @@ public:
     void setRenderScaleSupported(bool rsSupported);
     bool isRenderScaleSupportEnabled() const;
     
-    void setChannelsRendered(bool r, bool g, bool b, bool a);
-    void getChannelsRendered(bool* r, bool* g, bool* b, bool* a) const;
+    void setChannelsRendered(std::bitset<4> channelsRendered);
+    std::bitset<4> getChannelsRendered() const;
     
-    void setOutputPremult(Natron::ImagePremultiplicationEnum premult);
-    Natron::ImagePremultiplicationEnum getOutputPremult() const;
+    void setOutputPremult(ImagePremultiplicationEnum premult);
+    ImagePremultiplicationEnum getOutputPremult() const;
     
 private:
     
@@ -118,31 +120,34 @@ public:
     
     bool isInDepthProfilingEnabled() const;
     
-    void setNodeIdentity(const boost::shared_ptr<Natron::Node>& node, const boost::shared_ptr<Natron::Node>& identity);
+    void setNodeIdentity(const NodePtr& node, const NodePtr& identity);
     
-    void setGlobalRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
+    void setGlobalRenderInfosForNode(const NodePtr& node,
                                      const RectD& rod,
-                                     Natron::ImagePremultiplicationEnum outputPremult,
-                                     bool channelsRendered[4],
+                                     ImagePremultiplicationEnum outputPremult,
+                                     std::bitset<4> channelsRendered,
                                      bool tilesSupported,
                                      bool renderScaleSupported,
                                      unsigned int mipmapLevel);
     
-    void addCacheInfosForNode(const boost::shared_ptr<Natron::Node>& node,
+    void addCacheInfosForNode(const NodePtr& node,
                               bool isCacheMiss,
                               bool hasDownscaled);
     
-    void addRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
-                        const boost::shared_ptr<Natron::Node>& identity,
+    void addRenderInfosForNode(const NodePtr& node,
+                        const NodePtr& identity,
                         const std::string& plane,
                         const RectI& rectangle,
                         double timeSpent);
     
-    std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > getStats(double *totalTimeSpent) const;
+    std::map<NodePtr,NodeRenderStats > getStats(double *totalTimeSpent) const;
     
 private:
     
     boost::scoped_ptr<RenderStatsPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
+
 
 #endif // RENDERSTATS_H

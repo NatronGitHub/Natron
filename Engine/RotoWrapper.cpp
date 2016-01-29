@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,8 @@
 #include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
+
+NATRON_NAMESPACE_ENTER;
 
 ItemBase::ItemBase(const boost::shared_ptr<RotoItem>& item)
 : _item(item)
@@ -117,7 +119,7 @@ ItemBase::getParam(const std::string& name) const
     if (!drawable) {
         return 0;
     }
-    boost::shared_ptr<KnobI> knob = drawable->getKnobByName(name);
+    KnobPtr knob = drawable->getKnobByName(name);
     if (!knob) {
         return 0;
     }
@@ -261,7 +263,7 @@ BezierCurve::slavePointToTrack(int index, double trackTime, DoubleParam* trackCe
     if (!trackCenter) {
         return;
     }
-    boost::shared_ptr<KnobI> internalKnob = trackCenter->getInternalKnob();
+    KnobPtr internalKnob = trackCenter->getInternalKnob();
     if (!internalKnob) {
         return;
     }
@@ -271,7 +273,7 @@ BezierCurve::slavePointToTrack(int index, double trackTime, DoubleParam* trackCe
         return;
     }
     
-    Natron::EffectInstance* parent = dynamic_cast<Natron::EffectInstance*>(isDouble->getHolder());
+    EffectInstance* parent = dynamic_cast<EffectInstance*>(isDouble->getHolder());
     if (!parent) {
         return;
     }
@@ -567,3 +569,5 @@ Roto::createRectangle(double x,double y,double size,double time)
     }
     return 0;
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDebug>
 #include <QtCore/QSettings>
 #include <QApplication>
+#include <QDesktopWidget>
+#include <QFileOpenEvent>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -54,6 +56,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/QtDecoder.h"
 #include "Gui/QtEncoder.h"
 #include "Gui/SplashScreen.h"
+
+Q_INIT_RESOURCE_EXTERN(GuiResources);
 
 /**
  * @macro Registers a keybind to the application.
@@ -76,8 +80,9 @@ CLANG_DIAG_ON(uninitialized)
 /**
  * @brief Performs the same that the registerKeybind macro, except that it takes a QKeySequence::StandardKey in parameter.
  * This way the keybind will be standard and will adapt bery well across all platforms supporting the standard.
+ * If the standard parameter has no shortcut associated, the fallbackmodifiers and fallbacksymbol will be used instead.
  **/
-#define registerStandardKeybind(group,id,description,key) ( _imp->addStandardKeybind(group,id,description,key) )
+#define registerStandardKeybind(group,id,description,key, fallbackmodifiers, fallbacksymbol) ( _imp->addStandardKeybind(group,id,description,key,fallbackmodifiers, fallbacksymbol) )
 
 /**
  * @brief Performs the same that the registerKeybind macro, except that it works for shortcuts using mouse buttons instead of key symbols.
@@ -92,20 +97,21 @@ CLANG_DIAG_ON(uninitialized)
 //in a way. This way the user will get prompted to restore default shortcuts on next launch
 #define NATRON_SHORTCUTS_DEFAULT_VERSION 7
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 void
 GuiApplicationManager::updateAllRecentFileMenus()
 {
     const std::map<int,AppInstanceRef> & instances = getAppInstances();
-
+    
     for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* appInstance = dynamic_cast<GuiAppInstance*>(it->second.app);
-        assert(appInstance);
-        Gui* gui = appInstance->getGui();
-        assert(gui);
-        gui->updateRecentFileActions();
+        if (appInstance) {
+            Gui* gui = appInstance->getGui();
+            assert(gui);
+            gui->updateRecentFileActions();
+        }
     }
 }
 
@@ -124,17 +130,18 @@ void
 GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                               std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap)
 {
-    ////Use ReadQt and WriteQt only for debug versions of Natron.
-    // these  are built-in nodes
+    ////ReadQt and WriteQt are buggy and not maintained
+    // these are built-in nodes
     QStringList grouping;
+    grouping.push_back(PLUGIN_GROUP_IMAGE);
 
-    grouping.push_back(PLUGIN_GROUP_IMAGE); // Readers, Writers, and Generators are in the "Image" group in Nuke
-
-# ifdef DEBUG
+# ifdef NATRON_ENABLE_QT_IO_NODES
+   
+    
     {
         QStringList pgrp = grouping;
         pgrp.push_back("Readers");
-        std::auto_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( boost::shared_ptr<Natron::Node>() ) ) );
+        std::auto_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( NodePtr() ) ) );
         assert(reader.get());
         std::map<std::string,void(*)()> readerFunctions;
         readerFunctions.insert( std::make_pair("BuildEffect", (void(*)())&QtReader::BuildEffect) );
@@ -161,7 +168,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
     {
         QStringList pgrp = grouping;
         pgrp.push_back("Writers");
-        std::auto_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( boost::shared_ptr<Natron::Node>() ) ) );
+        std::auto_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( NodePtr() ) ) );
         assert(writer.get());
         std::map<std::string,void(*)()> writerFunctions;
         writerFunctions.insert( std::make_pair("BuildEffect", (void(*)())&QtWriter::BuildEffect) );
@@ -186,23 +193,11 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
             }
         }
     }
-# else // !DEBUG
+# else // !NATRON_ENABLE_QT_IO_NODES
     Q_UNUSED(readersMap);
     Q_UNUSED(writersMap);
-# endif // DEBUG
-
-    {
-        boost::shared_ptr<EffectInstance> viewer( ViewerInstance::BuildEffect( boost::shared_ptr<Natron::Node>() ) );
-        assert(viewer);
-        std::map<std::string,void(*)()> viewerFunctions;
-        viewerFunctions.insert( std::make_pair("BuildEffect", (void(*)())&ViewerInstance::BuildEffect) );
-        LibraryBinary *viewerPlugin = new LibraryBinary(viewerFunctions);
-        assert(viewerPlugin);
-        
-        registerPlugin(grouping, viewer->getPluginID().c_str(), viewer->getPluginLabel().c_str(),NATRON_IMAGES_PATH "viewer_icon.png", QStringList(), false, false, viewerPlugin, false, viewer->getMajorVersion(), viewer->getMinorVersion(), false);
-
-    }
-
+# endif // NATRON_ENABLE_QT_IO_NODES
+    
     ///Also load the plug-ins of the AppManager
     AppManager::loadBuiltinNodePlugins(readersMap, writersMap);
 } // loadBuiltinNodePlugins
@@ -214,7 +209,7 @@ GuiApplicationManager::makeNewInstance(int appID) const
 }
 
 KnobGui*
-GuiApplicationManager::createGuiForKnob(boost::shared_ptr<KnobI> knob,
+GuiApplicationManager::createGuiForKnob(KnobPtr knob,
                                         DockablePanel *container) const
 {
     return _imp->_knobGuiFactory->createGuiForKnob(knob,container);
@@ -292,9 +287,18 @@ GuiApplicationManager::initializeQApp(int &argc,
 {
     QApplication* app = new Application(this,argc, argv);
 
+    QDesktopWidget* desktop = app->desktop();
+    int dpiX = desktop->logicalDpiX();
+    int dpiY = desktop->logicalDpiY();
+    setCurrentLogicalDPI(dpiX,dpiY);
+
     app->setQuitOnLastWindowClosed(true);
-    Q_INIT_RESOURCE(GuiResources);
-    
+
+    //Q_INIT_RESOURCE(GuiResources);
+    // Q_INIT_RESOURCES expanded, and fixed for use from inside a namespace:
+    // (requires using Q_INIT_RESOURCES_EXTERN(GuiResources) before entering the namespace)
+    ::qInitResources_GuiResources();
+
     ///Register all the shortcuts.
     populateShortcuts();
 }
@@ -334,7 +338,7 @@ GuiApplicationManager::setUndoRedoStackLimit(int limit)
 }
 
 void
-GuiApplicationManager::debugImage(const Natron::Image* image,
+GuiApplicationManager::debugImage(const Image* image,
                                   const RectI& roi,
                                   const QString & filename) const
 {
@@ -354,32 +358,21 @@ bool
 GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
 {
     QString fileCopy(filename.c_str());
-    QString ext = Natron::removeFileExtension(fileCopy);
+    QString ext = QtCompat::removeFileExtension(fileCopy);
     std::string readerFileType = appPTR->isImageFileSupportedByNatron(ext.toStdString());
     AppInstance* mainInstance = appPTR->getTopLevelInstance();
     bool instanceCreated = false;
     if (!mainInstance || !mainInstance->getProject()->isGraphWorthLess()) {
         CLArgs cl;
-        mainInstance = appPTR->newAppInstance(cl);
+        mainInstance = appPTR->newAppInstance(cl, false);
         instanceCreated = true;
     }
     if (!mainInstance) {
         return false;
     }
     
-    CreateNodeArgs::DefaultValuesList defaultValues;
-    defaultValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
-    CreateNodeArgs args(readerFileType.c_str(),
-                        "",
-                        -1, -1,
-                        true,
-                        INT_MIN, INT_MIN,
-                        true,
-                        true,
-                        true,
-                        QString(),
-                        defaultValues,
-                        mainInstance->getProject());
+    CreateNodeArgs args(readerFileType.c_str(), eCreateNodeReasonUserCreate, mainInstance->getProject());
+    args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
     NodePtr readerNode = mainInstance->createNode(args);
     if (!readerNode && instanceCreated) {
         mainInstance->quit();
@@ -387,10 +380,10 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
     }
     
     ///Find and connect the viewer
-    NodeList allNodes = mainInstance->getProject()->getNodes();
+    NodesList allNodes = mainInstance->getProject()->getNodes();
     NodePtr viewerFound ;
-    for (NodeList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
-        if (dynamic_cast<ViewerInstance*>((*it)->getLiveInstance())) {
+    for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+        if ((*it)->isEffectViewer()) {
             viewerFound = *it;
             break;
         }
@@ -398,17 +391,7 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
     
     ///If no viewer is found, create it
     if (!viewerFound) {
-        viewerFound = mainInstance->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
-                                             "",
-                                             -1,-1,
-                                             true,
-                                             INT_MIN,INT_MIN,
-                                             false,
-                                             true,
-                                             false,
-                                             QString(),
-                                             CreateNodeArgs::DefaultValuesList(),
-                                             mainInstance->getProject()));
+        viewerFound = mainInstance->createNode(CreateNodeArgs(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, mainInstance->getProject()));
     }
     if (viewerFound) {
         viewerFound->connectInput(readerNode, 0);
@@ -443,15 +426,35 @@ GuiApplicationManager::onLoadCompleted()
 }
 
 void
-GuiApplicationManager::exitApp()
+GuiApplicationManager::exitApp(bool warnUserForSave)
 {
     ///make a copy of the map because it will be modified when closing projects
     std::map<int,AppInstanceRef> instances = getAppInstances();
-
+    
+    std::list<GuiAppInstance*> guiApps;
     for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(it->second.app);
-        if ( app && !app->getGui()->closeInstance() ) {
-            return;
+        if (app) {
+            guiApps.push_back(app);
+        }
+    }
+    
+    std::set<GuiAppInstance*> triedInstances;
+    while (!guiApps.empty()) {
+        GuiAppInstance* app = guiApps.front();
+        if (app) {
+            triedInstances.insert(app);
+            app->getGui()->closeInstance(warnUserForSave);
+        }
+        
+        //refreshg ui instances
+        instances = getAppInstances();
+        guiApps.clear();
+        for (std::map<int,AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+            GuiAppInstance* ga = dynamic_cast<GuiAppInstance*>(it->second.app);
+            if (ga && triedInstances.find(ga) == triedInstances.end()) {
+                guiApps.push_back(ga);
+            }
         }
     }
 }
@@ -743,16 +746,17 @@ void
 GuiApplicationManager::populateShortcuts()
 {
     ///General
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionNewProject, kShortcutDescActionNewProject,QKeySequence::New);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionOpenProject, kShortcutDescActionOpenProject,QKeySequence::Open);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveProject, kShortcutDescActionSaveProject,QKeySequence::Save);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveAsProject, kShortcutDescActionSaveAsProject,QKeySequence::SaveAs);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseProject, kShortcutDescActionCloseProject,QKeySequence::Close);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionPreferences, kShortcutDescActionPreferences,QKeySequence::Preferences);
-    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionQuit, kShortcutDescActionQuit,QKeySequence::Quit);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionNewProject, kShortcutDescActionNewProject,QKeySequence::New, Qt::ControlModifier, Qt::Key_N);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionOpenProject, kShortcutDescActionOpenProject,QKeySequence::Open, Qt::ControlModifier, Qt::Key_O);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveProject, kShortcutDescActionSaveProject,QKeySequence::Save, Qt::ControlModifier, Qt::Key_S);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveAsProject, kShortcutDescActionSaveAsProject,QKeySequence::SaveAs, Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_S);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseProject, kShortcutDescActionCloseProject,QKeySequence::Close, Qt::ControlModifier, Qt::Key_W);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionPreferences, kShortcutDescActionPreferences,QKeySequence::Preferences, Qt::ShiftModifier, Qt::Key_S);
+    registerStandardKeybind(kShortcutGroupGlobal, kShortcutIDActionQuit, kShortcutDescActionQuit,QKeySequence::Quit, Qt::ControlModifier, Qt::Key_Q);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionSaveAndIncrVersion, kShortcutDescActionSaveAndIncrVersion, Qt::ControlModifier | Qt::ShiftModifier |
                     Qt::AltModifier, Qt::Key_S);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionReloadProject, kShortcutDescActionReloadProject, Qt::ControlModifier | Qt::ShiftModifier, Qt::Key_R);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionExportProject, kShortcutDescActionExportProject, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowAbout, kShortcutDescActionShowAbout, Qt::NoModifier, (Qt::Key)0);
 
@@ -882,7 +886,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, kShortcutDescActionPlayerPrevIncr, Qt::ShiftModifier, Qt::Key_Left);
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, kShortcutDescActionPlayerNextIncr, Qt::ShiftModifier, Qt::Key_Right);
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, kShortcutDescActionPlayerPrevKF, Qt::ShiftModifier | Qt::ControlModifier, Qt::Key_Left);
-    registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, kShortcutDescActionPlayerPrevKF, Qt::ShiftModifier | Qt::ControlModifier, Qt::Key_Right);
+    registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, kShortcutDescActionPlayerNextKF, Qt::ShiftModifier | Qt::ControlModifier, Qt::Key_Right);
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, kShortcutDescActionPlayerFirst, Qt::ControlModifier, Qt::Key_Left);
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, kShortcutDescActionPlayerLast, Qt::ControlModifier, Qt::Key_Right);
 
@@ -1100,6 +1104,7 @@ GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
 void
 GuiApplicationManager::showOfxLog()
 {
+    hideSplashScreen();
     GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(getTopLevelInstance());
     if (app) {
         app->getGui()->showOfxLog();
@@ -1202,3 +1207,5 @@ GuiApplicationManager::reloadStylesheets()
         }
     }
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,17 +36,16 @@
 #include "Engine/ViewerInstance.h"
 #include "Engine/Lut.h"
 #include "Engine/Image.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/Label.h"
 
 using std::cout; using std::endl;
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
-InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
-                                   const QString & description,
+InfoViewerWidget::InfoViewerWidget(const QString & description,
                                    QWidget* parent)
 : QWidget(parent)
-, viewer(v)
 , _comp(ImageComponents::getNoneComponents())
 , _colorValid(false)
 , _colorApprox(false)
@@ -54,7 +53,11 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
     for (int i = 0; i < 4; ++i) {
         currentColor[i] = 0;
     }
-    setFixedHeight(20);
+
+    //Using this constructor of QFontMetrics will respect the DPI of the screen, see http://doc.qt.io/qt-4.8/qfontmetrics.html#QFontMetrics-2
+    QFontMetrics fm(font(),0);
+    setFixedHeight(fm.height());
+
     setStyleSheet( QString("background-color: black;\n"
                            "color : rgba(200,200,200,255);\n"
                            "QToolTip { background-color: black;}") );
@@ -91,7 +94,7 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
     layout->setSpacing(0);
     layout->setContentsMargins(0, 0, 0, 0);
 
-    descriptionLabel = new Natron::Label(this);
+    descriptionLabel = new Label(this);
     {
         const QFont& font = descriptionLabel->font();
 
@@ -105,14 +108,14 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
         int width = fm.width("A:");
         descriptionLabel->setMinimumWidth(width);
     }
-    imageFormat = new Natron::Label(this);
+    imageFormat = new Label(this);
     {
         QFontMetrics fm = imageFormat->fontMetrics();
         int width = fm.width("backward.motion32f");
         imageFormat->setMinimumWidth(width);
     }
 
-    resolution = new Natron::Label(this);
+    resolution = new Label(this);
     {
         QFontMetrics fm = resolution->fontMetrics();
         int width = fm.width("00000x00000");
@@ -120,7 +123,7 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
     }
 
 
-    coordDispWindow = new Natron::Label(this);
+    coordDispWindow = new Label(this);
     {
         QFontMetrics fm = coordDispWindow->fontMetrics();
         int width = fm.width("RoD: 000 000 0000 0000");
@@ -128,7 +131,7 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
         coordDispWindow->setMinimumWidth(width);
     }
    
-    _fpsLabel = new Natron::Label(this);
+    _fpsLabel = new Label(this);
     {
         QFontMetrics fm = _fpsLabel->fontMetrics();
         int width = fm.width("100 fps");
@@ -137,24 +140,24 @@ InfoViewerWidget::InfoViewerWidget(ViewerGL* v,
         _fpsLabel->hide();
     }
     
-    coordMouse = new Natron::Label(this);
+    coordMouse = new Label(this);
     {
         QFontMetrics fm = coordMouse->fontMetrics();
         int width = fm.width("x=00000 y=00000");
         coordMouse->setMinimumWidth(width);
     }
 
-    rgbaValues = new Natron::Label(this);
+    rgbaValues = new Label(this);
     {
         QFontMetrics fm = rgbaValues->fontMetrics();
         int width = fm.width("0.00000 0.00000 0.00000 ~ ");
         rgbaValues->setMinimumWidth(width);
     }
 
-    color = new Natron::Label(this);
-    color->setFixedSize(20, 20);
+    color = new Label(this);
+    color->setFixedSize(TO_DPIX(20), TO_DPIY(20));
     
-    hvl_lastOption = new Natron::Label(this);
+    hvl_lastOption = new Label(this);
     {
         QFontMetrics fm = hvl_lastOption->fontMetrics();
         int width = fm.width("H:000 S:0.00 V:0.00 L:0.00000");
@@ -323,7 +326,7 @@ InfoViewerWidget::setColor(float r,
     double srgb_g = Color::to_func_srgb(g);
     double srgb_b = Color::to_func_srgb(b);
     QColor col;
-    col.setRgbF( Natron::clamp(srgb_r, 0., 1.), Natron::clamp(srgb_g, 0., 1.), Natron::clamp(srgb_b, 0., 1.) );
+    col.setRgbF( Image::clamp(srgb_r, 0., 1.), Image::clamp(srgb_g, 0., 1.), Image::clamp(srgb_b, 0., 1.) );
     QPixmap pix(15,15);
     pix.fill(col);
     color->setPixmap(pix);
@@ -453,18 +456,22 @@ InfoViewerWidget::setDataWindow(const RectI & r)
 }
 
 void
-InfoViewerWidget::setImageFormat(const Natron::ImageComponents& comp,
-                                 Natron::ImageBitDepthEnum depth)
+InfoViewerWidget::setImageFormat(const ImageComponents& comp,
+                                 ImageBitDepthEnum depth)
 {
 
     const QFont& font = imageFormat->font();
     QString text = QString("<font color=\"#DBE0E0\" face=\"%1\" size=%2>")
     .arg(font.family())
     .arg(font.pixelSize());
-    QString format(Natron::Image::getFormatString(comp, depth).c_str());
+    QString format(Image::getFormatString(comp, depth).c_str());
     text.append(format);
     text.append("</font>");
     imageFormat->setText(text);
     _comp = comp;
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_InfoViewerWidget.cpp"

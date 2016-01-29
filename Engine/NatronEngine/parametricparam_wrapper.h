@@ -5,6 +5,7 @@
 
 #include <ParameterWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class ParametricParamWrapper : public ParametricParam
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~ParametricParamWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_PARAMETRICPARAMWRAPPER_H
 

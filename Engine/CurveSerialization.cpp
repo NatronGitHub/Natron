@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,10 @@
 
 // explicit template instantiations
 
+NATRON_NAMESPACE_ENTER;
 
 template void Curve::serialize<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar,
                                                              const unsigned int file_version);
 template void Curve::serialize<boost::archive::xml_oarchive>(boost::archive::xml_oarchive & ar,
                                                              const unsigned int file_version);
+NATRON_NAMESPACE_EXIT;

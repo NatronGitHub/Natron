@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +40,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 class DopeSheetEditorPrivate;
 
@@ -89,7 +91,7 @@ public:
      *
      * The model will decide if the node should be accepted or discarded.
      */
-    void addNode(boost::shared_ptr<NodeGui> nodeGui);
+    void addNode(NodeGuiPtr nodeGui);
 
     /**
      * @brief Tells to the dope sheet model to remove 'node' from the dope
@@ -120,8 +122,11 @@ private:
     virtual void enterEvent(QEvent *e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent *e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     
     boost::scoped_ptr<DopeSheetEditorPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // DOPESHEETEDITOR_H

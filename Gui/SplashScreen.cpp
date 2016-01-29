@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QDesktopWidget>
 CLANG_DIAG_ON(deprecated)
 
+NATRON_NAMESPACE_ENTER;
 
 SplashScreen::SplashScreen(const QString & filePath)
     : QWidget(0,Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
@@ -146,4 +147,6 @@ LoadProjectSplashScreen::paintEvent(QPaintEvent* /*e*/)
     p.setPen(QColor(243,137,0));
     p.drawText(loadStrPos, loadString);
 }
+
+NATRON_NAMESPACE_EXIT;
 

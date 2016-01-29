@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class KnobGuiDouble
     : public KnobGui
@@ -61,20 +62,20 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+    static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
         return new KnobGuiDouble(knob, container);
     }
 
-    KnobGuiDouble(boost::shared_ptr<KnobI> knob,
+    KnobGuiDouble(KnobPtr knob,
                    DockablePanel *container);
 
     virtual ~KnobGuiDouble() OVERRIDE;
     
     virtual void removeSpecificGui() OVERRIDE FINAL;
 
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
     bool getAllDimensionsVisible() const;
     
@@ -119,15 +120,18 @@ private:
     virtual void setReadOnly(bool readOnly,int dimension) OVERRIDE FINAL;
     virtual void updateGUI(int dimension) OVERRIDE FINAL;
     virtual void setDirty(bool dirty) OVERRIDE FINAL;
-    virtual void reflectAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual void reflectAnimationLevel(int dimension,AnimationLevelEnum level) OVERRIDE FINAL;
     virtual void reflectExpressionState(int dimension,bool hasExpr) OVERRIDE FINAL;
     virtual void updateToolTip() OVERRIDE FINAL;
     virtual void reflectModificationsState() OVERRIDE FINAL;
 private:
-    std::vector<std::pair<SpinBox *, Natron::Label *> > _spinBoxes;
+    std::vector<std::pair<SpinBox *, Label *> > _spinBoxes;
     QWidget *_container;
     ScaleSliderQWidget *_slider;
     Button *_dimensionSwitchButton;
     boost::weak_ptr<KnobDouble> _knob;
 };
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // Gui_KnobGuiDouble_h

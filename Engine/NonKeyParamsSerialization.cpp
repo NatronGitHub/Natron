@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,16 +24,19 @@
 
 #include "Engine/NonKeyParamsSerialization.h"
 
+NATRON_NAMESPACE_ENTER;
 
 // explicit template instantiations
 
 
-template void Natron::NonKeyParams::serialize<boost::archive::binary_iarchive>(boost::archive::binary_iarchive & ar,
+template void NonKeyParams::serialize<boost::archive::binary_iarchive>(boost::archive::binary_iarchive & ar,
                                                                                const unsigned int file_version);
-template void Natron::NonKeyParams::serialize<boost::archive::binary_oarchive>(boost::archive::binary_oarchive & ar,
+template void NonKeyParams::serialize<boost::archive::binary_oarchive>(boost::archive::binary_oarchive & ar,
                                                                                const unsigned int file_version);
 
-template void Natron::NonKeyParams::serialize<boost::archive::xml_iarchive>(   boost::archive::xml_iarchive & ar,
+template void NonKeyParams::serialize<boost::archive::xml_iarchive>(   boost::archive::xml_iarchive & ar,
                                                                                const unsigned int file_version);
-template void Natron::NonKeyParams::serialize<boost::archive::xml_oarchive>(   boost::archive::xml_oarchive & ar,
+template void NonKeyParams::serialize<boost::archive::xml_oarchive>(   boost::archive::xml_oarchive & ar,
                                                                                const unsigned int file_version);
+
+NATRON_NAMESPACE_EXIT;

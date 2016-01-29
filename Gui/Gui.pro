@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+# Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ SOURCES += \
     AnimatedCheckBox.cpp \
     AnimationButton.cpp \
     AutoHideToolBar.cpp \
-    BackDropGui.cpp \
+    BackdropGui.cpp \
     Button.cpp \
     ChannelsComboBox.cpp \
     ClickableLabel.cpp \
@@ -99,6 +99,7 @@ SOURCES += \
     ExportGroupTemplateDialog.cpp \
     FloatingWidget.cpp \
     QtEnumConvert.cpp \
+    GroupBoxLabel.cpp \
     Gui.cpp \
     Gui05.cpp \
     Gui10.cpp \
@@ -143,7 +144,7 @@ SOURCES += \
     Menu.cpp \
     MultiInstancePanel.cpp \
     NewLayerDialog.cpp \
-    NodeBackDropSerialization.cpp \
+    NodeBackdropSerialization.cpp \
     NodeCreationDialog.cpp \
     NodeGraph.cpp \
     NodeGraph05.cpp \
@@ -166,6 +167,7 @@ SOURCES += \
     PanelWidget.cpp \
     PickKnobDialog.cpp \
     PreferencesPanel.cpp \
+    PreviewThread.cpp \
     ProjectGui.cpp \
     ProjectGuiSerialization.cpp \
     PropertiesBinWrapper.cpp \
@@ -225,7 +227,7 @@ HEADERS += \
     AnimatedCheckBox.h \
     AnimationButton.h \
     AutoHideToolBar.h \
-    BackDropGui.h \
+    BackdropGui.h \
     Button.h \
     ChannelsComboBox.h \
     ClickableLabel.h \
@@ -291,7 +293,7 @@ HEADERS += \
     Menu.h \
     MultiInstancePanel.h \
     NewLayerDialog.h \
-    NodeBackDropSerialization.h \
+    NodeBackdropSerialization.h \
     NodeClipBoard.h \
     NodeCreationDialog.h \
     NodeGraph.h \
@@ -304,6 +306,7 @@ HEADERS += \
     PanelWidget.h \
     PickKnobDialog.h \
     PreferencesPanel.h \
+    PreviewThread.h \
     ProjectGui.h \
     ProjectGuiSerialization.h \
     PropertiesBinWrapper.h \

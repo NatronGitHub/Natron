@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class ProjectGui
     : public QObject
@@ -56,7 +57,7 @@ public:
     ProjectGui(Gui* gui);
     virtual ~ProjectGui() OVERRIDE;
 
-    void create(boost::shared_ptr<Natron::Project> projectInternal,QVBoxLayout* container,QWidget* parent = NULL);
+    void create(boost::shared_ptr<Project> projectInternal,QVBoxLayout* container,QWidget* parent = NULL);
 
 
     bool isVisible() const;
@@ -66,7 +67,7 @@ public:
         return _panel;
     }
 
-    boost::shared_ptr<Natron::Project> getInternalProject() const
+    boost::shared_ptr<Project> getInternalProject() const
     {
         return _project.lock();
     }
@@ -95,7 +96,7 @@ public:
     /**
      * @brief Retur
      **/
-    std::list<boost::shared_ptr<NodeGui> > getVisibleNodes() const;
+    NodesGuiList getVisibleNodes() const;
     Gui* getGui() const
     {
         return _gui;
@@ -110,10 +111,11 @@ public Q_SLOTS:
     void initializeKnobsGui();
 
 private:
+    
 
 
     Gui* _gui;
-    boost::weak_ptr<Natron::Project> _project;
+    boost::weak_ptr<Project> _project;
     DockablePanel* _panel;
     bool _created;
     std::vector<boost::shared_ptr<KnobColor> > _colorPickersEnabled;
@@ -127,7 +129,7 @@ class AddFormatDialog
 
 public:
 
-    AddFormatDialog(Natron::Project* project,
+    AddFormatDialog(Project* project,
                     Gui* gui);
 
     virtual ~AddFormatDialog()
@@ -143,7 +145,6 @@ public Q_SLOTS:
 private:
 
     Gui* _gui;
-    Natron::Project* _project;
     
     std::list<ViewerInstance*> _viewers;
     
@@ -154,21 +155,23 @@ private:
     ComboBox* _copyFromViewerCombo;
     QWidget* _parametersLine;
     QHBoxLayout* _parametersLineLayout;
-    Natron::Label* _widthLabel;
+    Label* _widthLabel;
     SpinBox* _widthSpinBox;
-    Natron::Label* _heightLabel;
+    Label* _heightLabel;
     SpinBox* _heightSpinBox;
-    Natron::Label* _pixelAspectLabel;
+    Label* _pixelAspectLabel;
     SpinBox* _pixelAspectSpinBox;
     QWidget* _formatNameLine;
     QHBoxLayout* _formatNameLayout;
-    Natron::Label* _nameLabel;
+    Label* _nameLabel;
     LineEdit* _nameLineEdit;
     QWidget* _buttonsLine;
     QHBoxLayout* _buttonsLineLayout;
     Button* _cancelButton;
     Button* _okButton;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 
 #endif // PROJECTGUI_H

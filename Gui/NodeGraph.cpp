@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@
 #include <locale>
 #include <algorithm> // min, max
 
-#include "Engine/BackDrop.h"
+#include "Engine/Backdrop.h"
 #include "Engine/Dot.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -40,7 +40,7 @@
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/DotGui.h"
 #include "Gui/Edge.h"
 #include "Gui/Gui.h"
@@ -52,12 +52,12 @@
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 //using std::cout; using std::endl;
 
 
 void
-NodeGraph::makeFullyQualifiedLabel(Natron::Node* node,std::string* ret)
+NodeGraph::makeFullyQualifiedLabel(Node* node,std::string* ret)
 {
     boost::shared_ptr<NodeCollection> parent = node->getGroup();
     NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>(parent.get());
@@ -141,11 +141,11 @@ NodeGraph::NodeGraph(Gui* gui,
     _imp->_undoStack->setUndoLimit( appPTR->getCurrentSettings()->getMaximumUndoRedoNodeGraph() );
     getGui()->registerNewUndoStack(_imp->_undoStack);
 
-    _imp->_hintInputEdge = new Edge(0,0,boost::shared_ptr<NodeGui>(),_imp->_nodeRoot);
+    _imp->_hintInputEdge = new Edge(0,0,NodeGuiPtr(),_imp->_nodeRoot);
     _imp->_hintInputEdge->setDefaultColor( QColor(0,255,0,100) );
     _imp->_hintInputEdge->hide();
 
-    _imp->_hintOutputEdge = new Edge(0,0,boost::shared_ptr<NodeGui>(),_imp->_nodeRoot);
+    _imp->_hintOutputEdge = new Edge(0,0,NodeGuiPtr(),_imp->_nodeRoot);
     _imp->_hintOutputEdge->setDefaultColor( QColor(0,255,0,100) );
     _imp->_hintOutputEdge->hide();
 
@@ -175,18 +175,18 @@ NodeGraph::NodeGraph(Gui* gui,
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    _imp->_menu = new Natron::Menu(this);
+    _imp->_menu = new Menu(this);
     
 }
 
 NodeGraph::~NodeGraph()
 {
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin();
+    for (NodesGuiList::iterator it = _imp->_nodes.begin();
          it != _imp->_nodes.end();
          ++it) {
         (*it)->discardGraphPointer();
     }
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin();
+    for (NodesGuiList::iterator it = _imp->_nodesTrash.begin();
          it != _imp->_nodesTrash.end();
          ++it) {
         (*it)->discardGraphPointer();
@@ -220,7 +220,7 @@ NodeGraph::isDoingNavigatorRender() const
 }
 
 
-const std::list< boost::shared_ptr<NodeGui> > &
+const std::list< NodeGuiPtr > &
 NodeGraph::getSelectedNodes() const
 {
     return _imp->_selection;
@@ -251,23 +251,14 @@ NodeGraph::notifyGuiClosing()
 void
 NodeGraph::onNodesCleared()
 {
-    _imp->_selection.clear();
-    std::list<boost::shared_ptr<NodeGui> > nodesCpy;
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        nodesCpy = _imp->_nodes;
-    }
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = nodesCpy.begin(); it != nodesCpy.end(); ++it) {
-        deleteNodepluginsly( *it );
+        _imp->_nodes.clear();
+        _imp->_nodesTrash.clear();
     }
 
-    while ( !_imp->_nodesTrash.empty() ) {
-        deleteNodepluginsly( *( _imp->_nodesTrash.begin() ) );
-    }
     _imp->_selection.clear();
     _imp->_magnifiedNode.reset();
-    _imp->_nodes.clear();
-    _imp->_nodesTrash.clear();
     _imp->_undoStack->clear();
 
 }
@@ -369,16 +360,14 @@ NodeGraph::visibleWidgetRect() const
     return viewport()->rect();
 }
 
-boost::shared_ptr<NodeGui>
-NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
-                         bool requestedByLoad,
-                         bool userEdited,
-                         bool pushUndoRedoCommand)
+NodeGuiPtr
+NodeGraph::createNodeGUI(const NodePtr & node,
+                         const CreateNodeArgs& args)
 {
-    boost::shared_ptr<NodeGui> node_ui;
-    Dot* isDot = dynamic_cast<Dot*>( node->getLiveInstance() );
-    BackDrop* isBd = dynamic_cast<BackDrop*>(node->getLiveInstance());
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getLiveInstance());
+    NodeGuiPtr node_ui;
+    Dot* isDot = dynamic_cast<Dot*>( node->getEffectInstance().get() );
+    Backdrop* isBd = dynamic_cast<Backdrop*>(node->getEffectInstance().get());
+    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getEffectInstance().get());
     
     
     ///prevent multiple render requests while creating node and connecting it
@@ -387,7 +376,7 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
     if (isDot) {
         node_ui.reset( new DotGui(_imp->_nodeRoot) );
     } else if (isBd) {
-        node_ui.reset(new BackDropGui(_imp->_nodeRoot));
+        node_ui.reset(new BackdropGui(_imp->_nodeRoot));
     } else {
         node_ui.reset( new NodeGui(_imp->_nodeRoot) );
     }
@@ -395,13 +384,13 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
     node_ui->initialize(this, node);
 
     if (isBd) {
-        BackDropGui* bd = dynamic_cast<BackDropGui*>(node_ui.get());
+        BackdropGui* bd = dynamic_cast<BackdropGui*>(node_ui.get());
         assert(bd);
-        NodeGuiList selectedNodes = _imp->_selection;
+        NodesGuiList selectedNodes = _imp->_selection;
         if ( bd && !selectedNodes.empty() ) {
             ///make the backdrop large enough to contain the selected nodes and position it correctly
             QRectF bbox;
-            for (std::list<boost::shared_ptr<NodeGui> >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+            for (NodesGuiList::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
                 QRectF nodeBbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
                 bbox = bbox.united(nodeBbox);
             }
@@ -424,8 +413,9 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
         _imp->_nodes.push_back(node_ui);
     }
 
+    NodeGroup* parentIsGroup = dynamic_cast<NodeGroup*>(node->getGroup().get());;
     
-    if (!requestedByLoad && (!getGui()->getApp()->isCreatingPythonGroup() || dynamic_cast<NodeGroup*>(node->getLiveInstance()))) {
+    if (args.reason != eCreateNodeReasonProjectLoad && (!getGui()->getApp()->isCreatingPythonGroup() || node->isEffectGroup()) && !parentIsGroup) {
         node_ui->ensurePanelCreated();
     }
     
@@ -436,12 +426,10 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
         getGui()->registerNewUndoStack(nodeStack.get());
     }
     
-    if (pushUndoRedoCommand) {
+    if (args.reason == eCreateNodeReasonUserCreate) {
         pushUndoCommand( new AddMultipleNodesCommand(this,node_ui) );
-    } else if (!requestedByLoad) {
-        if (!isGrp && userEdited) {
-            selectNode(node_ui, false);
-        }
+    } else if (args.reason != eCreateNodeReasonProjectLoad && !isGrp) {
+        selectNode(node_ui, false);
     }
 
     _imp->_evtState = eEventStateNone;
@@ -449,3 +437,7 @@ NodeGraph::createNodeGUI(const boost::shared_ptr<Natron::Node> & node,
     return node_ui;
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_NodeGraph.cpp"

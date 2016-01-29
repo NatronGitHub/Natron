@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,8 +30,8 @@
 #define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
 #endif
 
-using namespace FitCurve;
-using namespace Natron;
+using namespace NATRON_NAMESPACE::FitCurve;
+NATRON_NAMESPACE_ENTER;
 
 /*
  * This implementation is based on Graphic Gems I
@@ -566,4 +566,6 @@ void FitCurve::fit_cubic(const std::vector<Point>& points, double error,std::vec
         }
     }
 }
+
+NATRON_NAMESPACE_EXIT;
 

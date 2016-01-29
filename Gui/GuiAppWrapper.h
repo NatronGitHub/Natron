@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,16 +34,17 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class PyViewer
 {
     
-    boost::shared_ptr<Natron::Node> _node;
+    NodePtr _node;
     ViewerTab* _viewer;
     
 public:
     
-    PyViewer(const boost::shared_ptr<Natron::Node>& node);
+    PyViewer(const NodePtr& node);
     
     ~PyViewer();
     
@@ -65,13 +66,13 @@ public:
     
     void getFrameRange(int* firstFrame,int* lastFrame) const;
     
-    void setPlaybackMode(Natron::PlaybackModeEnum mode);
+    void setPlaybackMode(PlaybackModeEnum mode);
     
-    Natron::PlaybackModeEnum getPlaybackMode() const;
+    PlaybackModeEnum getPlaybackMode() const;
     
-    Natron::ViewerCompositingOperatorEnum getCompositingOperator() const;
+    ViewerCompositingOperatorEnum getCompositingOperator() const;
     
-    void setCompositingOperator(Natron::ViewerCompositingOperatorEnum op);
+    void setCompositingOperator(ViewerCompositingOperatorEnum op);
     
     int getAInput() const;
 
@@ -81,9 +82,9 @@ public:
     
     void setBInput(int index);
     
-    void setChannels(Natron::DisplayChannelsEnum channels);
+    void setChannels(DisplayChannelsEnum channels);
     
-    Natron::DisplayChannelsEnum getChannels() const;
+    DisplayChannelsEnum getChannels() const;
     
     void setProxyModeEnabled(bool enabled);
     
@@ -148,5 +149,7 @@ public:
     void renderBlocking(const std::list<Effect*>& effects,const std::list<int>& firstFrames,const std::list<int>& lastFrames,const std::list<int>& frameSteps);
 
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // GUIAPPWRAPPER_H

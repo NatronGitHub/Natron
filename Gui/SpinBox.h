@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@
 #include "Gui/LineEdit.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct SpinBoxPrivate;
 
@@ -145,7 +146,6 @@ private:
     ///Used by the stylesheet , they are Q_PROPERTIES
     int animation; // 0 = no animation, 1 = interpolated, 2 = equals keyframe value
     bool dirty;
-    bool altered;
     boost::scoped_ptr<SpinBoxPrivate> _imp;
 };
 
@@ -175,5 +175,7 @@ private:
     
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif /* defined(NATRON_GUI_FEEDBACKSPINBOX_H_) */

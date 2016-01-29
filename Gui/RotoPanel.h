@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct RotoPanelPrivate;
 
@@ -54,7 +55,7 @@ class RotoPanel
 public:
 
 
-    RotoPanel(const boost::shared_ptr<NodeGui>& n,
+    RotoPanel(const NodeGuiPtr& n,
               QWidget* parent = 0);
 
     virtual ~RotoPanel();
@@ -79,7 +80,7 @@ public:
     void makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& item,
                                   QTreeWidgetItem* treeItem = NULL);
     
-    boost::shared_ptr<NodeGui> getNode() const;
+    NodeGuiPtr getNode() const;
 
 public Q_SLOTS:
 
@@ -205,5 +206,7 @@ public:
 };
 
 typedef boost::shared_ptr<DroppedTreeItem> DroppedTreeItemPtr;
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // ROTOPANEL_H

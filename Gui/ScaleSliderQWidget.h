@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct ScaleSliderQWidgetPrivate;
 
@@ -64,7 +65,7 @@ public:
                        double initialPos, // the initial value
                        DataTypeEnum dataType,
                        Gui* gui,
-                       Natron::ScaleTypeEnum type = Natron::eScaleTypeLinear, // the type of scale
+                       ScaleTypeEnum type = eScaleTypeLinear, // the type of scale
                        QWidget* parent = 0);
     
 
@@ -73,7 +74,7 @@ public:
     void setMinimumAndMaximum(double min,double max);
 
 
-    Natron::ScaleTypeEnum type() const;
+    ScaleTypeEnum type() const;
 
     double minimum() const;
 
@@ -127,5 +128,7 @@ private:
     boost::scoped_ptr<ScaleSliderQWidgetPrivate> _imp;
     
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // SCALESLIDERQWIDGET_H

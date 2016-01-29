@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 struct DiskCacheNodePrivate
 {
@@ -47,7 +47,7 @@ struct DiskCacheNodePrivate
     }
 };
 
-DiskCacheNode::DiskCacheNode(boost::shared_ptr<Node> node)
+DiskCacheNode::DiskCacheNode(NodePtr node)
 : OutputEffectInstance(node)
 , _imp(new DiskCacheNodePrivate())
 {
@@ -56,16 +56,16 @@ DiskCacheNode::DiskCacheNode(boost::shared_ptr<Node> node)
 
 
 void
-DiskCacheNode::addAcceptedComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comps)
+DiskCacheNode::addAcceptedComponents(int /*inputNb*/,std::list<ImageComponents>* comps)
 {
     comps->push_back(ImageComponents::getRGBAComponents());
     comps->push_back(ImageComponents::getRGBComponents());
     comps->push_back(ImageComponents::getAlphaComponents());
 }
 void
-DiskCacheNode::addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const
+DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
-    depths->push_back(Natron::eImageBitDepthFloat);
+    depths->push_back(eImageBitDepthFloat);
 }
 
 bool
@@ -77,9 +77,9 @@ DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,double /*time
 void
 DiskCacheNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = Natron::createKnob<KnobPage>(this, "Controls");
+    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Controls");
     
-    boost::shared_ptr<KnobChoice> frameRange = Natron::createKnob<KnobChoice>(this, "Frame range");
+    boost::shared_ptr<KnobChoice> frameRange = AppManager::createKnob<KnobChoice>(this, "Frame range");
     frameRange->setName("frameRange");
     frameRange->setAnimationEnabled(false);
     std::vector<std::string> choices;
@@ -92,7 +92,7 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(frameRange);
     _imp->frameRange = frameRange;
     
-    boost::shared_ptr<KnobInt> firstFrame = Natron::createKnob<KnobInt>(this, "First frame");
+    boost::shared_ptr<KnobInt> firstFrame = AppManager::createKnob<KnobInt>(this, "First frame");
     firstFrame->setAnimationEnabled(false);
     firstFrame->setName("firstFrame");
     firstFrame->disableSlider();
@@ -103,7 +103,7 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(firstFrame);
     _imp->firstFrame = firstFrame;
     
-    boost::shared_ptr<KnobInt> lastFrame = Natron::createKnob<KnobInt>(this, "Last frame");
+    boost::shared_ptr<KnobInt> lastFrame = AppManager::createKnob<KnobInt>(this, "Last frame");
     lastFrame->setAnimationEnabled(false);
     lastFrame->setName("LastFrame");
     lastFrame->disableSlider();
@@ -113,7 +113,7 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(lastFrame);
     _imp->lastFrame = lastFrame;
     
-    boost::shared_ptr<KnobButton> preRender = Natron::createKnob<KnobButton>(this, "Pre-cache");
+    boost::shared_ptr<KnobButton> preRender = AppManager::createKnob<KnobButton>(this, "Pre-cache");
     preRender->setName("preRender");
     preRender->setEvaluateOnChange(false);
     preRender->setHintToolTip("Cache the frame range specified by rendering images at zoom-level 100% only.");
@@ -124,7 +124,7 @@ DiskCacheNode::initializeKnobs()
 }
 
 void
-DiskCacheNode::knobChanged(KnobI* k, Natron::ValueChangedReasonEnum /*reason*/, int /*view*/, double /*time*/,
+DiskCacheNode::knobChanged(KnobI* k, ValueChangedReasonEnum /*reason*/, int /*view*/, double /*time*/,
                            bool /*originatedFromMainThread*/)
 {
     if (_imp->frameRange.lock().get() == k) {
@@ -160,7 +160,7 @@ DiskCacheNode::getFrameRange(double *first,double *last)
     int idx = _imp->frameRange.lock()->getValue();
     switch (idx) {
         case 0: {
-            EffectInstance* input = getInput(0);
+            EffectInstPtr input = getInput(0);
             if (input) {
                 input->getFrameRange_public(input->getHash(), first, last);
             }
@@ -178,9 +178,9 @@ DiskCacheNode::getFrameRange(double *first,double *last)
 }
 
 void
-DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const
+DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const
 {
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (input) {
         return input->getPreferredDepthAndComponents(-1, comp, depth);
     } else {
@@ -190,10 +190,10 @@ DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,std::list<Natron::
 }
 
 
-Natron::ImagePremultiplicationEnum
+ImagePremultiplicationEnum
 DiskCacheNode::getOutputPremultiplication() const
 {
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (input) {
         return input->getOutputPremultiplication();
     } else {
@@ -205,7 +205,7 @@ DiskCacheNode::getOutputPremultiplication() const
 double
 DiskCacheNode::getPreferredAspectRatio() const
 {
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (input) {
         return input->getPreferredAspectRatio();
     } else {
@@ -214,13 +214,13 @@ DiskCacheNode::getPreferredAspectRatio() const
 
 }
 
-Natron::StatusEnum
+StatusEnum
 DiskCacheNode::render(const RenderActionArgs& args)
 {
     
     assert(args.outputPlanes.size() == 1);
     
-    EffectInstance* input = getInput(0);
+    EffectInstPtr input = getInput(0);
     if (!input) {
         return eStatusFailed;
     }
@@ -235,7 +235,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
     for (std::list<ImageComponents> ::const_iterator it =components.begin(); it != components.end(); ++it) {
         RectI roiPixel;
         
-        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, *it, bitdepth, par, false, &roiPixel);
+        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, *it, bitdepth, par, false, true, &roiPixel);
         if (!srcImg) {
             return eStatusFailed;
         }
@@ -256,3 +256,4 @@ DiskCacheNode::render(const RenderActionArgs& args)
     return eStatusOK;
 }
 
+NATRON_NAMESPACE_EXIT;

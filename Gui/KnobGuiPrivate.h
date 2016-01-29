@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -100,8 +100,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Utils.h"
 #include "Gui/ViewerTab.h"
 
-using namespace Natron;
-
+NATRON_NAMESPACE_ENTER;
 
 struct KnobGuiPrivate
 {
@@ -130,5 +129,7 @@ struct KnobGuiPrivate
     
     void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob);
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // _Gui_KnobGuiPrivate_h_

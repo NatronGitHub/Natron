@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,6 +53,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 //#define NATRON_ROTO_ENABLE_MOTION_BLUR
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A base class for all items made by the roto context
@@ -75,7 +76,7 @@ class RotoContext
 public:
 
     
-    RotoContext(const boost::shared_ptr<Natron::Node>& node);
+    RotoContext(const NodePtr& node);
 
     virtual ~RotoContext();
     
@@ -142,7 +143,7 @@ public:
     boost::shared_ptr<Bezier> makeSquare(double x,double y,double initialSize,double time);
     
     
-    boost::shared_ptr<RotoStrokeItem> makeStroke(Natron::RotoStrokeType type,
+    boost::shared_ptr<RotoStrokeItem> makeStroke(RotoStrokeType type,
                                                  const std::string& baseName,
                                                  bool clearSel);
     
@@ -200,37 +201,37 @@ public:
     
     
    
-    boost::shared_ptr<Natron::Image> renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
+    boost::shared_ptr<Image> renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                                           const RectI& roi,
-                                                          const Natron::ImageComponents& components,
+                                                          const ImageComponents& components,
                                                           const double time,
                                                           const int view,
-                                                          const Natron::ImageBitDepthEnum depth,
+                                                          const ImageBitDepthEnum depth,
                                                           const unsigned int mipmapLevel);
     
     double renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
                             const RectD& rod,
-                            const std::list<std::pair<Natron::Point,double> >& points,
+                            const std::list<std::pair<Point,double> >& points,
                             unsigned int mipmapLevel,
                             double par,
-                            const Natron::ImageComponents& components,
-                            Natron::ImageBitDepthEnum depth,
+                            const ImageComponents& components,
+                            ImageBitDepthEnum depth,
                             double distToNext,
-                            boost::shared_ptr<Natron::Image> *wholeStrokeImage);
+                            boost::shared_ptr<Image> *wholeStrokeImage);
     
 private:
     
-    boost::shared_ptr<Natron::Image> renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& stroke,
+    boost::shared_ptr<Image> renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                                         const RectI & roi,
-                                                        const Natron::ImageComponents& components,
+                                                        const ImageComponents& components,
                                                         const double startTime,
                                                         const double endTime,
                                                         const double timeStep,
                                                         const double time,
-                                                        const Natron::ImageBitDepthEnum depth,
+                                                        const ImageBitDepthEnum depth,
                                                         const unsigned int mipmapLevel,
-                                                        const std::list<std::list<std::pair<Natron::Point,double> > >& strokes,
-                                                        const boost::shared_ptr<Natron::Image> &image);
+                                                        const std::list<std::list<std::pair<Point,double> > >& strokes,
+                                                        const boost::shared_ptr<Image> &image);
     
 public:
     
@@ -314,7 +315,7 @@ public:
     
     int getNCurves() const;
     
-    boost::shared_ptr<Natron::Node> getNode() const;
+    NodePtr getNode() const;
     
     boost::shared_ptr<RotoLayer> getLayerByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getItemByName(const std::string & n) const;
@@ -383,11 +384,11 @@ public:
      **/
     void refreshRotoPaintTree();
     
-    void onRotoPaintInputChanged(const boost::shared_ptr<Natron::Node>& node);
+    void onRotoPaintInputChanged(const NodePtr& node);
         
-    void getRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
+    void getRotoPaintTreeNodes(NodesList* nodes) const;
     
-    boost::shared_ptr<Natron::Node> getRotoPaintBottomMergeNode() const;
+    NodePtr getRotoPaintBottomMergeNode() const;
         
     void setWhileCreatingPaintStrokeOnMergeNodes(bool b);
     
@@ -407,11 +408,8 @@ public:
      **/
     void evaluateNeatStrokeRender();
     
-    /**
-     * @brief Called when a render is finished to wake-up the main-thread if it was waiting in 
-     * evaluateNeatStrokeRender()
-     **/
-    void notifyRenderFinished();
+    
+    bool mustDoNeatRender() const;
     
     void setIsDoingNeatRender(bool doing);
     
@@ -420,7 +418,7 @@ public:
     void s_breakMultiStroke() { Q_EMIT breakMultiStroke(); }
     
     void knobChanged(KnobI* k,
-                     Natron::ValueChangedReasonEnum reason,
+                     ValueChangedReasonEnum reason,
                      int view,
                      double time,
                      bool originatedFromMainThread);
@@ -466,7 +464,7 @@ public Q_SLOTS:
 private:
     
     
-    boost::shared_ptr<Natron::Node> getOrCreateGlobalMergeNode(int *availableInputIndex);
+    NodePtr getOrCreateGlobalMergeNode(int *availableInputIndex);
     
     void selectInternal(const boost::shared_ptr<RotoItem>& b);
     void deselectInternal(boost::shared_ptr<RotoItem> b);
@@ -476,5 +474,7 @@ private:
    
     boost::scoped_ptr<RotoContextPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_RotoContext_h

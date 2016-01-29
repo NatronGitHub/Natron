@@ -1,7 +1,7 @@
 #!/bin/sh
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
+# DISABLE_BREAKPAD=1: Disable automatic crash report
 #Usage MKJOBS=4 BUILD_CONFIG=SNAPSHOT build-natron.sh workshop
 
 source `pwd`/common.sh || exit 1
@@ -171,28 +172,20 @@ if [ "$PYV" = "3" ]; then
     PYO="PYTHON_CONFIG=python3.4m-config"
 fi
 
-env CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo CONFIG+=silent ${EXTRA_QMAKE_FLAG} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
+if [ "$DISABLE_BREAKPAD" = "1" ]; then
+    CONFIG_BREAKPAD_FLAG="CONFIG+=disable-breakpad"
+fi
+
+env CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${CONFIG_BREAKPAD_FLAG} CONFIG+=silent ${EXTRA_QMAKE_FLAG} ${PYO} DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
 make -j${MKJOBS} || exit 1
 
 cp App/Natron $INSTALL_PATH/bin/ || exit 1
 cp Renderer/NatronRenderer $INSTALL_PATH/bin/ || exit 1
-if [ -f CrashReporter/NatronCrashReporter ]; then
+
+if [ "$DISABLE_BREAKPAD" != "1" ]; then
     cp CrashReporter/NatronCrashReporter $INSTALL_PATH/bin/ || exit 1
     cp CrashReporterCLI/NatronRendererCrashReporter $INSTALL_PATH/bin/ || exit 1
 fi
-
-#For breakpad to work, we must use exactly the symbols from the release build, so we build with CONFIG+=relwithdebinfo
-#if [ -z "$NODEBUG" ]; then
-#  CFLAGS="$BF" CXXFLAGS="$BF" $INSTALL_PATH/bin/qmake -r CONFIG+=debug CONDIF+=silent ../Project.pro || exit 1
-#  make -j${MKJOBS} || exit 1
-#  cp App/Natron $INSTALL_PATH/bin/Natron.debug || exit 1
-#  cp Renderer/NatronRenderer $INSTALL_PATH/bin/NatronRenderer.debug || exit 1
-#  if [ -f CrashReporter/NatronCrashReporter ]; then
-#    cp CrashReporter/NatronCrashReporter $INSTALL_PATH/bin/NatronCrashReporter.debug || exit 1
-#  else
-#    echo "CrashReporter missing!!! Something broken?"
-#  fi
-#fi
 
 #If OpenColorIO-Configs do not exist, download them
 if [ ! -d "$SRC_PATH/OpenColorIO-Configs" ]; then
@@ -210,6 +203,7 @@ mkdir -p $INSTALL_PATH/share/stylesheets || exit 1
 cp ../Gui/Resources/Stylesheets/mainstyle.qss $INSTALL_PATH/share/stylesheets/ || exit 1
 mkdir -p $INSTALL_PATH/share/pixmaps || exit 1
 cp ../Gui/Resources/Images/natronIcon256_linux.png $INSTALL_PATH/share/pixmaps/ || exit 1
+cp ../Gui/Resources/Images/natronProjectIcon_linux.png $INSTALL_PATH/share/pixmaps/ || exit 1
 echo $NATRON_REL_V > $INSTALL_PATH/docs/natron/VERSION || exit 1
 
 echo "Done!"

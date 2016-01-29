@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@
 #include <cerrno>
 #include <cstdio>
 #endif
+#include <sstream>
 #include <iostream>
 #include <stdexcept>
 
@@ -44,6 +45,8 @@
 #include "Global/GlobalDefines.h"
 
 #define MIN_FILE_SIZE 4096
+
+NATRON_NAMESPACE_ENTER;
 
 struct MemoryFilePrivate
 {
@@ -151,9 +154,9 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
     *********************************************************/
     file_handle = ::open(path.c_str(), posix_open_mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (file_handle == -1) {
-        std::string str("MemoryFile EXC : Failed to open ");
-        str.append(path);
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to open \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
 
     /*********************************************************
@@ -164,9 +167,9 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
     *********************************************************/
     struct stat sbuf;
     if (::fstat(file_handle, &sbuf) == -1) {
-        std::string str("MemoryFile EXC : Failed to get file info: ");
-        str.append(path);
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to get file info \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
 
     /*********************************************************
@@ -180,9 +183,9 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
                                        0, sbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, file_handle, 0) );
         if (data == MAP_FAILED) {
             data = 0;
-            std::string str("MemoryFile EXC : Failed to create mapping: ");
-            str.append(path);
-            throw std::runtime_error(str);
+            std::stringstream ss;
+            ss << "MemoryFile EXC : Failed to create mapping for \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
+            throw std::runtime_error(ss.str());
         } else {
             size = sbuf.st_size;
         }
@@ -228,7 +231,7 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
     ********************************************************
     *********************************************************/
 #ifdef UNICODE
-    std::wstring wpath = Natron::s2ws(path);
+    std::wstring wpath = Global::s2ws(path);
     file_handle = ::CreateFile(wpath.c_str(), GENERIC_READ | GENERIC_WRITE,
                                0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
 
@@ -238,7 +241,7 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
 #endif
     
     if (file_handle == INVALID_HANDLE_VALUE) {
-		std::string winError = Natron::GetLastErrorAsString();
+		std::string winError = Global::GetLastErrorAsString();
         std::string str("MemoryFile EXC : Failed to open file ");
         str.append(path);
 		str.append(winError);
@@ -296,23 +299,23 @@ MemoryFile::resize(size_t new_size)
 #if defined(__NATRON_UNIX__)
     if (_imp->data) {
         if (::munmap(_imp->data, _imp->size) < 0) {
-            std::string str("MemoryFile EXC : Failed to unmap the mapped file: ");
-            str.append( std::strerror(errno) );
-            throw std::runtime_error(str);
+            std::stringstream ss;
+            ss << "MemoryFile EXC : Failed to unmap \"" << _imp->path << "\": " << std::strerror(errno) << " (" << errno << ")";
+            throw std::runtime_error(ss.str());
         }
     }
     if (::ftruncate(_imp->file_handle, new_size) < 0) {
-        std::string str("MemoryFile EXC : Failed to resize the mapped file: ");
-        str.append( std::strerror(errno) );
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to truncate the file \"" << _imp->path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
     _imp->data = static_cast<char*>( ::mmap(
                                          0, new_size, PROT_READ | PROT_WRITE, MAP_SHARED, _imp->file_handle, 0) );
     if (_imp->data == MAP_FAILED) {
         _imp->data = 0;
-        std::string str("MemoryFile EXC : Failed to create mapping: ");
-        str.append(_imp->path);
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to create mapping of \"" << _imp->path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
 
 #elif defined(__NATRON_WIN32__)
@@ -335,9 +338,9 @@ MemoryFilePrivate::closeMapping()
 {
 #if defined(__NATRON_UNIX__)
     if (::munmap(data,size) != 0) {
-        std::string str("MemoryFile EXC : Failed to unmap the mapped file: ");
-        str.append( std::strerror(errno) );
-        throw std::runtime_error(str);
+        std::stringstream ss;
+        ss << "MemoryFile EXC : Failed to unmap \"" << path << "\": " << std::strerror(errno) << " (" << errno << ")";
+        throw std::runtime_error(ss.str());
     }
     ::close(file_handle);
 #elif defined(__NATRON_WIN32__)
@@ -387,4 +390,6 @@ MemoryFile::remove()
         _imp->data = 0;
     }
 }
+
+NATRON_NAMESPACE_EXIT;
 

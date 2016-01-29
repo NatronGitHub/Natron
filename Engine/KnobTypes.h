@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Knob.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /******************************KnobInt**************************************/
 
@@ -277,7 +278,7 @@ public:
 
     void serializeTracks(std::list<SerializedTrack>* tracks);
 
-    void restoreTracks(const std::list <SerializedTrack> & tracks,const std::list<boost::shared_ptr<Natron::Node> > & activeNodes);
+    void restoreTracks(const std::list <SerializedTrack> & tracks,const NodesList & activeNodes);
 
     void setHasHostOverlayHandle(bool handle);
     
@@ -480,7 +481,7 @@ private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual void handleSignalSlotsForAliasLink(const boost::shared_ptr<KnobI>& alias,bool connect) OVERRIDE FINAL;
+    virtual void handleSignalSlotsForAliasLink(const KnobPtr& alias,bool connect) OVERRIDE FINAL;
     
     
 private:
@@ -729,15 +730,15 @@ public:
                int dimension,
                bool declaredByPlugin);
 
-    void addKnob(boost::shared_ptr<KnobI> k);
+    void addKnob(KnobPtr k);
     void removeKnob(KnobI* k);
     
     bool moveOneStepUp(KnobI* k);
     bool moveOneStepDown(KnobI* k);
     
-    void insertKnob(int index, const boost::shared_ptr<KnobI>& k);
+    void insertKnob(int index, const KnobPtr& k);
 
-    std::vector< boost::shared_ptr<KnobI> > getChildren() const;
+    std::vector< KnobPtr > getChildren() const;
 
     void setAsTab();
 
@@ -779,7 +780,7 @@ public:
               int dimension,
               bool declaredByPlugin);
 
-    void addKnob(const boost::shared_ptr<KnobI>& k);
+    void addKnob(const KnobPtr& k);
     
 
     bool moveOneStepUp(KnobI* k);
@@ -787,9 +788,9 @@ public:
     
     void removeKnob(KnobI* k);
     
-    void insertKnob(int index, const boost::shared_ptr<KnobI>& k);
+    void insertKnob(int index, const KnobPtr& k);
 
-    std::vector< boost::shared_ptr<KnobI> >  getChildren() const;
+    std::vector< KnobPtr >  getChildren() const;
 
     static const std::string & typeNameStatic();
 
@@ -843,26 +844,26 @@ public:
     std::pair<double,double> getParametricRange() const WARN_UNUSED_RETURN;
     boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
     boost::shared_ptr<Curve> getDefaultParametricCurve(int dimension) const;
-    Natron::StatusEnum addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
-    Natron::StatusEnum addHorizontalControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
-    Natron::StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) const WARN_UNUSED_RETURN;
-    Natron::StatusEnum getNControlPoints(int dimension,int *returnValue) const WARN_UNUSED_RETURN;
-    Natron::StatusEnum getNthControlPoint(int dimension,
+    StatusEnum addControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
+    StatusEnum addHorizontalControlPoint(int dimension,double key,double value) WARN_UNUSED_RETURN;
+    StatusEnum getValue(int dimension,double parametricPosition,double *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum getNControlPoints(int dimension,int *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum getNthControlPoint(int dimension,
                                       int nthCtl,
                                       double *key,
                                       double *value) const WARN_UNUSED_RETURN;
-    Natron::StatusEnum getNthControlPoint(int dimension,
+    StatusEnum getNthControlPoint(int dimension,
                                           int nthCtl,
                                           double *key,
                                           double *value,
                                           double *leftDerivative,
                                           double *rightDerivative) const WARN_UNUSED_RETURN;
-    Natron::StatusEnum setNthControlPoint(int dimension,
+    StatusEnum setNthControlPoint(int dimension,
                                       int nthCtl,
                                       double key,
                                       double value) WARN_UNUSED_RETURN;
     
-    Natron::StatusEnum setNthControlPoint(int dimension,
+    StatusEnum setNthControlPoint(int dimension,
                                           int nthCtl,
                                           double key,
                                           double value,
@@ -870,8 +871,8 @@ public:
                                           double rightDerivative) WARN_UNUSED_RETURN;
 
     
-    Natron::StatusEnum deleteControlPoint(int dimension, int nthCtl) WARN_UNUSED_RETURN;
-    Natron::StatusEnum deleteAllControlPoints(int dimension) WARN_UNUSED_RETURN;
+    StatusEnum deleteControlPoint(int dimension, int nthCtl) WARN_UNUSED_RETURN;
+    StatusEnum deleteAllControlPoints(int dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
     void saveParametricCurves(std::list< Curve >* curves) const;
@@ -914,5 +915,7 @@ private:
     virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range,int dimension = -1) OVERRIDE FINAL;
     static const std::string _typeNameStr;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_KNOBTYPES_H

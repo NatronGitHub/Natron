@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,11 +57,11 @@
 
 #include <SequenceParsing.h>
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 //===========================FILE_KNOB_GUI=====================================
-KnobGuiFile::KnobGuiFile(boost::shared_ptr<KnobI> knob,
+KnobGuiFile::KnobGuiFile(KnobPtr knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
     , _lineEdit(0)
@@ -129,14 +129,14 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
     containerLayout->addWidget(_lineEdit);
     containerLayout->addWidget(_openFileButton);
     
-    if (knob->getHolder() && knob->isInputImageFile()) {
+    if (knob->getHolder()) {
         _reloadButton = new Button(container);
         _reloadButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _reloadButton->setFocusPolicy(Qt::NoFocus);
         QPixmap pixRefresh;
         appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixRefresh);
         _reloadButton->setIcon(QIcon(pixRefresh));
-        _reloadButton->setToolTip(Natron::convertFromPlainText(tr("Reload the file."), Qt::WhiteSpaceNormal));
+        _reloadButton->setToolTip(GuiUtils::convertFromPlainText(tr("Reload the file."), Qt::WhiteSpaceNormal));
         QObject::connect( _reloadButton, SIGNAL( clicked() ), this, SLOT( onReloadClicked() ) );
         containerLayout->addWidget(_reloadButton);
     }
@@ -162,7 +162,7 @@ KnobGuiFile::onReloadClicked()
             effect->purgeCaches();
             effect->clearPersistentMessage(false);
         }
-        knob->evaluateValueChange(0, knob->getCurrentTime(), Natron::eValueChangedReasonNatronInternalEdited);
+        knob->evaluateValueChange(0, knob->getCurrentTime(), eValueChangedReasonNatronInternalEdited);
     }
 }
 
@@ -175,7 +175,7 @@ KnobGuiFile::open_file()
     if ( !knob->isInputImageFile() ) {
         filters.push_back("*");
     } else {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>( knob->getHolder() );
+        EffectInstance* effect = dynamic_cast<EffectInstance*>( knob->getHolder() );
         if (effect) {
             filters = effect->supportedFileFormats();
         }
@@ -299,11 +299,11 @@ KnobGuiFile::watchedFileChanged()
                 QFileInfo fileMonitored(_fileBeingWatched.c_str());
                 if (fileMonitored.lastModified() != _lastModified) {
                     QString warn = tr("The file ") + _lineEdit->text() + tr(" has changed on disk. Press reload file to load the new version of the file");
-                    effect->setPersistentMessage(Natron::eMessageTypeWarning, warn.toStdString());
+                    effect->setPersistentMessage(eMessageTypeWarning, warn.toStdString());
                 }
                 
             } else {
-                 knob->evaluateValueChange(0, knob->getCurrentTime() , Natron::eValueChangedReasonNatronInternalEdited);
+                 knob->evaluateValueChange(0, knob->getCurrentTime() , eValueChangedReasonNatronInternalEdited);
             }
         }
         
@@ -327,7 +327,7 @@ void KnobGuiFile::onTextEdited()
 //    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
 //        std::map<std::string,std::string> envvar;
 //        _knob->getHolder()->getApp()->getProject()->getEnvironmentVariables(envvar);
-//        Natron::Project::findReplaceVariable(envvar,str);
+//        Project::findReplaceVariable(envvar,str);
 //    }
     
     
@@ -373,7 +373,7 @@ KnobGuiFile::setDirty(bool dirty)
     _lineEdit->setDirty(dirty);
 }
 
-boost::shared_ptr<KnobI> KnobGuiFile::getKnob() const
+KnobPtr KnobGuiFile::getKnob() const
 {
     return _knob.lock();
 }
@@ -439,7 +439,7 @@ KnobGuiFile::onSimplifyTriggered()
 }
 
 void
-KnobGuiFile::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevelEnum /*level*/)
+KnobGuiFile::reflectAnimationLevel(int /*dimension*/,AnimationLevelEnum /*level*/)
 {
     _lineEdit->setAnimation(0);
 }
@@ -463,7 +463,7 @@ KnobGuiFile::updateToolTip()
 }
 
 //============================OUTPUT_FILE_KNOB_GUI====================================
-KnobGuiOutputFile::KnobGuiOutputFile(boost::shared_ptr<KnobI> knob,
+KnobGuiOutputFile::KnobGuiOutputFile(KnobPtr knob,
                                        DockablePanel *container)
     : KnobGui(knob, container)
     , _lineEdit(0)
@@ -506,7 +506,7 @@ KnobGuiOutputFile::createWidget(QHBoxLayout* layout)
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
     _openFileButton->setIcon( QIcon(pix) );
-    _openFileButton->setToolTip(Natron::convertFromPlainText(tr("Browse file..."), Qt::WhiteSpaceNormal));
+    _openFileButton->setToolTip(GuiUtils::convertFromPlainText(tr("Browse file..."), Qt::WhiteSpaceNormal));
     _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
     QObject::connect( _openFileButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
     QWidget *container = new QWidget( layout->parentWidget() );
@@ -534,7 +534,7 @@ KnobGuiOutputFile::open_file(bool openSequence)
     if ( !_knob.lock()->isOutputImageFile() ) {
         filters.push_back("*");
     } else {
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>( getKnob()->getHolder() );
+        EffectInstance* effect = dynamic_cast<EffectInstance*>( getKnob()->getHolder() );
         if (effect) {
             filters = effect->supportedFileFormats();
         }
@@ -574,7 +574,7 @@ KnobGuiOutputFile::onTextEdited()
 //    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
 //        std::map<std::string,std::string> envvar;
 //        _knob->getHolder()->getApp()->getProject()->getEnvironmentVariables(envvar);
-//        Natron::Project::findReplaceVariable(envvar,newPattern);
+//        Project::findReplaceVariable(envvar,newPattern);
 //    }
 //
 //    
@@ -618,7 +618,7 @@ KnobGuiOutputFile::setDirty(bool dirty)
     _lineEdit->setDirty(dirty);
 }
 
-boost::shared_ptr<KnobI> KnobGuiOutputFile::getKnob() const
+KnobPtr KnobGuiOutputFile::getKnob() const
 {
     return _knob.lock();
 }
@@ -695,7 +695,7 @@ KnobGuiOutputFile::reflectExpressionState(int /*dimension*/,bool hasExpr)
 
 
 void
-KnobGuiOutputFile::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevelEnum /*level*/)
+KnobGuiOutputFile::reflectAnimationLevel(int /*dimension*/,AnimationLevelEnum /*level*/)
 {
     _lineEdit->setAnimation(0);
 }
@@ -710,7 +710,7 @@ KnobGuiOutputFile::updateToolTip()
 }
 
 //============================PATH_KNOB_GUI====================================
-KnobGuiPath::KnobGuiPath(boost::shared_ptr<KnobI> knob,
+KnobGuiPath::KnobGuiPath(KnobPtr knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
     , _mainContainer(0)
@@ -863,19 +863,19 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         
         _addPathButton = new Button( tr("Add..."),buttonsContainer );
         if (!knob->getIsStringList()) {
-            _addPathButton->setToolTip(Natron::convertFromPlainText(tr("Click to add a new project path."), Qt::WhiteSpaceNormal));
+            _addPathButton->setToolTip(GuiUtils::convertFromPlainText(tr("Click to add a new project path."), Qt::WhiteSpaceNormal));
         }
         QObject::connect( _addPathButton, SIGNAL( clicked() ), this, SLOT( onAddButtonClicked() ) );
         
         _removePathButton = new Button( tr("Remove"),buttonsContainer);
         QObject::connect( _removePathButton, SIGNAL( clicked() ), this, SLOT( onRemoveButtonClicked() ) );
         if (!knob->getIsStringList()) {
-            _removePathButton->setToolTip(Natron::convertFromPlainText(tr("Click to remove selected project path."), Qt::WhiteSpaceNormal));
+            _removePathButton->setToolTip(GuiUtils::convertFromPlainText(tr("Click to remove selected project path."), Qt::WhiteSpaceNormal));
         }
         
         _editPathButton = new Button( tr("Edit..."), buttonsContainer);
         QObject::connect( _editPathButton, SIGNAL( clicked() ), this, SLOT( onEditButtonClicked() ) );
-        _editPathButton->setToolTip(Natron::convertFromPlainText(tr("Click to change the path of the selected project path."), Qt::WhiteSpaceNormal));
+        _editPathButton->setToolTip(GuiUtils::convertFromPlainText(tr("Click to change the path of the selected project path."), Qt::WhiteSpaceNormal));
         
         
         
@@ -901,7 +901,7 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         enableRightClickMenu(_lineEdit, 0);
         _openFileButton = new Button( layout->parentWidget() );
         _openFileButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _openFileButton->setToolTip(Natron::convertFromPlainText(tr("Click to select a path to append to/replace this variable."), Qt::WhiteSpaceNormal));
+        _openFileButton->setToolTip(GuiUtils::convertFromPlainText(tr("Click to select a path to append to/replace this variable."), Qt::WhiteSpaceNormal));
         QPixmap pix;
         appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
         _openFileButton->setIcon( QIcon(pix) );
@@ -1071,7 +1071,7 @@ KnobGuiPath::onTextEdited()
 //    if (allowSimplification && _knob->getHolder() && _knob->getHolder()->getApp()) {
 //        std::map<std::string,std::string> envvar;
 //        _knob->getHolder()->getApp()->getProject()->getEnvironmentVariables(envvar);
-//        Natron::Project::findReplaceVariable(envvar,dirPath);
+//        Project::findReplaceVariable(envvar,dirPath);
 //    }
 
     
@@ -1097,7 +1097,7 @@ KnobGuiPath::updateGUI(int /*dimension*/)
     
     if (_knob.lock()->isMultiPath()) {
         std::vector<std::pair<std::string,std::string> > variables;
-        Natron::Project::makeEnvMapUnordered(path.toStdString(), variables);
+        Project::makeEnvMapUnordered(path.toStdString(), variables);
         
         
         _model->clear();
@@ -1198,7 +1198,7 @@ KnobGuiPath::setDirty(bool /*dirty*/)
     
 }
 
-boost::shared_ptr<KnobI> KnobGuiPath::getKnob() const
+KnobPtr KnobGuiPath::getKnob() const
 {
     return _knob.lock();
 }
@@ -1245,8 +1245,8 @@ KnobGuiPath::onItemDataChanged(TableItem* /*item*/)
             appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
             std::map<std::string,std::string> oldEnv,newEnv;
             
-            Natron::Project::makeEnvMap(oldPath,oldEnv);
-            Natron::Project::makeEnvMap(newPath, newEnv);
+            Project::makeEnvMap(oldPath,oldEnv);
+            Project::makeEnvMap(newPath, newEnv);
             
             ///Compare the 2 maps to find-out if a path has changed or just a name
             if (oldEnv.size() == newEnv.size()) {
@@ -1367,7 +1367,7 @@ KnobGuiPath::onSimplifyTriggered()
 }
 
 void
-KnobGuiPath::reflectAnimationLevel(int /*dimension*/,Natron::AnimationLevelEnum /*level*/)
+KnobGuiPath::reflectAnimationLevel(int /*dimension*/,AnimationLevelEnum /*level*/)
 {
     if (!_knob.lock()->isMultiPath()) {
         _lineEdit->setAnimation(0);
@@ -1399,3 +1399,8 @@ KnobGuiPath::updateToolTip()
         }
     }
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_KnobGuiFile.cpp"

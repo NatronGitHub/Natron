@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,6 +44,9 @@ CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
 #define CURVEWIDGET_DERIVATIVE_ROUND_PRECISION 3.
+
+NATRON_NAMESPACE_ENTER;
+
 
 /*****************************CURVE WIDGET***********************************************/
 
@@ -132,7 +135,7 @@ public:
 
     void refreshSelectionRectangle(double x,double y);
 
-    void setSelectedKeysInterpolation(Natron::KeyframeTypeEnum type);
+    void setSelectedKeysInterpolation(KeyframeTypeEnum type);
 
     void createMenu();
 
@@ -150,10 +153,10 @@ public:
     QPoint _lastMousePos; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
     ZoomContext zoomCtx;
     EventStateEnum _state;
-    Natron::Menu* _rightClickMenu;
+    Menu* _rightClickMenu;
     QColor _selectedCurveColor;
     QColor _nextCurveAddedColor;
-    Natron::TextRenderer textRenderer;
+    TextRenderer textRenderer;
     QFont* _font;
     Curves _curves;
     SelectedKeys _selectedKeyFrames;
@@ -190,5 +193,7 @@ public:
     
     CurveSelection* _selectionModel;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_CurveWidgetPrivate_h

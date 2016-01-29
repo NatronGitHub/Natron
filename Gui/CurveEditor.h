@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiFwd.h"
 
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * All nodes are tracked in the CurveEditor and they all have a NodeCurveEditorContext.
@@ -74,7 +75,7 @@ public:
     
     NodeCurveEditorElement(QTreeWidget* tree,
                            CurveEditor* curveWidget,
-                           const boost::shared_ptr<KnobI>& internalKnob,
+                           const KnobPtr& internalKnob,
                            int dimension,
                            QTreeWidgetItem* item,
                            const boost::shared_ptr<CurveGui>& curve);
@@ -113,7 +114,7 @@ public:
         return _knob;
     }
     
-    boost::shared_ptr<KnobI> getInternalKnob() const WARN_UNUSED_RETURN;
+    KnobPtr getInternalKnob() const WARN_UNUSED_RETURN;
     
     void checkVisibleState(bool autoSelectOnShow);
 
@@ -137,7 +138,7 @@ private:
     CurveEditor* _curveWidget;
     QTreeWidget* _treeWidget;
     KnobGui* _knob;
-    boost::shared_ptr<KnobI> _internalKnob;
+    KnobPtr _internalKnob;
     int _dimension;
 };
 
@@ -154,11 +155,11 @@ public:
 
     NodeCurveEditorContext(QTreeWidget *tree,
                            CurveEditor* curveWidget,
-                           const boost::shared_ptr<NodeGui> &node);
+                           const NodeGuiPtr &node);
 
     virtual ~NodeCurveEditorContext() OVERRIDE;
 
-    boost::shared_ptr<NodeGui> getNode() const WARN_UNUSED_RETURN
+    NodeGuiPtr getNode() const WARN_UNUSED_RETURN
     {
         return _node;
     }
@@ -187,7 +188,7 @@ public Q_SLOTS:
 
 private:
     // FIXME: PIMPL
-    boost::shared_ptr<NodeGui> _node;
+    NodeGuiPtr _node;
     Elements _nodeElements;
     QTreeWidgetItem* _nameItem;
 };
@@ -291,11 +292,11 @@ public:
     
     RotoCurveEditorContext(CurveEditor* widget,
                            QTreeWidget *tree,
-                           const boost::shared_ptr<NodeGui> &node);
+                           const NodeGuiPtr &node);
     
     virtual ~RotoCurveEditorContext() OVERRIDE;
     
-    boost::shared_ptr<NodeGui> getNode() const WARN_UNUSED_RETURN;
+    NodeGuiPtr getNode() const WARN_UNUSED_RETURN;
     
     QTreeWidgetItem* getItem() const;
     
@@ -345,7 +346,7 @@ public:
     /**
      * @brief Creates a new NodeCurveEditorContext and stores it until the CurveEditor is destroyed.
      **/
-    void addNode(boost::shared_ptr<NodeGui> node);
+    void addNode(NodeGuiPtr node);
 
     void removeNode(NodeGui* node);
     
@@ -394,12 +395,14 @@ private:
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+
     
     void recursiveSelect(QTreeWidgetItem* cur,std::vector<boost::shared_ptr<CurveGui> > *curves,bool inspectRotos = true);
 
     boost::scoped_ptr<CurveEditorPrivate> _imp;
 };
 
-
+NATRON_NAMESPACE_EXIT;
 
 #endif // CURVEEDITOR_H

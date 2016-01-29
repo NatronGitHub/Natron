@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
@@ -63,7 +63,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -79,10 +79,10 @@ NodeGraph::toggleAutoHideInputs(bool setSettings)
         bool autoHide = !appPTR->getCurrentSettings()->areOptionalInputsAutoHidden();
         appPTR->getCurrentSettings()->setOptionalInputsAutoHidden(autoHide);
     }
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         (*it)->refreshEdgesVisility();
     }
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
         (*it)->refreshEdgesVisility();
     }
 }
@@ -90,33 +90,33 @@ NodeGraph::toggleAutoHideInputs(bool setSettings)
 void
 NodeGraph::toggleHideInputs()
 {
-    const NodeGuiList& selectedNodes = getSelectedNodes();
+    const NodesGuiList& selectedNodes = getSelectedNodes();
     if (selectedNodes.empty()) {
-        Natron::warningDialog(tr("Hide Inptus").toStdString(), tr("You must select a node first").toStdString());
+        Dialogs::warningDialog(tr("Hide Inptus").toStdString(), tr("You must select a node first").toStdString());
         return;
     }
 
     bool hidden = !selectedNodes.front()->getNode()->getHideInputsKnobValue();
     
-    for (NodeGuiList::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
+    for (NodesGuiList::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
         (*it)->getNode()->setHideInputsKnobValue(hidden);
         //(*it)->refreshEdgesVisility();
     }
 
 }
 
-std::list<boost::shared_ptr<NodeGui> > NodeGraph::getNodesWithinBackDrop(const boost::shared_ptr<NodeGui>& bd) const
+NodesGuiList NodeGraph::getNodesWithinBackdrop(const NodeGuiPtr& bd) const
 {
-    BackDropGui* isBd = dynamic_cast<BackDropGui*>(bd.get());
+    BackdropGui* isBd = dynamic_cast<BackdropGui*>(bd.get());
     if (!isBd) {
-        return std::list<boost::shared_ptr<NodeGui> >();
+        return NodesGuiList();
     }
     
     QRectF bbox = bd->mapToScene( bd->boundingRect() ).boundingRect();
-    std::list<boost::shared_ptr<NodeGui> > ret;
+    NodesGuiList ret;
     QMutexLocker l(&_imp->_nodesMutex);
 
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+    for (NodesGuiList::const_iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         QRectF nodeBbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
         if ( bbox.contains(nodeBbox) ) {
             ret.push_back(*it);
@@ -127,28 +127,28 @@ std::list<boost::shared_ptr<NodeGui> > NodeGraph::getNodesWithinBackDrop(const b
 }
 
 void
-NodeGraph::refreshNodesKnobsAtTime(SequenceTime time)
+NodeGraph::refreshNodesKnobsAtTime(bool onlyTimeEvaluationKnobs, SequenceTime time)
 {
     ///Refresh all knobs at the current time
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-        (*it)->refreshKnobsAfterTimeChange(time);
+    for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+        (*it)->refreshKnobsAfterTimeChange(onlyTimeEvaluationKnobs, time);
     }
 }
 
 void
 NodeGraph::refreshAllKnobsGui()
 {
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         if ((*it)->isSettingsPanelVisible()) {
             const std::map<boost::weak_ptr<KnobI>,KnobGui*> & knobs = (*it)->getKnobs();
             
             for (std::map<boost::weak_ptr<KnobI>,KnobGui*>::const_iterator it2 = knobs.begin(); it2!=knobs.end(); ++it2) {
-                boost::shared_ptr<KnobI> knob = it2->first.lock();
+                KnobPtr knob = it2->first.lock();
                 if (!knob->getIsSecret()) {
                     for (int i = 0; i < knob->getDimension(); ++i) {
                         if (knob->isAnimated(i)) {
-                            it2->second->onInternalValueChanged(i, Natron::eValueChangedReasonPluginEdited);
-                            it2->second->onAnimationLevelChanged(i, Natron::eValueChangedReasonPluginEdited);
+                            it2->second->onInternalValueChanged(i, eValueChangedReasonPluginEdited);
+                            it2->second->onAnimationLevelChanged(i, eValueChangedReasonPluginEdited);
                         }
                     }
                 }
@@ -163,6 +163,9 @@ NodeGraph::focusInEvent(QFocusEvent* e)
     QGraphicsView::focusInEvent(e);
     if (getGui()) {
         getGui()->setLastSelectedGraph(this);
+    }
+    if (_imp->_undoStack) {
+        _imp->_undoStack->setActive();
     }
 }
 
@@ -215,7 +218,7 @@ NodeGraph::popFindDialog(const QPoint& p)
 void
 NodeGraph::popRenameDialog(const QPoint& pos)
 {
-    boost::shared_ptr<NodeGui> node;
+    NodeGuiPtr node;
     if (_imp->_selection.size() == 1 ) {
         node = _imp->_selection.front();
     } else {
@@ -261,17 +264,17 @@ struct FindNodeDialogPrivate
     NodeGraph* graph;
     
     QString currentFilter;
-    std::list<boost::shared_ptr<NodeGui> > nodeResults;
+    NodesGuiList nodeResults;
     int currentFindIndex;
     
     QVBoxLayout* mainLayout;
-    Natron::Label* label;
+    Label* label;
     
 
     QCheckBox* unixWildcards;
     QCheckBox* caseSensitivity;
 
-    Natron::Label* resultLabel;
+    Label* resultLabel;
     LineEdit* filter;
     QDialogButtonBox* buttons;
     
@@ -302,7 +305,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
     
-    _imp->label = new Natron::Label(tr("Select all nodes containing this text:"),this);
+    _imp->label = new Label(tr("Select all nodes containing this text:"),this);
     //_imp->label->setFont(QFont(appFont,appFontSize));
     _imp->mainLayout->addWidget(_imp->label);
 
@@ -324,7 +327,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,QWidget* parent)
     _imp->mainLayout->addWidget(_imp->caseSensitivity);
     
     
-    _imp->resultLabel = new Natron::Label(this);
+    _imp->resultLabel = new Label(this);
     _imp->mainLayout->addWidget(_imp->resultLabel);
     //_imp->resultLabel->setFont(QFont(appFont,appFontSize));
     
@@ -360,7 +363,7 @@ FindNodeDialog::updateFindResults(const QString& filter)
     }
     Qt::CaseSensitivity sensitivity = _imp->caseSensitivity->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
     
-    const std::list<boost::shared_ptr<NodeGui> >& activeNodes = _imp->graph->getAllActiveNodes();
+    const NodesGuiList& activeNodes = _imp->graph->getAllActiveNodes();
     
     if (_imp->unixWildcards->isChecked()) {
         QRegExp exp(filter,sensitivity,QRegExp::Wildcard);
@@ -370,13 +373,13 @@ FindNodeDialog::updateFindResults(const QString& filter)
         
         
         
-        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        for (NodesGuiList::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
             if ((*it)->isVisible() && exp.exactMatch((*it)->getNode()->getLabel().c_str())) {
                 _imp->nodeResults.push_back(*it);
             }
         }
     } else {
-        for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        for (NodesGuiList::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
             if ((*it)->isVisible() && QString((*it)->getNode()->getLabel().c_str()).contains(filter,sensitivity)) {
                 _imp->nodeResults.push_back(*it);
             }
@@ -403,7 +406,7 @@ FindNodeDialog::selectNextResult()
         return;
     }
     
-    std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->nodeResults.begin();
+    NodesGuiList::iterator it = _imp->nodeResults.begin();
     std::advance(it,_imp->currentFindIndex);
     
     _imp->graph->selectNode(*it, false);
@@ -483,9 +486,9 @@ struct EditNodeNameDialogPrivate
 {
     
     LineEdit* field;
-    boost::shared_ptr<NodeGui> node;
+    NodeGuiPtr node;
     
-    EditNodeNameDialogPrivate(const boost::shared_ptr<NodeGui>& node)
+    EditNodeNameDialogPrivate(const NodeGuiPtr& node)
     : field(0)
     , node(node)
     {
@@ -493,7 +496,7 @@ struct EditNodeNameDialogPrivate
     }
 };
 
-EditNodeNameDialog::EditNodeNameDialog(const boost::shared_ptr<NodeGui>& node,QWidget* parent)
+EditNodeNameDialog::EditNodeNameDialog(const NodeGuiPtr& node,QWidget* parent)
 : QDialog(parent)
 , _imp(new EditNodeNameDialogPrivate(node))
 {
@@ -501,7 +504,7 @@ EditNodeNameDialog::EditNodeNameDialog(const boost::shared_ptr<NodeGui>& node,QW
     mainLayout->setContentsMargins(0, 0, 0, 0);
     setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
     _imp->field = new LineEdit(this);
-    QObject::connect(_imp->field,SIGNAL(editingFinished()), this, SLOT(accept()));
+    //QObject::connect(_imp->field,SIGNAL(editingFinished()), this, SLOT(accept()));
     _imp->field->setPlaceholderText(tr("Edit node name"));
     mainLayout->addWidget(_imp->field);
 }
@@ -543,7 +546,7 @@ EditNodeNameDialog::getTypedName() const
     return _imp->field->text();
 }
 
-boost::shared_ptr<NodeGui>
+NodeGuiPtr
 EditNodeNameDialog::getNode() const
 {
     return _imp->node;
@@ -580,9 +583,9 @@ NodeGraph::createGroupFromSelection()
 void
 NodeGraph::expandSelectedGroups()
 {
-    NodeGuiList nodes;
-    for (NodeGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-        NodeGroup* isGroup = dynamic_cast<NodeGroup*>((*it)->getNode()->getLiveInstance());
+    NodesGuiList nodes;
+    for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+        NodeGroup* isGroup = (*it)->getNode()->isEffectGroup();
         if (isGroup) {
             nodes.push_back(*it);
         }
@@ -590,7 +593,7 @@ NodeGraph::expandSelectedGroups()
     if (!nodes.empty()) {
         pushUndoCommand(new InlineGroupCommand(this,nodes));
     } else {
-        Natron::warningDialog(tr("Expand group").toStdString(), tr("You must select a group to expand first").toStdString());
+        Dialogs::warningDialog(tr("Expand group").toStdString(), tr("You must select a group to expand first").toStdString());
     }
 }
 
@@ -643,9 +646,9 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
 }
 
 void
-NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> >& nodes,
+NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
                                      const boost::shared_ptr<NodeCollection>& group,
-                                     std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > >& createdNodes)
+                                     std::list<std::pair<std::string,NodeGuiPtr > >& createdNodes)
 {
     {
         CreatingNodeTreeFlag_RAII createNodeTree(getGui()->getApp());
@@ -653,16 +656,25 @@ NodeGraph::copyNodesAndCreateInGroup(const std::list<boost::shared_ptr<NodeGui> 
         NodeClipBoard clipboard;
         _imp->copyNodesInternal(nodes,clipboard);
         
+        std::map<std::string,std::string> oldNewScriptNamesMapping;
         std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itOther = clipboard.nodes.begin();
         for (std::list<boost::shared_ptr<NodeGuiSerialization> >::const_iterator it = clipboard.nodesUI.begin();
              it != clipboard.nodesUI.end(); ++it, ++itOther) {
-            boost::shared_ptr<NodeGui> node = _imp->pasteNode( **itOther,**it,QPointF(0,0),group,std::string(), false);
-            createdNodes.push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
+            NodeGuiPtr node = _imp->pasteNode( *itOther,*it,QPointF(0,0),group,std::string(), false,&oldNewScriptNamesMapping);
+            assert(node);
+            if (node) {
+                oldNewScriptNamesMapping[(*itOther)->getNodeScriptName()] = node->getNode()->getScriptName();
+                createdNodes.push_back(std::make_pair((*itOther)->getNodeScriptName(),node));
+            }
+            
         }
         assert( clipboard.nodes.size() == createdNodes.size() );
+        if (clipboard.nodes.size() != createdNodes.size()) {
+            return;
+        }
         
         ///Now that all nodes have been duplicated, try to restore nodes connections
-        _imp->restoreConnections(clipboard.nodes, createdNodes);
+        _imp->restoreConnections(clipboard.nodes, createdNodes, oldNewScriptNamesMapping);
     }
     
     getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
@@ -674,3 +686,5 @@ NodeGraph::getRootPos() const
 {
     return _imp->_root->pos();
 }
+
+NATRON_NAMESPACE_EXIT;

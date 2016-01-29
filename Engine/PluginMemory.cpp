@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,9 +34,11 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/EffectInstance.h"
 #include "Engine/CacheEntry.h"
 
+NATRON_NAMESPACE_ENTER;
+
 struct PluginMemory::Implementation
 {
-    Implementation(Natron::EffectInstance* effect_)
+    Implementation(const EffectInstPtr& effect_)
         : data()
           , locked(0)
           , mutex()
@@ -44,24 +46,25 @@ struct PluginMemory::Implementation
     {
     }
 
-    Natron::RamBuffer<char> data;
+    RamBuffer<char> data;
     int locked;
     QMutex mutex;
-    Natron::EffectInstance* effect;
+    EffectInstWPtr effect;
 };
 
-PluginMemory::PluginMemory(Natron::EffectInstance* effect)
-    : _imp( new Implementation(effect) )
+PluginMemory::PluginMemory(const EffectInstPtr& effect)
+    : _imp(new Implementation(effect))
 {
     if (effect) {
-        _imp->effect->addPluginMemoryPointer(this);
+        effect->addPluginMemoryPointer(this);
     }
 }
 
 PluginMemory::~PluginMemory()
 {
-    if (_imp->effect) {
-        _imp->effect->removePluginMemoryPointer(this);
+    EffectInstPtr e = _imp->effect.lock();
+    if (e) {
+        e->removePluginMemoryPointer(this);
     }
 }
 
@@ -74,8 +77,9 @@ PluginMemory::alloc(size_t nBytes)
         return false;
     } else {
         _imp->data.resize(nBytes);
-        if (_imp->effect) {
-            _imp->effect->registerPluginMemory( _imp->data.size() );
+        EffectInstPtr e = _imp->effect.lock();
+        if (e) {
+            e->registerPluginMemory( _imp->data.size() );
         }
 
         return true;
@@ -86,8 +90,9 @@ void
 PluginMemory::freeMem()
 {
     QMutexLocker l(&_imp->mutex);
-    if (_imp->effect) {
-        _imp->effect->unregisterPluginMemory( _imp->data.size() );
+    EffectInstPtr e = _imp->effect.lock();
+    if (e) {
+        e->unregisterPluginMemory( _imp->data.size() );
     }
     _imp->data.clear();
     _imp->locked = 0;
@@ -123,3 +128,4 @@ PluginMemory::unlock()
     }
 }
 
+NATRON_NAMESPACE_EXIT;

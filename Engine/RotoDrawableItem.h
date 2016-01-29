@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,6 +49,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/RotoItem.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A base class for all items made by the roto context
@@ -174,9 +175,9 @@ public:
     
     void setKeyframeOnAllTransformParameters(double time);
 
-    const std::list<boost::shared_ptr<KnobI> >& getKnobs() const;
+    const std::list<KnobPtr >& getKnobs() const;
     
-    boost::shared_ptr<KnobI> getKnobByName(const std::string& name) const;
+    KnobPtr getKnobByName(const std::string& name) const;
     
     virtual RectD getBoundingBox(double time) const = 0;
 
@@ -187,10 +188,10 @@ public:
      **/
     void setTransform(double time, double tx, double ty, double sx, double sy, double centerX, double centerY, double rot, double skewX, double skewY);
     
-    boost::shared_ptr<Natron::Node> getEffectNode() const;
-    boost::shared_ptr<Natron::Node> getMergeNode() const;
-    boost::shared_ptr<Natron::Node> getTimeOffsetNode() const;
-    boost::shared_ptr<Natron::Node> getFrameHoldNode() const;
+    NodePtr getEffectNode() const;
+    NodePtr getMergeNode() const;
+    NodePtr getTimeOffsetNode() const;
+    NodePtr getFrameHoldNode() const;
     
     void resetNodesThreadSafety();
     void deactivateNodes();
@@ -217,11 +218,11 @@ public Q_SLOTS:
     
 protected:
     
-    void rotoKnobChanged(const boost::shared_ptr<KnobI>& knob, Natron::ValueChangedReasonEnum reason);
+    void rotoKnobChanged(const KnobPtr& knob, ValueChangedReasonEnum reason);
     
     virtual void onTransformSet(double /*time*/) {}
     
-    void addKnob(const boost::shared_ptr<KnobI>& knob);
+    void addKnob(const KnobPtr& knob);
 
 private:
     
@@ -232,6 +233,6 @@ private:
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
 };
 
-
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_RotoDrawableItem_h

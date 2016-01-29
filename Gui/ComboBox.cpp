@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ CLANG_DIAG_ON(deprecated-register)
 #include "Gui/Utils.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 /*
@@ -103,7 +103,7 @@ ComboBox::ComboBox(QWidget* parent)
 
     setSizePolicy(QSizePolicy(QSizePolicy::Preferred,QSizePolicy::Fixed,QSizePolicy::Label));
     setFocusPolicy(Qt::StrongFocus);
-    setFixedHeight(NATRON_MEDIUM_BUTTON_SIZE);
+    setFixedHeight(TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
 }
 
 QSize
@@ -120,7 +120,8 @@ ComboBox::sizeForWidth(int w) const
     }
     QRect br;
     
-    QFontMetrics fm = fontMetrics();
+    //Using this constructor of QFontMetrics will respect the DPI of the screen, see http://doc.qt.io/qt-4.8/qfontmetrics.html#QFontMetrics-2
+    QFontMetrics fm(font(),0);
     
     Qt::Alignment align = QStyle::visualAlignment(Qt::LeftToRight, QFlag(_align));
     
@@ -389,7 +390,10 @@ ComboBox::wheelEvent(QWheelEvent *e)
     if (e->delta()>0) {
         setCurrentIndex((activeIndex() - 1 < 0) ? count() - 1 : activeIndex() - 1);
     } else {
-        setCurrentIndex((activeIndex() + 1) % count());
+        int c = count();
+        if (c != 0) {
+            setCurrentIndex((activeIndex() + 1) % c);
+        }
     }
 }
 
@@ -477,7 +481,7 @@ ComboBox::insertItem(int index,
     action->setText(item);
     action->setData(QVariant(index));
     if ( !toolTip.isEmpty() ) {
-        action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+        action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
     }
     if ( !icon.isNull() ) {
         action->setIcon(icon);
@@ -568,7 +572,7 @@ ComboBox::addItem(const QString & item,
             action->setShortcut(key);
         }
         if ( !toolTip.isEmpty() ) {
-            action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+            action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
         }
 
         addAction(action);
@@ -618,7 +622,7 @@ ComboBox::addItem(const QString & item,
                         action->setShortcut(key);
                     }
                     if ( !toolTip.isEmpty() ) {
-                        action->setToolTip( Natron::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
+                        action->setToolTip( GuiUtils::convertFromPlainText(toolTip.trimmed(), Qt::WhiteSpaceNormal) );
                     }
 
                     node->isLeaf = action;
@@ -1038,3 +1042,8 @@ ComboBox::getAltered() const
 {
     return _altered;
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_ComboBox.cpp"

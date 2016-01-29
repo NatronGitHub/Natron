@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -79,7 +79,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "ofxNatron.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 
 
@@ -127,7 +127,7 @@ KnobGuiDouble::shouldAddStretch() const
     return _knob.lock()->isSliderDisabled();
 }
 
-KnobGuiDouble::KnobGuiDouble(boost::shared_ptr<KnobI> knob,
+KnobGuiDouble::KnobGuiDouble(KnobPtr knob,
                                DockablePanel *container)
 : KnobGui(knob, container)
 , _container(0)
@@ -176,7 +176,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
     if (getKnobsCountOnSameLine() > 1) {
         knob->disableSlider();
     }
-    
+
     if (!knob->isSliderDisabled()) {
         layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     }
@@ -192,7 +192,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
     const std::vector<double > & mins = knob->getMinimums();
     const std::vector<double > & maxs = knob->getMaximums();
     const std::vector<int> &decimals = knob->getDecimals();
-    for (int i = 0; i < dim; ++i) {
+    for (std::size_t i = 0; i < (std::size_t)dim; ++i) {
 
         QWidget *boxContainer = new QWidget( _container );
         boxContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -200,13 +200,13 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         boxContainer->setLayout(boxContainerLayout);
         boxContainerLayout->setContentsMargins(0, 0, 0, 0);
         boxContainerLayout->setSpacing(3);
-        Natron::Label *subDesc = 0;
+        Label *subDesc = 0;
         if (dim != 1) {
             std::string dimLabel = getKnob()->getDimensionName(i);
             if (!dimLabel.empty()) {
                 dimLabel.append(":");
             }
-            subDesc = new Natron::Label(QString(dimLabel.c_str()), boxContainer);
+            subDesc = new Label(QString(dimLabel.c_str()), boxContainer);
             //subDesc->setFont( QFont(appFont,appFontSize) );
             boxContainerLayout->addWidget(subDesc);
         }
@@ -273,7 +273,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         }
         
         _slider = new ScaleSliderQWidget( dispmin, dispmax,knob->getValue(0),
-                                         ScaleSliderQWidget::eDataTypeDouble,getGui(), Natron::eScaleTypeLinear, layout->parentWidget() );
+                                         ScaleSliderQWidget::eDataTypeDouble,getGui(), eScaleTypeLinear, layout->parentWidget() );
         _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
             _slider->setToolTip( toolTip() );
@@ -286,12 +286,14 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         
     }
     
-    
+    QSize medSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
+    QSize medIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
+
     if (dim > 1 && !knob->isSliderDisabled() && sliderVisible ) {
         _dimensionSwitchButton = new Button(QIcon(),QString::number(dim), _container);
-        _dimensionSwitchButton->setToolTip(Natron::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
-        _dimensionSwitchButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _dimensionSwitchButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+        _dimensionSwitchButton->setToolTip(GuiUtils::convertFromPlainText(tr("Switch between a single value for all dimensions and multiple values."), Qt::WhiteSpaceNormal));
+        _dimensionSwitchButton->setFixedSize(medSize);
+        _dimensionSwitchButton->setIconSize(medIconSize);
         _dimensionSwitchButton->setFocusPolicy(Qt::NoFocus);
         _dimensionSwitchButton->setCheckable(true);
         containerLayout->addWidget(_dimensionSwitchButton);
@@ -482,10 +484,13 @@ KnobGuiDouble::updateGUI(int dimension)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
     const int knobDim = knob->getDimension();
+    if (knobDim < 1 || dimension >= knobDim) {
+        return;
+    }
     assert(1 <= knobDim && knobDim <= 3);
     assert(dimension == -1 || (dimension >= 0 && dimension < knobDim));
     double values[3];
-    double refValue;
+    double refValue = 0.;
     SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
     for (int i = 0; i < knobDim ; ++i) {
         double v = knob->getValue(i);
@@ -553,17 +558,17 @@ KnobGuiDouble::updateGUI(int dimension)
 
 void
 KnobGuiDouble::reflectAnimationLevel(int dimension,
-                                      Natron::AnimationLevelEnum level)
+                                      AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-        case Natron::eAnimationLevelNone:
+        case eAnimationLevelNone:
             value = 0;
             break;
-        case Natron::eAnimationLevelInterpolatedValue:
+        case eAnimationLevelInterpolatedValue:
             value = 1;
             break;
-        case Natron::eAnimationLevelOnKeyframe:
+        case eAnimationLevelOnKeyframe:
             value = 2;
             break;
         default:
@@ -748,7 +753,7 @@ KnobGuiDouble::setDirty(bool dirty)
     }
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 KnobGuiDouble::getKnob() const
 {
     return _knob.lock();
@@ -766,7 +771,7 @@ KnobGuiDouble::reflectExpressionState(int dimension,
             _slider->setReadOnly(true);
         }
     } else {
-        Natron::AnimationLevelEnum lvl = knob->getAnimationLevel(dimension);
+        AnimationLevelEnum lvl = knob->getAnimationLevel(dimension);
         _spinBoxes[dimension].first->setAnimation((int)lvl);
         bool isEnabled = knob->isEnabled(dimension);
         _spinBoxes[dimension].first->setReadOnly(!isEnabled);
@@ -805,4 +810,7 @@ KnobGuiDouble::reflectModificationsState() {
     }
 }
 
+NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
+#include "moc_KnobGuiDouble.cpp"

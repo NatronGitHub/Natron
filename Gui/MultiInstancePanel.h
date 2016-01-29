@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief This class represents a multi-instance settings panel.
@@ -57,7 +58,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    MultiInstancePanel(const boost::shared_ptr<NodeGui> & node);
+    MultiInstancePanel(const NodeGuiPtr & node);
 
     virtual ~MultiInstancePanel();
 
@@ -65,44 +66,44 @@ public:
 
     bool isGuiCreated() const;
 
-    void addRow(const boost::shared_ptr<Natron::Node> & node);
+    void addRow(const NodePtr & node);
 
     void removeRow(int index);
 
-    int getNodeIndex(const boost::shared_ptr<Natron::Node> & node) const;
+    int getNodeIndex(const NodePtr & node) const;
 
-    const std::list< std::pair<boost::weak_ptr<Natron::Node>,bool > > & getInstances() const;
+    const std::list< std::pair<NodeWPtr,bool > > & getInstances() const;
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL;
-    boost::shared_ptr<Natron::Node> getMainInstance() const;
+    NodePtr getMainInstance() const;
     
-    boost::shared_ptr<NodeGui> getMainInstanceGui() const;
+    NodeGuiPtr getMainInstanceGui() const;
 
-    void getSelectedInstances(std::list<Natron::Node*>* instances) const;
+    void getSelectedInstances(std::list<Node*>* instances) const;
 
     void resetAllInstances();
 
-    boost::shared_ptr<KnobI> getKnobForItem(TableItem* item,int* dimension) const;
+    KnobPtr getKnobForItem(TableItem* item,int* dimension) const;
     Gui* getGui() const;
     virtual void setIconForButton(KnobButton* /*knob*/)
     {
     }
 
-    boost::shared_ptr<Natron::Node> createNewInstance(bool useUndoRedoStack);
+    NodePtr createNewInstance(bool useUndoRedoStack);
 
-    void selectNode(const boost::shared_ptr<Natron::Node> & node,bool addToSelection);
+    void selectNode(const NodePtr & node,bool addToSelection);
 
-    void selectNodes(const std::list<Natron::Node*> & nodes,bool addToSelection);
+    void selectNodes(const std::list<Node*> & nodes,bool addToSelection);
 
-    void removeNodeFromSelection(const boost::shared_ptr<Natron::Node> & node);
+    void removeNodeFromSelection(const NodePtr & node);
 
     void clearSelection();
 
     bool isSettingsPanelVisible() const;
         
-    void removeInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances);
-    void addInstances(const std::list<boost::shared_ptr<Natron::Node> >& instances);
+    void removeInstances(const NodesList& instances);
+    void addInstances(const NodesList& instances);
 
-    void onChildCreated(const boost::shared_ptr<Natron::Node>& node);
+    void onChildCreated(const NodePtr& node);
     
     void setRedrawOnSelectionChanged(bool redraw);
     
@@ -140,12 +141,12 @@ protected:
     {
     }
 
-    boost::shared_ptr<Natron::Node> addInstanceInternal(bool useUndoRedoStack);
+    NodePtr addInstanceInternal(bool useUndoRedoStack);
     virtual void initializeExtraKnobs()
     {
     }
 
-    virtual void showMenuForInstance(Natron::Node* /*instance*/)
+    virtual void showMenuForInstance(Node* /*instance*/)
     {
     }
 
@@ -153,13 +154,13 @@ private:
 
     virtual void onButtonTriggered(KnobButton* button);
 
-    void resetInstances(const std::list<Natron::Node*> & instances);
+    void resetInstances(const std::list<Node*> & instances);
 
     void removeInstancesInternal();
 
-    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReasonEnum reason) OVERRIDE;
+    virtual void evaluate(KnobI* knob,bool isSignificant,ValueChangedReasonEnum reason) OVERRIDE;
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,double time,
+    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time,
                                     bool originatedFromMainThread) OVERRIDE;
     boost::scoped_ptr<MultiInstancePanelPrivate> _imp;
 };
@@ -174,7 +175,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    TrackerPanel(const boost::shared_ptr<NodeGui> & node);
+    TrackerPanel(const NodeGuiPtr & node);
 
     virtual ~TrackerPanel();
 
@@ -216,7 +217,7 @@ private:
     virtual void appendButtons(QHBoxLayout* buttonLayout) OVERRIDE FINAL;
     virtual void setIconForButton(KnobButton* knob) OVERRIDE FINAL;
     virtual void onButtonTriggered(KnobButton* button) OVERRIDE FINAL;
-    virtual void showMenuForInstance(Natron::Node* item) OVERRIDE FINAL;
+    virtual void showMenuForInstance(Node* item) OVERRIDE FINAL;
 
     boost::scoped_ptr<TrackerPanelPrivate> _imp;
 };
@@ -264,5 +265,6 @@ private:
     
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // MULTIINSTANCEPANEL_H

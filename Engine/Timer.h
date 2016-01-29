@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,21 +31,23 @@
 //
 //----------------------------------------------------------------------------
 
-#ifdef _WIN32
+#include "Global/Macros.h"
+
+#if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
 #include <windows.h>
 #else
 #include <sys/time.h>
 #endif
 
-#include "Global/Macros.h"
 
 #include <QtCore/QString>
 #include <QtCore/QObject>
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
-#ifdef _WIN32
+#if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
 int gettimeofday (struct timeval *tv, void *tz);
 #endif
 
@@ -156,5 +158,7 @@ public:
     
     ~TimeLapseReporter();
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // ifndef NATRON_ENGINE_TIMER_H

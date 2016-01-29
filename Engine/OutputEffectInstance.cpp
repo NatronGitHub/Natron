@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,30 +66,26 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/Settings.h"
-#include "Engine/ThreadStorage.h"
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/EngineFwd.h"
 
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
-class KnobFile;
-class KnobOutputFile;
-
-
-OutputEffectInstance::OutputEffectInstance(boost::shared_ptr<Node> node)
-    : Natron::EffectInstance(node)
-    , _writerCurrentFrame(0)
-    , _writerFirstFrame(0)
-    , _writerLastFrame(0)
-    , _outputEffectDataLock(new QMutex)
+OutputEffectInstance::OutputEffectInstance(NodePtr node)
+    : EffectInstance(node)
+    , _outputEffectDataLock()
     , _renderSequenceRequests()
     , _engine(0)
     , _timeSpentPerFrameRendered()
+    , _writerCurrentFrame(0)
+    , _writerFirstFrame(0)
+    , _writerLastFrame(0)
 {
 }
 
@@ -100,7 +96,6 @@ OutputEffectInstance::~OutputEffectInstance()
         assert( !_engine->hasThreadsAlive() );
     }
     delete _engine;
-    delete _outputEffectDataLock;
 }
 
 void
@@ -169,8 +164,8 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
     
     ///The effect is sequential (e.g: WriteFFMPEG), and thus cannot render multiple views, we have to choose one
     ///We pick the user defined main view in the project settings
-    Natron::SequentialPreferenceEnum sequentiallity = getSequentialPreference();
-    bool canOnlyHandleOneView = sequentiallity == Natron::eSequentialPreferenceOnlySequential || sequentiallity == Natron::eSequentialPreferencePreferSequential;
+    SequentialPreferenceEnum sequentiallity = getSequentialPreference();
+    bool canOnlyHandleOneView = sequentiallity == eSequentialPreferenceOnlySequential || sequentiallity == eSequentialPreferencePreferSequential;
     
     if (canOnlyHandleOneView) {
         viewsToRender.clear();
@@ -179,7 +174,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
     
     if (isViewAware()) {
         //If the Writer is view aware, check if it wants to render all views at once or not
-        boost::shared_ptr<KnobI> outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
+        KnobPtr outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
         if (outputFileNameKnob) {
             KnobOutputFile* outputFileName = dynamic_cast<KnobOutputFile*>(outputFileNameKnob.get());
             assert(outputFileName);
@@ -194,7 +189,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
                     ///all views will be overwritten to the same file
                     ///If this is WriteOIIO, check the parameter "viewsSelector" to determine if the user wants to encode all
                     ///views to a single file or not
-                    boost::shared_ptr<KnobI> viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
+                    KnobPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
                     bool hasViewChoice = false;
                     if (viewsKnob && !viewsKnob->getIsSecret()) {
                         KnobChoice* viewsChoice = dynamic_cast<KnobChoice*>(viewsKnob.get());
@@ -223,12 +218,12 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
                             if (!renderController) {
                                 message.append(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n");
                                 message = message + QObject::tr("Would you like to continue?");
-                                Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel), Natron::eStandardButtonOk);
-                                if (rep != Natron::eStandardButtonOk) {
+                                StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
+                                if (rep != eStandardButtonOk) {
                                     return;
                                 }
                             } else {
-                                Natron::warningDialog(tr("Multi-view support").toStdString(), message.toStdString());
+                                Dialogs::warningDialog(tr("Multi-view support").toStdString(), message.toStdString());
                             }
                         }
                         //Render the main-view only...
@@ -254,12 +249,12 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
             if (!renderController) {
                 message.append(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n");
                 message = message + QObject::tr("Would you like to continue?");
-                Natron::StandardButtonEnum rep = Natron::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, Natron::StandardButtons(Natron::eStandardButtonOk | Natron::eStandardButtonCancel), Natron::eStandardButtonOk);
-                if (rep != Natron::eStandardButtonOk) {
+                StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
+                if (rep != eStandardButtonOk) {
                     return;
                 }
             } else {
-                Natron::warningDialog(tr("Multi-view support").toStdString(), message.toStdString());
+                Dialogs::warningDialog(tr("Multi-view support").toStdString(), message.toStdString());
             }
         }
         
@@ -268,7 +263,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
     
     RenderSequenceArgs args;
     {
-        QMutexLocker k(_outputEffectDataLock);
+        QMutexLocker k(&_outputEffectDataLock);
         args.firstFrame = first;
         args.lastFrame = last;
         args.frameStep = frameStep;
@@ -306,7 +301,7 @@ void
 OutputEffectInstance::createWriterPath()
 {
     ///Make sure that the file path exists
-    boost::shared_ptr<KnobI> fileParam = getKnobByName(kOfxImageEffectFileParamName);
+    KnobPtr fileParam = getKnobByName(kOfxImageEffectFileParamName);
     if (fileParam) {
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( fileParam.get() );
         if (isString) {
@@ -329,7 +324,7 @@ OutputEffectInstance::notifyRenderFinished()
     RenderSequenceArgs newArgs;
     
     {
-        QMutexLocker k(_outputEffectDataLock);
+        QMutexLocker k(&_outputEffectDataLock);
         if (!_renderSequenceRequests.empty()) {
             const RenderSequenceArgs& args = _renderSequenceRequests.front();
             if (args.renderController) {
@@ -348,7 +343,7 @@ OutputEffectInstance::notifyRenderFinished()
 int
 OutputEffectInstance::getCurrentFrame() const
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     return _writerCurrentFrame;
 }
@@ -356,7 +351,7 @@ OutputEffectInstance::getCurrentFrame() const
 void
 OutputEffectInstance::setCurrentFrame(int f)
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     _writerCurrentFrame = f;
 }
@@ -364,7 +359,7 @@ OutputEffectInstance::setCurrentFrame(int f)
 void
 OutputEffectInstance::incrementCurrentFrame()
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     ++_writerCurrentFrame;
 }
@@ -372,7 +367,7 @@ OutputEffectInstance::incrementCurrentFrame()
 void
 OutputEffectInstance::decrementCurrentFrame()
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     --_writerCurrentFrame;
 }
@@ -380,7 +375,7 @@ OutputEffectInstance::decrementCurrentFrame()
 int
 OutputEffectInstance::getFirstFrame() const
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     return _writerFirstFrame;
 }
@@ -400,7 +395,7 @@ OutputEffectInstance::isDoingSequentialRender() const
 void
 OutputEffectInstance::setFirstFrame(int f)
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     _writerFirstFrame = f;
 }
@@ -408,7 +403,7 @@ OutputEffectInstance::setFirstFrame(int f)
 int
 OutputEffectInstance::getLastFrame() const
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     return _writerLastFrame;
 }
@@ -416,7 +411,7 @@ OutputEffectInstance::getLastFrame() const
 void
 OutputEffectInstance::setLastFrame(int f)
 {
-    QMutexLocker l(_outputEffectDataLock);
+    QMutexLocker l(&_outputEffectDataLock);
 
     _writerLastFrame = f;
 }
@@ -430,7 +425,10 @@ OutputEffectInstance::initializeData()
 RenderEngine*
 OutputEffectInstance::createRenderEngine()
 {
-    return new RenderEngine(this);
+    
+    boost::shared_ptr<OutputEffectInstance> thisShared = boost::dynamic_pointer_cast<OutputEffectInstance>(shared_from_this());
+    assert(thisShared);
+    return new RenderEngine(thisShared);
 }
 
 void
@@ -442,7 +440,7 @@ OutputEffectInstance::updateRenderTimeInfos(double lastTimeSpent,
 
     *totalTimeSpent = 0;
 
-    QMutexLocker k(_outputEffectDataLock);
+    QMutexLocker k(&_outputEffectDataLock);
     _timeSpentPerFrameRendered.push_back(lastTimeSpent);
 
     for (std::list<double>::iterator it = _timeSpentPerFrameRendered.begin(); it != _timeSpentPerFrameRendered.end(); ++it) {
@@ -455,7 +453,7 @@ OutputEffectInstance::updateRenderTimeInfos(double lastTimeSpent,
 void
 OutputEffectInstance::resetTimeSpentRenderingInfos()
 {
-    QMutexLocker k(_outputEffectDataLock);
+    QMutexLocker k(&_outputEffectDataLock);
 
     _timeSpentPerFrameRendered.clear();
 }
@@ -464,16 +462,16 @@ void
 OutputEffectInstance::reportStats(int time,
                                   int view,
                                   double wallTime,
-                                  const std::map<boost::shared_ptr<Natron::Node>, NodeRenderStats > & stats)
+                                  const std::map<NodePtr, NodeRenderStats > & stats)
 {
     std::string filename;
-    boost::shared_ptr<KnobI> fileKnob = getKnobByName(kOfxImageEffectFileParamName);
+    KnobPtr fileKnob = getKnobByName(kOfxImageEffectFileParamName);
 
     if (fileKnob) {
         KnobOutputFile* strKnob = dynamic_cast<KnobOutputFile*>( fileKnob.get() );
         if  (strKnob) {
             QString qfileName( SequenceParsing::generateFileNameFromPattern(strKnob->getValue(0), time, view).c_str() );
-            Natron::removeFileExtension(qfileName);
+            QtCompat::removeFileExtension(qfileName);
             qfileName.append("-stats.txt");
             filename = qfileName.toStdString();
         }
@@ -504,7 +502,7 @@ OutputEffectInstance::reportStats(int time,
     }
 
     ofile << "Time spent to render frame (wall clock time): " << Timer::printAsTime(wallTime, false).toStdString() << std::endl;
-    for (std::map<boost::shared_ptr<Natron::Node>, NodeRenderStats >::const_iterator it = stats.begin(); it != stats.end(); ++it) {
+    for (std::map<NodePtr, NodeRenderStats >::const_iterator it = stats.begin(); it != stats.end(); ++it) {
         ofile << "------------------------------- " << it->first->getScriptName_mt_safe() << "------------------------------- " << std::endl;
         ofile << "Time spent rendering: " << Timer::printAsTime(it->second.getTotalTimeSpentRendering(), false).toStdString() << std::endl;
         const RectD & rod = it->second.getRoD();
@@ -532,31 +530,30 @@ OutputEffectInstance::reportStats(int time,
         ofile << std::endl;
         ofile << "Channels processed: ";
 
-        bool r, g, b, a;
-        it->second.getChannelsRendered(&r, &g, &b, &a);
-        if (r) {
+        std::bitset<4> processChannels = it->second.getChannelsRendered();
+        if (processChannels[0]) {
             ofile << "red ";
         }
-        if (g) {
+        if (processChannels[1]) {
             ofile << "green ";
         }
-        if (b) {
+        if (processChannels[2]) {
             ofile << "blue ";
         }
-        if (a) {
+        if (processChannels[3]) {
             ofile << "alpha";
         }
         ofile << std::endl;
 
         ofile << "Output alpha premultiplication: ";
         switch ( it->second.getOutputPremult() ) {
-        case Natron::eImagePremultiplicationOpaque:
+        case eImagePremultiplicationOpaque:
             ofile << "opaque";
             break;
-        case Natron::eImagePremultiplicationPremultiplied:
+        case eImagePremultiplicationPremultiplied:
             ofile << "premultiplied";
             break;
-        case Natron::eImagePremultiplicationUnPremultiplied:
+        case eImagePremultiplicationUnPremultiplied:
             ofile << "unpremultiplied";
             break;
         }
@@ -580,11 +577,11 @@ OutputEffectInstance::reportStats(int time,
         }
         ofile << std::endl;
 
-        std::list<std::pair<RectI, boost::shared_ptr<Natron::Node> > > identityRectangles = it->second.getIdentityRectangles();
+        std::list<std::pair<RectI, NodePtr > > identityRectangles = it->second.getIdentityRectangles();
         const std::list<RectI> & renderedRectangles = it->second.getRenderedRectangles();
 
         ofile << "Identity rectangles: " << identityRectangles.size() << std::endl;
-        for (std::list<std::pair<RectI, boost::shared_ptr<Natron::Node> > > ::iterator it2 = identityRectangles.begin(); it2 != identityRectangles.end(); ++it2) {
+        for (std::list<std::pair<RectI, NodePtr > > ::iterator it2 = identityRectangles.begin(); it2 != identityRectangles.end(); ++it2) {
             ofile << "Origin: " << it2->second->getScriptName_mt_safe() << ", rect: x1 = " << it2->first.x1
                   << " y1 = " << it2->first.y1 << " x2 = " << it2->first.x2 << " y2 = " << it2->first.y2 << std::endl;
         }
@@ -596,3 +593,4 @@ OutputEffectInstance::reportStats(int time,
     }
 } // OutputEffectInstance::reportStats
 
+NATRON_NAMESPACE_EXIT;

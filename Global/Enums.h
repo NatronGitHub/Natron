@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,13 @@ CLANG_DIAG_OFF(deprecated)
 #include <QMetaType>
 CLANG_DIAG_ON(deprecated)
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+#ifdef SBK_RUN
+// shiboken doesn't generate SbkNatronEngine_StandardButtonEnum_as_number unless it is put in a class or namespace
+NATRON_NAMESPACE_EXIT;
+namespace NATRON_NAMESPACE {
+#endif
+
 enum ScaleTypeEnum
 {
     eScaleTypeLinear,
@@ -82,8 +88,6 @@ enum StandardButtonEnum
     eStandardButtonReset              = 0x04000000,
     eStandardButtonRestoreDefaults    = 0x08000000
 };
-
-typedef QFlags<Natron::StandardButtonEnum> StandardButtons;
 
 enum MessageTypeEnum
 {
@@ -321,6 +325,7 @@ enum PixmapEnum
     NATRON_PIXMAP_ROTO_NODE_ICON,
     
     NATRON_PIXMAP_LINK_CURSOR,
+    NATRON_PIXMAP_LINK_MULT_CURSOR,
     
     NATRON_PIXMAP_APP_ICON,
 
@@ -342,7 +347,8 @@ enum ValueChangedReasonEnum
     //A user change to the knob triggered the call, gui will not be refreshed but instanceChangedAction called
     eValueChangedReasonUserEdited = 0,
     
-    //A plugin change triggered the call, gui will be refreshed but instanceChangedAction not called
+    //A plugin change triggered the call, gui will be refreshed and instanceChangedAction called. This is stricly reserved
+    //to calls made directly from an OpenFX plug-in
     eValueChangedReasonPluginEdited ,
     
     // Natron gui called setValue itself, instanceChangedAction will be called (with a reason of User edited) AND knob gui refreshed
@@ -526,9 +532,34 @@ enum DopeSheetItemType
     eDopeSheetItemTypeKnobRoot,
     eDopeSheetItemTypeKnobDim
 };
+
+enum CreateNodeReason
+{
+    //The user created the node via the GUI
+    eCreateNodeReasonUserCreate,
     
+    //The user created the node via copy/paste
+    eCreateNodeReasonCopyPaste,
+    
+    //The node was created following a project load
+    eCreateNodeReasonProjectLoad,
+    
+    //The node was created by Natron internally
+    eCreateNodeReasonInternal,
+};
+    
+//typedef QFlags<StandardButtonEnum> StandardButtons;
+Q_DECLARE_FLAGS(StandardButtons,StandardButtonEnum)
+    
+#ifdef SBK_RUN
 }
-Q_DECLARE_METATYPE(Natron::StandardButtons)
+NATRON_NAMESPACE_ENTER;
+#endif
+
+
+NATRON_NAMESPACE_EXIT;
+
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::StandardButtons)
 
 
 #endif // NATRON_GLOBAL_ENUMS_H

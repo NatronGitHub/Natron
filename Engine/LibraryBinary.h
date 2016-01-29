@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 #ifdef __NATRON_OSX__
     #define NATRON_LIBRARY_EXT "dylib"
 #elif defined(__NATRON_LINUX__)
@@ -114,5 +114,5 @@ private:
     bool _valid;
     std::map<std::string,value_type> _functions; // <function name, pointer>
 };
-} // namespace Natron
+NATRON_NAMESPACE_EXIT;
 #endif // ifndef NATRON_GLOBAL_LIBRARYBINARY_H

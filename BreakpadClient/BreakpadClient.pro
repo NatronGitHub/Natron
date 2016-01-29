@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+# Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,8 +23,6 @@ CONFIG -= qt
 
 include(../global.pri)
 include(../config.pri)
-
-gbreakpad {
 
 # disable warnings, since this is an external library
 QMAKE_CFLAGS_WARN_ON=-Wno-deprecated
@@ -129,12 +127,11 @@ win32 {
                 $$BREAKPAD_PATH/client/windows/crash_generation/minidump_generator.cc \
                 $$BREAKPAD_PATH/client/windows/handler/exception_handler.cc \
                 $$BREAKPAD_PATH/client/windows/sender/crash_report_sender.cc \
-                $$BREAKPAD_PATH/common/windows/dia_util.cc \
+               # $$BREAKPAD_PATH/common/windows/dia_util.cc \
                 $$BREAKPAD_PATH/common/windows/guid_string.cc \
                 $$BREAKPAD_PATH/common/windows/http_upload.cc \
-                $$BREAKPAD_PATH/common/windows/omap.cc \
-                $$BREAKPAD_PATH/common/windows/pdb_source_line_writer.cc \
+               # $$BREAKPAD_PATH/common/windows/omap.cc \
+               # $$BREAKPAD_PATH/common/windows/pdb_source_line_writer.cc \
                 $$BREAKPAD_PATH/common/windows/string_utils.cc
 }
 
-}

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@
 #include "Global/Macros.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct HistogramCPUPrivate;
 
@@ -51,7 +52,7 @@ public:
     virtual ~HistogramCPU();
 
     void computeHistogram(int mode, //< corresponds to the enum Histogram::DisplayModeEnum
-                          const boost::shared_ptr<Natron::Image> & image,
+                          const boost::shared_ptr<Image> & image,
                           const RectI & rect,
                           int binsCount,
                           double vmin,
@@ -87,5 +88,7 @@ private:
     virtual void run() OVERRIDE FINAL;
     boost::scoped_ptr<HistogramCPUPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // HISTOGRAMCPU_H

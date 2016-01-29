@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/GuiAppInstance.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 GuiApplicationManagerPrivate::GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface)
@@ -60,6 +60,9 @@ GuiApplicationManagerPrivate::GuiApplicationManagerPrivate(GuiApplicationManager
 , fontconfigUpdateWatcher()
 , updateSplashscreenTimer()
 , fontconfigMessageDots(3)
+, previewRenderThread()
+, dpiX(96)
+, dpiY(96)
 {
 }
 
@@ -357,7 +360,9 @@ void
 GuiApplicationManagerPrivate::addStandardKeybind(const QString & grouping,
                                                  const QString & id,
                                                  const QString & description,
-                                                 QKeySequence::StandardKey key)
+                                                 QKeySequence::StandardKey key,
+                                                 const Qt::KeyboardModifiers & fallbackmodifiers,
+                                                 Qt::Key fallbacksymbol)
 {
     AppShortcuts::iterator foundGroup = _actionShortcuts.find(grouping);
     if ( foundGroup != _actionShortcuts.end() ) {
@@ -371,6 +376,12 @@ GuiApplicationManagerPrivate::addStandardKeybind(const QString & grouping,
     Qt::Key symbol;
 
     extractKeySequence(QKeySequence(key), modifiers, symbol);
+    
+    if (symbol == (Qt::Key)0) {
+        symbol = fallbacksymbol;
+        modifiers = fallbackmodifiers;
+    }
+    
     KeyBoundAction* kA = new KeyBoundAction;
     kA->grouping = grouping;
     kA->description = description;
@@ -399,3 +410,4 @@ GuiApplicationManagerPrivate::updateFontConfigCache()
     FcConfigBuildFonts(fcConfig);
 }
 
+NATRON_NAMESPACE_EXIT;

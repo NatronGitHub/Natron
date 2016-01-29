@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,17 +33,19 @@
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 class GroupOutput
 : public NoOpBase
 {
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new GroupOutput(n);
     }
     
-    GroupOutput(boost::shared_ptr<Natron::Node> n)
+    GroupOutput(NodePtr n)
     : NoOpBase(n)
     {
     }
@@ -77,6 +79,6 @@ public:
     
 };
 
-
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_GroupOutput_h

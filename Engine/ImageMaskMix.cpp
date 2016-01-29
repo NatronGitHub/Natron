@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 
 #include "Image.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked, bool maskInvert>
 void
@@ -141,7 +141,7 @@ Image::applyMaskMixForDstComponents(const RectI& roi,
                                     bool maskInvert,
                                     float mix)
 {
-    Natron::ImageBitDepthEnum depth = getBitDepth();
+    ImageBitDepthEnum depth = getBitDepth();
     switch (depth) {
         case eImageBitDepthByte:
             applyMaskMixForDepth<srcNComps,dstNComps, unsigned char , 255>(roi, maskImg, originalImg, masked, maskInvert, mix);
@@ -242,3 +242,5 @@ Image::applyMaskMix(const RectI& roi,
     }
     
 }
+
+NATRON_NAMESPACE_EXIT;

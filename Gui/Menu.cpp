@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 Menu::Menu(const QString &title, QWidget *parent)
 : QMenu(title,parent)
@@ -79,3 +79,4 @@ MenuWithToolTips::event (QEvent* e)
     return QMenu::event(e);
 }
 
+NATRON_NAMESPACE_EXIT;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,31 +33,31 @@
 #include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
-Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
-                                                                            const boost::shared_ptr<Natron::Node>& node,
+EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
+                                                                            const NodePtr& node,
                                                                             const FramesNeededMap& framesNeeded,
                                                                             const RoIMap& inputRois,
-                                                                            const std::map<int, Natron::EffectInstance*>& reroutesMap,
+                                                                            const boost::shared_ptr<InputMatrixMap>& reroutesMap,
                                                                             bool useTransforms, // roi functor specific
                                                                             unsigned int originalMipMapLevel, // roi functor specific
                                                                             double time,
                                                                             int view,
-                                                                            const boost::shared_ptr<Natron::Node>& treeRoot,
+                                                                            const NodePtr& treeRoot,
                                                                             FrameRequestMap* requests,  // roi functor specific
-                                                                            EffectInstance::InputImagesMap* inputImages, // render functor specific
+                                                                           EffectInstance::InputImagesMap* inputImages, // render functor specific
                                                                             const EffectInstance::ComponentsNeededMap* neededComps, // render functor specific
                                                                             bool useScaleOneInputs, // render functor specific
                                                                             bool byPassCache) // render functor specific
 {
     ///For all frames/views needed, call recursively on inputs with the appropriate RoI
 
-    EffectInstance* effect = node->getLiveInstance();
+    EffectInstPtr effect = node->getEffectInstance();
     bool isRoto = node->isRotoPaintingNode();
     
     //Same as FramesNeededMap but we also get a pointer to EffectInstance* as key
-    typedef std::map<EffectInstance*, std::pair<int,std::map<int, std::vector<OfxRangeD> > > > PreRenderFrames;
+    typedef std::map<EffectInstPtr, std::pair<int,std::map<int, std::vector<OfxRangeD> > > > PreRenderFrames;
     
     PreRenderFrames framesToRender;
     //Add frames needed to the frames to render
@@ -66,9 +66,9 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         
         bool inputIsMask = effect->isInputMask(inputNb);
         
-        Natron::ImageComponents maskComps;
+        ImageComponents maskComps;
         int channelForAlphaInput;
-        boost::shared_ptr<Node> maskInput;
+        NodePtr maskInput;
         // if (inputIsMask) {
         if (!effect->isMaskEnabled(inputNb)) {
             continue;
@@ -83,31 +83,21 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         }
         
         //Redirect for transforms if needed
-        EffectInstance* inputEffect = NULL;
-        std::map<int, EffectInstance*>::const_iterator foundReroute = reroutesMap.find(inputNb);
-        if (foundReroute != reroutesMap.end()) {
-            inputEffect = foundReroute->second->getInput(inputNb);
-        } else {
-            //if (!isRoto || isRenderFunctor) {
-                inputEffect = node->getLiveInstance()->getInput(inputNb);
-            /*} else {
-                //For the roto, propagate the request to the internal tree when not rendering
-                boost::shared_ptr<RotoContext> roto = node->getRotoContext();
-                std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder();
-                if (!items.empty()) {
-                    const boost::shared_ptr<RotoDrawableItem>& firstStrokeItem = items.back();
-                    assert(firstStrokeItem);
-                    boost::shared_ptr<Node> bottomMerge = firstStrokeItem->getMergeNode();
-                    assert(bottomMerge);
-                    inputEffect = bottomMerge->getLiveInstance();
-                }
-                
-            }*/
+        EffectInstPtr inputEffect;
+        if (reroutesMap) {
+            InputMatrixMap::const_iterator foundReroute = reroutesMap->find(inputNb);
+            if (foundReroute != reroutesMap->end()) {
+                inputEffect = foundReroute->second.newInputEffect->getInput(foundReroute->second.newInputNbToFetchFrom);
+            }
+        }
+        
+        if (!inputEffect) {
+            inputEffect = node->getEffectInstance()->getInput(inputNb);
         }
         
         //Redirect the mask input
         if (maskInput) {
-            inputEffect = maskInput->getLiveInstance();
+            inputEffect = maskInput->getEffectInstance();
         }
         
         //Never pre-render the mask if we are rendering a node of the rotopaint tree
@@ -122,7 +112,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
     
     if (isRoto && !isRenderFunctor) {
         //Also add internal rotopaint tree RoIs
-        boost::shared_ptr<Node> btmMerge = effect->getNode()->getRotoContext()->getRotoPaintBottomMergeNode();
+        NodePtr btmMerge = effect->getNode()->getRotoContext()->getRotoPaintBottomMergeNode();
         if (btmMerge) {
             std::map<int,std::vector<OfxRangeD> > frames;
             std::vector<OfxRangeD> vec;
@@ -130,15 +120,15 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
             r.min = r.max = time;
             vec.push_back(r);
             frames[view] = vec;
-            framesToRender[btmMerge->getLiveInstance()] = std::make_pair(-1, frames);
+            framesToRender[btmMerge->getEffectInstance()] = std::make_pair(-1, frames);
         }
     }
     
     for (PreRenderFrames::const_iterator it = framesToRender.begin(); it != framesToRender.end(); ++it) {
         
-        EffectInstance* inputEffect = it->first;
+        const EffectInstPtr& inputEffect = it->first;
         
-        boost::shared_ptr<Node> inputNode = inputEffect->getNode();
+        NodePtr inputNode = inputEffect->getNode();
         assert(inputNode);
         
         int inputNb = it->second.first;
@@ -153,9 +143,9 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         
         ImageList* inputImagesList = 0;
         if (isRenderFunctor) {
-            EffectInstance::InputImagesMap::iterator foundInputImages = inputImages->find(inputNb);
+           EffectInstance::InputImagesMap::iterator foundInputImages = inputImages->find(inputNb);
             if (foundInputImages == inputImages->end()) {
-                std::pair<EffectInstance::InputImagesMap::iterator,bool> ret = inputImages->insert(std::make_pair(inputNb, ImageList()));
+                std::pair<InputImagesMap::iterator,bool> ret = inputImages->insert(std::make_pair(inputNb, ImageList()));
                 inputImagesList = &ret.first->second;
                 assert(ret.second);
             }
@@ -165,7 +155,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         RectD roi;
         
         bool roiIsInRequestPass = false;
-        const ParallelRenderArgs* frameArgs = 0;
+        boost::shared_ptr<ParallelRenderArgs> frameArgs;
         if (isRenderFunctor) {
             frameArgs = inputEffect->getParallelRenderArgsTLS();
             if (frameArgs && frameArgs->request) {
@@ -176,14 +166,14 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         
         if (!roiIsInRequestPass) {
             RoIMap::const_iterator foundInputRoI = inputRois.find(inputEffect);
-            if(foundInputRoI == inputRois.end()) {
+            if (foundInputRoI == inputRois.end()) {
                 continue;
             }
             if (foundInputRoI->second.isInfinite()) {
                 std::stringstream ss;
                 ss << node->getScriptName_mt_safe();
                 ss << QObject::tr(" asked for an infinite region of interest upstream").toStdString();
-                effect->setPersistentMessage(Natron::eMessageTypeError, ss.str());
+                effect->setPersistentMessage(eMessageTypeError, ss.str());
                 return EffectInstance::eRenderRoIRetCodeFailed;
             }
             
@@ -194,10 +184,10 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         }
         
         ///There cannot be frames needed without components needed.
-        const std::vector<Natron::ImageComponents>* compsNeeded = 0;
+        const std::vector<ImageComponents>* compsNeeded = 0;
         
         if (neededComps) {
-            EffectInstance::ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(inputNb);
+           EffectInstance::ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(inputNb);
             if (foundCompsNeeded == neededComps->end()) {
                 continue;
             } else {
@@ -234,14 +224,15 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                              f += 1.) {
                             
                             if (!isRenderFunctor) {
-                                Natron::StatusEnum stat = EffectInstance::getInputsRoIsFunctor(useTransforms,
-                                                                                               f,
-                                                                                               viewIt->first,
-                                                                                               originalMipMapLevel,
-                                                                                               inputNode,
-                                                                                               treeRoot,
-                                                                                               roi,
-                                                                                               *requests);
+                                StatusEnum stat = EffectInstance::getInputsRoIsFunctor(useTransforms,
+                                                                                       f,
+                                                                                       viewIt->first,
+                                                                                       originalMipMapLevel,
+                                                                                       inputNode,
+                                                                                       node,
+                                                                                       treeRoot,
+                                                                                       roi,
+                                                                                       *requests);
                                 
                                 if (stat == eStatusFailed) {
                                     return EffectInstance::eRenderRoIRetCodeFailed;
@@ -252,15 +243,13 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                 
                             } else {
                                 
-                                RenderScale scaleOne;
-                                scaleOne.x = scaleOne.y = 1.;
+                                RenderScale scaleOne(1.);
                                 
-                                RenderScale scale;
-                                scale.x = scale.y = Natron::Image::getScaleFromMipMapLevel(originalMipMapLevel);
+                                RenderScale scale(Image::getScaleFromMipMapLevel(originalMipMapLevel));
                                 
                                 ///Render the input image with the bit depth of its preference
-                                std::list<Natron::ImageComponents> inputPrefComps;
-                                Natron::ImageBitDepthEnum inputPrefDepth;
+                                std::list<ImageComponents> inputPrefComps;
+                                ImageBitDepthEnum inputPrefDepth;
                                 inputEffect->getPreferredDepthAndComponents(-1/*it2->first*/, &inputPrefComps, &inputPrefDepth);
                                 std::list<ImageComponents> componentsToRender;
                                 
@@ -273,6 +262,9 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                         componentsToRender.push_back(compsNeeded->at(k));
                                     }
                                 }
+                                if (componentsToRender.empty()) {
+                                    continue;
+                                }
                                 
                                 if (roiIsInRequestPass) {
                                     frameArgs->request->getFrameViewCanonicalRoI(f, viewIt->first, &roi);
@@ -280,7 +272,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                 
                                 RectI inputRoIPixelCoords;
                                 const unsigned int upstreamMipMapLevel = useScaleOneInputs ? 0 : originalMipMapLevel;
-                                const RenderScale& upstreamScale = useScaleOneInputs ? scaleOne : scale;
+                                const RenderScale & upstreamScale = useScaleOneInputs ? scaleOne : scale;
                                 roi.toPixelEnclosing(upstreamMipMapLevel, inputPar, &inputRoIPixelCoords);
                                 
                                 EffectInstance::RenderRoIArgs inArgs(f, //< time
@@ -293,7 +285,7 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
                                                                      componentsToRender, //< requested comps
                                                                      inputPrefDepth,
                                                                      false,
-                                                                     effect);
+                                                                     effect.get());
                                 
                                 
                                 
@@ -330,30 +322,31 @@ Natron::EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool
         return EffectInstance::eRenderRoIRetCodeOk;
 }
 
-Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransforms,
-                                                                double time,
-                                                                int view,
-                                                                unsigned originalMipMapLevel,
-                                                                const boost::shared_ptr<Natron::Node>& node,
-                                                                const boost::shared_ptr<Natron::Node>& treeRoot,
-                                                                const RectD& canonicalRenderWindow,
-                                                                FrameRequestMap& requests)
+StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
+                                                double time,
+                                                int view,
+                                                unsigned originalMipMapLevel,
+                                                const NodePtr& node,
+                                                const NodePtr& callerNode,
+                                                const NodePtr& treeRoot,
+                                                const RectD& canonicalRenderWindow,
+                                                FrameRequestMap& requests)
 {
     
     boost::shared_ptr<NodeFrameRequest> nodeRequest;
     
-    EffectInstance* effect = node->getLiveInstance();
+    EffectInstPtr effect = node->getEffectInstance();
     assert(effect);
     
-    if (effect->supportsRenderScaleMaybe() == Natron::EffectInstance::eSupportsMaybe) {
+    if (effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
         /*
          If this flag was not set already that means it probably failed all calls to getRegionOfDefinition.
          We safely fail here
          */
         return eStatusFailed;
     }
-    assert(effect->supportsRenderScaleMaybe() == Natron::EffectInstance::eSupportsNo ||
-           effect->supportsRenderScaleMaybe() == Natron::EffectInstance::eSupportsYes);
+    assert(effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsNo ||
+           effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes);
     bool supportsRs = effect->supportsRenderScale();
     unsigned int mappedLevel = supportsRs ? originalMipMapLevel : 0;
     
@@ -365,7 +358,7 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
         ///Setup global data for the node for the whole frame render
         
         boost::shared_ptr<NodeFrameRequest> tmp(new NodeFrameRequest);
-        tmp->mappedScale.x = tmp->mappedScale.y = Natron::Image::getScaleFromMipMapLevel(mappedLevel);
+        tmp->mappedScale.x = tmp->mappedScale.y = Image::getScaleFromMipMapLevel(mappedLevel);
         tmp->nodeHash = node->getHashValue();
         
         std::pair<FrameRequestMap::iterator,bool> ret = requests.insert(std::make_pair(node, tmp));
@@ -398,7 +391,7 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
         fvRequest = &nodeRequest->frames[frameView];
         
         ///Get the RoD
-        Natron::StatusEnum stat = effect->getRegionOfDefinition_public(nodeRequest->nodeHash, time, nodeRequest->mappedScale, view, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
+        StatusEnum stat = effect->getRegionOfDefinition_public(nodeRequest->nodeHash, time, nodeRequest->mappedScale, view, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
         //If failed it should have failed earlier
         if (stat == eStatusFailed && !fvRequest->globalData.rod.isNull()) {
             return stat;
@@ -428,7 +421,8 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
         
         ///Concatenate transforms if needed
         if (useTransforms) {
-            effect->tryConcatenateTransforms(time, view, nodeRequest->mappedScale, &fvRequest->globalData.transforms);
+            fvRequest->globalData.transforms.reset(new InputMatrixMap);
+            effect->tryConcatenateTransforms(time, view, nodeRequest->mappedScale, fvRequest->globalData.transforms.get());
         }
         
         ///Get the frame/views needed for this frame/view
@@ -455,6 +449,7 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
                                                    inputView,
                                                    originalMipMapLevel,
                                                    node,
+                                                   node,
                                                    treeRoot,
                                                    canonicalRenderWindow,
                                                    requests);
@@ -465,21 +460,34 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
         
     } else if (fvRequest->globalData.identityInputNb != -1) {
         
-        Natron::EffectInstance* inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
+        EffectInstPtr inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
         if (inputEffectIdentity) {
             fvRequest->requests.push_back(std::make_pair(canonicalRenderWindow, FrameViewPerRequestData()));
+            
+            NodePtr inputIdentityNode = inputEffectIdentity->getNode();
             StatusEnum stat = getInputsRoIsFunctor(useTransforms,
                                                    fvRequest->globalData.inputIdentityTime,
                                                    view,
                                                    originalMipMapLevel,
-                                                   inputEffectIdentity->getNode(),
+                                                   inputIdentityNode,
+                                                   node,
                                                    treeRoot,
                                                    canonicalRenderWindow,
                                                    requests);
             return stat;
         }
         
-        //Identity but no input
+        //Identity but no input, if it's optional ignore, otherwise fail
+        if (callerNode && callerNode != node) {
+            
+            int inputIndex = callerNode->getInputIndex(node.get());
+            if (callerNode->getEffectInstance()->isInputOptional(inputIndex)
+                || callerNode->getEffectInstance()->isInputMask(inputIndex)) {
+                
+                
+                return eStatusOK;
+            }
+        }
         return eStatusFailed;
     }
     
@@ -487,9 +495,14 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
     FrameViewPerRequestData fvPerRequestData;
     effect->getRegionsOfInterest_public(time, nodeRequest->mappedScale, fvRequest->globalData.rod, canonicalRenderWindow, view, &fvPerRequestData.inputsRoi);
     
+    
+    
     ///Transform Rois and get the reroutes map
     if (useTransforms) {
-        transformInputRois(effect,fvRequest->globalData.transforms,par,nodeRequest->mappedScale,&fvPerRequestData.inputsRoi,&fvRequest->globalData.reroutesMap);
+        if (fvRequest->globalData.transforms) {
+            fvRequest->globalData.reroutesMap.reset(new std::map<int, EffectInstPtr>());
+            transformInputRois(effect.get(),fvRequest->globalData.transforms,par,nodeRequest->mappedScale,&fvPerRequestData.inputsRoi,fvRequest->globalData.reroutesMap.get());
+        }
     }
     
     /*qDebug() << node->getFullyQualifiedName().c_str() << "RoI request: x1="<<canonicalRenderWindow.x1<<"y1="<<canonicalRenderWindow.y1<<"x2="<<canonicalRenderWindow.x2<<"y2="<<canonicalRenderWindow.y2;
@@ -504,7 +517,7 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
                                                               node,
                                                               fvRequest->globalData.frameViewsNeeded,
                                                               fvPerRequestData.inputsRoi,
-                                                              fvRequest->globalData.reroutesMap,
+                                                              fvRequest->globalData.transforms,
                                                               useTransforms,
                                                               originalMipMapLevel,
                                                               time,
@@ -522,23 +535,24 @@ Natron::StatusEnum Natron::EffectInstance::getInputsRoIsFunctor(bool useTransfor
 }
 
 
-Natron::StatusEnum
+StatusEnum
 EffectInstance::computeRequestPass(double time,
                                    int view,
                                    unsigned int mipMapLevel,
                                    const RectD& renderWindow,
-                                   const boost::shared_ptr<Natron::Node>& treeRoot,
+                                   const NodePtr& treeRoot,
                                    FrameRequestMap& request)
 {
     bool doTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
-    Natron::StatusEnum stat = getInputsRoIsFunctor(doTransforms,
-                                                   time,
-                                                   view,
-                                                   mipMapLevel,
-                                                   treeRoot,
-                                                   treeRoot,
-                                                   renderWindow,
-                                                   request);
+    StatusEnum stat = getInputsRoIsFunctor(doTransforms,
+                                           time,
+                                           view,
+                                           mipMapLevel,
+                                           treeRoot,
+                                           treeRoot,
+                                           treeRoot,
+                                           renderWindow,
+                                           request);
     
     if (stat == eStatusFailed) {
         return stat;
@@ -597,32 +611,93 @@ NodeFrameRequest::getFrameViewCanonicalRoI(double time, int view, RectD* roi) co
     return true;
 }
 
+struct FindDependenciesNode
+{
+    NodePtr node;
+    bool recursed;
+    
+    FindDependenciesNode() : node(), recursed(false) {}
+};
+
+struct FindDependenciesNode_compare
+{
+    bool operator() (const FindDependenciesNode & lhs,
+                     const FindDependenciesNode & rhs) const
+    {
+        return lhs.node < rhs.node;
+    }
+};
+
+typedef std::set<FindDependenciesNode,FindDependenciesNode_compare> FindDependenciesSet;
 
 /**
  * @brief Builds a list with all nodes upstream of the given node (including this node) and all its dependencies through expressions as well (which
  * also may be recursive)
  **/
-static void getAllUpstreamNodesRecursiveWithDependencies(const boost::shared_ptr<Natron::Node>& node, std::list<boost::shared_ptr<Natron::Node> >& finalNodes)
+static void getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node, FindDependenciesSet& finalNodes)
 {
-    if (std::find(finalNodes.begin(), finalNodes.end(), node) != finalNodes.end()) {
+    //There may be cases where nodes gets added to the finalNodes in getAllExpressionDependenciesRecursive(), but we still
+    //want to recurse upstream for them too
+    bool foundButDidntRecursivelyCallUpstream = false;
+    
+    if (!node || !node->isNodeCreated()) {
         return;
     }
     
-    finalNodes.push_back(node);
+    for (FindDependenciesSet::iterator it = finalNodes.begin(); it!=finalNodes.end(); ++it) {
+        if (it->node == node) {
+            if ( it->recursed) {
+                //We already called getAllUpstreamNodesRecursiveWithDependencies on its inputs
+                return;
+            } else {
+                //Now we set the recurse flag below
+                finalNodes.erase(it);
+                foundButDidntRecursivelyCallUpstream = true;
+                break;
+            }
+        }
+    }
+ 
+    {
+        //Add this node to the set
+        FindDependenciesNode n;
+        n.node = node;
+        n.recursed = true;
+        finalNodes.insert(n);
+    }
     
-    node->getLiveInstance()->getAllExpressionDependenciesRecursive(finalNodes);
+    //If we already called it, don't do it again
+    if (!foundButDidntRecursivelyCallUpstream) {
+        
+        std::set<NodePtr> expressionsDeps;
+        node->getEffectInstance()->getAllExpressionDependenciesRecursive(expressionsDeps);
+        
+        //Also add all expression dependencies but mark them as we did not recursed on them yet
+        for (std::set<NodePtr>::iterator it = expressionsDeps.begin(); it!=expressionsDeps.end(); ++it) {
+            FindDependenciesNode n;
+            n.node = node;
+            n.recursed = false;
+            finalNodes.insert(n);
+        }
+    }
    
-    if (!node->isNodeCreated()) {
-        return;
-    }
     int maxInputs = node->getMaxInputCount();
     for (int i = 0; i < maxInputs; ++i) {
-        boost::shared_ptr<Natron::Node> inputNode = node->getInput(i);
+        NodePtr inputNode = node->getInput(i);
         if (inputNode) {
-            getAllUpstreamNodesRecursiveWithDependencies(inputNode, finalNodes);
+            getAllUpstreamNodesRecursiveWithDependencies_internal(inputNode, finalNodes);
         }
     }
     
+}
+
+static void getAllUpstreamNodesRecursiveWithDependencies(const NodePtr& node, NodesList& finalNodes)
+{
+    FindDependenciesSet tmp;
+    getAllUpstreamNodesRecursiveWithDependencies_internal(node, tmp);
+    for (FindDependenciesSet::iterator it = tmp.begin(); it!=tmp.end(); ++it) {
+        finalNodes.push_back(it->node);
+    }
 }
 
 
@@ -632,11 +707,11 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                                                    bool isSequential,
                                                    bool canAbort,
                                                    U64 renderAge,
-                                                   const boost::shared_ptr<Natron::Node>& treeRoot,
+                                                   const NodePtr& treeRoot,
                                                    const FrameRequestMap* request,
                                                    int textureIndex,
                                                    const TimeLine* timeline,
-                                                   const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
+                                                   const NodePtr& activeRotoPaintNode,
                                                    bool isAnalysis,
                                                    bool draftMode,
                                                    bool viewerProgressReportEnabled,
@@ -649,15 +724,15 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     
     getAllUpstreamNodesRecursiveWithDependencies(treeRoot, nodes);
     
-    for (std::list<boost::shared_ptr<Natron::Node> >::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         assert(*it);
         
-        Natron::EffectInstance* liveInstance = (*it)->getLiveInstance();
+        EffectInstPtr liveInstance = (*it)->getEffectInstance();
         assert(liveInstance);
         bool duringPaintStrokeCreation = activeRotoPaintNode && (*it)->isDuringPaintStrokeCreation();
-        Natron::RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
+        RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
         
-        std::list<boost::shared_ptr<Natron::Node> > rotoPaintNodes;
+        NodesList rotoPaintNodes;
         boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
         if (roto) {
             roto->getRotoPaintTreeNodes(&rotoPaintNodes);
@@ -682,7 +757,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
             liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash,
                                                    renderAge,treeRoot, nodeRequest,textureIndex, timeline, isAnalysis,duringPaintStrokeCreation, rotoPaintNodes, safety, doNanHandling, draftMode, viewerProgressReportEnabled, stats);
         }
-        for (std::list<boost::shared_ptr<Natron::Node> >::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
+        for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
             
             boost::shared_ptr<NodeFrameRequest> childRequest;
             U64 nodeHash = 0;
@@ -699,16 +774,16 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                 nodeHash = (*it2)->getHashValue();
             }
             
-            (*it2)->getLiveInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge, treeRoot, childRequest, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodeList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
+            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge, treeRoot, childRequest, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled,stats);
         }
         
         if ((*it)->isMultiInstance()) {
             
             ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
             ///on parameters.
-            std::list<boost::shared_ptr<Natron::Node> > children;
+            NodesList children;
             (*it)->getChildrenMultiInstance(&children);
-            for (std::list<boost::shared_ptr<Natron::Node> >::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+            for (NodesList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
                 
                 boost::shared_ptr<NodeFrameRequest> childRequest;
                 U64 nodeHash = 0;
@@ -726,16 +801,16 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                 }
                 
                 assert(*it2);
-                Natron::EffectInstance* childLiveInstance = (*it2)->getLiveInstance();
+                EffectInstPtr childLiveInstance = (*it2)->getEffectInstance();
                 assert(childLiveInstance);
-                Natron::RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge,treeRoot, childRequest, textureIndex, timeline, isAnalysis, false, std::list<boost::shared_ptr<Natron::Node> >(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled,stats);
+                RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, canAbort, nodeHash, renderAge,treeRoot, childRequest, textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled,stats);
                 
             }
         }
         
         
-       /* NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+       /* NodeGroup* isGrp = (*it)->isEffectGroup();
         if (isGrp) {
             isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, treeRoot, request, textureIndex, timeline, activeRotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats);
         }*/
@@ -744,42 +819,48 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     
 }
 
-ParallelRenderArgsSetter::ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args)
+ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr,boost::shared_ptr<ParallelRenderArgs> > >& args)
 : argsMap(args)
 {
-    for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it != argsMap.end(); ++it) {
-        it->first->getLiveInstance()->setParallelRenderArgsTLS(it->second);
+    if (args) {
+        for (std::map<NodePtr,boost::shared_ptr<ParallelRenderArgs> >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
+            it->first->getEffectInstance()->setParallelRenderArgsTLS(it->second);
+        }
     }
 }
 
 ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
 {
     
-    for (NodeList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if (!(*it) || !(*it)->getLiveInstance()) {
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        if (!(*it) || !(*it)->getEffectInstance()) {
             continue;
         }
-        (*it)->getLiveInstance()->invalidateParallelRenderArgsTLS();
+        (*it)->getEffectInstance()->invalidateParallelRenderArgsTLS();
         
         if ((*it)->isMultiInstance()) {
             
             ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
             ///on parameters.
-            NodeList children;
+            NodesList children;
             (*it)->getChildrenMultiInstance(&children);
-            for (NodeList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
-                (*it2)->getLiveInstance()->invalidateParallelRenderArgsTLS();
+            for (NodesList::iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+                (*it2)->getEffectInstance()->invalidateParallelRenderArgsTLS();
                 
             }
         }
 
-       /* NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getLiveInstance());
+       /* NodeGroup* isGrp = (*it)->isEffectGroup();
         if (isGrp) {
             isGrp->invalidateParallelRenderArgs();
         }*/
     }
     
-    for (std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >::iterator it = argsMap.begin(); it != argsMap.end(); ++it) {
-        it->first->getLiveInstance()->invalidateParallelRenderArgsTLS();
+    if (argsMap) {
+        for (std::map<NodePtr,boost::shared_ptr<ParallelRenderArgs> >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
+            it->first->getEffectInstance()->invalidateParallelRenderArgsTLS();
+        }
     }
 }
+
+NATRON_NAMESPACE_EXIT;

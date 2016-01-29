@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@
 // ***** END PYTHON BLOCK *****
 
 #include <list>
+#include <bitset>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -39,11 +41,11 @@
 #include "Engine/ImageComponents.h"
 #include "Engine/ImageLocker.h"
 #include "Engine/Knob.h" // for KnobHolder
-#include "Engine/ParallelRenderArgs.h"
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
 #include "Engine/RenderStats.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/ParallelRenderArgs.h"
 
 // Various useful plugin IDs, @see EffectInstance::getPluginID()
 #define PLUGINID_OFX_MERGE        "net.sf.openfx.MergePlugin"
@@ -78,17 +80,15 @@
 #define PLUGINID_NATRON_GROUP     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Group")
 #define PLUGINID_NATRON_INPUT     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Input")
 #define PLUGINID_NATRON_OUTPUT    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Output")
-#define PLUGINID_NATRON_BACKDROP  (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.BackDrop")
+#define PLUGINID_NATRON_BACKDROP  (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.BackDrop") // DO NOT change the capitalization, even if it's wrong
 #define PLUGINID_NATRON_ROTOPAINT (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoPaint")
 #define PLUGINID_NATRON_ROTO (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Roto")
 #define PLUGINID_NATRON_ROTOSMEAR (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.RotoSmear")
-
+#define PLUGINID_NATRON_PRECOMP     (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Precomp")
 
 #define kNatronTLSEffectPointerProperty "NatronTLSEffectPointerProperty"
 
-class QThread;
-
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief This is the base class for visual effects.
@@ -97,48 +97,51 @@ namespace Natron {
  **/
 class EffectInstance
     : public NamedKnobHolder
-      , public LockManagerI<Natron::Image>
-      , public boost::enable_shared_from_this<Natron::EffectInstance>
+      , public LockManagerI<Image>
+      , public boost::enable_shared_from_this<EffectInstance>
 {
 public:
 
 
-    typedef std::map<Natron::ImageComponents, boost::weak_ptr<Natron::Node> > ComponentsAvailableMap;
-    typedef std::list<std::pair<Natron::ImageComponents, boost::weak_ptr<Natron::Node> > > ComponentsAvailableList;
-    typedef std::map<int, std::vector<Natron::ImageComponents> > ComponentsNeededMap;
-    typedef std::map<int, std::list< boost::shared_ptr<Natron::Image> > > InputImagesMap;
-
+    typedef std::map<ImageComponents, NodeWPtr > ComponentsAvailableMap;
+    typedef std::list<std::pair<ImageComponents, NodeWPtr > > ComponentsAvailableList;
+    typedef std::map<int, std::list< boost::shared_ptr<Image> > > InputImagesMap;
+    typedef std::map<int, std::vector<ImageComponents> > ComponentsNeededMap;
+    
     struct RenderRoIArgs
     {
+        // Developper note: the fields were reordered to optimize packing.
+        // see http://www.catb.org/esr/structure-packing/
+        
         double time; //< the time at which to render
         RenderScale scale; //< the scale at which to render
         unsigned int mipMapLevel; //< the mipmap level (redundant with the scale, stored here to avoid refetching it everytimes)
         int view; //< the view to render
-        bool byPassCache;
         RectI roi; //< the renderWindow (in pixel coordinates) , watch out OpenFX action getRegionsOfInterest expects canonical coords!
         RectD preComputedRoD; //<  pre-computed region of definition in canonical coordinates for this effect to speed-up the call to renderRoi
-        std::list<Natron::ImageComponents> components; //< the requested image components (per plane)
-        Natron::ImageBitDepthEnum bitdepth; //< the requested bit depth
+        std::list<ImageComponents> components; //< the requested image components (per plane)
 
         ///When called from getImage() the calling node  will have already computed input images, hence the image of this node
         ///might already be in this list
         EffectInstance::InputImagesMap inputImagesList;
-        bool calledFromGetImage;
         const EffectInstance* caller;
+        ImageBitDepthEnum bitdepth; //< the requested bit depth
+        bool byPassCache;
+        bool calledFromGetImage;
 
         RenderRoIArgs()
         : time(0)
-        , scale()
+        , scale(1.)
         , mipMapLevel(0)
         , view(0)
-        , byPassCache(false)
         , roi()
         , preComputedRoD()
         , components()
-        , bitdepth(eImageBitDepthFloat)
         , inputImagesList()
-        , calledFromGetImage(false)
         , caller(0)
+        , bitdepth(eImageBitDepthFloat)
+        , byPassCache(false)
+        , calledFromGetImage(false)
         {
         }
         
@@ -149,23 +152,23 @@ public:
                       bool byPassCache_,
                       const RectI & roi_,
                       const RectD & preComputedRoD_,
-                      const std::list<Natron::ImageComponents> & components_,
-                      Natron::ImageBitDepthEnum bitdepth_,
+                      const std::list<ImageComponents> & components_,
+                      ImageBitDepthEnum bitdepth_,
                       bool calledFromGetImage,
                       const EffectInstance* caller,
-                      const EffectInstance::InputImagesMap & inputImages =  EffectInstance::InputImagesMap() )
+                      const EffectInstance::InputImagesMap & inputImages = EffectInstance::InputImagesMap() )
         : time(time_)
         , scale(scale_)
         , mipMapLevel(mipMapLevel_)
         , view(view_)
-        , byPassCache(byPassCache_)
         , roi(roi_)
         , preComputedRoD(preComputedRoD_)
         , components(components_)
-        , bitdepth(bitdepth_)
         , inputImagesList(inputImages)
-        , calledFromGetImage(calledFromGetImage)
         , caller(caller)
+        , bitdepth(bitdepth_)
+        , byPassCache(byPassCache_)
+        , calledFromGetImage(calledFromGetImage)
         {
         }
     };
@@ -186,7 +189,7 @@ public:
      * called just to be able to call a few virtuals fonctions.
      * The constructor is always called by the main thread of the application.
      **/
-    explicit EffectInstance(boost::shared_ptr<Natron::Node> node);
+    explicit EffectInstance(NodePtr node);
 
     virtual ~EffectInstance();
 
@@ -208,7 +211,7 @@ public:
     /**
      * @brief Returns a pointer to the node holding this effect.
      **/
-    boost::shared_ptr<Natron::Node> getNode() const WARN_UNUSED_RETURN
+    NodePtr getNode() const WARN_UNUSED_RETURN
     {
         return _node.lock();
     }
@@ -256,7 +259,7 @@ public:
      * @brief Returns input n. It might be NULL if the input is not connected.
      * MT-Safe
      **/
-    EffectInstance* getInput(int n) const WARN_UNUSED_RETURN;
+    EffectInstPtr getInput(int n) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Forwarded to the node holding the effect
@@ -382,7 +385,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb, Natron::ImageComponents* comps, boost::shared_ptr<Natron::Node>* maskInput) const;
+    int getMaskChannel(int inputNb, ImageComponents* comps, NodePtr* maskInput) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -395,47 +398,30 @@ public:
      * This function is also called to specify what image components this effect can output.
      * In that case inputNb equals -1.
      **/
-    virtual void addAcceptedComponents(int inputNb, std::list<Natron::ImageComponents>* comps) = 0;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const = 0;
+    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) = 0;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const = 0;
 
     /**
      * @brief Must return the deepest bit depth that this plug-in can support.
-     * If 32 float is supported then return Natron::eImageBitDepthFloat, otherwise
+     * If 32 float is supported then return eImageBitDepthFloat, otherwise
      * return eImageBitDepthShort if 16 bits is supported, and as a last resort, return
      * eImageBitDepthByte. At least one must be returned.
      **/
-    Natron::ImageBitDepthEnum getBitDepth() const;
+    ImageBitDepthEnum getBestSupportedBitDepth() const;
 
-    bool isSupportedBitDepth(Natron::ImageBitDepthEnum depth) const;
+    bool isSupportedBitDepth(ImageBitDepthEnum depth) const;
 
     /**
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
      * then this function will check whether the effect can produce the given components.
      **/
-    bool isSupportedComponent(int inputNb, const Natron::ImageComponents & comp) const;
+    bool isSupportedComponent(int inputNb, const ImageComponents & comp) const;
 
     /**
      * @brief Returns the most appropriate components that can be supported by the inputNb.
      * If inputNb equals -1 then this function will check the output components.
      **/
-    Natron::ImageComponents findClosestSupportedComponents(int inputNb, const Natron::ImageComponents & comp) const WARN_UNUSED_RETURN;
-
-    /**
-     * @brief Returns the preferred depth and components for the given input.
-     * If inputNb equals -1 then this function will check the output components.
-     **/
-    virtual void getPreferredDepthAndComponents(int inputNb,
-                                                std::list<Natron::ImageComponents>* comp,
-                                                Natron::ImageBitDepthEnum* depth) const;
-
-
-    /**
-     * @brief Override to get the preffered premultiplication flag for the output image
-     **/
-    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const
-    {
-        return Natron::eImagePremultiplicationPremultiplied;
-    }
+    ImageComponents findClosestSupportedComponents(int inputNb, const ImageComponents & comp) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Can be derived to give a more meaningful label to the input 'inputNb'
@@ -474,9 +460,9 @@ public:
      * eSequentialPreferencePreferSequential: This indicates that the effect would work better by rendering sequential. This is merely
      * a hint to Natron but for now we just consider it as eSequentialPreferenceNotSequential.
      **/
-    virtual Natron::SequentialPreferenceEnum getSequentialPreference() const
+    virtual SequentialPreferenceEnum getSequentialPreference() const
     {
-        return Natron::eSequentialPreferenceNotSequential;
+        return eSequentialPreferenceNotSequential;
     }
 
     enum RenderRoIRetCode
@@ -498,17 +484,17 @@ public:
 
     void getImageFromCacheAndConvertIfNeeded(bool useCache,
                                              bool useDiskCache,
-                                             const Natron::ImageKey & key,
+                                             const ImageKey & key,
                                              unsigned int mipMapLevel,
                                              const RectI* boundsParam,
                                              const RectD* rodParam,
-                                             Natron::ImageBitDepthEnum bitdepth,
-                                             const Natron::ImageComponents & components,
-                                             Natron::ImageBitDepthEnum nodeBitDepthPref,
-                                             const Natron::ImageComponents & nodeComponentsPref,
+                                             ImageBitDepthEnum bitdepth,
+                                             const ImageComponents & components,
+                                             ImageBitDepthEnum nodeBitDepthPref,
+                                             const ImageComponents & nodeComponentsPref,
                                              const EffectInstance::InputImagesMap & inputImages,
                                              const boost::shared_ptr<RenderStats> & stats,
-                                             boost::shared_ptr<Natron::Image>* image);
+                                             boost::shared_ptr<Image>* image);
 
 
     /**
@@ -516,7 +502,7 @@ public:
      * by the render action. We allocate those extra planes and cache them so they were not rendered for nothing.
      * Note that the plug-ins may call this only while in the render action, and there must be other planes to render.
      **/
-    boost::shared_ptr<Natron::Image> allocateImagePlaneAndSetInThreadLocalStorage(const Natron::ImageComponents & plane);
+    boost::shared_ptr<Image> allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponents & plane);
 
 
     class NotifyRenderingStarted_RAII
@@ -534,8 +520,8 @@ public:
     class NotifyInputNRenderingStarted_RAII
     {
         Node* _node;
-        bool _didEmit;
         int _inputNumber;
+        bool _didEmit;
 
 public:
 
@@ -556,14 +542,14 @@ public:
                                   bool canAbort,
                                   U64 nodeHash,
                                   U64 renderAge,
-                                  const boost::shared_ptr<Natron::Node> & treeRoot,
+                                  const NodePtr & treeRoot,
                                   const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
                                   int textureIndex,
                                   const TimeLine* timeline,
                                   bool isAnalysis,
                                   bool isDuringPaintStrokeCreation,
-                                  const std::list<boost::shared_ptr<Natron::Node> > & rotoPaintNodes,
-                                  Natron::RenderSafetyEnum currentThreadSafety,
+                                  const NodesList & rotoPaintNodes,
+                                  RenderSafetyEnum currentThreadSafety,
                                   bool doNanHandling,
                                   bool draftMode,
                                   bool viewerProgressReportEnabled,
@@ -571,48 +557,49 @@ public:
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
 
-    void setParallelRenderArgsTLS(const ParallelRenderArgs & args);
+    void setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderArgs> & args);
 
     /**
      *@returns whether the effect was flagged with canSetValue = true or false
      **/
     void invalidateParallelRenderArgsTLS();
 
-    const ParallelRenderArgs* getParallelRenderArgsTLS() const;
+    boost::shared_ptr<ParallelRenderArgs> getParallelRenderArgsTLS() const;
 
     //Implem in ParallelRenderArgs.cpp
-    static Natron::StatusEnum getInputsRoIsFunctor(bool useTransforms,
-                                                   double time,
-                                                   int view,
-                                                   unsigned originalMipMapLevel,
-                                                   const boost::shared_ptr<Natron::Node> & node,
-                                                   const boost::shared_ptr<Natron::Node> & treeRoot,
-                                                   const RectD & canonicalRenderWindow,
-                                                   FrameRequestMap & requests);
+    static StatusEnum getInputsRoIsFunctor(bool useTransforms,
+                                           double time,
+                                           int view,
+                                           unsigned originalMipMapLevel,
+                                           const NodePtr & node,
+                                           const NodePtr& callerNode,
+                                           const NodePtr & treeRoot,
+                                           const RectD & canonicalRenderWindow,
+                                           FrameRequestMap & requests);
 
     /**
      * @brief Visit recursively the compositing tree and computes required informations about region of interests for each node and
      * for each frame/view pair. This helps to call render a single time per frame/view pair for a node.
      * Implem is in ParallelRenderArgs.cpp
      **/
-    static Natron::StatusEnum computeRequestPass(double time,
+    static StatusEnum computeRequestPass(double time,
                                                  int view,
                                                  unsigned int mipMapLevel,
                                                  const RectD & renderWindow,
-                                                 const boost::shared_ptr<Natron::Node> & treeRoot,
+                                                 const NodePtr & treeRoot,
                                                  FrameRequestMap & request);
 
     // Implem is in ParallelRenderArgs.cpp
-    static Natron::EffectInstance::RenderRoIRetCode treeRecurseFunctor(bool isRenderFunctor,
-                                                                       const boost::shared_ptr<Natron::Node> & node,
+    static EffectInstance::RenderRoIRetCode treeRecurseFunctor(bool isRenderFunctor,
+                                                                       const NodePtr & node,
                                                                        const FramesNeededMap & framesNeeded,
                                                                        const RoIMap & inputRois,
-                                                                       const std::map<int, Natron::EffectInstance*> & reroutesMap,
+                                                                       const boost::shared_ptr<InputMatrixMap> & reroutesMap,
                                                                        bool useTransforms, // roi functor specific
                                                                        unsigned int originalMipMapLevel, // roi functor specific
                                                                        double time,
                                                                        int view,
-                                                                       const boost::shared_ptr<Natron::Node> & treeRoot,
+                                                                       const NodePtr & treeRoot,
                                                                        FrameRequestMap* requests,  // roi functor specific
                                                                        EffectInstance::InputImagesMap* inputImages, // render functor specific
                                                                        const EffectInstance::ComponentsNeededMap* neededComps, // render functor specific
@@ -620,16 +607,11 @@ public:
                                                                        bool byPassCache); // render functor specific
 
 
-    /**
-     * @brief If the current thread is rendering and this was started by the knobChanged (instanceChangedAction) function
-     * then this will return true
-     **/
-    bool isCurrentRenderInAnalysis() const;
 
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k, Natron::ValueChangedReasonEnum reason, double time, bool originatedFromMainThread) OVERRIDE FINAL;
+    virtual void onKnobValueChanged_public(KnobI* k, ValueChangedReasonEnum reason, double time, bool originatedFromMainThread) OVERRIDE FINAL;
 
     /**
      * @brief Returns a pointer to the first non disabled upstream node.
@@ -637,64 +619,80 @@ public:
      * from last to first.
      * If this not is not disabled, it will return a pointer to this.
      **/
-    Natron::EffectInstance* getNearestNonDisabled() const;
+    EffectInstPtr getNearestNonDisabled() const;
 
     /**
      * @brief Same as getNearestNonDisabled() except that it returns the *last* disabled node before the nearest non disabled node.
      * @param inputNb[out] The inputNb of the node that is non disabled.
      **/
-    Natron::EffectInstance* getNearestNonDisabledPrevious(int* inputNb);
+    EffectInstPtr getNearestNonDisabledPrevious(int* inputNb);
 
     /**
      * @brief Same as getNearestNonDisabled except that it looks for the nearest non identity node.
      * This function calls the action isIdentity and getRegionOfDefinition and can be expensive!
      **/
-    Natron::EffectInstance* getNearestNonIdentity(double time);
+    EffectInstPtr getNearestNonIdentity(double time);
 
     /**
      * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
      **/
-    void checkOFXClipPreferences_public(double time,
+    void refreshClipPreferences_public(double time,
                                         const RenderScale & scale,
-                                        const std::string & reason,
+                                        ValueChangedReasonEnum reason,
                                         bool forceGetClipPrefAction,
                                         bool recurse);
 
     virtual void onChannelsSelectorRefreshed() {}
 
 
-    virtual bool checkOFXClipPreferences(double /*time*/,
-                                     const RenderScale & /*scale*/,
-                                     const std::string & /*reason*/,
-                                     bool /*forceGetClipPrefAction*/)
-    {
-        return false;
-    }
+    virtual bool refreshClipPreferences(double time,
+                                        const RenderScale & scale,
+                                        ValueChangedReasonEnum reason,
+                                        bool forceGetClipPrefAction);
 
 protected:
 
-    void checkOFXClipPreferences_recursive(double time,
+    void refreshClipPreferences_recursive(double time,
                                            const RenderScale & scale,
-                                           const std::string & reason,
+                                          ValueChangedReasonEnum reason,
                                            bool forceGetClipPrefAction,
-                                           std::list<Natron::Node*> & markedNodes);
+                                           std::list<Node*> & markedNodes);
 
 
 
 public:
 
+
+    ///////////////////////Clip preferences related////////////////////////
+    // These data are refreshed during a call to getClipPreferences to optimize the getters below
+    // which would involve cycling through the tree
+    struct DefaultClipPreferencesData;
+
     /**
      * @brief Returns the output aspect ratio to render with
      **/
-    virtual double getPreferredAspectRatio() const
-    {
-        return 1.;
-    }
-
+    virtual double getPreferredAspectRatio() const;
     virtual double getPreferredFrameRate() const;
-    virtual void lock(const boost::shared_ptr<Natron::Image> & entry) OVERRIDE FINAL;
-    virtual bool tryLock(const boost::shared_ptr<Natron::Image> & entry) OVERRIDE FINAL;
-    virtual void unlock(const boost::shared_ptr<Natron::Image> & entry) OVERRIDE FINAL;
+
+    /**
+    * @brief Returns the preferred depth and components for the given input.
+    * If inputNb equals -1 then this function will check the output components.
+    **/
+    virtual void getPreferredDepthAndComponents(int inputNb,
+                                            std::list<ImageComponents>* comp,
+                                            ImageBitDepthEnum* depth) const;
+
+
+    /**
+    * @brief Override to get the preffered premultiplication flag for the output image
+    **/
+    virtual ImagePremultiplicationEnum getOutputPremultiplication() const;
+    ///////////////////////End Clip preferences related////////////////////////
+
+
+    virtual void lock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
+    virtual bool tryLock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
+    virtual void unlock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
     virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void abortAnyEvaluation() OVERRIDE FINAL;
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
@@ -703,6 +701,8 @@ public:
     {
         return false;
     }
+
+    virtual RenderScale getOverlayInteractRenderScale() const;
 
     SequenceTime getFrameRenderArgsCurrentTime() const;
 
@@ -713,22 +713,15 @@ public:
         return false;
     }
 
-    virtual void rerouteInputAndSetTransform(const InputMatrixMap & /*inputTransforms*/)
-    {
-    }
-
-    virtual void clearTransform(int /*inputNb*/)
-    {
-    }
 
     bool getThreadLocalRegionsOfInterests(RoIMap & roiMap) const;
 
 
-    void getThreadLocalInputImages(EffectInstance::InputImagesMap* images) const;
+    void getThreadLocalInputImages(InputImagesMap* images) const;
 
-    void addThreadLocalInputImageTempPointer(int inputNb, const boost::shared_ptr<Natron::Image> & img);
+    void addThreadLocalInputImageTempPointer(int inputNb, const boost::shared_ptr<Image> & img);
 
-    bool getThreadLocalRotoPaintTreeNodes(std::list<boost::shared_ptr<Natron::Node> >* nodes) const;
+    bool getThreadLocalRotoPaintTreeNodes(NodesList* nodes) const;
 
     /**
      * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
@@ -783,14 +776,14 @@ public:
         RenderScale originalScale;
         RenderScale mappedScale;
         RectI roi;
+        std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > > outputPlanes;
+        EffectInstance::InputImagesMap inputImages;
         int view;
         bool isSequentialRender;
         bool isRenderResponseToUserInteraction;
-        std::list<std::pair<Natron::ImageComponents, boost::shared_ptr<Natron::Image> > > outputPlanes;
-        EffectInstance::InputImagesMap inputImages;
         bool byPassCache;
-        bool processChannels[4];
         bool draftMode;
+        std::bitset<4> processChannels;
     };
 
 protected:
@@ -802,28 +795,28 @@ protected:
      * Note that this function can be called concurrently for the same output image but with different
      * rois, depending on the threading-affinity of the plug-in.
      **/
-    virtual Natron::StatusEnum render(const RenderActionArgs & /*args*/) WARN_UNUSED_RETURN
+    virtual StatusEnum render(const RenderActionArgs & /*args*/) WARN_UNUSED_RETURN
     {
-        return Natron::eStatusOK;
+        return eStatusOK;
     }
 
-    virtual Natron::StatusEnum getTransform(double /*time*/,
+    virtual StatusEnum getTransform(double /*time*/,
                                             const RenderScale & /*renderScale*/,
                                             int /*view*/,
-                                            Natron::EffectInstance** /*inputToTransform*/,
+                                            EffectInstPtr* /*inputToTransform*/,
                                             Transform::Matrix3x3* /*transform*/) WARN_UNUSED_RETURN
     {
-        return Natron::eStatusReplyDefault;
+        return eStatusReplyDefault;
     }
 
 public:
 
 
-    Natron::StatusEnum render_public(const RenderActionArgs & args) WARN_UNUSED_RETURN;
-    Natron::StatusEnum getTransform_public(double time,
+    StatusEnum render_public(const RenderActionArgs & args) WARN_UNUSED_RETURN;
+    StatusEnum getTransform_public(double time,
                                            const RenderScale & renderScale,
                                            int view,
-                                           Natron::EffectInstance** inputToTransform,
+                                           EffectInstPtr* inputToTransform,
                                            Transform::Matrix3x3* transform) WARN_UNUSED_RETURN;
 
 protected:
@@ -866,7 +859,7 @@ public:
      * RenderSafetyEnum::eRenderSafetyFullySafe - indicating that any instance of a plugin can have multiple renders running simultaneously
      * RenderSafetyEnum::eRenderSafetyFullySafeFrame - Same as eRenderSafetyFullySafe but the plug-in also flagged  kOfxImageEffectPluginPropHostFrameThreading to true.
      **/
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const WARN_UNUSED_RETURN = 0;
+    virtual RenderSafetyEnum renderThreadSafety() const WARN_UNUSED_RETURN = 0;
 
     /*@brief The derived class should query this to abort any long process
        in the engine function.*/
@@ -886,11 +879,13 @@ public:
                                       const RenderScale & scale,
                                       const int view,
                                       const RectD *optionalBounds, //!< optional region in canonical coordinates
-                                      const Natron::ImageComponents & requestComps,
-                                      const Natron::ImageBitDepthEnum depth,
+                                      const ImageComponents & requestComps,
+                                      const ImageBitDepthEnum depth,
                                       const double par,
                                       const bool dontUpscale,
-                                      RectI* roiPixel) WARN_UNUSED_RETURN;
+                                      const bool mapImageToPreferredComps,
+                                      RectI* roiPixel,
+                                      boost::shared_ptr<Transform::Matrix3x3>* transform = 0) WARN_UNUSED_RETURN;
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
     virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, int view) const;
 
@@ -902,13 +897,13 @@ public:
      * In case of failure the plugin should return eStatusFailed.
      * @returns eStatusOK, eStatusReplyDefault, or eStatusFailed. rod is set except if return value is eStatusOK or eStatusReplyDefault.
     **/
-    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, int view, RectD* rod) WARN_UNUSED_RETURN;
+    virtual StatusEnum getRegionOfDefinition(U64 hash, double time, const RenderScale & scale, int view, RectD* rod) WARN_UNUSED_RETURN;
 
 protected:
 
 
 
-    virtual void calcDefaultRegionOfDefinition(U64 hash, double time, int view, const RenderScale & scale, RectD *rod);
+    virtual void calcDefaultRegionOfDefinition(U64 hash, double time, const RenderScale & scale, int view, RectD *rod);
 
     /**
      * @brief If the instance rod is infinite, returns the union of all connected inputs. If there's no input this returns the
@@ -951,13 +946,13 @@ protected:
 
 public:
 
-    Natron::StatusEnum getRegionOfDefinition_public(U64 hash,
+    StatusEnum getRegionOfDefinition_public(U64 hash,
                                                     double time,
                                                     const RenderScale & scale,
                                                     int view,
                                                     RectD* rod,
                                                     bool* isProjectFormat) WARN_UNUSED_RETURN;
-    Natron::StatusEnum getRegionOfDefinitionWithIdentityCheck_public(U64 hash,
+    StatusEnum getRegionOfDefinitionWithIdentityCheck_public(U64 hash,
                                                                      double time,
                                                                      const RenderScale & scale,
                                                                      const RectI & renderWindow,
@@ -967,7 +962,7 @@ public:
 
 private:
 
-    Natron::StatusEnum getRegionOfDefinition_publicInternal(U64 hash,
+    StatusEnum getRegionOfDefinition_publicInternal(U64 hash,
                                                             double time,
                                                             const RenderScale & scale,
                                                             const RectI & renderWindow,
@@ -1028,7 +1023,7 @@ public:
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void beginKnobsValuesChanged(Natron::ValueChangedReasonEnum /*reason*/) OVERRIDE
+    virtual void beginKnobsValuesChanged(ValueChangedReasonEnum /*reason*/) OVERRIDE
     {
     }
 
@@ -1037,7 +1032,7 @@ public:
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void endKnobsValuesChanged(Natron::ValueChangedReasonEnum /*reason*/) OVERRIDE
+    virtual void endKnobsValuesChanged(ValueChangedReasonEnum /*reason*/) OVERRIDE
     {
     }
 
@@ -1063,7 +1058,7 @@ public:
      * case the function may return false if the user pressed the 'No' button.
      * @param content The message you want to pass.
      **/
-    bool message(Natron::MessageTypeEnum type, const std::string & content) const;
+    bool message(MessageTypeEnum type, const std::string & content) const;
 
     /**
      * @brief Use this function to post a persistent message to the user. It will be displayed on the
@@ -1073,7 +1068,7 @@ public:
      * eMessageTypeError : you want to inform the user an error occured.
      * @param content The message you want to pass.
      **/
-    void setPersistentMessage(Natron::MessageTypeEnum type, const std::string & content);
+    void setPersistentMessage(MessageTypeEnum type, const std::string & content);
 
     /**
      * @brief Test if a persistent message is set.
@@ -1139,9 +1134,9 @@ public:
         return false;
     }
 
-    virtual Natron::PluginOpenGLRenderSupport supportsOpenGLRender() const
+    virtual PluginOpenGLRenderSupport supportsOpenGLRender() const
     {
-        return Natron::ePluginOpenGLRenderSupportNone;
+        return ePluginOpenGLRenderSupportNone;
     }
 
     /**
@@ -1191,69 +1186,70 @@ public:
     void updateThreadLocalRenderTime(double time);
 
     bool isDuringPaintStrokeCreationThreadLocal() const;
-    Natron::RenderSafetyEnum getCurrentThreadSafetyThreadLocal() const;
+
     struct PlaneToRender
     {
         //Points to the fullscale image if render scale is not supported by the plug-in, or downscaleImage otherwise
-        boost::shared_ptr<Natron::Image> fullscaleImage;
-
+        boost::shared_ptr<Image> fullscaleImage;
+        
         //Points to the image to be rendered
-        boost::shared_ptr<Natron::Image> downscaleImage;
-
+        boost::shared_ptr<Image> downscaleImage;
+        
         //Points to the image that the plug-in can render (either fullScale or downscale)
-        boost::shared_ptr<Natron::Image> renderMappedImage;
-
+        boost::shared_ptr<Image> renderMappedImage;
+        
         //Points to a temporary image that the plug-in will render
-        boost::shared_ptr<Natron::Image> tmpImage;
+        boost::shared_ptr<Image> tmpImage;
         
         /*
          In the event where the fullScaleImage is in the cache but we must resize it to render a portion unallocated yet and
          if the render is issues directly from getImage() we swap image in cache instead of taking the write lock of fullScaleImage
          */
-        boost::shared_ptr<Natron::Image> cacheSwapImage;
+        boost::shared_ptr<Image> cacheSwapImage;
         
         void* originalCachedImage;
-
+        
         /**
          * This is set to true if this plane is allocated with allocateImagePlaneAndSetInThreadLocalStorage()
          **/
         bool isAllocatedOnTheFly;
-
+        
         PlaneToRender()
-            : fullscaleImage()
-            , downscaleImage()
-            , renderMappedImage()
-            , tmpImage()
-            , cacheSwapImage()
-            , originalCachedImage(0)
-            , isAllocatedOnTheFly(false)
+        : fullscaleImage()
+        , downscaleImage()
+        , renderMappedImage()
+        , tmpImage()
+        , cacheSwapImage()
+        , originalCachedImage(0)
+        , isAllocatedOnTheFly(false)
         {
         }
     };
 
     struct RectToRender
     {
-        Natron::EffectInstance* identityInput;
+        EffectInstPtr identityInput;
         RectI rect;
-        bool isIdentity;
-        double identityTime;
         RoIMap inputRois;
         EffectInstance::InputImagesMap imgs;
+        double identityTime;
+        bool isIdentity;
     };
 
     struct ImagePlanesToRender
     {
         std::list<RectToRender> rectsToRender;
-        std::map<Natron::ImageComponents, PlaneToRender> planes;
+        std::map<ImageComponents, PlaneToRender> planes;
+        std::map<int, ImagePremultiplicationEnum> inputPremult;
+        ImagePremultiplicationEnum outputPremult;
         bool isBeingRenderedElsewhere;
-        Natron::ImagePremultiplicationEnum outputPremult;
-        std::map<int, Natron::ImagePremultiplicationEnum> inputPremult;
 
         ImagePlanesToRender()
             : rectsToRender()
             , planes()
-            , isBeingRenderedElsewhere(false)
+            , inputPremult()
             , outputPremult(eImagePremultiplicationPremultiplied)
+            , isBeingRenderedElsewhere(false)
         {
         }
     };
@@ -1267,11 +1263,11 @@ public:
      *
      * WARNING: This call isexpensive and this function should not be called many times.
      **/
-    bool getThreadLocalRenderedPlanes(std::map<Natron::ImageComponents, PlaneToRender >*  planes,
-                                      Natron::ImageComponents* planeBeingRendered,
+    bool getThreadLocalRenderedPlanes(std::map<ImageComponents, EffectInstance::PlaneToRender >*  planes,
+                                      ImageComponents* planeBeingRendered,
                                       RectI* renderWindow) const;
 
-    bool getThreadLocalNeededComponents(EffectInstance::ComponentsNeededMap* neededComps) const;
+    bool getThreadLocalNeededComponents(boost::shared_ptr<ComponentsNeededMap>* neededComps) const;
 
     /**
      * @brief Called when the associated node's hash has changed.
@@ -1297,26 +1293,72 @@ protected:
     }
 
 #ifdef DEBUG
-    virtual bool checkCanSetValue() const
+
+    /*
+     Debug helper to track plug-in that do setValue calls that are forbidden
+     
+     http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#SettingParams
+     Officially, setValue calls are allowed during the following actions:
+     
+     The Create Instance Action
+     The The Begin Instance Changed Action
+     The The Instance Changed Action
+     The The End Instance Changed Action
+     The The Sync Private Data Action
+     
+     
+ */
+
+    void setCanSetValue(bool can);
+
+    void invalidateCanSetValueFlag();
+
+
+    bool isDuringActionThatCanSetValue() const;
+
+    class CanSetSetValueFlag_RAII
     {
-        return true;
+        EffectInstance* effect;
+        
+    public:
+        
+        CanSetSetValueFlag_RAII(EffectInstance* effect,bool canSetValue)
+        : effect(effect)
+        {
+            effect->setCanSetValue(canSetValue);
+        }
+        
+        ~CanSetSetValueFlag_RAII()
+        {
+            effect->invalidateCanSetValueFlag();
+        }
+    } ;
+
+    bool checkCanSetValue() const
+    {
+        return isDuringActionThatCanSetValue();
     }
 
-#endif
+
+#define SET_CAN_SET_VALUE(canSetValue) EffectInstance::CanSetSetValueFlag_RAII canSetValueSetter(this,canSetValue)
+#else
+#define SET_CAN_SET_VALUE(canSetValue) ( (void)0 )
+#endif // DEBUG
+
     /**
      * @brief Called whenever a param changes. It calls the virtual
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
     virtual void knobChanged(KnobI* /*k*/,
-                             Natron::ValueChangedReasonEnum /*reason*/,
+                             ValueChangedReasonEnum /*reason*/,
                              int /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/)
     {
     }
 
-    virtual Natron::StatusEnum beginSequenceRender(double /*first*/,
+    virtual StatusEnum beginSequenceRender(double /*first*/,
                                                    double /*last*/,
                                                    double /*step*/,
                                                    bool /*interactive*/,
@@ -1326,10 +1368,10 @@ protected:
                                                    bool /*draftMode*/,
                                                    int /*view*/)
     {
-        return Natron::eStatusOK;
+        return eStatusOK;
     }
 
-    virtual Natron::StatusEnum endSequenceRender(double /*first*/,
+    virtual StatusEnum endSequenceRender(double /*first*/,
                                                  double /*last*/,
                                                  double /*step*/,
                                                  bool /*interactive*/,
@@ -1339,43 +1381,43 @@ protected:
                                                  bool /*draftMode*/,
                                                  int /*view*/)
     {
-        return Natron::eStatusOK;
+        return eStatusOK;
     }
 
 public:
 
     ///Doesn't do anything, instead we overriden onKnobValueChanged_public
-    virtual void onKnobValueChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, double time,
+    virtual void onKnobValueChanged(KnobI* k, ValueChangedReasonEnum reason, double time,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
-    Natron::StatusEnum beginSequenceRender_public(double first, double last,
+    StatusEnum beginSequenceRender_public(double first, double last,
                                                   double step, bool interactive, const RenderScale & scale,
                                                   bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                                   bool draftMode,
                                                   int view);
-    Natron::StatusEnum endSequenceRender_public(double first, double last,
+    StatusEnum endSequenceRender_public(double first, double last,
                                                 double step, bool interactive, const RenderScale & scale,
                                                 bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                                 bool draftMode,
                                                 int view);
 
 
-    void drawOverlay_public(double time, double scaleX, double scaleY);
+    void drawOverlay_public(double time, const RenderScale & renderScale, int view);
 
-    bool onOverlayPenDown_public(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+bool onOverlayPenDown_public(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenMotion_public(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenMotion_public(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenUp_public(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenUp_public(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyDown_public(double time, double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyDown_public(double time, const RenderScale & renderScale, int view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyUp_public(double time, double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyUp_public(double time, const RenderScale & renderScale, int view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyRepeat_public(double time, double scaleX, double scaleY, Natron::Key key, Natron::KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyRepeat_public(double time, const RenderScale & renderScale, int view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayFocusGained_public(double time, double scaleX, double scaleY) WARN_UNUSED_RETURN;
+    bool onOverlayFocusGained_public(double time, const RenderScale & renderScale, int view) WARN_UNUSED_RETURN;
 
-    bool onOverlayFocusLost_public(double time, double scaleX, double scaleY) WARN_UNUSED_RETURN;
+    bool onOverlayFocusLost_public(double time, const RenderScale & renderScale, int view) WARN_UNUSED_RETURN;
 
     virtual bool isDoingInteractAction() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -1391,12 +1433,13 @@ public:
         return false;
     }
 
+    virtual void redrawOverlayInteract();
+
     /**
      * @brief Returns the components available on each input for this effect at the given time.
      **/
-    void getComponentsAvailable(bool useLayerChoice, double time, ComponentsAvailableMap* comps);
-    void getComponentsAvailable(bool useLayerChoice, double time, ComponentsAvailableMap* comps, std::list<Natron::EffectInstance*>* markedNodes);
-
+    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps);
+    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps, std::list<EffectInstance*>* markedNodes);
 
     /**
      * @brief Reimplement to control how the host adds the RGBA checkboxes.
@@ -1435,27 +1478,29 @@ public:
         return false;
     }
 
-    void getNonMaskInputsAvailableComponents(double time,
-                                             int view,
-                                             bool preferExistingComponents,
-                                             ComponentsAvailableMap* comps,
-                                             std::list<Natron::EffectInstance*>* markedNodes);
+    virtual void onKnobsLoaded() {}
+
 
 private:
 
-    void getComponentsAvailableRecursive(bool useLayerChoice, double time, int view, ComponentsAvailableMap* comps,
-                                         std::list<Natron::EffectInstance*>* markedNodes);
+    void getComponentsAvailableRecursive(bool useLayerChoice,
+                                         bool useThisNodeComponentsNeeded,
+                                         double time,
+                                         int view,
+                                         ComponentsAvailableMap* comps,
+                                         std::list<EffectInstance*>* markedNodes);
 
 public:
 
     void getComponentsNeededAndProduced_public(bool useLayerChoice,
+                                               bool useThisNodeComponentsNeeded,
                                                double time, int view,
-                                               ComponentsNeededMap* comps,
+                                              EffectInstance::ComponentsNeededMap* comps,
                                                bool* processAllRequested,
                                                SequenceTime* passThroughTime,
                                                int* passThroughView,
-                                               bool* processChannels,
-                                               boost::shared_ptr<Natron::Node>* passThroughInput);
+                                               std::bitset<4> *processChannels,
+                                               NodePtr* passThroughInput);
 
     void setComponentsAvailableDirty(bool dirty);
 
@@ -1469,12 +1514,132 @@ public:
                                   InputMatrixMap* inputTransforms);
 
 
-    static void transformInputRois(Natron::EffectInstance* self,
-                                   const InputMatrixMap & inputTransforms,
+    static void transformInputRois(const EffectInstance* self,
+                                   const boost::shared_ptr<InputMatrixMap>& inputTransforms,
                                    double par,
                                    const RenderScale & scale,
                                    RoIMap* inputRois,
-                                   std::map<int, EffectInstance*>* reroutesMap);
+                                   std::map<int, EffectInstPtr>* reroutesMap);
+
+    struct RenderArgs
+    {
+        RectD rod; //!< the effect's RoD in CANONICAL coordinates
+        RoIMap regionOfInterestResults; //< the input RoI's in CANONICAL coordinates
+        RectI renderWindowPixel; //< the current renderWindow in PIXEL coordinates
+        double time; //< the time to render
+        int view; //< the view to render
+        bool validArgs; //< are the args valid ?
+        bool isIdentity;
+        double identityTime;
+        EffectInstPtr identityInput;
+        
+        EffectInstance::InputImagesMap inputImages;
+        std::map<ImageComponents, PlaneToRender> outputPlanes;
+        
+        //This is set only when the plug-in has set ePassThroughRenderAllRequestedPlanes
+        ImageComponents outputPlaneBeingRendered;
+        boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
+        double firstFrame, lastFrame;
+        
+        boost::shared_ptr<InputMatrixMap> transformRedirections;
+        
+        RenderArgs();
+        
+        RenderArgs(const RenderArgs & o);
+    };
+
+    //these are per-node thread-local data
+    struct EffectTLSData {
+        
+        //Used to count the begin/endRenderAction recursion
+        int beginEndRenderCount;
+        
+        
+        ///Used to count the recursion in the function calls
+        /* The image effect actions which may trigger a recursive action call on a single instance are...
+         
+         kOfxActionBeginInstanceChanged
+         kOfxActionInstanceChanged
+         kOfxActionEndInstanceChanged
+         The interact actions which may trigger a recursive action to be called on the associated plugin instance are...
+         
+         kOfxInteractActionGainFocus
+         kOfxInteractActionKeyDown
+         kOfxInteractActionKeyRepeat
+         kOfxInteractActionKeyUp
+         kOfxInteractActionLoseFocus
+         kOfxInteractActionPenDown
+         kOfxInteractActionPenMotion
+         kOfxInteractActionPenUp
+         
+         The image effect actions which may be called recursively are...
+         
+         kOfxActionBeginInstanceChanged
+         kOfxActionInstanceChanged
+         kOfxActionEndInstanceChanged
+         kOfxImageEffectActionGetClipPreferences
+         The interact actions which may be called recursively are...
+         
+         kOfxInteractActionDraw
+         
+         */
+        int actionRecursionLevel;
+#ifdef DEBUG
+        std::list<bool> canSetValue;
+#endif
+      
+        ///Recursive because it may be set recursively in such situation:
+        ///knobChanged : set ParallelRenderArgs TLS for analysis
+        ///timelineGoTo calls getRenderviewerArgs on the MT which overrides this TLS
+        std::list<boost::shared_ptr<ParallelRenderArgs> > frameArgs;
+        EffectInstance::RenderArgs currentRenderArgs;
+        
+        EffectTLSData()
+        : beginEndRenderCount(0)
+        , actionRecursionLevel(0)
+#ifdef DEBUG
+        , canSetValue()
+#endif
+        , frameArgs()
+        , currentRenderArgs()
+        {
+            
+        }
+    };
+
+    typedef boost::shared_ptr<EffectTLSData> EffectDataTLSPtr;
+
+protected:
+
+    /**
+     * @brief Equivalent to assert(actionsRecursionLevel == 0).
+     * In release mode an exception is thrown instead.
+     * This should be called in all actions except in the following recursive actions...
+     *
+     * kOfxActionBeginInstanceChanged
+     * kOfxActionInstanceChanged
+     * kOfxActionEndInstanceChanged
+     * kOfxImageEffectActionGetClipPreferences
+     * kOfxInteractActionDraw
+     *
+     * We also allow recursion in some other actions such as getRegionOfDefinition or isIdentity
+     **/
+    virtual void assertActionIsNotRecursive() const OVERRIDE FINAL;
+
+    /**
+     * @brief Should be called in the begining of an action.
+     * Right after assertActionIsNotRecursive() for non recursive actions.
+     **/
+    virtual void incrementRecursionLevel() OVERRIDE FINAL;
+
+    /**
+     * @brief Should be called at the end of an action.
+     **/
+    virtual void decrementRecursionLevel() OVERRIDE FINAL;
+
+public:
+
+    virtual int getRecursionLevel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 protected:
 
@@ -1489,16 +1654,18 @@ protected:
     };
 
 
+
+
     /**
      * @brief Returns a map of the components produced by this effect and the components needed by the inputs of this effect.
      * The output is mapped against -1. For all components not produced and if this effect is passthrough, it should use the
      * passThroughInput to fetch the components needed.
      **/
     virtual void getComponentsNeededAndProduced(double time, int view,
-                                                ComponentsNeededMap* comps,
+                                               EffectInstance::ComponentsNeededMap* comps,
                                                 SequenceTime* passThroughTime,
                                                 int* passThroughView,
-                                                boost::shared_ptr<Natron::Node>* passThroughInput);
+                                                NodePtr* passThroughInput);
 
 
     /**
@@ -1510,14 +1677,14 @@ protected:
     }
 
     virtual void drawOverlay(double /*time*/,
-                             double /*scaleX*/,
-                             double /*scaleY*/)
+                             const RenderScale & /*renderScale*/,
+                             int /*view*/)
     {
     }
 
     virtual bool onOverlayPenDown(double /*time*/,
-                                  double /*scaleX*/,
-                                  double /*scaleY*/,
+                                  const RenderScale & /*renderScale*/,
+                                  int /*view*/,
                                   const QPointF & /*viewportPos*/,
                                   const QPointF & /*pos*/,
                                   double /*pressure*/) WARN_UNUSED_RETURN
@@ -1526,8 +1693,8 @@ protected:
     }
 
     virtual bool onOverlayPenMotion(double /*time*/,
-                                    double /*scaleX*/,
-                                    double /*scaleY*/,
+                                    const RenderScale & /*renderScale*/,
+                                    int /*view*/,
                                     const QPointF & /*viewportPos*/,
                                     const QPointF & /*pos*/,
                                     double /*pressure*/) WARN_UNUSED_RETURN
@@ -1536,8 +1703,8 @@ protected:
     }
 
     virtual bool onOverlayPenUp(double /*time*/,
-                                double /*scaleX*/,
-                                double /*scaleY*/,
+                                const RenderScale & /*renderScale*/,
+                                int /*view*/,
                                 const QPointF & /*viewportPos*/,
                                 const QPointF & /*pos*/,
                                 double /*pressure*/) WARN_UNUSED_RETURN
@@ -1546,53 +1713,52 @@ protected:
     }
 
     virtual bool onOverlayKeyDown(double /*time*/,
-                                  double /*scaleX*/,
-                                  double /*scaleY*/,
-                                  Natron::Key /*key*/,
-                                  Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+                                  const RenderScale & /*renderScale*/,
+                                  int /*view*/,
+                                  Key /*key*/,
+                                  KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }
 
     virtual bool onOverlayKeyUp(double /*time*/,
-                                double /*scaleX*/,
-                                double /*scaleY*/,
-                                Natron::Key /*key*/,
-                                Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+                                const RenderScale & /*renderScale*/,
+                                int /*view*/,
+                                Key /*key*/,
+                                KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }
 
     virtual bool onOverlayKeyRepeat(double /*time*/,
-                                    double /*scaleX*/,
-                                    double /*scaleY*/,
-                                    Natron::Key /*key*/,
-                                    Natron::KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+                                    const RenderScale & /*renderScale*/,
+                                    int /*view*/,
+                                    Key /*key*/,
+                                    KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
     {
         return false;
     }
 
     virtual bool onOverlayFocusGained(double /*time*/,
-                                      double /*scaleX*/,
-                                      double /*scaleY*/) WARN_UNUSED_RETURN
+                                      const RenderScale & /*renderScale*/,
+                                      int /*view*/) WARN_UNUSED_RETURN
     {
         return false;
     }
 
     virtual bool onOverlayFocusLost(double /*time*/,
-                                    double /*scaleX*/,
-                                    double /*scaleY*/) WARN_UNUSED_RETURN
+                                    const RenderScale & /*renderScale*/,
+                                    int /*view*/) WARN_UNUSED_RETURN
     {
         return false;
     }
 
-    boost::weak_ptr<Node> _node; //< the node holding this effect
+    NodeWPtr _node; //< the node holding this effect
 
 private:
 
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
-    struct RenderArgs;
     enum RenderRoIStatusEnum
     {
         eRenderRoIStatusImageAlreadyRendered = 0, // there was nothing left to render
@@ -1627,22 +1793,22 @@ private:
      * @returns True if the render call succeeded, false otherwise.
      **/
     RenderRoIStatusEnum renderRoIInternal(double time,
-                                          const ParallelRenderArgs & frameArgs,
-                                          Natron::RenderSafetyEnum safety,
+                                          const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
+                                          RenderSafetyEnum safety,
                                           unsigned int mipMapLevel,
                                           int view,
                                           const RectD & rod, //!< rod in canonical coordinates
                                           const double par,
-                                          ImagePlanesToRender & planes,
+                                          const boost::shared_ptr<ImagePlanesToRender> & planes,
                                           bool isSequentialRender,
                                           bool isRenderMadeInResponseToUserInteraction,
                                           U64 nodeHash,
                                           bool renderFullScaleThenDownscale,
                                           bool byPassCache,
-                                          Natron::ImageBitDepthEnum outputClipPrefDepth,
-                                          const std::list<Natron::ImageComponents> & outputClipPrefsComps,
-                                          const ComponentsNeededMap & compsNeeded,
-                                          bool* processChannels);
+                                          ImageBitDepthEnum outputClipPrefDepth,
+                                          const std::list<ImageComponents> & outputClipPrefsComps,
+                                          const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                          std::bitset<4> processChannels);
 
 
     /// \returns false if rendering was aborted
@@ -1650,23 +1816,20 @@ private:
                                              bool useTransforms,
                                              double time,
                                              int view,
-                                             double par,
                                              const RectD & rod,
                                              const RectD & canonicalRenderWindow,
-                                             const InputMatrixMap & transformMatrix,
+                                             const boost::shared_ptr<InputMatrixMap> & transformMatrix,
                                              unsigned int mipMapLevel,
-                                             const RenderScale & scale,
                                              const RenderScale & renderMappedScale,
                                              bool useScaleOneInputImages,
                                              bool byPassCache,
                                              const FramesNeededMap & framesNeeded,
-                                             const ComponentsNeededMap & compsNeeded,
-                                             InputImagesMap *inputImages,
+                                             const EffectInstance::ComponentsNeededMap & compsNeeded,
+                                             EffectInstance::InputImagesMap *inputImages,
                                              RoIMap* inputsRoI);
 
-    static boost::shared_ptr<Natron::Image> convertPlanesFormatsIfNeeded(const AppInstance* app,
-                                                                         bool targetIsMultiPlanar,
-                                                                         const boost::shared_ptr<Natron::Image>& inputImage,
+    static boost::shared_ptr<Image> convertPlanesFormatsIfNeeded(const AppInstance* app,
+                                                                         const boost::shared_ptr<Image>& inputImage,
                                                                          const RectI& roi,
                                                                          const ImageComponents& targetComponents,
                                                                          ImageBitDepthEnum targetDepth,
@@ -1687,7 +1850,7 @@ private:
                                          U64* nodeHash_p,
                                          bool* isIdentity_p,
                                          double* identityTime,
-                                         int* identityInputNb_p,
+                                         EffectInstPtr* identityInput_p,
                                          bool* duringPaintStroke_p,
                                          RectD* rod_p,
                                          RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
@@ -1700,22 +1863,22 @@ private:
                             const RectI & fullScaleImageBounds,
                             bool isProjectFormat,
                             const FramesNeededMap & framesNeeded,
-                            const Natron::ImageComponents & components,
-                            Natron::ImageBitDepthEnum depth,
+                            const ImageComponents & components,
+                            ImageBitDepthEnum depth,
                             double par,
                             unsigned int mipmapLevel,
                             bool renderFullScaleThenDownscale,
                             bool useDiskCache,
                             bool createInCache,
-                            boost::shared_ptr<Natron::Image>* fullScaleImage,
-                            boost::shared_ptr<Natron::Image>* downscaleImage);
+                            boost::shared_ptr<Image>* fullScaleImage,
+                            boost::shared_ptr<Image>* downscaleImage);
 
     /**
      * @brief Must be implemented to evaluate a value change
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    void evaluate(KnobI* knob, bool isSignificant, Natron::ValueChangedReasonEnum reason) OVERRIDE;
+    void evaluate(KnobI* knob, bool isSignificant, ValueChangedReasonEnum reason) OVERRIDE;
 
 
     virtual void onAllKnobsSlaved(bool isSlave, KnobHolder* master) OVERRIDE FINAL;
@@ -1730,123 +1893,23 @@ private:
         eRenderingFunctorRetAborted // we were aborted
     };
 
-    struct TiledRenderingFunctorArgs
-    {
-        ParallelRenderArgs frameArgs;
-        std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > frameTLS;
-        bool renderFullScaleThenDownscale;
-        bool isSequentialRender;
-        bool isRenderResponseToUserInteraction;
-        int firstFrame;
-        int lastFrame;
-        int preferredInput;
-        unsigned int mipMapLevel;
-        unsigned int renderMappedMipMapLevel;
-        RectD rod;
-        double time;
-        int view;
-        double par;
-        Natron::ImageBitDepthEnum outputClipPrefDepth;
-        ComponentsNeededMap  compsNeeded;
-        std::list<Natron::ImageComponents> outputClipPrefsComps;
-        bool byPassCache;
-        bool* processChannels;
-        ImagePlanesToRender planes;
-    };
-
-    RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,  const RectToRender & specificData,
-                                                  const QThread* callingThread);
-
-    RenderingFunctorRetEnum tiledRenderingFunctor(const QThread* callingThread,
-                                                  const ParallelRenderArgs & frameArgs,
-                                                  const RectToRender & rectToRender,
-                                                  const std::map<boost::shared_ptr<Natron::Node>, ParallelRenderArgs > & frameTls,
-                                                  const bool renderFullScaleThenDownscale,
-                                                  const bool isSequentialRender,
-                                                  const bool isRenderResponseToUserInteraction,
-                                                  const int firstFrame, const int lastFrame,
-                                                  const int preferredInput,
-                                                  const unsigned int mipMapLevel,
-                                                  const unsigned int renderMappedMipMapLevel,
-                                                  const RectD & rod,
-                                                  const double time,
-                                                  const int view,
-                                                  const double par,
-                                                  const bool byPassCache,
-                                                  const Natron::ImageBitDepthEnum outputClipPrefDepth,
-                                                  const std::list<Natron::ImageComponents> & outputClipPrefsComps,
-                                                  const ComponentsNeededMap & compsNeeded,
-                                                  bool* processChannels,
-                                                  ImagePlanesToRender & planes);
-
-
-    ///These are the image passed to the plug-in to render
-    /// - fullscaleMappedImage is the fullscale image remapped to what the plugin can support (components/bitdepth)
-    /// - downscaledMappedImage is the downscaled image remapped to what the plugin can support (components/bitdepth wise)
-    /// - fullscaleMappedImage is pointing to "image" if the plug-in does support the renderscale, meaning we don't use it.
-    /// - Similarily downscaledMappedImage is pointing to "downscaledImage" if the plug-in doesn't support the render scale.
-    ///
-    /// - renderMappedImage is what is given to the plug-in to render the image into,it is mapped to an image that the plug-in
-    ///can render onto (good scale, good components, good bitdepth)
-    ///
-    /// These are the possible scenarios:
-    /// - 1) Plugin doesn't need remapping and doesn't need downscaling
-    ///    * We render in downscaledImage always, all image pointers point to it.
-    /// - 2) Plugin doesn't need remapping but needs downscaling (doesn't support the renderscale)
-    ///    * We render in fullScaleImage, fullscaleMappedImage points to it and then we downscale into downscaledImage.
-    ///    * renderMappedImage points to fullScaleImage
-    /// - 3) Plugin needs remapping (doesn't support requested components or bitdepth) but doesn't need downscaling
-    ///    * renderMappedImage points to downscaledMappedImage
-    ///    * We render in downscaledMappedImage and then convert back to downscaledImage with requested comps/bitdepth
-    /// - 4) Plugin needs remapping and downscaling
-    ///    * renderMappedImage points to fullScaleMappedImage
-    ///    * We render in fullScaledMappedImage, then convert into "image" and then downscale into downscaledImage.
-    RenderingFunctorRetEnum renderHandler(RenderArgs & args,
-                                          const ParallelRenderArgs & frameArgs,
-                                          const InputImagesMap & inputImages,
-                                          const bool identity,
-                                          const double identityTime,
-                                          Natron::EffectInstance* identityInput,
-                                          const unsigned int mipMapLevel,
-                                          const bool renderFullScaleThenDownscale,
-                                          const bool isSequentialRender,
-                                          const bool isRenderResponseToUserInteraction,
-                                          const RectI & renderMappedRectToRender,
-                                          const RectI & downscaledRectToRender,
-                                          const bool byPassCache,
-                                          const bool bitmapMarkedForRendering,
-                                          const Natron::ImageBitDepthEnum outputClipPrefDepth,
-                                          const std::list<Natron::ImageComponents> & outputClipPrefsComps,
-                                          bool* processChannels,
-                                          const boost::shared_ptr<Natron::Image> & originalInputImage,
-                                          const boost::shared_ptr<Natron::Image> & maskImage,
-                                          const Natron::ImagePremultiplicationEnum originalImagePremultiplication,
-                                          ImagePlanesToRender & planes);
 
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.
      **/
-    int getInputNumber(Natron::EffectInstance* inputEffect) const;
+    int getInputNumber(const EffectInstance* inputEffect) const;
 
 
 };
 
-
-class EffectPointerThreadProperty_RAII
-{
-public:
-
-    EffectPointerThreadProperty_RAII(Natron::EffectInstance* effect);
-
-    ~EffectPointerThreadProperty_RAII();
-};
 
 
 /**
  * @typedef Any plug-in should have a static function called BuildEffect with the following signature.
  * It is used to build a new instance of an effect. Basically it should just call the constructor.
  **/
-typedef Natron::EffectInstance* (*EffectBuilder)(boost::shared_ptr<Node>);
+typedef EffectInstance* (*EffectBuilder)(NodePtr);
 
-} // Natron
+NATRON_NAMESPACE_EXIT;
+
 #endif // NATRON_ENGINE_EFFECTINSTANCE_H

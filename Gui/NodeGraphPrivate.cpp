@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@
 #include "Gui/NodeGuiSerialization.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
@@ -91,7 +91,7 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
 , isDoingPreviewRender(false)
 , autoScrollTimer()
 {
-    appPTR->getIcon(Natron::NATRON_PIXMAP_LOCKED, &unlockIcon);
+    appPTR->getIcon(NATRON_PIXMAP_LOCKED, &unlockIcon);
 }
 
 QPoint
@@ -103,7 +103,7 @@ NodeGraphPrivate::getPyPlugUnlockPos() const
 void
 NodeGraphPrivate::resetSelection()
 {
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _selection.begin(); it != _selection.end(); ++it) {
+    for (NodesGuiList::iterator it = _selection.begin(); it != _selection.end(); ++it) {
         (*it)->setUserSelected(false);
     }
 
@@ -119,11 +119,11 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
 
     const QRectF& selection = _selectionRect;
 
-    for (NodeGuiList::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+    for (NodesGuiList::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
         if ( selection.contains(bbox) ) {
             
-            NodeGuiList::iterator foundInSel = std::find(_selection.begin(),_selection.end(),*it);
+            NodesGuiList::iterator foundInSel = std::find(_selection.begin(),_selection.end(),*it);
             if (foundInSel != _selection.end()) {
                 continue;
             }
@@ -147,7 +147,7 @@ NodeGraphPrivate::setNodesBendPointsVisible(bool visible)
 {
     _bendPointsVisible = visible;
 
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+    for (NodesGuiList::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         const std::vector<Edge*> & edges = (*it)->getInputsArrows();
         for (std::vector<Edge*>::const_iterator it2 = edges.begin(); it2 != edges.end(); ++it2) {
             if (visible) {
@@ -170,7 +170,7 @@ NodeGraphPrivate::calcNodesBoundingRect()
     QRectF ret;
     QMutexLocker l(&_nodesMutex);
 
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+    for (NodesGuiList::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         if ( (*it)->isVisible() ) {
             ret = ret.united( (*it)->boundingRectWithEdges() );
         }
@@ -188,25 +188,25 @@ NodeGraphPrivate::resetAllClipboards()
 
 
 void
-NodeGraphPrivate::copyNodesInternal(const NodeGuiList& selection,NodeClipBoard & clipboard)
+NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection,NodeClipBoard & clipboard)
 {
     ///Clear clipboard
     clipboard.nodes.clear();
     clipboard.nodesUI.clear();
 
-    NodeGuiList nodesToCopy = selection;
-    for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
+    NodesGuiList nodesToCopy = selection;
+    for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         ///Also copy all nodes within the backdrop
-        std::list<boost::shared_ptr<NodeGui> > nodesWithinBD = _publicInterface->getNodesWithinBackDrop(*it);
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-            std::list<boost::shared_ptr<NodeGui> >::iterator found = std::find(nodesToCopy.begin(),nodesToCopy.end(),*it2);
+        NodesGuiList nodesWithinBD = _publicInterface->getNodesWithinBackdrop(*it);
+        for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
+            NodesGuiList::iterator found = std::find(nodesToCopy.begin(),nodesToCopy.end(),*it2);
             if ( found == nodesToCopy.end() ) {
                 nodesToCopy.push_back(*it2);
             }
         }
     }
     
-    for (NodeGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
+    for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         if ((*it)->isVisible()) {
             boost::shared_ptr<NodeSerialization> ns( new NodeSerialization( (*it)->getNode(), true ) );
             boost::shared_ptr<NodeGuiSerialization> nGuiS(new NodeGuiSerialization);
@@ -216,3 +216,5 @@ NodeGraphPrivate::copyNodesInternal(const NodeGuiList& selection,NodeClipBoard &
         }
     }
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ GCC_DIAG_OFF(deprecated-declarations)
 
 #define MAX_MIP_MAP_LEVELS 20
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
    Everything related to OpenGL will (almost always) be in this class */
@@ -84,7 +84,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_, ViewerTab* parent)
 , displayingImageOffset()
 , displayingImageMipMapLevel()
 , displayingImagePremult()
-, displayingImageLut(Natron::eViewerColorSpaceSRGB)
+, displayingImageLut(eViewerColorSpaceSRGB)
 , ms(eMouseStateUndefined)
 , hs(eHoverStateNothing)
 , textRenderingColor(200,200,200,255)
@@ -95,7 +95,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_, ViewerTab* parent)
 , supportsGLSL(true)
 , updatingTexture(false)
 , clearColor(0,0,0,255)
-, menu( new Natron::Menu(_this) )
+, menu( new Menu(_this) )
 , persistentMessages()
 , persistentMessageType(0)
 , displayPersistentMessage(false)
@@ -130,7 +130,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_, ViewerTab* parent)
 , lastRenderedTiles()
 , memoryHeldByLastRenderedImages()
 , sizeH()
-, pointerTypeOnPress(Natron::ePenTypePen)
+, pointerTypeOnPress(ePenTypePen)
 , subsequentMousePressIsTablet(false)
 , pressureOnPress(1.)
 , pressureOnRelease(1.)
@@ -252,7 +252,7 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _this->context() );
 
-    bool useShader = _this->getBitDepth() != Natron::eImageBitDepthByte && this->supportsGLSL;
+    bool useShader = _this->getBitDepth() != eImageBitDepthByte && this->supportsGLSL;
 
 
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
@@ -515,7 +515,7 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
     GLenum err = glewInit();
     if (GLEW_OK != err) {
         /* Problem: glewInit failed, something is seriously wrong. */
-        Natron::errorDialog( tr("OpenGL/GLEW error").toStdString(),
+        Dialogs::errorDialog( tr("OpenGL/GLEW error").toStdString(),
                             (const char*)glewGetErrorString(err) );
     }
     //fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
@@ -529,7 +529,7 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
                           //"GL_ARB_vertex_array_object " // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
                           //"GL_ARB_framebuffer_object " // or GL_EXT_framebuffer_object GenFramebuffers, core since version 3.0
                           ) ) {
-        Natron::errorDialog( tr("Missing OpenGL requirements").toStdString(),
+        Dialogs::errorDialog( tr("Missing OpenGL requirements").toStdString(),
                             tr("The viewer may not be fully functional. "
                                "This software needs at least OpenGL 1.5 with NPOT textures, GLSL, VBO, PBO, vertex arrays. ").toStdString() );
     }
@@ -540,7 +540,7 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
     if ( !QGLShaderProgram::hasOpenGLShaderPrograms( _this->context() ) ) {
         // no need to pull out a dialog, it was already presented after the GLEW check above
 
-        //Natron::errorDialog("Viewer error","The viewer is unabgile to work without a proper version of GLSL.");
+        //Dialogs::errorDialog("Viewer error","The viewer is unabgile to work without a proper version of GLSL.");
         //cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
         this->supportsGLSL = false;
     }
@@ -783,13 +783,13 @@ public:
             glEnable(GL_BLEND);
         }
         switch (premult) {
-            case Natron::eImagePremultiplicationPremultiplied:
+            case eImagePremultiplicationPremultiplied:
                 glBlendFunc(GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
                 break;
-            case Natron::eImagePremultiplicationUnPremultiplied:
+            case eImagePremultiplicationUnPremultiplied:
                 glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
                 break;
-            case Natron::eImagePremultiplicationOpaque:
+            case eImagePremultiplicationOpaque:
                 break;
         }
 
@@ -1124,5 +1124,4 @@ ViewerGL::Implementation::refreshSelectionRectangle(const QPointF & pos)
     selectionRectangle.setRect(xmin,ymin,xmax - xmin,ymax - ymin);
 }
 
-
-
+NATRON_NAMESPACE_EXIT;

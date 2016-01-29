@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,17 +41,18 @@
 #include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class ImageLayer
 {
-    Natron::ImageComponents _comps;
+    ImageComponents _comps;
 public:
     
     ImageLayer(const std::string& layerName,
                const std::string& componentsPrettyName,
                const std::vector<std::string>& componentsName);
     
-    ImageLayer(const Natron::ImageComponents& internalComps);
+    ImageLayer(const ImageComponents& internalComps);
     
     
     ~ImageLayer() {}
@@ -186,6 +187,8 @@ public:
     
     ButtonParam* createButtonParam(const std::string& name, const std::string& label);
     
+    SeparatorParam* createSeparatorParam(const std::string& name, const std::string& label);
+    
     GroupParam* createGroupParam(const std::string& name, const std::string& label);
     
     PageParam* createPageParam(const std::string& name, const std::string& label);
@@ -204,15 +207,15 @@ public:
 
 class Effect : public Group, public UserParamHolder
 {
-    boost::shared_ptr<Natron::Node> _node;
+    NodeWPtr _node;
     
 public:
     
-    Effect(const boost::shared_ptr<Natron::Node>& node);
+    Effect(const NodePtr& node);
     
     ~Effect();
     
-    boost::shared_ptr<Natron::Node> getInternalNode() const;
+    NodePtr getInternalNode() const;
     
     
     /**
@@ -349,7 +352,7 @@ public:
     
     RectD getRegionOfDefinition(double time,int view) const;
     
-    static Param* createParamWrapperForKnob(const boost::shared_ptr<KnobI>& knob);
+    static Param* createParamWrapperForKnob(const KnobPtr& knob);
     
     void setSubGraphEditable(bool editable);
     
@@ -359,5 +362,7 @@ public:
     
     void setPagesOrder(const std::list<std::string>& pages);
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NODEWRAPPER_H

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,18 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <list>
+#include <vector>
+
+#include "Global/Macros.h"
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+#include <boost/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#endif
+
 // boost
 
 namespace boost {
@@ -36,7 +48,6 @@ namespace serialization {
 class access;
 }
 }
-class AbstractOfxEffectInstance;
 
 
 // Qt
@@ -47,9 +58,11 @@ class QFileInfo;
 class QLocalServer;
 class QLocalSocket;
 class QMutex;
+class QProcess;
 class QSettings;
 class QString;
 class QStringList;
+class QThread;
 class QTimer;
 class QWaitCondition;
 
@@ -80,8 +93,11 @@ class SequenceFromFiles;
 
 // Natron Engine
 
+NATRON_NAMESPACE_ENTER;
+class AbstractOfxEffectInstance;
 class AppInstance;
 class AppSettings;
+class AppTLS;
 class Bezier;
 class BezierCP;
 class BlockingBackgroundRender;
@@ -90,6 +106,8 @@ class BufferableObject;
 class ButtonParam;
 class CLArgs;
 class CacheEntryHolder;
+class CacheSignalEmitter;
+struct CreateNodeArgs;
 class ChoiceExtraData;
 class ChoiceParam;
 class ColorParam;
@@ -99,11 +117,21 @@ class Double2DParam;
 class Double3DParam;
 class DoubleParam;
 class Effect;
+class EffectInstance;
+class ExistenceCheckerThread;
 class FileParam;
 class Format;
-class GlobalOFXTLS;
+class FrameEntry;
+class FrameKey;
+class FrameParams;
+class GenericAccess;
 class GroupParam;
 class Hash64;
+class Image;
+class ImageComponents;
+class ImageKey;
+class ImageLayer;
+class ImageParams;
 class Int2DParam;
 class Int3DParam;
 class IntParam;
@@ -113,6 +141,7 @@ class KnobButton;
 class KnobChoice;
 class KnobColor;
 class KnobDouble;
+class KnobFactory;
 class KnobFile;
 class KnobGroup;
 class KnobHelper;
@@ -126,15 +155,25 @@ class KnobPath;
 class KnobSeparator;
 class KnobSerialization;
 class KnobString;
+class LibraryBinary;
+class Node;
 class NodeCollection;
+class NodeGroup;
 class NodeGraphI;
 class NodeGuiI;
 class NodeSerialization;
 class NodeSettingsPanel;
 class OfxClipInstance;
 class OfxEffectInstance;
+class OfxHost;
 class OfxImage;
+class OfxImageEffectInstance;
+class OfxOverlayInteract;
+class OfxParamOverlayInteract;
+class OfxParamToKnob;
+class OfxStringInstance;
 class OpenGLViewerI;
+class OutputEffectInstance;
 class OutputFileParam;
 class OverlaySupport;
 class PageParam;
@@ -142,10 +181,13 @@ class ParallelRenderArgsSetter;
 class Param;
 class ParametricParam;
 class PathParam;
+class Plugin;
 class PluginGroupNode;
 class PluginMemory;
+class PrecompNode;
 class ProcessHandler;
 class ProcessInputChannel;
+class Project;
 class ProjectSerialization;
 class RectD;
 class RectI;
@@ -162,43 +204,35 @@ class RotoItemSerialization;
 class RotoLayer;
 class RotoPoint;
 class RotoStrokeItem;
+class SeparatorParam;
 class Settings;
 class StringAnimationManager;
 class StringParam;
+class TLSHolderBase;
 class TextureRect;
 class TimeLine;
+class UserParamHolder;
 class ViewerInstance;
-
-namespace Natron {
-class CacheSignalEmitter;
-class EffectInstance;
-class FrameEntry;
-class FrameKey;
-class FrameParams;
-class GenericAccess;
-class Image;
-class ImageComponents;
-class ImageKey;
-class ImageParams;
-class LibraryBinary;
-class Node;
-class OfxHost;
-class OfxImageEffectInstance;
-class OfxOverlayInteract;
-class OfxParamOverlayInteract;
-class OutputEffectInstance;
-class Plugin;
-class Project;
 namespace Color {
 class Lut;
 }
-}
-
 namespace Transform {
 struct Matrix3x3;
 }
 
+typedef boost::shared_ptr<Node> NodePtr;
+typedef std::list<NodePtr> NodesList;
+
+typedef boost::weak_ptr<Node> NodeWPtr;
+typedef std::list<NodeWPtr> NodesWList;
+
+typedef boost::shared_ptr<KnobI> KnobPtr;
+typedef std::vector<KnobPtr> KnobsVec;
 
 
+typedef boost::shared_ptr<EffectInstance> EffectInstPtr;
+typedef boost::weak_ptr<EffectInstance> EffectInstWPtr;
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_EngineFwd_h

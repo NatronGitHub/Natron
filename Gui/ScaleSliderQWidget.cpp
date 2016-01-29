@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,6 +51,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #define SLIDER_WIDTH 4
 #define SLIDER_HEIGHT 15
 
+NATRON_NAMESPACE_ENTER;
 
 struct ScaleSliderQWidgetPrivate
 {
@@ -58,7 +59,7 @@ struct ScaleSliderQWidgetPrivate
     ZoomContext zoomCtx;
     QPointF oldClick;
     double minimum,maximum;
-    Natron::ScaleTypeEnum type;
+    ScaleTypeEnum type;
     double value;
     bool dragging;
     QFont font;
@@ -81,7 +82,7 @@ struct ScaleSliderQWidgetPrivate
                               double initialPos,
                               Gui* gui,
                               ScaleSliderQWidget::DataTypeEnum dataType,
-                              Natron::ScaleTypeEnum type)
+                              ScaleTypeEnum type)
     : gui(gui)
     , zoomCtx()
     , oldClick()
@@ -112,7 +113,7 @@ ScaleSliderQWidget::ScaleSliderQWidget(double min,
                                        double initialPos,
                                        DataTypeEnum dataType,
                                        Gui* gui,
-                                       Natron::ScaleTypeEnum type,
+                                       ScaleTypeEnum type,
                                        QWidget* parent)
     : QWidget(parent)
     , _imp(new ScaleSliderQWidgetPrivate(parent,min,max,initialPos,gui,dataType,type))
@@ -133,14 +134,14 @@ ScaleSliderQWidget::sizeHint() const
 QSize
 ScaleSliderQWidget::minimumSizeHint() const
 {
-   return QSize(150,20); 
+   return QSize(TO_DPIX(150),TO_DPIY(20));
 }
 
 ScaleSliderQWidget::~ScaleSliderQWidget()
 {
 }
 
-Natron::ScaleTypeEnum
+ScaleTypeEnum
 ScaleSliderQWidget::type() const
 {
     return _imp->type;
@@ -274,15 +275,23 @@ ScaleSliderQWidget::leaveEvent(QEvent* e)
 void
 ScaleSliderQWidget::keyPressEvent(QKeyEvent* e)
 {
+    
+    bool accepted = true;
     if (e->key() == Qt::Key_Control) {
         _imp->ctrlDown = true;
         zoomRange();
+        accepted = false;
     } else if (e->key() == Qt::Key_Shift) {
         _imp->shiftDown = true;
         zoomRange();
+        accepted = false;
     } else {
+        accepted = false;
+    }
+    if (!accepted) {
         QWidget::keyPressEvent(e);
     }
+
 }
 
 double
@@ -307,13 +316,19 @@ ScaleSliderQWidget::getAltered() const
 void
 ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
 {
+    bool accepted = true;
     if (e->key() == Qt::Key_Control) {
         _imp->ctrlDown = false;
         zoomRange();
+        accepted = false;
     } else if (e->key() == Qt::Key_Shift) {
         _imp->shiftDown = false;
         zoomRange();
+        accepted = false;
     } else {
+        accepted = false;
+    }
+    if (!accepted) {
         QWidget::keyReleaseEvent(e);
     }
 }
@@ -418,14 +433,14 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     }
     
     QColor textColor;
-    textColor.setRgbF(Natron::clamp<qreal>(txtR, 0., 1.),
-                      Natron::clamp<qreal>(txtG, 0., 1.),
-                      Natron::clamp<qreal>(txtB, 0., 1.));
+    textColor.setRgbF(Image::clamp<qreal>(txtR, 0., 1.),
+                      Image::clamp<qreal>(txtG, 0., 1.),
+                      Image::clamp<qreal>(txtB, 0., 1.));
     
     QColor scaleColor;
     scaleColor.setRgbF(textColor.redF() / 2., textColor.greenF() / 2., textColor.blueF() / 2.);
     
-    QFontMetrics fontM(_imp->font);
+    QFontMetrics fontM(_imp->font, 0);
     
     if (!_imp->useLineColor) {
         p.setPen(scaleColor);
@@ -441,11 +456,11 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
     }
 
     /*drawing X axis*/
-    double lineYpos = height() - 1 - fontM.height()  - TICK_HEIGHT / 2;
+    double lineYpos = height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT) / 2;
     p.drawLine(0, lineYpos, width() - 1, lineYpos);
 
     double tickBottom = _imp->zoomCtx.toZoomCoordinates( 0,height() - 1 - fontM.height() ).y();
-    double tickTop = _imp->zoomCtx.toZoomCoordinates(0,height() - 1 - fontM.height()  - TICK_HEIGHT).y();
+    double tickTop = _imp->zoomCtx.toZoomCoordinates(0,height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT)).y();
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
     std::vector<double> acceptedDistances;
@@ -520,8 +535,8 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
         }
     }
     double positionValue = _imp->zoomCtx.toWidgetCoordinates(_imp->value,0).x();
-    QPointF sliderBottomLeft(positionValue - SLIDER_WIDTH / 2,height() - 1 - fontM.height() / 2);
-    QPointF sliderTopRight(positionValue + SLIDER_WIDTH / 2,height() - 1 - fontM.height() / 2 - SLIDER_HEIGHT);
+    QPointF sliderBottomLeft(positionValue - TO_DPIX(SLIDER_WIDTH) / 2,height() - 1 - fontM.height() / 2);
+    QPointF sliderTopRight(positionValue + TO_DPIX(SLIDER_WIDTH) / 2,height() - 1 - fontM.height() / 2 - TO_DPIY(SLIDER_HEIGHT));
 
     /*draw the slider*/
     p.setPen(_imp->sliderColor);
@@ -562,3 +577,7 @@ ScaleSliderQWidget::setUseLineColor(bool use, const QColor& color)
     update();
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_ScaleSliderQWidget.cpp"

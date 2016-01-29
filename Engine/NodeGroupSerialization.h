@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,6 +50,8 @@ GCC_DIAG_ON(unused-parameter)
 
 #define NODE_GROUP_SERIALIZATION_VERSION 1
 
+NATRON_NAMESPACE_ENTER;
+
 class NodeCollectionSerialization
 {
     std::list< boost::shared_ptr<NodeSerialization> > _serializedNodes;
@@ -80,23 +82,22 @@ public:
     static bool restoreFromSerialization(const std::list< boost::shared_ptr<NodeSerialization> > & serializedNodes,
                                          const boost::shared_ptr<NodeCollection>& group,
                                          bool createNodes,
-                                         std::map<std::string,bool>* moduleUpdatesProcessed,
-                                         bool* hasProjectAWriter);
+                                         std::map<std::string,bool>* moduleUpdatesProcessed);
     
 private:
                                          
-    friend class boost::serialization::access;
+    friend class ::boost::serialization::access;
     template<class Archive>
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
         int nodesCount = (int)_serializedNodes.size();
-        ar & boost::serialization::make_nvp("NodesCount",nodesCount);
+        ar & ::boost::serialization::make_nvp("NodesCount",nodesCount);
         
         for (std::list< boost::shared_ptr<NodeSerialization> >::const_iterator it = _serializedNodes.begin();
              it != _serializedNodes.end();
              ++it) {
-            ar & boost::serialization::make_nvp("item",**it);
+            ar & ::boost::serialization::make_nvp("item",**it);
         }
     }
     
@@ -105,11 +106,11 @@ private:
               const unsigned int /*version*/)
     {
         int nodesCount ;
-        ar & boost::serialization::make_nvp("NodesCount",nodesCount);
+        ar & ::boost::serialization::make_nvp("NodesCount",nodesCount);
         
         for (int i = 0; i < nodesCount; ++i) {
             boost::shared_ptr<NodeSerialization> s(new NodeSerialization);
-            ar & boost::serialization::make_nvp("item",*s);
+            ar & ::boost::serialization::make_nvp("item",*s);
             _serializedNodes.push_back(s);
         }
 
@@ -118,7 +119,9 @@ private:
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
-BOOST_CLASS_VERSION(NodeCollectionSerialization,NODE_COLLECTION_SERIALIZATION_VERSION)
+NATRON_NAMESPACE_EXIT;
+
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::NodeCollectionSerialization,NODE_COLLECTION_SERIALIZATION_VERSION)
 
 
 

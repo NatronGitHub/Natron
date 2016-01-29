@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,7 +50,12 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobGui.h"
 #include "Gui/SpinBoxValidator.h"
+#include "Gui/GuiApplicationManager.h"
 
+#define SPINBOX_MAX_WIDTH 50
+#define SPINBOX_MIN_WIDTH 35
+
+NATRON_NAMESPACE_ENTER;
 
 struct SpinBoxPrivate
 {
@@ -102,13 +107,12 @@ SpinBox::SpinBox(QWidget* parent,
 : LineEdit(parent)
 , animation(0)
 , dirty(false)
-, altered(false)
 , _imp( new SpinBoxPrivate(type) )
 {
     QObject::connect( this, SIGNAL( returnPressed() ), this, SLOT( interpretReturn() ) );
     setValue(0);
-    setMaximumWidth(50);
-    setMinimumWidth(35);
+    setMaximumWidth(TO_DPIX(SPINBOX_MAX_WIDTH));
+    setMinimumWidth(TO_DPIX(SPINBOX_MIN_WIDTH));
     setFocusPolicy(Qt::WheelFocus); // mouse wheel gives focus too - see also SpinBox::focusInEvent()
     decimals(_imp->decimals);
 
@@ -885,3 +889,8 @@ SpinBox::setUseLineColor(bool use, const QColor& color)
     _imp->lineColor = color;
     update();
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_SpinBox.cpp"

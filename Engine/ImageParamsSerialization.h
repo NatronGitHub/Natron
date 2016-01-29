@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,7 +63,7 @@ serialize(Archive & ar,
 }
 }
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 template<class Archive>
 void
@@ -80,15 +80,15 @@ void
 ImageParams::serialize(Archive & ar,
                        const unsigned int /*version*/)
 {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Natron::NonKeyParams);
-    ar & boost::serialization::make_nvp("RoD",_rod);
-    ar & boost::serialization::make_nvp("Bounds",_bounds);
-    ar & boost::serialization::make_nvp("IsProjectFormat",_isRoDProjectFormat);
-    ar & boost::serialization::make_nvp("FramesNeeded",_framesNeeded);
-    ar & boost::serialization::make_nvp("Components",_components);
-    ar & boost::serialization::make_nvp("MMLevel",_mipMapLevel);
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(NonKeyParams);
+    ar & ::boost::serialization::make_nvp("RoD",_rod);
+    ar & ::boost::serialization::make_nvp("Bounds",_bounds);
+    ar & ::boost::serialization::make_nvp("IsProjectFormat",_isRoDProjectFormat);
+    ar & ::boost::serialization::make_nvp("FramesNeeded",_framesNeeded);
+    ar & ::boost::serialization::make_nvp("Components",_components);
+    ar & ::boost::serialization::make_nvp("MMLevel",_mipMapLevel);
 }
 
-} // namespace Natron
+NATRON_NAMESPACE_EXIT;
 
 #endif // IMAGEPARAMSSERIALIZATION_H

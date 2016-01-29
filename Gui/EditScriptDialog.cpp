@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -93,14 +93,14 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Utils.h"
 #include "Gui/ViewerTab.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 struct EditScriptDialogPrivate
 {
     QVBoxLayout* mainLayout;
     
-    Natron::Label* expressionLabel;
+    Label* expressionLabel;
     InputScriptTextEdit* expressionEdit;
     
     QWidget* midButtonsContainer;
@@ -109,7 +109,7 @@ struct EditScriptDialogPrivate
     Button* useRetButton;
     Button* helpButton;
     
-    Natron::Label* resultLabel;
+    Label* resultLabel;
     OutputScriptTextEdit* resultEdit;
     
     QDialogButtonBox* buttons;
@@ -169,7 +169,7 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
         labelHtml.append("<p>" + tr("Note that parameters can be referenced by drag&dropping them from their animation button.") + "</p>");
     }
     
-    _imp->expressionLabel = new Natron::Label(labelHtml,this);
+    _imp->expressionLabel = new Label(labelHtml,this);
     //_imp->expressionLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
     
@@ -189,7 +189,7 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
         
         bool retVariable = hasRetVariable();
         _imp->useRetButton = new Button(tr("Multi-line"),_imp->midButtonsContainer);
-        _imp->useRetButton->setToolTip(Natron::convertFromPlainText(tr("When checked the Python expression will be interpreted "
+        _imp->useRetButton->setToolTip(GuiUtils::convertFromPlainText(tr("When checked the Python expression will be interpreted "
                                                                    "as series of statement. The return value should be then assigned to the "
                                                                    "\"ret\" variable. When unchecked the expression must not contain "
                                                                    "any new line character and the result will be interpreted from the "
@@ -211,12 +211,12 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     
     _imp->mainLayout->addWidget(_imp->midButtonsContainer);
     
-    _imp->resultLabel = new Natron::Label(tr("Result:"),this);
+    _imp->resultLabel = new Label(tr("Result:"),this);
     //_imp->resultLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->resultLabel);
     
     _imp->resultEdit = new OutputScriptTextEdit(this);
-    _imp->resultEdit->setFixedHeight(80);
+    _imp->resultEdit->setFixedHeight(TO_DPIY(80));
     _imp->resultEdit->setReadOnly(true);
     _imp->mainLayout->addWidget(_imp->resultEdit);
     
@@ -304,7 +304,7 @@ void
 EditScriptDialog::onHelpRequested()
 {
     QString help = getCustomHelp();
-    Natron::informationDialog(tr("Help").toStdString(), help.toStdString(),true);
+    Dialogs::informationDialog(tr("Help").toStdString(), help.toStdString(),true);
 }
 
 
@@ -353,3 +353,8 @@ EditScriptDialog::keyPressEvent(QKeyEvent* e)
     }
     
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_EditScriptDialog.cpp"

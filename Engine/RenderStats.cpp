@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <bitset>
+
 #include "RenderStats.h"
 
 #include <QMutex>
@@ -31,6 +33,7 @@
 #include "Engine/RectI.h"
 #include "Engine/RectD.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct NodeRenderStatsPrivate
 {
@@ -41,13 +44,13 @@ struct NodeRenderStatsPrivate
     RectD rod;
     
     //Is identity
-    boost::weak_ptr<Natron::Node> isWholeImageIdentity;
+    NodeWPtr isWholeImageIdentity;
     
     //The list of all tiles rendered
     std::list<RectI> rectanglesRendered;
     
     //The list of rectangles for which isIdentity returned true
-    std::list<std::pair<RectI,boost::weak_ptr<Natron::Node> > > identityRectangles;
+    std::list<std::pair<RectI,NodeWPtr > > identityRectangles;
     
     //The different mipmaplevels rendered
     std::set<unsigned int> mipmapLevelsAccessed;
@@ -67,10 +70,10 @@ struct NodeRenderStatsPrivate
     bool renderScaleSupportEnabled;
     
     //Channels rendered
-    bool channelsEnabled[4];
+    std::bitset<4> channelsEnabled;
     
     //Premultiplication of the output imge
-    Natron::ImagePremultiplicationEnum outputPremult;
+    ImagePremultiplicationEnum outputPremult;
     
     NodeRenderStatsPrivate()
     : totalTimeSpentRendering(0)
@@ -86,7 +89,7 @@ struct NodeRenderStatsPrivate
     , tileSupportEnabled(false)
     , renderScaleSupportEnabled(false)
     , channelsEnabled()
-    , outputPremult(Natron::eImagePremultiplicationOpaque)
+    , outputPremult(eImagePremultiplicationOpaque)
     {
         for (int i = 0; i < 4; ++i) {
             channelsEnabled[i] = false;
@@ -157,12 +160,12 @@ NodeRenderStats::setRoD(const RectD& rod)
 }
 
 void
-NodeRenderStats::setInputImageIdentity(const boost::shared_ptr<Natron::Node>& identity)
+NodeRenderStats::setInputImageIdentity(const NodePtr& identity)
 {
     _imp->isWholeImageIdentity = identity;
 }
 
-boost::shared_ptr<Natron::Node>
+NodePtr
 NodeRenderStats::getInputImageIdentity() const
 {
     return _imp->isWholeImageIdentity.lock();
@@ -181,17 +184,17 @@ NodeRenderStats::getRenderedRectangles() const
 }
 
 void
-NodeRenderStats::addIdentityRectangle(const boost::shared_ptr<Natron::Node>& identity, const RectI& rectangle)
+NodeRenderStats::addIdentityRectangle(const NodePtr& identity, const RectI& rectangle)
 {
     _imp->identityRectangles.push_back(std::make_pair(rectangle,identity));
 }
 
-std::list<std::pair<RectI,boost::shared_ptr<Natron::Node> > >
+std::list<std::pair<RectI,NodePtr > >
 NodeRenderStats::getIdentityRectangles() const
 {
-    std::list<std::pair<RectI,boost::shared_ptr<Natron::Node> > > ret;
-    for (std::list<std::pair<RectI,boost::weak_ptr<Natron::Node> > >::const_iterator it = _imp->identityRectangles.begin(); it!=_imp->identityRectangles.end(); ++it) {
-        boost::shared_ptr<Natron::Node> n = it->second.lock();
+    std::list<std::pair<RectI,NodePtr > > ret;
+    for (std::list<std::pair<RectI,NodeWPtr > >::const_iterator it = _imp->identityRectangles.begin(); it!=_imp->identityRectangles.end(); ++it) {
+        NodePtr n = it->second.lock();
         if (n) {
             ret.push_back(std::make_pair(it->first, n));
         }
@@ -270,30 +273,24 @@ NodeRenderStats::isRenderScaleSupportEnabled() const
 }
 
 void
-NodeRenderStats::setChannelsRendered(bool r, bool g, bool b, bool a)
+NodeRenderStats::setChannelsRendered(const std::bitset<4> channelsRendered)
 {
-    _imp->channelsEnabled[0] = r;
-    _imp->channelsEnabled[1] = g;
-    _imp->channelsEnabled[2] = b;
-    _imp->channelsEnabled[3] = a;
+    _imp->channelsEnabled = channelsRendered;
+}
+
+std::bitset<4>
+NodeRenderStats::getChannelsRendered() const
+{
+    return _imp->channelsEnabled;
 }
 
 void
-NodeRenderStats::getChannelsRendered(bool* r, bool* g, bool* b, bool* a) const
-{
-    *r = _imp->channelsEnabled[0];
-    *g = _imp->channelsEnabled[1];
-    *b = _imp->channelsEnabled[2];
-    *a = _imp->channelsEnabled[3];
-}
-
-void
-NodeRenderStats::setOutputPremult(Natron::ImagePremultiplicationEnum premult)
+NodeRenderStats::setOutputPremult(ImagePremultiplicationEnum premult)
 {
     _imp->outputPremult = premult;
 }
 
-Natron::ImagePremultiplicationEnum
+ImagePremultiplicationEnum
 NodeRenderStats::getOutputPremult() const
 {
     return _imp->outputPremult;
@@ -309,7 +306,7 @@ struct RenderStatsPrivate
     //When true in-depth profiling will be enabled for all Nodes with detailed infos
     bool doNodesProfiling;
     
-    typedef std::map<boost::weak_ptr<Natron::Node>,NodeRenderStats > NodeInfosMap;
+    typedef std::map<NodeWPtr,NodeRenderStats > NodeInfosMap;
     NodeInfosMap nodeInfos;
     
     
@@ -323,7 +320,7 @@ struct RenderStatsPrivate
         
     }
     
-    NodeInfosMap::iterator findNode(const boost::shared_ptr<Natron::Node>& node)
+    NodeInfosMap::iterator findNode(const NodePtr& node)
     {
         //Private, shouldn't lock
         assert(!lock.tryLock());
@@ -336,7 +333,7 @@ struct RenderStatsPrivate
         return nodeInfos.end();
     }
     
-    NodeRenderStats& findOrCreateNodeStats(const boost::shared_ptr<Natron::Node>& node)
+    NodeRenderStats& findOrCreateNodeStats(const NodePtr& node)
     {
       
         NodeInfosMap::iterator found = findNode(node);
@@ -369,7 +366,7 @@ RenderStats::isInDepthProfilingEnabled() const
 }
 
 void
-RenderStats::setNodeIdentity(const boost::shared_ptr<Natron::Node>& node, const boost::shared_ptr<Natron::Node>& identity)
+RenderStats::setNodeIdentity(const NodePtr& node, const NodePtr& identity)
 {
     QMutexLocker k(&_imp->lock);
     assert(_imp->doNodesProfiling);
@@ -379,13 +376,13 @@ RenderStats::setNodeIdentity(const boost::shared_ptr<Natron::Node>& node, const 
 }
 
 void
-RenderStats::setGlobalRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
-                                 const RectD& rod,
-                                 Natron::ImagePremultiplicationEnum outputPremult,
-                                 bool channelsRendered[4],
-                                 bool tilesSupported,
-                                 bool renderScaleSupported,
-                                 unsigned int mipmapLevel)
+RenderStats::setGlobalRenderInfosForNode(const NodePtr& node,
+                                         const RectD& rod,
+                                         ImagePremultiplicationEnum outputPremult,
+                                         std::bitset<4> channelsRendered,
+                                         bool tilesSupported,
+                                         bool renderScaleSupported,
+                                         unsigned int mipmapLevel)
 {
     QMutexLocker k(&_imp->lock);
     assert(_imp->doNodesProfiling);
@@ -395,12 +392,12 @@ RenderStats::setGlobalRenderInfosForNode(const boost::shared_ptr<Natron::Node>& 
     stats.setTilesSupported(tilesSupported);
     stats.setRenderScaleSupported(renderScaleSupported);
     stats.addMipMapLevelRendered(mipmapLevel);
-    stats.setChannelsRendered(channelsRendered[0], channelsRendered[1], channelsRendered[2], channelsRendered[3]);
+    stats.setChannelsRendered(channelsRendered);
     stats.setRoD(rod);
 }
 
 void
-RenderStats::addCacheInfosForNode(const boost::shared_ptr<Natron::Node>& node,
+RenderStats::addCacheInfosForNode(const NodePtr& node,
                           bool isCacheMiss,
                           bool hasDownscaled)
 {
@@ -412,8 +409,8 @@ RenderStats::addCacheInfosForNode(const boost::shared_ptr<Natron::Node>& node,
 }
 
 void
-RenderStats::addRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
-                           const boost::shared_ptr<Natron::Node>& identity,
+RenderStats::addRenderInfosForNode(const NodePtr& node,
+                           const NodePtr& identity,
                            const std::string& plane,
                            const RectI& rectangle,
                            double timeSpent)
@@ -431,14 +428,14 @@ RenderStats::addRenderInfosForNode(const boost::shared_ptr<Natron::Node>& node,
     stats.addPlaneRendered(plane);
 }
 
-std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats >
+std::map<NodePtr,NodeRenderStats >
 RenderStats::getStats(double *totalTimeSpent) const
 {
     QMutexLocker k(&_imp->lock);
     
-    std::map<boost::shared_ptr<Natron::Node>,NodeRenderStats > ret;
+    std::map<NodePtr,NodeRenderStats > ret;
     for (RenderStatsPrivate::NodeInfosMap::const_iterator it = _imp->nodeInfos.begin(); it!=_imp->nodeInfos.end(); ++it) {
-        boost::shared_ptr<Natron::Node> node = it->first.lock();
+        NodePtr node = it->first.lock();
         if (node) {
             ret.insert(std::make_pair(node, it->second));
         }
@@ -448,3 +445,5 @@ RenderStats::getStats(double *totalTimeSpent) const
     
     return ret;
 }
+
+NATRON_NAMESPACE_EXIT;

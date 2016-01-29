@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,12 +52,13 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ShortCutEditor.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerTab.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -99,7 +100,7 @@ Gui::setupUi()
     _imp->_toolBox = new AutoHideToolBar(this, _imp->_leftRightSplitter);
     _imp->_toolBox->setToolButtonStyle(Qt::ToolButtonIconOnly);
     _imp->_toolBox->setOrientation(Qt::Vertical);
-    _imp->_toolBox->setMaximumWidth(NATRON_TOOL_BUTTON_SIZE);
+    _imp->_toolBox->setMaximumWidth(TO_DPIX(NATRON_TOOL_BUTTON_SIZE));
 
     if (_imp->leftToolBarDisplayedOnHoverOnly) {
         _imp->refreshLeftToolBarVisibility( mapFromGlobal( QCursor::pos() ) );
@@ -188,10 +189,10 @@ Gui::onPropertiesScrolled()
 }
 
 void
-Gui::createGroupGui(const boost::shared_ptr<Natron::Node> & group,
-                    bool requestedByLoad)
+Gui::createGroupGui(const NodePtr & group,
+                    CreateNodeReason reason)
 {
-    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getLiveInstance()->shared_from_this() );
+    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
 
     assert(isGrp);
     boost::shared_ptr<NodeCollection> collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
@@ -214,7 +215,7 @@ Gui::createGroupGui(const boost::shared_ptr<Natron::Node> & group,
     NodeGraph* nodeGraph = new NodeGraph(this, collection, scene, this);
     nodeGraph->setObjectName( group->getLabel().c_str() );
     _imp->_groups.push_back(nodeGraph);
-    if ( where && !requestedByLoad && !getApp()->isCreatingPythonGroup() ) {
+    if ( where && reason == eCreateNodeReasonUserCreate && !getApp()->isCreatingPythonGroup() ) {
         where->appendTab(nodeGraph, nodeGraph);
         QTimer::singleShot( 25, nodeGraph, SLOT( centerOnAllNodes() ) );
     } else {
@@ -356,3 +357,4 @@ Gui::wipeLayout()
     }
 }
 
+NATRON_NAMESPACE_EXIT;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,6 +62,8 @@ CLANG_DIAG_ON(uninitialized)
 
 #define NATRON_SCENE_MAX 1e6
 #define NATRON_SCENE_MIN 0
+
+NATRON_NAMESPACE_ENTER;
 
 enum EventStateEnum
 {
@@ -165,8 +167,8 @@ public:
     bool _magnifOn;
     Edge* _arrowSelected;
     mutable QMutex _nodesMutex;
-    NodeGuiList _nodes;
-    NodeGuiList _nodesTrash;
+    NodesGuiList _nodes;
+    NodesGuiList _nodesTrash;
 
     ///Enables the "Tab" shortcut to popup the node creation dialog.
     ///This is set to true on enterEvent and set back to false on leaveEvent
@@ -192,9 +194,9 @@ public:
     
     NodeGuiPtr _backdropResized; //< the backdrop being resized
     
-    NodeGuiList _selection;
+    NodesGuiList _selection;
     
-    std::map<NodeGuiPtr,NodeGuiList> _nodesWithinBDAtPenDown;
+    std::map<NodeGuiPtr,NodesGuiList> _nodesWithinBDAtPenDown;
     
     QRectF _selectionRect;
     bool _bendPointsVisible;
@@ -222,21 +224,22 @@ public:
 
     QRectF calcNodesBoundingRect();
 
-    void copyNodesInternal(const NodeGuiList& selection,NodeClipBoard & clipboard);
+    void copyNodesInternal(const NodesGuiList& selection,NodeClipBoard & clipboard);
     void pasteNodesInternal(const NodeClipBoard & clipboard,const QPointF& scenPos,
                             bool useUndoCommand,
-                            std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > *newNodes);
+                            std::list<std::pair<std::string,NodeGuiPtr > > *newNodes);
 
     /**
      * @brief Create a new node given the serialization of another one
      * @param offset[in] The offset applied to the new node position relative to the serialized node's position.
      **/
-    boost::shared_ptr<NodeGui> pasteNode(const NodeSerialization & internalSerialization,
-                                         const NodeGuiSerialization & guiSerialization,
+    NodeGuiPtr pasteNode(const boost::shared_ptr<NodeSerialization> & internalSerialization,
+                                         const boost::shared_ptr<NodeGuiSerialization> & guiSerialization,
                                          const QPointF & offset,
                                          const boost::shared_ptr<NodeCollection>& group,
                                          const std::string& parentName,
-                                         bool clone);
+                                         bool clone,
+                                         std::map<std::string,std::string>* oldNewScriptNameMapping);
 
 
     /**
@@ -245,7 +248,8 @@ public:
      * list. We're not using 2 lists to avoid a copy from the paste function.
      **/
     void restoreConnections(const std::list<boost::shared_ptr<NodeSerialization> > & serializations,
-                            const std::list<std::pair<std::string,boost::shared_ptr<NodeGui> > > & newNodes);
+                            const std::list<std::pair<std::string,NodeGuiPtr > > & newNodes,
+                            const std::map<std::string,std::string>& oldNewScriptNamesMap);
 
     void editSelectionFromSelectionRectangle(bool addToSelection);
 
@@ -258,5 +262,7 @@ public:
     void toggleSelectedNodesEnabled();
     
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_NodeGraphPrivate_h

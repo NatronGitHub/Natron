@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,17 +24,17 @@
 
 #include "ImageKey.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 ImageKey::ImageKey()
 : KeyHelper<U64>()
 , _nodeHashKey(0)
-, _frameVaryingOrAnimated(false)
 , _time(0)
 //, _mipMapLevel(0)
-, _view(0)
 , _pixelAspect(1)
+, _view(0)
 , _draftMode(false)
+, _frameVaryingOrAnimated(false)
 , _fullScaleWithDownscaleInputs(false)
 {
 }
@@ -50,11 +50,11 @@ ImageKey::ImageKey(const CacheEntryHolder* holder,
                    bool fullScaleWithDownscaleInputs)
 : KeyHelper<U64>(holder)
 , _nodeHashKey(nodeHashKey)
-, _frameVaryingOrAnimated(frameVaryingOrAnimated)
 , _time(time)
-, _view(view)
 , _pixelAspect(pixelAspect)
+, _view(view)
 , _draftMode(draftMode)
+, _frameVaryingOrAnimated(frameVaryingOrAnimated)
 , _fullScaleWithDownscaleInputs(fullScaleWithDownscaleInputs)
 {
 }
@@ -89,5 +89,6 @@ ImageKey::operator==(const ImageKey & other) const
         _draftMode == other._draftMode &&
         _fullScaleWithDownscaleInputs == other._fullScaleWithDownscaleInputs;
     }
-    
 }
+
+NATRON_NAMESPACE_EXIT;

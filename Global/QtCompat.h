@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,12 +18,16 @@
 #ifndef NATRON_GLOBAL_QTCOMPAT_H
 #define NATRON_GLOBAL_QTCOMPAT_H
 
+#include "Global/Macros.h"
 
 #if QT_VERSION < 0x050000
 #include <QtCore/QDir>
 #include <QtCore/QString>
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
+namespace QtCompat {
+
 inline bool
 removeRecursively(const QString & dirName)
 {
@@ -47,27 +51,34 @@ removeRecursively(const QString & dirName)
 
     return result;
 }
-}
+
+} // namespace QtCompat
+
+NATRON_NAMESPACE_EXIT;
+
 #endif
 
 #include <QtCore/QString>
 #include <QtCore/QUrl>
+#include <QtCore/QFileInfo>
+//#include <QtCore/QDebug>
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
+namespace QtCompat {
+
 /*Removes the . and the extension from the filename and also
  * returns the extension as a string.*/
 inline QString
 removeFileExtension(QString & filename)
 {
-    int i = filename.size() - 1;
-    QString extension;
-
-    while ( i >= 0 && filename.at(i) != QChar('.') ) {
-        extension.prepend( filename.at(i) );
-        --i;
+    //qDebug() << "remove file ext from" << filename;
+    QFileInfo fi(filename);
+    QString extension = fi.suffix();
+    if (!extension.isEmpty()) {
+        filename.truncate(filename.size() - extension.size() - 1);
     }
-    filename = filename.left(i);
-
+    //qDebug() << "->" << filename << fi.suffix();
     return extension;
 }
 
@@ -80,6 +91,8 @@ QUrl toLocalFileUrlFixed(const QUrl& url);
 inline QUrl toLocalFileUrlFixed(const QUrl& url) { return url; }
 #endif // #if defined(Q_OS_MAC) && QT_VERSION < 0x050000
 
-} // namespace Natron
+} // namespace QtCompat
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_GLOBAL_QTCOMPAT_H

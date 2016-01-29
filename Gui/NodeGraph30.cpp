@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,7 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -88,17 +88,10 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
         v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
                                                        getInternalNode()->getNode() );
     } else {
-        NodePtr viewerNode = getGui()->getApp()->createNode(  CreateNodeArgs(PLUGINID_NATRON_VIEWER,
-                                                          "",
-                                                          -1,-1,
-                                                          true,
-                                                          INT_MIN,INT_MIN,
-                                                          true,
-                                                          true,
-                                                          true,
-                                                          QString(),
-                                                          CreateNodeArgs::DefaultValuesList(),
-                                                          getGroup()) );
+        NodePtr viewerNode = getGui()->getApp()->createNode( CreateNodeArgs(PLUGINID_NATRON_VIEWER,
+                                                                            eCreateNodeReasonUserCreate,
+                                                                            getGroup()));
+                                                
         if (!viewerNode) {
             return;
         }
@@ -116,7 +109,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
 
     ///get a ptr to the NodeGui
     boost::shared_ptr<NodeGuiI> gui_i = v->getNodeGui();
-    boost::shared_ptr<NodeGui> gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
+    NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
 
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
@@ -128,7 +121,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
         return;
     }
 
-    boost::shared_ptr<NodeGui> selected = _imp->_selection.front();
+    NodeGuiPtr selected = _imp->_selection.front();
 
 
     if ( !selected->getNode()->canOthersConnectToThisNode() ) {
@@ -224,23 +217,30 @@ NodeGraph::keyReleaseEvent(QKeyEvent* e)
             _imp->setNodesBendPointsVisible(false);
         }
     }
+    
+    handleUnCaughtKeyUpEvent(e);
+    QGraphicsView::keyReleaseEvent(e);
 }
 
 void
-NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
+NodeGraph::removeNode(const NodeGuiPtr & node)
 {
  
-    NodeGroup* isGrp = dynamic_cast<NodeGroup*>(node->getNode()->getLiveInstance());
-    const std::vector<boost::shared_ptr<KnobI> > & knobs = node->getNode()->getKnobs();
+    NodeGroup* isGrp = node->getNode()->isEffectGroup();
+    const KnobsVec & knobs = node->getNode()->getKnobs();
 
     
     for (U32 i = 0; i < knobs.size(); ++i) {
-        std::list<boost::shared_ptr<KnobI> > listeners;
+        KnobI::ListenerDimsMap listeners;
         knobs[i]->getListeners(listeners);
         ///For all listeners make sure they belong to a node
         bool foundEffect = false;
-        for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
-            EffectInstance* isEffect = dynamic_cast<EffectInstance*>( (*it2)->getHolder() );
+        for (KnobI::ListenerDimsMap::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
+            KnobPtr listener = it2->first.lock();
+            if (!listener) {
+                continue;
+            }
+            EffectInstance* isEffect = dynamic_cast<EffectInstance*>(listener->getHolder());
             if (!isEffect) {
                 continue;
             }
@@ -248,13 +248,13 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
                 continue;
             }
             
-            if ( isEffect && ( isEffect != node->getNode()->getLiveInstance() ) ) {
+            if ( isEffect && ( isEffect != node->getNode()->getEffectInstance().get() ) ) {
                 foundEffect = true;
                 break;
             }
         }
         if (foundEffect) {
-            Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Delete").toStdString(), tr("This node has one or several "
+            StandardButtonEnum reply = Dialogs::questionDialog( tr("Delete").toStdString(), tr("This node has one or several "
                                                                                                   "parameters from which other parameters "
                                                                                                   "of the project rely on through expressions "
                                                                                                   "or links. Deleting this node will "
@@ -262,7 +262,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
                                                                                                   "and undoing the action will not recover "
                                                                                                   "them. Do you wish to continue ?")
                                                                    .toStdString(), false );
-            if (reply == Natron::eStandardButtonNo) {
+            if (reply == eStandardButtonNo) {
                 return;
             }
             break;
@@ -270,7 +270,7 @@ NodeGraph::removeNode(const boost::shared_ptr<NodeGui> & node)
     }
 
     node->setUserSelected(false);
-    std::list<boost::shared_ptr<NodeGui> > nodesToRemove;
+    NodesGuiList nodesToRemove;
     nodesToRemove.push_back(node);
     pushUndoCommand( new RemoveMultipleNodesCommand(this,nodesToRemove) );
 }
@@ -279,14 +279,14 @@ void
 NodeGraph::deleteSelection()
 {
     if ( !_imp->_selection.empty()) {
-        NodeGuiList nodesToRemove = _imp->_selection;
+        NodesGuiList nodesToRemove = _imp->_selection;
 
         
         ///For all backdrops also move all the nodes contained within it
-        for (NodeGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
-            NodeGuiList nodesWithinBD = getNodesWithinBackDrop(*it);
-            for (NodeGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-                NodeGuiList::iterator found = std::find(nodesToRemove.begin(),nodesToRemove.end(),*it2);
+        for (NodesGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
+            NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
+            for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
+                NodesGuiList::iterator found = std::find(nodesToRemove.begin(),nodesToRemove.end(),*it2);
                 if ( found == nodesToRemove.end()) {
                     nodesToRemove.push_back(*it2);
                 }
@@ -294,21 +294,25 @@ NodeGraph::deleteSelection()
         }
 
 
-        for (NodeGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
+        for (NodesGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
             
-            const std::vector<boost::shared_ptr<KnobI> > & knobs = (*it)->getNode()->getKnobs();
+            const KnobsVec & knobs = (*it)->getNode()->getKnobs();
             bool mustBreak = false;
             
-            NodeGroup* isGrp = dynamic_cast<NodeGroup*>((*it)->getNode()->getLiveInstance());
+            NodeGroup* isGrp = (*it)->getNode()->isEffectGroup();
             
             for (U32 i = 0; i < knobs.size(); ++i) {
-                std::list<boost::shared_ptr<KnobI> > listeners;
+                KnobI::ListenerDimsMap listeners;
                 knobs[i]->getListeners(listeners);
 
                 ///For all listeners make sure they belong to a node
                 bool foundEffect = false;
-                for (std::list<boost::shared_ptr<KnobI> >::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
-                    EffectInstance* isEffect = dynamic_cast<EffectInstance*>( (*it2)->getHolder() );
+                for (KnobI::ListenerDimsMap::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
+                    KnobPtr listener = it2->first.lock();
+                    if (!listener) {
+                        continue;
+                    }
+                    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(listener->getHolder() );
                     
                     if (!isEffect) {
                         continue;
@@ -317,13 +321,13 @@ NodeGraph::deleteSelection()
                         continue;
                     }
                     
-                    if ( isEffect && ( isEffect != (*it)->getNode()->getLiveInstance() ) ) {
+                    if ( isEffect && ( isEffect != (*it)->getNode()->getEffectInstance().get() ) ) {
                         foundEffect = true;
                         break;
                     }
                 }
                 if (foundEffect) {
-                    Natron::StandardButtonEnum reply = Natron::questionDialog( tr("Delete").toStdString(),
+                    StandardButtonEnum reply = Dialogs::questionDialog( tr("Delete").toStdString(),
                                                                            tr("This node has one or several "
                                                                               "parameters from which other parameters "
                                                                               "of the project rely on through expressions "
@@ -332,7 +336,7 @@ NodeGraph::deleteSelection()
                                                                               ". Undoing the action will not recover "
                                                                               "them. \nContinue anyway ?")
                                                                            .toStdString(), false );
-                    if (reply == Natron::eStandardButtonNo) {
+                    if (reply == eStandardButtonNo) {
                         return;
                     }
                     mustBreak = true;
@@ -345,7 +349,7 @@ NodeGraph::deleteSelection()
         }
 
 
-        for (NodeGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
+        for (NodesGuiList::iterator it = nodesToRemove.begin(); it != nodesToRemove.end(); ++it) {
             (*it)->setUserSelected(false);
         }
 
@@ -356,13 +360,13 @@ NodeGraph::deleteSelection()
 } // deleteSelection
 
 void
-NodeGraph::deselectNode(const boost::shared_ptr<NodeGui>& n)
+NodeGraph::deselectNode(const NodeGuiPtr& n)
 {
     
     
     {
         QMutexLocker k(&_imp->_nodesMutex);
-        NodeGuiList::iterator it = std::find(_imp->_selection.begin(), _imp->_selection.end(), n);
+        NodesGuiList::iterator it = std::find(_imp->_selection.begin(), _imp->_selection.end(), n);
         if (it != _imp->_selection.end()) {
             _imp->_selection.erase(it);
         }
@@ -378,7 +382,7 @@ NodeGraph::deselectNode(const boost::shared_ptr<NodeGui>& n)
 }
 
 void
-NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
+NodeGraph::selectNode(const NodeGuiPtr & n,
                       bool addToSelection)
 {
     if ( !n->isVisible() ) {
@@ -397,7 +401,7 @@ NodeGraph::selectNode(const boost::shared_ptr<NodeGui> & n,
 
     n->setUserSelected(true);
 
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( n->getNode()->getLiveInstance() );
+    ViewerInstance* isViewer =  n->getNode()->isEffectViewer();
     if (isViewer) {
         OpenGLViewerI* viewer = isViewer->getUiContext();
         const std::list<ViewerTab*> & viewerTabs = getGui()->getViewersList();
@@ -432,10 +436,10 @@ NodeGraph::getLastSelectedViewer() const
 }
 
 void
-NodeGraph::setSelection(const std::list<boost::shared_ptr<NodeGui> >& nodes)
+NodeGraph::setSelection(const NodesGuiList& nodes)
 {
     clearSelection();
-    for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         selectNode(*it, true);
     }
 }
@@ -445,7 +449,7 @@ NodeGraph::clearSelection()
 {
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
+        for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
             (*it)->setUserSelected(false);
         }
     }
@@ -471,7 +475,7 @@ NodeGraph::areAllNodesVisible()
     QRectF rect = visibleSceneRect();
     QMutexLocker l(&_imp->_nodesMutex);
 
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         if ( (*it)->isVisible() ) {
             if ( !rect.contains( (*it)->boundingRectWithEdges() ) ) {
                 return false;
@@ -480,3 +484,5 @@ NodeGraph::areAllNodesVisible()
     }
     return true;
 }
+
+NATRON_NAMESPACE_EXIT;

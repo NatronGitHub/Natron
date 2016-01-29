@@ -1,7 +1,7 @@
 #!/bin/sh
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@
 # MISC=1 : Enable misc plug
 # ARENA=1 : Enable arena plug
 # CV=1 : Enable cv plug
+# DISABLE_BREAKPAD=1: Disable automatic crash report
 # OFFLINE_INSTALLER=1: Build offline installer in addition to the online installer
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
@@ -139,12 +140,12 @@ if [ "$NOBUILD" != "1" ]; then
     if [ "$ONLY_PLUGINS" != "1" ]; then
         log="$LOGS/natron.$PKGOS$BIT.$TAG.log"
         echo -n "Building Natron (log in $log)..."
-        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER sh "$INC_PATH/scripts/build-natron.sh" $BRANCH >& "$log" || FAIL=1
+        env MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh "$INC_PATH/scripts/build-natron.sh" $BRANCH >& "$log" || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else
             echo ERROR
-            sleep 2
+            echo "BUILD__ERROR" >> $log
             cat "$log"
         fi
     fi
@@ -156,8 +157,8 @@ if [ "$NOBUILD" != "1" ]; then
             echo OK
         else
             echo ERROR
-            sleep 2
-            cat 
+            echo "BUILD__ERROR" >> $log
+            cat "$log"
         fi  
     fi
 fi
@@ -165,12 +166,12 @@ fi
 if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
     log="$LOGS/installer.$PKGOS$BIT.$TAG.log"
     echo -n "Building Packages (log in $log)... "
-    env OFFLINE=${OFFLINE_INSTALLER} NOTGZ=1 sh "$INC_PATH/scripts/build-installer.sh" $BRANCH >& "$log" || FAIL=1
+    env OFFLINE=${OFFLINE_INSTALLER} DISABLE_BREAKPAD=$DISABLE_BREAKPAD NOTGZ=1 sh "$INC_PATH/scripts/build-installer.sh" $BRANCH >& "$log" || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
     else
         echo ERROR
-        sleep 2
+        echo "BUILD__ERROR" >> $log
         cat "$log"
     fi 
 fi
@@ -190,6 +191,10 @@ if [ "$SYNC" = "1" -a "$FAIL" != "1" ]; then
 
     rsync -avz --progress  --verbose -e ssh "$REPO_DIR/installers/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files"
 fi
+
+# Symbols
+echo "sync symbols ..."
+rsync -avz --progress --verbose -e ssh "$INSTALL_PATH/symbols/" "${REPO_DEST}/symbols/"
 
 #Always upload logs, even upon failure
 rsync -avz --progress --delete --verbose -e ssh "$LOGS/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs"

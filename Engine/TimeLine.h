@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,8 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 /**
  * @brief A simple TimeLine representing the time for image sequences.
  * The interval [_firstFrame,_lastFrame] represents where images exist in the time space.
@@ -51,7 +53,7 @@ class TimeLine
 
 public:
 
-    TimeLine(Natron::Project* project);
+    TimeLine(Project* project);
 
     virtual ~TimeLine()
     {
@@ -61,45 +63,13 @@ public:
 
     void seekFrame(SequenceTime frame,
                    bool updateLastCaller,
-                   Natron::OutputEffectInstance* caller,
-                   Natron::TimelineChangeReasonEnum reason);
+                   OutputEffectInstance* caller,
+                   TimelineChangeReasonEnum reason);
 
     void incrementCurrentFrame();
 
     void decrementCurrentFrame();
 
-    /*
-     * @brief Timeline keyframes indicators are integers 
-     */
-    void removeAllKeyframesIndicators();
-    void addKeyframeIndicator(SequenceTime time);
-    void addMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys,bool emitSignal);
-    void removeKeyFrameIndicator(SequenceTime time);
-    void removeMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,bool emitSignal);
-
-    /**
-     * @brief Show keyframe markers for the given nodes on the timeline. The signal to refresh the gui
-     * will be emitted only once.
-     **/
-    void addNodesKeyframesToTimeline(const std::list<Natron::Node*> & nodes);
-
-    /**
-     * @brief Provided for convenience for a single node
-     **/
-    void addNodeKeyframesToTimeline(Natron::Node* node);
-
-    /**
-     * @brief Hide keyframe markers for the given nodes on the timeline. The signal to refresh the gui
-     * will be emitted only once.
-     **/
-    void removeNodesKeyframesFromTimeline(const std::list<Natron::Node*> & nodes);
-
-    /**
-     * @brief Provided for convenience for a single node
-     **/
-    void removeNodeKeyframesFromTimeline(Natron::Node* node);
-
-    void getKeyframes(std::list<SequenceTime>* keys) const;
 
 public Q_SLOTS:
 
@@ -107,27 +77,20 @@ public Q_SLOTS:
     void onFrameChanged(SequenceTime frame);
 
 
-    void goToPreviousKeyframe();
-
-    void goToNextKeyframe();
-
 Q_SIGNALS:
     
     void frameAboutToChange();
 
-    //reason being a Natron::TimelineChangeReasonEnum
+    //reason being a TimelineChangeReasonEnum
     void frameChanged(SequenceTime,int reason);
-
-    void keyframeIndicatorsChanged();
 
 private:
     
     mutable QMutex _lock; // protects the following SequenceTime members
+    Project* _project;
     SequenceTime _currentFrame;
-    
-    // not MT-safe
-    std::list<SequenceTime> _keyframes;
-    Natron::Project* _project;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif /* defined(NATRON_ENGINE_TIMELINE_H_) */

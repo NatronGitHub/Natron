@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,8 +38,12 @@
 
 #include "Engine/EngineFwd.h"
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+//Shiboken fails if defined at the start of a header
 GCC_DIAG_OFF(strict-overflow)
+#endif
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief A rectangle where x1 < x2 and y1 < y2 such as width() == (x2 - x1) && height() == (y2 - y1)
@@ -462,6 +466,8 @@ operator!=(const RectI & b1,
            b1.top() != b2.top();
 }
 
-Q_DECLARE_METATYPE(RectI)
+NATRON_NAMESPACE_EXIT;
+
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::RectI)
 
 #endif // Engine_RectI_h

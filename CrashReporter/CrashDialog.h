@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef _CrashReporter_CrashDialog_h_
-#define _CrashReporter_CrashDialog_h_
+#ifndef Natron_CrashReporter_CrashDialog_h_
+#define Natron_CrashReporter_CrashDialog_h_
 
 #include "Global/Macros.h"
 
@@ -34,6 +34,7 @@ class QGridLayout;
 class QPushButton;
 class QHBoxLayout;
 class QFrame;
+class PlaceHolderTextEdit;
 
 class CrashDialog : public QDialog
 {    
@@ -54,7 +55,12 @@ public:
 
     UserChoice getUserChoice() const;
     
-public slots:
+    const QString& getOriginalDumpFilePath() const
+    {
+        return _filePath;
+    }
+    
+public Q_SLOTS:
     
     void onSendClicked();
     
@@ -74,7 +80,7 @@ private:
     QLabel* _refLabel;
     QLabel* _refContent;
     QLabel* _descLabel;
-    QTextEdit* _descEdit;
+    PlaceHolderTextEdit* _descEdit;
     QFrame* _buttonsFrame;
     QHBoxLayout* _buttonsLayout;
     QPushButton* _sendButton;

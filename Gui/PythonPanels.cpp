@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DockablePanel.h"
 #include "Gui/GuiAppWrapper.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct DialogParamHolderPrivate
 {
@@ -86,7 +87,7 @@ DialogParamHolder::setParamChangedCallback(const std::string& callback)
 
 void
 DialogParamHolder::onKnobValueChanged(KnobI* k,
-                        Natron::ValueChangedReasonEnum reason,
+                        ValueChangedReasonEnum reason,
                         double /*time*/,
                         bool /*originatedFromMainThread*/)
 {
@@ -96,14 +97,14 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         callback = _imp->paramChangedCB;
     }
     if (!callback.empty()) {
-        bool userEdited = reason == Natron::eValueChangedReasonNatronGuiEdited ||
-        reason == Natron::eValueChangedReasonUserEdited;
+        bool userEdited = reason == eValueChangedReasonNatronGuiEdited ||
+        reason == eValueChangedReasonUserEdited;
 
         
         std::vector<std::string> args;
         std::string error;
         try {
-            Natron::getFunctionArguments(callback, &error, &args);
+            Python::getFunctionArguments(callback, &error, &args);
         } catch (const std::exception& e) {
             getApp()->appendToScriptEditor(std::string("Failed to run onParamChanged callback: ")
                                                              + e.what());
@@ -141,7 +142,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         std::string script = ss.str();
         std::string err;
         std::string output;
-        if (!Natron::interpretPythonScript(script, &err,&output)) {
+        if (!Python::interpretPythonScript(script, &err,&output)) {
             getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + err);
         } else if (!output.empty()) {
             getApp()->appendToScriptEditor(output);
@@ -242,7 +243,7 @@ PyModalDialog::setParamChangedCallback(const std::string& callback)
 Param*
 PyModalDialog::getParam(const std::string& scriptName) const
 {
-    boost::shared_ptr<KnobI> knob =  _imp->holder->getKnobByName(scriptName);
+    KnobPtr knob =  _imp->holder->getKnobByName(scriptName);
     if (!knob) {
         return 0;
     }
@@ -292,7 +293,7 @@ PyPanel::PyPanel(const std::string& scriptName,const std::string& label,bool use
 
     
     int idx = 1;
-    std::string name = Natron::makeNameScriptFriendly(scriptName);
+    std::string name = Python::makeNameScriptFriendly(scriptName);
     PanelWidget* existing = 0;
     existing = getGui()->findExistingTab(name);
     while (existing) {
@@ -372,7 +373,7 @@ PyPanel::getParam(const std::string& scriptName) const
     if (!_imp->holder) {
         return 0;
     }
-    boost::shared_ptr<KnobI> knob =  _imp->holder->getKnobByName(scriptName);
+    KnobPtr knob =  _imp->holder->getKnobByName(scriptName);
     if (!knob) {
         return 0;
     }
@@ -387,8 +388,8 @@ PyPanel::getParams() const
     if (!_imp->holder) {
         return ret;
     }
-    std::vector<boost::shared_ptr<KnobI> > knobs = _imp->holder->getKnobs_mt_safe();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    KnobsVec knobs = _imp->holder->getKnobs_mt_safe();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         Param* p = Effect::createParamWrapperForKnob(*it);
         if (p) {
             ret.push_back(p);
@@ -607,3 +608,8 @@ PyTabWidget::getScriptName() const
 {
     return _tab->objectName_mt_safe().toStdString();
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_PythonPanels.cpp"

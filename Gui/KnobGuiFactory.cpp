@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@
 #include "Gui/KnobGuiParametric.h"
 #include "Gui/DockablePanel.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 using std::pair;
 
@@ -54,7 +54,7 @@ using std::pair;
 /*Class inheriting KnobGui, must have a function named BuildKnobGui with the following signature.
    This function should in turn call a specific class-based static function with the appropriate param.*/
 typedef KnobHelper *(*KnobBuilder)(KnobHolder  *holder, const std::string &description, int dimension);
-typedef KnobGui *(*KnobGuiBuilder)(boost::shared_ptr<KnobI> knob, DockablePanel* panel);
+typedef KnobGui *(*KnobGuiBuilder)(KnobPtr knob, DockablePanel* panel);
 
 /***********************************FACTORY******************************************/
 KnobGuiFactory::KnobGuiFactory()
@@ -105,7 +105,7 @@ KnobGuiFactory::loadBultinKnobs()
 }
 
 KnobGui *
-KnobGuiFactory::createGuiForKnob(boost::shared_ptr<KnobI> knob,
+KnobGuiFactory::createGuiForKnob(KnobPtr knob,
                                  DockablePanel *container) const
 {
     assert(knob);
@@ -123,3 +123,4 @@ KnobGuiFactory::createGuiForKnob(boost::shared_ptr<KnobI> knob,
     }
 }
 
+NATRON_NAMESPACE_EXIT;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,7 +87,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kItalicStartTag "<i>"
 #define kItalicEndTag "</i>"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 
 
@@ -156,7 +156,7 @@ AnimatingTextEdit::paintEvent(QPaintEvent* e)
     QTextEdit::paintEvent(e);
 }
 
-KnobGuiString::KnobGuiString(boost::shared_ptr<KnobI> knob,
+KnobGuiString::KnobGuiString(KnobPtr knob,
                                DockablePanel *container)
     : KnobGui(knob, container)
       , _lineEdit(0)
@@ -213,7 +213,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
 
             _fontCombo = new QFontComboBox(_richTextOptions);
             _fontCombo->setCurrentFont(QApplication::font());
-            _fontCombo->setToolTip(Natron::convertFromPlainText(tr("Font."), Qt::WhiteSpaceNormal));
+            _fontCombo->setToolTip(GuiUtils::convertFromPlainText(tr("Font."), Qt::WhiteSpaceNormal));
             _richTextOptionsLayout->addWidget(_fontCombo);
 
             _fontSizeSpinBox = new SpinBox(_richTextOptions);
@@ -221,7 +221,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
             _fontSizeSpinBox->setMaximum(100);
             _fontSizeSpinBox->setValue(6);
             QObject::connect( _fontSizeSpinBox,SIGNAL( valueChanged(double) ),this,SLOT( onFontSizeChanged(double) ) );
-            _fontSizeSpinBox->setToolTip(Natron::convertFromPlainText(tr("Font size."), Qt::WhiteSpaceNormal));
+            _fontSizeSpinBox->setToolTip(GuiUtils::convertFromPlainText(tr("Font size."), Qt::WhiteSpaceNormal));
             _richTextOptionsLayout->addWidget(_fontSizeSpinBox);
 
             QPixmap pixBoldChecked,pixBoldUnchecked,pixItalicChecked,pixItalicUnchecked;
@@ -235,7 +235,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
             _setBoldButton = new Button(boldIcon,"",_richTextOptions);
             _setBoldButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE,NATRON_MEDIUM_BUTTON_ICON_SIZE));
             _setBoldButton->setCheckable(true);
-            _setBoldButton->setToolTip(Natron::convertFromPlainText(tr("Bold."), Qt::WhiteSpaceNormal));
+            _setBoldButton->setToolTip(GuiUtils::convertFromPlainText(tr("Bold."), Qt::WhiteSpaceNormal));
             _setBoldButton->setMaximumSize(18, 18);
             QObject::connect( _setBoldButton,SIGNAL( clicked(bool) ),this,SLOT( boldChanged(bool) ) );
             _richTextOptionsLayout->addWidget(_setBoldButton);
@@ -247,7 +247,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
             _setItalicButton = new Button(italicIcon,"",_richTextOptions);
             _setItalicButton->setCheckable(true);
             _setItalicButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE,NATRON_MEDIUM_BUTTON_ICON_SIZE));
-            _setItalicButton->setToolTip(Natron::convertFromPlainText(tr("Italic."), Qt::WhiteSpaceNormal));
+            _setItalicButton->setToolTip(GuiUtils::convertFromPlainText(tr("Italic."), Qt::WhiteSpaceNormal));
             _setItalicButton->setMaximumSize(18,18);
             QObject::connect( _setItalicButton,SIGNAL( clicked(bool) ),this,SLOT( italicChanged(bool) ) );
             _richTextOptionsLayout->addWidget(_setItalicButton);
@@ -257,7 +257,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
             _fontColorButton = new Button(QIcon(pixBlack),"",_richTextOptions);
             _fontColorButton->setCheckable(false);
             _fontColorButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE,NATRON_MEDIUM_BUTTON_ICON_SIZE));
-            _fontColorButton->setToolTip(Natron::convertFromPlainText(tr("Font color."), Qt::WhiteSpaceNormal));
+            _fontColorButton->setToolTip(GuiUtils::convertFromPlainText(tr("Font color."), Qt::WhiteSpaceNormal));
             _fontColorButton->setMaximumSize(18, 18);
             QObject::connect( _fontColorButton, SIGNAL( clicked(bool) ), this, SLOT( colorFontButtonClicked() ) );
             _richTextOptionsLayout->addWidget(_fontColorButton);
@@ -274,7 +274,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
 
         layout->addWidget(_container);
     } else if ( knob->isLabel() ) {
-        /*_label = new Natron::Label( layout->parentWidget() );
+        /*_label = new Label( layout->parentWidget() );
 
         if ( hasToolTip() ) {
             _label->setToolTip( toolTip() );
@@ -415,14 +415,16 @@ KnobGuiString::restoreTextInfoFromString()
         EffectInstance* effect = dynamic_cast<EffectInstance*>( knob->getHolder() );
         /// If the node has a sublabel, restore it in the label
         if ( effect && (knob->getName() == kUserLabelKnobName) ) {
-            boost::shared_ptr<KnobI> knob = effect->getKnobByName(kNatronOfxParamStringSublabelName);
+            KnobPtr knob = effect->getKnobByName(kNatronOfxParamStringSublabelName);
             if (knob) {
                 KnobString* strKnob = dynamic_cast<KnobString*>( knob.get() );
                 if (strKnob) {
                     QString sublabel = strKnob->getValue(0).c_str();
-                    text.append(NATRON_CUSTOM_HTML_TAG_START);
-                    text.append('(' + sublabel + ')');
-                    text.append(NATRON_CUSTOM_HTML_TAG_END);
+                    if (!sublabel.isEmpty()) {
+                        text.append(NATRON_CUSTOM_HTML_TAG_START);
+                        text.append('(' + sublabel + ')');
+                        text.append(NATRON_CUSTOM_HTML_TAG_END);
+                    }
                 }
             }
         }
@@ -999,18 +1001,18 @@ KnobGuiString::setEnabled()
 
 void
 KnobGuiString::reflectAnimationLevel(int /*dimension*/,
-                                      Natron::AnimationLevelEnum level)
+                                      AnimationLevelEnum level)
 {
     boost::shared_ptr<KnobString> knob = _knob.lock();
     int value;
     switch (level) {
-        case Natron::eAnimationLevelNone:
+        case eAnimationLevelNone:
             value = 0;
             break;
-        case Natron::eAnimationLevelInterpolatedValue:
+        case eAnimationLevelInterpolatedValue:
             value = 1;
             break;
-        case Natron::eAnimationLevelOnKeyframe:
+        case eAnimationLevelOnKeyframe:
             value = 2;
             
             break;
@@ -1057,7 +1059,7 @@ KnobGuiString::setDirty(bool dirty)
     }
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 KnobGuiString::getKnob() const
 {
     return _knob.lock();
@@ -1110,3 +1112,8 @@ KnobGuiString::reflectModificationsState()
         _lineEdit->setAltered(!hasModif);
     }
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_KnobGuiString.cpp"

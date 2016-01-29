@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,18 +51,19 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class KnobGuiSeparator
     : public KnobGui
 {
 public:
-    static KnobGui * BuildKnobGui(boost::shared_ptr<KnobI> knob,
+    static KnobGui * BuildKnobGui(KnobPtr knob,
                                   DockablePanel *container)
     {
         return new KnobGuiSeparator(knob, container);
     }
 
-    KnobGuiSeparator(boost::shared_ptr<KnobI> knob,
+    KnobGuiSeparator(KnobPtr knob,
                       DockablePanel *container);
 
     virtual ~KnobGuiSeparator() OVERRIDE;
@@ -74,7 +75,7 @@ public:
         return false;
     }
     
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
 
 private:
     virtual bool shouldAddStretch() const OVERRIDE FINAL { return false; }
@@ -102,5 +103,7 @@ private:
     QFrame *_line;
     boost::weak_ptr<KnobSeparator> _knob;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_KnobGuiSeparator_h

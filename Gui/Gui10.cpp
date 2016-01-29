@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,7 +62,7 @@
 #endif
 #endif
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 void
 Gui::createDefaultLayout1()
@@ -142,13 +142,13 @@ restoreSplitterRecursive(Gui* gui,
                          const SplitterSerialization & serialization)
 {
     Qt::Orientation qO;
-    Natron::OrientationEnum nO = (Natron::OrientationEnum)serialization.orientation;
+    OrientationEnum nO = (OrientationEnum)serialization.orientation;
 
     switch (nO) {
-    case Natron::eOrientationHorizontal:
+    case eOrientationHorizontal:
         qO = Qt::Horizontal;
         break;
-    case Natron::eOrientationVertical:
+    case eOrientationVertical:
         qO = Qt::Vertical;
         break;
     default:
@@ -256,9 +256,9 @@ Gui::restoreLayout(bool wipePrevious,
                 _imp->_projectGui->getPanel()->floatPanel();
             } else {
                 ///Find a node with the dockable panel name
-                const std::list<boost::shared_ptr<NodeGui> > & nodes = getNodeGraph()->getAllActiveNodes();
+                const NodesGuiList & nodes = getNodeGraph()->getAllActiveNodes();
                 DockablePanel* panel = 0;
-                for (std::list<boost::shared_ptr<NodeGui> >::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
+                for (NodesGuiList::const_iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
                     if ( (*it2)->getNode()->getScriptName() == (*it)->child_asDockablePanel ) {
                         (*it2)->ensurePanelCreated();
                         NodeSettingsPanel* nodeSettings = (*it2)->getSettingPanel();
@@ -296,7 +296,7 @@ Gui::exportLayout()
     if ( dialog.exec() ) {
         std::string filename = dialog.filesToSave();
         QString filenameCpy( filename.c_str() );
-        QString ext = Natron::removeFileExtension(filenameCpy);
+        QString ext = QtCompat::removeFileExtension(filenameCpy);
         if (ext != NATRON_LAYOUT_FILE_EXT) {
             filename.append("." NATRON_LAYOUT_FILE_EXT);
         }
@@ -306,14 +306,14 @@ Gui::exportLayout()
             ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             ofile.open(filename.c_str(), std::ofstream::out);
         } catch (const std::ofstream::failure & e) {
-            Natron::errorDialog( tr("Error").toStdString()
+            Dialogs::errorDialog( tr("Error").toStdString()
                                  , tr("Exception occured when opening file").toStdString(), false );
 
             return;
         }
 
         if ( !ofile.good() ) {
-            Natron::errorDialog( tr("Error").toStdString()
+            Dialogs::errorDialog( tr("Error").toStdString()
                                  , tr("Failure to open the file").toStdString(), false );
 
             return;
@@ -325,7 +325,7 @@ Gui::exportLayout()
             s.initialize(this);
             oArchive << boost::serialization::make_nvp("Layout", s);
         }catch (...) {
-            Natron::errorDialog( tr("Error").toStdString()
+            Dialogs::errorDialog( tr("Error").toStdString()
                                  , tr("Failure when saving the layout").toStdString(), false );
             ofile.close();
 
@@ -389,4 +389,6 @@ Gui::setApplicationConsoleActionVisible(bool visible)
     Q_UNUSED(visible)
 #endif
 }
+
+NATRON_NAMESPACE_EXIT;
 

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@
 //
 // Of course, as a consequence the main thread always has "local data", which is just a global variable.
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 template <class T>
 class ThreadStorage
     : public QThreadStorage<T>
@@ -87,7 +87,7 @@ public:
 private:
     T mainData;
 };
-} // namespace Natron
+NATRON_NAMESPACE_EXIT;
 
 
 #endif // ifndef Natron_Engine_ThreadStorage_h

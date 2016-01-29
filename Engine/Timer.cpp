@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,8 +33,9 @@
 
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 
+NATRON_NAMESPACE_ENTER;
 
-#ifdef _WIN32
+#if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
 int
 gettimeofday (struct timeval *tv,
               void *tz)
@@ -295,3 +296,8 @@ TimeLapseReporter::~TimeLapseReporter()
     (now.tv_usec - prev.tv_usec) * 1e-6f;
     std::cout << message << ' ' << dt << std::endl;
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_Timer.cpp"

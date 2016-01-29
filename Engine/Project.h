@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/weak_ptr.hpp>
 #endif
 
 #include "Global/Macros.h"
@@ -49,12 +50,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
 
 struct ProjectPrivate;
 
 class Project
-    :  public KnobHolder, public NodeCollection,  public boost::noncopyable, public boost::enable_shared_from_this<Natron::Project>
+    :  public KnobHolder, public NodeCollection,  public boost::noncopyable, public boost::enable_shared_from_this<Project>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -65,11 +66,17 @@ public:
     Project(AppInstance* appInstance);
 
     virtual ~Project();
+    
+    //these are per project thread-local data
+    struct ProjectTLSData {
+        std::vector<std::string> viewNames;
+    };
+    typedef boost::shared_ptr<ProjectTLSData> ProjectDataTLSPtr;
 
     /**
      * @brief Loads the project with the given path and name corresponding to a file on disk.
      **/
-    bool loadProject(const QString & path,const QString & name, bool isUntitledAutosave = false);
+    bool loadProject(const QString & path,const QString & name, bool isUntitledAutosave = false, bool attemptToLoadAutosave = true);
 
     
     
@@ -128,6 +135,10 @@ public:
     //QDateTime getProjectAgeSinceLastAutosave() const WARN_UNUSED_RETURN;
 
     void getProjectDefaultFormat(Format *f) const;
+    
+    bool getProjectFormatAtIndex(int index, Format* f) const;
+    
+    void getProjectFormatEntries(std::vector<std::string>* formatStrings, int* currentValue) const;
 
     void getAdditionalFormats(std::list<Format> *formats) const;
 
@@ -153,7 +164,6 @@ public:
 
     int currentFrame() const WARN_UNUSED_RETURN;
 
-    void ensureAllProcessingThreadsFinished();
 
     /**
      * @brief Returns true if the project is considered as irrelevant and shouldn't be autosaved anyway.
@@ -172,7 +182,7 @@ public:
      * @brief Called exclusively by the Node class when it needs to retrieve the shared ptr
      * from the "this" pointer.
      **/
-    Natron::ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(Natron::ImageBitDepthEnum bitdepth) const;
+    ViewerColorSpaceEnum getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const;
 
 
     /**
@@ -277,24 +287,24 @@ public:
     
     struct TreeOutput
     {
-        boost::shared_ptr<Natron::Node> node;
-        std::list<std::pair<int,Natron::Node*> > outputs;
+        NodePtr node;
+        std::list<std::pair<int,NodeWPtr > > outputs;
     };
     
     struct TreeInput
     {
-        boost::shared_ptr<Natron::Node> node;
-        std::vector<boost::shared_ptr<Natron::Node> > inputs;
+        NodePtr node;
+        std::vector<NodePtr > inputs;
     };
     
     struct NodesTree
     {
         TreeOutput output;
         std::list<TreeInput> inputs;
-        std::list<boost::shared_ptr<Natron::Node> > inbetweenNodes;
+        NodesList inbetweenNodes;
     };
     
-    static void extractTreesFromNodes(const std::list<boost::shared_ptr<Natron::Node> >& nodes,std::list<Project::NodesTree>& trees);
+    static void extractTreesFromNodes(const NodesList& nodes,std::list<Project::NodesTree>& trees);
     
     void closeProject(bool aboutToQuit)
     {
@@ -302,6 +312,8 @@ public:
     }
     
     bool addFormat(const std::string& formatSpec);
+    
+    void setTimeLine(const boost::shared_ptr<TimeLine>& timeline);
     
 public Q_SLOTS:
 
@@ -314,6 +326,8 @@ public Q_SLOTS:
     }
     
     void onAutoSaveFutureFinished();
+
+    void onProjectFormatPopulated();
 
 Q_SIGNALS:
 
@@ -362,28 +376,28 @@ private:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void evaluate(KnobI* knob,bool isSignificant,ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void beginKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
     /**
      * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
      * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
      * but this can lead to worse performance. You can overload this to make all changes to params at once.
      **/
-    virtual void endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason)  OVERRIDE FINAL;
+    virtual void endKnobsValuesChanged(ValueChangedReasonEnum reason)  OVERRIDE FINAL;
 
     /**
      * @brief Called whenever a param changes. It calls the virtual
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,double time,
+    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time,
                                     bool originatedFromMainThread)  OVERRIDE FINAL;
 
     void save(ProjectSerialization* serializationObject) const;
@@ -393,6 +407,7 @@ private:
 
     boost::scoped_ptr<ProjectPrivate> _imp;
 };
-} // Natron
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_PROJECT_H

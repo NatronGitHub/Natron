@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,8 @@
 #include "Gui/GuiFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 class GroupBoxLabel
     : public Label
 {
@@ -70,5 +71,7 @@ Q_SIGNALS:
 private:
     bool _checked;
 };
-} // namespace Natron
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // ifndef NATRON_GUI_GROUPBOXLABEL_H

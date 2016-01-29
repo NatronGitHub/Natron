@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,8 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"
 #include "Engine/Project.h"
+
+NATRON_NAMESPACE_ENTER;
 
 struct ToolButtonPrivate
 {
@@ -182,18 +184,10 @@ ToolButton::onTriggered()
 {
     boost::shared_ptr<NodeCollection> group = _imp->_app->getGui()->getLastSelectedNodeCollection();
     assert(group);
-    CreateNodeArgs args(_imp->_id,
-                        "",
-                        _imp->_major,_imp->_minor,
-                        true,
-                        INT_MIN,INT_MIN,
-                        true,
-                        true,
-                        true,
-                        QString(),
-                        CreateNodeArgs::DefaultValuesList(),
-                        group);
-    _imp->_app->createNode( args );
+    CreateNodeArgs args(_imp->_id, eCreateNodeReasonUserCreate, group);
+    args.majorV = _imp->_major;
+    args.minorV = _imp->_minor;
+    _imp->_app->createNode(args);
 }
 
 struct ToolButtonChildrenSortFunctor
@@ -228,3 +222,8 @@ ToolButton::sortChildren()
     _imp->_children = sortedChildren;
 
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_ToolButton.cpp"

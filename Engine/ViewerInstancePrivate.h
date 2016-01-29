@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
+#include <QtCore/QReadWriteLock>
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
 
@@ -49,30 +50,31 @@
 
 #define GAMMA_LUT_NB_VALUES 1023
 
+NATRON_NAMESPACE_ENTER;
 
 struct OnGoingRenderInfo
 {
     bool aborted;
+    U64 age;
 };
 
 
-typedef std::map<U64,OnGoingRenderInfo> OnGoingRenders;
+typedef std::list<OnGoingRenderInfo> OnGoingRenders;
 
-//namespace Natron {
 
 struct RenderViewerArgs
 {
-    RenderViewerArgs(const boost::shared_ptr<const Natron::Image> &inputImage_,
-                     const boost::shared_ptr<const Natron::Image> &matteImage_,
+    RenderViewerArgs(const boost::shared_ptr<const Image> &inputImage_,
+                     const boost::shared_ptr<const Image> &matteImage_,
                      const TextureRect & texRect_,
-                     Natron::DisplayChannelsEnum channels_,
-                     Natron::ImagePremultiplicationEnum srcPremult_,
+                     DisplayChannelsEnum channels_,
+                     ImagePremultiplicationEnum srcPremult_,
                      int bitDepth_,
                      double gain_,
                      double gamma_,
                      double offset_,
-                     const Natron::Color::Lut* srcColorSpace_,
-                     const Natron::Color::Lut* colorSpace_,
+                     const Color::Lut* srcColorSpace_,
+                     const Color::Lut* colorSpace_,
                      int alphaChannelIndex_)
     : inputImage(inputImage_)
     , matteImage(matteImage_)
@@ -89,17 +91,17 @@ struct RenderViewerArgs
     {
     }
 
-    boost::shared_ptr<const Natron::Image> inputImage;
-    boost::shared_ptr<const Natron::Image> matteImage;
+    boost::shared_ptr<const Image> inputImage;
+    boost::shared_ptr<const Image> matteImage;
     TextureRect texRect;
-    Natron::DisplayChannelsEnum channels;
-    Natron::ImagePremultiplicationEnum srcPremult;
+    DisplayChannelsEnum channels;
+    ImagePremultiplicationEnum srcPremult;
     int bitDepth;
     double gain;
     double gamma;
     double offset;
-    const Natron::Color::Lut* srcColorSpace;
-    const Natron::Color::Lut* colorSpace;
+    const Color::Lut* srcColorSpace;
+    const Color::Lut* colorSpace;
     int alphaChannelIndex;
 };
 
@@ -115,15 +117,15 @@ public:
     , textureIndex(0)
     , time(0)
     , textureRect()
-    , srcPremult(Natron::eImagePremultiplicationOpaque)
+    , srcPremult(eImagePremultiplicationOpaque)
     , bytesCount(0)
     , depth()
     , gain(1.)
     , gamma(1.)
     , offset(0.)
     , mipMapLevel(0)
-    , premult(Natron::eImagePremultiplicationOpaque)
-    , lut(Natron::eViewerColorSpaceSRGB)
+    , premult(eImagePremultiplicationOpaque)
+    , lut(eViewerColorSpaceSRGB)
     , layer()
     , alphaLayer()
     , alphaChannelName()
@@ -153,22 +155,22 @@ public:
     int textureIndex;
     int time;
     TextureRect textureRect;
-    Natron::ImagePremultiplicationEnum srcPremult;
+    ImagePremultiplicationEnum srcPremult;
     size_t bytesCount;
-    Natron::ImageBitDepthEnum depth;
+    ImageBitDepthEnum depth;
     double gain;
     double gamma;
     double offset;
     unsigned int mipMapLevel;
-    Natron::ImagePremultiplicationEnum premult;
-    Natron::ViewerColorSpaceEnum lut;
-    Natron::ImageComponents layer;
-    Natron::ImageComponents alphaLayer;
+    ImagePremultiplicationEnum premult;
+    ViewerColorSpaceEnum lut;
+    ImageComponents layer;
+    ImageComponents alphaLayer;
     std::string alphaChannelName;
     
     // put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
-    boost::shared_ptr<Natron::FrameEntry> cachedFrame;
-    std::list<boost::shared_ptr<Natron::Image> > tiles;
+    boost::shared_ptr<FrameEntry> cachedFrame;
+    std::list<boost::shared_ptr<Image> > tiles;
     RectD rod;
     U64 renderAge;
     bool isSequential;
@@ -177,7 +179,7 @@ public:
 };
 
 struct ViewerInstance::ViewerInstancePrivate
-: public QObject, public LockManagerI<Natron::FrameEntry>
+: public QObject, public LockManagerI<FrameEntry>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -194,11 +196,11 @@ public:
     , viewerParamsMutex()
     , viewerParamsGain(1.)
     , viewerParamsGamma(1.)
-    , viewerParamsLut(Natron::eViewerColorSpaceSRGB)
+    , viewerParamsLut(eViewerColorSpaceSRGB)
     , viewerParamsAutoContrast(false)
     , viewerParamsChannels()
-    , viewerParamsLayer(Natron::ImageComponents::getRGBAComponents())
-    , viewerParamsAlphaLayer(Natron::ImageComponents::getRGBAComponents())
+    , viewerParamsLayer(ImageComponents::getRGBAComponents())
+    , viewerParamsAlphaLayer(ImageComponents::getRGBAComponents())
     , viewerParamsAlphaChannelName("a")
     , viewerMipMapLevel(0)
     , activeInputsMutex(QMutex::Recursive)
@@ -219,7 +221,7 @@ public:
             activeInputs[i] = -1;
             renderAge[i] = 1;
             displayAge[i] = 0;
-            viewerParamsChannels[i] = Natron::eDisplayChannelsRGB;
+            viewerParamsChannels[i] = eDisplayChannelsRGB;
         }
         
     }
@@ -233,12 +235,12 @@ public:
     
 public:
     
-    virtual void lock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL
+    virtual void lock(const boost::shared_ptr<FrameEntry>& entry) OVERRIDE FINAL
     {
 
 
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<boost::shared_ptr<Natron::FrameEntry> >::iterator it =
+        std::list<boost::shared_ptr<FrameEntry> >::iterator it =
                 std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
         while ( it != textureBeingRendered.end() ) {
             textureBeingRenderedCond.wait(&textureBeingRenderedMutex);
@@ -249,10 +251,10 @@ public:
         textureBeingRendered.push_back(entry);
     }
     
-    virtual bool tryLock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL
+    virtual bool tryLock(const boost::shared_ptr<FrameEntry>& entry) OVERRIDE FINAL
     {
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<boost::shared_ptr<Natron::FrameEntry> >::iterator it =
+        std::list<boost::shared_ptr<FrameEntry> >::iterator it =
         std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
         if ( it != textureBeingRendered.end() ) {
             return false;
@@ -263,11 +265,11 @@ public:
         return true;
     }
     
-    virtual void unlock(const boost::shared_ptr<Natron::FrameEntry>& entry) OVERRIDE FINAL
+    virtual void unlock(const boost::shared_ptr<FrameEntry>& entry) OVERRIDE FINAL
     {
 
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<boost::shared_ptr<Natron::FrameEntry> >::iterator it =
+        std::list<boost::shared_ptr<FrameEntry> >::iterator it =
                 std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
         ///The image must exist, otherwise this is a bug
         assert( it != textureBeingRendered.end() );
@@ -280,7 +282,7 @@ public:
      * @brief Returns the current render age of the viewer (a simple counter incrementing at each request).
      * The age is then incremented so the next call to getRenderAge will return the current value plus one.
      **/
-    U64 getRenderAge(int texIndex)
+    U64 getRenderAgeAndIncrement(int texIndex)
     {
         QMutexLocker k(&renderAgeMutex);
         
@@ -304,12 +306,32 @@ public:
       
         
         for (OnGoingRenders::const_iterator it = currentRenderAges[texIndex].begin(); it!=currentRenderAges[texIndex].end();++it) {
-            if (it->first == age) {
-                return it->second.aborted;
+            if (it->age == age) {
+                return it->aborted;
             }
         }
          //hmm something is wrong the render doesn't exist
         return true;
+    }
+    
+    
+    void
+    markAllRendersAsAborted()
+    {
+        QMutexLocker k(&renderAgeMutex);
+        for (int i = 0; i < 2; ++i) {
+            if (currentRenderAges[i].empty()) {
+                continue;
+            }
+            
+            //Do not abort the oldest render, let it finish
+            OnGoingRenders::iterator it = currentRenderAges[i].begin();
+            ++it;
+            
+            for (;it != currentRenderAges[i].end(); ++it) {
+                it->aborted = true;
+            }
+        }
     }
     
     /**
@@ -339,7 +361,7 @@ public:
         QMutexLocker k(&renderAgeMutex);
         assert(age <= renderAge[texIndex]);
         assert(age != displayAge[texIndex]);
-        if (age < displayAge[texIndex]) {
+        if (age <= displayAge[texIndex]) {
             return false;
         }
         displayAge[texIndex] = age;
@@ -348,20 +370,21 @@ public:
     
     bool addOngoingRender(int texIndex, U64 age) {
         QMutexLocker k(&renderAgeMutex);
-        if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].rbegin()->first >= age) {
+        if (!currentRenderAges[texIndex].empty() && currentRenderAges[texIndex].back().age >= age) {
             return false;
         }
        
         OnGoingRenderInfo info;
         info.aborted = false;
-        currentRenderAges[texIndex][age] = info;
+        info.age = age;
+        currentRenderAges[texIndex].push_back(info);
         return true;
     }
     
     bool removeOngoingRender(int texIndex, U64 age) {
         QMutexLocker k(&renderAgeMutex);
         for (OnGoingRenders::iterator it = currentRenderAges[texIndex].begin(); it!=currentRenderAges[texIndex].end();++it) {
-            if (it->first == age) {
+            if (it->age == age) {
                 currentRenderAges[texIndex].erase(it);
                 return true;
             }
@@ -434,12 +457,12 @@ public:
     mutable QMutex viewerParamsMutex;   //< protects viewerParamsGain, viewerParamsLut, viewerParamsAutoContrast, viewerParamsChannels
     double viewerParamsGain;           /*!< Current gain setting in the GUI. Not affected by autoContrast. */
     double viewerParamsGamma;          /*!< Current gamma setting in the GUI. Not affected by autoContrast. */
-    Natron::ViewerColorSpaceEnum viewerParamsLut; /*!< a value coding the current color-space used to render.
+    ViewerColorSpaceEnum viewerParamsLut; /*!< a value coding the current color-space used to render.
                                                  0 = sRGB ,  1 = linear , 2 = Rec 709*/
     bool viewerParamsAutoContrast;
-    Natron::DisplayChannelsEnum viewerParamsChannels[2];
-    Natron::ImageComponents viewerParamsLayer;
-    Natron::ImageComponents viewerParamsAlphaLayer;
+    DisplayChannelsEnum viewerParamsChannels[2];
+    ImageComponents viewerParamsLayer;
+    ImageComponents viewerParamsAlphaLayer;
     std::string viewerParamsAlphaChannelName;
     unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
 
@@ -451,9 +474,9 @@ public:
     
     mutable QMutex textureBeingRenderedMutex;
     QWaitCondition textureBeingRenderedCond;
-    std::list<boost::shared_ptr<Natron::FrameEntry> > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
+    std::list<boost::shared_ptr<FrameEntry> > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
     
-    mutable QMutex gammaLookupMutex;
+    mutable QReadWriteLock gammaLookupMutex;
     std::vector<float> gammaLookup; // protected by gammaLookupMutex
     
     //When painting, this is the last texture we've drawn onto so that we can update only the specific portion needed
@@ -474,8 +497,7 @@ public:
     
 };
 
-
-//} // namespace Natron
+NATRON_NAMESPACE_EXIT;
 
 
 #endif // ifndef Natron_Engine_ViewerInstancePrivate_h

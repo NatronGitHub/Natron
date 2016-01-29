@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,8 @@
 
 #include "Global/Macros.h"
 
+#ifdef NATRON_ENABLE_QT_IO_NODES
+
 #include <vector>
 #include <string>
 
@@ -39,17 +41,18 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EffectInstance.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class QtReader
-    : public Natron::EffectInstance
+    : public EffectInstance
 {
 public:
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new QtReader(n);
     }
 
-    QtReader(boost::shared_ptr<Natron::Node> node);
+    QtReader(NodePtr node);
 
     virtual ~QtReader();
 
@@ -74,7 +77,7 @@ public:
     virtual std::string getPluginLabel() const OVERRIDE;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
     virtual std::string getPluginDescription() const OVERRIDE;
-    virtual Natron::StatusEnum getRegionOfDefinition(U64 hash,double time,
+    virtual StatusEnum getRegionOfDefinition(U64 hash,double time,
                                                  const RenderScale & scale,
                                                  int view,
                                                  RectD* rod) OVERRIDE; //!< rod is in canonical coordinates
@@ -99,16 +102,16 @@ public:
         return false;
     }
 
-    virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE;
-    virtual void knobChanged(KnobI* k, Natron::ValueChangedReasonEnum reason, int view, double time,
+    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE;
+    virtual void knobChanged(KnobI* k, ValueChangedReasonEnum reason, int view, double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {
-        return Natron::eRenderSafetyInstanceSafe;
+        return eRenderSafetyInstanceSafe;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     virtual bool isFrameVarying() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
 private:
@@ -124,7 +127,7 @@ private:
     void getFilenameAtSequenceTime(SequenceTime time, std::string &filename);
 
 
-    const Natron::Color::Lut* _lut;
+    const Color::Lut* _lut;
     std::string _filename;
     QImage* _img;
     QMutex _lock;
@@ -139,5 +142,9 @@ private:
     boost::shared_ptr<KnobInt> _timeOffset;
     bool _settingFrameRange;
 };
+
+NATRON_NAMESPACE_EXIT;
+
+#endif // NATRON_ENABLE_QT_IO_NODES
 
 #endif /* defined(NATRON_READERS_READQT_H_) */

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,8 @@
 #include "Engine/EngineFwd.h"
 
 
-class QString;
+NATRON_NAMESPACE_ENTER;
+
 
 class OpenGLViewerI
     : public OverlaySupport
@@ -77,7 +78,7 @@ public:
     /**
      * @brief Must return the bit depth of the texture used to render. (Byte, half or float)
      **/
-    virtual Natron::ImageBitDepthEnum getBitDepth() const = 0;
+    virtual ImageBitDepthEnum getBitDepth() const = 0;
 
     /**
      * @brief Returns true if the user has enabled the region of interest
@@ -97,8 +98,8 @@ public:
      * 4) glTexSubImage2D or glTexImage2D depending whether yo need to resize the texture or not.
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                            const std::list<boost::shared_ptr<Natron::Image> >& tiles,
-                                            Natron::ImageBitDepthEnum depth,
+                                            const std::list<boost::shared_ptr<Image> >& tiles,
+                                            ImageBitDepthEnum depth,
                                             int time,
                                             const RectD& rod,
                                             size_t bytesCount,
@@ -106,7 +107,7 @@ public:
                                             double gain, double gamma, double offset, int lut,
                                             int pboIndex,
                                             unsigned int mipMapLevel,
-                                            Natron::ImagePremultiplicationEnum premult,
+                                            ImagePremultiplicationEnum premult,
                                             int textureIndex,
                                             const RectI& roi,
                                             bool updateOnlyRoi) = 0;
@@ -163,12 +164,12 @@ public:
     /**
      * @brief Must return the current compositing operator applied to the viewer input A and B.
      **/
-    virtual Natron::ViewerCompositingOperatorEnum getCompositingOperator() const = 0;
+    virtual ViewerCompositingOperatorEnum getCompositingOperator() const = 0;
 
     /**
      * @brief Set the current compositing operator
      **/
-    virtual void setCompositingOperator(Natron::ViewerCompositingOperatorEnum op) = 0;
+    virtual void setCompositingOperator(ViewerCompositingOperatorEnum op) = 0;
     
     /**
      * @brief Must return a pointer to the current timeline used by the Viewer
@@ -197,5 +198,6 @@ public:
     
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // OPENGLVIEWERI_H

@@ -16,6 +16,7 @@
 				D7A1964818B2242E00F412DA /* PBXTargetDependency */,
 				1E5F8F5818AA913D0045A477 /* PBXTargetDependency */,
 				1E5F8F5A18AA913D0045A477 /* PBXTargetDependency */,
+				1EA307F71C4E7DF800B77270 /* PBXTargetDependency */,
 			);
 			name = libs;
 			productName = libs;
@@ -26,24 +27,13 @@
 			buildPhases = (
 			);
 			dependencies = (
-				1EADE5FD18AA408B00EF3180 /* PBXTargetDependency */,
+				1E306DFF1C4949BA00BAC6E3 /* PBXTargetDependency */,
 				1EADE5FF18AA408B00EF3180 /* PBXTargetDependency */,
-				D7A1965E18B2257700F412DA /* PBXTargetDependency */,
+				1E306E031C4949C900BAC6E3 /* PBXTargetDependency */,
+				1E306E011C4949BE00BAC6E3 /* PBXTargetDependency */,
 			);
 			name = all;
 			productName = all;
-		};
-		1EADE5F418AA407500EF3180 /* Natron */ = {
-			isa = PBXAggregateTarget;
-			buildConfigurationList = 1EADE5F518AA407500EF3180 /* Build configuration list for PBXAggregateTarget "Natron" */;
-			buildPhases = (
-				1E5F8F4F18AA905C0045A477 /* ShellScript */,
-			);
-			dependencies = (
-				1E5F8F5E18AA91490045A477 /* PBXTargetDependency */,
-			);
-			name = Natron;
-			productName = Natron;
 		};
 		1EADE5F818AA407D00EF3180 /* Tests */ = {
 			isa = PBXAggregateTarget;
@@ -53,36 +43,89 @@
 			);
 			dependencies = (
 				1E5F8F5C18AA91430045A477 /* PBXTargetDependency */,
+				1E306DFD1C4949AB00BAC6E3 /* PBXTargetDependency */,
 			);
 			name = Tests;
 			productName = Tests;
 		};
-		1EE26C7B1B9D9553001EEE0B /* NatronCrashReporter */ = {
+		AC4AA6331C480E7F00C92E12 /* Natron */ = {
 			isa = PBXAggregateTarget;
-			buildConfigurationList = 1EE26C7F1B9D9553001EEE0B /* Build configuration list for PBXAggregateTarget "NatronCrashReporter" */;
+			buildConfigurationList = AC4AA6341C480E7F00C92E12 /* Build configuration list for PBXAggregateTarget "Natron" */;
 			buildPhases = (
-				1EE26C7E1B9D9553001EEE0B /* ShellScript */,
 			);
 			dependencies = (
+				AC4AA6381C480E8700C92E12 /* PBXTargetDependency */,
+				1E306E051C4949D700BAC6E3 /* PBXTargetDependency */,
 			);
-			name = NatronCrashReporter;
-			productName = NatronRenderer;
-		};
-		D7A1965518B2255200F412DA /* NatronRenderer */ = {
-			isa = PBXAggregateTarget;
-			buildConfigurationList = D7A1965618B2255200F412DA /* Build configuration list for PBXAggregateTarget "NatronRenderer" */;
-			buildPhases = (
-				1ECAC6371B95F44C0064869D /* ShellScript */,
-			);
-			dependencies = (
-				1ED2BB2B1BAC3ABE00C2E4F9 /* PBXTargetDependency */,
-			);
-			name = NatronRenderer;
-			productName = NatronRenderer;
+			name = Natron;
+			productName = Natron;
 		};
 /* End PBXAggregateTarget section */
 
 /* Begin PBXContainerItemProxy section */
+		1E189EC31C49475E00F1FD20 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 1E189EBD1C49475600F1FD20;
+			remoteInfo = Natron;
+		};
+		1E306DA91C49482C00BAC6E3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E306DA31C49482B00BAC6E3 /* NatronCrashReporter.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 1E306DA61C49482B00BAC6E3;
+			remoteInfo = NatronCrashReporter;
+		};
+		1E306DF61C49497200BAC6E3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 1E306DF01C49497200BAC6E3;
+			remoteInfo = NatronRenderer;
+		};
+		1E306DF91C49497200BAC6E3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E306DE81C49497200BAC6E3 /* NatronRendererCrashReporter.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 1E306DEB1C49497200BAC6E3;
+			remoteInfo = NatronRendererCrashReporter;
+		};
+		1E306DFC1C4949AB00BAC6E3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1EADE5C718AA403700EF3180 /* Tests.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = DC7FDCA340DAC7F023377B78;
+			remoteInfo = Tests;
+		};
+		1E306DFE1C4949BA00BAC6E3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1EADE5B818AA400B00EF3180 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1E5F8F5118AA91330045A477;
+			remoteInfo = libs;
+		};
+		1E306E001C4949BE00BAC6E3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1EADE5B818AA400B00EF3180 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AC4AA6331C480E7F00C92E12;
+			remoteInfo = Natron;
+		};
+		1E306E021C4949C900BAC6E3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 32D9C4266EC8DC770A644D29;
+			remoteInfo = NatronRenderer;
+		};
+		1E306E041C4949D700BAC6E3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 782793A212D0A946A2611559;
+			remoteInfo = Natron;
+		};
 		1E5F8F5718AA913D0045A477 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
@@ -104,18 +147,18 @@
 			remoteGlobalIDString = 1E5F8F5118AA91330045A477;
 			remoteInfo = libs;
 		};
-		1E5F8F5D18AA91490045A477 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1EADE5B818AA400B00EF3180 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 1E5F8F5118AA91330045A477;
-			remoteInfo = libs;
-		};
 		1E8132FD1BA31D6D006845CF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = 1E8132FA1BA31D6D006845CF;
+			remoteInfo = BreakpadClient;
+		};
+		1EA307F61C4E7DF800B77270 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 79F5A65F5B69CA741078AAA0;
 			remoteInfo = BreakpadClient;
 		};
 		1EADE5CE18AA403700EF3180 /* PBXContainerItemProxy */ = {
@@ -132,26 +175,12 @@
 			remoteGlobalIDString = 1EADE5A018AA3E9300EF3180;
 			remoteInfo = Gui;
 		};
-		1EADE5D718AA403700EF3180 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1EADE5CA18AA403700EF3180 /* Natron.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 1EADE59A18AA3E9300EF3180;
-			remoteInfo = Natron;
-		};
 		1EADE5DA18AA403700EF3180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C718AA403700EF3180 /* Tests.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = 1EADE5A218AA3E9300EF3180;
 			remoteInfo = Tests;
-		};
-		1EADE5FC18AA408B00EF3180 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1EADE5B818AA400B00EF3180 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 1EADE5F418AA407500EF3180;
-			remoteInfo = Natron;
 		};
 		1EADE5FE18AA408B00EF3180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -160,26 +189,12 @@
 			remoteGlobalIDString = 1EADE5F818AA407D00EF3180;
 			remoteInfo = Tests;
 		};
-		1ED2BB2A1BAC3ABE00C2E4F9 /* PBXContainerItemProxy */ = {
+		AC4AA6371C480E8700C92E12 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5B818AA400B00EF3180 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 1E5F8F5118AA91330045A477;
 			remoteInfo = libs;
-		};
-		ACCCA4B61A87A0C500A20E4A /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = ACCCA4B01A87A0C500A20E4A /* NatronCrashReporter.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = ACCCA4B31A87A0C500A20E4A;
-			remoteInfo = NatronCrashReporter;
-		};
-		D7A1962B18B2234100F412DA /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D7A1962518B2234100F412DA /* NatronRenderer.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = D7A1962818B2234100F412DA;
-			remoteInfo = NatronRenderer;
 		};
 		D7A1964518B2242500F412DA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -195,27 +210,53 @@
 			remoteGlobalIDString = 0E116598542859DA9320C015;
 			remoteInfo = HostSupport;
 		};
-		D7A1965D18B2257700F412DA /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1EADE5B818AA400B00EF3180 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = D7A1965518B2255200F412DA;
-			remoteInfo = NatronRenderer;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Natron.xcodeproj; path = App/Natron.xcodeproj; sourceTree = "<group>"; };
+		1E306DA31C49482B00BAC6E3 /* NatronCrashReporter.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronCrashReporter.xcodeproj; path = CrashReporter/NatronCrashReporter.xcodeproj; sourceTree = "<group>"; };
+		1E306DE81C49497200BAC6E3 /* NatronRendererCrashReporter.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronRendererCrashReporter.xcodeproj; path = CrashReporterCLI/NatronRendererCrashReporter.xcodeproj; sourceTree = "<group>"; };
+		1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronRenderer.xcodeproj; path = Renderer/NatronRenderer.xcodeproj; sourceTree = "<group>"; };
 		1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = BreakpadClient.xcodeproj; path = BreakpadClient/BreakpadClient.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C118AA403700EF3180 /* Engine.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Engine.xcodeproj; path = Engine/Engine.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C418AA403700EF3180 /* Gui.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Gui.xcodeproj; path = Gui/Gui.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C718AA403700EF3180 /* Tests.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Tests.xcodeproj; path = Tests/Tests.xcodeproj; sourceTree = "<group>"; };
-		1EADE5CA18AA403700EF3180 /* Natron.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Natron.xcodeproj; path = App/Natron.xcodeproj; sourceTree = "<group>"; };
-		ACCCA4B01A87A0C500A20E4A /* NatronCrashReporter.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronCrashReporter.xcodeproj; path = CrashReporter/NatronCrashReporter.xcodeproj; sourceTree = "<group>"; };
-		D7A1962518B2234100F412DA /* NatronRenderer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronRenderer.xcodeproj; path = Renderer/NatronRenderer.xcodeproj; sourceTree = "<group>"; };
 		D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = HostSupport.xcodeproj; path = HostSupport/HostSupport.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		1E189EC01C49475E00F1FD20 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1E189EC41C49475E00F1FD20 /* Natron.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1E306DA41C49482B00BAC6E3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1E306DAA1C49482C00BAC6E3 /* NatronCrashReporter.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1E306DE91C49497200BAC6E3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1E306DFA1C49497200BAC6E3 /* NatronRendererCrashReporter */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1E306DEE1C49497200BAC6E3 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1E306DF71C49497200BAC6E3 /* NatronRenderer */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		1E8132F81BA31D6D006845CF /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -227,14 +268,15 @@
 		1EADE5B718AA400B00EF3180 = {
 			isa = PBXGroup;
 			children = (
-				ACCCA4B01A87A0C500A20E4A /* NatronCrashReporter.xcodeproj */,
+				1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */,
+				1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */,
 				D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */,
-				D7A1962518B2234100F412DA /* NatronRenderer.xcodeproj */,
 				1EADE5C118AA403700EF3180 /* Engine.xcodeproj */,
 				1EADE5C418AA403700EF3180 /* Gui.xcodeproj */,
 				1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */,
+				1E306DE81C49497200BAC6E3 /* NatronRendererCrashReporter.xcodeproj */,
+				1E306DA31C49482B00BAC6E3 /* NatronCrashReporter.xcodeproj */,
 				1EADE5C718AA403700EF3180 /* Tests.xcodeproj */,
-				1EADE5CA18AA403700EF3180 /* Natron.xcodeproj */,
 			);
 			sourceTree = "<group>";
 		};
@@ -262,30 +304,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		1EADE5CB18AA403700EF3180 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				1EADE5D818AA403700EF3180 /* Natron.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		ACCCA4B11A87A0C500A20E4A /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				ACCCA4B71A87A0C500A20E4A /* NatronCrashReporter */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		D7A1962618B2234100F412DA /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				D7A1962C18B2234100F412DA /* NatronRenderer */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		D7A1964018B2242500F412DA /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -301,6 +319,11 @@
 			isa = PBXProject;
 			attributes = {
 				LastUpgradeCheck = 0500;
+				TargetAttributes = {
+					AC4AA6331C480E7F00C92E12 = {
+						CreatedOnToolsVersion = 7.2;
+					};
+				};
 			};
 			buildConfigurationList = 1EADE5BB18AA400B00EF3180 /* Build configuration list for PBXProject "Project-xcode" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -329,16 +352,20 @@
 					ProjectRef = D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */;
 				},
 				{
-					ProductGroup = 1EADE5CB18AA403700EF3180 /* Products */;
-					ProjectRef = 1EADE5CA18AA403700EF3180 /* Natron.xcodeproj */;
+					ProductGroup = 1E189EC01C49475E00F1FD20 /* Products */;
+					ProjectRef = 1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */;
 				},
 				{
-					ProductGroup = ACCCA4B11A87A0C500A20E4A /* Products */;
-					ProjectRef = ACCCA4B01A87A0C500A20E4A /* NatronCrashReporter.xcodeproj */;
+					ProductGroup = 1E306DA41C49482B00BAC6E3 /* Products */;
+					ProjectRef = 1E306DA31C49482B00BAC6E3 /* NatronCrashReporter.xcodeproj */;
 				},
 				{
-					ProductGroup = D7A1962618B2234100F412DA /* Products */;
-					ProjectRef = D7A1962518B2234100F412DA /* NatronRenderer.xcodeproj */;
+					ProductGroup = 1E306DEE1C49497200BAC6E3 /* Products */;
+					ProjectRef = 1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */;
+				},
+				{
+					ProductGroup = 1E306DE91C49497200BAC6E3 /* Products */;
+					ProjectRef = 1E306DE81C49497200BAC6E3 /* NatronRendererCrashReporter.xcodeproj */;
 				},
 				{
 					ProductGroup = 1EADE5C818AA403700EF3180 /* Products */;
@@ -348,16 +375,42 @@
 			projectRoot = "";
 			targets = (
 				1EADE5DC18AA404400EF3180 /* all */,
-				1EADE5F418AA407500EF3180 /* Natron */,
 				1EADE5F818AA407D00EF3180 /* Tests */,
 				1E5F8F5118AA91330045A477 /* libs */,
-				D7A1965518B2255200F412DA /* NatronRenderer */,
-				1EE26C7B1B9D9553001EEE0B /* NatronCrashReporter */,
+				AC4AA6331C480E7F00C92E12 /* Natron */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		1E189EC41C49475E00F1FD20 /* Natron.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = Natron.app;
+			remoteRef = 1E189EC31C49475E00F1FD20 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		1E306DAA1C49482C00BAC6E3 /* NatronCrashReporter.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = NatronCrashReporter.app;
+			remoteRef = 1E306DA91C49482C00BAC6E3 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		1E306DF71C49497200BAC6E3 /* NatronRenderer */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = NatronRenderer;
+			remoteRef = 1E306DF61C49497200BAC6E3 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		1E306DFA1C49497200BAC6E3 /* NatronRendererCrashReporter */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = NatronRendererCrashReporter;
+			remoteRef = 1E306DF91C49497200BAC6E3 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		1E8132FE1BA31D6D006845CF /* libBreakpadClient.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -379,32 +432,11 @@
 			remoteRef = 1EADE5D118AA403700EF3180 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		1EADE5D818AA403700EF3180 /* Natron.app */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.application;
-			path = Natron.app;
-			remoteRef = 1EADE5D718AA403700EF3180 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
 		1EADE5DB18AA403700EF3180 /* Tests */ = {
 			isa = PBXReferenceProxy;
 			fileType = "compiled.mach-o.executable";
 			path = Tests;
 			remoteRef = 1EADE5DA18AA403700EF3180 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		ACCCA4B71A87A0C500A20E4A /* NatronCrashReporter */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = NatronCrashReporter;
-			remoteRef = ACCCA4B61A87A0C500A20E4A /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		D7A1962C18B2234100F412DA /* NatronRenderer */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = NatronRenderer;
-			remoteRef = D7A1962B18B2234100F412DA /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		D7A1964618B2242500F412DA /* libHostSupport.a */ = {
@@ -417,20 +449,6 @@
 /* End PBXReferenceProxy section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		1E5F8F4F18AA905C0045A477 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "xcodebuild -project App/Natron.xcodeproj -configuration $CONFIGURATION";
-			showEnvVarsInLog = 0;
-		};
 		1E5F8F5018AA911E0045A477 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -445,37 +463,34 @@
 			shellScript = "xcodebuild -project Tests/Tests.xcodeproj -configuration $CONFIGURATION";
 			showEnvVarsInLog = 0;
 		};
-		1ECAC6371B95F44C0064869D /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "xcodebuild -project Renderer/NatronRenderer.xcodeproj -configuration $CONFIGURATION";
-			showEnvVarsInLog = 0;
-		};
-		1EE26C7E1B9D9553001EEE0B /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "xcodebuild -project CrashReporter/NatronCrashReporter.xcodeproj -configuration $CONFIGURATION";
-			showEnvVarsInLog = 0;
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		1E306DFD1C4949AB00BAC6E3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Tests;
+			targetProxy = 1E306DFC1C4949AB00BAC6E3 /* PBXContainerItemProxy */;
+		};
+		1E306DFF1C4949BA00BAC6E3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1E5F8F5118AA91330045A477 /* libs */;
+			targetProxy = 1E306DFE1C4949BA00BAC6E3 /* PBXContainerItemProxy */;
+		};
+		1E306E011C4949BE00BAC6E3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AC4AA6331C480E7F00C92E12 /* Natron */;
+			targetProxy = 1E306E001C4949BE00BAC6E3 /* PBXContainerItemProxy */;
+		};
+		1E306E031C4949C900BAC6E3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = NatronRenderer;
+			targetProxy = 1E306E021C4949C900BAC6E3 /* PBXContainerItemProxy */;
+		};
+		1E306E051C4949D700BAC6E3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Natron;
+			targetProxy = 1E306E041C4949D700BAC6E3 /* PBXContainerItemProxy */;
+		};
 		1E5F8F5818AA913D0045A477 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = Engine;
@@ -491,35 +506,25 @@
 			target = 1E5F8F5118AA91330045A477 /* libs */;
 			targetProxy = 1E5F8F5B18AA91430045A477 /* PBXContainerItemProxy */;
 		};
-		1E5F8F5E18AA91490045A477 /* PBXTargetDependency */ = {
+		1EA307F71C4E7DF800B77270 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 1E5F8F5118AA91330045A477 /* libs */;
-			targetProxy = 1E5F8F5D18AA91490045A477 /* PBXContainerItemProxy */;
-		};
-		1EADE5FD18AA408B00EF3180 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 1EADE5F418AA407500EF3180 /* Natron */;
-			targetProxy = 1EADE5FC18AA408B00EF3180 /* PBXContainerItemProxy */;
+			name = BreakpadClient;
+			targetProxy = 1EA307F61C4E7DF800B77270 /* PBXContainerItemProxy */;
 		};
 		1EADE5FF18AA408B00EF3180 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 1EADE5F818AA407D00EF3180 /* Tests */;
 			targetProxy = 1EADE5FE18AA408B00EF3180 /* PBXContainerItemProxy */;
 		};
-		1ED2BB2B1BAC3ABE00C2E4F9 /* PBXTargetDependency */ = {
+		AC4AA6381C480E8700C92E12 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 1E5F8F5118AA91330045A477 /* libs */;
-			targetProxy = 1ED2BB2A1BAC3ABE00C2E4F9 /* PBXContainerItemProxy */;
+			targetProxy = AC4AA6371C480E8700C92E12 /* PBXContainerItemProxy */;
 		};
 		D7A1964818B2242E00F412DA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = HostSupport;
 			targetProxy = D7A1964718B2242E00F412DA /* PBXContainerItemProxy */;
-		};
-		D7A1965E18B2257700F412DA /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = D7A1965518B2255200F412DA /* NatronRenderer */;
-			targetProxy = D7A1965D18B2257700F412DA /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -568,20 +573,6 @@
 			};
 			name = Release;
 		};
-		1EADE5F618AA407500EF3180 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				PRODUCT_NAME = "$(TARGET_NAME)";
-			};
-			name = Debug;
-		};
-		1EADE5F718AA407500EF3180 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				PRODUCT_NAME = "$(TARGET_NAME)";
-			};
-			name = Release;
-		};
 		1EADE5FA18AA407D00EF3180 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -596,28 +587,14 @@
 			};
 			name = Release;
 		};
-		1EE26C801B9D9553001EEE0B /* Debug */ = {
+		AC4AA6351C480E7F00C92E12 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
 		};
-		1EE26C811B9D9553001EEE0B /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				PRODUCT_NAME = "$(TARGET_NAME)";
-			};
-			name = Release;
-		};
-		D7A1965718B2255200F412DA /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				PRODUCT_NAME = "$(TARGET_NAME)";
-			};
-			name = Debug;
-		};
-		D7A1965818B2255200F412DA /* Release */ = {
+		AC4AA6361C480E7F00C92E12 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -654,15 +631,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		1EADE5F518AA407500EF3180 /* Build configuration list for PBXAggregateTarget "Natron" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				1EADE5F618AA407500EF3180 /* Debug */,
-				1EADE5F718AA407500EF3180 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		1EADE5F918AA407D00EF3180 /* Build configuration list for PBXAggregateTarget "Tests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -672,20 +640,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		1EE26C7F1B9D9553001EEE0B /* Build configuration list for PBXAggregateTarget "NatronCrashReporter" */ = {
+		AC4AA6341C480E7F00C92E12 /* Build configuration list for PBXAggregateTarget "Natron" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1EE26C801B9D9553001EEE0B /* Debug */,
-				1EE26C811B9D9553001EEE0B /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		D7A1965618B2255200F412DA /* Build configuration list for PBXAggregateTarget "NatronRenderer" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				D7A1965718B2255200F412DA /* Debug */,
-				D7A1965818B2255200F412DA /* Release */,
+				AC4AA6351C480E7F00C92E12 /* Debug */,
+				AC4AA6361C480E7F00C92E12 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

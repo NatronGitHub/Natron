@@ -1,11 +1,11 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 140827 2015-10-04 18:51:44Z mcalhoun@macports.org $
+# $Id: Portfile 144505 2016-01-10 17:10:42Z khindenburg@macports.org $
 
 PortSystem          1.0
 
 name                libcaca
 version             0.99.beta19
-revision            3
+revision            4
 categories          graphics
 license             WTFPL-2 LGPL-2+
 maintainers         nomaintainer
@@ -19,9 +19,7 @@ long_description    \
 homepage            http://libcaca.zoy.org/wiki/libcaca
 platforms           darwin
 depends_build       port:pkgconfig
-depends_lib         port:freeglut \
-                    port:libGLU \
-                    port:ncurses
+depends_lib         port:ncurses
 master_sites        http://caca.zoy.org/files/libcaca/
 #master_sites       http://libcaca.zoy.org/raw-attachment/wiki/libcaca/
 
@@ -44,7 +42,11 @@ configure.args      --mandir=${prefix}/share/man \
 build.args-append   V=1
 
 variant	x11 {
-	depends_lib-append	port:xorg-libX11
+    depends_lib-append  port:imlib2 \
+                        port:freeglut \
+                        port:libGLU \
+                        port:xorg-libX11
+
 	configure.args-delete   --disable-x11
 	configure.args-append	--enable-x11 \
 	                        --x-includes=${prefix}/include \
@@ -58,6 +60,9 @@ variant imlib2 {
 }
 
 compiler.blacklist  llvm-gcc-4.2
+
+test.run            yes
+test.target         check
 
 livecheck.type      regex
 livecheck.url       ${master_sites}

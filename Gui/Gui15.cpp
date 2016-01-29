@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@
 #include "Gui/SequenceFileDialog.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 void
@@ -65,7 +65,7 @@ Gui::importLayout()
             ifile.open(filename.c_str(), std::ifstream::in);
         } catch (const std::ifstream::failure & e) {
             QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
-            Natron::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
+            Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
             return;
         }
@@ -78,13 +78,13 @@ Gui::importLayout()
         } catch (const boost::archive::archive_exception & e) {
             ifile.close();
             QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
-            Natron::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
+            Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
             return;
         } catch (const std::exception & e) {
             ifile.close();
             QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
-            Natron::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
+            Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
             return;
         }
@@ -115,13 +115,13 @@ Gui::createDefaultLayoutInternal(bool wipePrevious)
             } catch (const boost::archive::archive_exception & e) {
                 ifile.close();
                 QString err = QString("Exception occured when opening file %1: %2").arg( fileLayout.c_str() ).arg( e.what() );
-                Natron::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
+                Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
                 return;
             } catch (const std::exception & e) {
                 ifile.close();
                 QString err = QString("Exception occured when opening file %1: %2").arg( fileLayout.c_str() ).arg( e.what() );
-                Natron::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
+                Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
                 return;
             }
@@ -446,3 +446,5 @@ Gui::setVisibleProjectSettingsPanel()
         _imp->_projectGui->setVisible(true);
     }
 }
+
+NATRON_NAMESPACE_EXIT;

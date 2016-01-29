@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,8 @@
 #define MINAREA128 16384
 #define MINAREA256 65536
 #define MINAREA MINAREA128 // minimum rectangle area
+
+NATRON_NAMESPACE_ENTER;
 
 /// if splitCount is zero, this function returns a set of less than area()/MINAREA rects which are no smaller than MINAREA
 std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
@@ -130,3 +132,5 @@ RectI::toCanonical_noClipping(unsigned int thisLevel,
     rect->y1 = y1 << thisLevel;
     rect->y2 = y2 << thisLevel;
 }
+
+NATRON_NAMESPACE_EXIT;

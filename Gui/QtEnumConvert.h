@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,19 +41,20 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class QtEnumConvert
 {
 public:
 
-    static Natron::Key fromQtKey(Qt::Key k);
-    static Natron::KeyboardModifier fromQtModifier(Qt::KeyboardModifier m);
-    static Natron::KeyboardModifiers fromQtModifiers(Qt::KeyboardModifiers m);
-    static Natron::StandardButtonEnum fromQtStandardButton(QMessageBox::StandardButton b);
-    static QMessageBox::StandardButton toQtStandardButton(Natron::StandardButtonEnum b);
-    static QMessageBox::StandardButtons toQtStandarButtons(Natron::StandardButtons buttons);
+    static Key fromQtKey(Qt::Key k);
+    static KeyboardModifierEnum fromQtModifier(Qt::KeyboardModifier m);
+    static KeyboardModifiers fromQtModifiers(Qt::KeyboardModifiers m);
+    static StandardButtonEnum fromQtStandardButton(QMessageBox::StandardButton b);
+    static QMessageBox::StandardButton toQtStandardButton(StandardButtonEnum b);
+    static QMessageBox::StandardButtons toQtStandarButtons(StandardButtons buttons);
 };
 
-//namespace Natron
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_QtEnumConvert_h

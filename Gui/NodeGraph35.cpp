@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 QImage
@@ -158,13 +158,13 @@ NodeGraph::getFullSceneScreenShot()
     return img;
 } // getFullSceneScreenShot
 
-const std::list<boost::shared_ptr<NodeGui> > &
+const NodesGuiList &
 NodeGraph::getAllActiveNodes() const
 {
     return _imp->_nodes;
 }
 
-std::list<boost::shared_ptr<NodeGui> >
+NodesGuiList
 NodeGraph::getAllActiveNodes_mt_safe() const
 {
     QMutexLocker l(&_imp->_nodesMutex);
@@ -176,7 +176,7 @@ void
 NodeGraph::moveToTrash(NodeGui* node)
 {
     assert(node);
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_selection.begin();
+    for (NodesGuiList::iterator it = _imp->_selection.begin();
          it != _imp->_selection.end(); ++it) {
         if (it->get() == node) {
             (*it)->setUserSelected(false);
@@ -186,7 +186,7 @@ NodeGraph::moveToTrash(NodeGui* node)
     }
     
     QMutexLocker l(&_imp->_nodesMutex);
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         if ( (*it).get() == node ) {
             _imp->_nodesTrash.push_back(*it);
             _imp->_nodes.erase(it);
@@ -200,7 +200,7 @@ NodeGraph::restoreFromTrash(NodeGui* node)
 {
     assert(node);
     QMutexLocker l(&_imp->_nodesMutex);
-    for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
+    for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
         if ( (*it).get() == node ) {
             _imp->_nodes.push_back(*it);
             _imp->_nodesTrash.erase(it);
@@ -285,10 +285,10 @@ NodeGraph::toggleKnobLinksVisible()
     _imp->_knobLinksVisible = !_imp->_knobLinksVisible;
     {
         QMutexLocker l(&_imp->_nodesMutex);
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+        for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
             (*it)->setKnobLinksVisible(_imp->_knobLinksVisible);
         }
-        for (std::list<boost::shared_ptr<NodeGui> >::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
+        for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
             (*it)->setKnobLinksVisible(_imp->_knobLinksVisible);
         }
     }
@@ -317,7 +317,7 @@ NodeGraph::showMenu(const QPoint & pos)
     _imp->_menu->addSeparator();
     
     //QFont font(appFont,appFontSize);
-    Natron::Menu* editMenu = new Natron::Menu(tr("Edit"),_imp->_menu);
+    Menu* editMenu = new Menu(tr("Edit"),_imp->_menu);
     //editMenu->setFont(font);
     _imp->_menu->addAction( editMenu->menuAction() );
     
@@ -387,7 +387,7 @@ NodeGraph::showMenu(const QPoint & pos)
     QObject::connect( displayCacheInfoAction,SIGNAL( triggered() ),this,SLOT( toggleCacheInfo() ) );
     _imp->_menu->addAction(displayCacheInfoAction);
     
-    const NodeGuiList& selectedNodes = getSelectedNodes();
+    const NodesGuiList& selectedNodes = getSelectedNodes();
     if (!selectedNodes.empty()) {
         QAction* turnOffPreviewAction = new ActionWithShortcut(kShortcutGroupNodegraph,kShortcutIDActionGraphTogglePreview,
                                                                kShortcutDescActionGraphTogglePreview,_imp->_menu);
@@ -489,7 +489,7 @@ NodeGraph::dropEvent(QDropEvent* e)
     QStringList filesList;
     QList<QUrl> urls = e->mimeData()->urls();
     for (int i = 0; i < urls.size(); ++i) {
-        const QUrl rl = Natron::toLocalFileUrlFixed(urls.at(i));
+        const QUrl rl = QtCompat::toLocalFileUrlFixed(urls.at(i));
         QString path = rl.toLocalFile();
 
 #ifdef __NATRON_WIN32__
@@ -534,26 +534,17 @@ NodeGraph::dropEvent(QDropEvent* e)
         }
         std::map<std::string,std::string>::iterator found = readersForFormat.find(extLower);
         if ( found == readersForFormat.end() ) {
-            errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
+            Dialogs::errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
         } else {
             
             std::string pattern = sequence->generateValidSequencePattern();
-            CreateNodeArgs::DefaultValuesList defaultValues;
-            defaultValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
             
-            CreateNodeArgs args(found->second.c_str(),
-                                "",
-                                -1,
-                                -1,
-                                false,
-                                scenePos.x(),scenePos.y(),
-                                true,
-                                true,
-                                false,
-                                QString(),
-                                defaultValues,
-                                getGroup());
-            boost::shared_ptr<Natron::Node>  n = getGui()->getApp()->createNode(args);
+            CreateNodeArgs args(found->second.c_str(), eCreateNodeReasonUserCreate, getGroup());
+            args.xPosHint = scenePos.x();
+            args.yPosHint = scenePos.y();
+            args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern));
+
+            NodePtr  n = getGui()->getApp()->createNode(args);
             
             //And offset scenePos by the Width of the previous node created if several nodes are created
             double w,h;
@@ -580,3 +571,5 @@ NodeGraph::dragMoveEvent(QDragMoveEvent* e)
 {
     e->accept();
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,13 +50,13 @@
 #define NATRON_SETTINGS_VERTICAL_SPACING_PIXELS 3
 
 using std::make_pair;
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 
-static void findKnobsOnSameLine(const std::vector<boost::shared_ptr<KnobI> >& knobs,
-                                const boost::shared_ptr<KnobI>& ref,
-                                std::vector<boost::shared_ptr<KnobI> >& knobsOnSameLine)
+static void findKnobsOnSameLine(const KnobsVec& knobs,
+                                const KnobPtr& ref,
+                                KnobsVec& knobsOnSameLine)
 {
     int idx = -1;
     for (U32 k = 0; k < knobs.size() ; ++k) {
@@ -71,7 +71,7 @@ static void findKnobsOnSameLine(const std::vector<boost::shared_ptr<KnobI> >& kn
     }
     ///find all knobs backward that are on the same line.
     int k = idx - 1;
-    boost::shared_ptr<KnobI> parent = ref->getParentKnob();
+    KnobPtr parent = ref->getParentKnob();
     
     while ( k >= 0 && !knobs[k]->isNewLineActivated()) {
         if (parent) {
@@ -183,7 +183,7 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
         
         //If the knob is dynamic (i:e created after the initial creation of knobs)
         //it can be added as part of a group defined earlier hence we have to insert it at the proper index.
-        boost::shared_ptr<KnobI> parentKnob = knobs[i]->getParentKnob();
+        KnobPtr parentKnob = knobs[i]->getParentKnob();
         KnobGroup* isParentGroup = dynamic_cast<KnobGroup*>(parentKnob.get());
 
         
@@ -194,10 +194,10 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
             
             KnobPage* isParentPage = dynamic_cast<KnobPage*>(parentKnob.get());
             if (isParentPage) {
-                std::vector<boost::shared_ptr<KnobI> >  children = isParentPage->getChildren();
+                KnobsVec  children = isParentPage->getChildren();
                 findKnobsOnSameLine(children, knobs[i], knobsOnSameLine);
             } else if (isParentGroup) {
-                std::vector<boost::shared_ptr<KnobI> >  children = isParentGroup->getChildren();
+                KnobsVec  children = isParentGroup->getChildren();
                 findKnobsOnSameLine(children, knobs[i], knobsOnSameLine);
             } else {
                 findKnobsOnSameLine(knobs, knobs[i], knobsOnSameLine);
@@ -216,7 +216,7 @@ DockablePanelPrivate::initializeKnobVector(const std::vector< boost::shared_ptr<
 }
 
 KnobGui*
-DockablePanelPrivate::createKnobGui(const boost::shared_ptr<KnobI> &knob)
+DockablePanelPrivate::createKnobGui(const KnobPtr &knob)
 {
     boost::weak_ptr<KnobI> k = knob;
     std::map<boost::weak_ptr<KnobI>,KnobGui*>::iterator found = _knobs.find(k);
@@ -239,37 +239,37 @@ DockablePanelPrivate::createKnobGui(const boost::shared_ptr<KnobI> &knob)
 boost::shared_ptr<KnobPage>
 DockablePanelPrivate::ensureDefaultPageKnobCreated()
 {
-    const std::vector< boost::shared_ptr<KnobI> > & knobs = _holder->getKnobs();
+    const std::vector< KnobPtr > & knobs = _holder->getKnobs();
     ///find in all knobs a page param to set this param into
     for (U32 i = 0; i < knobs.size(); ++i) {
         boost::shared_ptr<KnobPage> p = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
         if ( p && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_INFO) && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
-            getOrCreatePage(p.get());
+            getOrCreatePage(p);
             return p;
         }
     }
 
     
-    boost::shared_ptr<KnobI> knob = _holder->getKnobByName(_defaultPageName.toStdString());
+    KnobPtr knob = _holder->getKnobByName(_defaultPageName.toStdString());
     boost::shared_ptr<KnobPage> pk;
     if (!knob) {
-        pk = Natron::createKnob<KnobPage>(_holder, _defaultPageName.toStdString());
+        pk = AppManager::createKnob<KnobPage>(_holder, _defaultPageName.toStdString());
     } else {
         pk = boost::dynamic_pointer_cast<KnobPage>(knob);
     }
     assert(pk);
-    getOrCreatePage(pk.get());
+    getOrCreatePage(pk);
     return pk;
 }
 
 PageMap::iterator
-DockablePanelPrivate::getDefaultPage(const boost::shared_ptr<KnobI> &knob)
+DockablePanelPrivate::getDefaultPage(const KnobPtr &knob)
 {
     PageMap::iterator page = _pages.end();
-    const std::vector< boost::shared_ptr<KnobI> > & knobs = _holder->getKnobs();
+    const std::vector< KnobPtr > & knobs = _holder->getKnobs();
     ///find in all knobs a page param to set this param into
     for (U32 i = 0; i < knobs.size(); ++i) {
-        KnobPage* p = dynamic_cast<KnobPage*>( knobs[i].get() );
+        boost::shared_ptr<KnobPage> p = boost::dynamic_pointer_cast<KnobPage>( knobs[i]);
         if ( p && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_INFO) && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
             page = getOrCreatePage(p);
             p->addKnob(knob);
@@ -290,14 +290,14 @@ DockablePanelPrivate::getDefaultPage(const boost::shared_ptr<KnobI> &knob)
         
         ///Last resort: The plug-in didn't specify ANY page, just put it into the default page
         if ( page == _pages.end() ) {
-            page = getOrCreatePage(NULL);
+            page = getOrCreatePage(boost::shared_ptr<KnobPage>());
         }
     }
     return page;
 }
 
 KnobGui*
-DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
+DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                                           bool makeNewLine,
                                           QWidget* lastRowWidget,
                                           const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine)
@@ -325,14 +325,14 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
         if (isPage->getChildren().empty()) {
             return 0;
         }
-        getOrCreatePage(isPage.get());
+        getOrCreatePage(isPage);
 
     } else {
         
         
         ret = createKnobGui(knob);
 
-        boost::shared_ptr<KnobI> parentKnob = knob->getParentKnob();
+        KnobPtr parentKnob = knob->getParentKnob();
         boost::shared_ptr<KnobGroup> parentIsGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
         KnobGuiGroup* parentGui = 0;
         /// if this knob is within a group, make sure the group is created so far
@@ -351,7 +351,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
         ///For group only create the gui if it is not  a tab.
         if (isGroup  && isGroup->isTab()) {
             
-            KnobPage* parentIsPage = dynamic_cast<KnobPage*>(parentKnob.get());
+            boost::shared_ptr<KnobPage> parentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentKnob);
             if (!parentKnob || parentIsPage) {
                 PageMap::iterator page = _pages.end();
                 if (!parentKnob) {
@@ -388,14 +388,14 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 if (parentIsGroup && parentIsGroup->isTab()) {
                     ///insert the tab in the layout of the parent
                     ///Find the page in the parentParent group
-                    boost::shared_ptr<KnobI> parentParent = parentKnob->getParentKnob();
+                    KnobPtr parentParent = parentKnob->getParentKnob();
                     assert(parentParent);
                     boost::shared_ptr<KnobGroup> parentParentIsGroup = boost::dynamic_pointer_cast<KnobGroup>(parentParent);
                     boost::shared_ptr<KnobPage> parentParentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentParent);
                     assert(parentParentIsGroup || parentParentIsPage);
                     TabGroup* parentTabGroup = 0;
                     if (parentParentIsPage) {
-                        PageMap::iterator page = getOrCreatePage(parentParentIsPage.get());
+                        PageMap::iterator page = getOrCreatePage(parentParentIsPage);
                         assert(page != _pages.end());
                         parentTabGroup = page->second.groupAsTab;
                     } else {
@@ -411,7 +411,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     layout->addWidget(groupAsTab, 0, 0, 1, 2);
                     
                 } else {
-                    KnobPage* topLevelPage = knob->getTopLevelPage();
+                    boost::shared_ptr<KnobPage> topLevelPage = knob->getTopLevelPage();
                     PageMap::iterator page = getOrCreatePage(topLevelPage);
                     assert(page != _pages.end());
                     ///retrieve the form layout
@@ -430,18 +430,18 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
             }
             
         } else if (!ret->hasWidgetBeenCreated()) {
-            KnobI* parentKnobTmp = parentKnob.get();
+            KnobPtr parentKnobTmp = parentKnob;
             while (parentKnobTmp) {
-                boost::shared_ptr<KnobI> parent = parentKnobTmp->getParentKnob();
+                KnobPtr parent = parentKnobTmp->getParentKnob();
                 if (!parent) {
                     break;
                 } else {
-                    parentKnobTmp = parent.get();
+                    parentKnobTmp = parent;
                 }
             }
 
             ////find in which page the knob should be
-            KnobPage* isTopLevelParentAPage = dynamic_cast<KnobPage*>(parentKnobTmp);
+            boost::shared_ptr<KnobPage> isTopLevelParentAPage = boost::dynamic_pointer_cast<KnobPage>(parentKnobTmp);
             assert(isTopLevelParentAPage);
             
             PageMap::iterator page = getOrCreatePage(isTopLevelParentAPage);
@@ -472,8 +472,8 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                 ///if new line is not turned off, create a new line
                 fieldContainer = new QWidget(page->second.tab);
                 fieldLayout = new QHBoxLayout(fieldContainer);
-                fieldLayout->setContentsMargins(3,0,0,NATRON_SETTINGS_VERTICAL_SPACING_PIXELS);
-                fieldLayout->setSpacing(2);
+                fieldLayout->setContentsMargins(TO_DPIX(3),0,0,TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS));
+                fieldLayout->setSpacing(TO_DPIY(2));
             } else {
                 ///otherwise re-use the last row's widget and layout
                 assert(lastRowWidget);
@@ -508,7 +508,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
              * the nearest parent group tab in the hierarchy
              */
             boost::shared_ptr<KnobGroup> closestParentGroupTab;
-            boost::shared_ptr<KnobI> parentTmp = parentKnob;
+            KnobPtr parentTmp = parentKnob;
             assert(parentKnobTmp);
             while (!closestParentGroupTab) {
                 boost::shared_ptr<KnobGroup> parentGroup = boost::dynamic_pointer_cast<KnobGroup>(parentTmp);
@@ -532,9 +532,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                  * to the on of the page.
                  */
                 
-                boost::shared_ptr<KnobI> parentParent = closestParentGroupTab->getParentKnob();
+                KnobPtr parentParent = closestParentGroupTab->getParentKnob();
                 KnobGroup* parentParentIsGroup = dynamic_cast<KnobGroup*>(parentParent.get());
-                KnobPage* parentParentIsPage = dynamic_cast<KnobPage*>(parentParent.get());
+                boost::shared_ptr<KnobPage> parentParentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentParent);
                 
                 assert(parentParentIsGroup || parentParentIsPage);
                 if (parentParentIsGroup) {
@@ -623,7 +623,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
                     layout->addWidget(foundSpacer,layout->rowCount(), 0, 1, 2);
                // }
                 
-            }
+            } // makeNewLine
 
             ret->setSecret();
             
@@ -647,10 +647,10 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
 
     ///if the knob is a group, create all the children
     if (isGroup) {
-        std::vector<boost::shared_ptr<KnobI> > children = isGroup->getChildren();
+        KnobsVec children = isGroup->getChildren();
         initializeKnobVector(children, lastRowWidget);
     } else if (isPage) {
-        std::vector<boost::shared_ptr<KnobI> > children = isPage->getChildren();
+        KnobsVec children = isPage->getChildren();
         initializeKnobVector(children, lastRowWidget);
     }
 
@@ -658,7 +658,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const boost::shared_ptr<KnobI> & knob,
 } // findKnobGuiOrCreate
 
 PageMap::iterator
-DockablePanelPrivate::getOrCreatePage(KnobPage* page)
+DockablePanelPrivate::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
 {
     if (!_pagesEnabled && _pages.size() > 0) {
         return _pages.begin();
@@ -709,7 +709,7 @@ DockablePanelPrivate::getOrCreatePage(KnobPage* page)
     layoutContainer->setLayout(tabLayout);
     //tabLayout->setContentsMargins(1, 1, 1, 1);
     tabLayout->setColumnStretch(1, 1);
-    tabLayout->setSpacing(NATRON_FORM_LAYOUT_LINES_SPACING);
+    tabLayout->setSpacing(TO_DPIY(NATRON_FORM_LAYOUT_LINES_SPACING));
     
     if (_tabWidget) {
         _tabWidget->addTab(newTab,name);
@@ -722,7 +722,13 @@ DockablePanelPrivate::getOrCreatePage(KnobPage* page)
     Page p;
     p.tab = newTab;
     p.currentRow = 0;
-
+    p.pageKnob =  page;
+    if (page) {
+        boost::shared_ptr<KnobSignalSlotHandler> handler = page->getSignalSlotHandler();
+        if (handler) {
+            QObject::connect(handler.get(), SIGNAL(labelChanged()), _publicInterface, SLOT(onPageLabelChangedInternally()));
+        }
+    }
     return _pages.insert( make_pair(name,p) ).first;
 }
 
@@ -731,8 +737,8 @@ DockablePanelPrivate::refreshPagesSecretness()
 {
     assert(_tabWidget);
     std::string stdName = _tabWidget->tabText(_tabWidget->currentIndex()).toStdString();
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = _holder->getKnobs();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+    const KnobsVec& knobs = _holder->getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
         KnobPage* isPage = dynamic_cast<KnobPage*>(it->get());
         if (!isPage) {
             continue;
@@ -740,14 +746,15 @@ DockablePanelPrivate::refreshPagesSecretness()
         if (isPage->getLabel() == stdName) {
             if (isPage->getIsSecret()) {
                 isPage->setSecret(false);
-                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), eValueChangedReasonUserEdited);
             }
         } else {
             if (!isPage->getIsSecret()) {
                 isPage->setSecret(true);
-                isPage->evaluateValueChange(0, isPage->getCurrentTime(), Natron::eValueChangedReasonUserEdited);
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), eValueChangedReasonUserEdited);
             }
         }
     }
 }
 
+NATRON_NAMESPACE_EXIT;

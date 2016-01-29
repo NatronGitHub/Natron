@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,14 +31,13 @@
 #include <vector>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
 CLANG_DIAG_OFF(deprecated)
 #include <QStringList>
 #include <QMutex>
 CLANG_DIAG_ON(deprecated)
-
-#include "Engine/ThreadStorage.h"
 
 
 #include "Global/GlobalDefines.h"
@@ -53,6 +52,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "ofxhParametricParam.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /*This file contains the classes that connect the knobs to the OpenFX params.
    Note that all the get(...) and set(...) functions are called BY PLUGIN and you should
@@ -96,7 +96,7 @@ public:
     {
     }
 
-    virtual boost::shared_ptr<KnobI> getKnob() const = 0;
+    virtual KnobPtr getKnob() const = 0;
     virtual OFX::Host::Param::Instance* getOfxParam() = 0;
     
     OFX::Host::Interact::Descriptor & getInteractDesc()
@@ -107,6 +107,13 @@ public:
     
     
     void connectDynamicProperties();
+    
+    //these are per ofxparam thread-local data
+    struct OfxParamTLSData
+    {
+        //only for string-param for now
+        std::string str;
+    };
 
 public Q_SLOTS:
     
@@ -147,7 +154,7 @@ class OfxPushButtonInstance
     : public OFX::Host::Param::PushbuttonInstance, public OfxParamToKnob
 {
 public:
-    OfxPushButtonInstance(OfxEffectInstance* node,
+    OfxPushButtonInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                           OFX::Host::Param::Descriptor & descriptor);
 
     // callback which should set enabled state as appropriate
@@ -160,7 +167,7 @@ public:
 
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 private:
@@ -177,7 +184,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    OfxIntegerInstance(OfxEffectInstance* node,
+    OfxIntegerInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                        OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(int &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, int &) OVERRIDE FINAL;
@@ -204,7 +211,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 public Q_SLOTS:
@@ -226,7 +233,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    OfxDoubleInstance(OfxEffectInstance* node,
+    OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                       OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(double &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, double &) OVERRIDE FINAL;
@@ -256,7 +263,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
     bool isAnimated() const;
@@ -268,7 +275,6 @@ public Q_SLOTS:
 private:
     
     boost::weak_ptr<KnobDouble> _knob;
-    OfxEffectInstance* _node;
 };
 
 class OfxBooleanInstance
@@ -279,7 +285,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    OfxBooleanInstance(OfxEffectInstance* node,
+    OfxBooleanInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                        OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(bool &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, bool &) OVERRIDE FINAL;
@@ -305,7 +311,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 public Q_SLOTS:
@@ -327,7 +333,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    OfxChoiceInstance(OfxEffectInstance* node,
+    OfxChoiceInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                       OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(int &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, int &) OVERRIDE FINAL;
@@ -355,7 +361,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 public Q_SLOTS:
@@ -377,7 +383,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    OfxRGBAInstance(OfxEffectInstance* node,
+    OfxRGBAInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                     OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(double &,double &,double &,double &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, double &,double &,double &,double &) OVERRIDE FINAL;
@@ -404,7 +410,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
     bool isAnimated(int dimension) const;
@@ -427,7 +433,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    OfxRGBInstance(OfxEffectInstance* node,
+    OfxRGBInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                    OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(double &,double &,double &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, double &,double &,double &) OVERRIDE FINAL;
@@ -454,7 +460,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
     bool isAnimated(int dimension) const;
@@ -476,7 +482,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    OfxDouble2DInstance(OfxEffectInstance* node,
+    OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                         OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(double &,double &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time,double &,double &) OVERRIDE FINAL;
@@ -505,7 +511,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
     bool isAnimated(int dimension) const;
@@ -516,7 +522,6 @@ public Q_SLOTS:
     void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
-    OfxEffectInstance* _node;
     boost::weak_ptr<KnobDouble> _knob;
 };
 
@@ -529,7 +534,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    OfxInteger2DInstance(OfxEffectInstance* node,
+    OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                          OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(int &,int &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time,int &,int &) OVERRIDE FINAL;
@@ -557,7 +562,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 public Q_SLOTS:
@@ -568,7 +573,6 @@ private:
     
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
     
-    OfxEffectInstance* _node;
     boost::weak_ptr<KnobInt> _knob;
 };
 
@@ -580,7 +584,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    OfxDouble3DInstance(OfxEffectInstance* node,
+    OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                         OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(double &,double &,double &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time,double &,double &,double &) OVERRIDE FINAL;
@@ -610,7 +614,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
     bool isAnimated(int dimension) const;
@@ -621,7 +625,6 @@ public Q_SLOTS:
     void onKnobAnimationLevelChanged(int,int lvl);
 
 private:
-    OfxEffectInstance* _node;
     boost::weak_ptr<KnobDouble> _knob;
 };
 
@@ -633,7 +636,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    OfxInteger3DInstance(OfxEffectInstance* node,
+    OfxInteger3DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                          OFX::Host::Param::Descriptor & descriptor);
     virtual OfxStatus get(int &,int &,int &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time,int &,int &,int &) OVERRIDE FINAL;
@@ -661,7 +664,7 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
 public Q_SLOTS:
@@ -672,7 +675,6 @@ private:
     
     virtual bool hasDoubleMinMaxProps() const OVERRIDE FINAL { return false; }
     
-    OfxEffectInstance* _node;
     boost::weak_ptr<KnobInt> _knob;
 };
 
@@ -681,12 +683,12 @@ class OfxGroupInstance
 {
 public:
 
-    OfxGroupInstance(OfxEffectInstance* node,
+    OfxGroupInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                      OFX::Host::Param::Descriptor & descriptor);
 
-    void addKnob(boost::shared_ptr<KnobI> k);
+    void addKnob(KnobPtr k);
 
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
     virtual ~OfxGroupInstance()
@@ -711,7 +713,7 @@ class OfxPageInstance
 public:
 
 
-    OfxPageInstance(OfxEffectInstance* node,
+    OfxPageInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                     OFX::Host::Param::Descriptor & descriptor);
 
     // callback which should set enabled state as appropriate
@@ -721,13 +723,14 @@ public:
 
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 private:
     boost::weak_ptr<KnobPage> _pageKnob;
 };
 
 
+struct OfxStringInstancePrivate;
 class OfxStringInstance
     : public OfxParamToKnob, public OFX::Host::Param::StringInstance
 {
@@ -736,9 +739,11 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    OfxStringInstance(OfxEffectInstance* node,
+    OfxStringInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                       OFX::Host::Param::Descriptor & descriptor);
 
+    virtual ~OfxStringInstance();
+    
     virtual OfxStatus get(std::string &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, std::string &) OVERRIDE FINAL;
     virtual OfxStatus set(const char*) OVERRIDE FINAL;
@@ -773,12 +778,9 @@ public:
     virtual OfxStatus deleteKey(OfxTime time) OVERRIDE FINAL;
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
     
-    virtual ~OfxStringInstance()
-    {
-    }
 
 public Q_SLOTS:
 
@@ -795,16 +797,11 @@ private:
      * @brief Find any project path contained in str and replace it by the associated name
      **/
     void projectEnvVar_setProxy(std::string& str) const;
-    
-    OfxEffectInstance* _node;
-    boost::weak_ptr<KnobFile> _fileKnob;
-    boost::weak_ptr<KnobOutputFile> _outputFileKnob;
-    boost::weak_ptr<KnobString> _stringKnob;
-    boost::weak_ptr<KnobPath> _pathKnob;
-    Natron::ThreadStorage<std::string> _localString;
+   
+    boost::scoped_ptr<OfxStringInstancePrivate> _imp;
 };
 
-
+struct OfxCustomInstancePrivate;
 class OfxCustomInstance
     : public OfxParamToKnob, public OFX::Host::Param::CustomInstance
 {
@@ -813,9 +810,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    OfxCustomInstance(OfxEffectInstance* node,
+    OfxCustomInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                       OFX::Host::Param::Descriptor & descriptor);
 
+    virtual ~OfxCustomInstance();
+
+    
     virtual OfxStatus get(std::string &) OVERRIDE FINAL;
     virtual OfxStatus get(OfxTime time, std::string &) OVERRIDE FINAL;
     virtual OfxStatus set(const char*) OVERRIDE FINAL;
@@ -842,13 +842,9 @@ public:
 
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
     
-    virtual ~OfxCustomInstance()
-    {
-    }
-
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
     virtual OfxStatus getKeyTime(int nth, OfxTime & time) const OVERRIDE FINAL;
@@ -857,6 +853,10 @@ public:
     virtual OfxStatus deleteAllKeys() OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
 
+    typedef OfxStatus (*customParamInterpolationV1Entry_t)(const void*            handleRaw,
+                                                           OfxPropertySetHandle inArgsRaw,
+                                                           OfxPropertySetHandle outArgsRaw);
+    
 public Q_SLOTS:
 
     void onKnobAnimationLevelChanged(int,int lvl);
@@ -865,14 +865,9 @@ private:
 
     void getCustomParamAtTime(double time,std::string &str) const;
 
-    typedef OfxStatus (*customParamInterpolationV1Entry_t)(const void*            handleRaw,
-                                                           OfxPropertySetHandle inArgsRaw,
-                                                           OfxPropertySetHandle outArgsRaw);
-
-    OfxEffectInstance* _node;
-    boost::weak_ptr<KnobString> _knob;
-    customParamInterpolationV1Entry_t _customParamInterpolationV1Entry;
-    Natron::ThreadStorage<std::string> _localString;
+ 
+    boost::scoped_ptr<OfxCustomInstancePrivate> _imp;
+    
 };
 
 
@@ -885,7 +880,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    explicit OfxParametricInstance(OfxEffectInstance* node,
+    explicit OfxParametricInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                    OFX::Host::Param::Descriptor & descriptor);
 
     virtual ~OfxParametricInstance();
@@ -930,7 +925,7 @@ public:
     virtual OfxStatus  deleteControlPoint(int curveIndex, int nthCtl) OVERRIDE FINAL;
     virtual OfxStatus  deleteAllControlPoints(int curveIndex) OVERRIDE FINAL;
     virtual OfxStatus copyFrom(const OFX::Host::Param::Instance &instance, OfxTime offset, const OfxRangeD* range) OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getKnob() const OVERRIDE FINAL;
+    virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
     
 public Q_SLOTS:
@@ -942,11 +937,11 @@ public Q_SLOTS:
 
 private:
 
-    OFX::Host::Param::Descriptor & _descriptor;
-    Natron::OfxOverlayInteract* _overlayInteract;
-    OfxEffectInstance* _effect;
+    OfxOverlayInteract* _overlayInteract;
     boost::weak_ptr<KnobParametric> _knob;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_OFXPARAMINSTANCE_H
 

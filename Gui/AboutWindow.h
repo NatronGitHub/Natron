@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class AboutWindow
     : public QDialog
@@ -42,7 +43,7 @@ class AboutWindow
     Q_OBJECT
     
     QVBoxLayout* _mainLayout;
-    Natron::Label* _iconLabel;
+    Label* _iconLabel;
     QTabWidget* _tabWidget;
     QTextBrowser* _aboutText;
     QTextBrowser* _libsText;
@@ -73,5 +74,7 @@ public Q_SLOTS:
     void onSelectionChanged(const QItemSelection & newSelection,
                             const QItemSelection & oldSelection);
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // ABOUTWINDOW_H

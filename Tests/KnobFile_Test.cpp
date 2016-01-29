@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 #include "Engine/StandardPaths.h"
 #include <SequenceParsing.h>
 
+NATRON_NAMESPACE_USING
 using namespace SequenceParsing;
 
 TEST(SequenceParsing,TestHashCharacter) {
@@ -42,7 +43,7 @@ TEST(SequenceParsing,TestHashCharacter) {
     QStringList fileNames;
     int sequenceItemsCount = 10;
     ///create temporary files as a sequence and try to read that sequence.
-    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+    QString tempPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
 
     dir.mkpath(".");
@@ -201,7 +202,7 @@ TEST(SequenceParsing,TestHashCharacter) {
 TEST(SequenceParsing,TestPrintfLikeSyntax) {
     int sequenceItemsCount = 10;
     ///create temporary files as a sequence and try to read that sequence.
-    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+    QString tempPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
 
     dir.mkpath(".");
@@ -304,7 +305,7 @@ TEST(SequenceParsing,TestPrintfLikeSyntax) {
 TEST(SequenceParsing,TestViews) {
     int sequenceItemsCount = 11;
     ///create temporary files as a sequence and try to read that sequence.
-    QString tempPath = Natron::StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+    QString tempPath = StandardPaths::writableLocation(StandardPaths::eStandardLocationTemp);
     QDir dir(tempPath);
 
     dir.mkpath(".");

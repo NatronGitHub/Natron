@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /******************************KNOB_FACTORY**************************************/
 //Maybe the factory should move to a separate file since it is used to create KnobGui aswell
@@ -44,7 +45,7 @@ class KnobHolder;
 
 class KnobGuiFactory
 {
-    std::map<std::string, Natron::LibraryBinary *> _loadedKnobs;
+    std::map<std::string, LibraryBinary *> _loadedKnobs;
 
 public:
     KnobGuiFactory();
@@ -52,10 +53,10 @@ public:
     ~KnobGuiFactory();
 
 
-    KnobGui * createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
+    KnobGui * createGuiForKnob(KnobPtr knob, DockablePanel *container) const;
 
 private:
-    const std::map<std::string, Natron::LibraryBinary *> &getLoadedKnobs() const
+    const std::map<std::string, LibraryBinary *> &getLoadedKnobs() const
     {
         return _loadedKnobs;
     }
@@ -63,5 +64,6 @@ private:
     void loadBultinKnobs();
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_GUI_KNOBGUIFACTORY_H

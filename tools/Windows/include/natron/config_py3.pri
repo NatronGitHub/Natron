@@ -1,1 +1,4 @@
-#On Msys2, config.pri should not be needed
+# add build-id for stackwalker
+# Requires mingw + binutils 2.25+
+QMAKE_LFLAGS += -Wl,--build-id
+

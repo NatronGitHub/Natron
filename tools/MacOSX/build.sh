@@ -1,7 +1,7 @@
 #!/bin/sh
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
 # BUILD_NUMBER=X: To be set to indicate the revision number of the build. For example RC1,RC2, RC3 etc...
+# DISABLE_BREAKPAD=1: When set, automatic crash reporting (google-breakpad support) will be disabled
 
 #Usage: BUILD_CONFIG=STABLE BUILD_NUMBER=1 CONFIG=release BRANCH=workshop MKJOBS=4 UPLOAD=1 ./build.sh
 
@@ -120,6 +121,9 @@ if [ "$NO_CLEAN" != "1" ]; then
 fi
 mkdir -p "$CWD/build"
 
+rm -rf "$CWD/build/symbols"
+mkdir -p "$CWD/build/symbols"
+
 LOGDIR="$CWD/logs"
 rm -rf $LOGDIR
 mkdir -p $LOGDIR || exit 1
@@ -138,12 +142,13 @@ NATRONLOG="$LOGDIR/Natron-$TAG.log"
 
 echo "Building Natron..."
 echo
-env MKJOBS="$MKJOBS" CONFIG="$CONFIG" BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER  BRANCH="$BRANCH" PLUGINDIR="$PLUGINDIR" ./build-natron.sh >& "$NATRONLOG" || FAIL=1
+env MKJOBS="$MKJOBS" CONFIG="$CONFIG" BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER  BRANCH="$BRANCH" PLUGINDIR="$PLUGINDIR" DISABLE_BREAKPAD="$DISABLE_BREAKPAD" ./build-natron.sh >& "$NATRONLOG" || FAIL=1
 
 if [ "$FAIL" != "1" ]; then
     echo OK
 else
     echo ERROR
+    echo "BUILD__ERROR" >> "$NATRONLOG"
     sleep 2
     cat "$NATRONLOG"
 fi
@@ -152,11 +157,12 @@ PLUGINSLOG="$LOGDIR/Natron-$TAG-plugins.log"
 if [ "$FAIL" != "1" ]; then
     echo "Building plug-ins..."
     echo
-    PLUGINDIR=$PLUGINDIR MKJOBS=$MKJOBS CONFIG=$CONFIG BRANCH=$BRANCH ./build-plugins.sh >& "$PLUGINSLOG" || FAIL=1
+    PLUGINDIR=$PLUGINDIR MKJOBS=$MKJOBS CONFIG=$CONFIG BRANCH=$BRANCH DISABLE_BREAKPAD="$DISABLE_BREAKPAD" ./build-plugins.sh >& "$PLUGINSLOG" || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
     else
         echo ERROR
+        echo "BUILD__ERROR" >> "$PLUGINSLOG"
         sleep 2
         cat "$PLUGINSLOG"
     fi
@@ -215,6 +221,7 @@ if [ "$FAIL" != "1" ]; then
         echo OK
     else
         echo ERROR
+        echo "BUILD__ERROR" >> "$INSTALLERLOG"
         sleep 2
         cat "$INSTALLERLOG"
     fi
@@ -231,6 +238,11 @@ if [ "$UPLOAD" = "1" ]; then
         echo
         rsync -avz --progress -e ssh "$NATRONDMG" "$REPO_DEST/Mac/$UPLOAD_BRANCH/" || exit 1
     fi
+    if [ "$DISABLE_BREAKPAD" != "1" ]; then
+        echo "Uploading symbols..."
+        rsync -avz --progress --verbose -e ssh "$CWD/build/symbols/" "${REPO_DEST}/symbols/"
+    fi
+
     echo "Uploading logs..."
     echo
     rsync -avz --progress -e ssh "$LOGDIR/" "$REPO_DEST/Mac/$UPLOAD_BRANCH/logs" || exit 1

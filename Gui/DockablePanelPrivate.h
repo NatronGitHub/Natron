@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,20 +51,22 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/DockablePanel.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct Page
 {
     QWidget* tab;
     int currentRow;
     TabGroup* groupAsTab; //< to gather group knobs that are set as a tab
-
+    boost::weak_ptr<KnobPage> pageKnob;
+    
     Page()
-    : tab(0), currentRow(0),groupAsTab(0)
+    : tab(0), currentRow(0),groupAsTab(0), pageKnob()
     {
     }
 
     Page(const Page & other)
-    : tab(other.tab), currentRow(other.currentRow), groupAsTab(other.groupAsTab)
+    : tab(other.tab), currentRow(other.currentRow), groupAsTab(other.groupAsTab), pageKnob(other.pageKnob)
     {
     }
 };
@@ -84,7 +86,7 @@ struct DockablePanelPrivate
     QFrame* _headerWidget;
     QHBoxLayout *_headerLayout;
     LineEdit* _nameLineEdit; /*!< if the name is editable*/
-    Natron::Label* _nameLabel; /*!< if the name is read-only*/
+    Label* _nameLabel; /*!< if the name is read-only*/
 
     QHBoxLayout* _horizLayout;
     QWidget* _horizContainer;
@@ -138,7 +140,7 @@ struct DockablePanelPrivate
 
     bool _pagesEnabled;
 
-    Natron::Label* _iconLabel;
+    Label* _iconLabel;
 
     DockablePanelPrivate(DockablePanel* publicI,
                          Gui* gui,
@@ -151,7 +153,7 @@ struct DockablePanelPrivate
                          const boost::shared_ptr<QUndoStack>& stack);
     
     /*inserts a new page to the dockable panel.*/
-    PageMap::iterator getOrCreatePage(KnobPage* page);
+    PageMap::iterator getOrCreatePage(const boost::shared_ptr<KnobPage>& page);
 
     boost::shared_ptr<KnobPage> ensureDefaultPageKnobCreated() ;
 
@@ -159,19 +161,20 @@ struct DockablePanelPrivate
     void initializeKnobVector(const std::vector< boost::shared_ptr< KnobI> > & knobs,
                               QWidget* lastRowWidget);
 
-    KnobGui* createKnobGui(const boost::shared_ptr<KnobI> &knob);
+    KnobGui* createKnobGui(const KnobPtr &knob);
 
     /*Search an existing knob GUI in the map, otherwise creates
      the gui for the knob.*/
-    KnobGui* findKnobGuiOrCreate( const boost::shared_ptr<KnobI> &knob,
+    KnobGui* findKnobGuiOrCreate( const KnobPtr &knob,
                                  bool makeNewLine,
                                  QWidget* lastRowWidget,
                                  const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine = std::vector< boost::shared_ptr< KnobI > >() );
 
-    PageMap::iterator getDefaultPage(const boost::shared_ptr<KnobI> &knob);
+    PageMap::iterator getDefaultPage(const KnobPtr &knob);
     
     void refreshPagesSecretness();
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_DockablePanelPrivate_h

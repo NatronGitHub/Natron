@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /** @class This class describes the rectangle (or portion) of an image that is contained
  * into a texture. x1,y1,x2,y2 are respectivly the image coordinates of the left,bottom,right,top
@@ -41,20 +42,20 @@
 class TextureRect
 {
 public:
+    double par; // the par of the associated image
     int x1,y1,x2,y2; // the edges of the texture. These are coordinates in the full size image
     int w,h; // the width and height of the texture. This has nothing to do with x,y,r,t
     int closestPo2; //< the closest power of 2 of the original region of interest of the image
-    double par; // the par of the associated image
 
     TextureRect()
-        : x1(0)
-          , y1(0)
-          , x2(0)
-          , y2(0)
-          , w(0)
-          , h(0)
-          , closestPo2(1)
-          , par(1.)
+        : par(1.)
+        , x1(0)
+        , y1(0)
+        , x2(0)
+        , y2(0)
+        , w(0)
+        , h(0)
+        , closestPo2(1)
     {
     }
 
@@ -66,14 +67,14 @@ public:
                 int h_,
                 int closestPo2_,
                 double par_)
-        : x1(x1_)
-          , y1(y1_)
-          , x2(x2_)
-          , y2(y2_)
-          , w(w_)
-          , h(h_)
-          , closestPo2(closestPo2_)
-          , par(par_)
+        : par(par_)
+        , x1(x1_)
+        , y1(y1_)
+        , x2(x2_)
+        , y2(y2_)
+        , w(w_)
+        , h(h_)
+        , closestPo2(closestPo2_)
     {
     }
 
@@ -138,5 +139,7 @@ operator!=(const TextureRect & first,
 {
     return !(first == second);
 }
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_TEXTURERECT_H

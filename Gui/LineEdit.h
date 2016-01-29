@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class LineEdit
     : public QLineEdit
@@ -85,6 +86,8 @@ protected:
     
     virtual void paintEvent(QPaintEvent* e) OVERRIDE;
 
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
+    
 private:
     
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
@@ -95,12 +98,12 @@ private:
 
     virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
     
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     
     int animation;
     bool dirty;
     bool altered;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // ifndef NATRON_GUI_LINEEDIT_H

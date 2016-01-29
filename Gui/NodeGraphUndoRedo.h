@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,15 +42,12 @@
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * This file gathers undo/redo command associated to the node graph. Each of them triggers an autosave when redone/undone
  * except the move command.
  **/
-
-
-typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
-typedef std::list<NodeGuiPtr> NodeGuiList;
 
 
 
@@ -59,7 +56,7 @@ class MoveMultipleNodesCommand
 {
 public:
 
-    MoveMultipleNodesCommand(const NodeGuiList & nodes,
+    MoveMultipleNodesCommand(const NodesGuiList & nodes,
                              double dx,
                              double dy,
                              QUndoCommand *parent = 0);
@@ -72,7 +69,7 @@ private:
     void move(double dx,double dy);
 
     bool _firstRedoCalled;
-    NodeGuiList _nodes;
+    NodesGuiList _nodes;
     double _dx,_dy;
 };
 
@@ -89,11 +86,11 @@ class AddMultipleNodesCommand
 public:
 
     AddMultipleNodesCommand(NodeGraph* graph,
-                            const std::list<boost::shared_ptr<NodeGui> > & nodes,
+                            const NodesGuiList & nodes,
                             QUndoCommand *parent = 0);
 
     AddMultipleNodesCommand(NodeGraph* graph,
-                            const boost::shared_ptr<NodeGui> & node,
+                            const NodeGuiPtr & node,
                             QUndoCommand* parent = 0);
 
 
@@ -117,7 +114,7 @@ class RemoveMultipleNodesCommand
 public:
 
     RemoveMultipleNodesCommand(NodeGraph* graph,
-                               const std::list<boost::shared_ptr<NodeGui> > & nodes,
+                               const NodesGuiList & nodes,
                                QUndoCommand *parent = 0);
 
     virtual ~RemoveMultipleNodesCommand();
@@ -131,7 +128,7 @@ private:
         ///This contains the output nodes whose input should be reconnected to this node afterwards.
         ///This list contains only nodes that are not part of the selection: we restore only the
         ///inputs of the outputs nodes of the graph that were not removed
-        std::list<Natron::Node* > outputsToRestore;
+        NodesWList outputsToRestore;
         boost::weak_ptr<NodeGui> node;
     };
 
@@ -146,8 +143,8 @@ class ConnectCommand
 public:
     ConnectCommand(NodeGraph* graph,
                    Edge* edge,
-                   const boost::shared_ptr<NodeGui> &oldSrc,
-                   const boost::shared_ptr<NodeGui> & newSrc,
+                   const NodeGuiPtr &oldSrc,
+                   const NodeGuiPtr & newSrc,
                    QUndoCommand *parent = 0);
 
     virtual void undo();
@@ -175,7 +172,7 @@ public:
     
     InsertNodeCommand(NodeGraph* graph,
                    Edge* edge,
-                   const boost::shared_ptr<NodeGui> & newSrc,
+                   const NodeGuiPtr & newSrc,
                    QUndoCommand *parent = 0);
     
     virtual void undo();
@@ -188,22 +185,22 @@ private:
 };
 
 
-class ResizeBackDropCommand
+class ResizeBackdropCommand
     : public QUndoCommand
 {
 public:
 
-    ResizeBackDropCommand(const NodeGuiPtr& bd,
+    ResizeBackdropCommand(const NodeGuiPtr& bd,
                           int w,
                           int h,
                           QUndoCommand *parent = 0);
-    virtual ~ResizeBackDropCommand();
+    virtual ~ResizeBackdropCommand();
 
     virtual void undo();
     virtual void redo();
     virtual int id() const
     {
-        return kNodeGraphResizeNodeBackDropCommandCompressionID;
+        return kNodeGraphResizeNodeBackdropCommandCompressionID;
     }
 
     virtual bool mergeWith(const QUndoCommand *command);
@@ -222,7 +219,7 @@ class DecloneMultipleNodesCommand
 public:
 
     DecloneMultipleNodesCommand(NodeGraph* graph,
-                                const std::list<boost::shared_ptr<NodeGui> > & nodes,
+                                const NodesGuiList & nodes,
                                 QUndoCommand *parent = 0);
 
 
@@ -236,7 +233,7 @@ private:
     struct NodeToDeclone
     {
         boost::weak_ptr<NodeGui> node;
-        boost::weak_ptr<Natron::Node> master;
+        NodeWPtr master;
     };
 
   
@@ -253,11 +250,11 @@ public:
 
     struct NodeToRearrange
     {
-        boost::shared_ptr<NodeGui> node;
+        NodeGuiPtr node;
         QPointF oldPos,newPos;
     };
 
-    RearrangeNodesCommand(const std::list<boost::shared_ptr<NodeGui> > & nodes,
+    RearrangeNodesCommand(const NodesGuiList & nodes,
                           QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
@@ -272,7 +269,7 @@ class DisableNodesCommand
 {
 public:
 
-    DisableNodesCommand(const std::list<boost::shared_ptr<NodeGui> > & nodes,
+    DisableNodesCommand(const NodesGuiList & nodes,
                         QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
@@ -287,7 +284,7 @@ class EnableNodesCommand
 {
 public:
 
-    EnableNodesCommand(const std::list<boost::shared_ptr<NodeGui> > & nodes,
+    EnableNodesCommand(const NodesGuiList & nodes,
                        QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
@@ -304,7 +301,7 @@ class LoadNodePresetsCommand
     
 public:
     
-    LoadNodePresetsCommand(const boost::shared_ptr<NodeGui> & node,
+    LoadNodePresetsCommand(const NodeGuiPtr & node,
                            const std::list<boost::shared_ptr<NodeSerialization> >& serialization,
                        QUndoCommand *parent = 0);
     
@@ -314,13 +311,13 @@ public:
 
 private:
     
-    void getListAsShared(const std::list< boost::weak_ptr<Natron::Node> >& original,
-                         std::list< boost::shared_ptr<Natron::Node> >& shared) const;
+    void getListAsShared(const std::list< NodeWPtr >& original,
+                         std::list< NodePtr >& shared) const;
     
     bool _firstRedoCalled;
     bool _isUndone;
     boost::weak_ptr<NodeGui> _node;
-    std::list< boost::weak_ptr<Natron::Node> > _oldChildren,_newChildren; //< children if multi-instance
+    std::list< NodeWPtr > _oldChildren,_newChildren; //< children if multi-instance
     std::list<boost::shared_ptr<NodeSerialization> > _newSerializations,_oldSerialization;
 };
 
@@ -329,7 +326,7 @@ class RenameNodeUndoRedoCommand
 {
 public:
     
-    RenameNodeUndoRedoCommand(const boost::shared_ptr<NodeGui> & node,
+    RenameNodeUndoRedoCommand(const NodeGuiPtr & node,
                               const QString& oldName,
                               const QString& newName);
     
@@ -346,13 +343,13 @@ private:
 struct ExtractedOutput
 {
     boost::weak_ptr<NodeGui> node;
-    std::list<std::pair<int,Natron::Node*> > outputs;
+    std::list<std::pair<int,NodeWPtr > > outputs;
 };
 
 struct ExtractedInput
 {
     boost::weak_ptr<NodeGui> node;
-    std::vector<boost::weak_ptr<Natron::Node> > inputs;
+    std::vector<NodeWPtr > inputs;
 };
 
 struct ExtractedTree
@@ -368,7 +365,7 @@ class ExtractNodeUndoRedoCommand
 {
 public:
     
-    ExtractNodeUndoRedoCommand(NodeGraph* graph,const std::list<boost::shared_ptr<NodeGui> > & nodes);
+    ExtractNodeUndoRedoCommand(NodeGraph* graph,const NodesGuiList & nodes);
     
     virtual ~ExtractNodeUndoRedoCommand();
     virtual void undo();
@@ -388,7 +385,7 @@ class GroupFromSelectionCommand
     
 public:
     
-    GroupFromSelectionCommand(NodeGraph* graph,const std::list<boost::shared_ptr<NodeGui> > & nodes);
+    GroupFromSelectionCommand(NodeGraph* graph,const NodesGuiList & nodes);
     
     virtual ~GroupFromSelectionCommand();
     
@@ -410,7 +407,7 @@ class InlineGroupCommand
     
 public:
     
-    InlineGroupCommand(NodeGraph* graph,const std::list<boost::shared_ptr<NodeGui> > & nodes);
+    InlineGroupCommand(NodeGraph* graph,const NodesGuiList & nodes);
     
     virtual ~InlineGroupCommand();
     
@@ -438,5 +435,7 @@ private:
     bool _firstRedoCalled;
 };
 
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NODEGRAPHUNDOREDO_H

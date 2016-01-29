@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,8 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // kNatronGroupInputIsOptionalParamName, kNatronGroupInputIsMaskParamName
 
+NATRON_NAMESPACE_ENTER;
+
 std::string
 GroupInput::getPluginDescription() const
 {
@@ -37,10 +39,10 @@ GroupInput::getPluginDescription() const
 void
 GroupInput::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = Natron::createKnob<KnobPage>(this, "Controls");
+    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Controls");
     page->setName("controls");
     
-    boost::shared_ptr<KnobBool> optKnob = Natron::createKnob<KnobBool>(this, "Optional");
+    boost::shared_ptr<KnobBool> optKnob = AppManager::createKnob<KnobBool>(this, "Optional");
     optKnob->setHintToolTip("When checked, this input of the group will be optional, i.e it will not be required that it is connected "
                              "for the render to work. ");
     optKnob->setAnimationEnabled(false);
@@ -48,7 +50,7 @@ GroupInput::initializeKnobs()
     page->addKnob(optKnob);
     optional = optKnob;
     
-    boost::shared_ptr<KnobBool> maskKnob = Natron::createKnob<KnobBool>(this, "Mask");
+    boost::shared_ptr<KnobBool> maskKnob = AppManager::createKnob<KnobBool>(this, "Mask");
     maskKnob->setHintToolTip("When checked, this input of the group will be considered as a mask. A mask is always optional.");
     maskKnob->setAnimationEnabled(false);
     maskKnob->setName(kNatronGroupInputIsMaskParamName);
@@ -59,7 +61,7 @@ GroupInput::initializeKnobs()
 
 void
 GroupInput::knobChanged(KnobI* k,
-                 Natron::ValueChangedReasonEnum /*reason*/,
+                 ValueChangedReasonEnum /*reason*/,
                  int /*view*/,
                  double /*time*/,
                  bool /*originatedFromMainThread*/)
@@ -80,16 +82,19 @@ GroupInput::knobChanged(KnobI* k,
     }
 }
 
-Natron::ImagePremultiplicationEnum
+ImagePremultiplicationEnum
 GroupInput::getOutputPremultiplication() const
 {
     NodePtr thisNode = getNode();
     boost::shared_ptr<NodeCollection> group = thisNode->getGroup();
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(group.get());
     assert(isGroup);
+    if (!isGroup) {
+        return eImagePremultiplicationPremultiplied;
+    }
     int inputNb = -1;
     std::vector<NodePtr> groupInputs;
-    isGroup->getInputs(&groupInputs);
+    isGroup->getInputs(&groupInputs, false);
     for (std::size_t i = 0; i < groupInputs.size(); ++i) {
         if (groupInputs[i] == thisNode) {
             inputNb = i;
@@ -98,10 +103,12 @@ GroupInput::getOutputPremultiplication() const
     }
     assert(inputNb != -1);
     if (inputNb != -1) {
-        Natron::EffectInstance* input = isGroup->getInput(inputNb);
+        EffectInstPtr input = isGroup->getInput(inputNb);
         if (input) {
             return input->getOutputPremultiplication();
         }
     }
-    return Natron::eImagePremultiplicationPremultiplied;
+    return eImagePremultiplicationPremultiplied;
 }
+
+NATRON_NAMESPACE_EXIT;

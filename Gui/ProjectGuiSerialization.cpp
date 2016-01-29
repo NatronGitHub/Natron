@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,25 +55,33 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 
+NATRON_NAMESPACE_ENTER;
+
 void
 ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
 {
-    NodeList activeNodes;
+    NodesList activeNodes;
     projectGui->getInternalProject()->getActiveNodesExpandGroups(&activeNodes);
     
     _serializedNodes.clear();
-    for (NodeList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+    for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         boost::shared_ptr<NodeGuiI> nodegui_i = (*it)->getNodeGui();
         if (!nodegui_i) {
             continue;
         }
-        boost::shared_ptr<NodeGui> nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
+        NodeGuiPtr nodegui = boost::dynamic_pointer_cast<NodeGui>(nodegui_i);
         
         if (nodegui->isVisible()) {
-            NodeGuiSerialization state;
-            nodegui->serialize(&state);
-            _serializedNodes.push_back(state);
-            ViewerInstance* viewer = dynamic_cast<ViewerInstance*>( (*it)->getLiveInstance() );
+            
+            boost::shared_ptr<NodeCollection> isInCollection = (*it)->getGroup();
+            NodeGroup* isCollectionAGroup = dynamic_cast<NodeGroup*>(isInCollection.get());
+            if (!isCollectionAGroup) {
+                ///Nodes within a group will be serialized recursively in the node group serialization
+                NodeGuiSerialization state;
+                nodegui->serialize(&state);
+                _serializedNodes.push_back(state);
+            }
+            ViewerInstance* viewer = (*it)->isEffectViewer();
             if (viewer) {
                 ViewerTab* tab = projectGui->getGui()->getViewerTabForInstance(viewer);
                 assert(tab);
@@ -102,6 +110,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
                 viewerData.fps = tab->getDesiredFps();
                 viewerData.fpsLocked = tab->isFPSLocked();
                 tab->getTimelineBounds(&viewerData.leftBound, &viewerData.rightBound);
+                tab->getActiveInputs(&viewerData.aChoice, &viewerData.bChoice);
                 viewerData.version = VIEWER_DATA_SERIALIZATION_VERSION;
                 _viewersData.insert( std::make_pair(viewer->getNode()->getScriptName_mt_safe(),viewerData) );
             }
@@ -125,8 +134,8 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
             KnobHolder* holder = (*it)->getHolder();
             assert(holder);
             
-            Natron::EffectInstance* isEffect = dynamic_cast<Natron::EffectInstance*>(holder);
-            Natron::Project* isProject = dynamic_cast<Natron::Project*>(holder);
+            EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+            Project* isProject = dynamic_cast<Project*>(holder);
 
             if (isProject) {
                 _openedPanelsOrdered.push_back(kNatronProjectSettingsPanelSerializationName);
@@ -163,14 +172,14 @@ void
 SplitterSerialization::initialize(Splitter* splitter)
 {
     sizes = splitter->serializeNatron().toStdString();
-    Natron::OrientationEnum nO = Natron::eOrientationHorizontal;
+    OrientationEnum nO = eOrientationHorizontal;
     Qt::Orientation qO = splitter->orientation();
     switch (qO) {
     case Qt::Horizontal:
-        nO = Natron::eOrientationHorizontal;
+        nO = eOrientationHorizontal;
         break;
     case Qt::Vertical:
-        nO = Natron::eOrientationVertical;
+        nO = eOrientationVertical;
         break;
     default:
         assert(false);
@@ -274,7 +283,7 @@ PythonPanelSerialization::initialize(PyPanel* tab,const std::string& func)
     std::list<Param*> parameters = tab->getParams();
     for (std::list<Param*>::iterator it = parameters.begin(); it != parameters.end(); ++it) {
         
-        boost::shared_ptr<KnobI> knob = (*it)->getInternalKnob();
+        KnobPtr knob = (*it)->getInternalKnob();
         KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knob.get() );
         KnobPage* isPage = dynamic_cast<KnobPage*>( knob.get() );
         KnobButton* isButton = dynamic_cast<KnobButton*>( knob.get() );
@@ -290,3 +299,4 @@ PythonPanelSerialization::initialize(PyPanel* tab,const std::string& func)
     userData = tab->save_serialization_thread();
 }
 
+NATRON_NAMESPACE_EXIT;

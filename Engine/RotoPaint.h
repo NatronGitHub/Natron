@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,18 +30,19 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct RotoPaintPrivate;
-class RotoPaint : public Natron::EffectInstance
+class RotoPaint : public EffectInstance
 {
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new RotoPaint(n, true);
     }
     
-    RotoPaint(boost::shared_ptr<Natron::Node> node, bool isPaintByDefault);
+    RotoPaint(NodePtr node, bool isPaintByDefault);
     
     virtual ~RotoPaint();
     
@@ -86,13 +87,13 @@ public:
         return true;
     }
 
-    virtual void addAcceptedComponents(int inputNb,std::list<Natron::ImageComponents>* comps) OVERRIDE FINAL;
-    virtual void addSupportedBitDepth(std::list<Natron::ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
     ///Doesn't really matter here since it won't be used (this effect is always an identity)
-    virtual Natron::RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return Natron::eRenderSafetyFullySafeFrame;
+        return eRenderSafetyFullySafeFrame;
     }
 
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -112,9 +113,9 @@ public:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 
-    virtual void getPreferredDepthAndComponents(int inputNb,std::list<Natron::ImageComponents>* comp,Natron::ImageBitDepthEnum* depth) const OVERRIDE FINAL;
+    virtual void getPreferredDepthAndComponents(int inputNb,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const OVERRIDE FINAL;
 
-    virtual Natron::ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
+    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
 
     virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
 
@@ -131,12 +132,12 @@ public:
 private:
     
     virtual void knobChanged(KnobI* k,
-                             Natron::ValueChangedReasonEnum reason,
+                             ValueChangedReasonEnum reason,
                              int view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
 
-    virtual Natron::StatusEnum
+    virtual StatusEnum
     getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
     
     virtual void getRegionsOfInterest(double time,
@@ -157,7 +158,7 @@ private:
         
 
 
-    virtual Natron::StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
+    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
     boost::scoped_ptr<RotoPaintPrivate> _imp;
 
@@ -171,13 +172,13 @@ class RotoNode : public RotoPaint
     
 public:
     
-    static Natron::EffectInstance* BuildEffect(boost::shared_ptr<Natron::Node> n)
+    static EffectInstance* BuildEffect(NodePtr n)
     {
         return new RotoNode(n);
     }
 
     
-    RotoNode(boost::shared_ptr<Natron::Node> node) : RotoPaint(node, false) {}
+    RotoNode(NodePtr node) : RotoPaint(node, false) {}
     
     virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN;
     
@@ -187,5 +188,7 @@ public:
     
     virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // ROTOPAINT_H

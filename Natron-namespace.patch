@@ -1,0 +1,306 @@
+diff --cc Engine/ExistenceCheckThread.h
+index 83fcc7a,ac9aee5..0000000
+--- a/Engine/ExistenceCheckThread.h
++++ b/Engine/ExistenceCheckThread.h
+@@@ -28,11 -36,9 +28,12 @@@
+  #include <boost/scoped_ptr.hpp>
+  #endif
+  
+- 
+ +#include <QThread>
+  
+  #include "Engine/EngineFwd.h"
+  
+++NATRON_NAMESPACE_ENTER;
+++
+  struct ExistenceCheckerThreadPrivate;
+  class ExistenceCheckerThread : public QThread
+  {
+@@@ -65,6 -71,6 +66,8 @@@ private
+      boost::scoped_ptr<ExistenceCheckerThreadPrivate> _imp;
+  };
+  
+++NATRON_NAMESPACE_EXIT;
+++
+  #endif // NATRON_USE_BREAKPAD
+  
+  
+diff --cc Engine/RotoPaint.cpp
+index 8d1ecee,6911199..0000000
+--- a/Engine/RotoPaint.cpp
++++ b/Engine/RotoPaint.cpp
+@@@ -381,20 -382,8 +381,18 @@@ RotoPaint::render(const RenderActionArg
+               plane != args.outputPlanes.end(); ++plane) {
+              
+              if (bgImg) {
+-                 
+-                 
+ -                plane->second->pasteFrom(*bgImg, args.roi, false);
+ +                if (bgImg->getComponents() != plane->second->getComponents()) {
+ +                    
+ +                    bgImg->convertToFormat(args.roi,
+ +                                           getApp()->getDefaultColorSpaceForBitDepth(bgImg->getBitDepth()),
+ +                                           getApp()->getDefaultColorSpaceForBitDepth(plane->second->getBitDepth()), 3
+ +                                           , false, false, plane->second.get());
+ +                } else {
+ +                    plane->second->pasteFrom(*bgImg, args.roi, false);
+ +                }
+ +                
+ +                
+-                 if (premultiply && plane->second->getComponents() == Natron::ImageComponents::getRGBAComponents()) {
++                 if (premultiply && plane->second->getComponents() == ImageComponents::getRGBAComponents()) {
+                      plane->second->premultImage(args.roi);
+                  }
+              } else {
+diff --git a/Engine/AppManager.cpp b/Engine/AppManager.cpp
+index 3ef7279..ead339a 100644
+--- a/Engine/AppManager.cpp
++++ b/Engine/AppManager.cpp
+@@ -2772,7 +2772,7 @@ AppManager::getOFXHost() const
+     return _imp->ofxHost.get();
+ }
+ 
+-NATRON_NAMESPACE_ENTER;
++static
+ void
+ errorDialog(const std::string & title,
+             const std::string & message,
+@@ -2787,6 +2787,7 @@ errorDialog(const std::string & title,
+     }
+ }
+ 
++static
+ void
+ errorDialog(const std::string & title,
+             const std::string & message,
+@@ -2802,6 +2803,7 @@ errorDialog(const std::string & title,
+     }
+ }
+ 
++static
+ void
+ warningDialog(const std::string & title,
+               const std::string & message,
+@@ -2815,6 +2817,8 @@ warningDialog(const std::string & title,
+         std::cerr << "WARNING: " << title << ": " << message << std::endl;
+     }
+ }
++
++static
+ void
+ warningDialog(const std::string & title,
+               const std::string & message,
+@@ -2830,7 +2834,7 @@ warningDialog(const std::string & title,
+     }
+ }
+ 
+-
++static
+ void
+ informationDialog(const std::string & title,
+                   const std::string & message,
+@@ -2845,6 +2849,7 @@ informationDialog(const std::string & title,
+     }
+ }
+ 
++static
+ void
+ informationDialog(const std::string & title,
+                   const std::string & message,
+@@ -2860,7 +2865,7 @@ informationDialog(const std::string & title,
+     }
+ }
+ 
+-
++static
+ StandardButtonEnum
+ questionDialog(const std::string & title,
+                const std::string & message,
+@@ -2880,6 +2885,7 @@ questionDialog(const std::string & title,
+     }
+ }
+ 
++static
+ StandardButtonEnum
+ questionDialog(const std::string & title,
+                const std::string & message,
+@@ -2900,7 +2906,7 @@ questionDialog(const std::string & title,
+     }
+ }
+     
+-std::size_t findNewLineStartAfterImports(std::string& script)
++std::size_t NATRON_NAMESPACE::findNewLineStartAfterImports(std::string& script)
+ {
+     ///Find position of the last import
+     size_t foundImport = script.find("import ");
+@@ -2933,19 +2939,19 @@ std::size_t findNewLineStartAfterImports(std::string& script)
+ 
+ }
+     
+-PyObject* getMainModule()
++PyObject* NATRON_NAMESPACE::getMainModule()
+ {
+     return appPTR->getMainModule();
+ }
+ 
+-std::size_t ensureScriptHasModuleImport(const std::string& moduleName,std::string& script)
++std::size_t NATRON_NAMESPACE::ensureScriptHasModuleImport(const std::string& moduleName,std::string& script)
+ {
+     /// import module
+     script = "from " + moduleName + " import * \n" + script;
+     return findNewLineStartAfterImports(script);
+ }
+     
+-bool interpretPythonScript(const std::string& script,std::string* error,std::string* output)
++bool NATRON_NAMESPACE::interpretPythonScript(const std::string& script,std::string* error,std::string* output)
+ {
+ #ifdef NATRON_RUN_WITHOUT_PYTHON
+     return true;
+@@ -3014,7 +3020,7 @@ bool interpretPythonScript(const std::string& script,std::string* error,std::str
+ }
+ 
+     
+-void compilePyScript(const std::string& script,PyObject** code)
++void NATRON_NAMESPACE::compilePyScript(const std::string& script,PyObject** code)
+ {
+     ///Must be locked
+     assert(PyThreadState_Get());
+@@ -3031,7 +3037,7 @@ void compilePyScript(const std::string& script,PyObject** code)
+ 
+     
+ std::string
+-makeNameScriptFriendly(const std::string& str)
++NATRON_NAMESPACE::makeNameScriptFriendly(const std::string& str)
+ {
+     if (str == "from") {
+         return "pFrom";
+@@ -3233,7 +3239,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
+   
+     
+ bool
+-getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
++NATRON_NAMESPACE::getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
+                                 const std::string& modulePath,
+                                 const std::string& pythonModule,
+                                 std::string* pluginID,
+@@ -3267,7 +3273,7 @@ getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
+ }
+     
+ bool
+-getGroupInfos(const std::string& modulePath,
++NATRON_NAMESPACE::getGroupInfos(const std::string& modulePath,
+               const std::string& pythonModule,
+               std::string* pluginID,
+               std::string* pluginLabel,
+@@ -3294,7 +3300,7 @@ getGroupInfos(const std::string& modulePath,
+ 
+ 
+     
+-void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args)
++void NATRON_NAMESPACE::getFunctionArguments(const std::string& pyFunc,std::string* error,std::vector<std::string>* args)
+ {
+ #ifdef NATRON_RUN_WITHOUT_PYTHON
+     return;
+@@ -3349,7 +3355,7 @@ void getFunctionArguments(const std::string& pyFunc,std::string* error,std::vect
+  * If app1 or Group1 does not exist at this point, this is a failure.
+  **/
+ PyObject*
+-getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined)
++NATRON_NAMESPACE::getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool* isDefined)
+ {
+ #ifdef NATRON_RUN_WITHOUT_PYTHON
+     return 0;
+@@ -3382,7 +3388,4 @@ getAttrRecursive(const std::string& fullyQualifiedName,PyObject* parentObj,bool*
+     
+ }
+ 
+-
+-} //Namespace Natron
+-
+ #include "moc_AppManager.cpp"
+diff --git a/Engine/Image.h b/Engine/Image.h
+index 3109d51..0594497 100644
+--- a/Engine/Image.h
++++ b/Engine/Image.h
+@@ -1003,7 +1003,7 @@ NATRON_NAMESPACE_ENTER;
+     
+     typedef boost::shared_ptr<Natron::Image> ImagePtr;
+     typedef std::list<ImagePtr> ImageList;
+-} //namespace Natron
+ 
++NATRON_NAMESPACE_EXIT;
+ 
+ #endif // NATRON_ENGINE_IMAGE_H
+diff --git a/Engine/Log.cpp b/Engine/Log.cpp
+index 9a32382..88ac548 100644
+--- a/Engine/Log.cpp
++++ b/Engine/Log.cpp
+@@ -221,5 +221,7 @@ Log::endFunction(const std::string & callerName,
+ {
+     Log::instance()->_imp->endFunction(callerName,function);
+ }
+-} //namespace Natron
++
++NATRON_NAMESPACE_EXIT;
++
+ #endif // ifdef NATRON_LOG
+diff --git a/Engine/Lut.h b/Engine/Lut.h
+index 120035f..23904a8 100644
+--- a/Engine/Lut.h
++++ b/Engine/Lut.h
+@@ -574,7 +574,7 @@ charToUint8xx(unsigned char quantum)
+     return (unsigned short) (quantum << 8);
+ }
+ }     //namespace Color
+-} //namespace Natron
+ 
++NATRON_NAMESPACE_EXIT;
+ 
+ #endif //NATRON_ENGINE_LUT_H
+diff --git a/Engine/Node.h b/Engine/Node.h
+index 2ac9bf5..9d5dbc1 100644
+--- a/Engine/Node.h
++++ b/Engine/Node.h
+@@ -1370,6 +1370,6 @@ public:
+     }
+ };
+ 
+-} //namespace Natron
++NATRON_NAMESPACE_EXIT;
+ 
+ #endif // NATRON_ENGINE_NODE_H
+diff --git a/Global/ProcInfo.h b/Global/ProcInfo.h
+index 7ba7fef..fa6ce83 100644
+--- a/Global/ProcInfo.h
++++ b/Global/ProcInfo.h
+@@ -38,8 +38,7 @@
+ #include <sys/stat.h>
+ #endif
+ 
+-namespace Natron
+-{
++NATRON_NAMESPACE_ENTER;
+ 
+ /**
+ * @brief Returns the application's executable absolute file path.
+@@ -61,5 +60,6 @@ QString applicationDirPath(const char* argv0Param);
+ **/
+ bool checkIfProcessIsRunning(const char* processAbsoluteFilePath, Q_PID pid);
+ 
+-} //Natron
++NATRON_NAMESPACE_EXIT;
++
+ #endif // NATRON_GLOBAL_PROCINFO_H
+diff --git a/Tests/Lut_Test.cpp b/Tests/Lut_Test.cpp
+index 7b16d5f..ed8e6a2 100644
+--- a/Tests/Lut_Test.cpp
++++ b/Tests/Lut_Test.cpp
+@@ -26,7 +26,7 @@
+ #include <gtest/gtest.h>
+ #include "Engine/Lut.h"
+ 
+-using namespace Natron::Color;
++using namespace NATRON_NAMESPACE::Color;
+ 
+ TEST(Lut,IntConversions) {
+     for (int i = 0; i < 0x10000; ++i) {

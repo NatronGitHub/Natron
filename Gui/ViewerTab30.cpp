@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@
 
 #include "Engine/Settings.h"
 #include "Engine/Node.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/Button.h"
@@ -59,7 +60,7 @@
 #endif
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 bool
 ViewerTab::isClippedToProject() const
@@ -70,18 +71,18 @@ ViewerTab::isClippedToProject() const
 std::string
 ViewerTab::getColorSpace() const
 {
-    Natron::ViewerColorSpaceEnum lut = (Natron::ViewerColorSpaceEnum)_imp->viewerNode->getLutType();
+    ViewerColorSpaceEnum lut = (ViewerColorSpaceEnum)_imp->viewerNode->getLutType();
 
     switch (lut) {
-    case Natron::eViewerColorSpaceLinear:
+    case eViewerColorSpaceLinear:
 
         return "Linear(None)";
         break;
-    case Natron::eViewerColorSpaceSRGB:
+    case eViewerColorSpaceSRGB:
 
         return "sRGB";
         break;
-    case Natron::eViewerColorSpaceRec709:
+    case eViewerColorSpaceRec709:
 
         return "Rec.709";
         break;
@@ -217,32 +218,32 @@ ViewerTab::getZoomOrPannedSinceLastFit() const
     return _imp->viewer->getZoomOrPannedSinceLastFit();
 }
 
-Natron::DisplayChannelsEnum
+DisplayChannelsEnum
 ViewerTab::getChannels() const
 {
     return _imp->viewerNode->getChannels(0);
 }
 
 std::string
-ViewerTab::getChannelsString(Natron::DisplayChannelsEnum c)
+ViewerTab::getChannelsString(DisplayChannelsEnum c)
 {
     switch (c) {
-        case Natron::eDisplayChannelsRGB:
+        case eDisplayChannelsRGB:
             
             return "RGB";
-        case Natron::eDisplayChannelsR:
+        case eDisplayChannelsR:
             
             return "R";
-        case Natron::eDisplayChannelsG:
+        case eDisplayChannelsG:
             
             return "G";
-        case Natron::eDisplayChannelsB:
+        case eDisplayChannelsB:
             
             return "B";
-        case Natron::eDisplayChannelsA:
+        case eDisplayChannelsA:
             
             return "A";
-        case Natron::eDisplayChannelsY:
+        case eDisplayChannelsY:
             
             return "Luminance";
             break;
@@ -255,7 +256,7 @@ ViewerTab::getChannelsString(Natron::DisplayChannelsEnum c)
 std::string
 ViewerTab::getChannelsString() const
 {
-    Natron::DisplayChannelsEnum c = _imp->viewerNode->getChannels(0);
+    DisplayChannelsEnum c = _imp->viewerNode->getChannels(0);
     return getChannelsString(c);
 }
 
@@ -726,7 +727,7 @@ ViewerTab::notifyGuiClosing()
 }
 
 void
-ViewerTab::onCompositingOperatorChangedInternal(Natron::ViewerCompositingOperatorEnum oldOp,Natron::ViewerCompositingOperatorEnum newOp)
+ViewerTab::onCompositingOperatorChangedInternal(ViewerCompositingOperatorEnum oldOp,ViewerCompositingOperatorEnum newOp)
 {
     if ( (oldOp == eViewerCompositingOperatorNone) && (newOp != eViewerCompositingOperatorNone) ) {
         _imp->viewer->resetWipeControls();
@@ -785,31 +786,31 @@ ViewerTab::onCompositingOperatorIndexChanged(int index)
 }
 
 void
-ViewerTab::setCompositingOperator(Natron::ViewerCompositingOperatorEnum op)
+ViewerTab::setCompositingOperator(ViewerCompositingOperatorEnum op)
 {
     int comboIndex;
 
     switch (op) {
-    case Natron::eViewerCompositingOperatorNone:
+    case eViewerCompositingOperatorNone:
         comboIndex = 0;
         break;
-    case Natron::eViewerCompositingOperatorOver:
+    case eViewerCompositingOperatorOver:
         comboIndex = 1;
         break;
-    case Natron::eViewerCompositingOperatorUnder:
+    case eViewerCompositingOperatorUnder:
         comboIndex = 2;
         break;
-    case Natron::eViewerCompositingOperatorMinus:
+    case eViewerCompositingOperatorMinus:
         comboIndex = 3;
         break;
-    case Natron::eViewerCompositingOperatorWipe:
+    case eViewerCompositingOperatorWipe:
         comboIndex = 4;
         break;
     default:
         throw std::logic_error("ViewerTab::setCompositingOperator(): unknown operator");
         break;
     }
-    Natron::ViewerCompositingOperatorEnum oldOp;
+    ViewerCompositingOperatorEnum oldOp;
     {
         QMutexLocker l(&_imp->compOperatorMutex);
         oldOp = _imp->compOperator;
@@ -845,8 +846,19 @@ ViewerTab::setInputA(int index)
     }
     _imp->firstInputImage->setCurrentIndex(comboboxIndex);
     _imp->viewerNode->setInputA(index);
-    _imp->viewerNode->renderCurrentFrame(true);
-    
+
+    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        ViewerInstance* viewer = (*it)->getInternalNode();
+        if (viewer) {
+            RenderEngine* engine = viewer->getRenderEngine();
+            if (engine && engine->hasThreadsWorking()) {
+                engine->abortRendering(true,false);
+                engine->renderCurrentFrame(false, true);
+            }
+        }
+    }
+
 }
 
 void
@@ -863,8 +875,26 @@ ViewerTab::setInputB(int index)
     }
     _imp->secondInputImage->setCurrentIndex(comboboxIndex);
     _imp->viewerNode->setInputB(index);
-    _imp->viewerNode->renderCurrentFrame(true);
+    
+    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        ViewerInstance* viewer = (*it)->getInternalNode();
+        if (viewer) {
+            RenderEngine* engine = viewer->getRenderEngine();
+            if (engine && engine->hasThreadsWorking()) {
+                engine->abortRendering(true,false);
+                engine->renderCurrentFrame(false, true);
+            }
+        }
+    }
 }
+
+void
+ViewerTab::getActiveInputs(int* a, int* b) const
+{
+    _imp->viewerNode->getActiveInputs(*a, *b);
+}
+
 
 void
 ViewerTab::switchInputAAndB()
@@ -884,7 +914,18 @@ ViewerTab::switchInputAAndB()
     }
     _imp->viewerNode->setInputA(inputBIndex);
     _imp->viewerNode->setInputB(inputAIndex);
-    _imp->viewerNode->renderCurrentFrame(true);
+    
+    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        ViewerInstance* viewer = (*it)->getInternalNode();
+        if (viewer) {
+            RenderEngine* engine = viewer->getRenderEngine();
+            if (engine && engine->hasThreadsWorking()) {
+                engine->abortRendering(true,false);
+                engine->renderCurrentFrame(false, true);
+            }
+        }
+    }
 }
 
 ///Called when the user change the combobox choice
@@ -900,7 +941,18 @@ ViewerTab::onFirstInputNameChanged(const QString & text)
         }
     }
     _imp->viewerNode->setInputA(inputIndex);
-    _imp->viewerNode->renderCurrentFrame(true);
+    
+    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        ViewerInstance* viewer = (*it)->getInternalNode();
+        if (viewer) {
+            RenderEngine* engine = viewer->getRenderEngine();
+            if (engine && engine->hasThreadsWorking()) {
+                engine->abortRendering(true,false);
+                engine->renderCurrentFrame(false, true);
+            }
+        }
+    }
 }
 
 ///Called when the user change the combobox choice
@@ -918,20 +970,30 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
     _imp->viewerNode->setInputB(inputIndex);
     if (inputIndex == -1) {
         manageSlotsForInfoWidget(1, false);
-        //setCompositingOperator(Natron::eViewerCompositingOperatorNone);
+        //setCompositingOperator(eViewerCompositingOperatorNone);
         _imp->infoWidget[1]->hide();
     } else {
         if ( !_imp->infoWidget[1]->isVisible() ) {
             _imp->infoWidget[1]->show();
             manageSlotsForInfoWidget(1, true);
             _imp->secondInputImage->setEnabled_natron(true);
-            if (_imp->compOperator == Natron::eViewerCompositingOperatorNone) {
+            if (_imp->compOperator == eViewerCompositingOperatorNone) {
                 _imp->viewer->resetWipeControls();
-                setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
+                setCompositingOperator(eViewerCompositingOperatorWipe);
             }
         }
     }
-    _imp->viewerNode->renderCurrentFrame(true);
+    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        ViewerInstance* viewer = (*it)->getInternalNode();
+        if (viewer) {
+            RenderEngine* engine = viewer->getRenderEngine();
+            if (engine && engine->hasThreadsWorking()) {
+                engine->abortRendering(true,false);
+                engine->renderCurrentFrame(false, true);
+            }
+        }
+    }
 }
 
 ///This function is called only when the user changed inputs on the node graph
@@ -952,8 +1014,8 @@ ViewerTab::onActiveInputsChanged()
         _imp->firstInputImage->setCurrentIndex_no_emit(0);
     }
 
-    Natron::ViewerCompositingOperatorEnum op = getCompositingOperator();
-    _imp->secondInputImage->setEnabled_natron(op != Natron::eViewerCompositingOperatorNone);
+    ViewerCompositingOperatorEnum op = getCompositingOperator();
+    _imp->secondInputImage->setEnabled_natron(op != eViewerCompositingOperatorNone);
 
     ViewerTabPrivate::InputNamesMap::iterator foundB = _imp->inputNamesMap.find(activeInputs[1]);
     if ( foundB != _imp->inputNamesMap.end() ) {
@@ -985,7 +1047,7 @@ ViewerTab::onActiveInputsChanged()
     else*/ if ( autoWipe && (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
                 && (op == eViewerCompositingOperatorNone) ) {
         _imp->viewer->resetWipeControls();
-        setCompositingOperator(Natron::eViewerCompositingOperatorWipe);
+        setCompositingOperator(eViewerCompositingOperatorWipe);
     }
     
 }
@@ -1018,11 +1080,11 @@ ViewerTab::refreshFPSBoxFromClipPreferences()
     int activeInputs[2];
     
     _imp->viewerNode->getActiveInputs(activeInputs[0], activeInputs[1]);
-    EffectInstance* input0 = activeInputs[0] != - 1 ? _imp->viewerNode->getInput(activeInputs[0]) : 0;
+    EffectInstPtr input0 = activeInputs[0] != - 1 ? _imp->viewerNode->getInput(activeInputs[0]) : EffectInstPtr();
     if (input0) {
         _imp->fpsBox->setValue(input0->getPreferredFrameRate());
     } else {
-        EffectInstance* input1 = activeInputs[1] != - 1 ? _imp->viewerNode->getInput(activeInputs[1]) : 0;
+        EffectInstPtr input1 = activeInputs[1] != - 1 ? _imp->viewerNode->getInput(activeInputs[1]) : EffectInstPtr();
         if (input1) {
             _imp->fpsBox->setValue(input1->getPreferredFrameRate());
         } else {
@@ -1040,3 +1102,5 @@ ViewerTab::onClipPreferencesChanged()
         refreshFPSBoxFromClipPreferences();
     }
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,41 +25,53 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QAtomicInt>
+
+
+#ifdef NATRON_USE_BREAKPAD
+#if defined(Q_OS_MAC)
+#include "client/mac/handler/exception_handler.h"
+#elif defined(Q_OS_LINUX)
+#include <fcntl.h>
+#include "client/linux/handler/exception_handler.h"
+#include "client/linux/crash_generation/crash_generation_server.h"
+#elif defined(Q_OS_WIN32)
+#include "client/windows/handler/exception_handler.h"
+#endif
+#endif
 
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/TLSHolder.h"
 
-class QProcess;
-class QLocalServer;
-class QLocalSocket;
-
-#ifdef NATRON_USE_BREAKPAD
-namespace google_breakpad {
-    class ExceptionHandler;
-}
-#endif
-
+NATRON_NAMESPACE_ENTER;
 
 struct AppManagerPrivate
 {
+  
+    AppTLS globalTLS;
+
     AppManager::AppTypeEnum _appType; //< the type of app
+    
+    mutable QMutex _appInstancesMutex;
     std::map<int,AppInstanceRef> _appInstances; //< the instances mapped against their ID
     int _availableID; //< the ID for the next instance
     int _topLevelInstanceID; //< the top level app ID
     boost::shared_ptr<Settings> _settings; //< app settings
     std::vector<Format*> _formats; //<a list of the "base" formats available in the application
-    Natron::PluginsMap _plugins; //< list of the plugins
-    boost::scoped_ptr<Natron::OfxHost> ofxHost; //< OpenFX host
+    PluginsMap _plugins; //< list of the plugins
+    boost::scoped_ptr<OfxHost> ofxHost; //< OpenFX host
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
-    boost::shared_ptr<Natron::Cache<Natron::Image> >  _nodeCache; //< Images cache
-    boost::shared_ptr<Natron::Cache<Natron::Image> >  _diskCache; //< Images disk cache (used by DiskCache nodes)
-    boost::shared_ptr<Natron::Cache<Natron::FrameEntry> > _viewerCache; //< Viewer textures cache
+    boost::shared_ptr<Cache<Image> >  _nodeCache; //< Images cache
+    boost::shared_ptr<Cache<Image> >  _diskCache; //< Images disk cache (used by DiskCache nodes)
+    boost::shared_ptr<Cache<FrameEntry> > _viewerCache; //< Viewer textures cache
     
     mutable QMutex diskCachesLocationMutex;
     QString diskCachesLocation;
@@ -112,15 +124,10 @@ struct AppManagerPrivate
     PyThreadState* mainThreadState;
     
 #ifdef NATRON_USE_BREAKPAD
+    QString breakpadProcessExecutableFilePath;
+    Q_PID breakpadProcessPID;
     boost::shared_ptr<google_breakpad::ExceptionHandler> breakpadHandler;
-    boost::shared_ptr<QProcess> crashReporter;
-#ifdef Q_OS_LINUX
-    QFile crashReporterBreakpadPipe;
-#else
-    QString crashReporterBreakpadPipe;
-#endif
-    boost::shared_ptr<QLocalServer> crashClientServer;
-    QLocalSocket* crashServerConnection;
+    boost::shared_ptr<ExistenceCheckerThread> breakpadAliveThread;
 #endif
     
     QMutex natronPythonGIL;
@@ -133,13 +140,7 @@ struct AppManagerPrivate
     
     AppManagerPrivate();
     
-    ~AppManagerPrivate()
-    {
-        for (U32 i = 0; i < args.size() ; ++i) {
-            free(args[i]);
-        }
-        args.clear();
-    }
+    ~AppManagerPrivate();
 
     void initProcessInputChannel(const QString & mainProcessServerName);
 
@@ -158,15 +159,18 @@ struct AppManagerPrivate
      **/
     void setMaxCacheFiles();
     
-    Natron::Plugin* findPluginById(const QString& oldId,int major, int minor) const;
+    Plugin* findPluginById(const QString& oldId,int major, int minor) const;
     
     void declareSettingsToPython();
     
 #ifdef NATRON_USE_BREAKPAD
-    void initBreakpad();
+    void initBreakpad(const QString& breakpadPipePath, const QString& breakpadComPipePath, int breakpad_client_fd);
+
+    void createBreakpadHandler(const QString& breakpadPipePath, int breakpad_client_fd);
 #endif
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_AppManagerPrivate_h
 

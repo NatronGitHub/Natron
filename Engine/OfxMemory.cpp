@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,9 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/PluginMemory.h"
 
-OfxMemory::OfxMemory(Natron::EffectInstance* effect)
+NATRON_NAMESPACE_ENTER;
+
+OfxMemory::OfxMemory(const EffectInstPtr& effect)
     : OFX::Host::Memory::Instance()
       , _memory( new PluginMemory(effect) )
 {
@@ -80,3 +82,4 @@ OfxMemory::unlock()
     _memory->unlock();
 }
 
+NATRON_NAMESPACE_EXIT;

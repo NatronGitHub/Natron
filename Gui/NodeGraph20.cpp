@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/NodeGroup.h"
 #include "Engine/Settings.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Edge.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
@@ -50,8 +50,340 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Global/QtCompat.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
+void
+NodeGraph::checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& selectedNode, const QRectF& visibleSceneR)
+{
+    NodePtr internalNode = selectedNode->getNode();
+    
+    bool doMergeHints = shiftdown && controlDown;
+    bool doConnectionHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
+    
+    //Ignore hints for backdrops
+    BackdropGui* isBd = dynamic_cast<BackdropGui*>(selectedNode.get());
+    if (isBd) {
+        return;
+    }
+    
+    if (!doMergeHints) {
+        ///for nodes already connected don't show hint
+        if ( ( internalNode->getMaxInputCount() == 0) && internalNode->hasOutputConnected() ) {
+            doConnectionHints = false;
+        } else if ( ( internalNode->getMaxInputCount() > 0) && internalNode->hasAllInputsConnected() && internalNode->hasOutputConnected() ) {
+            doConnectionHints = false;
+        }
+    }
+    
+    if (!doConnectionHints) {
+        return;
+    }
+    
+    QRectF selectedNodeBbox = selectedNode->boundingRectWithEdges();//selectedNode->mapToParent( selectedNode->boundingRect() ).boundingRect();
+    double tolerance = 10;
+    selectedNodeBbox.adjust(-tolerance, -tolerance, tolerance, tolerance);
+    
+    NodeGuiPtr nodeToShowMergeRect;
+    
+    NodePtr selectedNodeInternalNode = selectedNode->getNode();
+    bool selectedNodeIsReader = selectedNodeInternalNode->getEffectInstance()->isReader() || selectedNodeInternalNode->getMaxInputCount() == 0;
+    Edge* edge = 0;
+    {
+        QMutexLocker l(&_imp->_nodesMutex);
+        for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+            
+            bool isAlreadyAnOutput = false;
+            const NodesWList& outputs = internalNode->getGuiOutputs();
+            for (NodesWList::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
+                NodePtr node = it2->lock();
+                if (!node) {
+                    continue;
+                }
+                if (node == (*it)->getNode()) {
+                    isAlreadyAnOutput = true;
+                    break;
+                }
+            }
+            if (isAlreadyAnOutput) {
+                continue;
+            }
+            QRectF nodeBbox = (*it)->boundingRectWithEdges();
+            if ((*it) != selectedNode && (*it)->isVisible() && nodeBbox.intersects(visibleSceneR)) {
+                
+                if (doMergeHints) {
+                    
+                    //QRectF nodeRect = (*it)->mapToParent((*it)->boundingRect()).boundingRect();
+                    
+                    NodePtr internalNode = (*it)->getNode();
+                    
+                    
+                    if (!internalNode->isOutputNode() && nodeBbox.intersects(selectedNodeBbox)) {
+                        
+                        bool nHasInput = internalNode->hasInputConnected();
+                        int nMaxInput = internalNode->getMaxInputCount();
+                        bool selectedHasInput = selectedNodeInternalNode->hasInputConnected();
+                        int selectedMaxInput = selectedNodeInternalNode->getMaxInputCount();
+                        double nPAR = internalNode->getEffectInstance()->getPreferredAspectRatio();
+                        double selectedPAR = selectedNodeInternalNode->getEffectInstance()->getPreferredAspectRatio();
+                        double nFPS = internalNode->getEffectInstance()->getPreferredFrameRate();
+                        double selectedFPS = selectedNodeInternalNode->getEffectInstance()->getPreferredFrameRate();
+                        
+                        bool isValid = true;
+                        
+                        if (selectedPAR != nPAR || std::abs(nFPS - selectedFPS) > 0.01) {
+                            if (nHasInput || selectedHasInput) {
+                                isValid = false;
+                            } else if (!nHasInput && nMaxInput == 0 && !selectedHasInput && selectedMaxInput == 0) {
+                                isValid = false;
+                            }
+                        }
+                        if (isValid) {
+                            nodeToShowMergeRect = *it;
+                        }
+                    } else {
+                        (*it)->setMergeHintActive(false);
+                    }
+                    
+                } else { //!doMergeHints
+                    
+                    
+                    
+                    edge = (*it)->hasEdgeNearbyRect(selectedNodeBbox);
+                    
+                    ///if the edge input is the selected node don't continue
+                    if ( edge && ( edge->getSource() == selectedNode) ) {
+                        edge = 0;
+                    }
+                    
+                    if ( edge && edge->isOutputEdge() ) {
+                        
+                        if (selectedNodeIsReader) {
+                            continue;
+                        }
+                        int prefInput = selectedNodeInternalNode->getPreferredInputForConnection();
+                        if (prefInput == -1) {
+                            edge = 0;
+                        } else {
+                            Node::CanConnectInputReturnValue ret = selectedNodeInternalNode->canConnectInput(edge->getSource()->getNode(),
+                                                                                                                     prefInput);
+                            if (ret != Node::eCanConnectInput_ok) {
+                                edge = 0;
+                            }
+                        }
+                    }
+                    
+                    if ( edge && !edge->isOutputEdge() ) {
+                        
+                        if ((*it)->getNode()->getEffectInstance()->isReader() ||
+                            (*it)->getNode()->getMaxInputCount() == 0) {
+                            edge = 0;
+                            continue;
+                        }
+                        
+                        if ((*it)->getNode()->getEffectInstance()->isInputRotoBrush(edge->getInputNumber())) {
+                            edge = 0;
+                            continue;
+                        }
+                        
+                        //Check that the edge can connect to the selected node
+                        {
+                            Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput(selectedNodeInternalNode, edge->getInputNumber());
+                            if (ret == Node::eCanConnectInput_inputAlreadyConnected &&
+                                !selectedNodeIsReader) {
+                                ret = Node::eCanConnectInput_ok;
+                            }
+                            
+                            if (ret != Node::eCanConnectInput_ok) {
+                                edge = 0;
+                            }
+                        }
+                        
+                        //Check that the selected node can connect to the input of the edge
+                        
+                        if (edge) {
+                            NodeGuiPtr edgeHasSource = edge->getSource();
+                            if (edgeHasSource) {
+                                int prefInput = selectedNodeInternalNode->getPreferredInputForConnection();
+                                if (prefInput != -1) {
+                                    Node::CanConnectInputReturnValue ret = selectedNodeInternalNode->canConnectInput(edgeHasSource->getNode(), prefInput);
+                                    if (ret == Node::eCanConnectInput_inputAlreadyConnected &&
+                                        !selectedNodeIsReader) {
+                                        ret = Node::eCanConnectInput_ok;
+                                    }
+                                    
+                                    if (ret != Node::eCanConnectInput_ok) {
+                                        edge = 0;
+                                    }
+                                }
+                            }
+                        }
+                        
+                    }
+                    
+                    if (edge) {
+                        edge->setUseHighlight(true);
+                        break;
+                    }
+                } // doMergeHints
+            }
+        }
+    } // QMutexLocker l(&_imp->_nodesMutex);
+    
+    if ( _imp->_highLightedEdge && ( _imp->_highLightedEdge != edge) ) {
+        _imp->_highLightedEdge->setUseHighlight(false);
+        _imp->_hintInputEdge->hide();
+        _imp->_hintOutputEdge->hide();
+    }
+    
+    _imp->_highLightedEdge = edge;
+    
+    if (edge && edge->getSource() && edge->getDest()) {
+        ///setup the hints edge
+        
+        ///find out if the node is already connected to what the edge is connected
+        bool alreadyConnected = false;
+        const std::vector<NodeWPtr > & inpNodes = selectedNode->getNode()->getGuiInputs();
+        for (std::size_t i = 0; i < inpNodes.size(); ++i) {
+            if ( inpNodes[i].lock() == edge->getSource()->getNode() ) {
+                alreadyConnected = true;
+                break;
+            }
+        }
+        
+        if ( !_imp->_hintInputEdge->isVisible() ) {
+            if (!alreadyConnected) {
+                int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
+                _imp->_hintInputEdge->setInputNumber(prefInput != -1 ? prefInput : 0);
+                _imp->_hintInputEdge->setSourceAndDestination(edge->getSource(), selectedNode);
+                _imp->_hintInputEdge->setVisible(true);
+            }
+            _imp->_hintOutputEdge->setInputNumber( edge->getInputNumber() );
+            _imp->_hintOutputEdge->setSourceAndDestination( selectedNode, edge->getDest() );
+            _imp->_hintOutputEdge->setVisible(true);
+        } else {
+            if (!alreadyConnected) {
+                _imp->_hintInputEdge->initLine();
+            }
+            _imp->_hintOutputEdge->initLine();
+        }
+    } else if (edge) {
+        ///setup only 1 of the hints edge
+        
+        if ( _imp->_highLightedEdge && !_imp->_hintInputEdge->isVisible() ) {
+            if ( edge->isOutputEdge() ) {
+                int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
+                _imp->_hintInputEdge->setInputNumber(prefInput != -1 ? prefInput : 0);
+                _imp->_hintInputEdge->setSourceAndDestination(edge->getSource(), selectedNode);
+            } else {
+                _imp->_hintInputEdge->setInputNumber( edge->getInputNumber() );
+                _imp->_hintInputEdge->setSourceAndDestination( selectedNode,edge->getDest() );
+            }
+            _imp->_hintInputEdge->setVisible(true);
+        } else if ( _imp->_highLightedEdge && _imp->_hintInputEdge->isVisible() ) {
+            _imp->_hintInputEdge->initLine();
+        }
+    } else if (nodeToShowMergeRect) {
+        nodeToShowMergeRect->setMergeHintActive(true);
+        selectedNode->setMergeHintActive(true);
+        _imp->_mergeHintNode = nodeToShowMergeRect;
+    } else {
+        selectedNode->setMergeHintActive(false);
+        _imp->_mergeHintNode.reset();
+    }
+    
+    
+}
+
+void
+NodeGraph::moveSelectedNodesBy(bool shiftdown, bool controlDown, const QPointF& lastMousePosScene, const QPointF& newPos, const QRectF& visibleSceneR, bool userEdit)
+{
+    if (_imp->_selection.empty()) {
+        return;
+    }
+    
+    
+    //Get the nodes to move, taking into account the backdrops
+    std::list<std::pair<NodeGuiPtr,bool> > nodesToMove;
+    for (NodesGuiList::iterator it = _imp->_selection.begin();
+         it != _imp->_selection.end(); ++it) {
+        
+        const NodeGuiPtr& node = *it;
+        nodesToMove.push_back(std::make_pair(node,false));
+        
+        std::map<NodeGuiPtr,NodesGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
+        if (!controlDown && foundBd != _imp->_nodesWithinBDAtPenDown.end()) {
+            for (NodesGuiList::iterator it2 = foundBd->second.begin();
+                 it2 != foundBd->second.end(); ++it2) {
+                ///add it only if it's not already in the list
+                bool found = false;
+                for (std::list<std::pair<NodeGuiPtr,bool> >::iterator it3 = nodesToMove.begin();
+                     it3 != nodesToMove.end(); ++it3) {
+                    if (it3->first == *it2) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    nodesToMove.push_back(std::make_pair(*it2,true));
+                }
+            }
+            
+        }
+    }
+    
+    //The delta
+    double dxScene = newPos.x() - lastMousePosScene.x();
+    double dyScene = newPos.y() - lastMousePosScene.y();
+    
+    
+    //Move all nodes
+    bool deltaSet = false;
+    for (std::list<std::pair<NodeGuiPtr,bool> >::iterator it = nodesToMove.begin();
+         it != nodesToMove.end(); ++it) {
+        
+        //The current position
+        QPointF pos = it->first->getPos_mt_safe();
+        
+        //if ignoreMagnet == true, we do not snap nodes to horizontal/vertical positions
+        bool ignoreMagnet = it->second || nodesToMove.size() > 1;
+        it->first->refreshPosition(pos.x() + dxScene, pos.y() + dyScene,ignoreMagnet,newPos);
+        
+        //The new position
+        QPointF newNodePos = it->first->getPos_mt_safe();
+        if (!ignoreMagnet) {
+            //Magnet only works when selection is only for a single node
+            //Adjust the delta since mouse press by the new position after snapping
+            assert(nodesToMove.size() == 1);
+            _imp->_deltaSinceMousePress.rx() += newNodePos.x() - pos.x();
+            _imp->_deltaSinceMousePress.ry() += newNodePos.y() - pos.y();
+            deltaSet = true;
+        }
+    }
+    
+    if (!deltaSet) {
+        _imp->_deltaSinceMousePress.rx() += dxScene;
+        _imp->_deltaSinceMousePress.ry() += dyScene;
+    }
+    
+    if (!userEdit) {
+        //For !userEdit do not do auto-scroll and connections hints
+        return;
+    }
+    
+    //Start auto-scolling if nearby the edges
+    checkAndStartAutoScrollTimer(newPos);
+    
+    //Set the hand cursor
+    setCursor(Qt::ClosedHandCursor);
+    
+    //The lines below are trying to 
+    if (_imp->_selection.size() != 1) {
+        return;
+    }
+    
+    checkForHints(shiftdown, controlDown, _imp->_selection.front(),visibleSceneR);
+  
+}
 
 void
 NodeGraph::mouseMoveEvent(QMouseEvent* e)
@@ -89,7 +421,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
             e->y() >= (10 - 15) && e->y() <= (10 + ih + 15)) {
             assert(isGroup);
             QPoint pos = mapToGlobal(e->pos());
-            QToolTip::showText(pos, Natron::convertFromPlainText(QObject::tr("Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\nAny modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."),Qt::WhiteSpaceNormal));
+            QToolTip::showText(pos, GuiUtils::convertFromPlainText(QObject::tr("Clicking the unlock button will convert the PyPlug to a regular group saved in the project and dettach it from the script.\nAny modification will not be written to the Python script. Subsequent loading of the project will no longer load this group from the python script."),Qt::WhiteSpaceNormal));
         }
 
     }
@@ -97,12 +429,12 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     QRectF sceneR = visibleSceneRect();
     if (groupEdited && _imp->_evtState != eEventStateSelectionRect && _imp->_evtState != eEventStateDraggingArrow) {
         ///set cursor
-        boost::shared_ptr<NodeGui> selected;
+        NodeGuiPtr selected;
         Edge* selectedEdge = 0;
         {
             bool optionalInputsAutoHidden = areOptionalInputsAutoHidden();
             QMutexLocker l(&_imp->_nodesMutex);
-            for (NodeGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+            for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
                 QPointF evpt = (*it)->mapFromScene(newPos);
                 
                 QRectF bbox = (*it)->mapToScene((*it)->boundingRect()).boundingRect();
@@ -153,283 +485,10 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     }
     case eEventStateDraggingNode: {
         mustUpdate = true;
-        if ( !_imp->_selection.empty() ) {
-            
-            bool controlDown = modCASIsControl(e);
-
-            std::list<std::pair<NodeGuiPtr,bool> > nodesToMove;
-            for (std::list<NodeGuiPtr>::iterator it = _imp->_selection.begin();
-                 it != _imp->_selection.end(); ++it) {
-            
-                const NodeGuiPtr& node = *it;
-                nodesToMove.push_back(std::make_pair(node,false));
-                
-                std::map<NodeGuiPtr,NodeGuiList>::iterator foundBd = _imp->_nodesWithinBDAtPenDown.find(*it);
-                if (!controlDown && foundBd != _imp->_nodesWithinBDAtPenDown.end()) {
-                    for (NodeGuiList::iterator it2 = foundBd->second.begin();
-                         it2 != foundBd->second.end(); ++it2) {
-                        ///add it only if it's not already in the list
-                        bool found = false;
-                        for (std::list<std::pair<NodeGuiPtr,bool> >::iterator it3 = nodesToMove.begin();
-                             it3 != nodesToMove.end(); ++it3) {
-                            if (it3->first == *it2) {
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (!found) {
-                            nodesToMove.push_back(std::make_pair(*it2,true));
-                        }
-                    }
-
-                }
-            }
-            
-            double dxScene = newPos.x() - lastMousePosScene.x();
-            double dyScene = newPos.y() - lastMousePosScene.y();
-            
-            
-            bool deltaSet = false;
-            for (std::list<std::pair<NodeGuiPtr,bool> >::iterator it = nodesToMove.begin();
-                 it != nodesToMove.end(); ++it) {
-                QPointF pos = it->first->getPos_mt_safe();
-                bool ignoreMagnet = it->second || nodesToMove.size() > 1;
-                it->first->refreshPosition(pos.x() + dxScene, pos.y() + dyScene,ignoreMagnet,newPos);
-                QPointF newNodePos = it->first->getPos_mt_safe();
-                if (!ignoreMagnet) {
-                    assert(nodesToMove.size() == 1);
-                    _imp->_deltaSinceMousePress.rx() += newNodePos.x() - pos.x();
-                    _imp->_deltaSinceMousePress.ry() += newNodePos.y() - pos.y();
-                    deltaSet = true;
-                }                
-            }
-         
-            checkAndStartAutoScrollTimer(newPos);
-            
-            if (!deltaSet) {
-                _imp->_deltaSinceMousePress.rx() += dxScene;
-                _imp->_deltaSinceMousePress.ry() += dyScene;
-            }
-
-
-            mustUpdateNavigator = true;
-            
-        }
-        
-        if (_imp->_selection.size() == 1) {
-            ///try to find a nearby edge
-            boost::shared_ptr<NodeGui> selectedNode = _imp->_selection.front();
-            
-            boost::shared_ptr<Natron::Node> internalNode = selectedNode->getNode();
-            
-            bool doMergeHints = e->modifiers().testFlag(Qt::ControlModifier) && e->modifiers().testFlag(Qt::ShiftModifier);
-            bool doHints = appPTR->getCurrentSettings()->isConnectionHintEnabled();
-            
-            BackDropGui* isBd = dynamic_cast<BackDropGui*>(selectedNode.get());
-            if (isBd) {
-                doMergeHints = false;
-                doHints = false;
-            }
-            
-            if (!doMergeHints) {
-                ///for nodes already connected don't show hint
-                if ( ( internalNode->getMaxInputCount() == 0) && internalNode->hasOutputConnected() ) {
-                    doHints = false;
-                } else if ( ( internalNode->getMaxInputCount() > 0) && internalNode->hasAllInputsConnected() && internalNode->hasOutputConnected() ) {
-                    doHints = false;
-                }
-            }
-            
-            if (doHints) {
-                QRectF selectedNodeBbox = selectedNode->boundingRectWithEdges();//selectedNode->mapToParent( selectedNode->boundingRect() ).boundingRect();
-                double tolerance = 10;
-                selectedNodeBbox.adjust(-tolerance, -tolerance, tolerance, tolerance);
-                
-                boost::shared_ptr<NodeGui> nodeToShowMergeRect;
-                
-                boost::shared_ptr<Natron::Node> selectedNodeInternalNode = selectedNode->getNode();
-                bool selectedNodeIsReader = selectedNodeInternalNode->getLiveInstance()->isReader() || selectedNodeInternalNode->getMaxInputCount() == 0;
-                Edge* edge = 0;
-                {
-                    QMutexLocker l(&_imp->_nodesMutex);
-                    for (NodeGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
-                        
-                        bool isAlreadyAnOutput = false;
-                        const std::list<Natron::Node*>& outputs = internalNode->getGuiOutputs();
-                        for (std::list<Natron::Node*>::const_iterator it2 = outputs.begin(); it2 != outputs.end(); ++it2) {
-                            if (*it2 == (*it)->getNode().get()) {
-                                isAlreadyAnOutput = true;
-                                break;
-                            }
-                        }
-                        if (isAlreadyAnOutput) {
-                            continue;
-                        }
-                        QRectF nodeBbox = (*it)->boundingRectWithEdges();
-                        if ( (*it) != selectedNode && (*it)->isVisible() && nodeBbox.intersects(sceneR)) {
-                            
-                            if (doMergeHints) {
-                                
-                                //QRectF nodeRect = (*it)->mapToParent((*it)->boundingRect()).boundingRect();
-                                
-                                boost::shared_ptr<Natron::Node> internalNode = (*it)->getNode();
-                                
-                                
-                                if (!internalNode->isOutputNode() && nodeBbox.intersects(selectedNodeBbox)) {
-                                    
-                                    bool nHasInput = internalNode->hasInputConnected();
-                                    int nMaxInput = internalNode->getMaxInputCount();
-                                    bool selectedHasInput = selectedNodeInternalNode->hasInputConnected();
-                                    int selectedMaxInput = selectedNodeInternalNode->getMaxInputCount();
-                                    double nPAR = internalNode->getLiveInstance()->getPreferredAspectRatio();
-                                    double selectedPAR = selectedNodeInternalNode->getLiveInstance()->getPreferredAspectRatio();
-                                    double nFPS = internalNode->getLiveInstance()->getPreferredFrameRate();
-                                    double selectedFPS = selectedNodeInternalNode->getLiveInstance()->getPreferredFrameRate();
-                                    
-                                    bool isValid = true;
-                                    
-                                    if (selectedPAR != nPAR || std::abs(nFPS - selectedFPS) > 0.01) {
-                                        if (nHasInput || selectedHasInput) {
-                                            isValid = false;
-                                        } else if (!nHasInput && nMaxInput == 0 && !selectedHasInput && selectedMaxInput == 0) {
-                                            isValid = false;
-                                        }
-                                    }
-                                    if (isValid) {
-                                        nodeToShowMergeRect = *it;
-                                    }
-                                } else {
-                                    (*it)->setMergeHintActive(false);
-                                }
-                                
-                            } else {
-                                
-                                
-                                
-                                edge = (*it)->hasEdgeNearbyRect(selectedNodeBbox);
-                                
-                                ///if the edge input is the selected node don't continue
-                                if ( edge && ( edge->getSource() == selectedNode) ) {
-                                    edge = 0;
-                                }
-                                
-                                if ( edge && edge->isOutputEdge() ) {
-                                    
-                                    if (selectedNodeIsReader) {
-                                        continue;
-                                    }
-                                    int prefInput = selectedNodeInternalNode->getPreferredInputForConnection();
-                                    if (prefInput == -1) {
-                                        edge = 0;
-                                    } else {
-                                        Natron::Node::CanConnectInputReturnValue ret = selectedNodeInternalNode->canConnectInput(edge->getSource()->getNode(),
-                                                                                                                                 prefInput);
-                                        if (ret != Natron::Node::eCanConnectInput_ok) {
-                                            edge = 0;
-                                        }
-                                    }
-                                }
-                                
-                                if ( edge && !edge->isOutputEdge() ) {
-                                    
-                                    if ((*it)->getNode()->getLiveInstance()->isReader() ||
-                                        (*it)->getNode()->getMaxInputCount() == 0) {
-                                        edge = 0;
-                                        continue;
-                                    }
-                                    
-                                    if ((*it)->getNode()->getLiveInstance()->isInputRotoBrush(edge->getInputNumber())) {
-                                        edge = 0;
-                                        continue;
-                                    }
-                                    
-                                    Natron::Node::CanConnectInputReturnValue ret = edge->getDest()->getNode()->canConnectInput(selectedNodeInternalNode, edge->getInputNumber());
-                                    if (ret == Natron::Node::eCanConnectInput_inputAlreadyConnected &&
-                                        !selectedNodeIsReader) {
-                                        ret = Natron::Node::eCanConnectInput_ok;
-                                    }
-                                    
-                                    if (ret != Natron::Node::eCanConnectInput_ok) {
-                                        edge = 0;
-                                    }
-                                    
-                                }
-                                
-                                if (edge) {
-                                    edge->setUseHighlight(true);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                } // QMutexLocker l(&_imp->_nodesMutex);
-                
-                if ( _imp->_highLightedEdge && ( _imp->_highLightedEdge != edge) ) {
-                    _imp->_highLightedEdge->setUseHighlight(false);
-                    _imp->_hintInputEdge->hide();
-                    _imp->_hintOutputEdge->hide();
-                }
-
-                _imp->_highLightedEdge = edge;
-
-                if ( edge && edge->getSource() && edge->getDest() ) {
-                    ///setup the hints edge
-
-                    ///find out if the node is already connected to what the edge is connected
-                    bool alreadyConnected = false;
-                    const std::vector<boost::shared_ptr<Natron::Node> > & inpNodes = selectedNode->getNode()->getGuiInputs();
-                    for (U32 i = 0; i < inpNodes.size(); ++i) {
-                        if ( inpNodes[i] == edge->getSource()->getNode() ) {
-                            alreadyConnected = true;
-                            break;
-                        }
-                    }
-
-                    if ( !_imp->_hintInputEdge->isVisible() ) {
-                        if (!alreadyConnected) {
-                            int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
-                            _imp->_hintInputEdge->setInputNumber(prefInput != -1 ? prefInput : 0);
-                            _imp->_hintInputEdge->setSourceAndDestination(edge->getSource(), selectedNode);
-                            _imp->_hintInputEdge->setVisible(true);
-                        }
-                        _imp->_hintOutputEdge->setInputNumber( edge->getInputNumber() );
-                        _imp->_hintOutputEdge->setSourceAndDestination( selectedNode, edge->getDest() );
-                        _imp->_hintOutputEdge->setVisible(true);
-                    } else {
-                        if (!alreadyConnected) {
-                            _imp->_hintInputEdge->initLine();
-                        }
-                        _imp->_hintOutputEdge->initLine();
-                    }
-                } else if (edge) {
-                    ///setup only 1 of the hints edge
-
-                    if ( _imp->_highLightedEdge && !_imp->_hintInputEdge->isVisible() ) {
-                        if ( edge->isOutputEdge() ) {
-                            int prefInput = selectedNode->getNode()->getPreferredInputForConnection();
-                            _imp->_hintInputEdge->setInputNumber(prefInput != -1 ? prefInput : 0);
-                            _imp->_hintInputEdge->setSourceAndDestination(edge->getSource(), selectedNode);
-                        } else {
-                            _imp->_hintInputEdge->setInputNumber( edge->getInputNumber() );
-                            _imp->_hintInputEdge->setSourceAndDestination( selectedNode,edge->getDest() );
-                        }
-                        _imp->_hintInputEdge->setVisible(true);
-                    } else if ( _imp->_highLightedEdge && _imp->_hintInputEdge->isVisible() ) {
-                        _imp->_hintInputEdge->initLine();
-                    }
-                } else if (nodeToShowMergeRect) {
-                    nodeToShowMergeRect->setMergeHintActive(true);
-                    selectedNode->setMergeHintActive(true);
-                    _imp->_mergeHintNode = nodeToShowMergeRect;
-                } else {
-                    selectedNode->setMergeHintActive(false);
-                    _imp->_mergeHintNode.reset();
-                }
-                
-                
-            } // if (doHints) {
-        } //  if (_imp->_selection.nodes.size() == 1) {
-        setCursor( QCursor(Qt::ClosedHandCursor) );
+        mustUpdateNavigator = true;
+        bool controlDown = modCASIsControl(e);
+        bool shiftdown = modCASIsControlShift(e);
+        moveSelectedNodesBy(shiftdown, controlDown, lastMousePosScene, newPos, sceneR, true);
         break;
     }
     case eEventStateMovingArea: {
@@ -447,7 +506,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
         int h = newPos.y() - p.y();
         checkAndStartAutoScrollTimer(newPos);
         mustUpdate = true;
-        pushUndoCommand( new ResizeBackDropCommand(_imp->_backdropResized,w,h) );
+        pushUndoCommand( new ResizeBackdropCommand(_imp->_backdropResized,w,h) );
         break;
     }
     case eEventStateSelectionRect: {
@@ -501,4 +560,6 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     }
     QGraphicsView::mouseMoveEvent(e);
 } // mouseMoveEvent
+
+NATRON_NAMESPACE_EXIT;
 

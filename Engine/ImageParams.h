@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@
 #include "Engine/EngineFwd.h"
 
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
     
 inline int
         getElementsCountForComponents(ImageComponentsEnum comp)
@@ -61,7 +61,7 @@ inline int
     return 0;
 }
     
-inline bool isColorComponents(Natron::ImageComponentsEnum comp)
+inline bool isColorComponents(ImageComponentsEnum comp)
 {
     switch (comp) {
         case eImageComponentNone:
@@ -86,22 +86,22 @@ inline bool isColorComponents(Natron::ImageComponentsEnum comp)
 }
 
 inline int
-        getSizeOfForBitDepth(Natron::ImageBitDepthEnum bitdepth)
+        getSizeOfForBitDepth(ImageBitDepthEnum bitdepth)
 {
     switch (bitdepth) {
-    case Natron::eImageBitDepthByte: {
+    case eImageBitDepthByte: {
         return sizeof(unsigned char);
     }
-    case Natron::eImageBitDepthShort: {
+    case eImageBitDepthShort: {
         return sizeof(unsigned short);
     }
-    case Natron::eImageBitDepthHalf: {
+    case eImageBitDepthHalf: {
         return sizeof(unsigned short);
     }
-    case Natron::eImageBitDepthFloat: {
+    case eImageBitDepthFloat: {
         return sizeof(float);
     }
-    case Natron::eImageBitDepthNone:
+    case eImageBitDepthNone:
         break;
     }
     return 0;
@@ -116,12 +116,12 @@ public:
         : NonKeyParams()
         , _rod()
         , _bounds()
-        , _isRoDProjectFormat(false)
         , _framesNeeded()
-        , _components(ImageComponents::getRGBAComponents())
-        , _bitdepth(Natron::eImageBitDepthFloat)
-        , _mipMapLevel(0)
         , _par(1.)
+        , _components(ImageComponents::getRGBAComponents())
+        , _bitdepth(eImageBitDepthFloat)
+        , _mipMapLevel(0)
+        , _isRoDProjectFormat(false)
     {
     }
 
@@ -129,12 +129,12 @@ public:
         : NonKeyParams(other)
         , _rod(other._rod)
         , _bounds(other._bounds)
-        , _isRoDProjectFormat(other._isRoDProjectFormat)
         , _framesNeeded(other._framesNeeded)
+        , _par(other._par)
         , _components(other._components)
         , _bitdepth(other._bitdepth)
         , _mipMapLevel(other._mipMapLevel)
-        , _par(other._par)
+        , _isRoDProjectFormat(other._isRoDProjectFormat)
     {
     }
 
@@ -143,19 +143,19 @@ public:
                 const double par,
                 const unsigned int mipMapLevel,
                 const RectI & bounds,
-                Natron::ImageBitDepthEnum bitdepth,
+                ImageBitDepthEnum bitdepth,
                 bool isRoDProjectFormat,
                 const ImageComponents& components,
                 const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded)
         : NonKeyParams( cost,bounds.area() * components.getNumComponents() * getSizeOfForBitDepth(bitdepth) )
         , _rod(rod)
         , _bounds(bounds)
-        , _isRoDProjectFormat(isRoDProjectFormat)
         , _framesNeeded(framesNeeded)
+        , _par(par)
         , _components(components)
         , _bitdepth(bitdepth)
         , _mipMapLevel(mipMapLevel)
-        , _par(par)
+        , _isRoDProjectFormat(isRoDProjectFormat)
     {
     }
 
@@ -189,7 +189,7 @@ public:
         return _isRoDProjectFormat;
     }
 
-    Natron::ImageBitDepthEnum getBitDepth() const
+    ImageBitDepthEnum getBitDepth() const
     {
         return _bitdepth;
     }
@@ -274,21 +274,20 @@ public:
     
 private:
 
-
     RectD _rod;
     RectI _bounds;
 
-
+    std::map<int, std::map<int,std::vector<RangeD> > > _framesNeeded;
+    double _par;
+    ImageComponents _components;
+    ImageBitDepthEnum _bitdepth;
+    unsigned int _mipMapLevel;
     /// if true then when retrieving the associated image from cache
     /// the caller should update the rod to the current project format.
     /// This is because the project format might have changed since this image was cached.
     bool _isRoDProjectFormat;
-    std::map<int, std::map<int,std::vector<RangeD> > > _framesNeeded;
-    Natron::ImageComponents _components;
-    Natron::ImageBitDepthEnum _bitdepth;
-    unsigned int _mipMapLevel;
-    double _par;
 };
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // IMAGEPARAMS_H

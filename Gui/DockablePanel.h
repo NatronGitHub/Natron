@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,6 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief An abstract class that defines a dockable properties panel that can be found in the Property bin pane.
@@ -113,7 +114,7 @@ public:
     void appendHeaderWidget(QWidget* widget);
 
     QWidget* getHeaderWidget() const;
-    KnobGui* getKnobGui(const boost::shared_ptr<KnobI> & knob) const;
+    KnobGui* getKnobGui(const KnobPtr & knob) const;
 
     ///MT-safe
     virtual QColor getCurrentColor() const {
@@ -151,7 +152,7 @@ public:
     
     void getUserPages(std::list<KnobPage*>& userPages) const;
     
-    virtual void deleteKnobGui(const boost::shared_ptr<KnobI>& knob) OVERRIDE FINAL;
+    virtual void deleteKnobGui(const KnobPtr& knob) OVERRIDE FINAL;
     
     int getPagesCount() const;
         
@@ -169,6 +170,8 @@ public:
     void refreshTabWidgetMaxHeight();
     
 public Q_SLOTS:
+    
+    void onPageLabelChangedInternally();
     
     void onPageIndexChanged(int index);
 
@@ -284,5 +287,7 @@ private:
 
     boost::scoped_ptr<DockablePanelPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_DockablePanel_h

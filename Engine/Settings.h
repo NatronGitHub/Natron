@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,8 @@
 
 
 #define kQSettingsSoftwareMajorVersionSettingName "SoftwareVersionMajor"
+
+NATRON_NAMESPACE_ENTER;
 
 /*The current settings in the preferences menu.
    @todo Move this class to QSettings instead*/
@@ -75,7 +77,7 @@ public:
         eKnownHostNameNone,
     };
 
-    Settings(AppInstance* appInstance);
+    Settings();
 
     virtual ~Settings()
     {
@@ -83,14 +85,14 @@ public:
 
     virtual void evaluate(KnobI* /*knob*/,
                           bool /*isSignificant*/,
-                          Natron::ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL
+                          ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL
     {
     }
 
-    virtual void onKnobValueChanged(KnobI* k,Natron::ValueChangedReasonEnum reason,double time,
+    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
 
-    Natron::ImageBitDepthEnum getViewersBitDepth() const;
+    ImageBitDepthEnum getViewersBitDepth() const;
 
     int getViewerTilesPowerOf2() const;
 
@@ -149,7 +151,7 @@ public:
     ///restores the settings from disk
     void restoreSettings();
     
-    void restoreKnobsFromSettings(const std::vector<boost::shared_ptr<KnobI> >& knobs);
+    void restoreKnobsFromSettings(const KnobsVec& knobs);
     void restoreKnobsFromSettings(const std::vector<KnobI*>& knobs);
 
     bool isAutoPreviewOnForNewProjects() const;
@@ -164,11 +166,15 @@ public:
 
     int getAutoSaveDelayMS() const;
 
+    bool isAutoSaveEnabledForUnsavedProjects() const;
+    
     bool isSnapToNodeEnabled() const;
 
     bool isCheckForUpdatesEnabled() const;
 
     void setCheckUpdatesEnabled(bool enabled);
+    
+    bool isCrashReportingEnabled() const;
 
     int getMaxPanelsOpened() const;
 
@@ -184,7 +190,7 @@ public:
 
     void getDefaultNodeColor(float *r,float *g,float *b) const;
 
-    void getDefaultBackDropColor(float *r,float *g,float *b) const;
+    void getDefaultBackdropColor(float *r,float *g,float *b) const;
 
     int getDisconnectedArrowLength() const;
 
@@ -212,6 +218,8 @@ public:
         return _knownHostNames[(int)e];
     }
     std::string getDefaultLayoutFile() const;
+    
+    bool getLoadProjectWorkspce() const;
 
     bool useCursorPositionIncrements() const;
 
@@ -248,7 +256,7 @@ public:
      * for the given plug-in.
      * If the plug-in ID is not valid, -1 is returned.
      **/
-    int getRenderScaleSupportPreference(const Natron::Plugin* p) const;
+    int getRenderScaleSupportPreference(const Plugin* p) const;
     
     
     bool notifyOnFileChange() const;
@@ -335,7 +343,7 @@ public:
     
     std::string getUserStyleSheetFilePath() const;
     
-    bool isPluginDeactivated(const Natron::Plugin* p) const;
+    bool isPluginDeactivated(const Plugin* p) const;
     
 Q_SIGNALS:
     
@@ -367,7 +375,10 @@ private:
     boost::shared_ptr<KnobBool> _natronSettingsExist;
   
     boost::shared_ptr<KnobBool> _checkForUpdates;
+    boost::shared_ptr<KnobBool> _enableCrashReports;
+    boost::shared_ptr<KnobButton> _testCrashReportButton;
     boost::shared_ptr<KnobBool> _notifyOnFileChange;
+    boost::shared_ptr<KnobBool> _autoSaveUnSavedProjects;
     boost::shared_ptr<KnobInt> _autoSaveDelay;
     boost::shared_ptr<KnobBool> _linearPickers;
     boost::shared_ptr<KnobBool> _convertNaNValues;
@@ -382,6 +393,7 @@ private:
     boost::shared_ptr<KnobInt> _maxPanelsOpened;
     boost::shared_ptr<KnobBool> _useCursorPositionIncrements;
     boost::shared_ptr<KnobFile> _defaultLayoutFile;
+    boost::shared_ptr<KnobBool> _loadProjectsWorkspace;
     boost::shared_ptr<KnobBool> _renderOnEditingFinished;
     boost::shared_ptr<KnobBool> _activateRGBSupport;
     boost::shared_ptr<KnobBool> _activateTransformConcatenationSupport;
@@ -546,12 +558,14 @@ private:
         }
     };
 
-    std::map<const Natron::Plugin*,PerPluginKnobs> _pluginsMap;
+    std::map<const Plugin*,PerPluginKnobs> _pluginsMap;
+    std::vector<std::string> _knownHostNames;
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;
     bool _defaultAppearanceOutdated;
-    std::vector<std::string> _knownHostNames;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_SETTINGS_H

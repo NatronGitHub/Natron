@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,14 +44,16 @@
 //do not all stick altogether in memory
 #define NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING 4
 
-typedef std::map<Natron::EffectInstance*,RectD> RoIMap; // RoIs are in canonical coordinates
+NATRON_NAMESPACE_ENTER;
+
+typedef std::map<EffectInstPtr ,RectD> RoIMap; // RoIs are in canonical coordinates
 typedef std::map<int, std::map<int, std::vector<OfxRangeD> > > FramesNeededMap;
 
 struct InputMatrix
 {
-    Natron::EffectInstance* newInputEffect;
-    int newInputNbToFetchFrom;
+    EffectInstPtr newInputEffect;
     boost::shared_ptr<Transform::Matrix3x3> cat;
+    int newInputNbToFetchFrom;
 };
 
 typedef std::map<int,InputMatrix> InputMatrixMap;
@@ -65,6 +67,9 @@ struct NodeFrameRequest;
  **/
 struct ParallelRenderArgs
 {
+    // Developper note: the fields were reordered to optimize packing.
+    // see http://www.catb.org/esr/structure-packing/
+
     ///The initial time requested to render.
     ///This may be different than the time held in RenderArgs
     ///which are local to a renderRoI call whilst this is local
@@ -73,93 +78,90 @@ struct ParallelRenderArgs
     
     ///To check the current time on the timeline
     const TimeLine* timeline;
-    
-    ///The initial view requested to render.
-    ///This may be different than the view held in RenderArgs
-    ///which are local to a renderRoI call whilst this is local
-    ///to a frame being rendered by the tree.
-    int view;
-    
+
     ///The hash of the node at the time we started rendering
     U64 nodeHash;
     
     ///If set, contains data for all frame/view pair that are going to be computed
     ///for this frame/view pair with the overall RoI to avoid rendering several times with this node.
     boost::shared_ptr<NodeFrameRequest> request;
-    
-    ///> 0 if the args were set for the current thread
-    int validArgs;
-    
-    /// is this a render due to user interaction ? Generally this is true when rendering because
-    /// of a user parameter tweek or timeline seek, or more generally by calling RenderEngine::renderCurrentFrame
-    bool isRenderResponseToUserInteraction;
-    
-    /// Is this render sequential ? True for Viewer playback or a sequential writer such as WriteFFMPEG
-    bool isSequentialRender;
-    
-    /// True if this frame can be aborted (false for preview and tracking)
-    bool canAbort;
-    
+
+    ///The initial view requested to render.
+    ///This may be different than the view held in RenderArgs
+    ///which are local to a renderRoI call whilst this is local
+    ///to a frame being rendered by the tree.
+    int view;
+
+
     ///A number identifying the current frame render to determine if we can really abort for abortable renders
     U64 renderAge;
     
     ///A pointer to the node that requested the current render.
-    boost::shared_ptr<Natron::Node> treeRoot;
-    
-    ///The texture index of the viewer being rendered, only useful for abortable renders
-    int textureIndex;
-    
-    ///Was the render started in the instanceChangedAction (knobChanged)
-    bool isAnalysis;
-    
-    ///If true, the attached paint stroke is being drawn currently
-    bool isDuringPaintStrokeCreation;
-    
+    NodePtr treeRoot;
+
     ///List of the nodes in the rotopaint tree
-    std::list<boost::shared_ptr<Natron::Node> > rotoPaintNodes;
-    
-    ///Current thread safety: it might change in the case of the rotopaint: while drawing, the safety is instance safe,
-    ///whereas afterwards we revert back to the plug-in thread safety
-    Natron::RenderSafetyEnum currentThreadSafety;
-    
-    ///When true, all NaNs will be converted to 1
-    bool doNansHandling;
-    
-    ///When true, this is a hint for plug-ins that the render will be used for draft such as previewing while scrubbing the timeline
-    bool draftMode;
-    
-    ///The support for tiles is local to a render and may change depending on GPU usage or other parameters
-    bool tilesSupported;
-    
-    ///True when the preference in Natron is set and the renderRequester is a Viewer
-    bool viewerProgressReportEnabled;
-    
+    NodesList rotoPaintNodes;
+
     ///Various stats local to the render of a frame
     boost::shared_ptr<RenderStats> stats;
+
+    ///The texture index of the viewer being rendered, only useful for abortable renders
+    int textureIndex;
+
+    ///Current thread safety: it might change in the case of the rotopaint: while drawing, the safety is instance safe,
+    ///whereas afterwards we revert back to the plug-in thread safety
+    RenderSafetyEnum currentThreadSafety;
+
+    /// is this a render due to user interaction ? Generally this is true when rendering because
+    /// of a user parameter tweek or timeline seek, or more generally by calling RenderEngine::renderCurrentFrame
+    bool isRenderResponseToUserInteraction:1;
+
+    /// Is this render sequential ? True for Viewer playback or a sequential writer such as WriteFFMPEG
+    bool isSequentialRender:1;
+
+    /// True if this frame can be aborted (false for preview and tracking)
+    bool canAbort:1;
+
+    ///Was the render started in the instanceChangedAction (knobChanged)
+    bool isAnalysis:1;
     
+    ///If true, the attached paint stroke is being drawn currently
+    bool isDuringPaintStrokeCreation:1;
+
+    ///When true, all NaNs will be converted to 1
+    bool doNansHandling:1;
+    
+    ///When true, this is a hint for plug-ins that the render will be used for draft such as previewing while scrubbing the timeline
+    bool draftMode:1;
+    
+    ///The support for tiles is local to a render and may change depending on GPU usage or other parameters
+    bool tilesSupported:1;
+    
+    ///True when the preference in Natron is set and the renderRequester is a Viewer
+    bool viewerProgressReportEnabled:1;
+
     
     ParallelRenderArgs()
     : time(0)
     , timeline(0)
-    , view(0)
     , nodeHash(0)
     , request()
-    , validArgs(0)
+    , view(0)
+    , renderAge(0)
+    , treeRoot()
+    , rotoPaintNodes()
+    , stats()
+    , textureIndex(0)
+    , currentThreadSafety(eRenderSafetyInstanceSafe)
     , isRenderResponseToUserInteraction(false)
     , isSequentialRender(false)
     , canAbort(false)
-    , renderAge(0)
-    , treeRoot()
-    , textureIndex(0)
     , isAnalysis(false)
     , isDuringPaintStrokeCreation(false)
-    , rotoPaintNodes()
-    , currentThreadSafety(Natron::eRenderSafetyInstanceSafe)
     , doNansHandling(true)
     , draftMode(false)
     , tilesSupported(false)
     , viewerProgressReportEnabled(false)
-    , stats()
     {
         
     }
@@ -175,17 +177,17 @@ struct FrameViewPair {
 
 struct FrameViewRequestGlobalData
 {
-    ///Set when the first request is made, set on first request
-    RectD rod;
-    bool isProjectFormat;
-    
     ///The transforms associated to each input branch, set on first request
-    InputMatrixMap transforms;
-    std::map<int, Natron::EffectInstance*> reroutesMap;
+    boost::shared_ptr<InputMatrixMap> transforms;
+    boost::shared_ptr<std::map<int, EffectInstPtr> > reroutesMap;
     
     ///The required frame/views in input, set on first request
     FramesNeededMap frameViewsNeeded;
     
+    ///Set when the first request is made, set on first request
+    RectD rod;
+    bool isProjectFormat;
+
     //Identity data, set on first request
     bool isIdentity;
     int identityInputNb;
@@ -195,7 +197,6 @@ struct FrameViewRequestGlobalData
 struct FrameViewRequestFinalData
 {
     RectD finalRoi;
-
 };
 
 struct FrameViewPerRequestData
@@ -253,13 +254,13 @@ struct NodeFrameRequest
 
 };
 
-typedef std::map<boost::shared_ptr<Natron::Node>,boost::shared_ptr<NodeFrameRequest> > FrameRequestMap;
+typedef std::map<NodePtr,boost::shared_ptr<NodeFrameRequest> > FrameRequestMap;
 
 
 class ParallelRenderArgsSetter
 {
-    std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs > argsMap;
-    std::list<boost::shared_ptr<Natron::Node> > nodes;
+    boost::shared_ptr<std::map<NodePtr,boost::shared_ptr<ParallelRenderArgs> > > argsMap;
+    NodesList nodes;
     
 public:
     
@@ -276,20 +277,21 @@ public:
                              bool isSequential,
                              bool canAbort,
                              U64 renderAge,
-                             const boost::shared_ptr<Natron::Node>& treeRoot,
+                             const NodePtr& treeRoot,
                              const FrameRequestMap* request,
                              int textureIndex,
                              const TimeLine* timeline,
-                             const boost::shared_ptr<Natron::Node>& activeRotoPaintNode,
+                             const NodePtr& activeRotoPaintNode,
                              bool isAnalysis,
                              bool draftMode,
                              bool viewerProgressReportEnabled,
                              const boost::shared_ptr<RenderStats>& stats);
     
-    ParallelRenderArgsSetter(const std::map<boost::shared_ptr<Natron::Node>,ParallelRenderArgs >& args);
+    ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > >& args);
     
     virtual ~ParallelRenderArgsSetter();
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // PARALLELRENDERARGS_H

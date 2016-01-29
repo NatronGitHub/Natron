@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,10 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Settings.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 App::App(AppInstance* instance)
 : Group()
@@ -66,9 +70,9 @@ App::createNode(const std::string& pluginID,
         if (isApp) {
             collection = boost::dynamic_pointer_cast<NodeCollection>(isApp->getInternalApp()->getProject());
         } else if (isEffect) {
-            boost::shared_ptr<Natron::Node> node = isEffect->getInternalNode();
+            NodePtr node = isEffect->getInternalNode();
             assert(node);
-            boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getLiveInstance()->shared_from_this());
+            boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>(node->getEffectInstance()->shared_from_this());
             if (!isGrp) {
                 qDebug() << "The group passed to createNode() is not a group, defaulting to the project root.";
             } else {
@@ -85,20 +89,10 @@ App::createNode(const std::string& pluginID,
     
     assert(collection);
     
-    CreateNodeArgs args(pluginID.c_str(),
-                        "",
-                        majorVersion,
-                        -1,
-                        false,
-                        INT_MIN,
-                        INT_MIN,
-                        false,
-                        true,
-                        false,
-                        QString(),
-                        CreateNodeArgs::DefaultValuesList(),
-                        collection);
-    boost::shared_ptr<Natron::Node> node = _instance->createNode(args);
+    CreateNodeArgs args(pluginID.c_str(), eCreateNodeReasonInternal, collection);
+    args.majorV = majorVersion;
+
+    NodePtr node = _instance->createNode(args);
     if (node) {
         return new Effect(node);
     } else {
@@ -138,7 +132,7 @@ AppSettings::AppSettings(const boost::shared_ptr<Settings>& settings)
 Param*
 AppSettings::getParam(const std::string& scriptName) const
 {
-    boost::shared_ptr<KnobI> knob = _settings->getKnobByName(scriptName);
+    KnobPtr knob = _settings->getKnobByName(scriptName);
     if (!knob) {
         return 0;
     }
@@ -149,8 +143,8 @@ std::list<Param*>
 AppSettings::getParams() const
 {
     std::list<Param*> ret;
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = _settings->getKnobs();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    const KnobsVec& knobs = _settings->getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         Param* p = Effect::createParamWrapperForKnob(*it);
         if (p) {
             ret.push_back(p);
@@ -195,7 +189,7 @@ App::renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame,int last
         std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
         return;
     }
-    w.writer = dynamic_cast<Natron::OutputEffectInstance*>(node->getLiveInstance());
+    w.writer = dynamic_cast<OutputEffectInstance*>(node->getEffectInstance().get());
     if (!w.writer) {
         std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
         return;
@@ -231,7 +225,7 @@ App::renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const s
             std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
             return;
         }
-        w.writer = dynamic_cast<Natron::OutputEffectInstance*>(node->getLiveInstance());
+        w.writer = dynamic_cast<OutputEffectInstance*>(node->getEffectInstance().get());
         if (!w.writer || !w.writer->isOutput()) {
             std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
             return;
@@ -250,7 +244,7 @@ App::renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const s
 Param*
 App::getProjectParam(const std::string& name) const
 {
-    boost::shared_ptr<KnobI> knob =  _instance->getProject()->getKnobByName(name);
+    KnobPtr knob =  _instance->getProject()->getKnobByName(name);
     if (!knob) {
         return 0;
     }
@@ -325,3 +319,5 @@ App::newProject()
     return new App(app);
 
 }
+
+NATRON_NAMESPACE_EXIT;

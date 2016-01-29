@@ -5,6 +5,7 @@
 
 #include <RectI.h>
 
+NATRON_NAMESPACE_ENTER;
 class RectIWrapper : public RectI
 {
 public:
@@ -17,6 +18,7 @@ public:
     virtual ~RectIWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_RECTIWRAPPER_H
 

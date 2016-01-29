@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,8 @@
 #include "Gui/NodeGui.h"
 #include "Gui/GuiMacros.h"
 #include "Engine/TimeLine.h"
+
+NATRON_NAMESPACE_ENTER;
 
 ////////////////////////// DopeSheetEditor //////////////////////////
 
@@ -144,7 +146,7 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
 DopeSheetEditor::~DopeSheetEditor()
 {}
 
-void DopeSheetEditor::addNode(boost::shared_ptr<NodeGui> nodeGui)
+void DopeSheetEditor::addNode(NodeGuiPtr nodeGui)
 {
     _imp->model->addNode(nodeGui);
 }
@@ -230,14 +232,21 @@ DopeSheetEditor::keyPressEvent(QKeyEvent* e)
         _imp->dopeSheetView->pasteKeyframes();
     } else {
         accept = false;
-        QWidget::keyPressEvent(e);
     }
     if (accept) {
         takeClickFocus();
         e->accept();
     } else {
         handleUnCaughtKeyPressEvent(e);
+        QWidget::keyPressEvent(e);
     }
+}
+
+void
+DopeSheetEditor::keyReleaseEvent(QKeyEvent* e)
+{
+    handleUnCaughtKeyUpEvent(e);
+    QWidget::keyReleaseEvent(e);
 }
 
 void DopeSheetEditor::enterEvent(QEvent *e)
@@ -257,3 +266,5 @@ DopeSheetEditor::onInputEventCalled()
 {
     takeClickFocus();
 }
+
+NATRON_NAMESPACE_EXIT;

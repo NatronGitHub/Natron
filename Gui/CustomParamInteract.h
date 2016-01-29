@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct CustomParamInteractPrivate;
 class CustomParamInteract
@@ -54,7 +55,7 @@ class CustomParamInteract
 public:
     CustomParamInteract(KnobGui* knob,
                         void* ofxParamHandle,
-                        const boost::shared_ptr<Natron::OfxParamOverlayInteract> & entryPoint,
+                        const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint,
                         QWidget* parent = 0);
 
     virtual ~CustomParamInteract();
@@ -104,5 +105,7 @@ private:
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     boost::scoped_ptr<CustomParamInteractPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // CUSTOMPARAMINTERACT_H

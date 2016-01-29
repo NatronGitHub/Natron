@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,11 +60,13 @@
 #include "Engine/RectD.h"
 #include "Engine/Transform.h"
 
-using namespace Natron;
 
 #ifndef M_PI_2
 #define M_PI_2      1.57079632679489661923132169163975144   /* pi/2           */
 #endif
+
+
+NATRON_NAMESPACE_ENTER;
 
 
 static Point getPointAt(const BezierCPs& cps, double time, double t)
@@ -476,7 +478,7 @@ static void findIntersection(const BezierCPs& cps,
                              c1.x * c1.x + c1.y * c1.y)) {
                 double r[3];
                 int order[3];
-                int nsols = Natron::solveCubic(d, c, b, a, r, order);
+                int nsols = Interpolation::solveCubic(d, c, b, a, r, order);
                 for (int i = 0; i < nsols; ++i) {
                     roots.push_back(r[i]);
                 }
@@ -604,8 +606,8 @@ static bool splitAt(const BezierCPs &cps, double time, double t, std::list<Bezie
         
         std::list<BezierCPs> regularizedFirst;
         std::list<BezierCPs> regularizedSecond;
-        Natron::regularize(firstPart, time, &regularizedFirst);
-        Natron::regularize(secondPart, time, &regularizedSecond);
+        CoonsRegularization::regularize(firstPart, time, &regularizedFirst);
+        CoonsRegularization::regularize(secondPart, time, &regularizedSecond);
         ret->insert(ret->begin(),regularizedFirst.begin(),regularizedFirst.end());
         ret->insert(ret->end(), regularizedSecond.begin(), regularizedSecond.end());
         return true;
@@ -614,7 +616,7 @@ static bool splitAt(const BezierCPs &cps, double time, double t, std::list<Bezie
 }
 
 /**
- * @brief Given the original coon's patch, check if all interior angles are inferior to 180°. If not then we split
+ * @brief Given the original coon's patch, check if all interior angles are less than 180°. If not then we split
  * along the bysector angle and separate the patch.
  **/
 static bool checkAnglesAndSplitIfNeeded(const BezierCPs &cps, double time, int sign, std::list<BezierCPs>* ret)
@@ -1228,7 +1230,8 @@ static int computeWindingNumber(const BezierCPs& patch, double time, const Point
     return count;
 }
 
-void Natron::regularize(const BezierCPs &patch, double time, std::list<BezierCPs> *fixedPatch)
+void
+CoonsRegularization::regularize(const BezierCPs &patch, double time, std::list<BezierCPs> *fixedPatch)
 {
     if (patch.size() < 3) {
         fixedPatch->push_back(patch);
@@ -1385,7 +1388,7 @@ void Natron::regularize(const BezierCPs &patch, double time, std::list<BezierCPs
     for (int i = 0; i < 4; ++i) {
         double sol[4];
         int o[4];
-        int nSols = Natron::solveQuartic(c[i][0], c[i][1], c[i][2], c[i][3], c[i][4], sol, o);
+        int nSols = Interpolation::solveQuartic(c[i][0], c[i][1], c[i][2], c[i][3], c[i][4], sol, o);
         for (int k = 0; k < nSols; ++k) {
             if (std::fabs(sol[k]) < sqrtEpsilon) {
                 if (0 <= sol[k] && sol[k] <= 1) {
@@ -1411,3 +1414,5 @@ void Natron::regularize(const BezierCPs &patch, double time, std::list<BezierCPs
     // Split arbitrarily to resolve any remaining (internal) degeneracy.
     splitAt(patch, time, 0.5, fixedPatch);
 }
+
+NATRON_NAMESPACE_EXIT;

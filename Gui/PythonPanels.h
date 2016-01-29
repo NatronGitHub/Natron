@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct DialogParamHolderPrivate;
 class DialogParamHolder : public NamedKnobHolder
@@ -60,10 +61,10 @@ private:
     
     virtual void initializeKnobs() OVERRIDE FINAL {}
     
-    virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/,Natron::ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL {}
+    virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/,ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL {}
     
     virtual void onKnobValueChanged(KnobI* /*k*/,
-                                    Natron::ValueChangedReasonEnum /*reason*/,
+                                    ValueChangedReasonEnum /*reason*/,
                                     double /*time*/,
                                     bool /*originatedFromMainThread*/) OVERRIDE FINAL;
 
@@ -199,5 +200,7 @@ public :
     
     std::string getScriptName() const;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PYTHONPANELS_H

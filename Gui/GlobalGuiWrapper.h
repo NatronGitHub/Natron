@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,17 +27,21 @@
 
 #include "Global/Macros.h"
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QKeyEvent>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+#endif
 
 #include "Engine/GlobalFunctionsWrapper.h"
 
 #include "Gui/GuiAppWrapper.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 class PyGuiApplication : public PyCoreApplication
 {
@@ -54,7 +58,7 @@ public:
         
     }
     
-    QPixmap getIcon(Natron::PixmapEnum val) const
+    QPixmap getIcon(PixmapEnum val) const
     {
         QPixmap ret;
         appPTR->getIcon(val,&ret);
@@ -76,22 +80,22 @@ public:
     
     void informationDialog(const std::string& title,const std::string& message)
     {
-        Natron::informationDialog(title, message);
+        Dialogs::informationDialog(title, message);
     }
     
     void warningDialog(const std::string& title,const std::string& message)
     {
-        Natron::warningDialog(title,message);
+        Dialogs::warningDialog(title,message);
     }
     
     void errorDialog(const std::string& title,const std::string& message)
     {
-        Natron::errorDialog(title,message);
+        Dialogs::errorDialog(title,message);
     }
     
-    Natron::StandardButtonEnum questionDialog(const std::string& title,const std::string& message)
+    StandardButtonEnum questionDialog(const std::string& title,const std::string& message)
     {
-        return Natron::questionDialog(title, message, false);
+        return Dialogs::questionDialog(title, message, false);
     }
     
     void addMenuCommand(const std::string& grouping,const std::string& pythonFunctionName)
@@ -108,6 +112,6 @@ public:
     
 };
 
-
+NATRON_NAMESPACE_EXIT;
 
 #endif // GLOBAL_GUI_WRAPPER_H

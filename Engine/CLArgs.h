@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <string>
 #include "Global/GlobalDefines.h"
@@ -37,6 +39,8 @@ CLANG_DIAG_ON(deprecated)
 #include <boost/scoped_ptr.hpp>
 #endif
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 struct CLArgsPrivate;
 class CLArgs //: boost::noncopyable // GCC 4.2 requires the copy constructor
@@ -54,6 +58,12 @@ public:
         {
             
         }
+    };
+    
+    struct ReaderArg
+    {
+        QString name;
+        QString filename;
     };
     
     CLArgs();
@@ -77,6 +87,10 @@ public:
     int getError() const;
     
     const std::list<CLArgs::WriterArg>& getWriterArgs() const;
+    
+    const std::list<CLArgs::ReaderArg>& getReaderArgs() const;
+    
+    const std::list<std::string>& getPythonCommands() const;
     
     bool hasFrameRange() const;
     
@@ -106,11 +120,22 @@ public:
     
     bool areRenderStatsEnabled() const;
     
+    const QString& getBreakpadProcessExecutableFilePath() const;
+    
+    qint64 getBreakpadProcessPID() const;
+    
+    int getBreakpadClientFD() const;
+    
+    const QString& getBreakpadPipeFilePath() const;
+    
+    const QString& getBreakpadComPipeFilePath() const;
+    
 private:
     
     boost::scoped_ptr<CLArgsPrivate> _imp;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_CLArgs_h
 

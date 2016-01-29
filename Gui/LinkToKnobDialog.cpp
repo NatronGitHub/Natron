@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -93,7 +93,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Utils.h"
 #include "Gui/ViewerTab.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 struct LinkToKnobDialogPrivate
 {
@@ -101,11 +101,11 @@ struct LinkToKnobDialogPrivate
     QVBoxLayout* mainLayout;
     QHBoxLayout* firstLineLayout;
     QWidget* firstLine;
-    Natron::Label* selectNodeLabel;
+    Label* selectNodeLabel;
     CompleterLineEdit* nodeSelectionCombo;
     ComboBox* knobSelectionCombo;
     QDialogButtonBox* buttons;
-    NodeList allNodes;
+    NodesList allNodes;
     std::map<QString,boost::shared_ptr<KnobI > > allKnobs;
 
     LinkToKnobDialogPrivate(KnobGui* from)
@@ -141,7 +141,7 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
     QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
     _imp->mainLayout->addWidget(_imp->buttons);
 
-    _imp->selectNodeLabel = new Natron::Label(tr("Parent:"),_imp->firstLine);
+    _imp->selectNodeLabel = new Label(tr("Parent:"),_imp->firstLine);
     _imp->firstLineLayout->addWidget(_imp->selectNodeLabel);
 
 
@@ -157,14 +157,14 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
         _imp->allNodes.push_back(isGroup->getNode());
     }
     QStringList nodeNames;
-    for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
+    for (NodesList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
         QString name( (*it)->getLabel().c_str() );
         nodeNames.push_back(name);
         //_imp->nodeSelectionCombo->addItem(name);
     }
     nodeNames.sort();
     _imp->nodeSelectionCombo = new CompleterLineEdit(nodeNames,nodeNames,false,this);
-    _imp->nodeSelectionCombo->setToolTip(Natron::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
+    _imp->nodeSelectionCombo->setToolTip(GuiUtils::convertFromPlainText(tr("Input the name of a node in the current project."), Qt::WhiteSpaceNormal));
     _imp->firstLineLayout->addWidget(_imp->nodeSelectionCombo);
 
 
@@ -189,9 +189,9 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     QString index = _imp->nodeSelectionCombo->text();
 
     _imp->knobSelectionCombo->clear();
-    boost::shared_ptr<Natron::Node> selectedNode;
+    NodePtr selectedNode;
     std::string currentNodeName = index.toStdString();
-    for (NodeList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
+    for (NodesList::iterator it = _imp->allNodes.begin(); it != _imp->allNodes.end(); ++it) {
         if ((*it)->getLabel() == currentNodeName) {
             selectedNode = *it;
             break;
@@ -201,8 +201,8 @@ LinkToKnobDialog::onNodeComboEditingFinished()
         return;
     }
 
-    const std::vector< boost::shared_ptr<KnobI> > & knobs = selectedNode->getKnobs();
-    boost::shared_ptr<KnobI> from = _imp->fromKnob->getKnob();
+    const std::vector< KnobPtr > & knobs = selectedNode->getKnobs();
+    KnobPtr from = _imp->fromKnob->getKnob();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if ( !knobs[j]->getIsSecret() && (knobs[j] != from) ) {
             KnobButton* isButton = dynamic_cast<KnobButton*>( knobs[j].get() );
@@ -226,15 +226,19 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     }
 }
 
-boost::shared_ptr<KnobI> LinkToKnobDialog::getSelectedKnobs() const
+KnobPtr LinkToKnobDialog::getSelectedKnobs() const
 {
     QString str = _imp->knobSelectionCombo->itemText( _imp->knobSelectionCombo->activeIndex() );
-    std::map<QString,boost::shared_ptr<KnobI> >::const_iterator it = _imp->allKnobs.find(str);
+    std::map<QString,KnobPtr >::const_iterator it = _imp->allKnobs.find(str);
 
     if ( it != _imp->allKnobs.end() ) {
         return it->second;
     } else {
-        return boost::shared_ptr<KnobI>();
+        return KnobPtr();
     }
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_LinkToKnobDialog.cpp"

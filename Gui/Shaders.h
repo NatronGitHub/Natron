@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+NATRON_NAMESPACE_ENTER;
+
 extern const char* fragRGB;
 extern const char* vertRGB;
 
@@ -38,5 +40,7 @@ extern const char *histogramRendering_frag;
 extern const char *histogramRenderingVertex_vert;
 extern const char* minimal_vert;
 extern const char *histogramMaximum_frag;
+
+NATRON_NAMESPACE_EXIT;
 
 #endif

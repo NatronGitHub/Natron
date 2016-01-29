@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +40,8 @@
 
 #include "Global/GlobalDefines.h"
 
+NATRON_NAMESPACE_ENTER;
+
 // see second answer of http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
 static
 std::string
@@ -66,7 +68,6 @@ string_format(const std::string fmt, ...)
 }
 
 
-namespace Natron {
 class LogPrivate
 {
 public:
@@ -174,7 +175,7 @@ public:
 };
 
 Log::Log()
-    : Singleton<Natron::Log>(),_imp( new LogPrivate() )
+    : Singleton<Log>(),_imp( new LogPrivate() )
 {
 }
 
@@ -220,5 +221,7 @@ Log::endFunction(const std::string & callerName,
 {
     Log::instance()->_imp->endFunction(callerName,function);
 }
-} //namespace Natron
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // ifdef NATRON_LOG

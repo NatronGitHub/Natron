@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphTextItem.h"
-
+#include "Gui/GuiApplicationManager.h"
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
@@ -58,6 +58,8 @@
 
 // number of offset pixels from the arrow that determine if a click is contained in the arrow or not
 #define kGraphicalContainerOffset 10
+
+NATRON_NAMESPACE_ENTER;
 
 struct EdgePrivate
 {
@@ -113,7 +115,7 @@ struct EdgePrivate
 
 Edge::Edge(int inputNb_,
            double angle_,
-           const boost::shared_ptr<NodeGui> & dest_,
+           const NodeGuiPtr & dest_,
            QGraphicsItem *parent)
 : QGraphicsLineItem(parent)
 , _imp(new EdgePrivate(this, inputNb_, angle_))
@@ -132,14 +134,14 @@ Edge::Edge(int inputNb_,
 void
 EdgePrivate::initLabel()
 {
-    boost::shared_ptr<NodeGui> dst = dest.lock();
+    NodeGuiPtr dst = dest.lock();
     if ((inputNb != -1) && dst) {
         label = new NodeGraphSimpleTextItem(dst->getDagGui(), _publicInterface, false);
         label->setText(QString(dst->getNode()->getInputLabel(inputNb).c_str()));
         QColor txt;
         double r,g,b;
         appPTR->getCurrentSettings()->getTextColor(&r, &g, &b);
-        txt.setRgbF(Natron::clamp(r,0.,1.),Natron::clamp(g,0.,1.), Natron::clamp(b,0.,1.));
+        txt.setRgbF(Image::clamp(r,0.,1.),Image::clamp(g,0.,1.), Image::clamp(b,0.,1.));
         label->setBrush(txt);
         QFont f = qApp->font();
         bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
@@ -151,7 +153,7 @@ EdgePrivate::initLabel()
     }
 }
 
-Edge::Edge(const boost::shared_ptr<NodeGui> & src,
+Edge::Edge(const NodeGuiPtr & src,
            QGraphicsItem *parent)
 : QGraphicsLineItem(parent)
 , _imp(new EdgePrivate(this, -1, M_PI_2))
@@ -167,14 +169,14 @@ Edge::Edge(const boost::shared_ptr<NodeGui> & src,
 
 Edge::~Edge()
 {
-    boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
+    NodeGuiPtr dst = _imp->dest.lock();
     if (dst) {
         dst->markInputNull(this);
     }
 }
 
 void
-Edge::setSource(const boost::shared_ptr<NodeGui> & src)
+Edge::setSource(const NodeGuiPtr & src)
 {
     _imp->source = src;
     initLine();
@@ -193,13 +195,13 @@ Edge::setInputNumber(int i)
     _imp->inputNb = i;
 }
 
-boost::shared_ptr<NodeGui>
+NodeGuiPtr
 Edge::getDest() const
 {
     return _imp->dest.lock();
 }
 
-boost::shared_ptr<NodeGui>
+NodeGuiPtr
 Edge::getSource() const
 {
     return _imp->source.lock();
@@ -263,13 +265,13 @@ Edge::isMask() const
 bool
 Edge::areOptionalInputsAutoHidden() const
 {
-    boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
+    NodeGuiPtr dst = _imp->dest.lock();
     return dst ? dst->getDagGui()->areOptionalInputsAutoHidden() : false;
 }
 
 void
-Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
-                              const boost::shared_ptr<NodeGui> & dst)
+Edge::setSourceAndDestination(const NodeGuiPtr & src,
+                              const NodeGuiPtr & dst)
 {
     _imp->source = src;
     _imp->dest = dst;
@@ -287,9 +289,9 @@ Edge::setSourceAndDestination(const boost::shared_ptr<NodeGui> & src,
 void
 Edge::refreshState(bool hovered)
 {
-    boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
+    NodeGuiPtr dst = _imp->dest.lock();
     
-    Natron::EffectInstance* effect = dst ? dst->getNode()->getLiveInstance() : 0;
+    EffectInstPtr effect = dst ? dst->getNode()->getEffectInstance() : EffectInstPtr();
     
     if (effect) {
         
@@ -311,10 +313,10 @@ Edge::refreshState(bool hovered)
                 show();
             } else {
                 
-                boost::shared_ptr<NodeGui> src = _imp->source.lock();
+                NodeGuiPtr src = _imp->source.lock();
                 
                 //The viewer does not hide its optional edges
-                bool isViewer = effect ? dynamic_cast<ViewerInstance*>(effect) != 0 : false;
+                bool isViewer = effect ? dynamic_cast<ViewerInstance*>(effect.get()) != 0 : false;
                 bool isReader = effect ? effect->isReader() : false;
                 bool autoHide = areOptionalInputsAutoHidden();
                 bool isSelected = dst->getIsSelected();
@@ -384,8 +386,8 @@ void
 Edge::initLine()
 {
 
-    boost::shared_ptr<NodeGui> source = _imp->source.lock();
-    boost::shared_ptr<NodeGui> dest = _imp->dest.lock();
+    NodeGuiPtr source = _imp->source.lock();
+    NodeGuiPtr dest = _imp->dest.lock();
     if (!source && !dest) {
         return;
     }
@@ -513,14 +515,14 @@ Edge::initLine()
         if (foundIntersection) {
             double distToCenter = std::sqrt( ( intersection.x() - dst.x() ) * ( intersection.x() - dst.x() ) +
                                             ( intersection.y() - dst.y() ) * ( intersection.y() - dst.y() ) );
-            distToCenter += appPTR->getCurrentSettings()->getDisconnectedArrowLength();
+            distToCenter += TO_DPIY(appPTR->getCurrentSettings()->getDisconnectedArrowLength());
 
             srcpt = QPointF( dst.x() + (std::cos(_imp->angle) * distToCenter * sc),
                             dst.y() - (std::sin(_imp->angle) * distToCenter * sc) );
             setLine( dst.x(),dst.y(),srcpt.x(),srcpt.y() );
 
             if (_imp->label) {
-                QFontMetrics fm(_imp->label->font());
+                QFontMetrics fm(_imp->label->font(), 0);
                 double cosinus = std::cos(_imp->angle);
                 int yOffset = 0;
                 if (cosinus < 0) {
@@ -561,9 +563,9 @@ Edge::initLine()
 
     qreal arrowSize;
     if (source && dest) {
-        arrowSize = ARROW_SIZE_CONNECTED * sc;
+        arrowSize = TO_DPIX(ARROW_SIZE_CONNECTED) * sc;
     } else {
-        arrowSize = ARROW_SIZE_DISCONNECTED * sc;
+        arrowSize = TO_DPIX(ARROW_SIZE_DISCONNECTED) * sc;
     }
     QPointF arrowP1 = arrowIntersect + QPointF(std::cos(a + ARROW_HEAD_ANGLE/2) * arrowSize,
                                                std::sin(a + ARROW_HEAD_ANGLE/2) * arrowSize);
@@ -643,7 +645,7 @@ Edge::dragSource(const QPointF & src)
         a = 2 * M_PI - a;
     }
 
-    double arrowSize = ARROW_SIZE_DISCONNECTED;
+    double arrowSize = TO_DPIX(ARROW_SIZE_DISCONNECTED);
     QPointF arrowP1 = line().p1() + QPointF(std::cos(a + ARROW_HEAD_ANGLE/2) * arrowSize,
                                             std::sin(a + ARROW_HEAD_ANGLE/2) * arrowSize);
     QPointF arrowP2 = line().p1() + QPointF(std::cos(a - ARROW_HEAD_ANGLE/2) * arrowSize,
@@ -667,7 +669,7 @@ Edge::dragDest(const QPointF & dst)
         a = 2 * M_PI - a;
     }
 
-    double arrowSize = ARROW_SIZE_DISCONNECTED;
+    double arrowSize = TO_DPIX(ARROW_SIZE_DISCONNECTED);
     QPointF arrowP1 = line().p1() + QPointF(std::cos(a + ARROW_HEAD_ANGLE/2) * arrowSize,
                                             std::sin(a + ARROW_HEAD_ANGLE/2) * arrowSize);
     QPointF arrowP2 = line().p1() + QPointF(std::cos(a - ARROW_HEAD_ANGLE/2) * arrowSize,
@@ -712,7 +714,7 @@ Edge::paint(QPainter *painter,
     
     QPen myPen = pen();
     
-    boost::shared_ptr<NodeGui> dst = _imp->dest.lock();
+    NodeGuiPtr dst = _imp->dest.lock();
     if (dst) {
         if (dst->getDagGui()->isDoingNavigatorRender()) {
             return;
@@ -904,3 +906,7 @@ LinkArrow::paint(QPainter *painter,
     painter->fillPath(headPath, _headColor);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_Edge.cpp"

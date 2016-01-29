@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,8 +29,7 @@
 #include "Engine/NodeGroup.h"
 
 
-using namespace Natron;
-
+NATRON_NAMESPACE_ENTER;
 
 ActionsCache::ActionsCacheInstance::ActionsCacheInstance()
     : _hash(0)
@@ -292,47 +291,49 @@ ActionsCache::setTimeDomainResult(U64 hash,
 
 
 EffectInstance::RenderArgs::RenderArgs()
-    : _rod()
-    , _regionOfInterestResults()
-    , _renderWindowPixel()
-    , _time(0)
-    , _view(0)
-    , _validArgs(false)
-    , _isIdentity(false)
-    , _identityTime(0)
-    , _identityInputNb(-1)
-    , _outputPlanes()
-    , _outputPlaneBeingRendered()
-    , _firstFrame(0)
-    , _lastFrame(0)
+: rod()
+, regionOfInterestResults()
+, renderWindowPixel()
+, time(0)
+, view(0)
+, validArgs(false)
+, isIdentity(false)
+, identityTime(0)
+, identityInput()
+, inputImages()
+, outputPlanes()
+, outputPlaneBeingRendered()
+, firstFrame(0)
+, lastFrame(0)
+, transformRedirections()
 {
 }
 
 
 EffectInstance::RenderArgs::RenderArgs(const RenderArgs & o)
-    : _rod(o._rod)
-    , _regionOfInterestResults(o._regionOfInterestResults)
-    , _renderWindowPixel(o._renderWindowPixel)
-    , _time(o._time)
-    , _view(o._view)
-    , _validArgs(o._validArgs)
-    , _isIdentity(o._isIdentity)
-    , _identityTime(o._identityTime)
-    , _identityInputNb(o._identityInputNb)
-    , _outputPlanes(o._outputPlanes)
-    , _outputPlaneBeingRendered(o._outputPlaneBeingRendered)
-    , _firstFrame(o._firstFrame)
-    , _lastFrame(o._lastFrame)
+: rod(o.rod)
+, regionOfInterestResults(o.regionOfInterestResults)
+, renderWindowPixel(o.renderWindowPixel)
+, time(o.time)
+, view(o.view)
+, validArgs(o.validArgs)
+, isIdentity(o.isIdentity)
+, identityTime(o.identityTime)
+, identityInput(o.identityInput)
+, inputImages(o.inputImages)
+, outputPlanes(o.outputPlanes)
+, outputPlaneBeingRendered(o.outputPlaneBeingRendered)
+, firstFrame(o.firstFrame)
+, lastFrame(o.lastFrame)
+, transformRedirections(o.transformRedirections)
 {
 }
 
 
+
 EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     : _publicInterface(publicInterface)
-    , renderArgs()
-    , frameRenderArgs()
-    , beginEndRenderCount()
-    , inputImages()
+    , tlsData(new TLSHolder<EffectTLSData>())
     , duringInteractActionMutex()
     , duringInteractAction(false)
     , pluginMemoryChunksMutex()
@@ -346,6 +347,8 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , componentsAvailableMutex()
     , componentsAvailableDirty(true)
     , outputComponentsAvailable()
+    , defaultClipPreferencesDataMutex()
+    , clipPrefsData()
 {
 }
 
@@ -362,7 +365,7 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
         return;
     }
     try {
-        Natron::getFunctionArguments(callback, &error, &args);
+        Python::getFunctionArguments(callback, &error, &args);
     } catch (const std::exception& e) {
         _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onParamChanged callback: ")
                                                          + e.what());
@@ -425,7 +428,7 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
     std::string script = ss.str();
     std::string err;
     std::string output;
-    if ( !Natron::interpretPythonScript(script, &err, &output) ) {
+    if ( !Python::interpretPythonScript(script, &err, &output) ) {
         _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute onParamChanged callback: ").toStdString() + err);
     } else {
         if ( !output.empty() ) {
@@ -446,7 +449,7 @@ EffectInstance::Implementation::setDuringInteractAction(bool b)
 
 #if NATRON_ENABLE_TRIMAP
 void
-EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr<Natron::Image> & img)
+EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr<Image> & img)
 {
     if ( !img->usesBitMap() ) {
         return;
@@ -465,7 +468,7 @@ EffectInstance::Implementation::markImageAsBeingRendered(const boost::shared_ptr
 
 bool
 EffectInstance::Implementation::waitForImageBeingRenderedElsewhereAndUnmark(const RectI & roi,
-                                                                            const boost::shared_ptr<Natron::Image> & img)
+                                                                            const boost::shared_ptr<Image> & img)
 {
     if ( !img->usesBitMap() ) {
         return true;
@@ -517,7 +520,7 @@ EffectInstance::Implementation::waitForImageBeingRenderedElsewhereAndUnmark(cons
 
 
 void
-EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_ptr<Natron::Image> & img,
+EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img,
                                                            bool renderFailed)
 {
     if ( !img->usesBitMap() ) {
@@ -543,113 +546,80 @@ EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_p
 
 
 
-EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(ThreadStorage<RenderArgs>* dst)
-    : localData( &dst->localData() )
-    , _dst(dst)
+EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
+                                                                   const RectD & rod,
+                                                                   const RectI & renderWindow,
+                                                                   double time,
+                                                                   int view,
+                                                                   bool isIdentity,
+                                                                   double identityTime,
+                                                                   const EffectInstPtr& identityInput,
+                                                                   const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
+                                                                   const EffectInstance::InputImagesMap& inputImages,
+                                                                   const RoIMap & roiMap,
+                                                                   int firstFrame,
+                                                                   int lastFrame)
+: tlsData(tlsData)
 {
-    assert(_dst);
+    tlsData->currentRenderArgs.rod = rod;
+    tlsData->currentRenderArgs.renderWindowPixel = renderWindow;
+    tlsData->currentRenderArgs.time = time;
+    tlsData->currentRenderArgs.view = view;
+    tlsData->currentRenderArgs.isIdentity = isIdentity;
+    tlsData->currentRenderArgs.identityTime = identityTime;
+    tlsData->currentRenderArgs.identityInput = identityInput;
+    tlsData->currentRenderArgs.compsNeeded = compsNeeded;
+    tlsData->currentRenderArgs.inputImages.insert(inputImages.begin(), inputImages.end());
+    tlsData->currentRenderArgs.regionOfInterestResults = roiMap;
+    tlsData->currentRenderArgs.firstFrame = firstFrame;
+    tlsData->currentRenderArgs.lastFrame = lastFrame;
+
+    tlsData->currentRenderArgs.validArgs = true;
 }
 
 
-EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(ThreadStorage<RenderArgs>* dst,
-                                                                   const RenderArgs & a)
-    : localData( &dst->localData() )
-    , _dst(dst)
+EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
+                                                                   const EffectDataTLSPtr& otherThreadData)
+    : tlsData(tlsData)
 {
-    *localData = a;
-    localData->_validArgs = true;
+    tlsData->currentRenderArgs = otherThreadData->currentRenderArgs;
 }
 
 
 EffectInstance::Implementation::ScopedRenderArgs::~ScopedRenderArgs()
 {
-    assert( _dst->hasLocalData() );
-    localData->_outputPlanes.clear();
-    localData->_validArgs = false;
+    assert(tlsData);
+    tlsData->currentRenderArgs.outputPlanes.clear();
+    tlsData->currentRenderArgs.inputImages.clear();
+    tlsData->currentRenderArgs.validArgs = false;
 }
 
-
-EffectInstance::RenderArgs &
-EffectInstance::Implementation::ScopedRenderArgs::getLocalData()
-{
-    return *localData;
-}
-
-
-///Setup the first pass on thread-local storage.
-///RoIMap and frame range are separated because those actions might need
-///the thread-storage set up in the first pass to work
-void
-EffectInstance::Implementation::ScopedRenderArgs::setArgs_firstPass(const RectD & rod,
-                                                                    const RectI & renderWindow,
-                                                                    double time,
-                                                                    int view,
-                                                                    bool isIdentity,
-                                                                    double identityTime,
-                                                                    int inputNbIdentity,
-                                                                    const EffectInstance::ComponentsNeededMap & compsNeeded)
-{
-    localData->_rod = rod;
-    localData->_renderWindowPixel = renderWindow;
-    localData->_time = time;
-    localData->_view = view;
-    localData->_isIdentity = isIdentity;
-    localData->_identityTime = identityTime;
-    localData->_identityInputNb = inputNbIdentity;
-    localData->_compsNeeded = compsNeeded;
-    localData->_validArgs = true;
-}
-
-
-void
-EffectInstance::Implementation::ScopedRenderArgs::setArgs_secondPass(const RoIMap & roiMap,
-                                                                     int firstFrame,
-                                                                     int lastFrame)
-{
-    localData->_regionOfInterestResults = roiMap;
-    localData->_firstFrame = firstFrame;
-    localData->_lastFrame = lastFrame;
-    localData->_validArgs = true;
-}
 
 
 void
 EffectInstance::Implementation::addInputImageTempPointer(int inputNb,
-                                                         const boost::shared_ptr<Natron::Image> & img)
+                                                         const boost::shared_ptr<Image> & img)
 {
-    InputImagesMap & tls = inputImages.localData();
+    EffectDataTLSPtr tls = tlsData->getTLSData();
+    if (!tls) {
+        return;
+    }
+    tls->currentRenderArgs.inputImages[inputNb].push_back(img);
 
-    tls[inputNb].push_back(img);
 }
 
 
 void
 EffectInstance::Implementation::clearInputImagePointers()
 {
-    if ( inputImages.hasLocalData() ) {
-        inputImages.localData().clear();
+    EffectDataTLSPtr tls = tlsData->getTLSData();
+    if (!tls) {
+        return;
     }
+    tls->currentRenderArgs.inputImages.clear();
+
 }
 
-
-InputImagesHolder_RAII::InputImagesHolder_RAII(const EffectInstance::InputImagesMap & imgs,
-                                               ThreadStorage< EffectInstance::InputImagesMap>* storage)
-    : storage(storage)
-    , localData(0)
-{
-    if ( !imgs.empty() ) {
-        localData = &storage->localData();
-        localData->insert( imgs.begin(), imgs.end() );
-    } else {
-        this->storage = 0;
-    }
-}
+NATRON_NAMESPACE_EXIT;
 
 
-InputImagesHolder_RAII::~InputImagesHolder_RAII()
-{
-    if (storage) {
-        assert(localData);
-        localData->clear();
-    }
-}

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,11 @@
  **/
 #define getKeybind(group,action) ( appPTR->getKeySequenceForAction(group,action) )
 
+#define TO_DPI(x,y) ( appPTR->adjustSizeToDPI(x,y) )
+#define TO_DPIX(x) ( appPTR->adjustSizeToDPIX(x) )
+#define TO_DPIY(y) ( appPTR->adjustSizeToDPIY(y) )
 
+NATRON_NAMESPACE_ENTER;
 
 struct PythonUserCommand {
     QString grouping;
@@ -95,8 +99,8 @@ public:
         return false;
     }
 
-    void getIcon(Natron::PixmapEnum e, QPixmap* pix) const;
-    void getIcon(Natron::PixmapEnum e, int size, QPixmap* pix) const;
+    void getIcon(PixmapEnum e, QPixmap* pix) const;
+    void getIcon(PixmapEnum e, int size, QPixmap* pix) const;
 
     void setKnobClipBoard(bool copyAnimation,
                           const std::list<Variant> & values,
@@ -127,9 +131,9 @@ public:
     virtual void hideSplashScreen() OVERRIDE FINAL;
     const QCursor & getColorPickerCursor() const;
     virtual void setLoadingStatus(const QString & str) OVERRIDE FINAL;
-    KnobGui* createGuiForKnob(boost::shared_ptr<KnobI> knob, DockablePanel *container) const;
+    KnobGui* createGuiForKnob(KnobPtr knob, DockablePanel *container) const;
     virtual void setUndoRedoStackLimit(int limit) OVERRIDE FINAL;
-    virtual void debugImage( const Natron::Image* image, const RectI& roi, const QString & filename = QString() ) const OVERRIDE FINAL;
+    virtual void debugImage( const Image* image, const RectI& roi, const QString & filename = QString() ) const OVERRIDE FINAL;
 
     void setFileToOpen(const QString & str);
 
@@ -176,6 +180,9 @@ public:
     
     virtual int getAppFontSize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
+    ///Closes the application, asking the user to save each opened project that has unsaved changes
+    virtual void exitApp(bool warnUserForSave) OVERRIDE FINAL;
+    
     bool isNodeClipBoardEmpty() const;
     
     NodeClipBoard& getNodeClipBoard();
@@ -190,11 +197,30 @@ public:
     
     bool handleImageFileOpenRequest(const std::string& imageFile);
     
+    void appendTaskToPreviewThread(const NodeGuiPtr& node, double time);
+    
+
+    void setCurrentLogicalDPI(double dpiX,double dpiY);
+    double getLogicalDPIXRATIO() const;
+    double getLogicalDPIYRATIO() const;
+
+    template <typename T>
+    void adjustSizeToDPI(T &x, T &y) const {
+        x *= getLogicalDPIXRATIO();
+        y *= getLogicalDPIYRATIO();
+    }
+
+    template <typename T>
+    T adjustSizeToDPIX(T x) const {
+        return x * getLogicalDPIXRATIO();
+    }
+
+    template <typename T>
+    T adjustSizeToDPIY(T y) const {
+        return y * getLogicalDPIYRATIO();
+    }
+
 public Q_SLOTS:
-
-
-    ///Closes the application, asking the user to save each opened project that has unsaved changes
-    virtual void exitApp() OVERRIDE FINAL;
     
     void onFontconfigCacheUpdateFinished();
 
@@ -204,8 +230,8 @@ private:
 
     virtual void initBuiltinPythonModules() OVERRIDE FINAL;
 
-    void onPluginLoaded(Natron::Plugin* plugin) OVERRIDE;
-    virtual void ignorePlugin(Natron::Plugin* plugin) OVERRIDE FINAL;
+    void onPluginLoaded(Plugin* plugin) OVERRIDE;
+    virtual void ignorePlugin(Plugin* plugin) OVERRIDE FINAL;
     virtual void onAllPluginsLoaded() OVERRIDE FINAL;
     virtual void loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<std::string,double> > >* readersMap,
                                         std::map<std::string,std::vector< std::pair<std::string,double> > >* writersMap) OVERRIDE;
@@ -228,5 +254,8 @@ private:
 
     boost::scoped_ptr<GuiApplicationManagerPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
+
 
 #endif // Gui_GuiApplicationManager_h

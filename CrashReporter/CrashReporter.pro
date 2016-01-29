@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+# Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,95 +16,66 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
+# The binary name needs to be Natron as this is what the user lauches
+# It is renamed during deployment
 TARGET = NatronCrashReporter
-QT       += core network gui
-
-CONFIG += console
-CONFIG -= app_bundle
-CONFIG += moc
-CONFIG += qt
-
+VERSION = 2.0.0
 TEMPLATE = app
 
-INCLUDEPATH += $$PWD/..
+# NatronCrashReporter is built as an app to make debugging easier:
+# - on Linux and OSX, make a symbolic link to the Natron binary
+#  (which is inside Natron.app on OSX) next to the NatronCrashReporter binary
+#  example on OSX:
+#  $ cd build/Debug/NatronCrashReporter.app/Contents/MacOS
+#  $ ln -s ../../../../../../App/build/Debug/Natron.app/Contents/MacOS/Natron Natron-bin
 
-gbreakpad {
-
-*g++* | *clang* {
-#See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
-# QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO
-# QMAKE_CXXFLAGS_RELEASE_WITH_DEBUGINFO
-# QMAKE_OBJECTIVE_CFLAGS_RELEASE_WITH_DEBUGINFO
-# QMAKE_LFLAGS_RELEASE_WITH_DEBUGINFO
-
-    CONFIG(relwithdebinfo) {
-        CONFIG += release
-        DEFINES *= NDEBUG
-        QMAKE_CXXFLAGS += -O2 -g
-        QMAKE_CXXFLAGS -= -O3
-    }
-}
-
-win32-msvc* {
-    CONFIG(relwithdebinfo) {
-        CONFIG += release
-        DEFINES *= NDEBUG
-        QMAKE_CXXFLAGS_RELEASE += -Zi
-        QMAKE_LFLAGS_RELEASE += /DEBUG /OPT:REF
-    }
-}
-
-CONFIG(debug, debug|release){
-    DEFINES *= DEBUG
+win32 {
+    CONFIG += console
+    RC_FILE += ../Natron.rc
 } else {
-    DEFINES *= NDEBUG
+    CONFIG += app
 }
-
-macx {
-  # Set the pbuilder version to 46, which corresponds to Xcode >= 3.x
-  # (else qmake generates an old pbproj on Snow Leopard)
-  QMAKE_PBUILDER_VERSION = 46
-
-  QMAKE_MACOSX_DEPLOYMENT_VERSION = $$split(QMAKE_MACOSX_DEPLOYMENT_TARGET, ".")
-  QMAKE_MACOSX_DEPLOYMENT_MAJOR_VERSION = $$first(QMAKE_MACOSX_DEPLOYMENT_VERSION)
-  QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION = $$last(QMAKE_MACOSX_DEPLOYMENT_VERSION)
-  universal {
-    message("Compiling for universal OSX $${QMAKE_MACOSX_DEPLOYMENT_MAJOR_VERSION}.$$QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION")
-    contains(QMAKE_MACOSX_DEPLOYMENT_MAJOR_VERSION, 10) {
-      contains(QMAKE_MACOSX_DEPLOYMENT_TARGET, 4)|contains(QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION, 5) {
-        # OSX 10.4 (Tiger) and 10.5 (Leopard) are x86/ppc
-        message("Compiling for universal ppc/i386")
-        CONFIG += x86 ppc
-      }
-      contains(QMAKE_MACOSX_DEPLOYMENT_MINOR_VERSION, 6) {
-        message("Compiling for universal i386/x86_64")
-        # OSX 10.6 (Snow Leopard) may run on Intel 32 or 64 bits architectures
-        CONFIG += x86 x86_64
-      }
-      # later OSX instances only run on x86_64, universal builds are useless
-      # (unless a later OSX supports ARM)
-    }
-  }
-
-  #link against the CoreFoundation framework for the StandardPaths functionnality
-  LIBS += -framework CoreServices
-}
+#CONFIG += console
+#CONFIG -= app_bundle
+#CONFIG -= app
 
 
-unix:!mac {
-    DEFINES += N_UNDF=0
-}
+CONFIG += moc
+CONFIG += qt
+QT       += core network gui
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+include(../global.pri)
+
+#used by breakpad internals on Linux
+unix:!mac: DEFINES += N_UNDF=0
+
+#Windows: google-breakpad use this to determine if build is debug
 win32:Debug: DEFINES *= _DEBUG 
+
+INCLUDEPATH += $$PWD/..
+INCLUDEPATH += $$PWD/../Global
+DEPENDPATH += $$PWD/../Global
+
+
+BREAKPAD_PATH = $$PWD/../google-breakpad/src
+INCLUDEPATH += $$BREAKPAD_PATH
+DEPENDPATH += $$BREAKPAD_PATH
 
 SOURCES += \
     CrashDialog.cpp \
     main.cpp \
-    CallbacksManager.cpp
+    CallbacksManager.cpp \
+    ../Global/ProcInfo.cpp
 
 HEADERS += \
     CrashDialog.h \
-    CallbacksManager.h
+    CallbacksManager.h \
+    ../Global/Macros.h \
+    ../Global/ProcInfo.h
+
+
+
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -122,9 +93,7 @@ win32-msvc*{
         else:unix: LIBS += -L$$OUT_PWD/../BreakpadClient/ -lBreakpadClient
 }
 
-BREAKPAD_PATH = $$PWD/../google-breakpad/src
-INCLUDEPATH += $$BREAKPAD_PATH
-DEPENDPATH += $$BREAKPAD_PATH
+
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -144,9 +113,9 @@ win32-msvc*{
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../BreakpadClient/libBreakpadClient.a
 }
 
+
+
 RESOURCES += \
     ../Gui/GuiResources.qrc
 
 INSTALLS += target
-
-}

@@ -5,6 +5,7 @@
 
 #include <ParameterWrapper.h>
 
+NATRON_NAMESPACE_ENTER;
 class ColorParamWrapper : public ColorParam
 {
 public:
@@ -12,6 +13,7 @@ public:
     virtual ~ColorParamWrapper();
     static void pysideInitQtMetaTypes();
 };
+NATRON_NAMESPACE_EXIT;
 
 #endif // SBK_COLORPARAMWRAPPER_H
 

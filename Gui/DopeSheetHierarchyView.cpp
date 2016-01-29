@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 
+NATRON_NAMESPACE_ENTER;
 
 typedef std::list<boost::shared_ptr<DSKnob> > DSKnobPtrList;
 
@@ -234,15 +235,15 @@ QSize HierarchyViewItemDelegate::sizeHint(const QStyleOptionViewItem &option, co
 
     QSize itemSize = QStyledItemDelegate::sizeHint(option, index);
 
-    Natron::DopeSheetItemType nodeType = Natron::DopeSheetItemType(index.data(QT_ROLE_CONTEXT_TYPE).toInt());
+    DopeSheetItemType nodeType = DopeSheetItemType(index.data(QT_ROLE_CONTEXT_TYPE).toInt());
     int heightOffset = 0;
 
     switch (nodeType) {
-    case Natron::eDopeSheetItemTypeReader:
-    case Natron::eDopeSheetItemTypeRetime:
-    case Natron::eDopeSheetItemTypeTimeOffset:
-    case Natron::eDopeSheetItemTypeFrameRange:
-    case Natron::eDopeSheetItemTypeGroup:
+    case eDopeSheetItemTypeReader:
+    case eDopeSheetItemTypeRetime:
+    case eDopeSheetItemTypeTimeOffset:
+    case eDopeSheetItemTypeFrameRange:
+    case eDopeSheetItemTypeGroup:
         heightOffset = 10;
         break;
     default:
@@ -350,14 +351,14 @@ void HierarchyViewPrivate::checkKnobsVisibleState(DSNode *dsNode)
  */
 void HierarchyViewPrivate::checkNodeVisibleState(DSNode *dsNode)
 {
-    boost::shared_ptr<NodeGui> nodeGui = dsNode->getNodeGui();
+    NodeGuiPtr nodeGui = dsNode->getNodeGui();
 
 
-    Natron::DopeSheetItemType nodeType = dsNode->getItemType();
+    DopeSheetItemType nodeType = dsNode->getItemType();
     QTreeWidgetItem *nodeItem = dsNode->getTreeItem();
 
     bool showNode;
-    if (nodeType == Natron::eDopeSheetItemTypeCommon) {
+    if (nodeType == eDopeSheetItemTypeCommon) {
         showNode = nodeHasAnimation(nodeGui);
     } else {
         showNode = true;
@@ -734,7 +735,7 @@ void HierarchyView::drawRow(QPainter *painter, const QStyleOptionViewItem &optio
 {
     QTreeWidgetItem *item = itemFromIndex(index);
 
-    bool drawPluginIconToo = (item->data(0, QT_ROLE_CONTEXT_TYPE).toInt() < Natron::eDopeSheetItemTypeKnobRoot);
+    bool drawPluginIconToo = (item->data(0, QT_ROLE_CONTEXT_TYPE).toInt() < eDopeSheetItemTypeKnobRoot);
     bool isTreeViewTopItem = !itemAbove(item);
     boost::shared_ptr<DSNode> dsNode = _imp->dopeSheetModel->findParentDSNode(item);
 
@@ -915,7 +916,7 @@ void HierarchyView::onNodeAboutToBeRemoved(DSNode *dsNode)
     for (int i = 0; i < treeItem->childCount(); ++i) {
         QTreeWidgetItem *child = treeItem->child(i);
 
-        if (child->data(0, QT_ROLE_CONTEXT_TYPE).toInt() < Natron::eDopeSheetItemTypeKnobRoot) {
+        if (child->data(0, QT_ROLE_CONTEXT_TYPE).toInt() < eDopeSheetItemTypeKnobRoot) {
             toMove << child;
         }
     }
@@ -1034,7 +1035,7 @@ void HierarchyView::onItemDoubleClicked(QTreeWidgetItem *item, int column)
 
     boost::shared_ptr<DSNode> itemDSNode = _imp->dopeSheetModel->findParentDSNode(item);
 
-    boost::shared_ptr<NodeGui> nodeGui = itemDSNode->getNodeGui();
+    NodeGuiPtr nodeGui = itemDSNode->getNodeGui();
 
     // Move the nodeGui's settings panel on top
     DockablePanel *panel = 0;
@@ -1068,3 +1069,8 @@ void HierarchyView::onSelectionChanged()
 {
     _imp->selectKeyframes(selectedItems());
 }
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_DopeSheetHierarchyView.cpp"

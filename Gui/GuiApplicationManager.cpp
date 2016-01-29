@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,9 +47,16 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiDefines.h"
 #include "Gui/KnobGuiFactory.h"
 #include "Gui/SplashScreen.h"
+#include "Gui/PreviewThread.h"
 
+//All fixed sizes were calculated for a 96 dpi screen
+#ifndef Q_OS_MAC
+#define NATRON_PIXELS_FOR_DPI_DEFAULT 96.
+#else
+#define NATRON_PIXELS_FOR_DPI_DEFAULT 72.
+#endif
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 GuiApplicationManager::GuiApplicationManager()
@@ -66,10 +73,11 @@ GuiApplicationManager::~GuiApplicationManager()
             delete it2->second;
         }
     }
+    _imp->previewRenderThread.quitThread();
 }
 
 void
-GuiApplicationManager::getIcon(Natron::PixmapEnum e,
+GuiApplicationManager::getIcon(PixmapEnum e,
                                QPixmap* pix) const
 {
     int iconSet = appPTR->getCurrentSettings()->getIconsBlackAndWhite() ? 2 : 3;
@@ -621,6 +629,9 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
             case NATRON_PIXMAP_LINK_CURSOR:
                 path = NATRON_IMAGES_PATH "linkCursor.png";
                 break;
+            case NATRON_PIXMAP_LINK_MULT_CURSOR:
+                path = NATRON_IMAGES_PATH "linkMultCursor.png";
+                break;
             case NATRON_PIXMAP_ENTER_GROUP:
                 path = NATRON_IMAGES_PATH "enter_group.png";
                 break;
@@ -710,7 +721,7 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
 } // getIcon
 
 void
-GuiApplicationManager::getIcon(Natron::PixmapEnum e,
+GuiApplicationManager::getIcon(PixmapEnum e,
                                int size,
                                QPixmap* pix) const
 {
@@ -801,7 +812,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
     
     QCoreApplication::processEvents();
     QPixmap appIcPixmap;
-    appPTR->getIcon(Natron::NATRON_PIXMAP_APP_ICON, &appIcPixmap);
+    appPTR->getIcon(NATRON_PIXMAP_APP_ICON, &appIcPixmap);
     QIcon appIc(appIcPixmap);
     qApp->setWindowIcon(appIc);
     
@@ -857,7 +868,7 @@ GuiApplicationManager::onFontconfigTimerTriggered()
 }
 
 void
-GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
+GuiApplicationManager::onPluginLoaded(Plugin* plugin)
 {
     QString shortcutGrouping(kShortcutGroupNodes);
     const QStringList & groups = plugin->getGrouping();
@@ -915,7 +926,7 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
 }
 
 void
-GuiApplicationManager::ignorePlugin(Natron::Plugin* plugin)
+GuiApplicationManager::ignorePlugin(Plugin* plugin)
 {
     _imp->removePluginToolButton(plugin->getGrouping());
     _imp->removeKeybind(kShortcutGroupNodes, plugin->getPluginID());
@@ -998,3 +1009,34 @@ GuiApplicationManager::getKnobClipBoard(bool* copyAnimation,
     *nodeFullyQualifiedName = _imp->_knobsClipBoard->nodeFullyQualifiedName;
     *paramName = _imp->_knobsClipBoard->paramName;
 }
+
+void
+GuiApplicationManager::appendTaskToPreviewThread(const NodeGuiPtr& node, double time)
+{
+    _imp->previewRenderThread.appendToQueue(node, time);
+}
+
+double
+GuiApplicationManager::getLogicalDPIXRATIO() const
+{
+    return _imp->dpiX / NATRON_PIXELS_FOR_DPI_DEFAULT;
+}
+
+double
+GuiApplicationManager::getLogicalDPIYRATIO() const
+{
+   return _imp->dpiY / NATRON_PIXELS_FOR_DPI_DEFAULT;
+}
+
+
+void
+GuiApplicationManager::setCurrentLogicalDPI(double dpiX,double dpiY)
+{
+    _imp->dpiX = dpiX;
+    _imp->dpiY = dpiY;
+}
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_GuiApplicationManager.cpp"

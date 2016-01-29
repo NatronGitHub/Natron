@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,9 +29,10 @@
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
 
+NATRON_NAMESPACE_ENTER;
 
 void
-ProjectSerialization::initialize(const Natron::Project* project)
+ProjectSerialization::initialize(const Project* project)
 {
     ///All the code in this function is MT-safe
 
@@ -39,7 +40,7 @@ ProjectSerialization::initialize(const Natron::Project* project)
     
     project->getAdditionalFormats(&_additionalFormats);
 
-    std::vector< boost::shared_ptr<KnobI> > knobs = project->getKnobs_mt_safe();
+    std::vector< KnobPtr > knobs = project->getKnobs_mt_safe();
     for (U32 i = 0; i < knobs.size(); ++i) {
         KnobGroup* isGroup = dynamic_cast<KnobGroup*>( knobs[i].get() );
         KnobPage* isPage = dynamic_cast<KnobPage*>( knobs[i].get() );
@@ -57,3 +58,4 @@ ProjectSerialization::initialize(const Natron::Project* project)
     _creationDate = project->getProjectCreationTime();
 }
 
+NATRON_NAMESPACE_EXIT;

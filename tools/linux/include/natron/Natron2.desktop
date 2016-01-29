@@ -3,10 +3,10 @@ Version=1.0
 Type=Application
 Terminal=false
 Name=Natron2
-MimeType=application/vnd.natron.project;application/vnd.natron.nodepresets;application/vnd.natron.layout
+MimeType=application/x-natron
 Exec=Natron %U
 GenericName=Compositing software
 Comment=Node-graph based compositing software
-Icon=Natron
+Icon=natronIcon256_linux
 Categories=Graphics;2DGraphics;RasterGraphics;
 

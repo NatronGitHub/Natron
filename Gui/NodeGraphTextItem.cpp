@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,8 @@
 #define NODEGRAPH_TEXT_ITEM_MIN_HEIGHT_PX 4
 #define NODEGRAPH_SIMPLE_TEXT_ITEM_MIN_HEIGHT_PX 6
 #define NODEGRAPH_PIXMAP_ITEM_MIN_HEIGHT_PX 10
+
+NATRON_NAMESPACE_ENTER;
 
 NodeGraphTextItem::NodeGraphTextItem(NodeGraph* graph,QGraphicsItem* parent,bool alwaysDrawText)
 : QGraphicsTextItem(parent)
@@ -143,3 +145,4 @@ NodeGraphPixmapItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *op
     QGraphicsPixmapItem::paint(painter, option, widget);
 }
 
+NATRON_NAMESPACE_EXIT;

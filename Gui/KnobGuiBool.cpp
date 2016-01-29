@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,7 +78,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "ofxNatron.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 
 //==========================KnobBool_GUI======================================
@@ -97,7 +97,7 @@ Bool_CheckBox::getBackgroundColor(double *r,double *g,double *b) const
 }
 
 
-KnobGuiBool::KnobGuiBool(boost::shared_ptr<KnobI> knob,
+KnobGuiBool::KnobGuiBool(KnobPtr knob,
                            DockablePanel *container)
     : KnobGui(knob, container)
     , _checkBox(0)
@@ -141,17 +141,17 @@ KnobGuiBool::updateGUI(int /*dimension*/)
 
 void
 KnobGuiBool::reflectAnimationLevel(int /*dimension*/,
-                                    Natron::AnimationLevelEnum level)
+                                    AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-        case Natron::eAnimationLevelNone:
+        case eAnimationLevelNone:
             value = 0;
             break;
-        case Natron::eAnimationLevelInterpolatedValue:
+        case eAnimationLevelInterpolatedValue:
             value = 1;
             break;
-        case Natron::eAnimationLevelOnKeyframe:
+        case eAnimationLevelOnKeyframe:
             value = 2;
             break;
         default:
@@ -239,7 +239,7 @@ KnobGuiBool::setDirty(bool dirty)
     _checkBox->setDirty(dirty);
 }
 
-boost::shared_ptr<KnobI>
+KnobPtr
 KnobGuiBool::getKnob() const
 {
     return _knob.lock();
@@ -265,3 +265,7 @@ KnobGuiBool::updateToolTip()
     }
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_KnobGuiBool.cpp"

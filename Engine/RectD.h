@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,12 @@
 
 #include "Engine/EngineFwd.h"
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+//Shiboken fails if defined at the start of a header
 GCC_DIAG_OFF(strict-overflow)
+#endif
+
+NATRON_NAMESPACE_ENTER;
 
 class RectD
 {
@@ -336,8 +341,9 @@ operator!=(const RectD & b1,
            b1.right() != b2.right() ||
            b1.top() != b2.top();
 }
+NATRON_NAMESPACE_EXIT;
 
-Q_DECLARE_METATYPE(RectD)
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::RectD)
 
 
 #endif // Engine_RectD_h

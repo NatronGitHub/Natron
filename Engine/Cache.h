@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
 
 #include <vector>
 #include <sstream>
@@ -64,7 +66,8 @@ GCC_DIAG_ON(deprecated)
 ///When defined, number of opened files, memory size and disk size of the cache are printed whenever there's activity.
 //#define NATRON_DEBUG_CACHE
 
-namespace Natron {
+NATRON_NAMESPACE_ENTER;
+
 /**
  * @brief The point of this thread is to delete the content of the list in a separate thread so the thread calling
  * get() doesn't wait for all the entries to be deleted (which can be expensive for large images)
@@ -76,10 +79,10 @@ class DeleterThread
     mutable QMutex _entriesQueueMutex;
     std::list<boost::shared_ptr<T> >_entriesQueue;
     QWaitCondition _entriesQueueNotEmptyCond;
-    bool mustQuit;
+    CacheAPI* cache;
     QMutex mustQuitMutex;
     QWaitCondition mustQuitCond;
-    CacheAPI* cache;
+    bool mustQuit;
 
 public:
 
@@ -88,10 +91,10 @@ public:
         , _entriesQueueMutex()
         , _entriesQueue()
         , _entriesQueueNotEmptyCond()
-        , mustQuit(false)
+        , cache(cache)
         , mustQuitMutex()
         , mustQuitCond()
-        , cache(cache)
+        , mustQuit(false)
     {
         setObjectName("CacheDeleter");
     }
@@ -201,10 +204,10 @@ class CacheCleanerThread
 
     std::list<CleanRequest> _requestsQueues;
     QWaitCondition _requestsQueueNotEmptyCond;
-    bool mustQuit;
+    CacheAPI* cache;
     QMutex mustQuitMutex;
     QWaitCondition mustQuitCond;
-    CacheAPI* cache;
+    bool mustQuit;
 
 public:
 
@@ -213,10 +216,10 @@ public:
         , _requestQueueMutex()
         , _requestsQueues()
         , _requestsQueueNotEmptyCond()
-        , mustQuit(false)
+        , cache(cache)
         , mustQuitMutex()
         , mustQuitCond()
-        , cache(cache)
+        , mustQuit(false)
     {
         setObjectName("CacheCleaner");
     }
@@ -477,9 +480,9 @@ private:
     ///Store the system physical total RAM in a member
     std::size_t _maxPhysicalRAM;
     bool _tearingDown;
-    mutable Natron::DeleterThread<EntryType> _deleterThread;
+    mutable DeleterThread<EntryType> _deleterThread;
     mutable QWaitCondition _memoryFullCondition; //< protected by _sizeLock
-    mutable Natron::CacheCleanerThread _cleanerThread;
+    mutable CacheCleanerThread _cleanerThread;
 
 public:
 
@@ -627,19 +630,19 @@ private:
         }
         {
             QMutexLocker locker(&_lock);
-            Natron::StorageModeEnum storage;
+            StorageModeEnum storage;
             if (params->getCost() == 0) {
-                storage = Natron::eStorageModeRAM;
+                storage = eStorageModeRAM;
             } else if (params->getCost() >= 1) {
-                storage = Natron::eStorageModeDisk;
+                storage = eStorageModeDisk;
             } else {
-                storage = Natron::eStorageModeNone;
+                storage = eStorageModeNone;
             }
 
 
             try {
                 std::string filePath;
-                if (storage == Natron::eStorageModeDisk) {
+                if (storage == eStorageModeDisk) {
                     filePath = getCachePath().toStdString();
                     filePath += '/';
                 }
@@ -995,7 +998,7 @@ public:
      **/
     virtual void notifyEntryAllocated(double time,
                                       std::size_t size,
-                                      Natron::StorageModeEnum storage) const OVERRIDE FINAL
+                                      StorageModeEnum storage) const OVERRIDE FINAL
     {
         ///The entry has notified it's memory layout has changed, it must have been due to an action from the cache, hence the
         ///lock should already be taken.
@@ -1004,7 +1007,7 @@ public:
         _memoryCacheSize += size;
         _signalEmitter->emitAddedEntry(time);
 
-        if (storage == Natron::eStorageModeDisk) {
+        if (storage == eStorageModeDisk) {
             appPTR->increaseNCacheFilesOpened();
         }
 #ifdef NATRON_DEBUG_CACHE
@@ -1017,16 +1020,16 @@ public:
      **/
     virtual void notifyEntryDestroyed(double time,
                                       std::size_t size,
-                                      Natron::StorageModeEnum storage) const OVERRIDE FINAL
+                                      StorageModeEnum storage) const OVERRIDE FINAL
     {
         QMutexLocker k(&_sizeLock);
 
-        if (storage == Natron::eStorageModeRAM) {
+        if (storage == eStorageModeRAM) {
             _memoryCacheSize = size > _memoryCacheSize ? 0 : _memoryCacheSize - size;
 #ifdef NATRON_DEBUG_CACHE
             qDebug() << cacheName().c_str() << " memory size: " << printAsRAM(_memoryCacheSize);
 #endif
-        } else if (storage == Natron::eStorageModeDisk) {
+        } else if (storage == eStorageModeDisk) {
             _diskCacheSize = size > _diskCacheSize ? 0 : _diskCacheSize - size;
 #ifdef NATRON_DEBUG_CACHE
             qDebug() << cacheName().c_str() << " disk size: " << printAsRAM(_diskCacheSize);
@@ -1048,8 +1051,8 @@ public:
      * @brief To be called whenever an entry is deallocated from memory and put back on disk or whenever
      * it is reallocated in the RAM.
      **/
-    virtual void notifyEntryStorageChanged(Natron::StorageModeEnum oldStorage,
-                                           Natron::StorageModeEnum newStorage,
+    virtual void notifyEntryStorageChanged(StorageModeEnum oldStorage,
+                                           StorageModeEnum newStorage,
                                            double time,
                                            std::size_t size) const OVERRIDE FINAL
     {
@@ -1059,8 +1062,8 @@ public:
         QMutexLocker k(&_sizeLock);
 
         assert(oldStorage != newStorage);
-        assert(newStorage != Natron::eStorageModeNone);
-        if (oldStorage == Natron::eStorageModeRAM) {
+        assert(newStorage != eStorageModeNone);
+        if (oldStorage == eStorageModeRAM) {
             _memoryCacheSize = size > _memoryCacheSize ? 0 : _memoryCacheSize - size;
             _diskCacheSize += size;
 #ifdef NATRON_DEBUG_CACHE
@@ -1069,7 +1072,7 @@ public:
 #endif
             ///We switched from RAM to DISK that means the MemoryFile object has been destroyed hence the file has been closed.
             appPTR->decreaseNCacheFilesOpened();
-        } else if (oldStorage == Natron::eStorageModeDisk) {
+        } else if (oldStorage == eStorageModeDisk) {
             _memoryCacheSize += size;
             _diskCacheSize = size > _diskCacheSize ? 0 : _diskCacheSize - size;
 #ifdef NATRON_DEBUG_CACHE
@@ -1079,9 +1082,9 @@ public:
             ///We switched from DISK to RAM that means the MemoryFile object has been created and the file opened
             appPTR->increaseNCacheFilesOpened();
         } else {
-            if (newStorage == Natron::eStorageModeRAM) {
+            if (newStorage == eStorageModeRAM) {
                 _memoryCacheSize += size;
-            } else if (newStorage == Natron::eStorageModeDisk) {
+            } else if (newStorage == eStorageModeDisk) {
                 _diskCacheSize += size;
             }
         }
@@ -1278,9 +1281,13 @@ public:
         _cleanerThread.appendToQueue(holder->getCacheID(), nodeHash, false);
     }
 
-    void removeAllEntriesForHolderPublic(const CacheEntryHolder* holder)
+    void removeAllEntriesForHolderPublic(const CacheEntryHolder* holder, bool blocking)
     {
-        _cleanerThread.appendToQueue(holder->getCacheID(), 0, true);
+        if (blocking) {
+            removeAllEntriesWithDifferentNodeHashForHolderPrivate(holder->getCacheID(), 0, true);
+        } else {
+            _cleanerThread.appendToQueue(holder->getCacheID(), 0, true);
+        }
     }
     
     void getMemoryStatsForCacheEntryHolder(const CacheEntryHolder* holder,
@@ -1583,7 +1590,8 @@ private:
         return true;
     } // tryEvictEntry
 };
-} // namespace Natron
+
+NATRON_NAMESPACE_EXIT;
 
 
 #endif /*NATRON_ENGINE_ABSTRACTCACHE_H_ */

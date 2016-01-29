@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ namespace serialization {
 template<class Archive>
 void
 serialize(Archive & ar,
-          TextureRect &t,
+          NATRON_NAMESPACE::TextureRect &t,
           const unsigned int version)
 {
 
@@ -60,6 +60,6 @@ serialize(Archive & ar,
 }
 }
 
-BOOST_CLASS_VERSION(TextureRect, TEXTURE_RECT_VERSION);
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::TextureRect, TEXTURE_RECT_VERSION);
 
 #endif // NATRON_ENGINE_TEXTURERECTSERIALIZATION_H

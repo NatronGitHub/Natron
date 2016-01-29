@@ -1,10 +1,13 @@
---- Portfile.orig	2015-09-16 22:23:45.000000000 +0200
-+++ Portfile	2015-09-16 22:24:14.000000000 +0200
-@@ -65,6 +65,7 @@
- configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
-                     --libdir=${prefix}/lib/${name} \
-                     --includedir=${prefix}/include/${name} \
-+                    --with-sysroot=${configure.sdkroot} \
-                     --infodir=${prefix}/share/info \
-                     --mandir=${prefix}/share/man \
-                     --datarootdir=${prefix}/share/gcc-${major} \
+--- Portfile.orig	2015-12-14 10:30:10.000000000 +0100
++++ Portfile	2015-12-14 10:30:17.000000000 +0100
+@@ -87,6 +87,10 @@
+                     --with-ar=${prefix}/bin/ar \
+                     --with-bugurl=https://trac.macports.org/newticket
+ 
++if {${configure.sdkroot} ne ""} { 
++    configure.args-append     --with-sysroot=${configure.sdkroot} 
++} 
++
+ configure.env-append \
+                     AR_FOR_TARGET=${prefix}/bin/ar \
+                     AS_FOR_TARGET=${prefix}/bin/as \

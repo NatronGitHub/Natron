@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,8 @@
 #include "Global/QtCompat.h"
 #include "Engine/AppManager.h"
 
+NATRON_NAMESPACE_ENTER;
+
 
 struct CLArgsPrivate
 {
@@ -47,6 +49,8 @@ struct CLArgsPrivate
     QString defaultOnProjectLoadedScript;
     
     std::list<CLArgs::WriterArg> writers;
+    std::list<CLArgs::ReaderArg> readers;
+    std::list<std::string> pythonCommands;
     
     bool isBackground;
     
@@ -65,12 +69,23 @@ struct CLArgsPrivate
     
     mutable QString imageFilename;
     
+    QString breakpadPipeFilePath;
+    QString breakpadComPipeFilePath;
+    
+    int breakpadPipeClientID;
+    
+    QString breakpadProcessFilePath;
+    
+    qint64 breakpadProcessPID;
+    
     CLArgsPrivate()
     : args()
     , filename()
     , isPythonScript(false)
     , defaultOnProjectLoadedScript()
     , writers()
+    , readers()
+    , pythonCommands()
     , isBackground(false)
     , ipcPipe()
     , error(0)
@@ -80,6 +95,11 @@ struct CLArgsPrivate
     , enableRenderStats(false)
     , isEmpty(true)
     , imageFilename()
+    , breakpadPipeFilePath()
+    , breakpadComPipeFilePath()
+    , breakpadPipeClientID(-1)
+    , breakpadProcessFilePath()
+    , breakpadProcessPID(-1)
     {
         
     }
@@ -161,6 +181,8 @@ CLArgs::operator=(const CLArgs& other)
     _imp->isPythonScript = other._imp->isPythonScript;
     _imp->defaultOnProjectLoadedScript = other._imp->defaultOnProjectLoadedScript;
     _imp->writers = other._imp->writers;
+    _imp->readers = other._imp->readers;
+    _imp->pythonCommands = other._imp->pythonCommands;
     _imp->isBackground = other._imp->isBackground;
     _imp->ipcPipe = other._imp->ipcPipe;
     _imp->error = other._imp->error;
@@ -182,7 +204,7 @@ void
 CLArgs::printBackGroundWelcomeMessage()
 {
     QString msg = QObject::tr("%1 Version %2\n"
-                             "Copyright (C) 2015 the %1 developers\n"
+                             "Copyright (C) 2016 the %1 developers\n"
                               ">>>Use the --help or -h option to print usage.<<<").arg(NATRON_APPLICATION_NAME).arg(NATRON_VERSION_STRING);
     std::cout << msg.toStdString() << std::endl;
 }
@@ -226,7 +248,7 @@ CLArgs::printUsage(const std::string& programName)
                               "    Specify a Write node to render.\n"
                               "    When in background mode, the renderer only renders the node script name\n"
                               "    following this argument. If no such node exists in the project file, the\n"
-                              "    process aborts.\n"
+                              "    process will abort.\n"
                               "    Note that if there is no --writer option, it renders all the writers in\n"
                               "    the project.\n"
                               "    After the writer node script name you can pass an optional output\n"
@@ -243,6 +265,9 @@ CLArgs::printUsage(const std::string& programName)
                               "    to render.\n"
                               "    Note that if specified, the frame range is the same for all Write nodes\n"
                               "    to render.\n"
+                              "  -i [ --reader ] <reader node script name> <filename> :\n"
+                              "     Specify the input file/sequence/video to load for the given Reader node.\n"
+                              "     If the specified reader node cannot be found, the process will abort."
                               "  -l [ --onload ] <python script file path> :\n"
                               "    Specify a Python script to be executed after a project is created or\n"
                               "    loaded.\n"
@@ -296,6 +321,10 @@ CLArgs::printUsage(const std::string& programName)
                               "    -o1 [ --output1 ] : look for a node named Output1.\n"
                               "    -o2 [ --output2 ] : look for a node named Output2 \n"
                               "    etc...\n"
+                              "  -c [ --cmd ] \"PythonCommand\" : \n"
+                              "     Execute custom Python code passed as a script prior to executing the Python\n"
+                              "script passed in parameter. This option may be used multiple times and each python\n"
+                              "command will be executed in the order they were given to the command-line.\n\n"
                               "Sample uses:\n"
                               "  %1 /Users/Me/MyNatronScripts/MyScript.py\n"
                               "  %1 -b -w MyWriter /Users/Me/MyNatronScripts/MyScript.py\n"
@@ -328,6 +357,18 @@ const std::list<CLArgs::WriterArg>&
 CLArgs::getWriterArgs() const
 {
     return _imp->writers;
+}
+
+const std::list<CLArgs::ReaderArg>&
+CLArgs::getReaderArgs() const
+{
+    return _imp->readers;
+}
+
+const std::list<std::string>&
+CLArgs::getPythonCommands() const
+{
+    return _imp->pythonCommands;
 }
 
 bool
@@ -363,16 +404,23 @@ CLArgs::getScriptFilename() const
 const QString&
 CLArgs::getImageFilename() const
 {
-    if (_imp->imageFilename.isEmpty()) {
+    if (_imp->imageFilename.isEmpty() && !_imp->args.empty()) {
         ///Check for image file passed to command line
-        for (QStringList::iterator it = _imp->args.begin(); it!=_imp->args.end(); ++it) {
-            QString fileCopy = *it;
-            QString ext = Natron::removeFileExtension(fileCopy);
-            std::string readerId = appPTR->isImageFileSupportedByNatron(ext.toStdString());
-            if (!readerId.empty()) {
-                _imp->imageFilename = *it;
-                _imp->args.erase(it);
-                break;
+        QStringList::iterator it = _imp->args.begin();
+        // first argument is the program name, skip it
+        ++it;
+        for (; it!=_imp->args.end(); ++it) {
+            if (!it->startsWith("-")) {
+                QString fileCopy = *it;
+                QString ext = QtCompat::removeFileExtension(fileCopy);
+                if (!ext.isEmpty()) {
+                    std::string readerId = appPTR->isImageFileSupportedByNatron(ext.toStdString());
+                    if (!readerId.empty()) {
+                        _imp->imageFilename = *it;
+                        _imp->args.erase(it);
+                        break;
+                    }
+                }
             }
         }
     }
@@ -401,6 +449,36 @@ bool
 CLArgs::isPythonScript() const
 {
     return _imp->isPythonScript;
+}
+
+const QString&
+CLArgs::getBreakpadProcessExecutableFilePath() const
+{
+    return _imp->breakpadProcessFilePath;
+}
+
+qint64
+CLArgs::getBreakpadProcessPID() const
+{
+    return _imp->breakpadProcessPID;
+}
+
+int
+CLArgs::getBreakpadClientFD() const
+{
+    return _imp->breakpadPipeClientID;
+}
+
+const QString&
+CLArgs::getBreakpadPipeFilePath() const
+{
+    return _imp->breakpadPipeFilePath;
+}
+
+const QString&
+CLArgs::getBreakpadComPipeFilePath() const
+{
+    return _imp->breakpadComPipeFilePath;
 }
 
 QStringList::iterator
@@ -542,17 +620,16 @@ static bool tryParseFrameRange(const QString& arg,std::pair<int,int>& range, int
 static bool tryParseMultipleFrameRanges(const QString& args,std::list<std::pair<int,std::pair<int,int> > >& frameRanges)
 {
     QStringList splits = args.split(',');
+    bool added = false;
     for (int i = 0; i < splits.size(); ++i) {
         std::pair<int,int> frameRange;
         int frameStep;
         if (tryParseFrameRange(splits[i], frameRange, frameStep)) {
+            added = true;
             frameRanges.push_back(std::make_pair(frameStep, frameRange));
         }
     }
-    if (!frameRanges.empty()) {
-        return true;
-    }
-    return false;
+    return added;
 }
 
 void
@@ -603,6 +680,82 @@ CLArgsPrivate::parse()
             args.erase(it);
         }
     }
+    
+    {
+        QStringList::iterator it = hasToken(NATRON_BREAKPAD_PROCESS_PID, "");
+        if (it != args.end()) {
+            ++it;
+            if (it != args.end()) {
+                breakpadProcessPID = it->toLongLong();
+                args.erase(it);
+            } else {
+                std::cout << QObject::tr("You must specify the breakpad process executable file path").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
+        }
+    }
+    
+    {
+        QStringList::iterator it = hasToken(NATRON_BREAKPAD_PROCESS_EXEC, "");
+        if (it != args.end()) {
+            ++it;
+            if (it != args.end()) {
+                breakpadProcessFilePath = *it;
+                args.erase(it);
+            } else {
+                std::cout << QObject::tr("You must specify the breakpad process executable file path").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
+        }
+    }
+    
+    {
+        QStringList::iterator it = hasToken(NATRON_BREAKPAD_CLIENT_FD_ARG, "");
+        if (it != args.end()) {
+            ++it;
+            if (it != args.end()) {
+                breakpadPipeClientID = it->toInt();
+                args.erase(it);
+            } else {
+                std::cout << QObject::tr("You must specify the breakpad pipe client FD").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
+        }
+    }
+    
+    {
+        QStringList::iterator it = hasToken(NATRON_BREAKPAD_PIPE_ARG, "");
+        if (it != args.end()) {
+            ++it;
+            if (it != args.end()) {
+                breakpadPipeFilePath = *it;
+                args.erase(it);
+            } else {
+                std::cout << QObject::tr("You must specify the breakpad pipe path").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
+        }
+    }
+    
+    {
+        QStringList::iterator it = hasToken(NATRON_BREAKPAD_COM_PIPE_ARG, "");
+        if (it != args.end()) {
+            ++it;
+            if (it != args.end()) {
+                breakpadComPipeFilePath = *it;
+                args.erase(it);
+            } else {
+                std::cout << QObject::tr("You must specify the breakpad communication pipe path").toStdString() << std::endl;
+                error = 1;
+                return;
+            }
+        }
+    }
+
     
     {
         QStringList::iterator it = hasToken("IPCpipe", "");
@@ -667,16 +820,43 @@ CLArgsPrivate::parse()
     }
     
     //Parse frame range
-    for (int i = 0; i < args.size(); ++i) {
-        if (tryParseMultipleFrameRanges(args[i], frameRanges)) {
-            if (rangeSet) {
-                std::cout << QObject::tr("Only a single frame range can be specified from the command-line for all Write nodes").toStdString() << std::endl;
-                error = 1;
-                return;
-            }
+    for (QStringList::iterator it = args.begin(); it!=args.end(); ++it) {
+        if (tryParseMultipleFrameRanges(*it, frameRanges)) {
+            args.erase(it);
             rangeSet = true;
+            break;
         }
     }
+    
+    //Parse python commands
+    for (;;) {
+        QStringList::iterator it = hasToken("cmd", "c");
+        if (it == args.end()) {
+            break;
+        }
+        
+        if (!isBackground) {
+            std::cout << QObject::tr("You cannot use the -c option in interactive mode").toStdString() << std::endl;
+            error = 1;
+            return;
+        }
+        
+        QStringList::iterator next = it;
+        if (next != args.end()) {
+            ++next;
+        }
+        if (next == args.end()) {
+            std::cout << QObject::tr("You must specify a command when using the -c option").toStdString() << std::endl;
+            error = 1;
+            return;
+        }
+        
+        pythonCommands.push_back(next->toStdString());
+        
+        ++next;
+        args.erase(it,next);
+        
+    } // for (;;)
     
     //Parse writers
     for (;;) {
@@ -703,7 +883,7 @@ CLArgsPrivate::parse()
         
         
         //Check that the name is conform to a Python acceptable script name
-        std::string pythonConform = Natron::makeNameScriptFriendly(next->toStdString());
+        std::string pythonConform = Python::makeNameScriptFriendly(next->toStdString());
         if (next->toStdString() != pythonConform) {
             std::cout << QObject::tr("The name of the Write node specified is not valid: it cannot contain non alpha-numerical "
                                      "characters and must not start with a digit.").toStdString() << std::endl;
@@ -729,6 +909,75 @@ CLArgsPrivate::parse()
         }
         
         writers.push_back(w);
+        if (nextNext != args.end()) {
+            ++nextNext;
+        }
+        args.erase(it,nextNext);
+        
+    } // for (;;)
+    
+    
+    //Parse readers
+    for (;;) {
+        QStringList::iterator it = hasToken("reader", "i");
+        if (it == args.end()) {
+            break;
+        }
+        
+        if (!isBackground || isInterpreterMode) {
+            std::cout << QObject::tr("You cannot use the -i option in interactive or interpreter mode").toStdString() << std::endl;
+            error = 1;
+            return;
+        }
+        
+        QStringList::iterator next = it;
+        if (next != args.end()) {
+            ++next;
+        }
+        if (next == args.end()) {
+            std::cout << QObject::tr("You must specify the name of a Read node when using the -i option").toStdString() << std::endl;
+            error = 1;
+            return;
+        }
+        
+        
+        //Check that the name is conform to a Python acceptable script name
+        std::string pythonConform = Python::makeNameScriptFriendly(next->toStdString());
+        if (next->toStdString() != pythonConform) {
+            std::cout << QObject::tr("The name of the Read node specified is not valid: it cannot contain non alpha-numerical "
+                                     "characters and must not start with a digit.").toStdString() << std::endl;
+            error = 1;
+            return;
+        }
+        
+        CLArgs::ReaderArg r;
+        r.name = *next;
+        
+        QStringList::iterator nextNext = next;
+        if (nextNext != args.end()) {
+            ++nextNext;
+        }
+        if (nextNext == args.end()) {
+            std::cout << QObject::tr("You must specify the filename for the following Read node: ").toStdString()  << r.name.toStdString() << std::endl;
+            error = 1;
+            return;
+        }
+        
+        
+        //Check for  filename
+        if (!nextNext->startsWith("-") && !nextNext->startsWith("--")) {
+            r.filename = *nextNext;
+#if defined(Q_OS_UNIX)
+            r.filename = AppManager::qt_tildeExpansion(r.filename);
+#endif
+        } else {
+            std::cout << QObject::tr("You must specify the filename for the following Read node: ").toStdString()  << r.name.toStdString() << std::endl;
+            error = 1;
+            return;
+        }
+        
+        
+        readers.push_back(r);
         if (nextNext != args.end()) {
             ++nextNext;
         }
@@ -787,5 +1036,6 @@ CLArgsPrivate::parse()
         error = 1;
         return;
     }
-  
 }
+
+NATRON_NAMESPACE_EXIT;

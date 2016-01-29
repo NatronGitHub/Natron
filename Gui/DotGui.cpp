@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <ofxNatron.h>
 
-#include "Engine/BackDrop.h"
+#include "Engine/Backdrop.h"
 #include "Engine/Image.h"
 #include "Engine/Knob.h"
 #include "Engine/MergingEnum.h"
@@ -58,7 +58,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/BackDropGui.h"
+#include "Gui/BackdropGui.h"
 #include "Gui/Button.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/HostOverlay.h"
@@ -96,15 +96,12 @@ CLANG_DIAG_ON(uninitialized)
 
 #define NATRON_ELLIPSE_WARN_DIAMETER 10
 
-#define NODE_WIDTH 80
-#define NODE_HEIGHT 30
-
 #define DOT_GUI_DIAMETER 15
 
 #define NATRON_PLUGIN_ICON_SIZE 20
 #define PLUGIN_ICON_OFFSET 2
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 using std::make_pair;
 
@@ -129,13 +126,17 @@ DotGui::createGui()
     diskShape = new QGraphicsEllipseItem(this);
     diskShape->setZValue(depth);
     QPointF topLeft = mapFromParent( pos() );
-    diskShape->setRect( QRectF(topLeft.x(),topLeft.y(),DOT_GUI_DIAMETER,DOT_GUI_DIAMETER) );
+
+    int diam = TO_DPIX(DOT_GUI_DIAMETER);
+    int stateOffset = TO_DPIX(NATRON_STATE_INDICATOR_OFFSET);
+
+    diskShape->setRect( QRectF(topLeft.x(),topLeft.y(),diam,diam) );
 
     ellipseIndicator = new QGraphicsEllipseItem(this);
-    ellipseIndicator->setRect(QRectF(topLeft.x() - NATRON_STATE_INDICATOR_OFFSET,
-                                     topLeft.y() - NATRON_STATE_INDICATOR_OFFSET,
-                                     DOT_GUI_DIAMETER + NATRON_STATE_INDICATOR_OFFSET * 2,
-                                     DOT_GUI_DIAMETER + NATRON_STATE_INDICATOR_OFFSET * 2));
+    ellipseIndicator->setRect(QRectF(topLeft.x() - stateOffset,
+                                     topLeft.y() - stateOffset,
+                                     diam + stateOffset * 2,
+                                     diam + stateOffset * 2));
     ellipseIndicator->hide();
 }
 
@@ -167,7 +168,7 @@ DotGui::applyBrush(const QBrush & brush)
 
 NodeSettingsPanel*
 DotGui::createPanel(QVBoxLayout* container,
-                    const boost::shared_ptr<NodeGui> & thisAsShared)
+                    const NodeGuiPtr & thisAsShared)
 {
     NodeSettingsPanel* panel = new NodeSettingsPanel( boost::shared_ptr<MultiInstancePanel>(),
                                                       getDagGui()->getGui(),
@@ -199,3 +200,8 @@ DotGui::shape() const
 {
     return diskShape->shape();
 }
+
+NATRON_NAMESPACE_EXIT;
+
+//NATRON_NAMESPACE_USING;
+//#include "moc_DotGui.cpp"

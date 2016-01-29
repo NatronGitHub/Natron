@@ -1,0 +1,13 @@
+diff --git a/src/include/OpenImageIO/SHA1.h b/src/include/OpenImageIO/SHA1.h
+index 54be25f..bb0c327 100644
+--- a/src/include/OpenImageIO/SHA1.h
++++ b/src/include/OpenImageIO/SHA1.h
+@@ -74,6 +74,8 @@
+ #ifndef ___SHA1_HDR___
+ #define ___SHA1_HDR___
+ 
++#include <climits>
++
+ #include "export.h"
+ #include "oiioversion.h"
+ 

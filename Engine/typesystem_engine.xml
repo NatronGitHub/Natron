@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!-- ***** BEGIN LICENSE BLOCK *****
   - This file is part of Natron <http://www.natron.fr/>,
-  - Copyright (C) 2015 INRIA and Alexandre Gauthier
+  - Copyright (C) 2016 INRIA and Alexandre Gauthier
   -
   - Natron is free software: you can redistribute it and/or modify
   - it under the terms of the GNU General Public License as published by
@@ -207,9 +207,9 @@
             </target-to-native>
         </conversion-rule>
     </container-type>
-    
+
      <!--Natron global enums-->
-    <namespace-type name="Natron">
+    <namespace-type name="NATRON_NAMESPACE">
     <enum-type name="StatusEnum"/>
     <enum-type name="StandardButtonEnum" flags="StandardButtons"/>
     <enum-type name="KeyframeTypeEnum"/>
@@ -496,6 +496,11 @@
             </modify-argument>
         </modify-function>
         <modify-function signature="createButtonParam(std::string,std::string)">
+            <modify-argument index="return">
+                <define-ownership class="target" owner="target"/>
+            </modify-argument>
+        </modify-function>
+        <modify-function signature="createSeparatorParam(std::string,std::string)">
             <modify-argument index="return">
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
@@ -959,6 +964,7 @@
     <object-type name="ChoiceParam">
     </object-type>
     <object-type name="ButtonParam"/>
+    <object-type name="SeparatorParam"/>
     <object-type name="StringParamBase">
     </object-type>
     <object-type name="StringParam">
@@ -988,7 +994,7 @@
                 double key,value,left,right;
                 %RETURN_TYPE %0 = %CPPSELF.%FUNCTION_NAME(%1, %2,&amp;key,&amp;value, &amp;left, &amp;right);
                 %PYARG_0 = PyTuple_New(5);
-                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[Natron::StatusEnum](%0));
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[NATRON_NAMESPACE::StatusEnum](%0));
                 PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[double](key));
                 PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[double](value));
                 PyTuple_SET_ITEM(%PYARG_0, 3, %CONVERTTOPYTHON[double](left));
@@ -1174,8 +1180,7 @@
             </modify-argument>
         </modify-function>
     </object-type>
-   
-    
+
 
 </typesystem>
 

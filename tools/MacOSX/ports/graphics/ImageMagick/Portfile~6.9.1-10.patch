@@ -1,27 +1,28 @@
---- Portfile.orig	2015-10-19 10:42:31.000000000 +0200
-+++ Portfile	2015-11-12 14:08:59.000000000 +0100
-@@ -7,7 +7,8 @@
+--- Portfile.orig	2016-01-06 14:43:56.000000000 +0100
++++ Portfile	2016-01-06 14:44:18.000000000 +0100
+@@ -7,8 +7,8 @@
  # Keep relevant lines in sync between ImageMagick and p5-perlmagick.
  
  name                        ImageMagick
--version                     6.9.2-4
+-version                     6.9.2-10
+-revision                    1
 +version                     6.9.1-10
 +revision                    2
  set reasonable_version      [lindex [split ${version} -] 0]
  homepage                    http://www.imagemagick.org/
  categories                  graphics devel
-@@ -39,8 +40,8 @@
+@@ -40,8 +40,8 @@
                              ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
                              ftp://sunsite.icm.edu.pl/packages/ImageMagick
  
--checksums                   rmd160  0d674a2e6bbccbef4f7dcdce4965d1130aca4f60 \
--                            sha256  05b1c499415048099a1464ebd03f0cfaae8d0994c681bcf7e0319b26e5e8d848
+-checksums                   rmd160  2189e2afddba54d5c1165c87786716d4c7172c74 \
+-                            sha256  da2f6fba43d69f20ddb11783f13f77782b0b57783dde9cda39c9e5e733c2013c
 +checksums           rmd160  2de5e8a6c828254860e4eda5e522bcc4edd3b173 \
 +                    sha256  22565464059376513869b6626982e0726a33788ccc7e19a08e55ff1683d4ff92
  
  depends_lib                 port:bzip2 \
                              port:djvulibre \
-@@ -63,6 +64,8 @@
+@@ -64,6 +64,8 @@
                              port:expat \
                              port:libxml2
  
@@ -30,7 +31,7 @@
  # Magick-config etc. use pkg-config
  depends_lib-append          port:pkgconfig
  
-@@ -89,11 +92,14 @@
+@@ -90,11 +92,14 @@
                              --with-dps \
                              --with-bzlib \
                              --with-djvu \
@@ -46,7 +47,7 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -111,6 +117,69 @@
+@@ -112,6 +117,70 @@
                              --without-x \
                              --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
  
@@ -81,8 +82,9 @@
 +    configure.args-replace  --with-tiff --without-tiff
 +    depends_lib-delete       port:webp
 +    configure.args-replace  --with-webp --without-webp
-+    depends_lib-delete       port:zlib
-+    configure.args-replace  --with-zlib --without-zlib
++    # zlib is required by PNG
++    #depends_lib-delete       port:zlib
++    #configure.args-replace  --with-zlib --without-zlib
 +    depends_lib-delete       port:bzip2
 +    configure.args-replace  --with-bzlib --without-bzlib
 +    configure.args-replace  --enable-shared --disable-shared
@@ -116,7 +118,7 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -118,6 +187,14 @@
+@@ -119,6 +188,14 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
@@ -131,7 +133,7 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -152,6 +229,11 @@
+@@ -153,6 +230,11 @@
  
  default_variants            +x11
  

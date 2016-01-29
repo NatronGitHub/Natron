@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,6 +50,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Global/QtCompat.h" // for removeRecursively
 
 #include "Engine/CacheSerialization.h"
+#include "Engine/ExistenceCheckThread.h"
 #include "Engine/Format.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
@@ -57,22 +58,29 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/RectDSerialization.h"
 #include "Engine/RectISerialization.h"
+#include "Engine/StandardPaths.h"
 
 
-BOOST_CLASS_EXPORT(Natron::FrameParams)
-BOOST_CLASS_EXPORT(Natron::ImageParams)
+BOOST_CLASS_EXPORT(NATRON_NAMESPACE::FrameParams)
+BOOST_CLASS_EXPORT(NATRON_NAMESPACE::ImageParams)
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
+
+
+
+
 
 AppManagerPrivate::AppManagerPrivate()
-: _appType(AppManager::eAppTypeBackground)
+: globalTLS()
+, _appType(AppManager::eAppTypeBackground)
+, _appInstancesMutex()
 , _appInstances()
 , _availableID(0)
 , _topLevelInstanceID(0)
-, _settings( new Settings(NULL) )
+, _settings()
 , _formats()
 , _plugins()
-, ofxHost( new Natron::OfxHost() )
+, ofxHost( new OfxHost() )
 , _knobFactory( new KnobFactory() )
 , _nodeCache()
 , _diskCache()
@@ -99,11 +107,10 @@ AppManagerPrivate::AppManagerPrivate()
 ,mainModule(0)
 ,mainThreadState(0)
 #ifdef NATRON_USE_BREAKPAD
+,breakpadProcessExecutableFilePath()
+,breakpadProcessPID(0)
 ,breakpadHandler()
-,crashReporter()
-,crashReporterBreakpadPipe()
-,crashClientServer()
-,crashServerConnection(0)
+,breakpadAliveThread()
 #endif
 ,natronPythonGIL(QMutex::Recursive)
 {
@@ -113,59 +120,76 @@ AppManagerPrivate::AppManagerPrivate()
 }
 
 
-
-
-
+AppManagerPrivate::~AppManagerPrivate()
+{
+    for (U32 i = 0; i < args.size() ; ++i) {
+        free(args[i]);
+    }
+    args.clear();
+}
 
 
 #ifdef NATRON_USE_BREAKPAD
 void
-AppManagerPrivate::initBreakpad()
+AppManagerPrivate::initBreakpad(const QString& breakpadPipePath, const QString& breakpadComPipePath, int breakpad_client_fd)
 {
-    if (appPTR->isBackground()) {
+ 
+    assert(!breakpadHandler);
+    createBreakpadHandler(breakpadPipePath, breakpad_client_fd);
+
+    /*
+     We check periodically that the crash reporter process is still alive. If the user killed it somehow, then we want
+     the Natron process to terminate
+     */
+    breakpadAliveThread.reset(new ExistenceCheckerThread(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK,
+                                                         NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK,
+                                                         breakpadComPipePath));
+    QObject::connect(breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), appPTR, SLOT(onCrashReporterNoLongerResponding()));
+    breakpadAliveThread->start();
+
+    
+}
+
+void
+AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath, int breakpad_client_fd)
+{
+    QString dumpPath = StandardPaths::writableLocation(Natron::StandardPaths::eStandardLocationTemp);
+    Q_UNUSED(breakpad_client_fd);
+    try {
+#if defined(Q_OS_MAC)
+        Q_UNUSED(breakpad_client_fd);
+        breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdString(),
+                                                                     0,
+                                                                     0/*dmpcb*/,
+                                                                     0,
+                                                                     true,
+                                                                     breakpadPipePath.toStdString().c_str()));
+#elif defined(Q_OS_LINUX)
+        Q_UNUSED(breakpadPipePath);
+        breakpadHandler.reset(new google_breakpad::ExceptionHandler( google_breakpad::MinidumpDescriptor(dumpPath.toStdString()),
+                                                                     0,
+                                                                     0/*dmpCb*/,
+                                                                     0,
+                                                                     true,
+                                                                     breakpad_client_fd));
+#elif defined(Q_OS_WIN32)
+        Q_UNUSED(breakpad_client_fd);
+        breakpadHandler.reset(new google_breakpad::ExceptionHandler( dumpPath.toStdWString(),
+                                                                     0, //filter callback
+                                                                     0/*dmpcb*/,
+																	 0, //context
+                                                                     google_breakpad::ExceptionHandler::HANDLER_ALL,
+                                                                     MiniDumpNormal,
+                                                                     breakpadPipePath.toStdWString().c_str(),
+                                                                     0));
+#endif
+    } catch (const std::exception& e) {
+        qDebug() << e.what();
         return;
     }
     
-    assert(!breakpadHandler);
-    std::srand(2000);
-    
-    /*
-     Use a temporary file to get a random file name for the pipes.
-     We use 2 different pipe: 1 for the CrashReporter to notify to Natron that it has started correctly, and another
-     one that is used by the google_breakpad server itself.
-     */
-    QString tmpFileName;
-    {
-        QTemporaryFile tmpf(NATRON_APPLICATION_NAME "_CRASH_PIPE_");
-        tmpf.open();
-        tmpFileName = tmpf.fileName();
-        tmpf.remove();
-    }
-    int handle = 0;
-    
-    QString natronCrashReporterPipeFilename = tmpFileName + "_COM_PIPE_";
-    crashClientServer.reset(new QLocalServer());
-    QObject::connect(crashClientServer.get(),SIGNAL( newConnection() ),appPTR,SLOT( onNewCrashReporterConnectionPending() ) );
-    crashClientServer->listen(natronCrashReporterPipeFilename);
-    
-#ifdef Q_OS_LINUX
-    crashReporterBreakpadPipe.setFileName(tmpFileName);
-    crashReporterBreakpadPipe.open(QIODevice::ReadWrite);
-    handle = crashReporterBreakpadPipe.handle();
-#else
-    crashReporterBreakpadPipe = tmpFileName;
-#endif
-    QStringList args;
-    args << tmpFileName;
-    args << QString::number(handle);
-    args << natronCrashReporterPipeFilename;
-    crashReporter.reset(new QProcess);
-    QString crashReporterBinaryPath = qApp->applicationDirPath() + "/NatronCrashReporter";
-    crashReporter->start(crashReporterBinaryPath, args);
-    
-    
 }
-#endif
+#endif // NATRON_USE_BREAKPAD
 
 
 void
@@ -182,69 +206,41 @@ AppManagerPrivate::loadBuiltinFormats()
     /*initializing list of all Formats available*/
     std::vector<std::string> formatNames;
 
-    formatNames.push_back("PC_Video");
-    formatNames.push_back("NTSC");
-    formatNames.push_back("PAL");
-    formatNames.push_back("HD");
-    formatNames.push_back("NTSC_16:9");
-    formatNames.push_back("PAL_16:9");
-    formatNames.push_back("1K_Super_35(full-ap)");
-    formatNames.push_back("1K_Cinemascope");
-    formatNames.push_back("2K_Super_35(full-ap)");
-    formatNames.push_back("2K_Cinemascope");
-    formatNames.push_back("4K_Super_35(full-ap)");
-    formatNames.push_back("4K_Cinemascope");
-    formatNames.push_back("square_256");
-    formatNames.push_back("square_512");
-    formatNames.push_back("square_1K");
-    formatNames.push_back("square_2K");
+    struct BuiltinFormat {
+        const char *name;
+        int w;
+        int h;
+        double par;
+    };
 
-    std::vector< std::vector<double> > resolutions;
-    std::vector<double> pcvideo; pcvideo.push_back(640); pcvideo.push_back(480); pcvideo.push_back(1);
-    std::vector<double> ntsc; ntsc.push_back(720); ntsc.push_back(486); ntsc.push_back(0.91f);
-    std::vector<double> pal; pal.push_back(720); pal.push_back(576); pal.push_back(1.09f);
-    std::vector<double> hd; hd.push_back(1920); hd.push_back(1080); hd.push_back(1);
-    std::vector<double> ntsc169; ntsc169.push_back(720); ntsc169.push_back(486); ntsc169.push_back(1.21f);
-    std::vector<double> pal169; pal169.push_back(720); pal169.push_back(576); pal169.push_back(1.46f);
-    std::vector<double> super351k; super351k.push_back(1024); super351k.push_back(778); super351k.push_back(1);
-    std::vector<double> cine1k; cine1k.push_back(914); cine1k.push_back(778); cine1k.push_back(2);
-    std::vector<double> super352k; super352k.push_back(2048); super352k.push_back(1556); super352k.push_back(1);
-    std::vector<double> cine2K; cine2K.push_back(1828); cine2K.push_back(1556); cine2K.push_back(2);
-    std::vector<double> super4K35; super4K35.push_back(4096); super4K35.push_back(3112); super4K35.push_back(1);
-    std::vector<double> cine4K; cine4K.push_back(3656); cine4K.push_back(3112); cine4K.push_back(2);
-    std::vector<double> square256; square256.push_back(256); square256.push_back(256); square256.push_back(1);
-    std::vector<double> square512; square512.push_back(512); square512.push_back(512); square512.push_back(1);
-    std::vector<double> square1K; square1K.push_back(1024); square1K.push_back(1024); square1K.push_back(1);
-    std::vector<double> square2K; square2K.push_back(2048); square2K.push_back(2048); square2K.push_back(1);
+    BuiltinFormat formats[] = {
+        { "PC_Video",              640,  480, 1 },
+        { "NTSC",                  720,  486, 0.91 },
+        { "PAL",                   720,  576, 1.09 },
+        { "HD",                   1920, 1080, 1 },
+        { "NTSC_16:9",             720,  486, 1.21 },
+        { "PAL_16:9",              720,  576, 1.46 },
+        { "1K_Super_35(full-ap)", 1024,  778, 1 },
+        { "1K_Cinemascope",        914,  778, 2 },
+        { "2K_Super_35(full-ap)", 2048, 1556, 1 },
+        { "2K_Cinemascope",       1828, 1556, 2 },
+        { "4K_Super_35(full-ap)", 4096, 3112, 1 },
+        { "4K_Cinemascope",       3656, 3112, 2 },
+        { "square_256",            256,  256, 1 },
+        { "square_512",            512,  512, 1 },
+        { "square_1K",            1024, 1024, 1 },
+        { "square_2K",            2048, 2048, 1 },
+        { NULL, 0, 0, 0 }
+    };
 
-    resolutions.push_back(pcvideo);
-    resolutions.push_back(ntsc);
-    resolutions.push_back(pal);
-    resolutions.push_back(hd);
-    resolutions.push_back(ntsc169);
-    resolutions.push_back(pal169);
-    resolutions.push_back(super351k);
-    resolutions.push_back(cine1k);
-    resolutions.push_back(super352k);
-    resolutions.push_back(cine2K);
-    resolutions.push_back(super4K35);
-    resolutions.push_back(cine4K);
-    resolutions.push_back(square256);
-    resolutions.push_back(square512);
-    resolutions.push_back(square1K);
-    resolutions.push_back(square2K);
-
-    assert( formatNames.size() == resolutions.size() );
-    for (U32 i = 0; i < formatNames.size(); ++i) {
-        const std::vector<double> & v = resolutions[i];
-        assert(v.size() >= 3);
-        Format* _frmt = new Format(0, 0, (int)v[0], (int)v[1], formatNames[i], v[2]);
+    for (BuiltinFormat* f = &formats[0]; f->name != NULL; ++f) {
+        Format* _frmt = new Format(0, 0, f->w, f->h, f->name, f->par);
         assert(_frmt);
         _formats.push_back(_frmt);
     }
 } // loadBuiltinFormats
 
-Natron::Plugin*
+Plugin*
 AppManagerPrivate::findPluginById(const QString& newId,int major, int minor) const
 {
     for (PluginsMap::const_iterator it = _plugins.begin(); it != _plugins.end(); ++it) {
@@ -263,8 +259,8 @@ AppManagerPrivate::declareSettingsToPython()
 {
     std::stringstream ss;
     ss <<  NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.getSettings()\n";
-    const std::vector<boost::shared_ptr<KnobI> >& knobs = _settings->getKnobs();
-    for (std::vector<boost::shared_ptr<KnobI> >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    const KnobsVec& knobs = _settings->getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         ss <<  NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings." <<
         (*it)->getName() << " = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings.getParam('" << (*it)->getName() << "')\n";
     }
@@ -272,7 +268,7 @@ AppManagerPrivate::declareSettingsToPython()
 
 
 template <typename T>
-void saveCache(Natron::Cache<T>* cache)
+void saveCache(Cache<T>* cache)
 {
     std::ofstream ofile;
     ofile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
@@ -295,7 +291,7 @@ void saveCache(Natron::Cache<T>* cache)
         return;
     }
     
-    typename Natron::Cache<T>::CacheTOC toc;
+    typename Cache<T>::CacheTOC toc;
     cache->save(&toc);
     unsigned int version = cache->cacheVersion();
     try {
@@ -313,12 +309,12 @@ void saveCache(Natron::Cache<T>* cache)
 void
 AppManagerPrivate::saveCaches()
 {
-    saveCache<Natron::FrameEntry>(_viewerCache.get());
-    saveCache<Natron::Image>(_diskCache.get());
+    saveCache<FrameEntry>(_viewerCache.get());
+    saveCache<Image>(_diskCache.get());
 } // saveCaches
 
 template <typename T>
-void restoreCache(AppManagerPrivate* p,Natron::Cache<T>* cache)
+void restoreCache(AppManagerPrivate* p,Cache<T>* cache)
 {
     if ( p->checkForCacheDiskStructure( cache->getCachePath() ) ) {
         std::ifstream ifile;
@@ -339,7 +335,7 @@ void restoreCache(AppManagerPrivate* p,Natron::Cache<T>* cache)
             return;
         }
         
-        typename Natron::Cache<T>::CacheTOC tableOfContents;
+        typename Cache<T>::CacheTOC tableOfContents;
         unsigned int cacheVersion = 0x1; //< default to 1 before NATRON_CACHE_VERSION was introduced
         try {
             boost::archive::binary_iarchive iArchive(ifile);
@@ -432,7 +428,7 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
     QDir cacheFolder(cachePath);
 
 #   if QT_VERSION < 0x050000
-    removeRecursively(cachePath);
+    QtCompat::removeRecursively(cachePath);
 #   else
     if ( cacheFolder.exists() ) {
         cacheFolder.removeRecursively();
@@ -539,3 +535,5 @@ AppManagerPrivate::setMaxCacheFiles()
 
     maxCacheFiles = hardMax * 0.9;
 }
+
+NATRON_NAMESPACE_EXIT;

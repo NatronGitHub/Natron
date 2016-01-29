@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,8 @@
 #include "Engine/Plugin.h"
 #include "Engine/Curve.h"
 #include "Engine/CLArgs.h"
-using namespace Natron;
+
+NATRON_NAMESPACE_USING
 
 static AppManager* g_manager = 0;
 
@@ -65,9 +66,9 @@ BaseTest::registerTestPlugins()
 
     for (unsigned int i = 0; i < _allTestPluginIDs.size(); ++i) {
         ///make sure the generic test plugin is present
-        Natron::LibraryBinary* bin = NULL;
+        LibraryBinary* bin = NULL;
         try {
-            Natron::Plugin* p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1, false);
+            Plugin* p = appPTR->getPluginBinary(_allTestPluginIDs[i], -1, -1, false);
             if (p) {
                 bin = p->getLibraryBinary();
             }
@@ -102,40 +103,40 @@ BaseTest::TearDown()
  
 }
 
-boost::shared_ptr<Natron::Node> BaseTest::createNode(const QString & pluginID,
+NodePtr BaseTest::createNode(const QString & pluginID,
                                                      int majorVersion,
                                                      int minorVersion)
 {
-    boost::shared_ptr<Node> ret =  _app->createNode( CreateNodeArgs(pluginID,
-                                                                    "",
-                                                                    majorVersion,minorVersion,true,INT_MIN,INT_MIN,true,true,false,
-                                                                    QString(),CreateNodeArgs::DefaultValuesList(),
-                                                                    _app->getProject()) );
+    CreateNodeArgs args(pluginID, eCreateNodeReasonInternal, _app->getProject());
+    args.majorV = majorVersion;
+    args.minorV = minorVersion;
+    NodePtr ret =  _app->createNode(args);
+                                                    
 
-    EXPECT_NE(ret.get(),(Natron::Node*)NULL);
+    EXPECT_NE(ret.get(),(Node*)NULL);
 
     return ret;
 }
 
 void
-BaseTest::connectNodes(boost::shared_ptr<Natron::Node> input,
-                       boost::shared_ptr<Natron::Node> output,
+BaseTest::connectNodes(NodePtr input,
+                       NodePtr output,
                        int inputNumber,
                        bool expectedReturnValue)
 {
     if (expectedReturnValue) {
         ///check that the connections are internally all set as "expected"
 
-        EXPECT_EQ( (Natron::Node*)NULL,output->getInput(inputNumber).get() );
+        EXPECT_EQ( (Node*)NULL,output->getInput(inputNumber).get() );
         EXPECT_FALSE( output->isInputConnected(inputNumber) );
     } else {
         ///the call can only fail for those 2 reasons
         EXPECT_TRUE(inputNumber > output->getMaxInputCount() || //< inputNumber is greater than the maximum input number
-                    output->getInput(inputNumber).get() != (Natron::Node*)NULL); //< input slot is already filled with another node
+                    output->getInput(inputNumber).get() != (Node*)NULL); //< input slot is already filled with another node
     }
 
 
-    bool ret = _app->getProject()->connectNodes(inputNumber,input,output.get());
+    bool ret = _app->getProject()->connectNodes(inputNumber,input,output);
     EXPECT_EQ(expectedReturnValue,ret);
 
     if (expectedReturnValue) {
@@ -146,8 +147,8 @@ BaseTest::connectNodes(boost::shared_ptr<Natron::Node> input,
 }
 
 void
-BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
-                          boost::shared_ptr<Natron::Node> output,
+BaseTest::disconnectNodes(NodePtr input,
+                          NodePtr output,
                           bool expectedReturnvalue)
 {
     if (expectedReturnvalue) {
@@ -155,21 +156,21 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
 
         ///the input must have in its output the node 'output'
         EXPECT_TRUE( input->hasOutputConnected() );
-        const std::list<Natron::Node*> & outputs = input->getGuiOutputs();
+        const NodesWList & outputs = input->getGuiOutputs();
         bool foundOutput = false;
-        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            if ( *it == output.get() ) {
+        for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            if ( it->lock() == output) {
                 foundOutput = true;
                 break;
             }
         }
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = output->getGuiInputs();
+        const std::vector<NodeWPtr> & inputs = output->getGuiInputs();
         int inputIndex = 0;
         bool foundInput = false;
         for (U32 i = 0; i < inputs.size(); ++i) {
-            if (inputs[i] == input) {
+            if (inputs[i].lock() == input) {
                 foundInput = true;
                 break;
             }
@@ -183,27 +184,27 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
     }
 
     ///call disconnect
-    bool ret = _app->getProject()->disconnectNodes(input.get(),output.get());
+    bool ret = _app->getProject()->disconnectNodes(input,output);
     EXPECT_EQ(expectedReturnvalue,ret);
 
     if (expectedReturnvalue) {
         ///check that the disconnection went OK
 
-        const std::list<Natron::Node*> & outputs = input->getGuiOutputs();
+        const NodesWList & outputs = input->getGuiOutputs();
         bool foundOutput = false;
-        for (std::list<Natron::Node* >::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            if ( (*it) == output.get() ) {
+        for (NodesWList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            if (it->lock() == output) {
                 foundOutput = true;
                 break;
             }
         }
 
         ///the output must have in its inputs the node 'input'
-        const std::vector<boost::shared_ptr<Natron::Node> > & inputs = output->getGuiInputs();
+        const std::vector<NodeWPtr> & inputs = output->getGuiInputs();
         int inputIndex = 0;
         bool foundInput = false;
         for (U32 i = 0; i < inputs.size(); ++i) {
-            if (inputs[i] == input) {
+            if (inputs[i].lock() == input) {
                 foundInput = true;
                 break;
             }
@@ -212,7 +213,7 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
 
         EXPECT_FALSE(foundOutput);
         EXPECT_FALSE(foundInput);
-        EXPECT_EQ( (Natron::Node*)NULL,output->getInput(inputIndex).get() );
+        EXPECT_EQ( (Node*)NULL,output->getInput(inputIndex).get() );
         EXPECT_FALSE( output->isInputConnected(inputIndex) );
     }
 } // disconnectNodes
@@ -221,13 +222,13 @@ BaseTest::disconnectNodes(boost::shared_ptr<Natron::Node> input,
 TEST_F(BaseTest,GenerateDot)
 {
     ///create the generator
-    boost::shared_ptr<Node> generator = createNode(_dotGeneratorPluginID);
+    NodePtr generator = createNode(_dotGeneratorPluginID);
     
     ///create the writer and set its output filename
-    boost::shared_ptr<Node> writer = createNode(_writeOIIOPluginID);
+    NodePtr writer = createNode(_writeOIIOPluginID);
     ASSERT_TRUE(generator && writer);
     
-    boost::shared_ptr<KnobI> frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
+    KnobPtr frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
     ASSERT_TRUE(frameRange);
     KnobInt* knob = dynamic_cast<KnobInt*>(frameRange.get());
     ASSERT_TRUE(knob);
@@ -244,7 +245,7 @@ TEST_F(BaseTest,GenerateDot)
     ///and start rendering. This call is blocking.
     std::list<AppInstance::RenderWork> works;
     AppInstance::RenderWork w;
-    w.writer = dynamic_cast<Natron::OutputEffectInstance*>(writer->getLiveInstance());
+    w.writer = dynamic_cast<OutputEffectInstance*>(writer->getEffectInstance().get());
     assert(w.writer);
     w.firstFrame = INT_MIN;
     w.lastFrame = INT_MAX;
@@ -258,9 +259,9 @@ TEST_F(BaseTest,GenerateDot)
 
 TEST_F(BaseTest,SetValues)
 {
-    boost::shared_ptr<Node> generator = createNode(_dotGeneratorPluginID);
+    NodePtr generator = createNode(_dotGeneratorPluginID);
     assert(generator);
-    boost::shared_ptr<KnobI> knob = generator->getKnobByName("radius");
+    KnobPtr knob = generator->getKnobByName("radius");
     KnobDouble* radius = dynamic_cast<KnobDouble*>(knob.get());
     assert(radius);
     radius->setValue(100, 0);
@@ -268,7 +269,7 @@ TEST_F(BaseTest,SetValues)
     
     //Check that linear interpolation is working as intended
     KeyFrame kf;
-    radius->setInterpolationAtTime(Natron::eCurveChangeReasonInternal,0, 0, Natron::eKeyframeTypeLinear, &kf);
+    radius->setInterpolationAtTime(eCurveChangeReasonInternal,0, 0, eKeyframeTypeLinear, &kf);
     radius->setValueAtTime(0, 0, 0);
     radius->setValueAtTime(100, 100, 0);
     for (int i = 0; i <= 100; ++i) {
@@ -281,10 +282,10 @@ TEST_F(BaseTest,SetValues)
 ///High level test: simple node connections test
 TEST_F(BaseTest,SimpleNodeConnections) {
     ///create the generator
-    boost::shared_ptr<Node> generator = createNode(_dotGeneratorPluginID);
+    NodePtr generator = createNode(_dotGeneratorPluginID);
 
     ///create the writer and set its output filename
-    boost::shared_ptr<Node> writer = createNode(_writeOIIOPluginID);
+    NodePtr writer = createNode(_writeOIIOPluginID);
     ASSERT_TRUE(writer && generator);
     connectNodes(generator, writer, 0, true);
     connectNodes(generator, writer, 0, false); //< expect it to fail

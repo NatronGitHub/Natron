@@ -25,8 +25,8 @@ QGroupBox {
 
 
 
-Natron--Label[altered="true"] { color: %10; }
-Natron--Label[altered="false"] { color: %5; }
+Label[altered="true"] { color: %10; }
+Label[altered="false"] { color: %5; }
 
 
 
@@ -206,58 +206,58 @@ ComboBox {
 /*See http://doc.qt.io/qt-5/stylesheet-syntax.html for classes in namespaces*/
 
 /*Basic background: No multiple selection, no animation, no sunken style*/
-Natron--ClickableLabel[dirty="false"][animation="0"][sunkenStyle="false"]{
+ClickableLabel[dirty="false"][animation="0"][sunkenStyle="false"]{
     background-color: %2;
 }
 
 /*Basic background: No multiple selection, no animation but sunken style*/
-Natron--ClickableLabel[dirty="false"][animation="0"][sunkenStyle="true"]{
+ClickableLabel[dirty="false"][animation="0"][sunkenStyle="true"]{
     background-color: %3;
 }
 
 /*Multiple selection always have a black background*/
-Natron--ClickableLabel[dirty="true"]{
+ClickableLabel[dirty="true"]{
     background-color: black;
 }
 
 /*No multiple selection and interpolated*/
-Natron--ClickableLabel[dirty="false"][animation="1"]{
+ClickableLabel[dirty="false"][animation="1"]{
     background-color: %6;
 }
 
 /*Multiple selection and interpolated: change text color instead*/
-Natron--ClickableLabel[dirty="true"][animation="1"] {
+ClickableLabel[dirty="true"][animation="1"] {
     color: %6;
 }
 
 /*No multiple selection and keyframe*/
-Natron--ClickableLabel[dirty="false"][animation="2"]{
+ClickableLabel[dirty="false"][animation="2"]{
     background-color: %7;
 }
 
 /*Multiple selection and keyframe: change text color instead*/
-Natron--ClickableLabel[dirty="true"][animation="2"] {
+ClickableLabel[dirty="true"][animation="2"] {
     color: %7;
 }
 
 /*No multiple selection and expr. Change also text colour otherwise the default white is not perceptible*/
-Natron--ClickableLabel[dirty="false"][animation="3"] {
+ClickableLabel[dirty="false"][animation="3"] {
     background-color: %7;
     color: %9;
 }
 
 /*Multiple selection and expr: change text color instead*/
-Natron--ClickableLabel[dirty="true"][animation="3"] {
+ClickableLabel[dirty="true"][animation="3"] {
     color: %9;
 }
 
 /*Disabled and no multiple selection: */
-Natron--ClickableLabel[readOnly="true"][dirty="false"] {
+ClickableLabel[readOnly="true"][dirty="false"] {
     color : %8;
 }
 
 /*Disabled and multiple selection: */
-Natron--ClickableLabel[readOnly="true"][dirty="true"] {
+ClickableLabel[readOnly="true"][dirty="true"] {
     background-color: black;
     color : %8;
 }

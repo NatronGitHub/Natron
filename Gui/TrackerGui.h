@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
@@ -40,6 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct TrackerGuiPrivate;
 
@@ -61,21 +62,21 @@ public:
     QWidget* getButtonsBar() const;
 
 
-    void drawOverlays(double time, double scaleX, double scaleY) const;
+    void drawOverlays(double time, const RenderScale & renderScale, int view) const;
 
-    bool penDown(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, QMouseEvent* e);
+    bool penDown(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure, QMouseEvent* e);
 
-    bool penDoubleClicked(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool penDoubleClicked(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
 
-    bool penMotion(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, QInputEvent* e);
+    bool penMotion(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure, QInputEvent* e);
 
-    bool penUp(double time, double scaleX, double scaleY, const QPointF & viewportPos, const QPointF & pos, double pressure, QMouseEvent* e);
+    bool penUp(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure, QMouseEvent* e);
 
-    bool keyDown(double time, double scaleX, double scaleY, QKeyEvent* e);
+    bool keyDown(double time, const RenderScale & renderScale, int view, QKeyEvent* e);
 
-    bool keyUp(double time, double scaleX, double scaleY, QKeyEvent* e);
+    bool keyUp(double time, const RenderScale & renderScale, int view, QKeyEvent* e);
 
-    bool loseFocus(double time, double scaleX, double scaleY);
+    bool loseFocus(double time, const RenderScale & renderScale, int view);
 
 public Q_SLOTS:
 
@@ -108,5 +109,7 @@ private:
 
     boost::scoped_ptr<TrackerGuiPrivate> _imp;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // TRACKERGUI_H

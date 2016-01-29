@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2015 INRIA and Alexandre Gauthier
+# Copyright (C) 2016 INRIA and Alexandre Gauthier
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,6 +36,8 @@ DEFINES += OFX_SUPPORTS_DIALOG
         DEFINES *= NDEBUG
         QMAKE_CXXFLAGS += -O2 -g
         QMAKE_CXXFLAGS -= -O3
+        #Remove the -s flag passed in release mode by qmake so binaries don't get stripped
+        QMAKE_LFLAGS_RELEASE =
     }
 }
 
@@ -54,6 +56,12 @@ CONFIG(debug, debug|release){
     DEFINES *= NDEBUG
 }
 
+#Always enable breakpad, to disable just launch Natron-bin and not Natron
+#Commenting this will prevent Natron from even using breakpad
+
+!disable-breakpad {
+    DEFINES += NATRON_USE_BREAKPAD
+}
 
 CONFIG(noassertions) {
 #See http://doc.qt.io/qt-4.8/debug.html
@@ -349,6 +357,4 @@ coverage {
   QMAKE_CLEAN += $(OBJECTS_DIR)/*.gcda $(OBJECTS_DIR)/*.gcno
 }
 
-gbreakpad {
-  DEFINES += NATRON_USE_BREAKPAD
-}
+

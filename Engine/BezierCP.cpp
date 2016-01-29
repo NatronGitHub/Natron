@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,8 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Transform.h" // Point3D
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
+
 
 ////////////////////////////////////ControlPoint////////////////////////////////////
 
@@ -125,7 +126,7 @@ BezierCP::setPositionAtTime(bool useGuiCurves,
 {
     {
         KeyFrame k(time,x);
-        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveX->addKeyFrame(k);
         } else {
@@ -134,7 +135,7 @@ BezierCP::setPositionAtTime(bool useGuiCurves,
     }
     {
         KeyFrame k(time,y);
-        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveY->addKeyFrame(k);
         } else {
@@ -316,7 +317,7 @@ BezierCP::setLeftBezierPointAtTime(bool useGuiCurves,
 {
     {
         KeyFrame k(time,x);
-        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveLeftBezierX->addKeyFrame(k);
         } else {
@@ -325,7 +326,7 @@ BezierCP::setLeftBezierPointAtTime(bool useGuiCurves,
     }
     {
         KeyFrame k(time,y);
-        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveLeftBezierY->addKeyFrame(k);
         } else {
@@ -342,7 +343,7 @@ BezierCP::setRightBezierPointAtTime(bool useGuiCurves,
 {
     {
         KeyFrame k(time,x);
-        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveRightBezierX->addKeyFrame(k);
         } else {
@@ -351,7 +352,7 @@ BezierCP::setRightBezierPointAtTime(bool useGuiCurves,
     }
     {
         KeyFrame k(time,y);
-        k.setInterpolation(Natron::eKeyframeTypeLinear);
+        k.setInterpolation(eKeyframeTypeLinear);
         if (!useGuiCurves) {
             _imp->curveRightBezierY->addKeyFrame(k);
         } else {
@@ -479,7 +480,7 @@ BezierCP::getKeyframeTimes(bool useGuiCurves,std::set<double>* times) const
 }
 
 void
-BezierCP::getKeyFrames(bool useGuiCurves,std::list<std::pair<double,Natron::KeyframeTypeEnum> >* keys) const
+BezierCP::getKeyFrames(bool useGuiCurves,std::list<std::pair<double,KeyframeTypeEnum> >* keys) const
 {
     KeyFrameSet set;
     if (!useGuiCurves) {
@@ -503,7 +504,7 @@ BezierCP::getKeyFrameIndex(bool useGuiCurves,double time) const
 }
 
 void
-BezierCP::setKeyFrameInterpolation(bool useGuiCurves,Natron::KeyframeTypeEnum interp,int index)
+BezierCP::setKeyFrameInterpolation(bool useGuiCurves,KeyframeTypeEnum interp,int index)
 {
     if (!useGuiCurves) {
         _imp->curveX->setKeyFrameInterpolation(interp, index);
@@ -1018,4 +1019,6 @@ BezierCP::isSlaved() const
 
     return _imp->masterTrack;
 }
+
+NATRON_NAMESPACE_EXIT;
 

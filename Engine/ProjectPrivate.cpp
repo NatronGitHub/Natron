@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include "ProjectPrivate.h"
 
 #include <stdexcept>
+#include <list>
 
 #include <QtCore/QDebug>
 #include <QtCore/QTimer>
@@ -46,8 +47,10 @@
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
 
-namespace Natron {
-ProjectPrivate::ProjectPrivate(Natron::Project* project)
+
+NATRON_NAMESPACE_ENTER;
+
+ProjectPrivate::ProjectPrivate(Project* project)
     : _publicInterface(project)
     , projectLock()
     , hasProjectBeenSavedByUser(false)
@@ -85,6 +88,7 @@ ProjectPrivate::ProjectPrivate(Natron::Project* project)
     , isSavingProject(false)
     , autoSaveTimer( new QTimer() )
     , projectClosing(false)
+    , tlsData(new TLSHolder<Project::ProjectTLSData>())
     
 {
     
@@ -112,13 +116,13 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         std::vector<std::string> entries;
         
         for (std::list<Format>::const_iterator it = builtinFormats.begin(); it != builtinFormats.end(); ++it) {
-            QString formatStr = Natron::generateStringFromFormat(*it);
+            QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
             entries.push_back( formatStr.toStdString() );
         }
         
         const std::list<Format> & objAdditionalFormats = obj.getAdditionalFormats();
         for (std::list<Format>::const_iterator it = objAdditionalFormats.begin(); it != objAdditionalFormats.end(); ++it) {
-            QString formatStr = Natron::generateStringFromFormat(*it);
+            QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
             entries.push_back( formatStr.toStdString() );
         }
         additionalFormats = objAdditionalFormats;
@@ -127,7 +131,7 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         autoSetProjectFormat = false;
         
         const std::list< boost::shared_ptr<KnobSerialization> > & projectSerializedValues = obj.getProjectKnobsValues();
-        const std::vector< boost::shared_ptr<KnobI> > & projectKnobs = _publicInterface->getKnobs();
+        const std::vector< KnobPtr > & projectKnobs = _publicInterface->getKnobs();
         
         /// 1) restore project's knobs.
         for (U32 i = 0; i < projectKnobs.size(); ++i) {
@@ -173,26 +177,19 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         }
         
         /// 2) restore the timeline
-        timeline->seekFrame(obj.getCurrentTime(), false, 0, Natron::eTimelineChangeReasonOtherSeek);
+        timeline->seekFrame(obj.getCurrentTime(), false, 0, eTimelineChangeReasonOtherSeek);
         
         
         /// 3) Restore the nodes
-        
-        bool hasProjectAWriter = false;
-        
+                
         std::map<std::string,bool> processedModules;
         ok = NodeCollectionSerialization::restoreFromSerialization(obj.getNodesSerialization().getNodesSerialization(),
-                                                                        _publicInterface->shared_from_this(),true, &processedModules, &hasProjectAWriter);
+                                                                        _publicInterface->shared_from_this(),true, &processedModules);
         for (std::map<std::string,bool>::iterator it = processedModules.begin(); it!=processedModules.end(); ++it) {
             if (it->second) {
                 *mustSave = true;
                 break;
             }
-        }
-        
-        if ( !hasProjectAWriter && appPTR->isBackground() ) {
-            _publicInterface->clearNodes(true);
-            throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
         }
         
         
@@ -304,7 +301,7 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
         std::vector<std::string> args;
         std::string error;
         try {
-            Natron::getFunctionArguments(onProjectSave, &error, &args);
+            Python::getFunctionArguments(onProjectSave, &error, &args);
         } catch (const std::exception& e) {
             _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectSave callback: ")
                                                              + e.what());
@@ -342,11 +339,11 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
             onProjectSave = ss.str();
             std::string err;
             std::string output;
-            if (!Natron::interpretPythonScript(onProjectSave, &err, &output)) {
+            if (!Python::interpretPythonScript(onProjectSave, &err, &output)) {
                 _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectSave callback: " + err);
                 return filename;
             } else {
-                PyObject* mainModule = getMainModule();
+                PyObject* mainModule = Python::getMainModule();
                 assert(mainModule);
                 PyObject* ret = PyObject_GetAttrString(mainModule, "ret");
                 if (!ret) {
@@ -354,9 +351,9 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename, bool autoS
                 }
                 std::string filePath = filename;
                 if (ret) {
-                    filePath = PY3String_asString(ret);
+                    filePath = Python::PY3String_asString(ret);
                     std::string script = "del ret\n";
-                    bool ok = Natron::interpretPythonScript(script, &err, 0);
+                    bool ok = Python::interpretPythonScript(script, &err, 0);
                     assert(ok);
                     if (!ok) {
                         throw std::runtime_error("ProjectPrivate::runOnProjectSaveCallback(): interpretPythonScript("+script+") failed!");
@@ -383,7 +380,7 @@ ProjectPrivate::runOnProjectCloseCallback()
         std::vector<std::string> args;
         std::string error;
         try {
-            Natron::getFunctionArguments(onProjectClose, &error, &args);
+            Python::getFunctionArguments(onProjectClose, &error, &args);
         } catch (const std::exception& e) {
             _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectClose callback: ")
                                                              + e.what());
@@ -413,7 +410,7 @@ ProjectPrivate::runOnProjectCloseCallback()
         script = script + "\n" + onProjectClose + "(" + appID + ")\n";
         std::string err;
         std::string output;
-        if (!Natron::interpretPythonScript(script, &err, &output)) {
+        if (!Python::interpretPythonScript(script, &err, &output)) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectClose callback: " + err);
         } else {
             if (!output.empty()) {
@@ -433,7 +430,7 @@ ProjectPrivate::runOnProjectLoadCallback()
         std::vector<std::string> args;
         std::string error;
         try {
-            Natron::getFunctionArguments(cb, &error, &args);
+            Python::getFunctionArguments(cb, &error, &args);
         } catch (const std::exception& e) {
             _publicInterface->getApp()->appendToScriptEditor(std::string("Failed to run onProjectLoaded callback: ")
                                                              + e.what());
@@ -464,7 +461,7 @@ ProjectPrivate::runOnProjectLoadCallback()
         script =  script + "\n" + cb + "(" + appID + ")\n";
         std::string err;
         std::string output;
-        if (!Natron::interpretPythonScript(script, &err, &output)) {
+        if (!Python::interpretPythonScript(script, &err, &output)) {
             _publicInterface->getApp()->appendToScriptEditor("Failed to run onProjectLoaded callback: " + err);
         } else {
             if (!output.empty()) {
@@ -499,5 +496,5 @@ ProjectPrivate::getProjectPath() const
 {
     return projectPath->getValue();
 }
-    
-} // namespace Natron
+
+NATRON_NAMESPACE_EXIT;

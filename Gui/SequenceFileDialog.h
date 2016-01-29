@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,9 +60,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/QtCompat.h"
 
 #include "Engine/FileSystemModel.h"
+#include "Gui/LineEdit.h"
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief The UrlModel class is the model used by the favorite view in the file dialog. It serves as a connexion between
@@ -231,6 +233,7 @@ public:
     virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
 
 
@@ -267,6 +270,25 @@ private:
     SequenceFileDialog *dialog;
     QStringList m_history;
     bool doResize;
+};
+
+//Same as LineEdit but we do not process keyPresses for Key_Up and Key_Down
+class FileDialogLineEdit : public LineEdit
+{
+public:
+    
+    FileDialogLineEdit(QWidget* parent)
+    : LineEdit(parent)
+    {
+        
+    }
+    
+    virtual ~FileDialogLineEdit()
+    {
+        
+    }
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
 
 /**
@@ -525,7 +547,7 @@ private:
     
     void teardownPreview();
     
-    boost::shared_ptr<NodeGui> findOrCreatePreviewReader(const std::string& filetype);
+    NodeGuiPtr findOrCreatePreviewReader(const std::string& filetype);
     
     void refreshPreviewAfterSelectionChange();
     
@@ -549,7 +571,7 @@ private:
     boost::scoped_ptr<QFileSystemModel> _lookinViewModel;
     QVBoxLayout* _mainLayout;
     QString _requestedDir;
-    Natron::Label* _lookInLabel;
+    Label* _lookInLabel;
     FileDialogComboBox* _lookInCombobox;
     Button* _previousButton;
     Button* _nextButton;
@@ -559,12 +581,12 @@ private:
     Button* _cancelButton;
     Button* _addFavoriteButton;
     Button* _removeFavoriteButton;
-    LineEdit* _selectionLineEdit;
-    Natron::Label* _relativeLabel;
+    FileDialogLineEdit* _selectionLineEdit;
+    Label* _relativeLabel;
     ComboBox* _relativeChoice;
     ComboBox* _sequenceButton;
-    Natron::Label* _filterLabel;
-    LineEdit* _filterLineEdit;
+    Label* _filterLabel;
+    FileDialogLineEdit* _filterLineEdit;
     Button* _filterDropDown;
     ComboBox* _fileExtensionCombo;
     QHBoxLayout* _buttonsLayout;
@@ -628,7 +650,7 @@ class AddFavoriteDialog
     Q_OBJECT
 
     QVBoxLayout* _mainLayout;
-    Natron::Label* _descriptionLabel;
+    Label* _descriptionLabel;
     QWidget* _secondLine;
     QHBoxLayout* _secondLineLayout;
     LineEdit* _pathLineEdit;
@@ -657,5 +679,7 @@ public Q_SLOTS:
 
     void openDir();
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif /* defined(NATRON_GUI_SEQUENCEFILEDIALOG_H_) */

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
@@ -36,6 +38,7 @@
 #include "Engine/KnobFile.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct CurvePrivate
 {
@@ -53,12 +56,12 @@ struct CurvePrivate
     std::map<double,double> resultCache; //< a cache for interpolations
     KnobI* owner;
     int dimensionInOwner;
-    bool isParametric;
     CurveTypeEnum type;
     double xMin, xMax;
     double yMin, yMax;
-    bool hasYRange;
     mutable QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
+    bool isParametric;
+    bool hasYRange;
 
 
     CurvePrivate()
@@ -66,14 +69,14 @@ struct CurvePrivate
     , resultCache()
     , owner(NULL)
     , dimensionInOwner(-1)
-    , isParametric(false)
     , type(eCurveTypeDouble)
     , xMin(INT_MIN)
     , xMax(INT_MAX)
     , yMin(INT_MIN)
     , yMax(INT_MAX)
-    , hasYRange(false)
     , _lock(QMutex::Recursive)
+    , isParametric(false)
+    , hasYRange(false)
     {
     }
 
@@ -99,5 +102,6 @@ struct CurvePrivate
     
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_CURVEPRIVATE_H

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,8 @@
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 class PluginMemory
 {
 public:
@@ -44,7 +46,7 @@ public:
      * On the other hand if the parameter is set to NULL, the memory will not be registered and will live
      * until the plug-in decides to free the memory.
      **/
-    PluginMemory(Natron::EffectInstance* effect);
+    PluginMemory(const EffectInstPtr& effect);
 
     ~PluginMemory();
 
@@ -65,5 +67,7 @@ private:
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; //!< PImpl
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // PLUGINMEMORY_H

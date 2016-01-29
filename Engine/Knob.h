@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_KNOB_H
-#define NATRON_ENGINE_KNOB_H
+#ifndef Engine_Knob_h
+#define Engine_Knob_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -47,11 +47,7 @@
 #define NATRON_USER_MANAGED_KNOBS_PAGE_LABEL "User"
 #define NATRON_USER_MANAGED_KNOBS_PAGE "userNatron"
 
-class KnobPage;
-class KnobGroup;
-namespace Natron {
-    class Node;
-}
+NATRON_NAMESPACE_ENTER;
 
 class KnobSignalSlotHandler
 : public QObject
@@ -62,9 +58,9 @@ class KnobSignalSlotHandler
     
 public:
     
-    KnobSignalSlotHandler(const boost::shared_ptr<KnobI> &knob);
+    KnobSignalSlotHandler(const KnobPtr &knob);
     
-    boost::shared_ptr<KnobI> getKnob() const
+    KnobPtr getKnob() const
     {
         return k.lock();
     }
@@ -133,7 +129,7 @@ public:
         Q_EMIT setValueWithUndoStack(v, dim);
     }
     
-    void s_appendParamEditChange(Natron::ValueChangedReasonEnum reason,
+    void s_appendParamEditChange(ValueChangedReasonEnum reason,
                                  Variant v,
                                  int dim,
                                  double time,
@@ -158,7 +154,7 @@ public:
         Q_EMIT keyFrameMoved(dimension, oldTime, newTime);
     }
     
-    void s_redrawGuiCurve(Natron::CurveChangeReason reason, int dimension)
+    void s_redrawGuiCurve(CurveChangeReason reason, int dimension)
     {
         Q_EMIT redrawGuiCurve((int)reason,dimension);
     }
@@ -301,10 +297,11 @@ Q_SIGNALS:
 
 struct KnobChange
 {
-    Natron::ValueChangedReasonEnum reason;
-    bool originatedFromMainThread;
     KnobI* knob;
+    ValueChangedReasonEnum reason;
+    bool originatedFromMainThread;
 };
+
 typedef std::list<KnobChange> ChangesList;
 
 
@@ -332,6 +329,15 @@ protected:
     virtual void deleteKnob() = 0;
     
 public:
+    
+    struct ListenerDim {
+        bool isExpr;
+        bool isListening;
+        int targetDim;
+        ListenerDim() : isExpr(false), isListening(false), targetDim(-1) {}
+    };
+    
+    typedef std::map<boost::weak_ptr<KnobI>, std::vector<ListenerDim> > ListenerDimsMap;
     
     /**
      * @brief Do not call this. It is called right away after the constructor by the factory
@@ -407,7 +413,7 @@ public:
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
      * evaluate the new value (cause a render).
      **/
-    virtual void evaluateValueChange(int dimension, double time, Natron::ValueChangedReasonEnum reason) = 0;
+    virtual void evaluateValueChange(int dimension, double time, ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Copies all the values, animations and extra data the other knob might have
@@ -420,7 +426,7 @@ public:
      * WARNING: This knob and 'other' MUST have the same dimension as well as the same type.
      **/
     virtual void clone(KnobI* other,int dimension = -1) = 0;
-    virtual void clone(const boost::shared_ptr<KnobI> & other,int dimension = -1)
+    virtual void clone(const KnobPtr & other,int dimension = -1)
     {
         clone( other.get(), dimension );
     }
@@ -438,7 +444,7 @@ public:
     virtual bool cloneAndCheckIfChanged(KnobI* other,int dimension = -1) = 0;
     
     /**
-     * @brief Same as clone(const boost::shared_ptr<KnobI>& ) except that the given offset is applied
+     * @brief Same as clone(const KnobPtr& ) except that the given offset is applied
      * on the keyframes time and only the keyframes withing the given range are copied.
      * If the range is NULL everything will be copied.
      *
@@ -447,7 +453,7 @@ public:
      * The restriction on types still apply.
      **/
     virtual void clone(KnobI* other, double offset, const RangeD* range,int dimension = -1) = 0;
-    virtual void clone(const boost::shared_ptr<KnobI> & other,
+    virtual void clone(const KnobPtr & other,
                        double offset,
                        const RangeD* range,
                        int dimension = -1)
@@ -482,7 +488,7 @@ protected:
     /**
      * @brief Removes all the keyframes in the given dimension.
      **/
-    virtual void removeAnimation(int dimension,Natron::ValueChangedReasonEnum reason) = 0;
+    virtual void removeAnimation(int dimension,ValueChangedReasonEnum reason) = 0;
 
 
 public:
@@ -490,18 +496,18 @@ public:
     /**
      * @brief Removes the keyframe at the given time and dimension if it matches any.
      **/
-    virtual void deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,double time,int dimension) = 0;
+    virtual void deleteValueAtTime(CurveChangeReason curveChangeReason,double time,int dimension) = 0;
     
     
     /**
      * @brief Moves a keyframe by a given delta and emits the signal keyframeMoved
      **/
-    virtual bool moveValueAtTime(Natron::CurveChangeReason reason, double time,int dimension,double dt,double dv,KeyFrame* newKey) = 0;
+    virtual bool moveValueAtTime(CurveChangeReason reason, double time,int dimension,double dt,double dv,KeyFrame* newKey) = 0;
     
     /**
      * @brief Transforms a keyframe by a given matrix. The matrix must not contain any skew or rotation.
      **/
-    virtual bool transformValueAtTime(Natron::CurveChangeReason curveChangeReason, double time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) = 0;
+    virtual bool transformValueAtTime(CurveChangeReason curveChangeReason, double time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) = 0;
     
     /**
      * @brief Copies all the animation of *curve* into the animation curve at the given dimension.
@@ -511,38 +517,38 @@ public:
     /**
      * @brief Changes the interpolation type for the given keyframe
      **/
-    virtual bool setInterpolationAtTime(Natron::CurveChangeReason reason,int dimension,double time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) = 0;
+    virtual bool setInterpolationAtTime(CurveChangeReason reason,int dimension,double time,KeyframeTypeEnum interpolation,KeyFrame* newKey) = 0;
     
     /**
      * @brief Set the left/right derivatives of the control point at the given time.
      **/
-    virtual bool moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension,double time,double left,double right) = 0;
-    virtual bool moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,double time,double derivative,bool isLeft) = 0;
+    virtual bool moveDerivativesAtTime(CurveChangeReason reason,int dimension,double time,double left,double right) = 0;
+    virtual bool moveDerivativeAtTime(CurveChangeReason reason,int dimension,double time,double derivative,bool isLeft) = 0;
 
     /**
-     * @brief Removes animation before the given time and dimension. If the reason is different than Natron::eValueChangedReasonUserEdited
+     * @brief Removes animation before the given time and dimension. If the reason is different than eValueChangedReasonUserEdited
      * a signal will be emitted
      **/
-    virtual void deleteAnimationBeforeTime(double time,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
+    virtual void deleteAnimationBeforeTime(double time,int dimension,ValueChangedReasonEnum reason) = 0;
 
     /**
-     * @brief Removes animation before the given time and dimension. If the reason is different than Natron::eValueChangedReasonUserEdited
+     * @brief Removes animation before the given time and dimension. If the reason is different than eValueChangedReasonUserEdited
      * a signal will be emitted
      **/
-    virtual void deleteAnimationAfterTime(double time,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
+    virtual void deleteAnimationAfterTime(double time,int dimension,ValueChangedReasonEnum reason) = 0;
 
     /**
-     * @brief Calls removeAnimation with a reason of Natron::eValueChangedReasonPluginEdited.
+     * @brief Calls removeAnimation with a reason of eValueChangedReasonNatronInternalEdited.
      **/
     void removeAnimation(int dimension);
 
     /**
-     * @brief Calls deleteValueAtTime with a reason of Natron::eValueChangedReasonUserEdited
+     * @brief Calls deleteValueAtTime with a reason of eValueChangedReasonUserEdited
      **/
     virtual void onKeyFrameRemoved(double time,int dimension) = 0;
 
     /**
-     * @brief Calls removeAnimation with a reason of Natron::eValueChangedReasonUserEdited
+     * @brief Calls removeAnimation with a reason of eValueChangedReasonUserEdited
      **/
     void onAnimationRemoved(int dimension);
     
@@ -564,6 +570,14 @@ public:
     void setExpression(int dimension,const std::string& expression,bool hasRetVariable) {
         setExpressionInternal(dimension, expression, hasRetVariable, true);
     }
+    
+    /**
+     * @brief For each dimension, try to find in the expression, if set, the node name "oldName" and replace
+     * it by "newName"
+     **/
+    virtual void replaceNodeNameInExpression(int dimension,
+                                             const std::string& oldName,
+                                              const std::string& newName) = 0;
     
     virtual void clearExpressionsResults(int dimension) = 0;
     
@@ -602,18 +616,18 @@ public:
 
 
     /**
-     * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonUserEdited.
+     * @brief Calls setValueAtTime with a reason of eValueChangedReasonUserEdited.
      **/
     virtual bool onKeyFrameSet(double time,int dimension) = 0;
     virtual bool onKeyFrameSet(double time,const KeyFrame& key,int dimension) = 0;
-    virtual bool setKeyFrame(const KeyFrame& key,int dimension,Natron::ValueChangedReasonEnum reason) = 0;
+    virtual bool setKeyFrame(const KeyFrame& key,int dimension,ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Called when the current time of the timeline changes.
      * It must get the value at the given time and notify  the gui it must
      * update the value displayed.
      **/
-    virtual void onTimeChanged(double time) = 0;
+    virtual void onTimeChanged(bool isPlayback, double time) = 0;
 
     /**
      * @brief Compute the derivative at time as a double
@@ -776,6 +790,9 @@ public:
      **/
     virtual void setIsFrozen(bool frozen) = 0;
 
+    
+    virtual bool evaluateValueChangeOnTimeChange() const { return false; }
+    
     /**
      * @brief When dirty, the knob is actually representing several elements that do not hold the same value.
      * For example for the roto node, a knob actually represent the value of the opacity of the selected curve.
@@ -809,12 +826,12 @@ public:
      * @brief Set the given knob as the parent of this knob.
      * @param knob It must be a tab or group knob.
      */
-    virtual void setParentKnob(boost::shared_ptr<KnobI> knob) = 0;
+    virtual void setParentKnob(KnobPtr knob) = 0;
 
     /**
      * @brief Returns a pointer to the parent knob if any.
      */
-    virtual boost::shared_ptr<KnobI> getParentKnob() const = 0;
+    virtual KnobPtr getParentKnob() const = 0;
 
     /**
      * @brief Returns the hierarchy level of this knob.
@@ -859,6 +876,13 @@ public:
      * @brief Can the knob use undo/redo actions ?
      **/
     virtual bool getCanUndo() const = 0;
+    
+    /**
+     * @brief When a knob is clip preferences slaves, when its value changes, checkOFXClipPreferences will be called on the 
+     * holder effect
+     **/
+    virtual void setIsClipPreferencesSlave(bool slave) = 0;
+    virtual bool getIsClipPreferencesSlave() const = 0;
 
     /**
      * @brief Set the text displayed by the tooltip when
@@ -874,8 +898,8 @@ public:
     /**
      * @brief Call this to set a custom interact entry point, replacing any existing gui.
      **/
-    virtual void setCustomInteract(const boost::shared_ptr<Natron::OfxParamOverlayInteract> & interactDesc) = 0;
-    virtual boost::shared_ptr<Natron::OfxParamOverlayInteract> getCustomInteract() const = 0;
+    virtual void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc) = 0;
+    virtual boost::shared_ptr<OfxParamOverlayInteract> getCustomInteract() const = 0;
     virtual void swapOpenGLBuffers() OVERRIDE = 0;
     virtual void redraw() OVERRIDE = 0;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE = 0;
@@ -926,14 +950,20 @@ public:
     
     /**
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
-     * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
+     * is now listening to the values/keyframes of "this" either via a hard-link (slave/master) or via its expressions
+     * @param isExpression Is this listener listening through expressions or via a slave/master link
+     * @param listenerDimension The dimension of the listener that is listening to this knob
+     * @param listenedDimension The dimension of this knob that is listened to by the listener
      **/
-    virtual void addListener(bool isExpression,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) = 0;
+    virtual void addListener(const bool isExpression,
+                             const int listenerDimension,
+                             const int listenedToDimension,
+                             const KnobPtr& listener) = 0;
     
-    virtual void getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const = 0;
+    virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const = 0;
     
 private:
-    virtual void removeListener(KnobI* knob) = 0;
+    virtual void removeListener(KnobI* listener, int listenerDimension) = 0;
 public:
 
     virtual bool useHostOverlayHandle() const { return false; }
@@ -948,25 +978,25 @@ protected:
      * at the same dimension for the knob 'other'.
      * In case of success, this function returns true, otherwise false.
      **/
-    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI> &  other,int otherDimension,Natron::ValueChangedReasonEnum reason,
+    virtual bool slaveTo(int dimension,const KnobPtr &  other,int otherDimension,ValueChangedReasonEnum reason,
                          bool ignoreMasterPersistence) = 0;
 
     /**
      * @brief Unslaves a previously slaved dimension. The implementation should assert that
      * the dimension was really slaved.
      **/
-    virtual void unSlave(int dimension,Natron::ValueChangedReasonEnum reason,bool copyState) = 0;
+    virtual void unSlave(int dimension,ValueChangedReasonEnum reason,bool copyState) = 0;
 
 public:
 
     /**
-     * @brief Calls slaveTo with a value changed reason of Natron::eValueChangedReasonPluginEdited.
+     * @brief Calls slaveTo with a value changed reason of eValueChangedReasonNatronInternalEdited.
      * @param ignoreMasterPersistence If true the master will not be serialized.
      **/
-    bool slaveTo(int dimension,const boost::shared_ptr<KnobI> & other,int otherDimension,bool ignoreMasterPersistence = false);
+    bool slaveTo(int dimension,const KnobPtr & other,int otherDimension,bool ignoreMasterPersistence = false);
     virtual bool isMastersPersistenceIgnored() const = 0;
     
-    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,
+    virtual KnobPtr createDuplicateOnNode(EffectInstance* effect,
                                                            const boost::shared_ptr<KnobPage>& page,
                                                            const boost::shared_ptr<KnobGroup>& group,
                                                            int indexInParent,
@@ -979,28 +1009,28 @@ public:
     /**
      * @brief If a knob was created using createDuplicateOnNode(effect,true), this function will return true
      **/
-    virtual boost::shared_ptr<KnobI> getAliasMaster() const = 0;
+    virtual KnobPtr getAliasMaster() const = 0;
     
-    virtual bool setKnobAsAliasOfThis(const boost::shared_ptr<KnobI>& master, bool doAlias) = 0;
+    virtual bool setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias) = 0;
 
     /**
-     * @brief Calls slaveTo with a value changed reason of Natron::eValueChangedReasonUserEdited.
+     * @brief Calls slaveTo with a value changed reason of eValueChangedReasonUserEdited.
      **/
-    void onKnobSlavedTo(int dimension,const boost::shared_ptr<KnobI> &  other,int otherDimension);
+    void onKnobSlavedTo(int dimension,const KnobPtr &  other,int otherDimension);
 
 
     /**
-     * @brief Calls unSlave with a value changed reason of Natron::eValueChangedReasonPluginEdited.
+     * @brief Calls unSlave with a value changed reason of eValueChangedReasonNatronInternalEdited.
      **/
     void unSlave(int dimension,bool copyState);
 
     /**
      * @brief Returns a list of all the knobs whose value depends upon this knob.
      **/
-    virtual void getListeners(std::list<boost::shared_ptr<KnobI> > & listeners) const = 0;
-
+    virtual void getListeners(ListenerDimsMap & listeners) const = 0;
+    
     /**
-     * @brief Calls unSlave with a value changed reason of Natron::eValueChangedReasonUserEdited.
+     * @brief Calls unSlave with a value changed reason of eValueChangedReasonUserEdited.
      **/
     void onKnobUnSlaved(int dimension);
 
@@ -1008,7 +1038,7 @@ public:
      * @brief Returns a valid pointer to a knob if the value at
      * the given dimension is slaved.
      **/
-    virtual std::pair<int,boost::shared_ptr<KnobI> > getMaster(int dimension) const = 0;
+    virtual std::pair<int,KnobPtr > getMaster(int dimension) const = 0;
 
     /**
      * @brief Returns true if the value at the given dimension is slave to another parameter
@@ -1018,18 +1048,18 @@ public:
     /**
      * @brief Same as getMaster but for all dimensions.
      **/
-    virtual std::vector<std::pair<int,boost::shared_ptr<KnobI> > > getMasters_mt_safe() const = 0;
+    virtual std::vector<std::pair<int,KnobPtr > > getMasters_mt_safe() const = 0;
 
     /**
      * @brief Called by the GUI whenever the animation level changes (due to a time change
      * or a value changed).
      **/
-    virtual void setAnimationLevel(int dimension,Natron::AnimationLevelEnum level) = 0;
+    virtual void setAnimationLevel(int dimension,AnimationLevelEnum level) = 0;
 
     /**
      * @brief Get the current animation level.
      **/
-    virtual Natron::AnimationLevelEnum getAnimationLevel(int dimension) const = 0;
+    virtual AnimationLevelEnum getAnimationLevel(int dimension) const = 0;
 
     /**
      * @brief Restores the default value
@@ -1044,9 +1074,9 @@ public:
     /**
      * @brief Must return true if the other knobs type can convert to this knob's type.
      **/
-    virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const = 0;
+    virtual bool isTypeCompatible(const KnobPtr & other) const = 0;
 
-    KnobPage* getTopLevelPage();
+    boost::shared_ptr<KnobPage> getTopLevelPage();
 };
 
 
@@ -1085,6 +1115,18 @@ private:
     virtual void deleteKnob() OVERRIDE FINAL;
 public:
     
+    struct KnobTLSData
+    {
+        int expressionRecursionLevel;
+        
+        KnobTLSData()
+        : expressionRecursionLevel(0)
+        {
+            
+        }
+    };
+    typedef boost::shared_ptr<KnobTLSData> KnobDataTLSPtr;
+    
     virtual void setKnobGuiPointer(KnobGuiI* ptr) OVERRIDE FINAL;
     virtual KnobGuiI* getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
@@ -1122,13 +1164,15 @@ public:
     virtual void blockValueChanges() OVERRIDE FINAL;
     virtual void unblockValueChanges() OVERRIDE FINAL;
     virtual bool isValueChangesBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void evaluateValueChange(int dimension,double time, Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void evaluateValueChange(int dimension,double time, ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
     virtual double random(double time,unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual double random(double min = 0., double max = 1.) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int randomInt(double time,unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int randomInt(int min = 0,int max = INT_MAX) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 protected:
+    
     
     void randomSeed(double time, unsigned int seed) const;
     
@@ -1136,24 +1180,24 @@ private:
 
     
     
-    virtual void removeAnimation(int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
-    virtual void deleteValueAtTime(Natron::CurveChangeReason curveChangeReason,double time,int dimension) OVERRIDE FINAL;
+    virtual void removeAnimation(int dimension,ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void deleteValueAtTime(CurveChangeReason curveChangeReason,double time,int dimension) OVERRIDE FINAL;
 
 public:
 
     virtual void onKeyFrameRemoved(double time,int dimension) OVERRIDE FINAL;
-    virtual bool moveValueAtTime(Natron::CurveChangeReason reason, double time,int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
-    virtual bool transformValueAtTime(Natron::CurveChangeReason curveChangeReason, double time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool moveValueAtTime(CurveChangeReason reason, double time,int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool transformValueAtTime(CurveChangeReason curveChangeReason, double time,int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) OVERRIDE FINAL;
     virtual void cloneCurve(int dimension,const Curve& curve) OVERRIDE FINAL;
-    virtual bool setInterpolationAtTime(Natron::CurveChangeReason reason,int dimension,double time,Natron::KeyframeTypeEnum interpolation,KeyFrame* newKey) OVERRIDE FINAL;
-    virtual bool moveDerivativesAtTime(Natron::CurveChangeReason reason,int dimension,double time,double left,double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool moveDerivativeAtTime(Natron::CurveChangeReason reason,int dimension,double time,double derivative,bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void deleteAnimationBeforeTime(double time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
-    virtual void deleteAnimationAfterTime(double time,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual bool setInterpolationAtTime(CurveChangeReason reason,int dimension,double time,KeyframeTypeEnum interpolation,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool moveDerivativesAtTime(CurveChangeReason reason,int dimension,double time,double left,double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool moveDerivativeAtTime(CurveChangeReason reason,int dimension,double time,double derivative,bool isLeft) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void deleteAnimationBeforeTime(double time,int dimension,ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void deleteAnimationAfterTime(double time,int dimension,ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
 private:
     
-    void deleteAnimationConditional(double time,int dimension,Natron::ValueChangedReasonEnum reason,bool before);
+    void deleteAnimationConditional(double time,int dimension,ValueChangedReasonEnum reason,bool before);
 public:
     
     
@@ -1167,6 +1211,9 @@ public:
     virtual bool isAnimated(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setExpressionInternal(int dimension,const std::string& expression,bool hasRetVariable,bool clearResults) OVERRIDE FINAL;
+    virtual void replaceNodeNameInExpression(int dimension,
+                                            const std::string& oldName,
+                                            const std::string& newName) OVERRIDE FINAL;
     virtual void clearExpression(int dimension,bool clearResults) OVERRIDE FINAL;
     virtual std::string validateExpression(const std::string& expression,int dimension,bool hasRetVariable,
                                            std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1210,8 +1257,8 @@ public:
     virtual void setName(const std::string & name,bool throwExceptions = false) OVERRIDE FINAL;
     virtual const std::string & getName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::string & getOriginalName() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setParentKnob(boost::shared_ptr<KnobI> knob) OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobI> getParentKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setParentKnob(KnobPtr knob) OVERRIDE FINAL;
+    virtual KnobPtr getParentKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int determineHierarchySize() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setEvaluateOnChange(bool b) OVERRIDE FINAL;
     virtual bool getEvaluateOnChange() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1219,10 +1266,12 @@ public:
     virtual void setIsPersistant(bool b) OVERRIDE FINAL;
     virtual void setCanUndo(bool val) OVERRIDE FINAL;
     virtual bool getCanUndo() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setIsClipPreferencesSlave(bool slave) OVERRIDE FINAL;
+    virtual bool getIsClipPreferencesSlave() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setHintToolTip(const std::string & hint) OVERRIDE FINAL;
     virtual const std::string & getHintToolTip() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setCustomInteract(const boost::shared_ptr<Natron::OfxParamOverlayInteract> & interactDesc) OVERRIDE FINAL;
-    virtual boost::shared_ptr<Natron::OfxParamOverlayInteract> getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc) OVERRIDE FINAL;
+    virtual boost::shared_ptr<OfxParamOverlayInteract> getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
     virtual void redraw() OVERRIDE FINAL;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
@@ -1243,7 +1292,7 @@ public:
     virtual bool hasModifications(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasModificationsForSerialization() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
-    virtual boost::shared_ptr<KnobI> createDuplicateOnNode(Natron::EffectInstance* effect,
+    virtual KnobPtr createDuplicateOnNode(EffectInstance* effect,
                                                            const boost::shared_ptr<KnobPage>& page,
                                                            const boost::shared_ptr<KnobGroup>& group,
                                                            int indexInParent,
@@ -1252,13 +1301,13 @@ public:
                                                            const std::string& newLabel,
                                                            const std::string& newToolTip,
                                                            bool refreshParams) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual boost::shared_ptr<KnobI> getAliasMaster() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool setKnobAsAliasOfThis(const boost::shared_ptr<KnobI>& master, bool doAlias) OVERRIDE FINAL;
+    virtual KnobPtr getAliasMaster() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias) OVERRIDE FINAL;
     
 private:
     
 
-    virtual bool slaveTo(int dimension,const boost::shared_ptr<KnobI> &  other,int otherDimension,Natron::ValueChangedReasonEnum reason
+    virtual bool slaveTo(int dimension,const KnobPtr &  other,int otherDimension,ValueChangedReasonEnum reason
                          ,bool ignoreMasterPersistence) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 protected:
@@ -1276,24 +1325,24 @@ protected:
 
 public:
 
-    virtual std::pair<int,boost::shared_ptr<KnobI> > getMaster(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::pair<int,KnobPtr > getMaster(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSlave(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::vector<std::pair<int,boost::shared_ptr<KnobI> > > getMasters_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setAnimationLevel(int dimension,Natron::AnimationLevelEnum level) OVERRIDE FINAL;
-    virtual Natron::AnimationLevelEnum getAnimationLevel(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const OVERRIDE WARN_UNUSED_RETURN = 0;
+    virtual std::vector<std::pair<int,KnobPtr > > getMasters_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setAnimationLevel(int dimension,AnimationLevelEnum level) OVERRIDE FINAL;
+    virtual AnimationLevelEnum getAnimationLevel(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isTypeCompatible(const KnobPtr & other) const OVERRIDE WARN_UNUSED_RETURN = 0;
 
 
     /**
      * @brief Adds a new listener to this knob. This is just a pure notification about the fact that the given knob
      * is listening to the values/keyframes of "this". It could be call addSlave but it will also be use for expressions.
      **/
-    virtual void addListener(bool isFromExpr,int fromExprDimension, int thisDimension, const boost::shared_ptr<KnobI>& knob) OVERRIDE FINAL;
-    virtual void removeListener(KnobI* knob) OVERRIDE FINAL;
+    virtual void addListener(bool isFromExpr,int fromExprDimension, int thisDimension, const KnobPtr& knob) OVERRIDE FINAL;
+    virtual void removeListener(KnobI* listener, int listenerDimension) OVERRIDE FINAL;
     
-    virtual void getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const OVERRIDE FINAL;
+    virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const OVERRIDE FINAL;
 
-    virtual void getListeners(std::list<boost::shared_ptr<KnobI> >& listeners) const OVERRIDE FINAL;
+    virtual void getListeners(KnobI::ListenerDimsMap& listeners) const OVERRIDE FINAL;
     
     virtual void clearExpressionsResults(int /*dimension*/) OVERRIDE {}
     
@@ -1323,7 +1372,7 @@ public:
     
 protected:
 
-    virtual void handleSignalSlotsForAliasLink(const boost::shared_ptr<KnobI>& /*alias*/, bool /*connect*/) {
+    virtual void handleSignalSlotsForAliasLink(const KnobPtr& /*alias*/, bool /*connect*/) {
         
     }
     
@@ -1374,13 +1423,13 @@ protected:
     {
     }
     
-    void cloneGuiCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions);
+    void cloneGuiCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& modifiedDimensions);
     
-    void cloneInternalCurvesIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions);
+    void cloneInternalCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& modifiedDimensions);
     
     void setInternalCurveHasChanged(int dimension, bool changed);
     
-    void guiCurveCloneInternalCurve(Natron::CurveChangeReason curveChangeReason,int dimension, Natron::ValueChangedReasonEnum reason);
+    void guiCurveCloneInternalCurve(CurveChangeReason curveChangeReason,int dimension, ValueChangedReasonEnum reason);
     
     virtual boost::shared_ptr<Curve> getGuiCurve(int dimension,bool byPassMaster = false) const OVERRIDE FINAL;
     
@@ -1388,7 +1437,7 @@ protected:
 
     void checkAnimationLevel(int dimension);
     
-    void clearExpressionsResultsIfNeeded(std::map<int,Natron::ValueChangedReasonEnum>& modifiedDimensions);
+    void clearExpressionsResultsIfNeeded(std::map<int,ValueChangedReasonEnum>& modifiedDimensions);
 
     
     
@@ -1469,7 +1518,7 @@ private:
 
    
     virtual void unSlave(int dimension,
-                         Natron::ValueChangedReasonEnum reason,
+                         ValueChangedReasonEnum reason,
                          bool copyState) OVERRIDE FINAL;
 
 
@@ -1485,26 +1534,26 @@ public:
     bool setValueAtTime(double time,
                         const T & v,
                         int dimension,
-                        Natron::ValueChangedReasonEnum reason,
+                        ValueChangedReasonEnum reason,
                         KeyFrame* newKey);
 
-    virtual bool setKeyFrame(const KeyFrame& key,int dimension,Natron::ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual bool setKeyFrame(const KeyFrame& key,int dimension,ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
     /**
      * @brief Set the value of the knob in the given dimension with the given reason.
-     * @param newKey If not NULL and the animation level of the knob is Natron::eAnimationLevelInterpolatedValue
+     * @param newKey If not NULL and the animation level of the knob is eAnimationLevelInterpolatedValue
      * then a new keyframe will be set at the current time.
      **/
     ValueChangedReturnCodeEnum setValue(const T & v,
                                         int dimension,
-                                        Natron::ValueChangedReasonEnum reason,
+                                        ValueChangedReasonEnum reason,
                                         KeyFrame* newKey);
 
     
    
     
     /**
-     * @brief Calls setValue with a reason of Natron::eValueChangedReasonNatronInternalEdited.
+     * @brief Calls setValue with a reason of eValueChangedReasonNatronInternalEdited.
      * @param turnOffAutoKeying If set to true, the underlying call to setValue will
      * not set a new keyframe.
      **/
@@ -1514,33 +1563,33 @@ public:
     
     void setValues(const T& value0,
                    const T& value1,
-                   Natron::ValueChangedReasonEnum reason);
+                   ValueChangedReasonEnum reason);
 
     void setValues(const T& value0,
                    const T& value1,
                    const T& value2,
-                   Natron::ValueChangedReasonEnum reason);
+                   ValueChangedReasonEnum reason);
 
     void setValues(const T& value0,
                    const T& value1,
                    const T& value2,
                    const T& value3,
-                   Natron::ValueChangedReasonEnum reason);
+                   ValueChangedReasonEnum reason);
 
     /**
      * @brief Calls setValue 
-     * @param reason Can either be Natron::eValueChangedReasonUserEdited or Natron::eValueChangedReasonNatronGuiEdited
+     * @param reason Can either be eValueChangedReasonUserEdited or eValueChangedReasonNatronGuiEdited
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns A status according to the operation that was made to the keyframe.
      * @see ValueChangedReturnCodeEnum
      **/
     ValueChangedReturnCodeEnum onValueChanged(const T & v,
                                               int dimension,
-                                              Natron::ValueChangedReasonEnum reason,
+                                              ValueChangedReasonEnum reason,
                                               KeyFrame* newKey);
     
     /**
-     * @brief Calls setValue with a reason of Natron::eValueChangedReasonPluginEdited.
+     * @brief Calls setValue with a reason of eValueChangedReasonPluginEdited.
      **/
     ValueChangedReturnCodeEnum setValueFromPlugin(const T & value,
                                                   int dimension);
@@ -1552,14 +1601,14 @@ public:
                                     int dimension);
 
     /**
-     * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonNatronInternalEdited.
+     * @brief Calls setValueAtTime with a reason of eValueChangedReasonNatronInternalEdited.
      **/
     void setValueAtTime(double time,
                         const T & v,
                         int dimension);
     
     /**
-     * @brief Calls setValueAtTime with a reason of Natron::eValueChangedReasonPluginEdited.
+     * @brief Calls setValueAtTime with a reason of eValueChangedReasonPluginEdited.
      **/
     void setValueAtTimeFromPlugin(double time,
                                   const T & v,
@@ -1568,20 +1617,20 @@ public:
     void setValuesAtTime(double time,
                          const T& value0,
                          const T& value1,
-                         Natron::ValueChangedReasonEnum reason);
+                         ValueChangedReasonEnum reason);
 
     void setValuesAtTime(double time,
                          const T& value0,
                          const T& value1,
                          const T& value2,
-                         Natron::ValueChangedReasonEnum reason);
+                         ValueChangedReasonEnum reason);
 
     void setValuesAtTime(double time,
                          const T& value0,
                          const T& value1,
                          const T& value2,
                          const T& value3,
-                         Natron::ValueChangedReasonEnum reason);
+                         ValueChangedReasonEnum reason);
 
     /**
      * @brief Unlike getValueAtTime this function doesn't interpolate the values.
@@ -1626,14 +1675,14 @@ public:
     /// You must implement it
     virtual bool canAnimate() const OVERRIDE;
     virtual bool isTypePOD() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isTypeCompatible(const boost::shared_ptr<KnobI> & other) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isTypeCompatible(const KnobPtr & other) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ///Cannot be overloaded by KnobHelper as it requires setValueAtTime
     virtual bool onKeyFrameSet(double time,int dimension) OVERRIDE FINAL;
     virtual bool onKeyFrameSet(double time,const KeyFrame& key,int dimension) OVERRIDE FINAL;
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
-    virtual void onTimeChanged(double time) OVERRIDE FINAL;
+    virtual void onTimeChanged(bool isPlayback, double time) OVERRIDE FINAL;
 
     ///Cannot be overloaded by KnobHelper as it requires the value member
     virtual double getDerivativeAtTime(double time, int dimension = 0) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1747,7 +1796,7 @@ private:
         boost::scoped_ptr<QueuedSetValuePrivate> _imp;
   
         
-        QueuedSetValue(int dimension,const T& value,const KeyFrame& key,bool useKey,Natron::ValueChangedReasonEnum reason);
+        QueuedSetValue(int dimension,const T& value,const KeyFrame& key,bool useKey,ValueChangedReasonEnum reason);
         
         virtual bool isSetValueAtTime() const { return false; }
         
@@ -1758,7 +1807,7 @@ private:
     {
         double time;
         
-        QueuedSetValueAtTime(double time,int dimension,const T& value,const KeyFrame& key,Natron::ValueChangedReasonEnum reason)
+        QueuedSetValueAtTime(double time,int dimension,const T& value,const KeyFrame& key,ValueChangedReasonEnum reason)
         : QueuedSetValue(dimension,value,key,true,reason)
         , time(time)
         {
@@ -1783,12 +1832,13 @@ private:
     mutable QReadWriteLock _minMaxMutex;
     std::vector<T>  _minimums,_maximums,_displayMins,_displayMaxs;
     
-    ///this flag is to avoid recursive setValue calls
-    int _setValueRecursionLevel;
-    mutable QMutex _setValueRecursionLevelMutex;
-    
+
     mutable QMutex _setValuesQueueMutex;
     std::list< boost::shared_ptr<QueuedSetValue> > _setValuesQueue;
+
+    ///this flag is to avoid recursive setValue calls
+    mutable QMutex _setValueRecursionLevelMutex;
+    int _setValueRecursionLevel;
 };
 
 
@@ -1852,10 +1902,14 @@ private:
  **/
 class KnobHolder : public QObject
 {
-    struct KnobHolderPrivate;
-    boost::scoped_ptr<KnobHolderPrivate> _imp;
+    
 
     Q_OBJECT
+    
+    friend class RecursionLevelRAII;
+    
+    struct KnobHolderPrivate;
+    boost::scoped_ptr<KnobHolderPrivate> _imp;
     
 public:
 
@@ -1894,13 +1948,23 @@ public:
     template<typename K>
     boost::shared_ptr<K> createKnob(const std::string &label, int dimension = 1) const WARN_UNUSED_RETURN;
     AppInstance* getApp() const WARN_UNUSED_RETURN;
-    boost::shared_ptr<KnobI> getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
-    boost::shared_ptr<KnobI> getOtherKnobByName(const std::string & name,const KnobI* caller) const WARN_UNUSED_RETURN;
-    const std::vector< boost::shared_ptr<KnobI> > & getKnobs() const WARN_UNUSED_RETURN;
+    KnobPtr getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
+    KnobPtr getOtherKnobByName(const std::string & name,const KnobI* caller) const WARN_UNUSED_RETURN;
+    const std::vector< KnobPtr > & getKnobs() const WARN_UNUSED_RETURN;
     
-    std::vector< boost::shared_ptr<KnobI> >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
+    std::vector< KnobPtr >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
     
-    void refreshAfterTimeChange(double time);
+    void refreshAfterTimeChange(bool isPlayback,double time);
+    
+    /**
+     * @brief Same as refreshAfterTimeChange but refreshes only the knobs
+     * whose function evaluateValueChangeOnTimeChange() return true so that 
+     * after a playback their state is correct
+     **/
+    void refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(double time);
+    
+    void setIsInitializingKnobs(bool b);
+    bool isInitializingKnobs() const;
     
 protected:
     
@@ -1908,7 +1972,7 @@ protected:
     
 public:
 
-    void refreshInstanceSpecificKnobsOnly(double time);
+    void refreshInstanceSpecificKnobsOnly(bool isPlayback,double time);
 
     KnobHolder::MultipleParamsEditEnum getMultipleParamsEditLevel() const;
     
@@ -1934,12 +1998,19 @@ public:
     
     bool areKnobsFrozen() const;
 
+    /**
+     * @brief Makes all output nodes connected downstream to this node abort any rendering.
+     * Should be called prior to changing the state of the user interface that could impact the
+     * final image.
+     **/
     virtual void abortAnyEvaluation() {}
     
     /**
      * @brief Dequeues all values set in the queues for all knobs
      **/
     bool dequeueValuesSet();
+    
+    bool isDequeueingValuesSet() const;
     
     void discardAppPointer();
     
@@ -1979,6 +2050,8 @@ public:
     
     boost::shared_ptr<KnobButton> createButtonKnob(const std::string& name, const std::string& label);
     
+    boost::shared_ptr<KnobSeparator> createSeparatorKnob(const std::string& name, const std::string& label);
+    
     //Type corresponds to the Type enum defined in StringParamBase in ParameterWrapper.h
     boost::shared_ptr<KnobString> createStringKnob(const std::string& name, const std::string& label);
     
@@ -2002,11 +2075,11 @@ public:
     
     bool isEvaluationBlocked() const;
 
-    void appendValueChange(KnobI* knob,double time, Natron::ValueChangedReasonEnum reason);
+    void appendValueChange(KnobI* knob,double time, ValueChangedReasonEnum reason);
     
     bool isSetValueCurrentlyPossible() const;
     
-    void getAllExpressionDependenciesRecursive(std::list<boost::shared_ptr<Natron::Node> >& nodes) const;
+    void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const;
     
 protected:
     
@@ -2020,9 +2093,6 @@ protected:
     virtual bool canSetValue() const { return true; }
     
     
-protected:
-
-
     /**
      * @brief Equivalent to assert(actionsRecursionLevel == 0).
      * In release mode an exception is thrown instead.
@@ -2033,50 +2103,27 @@ protected:
      * kOfxActionEndInstanceChanged
      * kOfxImageEffectActionGetClipPreferences
      * kOfxInteractActionDraw
+     *
+     * We also allow recursion in some other actions such as getRegionOfDefinition or isIdentity
      **/
-    void assertActionIsNotRecursive() const;
-
+    virtual void assertActionIsNotRecursive() const {}
+    
     /**
      * @brief Should be called in the begining of an action.
      * Right after assertActionIsNotRecursive() for non recursive actions.
      **/
-    void incrementRecursionLevel();
-
+    virtual void incrementRecursionLevel() {}
+    
     /**
      * @brief Should be called at the end of an action.
      **/
-    void decrementRecursionLevel();
-
-        
-    /**
-     * @brief A small class to help managing the recursion level
-     * that can also that an action is not recursive.
-     **/
-    class RecursionLevelManager
-    {
-        KnobHolder* _holder;
-
+    virtual void decrementRecursionLevel() {}
+    
 public:
+    
+    virtual int getRecursionLevel() const { return 0; }
+    
 
-        RecursionLevelManager(KnobHolder* holder,
-                              bool assertNotRecursive)
-            : _holder(holder)
-        {
-            if (assertNotRecursive) {
-                _holder->assertActionIsNotRecursive();
-            }
-            _holder->incrementRecursionLevel();
-        }
-
-        ~RecursionLevelManager()
-        {
-            _holder->decrementRecursionLevel();
-        }
-    };
-
-public:
-
-    int getRecursionLevel() const;
 
     /**
      * @brief Use this to bracket setValue() calls, this will actually trigger the evaluate() and instanceChanged()
@@ -2092,14 +2139,14 @@ public:
      * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
      * You can overload this to prepare yourself to a lot of value changes.
      **/
-    void beginKnobsValuesChanged_public(Natron::ValueChangedReasonEnum reason);
+    void beginKnobsValuesChanged_public(ValueChangedReasonEnum reason);
 
     /**
      * @brief The virtual portion of notifyProjectEndKnobsValuesChanged(). This is called by the project
      * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
      * You can overload this to finish a serie of value changes, thus limiting the amount of changes to do.
      **/
-    void endKnobsValuesChanged_public(Natron::ValueChangedReasonEnum reason);
+    void endKnobsValuesChanged_public(ValueChangedReasonEnum reason);
 
 
     /**
@@ -2108,7 +2155,7 @@ public:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k,Natron::ValueChangedReasonEnum reason,double time,
+    virtual void onKnobValueChanged_public(KnobI* k,ValueChangedReasonEnum reason,double time,
                                            bool originatedFromMainThread);
 
 
@@ -2117,7 +2164,7 @@ public:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    void evaluate_public(KnobI* knob,bool isSignificant,Natron::ValueChangedReasonEnum reason);
+    void evaluate_public(KnobI* knob,bool isSignificant,ValueChangedReasonEnum reason);
 
     /**
      * @brief To be called after each function that modifies actionsRecursionLevel that is not
@@ -2141,9 +2188,9 @@ public:
 
     /*Add a knob to the vector. This is called by the
        Knob class. Don't call this*/
-    void addKnob(boost::shared_ptr<KnobI> k);
+    void addKnob(KnobPtr k);
     
-    void insertKnob(int idx, const boost::shared_ptr<KnobI>& k);
+    void insertKnob(int idx, const KnobPtr& k);
     void removeKnobFromList(const KnobI* knob);
 
 
@@ -2168,6 +2215,8 @@ public:
         return 0;
     }
     
+    int getPageIndex(const KnobPage* page) const;
+    
 protected:
 
 
@@ -2176,7 +2225,7 @@ protected:
      * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
      * You can overload this to prepare yourself to a lot of value changes.
      **/
-    virtual void beginKnobsValuesChanged(Natron::ValueChangedReasonEnum reason)
+    virtual void beginKnobsValuesChanged(ValueChangedReasonEnum reason)
     {
         Q_UNUSED(reason);
     }
@@ -2186,7 +2235,7 @@ protected:
      * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
      * You can overload this to finish a serie of value changes, thus limiting the amount of changes to do.
      **/
-    virtual void endKnobsValuesChanged(Natron::ValueChangedReasonEnum reason)
+    virtual void endKnobsValuesChanged(ValueChangedReasonEnum reason)
     {
         Q_UNUSED(reason);
     }
@@ -2198,7 +2247,7 @@ protected:
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
     virtual void onKnobValueChanged(KnobI* /*k*/,
-                                    Natron::ValueChangedReasonEnum /*reason*/,
+                                    ValueChangedReasonEnum /*reason*/,
                                     double /*time*/,
                                     bool /*originatedFromMainThread*/)
     {
@@ -2209,7 +2258,7 @@ protected:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(KnobI* knob,bool isSignificant,Natron::ValueChangedReasonEnum reason) = 0;
+    virtual void evaluate(KnobI* knob,bool isSignificant,ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Called when the knobHolder is made slave or unslaved.
@@ -2259,13 +2308,40 @@ private:
     virtual void initializeKnobs() = 0;
 };
 
+
+/**
+ * @brief A small class to help managing the recursion level
+ * that can also that an action is not recursive.
+ **/
+class RecursionLevelRAII
+{
+    KnobHolder* effect;
+    
+public:
+    
+    RecursionLevelRAII(KnobHolder* effect,
+                       bool assertNotRecursive)
+    : effect(effect)
+    {
+        if (assertNotRecursive) {
+            effect->assertActionIsNotRecursive();
+        }
+        effect->incrementRecursionLevel();
+    }
+    
+    ~RecursionLevelRAII()
+    {
+        effect->decrementRecursionLevel();
+    }
+};
+
 /**
  * @macro This special macro creates an object that will increment the recursion level in the constructor and decrement it in the
  * destructor.
  * @param assertNonRecursive If true then it will check that the recursion level is 0 and otherwise print a warning indicating that
  * this action was called recursively.
  **/
-#define MANAGE_RECURSION(assertNonRecursive) KnobHolder::RecursionLevelManager actionRecursionManager(this,assertNonRecursive)
+#define MANAGE_RECURSION(assertNonRecursive) RecursionLevelRAII actionRecursionManager(this,assertNonRecursive)
 
 /**
  * @brief Should be called in the begining of any action that cannot be called recursively.
@@ -2276,6 +2352,24 @@ private:
  * @brief Should be called in the begining of any action that can be called recursively
  **/
 #define RECURSIVE_ACTION() MANAGE_RECURSION(false)
+
+
+class InitializeKnobsFlag_RAII
+{
+    KnobHolder* _h;
+public:
+    
+    InitializeKnobsFlag_RAII(KnobHolder* h)
+    : _h(h)
+    {
+        h->setIsInitializingKnobs(true);
+    }
+    
+    ~InitializeKnobsFlag_RAII()
+    {
+        _h->setIsInitializingKnobs(false);
+    }
+};
 
 ////Common interface for EffectInstance and backdrops
 class NamedKnobHolder
@@ -2300,7 +2394,9 @@ template<typename K>
 boost::shared_ptr<K> KnobHolder::createKnob(const std::string &label,
                                             int dimension) const
 {
-    return Natron::createKnob<K>(this, label, dimension);
+    return AppManager::createKnob<K>(this, label, dimension);
 }
 
-#endif // NATRON_ENGINE_KNOB_H
+NATRON_NAMESPACE_EXIT;
+
+#endif // Engine_Knob_h

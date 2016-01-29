@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,18 +41,18 @@
 #include "Engine/Node.h"
 #include "Engine/OutputEffectInstance.h"
 
-ProcessHandler::ProcessHandler(AppInstance* app,
-                               const QString & projectPath,
-                               Natron::OutputEffectInstance* writer)
-    : _app(app)
-      ,_process(new QProcess)
-      ,_writer(writer)
-      ,_ipcServer(0)
-      ,_bgProcessOutputSocket(0)
-      ,_bgProcessInputSocket(0)
-      ,_earlyCancel(false)
-      ,_processLog()
-      ,_processArgs()
+NATRON_NAMESPACE_ENTER;
+
+ProcessHandler::ProcessHandler(const QString & projectPath,
+                               OutputEffectInstance* writer)
+: _process(new QProcess)
+,_writer(writer)
+,_ipcServer(0)
+,_bgProcessOutputSocket(0)
+,_bgProcessInputSocket(0)
+,_earlyCancel(false)
+,_processLog()
+,_processArgs()
 {
     ///setup the server used to listen the output of the background process
     _ipcServer = new QLocalServer();
@@ -233,7 +233,7 @@ void
 ProcessHandler::onProcessError(QProcess::ProcessError err)
 {
     if (err == QProcess::FailedToStart) {
-        Natron::errorDialog( _writer->getScriptName(),QObject::tr("The render process failed to start").toStdString() );
+        Dialogs::errorDialog( _writer->getScriptName(),QObject::tr("The render process failed to start").toStdString() );
     } else if (err == QProcess::Crashed) {
         //@TODO: find out a way to get the backtrace
     }
@@ -260,9 +260,9 @@ ProcessInputChannel::ProcessInputChannel(const QString & mainProcessServerName)
       , _backgroundOutputPipe(0)
       , _backgroundIPCServer(0)
       , _backgroundInputPipe(0)
+      , _mustQuitMutex()
+      , _mustQuitCond()
       , _mustQuit(false)
-      , _mustQuitCond(new QWaitCondition)
-      , _mustQuitMutex(new QMutex)
 {
     initialize();
     _backgroundIPCServer->moveToThread(this);
@@ -274,15 +274,13 @@ ProcessInputChannel::~ProcessInputChannel()
     if ( isRunning() ) {
         _mustQuit = true;
         while (_mustQuit) {
-            _mustQuitCond->wait(_mustQuitMutex);
+            _mustQuitCond.wait(&_mustQuitMutex);
         }
     }
 
     delete _backgroundIPCServer;
     delete _backgroundOutputPipeMutex;
     delete _backgroundOutputPipe;
-    delete _mustQuitCond;
-    delete _mustQuitMutex;
 }
 
 void
@@ -339,10 +337,10 @@ ProcessInputChannel::run()
             }
         }
 
-        QMutexLocker l(_mustQuitMutex);
+        QMutexLocker l(&_mustQuitMutex);
         if (_mustQuit) {
             _mustQuit = false;
-            _mustQuitCond->wakeOne();
+            _mustQuitCond.wakeOne();
 
             return;
         }
@@ -389,3 +387,7 @@ ProcessInputChannel::onOutputPipeConnectionMade()
     qDebug() << "The output channel was successfully created and connected.";
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_ProcessHandler.cpp"

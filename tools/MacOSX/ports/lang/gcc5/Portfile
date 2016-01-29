@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 138835 2015-07-21 04:52:10Z ryandesign@macports.org $
+# $Id: Portfile 143652 2015-12-16 20:59:15Z ryandesign@macports.org $
 
 PortSystem 1.0
 PortGroup select 1.0
@@ -9,7 +9,7 @@ name                gcc5
 subport             libgcc {}
 
 epoch               2
-version             5.2.0
+version             5.3.0
 platforms           darwin
 categories          lang
 maintainers         mww openmaintainer
@@ -29,8 +29,8 @@ master_sites        ftp://ftp.funet.fi/pub/mirrors/sources.redhat.com/pub/gcc/re
 distname            gcc-${version}
 use_bzip2           yes
 
-checksums           rmd160  eaedd62e7a738f6bdc0e97a0c40fbbd75d35925b \
-                    sha256  5f835b04b5f7dd4f4d2dc96190ec1621b8d89f2dc6f638f9f8bc1b1014ba8cad
+checksums           rmd160  b06fec59ceb37aeb042bdb9e1703e53d0834d085 \
+                    sha256  b84f5592e9218b73dbae612b5253035a7b34a9a1f7688d2e1bfaaf7267d5c4db
 
 depends_lib         port:cctools \
                     port:gmp \
@@ -59,7 +59,6 @@ configure.cmd       ${worksrcpath}/configure
 configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
                     --libdir=${prefix}/lib/${name} \
                     --includedir=${prefix}/include/${name} \
-                    --with-sysroot=${configure.sdkroot} \
                     --infodir=${prefix}/share/info \
                     --mandir=${prefix}/share/man \
                     --datarootdir=${prefix}/share/gcc-${major} \
@@ -80,6 +79,10 @@ configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
                     --with-ld=${prefix}/bin/ld \
                     --with-ar=${prefix}/bin/ar \
                     --with-bugurl=https://trac.macports.org/newticket
+
+if {${configure.sdkroot} ne ""} { 
+    configure.args-append     --with-sysroot=${configure.sdkroot} 
+} 
 
 configure.env-append \
                     AR_FOR_TARGET=${prefix}/bin/ar \

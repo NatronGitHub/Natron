@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 typedef boost::shared_ptr<RenderStats> RenderStatsPtr;
 
@@ -94,7 +95,7 @@ class RenderThreadTask :  public QThread
     
 public:
     
-    RenderThreadTask(Natron::OutputEffectInstance* output,OutputSchedulerThread* scheduler);
+    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,OutputSchedulerThread* scheduler);
     
     virtual ~RenderThreadTask();
     
@@ -148,7 +149,7 @@ public:
         eProcessFrameByMainThread //< the processFrame function will be called by the application's main-thread.
     };
     
-    OutputSchedulerThread(RenderEngine* engine,Natron::OutputEffectInstance* effect,ProcessFrameModeEnum mode);
+    OutputSchedulerThread(RenderEngine* engine,const boost::shared_ptr<OutputEffectInstance>& effect,ProcessFrameModeEnum mode);
     
     virtual ~OutputSchedulerThread();
     
@@ -225,7 +226,7 @@ public:
                              int viewIndex,
                              const std::vector<int>& viewsToRender,
                              const RenderStatsPtr& stats,
-                             Natron::SchedulingPolicyEnum policy);
+                             SchedulingPolicyEnum policy);
 
     /**
      * @brief To be called by concurrent worker threads in case of failure, all renders will be aborted
@@ -390,7 +391,7 @@ protected:
     /**
      * @brief Must return the scheduling policy that the output device will have
      **/
-    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const = 0;
+    virtual SchedulingPolicyEnum getSchedulingPolicy() const = 0;
     
     /**
      * @brief Returns the last successful render time.
@@ -453,14 +454,12 @@ private:
     
 };
 
-namespace Natron {
-class OutputEffectInstance;
-}
+
 class DefaultScheduler : public OutputSchedulerThread
 {
 public:
     
-    DefaultScheduler(RenderEngine* engine,Natron::OutputEffectInstance* effect);
+    DefaultScheduler(RenderEngine* engine,const boost::shared_ptr<OutputEffectInstance>& effect);
     
     virtual ~DefaultScheduler();
     
@@ -481,7 +480,7 @@ private:
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
-    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
+    virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
     
     virtual void aboutToStartRender() OVERRIDE FINAL;
     
@@ -489,7 +488,7 @@ private:
     
 
     
-    Natron::OutputEffectInstance* _effect;
+    boost::weak_ptr<OutputEffectInstance> _effect;
 };
 
 
@@ -499,7 +498,7 @@ class ViewerDisplayScheduler : public OutputSchedulerThread
     
 public:
     
-    ViewerDisplayScheduler(RenderEngine* engine,ViewerInstance* viewer);
+    ViewerDisplayScheduler(RenderEngine* engine, const boost::shared_ptr<ViewerInstance>& viewer);
     
     virtual ~ViewerDisplayScheduler();
     
@@ -522,13 +521,13 @@ private:
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
-    virtual Natron::SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL { return Natron::eSchedulingPolicyOrdered; }
+    virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL { return eSchedulingPolicyOrdered; }
     
     virtual int getLastRenderedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
     
-    ViewerInstance* _viewer;
+    boost::weak_ptr<ViewerInstance> _viewer;
 };
 
 /**
@@ -557,7 +556,7 @@ public:
     
     void quitThread();
     
-    void abortRendering();
+    void abortRendering(bool blocking);
     
     bool hasThreadsWorking() const;
     
@@ -580,21 +579,7 @@ private:
 };
 
 struct ViewerArgs;
-struct CurrentFrameFunctorArgs
-{
-    int view;
-    int time;
-    RenderStatsPtr stats;
-    ViewerInstance* viewer;
-    U64 viewerHash;
-    boost::shared_ptr<RequestedFrame> request;
-    ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
-    bool canAbort;
-    boost::shared_ptr<Natron::Node> isRotoPaintRequest;
-    boost::shared_ptr<RotoStrokeItem> strokeItem;
-    boost::shared_ptr<ViewerArgs> args[2];
-};
-
+struct CurrentFrameFunctorArgs;
 
 /**
  * @brief Single thread used by the ViewerCurrentFrameRequestScheduler when the global thread pool has reached its maximum
@@ -609,7 +594,7 @@ public:
     
     virtual ~ViewerCurrentFrameRequestRendererBackup();
     
-    void renderCurrentFrame(const CurrentFrameFunctorArgs& args);
+    void renderCurrentFrame(const boost::shared_ptr<CurrentFrameFunctorArgs>& args);
     
     void quitThread();
     
@@ -636,7 +621,7 @@ class RenderEngine : public QObject
     
 public:
     
-    RenderEngine(Natron::OutputEffectInstance* output);
+    RenderEngine(const boost::shared_ptr<OutputEffectInstance>& output);
     
     virtual ~RenderEngine();
    
@@ -672,7 +657,7 @@ public:
     /**
      * @brief Returns the playback mode of the internal scheduler
      **/
-    Natron::PlaybackModeEnum getPlaybackMode() const;
+    PlaybackModeEnum getPlaybackMode() const;
     
     /**
      * @brief Returns the desired user FPS that the internal scheduler should stick to
@@ -710,7 +695,7 @@ public Q_SLOTS:
     
     /**
      * @brief Set the playback mode
-     * @param mode Corresponds to the Natron::PlaybackModeEnum enum
+     * @param mode Corresponds to the PlaybackModeEnum enum
      **/
     void setPlaybackMode(int mode);
     
@@ -727,6 +712,8 @@ public Q_SLOTS:
     bool abortRendering(bool enableAutoRestartPlayback, bool blocking);
     void abortRendering_Blocking() { abortRendering(true,true); }
 
+    
+    void onCurrentFrameRenderRequestPosted();
     
 Q_SIGNALS:
     
@@ -761,6 +748,8 @@ Q_SIGNALS:
     * @brief Emitted when gui is frozen and rendering is finished to update all knobs
      **/
     void refreshAllKnobs();
+    
+    void currentFrameRenderRequestPosted();
 
 protected:
     
@@ -768,9 +757,12 @@ protected:
     /**
      * @brief Must create the main-scheduler that will be used for scheduling playback/writing on disk.
      **/
-    virtual OutputSchedulerThread* createScheduler(Natron::OutputEffectInstance* effect) ;
+    virtual OutputSchedulerThread* createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect) ;
     
 private:
+    
+    void renderCurrentFrameInternal(bool enableRenderStats,bool canAbort);
+
     
     /**
      * The following functions are called by the OutputThreadScheduler to Q_EMIT the corresponding signals
@@ -796,7 +788,7 @@ class ViewerRenderEngine : public RenderEngine
     
 public:
     
-    ViewerRenderEngine(Natron::OutputEffectInstance* output)
+    ViewerRenderEngine(const boost::shared_ptr<OutputEffectInstance>& output)
     : RenderEngine(output)
     {}
     
@@ -804,7 +796,9 @@ public:
     
 private:
     
-    virtual OutputSchedulerThread* createScheduler(Natron::OutputEffectInstance* effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual OutputSchedulerThread* createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // OUTPUTSCHEDULERTHREAD_H

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QApplication> // qApp
 #include <QMenuBar>
 #include <QUndoGroup>
+#include <QDesktopServices>
+#include <QUrl>
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -53,7 +55,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ToolButton.h"
 #include "Gui/RenderStatsDialog.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 // Helper function: Get the icon with the given name from the icon theme.
@@ -89,10 +91,10 @@ Gui::Gui(GuiAppInstance* app,
     enableShellOpen();
 #endif
     
-    QObject::connect( this, SIGNAL( doDialog(int, QString, QString, bool, Natron::StandardButtons, int) ), this,
-                     SLOT( onDoDialog(int, QString, QString, bool, Natron::StandardButtons, int) ) );
-    QObject::connect( this, SIGNAL( doDialogWithStopAskingCheckbox(int, QString, QString, bool, Natron::StandardButtons, int) ), this,
-                      SLOT( onDoDialogWithStopAskingCheckbox(int, QString, QString, bool, Natron::StandardButtons, int) ) );
+    QObject::connect( this, SIGNAL( doDialog(int, QString, QString, bool, StandardButtons, int) ), this,
+                     SLOT( onDoDialog(int, QString, QString, bool, StandardButtons, int) ) );
+    QObject::connect( this, SIGNAL( doDialogWithStopAskingCheckbox(int, QString, QString, bool, StandardButtons, int) ), this,
+                      SLOT( onDoDialogWithStopAskingCheckbox(int, QString, QString, bool, StandardButtons, int) ) );
     QObject::connect( app, SIGNAL( pluginsPopulated() ), this, SLOT( addToolButttonsToToolBar() ) );
     
     QObject::connect(qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*, QWidget*)));
@@ -143,21 +145,44 @@ Gui::setLeftToolBarVisible(bool visible)
 
 
 bool
-Gui::closeInstance()
+Gui::closeInstance(bool warnUserIfSaveNeeded)
 {
-    return abortProject(true);
+    return abortProject(true, warnUserIfSaveNeeded);
 }
 
 void
 Gui::closeProject()
 {
-    closeInstance();
+    closeInstance(true);
 
     ///When closing a project we can remove the ViewerCache from memory and put it on disk
     ///since we're not sure it will be used right away
     appPTR->clearPlaybackCache();
     //_imp->_appInstance->getProject()->createViewer();
     //_imp->_appInstance->execOnProjectCreatedCallback();
+}
+
+void
+Gui::reloadProject()
+{
+    
+    boost::shared_ptr<Project> proj = getApp()->getProject();
+    if (!proj->hasProjectBeenSavedByUser()) {
+        Dialogs::errorDialog(tr("Reload project").toStdString(), tr("This project has not been saved yet").toStdString());
+        return;
+    }
+    QString filename = proj->getProjectFilename();
+    QString projectPath = proj->getProjectPath();
+    if (!projectPath.endsWith("/")) {
+        projectPath.append('/');
+    }
+    projectPath.append(filename);
+    
+    if (!abortProject(false, true)) {
+        return;
+    }
+   
+    (void)openProjectInternal(projectPath.toStdString(), false);
 }
 
 void
@@ -179,9 +204,9 @@ Gui::notifyGuiClosing()
 }
 
 bool
-Gui::abortProject(bool quitApp)
+Gui::abortProject(bool quitApp, bool warnUserIfSaveNeeded)
 {
-    if ( getApp()->getProject()->hasNodes() ) {
+    if (getApp()->getProject()->hasNodes() && warnUserIfSaveNeeded) {
         int ret = saveWarning();
         if (ret == 0) {
             if ( !saveProject() ) {
@@ -236,7 +261,7 @@ Gui::closeEvent(QCloseEvent* e)
     if ( _imp->_appInstance->isClosing() ) {
         e->ignore();
     } else {
-        if ( !closeInstance() ) {
+        if ( !closeInstance(true) ) {
             e->ignore();
 
             return;
@@ -245,11 +270,9 @@ Gui::closeEvent(QCloseEvent* e)
     }
 }
 
-boost::shared_ptr<NodeGui>
-Gui::createNodeGUI(boost::shared_ptr<Node> node,
-                   bool requestedByLoad,
-                   bool userEdited,
-                   bool pushUndoRedoCommand)
+NodeGuiPtr
+Gui::createNodeGUI(NodePtr node,
+                   const CreateNodeArgs& args)
 {
     assert(_imp->_nodeGraphArea);
     
@@ -266,7 +289,7 @@ Gui::createNodeGUI(boost::shared_ptr<Node> node,
     if (!graph) {
         throw std::logic_error("");
     }
-    boost::shared_ptr<NodeGui> nodeGui = graph->createNodeGUI(node, requestedByLoad, userEdited, pushUndoRedoCommand);
+    NodeGuiPtr nodeGui = graph->createNodeGUI(node, args);
     QObject::connect( node.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onNodeNameChanged(QString) ) );
     assert(nodeGui);
 
@@ -274,31 +297,31 @@ Gui::createNodeGUI(boost::shared_ptr<Node> node,
 }
 
 void
-Gui::addNodeGuiToCurveEditor(const boost::shared_ptr<NodeGui> &node)
+Gui::addNodeGuiToCurveEditor(const NodeGuiPtr &node)
 {
     _imp->_curveEditor->addNode(node);
 }
 
 void
-Gui::removeNodeGuiFromCurveEditor(const boost::shared_ptr<NodeGui>& node)
+Gui::removeNodeGuiFromCurveEditor(const NodeGuiPtr& node)
 {
     _imp->_curveEditor->removeNode(node.get());
 }
 
 void
-Gui::addNodeGuiToDopeSheetEditor(const boost::shared_ptr<NodeGui> &node)
+Gui::addNodeGuiToDopeSheetEditor(const NodeGuiPtr &node)
 {
     _imp->_dopeSheetEditor->addNode(node);
 }
 
 void
-Gui::removeNodeGuiFromDopeSheetEditor(const boost::shared_ptr<NodeGui> &node)
+Gui::removeNodeGuiFromDopeSheetEditor(const NodeGuiPtr &node)
 {
     _imp->_dopeSheetEditor->removeNode(node.get());
 }
 
 void
-Gui::createViewerGui(boost::shared_ptr<Node> viewer)
+Gui::createViewerGui(NodePtr viewer)
 {
     TabWidget* where = _imp->_nextViewerTabPlace;
 
@@ -309,7 +332,7 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
     }
     assert(where);
 
-    ViewerInstance* v = dynamic_cast<ViewerInstance*>( viewer->getLiveInstance() );
+    ViewerInstance* v = viewer->isEffectViewer();
     assert(v);
 
     ViewerTab* tab = addNewViewerTab(v, where);
@@ -334,7 +357,7 @@ Gui::createViewerGui(boost::shared_ptr<Node> viewer)
     graph->setLastSelectedViewer(tab);
 }
 
-const std::list<boost::shared_ptr<NodeGui> > &
+const NodesGuiList &
 Gui::getSelectedNodes() const
 {
     assert(_imp->_nodeGraphArea);
@@ -385,6 +408,7 @@ Gui::createMenuActions()
     _imp->viewerInputsMenu = new Menu(QObject::tr("Connect Current Viewer"), _imp->viewersMenu);
     _imp->viewersViewMenu = new Menu(QObject::tr("Display View Number"), _imp->viewersMenu);
     _imp->cacheMenu = new Menu(QObject::tr("Cache"), _imp->menubar);
+    _imp->menuHelp = new Menu(QObject::tr("Help"), _imp->menubar);
 
 
     _imp->actionNew_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionNewProject, kShortcutDescActionNewProject, this);
@@ -399,6 +423,10 @@ Gui::createMenuActions()
     _imp->actionClose_project->setIcon( get_icon("document-close") );
     QObject::connect( _imp->actionClose_project, SIGNAL( triggered() ), this, SLOT( closeProject() ) );
 
+    _imp->actionReload_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionReloadProject, kShortcutDescActionReloadProject, this);
+    _imp->actionReload_project->setIcon( get_icon("document-open") );
+    QObject::connect( _imp->actionReload_project, SIGNAL( triggered() ), this, SLOT( reloadProject() ) );
+    
     _imp->actionSave_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionSaveProject, kShortcutDescActionSaveProject, this);
     _imp->actionSave_project->setIcon( get_icon("document-save") );
     QObject::connect( _imp->actionSave_project, SIGNAL( triggered() ), this, SLOT( saveProject() ) );
@@ -421,7 +449,7 @@ Gui::createMenuActions()
     _imp->actionExit = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionQuit, kShortcutDescActionQuit, this);
     _imp->actionExit->setMenuRole(QAction::QuitRole);
     _imp->actionExit->setIcon( get_icon("application-exit") );
-    QObject::connect( _imp->actionExit, SIGNAL( triggered() ), appPTR, SLOT( exitApp() ) );
+    QObject::connect( _imp->actionExit, SIGNAL( triggered() ), appPTR, SLOT( exitAppWithSaveWarning() ) );
 
     _imp->actionProject_settings = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionProjectSettings, kShortcutDescActionProjectSettings, this);
     _imp->actionProject_settings->setIcon( get_icon("document-properties") );
@@ -541,7 +569,12 @@ Gui::createMenuActions()
     _imp->menubar->addAction( _imp->menuDisplay->menuAction() );
     _imp->menubar->addAction( _imp->menuRender->menuAction() );
     _imp->menubar->addAction( _imp->cacheMenu->menuAction() );
+    _imp->menubar->addAction( _imp->menuHelp->menuAction() );
+
+#ifdef __APPLE__
     _imp->menuFile->addAction(_imp->actionShowAboutWindow);
+#endif
+
     _imp->menuFile->addAction(_imp->actionNew_project);
     _imp->menuFile->addAction(_imp->actionOpen_project);
     _imp->menuFile->addAction( _imp->menuRecentFiles->menuAction() );
@@ -550,6 +583,7 @@ Gui::createMenuActions()
         _imp->menuRecentFiles->addAction(_imp->actionsOpenRecentFile[c]);
     }
 
+    _imp->menuFile->addAction(_imp->actionReload_project);
     _imp->menuFile->addSeparator();
     _imp->menuFile->addAction(_imp->actionClose_project);
     _imp->menuFile->addAction(_imp->actionSave_project);
@@ -597,9 +631,75 @@ Gui::createMenuActions()
     _imp->cacheMenu->addSeparator();
     _imp->cacheMenu->addAction(_imp->actionClearPluginsLoadingCache);
 
+    // Help menu
+    _imp->actionHelpWebsite = new QAction(this);
+    _imp->actionHelpWebsite->setText(QObject::tr("Website"));
+    _imp->menuHelp->addAction(_imp->actionHelpWebsite);
+    QObject::connect( _imp->actionHelpWebsite, SIGNAL( triggered() ), this, SLOT( openHelpWebsite() ) );
+
+    _imp->actionHelpForum = new QAction(this);
+    _imp->actionHelpForum->setText(QObject::tr("Forum"));
+    _imp->menuHelp->addAction(_imp->actionHelpForum);
+    QObject::connect( _imp->actionHelpForum, SIGNAL( triggered() ), this, SLOT( openHelpForum() ) );
+
+    _imp->actionHelpIssues = new QAction(this);
+    _imp->actionHelpIssues->setText(QObject::tr("Issues"));
+    _imp->menuHelp->addAction(_imp->actionHelpIssues);
+    QObject::connect( _imp->actionHelpIssues, SIGNAL( triggered() ), this, SLOT( openHelpIssues() ) );
+
+    _imp->actionHelpWiki = new QAction(this);
+    _imp->actionHelpWiki->setText(QObject::tr("Wiki"));
+    _imp->menuHelp->addAction(_imp->actionHelpWiki);
+    QObject::connect( _imp->actionHelpWiki, SIGNAL( triggered() ), this, SLOT( openHelpWiki() ) );
+
+    _imp->actionHelpPython = new QAction(this);
+    _imp->actionHelpPython->setText(QObject::tr("Python API"));
+    _imp->menuHelp->addAction(_imp->actionHelpPython);
+    QObject::connect( _imp->actionHelpPython, SIGNAL( triggered() ), this, SLOT( openHelpPython() ) );
+
+#ifndef __APPLE__
+    _imp->menuHelp->addSeparator();
+    _imp->menuHelp->addAction(_imp->actionShowAboutWindow);
+#endif
+
     ///Create custom menu
     const std::list<PythonUserCommand> & commands = appPTR->getUserPythonCommands();
     for (std::list<PythonUserCommand>::const_iterator it = commands.begin(); it != commands.end(); ++it) {
         addMenuEntry(it->grouping, it->pythonFunction, it->key, it->modifiers);
     }
 } // createMenuActions
+
+void
+Gui::openHelpWebsite()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_WEBSITE_URL));
+}
+
+void
+Gui::openHelpForum()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_FORUM_URL));
+}
+
+void
+Gui::openHelpIssues()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_ISSUE_TRACKER_URL));
+}
+
+void
+Gui::openHelpWiki()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_WIKI_URL));
+}
+
+void
+Gui::openHelpPython()
+{
+    QDesktopServices::openUrl(QUrl(NATRON_PYTHON_URL));
+}
+
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_Gui.cpp"

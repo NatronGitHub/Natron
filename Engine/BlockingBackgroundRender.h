@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,28 +25,31 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <QMutex>
 #include <QWaitCondition>
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class BlockingBackgroundRender
 {
     bool _running;
     QWaitCondition _runningCond;
     QMutex _runningMutex;
-    Natron::OutputEffectInstance* _writer;
+    OutputEffectInstance* _writer;
 
 public:
 
-    BlockingBackgroundRender(Natron::OutputEffectInstance* writer);
+    BlockingBackgroundRender(OutputEffectInstance* writer);
 
     virtual ~BlockingBackgroundRender()
     {
     }
 
-    Natron::OutputEffectInstance* getWriter() const
+    OutputEffectInstance* getWriter() const
     {
         return _writer;
     }
@@ -55,5 +58,7 @@ public:
 
     void blockingRender(bool enableRenderStats,int first,int last, int frameStep);
 };
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // BLOCKINGBACKGROUNDRENDER_H

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,8 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 /*This class is used to hold the format of a frame (its resolution).
  * Some formats have a name , e.g : 1920*1080 is full HD, etc...
@@ -143,7 +145,8 @@ private:
     std::string _name;
 };
 
-Q_DECLARE_METATYPE(Format);
+NATRON_NAMESPACE_EXIT;
 
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::Format);
 
 #endif // Engine_Format_h

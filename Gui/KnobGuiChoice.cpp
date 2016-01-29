@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,14 +78,14 @@ CLANG_DIAG_ON(uninitialized)
 #include "ofxNatron.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 
 
 //=============================CHOICE_KNOB_GUI===================================
 
 
-KnobGuiChoice::KnobGuiChoice(boost::shared_ptr<KnobI> knob,
+KnobGuiChoice::KnobGuiChoice(KnobPtr knob,
                                DockablePanel *container)
     : KnobGui(knob, container)
     , _comboBox(0)
@@ -185,18 +185,18 @@ KnobGuiChoice::onItemNewSelected()
 {
     NewLayerDialog dialog(getGui());
     if (dialog.exec()) {
-        Natron::ImageComponents comps = dialog.getComponents();
-        if (comps == Natron::ImageComponents::getNoneComponents()) {
-            Natron::errorDialog(tr("Layer").toStdString(), tr("Invalid layer").toStdString());
+        ImageComponents comps = dialog.getComponents();
+        if (comps == ImageComponents::getNoneComponents()) {
+            Dialogs::errorDialog(tr("Layer").toStdString(), tr("Invalid layer").toStdString());
             return;
         }
         KnobHolder* holder = _knob.lock()->getHolder();
         assert(holder);
-        Natron::EffectInstance* effect = dynamic_cast<Natron::EffectInstance*>(holder);
+        EffectInstance* effect = dynamic_cast<EffectInstance*>(holder);
         assert(effect);
         assert(effect->getNode());
         if (!effect->getNode()->addUserComponents(comps)) {
-            Natron::errorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
+            Dialogs::errorDialog(tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString());
         }
     }
 }
@@ -230,17 +230,17 @@ KnobGuiChoice::updateGUI(int /*dimension*/)
 
 void
 KnobGuiChoice::reflectAnimationLevel(int /*dimension*/,
-                                      Natron::AnimationLevelEnum level)
+                                      AnimationLevelEnum level)
 {
     int value;
     switch (level) {
-    case Natron::eAnimationLevelNone:
+    case eAnimationLevelNone:
             value = 0;
         break;
-    case Natron::eAnimationLevelInterpolatedValue:
+    case eAnimationLevelInterpolatedValue:
             value = 1;
         break;
-    case Natron::eAnimationLevelOnKeyframe:
+    case eAnimationLevelOnKeyframe:
             value = 2;
         break;
     default:
@@ -286,7 +286,7 @@ KnobGuiChoice::setDirty(bool dirty)
     _comboBox->setDirty(dirty);
 }
 
-boost::shared_ptr<KnobI> KnobGuiChoice::getKnob() const
+KnobPtr KnobGuiChoice::getKnob() const
 {
     return _knob.lock();
 }
@@ -298,3 +298,7 @@ KnobGuiChoice::reflectModificationsState()
     _comboBox->setAltered(!hasModif);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_KnobGuiChoice.cpp"

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 class DockablePanelI
 {
@@ -40,7 +44,10 @@ public:
      * @brief Must scan for new knobs and rebuild the panel accordingly
      **/
     virtual void scanForNewKnobs(bool restorePageIndex = true) = 0;
-    virtual void deleteKnobGui(const boost::shared_ptr<KnobI>& knob) = 0;
+    virtual void deleteKnobGui(const KnobPtr& knob) = 0;
 
 };
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // DOCKABLEPANELI_H

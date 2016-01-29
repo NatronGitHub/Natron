@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -90,7 +90,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 
@@ -350,7 +350,7 @@ RotoItem::setScriptName(const std::string & name)
     }
     
     
-    std::string cpy = Natron::makeNameScriptFriendly(name);
+    std::string cpy = Python::makeNameScriptFriendly(name);
     
     if (cpy.empty()) {
         return false;
@@ -562,3 +562,4 @@ RotoItem::getPreviousItemInLayer() const
     return getPreviousInLayer(layer, shared_from_this());
 }
 
+NATRON_NAMESPACE_EXIT;

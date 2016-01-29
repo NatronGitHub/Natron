@@ -13,13 +13,13 @@ PortGroup        qt4 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.5.21 tags/Release-
+github.setup     OpenImageIO oiio 1.6.9 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
 name             openimageio
 #version          1.4.5.91
-revision         2
+#revision         2
 categories       graphics
 platforms           darwin
 license          BSD
@@ -53,6 +53,17 @@ depends_skip_archcheck txt2man
 #compiler.fallback-append macports-gcc-4.8 macports-gcc-4.9 macports-clang-3.3 macports-clang-3.4 macports-clang-3.5
 compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-gcc-4.0 macports-gcc-4.2
 
+# The PowerPC build requires GCC >= 4.8, which doesn't recognize the -arch flag, and requires libatomic
+if {${configure.build_arch} eq "ppc"} {
+    compiler.blacklist-append macports-gcc-4.3 macports-gcc-4.4 macports-gcc-4.5 macports-gcc-4.6 macports-gcc-4.7 macports-clang-3.3 macports-clang-3.4 macports-clang-3.5 
+    # the following removes the flag "-arch ppc" put by cmake-1.0 portgroup in the pre-configure phase
+    pre-configure {
+        configure.args-delete -DCMAKE_OSX_ARCHITECTURES="${configure.build_arch}"
+    }
+    # -latomic is necessary on ppc for __atomic_fetch_add_8 and __atomic_exchange_8
+    configure.args-append -DCMAKE_SHARED_LINKER_FLAGS=-latomic -DCMAKE_EXE_LINKER_FLAGS=-latomic
+}
+
 #post-extract {
 #    system "touch ${worksrcpath}/LICENSE  ${workpath}/${worksrcdir}/LICENSE"
 #}
@@ -67,14 +78,19 @@ compiler.blacklist apple-gcc-4.0 apple-gcc-4.2 gcc-3.3 gcc-4.0 gcc-4.2 macports-
 #    0004-Fix_FTBFS_on_atomic_operations.patch \
 
 patch.pre_args	-p1
-patchfiles pre-1.5.21.patch \
-    oiio-exrthreads.patch
+patchfiles \
+    oiio-x86intrin.patch \
+    oiio-sha1.patch
+
+cmake.out_of_source yes
 
 configure.args-append \
+    -DOIIO_BUILD_TESTS:BOOL=FALSE \
     -DBOOST_ROOT=${prefix} \
     -DUSE_QT:BOOL=FALSE \
     -DUSE_TBB:BOOL=FALSE \
     -DUSE_PYTHON:BOOL=FALSE \
+    -DUSE_PYTHON3:BOOL=FALSE \
     -DUSE_FIELD3D:BOOL=FALSE \
     -DUSE_FFMPEG:BOOL=FALSE \
     -DUSE_OPENJPEG:BOOL=FALSE \
@@ -83,6 +99,7 @@ configure.args-append \
     -DUSE_OPENSSL:BOOL=FALSE \
     -DUSE_FREETYPE:BOOL=FALSE \
     -DUSE_GIF:BOOL=TRUE \
+    -DUSE_PTEX:BOOL=FALSE \
     -DUSE_LIBRAW:BOOL=TRUE \
     -DSTOP_ON_WARNING:BOOL=FALSE
 

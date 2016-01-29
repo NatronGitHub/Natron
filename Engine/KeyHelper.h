@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 #include "Engine/CacheEntryHolder.h"
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 /** @brief Helper class that represents a Key in the cache. A key is a set
  * of 1 or more parameters that represent a "unique" element in the cache.
@@ -60,12 +61,12 @@ public:
      * @brief Constructs an empty key. This constructor is used by boost::serialization.
      **/
     KeyHelper()
-        : _hashComputed(false), _hash(), _holderID()
+        : _holderID(), _hash(), _hashComputed(false)
     {
     }
 
     KeyHelper(const CacheEntryHolder* holder)
-    : _hashComputed(false), _hash(), _holderID()
+    : _holderID(), _hash(), _hashComputed(false)
     {
         if (holder) {
             _holderID = holder->getCacheID();
@@ -83,7 +84,9 @@ public:
      * constructor above but takes in parameter another key.
      **/
     KeyHelper(const KeyHelper & other)
-        : _hashComputed(true), _hash( other.getHash() ), _holderID( other.getCacheHolderID() )
+        : _holderID( other.getCacheHolderID() )
+        , _hash( other.getHash() )
+        , _hashComputed(true)
     {
     }
 
@@ -113,7 +116,6 @@ public:
 
 
 protected:
-
     /*for now HashType can only be 64 bits...the implementation should
        fill the Hash64 using the append function with the values contained in the
        derived class.*/
@@ -129,14 +131,14 @@ private:
         _hash = hash.value();
     }
 
-    mutable bool _hashComputed;
-    mutable hash_type _hash;
-    
-public:
-    
+protected:
     std::string _holderID;
 
+private:
+    mutable hash_type _hash;
+    mutable bool _hashComputed;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // KEYHELPER_H

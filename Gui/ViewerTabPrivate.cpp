@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@
 #include "Gui/ViewerTab.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 
 ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* node)
@@ -111,7 +111,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 , nextIncrement_Button(NULL)
 , playbackMode_Button(NULL)
 , playbackModeMutex()
-, playbackMode(Natron::ePlaybackModeLoop)
+, playbackMode(ePlaybackModeLoop)
 , frameRangeEdit(NULL)
 , canEditFrameRangeLabel(NULL)
 , tripleSyncButton(0)
@@ -156,19 +156,18 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 bool
 ViewerTabPrivate::getOverlayTransform(double time,
                                       int view,
-                                      const boost::shared_ptr<Natron::Node>& target,
-                                      Natron::EffectInstance* currentNode,
+                                      const NodePtr& target,
+                                      EffectInstance* currentNode,
                                       Transform::Matrix3x3* transform) const
 {
-    if (currentNode == target->getLiveInstance()) {
+    if (currentNode == target->getEffectInstance().get()) {
         return true;
     }
-    RenderScale s;
-    s.x = s.y = 1.;
-    Natron::EffectInstance* input = 0;
-    Natron::StatusEnum stat = eStatusReplyDefault;
+    RenderScale s(1.);
+    EffectInstPtr input;
+    StatusEnum stat = eStatusReplyDefault;
     Transform::Matrix3x3 mat;
-    if (!currentNode->getNode()->isNodeDisabled() && currentNode->getCanTransform()) {
+    if (!currentNode->getNode()->isNodeDisabled() && currentNode->getNode()->getCurrentCanTransform()) {
         stat = currentNode->getTransform_public(time, s, view, &input, &mat);
     }
     if (stat == eStatusFailed) {
@@ -177,20 +176,20 @@ ViewerTabPrivate::getOverlayTransform(double time,
         //No transfo matrix found, pass to the input...
         
         ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-        std::list<Natron::EffectInstance*> nonOptionalInputs;
-        std::list<Natron::EffectInstance*> optionalInputs;
+        std::list<EffectInstance*> nonOptionalInputs;
+        std::list<EffectInstance*> optionalInputs;
         int maxInp = currentNode->getMaxInputCount();
         
         ///We cycle in reverse by default. It should be a setting of the application.
         ///In this case it will return input B instead of input A of a merge for example.
         for (int i = maxInp - 1; i >= 0; --i) {
-            Natron::EffectInstance* inp = currentNode->getInput(i);
+            EffectInstPtr inp = currentNode->getInput(i);
             bool optional = currentNode->isInputOptional(i);
             if (inp) {
                 if (optional) {
-                    optionalInputs.push_back(inp);
+                    optionalInputs.push_back(inp.get());
                 } else {
-                    nonOptionalInputs.push_back(inp);
+                    nonOptionalInputs.push_back(inp.get());
                 }
             }
         }
@@ -200,7 +199,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
         }
         
         ///Cycle through all non optional inputs first
-        for (std::list<Natron::EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+        for (std::list<EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
             mat = Transform::Matrix3x3(1,0,0,0,1,0,0,0,1);
             bool isOk = getOverlayTransform(time, view, target, *it, &mat);
             if (isOk) {
@@ -210,7 +209,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
         }
         
         ///Cycle through optional inputs...
-        for (std::list<Natron::EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+        for (std::list<EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
             mat = Transform::Matrix3x3(1,0,0,0,1,0,0,0,1);
             bool isOk = getOverlayTransform(time, view, target, *it, &mat);
             if (isOk) {
@@ -229,14 +228,14 @@ ViewerTabPrivate::getOverlayTransform(double time,
         mat = Transform::matMul(Transform::matPixelToCanonical(par, 1, 1, false),mat);
         mat = Transform::matMul(mat,Transform::matCanonicalToPixel(par, 1, 1, false));
         *transform = Transform::matMul(*transform, mat);
-        bool isOk = getOverlayTransform(time, view, target, input, transform);
+        bool isOk = getOverlayTransform(time, view, target, input.get(), transform);
         return isOk;
     }
     return false;
     
 }
 
-static double transformTimeForNode(Natron::EffectInstance* currentNode, double inTime)
+static double transformTimeForNode(EffectInstance* currentNode, double inTime)
 {
     U64 nodeHash = currentNode->getHash();
     FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(nodeHash, inTime, 0, 0);
@@ -260,11 +259,11 @@ static double transformTimeForNode(Natron::EffectInstance* currentNode, double i
 bool
 ViewerTabPrivate::getTimeTransform(double time,
                                    int view,
-                                   const boost::shared_ptr<Natron::Node>& target,
-                                   Natron::EffectInstance* currentNode,
+                                   const NodePtr& target,
+                                   EffectInstance* currentNode,
                                    double *newTime) const
 {
-    if (currentNode == target->getLiveInstance()) {
+    if (currentNode == target->getEffectInstance().get()) {
         *newTime = time;
         return true;
     }
@@ -276,20 +275,20 @@ ViewerTabPrivate::getTimeTransform(double time,
     }
     
     ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-    std::list<Natron::EffectInstance*> nonOptionalInputs;
-    std::list<Natron::EffectInstance*> optionalInputs;
+    std::list<EffectInstance*> nonOptionalInputs;
+    std::list<EffectInstance*> optionalInputs;
     int maxInp = currentNode->getMaxInputCount();
     
     ///We cycle in reverse by default. It should be a setting of the application.
     ///In this case it will return input B instead of input A of a merge for example.
     for (int i = maxInp - 1; i >= 0; --i) {
-        Natron::EffectInstance* inp = currentNode->getInput(i);
+        EffectInstPtr inp = currentNode->getInput(i);
         bool optional = currentNode->isInputOptional(i);
         if (inp) {
             if (optional) {
-                optionalInputs.push_back(inp);
+                optionalInputs.push_back(inp.get());
             } else {
-                nonOptionalInputs.push_back(inp);
+                nonOptionalInputs.push_back(inp.get());
             }
         }
     }
@@ -299,7 +298,7 @@ ViewerTabPrivate::getTimeTransform(double time,
     }
     
     ///Cycle through all non optional inputs first
-    for (std::list<Natron::EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+    for (std::list<EffectInstance*> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
         double inputTime;
         bool isOk = getTimeTransform(*newTime, view, target, *it, &inputTime);
         if (isOk) {
@@ -309,7 +308,7 @@ ViewerTabPrivate::getTimeTransform(double time,
     }
     
     ///Cycle through optional inputs...
-    for (std::list<Natron::EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+    for (std::list<EffectInstance*> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
         double inputTime;
         bool isOk = getTimeTransform(*newTime, view, target, *it, &inputTime);
         if (isOk) {
@@ -328,12 +327,12 @@ ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
 {
     int activeInputIdx[2];
     viewerNode->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
-    EffectInstance* activeInput[2] = {0, 0};
+    EffectInstPtr activeInput[2] = {EffectInstPtr(), EffectInstPtr()};
     for (int i = 0; i < 2; ++i) {
         activeInput[i] = viewerNode->getInput(activeInputIdx[i]);
         if (activeInput[i]) {
             EffectInstance::ComponentsAvailableMap compsAvailable;
-            activeInput[i]->getComponentsAvailable(true, publicInterface->getGui()->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
+            activeInput[i]->getComponentsAvailable(true, true, publicInterface->getGui()->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
             for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
                 if (it->second.lock()) {
                     comps->insert(it->first);
@@ -343,3 +342,5 @@ ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
     }
 
 }
+
+NATRON_NAMESPACE_EXIT;

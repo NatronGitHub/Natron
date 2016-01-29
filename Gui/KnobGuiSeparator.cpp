@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,12 +78,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "ofxNatron.h"
 
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 
 //=============================SEPARATOR_KNOB_GUI===================================
 
-KnobGuiSeparator::KnobGuiSeparator(boost::shared_ptr<KnobI> knob,
+KnobGuiSeparator::KnobGuiSeparator(KnobPtr knob,
                                      DockablePanel *container)
     : KnobGui(knob, container)
     , _line(0)
@@ -127,8 +127,9 @@ KnobGuiSeparator::_show()
     _line->show();
 }
 
-boost::shared_ptr<KnobI> KnobGuiSeparator::getKnob() const
+KnobPtr KnobGuiSeparator::getKnob() const
 {
     return _knob.lock();
 }
 
+NATRON_NAMESPACE_EXIT;

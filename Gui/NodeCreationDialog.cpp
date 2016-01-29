@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/LineEdit.h"
 #include "Gui/GuiApplicationManager.h"
 
-
+NATRON_NAMESPACE_ENTER;
 
 
 struct CompleterLineEditPrivate
@@ -271,7 +271,7 @@ struct NodeCreationDialogPrivate
 {
     QVBoxLayout* layout;
     CompleterLineEdit* textEdit;
-    Natron::PluginsMap items;
+    PluginsMap items;
 
     NodeCreationDialogPrivate()
         : layout(NULL)
@@ -314,13 +314,13 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
     QString initialFilterName;
     std::string stdInitialFilter = initialFilter.toStdString();
     int i = 0;
-    for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+    for (PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
         
         if (it->second.empty()) {
             continue;
         }
         
-        Natron::Plugin* p = (*it->second.begin());
+        Plugin* p = (*it->second.begin());
         if (!p->getIsUserCreatable()) {
             continue;
         }
@@ -347,7 +347,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
             ++i;
         } else {
             QString bestMajorName;
-            for (Natron::PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
+            for (PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
                 
                 std::pair<QString,QString> idNamePair;
                 if (it2 == it->second.rbegin()) {
@@ -404,17 +404,17 @@ NodeCreationDialog::getNodeName(int *major) const
     QString name = _imp->textEdit->text();
     
     
-    for (Natron::PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
+    for (PluginsMap::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
         if (it->second.size() == 1) {
             if ((*it->second.begin())->generateUserFriendlyPluginID() == name) {
-                Natron::Plugin* p = (*it->second.begin());
+                Plugin* p = (*it->second.begin());
                 *major = p->getMajorVersion();
                 const QString& ret = p->getPluginID();
                 incrementPluginWeight(ret,*major);
                 return ret;
             }
         } else {
-            for (Natron::PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
+            for (PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
                 if (it2 == it->second.rbegin()) {
                     if ((*it2)->generateUserFriendlyPluginID() == name) {
                         *major = (*it2)->getMajorVersion();
@@ -461,3 +461,7 @@ NodeCreationDialog::changeEvent(QEvent* e)
     QDialog::changeEvent(e);
 }
 
+NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_NodeCreationDialog.cpp"

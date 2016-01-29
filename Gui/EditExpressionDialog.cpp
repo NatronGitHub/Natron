@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -93,7 +93,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Utils.h"
 #include "Gui/ViewerTab.h"
 
-using namespace Natron;
+NATRON_NAMESPACE_ENTER;
 
 EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* parent)
 : EditScriptDialog(parent)
@@ -113,7 +113,7 @@ EditExpressionDialog::getDimension() const
 void
 EditExpressionDialog::setTitle()
 {
-    boost::shared_ptr<KnobI> k = _knob->getKnob();
+    KnobPtr k = _knob->getKnob();
     
     QString title(tr("Set expression on "));
     title.append(k->getName().c_str());
@@ -174,3 +174,5 @@ EditExpressionDialog::getDeclaredVariables(std::list<std::pair<QString,QString> 
     variables.push_back(std::make_pair("dimension", tr("Defined only if the parameter is multi-dimensional, it references the dimension of the parameter being edited (0-based index)")));
     variables.push_back(std::make_pair("frame", tr("the current time on the timeline or the time passed to the get function")));
 }
+
+NATRON_NAMESPACE_EXIT;

@@ -15,6 +15,7 @@
 # MISC=1 : Enable misc plug
 # ARENA=1 : Enable arena plug
 # CV=1 : Enable cv plug
+# DISABLE_BREAKPAD=1: Disable automatic crash report
 # OFFLINE_INSTALLER=1: Build offline installer in addition to the online installer
 # BUILD_CONFIG=(SNAPSHOT,ALPHA,BETA,RC,STABLE,CUSTOM)
 # CUSTOM_BUILD_USER_NAME="Toto" : to be set if BUILD_CONFIG=CUSTOM
@@ -45,8 +46,10 @@ fi
 
 if [ "$1" = "32" ]; then
     BIT=32
+    INSTALL_PATH=$INSTALL32_PATH
 else
     BIT=64
+    INSTALL_PATH=$INSTALL64_PATH
 fi
 
 if [ "$2" = "workshop" ]; then
@@ -114,11 +117,12 @@ fi
 if [ "$NOBUILD" != "1" ]; then
     if [ "$ONLY_PLUGINS" != "1" ]; then
         echo -n "Building Natron ... "
-        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER sh $INC_PATH/scripts/build-natron.sh $BIT $BRANCH >& $LOGS/natron.$PKGOS$BIT.$TAG.log || FAIL=1
+        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh $INC_PATH/scripts/build-natron.sh $BIT $BRANCH >& $LOGS/natron.$PKGOS$BIT.$TAG.log || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else
             echo ERROR
+            echo "BUILD__ERROR" >> $LOGS/natron.$PKGOS$BIT.$TAG.log
             sleep 2
             cat $LOGS/natron.$PKGOS$BIT.$TAG.log
         fi
@@ -130,6 +134,7 @@ if [ "$NOBUILD" != "1" ]; then
             echo OK
         else
             echo ERROR
+            echo "BUILD__ERROR" >> $LOGS/plugins.$PKGOS$BIT.$TAG.log
             sleep 2
             cat $LOGS/plugins.$PKGOS$BIT.$TAG.log
         fi  
@@ -138,11 +143,12 @@ fi
 
 if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
     echo -n "Building Packages ... "
-    env NATRON_LICENSE=$NATRON_LICENSE OFFLINE=${OFFLINE_INSTALLER} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER NO_ZIP=$NO_ZIP BUNDLE_CV=0 BUNDLE_IO=$IO BUNDLE_MISC=$MISC BUNDLE_ARENA=$ARENA sh $INC_PATH/scripts/build-installer.sh $BIT $BRANCH   >& $LOGS/installer.$PKGOS$BIT.$TAG.log || FAIL=1
+    env NATRON_LICENSE=$NATRON_LICENSE OFFLINE=${OFFLINE_INSTALLER} BUILD_CONFIG=${BUILD_CONFIG} CUSTOM_BUILD_USER_NAME=${CUSTOM_BUILD_USER_NAME} BUILD_NUMBER=$BUILD_NUMBER NO_ZIP=$NO_ZIP BUNDLE_CV=0 BUNDLE_IO=$IO BUNDLE_MISC=$MISC BUNDLE_ARENA=$ARENA DISABLE_BREAKPAD=$DISABLE_BREAKPAD sh $INC_PATH/scripts/build-installer.sh $BIT $BRANCH   >& $LOGS/installer.$PKGOS$BIT.$TAG.log || FAIL=1
     if [ "$FAIL" != "1" ]; then
         echo OK
     else
         echo ERROR
+        echo "BUILD__ERROR" >> $LOGS/installer.$PKGOS$BIT.$TAG.log
         sleep 2
         cat $LOGS/installer.$PKGOS$BIT.$TAG.log
     fi 
@@ -164,6 +170,7 @@ if [ "$SYNC" = "1" ]; then
 			 rsync -avz --progress  --verbose -e ssh $REPO_DIR/archive/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files 
 		fi
     fi
+    rsync -avz --progress --verbose -e ssh "$INSTALL_PATH/symbols/" "${REPO_DEST}/symbols/"
     rsync -avz --progress --delete --verbose -e ssh $LOGS/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs
 fi
 

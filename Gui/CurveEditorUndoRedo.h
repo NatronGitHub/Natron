@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 struct SelectedKey
 {
@@ -220,13 +221,13 @@ private:
 
 struct KeyInterpolationChange
 {
-    Natron::KeyframeTypeEnum oldInterp;
-    Natron::KeyframeTypeEnum newInterp;
+    KeyframeTypeEnum oldInterp;
+    KeyframeTypeEnum newInterp;
     KeyPtr key;
 
 
-    KeyInterpolationChange(Natron::KeyframeTypeEnum oldType,
-                           Natron::KeyframeTypeEnum newType,
+    KeyInterpolationChange(KeyframeTypeEnum oldType,
+                           KeyframeTypeEnum newType,
                            const KeyPtr & k)
         : oldInterp(oldType)
           , newInterp(newType)
@@ -303,7 +304,7 @@ private:
     CurveWidget* _widget;
     KeyPtr _key;
     SelectedTangentEnum _deriv;
-    Natron::KeyframeTypeEnum _oldInterp,_newInterp;
+    KeyframeTypeEnum _oldInterp,_newInterp;
     double _oldLeft,_oldRight,_newLeft,_newRight;
     bool _setBoth;
     bool _updateOnFirstRedo;
@@ -360,5 +361,6 @@ private:
     boost::shared_ptr<Transform::Matrix3x3> _matrix;
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // CURVEEDITORUNDOREDO_H

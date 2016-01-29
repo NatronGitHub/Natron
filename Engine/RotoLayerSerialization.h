@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,11 +55,12 @@ GCC_DIAG_ON(unused-parameter)
 #define ROTO_LAYER_SERIALIZATION_REMOVES_IS_BEZIER 2
 #define ROTO_LAYER_SERIALIZATION_VERSION ROTO_LAYER_SERIALIZATION_REMOVES_IS_BEZIER
 
+NATRON_NAMESPACE_ENTER;
 
 class RotoLayerSerialization
     : public RotoItemSerialization
 {
-    friend class boost::serialization::access;
+    friend class ::boost::serialization::access;
     friend class RotoLayer;
 
 public:
@@ -88,7 +89,7 @@ private:
             );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
         int numChildren = (int)children.size();
-        ar & boost::serialization::make_nvp("NumChildren",numChildren);
+        ar & ::boost::serialization::make_nvp("NumChildren",numChildren);
         for (std::list < boost::shared_ptr<RotoItemSerialization> >::const_iterator it = children.begin(); it != children.end(); ++it) {
             BezierSerialization* isBezier = dynamic_cast<BezierSerialization*>( it->get() );
             RotoStrokeItemSerialization* isStroke = dynamic_cast<RotoStrokeItemSerialization*>( it->get() );
@@ -101,14 +102,14 @@ private:
             } else if (isLayer) {
                 type = 2;
             }
-            ar & boost::serialization::make_nvp("Type",type);
+            ar & ::boost::serialization::make_nvp("Type",type);
             if (isBezier && !isStroke) {
-                ar & boost::serialization::make_nvp("Item",*isBezier);
+                ar & ::boost::serialization::make_nvp("Item",*isBezier);
             } else if (isStroke) {
-                ar & boost::serialization::make_nvp("Item",*isStroke);
+                ar & ::boost::serialization::make_nvp("Item",*isStroke);
             } else {
                 assert(isLayer);
-                ar & boost::serialization::make_nvp("Item",*isLayer);
+                ar & ::boost::serialization::make_nvp("Item",*isLayer);
             }
         }
     }
@@ -124,28 +125,28 @@ private:
             );
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
         int numChildren;
-        ar & boost::serialization::make_nvp("NumChildren",numChildren);
+        ar & ::boost::serialization::make_nvp("NumChildren",numChildren);
         for (int i = 0; i < numChildren; ++i) {
             
             int type;
             if (version < ROTO_LAYER_SERIALIZATION_REMOVES_IS_BEZIER) {
                 bool bezier;
-                ar & boost::serialization::make_nvp("IsBezier",bezier);
+                ar & ::boost::serialization::make_nvp("IsBezier",bezier);
                 type = bezier ? 0 : 2;
             } else {
-                ar & boost::serialization::make_nvp("Type",type);
+                ar & ::boost::serialization::make_nvp("Type",type);
             }
             if (type == 0) {
                 boost::shared_ptr<BezierSerialization> b(new BezierSerialization);
-                ar & boost::serialization::make_nvp("Item",*b);
+                ar & ::boost::serialization::make_nvp("Item",*b);
                 children.push_back(b);
             } else if (type == 1) {
                 boost::shared_ptr<RotoStrokeItemSerialization> b(new RotoStrokeItemSerialization);
-                ar & boost::serialization::make_nvp("Item",*b);
+                ar & ::boost::serialization::make_nvp("Item",*b);
                 children.push_back(b);
             } else {
                 boost::shared_ptr<RotoLayerSerialization> l(new RotoLayerSerialization);
-                ar & boost::serialization::make_nvp("Item",*l);
+                ar & ::boost::serialization::make_nvp("Item",*l);
                 children.push_back(l);
             }
         }
@@ -156,6 +157,8 @@ private:
     std::list < boost::shared_ptr<RotoItemSerialization> > children;
 };
 
-BOOST_CLASS_VERSION(RotoLayerSerialization,ROTO_LAYER_SERIALIZATION_VERSION)
+NATRON_NAMESPACE_EXIT;
+
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::RotoLayerSerialization,ROTO_LAYER_SERIALIZATION_VERSION)
 
 #endif // Engine_RotoLayerSerialization_h

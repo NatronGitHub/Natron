@@ -1,0 +1,101 @@
+--- coders/xcf.c.orig	2016-01-27 14:49:51.339227223 +0100
++++ coders/xcf.c	2016-01-27 14:50:03.692306590 +0100
+@@ -54,6 +54,7 @@
+ #include "magick/memory_.h"
+ #include "magick/pixel.h"
+ #include "magick/pixel-accessor.h"
++#include "magick/property.h"
+ #include "magick/quantize.h"
+ #include "magick/quantum-private.h"
+ #include "magick/static.h"
+@@ -766,6 +767,15 @@
+   return(MagickTrue);
+ }
+ 
++static void InitXCFImage(XCFLayerInfo *outLayer)
++{
++  outLayer->image->page.x=outLayer->offset_x;
++  outLayer->image->page.y=outLayer->offset_y;
++  outLayer->image->page.width=outLayer->width;
++  outLayer->image->page.height=outLayer->height;
++  (void) SetImageProperty(outLayer->image,"label",(char *)outLayer->name);
++}
++
+ static MagickBooleanType ReadOneLayer(const ImageInfo *image_info,Image* image,
+   XCFDocInfo* inDocInfo,XCFLayerInfo *outLayer,const ssize_t layer)
+ {
+@@ -891,10 +901,7 @@
+           outLayer->image=CloneImage(image,0,0,MagickTrue,&image->exception);
+           if (outLayer->image == (Image *) NULL)
+             return(MagickFalse);
+-          outLayer->image->page.x=outLayer->offset_x;
+-          outLayer->image->page.y=outLayer->offset_y;
+-          outLayer->image->page.width=outLayer->width;
+-          outLayer->image->page.height=outLayer->height;
++          InitXCFImage(outLayer);
+           return(MagickTrue);
+         }
+     }
+@@ -908,10 +915,8 @@
+     ScaleCharToQuantum((unsigned char) (255-outLayer->alpha));
+   (void) SetImageBackgroundColor(outLayer->image);
+ 
+-  outLayer->image->page.x=outLayer->offset_x;
+-  outLayer->image->page.y=outLayer->offset_y;
+-  outLayer->image->page.width=outLayer->width;
+-  outLayer->image->page.height=outLayer->height;
++  InitXCFImage(outLayer);
++
+   /* set the compositing mode */
+   outLayer->image->compose = GIMPBlendModeToCompositeOperator( outLayer->mode );
+   if ( outLayer->visible == MagickFalse )
+@@ -1342,17 +1347,6 @@
+       offset=SeekBlob(image, saved_pos, SEEK_SET);
+       current_layer++;
+     }
+-    if (number_layers == 1)
+-      {
+-        /*
+-          Composite the layer data onto the main image, dispose the layer.
+-        */
+-        (void) CompositeImage(image,CopyCompositeOp,layer_info[0].image,
+-          layer_info[0].offset_x,layer_info[0].offset_y);
+-        layer_info[0].image =DestroyImage( layer_info[0].image);
+-      }
+-    else
+-      {
+ #if 0
+         {
+         /* NOTE: XCF layers are REVERSED from composite order! */
+@@ -1380,22 +1374,13 @@
+         /* NOTE: XCF layers are REVERSED from composite order! */
+         ssize_t  j;
+ 
+-        /* first we copy the last layer on top of the main image */
+-        (void) CompositeImage(image,CopyCompositeOp,
+-          layer_info[number_layers-1].image,
+-          layer_info[number_layers-1].offset_x,
+-          layer_info[number_layers-1].offset_y);
+-        layer_info[number_layers-1].image=DestroyImage(
+-          layer_info[number_layers-1].image);
+-
+         /* now reverse the order of the layers as they are put
+            into subimages
+         */
+-        for (j=(long) number_layers-2; j >= 0; j--)
++        for (j=(long) number_layers-1; j >= 0; j--)
+           AppendImageToList(&image,layer_info[j].image);
+       }
+ #endif
+-    }
+ 
+     layer_info=(XCFLayerInfo *) RelinquishMagickMemory(layer_info);
+ 
+@@ -1439,6 +1424,7 @@
+   }
+ 
+   (void) CloseBlob(image);
++  DestroyImage(RemoveFirstImageFromList(&image));
+   if (image_type == GIMP_GRAY)
+     image->type=GrayscaleType;
+   return(GetFirstImageInList(image));

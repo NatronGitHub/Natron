@@ -7,9 +7,6 @@
 <RequiresAdminRights>true</RequiresAdminRights>
     <Name>fr.inria.openfx.extra</Name>
     <Dependencies>fr.inria.natron</Dependencies>
-	<Licenses>
-		<License name="openfx-extra" file="ofx-extra-license.txt" />
-	</Licenses>
     <!--<SortingPriority>1234</SortingPriority>-->
     <Default>script</Default>
     <Script>installscript.qs</Script>

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2015 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,25 +44,28 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define IMAGE_KEY_SERIALIZATION_INTRODUCES_CACHE_HOLDER_ID 2
 #define IMAGE_KEY_SERIALIZATION_VERSION IMAGE_KEY_SERIALIZATION_INTRODUCES_CACHE_HOLDER_ID
 
+NATRON_NAMESPACE_ENTER;
 
 template<class Archive>
 void
-Natron::ImageKey::serialize(Archive & ar,
+ImageKey::serialize(Archive & ar,
           const unsigned int version)
 {
     if (version >= IMAGE_KEY_SERIALIZATION_INTRODUCES_CACHE_HOLDER_ID) {
-        ar & boost::serialization::make_nvp("HolderID",_holderID);
+        ar & ::boost::serialization::make_nvp("HolderID",_holderID);
     }
-    ar & boost::serialization::make_nvp("NodeHashKey",_nodeHashKey);
-    ar & boost::serialization::make_nvp("FrameVarying",_frameVaryingOrAnimated);
-    ar & boost::serialization::make_nvp("Time",_time);
-    ar & boost::serialization::make_nvp("View",_view);
-    ar & boost::serialization::make_nvp("PixelAspect",_pixelAspect);
-    ar & boost::serialization::make_nvp("Draft",_draftMode);
+    ar & ::boost::serialization::make_nvp("NodeHashKey",_nodeHashKey);
+    ar & ::boost::serialization::make_nvp("FrameVarying",_frameVaryingOrAnimated);
+    ar & ::boost::serialization::make_nvp("Time",_time);
+    ar & ::boost::serialization::make_nvp("View",_view);
+    ar & ::boost::serialization::make_nvp("PixelAspect",_pixelAspect);
+    ar & ::boost::serialization::make_nvp("Draft",_draftMode);
 
 }
 
-BOOST_CLASS_VERSION(Natron::ImageKey, IMAGE_KEY_SERIALIZATION_VERSION)
+NATRON_NAMESPACE_EXIT;
+
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::ImageKey, IMAGE_KEY_SERIALIZATION_VERSION)
 
 
 #endif // IMAGESERIALIZATION_H
