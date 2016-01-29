@@ -76,6 +76,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
+#include "Engine/TrackerContext.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/ViewerInstance.h"
 
@@ -262,6 +263,7 @@ struct Node::Implementation
     , channelsSelectors()
     , maskSelectors()
     , rotoContext()
+    , trackContext()
     , imagesBeingRenderedMutex()
     , imageBeingRenderedCond()
     , imagesBeingRendered()
@@ -471,6 +473,7 @@ struct Node::Implementation
     std::map<int,MaskSelector> maskSelectors;
     
     boost::shared_ptr<RotoContext> rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
+    boost::shared_ptr<TrackerContext> trackContext;
     
     mutable QMutex imagesBeingRenderedMutex;
     QWaitCondition imageBeingRenderedCond;
@@ -602,6 +605,19 @@ Node::createRotoContextConditionnally()
     }
 }
 
+
+void
+Node::createTrackerContextConditionnally()
+{
+    assert(!_imp->trackContext);
+    assert(_imp->effect);
+    ///Initialize the tracker context if any
+    if (_imp->effect->isBuiltinTrackerNode()) {
+        _imp->trackContext.reset(new TrackerContext(shared_from_this()));
+    }
+    
+}
+
 const Plugin*
 Node::getPlugin() const
 {
@@ -709,6 +725,7 @@ Node::load(const CreateNodeArgs& args)
         _imp->effect->initializeData();
         
         createRotoContextConditionnally();
+        createTrackerContextConditionnally();
         initializeInputs();
         initializeKnobs(renderScaleSupportPreference);
         
@@ -754,7 +771,7 @@ Node::load(const CreateNodeArgs& args)
      */
     refreshDynamicProperties();
     
-    if (isTrackerNode()) {
+    if (isTrackerNodePlugin()) {
         _imp->isMultiInstance = true;
     }
    
@@ -1460,6 +1477,10 @@ Node::loadKnobs(const NodeSerialization & serialization,bool updateKnobGui)
     ///now restore the roto context if the node has a roto context
     if (serialization.hasRotoContext() && _imp->rotoContext) {
         _imp->rotoContext->load( serialization.getRotoContext() );
+    }
+    
+    if (serialization.hasTrackerContext() && _imp->trackContext) {
+        _imp->trackContext->load(serialization.getTrackerContext());
     }
     
     restoreUserKnobs(serialization);
@@ -2765,7 +2786,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
             bool isWriter = _imp->effect->isWriter();
         
             
-            bool disableNatronKnobs = _imp->effect->isReader() || isWriter || _imp->effect->isTrackerNode() || dynamic_cast<NodeGroup*>(_imp->effect.get()) || dynamic_cast<GroupInput*>(_imp->effect.get()) ||
+            bool disableNatronKnobs = _imp->effect->isReader() || isWriter || _imp->effect->isBuiltinTrackerNode() || dynamic_cast<NodeGroup*>(_imp->effect.get()) || dynamic_cast<GroupInput*>(_imp->effect.get()) ||
             dynamic_cast<GroupOutput*>(_imp->effect.get()) || dynamic_cast<PrecompNode*>(_imp->effect.get());
             
             bool useChannels = !_imp->effect->isMultiPlanar() && !disableNatronKnobs && !isDiskCache;
@@ -4083,7 +4104,7 @@ Node::hasOutputConnected() const
         if (_imp->outputs.size() == 1) {
 
             NodePtr output = _imp->outputs.front().lock();
-            return !(output->isTrackerNode() && output->isMultiInstance());
+            return !(output->isTrackerNodePlugin() && output->isMultiInstance());
 
         } else if (_imp->outputs.size() > 1) {
 
@@ -4095,7 +4116,7 @@ Node::hasOutputConnected() const
         if (_imp->outputs.size() == 1) {
 
             NodePtr output = _imp->outputs.front().lock();
-            return !(output->isTrackerNode() && output->isMultiInstance());
+            return !(output->isTrackerNodePlugin() && output->isMultiInstance());
 
         } else if (_imp->outputs.size() > 1) {
 
@@ -5559,6 +5580,12 @@ boost::shared_ptr<RotoContext>
 Node::getRotoContext() const
 {
     return _imp->rotoContext;
+}
+
+boost::shared_ptr<TrackerContext>
+Node::getTrackerContext() const
+{
+    return _imp->trackContext;
 }
 
 U64
@@ -7635,9 +7662,9 @@ Node::hasSequentialOnlyNodeUpstream(std::string & nodeName) const
 }
 
 bool
-Node::isTrackerNode() const
+Node::isTrackerNodePlugin() const
 {
-    return _imp->effect->isTrackerNode();
+    return _imp->effect->isTrackerNodePlugin();
 }
 
 bool

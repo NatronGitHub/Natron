@@ -138,6 +138,8 @@ public:
     }
 
     KnobHolder* getHolder() const;
+    
+    TrackerPanel* getTrackerPanel() const;
 
     void onGuiClosing();
 
@@ -262,6 +264,11 @@ protected:
     virtual void centerOnItem() {}
 
     virtual RotoPanel* initializeRotoPanel()
+    {
+        return NULL;
+    }
+    
+    virtual TrackerPanel* initializeTrackerPanel()
     {
         return NULL;
     }

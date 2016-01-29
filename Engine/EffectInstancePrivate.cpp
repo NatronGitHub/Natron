@@ -347,6 +347,7 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , componentsAvailableMutex()
     , componentsAvailableDirty(true)
     , outputComponentsAvailable()
+    , overlaySlaves()
     , defaultClipPreferencesDataMutex()
     , clipPrefsData()
 {

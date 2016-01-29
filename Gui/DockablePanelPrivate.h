@@ -140,6 +140,7 @@ struct DockablePanelPrivate
 
     bool _pagesEnabled;
 
+    TrackerPanel* _trackerPanel;
     Label* _iconLabel;
 
     DockablePanelPrivate(DockablePanel* publicI,

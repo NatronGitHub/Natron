@@ -100,6 +100,7 @@ private:
 
     
     virtual RotoPanel* initializeRotoPanel() OVERRIDE FINAL;
+    virtual TrackerPanel* initializeTrackerPanel() OVERRIDE;
     virtual void initializeExtraGui(QVBoxLayout* layout) OVERRIDE FINAL;
     virtual void centerOnItem() OVERRIDE FINAL;
 

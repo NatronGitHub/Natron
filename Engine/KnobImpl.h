@@ -602,8 +602,9 @@ Knob<T>::getValue(int dimension,bool clamp) const
         //Never clamp when using gui values
         clamp = false;
     }
- 
-    assert(dimension < (int)_values.size() && dimension >= 0);
+    if (dimension < 0 || dimension >= (int)_values.size()) {
+        return T();
+    }
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
         T ret;
@@ -691,7 +692,9 @@ template<typename T>
 T
 Knob<T>::getValueAtTime(double time, int dimension,bool clamp ,bool byPassMaster) const
 {
-    assert(dimension < (int)_values.size() && dimension >= 0);
+    if (dimension < 0 || dimension >= (int)_values.size()) {
+        return T();
+    }
     
     bool useGuiValues = QThread::currentThread() == qApp->thread();
     
@@ -838,8 +841,8 @@ Knob<T>::setValue(const T & v,
                   ValueChangedReasonEnum reason,
                   KeyFrame* newKey)
 {
-    if ( (0 > dimension) || ( dimension > (int)_values.size() ) ) {
-        throw std::invalid_argument("Knob::setValue(): Dimension out of range");
+    if (dimension < 0 || dimension >= (int)_values.size()) {
+        return eValueChangedReturnCodeNothingChanged;
     }
 
     KnobHelper::ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNoKeyframeAdded;
@@ -1170,7 +1173,9 @@ Knob<T>::setValueAtTime(double time,
                         ValueChangedReasonEnum reason,
                         KeyFrame* newKey)
 {
-    assert(dimension >= 0 && dimension < getDimension());
+    if (dimension < 0 || dimension >= (int)_values.size()) {
+        return false;
+    }
     if (!canAnimate() || !isAnimationEnabled()) {
         qDebug() << "WARNING: Attempting to call setValueAtTime on " << getName().c_str() << " which does not have animation enabled.";
         setValue(v, dimension, reason, newKey);

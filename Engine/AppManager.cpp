@@ -83,6 +83,7 @@
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoSmear.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/TrackerNode.h"
 #include "Engine/ViewerInstance.h" // RenderStatsMap
 
 #if QT_VERSION < 0x050000
@@ -1082,6 +1083,7 @@ AppManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< std::pair<s
     registerBuiltInPlugin<RotoNode>(NATRON_IMAGES_PATH "rotoNodeIcon.png", false, false);
     registerBuiltInPlugin<RotoSmear>("", false, true);
     registerBuiltInPlugin<PrecompNode>(NATRON_IMAGES_PATH "precompNodeIcon.png", false, false);
+    registerBuiltInPlugin<TrackerNode>(NATRON_IMAGES_PATH "", false, false);
     if (!isBackground()) {
         registerBuiltInPlugin<ViewerInstance>(NATRON_IMAGES_PATH "viewer_icon.png", false, false);
     }

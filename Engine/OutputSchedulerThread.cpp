@@ -3562,6 +3562,8 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
         stats.reset(new RenderStats(enableRenderStats));
     }
     
+    bool isTracking = _imp->viewer->isTracking();
+    
     NodePtr rotoPaintNode;
     boost::shared_ptr<RotoStrokeItem> curStroke;
     bool isDrawing;
@@ -3675,7 +3677,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
         int maxThreads = _imp->threadPool->maxThreadCount();
         
         //When painting, limit the number of threads to 1 to be sure strokes are painted in the right order
-        if (rotoUse1Thread) {
+        if (rotoUse1Thread || isTracking) {
             maxThreads = 1;
         }
         if (maxThreads == 1 || (_imp->threadPool->activeThreadCount() >= maxThreads - 1)) {

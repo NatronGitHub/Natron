@@ -256,6 +256,17 @@ public:
     
     void markAllOnGoingRendersAsAborted();
     
+    void setPartialUpdateRects(const std::list<RectD>& rois);
+    void clearPartialUpdateRects();
+    
+    void setViewportCenter(double x, double y);
+    
+    void unsetViewportCenter();
+    
+    void setIsTracking(bool tracking);
+    bool isTracking() const;
+    
+    
     virtual void reportStats(int time, int view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
     
     ///Only callable on MT

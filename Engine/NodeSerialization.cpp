@@ -45,6 +45,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,bool serializeInputs)
     , _pluginMajorVersion(-1)
     , _pluginMinorVersion(-1)
     , _hasRotoContext(false)
+    , _hasTrackerContext(false)
     , _node()
     , _pythonModuleVersion(0)
 {
@@ -128,6 +129,14 @@ NodeSerialization::NodeSerialization(const NodePtr & n,bool serializeInputs)
             roto->save(&_rotoContext);
         } else {
             _hasRotoContext = false;
+        }
+        
+        boost::shared_ptr<TrackerContext> tracker = n->getTrackerContext();
+        if (tracker) {
+            _hasTrackerContext = true;
+            tracker->save(&_trackerContext);
+        } else {
+            _hasTrackerContext = false;
         }
 
         

@@ -178,7 +178,9 @@ public:
                                             unsigned int mipMapLevel,ImagePremultiplicationEnum premult,
                                             int textureIndex,
                                             const RectI& roi,
-                                            bool updateOnlyRoi) OVERRIDE FINAL;
+                                            bool updateOnlyRoi,
+                                            bool recenterViewer,
+                                            const Natron::Point& viewportCenter) OVERRIDE FINAL;
     
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
     
@@ -373,6 +375,11 @@ public:
     virtual int getCurrentlyDisplayedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     QPointF toZoomCoordinates(const QPointF& position) const;
+    
+    QPointF toWidgetCoordinates(const QPointF& position) const;
+    
+    void getTopLeftAndBottomRightInZoomCoords(QPointF* topLeft, QPointF* bottomRight) const;
+
     
 Q_SIGNALS:
 

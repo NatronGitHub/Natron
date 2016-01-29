@@ -178,6 +178,7 @@ class TimeLineGui;
 class ToolButton;
 class TrackerGui;
 class TrackerPanel;
+class TrackerPanelV1;
 class VerticalColorBar;
 class ViewerGL;
 class ViewerTab;

@@ -44,6 +44,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 #endif
 #include "Engine/KnobSerialization.h"
+#include "Engine/TrackerSerialization.h"
 #include "Engine/RotoContextSerialization.h"
 #include "Engine/ImageParamsSerialization.h"
 #include "Engine/AppManager.h"
@@ -63,7 +64,8 @@ GCC_DIAG_ON(unused-parameter)
 #define NODE_SERIALIZATION_INTRODUCES_CACHE_ID 12
 #define NODE_SERIALIZATION_SERIALIZE_PYTHON_MODULE_ALWAYS 13
 #define NODE_SERIALIZATION_SERIALIZE_PAGE_INDEX 14
-#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_SERIALIZE_PAGE_INDEX
+#define NODE_SERIALIZATION_INTRODUCES_TRACKER_CONTEXT 15
+#define NODE_SERIALIZATION_CURRENT_VERSION NODE_SERIALIZATION_INTRODUCES_TRACKER_CONTEXT
 
 NATRON_NAMESPACE_ENTER;
 
@@ -89,6 +91,7 @@ public:
     , _pluginMajorVersion(-1)
     , _pluginMinorVersion(-1)
     , _hasRotoContext(false)
+    , _hasTrackerContext(false)
     , _node()
     , _pythonModuleVersion(0)
     {
@@ -195,6 +198,16 @@ public:
         return _rotoContext;
     }
 
+    bool hasTrackerContext() const
+    {
+        return _hasTrackerContext;
+    }
+    
+    const TrackerContextSerialization& getTrackerContext() const
+    {
+        return _trackerContext;
+    }
+    
     const std::string & getMultiInstanceParentName() const
     {
         return _multiInstanceParentName;
@@ -235,6 +248,9 @@ private:
     std::vector<std::string> _oldInputs;
     bool _hasRotoContext;
     RotoContextSerialization _rotoContext;
+    bool _hasTrackerContext;
+    TrackerContextSerialization _trackerContext;
+    
     NodePtr _node;
     std::string _multiInstanceParentName;
     std::list<boost::shared_ptr<GroupKnobSerialization> > _userPages;
@@ -272,6 +288,11 @@ private:
         ar & ::boost::serialization::make_nvp("HasRotoContext",_hasRotoContext);
         if (_hasRotoContext) {
             ar & ::boost::serialization::make_nvp("RotoContext",_rotoContext);
+        }
+        
+        ar & ::boost::serialization::make_nvp("HasTrackerContext",_hasTrackerContext);
+        if (_hasTrackerContext) {
+            ar & ::boost::serialization::make_nvp("TrackerContext",_trackerContext);
         }
         
         ar & ::boost::serialization::make_nvp("MultiInstanceParent",_multiInstanceParentName);
@@ -362,6 +383,13 @@ private:
             ar & ::boost::serialization::make_nvp("HasRotoContext",_hasRotoContext);
             if (_hasRotoContext) {
                 ar & ::boost::serialization::make_nvp("RotoContext",_rotoContext);
+            }
+            
+            if (version >= NODE_SERIALIZATION_INTRODUCES_TRACKER_CONTEXT) {
+                ar & boost::serialization::make_nvp("HasTrackerContext",_hasTrackerContext);
+                if (_hasTrackerContext) {
+                    ar & boost::serialization::make_nvp("TrackerContext",_trackerContext);
+                }
             }
         }
         if (version >= NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE) {

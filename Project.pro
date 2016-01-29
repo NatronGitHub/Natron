@@ -27,6 +27,7 @@ SUBDIRS += BreakpadClient CrashReporter CrashReporterCLI
 
 SUBDIRS += \
     HostSupport \
+    libmv \
     Engine \
     Renderer \
     Gui \

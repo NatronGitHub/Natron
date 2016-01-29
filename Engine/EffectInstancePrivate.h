@@ -209,6 +209,8 @@ struct EffectInstance::Implementation
     bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
     EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
     
+    std::list< boost::weak_ptr<KnobI> > overlaySlaves;
+    
     mutable QMutex defaultClipPreferencesDataMutex;
     EffectInstance::DefaultClipPreferencesData clipPrefsData;
     
