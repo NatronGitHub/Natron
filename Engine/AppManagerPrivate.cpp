@@ -206,63 +206,35 @@ AppManagerPrivate::loadBuiltinFormats()
     /*initializing list of all Formats available*/
     std::vector<std::string> formatNames;
 
-    formatNames.push_back("PC_Video");
-    formatNames.push_back("NTSC");
-    formatNames.push_back("PAL");
-    formatNames.push_back("HD");
-    formatNames.push_back("NTSC_16:9");
-    formatNames.push_back("PAL_16:9");
-    formatNames.push_back("1K_Super_35(full-ap)");
-    formatNames.push_back("1K_Cinemascope");
-    formatNames.push_back("2K_Super_35(full-ap)");
-    formatNames.push_back("2K_Cinemascope");
-    formatNames.push_back("4K_Super_35(full-ap)");
-    formatNames.push_back("4K_Cinemascope");
-    formatNames.push_back("square_256");
-    formatNames.push_back("square_512");
-    formatNames.push_back("square_1K");
-    formatNames.push_back("square_2K");
+    struct BuiltinFormat {
+        const char *name;
+        int w;
+        int h;
+        double par;
+    };
 
-    std::vector< std::vector<double> > resolutions;
-    std::vector<double> pcvideo; pcvideo.push_back(640); pcvideo.push_back(480); pcvideo.push_back(1);
-    std::vector<double> ntsc; ntsc.push_back(720); ntsc.push_back(486); ntsc.push_back(0.91f);
-    std::vector<double> pal; pal.push_back(720); pal.push_back(576); pal.push_back(1.09f);
-    std::vector<double> hd; hd.push_back(1920); hd.push_back(1080); hd.push_back(1);
-    std::vector<double> ntsc169; ntsc169.push_back(720); ntsc169.push_back(486); ntsc169.push_back(1.21f);
-    std::vector<double> pal169; pal169.push_back(720); pal169.push_back(576); pal169.push_back(1.46f);
-    std::vector<double> super351k; super351k.push_back(1024); super351k.push_back(778); super351k.push_back(1);
-    std::vector<double> cine1k; cine1k.push_back(914); cine1k.push_back(778); cine1k.push_back(2);
-    std::vector<double> super352k; super352k.push_back(2048); super352k.push_back(1556); super352k.push_back(1);
-    std::vector<double> cine2K; cine2K.push_back(1828); cine2K.push_back(1556); cine2K.push_back(2);
-    std::vector<double> super4K35; super4K35.push_back(4096); super4K35.push_back(3112); super4K35.push_back(1);
-    std::vector<double> cine4K; cine4K.push_back(3656); cine4K.push_back(3112); cine4K.push_back(2);
-    std::vector<double> square256; square256.push_back(256); square256.push_back(256); square256.push_back(1);
-    std::vector<double> square512; square512.push_back(512); square512.push_back(512); square512.push_back(1);
-    std::vector<double> square1K; square1K.push_back(1024); square1K.push_back(1024); square1K.push_back(1);
-    std::vector<double> square2K; square2K.push_back(2048); square2K.push_back(2048); square2K.push_back(1);
+    BuiltinFormat formats[] = {
+        { "PC_Video",              640,  480, 1 },
+        { "NTSC",                  720,  486, 0.91 },
+        { "PAL",                   720,  576, 1.09 },
+        { "HD",                   1920, 1080, 1 },
+        { "NTSC_16:9",             720,  486, 1.21 },
+        { "PAL_16:9",              720,  576, 1.46 },
+        { "1K_Super_35(full-ap)", 1024,  778, 1 },
+        { "1K_Cinemascope",        914,  778, 2 },
+        { "2K_Super_35(full-ap)", 2048, 1556, 1 },
+        { "2K_Cinemascope",       1828, 1556, 2 },
+        { "4K_Super_35(full-ap)", 4096, 3112, 1 },
+        { "4K_Cinemascope",       3656, 3112, 2 },
+        { "square_256",            256,  256, 1 },
+        { "square_512",            512,  512, 1 },
+        { "square_1K",            1024, 1024, 1 },
+        { "square_2K",            2048, 2048, 1 },
+        { NULL, 0, 0, 0 }
+    };
 
-    resolutions.push_back(pcvideo);
-    resolutions.push_back(ntsc);
-    resolutions.push_back(pal);
-    resolutions.push_back(hd);
-    resolutions.push_back(ntsc169);
-    resolutions.push_back(pal169);
-    resolutions.push_back(super351k);
-    resolutions.push_back(cine1k);
-    resolutions.push_back(super352k);
-    resolutions.push_back(cine2K);
-    resolutions.push_back(super4K35);
-    resolutions.push_back(cine4K);
-    resolutions.push_back(square256);
-    resolutions.push_back(square512);
-    resolutions.push_back(square1K);
-    resolutions.push_back(square2K);
-
-    assert( formatNames.size() == resolutions.size() );
-    for (U32 i = 0; i < formatNames.size(); ++i) {
-        const std::vector<double> & v = resolutions[i];
-        assert(v.size() >= 3);
-        Format* _frmt = new Format(0, 0, (int)v[0], (int)v[1], formatNames[i], v[2]);
+    for (BuiltinFormat* f = &formats[0]; f->name != NULL; ++f) {
+        Format* _frmt = new Format(0, 0, f->w, f->h, f->name, f->par);
         assert(_frmt);
         _formats.push_back(_frmt);
     }
