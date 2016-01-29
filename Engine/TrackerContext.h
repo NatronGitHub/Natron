@@ -153,7 +153,7 @@ class TrackArgsV1
     ViewerInstance* _viewer;
     std::vector<KnobButton*> _buttonInstances;
     bool _isUpdateViewerEnabled;
-    
+    bool _centerViewer;
     
 public:
     
@@ -165,6 +165,7 @@ public:
     , _viewer(0)
     , _buttonInstances()
     , _isUpdateViewerEnabled(false)
+    , _centerViewer(false)
     {
         
     }
@@ -180,7 +181,8 @@ public:
                 const boost::shared_ptr<TimeLine>& timeline,
                 ViewerInstance* viewer,
                 const std::vector<KnobButton*>& instances,
-                bool updateViewer)
+                bool updateViewer,
+                bool centerViewer)
     : _start(start)
     , _end(end)
     , _forward(forward)
@@ -188,6 +190,7 @@ public:
     , _viewer(viewer)
     , _buttonInstances(instances)
     , _isUpdateViewerEnabled(updateViewer)
+    , _centerViewer(centerViewer)
     {
         
     }
@@ -203,6 +206,7 @@ public:
         _viewer = other._viewer;
         _buttonInstances = other._buttonInstances;
         _isUpdateViewerEnabled = other._isUpdateViewerEnabled;
+        _centerViewer = other._centerViewer;
     }
     
     bool isUpdateViewerEnabled() const
@@ -212,7 +216,7 @@ public:
     
     bool isCenterViewerEnabled() const
     {
-        return false;
+        return _centerViewer;
     }
     
     int getStart() const
@@ -455,11 +459,6 @@ public:
     
     virtual ~TrackSchedulerBase() {}
     
-private Q_SLOTS:
-
-    void doRenderCurrentFrameForViewer(ViewerInstance* viewer);
-    
-protected:
     
     void emit_trackingStarted()
     {
@@ -475,6 +474,11 @@ protected:
     {
         Q_EMIT progressUpdate(p);
     }
+    
+private Q_SLOTS:
+
+    void doRenderCurrentFrameForViewer(ViewerInstance* viewer);
+  
     
 Q_SIGNALS:
     

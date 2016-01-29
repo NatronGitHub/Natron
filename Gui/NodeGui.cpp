@@ -402,7 +402,7 @@ NodeGui::ensurePanelCreated()
             _graph->getGui()->setRotoInterface(this);
         }
         if ((getNode()->isTrackerNodePlugin() && !getNode()->getParentMultiInstance()) || getNode()->getEffectInstance()->isBuiltinTrackerNode()) {
-            _graph->getGui()->createNewTrackerInterface(this);
+            _graph->getGui()->setTrackerInterface(this);
         }
     }
     

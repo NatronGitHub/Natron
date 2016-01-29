@@ -221,7 +221,7 @@ public:
     , partialUpdateRects()
     , viewportCenter()
     , viewportCenterSet(false)
-    , isTracking(false)
+    , isDoingPartialUpdates(false)
     , renderAgeMutex()
     , renderAge()
     , displayAge()
@@ -510,7 +510,7 @@ public:
     bool viewportCenterSet;
     
     //True if during tracking
-    bool isTracking;
+    bool isDoingPartialUpdates;
 
     
     mutable QMutex renderAgeMutex; // protects renderAge lastRenderAge currentRenderAges

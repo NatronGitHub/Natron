@@ -895,7 +895,7 @@ Gui::onTimeChanged(SequenceTime time,
         if ((*it)->getInternalNode() == leadViewer && isPlayback) {
             continue;
         }
-        if ((*it)->getInternalNode()->isTracking()) {
+        if ((*it)->getInternalNode()->isDoingPartialUpdates()) {
             //When tracking, we handle rendering separatly
             continue;
         }

@@ -2996,6 +2996,36 @@ TrackScheduler<TrackArgsType>::isWorking() const
     return _imp->isWorking;
 }
 
+class IsTrackingFlagSetter_RAII
+{
+    ViewerInstance* _v;
+    TrackSchedulerBase* _base;
+    bool _reportProgress;
+    
+public:
+    
+    IsTrackingFlagSetter_RAII(TrackSchedulerBase* base, bool reportProgress, ViewerInstance* viewer)
+    : _v(viewer)
+    , _base(base)
+    , _reportProgress(reportProgress)
+    {
+        
+        if (_reportProgress) {
+            base->emit_trackingStarted();
+        }
+        viewer->setDoingPartialUpdates(true);
+    }
+    
+    ~IsTrackingFlagSetter_RAII()
+    {
+        _v->setDoingPartialUpdates(false);
+        if (_reportProgress) {
+            _base->emit_trackingFinished();
+        }
+
+    }
+};
+
 template <class TrackArgsType>
 void
 TrackScheduler<TrackArgsType>::run()
@@ -3020,124 +3050,111 @@ TrackScheduler<TrackArgsType>::run()
         }
         
         boost::shared_ptr<TimeLine> timeline = curArgs.getTimeLine();
+        
         ViewerInstance* viewer =  curArgs.getViewer();
-        //timeline->setViewersRefreshBlocked(true);
-        if (viewer) {
-            viewer->setIsTracking(true);
-        }
+        assert(viewer);
+        
+        bool isUpdateViewerOnTrackingEnabled = curArgs.isUpdateViewerEnabled();
+        bool isCenterViewerEnabled = curArgs.isCenterViewerEnabled();
+        
         
         int end = curArgs.getEnd();
         int start = curArgs.getStart();
         int cur = start;
         bool isForward = curArgs.getForward();
         int framesCount = isForward ? (end - start) : (start - end);
-        bool isUpdateViewerOnTrackingEnabled = curArgs.isUpdateViewerEnabled();
-        bool isCenterViewerEnbaled = curArgs.isCenterViewerEnabled();
         int numTracks = curArgs.getNumTracks();
+        
         std::vector<int> trackIndexes;
         for (std::size_t i = 0; i < (std::size_t)numTracks; ++i) {
             trackIndexes.push_back(i);
         }
         
         int lastValidFrame = isForward ? start - 1 : start + 1;
-
-        
         bool reportProgress = numTracks > 1 || framesCount > 1;
-        if (reportProgress) {
-            emit_trackingStarted();
-        }
-        
-        while (cur != end) {
-            
-            
-            
-            ///Launch parallel thread for each track using the global thread pool
-            QFuture<bool> future = QtConcurrent::mapped(trackIndexes,
-                              boost::bind(_functor,
-                                          _1,
-                                          curArgs,
-                                          cur));
-            future.waitForFinished();
-            
-            bool failure = false;
-            for (QFuture<bool>::const_iterator it = future.begin(); it != future.end(); ++it) {
-                if (!(*it)) {
-                    failure = true;
-                    break;
-                }
-            }
-            if (failure) {
-                break;
-            }
-            
-            lastValidFrame = cur;
 
-            
-            double progress;
-            if (isForward) {
-                ++cur;
-                progress = (double)(cur - start) / framesCount;
-            } else {
-                --cur;
-                progress = (double)(start - cur) / framesCount;
-            }
-            
-            
-            ///Ok all tracks are finished now for this frame, refresh viewer if needed
-            if (isUpdateViewerOnTrackingEnabled && viewer) {
-                //This will not refresh the viewer since we blocked it explicitly
-                timeline->seekFrame(cur, true, 0, Natron::eTimelineChangeReasonOtherSeek);
+        {
+            ///Use RAII style for setting the isDoingPartialUpdates flag so we're sure it gets removed
+            IsTrackingFlagSetter_RAII __istrackingflag__(this, reportProgress, viewer);
+
+            while (cur != end) {
                 
-                ///Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more costly to render all partial rectangles
-                ///than just render the whole viewer RoI
-                if (numTracks < TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE) {
-                    std::list<RectD> updateRects;
-                    curArgs.getRedrawAreasNeeded(cur, &updateRects);
-                    if (isCenterViewerEnbaled) {
-                        RectD bbox;
-                        bool bboxSet = false;
-                        for (std::list<RectD>::iterator it = updateRects.begin(); it != updateRects.end(); ++it) {
-                            if (!bboxSet) {
-                                bboxSet = true;
-                                bbox = *it;
-                            } else {
-                                bbox.merge(*it);
-                            }
-                        }
-                        viewer->setViewportCenter((bbox.x1 + bbox.x2 / 2.), (bbox.y1 + bbox.y2) / 2.);
-                    } else {
-                        viewer->unsetViewportCenter();
+                
+                
+                ///Launch parallel thread for each track using the global thread pool
+                QFuture<bool> future = QtConcurrent::mapped(trackIndexes,
+                                                            boost::bind(_functor,
+                                                                        _1,
+                                                                        curArgs,
+                                                                        cur));
+                future.waitForFinished();
+                
+                bool failure = false;
+                for (QFuture<bool>::const_iterator it = future.begin(); it != future.end(); ++it) {
+                    if (!(*it)) {
+                        failure = true;
+                        break;
                     }
-                    viewer->setPartialUpdateRects(updateRects);
                 }
-                Q_EMIT renderCurrentFrameForViewer(viewer);
-            }
-            
-            if (reportProgress) {
-                ///Notify we progressed of 1 frame
-                emit_progressUpdate(progress);
-            }
-            
-            ///Check for abortion
-            {
-                QMutexLocker k(&_imp->abortRequestedMutex);
-                if (_imp->abortRequested > 0) {
-                    _imp->abortRequested = 0;
-                    _imp->abortRequestedCond.wakeAll();
+                if (failure) {
                     break;
                 }
-            }
+                
+                lastValidFrame = cur;
+                
+                
+                double progress;
+                if (isForward) {
+                    ++cur;
+                    progress = (double)(cur - start) / framesCount;
+                } else {
+                    --cur;
+                    progress = (double)(start - cur) / framesCount;
+                }
+                
+                
+                ///Ok all tracks are finished now for this frame, refresh viewer if needed
+                if (isUpdateViewerOnTrackingEnabled && viewer) {
+                    
+                    //This will not refresh the viewer since when tracking, renderCurrentFrame()
+                    //is not called on viewers, see Gui::onTimeChanged
+                    timeline->seekFrame(cur, true, 0, Natron::eTimelineChangeReasonOtherSeek);
+                    
+                    ///Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
+                    ///than just render the whole viewer RoI
+                    if (numTracks < TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE) {
+                        std::list<RectD> updateRects;
+                        curArgs.getRedrawAreasNeeded(cur, &updateRects);
+                        viewer->setPartialUpdateParams(updateRects, isCenterViewerEnabled);
+                    } else {
+                        viewer->clearPartialUpdateParams();
+                    }
+                    Q_EMIT renderCurrentFrameForViewer(viewer);
+                }
+                
+                if (reportProgress) {
+                    ///Notify we progressed of 1 frame
+                    emit_progressUpdate(progress);
+                }
+                
+                ///Check for abortion
+                {
+                    QMutexLocker k(&_imp->abortRequestedMutex);
+                    if (_imp->abortRequested > 0) {
+                        _imp->abortRequested = 0;
+                        _imp->abortRequestedCond.wakeAll();
+                        break;
+                    }
+                }
+                
+            } // while (cur != end) {
             
-        } // while (cur != end) {
         
-        if (reportProgress) {
-            emit_trackingFinished();
-        }
-        //timeline->setViewersRefreshBlocked(false);
-        if (viewer) {
-            viewer->clearPartialUpdateRects();
-            viewer->setIsTracking(false);
-        }
+        } // IsTrackingFlagSetter_RAII
+        
+        
+        //Now that tracking is done update viewer once to refresh the whole visible portion
+        
         if (isUpdateViewerOnTrackingEnabled) {
             //Refresh all viewers to the current frame
             timeline->seekFrame(lastValidFrame, true, 0, Natron::eTimelineChangeReasonOtherSeek);

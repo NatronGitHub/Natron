@@ -348,15 +348,19 @@ ViewerTab::createTrackerInterface(NodeGui* n)
     }
     
     TrackerGui* tracker = 0;
-    boost::shared_ptr<MultiInstancePanel> multiPanel = n->getMultiInstancePanel();
-    if (multiPanel) {
-        boost::shared_ptr<TrackerPanelV1> trackPanel = boost::dynamic_pointer_cast<TrackerPanelV1>(multiPanel);
-        assert(trackPanel);
-        tracker = new TrackerGui(trackPanel,this);
-    } else if (n->getNode()->getEffectInstance()->isBuiltinTrackerNode()) {
+        if (n->getNode()->getEffectInstance()->isBuiltinTrackerNode()) {
         TrackerPanel* panel = n->getTrackerPanel();
         assert(panel);
         tracker = new TrackerGui(panel,this);
+    } else {
+        assert(n->getNode()->isMultiInstance());
+        n->ensurePanelCreated();
+        boost::shared_ptr<MultiInstancePanel> multiPanel = n->getMultiInstancePanel();
+        if (multiPanel) {
+            boost::shared_ptr<TrackerPanelV1> trackPanel = boost::dynamic_pointer_cast<TrackerPanelV1>(multiPanel);
+            assert(trackPanel);
+            tracker = new TrackerGui(trackPanel,this);
+        }
     }
     
     

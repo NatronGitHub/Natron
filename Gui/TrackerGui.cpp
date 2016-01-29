@@ -56,6 +56,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/GuiMacros.h"
+#include "Gui/Gui.h"
 #include "Gui/TrackerUndoCommand.h"
 #include "Gui/Texture.h"
 #include "Gui/NodeGui.h"
@@ -3319,7 +3320,7 @@ TrackerGui::onTrackBwClicked()
     _imp->trackBwButton->setDown(true);
     _imp->trackBwButton->setChecked(true);
     if (_imp->panelv1) {
-        if (!_imp->panelv1->trackBackward(_imp->viewer->getInternalNode())) {
+        if (!_imp->panelv1->trackBackward(_imp->viewer->getInternalNode(), _imp->centerViewerButton->isDown())) {
             _imp->panelv1->stopTracking();
             _imp->trackBwButton->setDown(false);
             _imp->trackBwButton->setChecked(false);
@@ -3342,7 +3343,7 @@ void
 TrackerGui::onTrackPrevClicked()
 {
     if (_imp->panelv1) {
-        _imp->panelv1->trackPrevious(_imp->viewer->getInternalNode());
+        _imp->panelv1->trackPrevious(_imp->viewer->getInternalNode(), _imp->centerViewerButton->isDown());
     } else {
         boost::shared_ptr<TimeLine> timeline = _imp->viewer->getGui()->getApp()->getTimeLine();
         int startFrame = timeline->currentFrame() - 1;
@@ -3367,7 +3368,7 @@ void
 TrackerGui::onTrackNextClicked()
 {
     if (_imp->panelv1) {
-        _imp->panelv1->trackNext(_imp->viewer->getInternalNode());
+        _imp->panelv1->trackNext(_imp->viewer->getInternalNode(), _imp->centerViewerButton->isDown());
     } else {
         int startFrame = _imp->viewer->getGui()->getApp()->getTimeLine()->currentFrame() + 1;
         boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
@@ -3381,7 +3382,7 @@ TrackerGui::onTrackFwClicked()
     _imp->trackFwButton->setDown(true);
     _imp->trackFwButton->setChecked(true);
     if (_imp->panelv1) {
-        if (!_imp->panelv1->trackForward(_imp->viewer->getInternalNode())) {
+        if (!_imp->panelv1->trackForward(_imp->viewer->getInternalNode(), _imp->centerViewerButton->isDown())) {
             _imp->panelv1->stopTracking();
             _imp->trackFwButton->setDown(false);
             _imp->trackFwButton->setChecked(false);
@@ -3834,7 +3835,7 @@ TrackerGui::onKeyframeRemovedOnTrack(const boost::shared_ptr<TrackMarker>& marke
 {
     for (TrackerGuiPrivate::TrackKeysMap::iterator it = _imp->trackTextures.begin(); it!=_imp->trackTextures.end(); ++it) {
         if (it->first.lock() == marker) {
-            std::map<int,boost::shared_ptr<Texture> >::const_iterator found = it->second.find(key);
+            std::map<int,boost::shared_ptr<Texture> >::iterator found = it->second.find(key);
             if (found != it->second.end()) {
                 it->second.erase(found);
             }

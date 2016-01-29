@@ -297,6 +297,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         const std::string & parentName = it->second->getMultiInstanceParentName();
         if ( !parentName.empty() ) {
             it->first->fetchParentMultiInstancePointer();
+            //Do not restore connections as we just use the ones of the parent anyway
+            continue;
         }
         
         ///restore slave/master link if any

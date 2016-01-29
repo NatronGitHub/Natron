@@ -3562,7 +3562,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
         stats.reset(new RenderStats(enableRenderStats));
     }
     
-    bool isTracking = _imp->viewer->isTracking();
+    bool isTracking = _imp->viewer->isDoingPartialUpdates();
     
     NodePtr rotoPaintNode;
     boost::shared_ptr<RotoStrokeItem> curStroke;

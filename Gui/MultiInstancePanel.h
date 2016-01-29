@@ -180,10 +180,10 @@ public:
     virtual ~TrackerPanelV1();
     
     ///Each function below returns true if there is a selection, false otherwise
-    bool trackBackward(ViewerInstance* viewer);
-    bool trackForward(ViewerInstance* viewer);
-    bool trackPrevious(ViewerInstance* viewer);
-    bool trackNext(ViewerInstance* viewer);
+    bool trackBackward(ViewerInstance* viewer, bool centerViewer);
+    bool trackForward(ViewerInstance* viewer, bool centerViewer);
+    bool trackPrevious(ViewerInstance* viewer, bool centerViewer);
+    bool trackNext(ViewerInstance* viewer, bool centerViewer);
     void stopTracking();
     
     void clearAllAnimationForSelection();
