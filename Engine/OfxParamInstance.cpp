@@ -3363,8 +3363,16 @@ OfxParametricInstance::initializeInteract(OverlaySupport* widget)
     OfxPluginEntryPoint* interactEntryPoint = (OfxPluginEntryPoint*)getProperties().getPointerProperty(kOfxParamPropParametricInteractBackground);
 
     if (interactEntryPoint) {
-        OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>(_knob.lock()->getHolder());
+        boost::shared_ptr<KnobParametric> knob = _knob.lock();
+        assert(knob);
+        if (!knob) {
+            throw std::logic_error("OfxParametricInstance::initializeInteract");
+        }
+        OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>(knob->getHolder());
         assert(effect);
+        if (!effect) {
+            throw std::logic_error("OfxParametricInstance::initializeInteract");
+        }
         _overlayInteract = new OfxOverlayInteract( ( *effect->effectInstance() ),8,true );
         _overlayInteract->setCallingViewport(widget);
         _overlayInteract->createInstanceAction();
