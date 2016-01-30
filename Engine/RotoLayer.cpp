@@ -163,6 +163,9 @@ RotoLayer::save(RotoItemSerialization *obj) const
     RotoLayerSerialization* s = dynamic_cast<RotoLayerSerialization*>(obj);
 
     assert(s);
+    if (!s) {
+        throw std::logic_error("RotoLayer::save");
+    }
     RotoItems items;
     {
         QMutexLocker l(&itemMutex);

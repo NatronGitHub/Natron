@@ -1604,6 +1604,9 @@ CurveWidget::loopSelectedCurve()
     }
     KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve.get());
     assert(knobCurve);
+    if (!knobCurve) {
+        throw std::logic_error("CurveWidget::loopSelectedCurve");
+    }
     PyModalDialog dialog(_imp->_gui);
     boost::shared_ptr<IntParam> firstFrame(dialog.createIntParam("firstFrame", "First frame"));
     firstFrame->setAnimationEnabled(false);
@@ -1643,6 +1646,9 @@ CurveWidget::negateSelectedCurve()
     }
     KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve.get());
     assert(knobCurve);
+    if (!knobCurve) {
+        throw std::logic_error("CurveWidget::negateSelectedCurve");
+    }
     std::stringstream ss;
     ss << "-curve(frame, " << knobCurve->getDimension() << ")";
     std::string script = ss.str();
@@ -1671,6 +1677,9 @@ CurveWidget::reverseSelectedCurve()
     }
     KnobCurveGui* knobCurve = dynamic_cast<KnobCurveGui*>(curve.get());
     assert(knobCurve);
+    if (!knobCurve) {
+        throw std::logic_error("CurveWidget::reverseSelectedCurve");
+    }
     std::stringstream ss;
     ss << "curve(-frame, " << knobCurve->getDimension() << ")";
     std::string script = ss.str();

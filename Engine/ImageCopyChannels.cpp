@@ -349,11 +349,11 @@ Image::copyUnProcessedChannelsForComponents(const bool premult,
                         copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(/*true, false, true, false, */processChannels, premult, roi, originalImage, originalPremult); // GA were processed (rare)
                     }
                 } else {
-                    if (dstNComps >= 4 && doA) {
+                    //if (dstNComps >= 4 && doA) {
                         copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(/*true, false, false, true, */processChannels, premult, roi, originalImage, originalPremult); // GB were processed (rare)
-                    } else {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(/*true, false, false, false, */processChannels, premult, roi, originalImage, originalPremult); // GBA were processed (rare)
-                    }
+                    //} else {
+                    //    copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(/*true, false, false, false, */processChannels, premult, roi, originalImage, originalPremult); // GBA were processed (rare)
+                    //}
                 }
             }
         } else {
@@ -365,19 +365,19 @@ Image::copyUnProcessedChannelsForComponents(const bool premult,
                         copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(/*false, true, true, false, */processChannels, premult, roi, originalImage, originalPremult); // RA were processed (rare)
                     }
                 } else {
-                    if (dstNComps >= 4 && doA) {
+                    //if (dstNComps >= 4 && doA) {
                         copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(/*false, true, false, true, */processChannels, premult, roi, originalImage, originalPremult); // RB were processed (rare)
-                    } else {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(/*false, true, false, false, */processChannels, premult, roi, originalImage, originalPremult); // RBA were processed (rare)
-                    }
+                    //} else {
+                    //    copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(/*false, true, false, false, */processChannels, premult, roi, originalImage, originalPremult); // RBA were processed (rare)
+                    //}
                 }
             } else {
                 if (dstNComps >= 3 && doB) {
-                    if (dstNComps >= 4 && doA) {
+                    //if (dstNComps >= 4 && doA) {
                         copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(/*false, false, true, true, */processChannels, premult, roi, originalImage, originalPremult); // RG were processed (rare)
-                    } else {
-                        copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(/*false, false, true, false, */processChannels, premult, roi, originalImage, originalPremult); // RGA were processed (rare)
-                    }
+                    //} else {
+                    //    copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps>(/*false, false, true, false, */processChannels, premult, roi, originalImage, originalPremult); // RGA were processed (rare)
+                    //}
                 } else {
                     if (dstNComps >= 4 && doA) {
                         copyUnProcessedChannelsForChannels<PIX, maxValue, srcNComps, dstNComps, false, false, false, true>(processChannels, premult, roi, originalImage, originalPremult); // RGB were processed

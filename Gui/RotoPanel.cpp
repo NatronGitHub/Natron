@@ -1184,9 +1184,11 @@ RotoPanel::onCurrentItemCompOperatorChanged(int index)
         if (_imp->tree->itemWidget(it->treeItem,COL_OPERATOR) == comboboxSender) {
             RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
             assert(drawable);
-            boost::shared_ptr<KnobChoice> op = drawable->getOperatorKnob();
-            KeyFrame k;
-            op->setValue(index, 0, eValueChangedReasonUserEdited,&k);
+            if (drawable) {
+                boost::shared_ptr<KnobChoice> op = drawable->getOperatorKnob();
+                KeyFrame k;
+                op->setValue(index, 0, eValueChangedReasonUserEdited,&k);
+            }
             _imp->context->clearSelection(RotoItem::eSelectionReasonOther);
             _imp->context->select(it->rotoItem, RotoItem::eSelectionReasonOther);
             _imp->context->evaluateChange();

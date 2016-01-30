@@ -339,10 +339,19 @@ ManageUserParamsDialog::onPickClicked()
         
         NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(_imp->panel);
         assert(nodePanel);
+        if (!nodePanel) {
+            throw std::logic_error("ManageUserParamsDialog::onPickClicked");
+        }
         NodeGuiPtr nodeGui = nodePanel->getNode();
         assert(nodeGui);
+        if (!nodeGui) {
+            throw std::logic_error("ManageUserParamsDialog::onPickClicked");
+        }
         NodePtr node = nodeGui->getNode();
         assert(node);
+        if (!node) {
+            throw std::logic_error("ManageUserParamsDialog::onPickClicked");
+        }
         KnobPtr duplicate = selectedKnob->createDuplicateOnNode(node->getEffectInstance().get(), useAlias, page, group, -1);
         if (duplicate) {
 
