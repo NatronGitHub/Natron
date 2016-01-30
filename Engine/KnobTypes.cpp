@@ -28,6 +28,7 @@
 #include <locale>
 #include <sstream>
 #include <algorithm> // min, max
+#include <cassert>
 #include <stdexcept>
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF

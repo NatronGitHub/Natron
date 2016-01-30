@@ -25,6 +25,7 @@
 #include "ViewerTabPrivate.h"
 
 #include <cassert>
+#include <stdexcept>
 
 #include <QDebug>
 

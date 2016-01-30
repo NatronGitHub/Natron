@@ -28,8 +28,9 @@
 #include <sstream>
 #include <locale>
 #include <limits>
-#include <stdexcept>
 #include <cmath>
+#include <cassert>
+#include <stdexcept>
 
 #include <QLineF>
 #include <QtDebug>

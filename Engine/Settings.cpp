@@ -24,6 +24,7 @@
 
 #include "Settings.h"
 
+#include <cassert>
 #include <stdexcept>
 
 #include <QtCore/QDebug>

@@ -26,6 +26,7 @@
 
 #include <list>
 #include <cmath>
+#include <stdexcept>
 
 #include <boost/weak_ptr.hpp>
 

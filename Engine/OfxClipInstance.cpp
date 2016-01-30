@@ -26,8 +26,9 @@
 
 #include <cfloat>
 #include <limits>
-#include <stdexcept>
 #include <bitset>
+#include <cassert>
+#include <stdexcept>
 
 #include <QtCore/QTextStream>
 #include <QtCore/QDebug>

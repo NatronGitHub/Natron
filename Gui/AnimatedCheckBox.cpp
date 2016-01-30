@@ -24,6 +24,8 @@
 
 #include "AnimatedCheckBox.h"
 
+#include <stdexcept>
+
 #include <QStyle>
 #include <QPainter>
 #include <QStyleOption>

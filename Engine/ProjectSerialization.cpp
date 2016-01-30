@@ -24,6 +24,9 @@
 
 #include "ProjectSerialization.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Engine/AppManager.h"
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"

@@ -24,6 +24,9 @@
 
 #include "OfxMemory.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QMutex>

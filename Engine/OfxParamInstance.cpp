@@ -25,6 +25,9 @@
 #include "OfxParamInstance.h"
 
 #include <iostream>
+#include <cassert>
+#include <stdexcept>
+
 #include <boost/scoped_array.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>

@@ -30,6 +30,7 @@
 #include <map>
 #include <list>
 #include <utility>
+#include <stdexcept>
 
 #include "Global/Macros.h"
 

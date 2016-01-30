@@ -25,6 +25,9 @@
 #include "ScriptObject.h"
 
 #include <string>
+#include <cassert>
+#include <stdexcept>
+
 #include <QMutex>
 
 NATRON_NAMESPACE_ENTER;

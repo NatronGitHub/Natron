@@ -24,6 +24,9 @@
 
 #include "Plugin.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include <QMutex>
 
 #include "Engine/AppManager.h"

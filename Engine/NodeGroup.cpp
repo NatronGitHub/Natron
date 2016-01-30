@@ -28,6 +28,7 @@
 #include <locale>
 #include <cfloat>
 #include <algorithm> // min, max
+#include <cassert>
 #include <stdexcept>
 
 #include <QtCore/QThreadPool>

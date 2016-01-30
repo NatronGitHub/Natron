@@ -24,6 +24,8 @@
 
 #include "AutoHideToolBar.h"
 
+#include <stdexcept>
+
 #include "Gui/Gui.h"
 
 NATRON_NAMESPACE_ENTER;

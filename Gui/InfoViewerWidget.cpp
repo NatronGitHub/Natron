@@ -25,7 +25,8 @@
 #include "InfoViewerWidget.h"
 
 #include <cstdlib>
-#include <iostream>
+#include <stdexcept>
+
 #include <QtGui/QImage>
 #include <QHBoxLayout>
 #include <QThread>

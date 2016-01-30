@@ -25,6 +25,8 @@
 #include "NodeGraph.h"
 #include "NodeGraphPrivate.h"
 
+#include <stdexcept>
+
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

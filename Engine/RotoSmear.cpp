@@ -25,6 +25,8 @@
 #include "RotoSmear.h"
 
 #include <algorithm> // min, max
+#include <cassert>
+#include <stdexcept>
 
 #include "Engine/Node.h"
 #include "Engine/Image.h"

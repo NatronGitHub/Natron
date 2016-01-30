@@ -24,6 +24,8 @@
 
 #include "NodeGuiSerialization.h"
 
+#include <stdexcept>
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QColor>

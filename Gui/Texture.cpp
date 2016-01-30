@@ -24,7 +24,8 @@
 
 #include "Texture.h"
 
-#include <iostream>
+#include <stdexcept>
+
 #include "Global/GLIncludes.h"
 #include "Gui/ViewerGL.h"
 

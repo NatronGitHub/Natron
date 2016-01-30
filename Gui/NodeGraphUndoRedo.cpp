@@ -25,6 +25,7 @@
 #include "NodeGraphUndoRedo.h"
 
 #include <algorithm> // min, max
+#include <stdexcept>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

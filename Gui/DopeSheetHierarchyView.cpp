@@ -24,6 +24,8 @@
 
 #include "DopeSheetHierarchyView.h"
 
+#include <stdexcept>
+
 #include <QDebug> //REMOVEME
 #include <QHeaderView>
 #include <QPainter>

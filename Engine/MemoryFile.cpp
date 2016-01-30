@@ -39,6 +39,7 @@
 #endif
 #include <sstream>
 #include <iostream>
+#include <cassert>
 #include <stdexcept>
 
 #include "Global/Macros.h"

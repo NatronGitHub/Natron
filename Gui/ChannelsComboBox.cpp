@@ -25,6 +25,7 @@
 #include "ChannelsComboBox.h"
 
 #include <cassert>
+#include <stdexcept>
 
 #include "Global/Macros.h"
 

@@ -28,9 +28,9 @@
 #include <sys/time.h>     // for getrlimit on linux
 #include <sys/resource.h> // for getrlimit
 #endif
-
 #include <cstddef>
 #include <cstdlib>
+#include <cassert>
 #include <stdexcept>
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF

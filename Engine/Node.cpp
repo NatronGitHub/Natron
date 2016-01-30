@@ -27,8 +27,9 @@
 #include <limits>
 #include <locale>
 #include <algorithm> // min, max
-#include <stdexcept>
 #include <bitset>
+#include <cassert>
+#include <stdexcept>
 
 #include <QtCore/QDebug>
 #include <QtCore/QReadWriteLock>

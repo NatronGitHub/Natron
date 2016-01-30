@@ -27,6 +27,7 @@
 #include <set>
 #include <algorithm> // min, max
 #include <vector>
+#include <stdexcept>
 
 #include <QApplication>
 #include <QHeaderView>

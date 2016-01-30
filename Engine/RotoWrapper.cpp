@@ -24,6 +24,9 @@
 
 #include "RotoWrapper.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
 #include "Engine/EffectInstance.h"

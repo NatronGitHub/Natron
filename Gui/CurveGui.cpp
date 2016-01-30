@@ -26,6 +26,7 @@
 
 #include <cmath>
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include <QtCore/QThread>
 #include <QtCore/QObject>

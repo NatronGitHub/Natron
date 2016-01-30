@@ -24,6 +24,8 @@
 
 #include "ProjectGuiSerialization.h"
 
+#include <stdexcept>
+
 #include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)

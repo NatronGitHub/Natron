@@ -28,6 +28,8 @@
 #include <set>
 #include <list>
 #include <algorithm> // min, max
+#include <cassert>
+#include <stdexcept>
 
 #include <QtCore/QMetaType>
 #include <QtCore/QMutex>

@@ -23,6 +23,10 @@
 // ***** END PYTHON BLOCK *****
 
 #include "ParameterWrapper.h"
+
+#include <cassert>
+#include <stdexcept>
+
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 

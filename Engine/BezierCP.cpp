@@ -30,6 +30,7 @@
 #include <set>
 #include <list>
 #include <utility>
+#include <cassert>
 #include <stdexcept>
 
 #include <QtCore/QThread>

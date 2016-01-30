@@ -24,6 +24,9 @@
 
 #include "Image.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include <QDebug>
 
 //#define NATRON_COPY_CHANNELS_UNPREMULT

@@ -28,6 +28,7 @@
 #include <sstream>
 #include <locale>
 #include <limits>
+#include <cassert>
 #include <stdexcept>
 
 #include <QLineF>

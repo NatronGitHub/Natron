@@ -25,6 +25,7 @@
 #include "AddKnobDialog.h"
 
 #include <cfloat> // floor
+#include <stdexcept>
 
 #include <QCheckBox>
 #include <QTextEdit>

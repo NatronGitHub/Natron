@@ -24,6 +24,8 @@
 
 #include "QtEnumConvert.h"
 
+#include <stdexcept>
+
 NATRON_NAMESPACE_ENTER;
 
 ///what a painful mapping!

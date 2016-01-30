@@ -25,6 +25,8 @@
 #include "ToolButton.h"
 
 #include <algorithm>
+#include <stdexcept>
+
 CLANG_DIAG_OFF(deprecated)
 #include <QMenu>
 #include <qalgorithms.h>

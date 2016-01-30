@@ -20,6 +20,9 @@
 
 #include "ExistenceCheckThread.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include <QLocalSocket>
 #include <QMutex>
 #include <QWaitCondition>

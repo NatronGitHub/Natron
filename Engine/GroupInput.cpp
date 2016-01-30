@@ -24,6 +24,9 @@
 
 #include "GroupInput.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // kNatronGroupInputIsOptionalParamName, kNatronGroupInputIsMaskParamName

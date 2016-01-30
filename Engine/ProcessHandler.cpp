@@ -24,6 +24,7 @@
 
 #include "ProcessHandler.h"
 
+#include <cassert>
 #include <stdexcept>
 
 #include <QProcess>

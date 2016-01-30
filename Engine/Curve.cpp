@@ -25,6 +25,7 @@
 #include "Curve.h"
 
 #include <algorithm>
+#include <cassert>
 #include <stdexcept>
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)

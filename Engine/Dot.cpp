@@ -24,6 +24,9 @@
 
 #include "Dot.h"
 
+#include <cassert>
+#include <stdexcept>
+
 NATRON_NAMESPACE_ENTER;
 
 std::string
