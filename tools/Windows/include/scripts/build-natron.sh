@@ -155,6 +155,8 @@ if [ ! -d "$SRC_PATH/OpenColorIO-Configs" ]; then
     (cd "$SRC_PATH"; tar xf OpenColorIO-Configs.tar.gz) || exit 1
     rm "$SRC_PATH/OpenColorIO-Configs.tar.gz" || exit 1
     mv "$SRC_PATH/OpenColorIO-Configs"* "$SRC_PATH/OpenColorIO-Configs" || exit 1
+	rm -rf "$SRC_PATH/OpenColorIO-Configs/aces_1.0.1/baked"
+	rm -rf "$SRC_PATH/OpenColorIO-Configs/aces_1.0.1/python"
 fi
 
 cp -a "$SRC_PATH/OpenColorIO-Configs" "$INSTALL_PATH/share/" || exit 1
