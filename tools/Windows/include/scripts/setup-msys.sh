@@ -50,7 +50,7 @@ pacman $PKG_INSTALL_OPS ${PKG_PREFIX}pango
 pacman $PKG_INSTALL_OPS ${PKG_PREFIX}librsvg
 pacman $PKG_INSTALL_OPS ${PKG_PREFIX}libzip
 pacman $PKG_INSTALL_OPS ${PKG_PREFIX}cmake
-pacman $PKG_INSTALL_OPS wget tar diffutils file gawk gettext grep make patch patchutils pkg-config sed unzip git bison flex rsync
+pacman $PKG_INSTALL_OPS wget tar diffutils file gawk gettext grep make patch patchutils pkg-config sed unzip git bison flex rsync zip
 
 # needed by oiio
 if [ ! -f /mingw${1}/include/byteswap.h ]; then
