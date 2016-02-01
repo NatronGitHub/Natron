@@ -759,6 +759,17 @@ Gui::renderAllViewers(bool canAbort)
 }
 
 void
+Gui::abortAllViewers()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+        if ( (*it)->isVisible() ) {
+            (*it)->getInternalNode()->getNode()->abortAnyProcessing();
+        }
+    }
+}
+
+void
 Gui::toggleAutoHideGraphInputs()
 {
     _imp->_nodeGraphArea->toggleAutoHideInputs(false);

@@ -795,14 +795,20 @@ AppManager::clearPluginsLoadedCache()
 void
 AppManager::clearAllCaches()
 {
-    clearDiskCache();
-    clearNodeCache();
-
     std::map<int,AppInstanceRef> copy;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
         copy = _imp->_appInstances;
     }
+    
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
+        it->second.app->abortAllViewers();
+    }
+    
+    clearDiskCache();
+    clearNodeCache();
+
+ 
     ///for each app instance clear all its nodes cache
     for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
         it->second.app->clearOpenFXPluginsCaches();
