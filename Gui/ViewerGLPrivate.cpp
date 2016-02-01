@@ -27,6 +27,7 @@
 #include <cassert>
 #include <algorithm> // min, max
 #include <cmath> // sin, cos
+#include <stdexcept>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 #include <QApplication> // qApp

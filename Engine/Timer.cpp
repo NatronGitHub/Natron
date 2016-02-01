@@ -27,6 +27,9 @@
 #include <iostream>
 #include <time.h>
 #include <cmath>
+#include <cassert>
+#include <stdexcept>
+
 #include <QMutexLocker>
 
 #include "Global/GlobalDefines.h"

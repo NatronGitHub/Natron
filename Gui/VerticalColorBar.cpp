@@ -24,6 +24,8 @@
 
 #include "VerticalColorBar.h"
 
+#include <stdexcept>
+
 #include <QPainter>
 #include <QPen>
 

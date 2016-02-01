@@ -26,6 +26,10 @@
 
 #include <set>
 #include <cmath>
+#include <cassert>
+#include <stdexcept>
+
+
 #include <QMutex>
 
 #include "Engine/Knob.h"

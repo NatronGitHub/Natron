@@ -23,6 +23,8 @@
 // ***** END PYTHON BLOCK *****
 
 #include <cassert>
+#include <stdexcept>
+
 #include <boost/weak_ptr.hpp>
 
 #include "Engine/KnobTypes.h"

@@ -23,7 +23,10 @@
 // ***** END PYTHON BLOCK *****
 
 #include "PanelWidget.h"
+
 #include <cassert>
+#include <stdexcept>
+
 #include <QApplication>
 #include <QKeyEvent>
 

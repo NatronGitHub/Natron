@@ -26,6 +26,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <cassert>
 #include <stdexcept>
 
 #include <QDebug>

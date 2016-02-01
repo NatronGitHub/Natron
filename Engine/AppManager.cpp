@@ -28,6 +28,7 @@
 #include <clocale>
 #include <csignal>
 #include <cstddef>
+#include <cassert>
 #include <stdexcept>
 
 #if defined(Q_OS_LINUX)

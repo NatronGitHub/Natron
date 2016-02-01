@@ -22,6 +22,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <stdexcept>
+
 #include "ScriptTextEdit.h"
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)

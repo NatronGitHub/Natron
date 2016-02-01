@@ -24,6 +24,9 @@
 
 #include "NoOpBase.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Engine/Transform.h" // Matrix3x3
 
 NATRON_NAMESPACE_ENTER;

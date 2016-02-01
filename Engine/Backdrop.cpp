@@ -23,6 +23,10 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Backdrop.h"
+
+#include <cassert>
+#include <stdexcept>
+
 #include "Engine/Transform.h"
 #include "Engine/KnobTypes.h"
 

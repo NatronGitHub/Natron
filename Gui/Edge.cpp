@@ -26,6 +26,7 @@
 
 #include <algorithm> // min, max
 #include <cmath>
+#include <stdexcept>
 
 #include <QPainter>
 #include <QApplication>

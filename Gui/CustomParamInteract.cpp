@@ -24,6 +24,8 @@
 
 #include "CustomParamInteract.h"
 
+#include <stdexcept>
+
 #include <QThread>
 #include <QCoreApplication>
 #include <QMouseEvent>

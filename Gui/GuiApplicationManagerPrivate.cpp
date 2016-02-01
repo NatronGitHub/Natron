@@ -24,10 +24,11 @@
 
 #include "GuiApplicationManagerPrivate.h"
 
-#include "Global/Macros.h"
+#include <stdexcept>
 
 #include <fontconfig/fontconfig.h>
 
+#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

@@ -24,7 +24,9 @@
 
 #include "DopeSheetEditorUndoRedo.h"
 
-#include <QDebug> //REMOVEME
+#include <stdexcept>
+
+#include <QDebug>
 
 #include "Engine/Knob.h"
 #include "Engine/Node.h"

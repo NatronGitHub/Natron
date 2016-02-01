@@ -25,6 +25,8 @@
 #include "FileSystemModel.h"
 
 #include <vector>
+#include <cassert>
+#include <stdexcept>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

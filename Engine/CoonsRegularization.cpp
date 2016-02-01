@@ -52,6 +52,7 @@
 #include <limits>
 #include <cfloat>
 #include <algorithm> // min, max
+#include <cassert>
 #include <stdexcept>
 
 #include "Engine/Bezier.h"

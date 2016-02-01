@@ -25,6 +25,9 @@
 #include "HistogramCPU.h"
 
 #include <algorithm>
+#include <cassert>
+#include <stdexcept>
+
 #include <QMutex>
 #include <QWaitCondition>
 

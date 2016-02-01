@@ -25,6 +25,8 @@
 #include "Image.h"
 
 #include <algorithm> // min, max
+#include <cassert>
+#include <stdexcept>
 
 #include <QDebug>
 #ifndef Q_MOC_RUN

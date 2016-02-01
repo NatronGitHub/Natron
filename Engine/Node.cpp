@@ -27,8 +27,9 @@
 #include <limits>
 #include <locale>
 #include <algorithm> // min, max
-#include <stdexcept>
 #include <bitset>
+#include <cassert>
+#include <stdexcept>
 
 #include <QtCore/QDebug>
 #include <QtCore/QReadWriteLock>
@@ -6519,7 +6520,9 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
             
             const KnobFile* isFile = dynamic_cast<const KnobFile*>(fileKnob);
             assert(isFile);
-            
+            if (!isFile) {
+                throw std::logic_error("Node::computeFrameRangeForReader");
+            }
             std::string pattern = isFile->getValue();
             getApp()->getProject()->canonicalizePath(pattern);
             SequenceParsing::SequenceFromPattern seq;

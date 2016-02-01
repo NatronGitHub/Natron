@@ -24,6 +24,8 @@
 
 #include "DopeSheetHierarchyView.h"
 
+#include <stdexcept>
+
 #include <QDebug> //REMOVEME
 #include <QHeaderView>
 #include <QPainter>
@@ -951,6 +953,9 @@ void HierarchyView::onKeyframeSelectionChanged(bool recurse)
     HierarchyViewSelectionModel *mySelecModel
             = dynamic_cast<HierarchyViewSelectionModel *>(selectionModel());
     assert(mySelecModel);
+    if (!mySelecModel) {
+        throw std::logic_error("HierarchyView::onKeyframeSelectionChanged");
+    }
     
     // Retrieve the knob contexts with selected keyframes
     DSKnobPtrList toCheck;

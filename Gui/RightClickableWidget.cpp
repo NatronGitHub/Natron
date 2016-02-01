@@ -24,6 +24,8 @@
 
 #include "RightClickableWidget.h"
 
+#include <stdexcept>
+
 #include <QtCore/QThread>
 #include <QApplication>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF

@@ -24,12 +24,14 @@
 
 #include "TimeLine.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #ifndef NDEBUG
 #include <QThread>
 #include <QCoreApplication>
 #endif
 
-#include <cassert>
 #include "Engine/Project.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Node.h"

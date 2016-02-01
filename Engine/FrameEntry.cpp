@@ -24,6 +24,9 @@
 
 #include "FrameEntry.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Engine/RectI.h"
 
 NATRON_NAMESPACE_ENTER;

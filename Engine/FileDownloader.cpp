@@ -23,7 +23,10 @@
 // ***** END PYTHON BLOCK *****
 
 #include "FileDownloader.h"
+
 #include <cassert>
+#include <stdexcept>
+
 #include <QTimer>
 #include <QAbstractNetworkCache>
 

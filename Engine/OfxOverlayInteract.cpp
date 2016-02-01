@@ -24,6 +24,9 @@
 
 #include "OfxOverlayInteract.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Global/Macros.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"

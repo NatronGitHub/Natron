@@ -31,6 +31,7 @@
 #include <vector>
 #include <locale>
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include "Engine/Backdrop.h"
 #include "Engine/Dot.h"

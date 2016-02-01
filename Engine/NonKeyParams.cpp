@@ -24,8 +24,10 @@
 
 #include "NonKeyParams.h"
 
-NATRON_NAMESPACE_ENTER;
+#include <cassert>
+#include <stdexcept>
 
+NATRON_NAMESPACE_ENTER;
 
 NonKeyParams::NonKeyParams()
     : _elementsCount(0)

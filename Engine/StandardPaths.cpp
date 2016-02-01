@@ -24,6 +24,9 @@
 
 #include "StandardPaths.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include <QCoreApplication>
 #include <QDir>
 #include <QString>

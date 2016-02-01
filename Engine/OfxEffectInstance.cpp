@@ -26,6 +26,7 @@
 
 #include <locale>
 #include <limits>
+#include <cassert>
 #include <stdexcept>
 
 #include <QtCore/QDebug>

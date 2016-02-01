@@ -161,14 +161,18 @@ done
 
 # move all libraries to the same place, put symbolic links instead
 for plugin in "$PLUGINDIR/OFX/Natron"/*.ofx.bundle; do
-    cd $plugin/Contents/Libraries
+    cd "$plugin/Contents/Libraries"
+    # relative path to the Natron.app/Contents/Frameworks dir
+    frameworks=../../../../../../Frameworks
     for lib in lib*.dylib; do
-        if [ -f "../../../../Frameworks/$lib" ]; then
-            rm "$lib"
-        else
-            mv "$lib" "../../../../Frameworks/$lib"
+        if [ -f "$lib" ]; then
+            if [ -f "$frameworks/$lib" ]; then
+                rm "$lib"
+            else
+                mv "$lib" "$frameworks/$lib"
+            fi
+            ln -sf "$frameworks/$lib" "$lib"
         fi
-        ln -sf "../../../../Frameworks/$lib" "$lib"
     done
     if [ "$COMPILER" = "gcc" ]; then # use gcc's libraries everywhere
         for l in gcc_s.1 gomp.1 stdc++.6; do

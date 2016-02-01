@@ -24,8 +24,9 @@
 
 #include "ProjectPrivate.h"
 
-#include <stdexcept>
 #include <list>
+#include <cassert>
+#include <stdexcept>
 
 #include <QtCore/QDebug>
 #include <QtCore/QTimer>

@@ -25,9 +25,10 @@
 #include "DopeSheet.h"
 
 #include <algorithm>
+#include <stdexcept>
 
 // Qt includes
-#include <QDebug> //REMOVEME
+#include <QDebug>
 #include <QtEvents>
 #include <QTreeWidget>
 #include <QUndoStack>

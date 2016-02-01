@@ -24,6 +24,9 @@
 
 #include "ParallelRenderArgs.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Engine/AppManager.h"
 #include "Engine/Settings.h"
 #include "Engine/EffectInstance.h"
