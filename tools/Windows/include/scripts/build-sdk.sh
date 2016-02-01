@@ -256,7 +256,7 @@ if [ ! -f "${INSTALL_PATH}/bin/repogen.exe" ] || [ "$DOWNLOAD_INSTALLER" = "1" ]
     cd $SRC_PATH
     wget $THIRD_PARTY_BIN_URL/$INSTALLER_BIN_TAR -O $SRC_PATH/$INSTALLER_BIN_TAR || exit 1
     unzip $CWD/src/$INSTALLER_BIN_TAR || exit 1
-    cp -a natron-win-installer/mingw32/bin/* /mingw32//bin/  || exit 1
+    cp -a natron-win-installer/mingw32/bin/* /mingw32/bin/  || exit 1
     cp -a natron-win-installer/mingw64/bin/* /mingw64/bin/ || exit 1
 fi
 
