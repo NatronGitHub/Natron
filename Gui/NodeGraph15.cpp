@@ -271,7 +271,7 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                                                 selectedNodeCenter.y() + selectedNodeBbox.height() / 2.) + NodeGui::DEFAULT_OFFSET_BETWEEN_NODES);
                     
                     
-                    CreateNodeArgs args(PLUGINID_OFX_MERGE, eCreateNodeReasonUserCreate, getGroup());
+                    CreateNodeArgs args(PLUGINID_OFX_MERGE, eCreateNodeReasonInternal, getGroup());
                     args.xPosHint = newNodePos.x();
                     args.yPosHint = newNodePos.y();
 

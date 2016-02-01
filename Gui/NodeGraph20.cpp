@@ -486,8 +486,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     case eEventStateDraggingNode: {
         mustUpdate = true;
         mustUpdateNavigator = true;
-        bool controlDown = modCASIsControl(e);
-        bool shiftdown = modCASIsControlShift(e);
+        bool controlDown = modifierHasControl(e);
+        bool shiftdown = modifierHasShift(e);
         moveSelectedNodesBy(shiftdown, controlDown, lastMousePosScene, newPos, sceneR, true);
         break;
     }
