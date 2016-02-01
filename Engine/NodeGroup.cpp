@@ -28,6 +28,7 @@
 #include <locale>
 #include <cfloat>
 #include <algorithm> // min, max
+#include <cassert>
 #include <stdexcept>
 
 #include <QtCore/QThreadPool>
@@ -2263,7 +2264,11 @@ static void exportRotoLayer(int indentLevel,
                 boost::shared_ptr<KnobDouble> track = (*it2)->isSlaved();
                 if (track) {
                     EffectInstance* effect = dynamic_cast<EffectInstance*>(track->getHolder());
-                    assert(effect && effect->getNode()->isPointTrackerNode());
+                    assert(effect);
+                    if (!effect) {
+                        throw std::logic_error("exportRotoLayer");
+                    }
+                    assert(effect->getNode() && effect->getNode()->isPointTrackerNode());
                     std::string trackerName = effect->getNode()->getScriptName_mt_safe();
                     int trackTime = (*it2)->getOffsetTime();
                     WRITE_INDENT(indentLevel); WRITE_STRING("tracker = group.getNode(\"" + QString(trackerName.c_str()) + "\")");
@@ -2416,6 +2421,9 @@ static bool exportKnobLinks(int indentLevel,
             
             EffectInstance* aliasHolder = dynamic_cast<EffectInstance*>(alias->getHolder());
             assert(aliasHolder);
+            if (!aliasHolder) {
+                throw std::logic_error("exportKnobLinks");
+            }
             QString aliasName;
             if (aliasHolder == groupNode->getEffectInstance().get()) {
                 aliasName = groupName;

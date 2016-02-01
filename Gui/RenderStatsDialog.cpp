@@ -22,9 +22,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <bitset>
-
 #include "RenderStatsDialog.h"
+
+#include <bitset>
+#include <stdexcept>
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>

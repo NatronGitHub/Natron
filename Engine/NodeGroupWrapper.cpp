@@ -24,6 +24,9 @@
 
 #include "NodeGroupWrapper.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeWrapper.h"

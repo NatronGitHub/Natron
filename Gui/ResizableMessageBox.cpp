@@ -24,6 +24,8 @@
 
 #include "ResizableMessageBox.h"
 
+#include <stdexcept>
+
 #include <QEvent>
 #include <QTextEdit>
 

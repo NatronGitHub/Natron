@@ -24,6 +24,8 @@
 
 #include "TabGroup.h"
 
+#include <stdexcept>
+
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QGridLayout>

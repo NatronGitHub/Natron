@@ -28,6 +28,7 @@
 #include <sstream>
 #include <locale>
 #include <limits>
+#include <cassert>
 #include <stdexcept>
 
 #include <QLineF>
@@ -671,6 +672,9 @@ RotoStrokeItem::clone(const RotoItem* other)
 
     const RotoStrokeItem* otherStroke = dynamic_cast<const RotoStrokeItem*>(other);
     assert(otherStroke);
+    if (!otherStroke) {
+        throw std::logic_error("RotoStrokeItem::clone");
+    }
     {
         QMutexLocker k(&itemMutex);
         _imp->strokes.clear();
@@ -701,6 +705,9 @@ RotoStrokeItem::save(RotoItemSerialization* obj) const
     RotoDrawableItem::save(obj);
     RotoStrokeItemSerialization* s = dynamic_cast<RotoStrokeItemSerialization*>(obj);
     assert(s);
+    if (!s) {
+        throw std::logic_error("RotoStrokeItem::save");
+    }
     {
         QMutexLocker k(&itemMutex);
         s->_brushType = (int)_imp->type;
@@ -727,6 +734,9 @@ RotoStrokeItem::load(const RotoItemSerialization & obj)
     RotoDrawableItem::load(obj);
     const RotoStrokeItemSerialization* s = dynamic_cast<const RotoStrokeItemSerialization*>(&obj);
     assert(s);
+    if (!s) {
+        throw std::logic_error("RotoStrokeItem::load");
+    }
     {
         QMutexLocker k(&itemMutex);
         _imp->type = (RotoStrokeType)s->_brushType;

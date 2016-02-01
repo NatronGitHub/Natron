@@ -24,6 +24,9 @@
 
 #include "AppInstanceWrapper.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include <QDebug>
 
 #include "Engine/AppInstance.h"

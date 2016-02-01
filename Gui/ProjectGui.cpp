@@ -505,7 +505,9 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
                 assert(nodeGui_i);
                 NodeGui* nodeGui = dynamic_cast<NodeGui*>(nodeGui_i.get());
                 assert(nodeGui);
-                nodeGui->setVisibleSettingsPanel(true);
+                if (nodeGui) {
+                    nodeGui->setVisibleSettingsPanel(true);
+                }
             }
         }
     }

@@ -24,6 +24,8 @@
 
 #include "Gui/KnobGuiPrivate.h"
 
+#include <stdexcept>
+
 NATRON_NAMESPACE_ENTER;
 
 

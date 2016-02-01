@@ -34,6 +34,9 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
+//#define NATRON_PLAYBACK_USES_THREAD_POOL
+
+
 NATRON_NAMESPACE_ENTER;
 
 typedef boost::shared_ptr<RenderStats> RenderStatsPtr;
@@ -89,18 +92,32 @@ typedef std::list<BufferedFrame> BufferedFrames;
 class OutputSchedulerThread;
 
 struct RenderThreadTaskPrivate;
+
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
 class RenderThreadTask :  public QThread
+#else
+class RenderThreadTask :  public QRunnable
+#endif
 {
     
     
 public:
-    
+
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,OutputSchedulerThread* scheduler);
+#else
+    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
+                     OutputSchedulerThread* scheduler,
+                     const int time,
+                     const bool useRenderStats,
+                     const std::vector<int>& viewsToRender);
+#endif
     
     virtual ~RenderThreadTask();
     
     virtual void run() OVERRIDE FINAL;
     
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
      * @brief Call this to quit the thread whenever it will return to the pickFrameToRender function
      **/
@@ -111,6 +128,7 @@ public:
     bool hasQuit() const;
     
     void notifyIsRunning(bool running);
+#endif
     
 protected:
     
@@ -268,11 +286,12 @@ public:
      **/
     int getNActiveRenderThreads() const;
     
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
      * @brief Called by render-threads to pick some work to do or to get asleep if theres nothing to do
      **/
     int pickFrameToRender(RenderThreadTask* thread, bool* enableRenderStats, std::vector<int>* viewsToRender);
-    
+#endif
 
     /**
      * @brief Called by the render-threads when mustQuit() is true on the thread
@@ -299,7 +318,7 @@ public:
 
 public Q_SLOTS:
     
-    void doProcessFrameMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
+    void doProcessFrameMainThread(const BufferedFrames& frames);
     
     /**
      @brief Aborts all computations. This turns on the flag abortRequested and will inform the engine that it needs to stop.
@@ -317,10 +336,13 @@ public Q_SLOTS:
      **/
     void abortRendering(bool autoRestart, bool blocking);
     
+private Q_SLOTS:
+    
+    void onThreadSpawnsTimerTriggered();
     
 Q_SIGNALS:
     
-    void s_doProcessOnMainThread(const BufferedFrames& frames,bool mustSeekTimeline,int time);
+    void s_doProcessOnMainThread(const BufferedFrames& frames);
     
     void s_abortRenderingOnMainThread(bool userRequested,bool blocking);
     
@@ -378,10 +400,12 @@ protected:
      * @brief Must create a runnable task that will render 1 frame in a separate thread.
      * The internal thread pool will take care of the thread
      * The task will pick frames to render until there are no more to be rendered.
-     * @param playbackOrRender Used as a hint to know that we're rendering for playback or render on disk
-     * and not just for one frame
      **/
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     virtual RenderThreadTask* createRunnable() = 0;
+#else
+    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<int>& viewsToRender) = 0;
+#endif
     
     /**
      * @brief Called upon failure of a thread to render an image
@@ -417,6 +441,7 @@ private:
     
     virtual void run() OVERRIDE FINAL;
     
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     /**
      * @brief Called by the scheduler threads to wake-up render threads and make them do some work
      * It calls pushFramesToRenderInternal. It starts pushing frames from lastFramePushedIndex
@@ -438,6 +463,10 @@ private:
      * @param optimalNThreads[out] Will be set to the new number of threads
      **/
     void adjustNumberOfThreads(int* newNThreads, int *lastNThreads);
+#else
+    void startTasksFromLastStartedFrame();
+    void startTasks(int startingFrame);
+#endif
     
     /**
      * @brief Make nThreadsToStop quit running. If 0 then all threads will be destroyed.
@@ -476,7 +505,11 @@ private:
     
     virtual int timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
+#else
+    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<int>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
+#endif
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     
@@ -517,7 +550,11 @@ private:
     
     virtual void getFrameRangeToRender(int& first,int& last) const OVERRIDE FINAL;
     
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
+#else
+    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<int>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
+#endif
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     

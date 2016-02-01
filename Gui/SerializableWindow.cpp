@@ -24,6 +24,8 @@
 
 #include "SerializableWindow.h"
 
+#include <stdexcept>
+
 #include <QMutex>
 
 NATRON_NAMESPACE_ENTER;

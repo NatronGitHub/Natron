@@ -25,6 +25,7 @@
 #include "RotoGui.h"
 
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include "Global/GLIncludes.h"
 

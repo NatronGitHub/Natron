@@ -28,6 +28,7 @@
 #include <cmath> // ceil
 #include <list>
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include "Engine/Settings.h"
 

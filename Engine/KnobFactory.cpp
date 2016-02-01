@@ -24,6 +24,9 @@
 
 #include "KnobFactory.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Knob.h"

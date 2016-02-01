@@ -24,6 +24,8 @@
 
 #include "PropertiesBinWrapper.h"
 
+#include <stdexcept>
+
 #include <QApplication>
 
 #include "Gui/Gui.h"

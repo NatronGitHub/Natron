@@ -30,6 +30,7 @@
 #include <map>
 #include <list>
 #include <utility>
+#include <stdexcept>
 
 #include "Global/Macros.h"
 
@@ -754,6 +755,17 @@ Gui::renderAllViewers(bool canAbort)
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
             (*it)->getInternalNode()->renderCurrentFrame(canAbort);
+        }
+    }
+}
+
+void
+Gui::abortAllViewers()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
+        if ( (*it)->isVisible() ) {
+            (*it)->getInternalNode()->getNode()->abortAnyProcessing();
         }
     }
 }

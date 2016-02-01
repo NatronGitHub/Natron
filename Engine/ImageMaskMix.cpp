@@ -24,6 +24,9 @@
 
 #include "Image.h"
 
+#include <cassert>
+#include <stdexcept>
+
 NATRON_NAMESPACE_ENTER;
 
 template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked, bool maskInvert>

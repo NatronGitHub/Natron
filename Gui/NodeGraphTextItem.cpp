@@ -25,6 +25,7 @@
 #include "NodeGraphTextItem.h"
 
 #include <cmath>
+#include <stdexcept>
 
 #include <QDebug>
 #include <QStyleOption>

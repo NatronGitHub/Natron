@@ -26,6 +26,7 @@
 #include "Gui/KnobGuiPrivate.h"
 
 #include <cassert>
+#include <stdexcept>
 
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 

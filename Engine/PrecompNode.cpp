@@ -22,8 +22,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-
 #include "PrecompNode.h"
+
+#include <cassert>
+#include <stdexcept>
 
 #include "Global/GlobalDefines.h"
 #include "Global/QtCompat.h"

@@ -30,6 +30,7 @@
 #include <string>
 #include <exception>
 #include <fstream>
+#include <stdexcept>
 
 #include <QtGui/QStyle>
 

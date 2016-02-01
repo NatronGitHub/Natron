@@ -26,6 +26,7 @@
 
 #include <cmath> // floor
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include <QtCore/QThread>
 #include <QApplication>
@@ -1109,6 +1110,9 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
         } else {
             BezierCPCurveGui* bezierCurve = dynamic_cast<BezierCPCurveGui*>((*it)->curve.get());
             assert(bezierCurve);
+            if (!bezierCurve) {
+                throw std::logic_error("CurveWidgetPrivate::moveSelectedKeyFrames");
+            }
             std::set<double> keyframes;
             bezierCurve->getBezier()->getKeyframeTimes(&keyframes);
             std::set<double>::iterator found = keyframes.find((*it)->key.getTime());

@@ -24,6 +24,8 @@
 
 #include "ClickableLabel.h"
 
+#include <stdexcept>
+
 #include <QApplication>
 #include <QEvent>
 #include <QStyle>

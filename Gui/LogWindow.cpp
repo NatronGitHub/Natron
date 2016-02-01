@@ -25,6 +25,7 @@
 #include "LogWindow.h"
 
 #include <cmath>
+#include <stdexcept>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

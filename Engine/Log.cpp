@@ -26,13 +26,13 @@
 
 #ifdef NATRON_LOG
 
-
-#include <cassert>
 #include <cstdio>
 #include <cstdarg>
 #include <memory>
 #include <cstdlib>
 #include <string>
+#include <cassert>
+#include <stdexcept>
 
 #include <QtCore/QFile>
 #include <QtCore/QTextStream>

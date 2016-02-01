@@ -1097,6 +1097,12 @@ GuiAppInstance::renderAllViewers(bool canAbort)
 }
 
 void
+GuiAppInstance::abortAllViewers()
+{
+    _imp->_gui->abortAllViewers();
+}
+
+void
 GuiAppInstance::reloadStylesheet()
 {
     if (_imp->_gui) {

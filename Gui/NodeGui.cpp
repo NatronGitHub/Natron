@@ -26,6 +26,8 @@
 
 #include <cassert>
 #include <algorithm> // min, max
+#include <stdexcept>
+
 #include <boost/scoped_array.hpp>
 
 CLANG_DIAG_OFF(deprecated)
@@ -192,6 +194,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 , _overlayLocked(false)
 , _availableViewsIndicator()
 , _passThroughIndicator()
+, identityStateSet(false)
 {
 }
 
@@ -3554,9 +3557,13 @@ NodeGui::onIdentityStateChanged(int inputNb)
     if (inputNb >= 0) {
         ptInput = node->getInput(inputNb);
     }
-    if (ptInput && ptInput == _identityInput.lock()) {
+    NodePtr prevIdentityInput = _identityInput.lock();
+    if (identityStateSet && ((ptInput && ptInput == prevIdentityInput) ||
+        (!ptInput && !prevIdentityInput))) {
         return;
     }
+    
+    identityStateSet = true;
     _identityInput = ptInput;
     
     

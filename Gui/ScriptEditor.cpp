@@ -24,6 +24,8 @@
 
 #include "ScriptEditor.h"
 
+#include <stdexcept>
+
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QUndoStack>

@@ -24,6 +24,8 @@
 
 #include "Utils.h"
 
+#include <stdexcept>
+
 NATRON_NAMESPACE_ENTER;
 
 namespace GuiUtils {

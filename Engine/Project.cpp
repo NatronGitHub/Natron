@@ -29,6 +29,7 @@
 #include <ios>
 #include <cstdlib> // strtoul
 #include <cerrno> // errno
+#include <cassert>
 #include <stdexcept>
 
 #include "Global/Macros.h"

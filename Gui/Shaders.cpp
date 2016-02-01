@@ -24,6 +24,8 @@
 
 #include "Global/Macros.h"
 
+#include <stdexcept>
+
 NATRON_NAMESPACE_ENTER;
 
 const char* fragRGB =

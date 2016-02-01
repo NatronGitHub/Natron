@@ -24,8 +24,9 @@
 
 #include "PluginMemory.h"
 
-#include <stdexcept>
 #include <vector>
+#include <cassert>
+#include <stdexcept>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)

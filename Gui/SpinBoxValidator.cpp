@@ -25,6 +25,8 @@
 
 #include "SpinBoxValidator.h"
 
+#include <stdexcept>
+
 #include "Engine/KnobTypes.h"
 #include "Gui/KnobUndoCommand.h"
 #include "Gui/KnobGuiDouble.h"

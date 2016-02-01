@@ -33,6 +33,7 @@
 #include <cassert>
 #include <locale>
 #include <algorithm>
+#include <stdexcept>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

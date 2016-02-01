@@ -143,7 +143,7 @@ public:
     /// return components from other planes.
     /// Returns a vector since the function getStringPropertyN does not exist. Only getStringProperty
     /// with an index exists.
-    virtual const std::vector<std::string>& getComponentsPresent() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual const std::vector<std::string>& getComponentsPresent() const OFX_EXCEPTION_SPEC OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     
     virtual int getDimension(const std::string &name) const OFX_EXCEPTION_SPEC OVERRIDE FINAL WARN_UNUSED_RETURN;

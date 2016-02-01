@@ -27,6 +27,7 @@
 
 #include <algorithm> // min, max
 #include <stdexcept>
+#include <cassert>
 
 #include <boost/shared_ptr.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF

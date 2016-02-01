@@ -24,6 +24,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <cassert>
+#include <stdexcept>
+
 // Compatibility function for pyside versions before this commit:
 // https://qt.gitorious.org/pyside/pyside/commit/b3669dca4e4321b204d10b06018d35900b1847ee
 

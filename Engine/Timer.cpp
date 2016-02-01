@@ -27,6 +27,9 @@
 #include <iostream>
 #include <time.h>
 #include <cmath>
+#include <cassert>
+#include <stdexcept>
+
 #include <QMutexLocker>
 
 #include "Global/GlobalDefines.h"
@@ -213,10 +216,18 @@ Timer::waitUntilNextFrameIsDue ()
     
     if (t > NATRON_FPS_REFRESH_RATE_SECONDS) {
         double actualFrameRate = _framesSinceLastFpsFrame / t;
-        if (actualFrameRate != _actualFrameRate) {
-            _actualFrameRate = actualFrameRate;
-            Q_EMIT fpsChanged(_actualFrameRate,getDesiredFrameRate());
+        double curActualFrameRate;
+        {
+            QMutexLocker l(_mutex);
+            if (actualFrameRate != _actualFrameRate) {
+                _actualFrameRate = actualFrameRate;
+            }
+            curActualFrameRate = _actualFrameRate;
         }
+        
+        
+        Q_EMIT fpsChanged(curActualFrameRate,getDesiredFrameRate());
+        
         _framesSinceLastFpsFrame = 0;
     }
     
@@ -227,6 +238,13 @@ Timer::waitUntilNextFrameIsDue ()
 
     _framesSinceLastFpsFrame += 1;
 } // waitUntilNextFrameIsDue
+
+double
+Timer::getActualFrameRate() const
+{
+    QMutexLocker l(_mutex);
+    return _actualFrameRate;
+}
 
 void
 Timer::setDesiredFrameRate (double fps)

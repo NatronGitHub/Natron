@@ -27,6 +27,7 @@
 #include <cassert>
 #include <fstream>
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include <QtCore/QTextStream>
 #include <QWaitCondition>

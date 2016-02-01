@@ -26,8 +26,9 @@
 
 #include <cfloat>
 #include <limits>
-#include <stdexcept>
 #include <bitset>
+#include <cassert>
+#include <stdexcept>
 
 #include <QtCore/QTextStream>
 #include <QtCore/QDebug>
@@ -311,24 +312,31 @@ OfxClipInstancePrivate::getComponentsPresentInternal(const OfxClipInstance::Clip
  * to have it thread-safe and local to a current calling time.
  */
 const std::vector<std::string>&
-OfxClipInstance::getComponentsPresent() const
+OfxClipInstance::getComponentsPresent() const OFX_EXCEPTION_SPEC
 {
-    
-    //The components present have just been computed in the previous call to getDimension()
-    //so we are fine here
-    ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-    return tls->componentsPresent;
+    try {
+        //The components present have just been computed in the previous call to getDimension()
+        //so we are fine here
+        ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+        return tls->componentsPresent;
+    } catch (...) {
+        throw OFX::Host::Property::Exception(kOfxStatErrUnknown);
+    }
 }
 
 int
 OfxClipInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
 {
-    if (name == kFnOfxImageEffectPropComponentsPresent) {
+    if (name != kFnOfxImageEffectPropComponentsPresent) {
+        return OFX::Host::ImageEffect::ClipInstance::getDimension(name);
+    }
+    try {
         ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
         const std::vector<std::string>& components = _imp->getComponentsPresentInternal(tls);
         return (int)components.size();
+    } catch (...) {
+        throw OFX::Host::Property::Exception(kOfxStatErrUnknown);
     }
-    return OFX::Host::ImageEffect::ClipInstance::getDimension(name);
 }
 
 

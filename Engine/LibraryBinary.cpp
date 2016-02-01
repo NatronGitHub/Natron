@@ -24,8 +24,9 @@
 
 #include "LibraryBinary.h"
 
-#include <cassert>
 #include <iostream>
+#include <cassert>
+#include <stdexcept>
 
 #include "Global/GlobalDefines.h"
 #ifdef __NATRON_UNIX__

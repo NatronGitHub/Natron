@@ -24,6 +24,8 @@
 
 #include "NodeBackdropSerialization.h"
 
+#include <stdexcept>
+
 NATRON_NAMESPACE_ENTER;
 
 NodeBackdropSerialization::NodeBackdropSerialization()

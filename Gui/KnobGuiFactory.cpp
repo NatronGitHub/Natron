@@ -24,6 +24,8 @@
 
 #include "KnobGuiFactory.h"
 
+#include <stdexcept>
+
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"
 

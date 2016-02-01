@@ -34,6 +34,7 @@
 #include <cmath>
 #include <cassert>
 #include <algorithm> // min, max
+#include <stdexcept>
 
 // tick_size_10
 //

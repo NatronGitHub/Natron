@@ -40,6 +40,9 @@
 #include "FileTypeMainWindow_win.h"
 
 #ifdef __NATRON_WIN32__
+
+#include <stdexcept>
+
 // —— general includes —————————————————————————
 #include <windows.h>
 #include <QMessageBox>
