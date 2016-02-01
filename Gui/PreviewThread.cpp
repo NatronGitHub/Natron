@@ -166,6 +166,10 @@ PreviewThread::run()
         
         
         if (front.node) {
+            
+            ///Mark this thread as running
+            appPTR->fetchAndAddNRunningThreads(1);
+            
             //process the request if valid
             int w = NATRON_PREVIEW_WIDTH;
             int h = NATRON_PREVIEW_HEIGHT;
@@ -185,6 +189,9 @@ PreviewThread::run()
                     front.node->copyPreviewImageBuffer(_imp->data, w, h);
                 }
             }
+            
+            ///Unmark this thread as running
+            appPTR->fetchAndAddNRunningThreads(-1);
         }
         
         

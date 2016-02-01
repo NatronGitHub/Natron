@@ -92,12 +92,16 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/OfxMemory.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/TLSHolder.h"
+
+//An effect may not use more than this amount of threads
+#define NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU 4
 
 NATRON_NAMESPACE_ENTER;
 // to disambiguate with the global-scope ::OfxHost
@@ -1213,7 +1217,9 @@ OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
         int activeThreadsCount = QThreadPool::globalInstance()->activeThreadCount();
         
         // Add the number of threads already running by the multiThreadSuite + parallel renders
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
         activeThreadsCount += appPTR->getNRunningThreads();
+#endif
         
         // Clamp to 0
         activeThreadsCount = std::max( 0, activeThreadsCount);
@@ -1231,10 +1237,10 @@ OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
             
             if (hwConcurrency <= 0) {
                 nThreadsPerEffect = 1;
-            } else if (hwConcurrency <= 4) {
+            } else if (hwConcurrency <= NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU) {
                 nThreadsPerEffect = hwConcurrency;
             } else {
-                nThreadsPerEffect = 4;
+                nThreadsPerEffect = NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU;
             }
         }
         ///+1 because the current thread is going to wait during the multiThread call so we're better off

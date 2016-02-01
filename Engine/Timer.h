@@ -94,6 +94,7 @@ public:
     void  setDesiredFrameRate (double fps);
     double getDesiredFrameRate() const;
 
+    double getActualFrameRate() const;
 
     //-------------------
     // Current play state
@@ -118,7 +119,7 @@ private:
     int _framesSinceLastFpsFrame;       // actual frame rate, averaged
     double _actualFrameRate;         // over several frames
     
-    QMutex* _mutex; //< protects _spf which is the only member that can 
+    QMutex* _mutex; //< protects _spf and _actualFrameRate
 };
 
 
