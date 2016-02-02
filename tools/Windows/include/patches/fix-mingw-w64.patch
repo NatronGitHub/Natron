@@ -1,0 +1,251 @@
+--- a/src/cmake/externalpackages.cmake
++++ b/src/cmake/externalpackages.cmake
+@@ -149,6 +149,8 @@ else ()
+     endif ()
+ endif ()
+ 
++add_definitions("-DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB")
++
+ if (VERBOSE)
+     message (STATUS "Boost found ${Boost_FOUND} ")
+     message (STATUS "Boost version      ${Boost_VERSION}")
+--- a/src/include/OpenImageIO/missing_math.h
++++ b/src/include/OpenImageIO/missing_math.h
+@@ -106,7 +106,7 @@
+ 
+ OIIO_NAMESPACE_ENTER {
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) && !defined(__GNUC__)
+ // Windows doesn't define these functions from math.h
+ #define hypotf _hypotf
+ #define copysign(x,y) _copysign(x,y)
+--- a/src/include/OpenImageIO/osdep.h
++++ b/src/include/OpenImageIO/osdep.h
+@@ -33,7 +33,9 @@
+ #ifdef _WIN32
+ # define WIN32_LEAN_AND_MEAN
+ # define VC_EXTRALEAN
++# ifndef __MINGW32__
+ # define NOMINMAX
++# endif
+ # include <windows.h>
+ #endif
+ 
+--- a/src/include/OpenImageIO/thread.h
++++ b/src/include/OpenImageIO/thread.h
+@@ -98,6 +98,7 @@
+ #endif
+ 
+ #if defined(__GNUC__) && (defined(_GLIBCXX_ATOMIC_BUILTINS) || (__GNUC__ * 100 + __GNUC_MINOR__ >= 401))
++#include <sched.h>
+ #define USE_GCC_ATOMICS
+ #endif
+ 
+--- a/src/libOpenImageIO/CMakeLists.txt
++++ b/src/libOpenImageIO/CMakeLists.txt
+@@ -258,7 +261,7 @@
+ 
+ 
+ if (WIN32)
+-    target_link_libraries (OpenImageIO psapi.lib)
++    target_link_libraries (OpenImageIO psapi ws2_32)
+ endif ()
+ link_ilmbase (OpenImageIO)
+ add_dependencies (OpenImageIO "${CMAKE_CURRENT_SOURCE_DIR}/libOpenImageIO.map")
+--- a/src/libOpenImageIO/exif.cpp
++++ b/src/libOpenImageIO/exif.cpp
+@@ -36,6 +36,7 @@
+ #include <map>
+ #include <set>
+ #include <algorithm>
++#include <malloc.h>
+ 
+ #include <boost/foreach.hpp>
+ 
+--- a/src/libOpenImageIO/imageinput.cpp
++++ b/src/libOpenImageIO/imageinput.cpp
+@@ -32,6 +32,7 @@
+ #include <cstdlib>
+ #include <cmath>
+ #include <vector>
++#include <malloc.h>
+ 
+ #include "dassert.h"
+ #include "typedesc.h"
+--- a/src/libtexture/imagecache.cpp
++++ b/src/libtexture/imagecache.cpp
+@@ -32,6 +32,7 @@
+ #include <string>
+ #include <sstream>
+ #include <vector>
++#include <malloc.h>
+ #include <cstring>
+ 
+ #include <OpenEXR/ImathMatrix.h>
+--- a/src/libtexture/texoptions.cpp
++++ b/src/libtexture/texoptions.cpp
+@@ -29,6 +29,7 @@
+ */
+ 
+ #include <string>
++#include <malloc.h>
+ #include <boost/scoped_ptr.hpp>
+ #include <boost/tr1/memory.hpp>
+ using namespace std::tr1;
+--- a/src/libtexture/texturesys.cpp
++++ b/src/libtexture/texturesys.cpp
+@@ -30,6 +30,7 @@
+ 
+ 
+ #include <math.h>
++#include <malloc.h>
+ #include <string>
+ #include <sstream>
+ #include <list>
+--- a/src/libutil/argparse.cpp
++++ b/src/libutil/argparse.cpp
+@@ -39,6 +39,7 @@
+ #include <iterator>
+ #include <string>
+ #include <sstream>
++#include <malloc.h>
+ 
+ #include "strutil.h"
+ #include "sysutil.h"
+--- a/src/libutil/filesystem.cpp
++++ b/src/libutil/filesystem.cpp
+@@ -288,7 +288,7 @@
+ FILE*
+ Filesystem::fopen (const std::string &path, const std::string &mode)
+ {
+-#ifdef _WIN32
++#if defined(_WIN32) && !defined(__GNUC__)
+     // on Windows fopen does not accept UTF-8 paths, so we convert to wide char
+     std::wstring wpath = Strutil::utf8_to_utf16 (path);
+     std::wstring wmode = Strutil::utf8_to_utf16 (mode);
+@@ -307,7 +307,7 @@
+                   const std::string &path,
+                   std::ios_base::openmode mode)
+ {
+-#ifdef _WIN32
++#if defined(_WIN32) && !defined(__GNUC__)
+     // Windows std::ifstream accepts non-standard wchar_t* 
+     std::wstring wpath = Strutil::utf8_to_utf16(path);
+     stream.open (wpath.c_str(), mode);
+@@ -324,7 +324,7 @@
+                   const std::string &path,
+                   std::ios_base::openmode mode)
+ {
+-#ifdef _WIN32
++#if defined(_WIN32) && !defined(__GNUC__)
+     // Windows std::ofstream accepts non-standard wchar_t*
+     std::wstring wpath = Strutil::utf8_to_utf16 (path);
+     stream.open (wpath.c_str(), mode);
+--- a/src/libutil/plugin.cpp
++++ b/src/libutil/plugin.cpp
+@@ -93,7 +93,7 @@ dlclose (Handle plugin_handle)
+ void *
+ dlsym (Handle plugin_handle, const char *symbol_name)
+ {
+-    return GetProcAddress ((HMODULE)plugin_handle, symbol_name);
++    return (void *)GetProcAddress ((HMODULE)plugin_handle, symbol_name);
+ }
+ 
+ 
+--- a/src/libutil/sysutil.cpp
++++ b/src/libutil/sysutil.cpp
+@@ -137,7 +137,7 @@ Sysutil::get_local_time (const time_t *time, struct tm *converted_time)
+ #ifdef _MSC_VER
+     localtime_s (converted_time, time);
+ #else
+-    localtime_r (time, converted_time);
++    *converted_time = *localtime(time);
+ #endif
+ }
+ 
+--- a/src/ptex.imageio/ptex/PtexCache.cpp
++++ b/src/ptex.imageio/ptex/PtexCache.cpp
+@@ -224,12 +224,21 @@ public:
+ 	// split into dirs
+ 	_searchdirs.clear();
+ 	char* buff = strdup(path);
+-	char* pos = 0;
+-	char* token = strtok_r(buff, ":", &pos);
+-	while (token) {
+-	    if (token[0]) _searchdirs.push_back(token);
+-	    token = strtok_r(0, ":", &pos);
+-	}
++	char* pos = buff;
++
++	do {
++		char *token = pos;
++		pos = strstr(pos, ":");
++
++		if (pos) {
++			pos[0] = '\0';
++			pos++;
++		}
++
++		if (token[0]) _searchdirs.push_back(token);
++
++	} while(pos);
++
+ 	free(buff);
+     }
+ 
+--- a/src/ptex.imageio/ptex/PtexPlatform.h
++++ b/src/ptex.imageio/ptex/PtexPlatform.h
+@@ -79,11 +79,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ 
+ // missing functions on Windows
+ #ifdef WINDOWS
++#if !defined(__GNUC__)
+ #define snprintf sprintf_s
+ #define strtok_r strtok_s
++#endif
+ typedef __int64 FilePos;
++#if !defined(__GNUC__)
+ #define fseeko _fseeki64
+ #define ftello _ftelli64
++#else
++#define fseeko fseek
++#define ftello ftell
++#endif
+ 
+ inline double log2(double x) {
+     return log(x) * 1.4426950408889634; 
+--- a/src/rla.imageio/rlaoutput.cpp
++++ b/src/rla.imageio/rlaoutput.cpp
+@@ -32,6 +32,7 @@
+ #include <cstdlib>
+ #include <cmath>
+ #include <ctime>
++#include <malloc.h>
+ 
+ #include "dassert.h"
+ #include "typedesc.h"
+--- a/src/cmake/modules/FindOpenJpeg.cmake	2013-12-29 23:51:59.071600000 +0400
++++ b/src/cmake/modules/FindOpenJpeg.cmake	2013-12-29 23:52:34.998400000 +0400
+@@ -78,7 +78,9 @@
+        ${OPENJPEG_HOME}/lib64)
+   set (OpenJpeg_include_paths
+        ${OpenJpeg_include_paths}
+-       ${OPENJPEG_HOME}/include)
++       ${OPENJPEG_HOME}/include
++       ${OPENJPEG_HOME}/include/openjpeg
++       ${OPENJPEG_HOME}/include/openjpeg-1.5)
+ endif()
+ 
+ 
+--- a/CMakeLists.txt	2013-12-30 01:06:13.042400000 +0400
++++ b/CMakeLists.txt	2013-12-30 01:06:22.293200000 +0400
+@@ -423,7 +423,7 @@
+     set (CPACK_GENERATOR "TGZ;STGZ;PackageMaker")
+     set (CPACK_SOURCE_GENERATOR "TGZ")
+ endif ()
+-if (WIN32)
++if (WIN32 AND NOT MINGW)
+     set (CPACK_GENERATOR "NSIS")
+     set(CPACK_PACKAGE_EXECUTABLES "iv" "iv - Image Viewer")
+ #    set(CPACK_CREATE_DESCTOP_LINKS "iv" "iv - Image Viewer")

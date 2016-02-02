@@ -135,9 +135,11 @@ if [ ! -f $INSTALL_PATH/bin/libOpenImageIO.dll ]; then
     cd oiio-Release-* || exit 1
     OIIO_PATCHES=$CWD/include/patches/OpenImageIO
     patch -p1 -i ${OIIO_PATCHES}/fix-mingw-w64.patch  || exit 1
-    patch -p0 -i ${OIIO_PATCHES}/fix-mingw-w64.diff || exit 1
+    # 1.6.x # patch -p1 -i ${OIIO_PATCHES}/fix-mingw-w64-16.patch  || exit 1
+    # 1.6.x # patch -p0 -i ${OIIO_PATCHES}/fix-mingw-w64-16.diff || exit 1
     patch -p1 -i ${OIIO_PATCHES}/workaround-ansidecl-h-PTR-define-conflict.patch || exit 1
     patch -p1 -i ${OIIO_PATCHES}/0001-MinGW-w64-include-winbase-h-early-for-TCHAR-types.patch  || exit 1
+    patch -p1 -i ${OIIO_PATCHES}/oiio-exrthreads.patch || exit 1
     #patch -p1 -i ${OIIO_PATCHES}/0002-Also-link-to-opencv_videoio-library.patch  || exit 1
 	rm -rf build
     mkdir build || exit 1
