@@ -286,6 +286,12 @@ TimeLapse::getTimeElapsedReset()
     return dt;
 }
 
+void
+TimeLapse::reset()
+{
+    gettimeofday(&prev, 0);
+}
+
 double
 TimeLapse::getTimeSinceCreation() const
 {

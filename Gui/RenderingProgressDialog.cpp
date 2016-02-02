@@ -468,7 +468,7 @@ GeneralProgressDialog::updateProgress(double p)
     p = std::max(std::min(p, 1.), 0.);
     _imp->progressBar->setValue(p * 100.);
     
-    double timeElapsedSecs = _imp->timer.getTimeElapsedReset();
+    double timeElapsedSecs = _imp->timer.getTimeSinceCreation();
     _imp->timeRemaining = p == 0 ? 0 : timeElapsedSecs * (1. - p) / p;
     
     if (!isVisible() && !wasCanceled()) {
