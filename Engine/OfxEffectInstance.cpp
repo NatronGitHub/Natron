@@ -1611,7 +1611,7 @@ OfxEffectInstance::getFramesNeeded(double time, int view)
         
         if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
             throw std::runtime_error("getFrameViewsNeeded action failed");
-        } else if (stat == kOfxStatOK) {
+        } else {
             for (OFX::Host::ImageEffect::ViewsRangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
                 OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
                 assert(clip);
