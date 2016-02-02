@@ -87,6 +87,16 @@ ViewerTab::drawOverlays(double time,
         return;
     }
     
+    if (getGui()->getApp()->isShowingDialog()) {
+        /*
+         We may enter a situation where a plug-in called EffectInstance::message to show a dialog
+         and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
+         because of focus changes. This would end-up in the interact draw action being called whilst the message() function
+         did not yet return and may in some plug-ins cause deadlocks (happens in all Genarts Sapphire plug-ins).
+         */
+        return;
+    }
+    
     int view = getCurrentView();
     
     NodesList  nodes;

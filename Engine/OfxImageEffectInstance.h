@@ -275,11 +275,6 @@ private:
                                               to an OfxParamInstance. Without this pointer we would be unable
                                               to track the knobs that have been created for 1 Node since OfxParamInstance
                                               is totally dissociated from Node.*/
-
-    /*Use this to re-create parenting between effect's params.
-       The key is the name of a param and the Instance a pointer to the associated effect.
-       This has nothing to do with the base class _params member! */
-    std::map<OFX::Host::Param::Instance*,std::string> _parentingMap;
 };
 
 class OfxImageEffectDescriptor : public OFX::Host::ImageEffect::Descriptor

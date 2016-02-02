@@ -730,7 +730,7 @@ public:
                int dimension,
                bool declaredByPlugin);
 
-    void addKnob(KnobPtr k);
+    void addKnob(const KnobPtr& k);
     void removeKnob(KnobI* k);
     
     bool moveOneStepUp(KnobI* k);

@@ -30,13 +30,17 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QProgressBar>
 #include <QFrame>
 #include <QTextBrowser>
 #include <QApplication>
 #include <QThread>
 #include <QKeyEvent>
+#include <QMutex>
 #include <QString>
+#include <QTimer>
+#include <QProgressBar>
 #include <QtCore/QTextStream>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -49,6 +53,9 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/Label.h"
 #include "Gui/LogWindow.h"
+
+#define NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS 4000
+#define NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS 1000
 
 NATRON_NAMESPACE_ENTER;
 
@@ -323,6 +330,188 @@ RenderingProgressDialog::onProcessDeleted()
                         SLOT( onFrameRenderedWithTimer(int,double,double) ) );
     QObject::disconnect( _imp->_process.get(),SIGNAL( processFinished(int) ),this,SLOT( onProcessFinished(int) ) );
     QObject::disconnect( _imp->_process.get(),SIGNAL( deleted() ),this,SLOT( onProcessDeleted() ) );
+}
+
+
+struct GeneralProgressDialogPrivate
+{
+    
+    bool canCancel;
+    mutable QMutex canceledMutex;
+    bool canceled;
+    
+    QVBoxLayout* mainLayout;
+    Label* descLabel;
+    
+    QWidget* progressContainer;
+    QHBoxLayout* progressLayout;
+    QProgressBar* progressBar;
+    Label* timeRemainingLabel;
+    Label* timerLabel;
+    bool timerLabelSet;
+    
+    QWidget* buttonsContainer;
+    QHBoxLayout* buttonsLayout;
+    Button* cancelButton;
+    
+    TimeLapse timer;
+    
+    QTimer refreshLabelTimer;
+    
+    double timeRemaining;
+    
+    GeneralProgressDialogPrivate(bool canCancel)
+    : canCancel(canCancel)
+    , canceledMutex()
+    , canceled(false)
+    , mainLayout(0)
+    , descLabel(0)
+    , progressContainer(0)
+    , progressLayout(0)
+    , progressBar(0)
+    , timeRemainingLabel(0)
+    , timerLabel(0)
+    , timerLabelSet(false)
+    , buttonsContainer(0)
+    , buttonsLayout(0)
+    , cancelButton(0)
+    , timer()
+    , refreshLabelTimer()
+    , timeRemaining(-1)
+    {
+        
+    }
+};
+
+GeneralProgressDialog::GeneralProgressDialog(const QString& title, bool canCancel, QWidget* parent)
+: QDialog(parent, Qt::WindowStaysOnTopHint)
+, _imp(new GeneralProgressDialogPrivate(canCancel))
+{
+    setModal(false);
+    setWindowTitle(tr("Progress"));
+    
+    assert(QThread::currentThread() == qApp->thread());
+    
+    _imp->mainLayout = new QVBoxLayout(this);
+    _imp->descLabel = new Label(title,this);
+    
+    _imp->mainLayout->addWidget(_imp->descLabel);
+    
+    _imp->progressContainer = new QWidget(this);
+    _imp->progressLayout = new QHBoxLayout(_imp->progressContainer);
+    _imp->progressLayout->setContentsMargins(0, 0, 0, 0);
+    _imp->mainLayout->addWidget(_imp->progressContainer);
+
+    _imp->timeRemainingLabel = new Label(tr("Time to go: "),_imp->progressContainer);
+    _imp->progressLayout->addWidget(_imp->timeRemainingLabel);
+    
+    
+    _imp->timerLabel = new Label(_imp->progressContainer);
+    _imp->progressLayout->addWidget(_imp->timerLabel);
+    
+    _imp->progressBar = new QProgressBar(_imp->progressContainer);
+    _imp->progressBar->setRange(0, 100);
+    _imp->progressBar->setValue(0);
+    _imp->progressLayout->addWidget(_imp->progressBar);
+    
+    if (canCancel) {
+        
+        _imp->buttonsContainer = new QWidget(this);
+        _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsContainer);
+        _imp->mainLayout->addWidget(_imp->buttonsContainer);
+        
+        _imp->buttonsLayout->addStretch();
+        _imp->cancelButton = new Button(QIcon(), tr("Cancel"), this);
+        QObject::connect(_imp->cancelButton, SIGNAL(clicked(bool)), this, SLOT(onCancelRequested()));
+        _imp->buttonsLayout->addWidget(_imp->cancelButton);
+        _imp->buttonsLayout->addStretch();
+    }
+    
+    onRefreshLabelTimeout();
+    _imp->refreshLabelTimer.start(NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS);
+    QObject::connect(&_imp->refreshLabelTimer, SIGNAL(timeout()), this, SLOT(onRefreshLabelTimeout()));
+
+}
+
+GeneralProgressDialog::~GeneralProgressDialog()
+{
+    
+}
+
+bool
+GeneralProgressDialog::wasCanceled() const
+{
+    if (!_imp->canCancel) {
+        return false;
+    }
+    QMutexLocker k (&_imp->canceledMutex);
+    return _imp->canceled;
+}
+
+void
+GeneralProgressDialog::onRefreshLabelTimeout()
+{
+    QString timeStr;
+    if (_imp->timeRemaining == -1) {
+        timeStr = tr("Estimating...");
+    } else {
+        timeStr = Timer::printAsTime(_imp->timeRemaining, true);
+        _imp->timerLabelSet = true;
+    }
+    _imp->timerLabel->setText(timeStr);
+}
+
+void
+GeneralProgressDialog::updateProgress(double p)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    p = std::max(std::min(p, 1.), 0.);
+    _imp->progressBar->setValue(p * 100.);
+    
+    double timeElapsedSecs = _imp->timer.getTimeElapsedReset();
+    _imp->timeRemaining = p == 0 ? 0 : timeElapsedSecs * (100. - p) / p;
+    
+    if (!isVisible() && !wasCanceled()) {
+        ///Show the dialog if the total estimated time is gt NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS
+        double totalTime = p == 0 ? 0 : timeElapsedSecs * 100. / p;
+        if (_imp->timerLabelSet && totalTime * 1000 > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS) {
+            show();
+        }
+    }
+
+}
+
+void
+GeneralProgressDialog::onCancelRequested()
+{
+    {
+        QMutexLocker k (&_imp->canceledMutex);
+        _imp->canceled = true;
+    }
+    close();
+}
+
+void
+GeneralProgressDialog::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Escape) {
+        onCancelRequested();
+    } else {
+        QDialog::keyPressEvent(e);
+    }
+}
+
+void
+GeneralProgressDialog::closeEvent(QCloseEvent* /*e*/)
+{
+    QDialog::DialogCode ret = (QDialog::DialogCode)result();
+    if (ret != QDialog::Accepted) {
+        {
+            QMutexLocker k (&_imp->canceledMutex);
+            _imp->canceled = true;
+        }
+    }
+    
 }
 
 NATRON_NAMESPACE_EXIT;

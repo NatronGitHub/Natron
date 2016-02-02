@@ -92,6 +92,43 @@ private:
     boost::scoped_ptr<RenderingProgressDialogPrivate> _imp;
 };
 
+
+struct GeneralProgressDialogPrivate;
+class GeneralProgressDialog : public QDialog
+{
+    
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+    
+public:
+    
+    GeneralProgressDialog(const QString& title, bool canCancel, QWidget* parent = 0);
+    
+    virtual ~GeneralProgressDialog();
+    
+    //May be called from another thread
+    bool wasCanceled() const;
+    
+    //Must be called on main thread
+    void updateProgress(double p);
+    
+public Q_SLOTS:
+    
+    void onCancelRequested();
+    
+    void onRefreshLabelTimeout();
+    
+private:
+    
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
+    virtual void closeEvent(QCloseEvent* e) OVERRIDE FINAL;
+
+    
+    boost::scoped_ptr<GeneralProgressDialogPrivate> _imp;
+};
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // Gui_RenderingProgressDialog_h

@@ -1116,7 +1116,7 @@ KnobGroup::typeName() const
 }
 
 void
-KnobGroup::addKnob(KnobPtr k)
+KnobGroup::addKnob(const KnobPtr& k)
 {
     for (std::size_t i = 0; i < _children.size(); ++i) {
         if (_children[i].lock() == k) {
