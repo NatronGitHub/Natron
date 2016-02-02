@@ -204,7 +204,7 @@ Gui::onDoProgressStartOnMainThread(KnobHolder* effect, const QString &message, c
     }
     progressLabel.append(message);
     GeneralProgressDialog* dialog = new GeneralProgressDialog(progressLabel, canCancel, this);
-    
+    dialog->hide();
     {
         QMutexLocker k(&_imp->_progressBarsMutex);
         std::map<KnobHolder*, GeneralProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
@@ -249,19 +249,18 @@ void
 Gui::onDoProgressUpdateOnMainThread(KnobHolder* effect,double t)
 {
     assert(QThread::currentThread() == qApp->thread());
-    GeneralProgressDialog* dialog = 0;
+
     {
         QMutexLocker k(&_imp->_progressBarsMutex);
         std::map<KnobHolder*, GeneralProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
         if (found == _imp->_progressBars.end()) {
             return;
         }
-        dialog = found->second;
-        _imp->_progressBars.erase(found);
+        if (found->second) {
+            found->second->updateProgress(t);
+        }
     }
-    if (dialog) {
-        dialog->updateProgress(t);
-    }
+   
 }
 
 void
@@ -304,16 +303,17 @@ Gui::progressUpdate(KnobHolder* effect,
     bool isMainThread = QThread::currentThread() == qApp->thread();
     if (!isMainThread) {
         Q_EMIT s_doProgressUpdateOnMainThread(effect, t);
-        return true;
     } else {
         onDoProgressUpdateOnMainThread(effect, t);
     }
-
-    QMutexLocker k(&_imp->_progressBarsMutex);
-    std::map<KnobHolder*, GeneralProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
-    if (found != _imp->_progressBars.end()) {
-        if (found->second->wasCanceled()) {
-            return false;
+    
+    {
+        QMutexLocker k(&_imp->_progressBarsMutex);
+        std::map<KnobHolder*, GeneralProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
+        if (found != _imp->_progressBars.end()) {
+            if (found->second->wasCanceled()) {
+                return false;
+            }
         }
     }
     

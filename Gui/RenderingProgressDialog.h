@@ -113,6 +113,12 @@ public:
     //Must be called on main thread
     void updateProgress(double p);
     
+public Q_SLOTS:
+    
+    void onCancelRequested();
+    
+    void onRefreshLabelTimeout();
+    
 private:
     
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
