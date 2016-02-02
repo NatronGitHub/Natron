@@ -288,28 +288,25 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
     int dim = knob->getDimension();
     
     if (isAppKnob) {
-        const char* copyValuesStr = dim > 1 ? "Copy Values" : "Copy Value";
-        const char* pasteValuesStr = dim > 1 ? "Paste Values" : "Paste Value";
-        
-        QAction* copyValuesAction = new QAction(tr(copyValuesStr),_imp->copyRightClickMenu);
+        QAction* copyValuesAction = new QAction(dim > 1 ? tr("Copy Values") : tr("Copy Value"),_imp->copyRightClickMenu);
         copyValuesAction->setData( QVariant(dimension) );
-        QObject::connect( copyValuesAction,SIGNAL( triggered() ),this,SLOT( onCopyValuesActionTriggered() ) );
+        QObject::connect( copyValuesAction,SIGNAL( triggered() ), this, SLOT( onCopyValuesActionTriggered() ) );
         _imp->copyRightClickMenu->addAction(copyValuesAction);
         
         if (!isSlave) {
             bool isClipBoardEmpty = appPTR->isClipBoardEmpty();
-            QAction* pasteAction = new QAction(tr(pasteValuesStr),_imp->copyRightClickMenu);
+            QAction* pasteAction = new QAction(dim > 1 ? tr("Paste Values") : tr("Paste Value"),_imp->copyRightClickMenu);
             pasteAction->setData( QVariant(dimension) );
-            QObject::connect( pasteAction,SIGNAL( triggered() ),this,SLOT( onPasteValuesActionTriggered() ) );
+            QObject::connect( pasteAction,SIGNAL( triggered() ), this, SLOT( onPasteValuesActionTriggered() ) );
             _imp->copyRightClickMenu->addAction(pasteAction);
             if (isClipBoardEmpty || !enabled) {
                 pasteAction->setEnabled(false);
             }
         }
     }
-    QAction* resetDefaultAction = new QAction(tr("Reset to default"),_imp->copyRightClickMenu);
+    QAction* resetDefaultAction = new QAction(dim > 1 ? (tr("Reset to default")+' '+tr("(all dimensions)")) : tr("Reset to default"), _imp->copyRightClickMenu);
     resetDefaultAction->setData( QVariant(dimension) );
-    QObject::connect( resetDefaultAction,SIGNAL( triggered() ),this,SLOT( onResetDefaultValuesActionTriggered() ) );
+    QObject::connect( resetDefaultAction,SIGNAL( triggered() ), this, SLOT( onResetDefaultValuesActionTriggered() ) );
     _imp->copyRightClickMenu->addAction(resetDefaultAction);
     if (isSlave || !enabled) {
         resetDefaultAction->setEnabled(false);
@@ -317,15 +314,15 @@ KnobGui::showRightClickMenuForDimension(const QPoint &,
 
     if (isAppKnob && !isSlave && enabled) {
         _imp->copyRightClickMenu->addSeparator();
-        QAction* linkToAction = new QAction(tr("Link to"),_imp->copyRightClickMenu);
+        QAction* linkToAction = new QAction(tr("Link to"), _imp->copyRightClickMenu);
         linkToAction->setData(dimension);
-        QObject::connect( linkToAction,SIGNAL( triggered() ),this,SLOT( onLinkToActionTriggered() ) );
+        QObject::connect( linkToAction,SIGNAL( triggered() ), this, SLOT( onLinkToActionTriggered() ) );
         _imp->copyRightClickMenu->addAction(linkToAction);
         
         if (dim > 1) {
-            QAction* linkToAction = new QAction(tr("Link to (all dimensions)"),_imp->copyRightClickMenu);
+            QAction* linkToAction = new QAction(tr("Link to")+' '+tr("(all dimensions)"), _imp->copyRightClickMenu);
             linkToAction->setData(-1);
-            QObject::connect( linkToAction,SIGNAL( triggered() ),this,SLOT( onLinkToActionTriggered() ) );
+            QObject::connect( linkToAction,SIGNAL( triggered() ), this, SLOT( onLinkToActionTriggered() ) );
             _imp->copyRightClickMenu->addAction(linkToAction);
         }
         
@@ -382,7 +379,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
             if (knob->getDimension() > 1) {
                 ///Multi-dim actions
                 if (!hasAllKeyframes) {
-                    QAction* setKeyAction = new QAction(tr("Set Key (all dimensions)"),menu);
+                    QAction* setKeyAction = new QAction(tr("Set Key")+' '+tr("(all dimensions)"),menu);
                     setKeyAction->setData(-1);
                     QObject::connect( setKeyAction,SIGNAL( triggered() ),this,SLOT( onSetKeyActionTriggered() ) );
                     menu->addAction(setKeyAction);
@@ -390,7 +387,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
                         setKeyAction->setEnabled(false);
                     }
                 } else {
-                    QAction* removeKeyAction = new QAction(tr("Remove Key (all dimensions)"),menu);
+                    QAction* removeKeyAction = new QAction(tr("Remove Key")+' '+tr("(all dimensions)"),menu);
                     removeKeyAction->setData(-1);
                     QObject::connect( removeKeyAction,SIGNAL( triggered() ),this,SLOT( onRemoveKeyActionTriggered() ) );
                     menu->addAction(removeKeyAction);
@@ -399,7 +396,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
                     }
                 }
                 
-                QAction* removeAnyAnimationAction = new QAction(tr("Remove animation (all dimensions)"),menu);
+                QAction* removeAnyAnimationAction = new QAction(tr("Remove animation")+' '+tr("(all dimensions)"),menu);
                 removeAnyAnimationAction->setData(-1);
                 QObject::connect( removeAnyAnimationAction,SIGNAL( triggered() ),this,SLOT( onRemoveAnimationActionTriggered() ) );
                 menu->addAction(removeAnyAnimationAction);
@@ -535,13 +532,13 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         }
         
         if (knob->getDimension() > 1 && isEnabled) {
-            QAction* setExprsAction = new QAction(!hasExpr.empty() ? tr("Edit expression (all dimensions)") :
-                                                  tr("Set expression (all dimensions)"),menu);
+            QAction* setExprsAction = new QAction((!hasExpr.empty() ? tr("Edit expression") :
+                                                   tr("Set expression"))+' '+tr("(all dimensions)"),menu);
             setExprsAction->setData(-1);
             QObject::connect(setExprsAction,SIGNAL(triggered() ),this,SLOT(onSetExprActionTriggered()));
             menu->addAction(setExprsAction);
             
-            QAction* clearExprAction = new QAction(tr("Clear expression (all dimensions)"),menu);
+            QAction* clearExprAction = new QAction(tr("Clear expression")+' '+tr("(all dimensions)"),menu);
             QObject::connect(clearExprAction,SIGNAL(triggered() ),this,SLOT(onClearExprActionTriggered()));
             clearExprAction->setData(-1);
             menu->addAction(clearExprAction);

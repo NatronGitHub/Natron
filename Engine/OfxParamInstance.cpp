@@ -641,7 +641,13 @@ OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>&
               doubleType == kOfxParamDoubleTypeNormalisedYAbsolute) {
         dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedY);
     }
-    dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised);
+    dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised ||
+                                           doubleType == kOfxParamDoubleTypeNormalisedX ||
+                                           doubleType == kOfxParamDoubleTypeNormalisedXAbsolute ||
+                                           doubleType ==  kOfxParamDoubleTypeNormalisedY ||
+                                           doubleType ==  kOfxParamDoubleTypeNormalisedYAbsolute ||
+                                           doubleType ==  kOfxParamDoubleTypeNormalisedXY ||
+                                           doubleType ==  kOfxParamDoubleTypeNormalisedXYAbsolute);
     dblKnob->blockValueChanges();
     dblKnob->setDefaultValue(def, 0);
     dblKnob->unblockValueChanges();

@@ -250,30 +250,34 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         if (dispmax == DBL_MAX) {
             dispmax = maxs[0];
         }
-        valueAccordingToType(false, 0, &dispmin);
-        valueAccordingToType(false, 0, &dispmax);
+
+        // denormalize if necessary
+        double dispminGui = dispmin;
+        double dispmaxGui = dispmax;
+        valueAccordingToType(false, 0, &dispminGui);
+        valueAccordingToType(false, 0, &dispmaxGui);
         
         bool spatial = knob->getIsSpatial();
         Format f;
         if (spatial) {
             getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
         }
-        if (dispmin < -SLIDER_MAX_RANGE) {
+        if (dispminGui < -SLIDER_MAX_RANGE) {
             if (spatial) {
-                dispmin = -f.width();
+                dispminGui = -f.width();
             } else {
-                dispmin = -SLIDER_MAX_RANGE;
+                dispminGui = -SLIDER_MAX_RANGE;
             }
         }
-        if (dispmax > SLIDER_MAX_RANGE) {
+        if (dispmaxGui > SLIDER_MAX_RANGE) {
             if (spatial) {
-                dispmax = f.width();
+                dispmaxGui = f.width();
             } else {
-                dispmax = SLIDER_MAX_RANGE;
+                dispmaxGui = SLIDER_MAX_RANGE;
             }
         }
         
-        _slider = new ScaleSliderQWidget( dispmin, dispmax,knob->getValue(0),
+        _slider = new ScaleSliderQWidget( dispminGui, dispmaxGui, knob->getValue(0),
                                          ScaleSliderQWidget::eDataTypeDouble,getGui(), eScaleTypeLinear, layout->parentWidget() );
         _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
@@ -282,9 +286,10 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
         QObject::connect( _slider, SIGNAL( editingFinished(bool) ), this, SLOT( onSliderEditingFinished(bool) ) );
         containerLayout->addWidget(_slider);
-        sliderVisible = shouldSliderBeVisible(dispmin, dispmax);
+        sliderVisible = shouldSliderBeVisible(dispminGui, dispmaxGui);
+
+        // onDisplayMinMaxChanged takes original (maybe normalized) values
         onDisplayMinMaxChanged(dispmin, dispmax);
-        
     }
     
     QSize medSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
