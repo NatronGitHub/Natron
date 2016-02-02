@@ -469,11 +469,11 @@ GeneralProgressDialog::updateProgress(double p)
     _imp->progressBar->setValue(p * 100.);
     
     double timeElapsedSecs = _imp->timer.getTimeElapsedReset();
-    _imp->timeRemaining = p == 0 ? 0 : timeElapsedSecs * (100. - p) / p;
+    _imp->timeRemaining = p == 0 ? 0 : timeElapsedSecs * (1. - p) / p;
     
     if (!isVisible() && !wasCanceled()) {
         ///Show the dialog if the total estimated time is gt NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS
-        double totalTime = p == 0 ? 0 : timeElapsedSecs * 100. / p;
+        double totalTime = p == 0 ? 0 : timeElapsedSecs * 1. / p;
         if (_imp->timerLabelSet && totalTime * 1000 > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS) {
             show();
         }
