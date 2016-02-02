@@ -569,7 +569,20 @@ Q_SIGNALS:
     ///emitted when a viewer changes its name or is deleted/added
     void viewersChanged();
 
+    void s_doProgressStartOnMainThread(KnobHolder* effect, const QString &message, const QString &messageid, bool canCancel);
+    
+    void s_doProgressEndOnMainThread(KnobHolder* effect);
+    
+    void s_doProgressUpdateOnMainThread(KnobHolder* effect,double t);
+
+    
 public Q_SLOTS:
+    
+    void onDoProgressStartOnMainThread(KnobHolder* effect, const QString &message, const QString &messageid, bool canCancel);
+    
+    void onDoProgressEndOnMainThread(KnobHolder* effect);
+    
+    void onDoProgressUpdateOnMainThread(KnobHolder* effect,double t);
     
     ///Called whenever the time changes on the timeline
     void onTimeChanged(SequenceTime time,int reason);

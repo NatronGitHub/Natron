@@ -225,7 +225,8 @@ struct GuiPrivate
 
     ///The "About" window.
     AboutWindow* _aboutWindow;
-    std::map<KnobHolder*, QProgressDialog*> _progressBars;
+    mutable QMutex _progressBarsMutex;
+    std::map<KnobHolder*, GeneralProgressDialog*> _progressBars;
 
     ///list of the currently opened property panels
     mutable QMutex openedPanelsMutex;

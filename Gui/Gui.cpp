@@ -98,6 +98,17 @@ Gui::Gui(GuiAppInstance* app,
     QObject::connect( app, SIGNAL( pluginsPopulated() ), this, SLOT( addToolButttonsToToolBar() ) );
     
     QObject::connect(qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*, QWidget*)));
+    
+    QObject::connect(this, SIGNAL(s_doProgressStartOnMainThread(KnobHolder*,QString,QString,bool)), this,
+                     SLOT(onDoProgressStartOnMainThread(KnobHolder*,QString,QString,bool)));
+    
+    QObject::connect(this, SIGNAL(s_doProgressEndOnMainThread(KnobHolder*)), this,
+                     SLOT(onDoProgressEndOnMainThread(KnobHolder*)));
+
+    
+    QObject::connect(this, SIGNAL(s_doProgressUpdateOnMainThread(KnobHolder*,double)), this,
+                     SLOT(onDoProgressUpdateOnMainThread(KnobHolder*,double)));
+
 
 }
 
