@@ -329,9 +329,13 @@ CurveGui::drawCurve(int curveIndex,
         glCheckError();
         if (hasDrawnExpr) {
             glBegin(GL_LINE_STRIP);
+            bool prevVisible = true;
             for (int i = 0; i < (int)exprVertices.size(); i += 2) {
-                if (exprVertices[i] < btmLeft.x() || exprVertices[i] > topRight.x() ||
-                    exprVertices[i+1] < btmLeft.y() || exprVertices[i+1] > topRight.y()) {
+                bool vertexVisible = exprVertices[i] >= btmLeft.x() && exprVertices[i] <= topRight.x() &&
+                exprVertices[i+1] >= btmLeft.y() && exprVertices[i+1] <= topRight.y();
+                bool previousWasVisible = prevVisible;
+                prevVisible = vertexVisible;
+                if (!previousWasVisible && !vertexVisible) {
                     continue;
                 }
                 glVertex2f(exprVertices[i],exprVertices[i + 1]);
@@ -343,13 +347,19 @@ CurveGui::drawCurve(int curveIndex,
             glEnable(GL_LINE_STIPPLE);
         }
         glBegin(GL_LINE_STRIP);
+        
+        bool prevVisible = true;
         for (int i = 0; i < (int)vertices.size(); i += 2) {
-            if (vertices[i] < btmLeft.x() || vertices[i] > topRight.x() ||
-                vertices[i+1] < btmLeft.y() || vertices[i+1] > topRight.y()) {
+            bool vertexVisible = vertices[i] >= btmLeft.x() && vertices[i] <= topRight.x() &&
+            vertices[i+1] >= btmLeft.y() && vertices[i+1] <= topRight.y();
+            bool previousWasVisible = prevVisible;
+            prevVisible = vertexVisible;
+            if (!previousWasVisible && !vertexVisible) {
                 continue;
             }
             glVertex2f(vertices[i],vertices[i + 1]);
         }
+     
         glEnd();
         if (hasDrawnExpr) {
             glDisable(GL_LINE_STIPPLE);

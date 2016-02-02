@@ -15,14 +15,12 @@ if [ "$1" = "32" ]; then
     PKG_PREFIX=$PKG_PREFIX32
     FFMPEG_MXE_BIN_GPL=$FFMPEG_MXE_BIN_32_GPL_TAR
     FFMPEG_MXE_BIN_LGPL=$FFMPEG_MXE_BIN_32_LGPL_TAR
-    INSTALLER_BIN_TAR=$INSTALLER32_BIN_TAR
 elif [ "$1" = "64" ]; then
     BIT=64
     INSTALL_PATH=$INSTALL64_PATH
     PKG_PREFIX=$PKG_PREFIX64
     FFMPEG_MXE_BIN_GPL=$FFMPEG_MXE_BIN_64_GPL_TAR
     FFMPEG_MXE_BIN_LGPL=$FFMPEG_MXE_BIN_64_LGPL_TAR
-    INSTALLER_BIN_TAR=$INSTALLER64_BIN_TAR
 else
     echo "Usage build-sdk.sh <BIT>"
     exit 1
@@ -137,9 +135,11 @@ if [ ! -f $INSTALL_PATH/bin/libOpenImageIO.dll ]; then
     cd oiio-Release-* || exit 1
     OIIO_PATCHES=$CWD/include/patches/OpenImageIO
     patch -p1 -i ${OIIO_PATCHES}/fix-mingw-w64.patch  || exit 1
-    patch -p0 -i ${OIIO_PATCHES}/fix-mingw-w64.diff || exit 1
+    # 1.6.x # patch -p1 -i ${OIIO_PATCHES}/fix-mingw-w64-16.patch  || exit 1
+    # 1.6.x # patch -p0 -i ${OIIO_PATCHES}/fix-mingw-w64-16.diff || exit 1
     patch -p1 -i ${OIIO_PATCHES}/workaround-ansidecl-h-PTR-define-conflict.patch || exit 1
     patch -p1 -i ${OIIO_PATCHES}/0001-MinGW-w64-include-winbase-h-early-for-TCHAR-types.patch  || exit 1
+    patch -p1 -i ${OIIO_PATCHES}/oiio-exrthreads.patch || exit 1
     #patch -p1 -i ${OIIO_PATCHES}/0002-Also-link-to-opencv_videoio-library.patch  || exit 1
 	rm -rf build
     mkdir build || exit 1
@@ -254,26 +254,12 @@ done
 
 #Make sure we have mt.exe for embedding manifests
 
-if [ ! -f "${INSTALL_PATH}/bin/repogen.exe" ] || [ "$DOWNLOAD_INSTALLER" = "1" ]; then
+if [ ! -f "${INSTALL_PATH}/bin/repogen.exe" ] || [ "$DOWNLOAD_INSTALLER" = "1" ] || [ ! -f "/mingw32/bin/dump_syms.exe" ] || [ ! -f "/mingw64/bin/dump_syms.exe" ] || [ ! -f "/mingw32/bin/mt.exe" ] || [ ! -f "/mingw64/bin/mt.exe" ]; then
     cd $SRC_PATH
     wget $THIRD_PARTY_BIN_URL/$INSTALLER_BIN_TAR -O $SRC_PATH/$INSTALLER_BIN_TAR || exit 1
     unzip $CWD/src/$INSTALLER_BIN_TAR || exit 1
-    cd natron-win$BIT-installer* || exit 1
-    if [ -d "bin" ]; then
-        cd bin
-    fi
-    cp mt.exe /usr/bin || exit 1
-    cp archivegen.exe $INSTALL_PATH/bin || exit 1
-    cp binarycreator.exe $INSTALL_PATH/bin || exit 1
-    cp installerbase.exe $INSTALL_PATH/bin || exit 1
-    cp repogen.exe $INSTALL_PATH/bin || exit 1
-fi
-
-if [ ! -f "/mingw32/bin/dump_syms.exe" ] || [ ! -f "/mingw64/bin/dump_syms.exe" ]; then
-  cd $SRC_PATH || exit 1
-  wget $THIRD_PARTY_BIN_URL/dump_syms.exe -O $SRC_PATH/dump_syms.exe || exit 1
-  cp dump_syms.exe /mingw64/bin/ || exit 1
-  cp dump_syms.exe /mingw32/bin/ || exit 1
+    cp -a natron-win-installer/mingw32/bin/* /mingw32/bin/  || exit 1
+    cp -a natron-win-installer/mingw64/bin/* /mingw64/bin/ || exit 1
 fi
 
 echo

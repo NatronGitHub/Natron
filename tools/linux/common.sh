@@ -47,7 +47,7 @@ PACKAGES=$NATRON_PKG,$CORELIBS_PKG,$PROFILES_PKG,$IOPLUG_PKG,$MISCPLUG_PKG,$AREN
 
 # bump number when OpenColorIO-Configs changes
 GIT_OCIO_CONFIG_TAR=https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz
-COLOR_PROFILES_VERSION=2.0.0
+COLOR_PROFILES_VERSION=2.0.1
 
 # bump timestamp on SDK changes, important!
 CORELIBS_VERSION=20160121
@@ -136,7 +136,7 @@ BOOST_TAR=boost_1_55_0.tar.bz2
 CAIRO_TAR=cairo-1.14.6.tar.xz
 FFMPEG_TAR=ffmpeg-2.8.5.tar.xz
 OCIO_TAR=OpenColorIO-1.0.9.tar.gz
-OIIO_TAR=oiio-Release-1.6.9.tar.gz
+OIIO_TAR=oiio-Release-1.5.23.tar.gz
 PYSIDE_TAR=pyside-qt4.8+1.2.2.tar.bz2
 PYSIDE2_TAR=pyside2-2.0.0.dev0.tar.gz
 SHIBOK_TAR=shiboken-1.2.2.tar.bz2

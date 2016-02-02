@@ -41,7 +41,7 @@ PACKAGES=$NATRON_PKG,$CORELIBS_PKG,$PROFILES_PKG,$IOPLUG_PKG,$MISCPLUG_PKG,$AREN
 
 # bump number when OpenColorIO-Configs changes
 GIT_OCIO_CONFIG_TAR=https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz
-COLOR_PROFILES_VERSION=2.0
+COLOR_PROFILES_VERSION=2.0.0
 
 
 # SDK
@@ -120,7 +120,7 @@ GLEW_TAR=glew-1.12.0.tgz
 BOOST_TAR=boost_1_55_0.tar.gz
 CAIRO_TAR=cairo-1.14.2.tar.xz
 OCIO_TAR=OpenColorIO-1.0.9.tar.gz
-OIIO_TAR=oiio-Release-1.6.9.tar.gz 
+OIIO_TAR=oiio-Release-1.5.23.tar.gz 
 PYSIDE_TAR=pyside-qt4.8+1.2.2.tar.bz2
 SHIBOK_TAR=shiboken-1.2.2.tar.bz2
 LIBXML_TAR=libxml2-2.9.2.tar.gz
@@ -133,8 +133,7 @@ MAGICK_TAR=ImageMagick-6.9.2-10.tar.xz
 GIF_TAR=giflib-5.1.1.tar.gz
 #SSL_TAR=openssl-1.0.0r.tar.gz 
 JASP_TAR=jasper-1.900.1.zip
-INSTALLER32_BIN_TAR=natron-win32-installer-extra.zip
-INSTALLER64_BIN_TAR=natron-win64-installer-extra.zip
+INSTALLER_BIN_TAR=natron-windows-installer.zip
 
 FFMPEG_MXE_BIN_64_GPL_TAR=ffmpeg-2.8.3-windows-x86_64-shared-GPLv2.tar.xz
 FFMPEG_MXE_BIN_32_GPL_TAR=ffmpeg-2.8.3-windows-i686-shared-GPLv2.tar.xz

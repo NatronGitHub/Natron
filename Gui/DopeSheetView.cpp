@@ -74,6 +74,8 @@
 CLANG_DIAG_OFF(deprecated-declarations)
 GCC_DIAG_OFF(deprecated-declarations)
 
+#define NATRON_DOPESHEET_MIN_RANGE_FIT 10
+
 NATRON_NAMESPACE_ENTER;
 
 namespace {
@@ -2681,6 +2683,15 @@ void DopeSheetView::centerOnSelection()
     if (range.first == range.second) {
         return;
     }
+    
+    double actualRange = (range.second - range.first);
+    if (actualRange < NATRON_DOPESHEET_MIN_RANGE_FIT) {
+        double diffRange = NATRON_DOPESHEET_MIN_RANGE_FIT - actualRange;
+        diffRange /= 2;
+        range.first -= diffRange;
+        range.second += diffRange;
+    }
+    
 
     _imp->zoomContext.fill(range.first, range.second,
                            _imp->zoomContext.bottom(), _imp->zoomContext.top());
@@ -3463,7 +3474,7 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
     }
     else if (par > par_max) {
         par = par_max;
-        scaleFactor = par / _imp->zoomContext.factor();
+        scaleFactor = 1;
     }
 
 
