@@ -137,6 +137,9 @@ public:
      **/
     double getTimeElapsedReset();
     
+    
+    void reset();
+    
     /**
      * @brief Returns the time elapsed since this object was created.
      **/
