@@ -3460,6 +3460,13 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries, int defV
     choice->endChanges();
 }
 
+void
+Node::refreshPreviewsAfterProjectLoad()
+{
+    computePreviewImage(getApp()->getTimeLine()->currentFrame());
+    Q_EMIT s_refreshPreviewsAfterProjectLoadRequested();
+}
+
 QString
 Node::makeHTMLDocumentation() const
 {

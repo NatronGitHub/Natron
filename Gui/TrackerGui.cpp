@@ -61,6 +61,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Gui.h"
 #include "Gui/TrackerUndoCommand.h"
 #include "Gui/Texture.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGui.h"
 #include "Gui/TrackerPanel.h"
 #include "Gui/MultiInstancePanel.h"
@@ -389,17 +390,22 @@ TrackerGui::createGui()
     _imp->buttonsBar = new QWidget(_imp->viewer);
     _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsBar);
     _imp->buttonsLayout->setContentsMargins(3, 2, 0, 0);
+
+    
+    const double iconSizeX = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
     
     QPixmap pixAdd;
 
-    appPTR->getIcon(NATRON_PIXMAP_ADD_TRACK,NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixAdd);
+    appPTR->getIcon(NATRON_PIXMAP_ADD_TRACK,iconSizeX, &pixAdd);
 
+    const QSize medButtonSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
+    const QSize medButtonIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
     
     _imp->addTrackButton = new Button(QIcon(pixAdd),"",_imp->buttonsBar);
     _imp->addTrackButton->setCheckable(true);
     _imp->addTrackButton->setChecked(false);
-    _imp->addTrackButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->addTrackButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->addTrackButton->setFixedSize(medButtonSize);
+    _imp->addTrackButton->setIconSize(medButtonIconSize);
     _imp->addTrackButton->setToolTip(GuiUtils::convertFromPlainText(tr("When enabled you can add new tracks "
                                                                  "by clicking on the Viewer. "
                                                                  "Holding the Control + Alt keys is the "
@@ -411,18 +417,18 @@ TrackerGui::createGui()
     QPixmap pixPrev,pixNext,pixClearAll,pixClearBw,pixClearFw,pixUpdateViewerEnabled,pixUpdateViewerDisabled,pixStop;
     QPixmap bwEnabled,bwDisabled,fwEnabled,fwDisabled;
 
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_DISABLED,NATRON_MEDIUM_BUTTON_ICON_SIZE, &bwDisabled);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_ENABLED, NATRON_MEDIUM_BUTTON_ICON_SIZE,&bwEnabled);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS, NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixPrev);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT, NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixNext);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_DISABLED, NATRON_MEDIUM_BUTTON_ICON_SIZE,&fwDisabled);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ENABLED, NATRON_MEDIUM_BUTTON_ICON_SIZE,&fwEnabled);
-    appPTR->getIcon(NATRON_PIXMAP_CLEAR_ALL_ANIMATION, NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixClearAll);
-    appPTR->getIcon(NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION, NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixClearBw);
-    appPTR->getIcon(NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION, NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixClearFw);
-    appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE, NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixUpdateViewerEnabled);
-    appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixUpdateViewerDisabled);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP, NATRON_MEDIUM_BUTTON_ICON_SIZE,&pixStop);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_DISABLED,iconSizeX, &bwDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_ENABLED, iconSizeX,&bwEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS, iconSizeX,&pixPrev);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT, iconSizeX,&pixNext);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_DISABLED, iconSizeX,&fwDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ENABLED, iconSizeX,&fwEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_CLEAR_ALL_ANIMATION, iconSizeX,&pixClearAll);
+    appPTR->getIcon(NATRON_PIXMAP_CLEAR_BACKWARD_ANIMATION, iconSizeX,&pixClearBw);
+    appPTR->getIcon(NATRON_PIXMAP_CLEAR_FORWARD_ANIMATION, iconSizeX,&pixClearFw);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH_ACTIVE, iconSizeX,&pixUpdateViewerEnabled);
+    appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, iconSizeX,&pixUpdateViewerDisabled);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP, iconSizeX,&pixStop);
 
 
     QIcon bwIcon;
@@ -435,8 +441,8 @@ TrackerGui::createGui()
     trackPlayerLayout->setSpacing(0);
     
     _imp->trackBwButton = new Button(bwIcon,"",_imp->buttonsBar);
-    _imp->trackBwButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->trackBwButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->trackBwButton->setFixedSize(medButtonSize);
+    _imp->trackBwButton->setIconSize(medButtonIconSize);
     _imp->trackBwButton->setToolTip("<p>" + tr("Track selected tracks backward until left bound of the timeline.") +
                                     "</p><p><b>" + tr("Keyboard shortcut:") + " Z</b></p>");
     _imp->trackBwButton->setCheckable(true);
@@ -445,24 +451,24 @@ TrackerGui::createGui()
     trackPlayerLayout->addWidget(_imp->trackBwButton);
     
     _imp->trackPrevButton = new Button(QIcon(pixPrev),"",_imp->buttonsBar);
-    _imp->trackPrevButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->trackPrevButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->trackPrevButton->setFixedSize(medButtonSize);
+    _imp->trackPrevButton->setIconSize(medButtonIconSize);
     _imp->trackPrevButton->setToolTip("<p>" + tr("Track selected tracks on the previous frame.") +
                                       "</p><p><b>" + tr("Keyboard shortcut:") + " X</b></p>");
     QObject::connect( _imp->trackPrevButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackPrevClicked() ) );
     trackPlayerLayout->addWidget(_imp->trackPrevButton);
     
     _imp->stopTrackingButton = new Button(QIcon(pixStop),"",_imp->buttonsBar);
-    _imp->stopTrackingButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->stopTrackingButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->stopTrackingButton->setFixedSize(medButtonSize);
+    _imp->stopTrackingButton->setIconSize(medButtonIconSize);
     _imp->stopTrackingButton->setToolTip("<p>" + tr("Stop the ongoing tracking if any")  +
                                          "</p><p><b>" + tr("Keyboard shortcut:") + " Escape</b></p>");
     QObject::connect( _imp->stopTrackingButton,SIGNAL( clicked(bool) ),this,SLOT( onStopButtonClicked() ) );
     trackPlayerLayout->addWidget(_imp->stopTrackingButton);
     
     _imp->trackNextButton = new Button(QIcon(pixNext),"",_imp->buttonsBar);
-    _imp->trackNextButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->trackNextButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->trackNextButton->setFixedSize(medButtonSize);
+    _imp->trackNextButton->setIconSize(medButtonIconSize);
     _imp->trackNextButton->setToolTip("<p>" + tr("Track selected tracks on the next frame.") +
                                       "</p><p><b>" + tr("Keyboard shortcut:") + " C</b></p>");
     QObject::connect( _imp->trackNextButton,SIGNAL( clicked(bool) ),this,SLOT( onTrackNextClicked() ) );
@@ -473,8 +479,8 @@ TrackerGui::createGui()
     fwIcon.addPixmap(fwEnabled,QIcon::Normal,QIcon::On);
     fwIcon.addPixmap(fwDisabled,QIcon::Normal,QIcon::Off);
     _imp->trackFwButton = new Button(fwIcon,"",_imp->buttonsBar);
-    _imp->trackFwButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->trackFwButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->trackFwButton->setFixedSize(medButtonSize);
+    _imp->trackFwButton->setIconSize(medButtonIconSize);
     _imp->trackFwButton->setToolTip("<p>" + tr("Track selected tracks forward until right bound of the timeline.") +
                                     "</p><p><b>" + tr("Keyboard shortcut:") + " V</b></p>");
     _imp->trackFwButton->setCheckable(true);
@@ -492,22 +498,22 @@ TrackerGui::createGui()
     clearAnimationLayout->setSpacing(0);
     
     _imp->clearAllAnimationButton = new Button(QIcon(pixClearAll),"",_imp->buttonsBar);
-    _imp->clearAllAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->clearAllAnimationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->clearAllAnimationButton->setFixedSize(medButtonSize);
+    _imp->clearAllAnimationButton->setIconSize(medButtonIconSize);
     _imp->clearAllAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear all animation for selected tracks."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearAllAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearAllAnimationClicked() ) );
     clearAnimationLayout->addWidget(_imp->clearAllAnimationButton);
     
     _imp->clearBwAnimationButton = new Button(QIcon(pixClearBw),"",_imp->buttonsBar);
-    _imp->clearBwAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->clearBwAnimationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->clearBwAnimationButton->setFixedSize(medButtonSize);
+    _imp->clearBwAnimationButton->setIconSize(medButtonIconSize);
     _imp->clearBwAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear animation backward from the current frame."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearBwAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearBwAnimationClicked() ) );
     clearAnimationLayout->addWidget(_imp->clearBwAnimationButton);
     
     _imp->clearFwAnimationButton = new Button(QIcon(pixClearFw),"",_imp->buttonsBar);
-    _imp->clearFwAnimationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->clearFwAnimationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->clearFwAnimationButton->setFixedSize(medButtonSize);
+    _imp->clearFwAnimationButton->setIconSize(medButtonIconSize);
     _imp->clearFwAnimationButton->setToolTip(GuiUtils::convertFromPlainText(tr("Clear animation forward from the current frame."), Qt::WhiteSpaceNormal));
     QObject::connect( _imp->clearFwAnimationButton,SIGNAL( clicked(bool) ),this,SLOT( onClearFwAnimationClicked() ) );
     clearAnimationLayout->addWidget(_imp->clearFwAnimationButton);
@@ -518,8 +524,8 @@ TrackerGui::createGui()
     updateViewerIC.addPixmap(pixUpdateViewerEnabled,QIcon::Normal,QIcon::On);
     updateViewerIC.addPixmap(pixUpdateViewerDisabled,QIcon::Normal,QIcon::Off);
     _imp->updateViewerButton = new Button(updateViewerIC,"",_imp->buttonsBar);
-    _imp->updateViewerButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->updateViewerButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->updateViewerButton->setFixedSize(medButtonSize);
+    _imp->updateViewerButton->setIconSize(medButtonIconSize);
     _imp->updateViewerButton->setCheckable(true);
     _imp->updateViewerButton->setChecked(true);
     _imp->updateViewerButton->setDown(true);
@@ -531,8 +537,8 @@ TrackerGui::createGui()
     appPTR->getIcon(Natron::NATRON_PIXMAP_CENTER_VIEWER_ON_TRACK, &centerViewerPix);
     
     _imp->centerViewerButton = new Button(QIcon(centerViewerPix),"",_imp->buttonsBar);
-    _imp->centerViewerButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    _imp->centerViewerButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+    _imp->centerViewerButton->setFixedSize(medButtonSize);
+    _imp->centerViewerButton->setIconSize(medButtonIconSize);
     _imp->centerViewerButton->setCheckable(true);
     _imp->centerViewerButton->setChecked(false);
     _imp->centerViewerButton->setDown(false);
@@ -565,8 +571,8 @@ TrackerGui::createGui()
         addKeyIc.addPixmap(addKeyOffPix, QIcon::Normal, QIcon::Off);
         
         _imp->createKeyOnMoveButton = new Button(addKeyIc, "", _imp->buttonsBar);
-        _imp->createKeyOnMoveButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _imp->createKeyOnMoveButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+        _imp->createKeyOnMoveButton->setFixedSize(medButtonSize);
+        _imp->createKeyOnMoveButton->setIconSize(medButtonIconSize);
         _imp->createKeyOnMoveButton->setToolTip(GuiUtils::convertFromPlainText(tr("When enabled, adjusting a track on the viewer will create a new keyframe"), Qt::WhiteSpaceNormal));
         _imp->createKeyOnMoveButton->setCheckable(true);
         _imp->createKeyOnMoveButton->setChecked(true);
@@ -581,8 +587,8 @@ TrackerGui::createGui()
         corrIc.addPixmap(showCorrPix, QIcon::Normal, QIcon::On);
         corrIc.addPixmap(hideCorrPix, QIcon::Normal, QIcon::Off);
         _imp->showCorrelationButton = new Button(corrIc, "", _imp->buttonsBar);
-        _imp->showCorrelationButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _imp->showCorrelationButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+        _imp->showCorrelationButton->setFixedSize(medButtonSize);
+        _imp->showCorrelationButton->setIconSize(medButtonIconSize);
         _imp->showCorrelationButton->setToolTip(GuiUtils::convertFromPlainText(tr("When enabled, the correlation score of each tracked frame will be displayed on "
                                                                                 "the viewer, with lower correlations close to green and greater correlations "
                                                                                 "close to red."), Qt::WhiteSpaceNormal));
@@ -605,15 +611,15 @@ TrackerGui::createGui()
         
         
         _imp->setKeyFrameButton = new Button(QIcon(addKeyPix), "", keyframeContainer);
-        _imp->setKeyFrameButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _imp->setKeyFrameButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+        _imp->setKeyFrameButton->setFixedSize(medButtonSize);
+        _imp->setKeyFrameButton->setIconSize(medButtonIconSize);
         _imp->setKeyFrameButton->setToolTip(GuiUtils::convertFromPlainText(tr("Set a keyframe for the pattern for the selected tracks"), Qt::WhiteSpaceNormal));
         QObject::connect( _imp->setKeyFrameButton,SIGNAL( clicked(bool) ),this,SLOT( onSetKeyframeButtonClicked() ) );
         keyframeLayout->addWidget(_imp->setKeyFrameButton);
         
         _imp->removeKeyFrameButton = new Button(QIcon(removeKeyPix), "", keyframeContainer);
-        _imp->removeKeyFrameButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _imp->removeKeyFrameButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+        _imp->removeKeyFrameButton->setFixedSize(medButtonSize);
+        _imp->removeKeyFrameButton->setIconSize(medButtonIconSize);
         _imp->removeKeyFrameButton->setToolTip(GuiUtils::convertFromPlainText(tr("Remove a keyframe for the pattern for the selected tracks"), Qt::WhiteSpaceNormal));
         QObject::connect( _imp->removeKeyFrameButton,SIGNAL( clicked(bool) ),this,SLOT( onRemoveKeyframeButtonClicked() ) );
         keyframeLayout->addWidget(_imp->removeKeyFrameButton);
@@ -625,28 +631,47 @@ TrackerGui::createGui()
         QPixmap resetPix;
         appPTR->getIcon(Natron::NATRON_PIXMAP_RESTORE_DEFAULTS_ENABLED, &resetPix);
         _imp->resetOffsetButton = new Button(QIcon(resetOffsetPix), "", _imp->buttonsBar);
-        _imp->resetOffsetButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _imp->resetOffsetButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+        _imp->resetOffsetButton->setFixedSize(medButtonSize);
+        _imp->resetOffsetButton->setIconSize(medButtonIconSize);
         _imp->resetOffsetButton->setToolTip(GuiUtils::convertFromPlainText(tr("Resets the offset for the selected tracks"), Qt::WhiteSpaceNormal));
         QObject::connect( _imp->resetOffsetButton,SIGNAL( clicked(bool) ),this,SLOT( onResetOffsetButtonClicked() ) );
         _imp->buttonsLayout->addWidget(_imp->resetOffsetButton);
         
         _imp->resetTrackButton = new Button(QIcon(resetPix), "", _imp->buttonsBar);
-        _imp->resetTrackButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-        _imp->resetTrackButton->setIconSize(QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE));
+        _imp->resetTrackButton->setFixedSize(medButtonSize);
+        _imp->resetTrackButton->setIconSize(medButtonIconSize);
         _imp->resetTrackButton->setToolTip(GuiUtils::convertFromPlainText(tr("Resets animation for the selected tracks"), Qt::WhiteSpaceNormal));
         QObject::connect( _imp->resetTrackButton,SIGNAL( clicked(bool) ),this,SLOT( onResetTrackButtonClicked() ) );
         _imp->buttonsLayout->addWidget(_imp->resetTrackButton);
         
     }
     
-
-    
     _imp->buttonsLayout->addStretch();
+    
+    if (_imp->panel) {
+        QObject::connect(_imp->panel->getNode()->getNode().get(), SIGNAL(s_refreshPreviewsAfterProjectLoadRequested()), this, SLOT(rebuildMarkerTextures()));
+    }
 }
 
 TrackerGui::~TrackerGui()
 {
+}
+
+void
+TrackerGui::rebuildMarkerTextures()
+{
+    ///Refreh textures for all markers
+    std::list<boost::shared_ptr<TrackMarker> > markers;
+    _imp->panel->getContext()->getSelectedMarkers(&markers);
+    for (std::list<boost::shared_ptr<TrackMarker> >::iterator it = markers.begin(); it!=markers.end(); ++it) {
+        std::set<int> keys;
+        (*it)->getUserKeyframes(&keys);
+        for (std::set<int>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
+            _imp->makeMarkerKeyTexture(*it2, *it);
+        }
+    }
+    onContextSelectionChanged(TrackerContext::eTrackSelectionInternal);
+
 }
 
 QWidget*
@@ -1194,6 +1219,9 @@ TrackerGui::drawOverlays(double time,
             glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
             glLineWidth(1.5);
             //GLProtectMatrix p(GL_PROJECTION); // useless (we do two glTranslate in opposite directions)
+            
+            const double addTrackSize = TO_DPIX(ADDTRACK_SIZE);
+            
             for (int l = 0; l < 2; ++l) {
                 // shadow (uses GL_PROJECTION)
                 glMatrixMode(GL_PROJECTION);
@@ -1209,18 +1237,18 @@ TrackerGui::drawOverlays(double time,
                 }
                 
                 glBegin(GL_LINE_LOOP);
-                glVertex2d(_imp->lastMousePos.x() - ADDTRACK_SIZE * 2 * pixelScaleX, _imp->lastMousePos.y() - ADDTRACK_SIZE * 2 * pixelScaleY);
-                glVertex2d(_imp->lastMousePos.x() - ADDTRACK_SIZE * 2 * pixelScaleX, _imp->lastMousePos.y() + ADDTRACK_SIZE * 2 * pixelScaleY);
-                glVertex2d(_imp->lastMousePos.x() + ADDTRACK_SIZE * 2 * pixelScaleX, _imp->lastMousePos.y() + ADDTRACK_SIZE * 2 * pixelScaleY);
-                glVertex2d(_imp->lastMousePos.x() + ADDTRACK_SIZE * 2 * pixelScaleX, _imp->lastMousePos.y() - ADDTRACK_SIZE * 2 * pixelScaleY);
+                glVertex2d(_imp->lastMousePos.x() - addTrackSize * 2 * pixelScaleX, _imp->lastMousePos.y() - addTrackSize * 2 * pixelScaleY);
+                glVertex2d(_imp->lastMousePos.x() - addTrackSize * 2 * pixelScaleX, _imp->lastMousePos.y() + addTrackSize * 2 * pixelScaleY);
+                glVertex2d(_imp->lastMousePos.x() + addTrackSize * 2 * pixelScaleX, _imp->lastMousePos.y() + addTrackSize * 2 * pixelScaleY);
+                glVertex2d(_imp->lastMousePos.x() + addTrackSize * 2 * pixelScaleX, _imp->lastMousePos.y() - addTrackSize * 2 * pixelScaleY);
                 glEnd();
                 
                 ///draw a cross at the cursor position
                 glBegin(GL_LINES);
-                glVertex2d( _imp->lastMousePos.x() - ADDTRACK_SIZE * pixelScaleX, _imp->lastMousePos.y() );
-                glVertex2d( _imp->lastMousePos.x() + ADDTRACK_SIZE * pixelScaleX, _imp->lastMousePos.y() );
-                glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() - ADDTRACK_SIZE * pixelScaleY);
-                glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() + ADDTRACK_SIZE * pixelScaleY);
+                glVertex2d( _imp->lastMousePos.x() - addTrackSize * pixelScaleX, _imp->lastMousePos.y() );
+                glVertex2d( _imp->lastMousePos.x() + addTrackSize * pixelScaleX, _imp->lastMousePos.y() );
+                glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() - addTrackSize * pixelScaleY);
+                glVertex2d(_imp->lastMousePos.x(), _imp->lastMousePos.y() + addTrackSize * pixelScaleY);
                 glEnd();
             }
         }
@@ -1255,7 +1283,10 @@ TrackerGuiPrivate::isInsideKeyFrameTexture(double currentTime, const QPointF& po
     
     //Find out which keyframe it is by counting keyframe portions
     int xRightMainTexture = viewer->getViewer()->toWidgetCoordinates(QPointF(textureRectCanonical.x2,0)).x();
-    double indexF = (viewportPos.x() - xRightMainTexture) / double(SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX);
+    
+    const double keyWidthpx = TO_DPIX(SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX);
+    
+    double indexF = (viewportPos.x() - xRightMainTexture) / keyWidthpx;
     int texIndex = (int)std::floor(indexF);
     
     for (TrackKeysMap::const_iterator it = trackTextures.begin(); it!=trackTextures.end(); ++it) {
@@ -1273,8 +1304,8 @@ TrackerGuiPrivate::isInsideKeyFrameTexture(double currentTime, const QPointF& po
             std::advance(found, texIndex);
             
             RectD texCanonicalRect;
-            computeTextureCanonicalRect(*found->second, indexF * SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX + xRightMainTexture,
-                                        SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX, &texCanonicalRect);
+            computeTextureCanonicalRect(*found->second, indexF * keyWidthpx + xRightMainTexture,
+                                        keyWidthpx, &texCanonicalRect);
             
             if (pos.y() >= texCanonicalRect.y1 && pos.y() < texCanonicalRect.y2) {
                 return found->first;
@@ -1294,8 +1325,9 @@ TrackerGuiPrivate::isNearbySelectedMarkerTextureResizeAnchor(const QPointF& pos)
     QPointF clickWidget = viewer->getViewer()->toWidgetCoordinates(pos);
     QPointF btmRightWidget = viewer->getViewer()->toWidgetCoordinates(QPointF(textureRectCanonical.x2, textureRectCanonical.y1));
     
-    if (clickWidget.x() >= (btmRightWidget.x() - POINT_TOLERANCE) && clickWidget.x() <= (btmRightWidget.x() + POINT_TOLERANCE) &&
-        clickWidget.y() >= (btmRightWidget.y() - POINT_TOLERANCE) && clickWidget.y() <= (btmRightWidget.y() + POINT_TOLERANCE)) {
+    double tolerance = TO_DPIX(POINT_TOLERANCE);
+    if (clickWidget.x() >= (btmRightWidget.x() - tolerance) && clickWidget.x() <= (btmRightWidget.x() + tolerance) &&
+        clickWidget.y() >= (btmRightWidget.y() - tolerance) && clickWidget.y() <= (btmRightWidget.y() + tolerance)) {
         return true;
     }
     return false;
@@ -1491,7 +1523,7 @@ TrackerGuiPrivate::drawSelectedMarkerKeyframes(const std::pair<double,double>& p
                 double par = texRect.w / (double)texRect.h;
                 RectD textureRectCanonical;
                 
-                textureRectCanonical.x2 = viewer->getViewer()->toZoomCoordinates(QPointF(SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX + xOffsetPixels, 0.)).x();
+                textureRectCanonical.x2 = viewer->getViewer()->toZoomCoordinates(QPointF(TO_DPIX(SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX) + xOffsetPixels, 0.)).x();
                 textureRectCanonical.x1 = viewer->getViewer()->toZoomCoordinates(QPointF(xOffsetPixels, 0.)).x();
                 textureRectCanonical.y2 = viewerTopLeftCanonical.y();
                 double height = textureRectCanonical.width() / par;
@@ -1615,7 +1647,7 @@ TrackerGuiPrivate::drawSelectedMarkerKeyframes(const std::pair<double,double>& p
                     
                 }
                 
-                xOffsetPixels += SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX;
+                xOffsetPixels += TO_DPIX(SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX);
 
                 
             }
@@ -3558,7 +3590,7 @@ TrackerGui::onContextSelectionChanged(int reason)
         return;
     }
 
-    _imp->viewer->getViewer()->update();
+    _imp->viewer->getViewer()->redraw();
     
 }
 

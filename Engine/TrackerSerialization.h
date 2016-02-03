@@ -56,6 +56,7 @@ public:
     , _label()
     , _scriptName()
     , _knobs()
+    , _userKeys()
     {
         
     }
@@ -78,6 +79,12 @@ private:
             ar & boost::serialization::make_nvp("Item",**it);
         }
         
+        int nbUserKeys = (int)_userKeys.size();
+        ar & boost::serialization::make_nvp("NbUserKeys",nbUserKeys);
+        for (std::list<int>::const_iterator it = _userKeys.begin(); it!=_userKeys.end();++it) {
+            ar & boost::serialization::make_nvp("UserKeys",*it);
+        }
+        
     }
     
     template<class Archive>
@@ -95,6 +102,13 @@ private:
             ar & boost::serialization::make_nvp("Item",*s);
             _knobs.push_back(s);
         }
+        int nbUserKeys;
+        ar & boost::serialization::make_nvp("NbUserKeys",nbUserKeys);
+        for (int i = 0; i < nbUserKeys; ++i) {
+            int key;
+            ar & boost::serialization::make_nvp("UserKeys",key);
+            _userKeys.push_back(key);
+        }
     }
     
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -103,6 +117,7 @@ private:
     bool _enabled;
     std::string _label,_scriptName;
     std::list<boost::shared_ptr<KnobSerialization> > _knobs;
+    std::list<int> _userKeys;
 };
 
 

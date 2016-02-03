@@ -1111,6 +1111,8 @@ public:
     
     QString makeHTMLDocumentation() const;
     
+    void refreshPreviewsAfterProjectLoad();
+    
 private:
     
     void computeHashRecursive(std::list<Node*>& marked);
@@ -1193,6 +1195,8 @@ public Q_SLOTS:
     void doComputeHashOnMainThread();
     
 Q_SIGNALS:
+    
+    void s_refreshPreviewsAfterProjectLoadRequested();
     
     void hideInputsKnobChanged(bool hidden);
     

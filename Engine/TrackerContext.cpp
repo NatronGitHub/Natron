@@ -392,6 +392,9 @@ TrackMarker::load(const TrackSerialization& serialization)
             }
         }
     }
+    for (std::list<int>::const_iterator it = serialization._userKeys.begin(); it!= serialization._userKeys.end(); ++it) {
+        _imp->userKeyframes.insert(*it);
+    }
 }
 
 void
@@ -404,6 +407,9 @@ TrackMarker::save(TrackSerialization* serialization) const
     for (std::list<boost::shared_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it!=_imp->knobs.end(); ++it) {
         boost::shared_ptr<KnobSerialization> s(new KnobSerialization(*it));
         serialization->_knobs.push_back(s);
+    }
+    for (std::set<int>::const_iterator it = _imp->userKeyframes.begin(); it!= _imp->userKeyframes.end(); ++it) {
+        serialization->_userKeys.push_back(*it);
     }
 }
 

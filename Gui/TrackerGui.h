@@ -135,11 +135,14 @@ public Q_SLOTS:
     
 private Q_SLOTS:
     
+    void rebuildMarkerTextures();
+    
     void onTrackerInputChanged(int inputNb);
     void onTrackImageRenderingFinished();
     void onKeyFrameImageRenderingFinished();
     
 private:
+
     
     void createGui();
 
