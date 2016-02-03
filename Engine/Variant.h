@@ -38,6 +38,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 class Variant
     : public QVariant
@@ -191,8 +192,6 @@ public:
     }
 };
 
-Q_DECLARE_METATYPE(Variant);
-
 // specializations of setValue() for simple string types (to avoid conversions)
 template<>
 inline void
@@ -207,5 +206,9 @@ Variant::setValue(const char* const & str)
 {
     QVariant::setValue( QString(str) );
 }
+
+NATRON_NAMESPACE_EXIT;
+
+Q_DECLARE_METATYPE(NATRON_NAMESPACE::Variant);
 
 #endif // Engine_Variant_h

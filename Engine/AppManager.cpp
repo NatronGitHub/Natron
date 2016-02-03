@@ -1863,12 +1863,12 @@ AppManager::makeNewInstance(int appID) const
 void
 AppManager::registerEngineMetaTypes() const
 {
-    qRegisterMetaType<Variant>();
-    qRegisterMetaType<Format>();
+    qRegisterMetaType<Variant>("Variant");
+    qRegisterMetaType<Format>("Format");
     qRegisterMetaType<SequenceTime>("SequenceTime");
-    qRegisterMetaType<StandardButtons>();
-    qRegisterMetaType<RectI>();
-    qRegisterMetaType<RectD>();
+    qRegisterMetaType<StandardButtons>("StandardButtons");
+    qRegisterMetaType<RectI>("RectI");
+    qRegisterMetaType<RectD>("RectD");
     qRegisterMetaType<RenderStatsPtr>("RenderStatsPtr");
     qRegisterMetaType<RenderStatsMap>("RenderStatsMap");
 #if QT_VERSION < 0x050000
