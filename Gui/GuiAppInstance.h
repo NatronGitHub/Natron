@@ -45,7 +45,7 @@ public:
     ViewerTab* viewerUI;
     NodePtr viewerNodeInternal;
     NodeGuiPtr viewerNode;
-    std::map<std::string,std::pair< NodePtr, NodeGuiPtr > > readerNodes;
+    std::map<std::string, NodePtr > readerNodes;
     
     FileDialogPreviewProvider()
     : viewerUI(0)

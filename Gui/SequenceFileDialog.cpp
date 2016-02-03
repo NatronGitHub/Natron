@@ -2945,9 +2945,9 @@ SequenceFileDialog::onTogglePreviewButtonClicked(bool toggled)
 void
 SequenceFileDialog::createViewerPreviewNode()
 {
-    CreateNodeArgs args(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, _gui->getApp()->getProject());
+    CreateNodeArgs args(PLUGINID_NATRON_VIEWER, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
     args.fixedName = NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME;
-
+    args.addToProject = false;
     
     _preview->viewerNodeInternal = _gui->getApp()->createNode(args);
     assert(_preview->viewerNodeInternal);
@@ -2991,7 +2991,7 @@ SequenceFileDialog::createViewerPreviewNode()
     _preview->viewerUI->setParent(NULL);
 }
 
-NodeGuiPtr
+NodePtr
 SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
 {
     std::map<std::string,std::string> readersForFormat;
@@ -2999,27 +2999,25 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
     if ( !filetype.empty() ) {
         std::map<std::string,std::string>::iterator found = readersForFormat.find(filetype);
         if ( found == readersForFormat.end() ) {
-            return NodeGuiPtr();
+            return NodePtr();
         }
-        std::map<std::string,std::pair< NodePtr, NodeGuiPtr > >::iterator foundReader = _preview->readerNodes.find(found->second);
+        std::map<std::string,NodePtr>::iterator foundReader = _preview->readerNodes.find(found->second);
         if (foundReader == _preview->readerNodes.end()) {
             
-            CreateNodeArgs args(found->second.c_str(), eCreateNodeReasonInternal, _gui->getApp()->getProject());
+            CreateNodeArgs args(found->second.c_str(), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>());
             args.fixedName = QString(NATRON_FILE_DIALOG_PREVIEW_READER_NAME) +  QString(found->first.c_str());
-            
-            
+            args.createGui = false;
+            args.addToProject = false;
             NodePtr reader = _gui->getApp()->createNode(args);
-            boost::shared_ptr<NodeGuiI> readerGui_i = reader->getNodeGui();
-            NodeGuiPtr readerGui = boost::dynamic_pointer_cast<NodeGui>(readerGui_i);
-            assert(readerGui);
-            readerGui->hideGui();
-            _preview->readerNodes.insert(std::make_pair(found->second,std::make_pair(reader,readerGui)));
-            return readerGui;
+            if (reader) {
+                _preview->readerNodes.insert(std::make_pair(found->second,reader));
+            }
+            return reader;
         } else {
-            return foundReader->second.second;
+            return foundReader->second;
         }
     }
-    return  NodeGuiPtr();
+    return  NodePtr();
 }
 
 void
@@ -3041,19 +3039,19 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
     
     _gui->getApp()->getProject()->setAutoSetProjectFormatEnabled(false);
 
-    NodeGuiPtr reader = findOrCreatePreviewReader(ext);
+    NodePtr reader = findOrCreatePreviewReader(ext);
     if (reader) {
-        const KnobsVec & knobs = reader->getNode()->getKnobs();
+        const KnobsVec & knobs = reader->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             KnobFile* fileKnob = dynamic_cast<KnobFile*>(knobs[i].get());
             if ( fileKnob && fileKnob->isInputImageFile() ) {
                 fileKnob->setValue(pattern,0);
             }
         }
-        _preview->viewerNode->getNode()->connectInput(reader->getNode(), 0);
+        _preview->viewerNode->getNode()->connectInput(reader, 0);
         
         double firstFrame,lastFrame;
-        reader->getNode()->getEffectInstance()->getFrameRange_public(reader->getNode()->getHashValue(), &firstFrame, &lastFrame);
+        reader->getEffectInstance()->getFrameRange_public(reader->getHashValue(), &firstFrame, &lastFrame);
         _preview->viewerUI->setTimelineBounds(firstFrame, lastFrame);
         _preview->viewerUI->centerOn(firstFrame,lastFrame);
 

@@ -186,10 +186,10 @@ GuiAppInstance::deletePreviewProvider()
             _imp->_previewProvider->viewerNodeInternal.reset();
         }
 
-        for (std::map<std::string,std::pair< NodePtr, NodeGuiPtr > >::iterator it =
+        for (std::map<std::string,NodePtr>::iterator it =
              _imp->_previewProvider->readerNodes.begin();
              it != _imp->_previewProvider->readerNodes.end(); ++it) {
-            it->second.first->destroyNode(false);
+            it->second->destroyNode(false);
         }
         _imp->_previewProvider->readerNodes.clear();
 

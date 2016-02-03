@@ -547,7 +547,7 @@ private:
     
     void teardownPreview();
     
-    NodeGuiPtr findOrCreatePreviewReader(const std::string& filetype);
+    NodePtr findOrCreatePreviewReader(const std::string& filetype);
     
     void refreshPreviewAfterSelectionChange();
     
