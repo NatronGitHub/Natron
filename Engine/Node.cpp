@@ -8567,7 +8567,7 @@ Node::setNodeVariableToPython(const std::string& oldName,const std::string& newN
 void
 Node::deleteNodeVariableToPython(const std::string& nodeName)
 {
-    if (!_imp->isPartOfProject) {
+    if (!_imp->isPartOfProject || nodeName.empty()) {
         return;
     }
     if (getParentMultiInstance()) {
