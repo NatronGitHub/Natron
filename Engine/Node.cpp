@@ -5015,7 +5015,12 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     ///_imp->effect->clearPluginMemoryChunks();
     clearLastRenderedImage();
     
-    if (parentCol) {
+    bool beingDestroyed;
+    {
+        QMutexLocker k(&_imp->isBeingDestroyedMutex);
+        beingDestroyed = _imp->isBeingDestroyed;
+    }
+    if (parentCol && !beingDestroyed) {
         parentCol->notifyNodeDeactivated(shared_from_this());
     }
     
