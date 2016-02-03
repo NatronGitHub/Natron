@@ -122,10 +122,7 @@ public:
      * @brief Calls syncPrivateDataAction from another thread than the main thread. The actual
      * call of the action will take place in the main-thread.
      **/
-    void syncPrivateData_other_thread()
-    {
-        Q_EMIT syncPrivateDataRequested();
-    }
+    void syncPrivateData_other_thread();
 
 public:
     /********OVERRIDEN FROM EFFECT INSTANCE*************/

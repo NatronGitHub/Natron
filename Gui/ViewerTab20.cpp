@@ -281,6 +281,17 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
         return false;
     }
     
+    if (getGui()->getApp()->isShowingDialog()) {
+        /*
+         We may enter a situation where a plug-in called EffectInstance::message to show a dialog
+         and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
+         because of focus changes. This would end-up in the interact draw action being called whilst the message() function
+         did not yet return and may in some plug-ins cause deadlocks (happens in all Genarts Sapphire plug-ins).
+         */
+        return false;
+    }
+
+    
     _imp->hasPenDown = true;
     _imp->hasCaughtPenMotionWhileDragging = false;
     
@@ -517,6 +528,17 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
         return false;
     }
     
+    if (getGui()->getApp()->isShowingDialog()) {
+        /*
+         We may enter a situation where a plug-in called EffectInstance::message to show a dialog
+         and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
+         because of focus changes. This would end-up in the interact draw action being called whilst the message() function
+         did not yet return and may in some plug-ins cause deadlocks (happens in all Genarts Sapphire plug-ins).
+         */
+        return false;
+    }
+
+    
     NodesList  nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     
@@ -565,6 +587,17 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
+    
+    if (getGui()->getApp()->isShowingDialog()) {
+        /*
+         We may enter a situation where a plug-in called EffectInstance::message to show a dialog
+         and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
+         because of focus changes. This would end-up in the interact draw action being called whilst the message() function
+         did not yet return and may in some plug-ins cause deadlocks (happens in all Genarts Sapphire plug-ins).
+         */
+        return false;
+    }
+
     
     ///Reset draft
     bool mustTriggerRender = false;
@@ -985,6 +1018,17 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
         return false;
     }
     
+    if (getGui()->getApp()->isShowingDialog()) {
+        /*
+         We may enter a situation where a plug-in called EffectInstance::message to show a dialog
+         and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
+         because of focus changes. This would end-up in the interact draw action being called whilst the message() function
+         did not yet return and may in some plug-ins cause deadlocks (happens in all Genarts Sapphire plug-ins).
+         */
+        return false;
+    }
+
+    
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     int view = getCurrentView();
     
@@ -1025,6 +1069,17 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
     }
+    
+    if (getGui()->getApp()->isShowingDialog()) {
+        /*
+         We may enter a situation where a plug-in called EffectInstance::message to show a dialog
+         and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
+         because of focus changes. This would end-up in the interact draw action being called whilst the message() function
+         did not yet return and may in some plug-ins cause deadlocks (happens in all Genarts Sapphire plug-ins).
+         */
+        return false;
+    }
+
     
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     int view = getCurrentView();

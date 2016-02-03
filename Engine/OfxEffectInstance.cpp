@@ -2551,6 +2551,21 @@ OfxEffectInstance::beginEditKnobs()
 }
 
 void
+OfxEffectInstance::syncPrivateData_other_thread()
+{
+    if (getApp()->isShowingDialog()) {
+        /*
+         We may enter a situation where a plug-in called EffectInstance::message to show a dialog
+         and would block the main thread until the user would click OK but Qt would request a paintGL() on the viewer
+         because of focus changes. This would end-up in the interact draw action being called whilst the message() function
+         did not yet return and may in some plug-ins cause deadlocks (happens in all Genarts Sapphire plug-ins).
+         */
+        return;
+    }
+    Q_EMIT syncPrivateDataRequested();
+}
+
+void
 OfxEffectInstance::onSyncPrivateDataRequested()
 {
     ///Can only be called in the main thread
