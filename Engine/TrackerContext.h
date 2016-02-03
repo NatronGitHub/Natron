@@ -438,7 +438,6 @@ Q_SIGNALS:
     
     void trackingStarted();
     void trackingFinished();
-    void trackingProgress(double);
     
     void onNodeInputChanged(int inputNb);
     
@@ -459,7 +458,6 @@ public:
     
     virtual ~TrackSchedulerBase() {}
     
-    
     void emit_trackingStarted()
     {
         Q_EMIT trackingStarted();
@@ -468,11 +466,6 @@ public:
     void emit_trackingFinished()
     {
         Q_EMIT trackingFinished();
-    }
-    
-    void emit_progressUpdate(double p)
-    {
-        Q_EMIT progressUpdate(p);
     }
     
 private Q_SLOTS:
@@ -486,8 +479,7 @@ Q_SIGNALS:
     
     void trackingFinished();
     
-    void progressUpdate(double progress);
-    
+
     void renderCurrentFrameForViewer(ViewerInstance* viewer);
 };
 
@@ -506,7 +498,7 @@ public:
      */
     typedef bool (*TrackStepFunctor)(int trackIndex, const TrackArgsType& args, int time);
     
-    TrackScheduler(TrackStepFunctor functor);
+    TrackScheduler(const NodeWPtr& node, TrackStepFunctor functor);
     
     virtual ~TrackScheduler();
     

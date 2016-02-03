@@ -195,7 +195,7 @@ public:
     void setUpdateViewerOnTracking(bool update);
     
     bool isUpdateViewerOnTrackingEnabled() const;
-    public Q_SLOTS:
+public Q_SLOTS:
     
     void onAverageTracksButtonClicked();
     void onExportButtonClicked();
@@ -203,8 +203,6 @@ public:
     void onTrackingStarted();
     
     void onTrackingFinished();
-    
-    void onTrackingProgressUpdate(double progress);
     
 Q_SIGNALS:
     

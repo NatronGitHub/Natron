@@ -1726,7 +1726,7 @@ struct TrackerPanelPrivateV1
     
     
     
-    TrackerPanelPrivateV1(TrackerPanelV1* publicInterface)
+    TrackerPanelPrivateV1(TrackerPanelV1* publicInterface, const boost::shared_ptr<NodeGui> & node)
     : publicInterface(publicInterface)
     , averageTracksButton(0)
     , updateViewerMutex()
@@ -1738,7 +1738,7 @@ struct TrackerPanelPrivateV1
     , exportButton(0)
     , transformPage()
     , referenceFrame()
-    , scheduler(&TrackerContext::trackStepV1)
+    , scheduler(node->getNode(), &TrackerContext::trackStepV1)
     {
     }
     
@@ -1751,11 +1751,10 @@ struct TrackerPanelPrivateV1
 
 TrackerPanelV1::TrackerPanelV1(const boost::shared_ptr<NodeGui> & node)
 : MultiInstancePanel(node)
-, _imp( new TrackerPanelPrivateV1(this) )
+, _imp( new TrackerPanelPrivateV1(this, node) )
 {
     QObject::connect(&_imp->scheduler, SIGNAL(trackingStarted()), this, SLOT(onTrackingStarted()));
     QObject::connect(&_imp->scheduler, SIGNAL(trackingFinished()), this, SLOT(onTrackingFinished()));
-    QObject::connect(&_imp->scheduler, SIGNAL(progressUpdate(double)), this, SLOT(onTrackingProgressUpdate(double)));
 }
 
 TrackerPanelV1::~TrackerPanelV1()
@@ -2020,15 +2019,6 @@ TrackerPanelV1::onTrackingFinished()
     }
 }
 
-void
-TrackerPanelV1::onTrackingProgressUpdate(double progress)
-{
-    if (getGui()) {
-        if (!getGui()->progressUpdate(getMainInstance()->getEffectInstance().get(), progress)) {
-            _imp->scheduler.abortTracking();
-        }
-    }
-}
 
 bool
 TrackerPanelPrivateV1::getTrackInstancesForButton(std::vector<KnobButton*>* trackButtons,const std::string& buttonName)

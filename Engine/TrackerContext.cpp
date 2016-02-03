@@ -1547,12 +1547,11 @@ struct TrackerContextPrivate
     , markersToUnslave()
     , beginSelectionCounter(0)
     , selectionRecursion(0)
-    , scheduler(trackStepLibMV)
+    , scheduler(node, trackStepLibMV)
     {
         EffectInstPtr effect = node->getEffectInstance();
         QObject::connect(&scheduler, SIGNAL(trackingStarted()), _publicInterface, SIGNAL(trackingStarted()));
         QObject::connect(&scheduler, SIGNAL(trackingFinished()), _publicInterface, SIGNAL(trackingFinished()));
-        QObject::connect(&scheduler, SIGNAL(progressUpdate(double)), _publicInterface, SIGNAL(trackingProgress(double)));
         
         boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(effect.get(), "Controls", 1 , false);
         boost::shared_ptr<KnobPage> transformPage = AppManager::createKnob<KnobPage>(effect.get(), "Transform", 1 , false);
@@ -2924,7 +2923,7 @@ TrackerContext::onSelectedKnobCurveChanged()
 
 struct TrackSchedulerPrivate
 {
-    
+    NodeWPtr node;
     mutable QMutex mustQuitMutex;
     bool mustQuit;
     QWaitCondition mustQuitCond;
@@ -2941,8 +2940,9 @@ struct TrackSchedulerPrivate
     bool isWorking;
     
     
-    TrackSchedulerPrivate()
-    : mustQuitMutex()
+    TrackSchedulerPrivate(const NodeWPtr& node)
+    : node(node)
+    , mustQuitMutex()
     , mustQuit(false)
     , mustQuitCond()
     , abortRequestedMutex()
@@ -2955,6 +2955,11 @@ struct TrackSchedulerPrivate
     , isWorking(false)
     {
         
+    }
+    
+    NodePtr getNode() const
+    {
+        return node.lock();
     }
     
     bool checkForExit()
@@ -2977,9 +2982,9 @@ TrackSchedulerBase::TrackSchedulerBase()
 }
 
 template <class TrackArgsType>
-TrackScheduler<TrackArgsType>::TrackScheduler(TrackStepFunctor functor)
+TrackScheduler<TrackArgsType>::TrackScheduler(const NodeWPtr& node, TrackStepFunctor functor)
 : TrackSchedulerBase()
-, _imp(new TrackSchedulerPrivate())
+, _imp(new TrackSchedulerPrivate(node))
 , argsMutex()
 , curArgs()
 , requestedArgs()
@@ -3005,27 +3010,31 @@ TrackScheduler<TrackArgsType>::isWorking() const
 class IsTrackingFlagSetter_RAII
 {
     ViewerInstance* _v;
+    EffectInstPtr _effect;
     TrackSchedulerBase* _base;
     bool _reportProgress;
     
 public:
     
-    IsTrackingFlagSetter_RAII(TrackSchedulerBase* base, bool reportProgress, ViewerInstance* viewer)
+    IsTrackingFlagSetter_RAII(const EffectInstPtr& effect, TrackSchedulerBase* base, bool reportProgress, ViewerInstance* viewer)
     : _v(viewer)
+    , _effect(effect)
     , _base(base)
     , _reportProgress(reportProgress)
     {
-        
-        if (_reportProgress) {
-            base->emit_trackingStarted();
+        if (_effect && _reportProgress) {
+            _effect->getApp()->progressStart(_effect.get(), QObject::tr("Tracking...").toStdString(), "");
+            _base->emit_trackingStarted();
         }
+
         viewer->setDoingPartialUpdates(true);
     }
     
     ~IsTrackingFlagSetter_RAII()
     {
         _v->setDoingPartialUpdates(false);
-        if (_reportProgress) {
+        if (_effect && _reportProgress) {
+            _effect->getApp()->progressEnd(_effect.get());
             _base->emit_trackingFinished();
         }
 
@@ -3060,6 +3069,8 @@ TrackScheduler<TrackArgsType>::run()
         ViewerInstance* viewer =  curArgs.getViewer();
         assert(viewer);
         
+        
+        
         bool isUpdateViewerOnTrackingEnabled = curArgs.isUpdateViewerEnabled();
         bool isCenterViewerEnabled = curArgs.isCenterViewerEnabled();
         
@@ -3079,9 +3090,10 @@ TrackScheduler<TrackArgsType>::run()
         int lastValidFrame = isForward ? start - 1 : start + 1;
         bool reportProgress = numTracks > 1 || framesCount > 1;
 
+        EffectInstPtr effect = _imp->getNode()->getEffectInstance();
         {
             ///Use RAII style for setting the isDoingPartialUpdates flag so we're sure it gets removed
-            IsTrackingFlagSetter_RAII __istrackingflag__(this, reportProgress, viewer);
+            IsTrackingFlagSetter_RAII __istrackingflag__(effect, this, reportProgress, viewer);
 
             while (cur != end) {
                 
@@ -3138,9 +3150,12 @@ TrackScheduler<TrackArgsType>::run()
                     Q_EMIT renderCurrentFrameForViewer(viewer);
                 }
                 
-                if (reportProgress) {
+                if (reportProgress && effect) {
                     ///Notify we progressed of 1 frame
-                    emit_progressUpdate(progress);
+                    if (!effect->getApp()->progressUpdate(effect.get(), progress)) {
+                        QMutexLocker k(&_imp->abortRequestedMutex);
+                        ++_imp->abortRequested;
+                    }
                 }
                 
                 ///Check for abortion
@@ -3234,7 +3249,10 @@ TrackScheduler<TrackArgsType>::abortTracking()
     {
         QMutexLocker k(&_imp->abortRequestedMutex);
         ++_imp->abortRequested;
-        _imp->abortRequestedCond.wakeAll();
+        while (_imp->abortRequested) {
+            _imp->abortRequestedCond.wait(&_imp->abortRequestedMutex);
+        }
+        
     }
     
 }
