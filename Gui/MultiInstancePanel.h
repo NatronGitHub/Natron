@@ -40,6 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Knob.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/TrackerContext.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -167,7 +168,7 @@ private:
 
 struct TrackerPanelPrivateV1;
 class TrackerPanelV1
-: public MultiInstancePanel
+: public MultiInstancePanel, public TrackerParamsProvider
 {
     GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -180,10 +181,10 @@ public:
     virtual ~TrackerPanelV1();
     
     ///Each function below returns true if there is a selection, false otherwise
-    bool trackBackward(ViewerInstance* viewer, bool centerViewer);
-    bool trackForward(ViewerInstance* viewer, bool centerViewer);
-    bool trackPrevious(ViewerInstance* viewer, bool centerViewer);
-    bool trackNext(ViewerInstance* viewer, bool centerViewer);
+    bool trackBackward(ViewerInstance* viewer);
+    bool trackForward(ViewerInstance* viewer);
+    bool trackPrevious(ViewerInstance* viewer);
+    bool trackNext(ViewerInstance* viewer);
     void stopTracking();
     
     void clearAllAnimationForSelection();
@@ -192,9 +193,6 @@ public:
     
     void clearForwardAnimationForSelection();
     
-    void setUpdateViewerOnTracking(bool update);
-    
-    bool isUpdateViewerOnTrackingEnabled() const;
 public Q_SLOTS:
     
     void onAverageTracksButtonClicked();

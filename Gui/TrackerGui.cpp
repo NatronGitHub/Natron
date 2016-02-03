@@ -651,6 +651,16 @@ TrackerGui::createGui()
     if (_imp->panel) {
         QObject::connect(_imp->panel->getNode()->getNode().get(), SIGNAL(s_refreshPreviewsAfterProjectLoadRequested()), this, SLOT(rebuildMarkerTextures()));
     }
+    
+    
+    ///Refresh track parameters according to buttons state
+    if (_imp->panelv1) {
+        _imp->panelv1->setUpdateViewer(_imp->updateViewerButton->isDown());
+        _imp->panelv1->setCenterOnTrack(_imp->centerViewerButton->isDown());
+    } else {
+        _imp->panel->getContext()->setUpdateViewer(_imp->updateViewerButton->isDown());
+        _imp->panel->getContext()->setCenterOnTrack(_imp->centerViewerButton->isDown());
+    }
 }
 
 TrackerGui::~TrackerGui()
@@ -863,7 +873,7 @@ TrackerGui::drawOverlays(double time,
                         glEnd();
                     }
                     glPointSize(1.);
-                } else { // if (!isSelected) {
+                } else { // if (isSelected) {
                     glEnable(GL_LINE_SMOOTH);
                     glHint(GL_LINE_SMOOTH_HINT,GL_DONT_CARE);
                     GLdouble projection[16];
@@ -956,21 +966,26 @@ TrackerGui::drawOverlays(double time,
                     boost::shared_ptr<Curve> yCurve = centerKnob->getCurve(1);
                     boost::shared_ptr<Curve> errorCurve = correlationKnob->getCurve(0);
                     
-                    for (int i = floorTime; i < MAX_CENTER_POINTS_DISPLAYED; ++i) {
+                    for (int i = 0; i < MAX_CENTER_POINTS_DISPLAYED / 2; ++i) {
                         KeyFrame k;
-                        if (xCurve->getKeyFrameWithTime(i, &k)) {
-                            std::pair<Natron::Point,double>& p = centerPoints[k.getTime()];
-                            p.first.x = k.getValue();
-                            p.first.y = INT_MIN;
-                            
-                            if (yCurve->getKeyFrameWithTime(i, &k)) {
-                                p.first.y = k.getValue();
-                            }
-                            if (showErrorColor && errorCurve->getKeyFrameWithTime(i, &k)) {
-                                p.second = k.getValue();
+                        int keyTimes[2] = {floorTime + i, floorTime - i};
+                        
+                        for (int j = 0; j < 2; ++j) {
+                            if (xCurve->getKeyFrameWithTime(keyTimes[j], &k)) {
+                                std::pair<Natron::Point,double>& p = centerPoints[k.getTime()];
+                                p.first.x = k.getValue();
+                                p.first.y = INT_MIN;
+                                
+                                if (yCurve->getKeyFrameWithTime(keyTimes[j], &k)) {
+                                    p.first.y = k.getValue();
+                                }
+                                if (showErrorColor && errorCurve->getKeyFrameWithTime(keyTimes[j], &k)) {
+                                    p.second = k.getValue();
+                                }
                             }
                         }
                     }
+           
           
                     for (int l = 0; l < 2; ++l) {
                         // shadow (uses GL_PROJECTION)
@@ -3354,7 +3369,7 @@ TrackerGui::onTrackBwClicked()
     _imp->trackBwButton->setDown(true);
     _imp->trackBwButton->setChecked(true);
     if (_imp->panelv1) {
-        if (!_imp->panelv1->trackBackward(_imp->viewer->getInternalNode(), _imp->centerViewerButton->isDown())) {
+        if (!_imp->panelv1->trackBackward(_imp->viewer->getInternalNode())) {
             _imp->panelv1->stopTracking();
             _imp->trackBwButton->setDown(false);
             _imp->trackBwButton->setChecked(false);
@@ -3368,7 +3383,7 @@ TrackerGui::onTrackBwClicked()
         if (ctx->isCurrentlyTracking()) {
             ctx->abortTracking();
         } else {
-            ctx->trackSelectedMarkers(startFrame, first -1, false, _imp->updateViewerButton->isDown(), _imp->centerViewerButton->isDown(), _imp->viewer->getInternalNode());
+            ctx->trackSelectedMarkers(startFrame, first -1, false,  _imp->viewer->getInternalNode());
         }
     }
 }
@@ -3377,12 +3392,12 @@ void
 TrackerGui::onTrackPrevClicked()
 {
     if (_imp->panelv1) {
-        _imp->panelv1->trackPrevious(_imp->viewer->getInternalNode(), _imp->centerViewerButton->isDown());
+        _imp->panelv1->trackPrevious(_imp->viewer->getInternalNode());
     } else {
         boost::shared_ptr<TimeLine> timeline = _imp->viewer->getGui()->getApp()->getTimeLine();
         int startFrame = timeline->currentFrame() - 1;
         boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
-        ctx->trackSelectedMarkers(startFrame, startFrame - 1, false, _imp->updateViewerButton->isDown(),_imp->centerViewerButton->isDown(),  _imp->viewer->getInternalNode());
+        ctx->trackSelectedMarkers(startFrame, startFrame - 1, false,  _imp->viewer->getInternalNode());
     }
 }
 
@@ -3402,11 +3417,11 @@ void
 TrackerGui::onTrackNextClicked()
 {
     if (_imp->panelv1) {
-        _imp->panelv1->trackNext(_imp->viewer->getInternalNode(), _imp->centerViewerButton->isDown());
+        _imp->panelv1->trackNext(_imp->viewer->getInternalNode());
     } else {
         int startFrame = _imp->viewer->getGui()->getApp()->getTimeLine()->currentFrame() + 1;
         boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
-        ctx->trackSelectedMarkers(startFrame, startFrame + 1, true, _imp->updateViewerButton->isDown(), _imp->centerViewerButton->isDown(), _imp->viewer->getInternalNode());
+        ctx->trackSelectedMarkers(startFrame, startFrame + 1, true,  _imp->viewer->getInternalNode());
     }
 }
 
@@ -3416,7 +3431,7 @@ TrackerGui::onTrackFwClicked()
     _imp->trackFwButton->setDown(true);
     _imp->trackFwButton->setChecked(true);
     if (_imp->panelv1) {
-        if (!_imp->panelv1->trackForward(_imp->viewer->getInternalNode(), _imp->centerViewerButton->isDown())) {
+        if (!_imp->panelv1->trackForward(_imp->viewer->getInternalNode())) {
             _imp->panelv1->stopTracking();
             _imp->trackFwButton->setDown(false);
             _imp->trackFwButton->setChecked(false);
@@ -3430,7 +3445,7 @@ TrackerGui::onTrackFwClicked()
         if (ctx->isCurrentlyTracking()) {
             ctx->abortTracking();
         } else {
-            ctx->trackSelectedMarkers(startFrame, last + 1, true, _imp->updateViewerButton->isDown(), _imp->centerViewerButton->isDown(), _imp->viewer->getInternalNode());
+            ctx->trackSelectedMarkers(startFrame, last + 1, true, _imp->viewer->getInternalNode());
         }
     }
 }
@@ -3438,11 +3453,13 @@ TrackerGui::onTrackFwClicked()
 void
 TrackerGui::onUpdateViewerClicked(bool clicked)
 {
-    if (_imp->panelv1) {
-        _imp->panelv1->setUpdateViewerOnTracking(clicked);
-    }
     _imp->updateViewerButton->setDown(clicked);
     _imp->updateViewerButton->setChecked(clicked);
+    if (_imp->panelv1) {
+        _imp->panelv1->setUpdateViewer(clicked);
+    } else {
+        _imp->panel->getContext()->setUpdateViewer(clicked);
+    }
 }
 
 void
@@ -3505,12 +3522,18 @@ void
 TrackerGui::onShowCorrelationButtonClicked(bool clicked)
 {
     _imp->showCorrelationButton->setDown(clicked);
+    _imp->viewer->getViewer()->redraw();
 }
 
 void
 TrackerGui::onCenterViewerButtonClicked(bool clicked)
 {
     _imp->centerViewerButton->setDown(clicked);
+    if (_imp->panelv1) {
+        _imp->panelv1->setCenterOnTrack(clicked);
+    } else {
+        _imp->panel->getContext()->setCenterOnTrack(clicked);
+    }
 }
 
 void

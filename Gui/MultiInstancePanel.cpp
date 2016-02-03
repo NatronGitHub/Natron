@@ -1710,9 +1710,6 @@ struct TrackerPanelPrivateV1
     TrackerPanelV1* publicInterface;
     Button* averageTracksButton;
     
-    mutable QMutex updateViewerMutex;
-    bool updateViewerOnTrackingEnabled;
-    
     Label* exportLabel;
     QWidget* exportContainer;
     QHBoxLayout* exportLayout;
@@ -1729,8 +1726,6 @@ struct TrackerPanelPrivateV1
     TrackerPanelPrivateV1(TrackerPanelV1* publicInterface, const boost::shared_ptr<NodeGui> & node)
     : publicInterface(publicInterface)
     , averageTracksButton(0)
-    , updateViewerMutex()
-    , updateViewerOnTrackingEnabled(true)
     , exportLabel(0)
     , exportContainer(0)
     , exportLayout(0)
@@ -1738,7 +1733,7 @@ struct TrackerPanelPrivateV1
     , exportButton(0)
     , transformPage()
     , referenceFrame()
-    , scheduler(node->getNode(), &TrackerContext::trackStepV1)
+    , scheduler(publicInterface, node->getNode(), &TrackerContext::trackStepV1)
     {
     }
     
@@ -1986,13 +1981,13 @@ TrackerPanelV1::onButtonTriggered(KnobButton* button)
     
     ///hack the trackBackward and trackForward buttons behaviour so they appear to progress simultaneously
     if (name == kNatronParamTrackingBackward) {
-        trackBackward(viewer, false);
+        trackBackward(viewer);
     } else if (name == kNatronParamTrackingForward) {
-        trackForward(viewer, false);
+        trackForward(viewer);
     } else if (name == kNatronParamTrackingPrevious) {
-        trackPrevious(viewer, false);
+        trackPrevious(viewer);
     } else if (name == kNatronParamTrackingNext) {
-        trackNext(viewer, false);
+        trackNext(viewer);
     }
 }
 
@@ -2050,7 +2045,7 @@ TrackerPanelPrivateV1::getTrackInstancesForButton(std::vector<KnobButton*>* trac
 }
 
 bool
-TrackerPanelV1::trackBackward(ViewerInstance* viewer, bool centerViewer)
+TrackerPanelV1::trackBackward(ViewerInstance* viewer)
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -2065,13 +2060,13 @@ TrackerPanelV1::trackBackward(ViewerInstance* viewer, bool centerViewer)
     int end = leftBound - 1;
     int start = getApp()->getTimeLine()->currentFrame();
     
-    _imp->scheduler.track(TrackArgsV1(start, end, false, getApp()->getTimeLine(), viewer, instanceButtons,isUpdateViewerOnTrackingEnabled(), centerViewer));
+    _imp->scheduler.track(TrackArgsV1(start, end, false, getApp()->getTimeLine(), viewer, instanceButtons));
     
     return true;
 } // trackBackward
 
 bool
-TrackerPanelV1::trackForward(ViewerInstance* viewer, bool centerViewer)
+TrackerPanelV1::trackForward(ViewerInstance* viewer)
 {
     assert(QThread::currentThread() == qApp->thread());
     
@@ -2087,7 +2082,7 @@ TrackerPanelV1::trackForward(ViewerInstance* viewer, bool centerViewer)
     int end = rightBound + 1;
     int start = timeline->currentFrame();
     
-    _imp->scheduler.track(TrackArgsV1(start, end, true, getApp()->getTimeLine(),viewer, instanceButtons,isUpdateViewerOnTrackingEnabled(), centerViewer));
+    _imp->scheduler.track(TrackArgsV1(start, end, true, getApp()->getTimeLine(),viewer, instanceButtons));
     
     return true;
     
@@ -2100,7 +2095,7 @@ TrackerPanelV1::stopTracking()
 }
 
 bool
-TrackerPanelV1::trackPrevious(ViewerInstance* viewer, bool centerViewer)
+TrackerPanelV1::trackPrevious(ViewerInstance* viewer)
 {
     std::list<Node*> selectedInstances;
     
@@ -2120,13 +2115,13 @@ TrackerPanelV1::trackPrevious(ViewerInstance* viewer, bool centerViewer)
     int start = timeline->currentFrame();
     int end = start - 1;
     
-    _imp->scheduler.track(TrackArgsV1(start, end, false, getApp()->getTimeLine(),viewer, instanceButtons,isUpdateViewerOnTrackingEnabled(), centerViewer));
+    _imp->scheduler.track(TrackArgsV1(start, end, false, getApp()->getTimeLine(),viewer, instanceButtons));
     
     return true;
 }
 
 bool
-TrackerPanelV1::trackNext(ViewerInstance* viewer, bool centerViewer)
+TrackerPanelV1::trackNext(ViewerInstance* viewer)
 {
     std::list<Node*> selectedInstances;
     
@@ -2146,7 +2141,7 @@ TrackerPanelV1::trackNext(ViewerInstance* viewer, bool centerViewer)
     int start = timeline->currentFrame();
     int end = start + 1;
     
-    _imp->scheduler.track(TrackArgsV1(start, end, true, getApp()->getTimeLine(),viewer, instanceButtons,isUpdateViewerOnTrackingEnabled(), centerViewer));
+    _imp->scheduler.track(TrackArgsV1(start, end, true, getApp()->getTimeLine(),viewer, instanceButtons));
     
     return true;
 }
@@ -2199,20 +2194,6 @@ TrackerPanelV1::clearForwardAnimationForSelection()
             }
         }
     }
-}
-
-void
-TrackerPanelV1::setUpdateViewerOnTracking(bool update)
-{
-    QMutexLocker k(&_imp->updateViewerMutex);
-    _imp->updateViewerOnTrackingEnabled = update;
-}
-
-bool
-TrackerPanelV1::isUpdateViewerOnTrackingEnabled() const
-{
-    QMutexLocker k(&_imp->updateViewerMutex);
-    return _imp->updateViewerOnTrackingEnabled;
 }
 
 void

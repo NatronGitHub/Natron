@@ -935,8 +935,6 @@ class TrackArgsLibMV
     int _start, _end;
     bool _isForward;
     boost::shared_ptr<TimeLine> _timeline;
-    bool _isUpdateViewerEnabled;
-    bool _centerViewer;
     ViewerInstance* _viewer;
     boost::shared_ptr<mv::AutoTrack> _libmvAutotrack;
     boost::shared_ptr<FrameAccessorImpl> _fa;
@@ -953,8 +951,6 @@ public:
     , _end(0)
     , _isForward(false)
     , _timeline()
-    , _isUpdateViewerEnabled(false)
-    , _centerViewer(false)
     , _viewer(0)
     , _libmvAutotrack()
     , _fa()
@@ -969,8 +965,6 @@ public:
                    int end,
                    bool isForward,
                    const boost::shared_ptr<TimeLine>& timeline,
-                   bool isUpdateViewerEnabled,
-                   bool centerViewer,
                    ViewerInstance* viewer,
                    const boost::shared_ptr<mv::AutoTrack>& autoTrack,
                    const boost::shared_ptr<FrameAccessorImpl>& fa,
@@ -981,8 +975,6 @@ public:
     , _end(end)
     , _isForward(isForward)
     , _timeline(timeline)
-    , _isUpdateViewerEnabled(isUpdateViewerEnabled)
-    , _centerViewer(centerViewer)
     , _viewer(viewer)
     , _libmvAutotrack(autoTrack)
     , _fa(fa)
@@ -1004,11 +996,9 @@ public:
         _end = other._end;
         _isForward = other._isForward;
         _timeline = other._timeline;
-        _isUpdateViewerEnabled = other._isUpdateViewerEnabled;
         _viewer = other._viewer;
         _libmvAutotrack = other._libmvAutotrack;
         _fa = other._fa;
-        _centerViewer = other._centerViewer;
         _tracks = other._tracks;
         _formatWidth = other._formatWidth;
         _formatHeight = other._formatHeight;
@@ -1052,17 +1042,6 @@ public:
     ViewerInstance* getViewer() const
     {
         return _viewer;
-    }
-    
-    bool isCenterViewerEnabled() const
-    {
-        return _centerViewer;
-    }
-
-    
-    bool isUpdateViewerEnabled() const
-    {
-        return _isUpdateViewerEnabled;
     }
     
     int getNumTracks() const
@@ -1526,6 +1505,8 @@ struct TrackerContextPrivate
     
     TrackScheduler<TrackArgsLibMV> scheduler;
     
+
+    
     TrackerContextPrivate(TrackerContext* publicInterface, const boost::shared_ptr<Natron::Node> &node)
     : _publicInterface(publicInterface)
     , node(node)
@@ -1547,7 +1528,7 @@ struct TrackerContextPrivate
     , markersToUnslave()
     , beginSelectionCounter(0)
     , selectionRecursion(0)
-    , scheduler(node, trackStepLibMV)
+    , scheduler(_publicInterface ,node, trackStepLibMV)
     {
         EffectInstPtr effect = node->getEffectInstance();
         QObject::connect(&scheduler, SIGNAL(trackingStarted()), _publicInterface, SIGNAL(trackingStarted()));
@@ -2498,8 +2479,6 @@ TrackerContext::trackMarkers(const std::list<boost::shared_ptr<TrackMarker> >& m
                              int start,
                              int end,
                              bool forward,
-                             bool updateViewer,
-                             bool centerViewer,
                              ViewerInstance* viewer)
 {
     
@@ -2594,12 +2573,12 @@ TrackerContext::trackMarkers(const std::list<boost::shared_ptr<TrackMarker> >& m
     /*
      Launch tracking in the scheduler thread.
      */
-    TrackArgsLibMV args(start, end, forward, getNode()->getApp()->getTimeLine(), updateViewer, centerViewer, viewer, trackContext, accessor, trackAndOptions,formatWidth,formatHeight);
+    TrackArgsLibMV args(start, end, forward, getNode()->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions,formatWidth,formatHeight);
     _imp->scheduler.track(args);
 }
 
 void
-TrackerContext::trackSelectedMarkers(int start, int end, bool forward, bool updateViewer, bool centerViewer, ViewerInstance* viewer)
+TrackerContext::trackSelectedMarkers(int start, int end, bool forward, ViewerInstance* viewer)
 {
     std::list<boost::shared_ptr<TrackMarker> > markers;
     {
@@ -2611,7 +2590,7 @@ TrackerContext::trackSelectedMarkers(int start, int end, bool forward, bool upda
             }
         }
     }
-    trackMarkers(markers,start,end,forward,updateViewer, centerViewer, viewer);
+    trackMarkers(markers,start,end,forward, viewer);
 }
 
 bool
@@ -2923,6 +2902,7 @@ TrackerContext::onSelectedKnobCurveChanged()
 
 struct TrackSchedulerPrivate
 {
+    TrackerParamsProvider* paramsProvider;
     NodeWPtr node;
     mutable QMutex mustQuitMutex;
     bool mustQuit;
@@ -2940,8 +2920,9 @@ struct TrackSchedulerPrivate
     bool isWorking;
     
     
-    TrackSchedulerPrivate(const NodeWPtr& node)
-    : node(node)
+    TrackSchedulerPrivate(TrackerParamsProvider* paramsProvider, const NodeWPtr& node)
+    : paramsProvider(paramsProvider)
+    , node(node)
     , mustQuitMutex()
     , mustQuit(false)
     , mustQuitCond()
@@ -2982,9 +2963,9 @@ TrackSchedulerBase::TrackSchedulerBase()
 }
 
 template <class TrackArgsType>
-TrackScheduler<TrackArgsType>::TrackScheduler(const NodeWPtr& node, TrackStepFunctor functor)
+TrackScheduler<TrackArgsType>::TrackScheduler(TrackerParamsProvider* paramsProvider, const NodeWPtr& node, TrackStepFunctor functor)
 : TrackSchedulerBase()
-, _imp(new TrackSchedulerPrivate(node))
+, _imp(new TrackSchedulerPrivate(paramsProvider, node))
 , argsMutex()
 , curArgs()
 , requestedArgs()
@@ -3070,11 +3051,6 @@ TrackScheduler<TrackArgsType>::run()
         assert(viewer);
         
         
-        
-        bool isUpdateViewerOnTrackingEnabled = curArgs.isUpdateViewerEnabled();
-        bool isCenterViewerEnabled = curArgs.isCenterViewerEnabled();
-        
-        
         int end = curArgs.getEnd();
         int start = curArgs.getStart();
         int cur = start;
@@ -3130,6 +3106,9 @@ TrackScheduler<TrackArgsType>::run()
                     progress = (double)(start - cur) / framesCount;
                 }
                 
+                bool isUpdateViewerOnTrackingEnabled = _imp->paramsProvider->getUpdateViewer();
+                bool isCenterViewerEnabled = _imp->paramsProvider->getCenterOnTrack();
+
                 
                 ///Ok all tracks are finished now for this frame, refresh viewer if needed
                 if (isUpdateViewerOnTrackingEnabled && viewer) {
@@ -3176,7 +3155,8 @@ TrackScheduler<TrackArgsType>::run()
         
         //Now that tracking is done update viewer once to refresh the whole visible portion
         
-        if (isUpdateViewerOnTrackingEnabled) {
+
+        if (_imp->paramsProvider->getUpdateViewer()) {
             //Refresh all viewers to the current frame
             timeline->seekFrame(lastValidFrame, true, 0, Natron::eTimelineChangeReasonOtherSeek);
         }

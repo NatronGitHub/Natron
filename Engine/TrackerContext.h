@@ -152,8 +152,6 @@ class TrackArgsV1
     boost::shared_ptr<TimeLine> _timeline;
     ViewerInstance* _viewer;
     std::vector<KnobButton*> _buttonInstances;
-    bool _isUpdateViewerEnabled;
-    bool _centerViewer;
     
 public:
     
@@ -164,8 +162,6 @@ public:
     , _timeline()
     , _viewer(0)
     , _buttonInstances()
-    , _isUpdateViewerEnabled(false)
-    , _centerViewer(false)
     {
         
     }
@@ -180,17 +176,13 @@ public:
                 bool forward,
                 const boost::shared_ptr<TimeLine>& timeline,
                 ViewerInstance* viewer,
-                const std::vector<KnobButton*>& instances,
-                bool updateViewer,
-                bool centerViewer)
+                const std::vector<KnobButton*>& instances)
     : _start(start)
     , _end(end)
     , _forward(forward)
     , _timeline(timeline)
     , _viewer(viewer)
     , _buttonInstances(instances)
-    , _isUpdateViewerEnabled(updateViewer)
-    , _centerViewer(centerViewer)
     {
         
     }
@@ -205,18 +197,6 @@ public:
         _timeline = other._timeline;
         _viewer = other._viewer;
         _buttonInstances = other._buttonInstances;
-        _isUpdateViewerEnabled = other._isUpdateViewerEnabled;
-        _centerViewer = other._centerViewer;
-    }
-    
-    bool isUpdateViewerEnabled() const
-    {
-        return _isUpdateViewerEnabled;
-    }
-    
-    bool isCenterViewerEnabled() const
-    {
-        return _centerViewer;
     }
     
     int getStart() const
@@ -258,8 +238,49 @@ public:
     
 };
 
+class TrackerParamsProvider
+{
+    mutable QMutex _trackParamsMutex;
+    bool _centerTrack;
+    bool _updateViewer;
+public:
+    
+    TrackerParamsProvider()
+    : _trackParamsMutex()
+    , _centerTrack(false)
+    , _updateViewer(false)
+    {
+        
+    }
+    
+    void setCenterOnTrack(bool centerTrack)
+    {
+        QMutexLocker k(&_trackParamsMutex);
+        _centerTrack = centerTrack;
+    }
+    
+    void setUpdateViewer(bool updateViewer)
+    {
+        QMutexLocker k(&_trackParamsMutex);
+        _updateViewer =  updateViewer;
+    }
+    
+    bool getCenterOnTrack() const
+    {
+        QMutexLocker k(&_trackParamsMutex);
+        return _centerTrack;
+    }
+    
+    bool getUpdateViewer() const
+    {
+        QMutexLocker k(&_trackParamsMutex);
+        return _updateViewer;
+    }
+
+};
+
 struct TrackerContextPrivate;
-class TrackerContext : public QObject, public boost::enable_shared_from_this<TrackerContext>
+class TrackerContext : public QObject, public boost::enable_shared_from_this<TrackerContext>, public TrackerParamsProvider
 {
     Q_OBJECT
     
@@ -307,13 +328,11 @@ public:
      * @brief Tracks the selected markers over the range defined by [start,end[ (end pointing to the frame
      * after the last one, a la STL).
      **/
-    void trackSelectedMarkers(int start, int end, bool forward, bool updateViewer, bool centerViewer, ViewerInstance* viewer);
+    void trackSelectedMarkers(int start, int end, bool forward, ViewerInstance* viewer);
     void trackMarkers(const std::list<boost::shared_ptr<TrackMarker> >& marks,
                       int start,
                       int end,
                       bool forward,
-                      bool updateViewer,
-                      bool centerViewer,
                       ViewerInstance* viewer);
     
     void abortTracking();
@@ -498,7 +517,7 @@ public:
      */
     typedef bool (*TrackStepFunctor)(int trackIndex, const TrackArgsType& args, int time);
     
-    TrackScheduler(const NodeWPtr& node, TrackStepFunctor functor);
+    TrackScheduler(TrackerParamsProvider* paramsProvider, const NodeWPtr& node, TrackStepFunctor functor);
     
     virtual ~TrackScheduler();
     
