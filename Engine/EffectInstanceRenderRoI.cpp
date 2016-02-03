@@ -911,24 +911,25 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if ( ( found != _imp->imagesBeingRendered.end() ) && found->second->refCount ) {
                     ibr = found->second;
                 }
-            }
-            if (!ibr) {
-                Image::ReadAccess racc( isPlaneCached.get() );
-                isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
-                std::list<RectI> tmpRects;
-                isPlaneCached->getRestToRender(roi, tmpRects);
-
-                //If it crashes here that means the image is no longer being rendered but its bitmap still contains PIXEL_UNAVAILABLE pixels.
-                //The other thread should have removed that image from the cache or marked the image as rendered.
-                assert(!planesToRender->isBeingRenderedElsewhere);
-                assert( rectsLeftToRender.size() == tmpRects.size() );
-
-                std::list<RectI>::iterator oIt = rectsLeftToRender.begin();
-                for (std::list<RectI>::iterator it = tmpRects.begin(); it != tmpRects.end(); ++it, ++oIt) {
-                    assert(*it == *oIt);
+                
+                if (!ibr) {
+                    Image::ReadAccess racc( isPlaneCached.get() );
+                    isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
+                    std::list<RectI> tmpRects;
+                    isPlaneCached->getRestToRender(roi, tmpRects);
+                    
+                    //If it crashes here that means the image is no longer being rendered but its bitmap still contains PIXEL_UNAVAILABLE pixels.
+                    //The other thread should have removed that image from the cache or marked the image as rendered.
+                    assert(!planesToRender->isBeingRenderedElsewhere);
+                    assert( rectsLeftToRender.size() == tmpRects.size() );
+                    
+                    std::list<RectI>::iterator oIt = rectsLeftToRender.begin();
+                    for (std::list<RectI>::iterator it = tmpRects.begin(); it != tmpRects.end(); ++it, ++oIt) {
+                        assert(*it == *oIt);
+                    }
+                } else {
+                    isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
                 }
-            } else {
-                isPlaneCached->getRestToRender_trimap(roi, rectsLeftToRender, &planesToRender->isBeingRenderedElsewhere);
             }
 #endif
         } else {
