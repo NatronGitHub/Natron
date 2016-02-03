@@ -1576,7 +1576,7 @@ TrackerPanel::onItemMotionModelChanged(int index)
     ComboBox* widget = qobject_cast<ComboBox*>(sender());
     assert(widget);
     for (std::size_t i = 0; i < _imp->items.size(); ++i) {
-        QWidget* cellW = _imp->view->cellWidget(i, COL_ENABLED);
+        QWidget* cellW = _imp->view->cellWidget(i, COL_MOTION_MODEL);
         if (widget == cellW) {
             boost::shared_ptr<TrackMarker> marker = _imp->items[i].marker.lock();
             marker->getMotionModelKnob()->setValue(index, 0, Natron::eValueChangedReasonNatronGuiEdited, 0);
