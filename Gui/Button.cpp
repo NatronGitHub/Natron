@@ -24,7 +24,10 @@
 
 #include "Button.h"
 
+#include <stdexcept>
+
 #include <QApplication>
+
 #include "Gui/GuiApplicationManager.h"
 
 NATRON_NAMESPACE_ENTER;

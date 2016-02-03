@@ -322,6 +322,8 @@ public:
     
     virtual void renderAllViewers(bool /* canAbort*/) {}
     
+    virtual void abortAllViewers() {}
+    
     virtual void declareCurrentAppVariable_Python();
 
     void execOnProjectCreatedCallback();

@@ -42,6 +42,7 @@
 
 #include "ofxNatron.h"
 #include <ofxhUtilities.h> // for StatStr
+#include <ofxhPluginCache.h>
 
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
@@ -95,7 +96,6 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
                                                bool interactive)
     : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
       , _ofxEffectInstance()
-      , _parentingMap()
 {
 }
 
@@ -378,6 +378,8 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     KnobPtr knob;
     bool paramShouldBePersistant = true;
 
+    bool secretByDefault = descriptor.getSecret();
+    
     if (descriptor.getType() == kOfxParamTypeInteger) {
         OfxIntegerInstance *ret = new OfxIntegerInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
@@ -526,6 +528,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
            Custom parameters are mandatory, as they are simply ASCII C strings. However, animation of custom parameters an support for an in editor interact is optional.
          */
         //throw std::runtime_error(std::string("Parameter ") + paramName + " has unsupported OFX type " + descriptor.getType());
+        secretByDefault = true;
         OfxCustomInstance *ret = new OfxCustomInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         assert(knob);
@@ -574,11 +577,6 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     if (!instance) {
         throw std::runtime_error( std::string("Parameter ") + paramName + " has unknown OFX type " + descriptor.getType() );
     }
-
-    std::string parent = instance->getParentName();
-    if ( !parent.empty() ) {
-        _parentingMap.insert( make_pair(instance,parent) );
-    }
    
     knob->setName(paramName);
     knob->setEvaluateOnChange( descriptor.getEvaluateOnChange() );
@@ -590,7 +588,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     knob->setIsClipPreferencesSlave(isClipPreferencesSlaveParam(paramName));
     knob->setIsPersistant(persistant);
     knob->setAnimationEnabled( descriptor.getCanAnimate() );
-    knob->setSecretByDefault( descriptor.getSecret() );
+    knob->setSecretByDefault(secretByDefault);
     knob->setDefaultAllDimensionsEnabled( descriptor.getEnabled() );
     knob->setHintToolTip( descriptor.getHint() );
     knob->setCanUndo( descriptor.getCanUndo() );
@@ -631,107 +629,87 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 void
 OfxImageEffectInstance::addParamsToTheirParents()
 {
+    //All parameters in their order of declaration by the plug-in
     const std::list<OFX::Host::Param::Instance*> & params = getParamList();
-    const std::map<std::string, OFX::Host::Param::Instance*> & paramsMap = getParams();
     
     boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
-    const KnobsVec& knobs = effect->getKnobs();
     
     //for each params find their parents if any and add to the parent this param's knob
-    std::list<OfxPageInstance*> pages;
+    
+
+    std::map<OfxPageInstance*, std::list<OfxParamToKnob*> > pages;
+    
     for (std::list<OFX::Host::Param::Instance*>::const_iterator it = params.begin(); it != params.end(); ++it) {
+        OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(*it);
+        assert(isKnownKnob);
+        if (!isKnownKnob) {
+            continue;
+        }
+        boost::shared_ptr<KnobI> associatedKnob = isKnownKnob->getKnob();
+        if (!associatedKnob) {
+            continue;
+        }
         OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
         if (isPage) {
-            pages.push_back(isPage);
+            const std::map<int,OFX::Host::Param::Instance*>& children = isPage->getChildren();
+            std::list<OfxParamToKnob*>& childrenList = pages[isPage];
+            for (std::map<int,OFX::Host::Param::Instance*>::const_iterator it2 = children.begin(); it2!=children.end(); ++it2) {
+                OfxParamToKnob* isParamToKnob = dynamic_cast<OfxParamToKnob*>(it2->second);
+                assert(isParamToKnob);
+                if (!isParamToKnob) {
+                    continue;
+                }
+                childrenList.push_back(isParamToKnob);
+            }
         } else {
-            std::map<OFX::Host::Param::Instance*,std::string>::const_iterator found = _parentingMap.find(*it);
-
-            //the param has no parent
-            if ( found == _parentingMap.end() ) {
-                continue;
-            }
-
-            assert( !found->second.empty() );
-
-            //find the parent by name
-            std::map<std::string, OFX::Host::Param::Instance*>::const_iterator foundParent = paramsMap.find(found->second);
-
-            //the parent must exist!
-            assert( foundParent != paramsMap.end() );
-
-            //add the param's knob to the parent
-            OfxParamToKnob* knobHolder = dynamic_cast<OfxParamToKnob*>(found->first);
-            assert(knobHolder);
-            OfxGroupInstance* grp = (( foundParent != paramsMap.end() ) ?
-                                     dynamic_cast<OfxGroupInstance*>(foundParent->second) :
-                                     0);
-            assert(grp);
-            if (grp && knobHolder) {
-                grp->addKnob( knobHolder->getKnob() );
-            } else {
-                // coverity[dead_error_line]
-                std::cerr << "Warning: attempting to set a parent which is not a group to parameter " << (*it)->getName() << std::endl;;
-                continue;
-            }
-            
-            int layoutHint = (*it)->getProperties().getIntProperty(kOfxParamPropLayoutHint);
-            if (layoutHint == kOfxParamPropLayoutHintDivider) {
-                
-                boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>( effect.get(),"");
-                sep->setName((*it)->getName() + "_separator");
-                if (grp) {
-                    grp->addKnob(sep);
+            OFX::Host::Param::Instance* hasParent = (*it)->getParentInstance();
+            if (hasParent) {
+                OfxGroupInstance* parentIsGroup = dynamic_cast<OfxGroupInstance*>(hasParent);
+                if (!parentIsGroup) {
+                    std::cerr << getDescriptor().getPlugin()->getIdentifier() << ": Warning: attempting to set a parent which is not a group. (" << (*it)->getName() << ")" << std::endl;
+                } else {
+                    
+                    ///Add a separator in the group if needed
+                    if (associatedKnob->isSeparatorActivated()) {
+                        boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>( effect.get(),"");
+                        assert(sep);
+                        sep->setName((*it)->getName() + "_separator");
+                        parentIsGroup->addKnob(sep);
+                    }
+                    
+                    parentIsGroup->addKnob(associatedKnob);
                 }
             }
         }
     }
-    
+
     ///Add parameters to pages if they do not have a parent
-    for (std::list<OfxPageInstance*>::const_iterator it = pages.begin(); it != pages.end(); ++it) {
-        int nChildren = (*it)->getProperties().getDimension(kOfxParamPropPageChild);
-        for (int i = 0; i < nChildren; ++i) {
-            std::string childName = (*it)->getProperties().getStringProperty(kOfxParamPropPageChild,i);
-            if (childName == kOfxParamPageSkipRow ||
-                childName == kOfxParamPageSkipColumn) {
-                // Pseudo parameter names used to skip a row/column in a page layout.
-                continue;
-            }
-
-            KnobPtr child;
-            for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-                if ((*it2)->getOriginalName() == childName) {
-                    child = *it2;
-                    break;
-                }
-            }
-            if (!child) {
-                std::cerr << "Warning: " << childName << " is in the children list of " << (*it)->getName() << " but does not seem to be a valid parameter." << std::endl;
-                continue;
-            }
-            if (child && !child->getParentKnob()) {
-                OfxParamToKnob* knobHolder = dynamic_cast<OfxParamToKnob*>(*it);
-                assert(knobHolder);
-                if (knobHolder) {
-                    KnobPtr knob_i = knobHolder->getKnob();
-                    assert(knob_i);
-                    if (knob_i) {
-                        KnobPage* pageKnob = dynamic_cast<KnobPage*>(knob_i.get());
-                        assert(pageKnob);
-                        if (pageKnob) {
-                            pageKnob->addKnob(child);
-                        
-                            if (child->isSeparatorActivated()) {
-                    
-                                boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>( effect.get(),"");
-                                sep->setName(child->getName() + "_separator");
-                                pageKnob->addKnob(sep);
-                            }
-                        }
-                    }
-                }
-            }
+    for (std::map<OfxPageInstance*, std::list<OfxParamToKnob*> >::const_iterator it = pages.begin(); it != pages.end(); ++it) {
+        boost::shared_ptr<KnobI> pageKnobI = it->first->getKnob();
+        KnobPage* page = dynamic_cast<KnobPage*>(pageKnobI.get());
+        if (!page) {
+            continue;
         }
+        for (std::list<OfxParamToKnob*>::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
 
+            boost::shared_ptr<KnobI> childKnob = (*it2)->getKnob();
+            assert(childKnob);
+            if (!childKnob) {
+                continue;
+            }
+            if (childKnob && !childKnob->getParentKnob()) {
+                
+                if (childKnob->isSeparatorActivated()) {
+                    boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>( effect.get(),"");
+                    assert(sep);
+                    sep->setName(childKnob->getName() + "_separator");
+                    page->addKnob(sep);
+                }
+                page->addKnob(childKnob);
+     
+            }
+
+        }
     }
 }
 

@@ -25,6 +25,9 @@
 #include "TLSHolder.h"
 #include "TLSHolderImpl.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OfxParamInstance.h"

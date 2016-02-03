@@ -25,6 +25,7 @@
 #include "AnimationButton.h"
 
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)

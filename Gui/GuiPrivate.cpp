@@ -27,6 +27,7 @@
 #include <cassert>
 #include <fstream>
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include <QtCore/QTextStream>
 #include <QWaitCondition>
@@ -246,6 +247,7 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , _currentlyDraggedPanel(0)
 , _currentlyDraggedPanelInitialSize()
 , _aboutWindow(0)
+, _progressBarsMutex()
 , _progressBars()
 , openedPanelsMutex()
 , openedPanels()

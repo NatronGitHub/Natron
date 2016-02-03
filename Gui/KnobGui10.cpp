@@ -22,12 +22,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiPrivate.h"
-
-#include <cassert>
 
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 

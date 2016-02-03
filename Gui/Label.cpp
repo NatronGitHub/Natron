@@ -24,6 +24,8 @@
 
 #include "Label.h"
 
+#include <stdexcept>
+
 #include <QApplication>
 #include <QStyle>
 

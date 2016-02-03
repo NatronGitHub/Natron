@@ -451,9 +451,16 @@ MultiInstancePanel::initializeKnobs()
             ///find the corresponding knob in the main instance knobs
             KnobPtr other = _imp->getMainInstance()->getKnobByName( isPage->getName() );
             assert(other);
+            if (!other) {
+                throw std::logic_error("MultiInstancePanel::initializeKnobs");
+            }
             KnobPage* otherPage = dynamic_cast<KnobPage*>( other.get() );
             assert(otherPage);
-            std::vector<KnobPtr >  otherChildren = otherPage->getChildren();
+            
+            if (!otherPage) {
+                continue;
+            }
+            KnobsVec  otherChildren = otherPage->getChildren();
             bool isNodePage = otherPage->getName() == "Node";
             for (U32 j = 0; j < otherChildren.size(); ++j) {
                 if ( !otherChildren[j]->isInstanceSpecific() ) {

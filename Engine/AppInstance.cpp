@@ -26,6 +26,7 @@
 
 #include <fstream>
 #include <list>
+#include <cassert>
 #include <stdexcept>
 
 #include <QtCore/QDir>
@@ -398,7 +399,10 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderW
             }
         } else {
             writerNode = createWriter(it->filename.toStdString(), eCreateNodeReasonInternal, getProject());
-            
+            if (!writerNode) {
+                throw std::runtime_error(std::string("Failed to create writer for ") + it->filename.toStdString());
+            }
+
             //Connect the writer to the corresponding Output node input
             NodePtr output = getProject()->getNodeByFullySpecifiedName(it->name.toStdString());
             if (!output) {
@@ -412,7 +416,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderW
             if (outputInput) {
                 writerNode->connectInput(outputInput, 0);
             }
-            
+#pragma message WARN("what is the following line for?")
             writerNode->getScriptName().c_str();
         }
         

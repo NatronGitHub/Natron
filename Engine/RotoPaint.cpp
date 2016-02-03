@@ -25,6 +25,7 @@
 #include "RotoPaint.h"
 
 #include <sstream>
+#include <cassert>
 #include <stdexcept>
 
 #include "Engine/AppInstance.h"

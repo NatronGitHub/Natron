@@ -23,7 +23,11 @@
 // ***** END PYTHON BLOCK *****
 
 #include "ActionShortcuts.h"
+
+#include <stdexcept>
+
 #include <QWidget>
+
 #include "Gui/GuiApplicationManager.h"
 
 NATRON_NAMESPACE_ENTER;

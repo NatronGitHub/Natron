@@ -138,7 +138,7 @@ if [ "$DISABLE_BREAKPAD" = "1" ]; then
     CONFIG_BREAKPAD_FLAG="CONFIG+=disable-breakpad"
 fi
 
-$INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${CONFIG_BREAKPAD_FLAG} CONFIG+=silent CONFIG+=${BIT}bit DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
+$INSTALL_PATH/bin/qmake -r CONFIG+=relwithdebinfo ${EXTRA_QMAKE_FLAG} ${CONFIG_BREAKPAD_FLAG} CONFIG+=silent CONFIG+=${BIT}bit DEFINES+=QT_NO_DEBUG_OUTPUT ../Project.pro || exit 1
 make -j${MKJOBS} || exit 1
 
 cp App/release/Natron.exe $INSTALL_PATH/bin/ || exit 1
@@ -155,6 +155,8 @@ if [ ! -d "$SRC_PATH/OpenColorIO-Configs" ]; then
     (cd "$SRC_PATH"; tar xf OpenColorIO-Configs.tar.gz) || exit 1
     rm "$SRC_PATH/OpenColorIO-Configs.tar.gz" || exit 1
     mv "$SRC_PATH/OpenColorIO-Configs"* "$SRC_PATH/OpenColorIO-Configs" || exit 1
+	rm -rf "$SRC_PATH/OpenColorIO-Configs/aces_1.0.1/baked"
+	rm -rf "$SRC_PATH/OpenColorIO-Configs/aces_1.0.1/python"
 fi
 
 cp -a "$SRC_PATH/OpenColorIO-Configs" "$INSTALL_PATH/share/" || exit 1

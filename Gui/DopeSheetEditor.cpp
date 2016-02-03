@@ -24,6 +24,8 @@
 
 #include "DopeSheetEditor.h"
 
+#include <stdexcept>
+
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QScrollBar>

@@ -25,6 +25,9 @@
 #include "OfxParamInstance.h"
 
 #include <iostream>
+#include <cassert>
+#include <stdexcept>
+
 #include <boost/scoped_array.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
@@ -638,7 +641,13 @@ OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>&
               doubleType == kOfxParamDoubleTypeNormalisedYAbsolute) {
         dblKnob->setValueIsNormalized(0, KnobDouble::eValueIsNormalizedY);
     }
-    dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised);
+    dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised ||
+                                           doubleType == kOfxParamDoubleTypeNormalisedX ||
+                                           doubleType == kOfxParamDoubleTypeNormalisedXAbsolute ||
+                                           doubleType ==  kOfxParamDoubleTypeNormalisedY ||
+                                           doubleType ==  kOfxParamDoubleTypeNormalisedYAbsolute ||
+                                           doubleType ==  kOfxParamDoubleTypeNormalisedXY ||
+                                           doubleType ==  kOfxParamDoubleTypeNormalisedXYAbsolute);
     dblKnob->blockValueChanges();
     dblKnob->setDefaultValue(def, 0);
     dblKnob->unblockValueChanges();
@@ -3363,8 +3372,16 @@ OfxParametricInstance::initializeInteract(OverlaySupport* widget)
     OfxPluginEntryPoint* interactEntryPoint = (OfxPluginEntryPoint*)getProperties().getPointerProperty(kOfxParamPropParametricInteractBackground);
 
     if (interactEntryPoint) {
-        OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>(_knob.lock()->getHolder());
+        boost::shared_ptr<KnobParametric> knob = _knob.lock();
+        assert(knob);
+        if (!knob) {
+            throw std::logic_error("OfxParametricInstance::initializeInteract");
+        }
+        OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>(knob->getHolder());
         assert(effect);
+        if (!effect) {
+            throw std::logic_error("OfxParametricInstance::initializeInteract");
+        }
         _overlayInteract = new OfxOverlayInteract( ( *effect->effectInstance() ),8,true );
         _overlayInteract->setCallingViewport(widget);
         _overlayInteract->createInstanceAction();

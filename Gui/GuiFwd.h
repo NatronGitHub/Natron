@@ -117,6 +117,7 @@ class Edge;
 class FileDialogPreviewProvider;
 class FloatingWidget;
 class Histogram;
+class GeneralProgressDialog;
 class Gui;
 class GuiApp;
 class GuiAppInstance;

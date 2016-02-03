@@ -28,6 +28,7 @@
 #include <locale>
 #include <sstream>
 #include <algorithm> // min, max
+#include <cassert>
 #include <stdexcept>
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -1115,7 +1116,7 @@ KnobGroup::typeName() const
 }
 
 void
-KnobGroup::addKnob(KnobPtr k)
+KnobGroup::addKnob(const KnobPtr& k)
 {
     for (std::size_t i = 0; i < _children.size(); ++i) {
         if (_children[i].lock() == k) {

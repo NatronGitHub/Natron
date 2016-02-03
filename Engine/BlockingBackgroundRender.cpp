@@ -24,6 +24,9 @@
 
 #include "BlockingBackgroundRender.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QDebug>

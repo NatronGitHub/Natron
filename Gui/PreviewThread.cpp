@@ -21,8 +21,10 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
 #include <list>
 #include <vector>
+#include <stdexcept>
 
 #include "PreviewThread.h"
 
@@ -164,6 +166,10 @@ PreviewThread::run()
         
         
         if (front.node) {
+            
+            ///Mark this thread as running
+            appPTR->fetchAndAddNRunningThreads(1);
+            
             //process the request if valid
             int w = NATRON_PREVIEW_WIDTH;
             int h = NATRON_PREVIEW_HEIGHT;
@@ -183,6 +189,9 @@ PreviewThread::run()
                     front.node->copyPreviewImageBuffer(_imp->data, w, h);
                 }
             }
+            
+            ///Unmark this thread as running
+            appPTR->fetchAndAddNRunningThreads(-1);
         }
         
         

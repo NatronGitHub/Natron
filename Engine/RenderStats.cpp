@@ -26,6 +26,9 @@
 
 #include "RenderStats.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include <QMutex>
 
 #include "Engine/Node.h"

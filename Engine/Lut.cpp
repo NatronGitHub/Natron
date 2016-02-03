@@ -26,6 +26,7 @@
 
 #include <cstring> // for memcpy
 #include <algorithm> // min, max
+#include <cassert>
 #include <stdexcept>
 
 #include "Engine/RectI.h"

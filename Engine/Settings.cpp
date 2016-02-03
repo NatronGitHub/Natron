@@ -24,6 +24,7 @@
 
 #include "Settings.h"
 
+#include <cassert>
 #include <stdexcept>
 
 #include <QtCore/QDebug>
@@ -45,6 +46,7 @@
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/Node.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
@@ -212,6 +214,7 @@ Settings::initializeKnobsGeneral()
     _numberOfThreads->setDisplayMinimum(-1);
     _generalTab->addKnob(_numberOfThreads);
     
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     _numberOfParallelRenders = AppManager::createKnob<KnobInt>(this, "Number of parallel renders (0=\"guess\")");
     _numberOfParallelRenders->setHintToolTip("Controls the number of parallel frame that will be rendered at the same time by the renderer."
                                              "A value of 0 indicate that " NATRON_APPLICATION_NAME " should automatically determine "
@@ -224,6 +227,7 @@ Settings::initializeKnobsGeneral()
     _numberOfParallelRenders->disableSlider();
     _numberOfParallelRenders->setAnimationEnabled(false);
     _generalTab->addKnob(_numberOfParallelRenders);
+#endif
     
     _useThreadPool = AppManager::createKnob<KnobBool>(this, "Effects use thread-pool");
     _useThreadPool->setName("useThreadPool");
@@ -1375,7 +1379,11 @@ Settings::setDefaultValues()
     _loadProjectsWorkspace->setDefaultValue(false);
     _useNodeGraphHints->setDefaultValue(true);
     _numberOfThreads->setDefaultValue(0,0);
+    
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     _numberOfParallelRenders->setDefaultValue(0,0);
+#endif
+    
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false,0);
@@ -2944,14 +2952,19 @@ Settings::getCheckerboardColor2(double* r,double* g,double* b,double* a) const
 
 int Settings::getNumberOfParallelRenders() const
 {
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     return _numberOfParallelRenders->getValue();
-
+#else
+    return 1;
+#endif
 }
 
 void
 Settings::setNumberOfParallelRenders(int nb)
 {
+#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     _numberOfParallelRenders->setValue(nb, 0);
+#endif
 }
 
 bool

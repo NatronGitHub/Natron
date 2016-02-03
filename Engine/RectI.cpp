@@ -25,6 +25,8 @@
 #include "RectI.h"
 
 #include <algorithm> // min, max
+#include <cassert>
+#include <stdexcept>
 
 #include "Engine/RectD.h"
 

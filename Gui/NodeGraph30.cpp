@@ -26,6 +26,7 @@
 #include "NodeGraphPrivate.h"
 
 #include <cmath> // abs
+#include <stdexcept>
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 CLANG_DIAG_OFF(deprecated)

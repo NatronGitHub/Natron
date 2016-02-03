@@ -24,6 +24,7 @@
 
 #include "DiskCacheNode.h"
 
+#include <cassert>
 #include <stdexcept>
 
 #include "Engine/Node.h"

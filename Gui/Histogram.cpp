@@ -25,6 +25,7 @@
 #include "Histogram.h"
 
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include <QHBoxLayout>
 #include <QVBoxLayout>

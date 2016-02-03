@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <algorithm> // min, max
+#include <stdexcept>
 
 #include <QHBoxLayout>
 #include <QApplication> // qApp

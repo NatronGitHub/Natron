@@ -24,6 +24,8 @@
 
 #include "TextRenderer.h"
 
+#include <stdexcept>
+
 #include <boost/shared_ptr.hpp>
 
 #include "Global/Macros.h"

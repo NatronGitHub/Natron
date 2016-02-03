@@ -24,6 +24,9 @@
 
 #include "NodeSerialization.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Engine/AppInstance.h"
 #include "Engine/Knob.h"
 #include "Engine/Node.h"

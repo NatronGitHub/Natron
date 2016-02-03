@@ -667,6 +667,7 @@ private:
     boost::shared_ptr<NodeGuiIndicator> _availableViewsIndicator;
     boost::shared_ptr<NodeGuiIndicator> _passThroughIndicator;
     NodeWPtr _identityInput;
+    bool identityStateSet;
     
 };
 

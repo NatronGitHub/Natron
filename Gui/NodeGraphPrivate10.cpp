@@ -22,6 +22,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <stdexcept>
+
 #include "NodeGraphPrivate.h"
 #include "NodeGraph.h"
 

@@ -24,6 +24,8 @@
 
 #include "KnobUndoCommand.h"
 
+#include <stdexcept>
+
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Node.h"

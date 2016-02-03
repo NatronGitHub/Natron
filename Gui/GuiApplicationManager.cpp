@@ -25,7 +25,8 @@
 #include "GuiApplicationManager.h"
 #include "GuiApplicationManagerPrivate.h"
 
-///gui
+#include <stdexcept>
+
 #include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
@@ -35,11 +36,9 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QPixmapCache>
 #include <QApplication>
 #include <QFontDatabase>
+#include <QtConcurrentRun>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
-
-
-#include <QtConcurrentRun>
 
 #include "Engine/Settings.h"
 #include "Engine/EffectInstance.h" // PLUGINID_OFX_*

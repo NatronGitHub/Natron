@@ -26,6 +26,8 @@
 #include "KnobSerialization.h"
 
 #include <algorithm> // min, max
+#include <cassert>
+#include <stdexcept>
 
 #include <QDebug>
 

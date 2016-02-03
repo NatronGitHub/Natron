@@ -26,6 +26,7 @@
 #include "KnobImpl.h"
 
 #include <algorithm> // min, max
+#include <cassert>
 #include <stdexcept>
 
 #include <QtCore/QDataStream>

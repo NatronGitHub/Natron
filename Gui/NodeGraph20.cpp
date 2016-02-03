@@ -26,6 +26,7 @@
 #include "NodeGraphPrivate.h"
 
 #include <cmath> // abs
+#include <stdexcept>
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 CLANG_DIAG_OFF(deprecated)
@@ -486,8 +487,8 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
     case eEventStateDraggingNode: {
         mustUpdate = true;
         mustUpdateNavigator = true;
-        bool controlDown = modCASIsControl(e);
-        bool shiftdown = modCASIsControlShift(e);
+        bool controlDown = modifierHasControl(e);
+        bool shiftdown = modifierHasShift(e);
         moveSelectedNodesBy(shiftdown, controlDown, lastMousePosScene, newPos, sceneR, true);
         break;
     }

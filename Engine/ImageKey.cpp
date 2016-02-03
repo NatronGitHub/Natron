@@ -24,6 +24,9 @@
 
 #include "ImageKey.h"
 
+#include <cassert>
+#include <stdexcept>
+
 NATRON_NAMESPACE_ENTER;
 
 ImageKey::ImageKey()

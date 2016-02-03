@@ -24,6 +24,9 @@
 
 #include "EffectInstancePrivate.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include "Engine/AppInstance.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"

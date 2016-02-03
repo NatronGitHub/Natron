@@ -24,6 +24,9 @@
 
 #include "FrameKey.h"
 
+#include <cassert>
+#include <stdexcept>
+
 NATRON_NAMESPACE_ENTER;
 
 FrameKey::FrameKey()

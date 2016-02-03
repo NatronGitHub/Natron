@@ -19,6 +19,9 @@
 #include "ImageComponents.h"
 #include "ofxNatron.h"
 
+#include <cassert>
+#include <stdexcept>
+
 NATRON_NAMESPACE_ENTER;
 
 static const char* rgbaComps[4] = {"R","G","B","A"};

@@ -28,9 +28,10 @@
 #include <map>
 #include <sstream>
 #include <algorithm> // min, max
-#include <stdexcept>
 #include <fstream>
 #include <bitset>
+#include <cassert>
+#include <stdexcept>
 
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QReadWriteLock>

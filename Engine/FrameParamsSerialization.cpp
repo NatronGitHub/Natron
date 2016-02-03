@@ -24,6 +24,9 @@
 
 #include "FrameParamsSerialization.h"
 
+#include <cassert>
+#include <stdexcept>
+
 // explicit template instantiations
 
 NATRON_NAMESPACE_ENTER;

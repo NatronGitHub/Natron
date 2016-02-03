@@ -24,6 +24,9 @@
 
 #include "NodeGroupSerialization.h"
 
+#include <cassert>
+#include <stdexcept>
+
 #include <QFileInfo>
 
 #include "Engine/AppManager.h"
