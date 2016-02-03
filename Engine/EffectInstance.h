@@ -1400,10 +1400,12 @@ public:
                                                 bool draftMode,
                                                 int view);
 
+    virtual bool canHandleRenderScaleForOverlays() const { return true; }
+
 
     void drawOverlay_public(double time, const RenderScale & renderScale, int view);
 
-bool onOverlayPenDown_public(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenDown_public(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
     bool onOverlayPenMotion_public(double time, const RenderScale & renderScale, int view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 

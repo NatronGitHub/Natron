@@ -1004,6 +1004,8 @@ public:
     
     bool getOverlayColor(double* r,double* g,double* b) const;
     
+    bool canHandleRenderScaleForOverlays() const;
+    
     bool shouldDrawOverlay() const;
     
     
@@ -1106,6 +1108,8 @@ public:
     bool handleFormatKnob(KnobI* knob);
     
     QString makeHTMLDocumentation() const;
+    
+    
     
 private:
     

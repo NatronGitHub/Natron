@@ -215,7 +215,13 @@ struct OfxEffectInstancePrivate
     bool penDown; // true when the overlay trapped a penDow action
     bool created; // true after the call to createInstance
     bool initialized; //true when the image effect instance has been created and populated
-
+    
+    /*
+     Some OpenFX do not handle render scale properly when it comes to overlay interacts.
+     We try to keep a blacklist of these and call overlay actions with render scale = 1  in that 
+     case
+     */
+    bool overlaysCanHandleRenderScale;
     
     OfxEffectInstancePrivate()
     : effect()
@@ -235,6 +241,7 @@ struct OfxEffectInstancePrivate
     , penDown(false)
     , created(false)
     , initialized(false)
+    , overlaysCanHandleRenderScale(true)
 
     {
         
@@ -515,6 +522,15 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         // already created
         return;
     }
+    
+    QString pluginID(getPluginID().c_str());
+    /*
+     Currently genarts plug-ins do not handle render scale properly for overlays
+     */
+    if (pluginID.startsWith("com.genarts.")) {
+        _imp->overlaysCanHandleRenderScale = false;
+    }
+    
     /*create overlay instance if any*/
     OfxPluginEntryPoint *overlayEntryPoint = _imp->effect->getOverlayInteractMainEntry();
     if (overlayEntryPoint) {
@@ -2067,6 +2083,12 @@ void
 OfxEffectInstance::initializeOverlayInteract()
 {
     tryInitializeOverlayInteracts();
+}
+
+bool
+OfxEffectInstance::canHandleRenderScaleForOverlays() const
+{
+    return _imp->overlaysCanHandleRenderScale;
 }
 
 void

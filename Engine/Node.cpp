@@ -6550,6 +6550,12 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
 }
 
 bool
+Node::canHandleRenderScaleForOverlays() const
+{
+    return _imp->effect->canHandleRenderScaleForOverlays();
+}
+
+bool
 Node::getOverlayColor(double* r,double* g,double* b) const
 {
     boost::shared_ptr<NodeGuiI> gui_i = getNodeGui();
