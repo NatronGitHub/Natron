@@ -134,7 +134,9 @@ struct GuiAppInstancePrivate
     mutable QMutex rotoDataMutex;
     RotoPaintData rotoData;
     
-    std::list<SequenceTime> timelineKeyframes;
+    std::list<SequenceTime> timelineKeyframes,timelineUserKeys;
+    
+    
     
     GuiAppInstancePrivate()
     : _gui(NULL)
@@ -152,6 +154,7 @@ struct GuiAppInstancePrivate
     , rotoDataMutex()
     , rotoData()
     , timelineKeyframes()
+    , timelineUserKeys()
     {
         rotoData.turboAlreadyActiveBeforePainting = false;
     }
@@ -1424,6 +1427,84 @@ GuiAppInstance::removeMultipleKeyframeIndicator(const std::list<SequenceTime> & 
         Q_EMIT keyframeIndicatorsChanged();
     }
 }
+
+void
+GuiAppInstance::removeAllUserKeyframesIndicators()
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    bool wasEmpty = _imp->timelineUserKeys.empty();
+    _imp->timelineUserKeys.clear();
+    if (!wasEmpty) {
+        Q_EMIT keyframeIndicatorsChanged();
+    }
+
+}
+
+void
+GuiAppInstance::addUserKeyframeIndicator(SequenceTime time)
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    _imp->timelineUserKeys.push_back(time);
+    Q_EMIT keyframeIndicatorsChanged();
+
+}
+
+void
+GuiAppInstance::addUserMultipleKeyframeIndicatorsAdded(const std::list<SequenceTime> & keys,bool emitSignal)
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    _imp->timelineUserKeys.insert( _imp->timelineUserKeys.begin(),keys.begin(),keys.end() );
+    if (!keys.empty() && emitSignal) {
+        Q_EMIT keyframeIndicatorsChanged();
+    }
+}
+
+void
+GuiAppInstance::removeUserKeyFrameIndicator(SequenceTime time)
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    std::list<SequenceTime>::iterator it = std::find(_imp->timelineUserKeys.begin(), _imp->timelineUserKeys.end(), time);
+    if ( it != _imp->timelineUserKeys.end() ) {
+        _imp->timelineUserKeys.erase(it);
+        Q_EMIT keyframeIndicatorsChanged();
+    }
+}
+
+void
+GuiAppInstance::removeUserMultipleKeyframeIndicator(const std::list<SequenceTime> & keys,bool emitSignal)
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    for (std::list<SequenceTime>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        std::list<SequenceTime>::iterator it2 = std::find(_imp->timelineUserKeys.begin(), _imp->timelineUserKeys.end(), *it);
+        if ( it2 != _imp->timelineUserKeys.end() ) {
+            _imp->timelineUserKeys.erase(it2);
+        }
+    }
+    if (!keys.empty() && emitSignal) {
+        Q_EMIT keyframeIndicatorsChanged();
+    }
+}
+
+
+void
+GuiAppInstance::getUserKeyframes(std::list<SequenceTime>* keys) const
+{
+    ///runs only in the main thread
+    assert( QThread::currentThread() == qApp->thread() );
+    
+    *keys = _imp->timelineUserKeys;
+}
+
 
 void
 GuiAppInstance::addNodesKeyframesToTimeline(const std::list<Node*> & nodes)

@@ -299,6 +299,7 @@ public:
     void getSelectionColor(double* r,double* g,double* b) const;
     void getInterpolatedColor(double* r,double* g,double* b) const;
     void getKeyframeColor(double* r,double* g,double* b) const;
+    void getTrackerKeyframeColor(double* r,double* g,double* b) const;
     void getExprColor(double* r,double* g,double* b) const;
     void getTextColor(double* r,double* g,double* b) const;
     void getAltTextColor(double* r,double* g,double* b) const;
@@ -510,6 +511,7 @@ private:
     boost::shared_ptr<KnobColor> _timelineBoundsColor;
     boost::shared_ptr<KnobColor> _interpolatedColor;
     boost::shared_ptr<KnobColor> _keyframeColor;
+    boost::shared_ptr<KnobColor> _trackerKeyframeColor;
     boost::shared_ptr<KnobColor> _exprColor;
     boost::shared_ptr<KnobColor> _cachedFrameColor;
     boost::shared_ptr<KnobColor> _diskCachedFrameColor;
