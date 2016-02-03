@@ -76,13 +76,14 @@ CurveGui::~CurveGui()
 
 std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1,
                                                        double* x2,
-                                                       const KeyFrameSet & keys)
+                                                       const KeyFrameSet & keys,
+                                                       const double xminCurveWidgetCoord,
+                                                       const double xmaxCurveWidgetCoord)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( !keys.empty() );
-    double xminCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.begin()->getTime(),0).x();
-    double xmaxCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keys.rbegin()->getTime(),0).x();
+    
     std::pair<double,double> curveYRange = getCurveYRange();
 
     if (x1 < xminCurveWidgetCoord) {
@@ -224,7 +225,7 @@ CurveGui::drawCurve(int curveIndex,
     std::vector<float> vertices,exprVertices;
     double x1 = 0;
     double x2;
-    double w = _curveWidget->width();
+    const double widgetWidth = _curveWidget->width();
     KeyFrameSet keyframes;
     BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>(this);
     KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(this);
@@ -237,7 +238,7 @@ CurveGui::drawCurve(int curveIndex,
         expr = knob->getExpression(isKnobCurve->getDimension());
         if (!expr.empty()) {
             //we have no choice but to evaluate the expression at each time
-            for (int i = x1; i < w; ++i) {
+            for (int i = x1; i < widgetWidth; ++i) {
                 double x = _curveWidget->toZoomCoordinates(i,0).x();;
                 double y = knob->getValueAtWithExpression(x, isKnobCurve->getDimension());
                 exprVertices.push_back(x);
@@ -260,8 +261,10 @@ CurveGui::drawCurve(int curveIndex,
     if (!keyframes.empty()) {
         
         try {
-            std::pair<KeyFrame,bool> isX1AKey;
-            while ( x1 < (w - 1) ) {
+            double xminCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keyframes.begin()->getTime(),0).x();
+            double xmaxCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keyframes.rbegin()->getTime(),0).x();
+            std::pair<KeyFrame,bool> isX1AKey = std::make_pair(KeyFrame(), false);
+            while (x1 < (widgetWidth - 1)) {
                 double x,y;
                 if (!isX1AKey.second) {
                     x = _curveWidget->toZoomCoordinates(x1,0).x();
@@ -272,7 +275,7 @@ CurveGui::drawCurve(int curveIndex,
                 }
                 vertices.push_back( (float)x );
                 vertices.push_back( (float)y );
-                isX1AKey = nextPointForSegment(x1,&x2,keyframes);
+                isX1AKey = nextPointForSegment(x1,&x2,keyframes, xminCurveWidgetCoord, xmaxCurveWidgetCoord);
                 x1 = x2;
             }
             //also add the last point
@@ -382,7 +385,9 @@ CurveGui::drawCurve(int curveIndex,
             textY = evaluate(true,textX);
         }
         
-        _curveWidget->renderText( textX,textY,_name,_color,_curveWidget->getFont() );
+        if (textX >= btmLeft.x() && textX <= topRight.x() && textY >= btmLeft.y() && textY <= topRight.y()) {
+            _curveWidget->renderText( textX,textY,_name,_color,_curveWidget->getFont() );
+        }
         glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
         
         //draw keyframes
