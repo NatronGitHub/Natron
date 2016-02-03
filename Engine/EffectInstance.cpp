@@ -2534,7 +2534,7 @@ EffectInstance::evaluate(KnobI* knob,
     ////and a rebuild of the inputs tree.
     NodePtr node = getNode();
 
-    if ( node->duringInputChangedAction() ) {
+    if ( node->duringInputChangedAction() || !node->isNodeCreated() ) {
         return;
     }
 
