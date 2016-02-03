@@ -165,7 +165,7 @@ private:
                         _entriesQueueMutex.unlock();
                         QMutexLocker k(&mustQuitMutex);
                         mustQuit = false;
-                        mustQuitCond.wakeAll();
+                        mustQuitCond.wakeOne();
 
                         return;
                     }
