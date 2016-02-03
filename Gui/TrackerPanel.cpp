@@ -42,6 +42,7 @@
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/TimeLine.h"
+#include "Engine/TrackMarker.h"
 
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/Button.h"
@@ -600,9 +601,11 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     ///Restore the table if needed
     std::vector<boost::shared_ptr<TrackMarker> > existingMarkers;
     context->getAllMarkers(&existingMarkers);
+    blockSelection();
     for (std::size_t i = 0; i < existingMarkers.size(); ++i) {
         addTableRow(existingMarkers[i]);
     }
+    unblockSelection();
 }
 
 void
@@ -1446,6 +1449,9 @@ TrackerPanel::onContextSelectionChanged(int reason)
 void
 TrackerPanel::onModelSelectionChanged(const QItemSelection & oldSelection,const QItemSelection & newSelection)
 {
+    if (_imp->selectionRecursion > 0) {
+        return;
+    }
     std::list<boost::shared_ptr<TrackMarker> > oldMarkers,markers;
     _imp->selectionToMarkers(newSelection, &markers);
     _imp->selectionToMarkers(oldSelection, &oldMarkers);
@@ -1491,8 +1497,12 @@ TrackerPanel::selectInternal(const std::list<boost::shared_ptr<TrackMarker> >& m
             }
             _imp->keys[*it] = k;
         }
-        _imp->node.lock()->getNode()->getApp()->addMultipleKeyframeIndicatorsAdded(keysToAdd, true);
-        _imp->node.lock()->getNode()->getApp()->addUserMultipleKeyframeIndicatorsAdded(userKeysToAdd, true);
+        if (!keysToAdd.empty()) {
+            _imp->node.lock()->getNode()->getApp()->addMultipleKeyframeIndicatorsAdded(keysToAdd, true);
+        }
+        if (!userKeysToAdd.empty()) {
+            _imp->node.lock()->getNode()->getApp()->addUserMultipleKeyframeIndicatorsAdded(userKeysToAdd, true);
+        }
         
         boost::shared_ptr<TrackerContext> context = getContext();
         assert(context);

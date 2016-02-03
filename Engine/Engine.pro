@@ -177,6 +177,7 @@ SOURCES += \
     TimeLine.cpp \
     Timer.cpp \
     TrackerContext.cpp \
+    TrackMarker.cpp \
     TrackerNode.cpp \
     TLSHolder.cpp \
     Transform.cpp \
@@ -357,6 +358,7 @@ HEADERS += \
     Timer.h \
     TrackerContext.h \
     TrackerNode.h \
+    TrackMarker.h \
     TrackerSerialization.h \
     TLSHolder.h \
     TLSHolderImpl.h \

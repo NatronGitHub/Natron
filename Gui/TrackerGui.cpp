@@ -50,6 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Lut.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
+#include "Engine/TrackMarker.h"
 #include "Engine/TrackerContext.h"
 
 
