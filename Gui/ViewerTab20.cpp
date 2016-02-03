@@ -746,8 +746,8 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
                                  QKeyEvent* e)
 {
     bool didSomething = false;
-
-    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
+    GuiAppInstance* app = getGui()->getApp();
+    if ( !app  || getGui()->getApp()->isClosing() ) {
         return false;
     }
 
@@ -798,11 +798,16 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
             return true;
         }
     }
-
-    if (getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
-        getGui()->getApp()->redrawAllViewers();
+    
+    if (isModifier) {
+        //Modifiers may not necessarily return true for plug-ins but may require a redraw
+        app->queueRedrawForAllViewers();
     }
-    getGui()->getApp()->clearOverlayRedrawRequests();
+
+    if (app->getOverlayRedrawRequestsCount() > 0) {
+        app->redrawAllViewers();
+    }
+    app->clearOverlayRedrawRequests();
 
     return didSomething;
 }
@@ -812,8 +817,8 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
                                QKeyEvent* e)
 {
     bool didSomething = false;
-
-    if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
+    GuiAppInstance* app = getGui()->getApp();
+    if ( !app || getGui()->getApp()->isClosing() ) {
         return false;
     }
     
@@ -865,14 +870,17 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
      */
     bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
     e->key() == Qt::Key_Meta;
+    
     if (isModifier) {
-        didSomething = false;
+        //Modifiers may not necessarily return true for plug-ins but may require a redraw
+        app->queueRedrawForAllViewers();
     }
-   
-    if (!didSomething && getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
-        getGui()->getApp()->redrawAllViewers();
+    
+    if (app->getOverlayRedrawRequestsCount() > 0) {
+        app->redrawAllViewers();
     }
-    getGui()->getApp()->clearOverlayRedrawRequests();
+    
+    app->clearOverlayRedrawRequests();
     
 
     return didSomething;
