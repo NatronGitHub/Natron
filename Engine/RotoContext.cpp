@@ -2051,14 +2051,12 @@ RotoContext::setIsDoingNeatRender(bool doing)
 {
     
     QMutexLocker k(&_imp->doingNeatRenderMutex);
-    bool wasDoingNeatRender = _imp->doingNeatRender;
     if (doing && _imp->mustDoNeatRender) {
+        assert(!_imp->doingNeatRender);
         _imp->doingNeatRender = true;
         _imp->mustDoNeatRender = false;
-    } else {
+    } else if (_imp->doingNeatRender) {
         _imp->doingNeatRender = false;
-    }
-    if (!doing && wasDoingNeatRender) {
         _imp->doingNeatRenderCond.wakeAll();
     }
 }

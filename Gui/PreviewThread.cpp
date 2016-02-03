@@ -108,6 +108,7 @@ PreviewThread::quitThread()
         return;
     }
     QMutexLocker k(&_imp->mustQuitMutex);
+    assert(!_imp->mustQuit);
     _imp->mustQuit = true;
     
     {
@@ -145,7 +146,7 @@ PreviewThread::run()
             QMutexLocker k(&_imp->mustQuitMutex);
             if (_imp->mustQuit) {
                 _imp->mustQuit = false;
-                _imp->mustQuitCond.wakeAll();
+                _imp->mustQuitCond.wakeOne();
                 return;
             }
         }

@@ -127,6 +127,7 @@ public:
             return;
         }
         QMutexLocker k(&mustQuitMutex);
+        assert(!mustQuit);
         mustQuit = true;
 
         {
@@ -164,6 +165,7 @@ private:
                     if ( quit && _entriesQueue.empty() ) {
                         _entriesQueueMutex.unlock();
                         QMutexLocker k(&mustQuitMutex);
+                        assert(mustQuit);
                         mustQuit = false;
                         mustQuitCond.wakeOne();
 
@@ -254,6 +256,7 @@ public:
             return;
         }
         QMutexLocker k(&mustQuitMutex);
+        assert(!mustQuit);
         mustQuit = true;
 
         {
@@ -292,8 +295,9 @@ private:
                     if ( quit && _requestsQueues.empty() ) {
                         _requestQueueMutex.unlock();
                         QMutexLocker k(&mustQuitMutex);
+                        assert(mustQuit);
                         mustQuit = false;
-                        mustQuitCond.wakeAll();
+                        mustQuitCond.wakeOne();
 
                         return;
                     }

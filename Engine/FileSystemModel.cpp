@@ -1242,6 +1242,7 @@ FileGathererThread::quitGatherer()
     abortGathering();
     {
         QMutexLocker k(&_imp->mustQuitMutex);
+        assert(!_imp->mustQuit);
         _imp->mustQuit = true;
     }
     {

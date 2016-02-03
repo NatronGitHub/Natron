@@ -87,6 +87,7 @@ ExistenceCheckerThread::quitThread()
     }
     {
         QMutexLocker k(&_imp->mustQuitMutex);
+        assert(!_imp->mustQuit);
         _imp->mustQuit = true;
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
@@ -113,7 +114,7 @@ ExistenceCheckerThread::run()
             QMutexLocker k(&_imp->mustQuitMutex);
             if (_imp->mustQuit) {
                 _imp->mustQuit = false;
-                _imp->mustQuitCond.wakeAll();
+                _imp->mustQuitCond.wakeOne();
                 return;
             }
         }

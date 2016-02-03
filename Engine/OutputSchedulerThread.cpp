@@ -1390,7 +1390,7 @@ OutputSchedulerThread::run()
                             break;
                         }
                     }
-                    
+                    assert(!_imp->processRunning);
                     _imp->processRunning = true;
             
 
@@ -1773,10 +1773,12 @@ OutputSchedulerThread::doProcessFrameMainThread(const BufferedFrames& frames)
     
     processFrame(frames);
  
-    
-    QMutexLocker processLocker (&_imp->processMutex);
-    _imp->processRunning = false;
-    _imp->processCondition.wakeOne();
+    {
+        QMutexLocker processLocker (&_imp->processMutex);
+        assert(_imp->processRunning);
+        _imp->processRunning = false;
+        _imp->processCondition.wakeOne();
+    }
 }
 
 void
@@ -2291,6 +2293,7 @@ void
 RenderThreadTask::scheduleForRemoval()
 {
     QMutexLocker l(&_imp->mustQuitMutex);
+    assert(!_imp->mustQuit);
     _imp->mustQuit = true;
 }
 
@@ -3852,6 +3855,7 @@ ViewerCurrentFrameRequestScheduler::quitThread()
     
     {
         QMutexLocker k(&_imp->mustQuitMutex);
+        assert(!_imp->mustQuit);
         _imp->mustQuit = true;
         
         ///Push a fake request
@@ -4066,7 +4070,7 @@ struct ViewerCurrentFrameRequestRendererBackupPrivate
         QMutexLocker k(&mustQuitMutex);
         if (mustQuit) {
             mustQuit = false;
-            mustQuitCond.wakeAll();
+            mustQuitCond.wakeOne();
             return true;
         }
         return false;
@@ -4151,6 +4155,7 @@ ViewerCurrentFrameRequestRendererBackup::quitThread()
     
     {
         QMutexLocker k(&_imp->mustQuitMutex);
+        assert(!_imp->mustQuit);
         _imp->mustQuit = true;
         
         ///Push a fake request

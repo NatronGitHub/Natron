@@ -52,6 +52,7 @@ BlockingBackgroundRender::blockingRender(bool enableRenderStats,int first,int la
     // avoid race condition: the code must work even if renderFullSequence() calls notifyFinished()
     // immediately.
     QMutexLocker locker(&_runningMutex);
+    assert(_running == false);
     _running = true;
     _writer->renderFullSequence(true, enableRenderStats,this,first,last, frameStep);
     if (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) {
@@ -71,6 +72,7 @@ BlockingBackgroundRender::notifyFinished()
 #endif
     appPTR->writeToOutputPipe(kRenderingFinishedStringLong,kRenderingFinishedStringShort);
     QMutexLocker locker(&_runningMutex);
+    assert(_running == true);
     _running = false;
     _runningCond.wakeOne();
 }

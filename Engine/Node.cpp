@@ -2054,6 +2054,7 @@ Node::Implementation::abortPreview()
     
     if (computing) {
         QMutexLocker l(&mustQuitPreviewMutex);
+        assert(!mustQuitPreview);
         mustQuitPreview = true;
         while (mustQuitPreview) {
             mustQuitPreviewCond.wait(&mustQuitPreviewMutex);
@@ -2112,8 +2113,10 @@ Node::quitAnyProcessing()
 {
     {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        _imp->nodeIsDequeuing = false;
-        _imp->nodeIsDequeuingCond.wakeAll();
+        if (_imp->nodeIsDequeuing) {
+            _imp->nodeIsDequeuing = false;
+            _imp->nodeIsDequeuingCond.wakeOne();
+        }
     }
     
     
@@ -5712,12 +5715,13 @@ Node::notifyRenderBeingAborted()
 {
 //
 //    if (QThread::currentThread() == qApp->thread()) {
-        ///The render thread is waiting for the main-thread to dequeue actions
-        ///but the main-thread is waiting for the render thread to abort
-        ///cancel the dequeuing
-        QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        _imp->nodeIsDequeuing = false;
-        _imp->nodeIsDequeuingCond.wakeAll();
+    ///The render thread is waiting for the main-thread to dequeue actions
+    ///but the main-thread is waiting for the render thread to abort
+    ///cancel the dequeuing
+    QMutexLocker k(&_imp->nodeIsDequeuingMutex);
+    assert(_imp->nodeIsDequeuing);
+    _imp->nodeIsDequeuing = false;
+    _imp->nodeIsDequeuingCond.wakeOne();
 //    }
     
 }
@@ -7826,6 +7830,7 @@ Node::dequeueActions()
     ///Flag that the node is dequeuing.
     {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
+        assert(!_imp->nodeIsDequeuing);
         _imp->nodeIsDequeuing = true;
     }
     bool hasChanged = false;
@@ -7874,8 +7879,9 @@ Node::dequeueActions()
 
     {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
+        assert(_imp->nodeIsDequeuing);
         _imp->nodeIsDequeuing = false;
-        _imp->nodeIsDequeuingCond.wakeAll();
+        _imp->nodeIsDequeuingCond.wakeOne();
     }
 }
 
