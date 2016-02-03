@@ -79,6 +79,44 @@ getParamLabel(OFX::Host::Param::Instance* param)
     return label;
 }
 
+struct OfxKeyFrames_compare {
+    
+    bool operator() (double lhs, double rhs) const
+    {
+        if (std::abs(rhs - lhs) < NATRON_CURVE_X_SPACING_EPSILON) {
+            return false;
+        }
+        return lhs < rhs;
+    }
+};
+
+typedef std::set<double, OfxKeyFrames_compare> OfxKeyFramesSet;
+
+static void getOfxKeyFrames(KnobI* knob, OfxKeyFramesSet &keyframes)
+{
+    if (knob->canAnimate()) {
+        for (int i = 0; i < knob->getDimension(); ++i) {
+            
+            // Was added for https://github.com/MrKepzie/Natron/issues/690 but cannot figure out what this fixes
+            /*std::list<std::pair<KnobI*,int> > dependencies;
+             if (knob->getExpressionDependencies(i, dependencies)) {
+             for (std::list<std::pair<KnobI*,int> >::iterator it = dependencies.begin(); it!=dependencies.end(); ++it) {
+             unsigned int tmp;
+             getNumKeys(it->first, tmp);
+             sum += tmp;
+             }
+             } else {*/
+            
+            boost::shared_ptr<Curve> curve = knob->getCurve(i);
+            if (curve) {
+                KeyFrameSet dimKeys = curve->getKeyFrames_mt_safe();
+                for (KeyFrameSet::iterator it = dimKeys.begin(); it!=dimKeys.end(); ++it) {
+                    keyframes.insert(it->getTime());
+                }
+            }
+        }
+    }
+}
 
 ///anonymous namespace to handle keyframes communication support for Ofx plugins
 /// in a generalized manner
@@ -88,116 +126,94 @@ OfxStatus
 getNumKeys(KnobI* knob,
            unsigned int &nKeys)
 {
-    int sum = 0;
 
-    if (knob->canAnimate()) {
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            std::list<std::pair<KnobI*,int> > dependencies;
-            if (knob->getExpressionDependencies(i, dependencies)) {
-                for (std::list<std::pair<KnobI*,int> >::iterator it = dependencies.begin(); it!=dependencies.end(); ++it) {
-                    unsigned int tmp;
-                    getNumKeys(it->first, tmp);
-                    sum += tmp;
-                }
-            } else {
-                boost::shared_ptr<Curve> curve = knob->getCurve(i);
-                assert(curve);
-                sum += curve->getKeyFramesCount();
-            }
-        }
-    }
-    nKeys =  sum;
-
+    OfxKeyFramesSet keyframes;
+    getOfxKeyFrames(knob,keyframes);
+    nKeys = (unsigned int)keyframes.size();
     return kOfxStatOK;
 }
 
 static
 OfxStatus
-getKeyTime(KnobPtr knob,
+getKeyTime(const KnobPtr& knob,
            int nth,
            OfxTime & time)
 {
     if (nth < 0) {
         return kOfxStatErrBadIndex;
     }
-    int dimension = 0;
-    int indexSoFar = 0;
-    while ( dimension < knob->getDimension() ) {
-        ++dimension;
-        int curveKeyFramesCount = knob->getKeyFramesCount(dimension);
-        if ( nth >= (int)(curveKeyFramesCount + indexSoFar) ) {
-            indexSoFar += curveKeyFramesCount;
-            continue;
-        } else {
-            boost::shared_ptr<Curve> curve = knob->getCurve(dimension);
-            assert(curve);
-            KeyFrameSet set = curve->getKeyFrames_mt_safe();
-            KeyFrameSet::const_iterator it = set.begin();
-            while ( it != set.end() ) {
-                if (indexSoFar == nth) {
-                    time = it->getTime();
-
-                    return kOfxStatOK;
-                }
-                ++indexSoFar;
-                ++it;
-            }
-        }
+    OfxKeyFramesSet keyframes;
+    getOfxKeyFrames(knob.get(),keyframes);
+    if (nth >= (int)keyframes.size()) {
+        return kOfxStatErrBadIndex;
     }
-
-    return kOfxStatErrBadIndex;
+    OfxKeyFramesSet::iterator it = keyframes.begin();
+    std::advance(it, nth);
+    time = *it;
+    return kOfxStatOK;
 }
 
 static
 OfxStatus
-getKeyIndex(KnobPtr knob,
+getKeyIndex(const KnobPtr& knob,
             OfxTime time,
             int direction,
             int & index)
 {
-    int c = 0;
 
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        if (!knob->isAnimated(i)) {
-            continue;
-        }
-        boost::shared_ptr<Curve> curve = knob->getCurve(i);
-        assert(curve);
-        KeyFrameSet set = curve->getKeyFrames_mt_safe();
-        for (KeyFrameSet::const_iterator it = set.begin(); it != set.end(); ++it) {
-            if (it->getTime() == time) {
-                if (direction == 0) {
-                    index = c;
-                } else if (direction < 0) {
-                    if ( it == set.begin() ) {
-                        index = -1;
-                    } else {
-                        index = c - 1;
-                    }
-                } else {
-                    KeyFrameSet::const_iterator next = it;
-                    if (next != set.end()) {
-                        ++next;
-                    }
-                    if ( next != set.end() ) {
-                        index = c + 1;
-                    } else {
-                        index = -1;
-                    }
-                }
-
+    OfxKeyFramesSet keyframes;
+    getOfxKeyFrames(knob.get(),keyframes);
+    int i = 0;
+    if (direction == 0) {
+        //search for key at indicated time
+        for (OfxKeyFramesSet::iterator it = keyframes.begin(); it!=keyframes.end(); ++it,++i) {
+            if (std::abs(*it - time) < NATRON_CURVE_X_SPACING_EPSILON) {
+                index = i;
                 return kOfxStatOK;
             }
-            ++c;
+        }
+    } else if (direction < 0) {
+        //search for key before indicated time
+        OfxKeyFramesSet::iterator next = keyframes.begin();
+        if (!keyframes.empty()) {
+            ++next;
+        }
+        for (OfxKeyFramesSet::iterator it = keyframes.begin(); it!=keyframes.end(); ++it,++i) {
+            if (*it < time) {
+                if (next != keyframes.end()) {
+                    if (*next > time) {
+                        index = i;
+                        return kOfxStatOK;
+                    }
+                } else {
+                    index = i;
+                    assert(i == (int)keyframes.size() - 1);
+                    return kOfxStatOK;
+                }
+            } else {
+                return kOfxStatFailed;
+            }
+            if (!keyframes.empty()) {
+                ++next;
+            }
+        }
+    } else if (direction > 0) {
+        ///Find the first keyframe that is considered to be after the given time
+        for (OfxKeyFramesSet::iterator it = keyframes.begin(); it!=keyframes.end(); ++it,++i) {
+            if (*it > time) {
+                index = i;
+                return kOfxStatOK;
+            }
+
         }
     }
-
+    
     return kOfxStatFailed;
 }
 
 static
 OfxStatus
-deleteKey(KnobPtr knob,
+deleteKey(const KnobPtr& knob,
           OfxTime time)
 {
     for (int i = 0; i < knob->getDimension(); ++i) {
@@ -209,7 +225,7 @@ deleteKey(KnobPtr knob,
 
 static
 OfxStatus
-deleteAllKeys(KnobPtr knob)
+deleteAllKeys(const KnobPtr& knob)
 {
     for (int i = 0; i < knob->getDimension(); ++i) {
         knob->removeAnimation(i);
