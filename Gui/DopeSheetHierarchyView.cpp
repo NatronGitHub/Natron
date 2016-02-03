@@ -958,7 +958,7 @@ void HierarchyView::onKeyframeSelectionChanged(bool recurse)
     }
     
     // Retrieve the knob contexts with selected keyframes
-    DSKnobPtrList toCheck;
+    std::set<boost::shared_ptr<DSKnob> > toCheck;
     DSKeyPtrList selectedKeys;
     std::vector<boost::shared_ptr<DSNode> > selectedNodes;
     
@@ -967,7 +967,7 @@ void HierarchyView::onKeyframeSelectionChanged(bool recurse)
     for (DSKeyPtrList::const_iterator it = selectedKeys.begin();
          it != selectedKeys.end();
          ++it) {
-        toCheck.push_back((*it)->getContext());
+        toCheck.insert((*it)->getContext());
     }
     
     
@@ -981,7 +981,7 @@ void HierarchyView::onKeyframeSelectionChanged(bool recurse)
     else {
         std::set<QModelIndex> toSelect;
 
-        for (DSKnobPtrList::const_iterator toCheckIt = toCheck.begin();
+        for (std::set<boost::shared_ptr<DSKnob> >::const_iterator toCheckIt = toCheck.begin();
              toCheckIt != toCheck.end();
              ++toCheckIt) {
             boost::shared_ptr<DSKnob> dsKnob = (*toCheckIt);
