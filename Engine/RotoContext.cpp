@@ -1776,7 +1776,11 @@ RotoContext::getCurvesByRenderOrder(bool onlyActivated) const
     std::list< boost::shared_ptr<RotoDrawableItem> > ret;
     
     ///Note this might not be the timeline's current frame if this is a render thread.
-    double time = getNode()->getEffectInstance()->getCurrentTime();
+    EffectInstPtr effect = getNode()->getEffectInstance();
+    if (!effect) {
+        return ret;
+    }
+    double time = effect->getCurrentTime();
     {
         QMutexLocker l(&_imp->rotoContextMutex);
         if ( !_imp->layers.empty() ) {

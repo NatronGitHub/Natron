@@ -766,14 +766,16 @@ Gui::renderSelectedNode()
 
         for (NodesGuiList::const_iterator it = selectedNodes.begin();
              it != selectedNodes.end(); ++it) {
-            EffectInstance* effect = (*it)->getNode()->isEffectViewer();
-            assert(effect);
+            EffectInstPtr effect = (*it)->getNode()->getEffectInstance();
+            if (!effect) {
+                continue;
+            }
             if (effect->isWriter()) {
                 if (!effect->areKnobsFrozen()) {
                     //if ((*it)->getNode()->is)
                     ///if the node is a writer, just use it to render!
                     AppInstance::RenderWork w;
-                    w.writer = dynamic_cast<OutputEffectInstance*>(effect);
+                    w.writer = dynamic_cast<OutputEffectInstance*>(effect.get());
                     assert(w.writer);
                     w.firstFrame = INT_MIN;
                     w.lastFrame = INT_MAX;
