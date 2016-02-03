@@ -325,7 +325,7 @@ Gui::onDoDialog(int type,
         QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
         assert(_imp->_uiUsingMainThread);
         _imp->_uiUsingMainThread = false;
-        _imp->_uiUsingMainThreadCond.wakeOne();
+        _imp->_uiUsingMainThreadCond.wakeAll();
     }
     if (currentActiveWindow && !isActiveWindowADialog) {
         currentActiveWindow->activateWindow();
