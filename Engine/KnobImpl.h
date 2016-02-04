@@ -603,7 +603,9 @@ Knob<T>::getValue(int dimension,bool clamp) const
         clamp = false;
     }
  
-    assert(dimension < (int)_values.size() && dimension >= 0);
+    if (dimension >= (int)_values.size() || dimension < 0) {
+        return T();
+    }
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
         T ret;
@@ -691,7 +693,9 @@ template<typename T>
 T
 Knob<T>::getValueAtTime(double time, int dimension,bool clamp ,bool byPassMaster) const
 {
-    assert(dimension < (int)_values.size() && dimension >= 0);
+    if  (dimension >= (int)_values.size() || dimension < 0) {
+        return T();
+    }
     
     bool useGuiValues = QThread::currentThread() == qApp->thread();
     
