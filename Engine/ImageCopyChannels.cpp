@@ -49,8 +49,8 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
     
     PIX* dst_pixels = (PIX*)pixelAt(roi.x1, roi.y1);
     assert(dst_pixels);
-    assert(srcNComps == 4 || !originalPremult); // only RGBA can be premult
-    assert(dstNComps == 4 || !premult); // only RGBA can be premult
+    assert(srcNComps == 1 || srcNComps == 4 || !originalPremult); // only A or RGBA can be premult
+    assert(dstNComps == 1 || dstNComps == 4 || !premult); // only A or RGBA can be premult
 
     for (int y = roi.y1; y < roi.y2; ++y, dst_pixels += (dstRowElements - (roi.x2 - roi.x1) * dstNComps)) {
         for (int x = roi.x1; x < roi.x2; ++x, dst_pixels += dstNComps) {
