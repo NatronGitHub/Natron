@@ -7288,15 +7288,62 @@ void
 Node::refreshEnabledKnobsLabel(const ImageComponents& comp)
 {
     const std::vector<std::string>& channels = comp.getComponentsNames();
-    for (int i = 0; i < 4; ++i) {
-        boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
-        if (i >= (int)(channels.size())) {
-            enabled->setSecret(true);
-        } else {
-            enabled->setSecret(false);
-            enabled->setLabel(channels[i]);
-        }
-        //enabled->setValue(true, 0);
+    switch (channels.size()) {
+        
+        case 1:
+        {
+            for (int i = 0; i < 3; ++i) {
+                boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+                enabled->setSecret(true);
+            }
+            boost::shared_ptr<KnobBool> alpha = _imp->enabledChan[3].lock();
+            alpha->setSecret(false);
+            alpha->setLabel(channels[0]);
+        } break;
+        case 2:
+        {
+            for (int i = 2; i < 4; ++i) {
+                boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+                enabled->setSecret(true);
+            }
+            for (int i = 0; i < 2; ++i) {
+                boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+                enabled->setSecret(false);
+                enabled->setLabel(channels[i]);
+            }
+
+            
+        } break;
+        case 3:
+        {
+            for (int i = 3; i < 4; ++i) {
+                boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+                enabled->setSecret(true);
+            }
+            for (int i = 0; i < 3; ++i) {
+                boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+                enabled->setSecret(false);
+                enabled->setLabel(channels[i]);
+            }
+        } break;
+        case 4:
+        {
+         
+            for (int i = 0; i < 4; ++i) {
+                boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+                enabled->setSecret(false);
+                enabled->setLabel(channels[i]);
+            }
+        } break;
+            
+        case 0:
+        default:
+        {
+            for (int i = 0; i < 4; ++i) {
+                boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+                enabled->setSecret(true);
+            }
+        } break;
     }
 
 }
