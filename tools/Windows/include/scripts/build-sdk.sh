@@ -141,7 +141,8 @@ if [ ! -f $INSTALL_PATH/bin/libOpenImageIO.dll ]; then
     patch -p1 -i ${OIIO_PATCHES}/0001-MinGW-w64-include-winbase-h-early-for-TCHAR-types.patch  || exit 1
     patch -p1 -i ${OIIO_PATCHES}/oiio-exrthreads.patch || exit 1
     #patch -p1 -i ${OIIO_PATCHES}/0002-Also-link-to-opencv_videoio-library.patch  || exit 1
-	rm -rf build
+    patch -p1 -i ${OIIO_PATCHES}/oiio-pnm16.patch || exit 1
+    rm -rf build
     mkdir build || exit 1
     cd build || exit 1
     cmake -G"MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DCMAKE_SHARED_LINKER_FLAGS=" -Wl,--export-all-symbols -Wl,--enable-auto-import " -DUSE_OPENSSL:BOOL=FALSE -DOPENEXR_HOME=$INSTALL_PATH -DILMBASE_HOME=$INSTALL_PATH -DTHIRD_PARTY_TOOLS_HOME=$INSTALL_PATH -DUSE_QT:BOOL=FALSE -DUSE_TBB:BOOL=FALSE -DUSE_PYTHON:BOOL=FALSE -DUSE_FIELD3D:BOOL=FALSE -DUSE_OPENJPEG:BOOL=TRUE  -DOIIO_BUILD_TESTS=0 -DOIIO_BUILD_TOOLS=0 -DLIBRAW_PATH=$INSTALL_PATH -DBOOST_ROOT=$INSTALL_PATH -DSTOP_ON_WARNING:BOOL=FALSE -DUSE_GIF:BOOL=TRUE -DUSE_FREETYPE:BOOL=TRUE -DFREETYPE_INCLUDE_PATH=$INSTALL_PATH/include/freetype2 -DOPENJPEG_INCLUDE_DIR=${INSTALL_PATH}/include/openjpeg-1.5  -DOPENJPEG_OPENJPEG_LIBRARIES=${INSTALL_PATH}/lib/libopenjpeg.dll.a -DUSE_FFMPEG:BOOL=FALSE -DUSE_OPENCV:BOOL=FALSE .. || exit 1
