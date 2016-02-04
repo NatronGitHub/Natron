@@ -10,6 +10,22 @@
 
 source `pwd`/common.sh || exit 1
 
+PID=$$
+# make kill bot
+KILLSCRIPT="/tmp/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+PARENT=$1
+sleep 30m
+if [ "$PARENT" = "" ]; then
+  exit 1
+fi
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+  kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
 
 if [ "$1" = "32" ]; then
     BIT=32
@@ -17,6 +33,11 @@ if [ "$1" = "32" ]; then
 else
     BIT=64
     INSTALL_PATH=$INSTALL64_PATH
+fi
+
+if [ "$1" = "" ]; then
+  echo "no bit"
+  exit 1
 fi
 
 TMP_BUILD_DIR=$TMP_PATH$BIT
@@ -53,6 +74,10 @@ export BOOST_ROOT PYTHON_HOME PYTHON_PATH PYTHON_INCLUDE
 # Install natron
 cd $TMP_BUILD_DIR || exit 1
 
+
+$KILLSCRIPT $PID &
+KILLBOT=$!
+
 git clone $GIT_NATRON || exit 1
 cd Natron || exit 1
 git checkout $NATRON_BRANCH || exit 1
@@ -62,6 +87,9 @@ if [ "$NATRON_BRANCH" = "workshop" ]; then
     # the snapshots are always built with the latest version of submodules
     git submodule foreach git pull origin master
 fi
+
+
+kill -o $KILLBOT
 
 REL_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
@@ -167,6 +195,9 @@ cp ../Gui/Resources/Stylesheets/mainstyle.qss "$INSTALL_PATH/share/stylesheets/"
 mkdir -p $INSTALL_PATH/share/pixmaps || exit 1
 cp ../Gui/Resources/Images/natronIcon256_linux.png "$INSTALL_PATH/share/pixmaps/" || exit 1
 echo "$NATRON_REL_V" > "$INSTALL_PATH/docs/natron/VERSION" || exit 1
+
+
+rm -f $KILLSCRIPT
 
 echo "Done!"
 

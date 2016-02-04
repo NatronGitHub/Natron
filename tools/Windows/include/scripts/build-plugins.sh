@@ -6,6 +6,24 @@
 source `pwd`/common.sh || exit 1
 
 
+PID=$$
+# make kill bot
+KILLSCRIPT="/tmp/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+PARENT=$1
+sleep 30m
+if [ "$PARENT" = "" ]; then
+  exit 1
+fi
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+  kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
+
+
 if [ "$1" = "32" ]; then
   INSTALL_PATH=$INSTALL32_PATH
   PKG_PREFIX=$PKG_PREFIX32
@@ -85,6 +103,9 @@ if [ "$BUILD_MISC" = "1" ]; then
 
 cd $TMP_BUILD_DIR || exit 1
 
+$KILLSCRIPT $PID &
+KILLBOT=$!
+
 git clone $GIT_MISC || exit 1
 cd openfx-misc || exit 1
 git checkout ${MISC_BRANCH} || exit 1
@@ -93,6 +114,8 @@ if [ "$MISC_BRANCH" = "master" ]; then
     # the snapshots are always built with the latest version of submodules
     git submodule foreach git pull origin master
 fi
+
+kill -9 $KILLBOT
 
 MISC_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
@@ -127,6 +150,9 @@ if [ "$BUILD_IO" = "1" ]; then
 
 cd $TMP_BUILD_DIR || exit 1
 
+$KILLSCRIPT $PID &
+KILLBOT=$!
+
 git clone $GIT_IO || exit 1
 cd openfx-io || exit 1
 git checkout ${IO_BRANCH} || exit 1
@@ -135,6 +161,8 @@ if [ "$IO_BRANCH" = "master" ]; then
     # the snapshots are always built with the latest version of submodules
     git submodule foreach git pull origin master
 fi
+
+kill -9 $KILLBOT
 
 IO_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
@@ -168,6 +196,9 @@ if [ "$BUILD_ARENA" = "1" ]; then
 
 cd $TMP_BUILD_DIR || exit 1
 
+$KILLSCRIPT $PID &
+KILLBOT=$!
+
 git clone $GIT_ARENA || exit 1
 cd openfx-arena || exit 1
 git checkout ${ARENA_BRANCH} || exit 1
@@ -180,6 +211,8 @@ if [ "$ARENA_BRANCH" = "master" ]; then
        echo "Warning: openfx-arena submodules not updated..."
     fi
 fi
+
+kill -9 $KILLBOT
 
 ARENA_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
@@ -249,5 +282,7 @@ cp LIC* READ* $INSTALL_PATH/docs/openfx-opencv/
 echo $CV_V > $INSTALL_PATH/docs/openfx-opencv/VERSION || exit 1
 
 fi
+
+rm -f $KILLSCRIPT
 
 echo "Done!"

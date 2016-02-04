@@ -26,6 +26,22 @@
 
 source `pwd`/common.sh || exit 1
 
+PID=$$
+# make kill bot
+KILLSCRIPT="/tmp/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+PARENT=$1
+sleep 30m
+if [ "$PARENT" = "" ]; then
+  exit 1
+fi
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+  kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
 
 if [ "$OS" = "Msys" ]; then
     PKGOS=Windows
@@ -154,6 +170,9 @@ if [ "$NOPKG" != "1" -a "$FAIL" != "1" ]; then
     fi 
 fi
 
+$KILLSCRIPT $PID &
+KILLBOT=$!
+
 if [ "$SYNC" = "1" ]; then
     if [ "$BRANCH" = "workshop" ]; then
         ONLINE_REPO_BRANCH=snapshots
@@ -174,7 +193,8 @@ if [ "$SYNC" = "1" ]; then
     rsync -avz --progress --delete --verbose -e ssh $LOGS/ $REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs
 fi
 
-
+kill -9 $KILLBOT
+rm -f $KILLSCRIPT
 
 
 if [ "$FAIL" = "1" ]; then

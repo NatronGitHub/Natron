@@ -17,6 +17,7 @@ else
     BIT=64
 fi
 
+PID=$$
 CWD=`pwd`
 TMP=$CWD/.autobuild
 
@@ -88,10 +89,45 @@ do
     FAIL=0
     echo "Running ..."
 
+# make git sync
+GITSCRIPT="/tmp/snapshot-git.sh"
+cat << 'EOF' > $GITSCRIPT
+#!/bin/sh
+if [ "$1" != "" ]; then
+  echo "Running git sync ..."
+  PID=$$
+  echo $PID > /tmp/snapshot-git.pid || exit 1
+  git fetch --all || exit 1
+  git merge origin/${1} || exit 1
+fi
+EOF
+chmod +x $GITSCRIPT
+
+# make kill bot
+KILLSCRIPT="/tmp/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+sleep 30m
+PARENT=`cat /tmp/snapshot-git.pid`
+if [ "$PARENT" = "" ]; then
+  exit 1
+fi
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+  kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
+
+
     BUILD_NATRON=0
     cd $TMP/Natron 
-    git fetch --all || FAIL=1
-    git merge origin/workshop || FAIL=1
+
+    $KILLSCRIPT &
+    KILLBOT=$!
+    $GITSCRIPT workshop 
+    kill -9 $KILLBOT
+
     GITV_NATRON=`git log|head -1|awk '{print $2}'`
     ORIG_NATRON=$NATRON_DEVEL_GIT
     echo "Natron $GITV_NATRON vs. $ORIG_NATRON"
@@ -102,8 +138,12 @@ do
     BUILD_IO=0
     if [ "$FAIL" != "1" ]; then
         cd $TMP/openfx-io
-        git fetch --all || FAIL=1
-        git merge origin/master || FAIL=1
+
+        $KILLSCRIPT &
+        KILLBOT=$!
+        $GITSCRIPT master 
+        kill -9 $KILLBOT
+
         GITV_IO=`git log|head -1|awk '{print $2}'`
         ORIG_IO=$IOPLUG_DEVEL_GIT
         echo "IO $GITV_IO vs. $ORIG_IO"
@@ -115,8 +155,12 @@ do
     BUILD_MISC=0
     if [ "$FAIL" != "1" ]; then
         cd $TMP/openfx-misc
-        git fetch --all || FAIL=1
-        git merge origin/master || FAIL=1
+
+        $KILLSCRIPT &
+        KILLBOT=$!
+        $GITSCRIPT master 
+        kill -9 $KILLBOT
+
         GITV_MISC=`git log|head -1|awk '{print $2}'`
         ORIG_MISC=$MISCPLUG_DEVEL_GIT
         echo "Misc $GITV_MISC vs. $ORIG_MISC"
@@ -128,8 +172,12 @@ do
     BUILD_ARENA=0
     if [ "$FAIL" != "1" ]; then
         cd $TMP/openfx-arena
-        git fetch --all || FAIL=1
-        git merge origin/master || FAIL=1
+
+        $KLLSCRIPT &
+        KILLBOT=$!
+        $GITSCRIPT master 
+        kill -9 $KILLBOT
+
         GITV_ARENA=`git log|head -1|awk '{print $2}'`
         ORIG_ARENA=$ARENAPLUG_DEVEL_GIT
         echo "Arena $GITV_ARENA vs. $ORIG_ARENA"
@@ -139,18 +187,21 @@ do
         fi
     fi
     BUILD_CV=0
-    if [ "$FAIL" != "1" ]; then
-        cd $TMP/openfx-opencv
-        git fetch --all || FAIL=1
-        git merge origin/master || FAIL=1
-        GITV_CV=`git log|head -1|awk '{print $2}'`
-        ORIG_CV=$CVPLUG_DEVEL_GIT
-        echo "CV $GITV_CV vs. $ORIG_CV"
-        if [ "$GITV_CV" != "$ORIG_CV" -a "$FAIL" != "1" ]; then
-            echo "CV update needed"
-            BUILD_CV=1
-        fi
-    fi
+    #if [ "$FAIL" != "1" ]; then
+    #    cd $TMP/openfx-opencv
+    #    git fetch --all || FAIL=1
+    #    git merge origin/master || FAIL=1
+    #    GITV_CV=`git log|head -1|awk '{print $2}'`
+    #    ORIG_CV=$CVPLUG_DEVEL_GIT
+    #    echo "CV $GITV_CV vs. $ORIG_CV"
+    #    if [ "$GITV_CV" != "$ORIG_CV" -a "$FAIL" != "1" ]; then
+    #        echo "CV update needed"
+    #        BUILD_CV=1
+    #    fi
+    #fi
+
+
+    rm -f $GITSCRIPT $KILLSCRIPT
 
     cd $CWD || exit 1
     if [ "$FAIL" != "1" ]; then
