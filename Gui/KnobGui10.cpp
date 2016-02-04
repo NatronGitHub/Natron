@@ -187,8 +187,8 @@ KnobGui::isSecretRecursive() const
     KnobPtr knob = getKnob();
     bool showit = !knob->getIsSecret();
     KnobPtr parentKnob = knob->getParentKnob();
-    
-    while (showit && parentKnob && parentKnob->typeName() == "Group") {
+    KnobGroup* parentIsGroup = dynamic_cast<KnobGroup*>(parentKnob.get());
+    while (showit && parentKnob && parentIsGroup) {
         KnobGuiGroup* parentGui = dynamic_cast<KnobGuiGroup*>( _imp->container->getKnobGui(parentKnob) );
         assert(parentGui);
         // check for secretness and visibility of the group
@@ -671,12 +671,12 @@ KnobGui::show(int /*index*/)
         getGui()->getCurveEditor()->showCurves(this);
     }
 
-    if (_imp->isOnNewLine) {
+    //if (_imp->isOnNewLine) {
         _imp->field->show();
         if (_imp->container) {
             _imp->container->refreshTabWidgetMaxHeight();
         }
-    }
+    //}
     
     if (_imp->descriptionLabel) {
         _imp->descriptionLabel->show();

@@ -290,9 +290,8 @@ OfxParamToKnob::connectDynamicProperties()
 void
 OfxParamToKnob::onEvaluateOnChangeChanged(bool evaluate)
 {
-    if (isDynamicPropertyBeingModified()) {
-        return;
-    }
+    DYNAMIC_PROPERTY_CHECK();
+    
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
     param->getProperties().setIntProperty(kOfxParamPropEvaluateOnChange, (int)evaluate);
@@ -301,9 +300,7 @@ OfxParamToKnob::onEvaluateOnChangeChanged(bool evaluate)
 void
 OfxParamToKnob::onSecretChanged()
 {
-    if (isDynamicPropertyBeingModified()) {
-        return;
-    }
+    DYNAMIC_PROPERTY_CHECK();
 
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
@@ -318,9 +315,7 @@ OfxParamToKnob::onSecretChanged()
 void
 OfxParamToKnob::onEnabledChanged()
 {
-    if (isDynamicPropertyBeingModified()) {
-        return;
-    }
+    DYNAMIC_PROPERTY_CHECK();
 
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
@@ -334,9 +329,7 @@ OfxParamToKnob::onEnabledChanged()
 void
 OfxParamToKnob::onLabelChanged()
 {
-    if (isDynamicPropertyBeingModified()) {
-        return;
-    }
+    DYNAMIC_PROPERTY_CHECK();
 
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
@@ -350,10 +343,8 @@ OfxParamToKnob::onLabelChanged()
 void
 OfxParamToKnob::onDisplayMinMaxChanged(double min,double max, int index)
 {
-    if (isDynamicPropertyBeingModified()) {
-        return;
-    }
-
+    DYNAMIC_PROPERTY_CHECK();
+    
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
     if (hasDoubleMinMaxProps()) {
@@ -368,10 +359,8 @@ OfxParamToKnob::onDisplayMinMaxChanged(double min,double max, int index)
 void
 OfxParamToKnob::onMinMaxChanged(double min,double max, int index)
 {
-    if (isDynamicPropertyBeingModified()) {
-        return;
-    }
-
+    DYNAMIC_PROPERTY_CHECK();
+    
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
     if (hasDoubleMinMaxProps()) {
@@ -401,7 +390,7 @@ OfxPushButtonInstance::OfxPushButtonInstance(const boost::shared_ptr<OfxEffectIn
 void
 OfxPushButtonInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -409,21 +398,21 @@ OfxPushButtonInstance::setEnabled()
 void
 OfxPushButtonInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setSecret( getSecret() );
 }
 
 void
 OfxPushButtonInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setLabel(getParamLabel(this));
 }
 
 void
 OfxPushButtonInstance::setEvaluateOnChange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
@@ -500,7 +489,7 @@ OfxIntegerInstance::set(OfxTime time,
 void
 OfxIntegerInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -508,21 +497,21 @@ OfxIntegerInstance::setEnabled()
 void
 OfxIntegerInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setSecret( getSecret() );
 }
 
 void
 OfxIntegerInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setLabel(getParamLabel(this));
 }
 
 void
 OfxIntegerInstance::setEvaluateOnChange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
@@ -587,7 +576,7 @@ OfxIntegerInstance::onKnobAnimationLevelChanged(int,int lvl)
 void
 OfxIntegerInstance::setDisplayRange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     int displayMin = getProperties().getIntProperty(kOfxParamPropDisplayMin);
     int displayMax = getProperties().getIntProperty(kOfxParamPropDisplayMax);
 
@@ -598,7 +587,7 @@ OfxIntegerInstance::setDisplayRange()
 void
 OfxIntegerInstance::setRange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     int mini = getProperties().getIntProperty(kOfxParamPropMin);
     int maxi = getProperties().getIntProperty(kOfxParamPropMax);
     
@@ -728,7 +717,7 @@ OfxDoubleInstance::integrate(OfxTime time1,
 void
 OfxDoubleInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -736,28 +725,28 @@ OfxDoubleInstance::setEnabled()
 void
 OfxDoubleInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setSecret( getSecret() );
 }
 
 void
 OfxDoubleInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setLabel(getParamLabel(this));
 }
 
 void
 OfxDoubleInstance::setEvaluateOnChange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
 void
 OfxDoubleInstance::setDisplayRange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     double displayMin = getProperties().getDoubleProperty(kOfxParamPropDisplayMin);
     double displayMax = getProperties().getDoubleProperty(kOfxParamPropDisplayMax);
 
@@ -768,7 +757,7 @@ OfxDoubleInstance::setDisplayRange()
 void
 OfxDoubleInstance::setRange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     double mini = getProperties().getDoubleProperty(kOfxParamPropMin);
     double maxi = getProperties().getDoubleProperty(kOfxParamPropMax);
     
@@ -898,7 +887,7 @@ OfxBooleanInstance::set(OfxTime time,
 void
 OfxBooleanInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -906,21 +895,21 @@ OfxBooleanInstance::setEnabled()
 void
 OfxBooleanInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setSecret( getSecret() );
 }
 
 void
 OfxBooleanInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setLabel(getParamLabel(this));
 }
 
 void
 OfxBooleanInstance::setEvaluateOnChange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
@@ -1087,7 +1076,7 @@ OfxChoiceInstance::set(OfxTime time,
 void
 OfxChoiceInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -1095,21 +1084,21 @@ OfxChoiceInstance::setEnabled()
 void
 OfxChoiceInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setSecret( getSecret() );
 }
 
 void
 OfxChoiceInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setLabel(getParamLabel(this));
 }
 
 void
 OfxChoiceInstance::setEvaluateOnChange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
@@ -1329,7 +1318,7 @@ OfxRGBAInstance::integrate(OfxTime time1,
 void
 OfxRGBAInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -1337,14 +1326,14 @@ OfxRGBAInstance::setEnabled()
 void
 OfxRGBAInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setSecret( getSecret() );
 }
 
 void
 OfxRGBAInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setLabel(getParamLabel(this));
 }
 
@@ -1352,7 +1341,7 @@ OfxRGBAInstance::setLabel()
 void
 OfxRGBAInstance::setEvaluateOnChange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
@@ -1546,7 +1535,7 @@ OfxRGBInstance::integrate(OfxTime time1,
 void
 OfxRGBInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -1554,21 +1543,21 @@ OfxRGBInstance::setEnabled()
 void
 OfxRGBInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setSecret( getSecret() );
 }
 
 void
 OfxRGBInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setLabel(getParamLabel(this));
 }
 
 void
 OfxRGBInstance::setEvaluateOnChange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
@@ -1797,7 +1786,7 @@ OfxDouble2DInstance::integrate(OfxTime time1,
 void
 OfxDouble2DInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -1805,14 +1794,14 @@ OfxDouble2DInstance::setEnabled()
 void
 OfxDouble2DInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setSecret( getSecret() );
 }
 
 void
 OfxDouble2DInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setLabel(getParamLabel(this));
 }
 
@@ -1820,14 +1809,14 @@ OfxDouble2DInstance::setLabel()
 void
 OfxDouble2DInstance::setEvaluateOnChange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
 void
 OfxDouble2DInstance::setDisplayRange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     std::vector<double> displayMins(2);
     std::vector<double> displayMaxs(2);
 
@@ -1841,7 +1830,7 @@ OfxDouble2DInstance::setDisplayRange()
 void
 OfxDouble2DInstance::setRange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     std::vector<double> displayMins(2);
     std::vector<double> displayMaxs(2);
     
@@ -2010,7 +1999,7 @@ OfxInteger2DInstance::set(OfxTime time,
 void
 OfxInteger2DInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -2018,14 +2007,14 @@ OfxInteger2DInstance::setEnabled()
 void
 OfxInteger2DInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setSecret( getSecret() );
 }
 
 void
 OfxInteger2DInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setLabel(getParamLabel(this));
 }
 
@@ -2033,7 +2022,7 @@ OfxInteger2DInstance::setLabel()
 void
 OfxInteger2DInstance::setDisplayRange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     std::vector<int> displayMins(2);
     std::vector<int> displayMaxs(2);
     
@@ -2048,7 +2037,7 @@ OfxInteger2DInstance::setDisplayRange()
 void
 OfxInteger2DInstance::setRange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     
     std::vector<int> displayMins(2);
     std::vector<int> displayMaxs(2);
@@ -2064,7 +2053,7 @@ OfxInteger2DInstance::setRange()
 void
 OfxInteger2DInstance::setEvaluateOnChange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
@@ -2256,7 +2245,7 @@ OfxDouble3DInstance::integrate(OfxTime time1,
 void
 OfxDouble3DInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -2264,14 +2253,14 @@ OfxDouble3DInstance::setEnabled()
 void
 OfxDouble3DInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setSecret( getSecret() );
 }
 
 void
 OfxDouble3DInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setLabel(getParamLabel(this));
 }
 
@@ -2279,7 +2268,7 @@ OfxDouble3DInstance::setLabel()
 void
 OfxDouble3DInstance::setDisplayRange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     std::vector<double> displayMins(3);
     std::vector<double> displayMaxs(3);
     
@@ -2296,7 +2285,7 @@ OfxDouble3DInstance::setDisplayRange()
 void
 OfxDouble3DInstance::setRange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     std::vector<double> displayMins(3);
     std::vector<double> displayMaxs(3);
     
@@ -2313,7 +2302,7 @@ OfxDouble3DInstance::setRange()
 void
 OfxDouble3DInstance::setEvaluateOnChange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
@@ -2483,7 +2472,7 @@ OfxInteger3DInstance::set(OfxTime time,
 void
 OfxInteger3DInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -2491,14 +2480,14 @@ OfxInteger3DInstance::setEnabled()
 void
 OfxInteger3DInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setSecret( getSecret() );
 }
 
 void
 OfxInteger3DInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setLabel(getParamLabel(this));
 }
 
@@ -2506,7 +2495,7 @@ OfxInteger3DInstance::setLabel()
 void
 OfxInteger3DInstance::setDisplayRange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     std::vector<int> displayMins(3);
     std::vector<int> displayMaxs(3);
     
@@ -2523,7 +2512,7 @@ OfxInteger3DInstance::setDisplayRange()
 void
 OfxInteger3DInstance::setRange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     std::vector<int> displayMins(3);
     std::vector<int> displayMaxs(3);
     
@@ -2540,7 +2529,7 @@ OfxInteger3DInstance::setRange()
 void
 OfxInteger3DInstance::setEvaluateOnChange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
@@ -2639,7 +2628,7 @@ KnobPtr OfxGroupInstance::getKnob() const
 void
 OfxGroupInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _groupKnob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -2647,14 +2636,14 @@ OfxGroupInstance::setEnabled()
 void
 OfxGroupInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _groupKnob.lock()->setSecret( getSecret() );
 }
 
 void
 OfxGroupInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _groupKnob.lock()->setLabel(getParamLabel(this));
 }
 
@@ -2673,7 +2662,7 @@ OfxPageInstance::OfxPageInstance(const boost::shared_ptr<OfxEffectInstance>& nod
 void
 OfxPageInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _pageKnob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -2681,14 +2670,14 @@ OfxPageInstance::setEnabled()
 void
 OfxPageInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _pageKnob.lock()->setAllDimensionsEnabled( getSecret() );
 }
 
 void
 OfxPageInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _pageKnob.lock()->setLabel(getParamLabel(this));
 }
 
@@ -2964,7 +2953,7 @@ OfxStringInstance::getKnob() const
 void
 OfxStringInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     if (_imp->fileKnob.lock()) {
         _imp->fileKnob.lock()->setAllDimensionsEnabled( getEnabled() );
     }
@@ -2982,7 +2971,7 @@ OfxStringInstance::setEnabled()
 void
 OfxStringInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     if (_imp->fileKnob.lock()) {
         _imp->fileKnob.lock()->setLabel(getParamLabel(this));
     }
@@ -3001,7 +2990,7 @@ OfxStringInstance::setLabel()
 void
 OfxStringInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     if (_imp->fileKnob.lock()) {
         _imp->fileKnob.lock()->setSecret( getSecret() );
     }
@@ -3019,7 +3008,7 @@ OfxStringInstance::setSecret()
 void
 OfxStringInstance::setEvaluateOnChange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     if (_imp->fileKnob.lock()) {
         _imp->fileKnob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
     }
@@ -3270,7 +3259,7 @@ KnobPtr OfxCustomInstance::getKnob() const
 void
 OfxCustomInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _imp->knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -3278,21 +3267,21 @@ OfxCustomInstance::setEnabled()
 void
 OfxCustomInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _imp->knob.lock()->setSecret( getSecret() );
 }
 
 void
 OfxCustomInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _imp->knob.lock()->setLabel(getParamLabel(this));
 }
 
 void
 OfxCustomInstance::setEvaluateOnChange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _imp->knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
@@ -3419,7 +3408,7 @@ KnobPtr OfxParametricInstance::getKnob() const
 void
 OfxParametricInstance::setEnabled()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
@@ -3427,14 +3416,14 @@ OfxParametricInstance::setEnabled()
 void
 OfxParametricInstance::setSecret()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setSecret( getSecret() );
 }
 
 void
 OfxParametricInstance::setEvaluateOnChange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setEvaluateOnChange( getEvaluateOnChange() );
 }
 
@@ -3442,7 +3431,7 @@ OfxParametricInstance::setEvaluateOnChange()
 void
 OfxParametricInstance::setLabel()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setLabel( getParamLabel(this) );
     for (int i = 0; i < _knob.lock()->getDimension(); ++i) {
         const std::string & curveName = getProperties().getStringProperty(kOfxParamPropDimensionLabel,i);
@@ -3453,7 +3442,7 @@ OfxParametricInstance::setLabel()
 void
 OfxParametricInstance::setDisplayRange()
 {
-    SET_DYNAMIC_PROPERTY_EDITED();
+    DYNAMIC_PROPERTY_CHECK();
     double range_min = getProperties().getDoubleProperty(kOfxParamPropParametricRange,0);
     double range_max = getProperties().getDoubleProperty(kOfxParamPropParametricRange,1);
 

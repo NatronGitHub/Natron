@@ -75,6 +75,11 @@ public:
 
 #define SET_DYNAMIC_PROPERTY_EDITED() PropertyModified_RAII dynamic_prop_edited_raii(this)
 
+#define DYNAMIC_PROPERTY_CHECK() if (isDynamicPropertyBeingModified()) { \
+                                    return; \
+                                 } \
+                                 SET_DYNAMIC_PROPERTY_EDITED();
+
 class OfxParamToKnob : public QObject
 {
     
