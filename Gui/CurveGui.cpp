@@ -157,6 +157,7 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(const double x1,
         double upperWidgetCoord = x1;
         for (std::list<double>::const_iterator it = keysWidgetCoords.begin(); it !=keysWidgetCoords.end(); ++it, ++itKeys) {
             if (*it > x1) {
+                upperWidgetCoord = *it;
                 upper = itKeys;
                 break;
             }
