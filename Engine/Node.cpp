@@ -9169,6 +9169,12 @@ Node::refreshChannelSelectors()
             if (itl->second == -1) {
                 std::string choiceName = ImageComponents::mapNatronInternalPlaneNameToUserFriendlyPlaneName(itl->first);
                 choices.push_back(choiceName);
+                
+                if (foundCurLayerChoice == -1 && itl->first == curLayer) {
+                    selectedComp = ImageComponents::getDefaultComponent(itl->first);
+                    foundCurLayerChoice = choices.size()-1;
+                }
+
             }
         }
 

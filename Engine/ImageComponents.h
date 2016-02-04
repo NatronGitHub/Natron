@@ -66,6 +66,8 @@ public:
     static std::string mapUserFriendlyPlaneNameToNatronInternalPlaneName(const std::string& userfriendlyPlaneName);
     static std::string mapNatronInternalPlaneNameToUserFriendlyPlaneName(const std::string& planeName);
     
+    static const ImageComponents& getDefaultComponent(const std::string& planeName);
+    
     ImageComponents();
     
     ImageComponents(const std::string& layerName,

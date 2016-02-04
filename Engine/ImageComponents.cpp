@@ -44,6 +44,29 @@ const char* ImageComponents::defaultComponents[][2] =
     {0, 0}
 };
 
+const ImageComponents&
+ImageComponents::getDefaultComponent(const std::string& planeName)
+{
+    if (planeName == kNatronRGBAComponentsName) {
+        return getRGBAComponents();
+    } else if (planeName == kNatronRGBComponentsName) {
+        return getRGBComponents();
+    } else if (planeName == kNatronRGBComponentsName) {
+        return getRGBComponents();
+    } else if (planeName == kNatronAlphaComponentsName) {
+        return getAlphaComponents();
+    } else if (planeName == kNatronDisparityLeftPlaneName) {
+        return getDisparityLeftComponents();
+    } else if (planeName == kNatronDisparityRightPlaneName) {
+        return getDisparityRightComponents();
+    } else if (planeName == kNatronBackwardMotionVectorsPlaneName) {
+        return getBackwardMotionComponents();
+    } else if (planeName == kNatronForwardMotionVectorsPlaneName) {
+        return getForwardMotionComponents();
+    }
+    return getNoneComponents();
+}
+
 std::string
 ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(const std::string& userfriendlyPlaneName)
 {
@@ -69,6 +92,8 @@ ImageComponents::mapNatronInternalPlaneNameToUserFriendlyPlaneName(const std::st
     }
     return planeName;
 }
+
+
 
 ImageComponents::ImageComponents()
 : _layerName("none")
