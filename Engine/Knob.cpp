@@ -725,52 +725,31 @@ KnobHelper::moveValueAtTime(CurveChangeReason reason, double time,int dimension,
         setGuiCurveHasChanged(dimension,true);
     }
     assert(curve);
-        
-    KeyFrame k;
-    int keyindex = curve->keyFrameIndex(time);
-    if (keyindex == -1) {
+    
+    if (!curve->moveKeyFrameValueAndTime(time, dt, dv, newKey)) {
         return false;
     }
     
-    bool gotKey = curve->getKeyFrameWithIndex(keyindex, &k);
-    if (!gotKey) {
-        return false;
-    }
-    
-    double newX = k.getTime() + dt;
-    double newY = k.getValue() + dv;
-    
-    if ( curve->areKeyFramesValuesClampedToIntegers() ) {
-        newY = std::floor(newY + 0.5);
-    } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
-        newY = newY < 0.5 ? 0 : 1;
-    }
-    
+
     ///Make sure string animation follows up
     AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>(this);
     std::string v;
     if (isString) {
-        isString->stringFromInterpolatedValue(k.getValue(), &v);
+        isString->stringFromInterpolatedValue(time, &v);
     }
     keyframeRemoved_virtual(dimension,time);
     if (isString) {
         double ret;
-        isString->stringToKeyFrameValue(newX, v, &ret);
+        isString->stringToKeyFrameValue(newKey->getTime(), v, &ret);
     }
     
-    
-    try {
-        *newKey = curve->setKeyFrameValueAndTime(newX,newY, keyindex, NULL);
-    } catch (...) {
-        return false;
-    }
     
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_keyFrameMoved(dimension,time,newX);
+        _signalSlotHandler->s_keyFrameMoved(dimension,time,newKey->getTime());
     }
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension, newX, eValueChangedReasonNatronInternalEdited);
+        evaluateValueChange(dimension, newKey->getTime(), eValueChangedReasonNatronInternalEdited);
         
         //We've set the internal curve, so synchronize the gui curve to the internal curve
         //the s_redrawGuiCurve signal will be emitted

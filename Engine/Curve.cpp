@@ -1156,6 +1156,34 @@ Curve::setKeyFrameValueAndTime(double time,
     return ret;
 }
 
+bool
+Curve::moveKeyFrameValueAndTime(const double time, const double dt, const double dv, KeyFrame* newKey)
+{
+    QMutexLocker l(&_imp->_lock);
+    KeyFrameSet::iterator it = find(time);
+    if (it == _imp->keyFrames.end()) {
+        return false;
+    }
+    if (dt == 0 && dv == 0) {
+        return true;
+    }
+    
+    double newX = it->getTime() + dt;
+    double newY = it->getValue() + dv;
+    if (_imp->type == CurvePrivate::eCurveTypeInt) {
+        newY = std::floor(newY + 0.5);
+    } else if (_imp->type == CurvePrivate::eCurveTypeBool) {
+        newY = newY < 0.5 ? 0 : 1;
+    }
+    
+    it = setKeyFrameValueAndTimeNoUpdate(newY, newX, it);
+    it = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it);
+    if (newKey) {
+        *newKey = *it;
+    }
+    return true;
+}
+
 KeyFrame
 Curve::setKeyFrameLeftDerivative(double value,
                                  int index,
