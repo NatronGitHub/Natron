@@ -792,12 +792,14 @@ Curve::getValueAt(double t,bool doClamp) const
         throw std::runtime_error("Curve has no control points!");
     }
     
-    std::map<double,double>::const_iterator foundCached = _imp->resultCache.find(t);
     double v;
+#ifdef NATRON_CURVE_USE_CACHE
+    std::map<double,double>::const_iterator foundCached = _imp->resultCache.find(t);
     if (foundCached != _imp->resultCache.end()) {
         v = foundCached->second;
-    } else {
-        
+    } else
+#endif
+    {
         // even when there is only one keyframe, there may be tangents!
         //if (_imp->keyFrames.size() == 1) {
         //    //if there's only 1 keyframe, don't bother interpolating
@@ -829,7 +831,9 @@ Curve::getValueAt(double t,bool doClamp) const
                                 t,
                                 interp,
                                 interpNext);
+#ifdef NATRON_CURVE_USE_CACHE
         _imp->resultCache[t] = v;
+#endif
     }
 
     if ( doClamp && mustClamp() ) {
@@ -1552,7 +1556,9 @@ Curve::onCurveChanged()
     if (_imp->owner) {
         _imp->owner->clearExpressionsResults(_imp->dimensionInOwner);
     }
+#ifdef NATRON_CURVE_USE_CACHE
     _imp->resultCache.clear();
+#endif
 }
 
 NATRON_NAMESPACE_EXIT;
