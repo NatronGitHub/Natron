@@ -6,17 +6,21 @@
 source `pwd`/common.sh || exit 1
 
 PID=$$
-if [ -f $TMP_DIR/natron-build-plugins.pid ]; then
-    OLDPID=`cat $TMP_DIR/natron-build-plugins.pid`
-    PIDS=`ps aux|awk '{print $2}'`
-    for i in $PIDS;do
-        if [ "$i" = "$OLDPID" ]; then
-            echo "already running ..."
-            exit 1
-        fi
-    done
+# make kill bot
+KILLSCRIPT="/tmp/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+PARENT=$1
+sleep 30m
+if [ "$PARENT" = "" ]; then
+  exit 1
 fi
-echo $PID > $TMP_DIR/natron-build-plugins.pid || exit 1
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+  kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
 
 #If "workshop" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
 IO_BRANCH=master
@@ -97,12 +101,19 @@ if [ "$BUILD_MISC" = "1" ]; then
 
     git clone $GIT_MISC || exit 1
     cd openfx-misc || exit 1
+
+    $KILLSCRIPT $PID &
+    KILLBOT=$!
+
     git checkout ${MISC_BRANCH} || exit 1
     git submodule update -i --recursive || exit 1
     if [ "$MISC_BRANCH" = "master" ]; then
         # the snapshots are always built with the latest version of submodules
         git submodule foreach git pull origin master
     fi
+
+    kill -9 $KILLBOT
+
     make -C CImg CImg.h || exit 1
 
     MISC_GIT_VERSION=`git log|head -1|awk '{print $2}'`
@@ -138,6 +149,9 @@ if [ "$BUILD_IO" = "1" ]; then
 
     cd $TMP_PATH || exit 1
 
+    $KILLSCRIPT $PID &
+    KILLBOT=$!
+
     git clone $GIT_IO || exit 1
     cd openfx-io || exit 1
     git checkout ${IO_BRANCH} || exit 1
@@ -146,6 +160,8 @@ if [ "$BUILD_IO" = "1" ]; then
         # the snapshots are always built with the latest version of submodules
         git submodule foreach git pull origin master
     fi
+
+    kill -9 $KILLBOT
 
     IO_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
@@ -178,6 +194,9 @@ if [ "$BUILD_ARENA" = "1" ]; then
 
     cd $TMP_PATH || exit 1
 
+    $KILLSCRIPT $PID &
+    KILLBOT=$!
+
     git clone $GIT_ARENA || exit 1
     cd openfx-arena || exit 1
     git checkout ${ARENA_BRANCH} || exit 1
@@ -190,6 +209,8 @@ if [ "$BUILD_ARENA" = "1" ]; then
            echo "Warning: openfx-arena submodules not updated..."
         fi
     fi
+    
+    kill -9 $KILLBOT
 
     ARENA_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
@@ -257,5 +278,7 @@ if [ "$BUILD_CV" = "1" ]; then
     echo $CV_V > $INSTALL_PATH/docs/openfx-opencv/VERSION || exit 1
 
 fi
+
+rm -f $KILLSCRIPT
 
 echo "Done!"

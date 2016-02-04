@@ -47,17 +47,21 @@
 source `pwd`/common.sh || exit 1
 
 PID=$$
-if [ -f $TMP_DIR/natron-build.pid ]; then
-    OLDPID=`cat $TMP_DIR/natron-build.pid`
-    PIDS=`ps aux|awk '{print $2}'`
-    for i in $PIDS;do
-        if [ "$i" = "$OLDPID" ]; then
-            echo "already running ..."
-            exit 1
-        fi
-    done
+# make kill bot
+KILLSCRIPT="/tmp/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+PARENT=$1
+sleep 30m
+if [ "$PARENT" = "" ]; then
+  exit 1
 fi
-echo $PID > $TMP_DIR/natron-build.pid || exit 1
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+  kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
 
 if [ "$OS" = "GNU/Linux" ]; then
     PKGOS=Linux
@@ -185,22 +189,34 @@ fi
 BIT_SUFFIX=bit
 BIT_TAG="$BIT$BIT_SUFFIX"
 
+$KILLSCRIPT $PID &
+KILLBOT=$!
+
 if [ "$SYNC" = "1" -a "$FAIL" != "1" ]; then
     echo "Syncing packages ... "
     rsync -avz --progress --delete --verbose -e ssh "$REPO_DIR/packages/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/packages"
 
-    rsync -avz --progress  --verbose -e ssh "$REPO_DIR/installers/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files"
+    rsync -avz --progress  --verbose -e ssh "$REPO_DIR/installers/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/files" 
+
+  # Symbols
+  echo "sync symbols ..."
+  rsync -avz --progress --verbose -e ssh "$INSTALL_PATH/symbols/" "${REPO_DEST}/symbols/"
 fi
 
-# Symbols
-echo "sync symbols ..."
-rsync -avz --progress --verbose -e ssh "$INSTALL_PATH/symbols/" "${REPO_DEST}/symbols/"
+if [ "$NO_LOG_SYNC" != "1" ]; then
 
 #Always upload logs, even upon failure
 rsync -avz --progress --delete --verbose -e ssh "$LOGS/" "$REPO_DEST/$PKGOS/$ONLINE_REPO_BRANCH/$BIT_TAG/logs"
+
+fi
+
+kill -9 $KILLBOT
 
 if [ "$FAIL" = "1" ]; then
     exit 1
 else
     exit 0
 fi
+
+rm -f $KILLSCRIPT
+

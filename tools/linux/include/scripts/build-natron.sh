@@ -31,17 +31,21 @@
 source `pwd`/common.sh || exit 1
 
 PID=$$
-if [ -f $TMP_DIR/natron-build-app.pid ]; then
-    OLDPID=`cat $TMP_DIR/natron-build-app.pid`
-    PIDS=`ps aux|awk '{print $2}'`
-    for i in $PIDS;do
-        if [ "$i" = "$OLDPID" ]; then
-            echo "already running ..."
-            exit 1
-        fi
-    done
+# make kill bot
+KILLSCRIPT="/tmp/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+PARENT=$1
+sleep 30m
+if [ "$PARENT" = "" ]; then
+  exit 1
 fi
-echo $PID > $TMP_DIR/natron-build-app.pid || exit 1
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+  kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
 
 #Assume that $1 is the branch to build, otherwise if empty use the NATRON_GIT_TAG in common.sh
 NATRON_BRANCH=$1
@@ -89,15 +93,21 @@ fi
 # Install natron
 cd $TMP_PATH || exit 1
 
+$KILLSCRIPT $PID &
+KILLBOT=$! 
+
 git clone $GIT_NATRON || exit 1
 cd Natron || exit 1
 git checkout $NATRON_BRANCH || exit 1
 git pull origin $NATRON_BRANCH
 git submodule update -i --recursive || exit 1
+
 if [ "$NATRON_BRANCH" = "workshop" ]; then
     # the snapshots are always built with the latest version of submodules
     git submodule foreach git pull origin master
 fi
+
+kill -9 $KILLBOT
 
 REL_GIT_VERSION=`git log|head -1|awk '{print $2}'`
 
@@ -207,6 +217,8 @@ mkdir -p $INSTALL_PATH/share/pixmaps || exit 1
 cp ../Gui/Resources/Images/natronIcon256_linux.png $INSTALL_PATH/share/pixmaps/ || exit 1
 cp ../Gui/Resources/Images/natronProjectIcon_linux.png $INSTALL_PATH/share/pixmaps/ || exit 1
 echo $NATRON_REL_V > $INSTALL_PATH/docs/natron/VERSION || exit 1
+
+rm -f $KILLSCRIPT
 
 echo "Done!"
 
