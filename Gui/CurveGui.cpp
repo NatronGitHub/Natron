@@ -74,9 +74,10 @@ CurveGui::~CurveGui()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 }
 
-std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1,
+std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(const double x1,
                                                        double* x2,
                                                        const KeyFrameSet & keys,
+                                                       const std::list<double>& keysWidgetCoords,
                                                        const double xminCurveWidgetCoord,
                                                        const double xmaxCurveWidgetCoord)
 {
@@ -150,12 +151,13 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(double x1,
         }
     } else {
         //we're between 2 keyframes,get the upper and lower
+        assert(keys.size() == keysWidgetCoords.size());
         KeyFrameSet::const_iterator upper = keys.end();
+        KeyFrameSet::const_iterator itKeys = keys.begin();
         double upperWidgetCoord = x1;
-        for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
-            upperWidgetCoord = _curveWidget->toWidgetCoordinates(it->getTime(),0).x();
-            if (upperWidgetCoord > x1) {
-                upper = it;
+        for (std::list<double>::const_iterator it = keysWidgetCoords.begin(); it !=keysWidgetCoords.end(); ++it, ++itKeys) {
+            if (*it > x1) {
+                upper = itKeys;
                 break;
             }
         }
@@ -264,6 +266,13 @@ CurveGui::drawCurve(int curveIndex,
             double xminCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keyframes.begin()->getTime(),0).x();
             double xmaxCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keyframes.rbegin()->getTime(),0).x();
             std::pair<KeyFrame,bool> isX1AKey = std::make_pair(KeyFrame(), false);
+            
+            std::list<double> keysWidgetCoords;
+            for (KeyFrameSet::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
+                double widgetCoord = _curveWidget->toWidgetCoordinates(it->getTime(),0).x();
+                keysWidgetCoords.push_back(widgetCoord);
+            }
+            
             while (x1 < (widgetWidth - 1)) {
                 double x,y;
                 if (!isX1AKey.second) {
@@ -275,7 +284,7 @@ CurveGui::drawCurve(int curveIndex,
                 }
                 vertices.push_back( (float)x );
                 vertices.push_back( (float)y );
-                isX1AKey = nextPointForSegment(x1,&x2,keyframes, xminCurveWidgetCoord, xmaxCurveWidgetCoord);
+                isX1AKey = nextPointForSegment(x1,&x2,keyframes, keysWidgetCoords, xminCurveWidgetCoord, xmaxCurveWidgetCoord);
                 x1 = x2;
             }
             //also add the last point

@@ -144,9 +144,10 @@ Q_SIGNALS:
 
 private:
 
-    std::pair<KeyFrame,bool> nextPointForSegment(double x1,
+    std::pair<KeyFrame,bool> nextPointForSegment(const double x1,
                                                  double* x2,
                                                  const KeyFrameSet & keyframes,
+                                                 const std::list<double>& keysWidgetCoords,
                                                  const double xminCurveWidgetCoord,
                                                  const double xmaxCurveWidgetCoord);
     
