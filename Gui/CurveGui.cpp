@@ -232,6 +232,48 @@ CurveGui::getInternalCurve() const
     return _internalCurve;
 }
 
+static void drawLineStrip(const std::vector<float>& vertices,
+                          const QPointF& btmLeft,
+                          const QPointF& topRight)
+{
+    glBegin(GL_LINE_STRIP);
+    
+    bool prevVisible = true;
+    bool prevTooAbove = false;
+    bool prevTooBelow = false;
+    for (int i = 0; i < (int)vertices.size(); i += 2) {
+        
+        const bool isAbove = vertices[i+1] > topRight.y();
+        const bool isBelow = vertices[i+1] < btmLeft.y();
+        
+        const bool vertexVisible = vertices[i] >= btmLeft.x() && vertices[i] <= topRight.x() && !isAbove && !isBelow;
+        
+        const bool previousWasVisible = prevVisible;
+        const bool previousWasTooAbove = prevTooAbove;
+        const bool previousWasTooBelow = prevTooBelow;
+        
+        prevVisible = vertexVisible;
+        prevTooBelow = isBelow;
+        prevTooAbove = isAbove;
+        
+        if (!previousWasVisible && !vertexVisible) {
+            continue;
+        }
+        if (!previousWasVisible && i >= 2) {
+            //At least draw the previous point otherwise this will draw a line between the last previous point and this point
+            //Draw them 10000 units further so that we're sure we don't see half of a pixel of a line remaining
+            if (previousWasTooAbove) {
+                glVertex2f(vertices[i - 2], vertices[i -1] + 100000);
+            } else if (previousWasTooBelow) {
+                glVertex2f(vertices[i - 2], vertices[i -1] - 100000);
+            }
+        }
+        glVertex2f(vertices[i],vertices[i + 1]);
+    }
+    
+    glEnd();
+}
+
 void
 CurveGui::drawCurve(int curveIndex,
                     int curvesCount)
@@ -367,39 +409,11 @@ CurveGui::drawCurve(int curveIndex,
         glLineWidth(1.5);
         glCheckError();
         if (hasDrawnExpr) {
-            glBegin(GL_LINE_STRIP);
-            bool prevVisible = true;
-            for (int i = 0; i < (int)exprVertices.size(); i += 2) {
-                bool vertexVisible = exprVertices[i] >= btmLeft.x() && exprVertices[i] <= topRight.x() &&
-                exprVertices[i+1] >= btmLeft.y() && exprVertices[i+1] <= topRight.y();
-                bool previousWasVisible = prevVisible;
-                prevVisible = vertexVisible;
-                if (!previousWasVisible && !vertexVisible) {
-                    continue;
-                }
-                glVertex2f(exprVertices[i],exprVertices[i + 1]);
-            }
-            glEnd();
-            
-            
+            drawLineStrip(exprVertices, btmLeft, topRight);
             glLineStipple(2, 0xAAAA);
             glEnable(GL_LINE_STIPPLE);
         }
-        glBegin(GL_LINE_STRIP);
-        
-        bool prevVisible = true;
-        for (int i = 0; i < (int)vertices.size(); i += 2) {
-            bool vertexVisible = vertices[i] >= btmLeft.x() && vertices[i] <= topRight.x() &&
-            vertices[i+1] >= btmLeft.y() && vertices[i+1] <= topRight.y();
-            bool previousWasVisible = prevVisible;
-            prevVisible = vertexVisible;
-            if (!previousWasVisible && !vertexVisible) {
-                continue;
-            }
-            glVertex2f(vertices[i],vertices[i + 1]);
-        }
-     
-        glEnd();
+        drawLineStrip(vertices, btmLeft, topRight);
         if (hasDrawnExpr) {
             glDisable(GL_LINE_STIPPLE);
         }
