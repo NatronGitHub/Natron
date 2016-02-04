@@ -5719,9 +5719,10 @@ Node::notifyRenderBeingAborted()
     ///but the main-thread is waiting for the render thread to abort
     ///cancel the dequeuing
     QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-    assert(_imp->nodeIsDequeuing);
-    _imp->nodeIsDequeuing = false;
-    _imp->nodeIsDequeuingCond.wakeOne();
+    if (_imp->nodeIsDequeuing) {
+        _imp->nodeIsDequeuing = false;
+        _imp->nodeIsDequeuingCond.wakeOne();
+    }
 //    }
     
 }
