@@ -190,7 +190,6 @@ KnobGui::isSecretRecursive() const
     KnobGroup* parentIsGroup = dynamic_cast<KnobGroup*>(parentKnob.get());
     while (showit && parentKnob && parentIsGroup) {
         KnobGuiGroup* parentGui = dynamic_cast<KnobGuiGroup*>( _imp->container->getKnobGui(parentKnob) );
-        assert(parentGui);
         // check for secretness and visibility of the group
         if ( parentKnob->getIsSecret() || ( parentGui && !parentGui->isChecked() ) ) {
             showit = false; // one of the including groups is folder, so this item is hidden

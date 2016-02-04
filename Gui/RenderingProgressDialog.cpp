@@ -409,27 +409,30 @@ GeneralProgressDialog::GeneralProgressDialog(const QString& title, bool canCance
     _imp->timerLabel = new Label(_imp->progressContainer);
     _imp->progressLayout->addWidget(_imp->timerLabel);
     
-    _imp->progressBar = new QProgressBar(_imp->progressContainer);
+    _imp->buttonsContainer = new QWidget(this);
+    _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsContainer);
+    _imp->mainLayout->addWidget(_imp->buttonsContainer);
+
+    
+    _imp->progressBar = new QProgressBar(_imp->buttonsContainer);
     _imp->progressBar->setRange(0, 100);
     _imp->progressBar->setValue(0);
-    _imp->progressLayout->addWidget(_imp->progressBar);
+    _imp->buttonsLayout->addWidget(_imp->progressBar);
     
     if (canCancel) {
         
-        _imp->buttonsContainer = new QWidget(this);
-        _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsContainer);
-        _imp->mainLayout->addWidget(_imp->buttonsContainer);
-        
-        _imp->buttonsLayout->addStretch();
         _imp->cancelButton = new Button(QIcon(), tr("Cancel"), this);
         QObject::connect(_imp->cancelButton, SIGNAL(clicked(bool)), this, SLOT(onCancelRequested()));
         _imp->buttonsLayout->addWidget(_imp->cancelButton);
-        _imp->buttonsLayout->addStretch();
     }
+    
+    _imp->mainLayout->addStretch();
     
     onRefreshLabelTimeout();
     _imp->refreshLabelTimer.start(NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS);
     QObject::connect(&_imp->refreshLabelTimer, SIGNAL(timeout()), this, SLOT(onRefreshLabelTimeout()));
+    
+    setMinimumWidth(TO_DPIX(400));
 
 }
 
