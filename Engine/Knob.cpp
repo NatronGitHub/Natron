@@ -650,7 +650,7 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(dimension);
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -783,7 +783,7 @@ KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason, double tim
     
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(dimension);
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -855,7 +855,7 @@ KnobHelper::cloneCurve(int dimension,const Curve& curve)
     assert(dimension >= 0 && dimension < (int)_imp->curves.size());
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> thisCurve;
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(dimension);
     if (!useGuiCurve) {
         thisCurve = _imp->curves[dimension];
     } else {
@@ -900,7 +900,7 @@ KnobHelper::setInterpolationAtTime(CurveChangeReason reason,int dimension,double
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(dimension);
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -946,7 +946,7 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,int dimension,double 
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(dimension);
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -994,7 +994,7 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,int dimension,double t
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(dimension);
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -1049,7 +1049,7 @@ KnobHelper::removeAnimation(int dimension,
     
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(dimension);
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -2743,7 +2743,7 @@ KnobHelper::deleteAnimationConditional(double time,int dimension,ValueChangedRea
     
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(dimension);
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
