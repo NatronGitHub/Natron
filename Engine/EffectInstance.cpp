@@ -665,7 +665,6 @@ EffectInstance::getImage(int inputNb,
      */
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     RoIMap inputsRoI;
-    RectD rod;
     bool isIdentity = false;
     EffectInstPtr identityInput;
     double inputIdentityTime = 0.;
@@ -684,19 +683,25 @@ EffectInstance::getImage(int inputNb,
     //    in the kOfxActionInstanceChanged and kOfxActionEndInstanceChanged actions with a kOfxPropChangeReason of kOfxChangeUserEdited
     RectD roi;
     bool roiWasInRequestPass = false;
-    
+    bool isAnalysisPass = false;
     ///Try to find in the input images thread local storage if we already pre-computed the image
     EffectInstance::InputImagesMap inputImagesThreadLocal;
     
-    if (!tls || !tls->currentRenderArgs.validArgs || tls->frameArgs.empty()) {
-        if (!retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &identityInput, &duringPaintStroke, &rod, &inputsRoI, &optionalBounds)) {
+    if (!tls || (!tls->currentRenderArgs.validArgs && tls->frameArgs.empty())) {
+        /*
+         This is either a huge bug or an unknown thread that called clipGetImage from the OpenFX plug-in.
+         Make-up some reasonable arguments
+         */
+        RectD thisRod;
+        if (!retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &identityInput, &duringPaintStroke, &thisRod, &inputsRoI, &optionalBounds)) {
             return ImagePtr();
         }
     } else {
-        const RenderArgs& renderArgs = tls->currentRenderArgs;
-        const boost::shared_ptr<ParallelRenderArgs>& frameRenderArgs = tls->frameArgs.back();
+        
+        assert(tls->currentRenderArgs.validArgs || !tls->frameArgs.empty());
         
         if (inputEffect) {
+            //When analysing we do not compute a request pass so we do not enter this condition
             boost::shared_ptr<ParallelRenderArgs> inputFrameArgs = inputEffect->getParallelRenderArgsTLS();
             const FrameViewRequest* request = 0;
             if (inputFrameArgs && inputFrameArgs->request) {
@@ -707,22 +712,41 @@ EffectInstance::getImage(int inputNb,
                 roi = request->finalData.finalRoi;
             }
         }
-        if (!roiWasInRequestPass) {
-            inputsRoI = renderArgs.regionOfInterestResults;
-        }
-        rod = renderArgs.rod;
-        isIdentity = renderArgs.isIdentity;
-        inputIdentityTime = renderArgs.identityTime;
-        identityInput = renderArgs.identityInput;
-        inputImagesThreadLocal = renderArgs.inputImages;
         
-        nodeHash = frameRenderArgs->nodeHash;
-        duringPaintStroke = frameRenderArgs->isDuringPaintStrokeCreation;
-    }
+        if (!tls->frameArgs.empty()) {
+            const boost::shared_ptr<ParallelRenderArgs>& frameRenderArgs = tls->frameArgs.back();
+            nodeHash = frameRenderArgs->nodeHash;
+            duringPaintStroke = frameRenderArgs->isDuringPaintStrokeCreation;
+            isAnalysisPass = frameRenderArgs->isAnalysis;
+        } else {
+            //This is a bug, when entering here, frameArgs TLS should always have been set, except for unknown threads.
+            nodeHash = getHash();
+            duringPaintStroke = false;
+        }
+        if (tls->currentRenderArgs.validArgs) {
+            //This will only be valid for render pass, not analysis
+            const RenderArgs& renderArgs = tls->currentRenderArgs;
+            if (!roiWasInRequestPass) {
+                inputsRoI = renderArgs.regionOfInterestResults;
+            }
+            isIdentity = renderArgs.isIdentity;
+            inputIdentityTime = renderArgs.identityTime;
+            identityInput = renderArgs.identityInput;
+            inputImagesThreadLocal = renderArgs.inputImages;
 
+        }
+        
+      
+    }
+  
+    RectD inputRoD;
+    bool inputRoDSet = false;
     if (optionalBoundsParam) {
+        //Set the RoI from the parameters given to clipGetImage
         roi = optionalBounds;
     } else if (!roiWasInRequestPass) {
+        //We did not have a request pass, use if possible the result of getRegionsOfInterest found in the TLS
+        //If not, fallback on input RoD
         EffectInstPtr inputToFind;
         if (useRotoInput) {
             if (getNode()->getRotoContext()) {
@@ -740,11 +764,22 @@ EffectInstance::getImage(int inputNb,
             roi = found->second;
         } else {
             ///Oops, we didn't find the roi in the thread-storage... use  the RoD instead...
-            if (inputEffect) {
+            if (inputEffect && !isAnalysisPass) {
                 qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "[Bug] RoI not found in TLS...falling back on RoD when calling getImage() on" <<
                 inputEffect->getScriptName_mt_safe().c_str();
             }
-            roi = rod;
+            
+            
+            //We are either in analysis or in an unknown thread
+            //do not set identity flags, request for RoI the full RoD of the input
+            if (inputEffect) {
+                Natron::StatusEnum stat = inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
+                if (stat != eStatusFailed) {
+                    inputRoDSet = true;
+                }
+            }
+
+            roi = inputRoD;
         }
     }
 
@@ -756,8 +791,8 @@ EffectInstance::getImage(int inputNb,
     if (isIdentity) {
         assert(identityInput.get() != this);
         ///If the effect is an identity but it didn't ask for the effect's image of which it is identity
-        ///return a null image
-        if (identityInput != inputEffect) {
+        ///return a null image (only when non analysis)
+        if (identityInput != inputEffect && !isAnalysisPass) {
             return ImagePtr();
         }
     }
@@ -901,7 +936,12 @@ EffectInstance::getImage(int inputNb,
         inputImg->upscaleMipMap( inputImg->getBounds(), inputImgMipMapLevel, 0, rescaledImg.get() );
         if (roiPixel) {
             RectD canonicalPixelRoI;
-            pixelRoI.toCanonical(inputImgMipMapLevel, par, rod, &canonicalPixelRoI);
+            
+            if (!inputRoDSet) {
+                (void)inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
+            }
+            
+            pixelRoI.toCanonical(inputImgMipMapLevel, par, inputRoD, &canonicalPixelRoI);
             canonicalPixelRoI.toPixelEnclosing(0, par, roiPixel);
             pixelRoI = *roiPixel;
         }
