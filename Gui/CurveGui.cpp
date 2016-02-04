@@ -74,19 +74,23 @@ CurveGui::~CurveGui()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 }
 
-std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(const double x1,
-                                                       double* x2,
-                                                       const KeyFrameSet & keys,
-                                                       const std::list<double>& keysWidgetCoords,
-                                                       const double xminCurveWidgetCoord,
-                                                       const double xmaxCurveWidgetCoord)
+void CurveGui::nextPointForSegment(const double x1,
+                                   const KeyFrameSet & keys,
+                                   const std::list<double>& keysWidgetCoords,
+                                   const std::pair<double,double>& curveYRange,
+                                   const double xminCurveWidgetCoord,
+                                   const double xmaxCurveWidgetCoord,
+                                   KeyFrameSet::const_iterator* lastUpperIt,
+                                   std::list<double>::const_iterator* lastUpperItCoords,
+                                   double* x2,
+                                   KeyFrame* x1Key,
+                                   bool* isx1Key)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( !keys.empty() );
     
-    std::pair<double,double> curveYRange = getCurveYRange();
-
+    
     if (x1 < xminCurveWidgetCoord) {
         if ( ( curveYRange.first <= kOfxFlagInfiniteMin) && ( curveYRange.second >= kOfxFlagInfiniteMax) ) {
             *x2 = xminCurveWidgetCoord;
@@ -155,16 +159,31 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(const double x1,
         KeyFrameSet::const_iterator upper = keys.end();
         KeyFrameSet::const_iterator itKeys = keys.begin();
         double upperWidgetCoord = x1;
-        for (std::list<double>::const_iterator it = keysWidgetCoords.begin(); it !=keysWidgetCoords.end(); ++it, ++itKeys) {
+        
+        std::list<double>::const_iterator it;
+        if (*lastUpperItCoords != keysWidgetCoords.end()) {
+            assert(*lastUpperIt != keys.end());
+            itKeys = *lastUpperIt;
+            it = *lastUpperItCoords;
+        } else {
+            itKeys = keys.begin();
+            it = keysWidgetCoords.begin();
+        }
+        for (; it !=keysWidgetCoords.end(); ++it, ++itKeys) {
             if (*it > x1) {
                 upperWidgetCoord = *it;
                 upper = itKeys;
+                *lastUpperItCoords = it;
+                *lastUpperIt = upper;
                 break;
             }
         }
         assert( upper != keys.end() && upper != keys.begin() );
         if (upper == keys.end() || upper == keys.begin()) {
-            return std::make_pair(KeyFrame(0.,0.),false);
+            *lastUpperItCoords = keysWidgetCoords.end();
+            *lastUpperIt = keys.end();
+            *isx1Key = false;
+            return;
         }
         KeyFrameSet::const_iterator lower = upper;
         --lower;
@@ -185,14 +204,15 @@ std::pair<KeyFrame,bool> CurveGui::nextPointForSegment(const double x1,
 
         if (upperWidgetCoord < x1 + delta_x) {
             *x2 = upperWidgetCoord;
-
-            return std::make_pair(*upper,true);
+            *x1Key = *upper;
+            *isx1Key = true;
+            return;
         } else {
             *x2 = x1 + delta_x;
         }
     }
+    *isx1Key = false;
 
-    return std::make_pair(KeyFrame(0.,0.),false);
 } // nextPointForSegment
 
 std::pair<double,double>
@@ -266,7 +286,6 @@ CurveGui::drawCurve(int curveIndex,
         try {
             double xminCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keyframes.begin()->getTime(),0).x();
             double xmaxCurveWidgetCoord = _curveWidget->toWidgetCoordinates(keyframes.rbegin()->getTime(),0).x();
-            std::pair<KeyFrame,bool> isX1AKey = std::make_pair(KeyFrame(), false);
             
             std::list<double> keysWidgetCoords;
             for (KeyFrameSet::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
@@ -274,18 +293,25 @@ CurveGui::drawCurve(int curveIndex,
                 keysWidgetCoords.push_back(widgetCoord);
             }
             
+            std::pair<double,double> curveYRange = getCurveYRange();
+            
+            bool isX1AKey = false;
+            KeyFrame x1Key;
+            std::list<double>::const_iterator lastUpperItCoords = keysWidgetCoords.end();
+            KeyFrameSet::const_iterator lastUpperIt = keyframes.end();
+            
             while (x1 < (widgetWidth - 1)) {
                 double x,y;
-                if (!isX1AKey.second) {
+                if (!isX1AKey) {
                     x = _curveWidget->toZoomCoordinates(x1,0).x();
                     y = evaluate(false,x);
                 } else {
-                    x = isX1AKey.first.getTime();
-                    y = isX1AKey.first.getValue();
+                    x = x1Key.getTime();
+                    y = x1Key.getValue();
                 }
                 vertices.push_back( (float)x );
                 vertices.push_back( (float)y );
-                isX1AKey = nextPointForSegment(x1,&x2,keyframes, keysWidgetCoords, xminCurveWidgetCoord, xmaxCurveWidgetCoord);
+                nextPointForSegment(x1, keyframes, keysWidgetCoords,curveYRange, xminCurveWidgetCoord, xmaxCurveWidgetCoord, &lastUpperIt, &lastUpperItCoords, &x2, &x1Key, &isX1AKey);
                 x1 = x2;
             }
             //also add the last point

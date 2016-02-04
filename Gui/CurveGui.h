@@ -143,13 +143,18 @@ Q_SIGNALS:
     
 
 private:
-
-    std::pair<KeyFrame,bool> nextPointForSegment(const double x1,
-                                                 double* x2,
-                                                 const KeyFrameSet & keyframes,
-                                                 const std::list<double>& keysWidgetCoords,
-                                                 const double xminCurveWidgetCoord,
-                                                 const double xmaxCurveWidgetCoord);
+    
+    void nextPointForSegment(const double x1,
+                             const KeyFrameSet & keyframes,
+                             const std::list<double>& keysWidgetCoords,
+                             const std::pair<double,double>& curveYRange,
+                             const double xminCurveWidgetCoord,
+                             const double xmaxCurveWidgetCoord,
+                             KeyFrameSet::const_iterator* lastUpperIt,
+                             std::list<double>::const_iterator* lastUpperItCoords,
+                             double* x2,
+                             KeyFrame* key,
+                             bool* isKey );
     
 protected:
     
