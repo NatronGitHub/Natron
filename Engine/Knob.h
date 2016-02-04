@@ -1434,6 +1434,7 @@ protected:
     virtual boost::shared_ptr<Curve> getGuiCurve(int dimension,bool byPassMaster = false) const OVERRIDE FINAL;
     
     void setGuiCurveHasChanged(int dimension,bool changed);
+    bool hasGuiCurveChanged(int dimension) const;
 
     void checkAnimationLevel(int dimension);
     

@@ -716,7 +716,12 @@ KnobHelper::moveValueAtTime(CurveChangeReason reason, double time,int dimension,
     
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui;
+    /*
+     We write on the "GUI" curve if the engine is either:
+     - using it
+     - is still marked as different from the "internal" curve
+     */
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(dimension);
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -1184,8 +1189,17 @@ KnobHelper::getGuiCurve(int dimension,bool byPassMaster) const
 void
 KnobHelper::setGuiCurveHasChanged(int dimension,bool changed)
 {
+    assert(dimension < (int)_imp->mustCloneGuiCurves.size());
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
     _imp->mustCloneGuiCurves[dimension] = changed;
+}
+
+bool
+KnobHelper::hasGuiCurveChanged(int dimension) const
+{
+    assert(dimension < (int)_imp->mustCloneGuiCurves.size());
+    QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
+    return _imp->mustCloneGuiCurves[dimension];
 }
 
 boost::shared_ptr<Curve> KnobHelper::getCurve(int dimension,bool byPassMaster) const
