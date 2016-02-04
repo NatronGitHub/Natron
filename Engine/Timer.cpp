@@ -62,52 +62,64 @@ gettimeofday (struct timeval *tv,
 
 
 // prints time value as seconds, minutes hours or days
-QString Timer::printAsTime(double timeInSeconds, bool clampToSecondsToInt)
+QString Timer::printAsTime(const double timeInSeconds, const bool clampToSecondsToInt)
 {
-    const U64 min = 60;
-    const U64 hour = 60 * min;
-    const U64 day = 24 * hour;
-    
-    if (timeInSeconds >= day) {
+    const int min = 60;
+    const int hour = 60 * min;
+    const int day = 24 * hour;
+    QString ret;
+    double timeRemain = timeInSeconds;
+    if (timeRemain >= day) {
         double daysRemaining = timeInSeconds / day;
         double floorDays = std::floor(daysRemaining);
         daysRemaining -= floorDays;
-        QString ret =  QObject::tr("%1 day(s)").arg(QString::number(floorDays));
         if (daysRemaining > 0) {
-            ret.append(" ");
-            ret.append(printAsTime(daysRemaining * day, clampToSecondsToInt));
+            ret.append((floorDays > 1 ? tr("%1 days") : tr("%1 day")).arg(QString::number(floorDays)));
+            timeRemain -= floorDays * day;
         }
-        return ret;
+        if (timeInSeconds >= 3 * day) {
+            return ret;
+        }
     }
-    if (timeInSeconds >= hour) {
+    if (timeRemain >= hour) {
+        if (timeInSeconds >= day) {
+            ret.append(' ');
+        }
         double hourRemaining = timeInSeconds / hour;
         double floorHour = std::floor(hourRemaining);
         hourRemaining -= floorHour;
-        QString ret =  QObject::tr("%1 hour(s)").arg(QString::number(floorHour));
         if (hourRemaining > 0) {
-            ret.append(" ");
-            ret.append(printAsTime(hourRemaining * hour, clampToSecondsToInt));
+            ret.append(((floorHour > 1) ? tr("%1 hours") : tr("%1 hour")).arg(QString::number(floorHour)));
+            timeRemain -= floorHour * hour;
         }
-        return ret;
+        if (timeInSeconds >= 3 * hour) {
+            return ret;
+        }
     }
-    if (timeInSeconds >= min) {
+    if (timeRemain >= min) {
+        if (timeInSeconds >= hour) {
+            ret.append(' ');
+        }
         double minRemaining = timeInSeconds / min;
         double floorMin = std::floor(minRemaining);
-        QString ret =  QObject::tr("%1 min(s)").arg(QString::number(floorMin));
         minRemaining -= floorMin;
         if (minRemaining > 0) {
-            ret.append(" ");
-            ret.append(printAsTime(minRemaining  * min, clampToSecondsToInt));
+            ret.append(((floorMin > 1) ? tr("%1 minutes") : tr("%1 minute")).arg(QString::number(floorMin)));
+            timeRemain -= floorMin * min;
         }
-        return ret;
+        if (timeInSeconds >= 3 * min) {
+            return ret;
+        }
+    }
+    if (timeInSeconds >= min) {
+        ret.append(' ');
     }
     if (clampToSecondsToInt) {
-        timeInSeconds = std::floor(timeInSeconds + 0.5);
-        return QObject::tr("%1 sec(s)").arg(QString::number((int)timeInSeconds));
+        ret.append((timeRemain > 1 ? tr("%1 seconds") : tr("%1 second")).arg(QString::number((int)timeRemain)));
     } else {
-        return QObject::tr("%1 sec(s)").arg(QString::number(timeInSeconds, 'f', 2));
+        ret.append((timeRemain > 1 ? tr("%1 seconds") : tr("%1 second")).arg(QString::number(timeRemain, 'f', 2)));
     }
-    
+    return ret;
 }
 
 Timer::Timer ()

@@ -347,7 +347,6 @@ struct GeneralProgressDialogPrivate
     QHBoxLayout* progressLayout;
     QProgressBar* progressBar;
     Label* timeRemainingLabel;
-    Label* timerLabel;
     bool timerLabelSet;
     
     QWidget* buttonsContainer;
@@ -370,7 +369,6 @@ struct GeneralProgressDialogPrivate
     , progressLayout(0)
     , progressBar(0)
     , timeRemainingLabel(0)
-    , timerLabel(0)
     , timerLabelSet(false)
     , buttonsContainer(0)
     , buttonsLayout(0)
@@ -402,12 +400,9 @@ GeneralProgressDialog::GeneralProgressDialog(const QString& title, bool canCance
     _imp->progressLayout->setContentsMargins(0, 0, 0, 0);
     _imp->mainLayout->addWidget(_imp->progressContainer);
 
-    _imp->timeRemainingLabel = new Label(tr("Time to go: "),_imp->progressContainer);
+    _imp->timeRemainingLabel = new Label(tr("Time to go:") + ' ' + tr("Estimating..."),_imp->progressContainer);
     _imp->progressLayout->addWidget(_imp->timeRemainingLabel);
     
-    
-    _imp->timerLabel = new Label(_imp->progressContainer);
-    _imp->progressLayout->addWidget(_imp->timerLabel);
     
     _imp->buttonsContainer = new QWidget(this);
     _imp->buttonsLayout = new QHBoxLayout(_imp->buttonsContainer);
@@ -454,14 +449,14 @@ GeneralProgressDialog::wasCanceled() const
 void
 GeneralProgressDialog::onRefreshLabelTimeout()
 {
-    QString timeStr;
+    QString timeStr = tr("Time to go:") + ' ';
     if (_imp->timeRemaining == -1) {
-        timeStr = tr("Estimating...");
+        timeStr += tr("Estimating...");
     } else {
-        timeStr = Timer::printAsTime(_imp->timeRemaining, true);
+        timeStr += Timer::printAsTime(_imp->timeRemaining, true) + '.';
         _imp->timerLabelSet = true;
     }
-    _imp->timerLabel->setText(timeStr);
+    _imp->timeRemainingLabel->setText(timeStr);
 }
 
 void
@@ -477,7 +472,9 @@ GeneralProgressDialog::updateProgress(double p)
     if (!isVisible() && !wasCanceled()) {
         ///Show the dialog if the total estimated time is gt NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS
         double totalTime = p == 0 ? 0 : timeElapsedSecs * 1. / p;
-        if (_imp->timerLabelSet && totalTime * 1000 > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS) {
+        //also,  don't show if it was not shown yet but there are less than NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS remaining
+        if (_imp->timerLabelSet && std::min(_imp->timeRemaining, totalTime) * 1000 > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS) {
+            printf("timeRemaining=%g\n", _imp->timeRemaining);
             show();
         }
     }
