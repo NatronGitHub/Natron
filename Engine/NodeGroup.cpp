@@ -1432,7 +1432,11 @@ NodeGroup::getInputsOutputs(NodesList* nodes, bool useGuiConnexions) const
     if (!useGuiConnexions) {
         for (U32 i = 0; i < _imp->inputs.size(); ++i) {
             NodesWList outputs;
-            _imp->inputs[i].lock()->getOutputs_mt_safe(outputs);
+            NodePtr input = _imp->inputs[i].lock();
+            if (!input) {
+                continue;
+            }
+            input->getOutputs_mt_safe(outputs);
             for (NodesWList::iterator it = outputs.begin(); it!=outputs.end(); ++it) {
                 NodePtr node = it->lock();
                 if (node) {
@@ -1443,7 +1447,11 @@ NodeGroup::getInputsOutputs(NodesList* nodes, bool useGuiConnexions) const
     } else {
         for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
             NodesWList outputs;
-            _imp->guiInputs[i].lock()->getOutputs_mt_safe(outputs);
+            NodePtr input = _imp->guiInputs[i].lock();
+            if (!input) {
+                continue;
+            }
+            input->getOutputs_mt_safe(outputs);
             for (NodesWList::iterator it = outputs.begin(); it!=outputs.end(); ++it) {
                 NodePtr node = it->lock();
                 if (node) {
@@ -1460,11 +1468,19 @@ NodeGroup::getInputs(std::vector<NodePtr >* inputs,bool useGuiConnexions) const
     QMutexLocker k(&_imp->nodesLock);
     if (!useGuiConnexions) {
         for (U32 i = 0; i < _imp->inputs.size(); ++i) {
-            inputs->push_back(_imp->inputs[i].lock());
+            NodePtr input = _imp->inputs[i].lock();
+            if (!input) {
+                continue;
+            }
+            inputs->push_back(input);
         }
     } else {
         for (U32 i = 0; i < _imp->guiInputs.size(); ++i) {
-            inputs->push_back(_imp->guiInputs[i].lock());
+            NodePtr input = _imp->guiInputs[i].lock();
+            if (!input) {
+                continue;
+            }
+            inputs->push_back(input);
         }
     }
 }
