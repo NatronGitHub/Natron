@@ -118,7 +118,12 @@ KnobGuiBool::createWidget(QHBoxLayout* layout)
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_checkBox,0);
 
-    layout->addWidget(_checkBox);
+    QWidget *checkBoxContainer = new QWidget();
+    QVBoxLayout *checkBoxLayout = new QVBoxLayout(checkBoxContainer);
+    checkBoxLayout->addStretch();
+    checkBoxLayout->addWidget(_checkBox);
+
+    layout->addWidget(checkBoxContainer);
 }
 
 KnobGuiBool::~KnobGuiBool()

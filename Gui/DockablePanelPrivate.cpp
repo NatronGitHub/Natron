@@ -479,6 +479,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             fieldLayout = new QHBoxLayout(fieldContainer);
             fieldLayout->setContentsMargins(TO_DPIX(3),0,0,TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS));
             fieldLayout->setSpacing(TO_DPIY(2));
+            //fieldLayout->setAlignment(Qt::AlignLeft);
         } else {
             ///otherwise re-use the last row's widget and layout
             assert(lastRowWidget);
@@ -583,7 +584,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                 rowIndex = page->second.currentRow;
             }
             
-            fieldContainer->layout()->setAlignment(Qt::AlignLeft);
+
             
             
             if (!label || !ret->isLabelVisible() || label->text().isEmpty()) {

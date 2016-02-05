@@ -32,6 +32,7 @@
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/GuiDefines.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/ClickableLabel.h"
 
 
@@ -162,7 +163,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
     _imp->isOnNewLine = isOnNewLine;
     if (!isOnNewLine) {
         //layout->addStretch();
-        layout->addSpacing(15);
+        layout->addSpacing(TO_DPIX(15));
         if (label) {
             layout->addWidget(label);
         }
