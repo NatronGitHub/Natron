@@ -668,6 +668,8 @@ OfxImageEffectInstance::addParamsToTheirParents()
                 if (!parentIsGroup) {
                     std::cerr << getDescriptor().getPlugin()->getIdentifier() << ": Warning: attempting to set a parent which is not a group. (" << (*it)->getName() << ")" << std::endl;
                 } else {
+
+                    parentIsGroup->addKnob(associatedKnob);
                     
                     ///Add a separator in the group if needed
                     if (associatedKnob->isSeparatorActivated()) {
@@ -676,8 +678,6 @@ OfxImageEffectInstance::addParamsToTheirParents()
                         sep->setName((*it)->getName() + "_separator");
                         parentIsGroup->addKnob(sep);
                     }
-                    
-                    parentIsGroup->addKnob(associatedKnob);
                 }
             }
         }
@@ -698,15 +698,14 @@ OfxImageEffectInstance::addParamsToTheirParents()
                 continue;
             }
             if (childKnob && !childKnob->getParentKnob()) {
-                
+
+                page->addKnob(childKnob);
                 if (childKnob->isSeparatorActivated()) {
                     boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>( effect.get(),"");
                     assert(sep);
                     sep->setName(childKnob->getName() + "_separator");
                     page->addKnob(sep);
                 }
-                page->addKnob(childKnob);
-     
             }
 
         }
