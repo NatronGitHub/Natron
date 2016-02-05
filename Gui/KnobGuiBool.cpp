@@ -120,9 +120,10 @@ KnobGuiBool::createWidget(QHBoxLayout* layout)
 
     QWidget *checkBoxContainer = new QWidget();
     QVBoxLayout *checkBoxLayout = new QVBoxLayout(checkBoxContainer);
+    checkBoxLayout->setContentsMargins(0, 0, 0, 0);
     checkBoxLayout->addStretch();
     checkBoxLayout->addWidget(_checkBox);
-
+    checkBoxLayout->addStretch();
     layout->addWidget(checkBoxContainer);
 }
 
