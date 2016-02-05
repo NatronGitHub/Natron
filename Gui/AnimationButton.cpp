@@ -118,8 +118,12 @@ AnimationButton::mouseMoveEvent(QMouseEvent* e)
         } else {
             expr << effect->getApp()->getAppIDString() << ".";
         }
-        expr << effect->getNode()->getScriptName_mt_safe() << "." << _knob->getKnob()->getName()
-        << ".getValue(dimension)";
+        expr << effect->getNode()->getScriptName_mt_safe() << "." << _knob->getKnob()->getName();
+        expr << ".getValue(";
+        if (_knob->getKnob()->getDimension() > 1) {
+            expr << "dimension";
+        }
+        expr << ")";
 
         Qt::KeyboardModifiers modifiers = qApp->keyboardModifiers();
         bool useMult = modifiers.testFlag(Qt::ControlModifier);
