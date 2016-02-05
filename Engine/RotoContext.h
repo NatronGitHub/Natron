@@ -202,7 +202,6 @@ public:
     
    
     boost::shared_ptr<Image> renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
-                                                          const RectI& roi,
                                                           const ImageComponents& components,
                                                           const double time,
                                                           const int view,

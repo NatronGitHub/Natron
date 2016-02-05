@@ -684,6 +684,8 @@ EffectInstance::getImage(int inputNb,
     RectD roi;
     bool roiWasInRequestPass = false;
     bool isAnalysisPass = false;
+    RectD thisRod;
+
     ///Try to find in the input images thread local storage if we already pre-computed the image
     EffectInstance::InputImagesMap inputImagesThreadLocal;
     
@@ -692,7 +694,6 @@ EffectInstance::getImage(int inputNb,
          This is either a huge bug or an unknown thread that called clipGetImage from the OpenFX plug-in.
          Make-up some reasonable arguments
          */
-        RectD thisRod;
         if (!retrieveGetImageDataUponFailure(time, view, scale, optionalBoundsParam, &nodeHash, &isIdentity, &inputIdentityTime, &identityInput, &duringPaintStroke, &thisRod, &inputsRoI, &optionalBounds)) {
             return ImagePtr();
         }
@@ -733,6 +734,7 @@ EffectInstance::getImage(int inputNb,
             inputIdentityTime = renderArgs.identityTime;
             identityInput = renderArgs.identityInput;
             inputImagesThreadLocal = renderArgs.inputImages;
+            thisRod = renderArgs.rod;
 
         }
         
@@ -772,14 +774,19 @@ EffectInstance::getImage(int inputNb,
             
             //We are either in analysis or in an unknown thread
             //do not set identity flags, request for RoI the full RoD of the input
-            if (inputEffect) {
-                Natron::StatusEnum stat = inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
-                if (stat != eStatusFailed) {
-                    inputRoDSet = true;
+            if (useRotoInput) {
+                assert(!thisRod.isNull());
+                roi = thisRod;
+            } else {
+                if (inputEffect) {
+                    Natron::StatusEnum stat = inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
+                    if (stat != eStatusFailed) {
+                        inputRoDSet = true;
+                    }
                 }
+                
+                roi = inputRoD;
             }
-
-            roi = inputRoD;
         }
     }
 
@@ -824,9 +831,9 @@ EffectInstance::getImage(int inputNb,
         assert(attachedStroke);
         if (attachedStroke) {
             if (duringPaintStroke) {
-                inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, pixelRoI, par, requestComps, depth);
+                inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, par, requestComps, depth);
             } else {
-                inputImg = roto->renderMaskFromStroke(attachedStroke, pixelRoI, requestComps,
+                inputImg = roto->renderMaskFromStroke(attachedStroke, requestComps,
                                                       time, view, depth, mipMapLevel);
                 if ( roto->isDoingNeatRender() ) {
                     getApp()->updateStrokeImage(inputImg, 0, false);

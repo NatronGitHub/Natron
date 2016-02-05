@@ -444,7 +444,6 @@ public:
     void clearLastPaintStrokeRoD();
     void getLastPaintStrokePoints(double time,std::list<std::list<std::pair<Point,double> > >* strokes, int* strokeIndex) const;
     boost::shared_ptr<Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
-                                                                const RectI& roi,
                                                                 double par,
                                                                 const ImageComponents& components,
                                                                 ImageBitDepthEnum depth) const;

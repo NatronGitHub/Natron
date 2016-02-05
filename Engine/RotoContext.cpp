@@ -2623,7 +2623,6 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
 
 boost::shared_ptr<Image>
 RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
-                                  const RectI& /*roi*/,
                                   const ImageComponents& components,
                                   const double time,
                                   const int view,

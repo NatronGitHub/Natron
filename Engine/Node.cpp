@@ -1069,7 +1069,6 @@ Node::getLastPaintStrokePoints(double time,
 
 boost::shared_ptr<Image>
 Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
-                                 const RectI& /*roi*/,
                                  double par,
                                  const ImageComponents& components,
                                  ImageBitDepthEnum depth) const
