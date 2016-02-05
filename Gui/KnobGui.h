@@ -110,6 +110,7 @@ public:
 
     void createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
+                   QWidget* labelContainer,
                    ClickableLabel* label,
                    QHBoxLayout* layout,
                    bool isOnNewLine,

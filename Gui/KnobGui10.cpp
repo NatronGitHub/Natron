@@ -645,8 +645,8 @@ KnobGui::hide()
             _imp->field->show();
         }
     }
-    if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->hide();
+    if (_imp->labelContainer) {
+        _imp->labelContainer->hide();
     }
     
 }
@@ -677,8 +677,8 @@ KnobGui::show(int /*index*/)
         }
     //}
     
-    if (_imp->descriptionLabel) {
-        _imp->descriptionLabel->show();
+    if (_imp->labelContainer) {
+        _imp->labelContainer->show();
     }
  
 }

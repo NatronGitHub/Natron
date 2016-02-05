@@ -501,12 +501,22 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         } else {
             descriptionLabel = knob->getLabel();
         }
+        QWidget *labelContainer = 0;
         if (ret->isLabelVisible() && (isLabelKnob || !descriptionLabel.empty())) {
+            
+            labelContainer = new QWidget(page->second.tab);
+            QHBoxLayout *labelLayout = new QHBoxLayout(labelContainer);
+            labelLayout->setContentsMargins(TO_DPIX(3),0,0,TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS));
+            labelLayout->setSpacing(TO_DPIY(2));
+            
             label = new ClickableLabel("",page->second.tab);
             QString labelStr(descriptionLabel.c_str());
             labelStr += ":";
             label->setText_overload(labelStr );
             QObject::connect( label, SIGNAL( clicked(bool) ), ret, SIGNAL( labelClicked(bool) ) );
+            
+            labelLayout->addWidget(label);
+
         }
         
         /*
@@ -562,7 +572,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         }
         
         ///fill the fieldLayout with the widgets
-        ret->createGUI(layout,fieldContainer,label,fieldLayout,makeNewLine,knobsOnSameLine);
+        ret->createGUI(layout,fieldContainer, labelContainer, label,fieldLayout,makeNewLine,knobsOnSameLine);
         
         
         ret->setEnabledSlot();
@@ -591,12 +601,6 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                 layout->addWidget(fieldContainer,rowIndex,0, 1, 2);
             } else {
                 
-                QWidget *labelContainer = new QWidget(page->second.tab);
-                QHBoxLayout *labelLayout = new QHBoxLayout(labelContainer);
-                labelLayout->setContentsMargins(TO_DPIX(3),0,0,TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS));
-                labelLayout->setSpacing(TO_DPIY(2));
-                labelLayout->addWidget(label);
-
                 layout->addWidget(fieldContainer,rowIndex,1, 1, 1);
                 layout->addWidget(labelContainer, rowIndex, 0, 1, 1, Qt::AlignRight);
                 

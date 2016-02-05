@@ -117,6 +117,7 @@ struct KnobGuiPrivate
     std::vector< boost::weak_ptr< KnobI > > knobsOnSameLine;
     QGridLayout* containerLayout;
     QWidget* field;
+    QWidget* labelContainer;
     Natron::ClickableLabel* descriptionLabel;
     bool isOnNewLine;
     CustomParamInteract* customInteract;

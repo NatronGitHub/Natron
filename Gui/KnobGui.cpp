@@ -102,7 +102,7 @@ KnobGui::removeGui()
     
     if (_imp->knobsOnSameLine.empty()) {
         if (_imp->isOnNewLine) {
-            delete _imp->descriptionLabel;
+            delete _imp->labelContainer;
         }
         delete _imp->field;
     } else {
@@ -146,6 +146,7 @@ KnobGui::pushUndoCommand(QUndoCommand* cmd)
 void
 KnobGui::createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
+                   QWidget* labelContainer,
                    ClickableLabel* label,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
@@ -159,6 +160,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
         _imp->knobsOnSameLine.push_back(*it);
     }
     _imp->field = fieldContainer;
+    _imp->labelContainer = labelContainer;
     _imp->descriptionLabel = label;
     _imp->isOnNewLine = isOnNewLine;
     if (!isOnNewLine) {
