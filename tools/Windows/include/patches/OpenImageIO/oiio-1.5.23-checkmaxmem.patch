@@ -1,0 +1,18 @@
+diff --git a/src/libtexture/imagecache.cpp b/src/libtexture/imagecache.cpp
+index f750b5c..ddc0678 100644
+--- a/src/libtexture/imagecache.cpp
++++ b/src/libtexture/imagecache.cpp
+@@ -2093,6 +2093,13 @@ ImageCacheImpl::check_max_mem (ImageCachePerThreadInfo *thread_info)
+     // looking up the first entry in the tile cache.
+     if (m_tile_sweep_id.empty()) {
+         TileCache::iterator sweep = m_tilecache.begin();
++        if (sweep == m_tilecache.end()) {
++            // Maybe we do not own on the cache because
++            // add_tile_to_cache did not find the cache entry, and
++            // holds no lock (see comment in add_tile_to_cache).
++            // In this case just return.
++            return;
++        }
+         DASSERT (sweep != m_tilecache.end() &&
+                 "no way m_tilecache can be empty and use too much memory");
+         m_tile_sweep_id = (*sweep).first;
