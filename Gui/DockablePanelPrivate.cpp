@@ -504,10 +504,13 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         QWidget *labelContainer = 0;
         if (ret->isLabelVisible() && (isLabelKnob || !descriptionLabel.empty())) {
             
-            labelContainer = new QWidget(page->second.tab);
-            QHBoxLayout *labelLayout = new QHBoxLayout(labelContainer);
-            labelLayout->setContentsMargins(TO_DPIX(3),0,0,TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS));
-            labelLayout->setSpacing(TO_DPIY(2));
+            QHBoxLayout *labelLayout = 0;
+            if (makeNewLine) {
+                labelContainer = new QWidget(page->second.tab);
+                labelLayout = new QHBoxLayout(labelContainer);
+                labelLayout->setContentsMargins(TO_DPIX(3),0,0,TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS));
+                labelLayout->setSpacing(TO_DPIY(2));
+            }
             
             label = new ClickableLabel("",page->second.tab);
             QString labelStr(descriptionLabel.c_str());
@@ -515,7 +518,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             label->setText_overload(labelStr );
             QObject::connect( label, SIGNAL( clicked(bool) ), ret, SIGNAL( labelClicked(bool) ) );
             
-            labelLayout->addWidget(label);
+            if (makeNewLine) {
+                labelLayout->addWidget(label);
+            }
 
         }
         

@@ -167,7 +167,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
         //layout->addStretch();
         layout->addSpacing(TO_DPIX(15));
         if (label) {
-            layout->addWidget(_imp->labelContainer);
+            layout->addWidget(label);
         }
     }
 
