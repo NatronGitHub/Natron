@@ -108,8 +108,6 @@ struct KnobGuiPrivate
     int spacingBetweenItems;
     bool widgetCreated;
     DockablePanel*  container;
-    Natron::Menu* animationMenu;
-    AnimationButton* animationButton;
     QMenu* copyRightClickMenu;
     QHBoxLayout* fieldLayout; //< the layout containing the widgets of the knob
 
@@ -118,7 +116,7 @@ struct KnobGuiPrivate
     QGridLayout* containerLayout;
     QWidget* field;
     QWidget* labelContainer;
-    Natron::ClickableLabel* descriptionLabel;
+    KnobClickableLabel* descriptionLabel;
     bool isOnNewLine;
     CustomParamInteract* customInteract;
 

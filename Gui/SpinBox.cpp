@@ -891,6 +891,81 @@ SpinBox::setUseLineColor(bool use, const QColor& color)
     update();
 }
 
+void
+KnobSpinBox::enterEvent(QEvent* e)
+{
+    mouseEnter(e);
+    SpinBox::enterEvent(e);
+}
+
+void
+KnobSpinBox::leaveEvent(QEvent* e)
+{
+    mouseLeave(e);
+    SpinBox::leaveEvent(e);
+}
+
+void
+KnobSpinBox::keyPressEvent(QKeyEvent* e)
+{
+    keyPress(e);
+    SpinBox::keyPressEvent(e);
+}
+
+void
+KnobSpinBox::keyReleaseEvent(QKeyEvent* e)
+{
+    keyRelease(e);
+    SpinBox::keyReleaseEvent(e);
+}
+
+void
+KnobSpinBox::mousePressEvent(QMouseEvent* e)
+{
+    if (!mousePress(e)) {
+        SpinBox::mousePressEvent(e);
+    }
+}
+
+void
+KnobSpinBox::mouseMoveEvent(QMouseEvent* e)
+{
+    if (!mouseMove(e)) {
+        SpinBox::mouseMoveEvent(e);
+    }
+}
+
+void
+KnobSpinBox::mouseReleaseEvent(QMouseEvent* e)
+{
+    mouseRelease(e);
+    SpinBox::mouseReleaseEvent(e);
+
+}
+
+void
+KnobSpinBox::dragEnterEvent(QDragEnterEvent* e)
+{
+    if (!dragEnter(e)) {
+        SpinBox::dragEnterEvent(e);
+    }
+}
+
+void
+KnobSpinBox::dragMoveEvent(QDragMoveEvent* e)
+{
+    if (!dragMove(e)) {
+        SpinBox::dragMoveEvent(e);
+    }
+}
+void
+KnobSpinBox::dropEvent(QDropEvent* e)
+{
+    if (!drop(e)) {
+        SpinBox::dropEvent(e);
+    }
+}
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

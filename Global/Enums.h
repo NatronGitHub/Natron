@@ -548,6 +548,13 @@ enum CreateNodeReason
     eCreateNodeReasonInternal,
 };
     
+enum KnobClipBoardType
+{
+    eKnobClipBoardTypeCopyValue,
+    eKnobClipBoardTypeCopyAnim,
+    eKnobClipBoardTypeCopyLink
+};
+    
 //typedef QFlags<StandardButtonEnum> StandardButtons;
 Q_DECLARE_FLAGS(StandardButtons,StandardButtonEnum)
     

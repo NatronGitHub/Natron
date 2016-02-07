@@ -49,12 +49,16 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/KnobGui.h"
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
+#include "Gui/LineEdit.h"
 #include "Gui/GuiFwd.h"
+#include "Gui/KnobWidgetDnD.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
 class AnimatingTextEdit
     : public QTextEdit
+    , public KnobWidgetDnD
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -66,8 +70,10 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    AnimatingTextEdit(QWidget* parent = 0)
-        : QTextEdit(parent), animation(0), readOnlyNatron(false), _hasChanged(false), dirty(false)
+    AnimatingTextEdit(KnobGui* knob, int dimension, QWidget* parent = 0)
+    : QTextEdit(parent)
+    , KnobWidgetDnD(knob, dimension, this)
+    , animation(0), readOnlyNatron(false), _hasChanged(false), dirty(false)
     {
     }
 
@@ -104,11 +110,52 @@ private:
 
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE;
+    
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
+    
+
+    
     int animation;
     bool readOnlyNatron; //< to bypass the readonly property of Qt that is bugged
     bool _hasChanged;
     bool dirty;
+};
+
+class KnobLineEdit : public LineEdit, public KnobWidgetDnD
+{
+public:
+    KnobLineEdit(KnobGui* knob,int dimension, QWidget* parent = 0)
+    : LineEdit(parent)
+    , KnobWidgetDnD(knob, dimension, this)
+    {}
+    
+    virtual ~KnobLineEdit() {
+        
+    }
+    
+private:
+    
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
+
+    
 };
 
 /*****************************/
@@ -204,7 +251,7 @@ private:
     static QString stripWhitespaces(const QString & str);
 
 private:
-    LineEdit *_lineEdit; //< if single line
+    KnobLineEdit *_lineEdit; //< if single line
     QWidget* _container; //< only used when multiline is on
     QVBoxLayout* _mainLayout; //< only used when multiline is on
     AnimatingTextEdit *_textEdit; //< if multiline

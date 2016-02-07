@@ -351,7 +351,7 @@ ScaleSliderQWidget::seekScalePosition(double v)
         return;
     }
     _imp->value = v;
-    if (_imp->initialized) {
+    if (_imp->initialized && isVisible()) {
         update();
     }
 }

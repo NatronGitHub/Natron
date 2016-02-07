@@ -133,8 +133,23 @@ AnimatingTextEdit::focusOutEvent(QFocusEvent* e)
 }
 
 void
+AnimatingTextEdit::enterEvent(QEvent* e)
+{
+    mouseEnter(e);
+    QTextEdit::enterEvent(e);
+}
+
+void
+AnimatingTextEdit::leaveEvent(QEvent* e)
+{
+    mouseLeave(e);
+    QTextEdit::leaveEvent(e);
+}
+
+void
 AnimatingTextEdit::keyPressEvent(QKeyEvent* e)
 {
+    keyPress(e);
     if (modCASIsControl(e) && e->key() == Qt::Key_Return) {
         if (_hasChanged) {
             _hasChanged = false;
@@ -143,6 +158,13 @@ AnimatingTextEdit::keyPressEvent(QKeyEvent* e)
     }
     _hasChanged = true;
     QTextEdit::keyPressEvent(e);
+}
+
+void
+AnimatingTextEdit::keyReleaseEvent(QKeyEvent* e)
+{
+    keyRelease(e);
+    QTextEdit::keyReleaseEvent(e);
 }
 
 void
@@ -155,6 +177,129 @@ AnimatingTextEdit::paintEvent(QPaintEvent* e)
     //p.setColor( QPalette::HighlightedText, c );
     this->setPalette( p );
     QTextEdit::paintEvent(e);
+}
+
+void
+AnimatingTextEdit::mousePressEvent(QMouseEvent* e)
+{
+    if (!mousePress(e)) {
+        QTextEdit::mousePressEvent(e);
+    }
+}
+
+void
+AnimatingTextEdit::mouseMoveEvent(QMouseEvent* e)
+{
+    if (!mouseMove(e)) {
+        QTextEdit::mouseMoveEvent(e);
+    }
+}
+
+void
+AnimatingTextEdit::mouseReleaseEvent(QMouseEvent* e)
+{
+    mouseRelease(e);
+    QTextEdit::mouseReleaseEvent(e);
+    
+}
+
+void
+AnimatingTextEdit::dragEnterEvent(QDragEnterEvent* e)
+{
+    if (!dragEnter(e)) {
+        AnimatingTextEdit::dragEnterEvent(e);
+    }
+}
+
+void
+AnimatingTextEdit::dragMoveEvent(QDragMoveEvent* e)
+{
+    if (!dragMove(e)) {
+        AnimatingTextEdit::dragMoveEvent(e);
+    }
+}
+void
+AnimatingTextEdit::dropEvent(QDropEvent* e)
+{
+    if (!drop(e)) {
+        AnimatingTextEdit::dropEvent(e);
+    }
+}
+
+
+void
+KnobLineEdit::enterEvent(QEvent* e)
+{
+    mouseEnter(e);
+    LineEdit::enterEvent(e);
+}
+
+void
+KnobLineEdit::leaveEvent(QEvent* e)
+{
+    mouseLeave(e);
+    LineEdit::leaveEvent(e);
+}
+
+void
+KnobLineEdit::keyPressEvent(QKeyEvent* e)
+{
+    keyPress(e);
+    LineEdit::keyPressEvent(e);
+}
+
+void
+KnobLineEdit::keyReleaseEvent(QKeyEvent* e)
+{
+    keyRelease(e);
+    LineEdit::keyReleaseEvent(e);
+}
+
+void
+KnobLineEdit::mousePressEvent(QMouseEvent* e)
+{
+    if (!mousePress(e)) {
+        LineEdit::mousePressEvent(e);
+    }
+}
+
+void
+KnobLineEdit::mouseMoveEvent(QMouseEvent* e)
+{
+    if (!mouseMove(e)) {
+        LineEdit::mouseMoveEvent(e);
+    }
+}
+
+void
+KnobLineEdit::mouseReleaseEvent(QMouseEvent* e)
+{
+    mouseRelease(e);
+    LineEdit::mouseReleaseEvent(e);
+    
+}
+
+void
+KnobLineEdit::dragEnterEvent(QDragEnterEvent* e)
+{
+    if (!dragEnter(e)) {
+        LineEdit::dragEnterEvent(e);
+    }
+}
+
+void
+KnobLineEdit::dragMoveEvent(QDragMoveEvent* e)
+{
+    if (!dragMove(e)) {
+        LineEdit::dragMoveEvent(e);
+    }
+}
+void
+KnobLineEdit::dropEvent(QDropEvent* e)
+{
+    if (!drop(e)) {
+        LineEdit::dropEvent(e);
+    }
 }
 
 KnobGuiString::KnobGuiString(KnobPtr knob,
@@ -189,7 +334,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         _mainLayout->setSpacing(0);
 
         bool useRichText = knob->usesRichText();
-        _textEdit = new AnimatingTextEdit(_container);
+        _textEdit = new AnimatingTextEdit(this, 0, _container);
         _textEdit->setAcceptRichText(useRichText);
 
 
@@ -283,7 +428,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         //_label->setFont(QFont(appFont,appFontSize));
         layout->addWidget(_label);*/
     } else {
-        _lineEdit = new LineEdit( layout->parentWidget() );
+        _lineEdit = new KnobLineEdit(this, 0, layout->parentWidget() );
 
         if ( hasToolTip() ) {
             _lineEdit->setToolTip( toolTip() );
@@ -315,7 +460,15 @@ void KnobGuiString::removeSpecificGui()
 void
 KnobGuiString::onLineChanged()
 {
-    pushUndoCommand( new KnobUndoCommand<std::string>( this,_knob.lock()->getValue(0),_lineEdit->text().toStdString() ) );
+    if (!_lineEdit->isEnabled() || _lineEdit->isReadOnly()) {
+        return;
+    }
+    std::string oldText = _knob.lock()->getValue(0);
+    std::string newText = _lineEdit->text().toStdString();
+   
+    if (oldText != newText) {
+        pushUndoCommand( new KnobUndoCommand<std::string>( this,oldText,newText) );
+    }
 }
 
 QString

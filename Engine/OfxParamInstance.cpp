@@ -3259,16 +3259,18 @@ KnobPtr OfxCustomInstance::getKnob() const
 void
 OfxCustomInstance::setEnabled()
 {
-    DYNAMIC_PROPERTY_CHECK();
-    _imp->knob.lock()->setAllDimensionsEnabled( getEnabled() );
+    //DYNAMIC_PROPERTY_CHECK();
+    //_imp->knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
 // callback which should set secret state as appropriate
 void
 OfxCustomInstance::setSecret()
 {
-    DYNAMIC_PROPERTY_CHECK();
-    _imp->knob.lock()->setSecret( getSecret() );
+    //Always make custom parameters secret as it is done on others OFX hosts. They can contain very long
+    //string which may take time to the UI to draw.
+    //DYNAMIC_PROPERTY_CHECK();
+    //_imp->knob.lock()->setSecret( getSecret() );
 }
 
 void

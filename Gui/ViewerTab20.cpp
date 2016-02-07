@@ -565,7 +565,7 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
     }
 
    
-    if (getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
+    if (!didSomething && getGui()->getApp()->getOverlayRedrawRequestsCount() > 0) {
         getGui()->getApp()->redrawAllViewers();
     }
     getGui()->getApp()->clearOverlayRedrawRequests();

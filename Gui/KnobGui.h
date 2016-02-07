@@ -43,6 +43,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
+#include "Global/Enums.h"
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
 #include "Engine/KnobGuiI.h"
@@ -111,7 +112,7 @@ public:
     void createGUI(QGridLayout* containerLayout,
                    QWidget* fieldContainer,
                    QWidget* labelContainer,
-                   ClickableLabel* label,
+                   KnobClickableLabel* label,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
@@ -232,11 +233,11 @@ public:
     
     virtual bool isGuiFrozenForPlayback() const OVERRIDE FINAL;
 
-    virtual void copyAnimationToClipboard() const OVERRIDE FINAL;
+    virtual void copyAnimationToClipboard(int dimension = -1) const OVERRIDE FINAL;
 
-    void copyValuesToCliboard();
-
-    void pasteValuesFromClipboard();
+    virtual void copyValuesToClipboard(int dimension = -1) const OVERRIDE FINAL;
+    
+    virtual void copyLinkToClipboard(int dimension = -1) const OVERRIDE FINAL;
     
     virtual boost::shared_ptr<Curve> getCurve(int dimension) const OVERRIDE FINAL;
 
@@ -290,8 +291,6 @@ public Q_SLOTS:
 
     void setSecret();
 
-    void showAnimationMenu();
-
     void onRightClickClicked(const QPoint & pos);
 
     void showRightClickMenuForDimension(const QPoint & pos,int dimension);
@@ -322,15 +321,14 @@ public Q_SLOTS:
     void onCubicInterpActionTriggered();
 
     void onHorizontalInterpActionTriggered();
-
-
+    
     void onCopyValuesActionTriggered();
 
-    void onPasteValuesActionTriggered();
-
     void onCopyAnimationActionTriggered();
-
-    void onPasteAnimationActionTriggered();
+    
+    void onCopyLinksActionTriggered();
+    
+    void onPasteActionTriggered();
 
     void onLinkToActionTriggered();
     void linkTo(int dimension);
@@ -418,9 +416,9 @@ private:
 
     void updateGuiInternal(int dimension);
 
-    void copyToClipBoard(bool copyAnimation) const;
+    void copyToClipBoard(KnobClipBoardType type, int dimension) const;
 
-    void pasteClipBoard();
+    void pasteClipBoard(int targetDimension);
 
     virtual void _hide() = 0;
     virtual void _show() = 0;
@@ -449,11 +447,10 @@ private:
     virtual void updateToolTip() {}
     
     void createAnimationMenu(QMenu* menu,int dimension);
+    
+    Menu* createInterpolationMenu(QMenu* menu, int dimension, bool isEnabled);
 
-    void createAnimationButton(QHBoxLayout* layout);
-
-
-    void setInterpolationForDimensions(const std::vector<int> & dimensions,KeyframeTypeEnum interp);
+    void setInterpolationForDimensions(QAction* action,KeyframeTypeEnum interp);
 
 private:
 

@@ -39,7 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/Image.h"
 #include "Engine/Settings.h"
-
+#include "Engine/EffectInstance.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 
@@ -467,28 +467,35 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
     }
     QStringList formats = e->mimeData()->formats();
     if ( formats.contains("Animation") ) {
-        std::list<Variant> values;
-        std::list<boost::shared_ptr<Curve> > curves;
-        std::list<boost::shared_ptr<Curve> > parametricCurves;
-        std::map<int,std::string> stringAnimation;
-        bool copyAnimation;
+        int cbDim;
+        KnobClipBoardType type;
+        KnobPtr fromKnob;
+        appPTR->getKnobClipBoard(&type, &fromKnob, &cbDim);
         
-        std::string appID;
-        std::string nodeFullyQualifiedName;
-        std::string paramName;
-        
-        appPTR->getKnobClipBoard(&copyAnimation,&values,&curves,&stringAnimation,&parametricCurves,&appID,&nodeFullyQualifiedName,&paramName);
-        
-        QString toAppend;
-        toAppend.append(nodeFullyQualifiedName.c_str());
-        toAppend.append('.');
-        toAppend.append(paramName.c_str());
-        toAppend.append(".get()");
-        if (values.size() > 1) {
-            toAppend.append("[dimension]");
+        if (fromKnob) {
+            EffectInstance* isEffect = dynamic_cast<EffectInstance*>(fromKnob->getHolder());
+            if (isEffect) {
+                
+                
+                
+                QString toAppend;
+                toAppend.append(isEffect->getNode()->getFullyQualifiedName().c_str());
+                toAppend.append('.');
+                toAppend.append(fromKnob->getName().c_str());
+                toAppend.append(".get()");
+                if (fromKnob->getDimension() > 1) {
+                    toAppend.append("[");
+                    if (cbDim == -1) {
+                        toAppend.append("dimension");
+                    } else {
+                        toAppend.append(QString::number(cbDim));
+                    }
+                    toAppend.append("]");
+                }
+                appendPlainText(toAppend);
+                e->acceptProposedAction();
+            }
         }
-        appendPlainText(toAppend);
-        e->acceptProposedAction();
     }
     
 }

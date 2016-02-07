@@ -35,7 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/Macros.h"
 #include "Gui/GuiFwd.h"
-
+#include "Gui/KnobWidgetDnD.h"
 #include "Gui/Label.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -100,8 +100,12 @@ public:
 Q_SIGNALS:
     void clicked(bool);
 
+protected:
+    
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
+    
 private:
-    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
 
 private:
@@ -110,6 +114,37 @@ private:
     bool readOnly;
     int animation;
     bool sunkenStyle;
+};
+
+
+class KnobClickableLabel : public ClickableLabel, public KnobWidgetDnD
+{
+  
+public:
+    
+    KnobClickableLabel(const QString& text, KnobGui* knob, QWidget* parent = 0)
+    : ClickableLabel(text, parent)
+    , KnobWidgetDnD(knob,-1, this)
+    {
+        
+    }
+    
+    virtual ~KnobClickableLabel() {
+        
+    }
+    
+private:
+    
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -102,6 +102,12 @@ struct RotoPaintData
     
 };
 
+struct KnobDnDData {
+    boost::weak_ptr<KnobI> source;
+    int sourceDimension;
+    QDrag* drag;
+};
+
 struct GuiAppInstancePrivate
 {
     Gui* _gui; //< ptr to the Gui interface
@@ -136,6 +142,8 @@ struct GuiAppInstancePrivate
     
     std::list<SequenceTime> timelineKeyframes;
     
+    KnobDnDData knobDnd;
+    
     GuiAppInstancePrivate()
     : _gui(NULL)
     , _activeBgProcesses()
@@ -152,6 +160,7 @@ struct GuiAppInstancePrivate
     , rotoDataMutex()
     , rotoData()
     , timelineKeyframes()
+    , knobDnd()
     {
         rotoData.turboAlreadyActiveBeforePainting = false;
     }
@@ -1521,6 +1530,24 @@ GuiAppInstance::goToNextKeyframe()
     if ( upperBound != _imp->timelineKeyframes.end() ) {
         timeline->seekFrame(*upperBound, true, NULL, eTimelineChangeReasonPlaybackSeek);
     }
+}
+
+void
+GuiAppInstance::setKnobDnDData(QDrag* drag, const KnobPtr& knob, int dimension)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->knobDnd.source = knob;
+    _imp->knobDnd.sourceDimension = dimension;
+    _imp->knobDnd.drag = drag;
+}
+
+void
+GuiAppInstance::getKnobDnDData(QDrag** drag, KnobPtr* knob, int* dimension) const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    *knob = _imp->knobDnd.source.lock();
+    *dimension = _imp->knobDnd.sourceDimension;
+    *drag = _imp->knobDnd.drag;
 }
 
 NATRON_NAMESPACE_EXIT;

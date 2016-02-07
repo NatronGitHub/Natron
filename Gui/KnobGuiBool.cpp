@@ -97,6 +97,81 @@ Bool_CheckBox::getBackgroundColor(double *r,double *g,double *b) const
     }
 }
 
+void
+Bool_CheckBox::enterEvent(QEvent* e)
+{
+    mouseEnter(e);
+    AnimatedCheckBox::enterEvent(e);
+}
+
+void
+Bool_CheckBox::leaveEvent(QEvent* e)
+{
+    mouseLeave(e);
+    AnimatedCheckBox::leaveEvent(e);
+}
+
+void
+Bool_CheckBox::keyPressEvent(QKeyEvent* e)
+{
+    keyPress(e);
+    AnimatedCheckBox::keyPressEvent(e);
+}
+
+void
+Bool_CheckBox::keyReleaseEvent(QKeyEvent* e)
+{
+    keyRelease(e);
+    AnimatedCheckBox::keyReleaseEvent(e);
+}
+
+void
+Bool_CheckBox::mousePressEvent(QMouseEvent* e)
+{
+    if (!mousePress(e)) {
+        AnimatedCheckBox::mousePressEvent(e);
+    }
+}
+
+void
+Bool_CheckBox::mouseMoveEvent(QMouseEvent* e)
+{
+    if (!mouseMove(e)) {
+        AnimatedCheckBox::mouseMoveEvent(e);
+    }
+}
+
+void
+Bool_CheckBox::mouseReleaseEvent(QMouseEvent* e)
+{
+    mouseRelease(e);
+    AnimatedCheckBox::mouseReleaseEvent(e);
+    
+}
+
+void
+Bool_CheckBox::dragEnterEvent(QDragEnterEvent* e)
+{
+    if (!dragEnter(e)) {
+        AnimatedCheckBox::dragEnterEvent(e);
+    }
+}
+
+void
+Bool_CheckBox::dragMoveEvent(QDragMoveEvent* e)
+{
+    if (!dragMove(e)) {
+        AnimatedCheckBox::dragMoveEvent(e);
+    }
+}
+void
+Bool_CheckBox::dropEvent(QDropEvent* e)
+{
+    if (!drop(e)) {
+        AnimatedCheckBox::dropEvent(e);
+    }
+}
+
 
 KnobGuiBool::KnobGuiBool(KnobPtr knob,
                            DockablePanel *container)
@@ -109,7 +184,7 @@ KnobGuiBool::KnobGuiBool(KnobPtr knob,
 void
 KnobGuiBool::createWidget(QHBoxLayout* layout)
 {
-    _checkBox = new Bool_CheckBox( layout->parentWidget() );
+    _checkBox = new Bool_CheckBox(this, 0,layout->parentWidget() );
     onLabelChangedInternal();
     //_checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     QObject::connect( _checkBox, SIGNAL( clicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );

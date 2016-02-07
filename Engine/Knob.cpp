@@ -2555,7 +2555,7 @@ void
 KnobHelper::copyAnimationToClipboard() const
 {
     if (_imp->gui) {
-        _imp->gui->copyAnimationToClipboard();
+        _imp->gui->copyAnimationToClipboard(-1);
     }
 }
 

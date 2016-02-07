@@ -66,7 +66,6 @@ GuiApplicationManager::GuiApplicationManager()
 
 GuiApplicationManager::~GuiApplicationManager()
 {
-    delete _imp->_colorPickerCursor;
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
         for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             delete it2->second;
@@ -742,7 +741,19 @@ GuiApplicationManager::getTopLevelPluginsToolButtons() const
 const QCursor &
 GuiApplicationManager::getColorPickerCursor() const
 {
-    return *(_imp->_colorPickerCursor);
+    return _imp->_colorPickerCursor;
+}
+
+const QCursor &
+GuiApplicationManager::getLinkToCursor() const
+{
+    return _imp->_linkToCursor;
+}
+
+const QCursor &
+GuiApplicationManager::getLinkToMultCursor() const
+{
+    return _imp->_linkMultCursor;
 }
 
 bool
@@ -824,7 +835,8 @@ GuiApplicationManager::initGui(const CLArgs& args)
     getCurrentSettings()->populateSystemFonts(settings,systemFonts);
     
     _imp->createColorPickerCursor();
-    _imp->_knobsClipBoard->isEmpty = true;
+    _imp->createLinkToCursor();
+    _imp->createLinkMultCursor();
     
     ///Copy the args that will be used when fontconfig cache is updated
     _imp->startupArgs = args;
@@ -962,51 +974,22 @@ GuiApplicationManager::hideSplashScreen()
     }
 }
 
-bool
-GuiApplicationManager::isClipBoardEmpty() const
-{
-    return _imp->_knobsClipBoard->isEmpty;
-}
 
 void
-GuiApplicationManager::setKnobClipBoard(bool copyAnimation,
-                                        const std::list<Variant> & values,
-                                        const std::list<boost::shared_ptr<Curve> > & animation,
-                                        const std::map<int,std::string> & stringAnimation,
-                                        const std::list<boost::shared_ptr<Curve> > & parametricCurves,
-                                        const std::string& appID,
-                                        const std::string& nodeFullyQualifiedName,
-                                        const std::string& paramName)
+GuiApplicationManager::setKnobClipBoard(KnobClipBoardType type, const KnobPtr& serialization, int dimension)
 {
-    _imp->_knobsClipBoard->copyAnimation = copyAnimation;
-    _imp->_knobsClipBoard->isEmpty = false;
-    _imp->_knobsClipBoard->values = values;
-    _imp->_knobsClipBoard->curves = animation;
-    _imp->_knobsClipBoard->stringAnimation = stringAnimation;
-    _imp->_knobsClipBoard->parametricCurves = parametricCurves;
-    _imp->_knobsClipBoard->appID = appID;
-    _imp->_knobsClipBoard->nodeFullyQualifiedName = nodeFullyQualifiedName;
-    _imp->_knobsClipBoard->paramName = paramName;
+    _imp->_knobsClipBoard->serialization = serialization;
+    _imp->_knobsClipBoard->type = type;
+    _imp->_knobsClipBoard->dimension = dimension;
 }
 
+
 void
-GuiApplicationManager::getKnobClipBoard(bool* copyAnimation,
-                                        std::list<Variant>* values,
-                                        std::list<boost::shared_ptr<Curve> >* animation,
-                                        std::map<int,std::string>* stringAnimation,
-                                        std::list<boost::shared_ptr<Curve> >* parametricCurves,
-                                        std::string* appID,
-                                        std::string* nodeFullyQualifiedName,
-                                        std::string* paramName) const
+GuiApplicationManager::getKnobClipBoard(KnobClipBoardType *type, KnobPtr *serialization, int* dimension) const
 {
-    *copyAnimation = _imp->_knobsClipBoard->copyAnimation;
-    *values = _imp->_knobsClipBoard->values;
-    *animation = _imp->_knobsClipBoard->curves;
-    *stringAnimation = _imp->_knobsClipBoard->stringAnimation;
-    *parametricCurves = _imp->_knobsClipBoard->parametricCurves;
-    *appID = _imp->_knobsClipBoard->appID;
-    *nodeFullyQualifiedName = _imp->_knobsClipBoard->nodeFullyQualifiedName;
-    *paramName = _imp->_knobsClipBoard->paramName;
+    *serialization = _imp->_knobsClipBoard->serialization;
+    *type = _imp->_knobsClipBoard->type;
+    *dimension = _imp->_knobsClipBoard->dimension;
 }
 
 void

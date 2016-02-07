@@ -194,17 +194,19 @@ Q_SIGNALS:
 protected:
 
     virtual void paintEvent(QPaintEvent* e) OVERRIDE;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     
 private:
     
     
-    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
-    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    
     virtual void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void changeEvent(QEvent* e) OVERRIDE FINAL;
     virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
-    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    
     
     void growMaximumWidthFromText(const QString & str);
     void createMenu();

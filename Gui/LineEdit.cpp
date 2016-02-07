@@ -64,12 +64,12 @@ LineEdit::~LineEdit()
 void
 LineEdit::paintEvent(QPaintEvent* e)
 {
-    QPalette p = this->palette();
+    /*QPalette p = this->palette();
     QColor c(200,200,200,255);
 
     p.setColor( QPalette::Highlight, c );
     p.setColor( QPalette::HighlightedText, c );
-    this->setPalette( p );
+    this->setPalette( p );*/
     QLineEdit::paintEvent(e);
 }
 

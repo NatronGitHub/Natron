@@ -687,7 +687,7 @@ DockablePanel::onRestoreDefaultsButtonClicked()
      may not revert its state to the original as if after the createInstanceAction.
      We may not either kill this node and create a new one because otherwise the undo/redo stack will be wiped.
      */
-    pushUndoCommand( new RestoreDefaultsCommand(true, knobsList) );
+    pushUndoCommand( new RestoreDefaultsCommand(true, knobsList, -1) );
 }
 
 void

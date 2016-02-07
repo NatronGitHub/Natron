@@ -127,6 +127,7 @@ class Histogram;
 class HostOverlay;
 class InfoViewerWidget;
 class KeyBoundAction;
+class KnobClickableLabel;
 class KnobCurveGui;
 class KnobGui;
 class KnobGuiFactory;

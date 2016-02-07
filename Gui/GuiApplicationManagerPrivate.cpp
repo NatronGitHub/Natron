@@ -48,7 +48,8 @@ GuiApplicationManagerPrivate::GuiApplicationManagerPrivate(GuiApplicationManager
 , _topLevelToolButtons()
 , _knobsClipBoard(new KnobsClipBoard)
 , _knobGuiFactory( new KnobGuiFactory() )
-, _colorPickerCursor(NULL)
+, _colorPickerCursor()
+, _linkToCursor()
 , _splashScreen(NULL)
 , _openFileRequest()
 , _actionShortcuts()
@@ -202,7 +203,24 @@ GuiApplicationManagerPrivate::createColorPickerCursor()
         }
     }
     QPixmap pix = QPixmap::fromImage(dstImage);
-    _colorPickerCursor = new QCursor(pix);
+    _colorPickerCursor = QCursor(pix);
+}
+
+void
+GuiApplicationManagerPrivate::createLinkToCursor()
+{
+    QPixmap p;
+    appPTR->getIcon(NATRON_PIXMAP_LINK_CURSOR, &p);
+    _linkToCursor = QCursor(p);
+    
+}
+
+void
+GuiApplicationManagerPrivate::createLinkMultCursor()
+{
+    QPixmap p;
+    appPTR->getIcon(NATRON_PIXMAP_LINK_MULT_CURSOR, &p);
+    _linkMultCursor = QCursor(p);
 }
 
 void

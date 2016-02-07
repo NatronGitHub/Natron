@@ -327,31 +327,26 @@ public:
     static KnobPtr createCopyForKnob(const KnobPtr & originalKnob);
 };
 
+struct PasteUndoCommandPrivate;
 class PasteUndoCommand
     : public QUndoCommand
 {
-    KnobGui* _knob;
-    std::list<Variant> newValues,oldValues;
-    std::list<boost::shared_ptr<Curve> > newCurves,oldCurves;
-    std::list<boost::shared_ptr<Curve> > newParametricCurves,oldParametricCurves;
-    std::map<int,std::string> newStringAnimation,oldStringAnimation;
-    bool _copyAnimation;
-
+    
+    boost::scoped_ptr<PasteUndoCommandPrivate> _imp;
 public:
 
     PasteUndoCommand(KnobGui* knob,
-                     bool copyAnimation,
-                     const std::list<Variant> & values,
-                     const std::list<boost::shared_ptr<Curve> > & curves,
-                     const std::list<boost::shared_ptr<Curve> > & parametricCurves,
-                     const std::map<int,std::string> & stringAnimation);
+                     KnobClipBoardType type,
+                     int fromDimension,
+                     int targetDimension,
+                     const KnobPtr& fromKnob);
 
-    virtual ~PasteUndoCommand()
-    {
-    }
+    virtual ~PasteUndoCommand();
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
+    
+    void copyFrom(const KnobPtr& fromKnob, bool isRedo);
 };
 
 
@@ -362,6 +357,7 @@ public:
 
     RestoreDefaultsCommand(bool isNodeReset,
                            const std::list<KnobPtr > & knobs,
+                           int targetDim,
                            QUndoCommand *parent = 0);
     virtual void undo();
     virtual void redo();
@@ -369,6 +365,7 @@ public:
 private:
 
     bool _isNodeReset;
+    int _targetDim;
     std::list<KnobPtr > _knobs,_clones;
 };
 

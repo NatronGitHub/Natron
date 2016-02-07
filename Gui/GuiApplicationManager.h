@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+#include "Global/Enums.h"
 
 #include <list>
 
@@ -102,26 +103,14 @@ public:
     void getIcon(PixmapEnum e, QPixmap* pix) const;
     void getIcon(PixmapEnum e, int size, QPixmap* pix) const;
 
-    void setKnobClipBoard(bool copyAnimation,
-                          const std::list<Variant> & values,
-                          const std::list<boost::shared_ptr<Curve> > & animation,
-                          const std::map<int,std::string> & stringAnimation,
-                          const std::list<boost::shared_ptr<Curve> > & parametricCurves,
-                          const std::string& appID,
-                          const std::string& nodeFullyQualifiedName,
-                          const std::string& paramName);
+    void setKnobClipBoard(KnobClipBoardType type,
+                          const KnobPtr& serialization,
+                          int dimension);
 
 
-    void getKnobClipBoard(bool* copyAnimation,
-                          std::list<Variant>* values,
-                          std::list<boost::shared_ptr<Curve> >* animation,
-                          std::map<int,std::string>* stringAnimation,
-                          std::list<boost::shared_ptr<Curve> >* parametricCurves,
-                          std::string* appID,
-                          std::string* nodeFullyQualifiedName,
-                          std::string* paramName) const;
-
-    bool isClipBoardEmpty() const;
+    void getKnobClipBoard(KnobClipBoardType *type,
+                          KnobPtr* serialization,
+                          int *dimension) const;
 
 
     void updateAllRecentFileMenus();
@@ -129,7 +118,11 @@ public:
     bool isSplashcreenVisible() const;
     
     virtual void hideSplashScreen() OVERRIDE FINAL;
+    
     const QCursor & getColorPickerCursor() const;
+    const QCursor & getLinkToCursor() const;
+    const QCursor & getLinkToMultCursor() const;
+    
     virtual void setLoadingStatus(const QString & str) OVERRIDE FINAL;
     KnobGui* createGuiForKnob(KnobPtr knob, DockablePanel *container) const;
     virtual void setUndoRedoStackLimit(int limit) OVERRIDE FINAL;

@@ -85,6 +85,80 @@ using std::make_pair;
 
 //=============================CHOICE_KNOB_GUI===================================
 
+void
+KnobComboBox::enterEvent(QEvent* e)
+{
+    mouseEnter(e);
+    ComboBox::enterEvent(e);
+}
+
+void
+KnobComboBox::leaveEvent(QEvent* e)
+{
+    mouseLeave(e);
+    ComboBox::leaveEvent(e);
+}
+
+void
+KnobComboBox::keyPressEvent(QKeyEvent* e)
+{
+    keyPress(e);
+    ComboBox::keyPressEvent(e);
+}
+
+void
+KnobComboBox::keyReleaseEvent(QKeyEvent* e)
+{
+    keyRelease(e);
+    ComboBox::keyReleaseEvent(e);
+}
+
+void
+KnobComboBox::mousePressEvent(QMouseEvent* e)
+{
+    if (!mousePress(e)) {
+        ComboBox::mousePressEvent(e);
+    }
+}
+
+void
+KnobComboBox::mouseMoveEvent(QMouseEvent* e)
+{
+    if (!mouseMove(e)) {
+        ComboBox::mouseMoveEvent(e);
+    }
+}
+
+void
+KnobComboBox::mouseReleaseEvent(QMouseEvent* e)
+{
+    mouseRelease(e);
+    ComboBox::mouseReleaseEvent(e);
+    
+}
+
+void
+KnobComboBox::dragEnterEvent(QDragEnterEvent* e)
+{
+    if (!dragEnter(e)) {
+        ComboBox::dragEnterEvent(e);
+    }
+}
+
+void
+KnobComboBox::dragMoveEvent(QDragMoveEvent* e)
+{
+    if (!dragMove(e)) {
+        ComboBox::dragMoveEvent(e);
+    }
+}
+void
+KnobComboBox::dropEvent(QDropEvent* e)
+{
+    if (!drop(e)) {
+        ComboBox::dropEvent(e);
+    }
+}
 
 KnobGuiChoice::KnobGuiChoice(KnobPtr knob,
                                DockablePanel *container)
@@ -111,7 +185,7 @@ void KnobGuiChoice::removeSpecificGui()
 void
 KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
-    _comboBox = new ComboBox( layout->parentWidget() );
+    _comboBox = new KnobComboBox(this, 0, layout->parentWidget() );
     _comboBox->setCascading(_knob.lock()->isCascading());
     onEntriesPopulated();
 

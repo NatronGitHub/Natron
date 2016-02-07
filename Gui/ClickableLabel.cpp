@@ -121,6 +121,83 @@ ClickableLabel::setSunken(bool s)
     }
 }
 
+void
+KnobClickableLabel::enterEvent(QEvent* e)
+{
+    mouseEnter(e);
+    ClickableLabel::enterEvent(e);
+}
+
+void
+KnobClickableLabel::leaveEvent(QEvent* e)
+{
+    mouseLeave(e);
+    ClickableLabel::leaveEvent(e);
+}
+
+void
+KnobClickableLabel::keyPressEvent(QKeyEvent* e)
+{
+    keyPress(e);
+    ClickableLabel::keyPressEvent(e);
+}
+
+void
+KnobClickableLabel::keyReleaseEvent(QKeyEvent* e)
+{
+    keyRelease(e);
+    ClickableLabel::keyReleaseEvent(e);
+}
+
+
+void
+KnobClickableLabel::mousePressEvent(QMouseEvent* e)
+{
+    if (!mousePress(e)) {
+        ClickableLabel::mousePressEvent(e);
+    }
+}
+
+void
+KnobClickableLabel::mouseMoveEvent(QMouseEvent* e)
+{
+    if (!mouseMove(e)) {
+        ClickableLabel::mouseMoveEvent(e);
+    }
+}
+
+void
+KnobClickableLabel::mouseReleaseEvent(QMouseEvent* e)
+{
+    mouseRelease(e);
+    ClickableLabel::mouseReleaseEvent(e);
+    
+}
+
+void
+KnobClickableLabel::dragEnterEvent(QDragEnterEvent* e)
+{
+    if (!dragEnter(e)) {
+        ClickableLabel::dragEnterEvent(e);
+    }
+}
+
+void
+KnobClickableLabel::dragMoveEvent(QDragMoveEvent* e)
+{
+    if (!dragMove(e)) {
+        ClickableLabel::dragMoveEvent(e);
+    }
+}
+void
+KnobClickableLabel::dropEvent(QDropEvent* e)
+{
+    if (!drop(e)) {
+        ClickableLabel::dropEvent(e);
+    }
+}
+
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

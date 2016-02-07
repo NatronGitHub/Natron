@@ -22,8 +22,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <QAction>
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiPrivate.h"
+#include "Gui/GuiApplicationManager.h"
 
 #include <cassert>
 #include <stdexcept>
@@ -98,172 +100,122 @@ KnobGui::onInternalKeyRemoved(double time,
 }
 
 void
-KnobGui::copyAnimationToClipboard() const
+KnobGui::copyAnimationToClipboard(int dimension) const
 {
-    copyToClipBoard(true);
+    copyToClipBoard(eKnobClipBoardTypeCopyAnim, dimension);
+}
+
+
+void
+KnobGui::onCopyAnimationActionTriggered()
+{
+    QAction* act = qobject_cast<QAction*>(sender());
+    if (!act) {
+        return;
+    }
+    int dim = act->data().toInt();
+    copyAnimationToClipboard(dim);
+}
+
+
+void
+KnobGui::copyValuesToClipboard(int dimension ) const
+{
+    copyToClipBoard(eKnobClipBoardTypeCopyValue, dimension);
+
 }
 
 void
 KnobGui::onCopyValuesActionTriggered()
 {
-    copyValuesToCliboard();
+    QAction* act = qobject_cast<QAction*>(sender());
+    if (!act) {
+        return;
+    }
+    int dim = act->data().toInt();
+    copyValuesToClipboard(dim);
+}
+
+
+void
+KnobGui::copyLinkToClipboard(int dimension) const
+{
+    copyToClipBoard(eKnobClipBoardTypeCopyLink, dimension);
 }
 
 void
-KnobGui::copyValuesToCliboard()
+KnobGui::onCopyLinksActionTriggered()
 {
-    copyToClipBoard(false);
+    QAction* act = qobject_cast<QAction*>(sender());
+    if (!act) {
+        return;
+    }
+    int dim = act->data().toInt();
+    copyLinkToClipboard(dim);
 }
 
 void
-KnobGui::onCopyAnimationActionTriggered()
+KnobGui::copyToClipBoard(KnobClipBoardType type, int dimension) const
 {
-    copyAnimationToClipboard();
-}
-
-void
-KnobGui::copyToClipBoard(bool copyAnimation) const
-{
-    std::list<Variant> values;
-    std::list<boost::shared_ptr<Curve> > curves;
-    std::list<boost::shared_ptr<Curve> > parametricCurves;
-    std::map<int,std::string> stringAnimation;
+   
     KnobPtr knob = getKnob();
-
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
-    AnimatingKnobStringHelper* isAnimatingString = dynamic_cast<AnimatingKnobStringHelper*>( knob.get() );
-    boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
-
-
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        if (isInt) {
-            values.push_back( Variant( isInt->getValue(i) ) );
-        } else if (isBool) {
-            values.push_back( Variant( isBool->getValue(i) ) );
-        } else if (isDouble) {
-            values.push_back( Variant( isDouble->getValue(i) ) );
-        } else if (isString) {
-            values.push_back( Variant( isString->getValue(i).c_str() ) );
-        }
-        if (copyAnimation) {
-            boost::shared_ptr<Curve> c(new Curve);
-            c->clone( *knob->getCurve(i) );
-            curves.push_back(c);
-        }
-    }
-
-    if (isAnimatingString) {
-        isAnimatingString->saveAnimation(&stringAnimation);
-    }
-
-    if (isParametric) {
-        std::list< Curve > tmpCurves;
-        isParametric->saveParametricCurves(&tmpCurves);
-        for (std::list< Curve >::iterator it = tmpCurves.begin(); it != tmpCurves.end(); ++it) {
-            boost::shared_ptr<Curve> c(new Curve);
-            c->clone(*it);
-            parametricCurves.push_back(c);
-        }
-    }
-    
-    std::string appID = getGui()->getApp()->getAppIDString();
-    std::string nodeFullyQualifiedName;
-    KnobHolder* holder = getKnob()->getHolder();
-    if (holder) {
-        EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
-        if (isEffect) {
-            nodeFullyQualifiedName = isEffect->getNode()->getFullyQualifiedName();
-        }
-    }
-    std::string paramName = getKnob()->getName();
-
-    appPTR->setKnobClipBoard(copyAnimation,values,curves,stringAnimation,parametricCurves,appID,nodeFullyQualifiedName,paramName);
-}
-
-void
-KnobGui::pasteClipBoard()
-{
-    if ( appPTR->isClipBoardEmpty() ) {
+    if (!knob) {
         return;
     }
 
-    std::list<Variant> values;
-    std::list<boost::shared_ptr<Curve> > curves;
-    std::list<boost::shared_ptr<Curve> > parametricCurves;
-    std::map<int,std::string> stringAnimation;
-    bool copyAnimation;
+    appPTR->setKnobClipBoard(type, knob, dimension);
+}
 
-    std::string appID;
-    std::string nodeFullyQualifiedName;
-    std::string paramName;
-    
-    appPTR->getKnobClipBoard(&copyAnimation,&values,&curves,&stringAnimation,&parametricCurves,&appID,&nodeFullyQualifiedName,&paramName);
-
+void
+KnobGui::pasteClipBoard(int targetDimension)
+{
     KnobPtr knob = getKnob();
-
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
-    boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
-
-    int i = 0;
-    for (std::list<Variant>::iterator it = values.begin(); it != values.end(); ++it) {
-        if (isInt) {
-            if ( !it->canConvert(QVariant::Int) ) {
-                QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Integer").arg( it->typeName() );
-                Dialogs::errorDialog( tr("Paste").toStdString(),err.toStdString() );
-
-                return;
-            }
-        } else if (isBool) {
-            if ( !it->canConvert(QVariant::Bool) ) {
-                QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Boolean").arg( it->typeName() );
-                Dialogs::errorDialog( tr("Paste").toStdString(),err.toStdString() );
-
-                return;
-            }
-        } else if (isDouble) {
-            if ( !it->canConvert(QVariant::Double) ) {
-                QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type Double").arg( it->typeName() );
-                Dialogs::errorDialog( tr("Paste").toStdString(),err.toStdString() );
-
-                return;
-            }
-        } else if (isString) {
-            if ( !it->canConvert(QVariant::String) ) {
-                QString err = tr("Cannot paste values from a parameter of type %1 to a parameter of type String").arg( it->typeName() );
-                Dialogs::errorDialog( tr("Paste").toStdString(),err.toStdString() );
-
-                return;
-            }
-        }
-
-        ++i;
+    if (!knob) {
+        return;
+    }
+    
+    //the dimension from which it was copied from
+    int cbDim;
+    KnobClipBoardType type;
+    KnobPtr fromKnob;
+    appPTR->getKnobClipBoard(&type, &fromKnob, &cbDim);
+    if (!fromKnob) {
+        return;
+    }
+    
+    if (!knob->isAnimationEnabled() && type == eKnobClipBoardTypeCopyAnim) {
+        Dialogs::errorDialog(tr("Paste").toStdString(), tr("This parameter does not support animation").toStdString());
+        return;
     }
 
-    pushUndoCommand( new PasteUndoCommand(this,copyAnimation,values,curves,parametricCurves,stringAnimation) );
+    if (fromKnob->typeName() != knob->typeName()) {
+        Dialogs::errorDialog(tr("Paste").toStdString(), tr("You can only copy/paste between parameters of the same type. To overcome this, use an expression instead.").toStdString());
+        return;
+    }
+    
+    if (cbDim != -1 && targetDimension == -1) {
+        Dialogs::errorDialog(tr("Paste").toStdString(), tr("When copy/pasting on all dimensions, original and target parameters must have the same dimension.").toStdString());
+        return;
+    }
+    
+    if ((targetDimension == -1 || cbDim == -1) && fromKnob->getDimension() != knob->getDimension()) {
+        Dialogs::errorDialog(tr("Paste").toStdString(), tr("When copy/pasting on all dimensions, original and target parameters must have the same dimension.").toStdString());
+        return;
+    }
+
+    pushUndoCommand(new PasteUndoCommand(this,type, cbDim, targetDimension, fromKnob));
 } // pasteClipBoard
 
-void
-KnobGui::onPasteAnimationActionTriggered()
-{
-    pasteClipBoard();
-}
 
 void
-KnobGui::pasteValuesFromClipboard()
+KnobGui::onPasteActionTriggered()
 {
-    pasteClipBoard();
-}
-
-void
-KnobGui::onPasteValuesActionTriggered()
-{
-    pasteValuesFromClipboard();
+    QAction* act = qobject_cast<QAction*>(sender());
+    if (!act) {
+        return;
+    }
+    
+    pasteClipBoard(act->data().toInt());
 }
 
 void
@@ -380,7 +332,7 @@ KnobGui::onResetDefaultValuesActionTriggered()
 }
 
 void
-KnobGui::resetDefault(int /*dimension*/)
+KnobGui::resetDefault(int dimension)
 {
     KnobPtr knob = getKnob();
     KnobButton* isBtn = dynamic_cast<KnobButton*>( knob.get() );
@@ -391,7 +343,7 @@ KnobGui::resetDefault(int /*dimension*/)
     if (!isBtn && !isPage && !isGroup && !isSeparator) {
         std::list<KnobPtr > knobs;
         knobs.push_back(knob);
-        pushUndoCommand( new RestoreDefaultsCommand(false, knobs) );
+        pushUndoCommand( new RestoreDefaultsCommand(false, knobs, dimension) );
     }
 }
 

@@ -160,18 +160,18 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
         _rBox->setValidator(validator);
     }
     
-    QObject::connect( _rBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
+    QObject::connect( _rBox, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
     
     if (_dimension >= 3) {
         _gBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, this, 1);
-        QObject::connect( _gBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
+        QObject::connect( _gBox, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
         {
             NumericKnobValidator* validator = new NumericKnobValidator(_gBox,this);
             _gBox->setValidator(validator);
         }
         
         _bBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, this, 2);
-        QObject::connect( _bBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
+        QObject::connect( _bBox, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
         
         {
             NumericKnobValidator* validator = new NumericKnobValidator(_bBox,this);
@@ -180,7 +180,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     }
     if (_dimension >= 4) {
         _aBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, this, 3);
-        QObject::connect( _aBox, SIGNAL( valueChanged(double) ), this, SLOT( onColorChanged() ) );
+        QObject::connect( _aBox, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
         {
             NumericKnobValidator* validator = new NumericKnobValidator(_aBox,this);
             _aBox->setValidator(validator);
@@ -433,7 +433,7 @@ KnobGuiColor::onSliderValueChanged(double v)
             _aBox->setValue(v);
         }
     }
-    onColorChanged();
+    onColorChangedInternal();
 }
 
 void
@@ -632,7 +632,6 @@ KnobGuiColor::setEnabled()
         _aBox->setReadOnly(!a);
         _aLabel->setEnabled(a);
     }
-    _dimensionSwitchButton->setEnabled(enabled0);
     _colorLabel->setEnabledMode(enabled0);
 }
 
@@ -956,7 +955,7 @@ KnobGuiColor::showColorDialog()
 //            }
         }
 
-        onColorChanged();
+        onColorChangedInternal();
         
         knob->endChanges();
 
@@ -988,10 +987,53 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
 }
 
 void
-KnobGuiColor::onColorChanged()
+KnobGuiColor::onSpinBoxValueChanged()
 {
     SpinBox* isSpinbox = qobject_cast<SpinBox*>(sender());
+    int spinboxdim = -1;
+    if (!isSpinbox) {
+        return;
+    }
+    if (isSpinbox == _rBox) {
+        spinboxdim = 0;
+    } else if (isSpinbox == _gBox) {
+        spinboxdim = 1;
+    } else if (isSpinbox == _bBox) {
+        spinboxdim = 2;
+    } else if (isSpinbox == _aBox) {
+        spinboxdim = 3;
+    }
     
+    double newValue = 0;
+    double oldValue = 0;
+    if (!_dimensionSwitchButton || _dimensionSwitchButton->isChecked() ) {
+        // each spinbox has a different value
+        assert(spinboxdim != -1);
+        newValue = isSpinbox->value();
+        oldValue = _knob.lock()->getValue(spinboxdim);
+    } else {
+        // use the value of the first dimension only, and set all spinboxes
+        newValue = _rBox->value();
+        oldValue = _knob.lock()->getValue(0);
+        if (_gBox) {
+            _gBox->setValue(newValue);
+        }
+        if (_bBox) {
+            _bBox->setValue(newValue);
+        }
+        if (_aBox) {
+            _aBox->setValue(newValue);
+        }
+    }
+    if (_slider) {
+        _slider->seekScalePosition(newValue);
+    }
+    pushUndoCommand( new KnobUndoCommand<double>(this,oldValue, newValue, spinboxdim ,false) );
+}
+
+void
+KnobGuiColor::onColorChangedInternal()
+{
     
     std::list<double> newValues;
     double r = _rBox->value();
@@ -1008,7 +1050,7 @@ KnobGuiColor::onColorChanged()
             a = _aBox->value();
         }
     } else {
-        if (isSpinbox) {
+        if (_slider) {
             _slider->seekScalePosition(r);
         }
         if (_dimension >= 3) {

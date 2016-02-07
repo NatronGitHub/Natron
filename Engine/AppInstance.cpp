@@ -416,8 +416,6 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderW
             if (outputInput) {
                 writerNode->connectInput(outputInput, 0);
             }
-#pragma message WARN("what is the following line for?")
-            writerNode->getScriptName().c_str();
         }
         
         assert(writerNode);

@@ -88,15 +88,16 @@ protected:
 
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
     
+    virtual void dropEvent(QDropEvent* e) OVERRIDE ;
+    
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE ;
+    
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE ;
+    
+    virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE ;
 private:
     
-    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
-
-    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
-
-    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
-
-    virtual void dragLeaveEvent(QDragLeaveEvent* e) OVERRIDE FINAL;
+    
     
     
     int animation;

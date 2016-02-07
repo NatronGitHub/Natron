@@ -16,8 +16,9 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Engine_KnobGui_h
-#define Engine_KnobGui_h
+
+#ifndef KNOBWIDGETDND_H
+#define KNOBWIDGETDND_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,42 +26,50 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
-#include "Engine/OverlaySupport.h"
-#include "Engine/EngineFwd.h"
+#include "Gui/GuiFwd.h"
+
+#define KNOB_DND_MIME_DATA_KEY "KnobLink"
+
+
+class QDragEnterEvent;
+class QDragMoveEvent;
+class QDragLeaveEvent;
+class QDropEvent;
+class QMouseEvent;
+class QWidget;
+class QKeyEvent;
 
 NATRON_NAMESPACE_ENTER;
 
-class KnobGuiI
-    : public OverlaySupport
+struct KnobWidgetDnDPrivate;
+class KnobWidgetDnD
 {
 public:
-
-    KnobGuiI()
-    {
-    }
-
-    virtual void swapOpenGLBuffers() = 0;
-    virtual void redraw() = 0;
-    virtual void getViewportSize(double &width, double &height) const = 0;
-    virtual void getPixelScale(double & xScale, double & yScale) const  = 0;
-    virtual void getBackgroundColour(double &r, double &g, double &b) const = 0;
-    virtual void copyAnimationToClipboard(int/* dimension = -1*/) const {}
-    virtual void copyValuesToClipboard(int /*dimension = -1*/) const {}
-    virtual void copyLinkToClipboard(int /*dimension = -1*/) const {}
-    virtual bool isGuiFrozenForPlayback() const = 0;
-    virtual void saveOpenGLContext() = 0;
-    virtual void restoreOpenGLContext() = 0;
-    virtual unsigned int getCurrentRenderScale() const { return 0; }
-    virtual boost::shared_ptr<Curve> getCurve(int dimension) const = 0;
+    
+    KnobWidgetDnD(KnobGui* knob, int dimension, QWidget* widget);
+    
+    virtual ~KnobWidgetDnD();
+    
 protected:
+    
+    void keyPress(QKeyEvent* e);
+    void keyRelease(QKeyEvent* e);
+    bool mousePress(QMouseEvent* e);
+    bool mouseMove(QMouseEvent* e);
+    void mouseRelease(QMouseEvent* e);
+    bool dragEnter(QDragEnterEvent* e);
+    bool dragMove(QDragMoveEvent* e);
+    bool drop(QDropEvent* e);
+    void mouseEnter(QEvent* e);
+    void mouseLeave(QEvent* e);
+private:
+    
+    void startDrag();
 
-    ///Should set to the underlying knob the gui ptr
-    virtual void setKnobGuiPointer() = 0;
+    
+    boost::scoped_ptr<KnobWidgetDnDPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // Engine_KnobGui_h
+#endif // KNOBWIDGETDND_H

@@ -33,6 +33,8 @@
 
 #include "Gui/GuiFwd.h"
 
+class QDrag;
+
 NATRON_NAMESPACE_ENTER;
 
 /**
@@ -179,6 +181,9 @@ public:
     int getOverlayRedrawRequestsCount() const;
     
     void clearOverlayRedrawRequests();
+    
+    void setKnobDnDData(QDrag* drag, const KnobPtr& knob, int dimension);
+    void getKnobDnDData(QDrag** drag,  KnobPtr* knob, int* dimension) const;
     
 public Q_SLOTS:
     

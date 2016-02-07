@@ -645,32 +645,45 @@ KnobGuiDouble::sliderEditingEnd(double d)
 void
 KnobGuiDouble::onSpinBoxValueChanged()
 {
-    std::list<double> newValues;
+    
+    SpinBox* box = qobject_cast<SpinBox*>(sender());
+    if (!box) {
+        return;
+    }
+    
+    int spinBoxDim = -1;
+    
+    double newValue = 0;
+    double oldValue = 0;
 
     if (!_dimensionSwitchButton || _dimensionSwitchButton->isChecked() ) {
         // each spinbox has a different value
         for (U32 i = 0; i < _spinBoxes.size(); ++i) {
-            double v = _spinBoxes[i].first->value();
-            valueAccordingToType(true, i, &v);
-            newValues.push_back(v);
+            if (_spinBoxes[i].first == box) {
+                newValue = _spinBoxes[i].first->value();
+                valueAccordingToType(true, i, &newValue);
+                oldValue = _knob.lock()->getValue(i);
+                spinBoxDim = i;
+            }
         }
     } else {
         // use the value of the first dimension only, and set all spinboxes
-        if (_spinBoxes.size() > 1) {
-            double v = _spinBoxes[0].first->value();
-            valueAccordingToType(true, 0, &v);
-            newValues.push_back(v);
-            for (U32 i = 1; i < _spinBoxes.size(); ++i) {
-                newValues.push_back(v);
-                _spinBoxes[i].first->setValue(v);
+        newValue = _spinBoxes[0].first->value();
+        valueAccordingToType(true, 0, &newValue);
+        oldValue = _knob.lock()->getValue(0);
+        spinBoxDim = 0;
+        for (U32 i = 1; i < _spinBoxes.size(); ++i) {
+            if (_spinBoxes[i].first != box) {
+                _spinBoxes[i].first->setValue(newValue);
             }
         }
+        
     }
 
     if (_slider) {
-        _slider->seekScalePosition( newValues.front() );
+        _slider->seekScalePosition(newValue);
     }
-    pushUndoCommand( new KnobUndoCommand<double>(this,_knob.lock()->getValueForEachDimension_mt_safe(),newValues,false) );
+    pushUndoCommand( new KnobUndoCommand<double>(this,oldValue, newValue, spinBoxDim ,false) );
 }
 
 void
@@ -732,10 +745,6 @@ KnobGuiDouble::setEnabled()
     }
     if (_slider) {
         _slider->setReadOnly( !enabled0 );
-    }
-    
-    if (_dimensionSwitchButton) {
-        _dimensionSwitchButton->setEnabled(enabled0);
     }
 
 }

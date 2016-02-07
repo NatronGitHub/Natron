@@ -379,7 +379,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     bool paramShouldBePersistant = true;
 
     bool secretByDefault = descriptor.getSecret();
-    
+    bool enabledByDefault = descriptor.getEnabled();
     if (descriptor.getType() == kOfxParamTypeInteger) {
         OfxIntegerInstance *ret = new OfxIntegerInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
@@ -529,6 +529,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
          */
         //throw std::runtime_error(std::string("Parameter ") + paramName + " has unsupported OFX type " + descriptor.getType());
         secretByDefault = true;
+        enabledByDefault = false;
         OfxCustomInstance *ret = new OfxCustomInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         assert(knob);
@@ -589,7 +590,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     knob->setIsPersistant(persistant);
     knob->setAnimationEnabled( descriptor.getCanAnimate() );
     knob->setSecretByDefault(secretByDefault);
-    knob->setDefaultAllDimensionsEnabled( descriptor.getEnabled() );
+    knob->setDefaultAllDimensionsEnabled(enabledByDefault);
     knob->setHintToolTip( descriptor.getHint() );
     knob->setCanUndo( descriptor.getCanUndo() );
     knob->setSpacingBetweenItems( descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth) );

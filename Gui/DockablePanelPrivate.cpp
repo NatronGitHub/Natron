@@ -491,7 +491,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         assert(fieldLayout);
         
         ///Create the label if needed
-        ClickableLabel* label = 0;
+        KnobClickableLabel* label = 0;
         
         std::string descriptionLabel;
         KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
@@ -512,7 +512,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                 labelLayout->setSpacing(TO_DPIY(2));
             }
             
-            label = new ClickableLabel("",page->second.tab);
+            label = new KnobClickableLabel("", ret, page->second.tab);
             QString labelStr(descriptionLabel.c_str());
             labelStr += ":";
             label->setText_overload(labelStr );

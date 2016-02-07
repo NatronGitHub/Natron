@@ -201,13 +201,6 @@ KnobGui::isSecretRecursive() const
 }
 
 void
-KnobGui::showAnimationMenu()
-{
-    createAnimationMenu(_imp->animationMenu,-1);
-    _imp->animationMenu->exec( _imp->animationButton->mapToGlobal( QPoint(0,0) ) );
-}
-
-void
 KnobGui::onShowInCurveEditorActionTriggered()
 {
     KnobPtr knob = getKnob();
@@ -260,21 +253,29 @@ KnobGui::onRemoveAnimationActionTriggered()
 }
 
 void
-KnobGui::setInterpolationForDimensions(const std::vector<int> & dimensions,
+KnobGui::setInterpolationForDimensions(QAction* action,
                                        KeyframeTypeEnum interp)
 {
+    if (!action) {
+        return;
+    }
+    int dimension = action->data().toInt();
+    
     KnobPtr knob = getKnob();
     
-    for (U32 i = 0; i < dimensions.size(); ++i) {
-        boost::shared_ptr<Curve> c = knob->getCurve(dimensions[i]);
-        if (c) {
-            int kfCount = c->getKeyFramesCount();
-            for (int j = 0; j < kfCount; ++j) {
-                c->setKeyFrameInterpolation(interp, j);
-            }
-            boost::shared_ptr<Curve> guiCurve = getCurve(dimensions[i]);
-            if (guiCurve) {
-                guiCurve->clone(*c);
+    
+    for (int i = 0; i < knob->getDimension(); ++i) {
+        if (dimension == -1 || dimension == i) {
+            boost::shared_ptr<Curve> c = knob->getCurve(i);
+            if (c) {
+                int kfCount = c->getKeyFramesCount();
+                for (int j = 0; j < kfCount; ++j) {
+                    c->setKeyFrameInterpolation(interp, j);
+                }
+                boost::shared_ptr<Curve> guiCurve = getCurve(i);
+                if (guiCurve) {
+                    guiCurve->clone(*c);
+                }
             }
         }
     }
@@ -288,73 +289,37 @@ KnobGui::setInterpolationForDimensions(const std::vector<int> & dimensions,
 void
 KnobGui::onConstantInterpActionTriggered()
 {
-    KnobPtr knob = getKnob();
-    std::vector<int> dims;
-
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        dims.push_back(i);
-    }
-    setInterpolationForDimensions(dims, eKeyframeTypeConstant);
+    setInterpolationForDimensions(qobject_cast<QAction*>(sender()), eKeyframeTypeConstant);
 }
 
 void
 KnobGui::onLinearInterpActionTriggered()
 {
-    KnobPtr knob = getKnob();
-    std::vector<int> dims;
-
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        dims.push_back(i);
-    }
-    setInterpolationForDimensions(dims, eKeyframeTypeLinear);
+    setInterpolationForDimensions(qobject_cast<QAction*>(sender()), eKeyframeTypeLinear);
 }
 
 void
 KnobGui::onSmoothInterpActionTriggered()
 {
-    KnobPtr knob = getKnob();
-    std::vector<int> dims;
-
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        dims.push_back(i);
-    }
-    setInterpolationForDimensions(dims, eKeyframeTypeSmooth);
+    setInterpolationForDimensions(qobject_cast<QAction*>(sender()), eKeyframeTypeSmooth);
 }
 
 void
 KnobGui::onCatmullromInterpActionTriggered()
 {
-    KnobPtr knob = getKnob();
-    std::vector<int> dims;
-
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        dims.push_back(i);
-    }
-    setInterpolationForDimensions(dims, eKeyframeTypeCatmullRom);
+    setInterpolationForDimensions(qobject_cast<QAction*>(sender()), eKeyframeTypeCatmullRom);
 }
 
 void
 KnobGui::onCubicInterpActionTriggered()
 {
-    KnobPtr knob = getKnob();
-    std::vector<int> dims;
-
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        dims.push_back(i);
-    }
-    setInterpolationForDimensions(dims, eKeyframeTypeCubic);
+    setInterpolationForDimensions(qobject_cast<QAction*>(sender()), eKeyframeTypeCubic);
 }
 
 void
 KnobGui::onHorizontalInterpActionTriggered()
 {
-    KnobPtr knob = getKnob();
-    std::vector<int> dims;
-
-    for (int i = 0; i < knob->getDimension(); ++i) {
-        dims.push_back(i);
-    }
-    setInterpolationForDimensions(dims, eKeyframeTypeHorizontal);
+    setInterpolationForDimensions(qobject_cast<QAction*>(sender()), eKeyframeTypeHorizontal);
 }
 
 void
@@ -606,9 +571,7 @@ KnobGui::hide()
     } else {
         _imp->customInteract->hide();
     }
-    if (_imp->animationButton) {
-        _imp->animationButton->hide();
-    }
+
     //also  hide the curve from the curve editor if there's any and the knob is not inside a group
     if ( getKnob()->getHolder()->getApp() ) {
         KnobPtr parent = getKnob()->getParentKnob();
@@ -664,9 +627,7 @@ KnobGui::show(int /*index*/)
     } else {
         _imp->customInteract->show();
     }
-    if (_imp->animationButton) {
-        _imp->animationButton->show();
-    }
+
     //also show the curve from the curve editor if there's any
     if ( getKnob()->getHolder()->getApp() ) {
         getGui()->getCurveEditor()->showCurves(this);

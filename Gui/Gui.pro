@@ -135,6 +135,7 @@ SOURCES += \
     KnobGuiGroup.cpp \
     KnobGuiParametric.cpp \
     KnobUndoCommand.cpp \
+    KnobWidgetDnD.cpp \
     Label.cpp \
     LineEdit.cpp \
     LinkToKnobDialog.cpp \
@@ -284,6 +285,7 @@ HEADERS += \
     KnobGuiGroup.h \
     KnobGuiParametric.h \
     KnobUndoCommand.h \
+    KnobWidgetDnD.h \
     Label.h \
     LineEdit.h \
     LinkToKnobDialog.h \

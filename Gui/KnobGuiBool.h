@@ -50,19 +50,27 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Label.h"
 #include "Gui/GuiFwd.h"
+#include "Gui/KnobWidgetDnD.h"
 
 NATRON_NAMESPACE_ENTER;
 
 //================================
 
-class Bool_CheckBox: public AnimatedCheckBox
+class Bool_CheckBox: public AnimatedCheckBox, public KnobWidgetDnD
 {
     bool useCustomColor;
     QColor customColor;
     
 public:
     
-    Bool_CheckBox(QWidget* parent = 0) : AnimatedCheckBox(parent), useCustomColor(false), customColor() {}
+    Bool_CheckBox(KnobGui* knob, int dimension, QWidget* parent = 0)
+    : AnimatedCheckBox(parent)
+    , KnobWidgetDnD(knob, dimension, this)
+    , useCustomColor(false)
+    , customColor()
+    {
+    
+    }
     
     virtual ~Bool_CheckBox() {}
     
@@ -74,6 +82,18 @@ public:
     
     virtual void getBackgroundColor(double *r,double *g,double *b) const OVERRIDE FINAL;
     
+private:
+    
+    virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void dragEnterEvent(QDragEnterEvent* e) OVERRIDE FINAL;
+    virtual void dragMoveEvent(QDragMoveEvent* e) OVERRIDE FINAL;
+    virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     
 };
 
