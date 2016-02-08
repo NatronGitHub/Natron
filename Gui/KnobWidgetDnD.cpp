@@ -357,7 +357,11 @@ KnobWidgetDnD::drop(QDropEvent* e)
                 ss << effect->getNode()->getScriptName_mt_safe() << "." << source->getName();
                 ss << ".getValue(";
                 if (source->getDimension() > 1) {
-                    ss << "dimension";
+                    if (srcDim == -1) {
+                        ss << "dimension";
+                    } else {
+                        ss << srcDim;
+                    }
                 }
                 ss << ")";
                 ss << " * curve(frame,";
