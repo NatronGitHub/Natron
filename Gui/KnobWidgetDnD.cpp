@@ -331,6 +331,11 @@ KnobWidgetDnD::drop(QDropEvent* e)
         _imp->knob->getGui()->getApp()->setKnobDnDData(0, KnobPtr(), -1);
         if (source && source != thisKnob) {
             
+            int targetDim = _imp->dimension;
+            if (targetDim == 0 && !_imp->knob->getAllDimensionsVisible()) {
+                targetDim = -1;
+            }
+            
             Qt::KeyboardModifiers mods = QApplication::keyboardModifiers();
             if ((mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier)) == (Qt::ControlModifier | Qt::ShiftModifier)) {
                 
@@ -355,13 +360,19 @@ KnobWidgetDnD::drop(QDropEvent* e)
                     ss << "dimension";
                 }
                 ss << ")";
-                ss << " * curve(frame,dimension)";
+                ss << " * curve(frame,";
+                if (targetDim == -1) {
+                    ss << "dimension";
+                } else {
+                    ss << targetDim;
+                }
+                ss << ")";
                 
 
                 expr = ss.str();
                 _imp->knob->pushUndoCommand(new SetExpressionCommand(_imp->knob->getKnob(), false, _imp->dimension,expr));
             } else if ((mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier)) == (Qt::ControlModifier)) {
-                _imp->knob->pushUndoCommand(new PasteUndoCommand(_imp->knob, eKnobClipBoardTypeCopyLink, srcDim, _imp->dimension, source));
+                _imp->knob->pushUndoCommand(new PasteUndoCommand(_imp->knob, eKnobClipBoardTypeCopyLink, srcDim, targetDim, source));
             }
             return true;
         }
