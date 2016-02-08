@@ -62,6 +62,9 @@
 #include <ofxhPluginCache.h>
 #endif
 
+#define NATRON_DEFAULT_OCIO_CONFIG_NAME "blender"
+
+
 #define NATRON_CUSTOM_OCIO_CONFIG_NAME "Custom config"
 
 #define NATRON_DEFAULT_APPEARANCE_VERSION 1
@@ -726,7 +729,7 @@ Settings::initializeKnobsAppearance()
         if ( ocioConfigsDir.exists() ) {
             QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
             for (int j = 0; j < entries.size(); ++j) {
-                if ( entries[j].contains(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
+                if ( entries[j] == NATRON_DEFAULT_OCIO_CONFIG_NAME ) {
                     defaultIndex = j;
                 }
                 configs.push_back( entries[j].toStdString() );

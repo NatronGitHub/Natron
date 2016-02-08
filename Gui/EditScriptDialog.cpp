@@ -98,6 +98,8 @@ NATRON_NAMESPACE_ENTER;
 
 struct EditScriptDialogPrivate
 {
+    
+    Gui* gui;
     QVBoxLayout* mainLayout;
     
     Label* expressionLabel;
@@ -114,8 +116,9 @@ struct EditScriptDialogPrivate
     
     QDialogButtonBox* buttons;
     
-    EditScriptDialogPrivate()
-    : mainLayout(0)
+    EditScriptDialogPrivate(Gui* gui)
+    : gui(gui)
+    , mainLayout(0)
     , expressionLabel(0)
     , expressionEdit(0)
     , midButtonsContainer(0)
@@ -130,9 +133,9 @@ struct EditScriptDialogPrivate
     }
 };
 
-EditScriptDialog::EditScriptDialog(QWidget* parent)
+EditScriptDialog::EditScriptDialog(Gui* gui, QWidget* parent)
 : QDialog(parent)
-, _imp(new EditScriptDialogPrivate())
+, _imp(new EditScriptDialogPrivate(gui))
 {
     
     setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
@@ -173,7 +176,7 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     //_imp->expressionLabel->setFont(font);
     _imp->mainLayout->addWidget(_imp->expressionLabel);
     
-    _imp->expressionEdit = new InputScriptTextEdit(this);
+    _imp->expressionEdit = new InputScriptTextEdit(_imp->gui,this);
     _imp->expressionEdit->setAcceptDrops(true);
     _imp->expressionEdit->setMouseTracking(true);
     QFontMetrics fm = _imp->expressionEdit->fontMetrics();

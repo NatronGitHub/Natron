@@ -45,7 +45,7 @@ class EditExpressionDialog : public EditScriptDialog
     
 public:
     
-    EditExpressionDialog(int dimension, KnobGui* knob, QWidget* parent);
+    EditExpressionDialog(Gui* gui, int dimension, KnobGui* knob, QWidget* parent);
     
     virtual ~EditExpressionDialog()
     {

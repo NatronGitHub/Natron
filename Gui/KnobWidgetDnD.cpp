@@ -163,7 +163,13 @@ KnobWidgetDnD::startDrag()
     if (!internalKnob) {
         return;
     }
-    _imp->knob->getGui()->getApp()->setKnobDnDData(drag, internalKnob, _imp->dimension);
+    
+    int dragDim = _imp->dimension;
+    if (dragDim == 0 && !_imp->knob->getAllDimensionsVisible()) {
+        dragDim = -1;
+    }
+    
+    _imp->knob->getGui()->getApp()->setKnobDnDData(drag, internalKnob, dragDim);
     
     QFont font = _imp->widget->font();
     font.setBold(true);
@@ -192,9 +198,9 @@ KnobWidgetDnD::startDrag()
     
     
     if (internalKnob->getDimension() > 1) {
-        if (_imp->dimension != -1) {
+        if (dragDim != -1) {
             knobLine += '.';
-            knobLine += internalKnob->getDimensionName(_imp->dimension).c_str();
+            knobLine += internalKnob->getDimensionName(dragDim).c_str();
         } else {
             if (!isExprMult) {
                 knobLine += ' ';
@@ -208,7 +214,7 @@ KnobWidgetDnD::startDrag()
     }
    
     QString textThirdLine;
-    if (_imp->dimension == -1) {
+    if (dragDim == -1) {
         textThirdLine = QObject::tr("Drag it to another parameter's label of the same type");
     } else {
         textThirdLine = QObject::tr("Drag it to another parameter's dimension of the same type");
@@ -325,6 +331,11 @@ KnobWidgetDnD::drop(QDropEvent* e)
         _imp->knob->getGui()->getApp()->setKnobDnDData(0, KnobPtr(), -1);
         if (source && source != thisKnob) {
             
+            int targetDim = _imp->dimension;
+            if (targetDim == 0 && !_imp->knob->getAllDimensionsVisible()) {
+                targetDim = -1;
+            }
+            
             Qt::KeyboardModifiers mods = QApplication::keyboardModifiers();
             if ((mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier)) == (Qt::ControlModifier | Qt::ShiftModifier)) {
                 
@@ -346,16 +357,26 @@ KnobWidgetDnD::drop(QDropEvent* e)
                 ss << effect->getNode()->getScriptName_mt_safe() << "." << source->getName();
                 ss << ".getValue(";
                 if (source->getDimension() > 1) {
-                    ss << "dimension";
+                    if (srcDim == -1) {
+                        ss << "dimension";
+                    } else {
+                        ss << srcDim;
+                    }
                 }
                 ss << ")";
-                ss << " * curve(frame,dimension)";
+                ss << " * curve(frame,";
+                if (targetDim == -1) {
+                    ss << "dimension";
+                } else {
+                    ss << targetDim;
+                }
+                ss << ")";
                 
 
-                
+                expr = ss.str();
                 _imp->knob->pushUndoCommand(new SetExpressionCommand(_imp->knob->getKnob(), false, _imp->dimension,expr));
             } else if ((mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier)) == (Qt::ControlModifier)) {
-                _imp->knob->pushUndoCommand(new PasteUndoCommand(_imp->knob, eKnobClipBoardTypeCopyLink, srcDim, _imp->dimension, source));
+                _imp->knob->pushUndoCommand(new PasteUndoCommand(_imp->knob, eKnobClipBoardTypeCopyLink, srcDim, targetDim, source));
             }
             return true;
         }

@@ -30,6 +30,7 @@
 #include <QEvent>
 #include <QStyle>
 
+#include "Gui/KnobGui.h"
 #include "Gui/GuiApplicationManager.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -119,6 +120,13 @@ ClickableLabel::setSunken(bool s)
         sunkenStyle = s;
         refreshStyle();
     }
+}
+
+KnobClickableLabel::KnobClickableLabel(const QString& text, KnobGui* knob, QWidget* parent)
+: ClickableLabel(text, parent)
+, KnobWidgetDnD(knob,-1, this)
+{
+    knob->enableRightClickMenu(this,-1);
 }
 
 void

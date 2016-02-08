@@ -189,6 +189,10 @@ KnobGui::pasteClipBoard(int targetDimension)
         return;
     }
     
+    if (targetDimension == 0 && !getAllDimensionsVisible()) {
+        targetDimension = -1;
+    }
+    
     if (!knob->isAnimationEnabled() && type == eKnobClipBoardTypeCopyAnim) {
         Dialogs::errorDialog(tr("Paste").toStdString(), tr("This parameter does not support animation").toStdString());
         return;

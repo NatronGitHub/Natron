@@ -261,7 +261,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->outputEdit->setReadOnly(true);
     _imp->outputEdit->setFont(scriptFont);
     
-    _imp->inputEdit = new InputScriptTextEdit(this);
+    _imp->inputEdit = new InputScriptTextEdit(gui, this);
     QObject::connect(_imp->inputEdit, SIGNAL(textChanged()), this, SLOT(onInputScriptTextChanged()));
     _imp->inputEdit->setFont(scriptFont);
     QFontMetrics fm = _imp->inputEdit->fontMetrics();
