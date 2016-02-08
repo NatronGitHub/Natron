@@ -343,10 +343,22 @@ EffectInstance::Implementation::aborted(const EffectDataTLSPtr& tls) const
         }
         
         if (args->canAbort) {
-            if ( isViewer && isViewer->isRenderAbortable(args->textureIndex, args->renderAge) ) {
-                return true;
-            }
             
+            if (isViewer) {
+                ///The renders have been aborted on the viewer itself, check it with the render age
+                bool isLatestRender;
+                if (isViewer->isRenderAbortable(args->textureIndex, args->renderAge, &isLatestRender)) {
+                    return true;
+                }
+                
+                ///If the render was not aborted but it is no longer the latest render and the plug-in safety does not allow
+                ///concurrent thread abort it
+                if (!isLatestRender && (args->currentThreadSafety == eRenderSafetyInstanceSafe || args->currentThreadSafety == eRenderSafetyUnsafe)) {
+                    return true;
+                }
+                
+            }
+           
             if (args->draftMode && args->timeline && args->time != args->timeline->currentFrame()) {
                 return true;
             }

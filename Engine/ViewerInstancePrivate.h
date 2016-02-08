@@ -300,13 +300,20 @@ public:
      * @brief We keep track of ongoing renders internally. This function is called only by non 
      * abortable renders to determine if we should abort anyway because the render is no longer interesting.
      **/
-    bool isRenderAbortable(int texIndex,U64 age) const
+    bool isRenderAbortable(int texIndex,U64 age, bool* isLatestRender) const
     {
         QMutexLocker k(&renderAgeMutex);
       
-        
+        *isLatestRender = true;
         for (OnGoingRenders::const_iterator it = currentRenderAges[texIndex].begin(); it!=currentRenderAges[texIndex].end();++it) {
             if (it->age == age) {
+                OnGoingRenders::const_iterator next = it;
+                ++next;
+                if (next == currentRenderAges[texIndex].end()) {
+                    *isLatestRender = true;
+                } else {
+                    *isLatestRender = false;
+                }
                 return it->aborted;
             }
         }

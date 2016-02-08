@@ -3174,9 +3174,9 @@ ViewerInstance::getCurrentView() const
 }
 
 bool
-ViewerInstance::isRenderAbortable(int textureIndex, U64 renderAge) const
+ViewerInstance::isRenderAbortable(int textureIndex, U64 renderAge,bool* isLatestRender) const
 {
-    return _imp->isRenderAbortable(textureIndex, renderAge);
+    return _imp->isRenderAbortable(textureIndex, renderAge, isLatestRender);
 }
 
 void

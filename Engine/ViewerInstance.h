@@ -193,7 +193,7 @@ public:
         return true;
     }
     
-    bool isRenderAbortable(int textureIndex, U64 renderAge) const;
+    bool isRenderAbortable(int textureIndex, U64 renderAge,bool* isLatestRender) const;
 
 
     void setDisplayChannels(DisplayChannelsEnum channels, bool bothInputs);
