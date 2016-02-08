@@ -909,6 +909,11 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
         if (foundCurIt->getNumComponents() == 1) {
             _imp->viewerChannels->setCurrentIndex_no_emit(5);
             setDisplayChannels(5, true);
+        } else {
+            if (foundCurIt->getNumComponents() > 1 && _imp->viewerChannels->activeIndex() == 5) {
+                _imp->viewerChannels->setCurrentIndex_no_emit(1);
+                setDisplayChannels(1, true);
+            }
         }
         _imp->viewerNode->setActiveLayer(*foundCurIt, false);
     }
