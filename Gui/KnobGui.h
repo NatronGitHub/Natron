@@ -263,6 +263,8 @@ public:
     {
         return (sliderMax > sliderMin) && ( (sliderMax - sliderMin) < SLIDER_MAX_RANGE ) && (sliderMax < DBL_MAX) && (sliderMin > -DBL_MAX);
     }
+    
+    virtual bool getAllDimensionsVisible() const OVERRIDE { return true; }
 
 public Q_SLOTS:
     

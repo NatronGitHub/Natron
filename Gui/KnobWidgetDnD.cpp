@@ -163,7 +163,13 @@ KnobWidgetDnD::startDrag()
     if (!internalKnob) {
         return;
     }
-    _imp->knob->getGui()->getApp()->setKnobDnDData(drag, internalKnob, _imp->dimension);
+    
+    int dragDim = _imp->dimension;
+    if (dragDim == 0 && !_imp->knob->getAllDimensionsVisible()) {
+        dragDim = -1;
+    }
+    
+    _imp->knob->getGui()->getApp()->setKnobDnDData(drag, internalKnob, dragDim);
     
     QFont font = _imp->widget->font();
     font.setBold(true);
@@ -192,9 +198,9 @@ KnobWidgetDnD::startDrag()
     
     
     if (internalKnob->getDimension() > 1) {
-        if (_imp->dimension != -1) {
+        if (dragDim != -1) {
             knobLine += '.';
-            knobLine += internalKnob->getDimensionName(_imp->dimension).c_str();
+            knobLine += internalKnob->getDimensionName(dragDim).c_str();
         } else {
             if (!isExprMult) {
                 knobLine += ' ';
@@ -208,7 +214,7 @@ KnobWidgetDnD::startDrag()
     }
    
     QString textThirdLine;
-    if (_imp->dimension == -1) {
+    if (dragDim == -1) {
         textThirdLine = QObject::tr("Drag it to another parameter's label of the same type");
     } else {
         textThirdLine = QObject::tr("Drag it to another parameter's dimension of the same type");

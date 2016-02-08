@@ -213,6 +213,7 @@ class TextureRect;
 class TimeLine;
 class UserParamHolder;
 class ViewerInstance;
+class ViewIdx;
 namespace Color {
 class Lut;
 }

@@ -49,6 +49,14 @@
 
 NATRON_NAMESPACE_ENTER;
 
+/**
+ * @brief Small struct to handle different views across a Knob. 
+ * For all functions that change the state of a Knob, if a view parameter is available it is possible to 
+ * pass ViewIdx::ALL_VIEWS to operate on all views or ViewIdx::CURRENT_VIEW to operate on the "current view"
+ * that is being processed (resolved via thread local storage).
+ * All functions that are marked const cannot have ViewIdx::ALL_VIEWS passed as parameter but only ViewIdx::CURRENT_VIEW
+ * may be used.
+ **/
 struct ViewIdx
 {
     int i;
