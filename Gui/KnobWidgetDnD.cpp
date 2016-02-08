@@ -168,7 +168,19 @@ KnobWidgetDnD::startDrag()
     QFont font = _imp->widget->font();
     font.setBold(true);
     QFontMetrics fmetrics(font,0);
-    QString textFirstLine( QObject::tr("Linking value from:") );
+    
+    Qt::KeyboardModifiers mods = QApplication::keyboardModifiers();
+
+  
+    bool isExprMult = (mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier)) == (Qt::ControlModifier | Qt::ShiftModifier);
+    
+    QString textFirstLine;
+    if (isExprMult) {
+        textFirstLine = QObject::tr("Linking (expression):");
+    } else {
+        textFirstLine = QObject::tr("Linking (hard-link) from:");
+    }
+    
     
     QString knobLine;
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(internalKnob->getHolder());
@@ -184,11 +196,17 @@ KnobWidgetDnD::startDrag()
             knobLine += '.';
             knobLine += internalKnob->getDimensionName(_imp->dimension).c_str();
         } else {
-            knobLine += ' ';
-            knobLine += QObject::tr("(all dimensions)");
+            if (!isExprMult) {
+                knobLine += ' ';
+                knobLine += QObject::tr("(all dimensions)");
+            }
         }
     }
     
+    if (isExprMult) {
+        knobLine += " * curve(frame, dimension)";
+    }
+   
     QString textThirdLine;
     if (_imp->dimension == -1) {
         textThirdLine = QObject::tr("Drag it to another parameter's label of the same type");
@@ -305,7 +323,7 @@ KnobWidgetDnD::drop(QDropEvent* e)
         QDrag* drag;
         _imp->knob->getGui()->getApp()->getKnobDnDData(&drag, &source, &srcDim);
         _imp->knob->getGui()->getApp()->setKnobDnDData(0, KnobPtr(), -1);
-        if (source) {
+        if (source && source != thisKnob) {
             
             Qt::KeyboardModifiers mods = QApplication::keyboardModifiers();
             if ((mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier)) == (Qt::ControlModifier | Qt::ShiftModifier)) {

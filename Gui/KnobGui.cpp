@@ -484,7 +484,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
     appPTR->getKnobClipBoard(&type, &fromKnob, &cbDim);
     
     
-    if (fromKnob) {
+    if (fromKnob && fromKnob != knob) {
         if (fromKnob->typeName() == knob->typeName()) {
             
             QString titlebase;
