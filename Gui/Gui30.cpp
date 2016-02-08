@@ -439,6 +439,11 @@ Gui::questionDialog(const std::string & title,
             _imp->_uiUsingMainThreadCond.wait(&_imp->_uiUsingMainThreadMutex);
         }
     } else {
+        {
+            QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
+            assert(!_imp->_uiUsingMainThread);
+            _imp->_uiUsingMainThread = true;
+        }
         Q_EMIT onDoDialogWithStopAskingCheckbox( (int)MessageBox::eMessageBoxTypeQuestion,
                                                  QString( title.c_str() ), QString( message.c_str() ), useHtml, buttons, (int)defaultButton );
     }
@@ -465,6 +470,13 @@ Gui::onDoDialogWithStopAskingCheckbox(int type,
     if ( dialog.exec() ) {
         _imp->_lastQuestionDialogAnswer = dialog.getReply();
         _imp->_lastStopAskingAnswer = stopAskingCheckbox->isChecked();
+    }
+    
+    {
+        QMutexLocker locker(&_imp->_uiUsingMainThreadMutex);
+        assert(_imp->_uiUsingMainThread);
+        _imp->_uiUsingMainThread = false;
+        _imp->_uiUsingMainThreadCond.wakeAll();
     }
 }
 
