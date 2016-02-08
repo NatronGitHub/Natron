@@ -352,10 +352,8 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
     }
     
     bool isAppKnob = knob->getHolder() && knob->getHolder()->getApp() != 0;
-    if (!isAppKnob) {
-        return;
-    }
-    if (knob->getDimension() > 1 && knob->isAnimationEnabled() && !hasDimensionSlaved) {
+  
+    if (knob->getDimension() > 1 && knob->isAnimationEnabled() && !hasDimensionSlaved && isAppKnob) {
         ///Multi-dim actions
         if (!hasAllKeyframesAtTime) {
             QAction* setKeyAction = new QAction(tr("Set Key")+' '+tr("(all dimensions)"),menu);
@@ -386,7 +384,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         }
         
     }
-    if ((dimension != -1 || knob->getDimension() == 1) && knob->isAnimationEnabled() && !dimensionIsSlaved) {
+    if ((dimension != -1 || knob->getDimension() == 1) && knob->isAnimationEnabled() && !dimensionIsSlaved && isAppKnob) {
         if (!menu->isEmpty()) {
             menu->addSeparator();
         }
@@ -426,7 +424,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         menu->addSeparator();
     }
     
-    if (hasAnimation) {
+    if (hasAnimation && isAppKnob) {
         QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"),menu);
         QObject::connect( showInCurveEditorAction,SIGNAL( triggered() ),this,SLOT( onShowInCurveEditorActionTriggered() ) );
         menu->addAction(showInCurveEditorAction);
@@ -450,7 +448,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         
         Menu* copyMenu = new Menu(menu);
         copyMenu->setTitle(tr("Copy"));
-        if (hasAnimation) {
+        if (hasAnimation && isAppKnob) {
             
             QAction* copyAnimationAction = new QAction(tr("Copy Animation"),copyMenu);
             copyAnimationAction->setData(-1);
@@ -466,12 +464,12 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         QObject::connect( copyValuesAction,SIGNAL( triggered() ), this, SLOT( onCopyValuesActionTriggered() ) );
         
         
-        
-        QAction* copyLinkAction = new QAction(tr("Copy Link"),copyMenu);
-        copyLinkAction->setData( QVariant(-1) );
-        copyMenu->addAction(copyLinkAction);
-        QObject::connect( copyLinkAction,SIGNAL( triggered() ), this, SLOT( onCopyLinksActionTriggered() ) );
-        
+        if (isAppKnob) {
+            QAction* copyLinkAction = new QAction(tr("Copy Link"),copyMenu);
+            copyLinkAction->setData( QVariant(-1) );
+            copyMenu->addAction(copyLinkAction);
+            QObject::connect( copyLinkAction,SIGNAL( triggered() ), this, SLOT( onCopyLinksActionTriggered() ) );
+        }
         
         menu->addAction(copyMenu->menuAction());
     }
@@ -484,7 +482,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
     appPTR->getKnobClipBoard(&type, &fromKnob, &cbDim);
     
     
-    if (fromKnob && fromKnob != knob) {
+    if (fromKnob && fromKnob != knob && isAppKnob) {
         if (fromKnob->typeName() == knob->typeName()) {
             
             QString titlebase;
@@ -561,7 +559,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         }
         hasExpression |= !dimExpr.empty();
     }
-    if (knob->getDimension() > 1 && !hasDimensionSlaved) {
+    if (knob->getDimension() > 1 && !hasDimensionSlaved && isAppKnob) {
         QAction* setExprsAction = new QAction((hasExpression ? tr("Edit expression") :
                                                tr("Set expression"))+' '+tr("(all dimensions)"),menu);
         setExprsAction->setData(-1);
@@ -581,7 +579,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
             menu->addAction(clearExprAction);
         }
     }
-    if ((dimension != -1 || knob->getDimension() == 1) && !dimensionIsSlaved) {
+    if ((dimension != -1 || knob->getDimension() == 1) && !dimensionIsSlaved && isAppKnob) {
         
         
         QAction* setExprAction = new QAction(dimensionHasExpression ? tr("Edit expression...") : tr("Set expression..."),menu);
@@ -618,7 +616,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
     }
     
     
-    if ((hasDimensionSlaved && dimension == -1) || dimensionIsSlaved) {
+    if (isAppKnob && ((hasDimensionSlaved && dimension == -1) || dimensionIsSlaved)) {
         menu->addSeparator();
         
         KnobPtr aliasMaster = knob->getAliasMaster();
