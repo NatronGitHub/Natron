@@ -1154,7 +1154,7 @@ AppManager::getAllNonOFXPluginsPaths() const
     
     //add ~/.Natron
     QString dataLocation = QDir::homePath();
-    QString mainPath = dataLocation + "." + QString(NATRON_APPLICATION_NAME);
+    QString mainPath = dataLocation + "/." + QString(NATRON_APPLICATION_NAME);
 
     QDir mainPathDir(mainPath);
     if (!mainPathDir.exists()) {
@@ -1250,8 +1250,8 @@ static void addToPythonPathFunctor(const QDir& directory)
 
 static void findAllScriptsRecursive(const QDir& directory,
                                     QStringList& allPlugins,
-                                    bool *foundInit,
-                                    bool *foundInitGui)
+                                    QStringList *foundInit,
+                                    QStringList *foundInitGui)
 {
     if (!directory.exists()) {
         return;
@@ -1262,12 +1262,12 @@ static void findAllScriptsRecursive(const QDir& directory,
     QStringList files = directory.entryList(filters,QDir::Files | QDir::NoDotAndDotDot);
     bool ok = findAndRunScriptFile(directory.absolutePath() + '/', files,"init.py");
     if (ok) {
-        *foundInit = true;
+        foundInit->append(directory.absolutePath() + "/init.py");
     }
     if (!appPTR->isBackground()) {
         ok = findAndRunScriptFile(directory.absolutePath() + '/',files,"initGui.py");
         if (ok) {
-            *foundInitGui = true;
+            foundInitGui->append(directory.absolutePath() + "/initGui.py");
         }
     }
     
@@ -1331,29 +1331,33 @@ AppManager::loadPythonGroups()
     }
 
     
-    bool foundInit = false;
-    bool foundInitGui = false;
+    QStringList foundInit;
+    QStringList foundInitGui;
     for (int i = 0; i < templatesSearchPath.size(); ++i) {
         QDir d(templatesSearchPath[i]);
         findAllScriptsRecursive(d,allPlugins,&foundInit, &foundInitGui);
     }
-    if (!foundInit) {
+    if (foundInit.isEmpty()) {
         QString message = QObject::tr("init.py script not loaded");
         appPTR->setLoadingStatus(message);
         if (!appPTR->isBackground()) {
             std::cout << message.toStdString() << std::endl;
         }
     } else {
-        QString message = QObject::tr("init.py script loaded");
-        appPTR->setLoadingStatus(message);
-        if (!appPTR->isBackground()) {
-            std::cout << message.toStdString() << std::endl;
+        for (int i = 0; i < foundInit.size(); ++i) {
+            QString message = QObject::tr("init.py script found and loaded at: ");
+            message.append(foundInit[i]);
+            appPTR->setLoadingStatus(message);
+            if (!appPTR->isBackground()) {
+                std::cout << message.toStdString() << std::endl;
+            }
         }
+        
     }
     
     if (!appPTR->isBackground()) {
         
-        if (!foundInitGui) {
+        if (foundInitGui.isEmpty()) {
             QString message = QObject::tr("initGui.py script not loaded");
             appPTR->setLoadingStatus(message);
             if (!appPTR->isBackground()) {
@@ -1361,10 +1365,13 @@ AppManager::loadPythonGroups()
             }
 
         } else {
-            QString message = QObject::tr("initGui.py script loaded");
-            appPTR->setLoadingStatus(message);
-            if (!appPTR->isBackground()) {
-                std::cout << message.toStdString() << std::endl;
+            for (int i = 0; i < foundInitGui.size(); ++i) {
+                QString message = QObject::tr("initGui.py script found and loaded at: ");
+                message.append(foundInitGui[i]);
+                appPTR->setLoadingStatus(message);
+                if (!appPTR->isBackground()) {
+                    std::cout << message.toStdString() << std::endl;
+                }
             }
         }
         
