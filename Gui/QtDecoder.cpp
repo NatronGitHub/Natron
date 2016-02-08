@@ -395,7 +395,7 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
 {
     int missingChoice = _missingFrameChoice->getValue();
 
-    filename = _fileKnob->getFileName(time);
+    filename = _fileKnob->getFileName(time, 0);
 
     switch (missingChoice) {
     case 0:     // Load nearest

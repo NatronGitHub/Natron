@@ -539,7 +539,7 @@ KnobButton::typeName() const
 void
 KnobButton::trigger()
 {
-    evaluateValueChange(0, getCurrentTime(),  eValueChangedReasonUserEdited);
+    evaluateValueChange(0, getCurrentTime(), ViewIdx(0),  eValueChangedReasonUserEdited);
 }
 
 /******************************KnobChoice**************************************/
@@ -804,7 +804,7 @@ KnobChoice::setValueFromLabel(const std::string & value,
 {
     for (std::size_t i = 0; i < _entries.size(); ++i) {
         if (caseInsensitiveCompare(_entries[i], value)) {
-            return setValue(i, dimension, turnOffAutoKeying);
+            return setValue(i,ViewIdx(0), dimension, turnOffAutoKeying);
         }
     }
     return KnobHelper::eValueChangedReturnCodeNothingChanged;
@@ -841,12 +841,12 @@ KnobChoice::choiceRestoration(KnobChoice* knob,const ChoiceExtraData* data)
     int serializedIndex = knob->getValue();
     if ( ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex] == data->_choiceString) ) {
         // we're lucky, entry hasn't changed
-        setValue(serializedIndex, 0);
+        setValue(serializedIndex);
     } else {
         // try to find the same label at some other index
         for (std::size_t i = 0; i < _entries.size(); ++i) {
             if (caseInsensitiveCompare(_entries[i], data->_choiceString)) {
-                setValue(i, 0);
+                setValue(i);
                 return;
             }
         }

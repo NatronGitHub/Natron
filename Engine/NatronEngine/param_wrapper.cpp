@@ -1308,6 +1308,111 @@ static PyObject* Sbk_ParamFunc_setVisibleByDefault(PyObject* self, PyObject* pyA
         return 0;
 }
 
+static PyObject* Sbk_ParamFunc_slaveTo(PyObject* self, PyObject* args)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "slaveTo", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: slaveTo(Param*,int,int)
+    if (numArgs == 3
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
+        overloadId = 0; // slaveTo(Param*,int,int)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_slaveTo_TypeError;
+
+    // Call function/method
+    {
+        if (!Shiboken::Object::isValid(pyArgs[0]))
+            return 0;
+        ::Param* cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        int cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+        int cppArg2;
+        pythonToCpp[2](pyArgs[2], &cppArg2);
+
+        if (!PyErr_Occurred()) {
+            // slaveTo(Param*,int,int)
+            bool cppResult = cppSelf->slaveTo(cppArg0, cppArg1, cppArg2);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_ParamFunc_slaveTo_TypeError:
+        const char* overloads[] = {"NatronEngine.Param, int, int", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.slaveTo", overloads);
+        return 0;
+}
+
+static PyObject* Sbk_ParamFunc_unslave(PyObject* self, PyObject* pyArg)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: unslave(int)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
+        overloadId = 0; // unslave(int)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_unslave_TypeError;
+
+    // Call function/method
+    {
+        int cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // unslave(int)
+            cppSelf->unslave(cppArg0);
+        }
+    }
+
+    if (PyErr_Occurred()) {
+        return 0;
+    }
+    Py_RETURN_NONE;
+
+    Sbk_ParamFunc_unslave_TypeError:
+        const char* overloads[] = {"int", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.unslave", overloads);
+        return 0;
+}
+
 static PyMethodDef Sbk_Param_methods[] = {
     {"_addAsDependencyOf", (PyCFunction)Sbk_ParamFunc__addAsDependencyOf, METH_VARARGS},
     {"copy", (PyCFunction)Sbk_ParamFunc_copy, METH_VARARGS|METH_KEYWORDS},
@@ -1337,6 +1442,8 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"setPersistant", (PyCFunction)Sbk_ParamFunc_setPersistant, METH_O},
     {"setVisible", (PyCFunction)Sbk_ParamFunc_setVisible, METH_O},
     {"setVisibleByDefault", (PyCFunction)Sbk_ParamFunc_setVisibleByDefault, METH_O},
+    {"slaveTo", (PyCFunction)Sbk_ParamFunc_slaveTo, METH_VARARGS},
+    {"unslave", (PyCFunction)Sbk_ParamFunc_unslave, METH_O},
 
     {0} // Sentinel
 };

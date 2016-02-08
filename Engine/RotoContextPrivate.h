@@ -448,6 +448,7 @@ struct BezierPrivate
                                                      double y,
                                                      double acceptance,
                                                      double time,
+                                                     int view,
                                                      const Transform::Matrix3x3& transform,
                                                      int* index) const
     {
@@ -457,7 +458,7 @@ struct BezierPrivate
         for (BezierCPs::const_iterator it = points.begin(); it != points.end(); ++it, ++i) {
             Transform::Point3D p;
             p.z = 1;
-            (*it)->getPositionAtTime(true, time, &p.x, &p.y);
+            (*it)->getPositionAtTime(true, time, view, &p.x, &p.y);
             p = Transform::matApply(transform, p);
             if ( ( p.x >= (x - acceptance) ) && ( p.x <= (x + acceptance) ) && ( p.y >= (y - acceptance) ) && ( p.y <= (y + acceptance) ) ) {
                 *index = i;
@@ -473,6 +474,7 @@ struct BezierPrivate
                                                      double y,
                                                      double acceptance,
                                                      double time,
+                                                     int view,
                                                      const Transform::Matrix3x3& transform,
                                                      int* index) const
     {
@@ -482,7 +484,7 @@ struct BezierPrivate
         for (BezierCPs::const_iterator it = featherPoints.begin(); it != featherPoints.end(); ++it, ++i) {
             Transform::Point3D p;
             p.z = 1;
-            (*it)->getPositionAtTime(true, time, &p.x, &p.y);
+            (*it)->getPositionAtTime(true, time, view, &p.x, &p.y);
             p = Transform::matApply(transform, p);
             if ( ( p.x >= (x - acceptance) ) && ( p.x <= (x + acceptance) ) && ( p.y >= (y - acceptance) ) && ( p.y <= (y + acceptance) ) ) {
                 *index = i;

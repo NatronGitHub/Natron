@@ -635,7 +635,7 @@ std::vector<DopeSheetKey> DopeSheetViewPrivate::isNearByKeyframe(const boost::sh
     }
 
     for (int i = startDim; i < endDim; ++i) {
-        KeyFrameSet keyframes = knob->getCurve(i)->getKeyFrames_mt_safe();
+        KeyFrameSet keyframes = knob->getCurve(ViewIdx(0),i)->getKeyFrames_mt_safe();
 
         for (KeyFrameSet::const_iterator kIt = keyframes.begin();
              kIt != keyframes.end();
@@ -678,7 +678,7 @@ std::vector<DopeSheetKey> DopeSheetViewPrivate::isNearByKeyframe(boost::shared_p
             continue;
         }
 
-        KeyFrameSet keyframes = knobGui->getCurve(dim)->getKeyFrames_mt_safe();
+        KeyFrameSet keyframes = knobGui->getCurve(0,dim)->getKeyFrames_mt_safe();
 
         for (KeyFrameSet::const_iterator kIt = keyframes.begin();
              kIt != keyframes.end();
@@ -1247,7 +1247,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                 continue;
             }
 
-            KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(dim)->getKeyFrames_mt_safe();
+            KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(0,dim)->getKeyFrames_mt_safe();
 
             for (KeyFrameSet::const_iterator kIt = keyframes.begin();
                  kIt != keyframes.end();
@@ -2047,7 +2047,7 @@ void DopeSheetViewPrivate::computeGroupRange(DSNode *group)
             }
             else {
                 for (int i = 0; i < knob->getDimension(); ++i) {
-                    KeyFrameSet keyframes = knob->getCurve(i)->getKeyFrames_mt_safe();
+                    KeyFrameSet keyframes = knob->getCurve(ViewIdx(0),i)->getKeyFrames_mt_safe();
 
                     if (keyframes.empty()) {
                         continue;
@@ -2210,7 +2210,7 @@ void DopeSheetViewPrivate::createSelectionFromRect(const RectD &zoomCoordsRect, 
                 continue;
             }
 
-            KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(dim)->getKeyFrames_mt_safe();
+            KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(0,dim)->getKeyFrames_mt_safe();
 
             for (KeyFrameSet::const_iterator kIt = keyframes.begin();
                  kIt != keyframes.end();
@@ -2501,7 +2501,7 @@ std::pair<double, double> DopeSheetView::getKeyframeRange() const
             const boost::shared_ptr<DSKnob>& dsKnob = (*itKnob).second;
 
             for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
-                KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(i)->getKeyFrames_mt_safe();
+                KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(0,i)->getKeyFrames_mt_safe();
 
                 if (keyframes.empty()) {
                     continue;
@@ -2805,7 +2805,7 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
             for (KnobsAndGuis::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
                 KnobPtr knob = knobIt->first.lock();
                 KnobGui *knobGui = knobIt->second;
-                connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,double,double)),
+                connect(knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewIdx,int,double,double)),
                         this, SLOT(onKeyframeChanged()));
 
                 connect(knobGui, SIGNAL(keyFrameSet()),
@@ -2826,11 +2826,11 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
         boost::shared_ptr<KnobSignalSlotHandler> startingTimeKnob = node->getKnobByName(kReaderParamNameStartingTime)->getSignalSlotHandler();
         assert(startingTimeKnob);
 
-        connect(lastFrameKnob.get(), SIGNAL(valueChanged(int, int)),
-                this, SLOT(onRangeNodeChanged(int, int)));
+        connect(lastFrameKnob.get(), SIGNAL(valueChanged(ViewIdx,int, int)),
+                this, SLOT(onRangeNodeChanged(ViewIdx,int, int)));
 
-        connect(startingTimeKnob.get(), SIGNAL(valueChanged(int, int)),
-                this, SLOT(onRangeNodeChanged(int, int)));
+        connect(startingTimeKnob.get(), SIGNAL(valueChanged(ViewIdx,int, int)),
+                this, SLOT(onRangeNodeChanged(ViewIdx,int, int)));
 
         // We don't make the connection for the first frame knob, because the
         // starting time is updated when it's modified. Thus we avoid two
@@ -2840,22 +2840,22 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
         boost::shared_ptr<KnobSignalSlotHandler> speedKnob =  node->getKnobByName(kRetimeParamNameSpeed)->getSignalSlotHandler();
         assert(speedKnob);
 
-        connect(speedKnob.get(), SIGNAL(valueChanged(int, int)),
-                this, SLOT(onRangeNodeChanged(int, int)));
+        connect(speedKnob.get(), SIGNAL(valueChanged(ViewIdx,int, int)),
+                this, SLOT(onRangeNodeChanged(ViewIdx,int, int)));
     }
     else if (nodeType == eDopeSheetItemTypeTimeOffset) {
         boost::shared_ptr<KnobSignalSlotHandler> timeOffsetKnob =  node->getKnobByName(kReaderParamNameTimeOffset)->getSignalSlotHandler();
         assert(timeOffsetKnob);
 
-        connect(timeOffsetKnob.get(), SIGNAL(valueChanged(int, int)),
-                this, SLOT(onRangeNodeChanged(int, int)));
+        connect(timeOffsetKnob.get(), SIGNAL(valueChanged(ViewIdx,int, int)),
+                this, SLOT(onRangeNodeChanged(ViewIdx,int, int)));
     }
     else if (nodeType == eDopeSheetItemTypeFrameRange) {
         boost::shared_ptr<KnobSignalSlotHandler> frameRangeKnob =  node->getKnobByName(kFrameRangeParamNameFrameRange)->getSignalSlotHandler();
         assert(frameRangeKnob);
 
-        connect(frameRangeKnob.get(), SIGNAL(valueChanged(int, int)),
-                this, SLOT(onRangeNodeChanged(int, int)));
+        connect(frameRangeKnob.get(), SIGNAL(valueChanged(ViewIdx,int, int)),
+                this, SLOT(onRangeNodeChanged(ViewIdx,int, int)));
     }
 
     if (mustComputeNodeRange) {
@@ -2920,7 +2920,7 @@ void DopeSheetView::onKeyframeChanged()
     }
 }
 
-void DopeSheetView::onRangeNodeChanged(int /*dimension*/, int /*reason*/)
+void DopeSheetView::onRangeNodeChanged(const ViewIdx& /*view*/, int /*dimension*/, int /*reason*/)
 {
     QObject *signalSender = sender();
 
@@ -3415,7 +3415,7 @@ DopeSheetView::mouseDoubleClickEvent(QMouseEvent *e)
             bool hasKeyframe = false;
             for (int i = 0; i < knob->getDimension(); ++i) {
                 if (i == dim || dim == -1) {
-                    boost::shared_ptr<Curve> curve = knob->getGuiCurve(i);
+                    boost::shared_ptr<Curve> curve = knob->getGuiCurve(ViewIdx(0),i);
                     KeyFrame k;
                     if (curve && curve->getKeyFrameWithTime(keyframeTime, &k)) {
                         hasKeyframe = true;

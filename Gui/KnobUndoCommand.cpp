@@ -160,14 +160,14 @@ PasteUndoCommand::copyFrom(const KnobPtr& serializedKnob, bool isRedo)
                 if (_imp->targetDimension == -1 || i == _imp->targetDimension) {
                     boost::shared_ptr<Curve> fromCurve;
                     if (i == _imp->targetDimension && _imp->fromDimension != -1) {
-                        fromCurve = serializedKnob->getCurve(_imp->fromDimension);
+                        fromCurve = serializedKnob->getCurve(ViewIdx(0),_imp->fromDimension);
                     } else {
-                        fromCurve = serializedKnob->getCurve(i);
+                        fromCurve = serializedKnob->getCurve(ViewIdx(0),i);
                     }
                     if (!fromCurve) {
                         continue;
                     }
-                    internalKnob->cloneCurve(i, *fromCurve);
+                    internalKnob->cloneCurve(ViewIdx(0),i, *fromCurve);
                 }
             }
             internalKnob->endChanges();
@@ -190,19 +190,19 @@ PasteUndoCommand::copyFrom(const KnobPtr& serializedKnob, bool isRedo)
                     if (isInt) {
                         assert(isFromInt);
                         int f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromInt->getValue(_imp->fromDimension) : isFromInt->getValue(i);
-                        isInt->setValue(f, i, eValueChangedReasonNatronInternalEdited, 0);
+                        isInt->setValue(f, ViewIdx(0),i, eValueChangedReasonNatronInternalEdited, 0);
                     } else if (isBool) {
                         assert(isFromBool);
                         bool f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromBool->getValue(_imp->fromDimension) : isFromBool->getValue(i);
-                        isBool->setValue(f, i, eValueChangedReasonNatronInternalEdited, 0);
+                        isBool->setValue(f, ViewIdx(0),i, eValueChangedReasonNatronInternalEdited, 0);
                     } else if (isDouble) {
                         assert(isFromDouble);
                         double f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromDouble->getValue(_imp->fromDimension) : isFromDouble->getValue(i);
-                        isDouble->setValue(f, i, eValueChangedReasonNatronInternalEdited, 0);
+                        isDouble->setValue(f,ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
                     } else if (isString) {
                         assert(isFromString);
                         std::string f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromString->getValue(_imp->fromDimension) : isFromString->getValue(i);
-                        isString->setValue(f, i, eValueChangedReasonNatronInternalEdited, 0);
+                        isString->setValue(f, ViewIdx(0),i, eValueChangedReasonNatronInternalEdited, 0);
                     }
                     
                 }
@@ -335,20 +335,19 @@ MultipleKnobEditsUndoCommand::undo()
             KnobHelper::ValueChangedReturnCodeEnum retCode = (KnobHelper::ValueChangedReturnCodeEnum)it2->setValueRetCode;
             
             if (retCode == KnobHelper::eValueChangedReturnCodeKeyframeAdded) {
-                it->first->removeKeyFrame(it2->time, it2->dimension);
+                it->first->removeKeyFrame(it2->time, it2->dimension, ViewIdx(0));
             } else {
                 if (it2->setKeyFrame) {
                     
                     bool refreshGui =  it2->time == knob->getHolder()->getApp()->getTimeLine()->currentFrame();
                     if (isInt) {
-                        it->first->setValueAtTime<int>(it2->dimension, it2->oldValue.toInt(), it2->time, &k,refreshGui,_reason);
+                        it->first->setValueAtTime<int>(it2->dimension, it2->oldValue.toInt(), it2->time, ViewIdx(0), &k,refreshGui,_reason);
                     } else if (isBool) {
-                        it->first->setValueAtTime<bool>(it2->dimension, it2->oldValue.toBool(), it2->time, &k,refreshGui,_reason);
+                        it->first->setValueAtTime<bool>(it2->dimension, it2->oldValue.toBool(), it2->time, ViewIdx(0), &k,refreshGui,_reason);
                     } else if (isDouble) {
-                        it->first->setValueAtTime<double>(it2->dimension,it2->oldValue.toDouble(), it2->time, &k,refreshGui,_reason);
+                        it->first->setValueAtTime<double>(it2->dimension,it2->oldValue.toDouble(), it2->time, ViewIdx(0), &k,refreshGui,_reason);
                     } else if (isString) {
-                        it->first->setValueAtTime<std::string>(it2->dimension, it2->oldValue.toString().toStdString(), it2->time,
-                                                               &k,refreshGui,_reason);
+                        it->first->setValueAtTime<std::string>(it2->dimension, it2->oldValue.toString().toStdString(), it2->time, ViewIdx(0), &k,refreshGui,_reason);
                     } else {
                         assert(false);
                     }
@@ -419,14 +418,14 @@ MultipleKnobEditsUndoCommand::redo()
                 bool keyAdded = false;
                 bool refreshGui =  it2->time == knob->getHolder()->getApp()->getTimeLine()->currentFrame();
                 if (isInt) {
-                    keyAdded = it->first->setValueAtTime<int>(it2->dimension, it2->newValue.toInt(), it2->time, &k,refreshGui,_reason);
+                    keyAdded = it->first->setValueAtTime<int>(it2->dimension, it2->newValue.toInt(), it2->time, ViewIdx(0), &k,refreshGui,_reason);
                 } else if (isBool) {
-                    keyAdded = it->first->setValueAtTime<bool>(it2->dimension, it2->newValue.toBool(), it2->time, &k,refreshGui,_reason);
+                    keyAdded = it->first->setValueAtTime<bool>(it2->dimension, it2->newValue.toBool(), it2->time, ViewIdx(0), &k,refreshGui,_reason);
                 } else if (isDouble) {
-                    keyAdded = it->first->setValueAtTime<double>(it2->dimension,it2->newValue.toDouble(), it2->time, &k,refreshGui,_reason);
+                    keyAdded = it->first->setValueAtTime<double>(it2->dimension,it2->newValue.toDouble(), it2->time, ViewIdx(0), &k,refreshGui,_reason);
                 } else if (isString) {
                     keyAdded = it->first->setValueAtTime<std::string>(it2->dimension, it2->newValue.toString().toStdString(), it2->time,
-                                                           &k,refreshGui,_reason);
+                                                           ViewIdx(0), &k,refreshGui,_reason);
                 } else {
                     assert(false);
                 }
@@ -547,7 +546,7 @@ RestoreDefaultsCommand::undo()
             int dim = (*it)->getDimension();
             for (int i = 0; i < dim; ++i) {
                 if (i == _targetDim || _targetDim == -1) {
-                    boost::shared_ptr<Curve> c = (*it)->getCurve(i);
+                    boost::shared_ptr<Curve> c = (*it)->getCurve(ViewIdx(0),i);
                     if (c) {
                         KeyFrameSet kfs = c->getKeyFrames_mt_safe();
                         for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
@@ -593,7 +592,7 @@ RestoreDefaultsCommand::redo()
             int dim = (*it)->getDimension();
             for (int i = 0; i < dim; ++i) {
                 if (i == _targetDim || _targetDim == -1) {
-                    boost::shared_ptr<Curve> c = (*it)->getCurve(i);
+                    boost::shared_ptr<Curve> c = (*it)->getCurve(ViewIdx(0),i);
                     if (c) {
                         KeyFrameSet kfs = c->getKeyFrames_mt_safe();
                         for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
@@ -632,7 +631,7 @@ RestoreDefaultsCommand::redo()
     }
     for (std::list<KnobPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         if ((*it)->getHolder()) {
-            (*it)->getHolder()->onKnobValueChanged_public(it->get(), eValueChangedReasonRestoreDefault, time, true);
+            (*it)->getHolder()->onKnobValueChanged_public(it->get(), eValueChangedReasonRestoreDefault, time, ViewIdx(0),true);
         }
     }
     
@@ -691,7 +690,7 @@ SetExpressionCommand::undo()
         }
     }
     
-    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), eValueChangedReasonNatronGuiEdited);
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(),ViewIdx(0), eValueChangedReasonNatronGuiEdited);
     setText( QObject::tr("Set expression") );
 }
 
@@ -714,7 +713,7 @@ SetExpressionCommand::redo()
             Dialogs::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
         }
     }
-    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), eValueChangedReasonNatronGuiEdited);
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(),ViewIdx(0), eValueChangedReasonNatronGuiEdited);
     setText( QObject::tr("Set expression") );
 }
 

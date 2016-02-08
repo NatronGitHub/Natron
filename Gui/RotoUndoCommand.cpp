@@ -748,9 +748,9 @@ dragTangent(double time,
 {
     Transform::Point3D ltan,rtan,pos;
     ltan.z = rtan.z = pos.z = 1;
-    bool isOnKeyframe = p.getLeftBezierPointAtTime(true,time, &ltan.x, &ltan.y,true);
-    p.getRightBezierPointAtTime(true,time, &rtan.x, &rtan.y,true);
-    p.getPositionAtTime(true,time, &pos.x, &pos.y,true);
+    bool isOnKeyframe = p.getLeftBezierPointAtTime(true,time,/*view*/0, &ltan.x, &ltan.y,true);
+    p.getRightBezierPointAtTime(true,time, /*view*/0,&rtan.x, &rtan.y,true);
+    p.getPositionAtTime(true,time,/*view*/0, &pos.x, &pos.y,true);
     
     pos = Transform::matApply(transform, pos);
     ltan = Transform::matApply(transform, ltan);
@@ -928,8 +928,8 @@ MoveFeatherBarUndoCommand::redo()
     
     Transform::Point3D featherPoint,controlPoint;
     featherPoint.z = controlPoint.z = 1.;
-    p->getPositionAtTime(true,_time, &controlPoint.x, &controlPoint.y);
-    bool isOnKeyframe = fp->getPositionAtTime(true,_time, &featherPoint.x, &featherPoint.y);
+    p->getPositionAtTime(true,_time, /*view*/0,&controlPoint.x, &controlPoint.y);
+    bool isOnKeyframe = fp->getPositionAtTime(true,_time,/*view*/0, &featherPoint.x, &featherPoint.y);
     
     controlPoint = Transform::matApply(transform, controlPoint);
     featherPoint = Transform::matApply(transform, featherPoint);
@@ -1501,10 +1501,10 @@ MakeEllipseUndoCommand::redo()
             boost::shared_ptr<BezierCP> bottom = _curve->getControlPointAtIndex(2);
             boost::shared_ptr<BezierCP> left = _curve->getControlPointAtIndex(3);
             double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
-            top->getPositionAtTime(true,_time, &topX, &topY);
-            right->getPositionAtTime(true,_time, &rightX, &rightY);
-            bottom->getPositionAtTime(true,_time, &btmX, &btmY);
-            left->getPositionAtTime(true,_time, &leftX, &leftY);
+            top->getPositionAtTime(true,_time, /*view*/0,&topX, &topY);
+            right->getPositionAtTime(true,_time, /*view*/0,&rightX, &rightY);
+            bottom->getPositionAtTime(true,_time,/*view*/0, &btmX, &btmY);
+            left->getPositionAtTime(true,_time, /*view*/0,&leftX, &leftY);
             
             _curve->setLeftBezierPoint(0, _time,  (leftX + topX) / 2., topY);
             _curve->setRightBezierPoint(0, _time, (rightX + topX) / 2., topY);

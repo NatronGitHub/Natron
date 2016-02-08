@@ -1871,6 +1871,7 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<RectD>("RectD");
     qRegisterMetaType<RenderStatsPtr>("RenderStatsPtr");
     qRegisterMetaType<RenderStatsMap>("RenderStatsMap");
+    qRegisterMetaType<ViewIdx>("ViewIdx");
 #if QT_VERSION < 0x050000
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 #endif

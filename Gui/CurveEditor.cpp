@@ -437,14 +437,14 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,KnobPtr 
     if (k->getDimension() == 1) {
                 
         if (kgui) {
-            knobCurve.reset(new KnobCurveGui(curveWidget, kgui->getCurve(0), kgui, 0, k->getLabel().c_str(), QColor(255,255,255),1.));
+            knobCurve.reset(new KnobCurveGui(curveWidget, kgui->getCurve(0,0), kgui, 0, k->getLabel().c_str(), QColor(255,255,255),1.));
         } else {
             
-            knobCurve.reset(new KnobCurveGui(curveWidget, k->getCurve(0,true), k, rotoctx, 0, k->getLabel().c_str(), QColor(255,255,255),1.));
+            knobCurve.reset(new KnobCurveGui(curveWidget, k->getCurve(ViewIdx(0),0,true), k, rotoctx, 0, k->getLabel().c_str(), QColor(255,255,255),1.));
         }
         curveWidget->addCurveAndSetColor(knobCurve);
         
-        if ( !k->getCurve(0)->isAnimated() ) {
+        if ( !k->getCurve(ViewIdx(0),0)->isAnimated() ) {
             knobItem->setHidden(true);
         } else {
             *hasCurveVisible = true;
@@ -461,10 +461,10 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,KnobPtr 
             NodeCurveEditorElement* elem;
             boost::shared_ptr<KnobCurveGui> dimCurve;
             if (kgui) {
-                dimCurve.reset(new KnobCurveGui(curveWidget,kgui->getCurve(j),kgui,j,curveName,QColor(255,255,255),1.));
+                dimCurve.reset(new KnobCurveGui(curveWidget,kgui->getCurve(0,j),kgui,j,curveName,QColor(255,255,255),1.));
                 elem = new NodeCurveEditorElement(tree,curveEditor,kgui,j,dimItem,dimCurve);
             } else {
-                dimCurve.reset(new KnobCurveGui(curveWidget,k->getCurve(j,true),k,rotoctx,j,curveName,QColor(255,255,255),1.));
+                dimCurve.reset(new KnobCurveGui(curveWidget,k->getCurve(ViewIdx(0),j,true),k,rotoctx,j,curveName,QColor(255,255,255),1.));
                 elem = new NodeCurveEditorElement(tree,curveEditor,k,j,dimItem,dimCurve);
             }
             curveWidget->addCurveAndSetColor(dimCurve);
@@ -748,9 +748,9 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
 {
     if (internalKnob) {
         boost::shared_ptr<KnobSignalSlotHandler> handler = internalKnob->getSignalSlotHandler();
-        QObject::connect( handler.get(),SIGNAL( keyFrameSet(double,int,int,bool) ),this,SLOT( checkVisibleState() ) );
-        QObject::connect( handler.get(),SIGNAL( keyFrameRemoved(double,int,int) ),this,SLOT( checkVisibleState() ) );
-        QObject::connect( handler.get(),SIGNAL( animationRemoved(int) ),this,SLOT( checkVisibleState() ) );
+        QObject::connect( handler.get(),SIGNAL( keyFrameSet(double,ViewIdx,int,int,bool) ),this,SLOT( checkVisibleState() ) );
+        QObject::connect( handler.get(),SIGNAL( keyFrameRemoved(double,ViewIdx,int,int) ),this,SLOT( checkVisibleState() ) );
+        QObject::connect( handler.get(),SIGNAL( animationRemoved(ViewIdx,int) ),this,SLOT( checkVisibleState() ) );
     }
     if (curve) {
         // even when there is only one keyframe, there may be tangents!
@@ -1623,7 +1623,7 @@ CurveEditor::setSelectedCurve(const boost::shared_ptr<CurveGui>& curve)
             std::string expr = knob->getExpression(knobCurve->getDimension());
             if (!expr.empty()) {
                 _imp->knobLineEdit->setText(expr.c_str());
-                double v = knob->getValueAtWithExpression(getGui()->getApp()->getTimeLine()->currentFrame(), knobCurve->getDimension());
+                double v = knob->getValueAtWithExpression(getGui()->getApp()->getTimeLine()->currentFrame(), ViewIdx(0), knobCurve->getDimension());
                 _imp->resultLabel->setText("= " + QString::number(v));
             } else {
                 _imp->knobLineEdit->clear();
@@ -1653,7 +1653,7 @@ CurveEditor::refreshCurrentExpression()
     KnobPtr knob = curve->getInternalKnob();
     
     std::string expr = knob->getExpression(curve->getDimension());
-    double v = knob->getValueAtWithExpression(getGui()->getApp()->getTimeLine()->currentFrame(), curve->getDimension());
+    double v = knob->getValueAtWithExpression(getGui()->getApp()->getTimeLine()->currentFrame(), ViewIdx(0), curve->getDimension());
     _imp->knobLineEdit->setText(expr.c_str());
     _imp->resultLabel->setText("= " + QString::number(v));
 }

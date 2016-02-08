@@ -124,12 +124,12 @@ public:
     const QUndoCommand* getLastUndoCommand() const;
 
 
-    void setKeyframe(double time,int dimension);
-    void setKeyframe(double time,const KeyFrame& key,int dimension);
-    void removeKeyFrame(double time,int dimension);
+    void setKeyframe(double time, int dimension, const ViewIdx& view);
+    void setKeyframe(double time,const KeyFrame& key,int dimension, const ViewIdx& view);
+    void removeKeyFrame(double time,int dimension, const ViewIdx& view);
     
-    void setKeyframes(const std::vector<KeyFrame>& keys, int dimension);
-    void removeKeyframes(const std::vector<KeyFrame>& keys, int dimension);
+    void setKeyframes(const std::vector<KeyFrame>& keys, int dimension, const ViewIdx& view);
+    void removeKeyframes(const std::vector<KeyFrame>& keys, int dimension, const ViewIdx& view);
 
     QString getScriptNameHtml() const;
 
@@ -177,7 +177,7 @@ public:
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
         assert(knob);
         if (knob) {
-            ret = knob->setValue(v,dimension,reason,newKey);
+            ret = knob->setValue(v,ViewIdx::CURRENT_VIEW, dimension,reason,newKey);
         }
         if (ret > 0 && ret != KnobHelper::eValueChangedReturnCodeNothingChanged && reason == eValueChangedReasonUserEdited) {
             assert(newKey);
@@ -199,6 +199,7 @@ public:
     bool setValueAtTime(int dimension,
                         const T & v,
                         double time,
+                        const ViewIdx& view,
                         KeyFrame* newKey,
                         bool refreshGui,
                         ValueChangedReasonEnum reason)
@@ -208,7 +209,7 @@ public:
         assert(knob);
         bool addedKey  = false;
         if (knob) {
-            addedKey = knob->setValueAtTime(time,v,dimension,reason,newKey);
+            addedKey = knob->setValueAtTime(time,view, v,dimension,reason,newKey);
         }
         if ((knob) && reason == eValueChangedReasonUserEdited) {
             assert(newKey);
@@ -239,7 +240,7 @@ public:
     
     virtual void copyLinkToClipboard(int dimension = -1) const OVERRIDE FINAL;
     
-    virtual boost::shared_ptr<Curve> getCurve(int dimension) const OVERRIDE FINAL;
+    virtual boost::shared_ptr<Curve> getCurve(int view, int dimension) const OVERRIDE FINAL;
 
     /**
      * @brief Check if the knob is secret by also checking the parent group visibility
@@ -269,25 +270,25 @@ public Q_SLOTS:
     
     void onUnlinkActionTriggered();
 
-    void onRedrawGuiCurve(int reason, int dimension);
+    void onRedrawGuiCurve(int reason,const ViewIdx& view, int dimension);
     
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
      **/
-    void onInternalValueChanged(int dimension,int reason);
+    void onInternalValueChanged(const ViewIdx& view, int dimension,int reason);
 
-    void onInternalKeySet(double time,int dimension,int reason,bool added);
+    void onInternalKeySet(double time,const ViewIdx& view,int dimension,int reason,bool added);
 
-    void onInternalKeyRemoved(double time,int dimension,int reason);
+    void onInternalKeyRemoved(double time,const ViewIdx& view, int dimension,int reason);
     
-    void onMultipleKeySet(const std::list<double>& keys,int dimension, int reason);
+    void onMultipleKeySet(const std::list<double>& keys,const ViewIdx& view, int dimension, int reason);
 
-    void onInternalAnimationAboutToBeRemoved(int dimension);
+    void onInternalAnimationAboutToBeRemoved(const ViewIdx& view, int dimension);
     
     void onInternalAnimationRemoved();
     
     ///Handler when a keyframe is moved in the curve editor/dope sheet
-    void onKeyFrameMoved(int dimension,double oldTime,double newTime);
+    void onKeyFrameMoved(const ViewIdx& view, int dimension,double oldTime,double newTime);
 
     void setSecret();
 
@@ -340,13 +341,13 @@ public Q_SLOTS:
 
     void onKnobSlavedChanged(int dimension,bool b);
 
-    void onSetValueUsingUndoStack(const Variant & v,int dim);
+    void onSetValueUsingUndoStack(const Variant & v,const ViewIdx& view,int dim);
 
     void onSetDirty(bool d);
 
-    void onAnimationLevelChanged(int dim,int level);
+    void onAnimationLevelChanged(const ViewIdx& view, int dim,int level);
 
-    void onAppendParamEditChanged(int reason,const Variant & v,int dim,double time,bool createNewCommand,bool setKeyFrame);
+    void onAppendParamEditChanged(int reason,const Variant & v,const ViewIdx& view,int dim,double time,bool createNewCommand,bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);
 

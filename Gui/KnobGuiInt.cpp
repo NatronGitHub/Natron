@@ -279,7 +279,7 @@ KnobGuiInt::onDimensionSwitchClicked()
             double value(_spinBoxes[0].first->value());
             knob->beginChanges();
             for (int i = 1; i < dim; ++i) {
-                knob->setValue(value,i);
+                knob->setValue(value,ViewIdx::ALL_VIEWS, i);
             }
             knob->endChanges();
         }

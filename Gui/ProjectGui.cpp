@@ -628,9 +628,9 @@ ProjectGui::setPickersColor(double r,double g, double b,double a)
             _colorPickersEnabled[i]->activateAllDimensions();
         }
         if (_colorPickersEnabled[i]->getDimension() == 3) {
-            _colorPickersEnabled[i]->setValues(r, g, b, eValueChangedReasonNatronGuiEdited);
+            _colorPickersEnabled[i]->setValues(r, g, b, ViewIdx::ALL_VIEWS, eValueChangedReasonNatronGuiEdited);
         } else {
-            _colorPickersEnabled[i]->setValues(r, g, b, a, eValueChangedReasonNatronGuiEdited);
+            _colorPickersEnabled[i]->setValues(r, g, b, a, ViewIdx::ALL_VIEWS, eValueChangedReasonNatronGuiEdited);
         }
     }
 }

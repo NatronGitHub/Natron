@@ -517,9 +517,9 @@ KnobGuiColor::onDimensionSwitchClicked()
         if (_dimension > 1) {
             double value( _rBox->value() );
             if (_dimension == 3) {
-                knob->setValues(value, value, value, eValueChangedReasonNatronGuiEdited);
+                knob->setValues(value, value, value, ViewIdx::ALL_VIEWS, eValueChangedReasonNatronGuiEdited);
             } else {
-                knob->setValues(value, value, value,value, eValueChangedReasonNatronGuiEdited);
+                knob->setValues(value, value, value,value, ViewIdx::ALL_VIEWS, eValueChangedReasonNatronGuiEdited);
             }
         }
     }
@@ -906,7 +906,7 @@ KnobGuiColor::showColorDialog()
         knob->beginChanges();
 
         for (int i = 0; i < _dimension; ++i) {
-            knob->setValue(_lastColor[i],i);
+            knob->setValue(_lastColor[i],ViewIdx::ALL_VIEWS,i);
         }
         knob->endChanges();
 
@@ -916,7 +916,7 @@ KnobGuiColor::showColorDialog()
 
         ///refresh the last value so that the undo command retrieves the value that was prior to opening the dialog
         for (int i = 0; i < _dimension; ++i) {
-            knob->setValue(_lastColor[i],i);
+            knob->setValue(_lastColor[i],ViewIdx::ALL_VIEWS,i);
         }
 
         ///if only the first dimension is displayed, switch back to all dimensions
@@ -960,7 +960,7 @@ KnobGuiColor::showColorDialog()
         knob->endChanges();
 
     }
-    knob->evaluateValueChange(0, knob->getCurrentTime(), eValueChangedReasonNatronGuiEdited);
+    knob->evaluateValueChange(0, knob->getCurrentTime(),ViewIdx(0), eValueChangedReasonNatronGuiEdited);
 } // showColorDialog
 
 void
@@ -969,18 +969,20 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     bool isSimple = knob->isSimplified();
     if (_dimension == 1) {
-        knob->setValue(color.redF(), 0);
+        knob->setValue(color.redF(),ViewIdx::ALL_VIEWS, 0);
     } else if (_dimension == 3) {
          ///Don't set alpha since the color dialog can only handle RGB
         knob->setValues(isSimple ? color.redF() : Color::from_func_srgb(color.redF()),
                         isSimple ? color.greenF() : Color::from_func_srgb(color.greenF()),
                         isSimple ? color.blueF() : Color::from_func_srgb(color.blueF()),
+                        ViewIdx::ALL_VIEWS,
                         eValueChangedReasonNatronInternalEdited);
     } else if (_dimension == 4) {
         knob->setValues(isSimple ? color.redF() : Color::from_func_srgb(color.redF()),
                         isSimple ? color.greenF() : Color::from_func_srgb(color.greenF()),
                         isSimple ? color.blueF() : Color::from_func_srgb(color.blueF()),
                         1.,
+                        ViewIdx::ALL_VIEWS,
                         eValueChangedReasonNatronInternalEdited);
     }
 

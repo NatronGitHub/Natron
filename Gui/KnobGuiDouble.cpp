@@ -373,7 +373,7 @@ KnobGuiDouble::onDimensionSwitchClicked()
                 if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
                     knob->normalize(i, time, &v);
                 }
-                knob->setValue(v, i);
+                knob->setValue(v, ViewIdx::ALL_VIEWS, i);
             }
             knob->endChanges();
         }

@@ -78,40 +78,15 @@ KnobFile::typeName() const
     return typeNameStatic();
 }
 
-int
-KnobFile::firstFrame() const
-{
-    double time;
-    bool foundKF = getFirstKeyFrameTime(0, &time);
-
-    return foundKF ? (int)time : INT_MIN;
-}
-
-int
-KnobFile::lastFrame() const
-{
-    double time;
-    bool foundKF = getLastKeyFrameTime(0, &time);
-
-    return foundKF ? (int)time : INT_MAX;
-}
-
-int
-KnobFile::frameCount() const
-{
-    return getKeyFramesCount(0);
-}
 
 std::string
-KnobFile::getFileName(int time) const
+KnobFile::getFileName(int time,int view) const
 {
-    int view = getHolder() ? getHolder()->getCurrentView() : 0;
-    
     if (!_isInputImage) {
-        return getValue();
+        return getValue(0, ViewIdx(view));
     } else {
         ///try to interpret the pattern and generate a filename if indexes are found
-        return SequenceParsing::generateFileNameFromPattern(getValue(), time, view);
+        return SequenceParsing::generateFileNameFromPattern(getValue(0,ViewIdx(0)), time, view);
     }
 }
 
@@ -147,10 +122,9 @@ KnobOutputFile::typeName() const
 }
 
 QString
-KnobOutputFile::generateFileNameAtTime(SequenceTime time) const
+KnobOutputFile::generateFileNameAtTime(SequenceTime time, int view) const
 {
-    int view = getHolder() ? getHolder()->getCurrentView() : 0;
-    return SequenceParsing::generateFileNameFromPattern(getValue(0), time, view).c_str();
+    return SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), time, view).c_str();
 }
 
 /***********************************KnobPath*****************************************/
@@ -298,7 +272,7 @@ KnobPath::setPaths(const std::list<std::pair<std::string,std::string> >& paths)
     if (!_isMultiPath) {
         return;
     }
-    setValue(encodeToMultiPathFormat(paths), 0);
+    setValue(encodeToMultiPathFormat(paths));
 }
 
 std::string
@@ -331,7 +305,7 @@ void
 KnobPath::prependPath(const std::string& path)
 {
     if (!_isMultiPath) {
-        setValue(path, 0);
+        setValue(path);
     } else {
         std::list<std::pair<std::string,std::string> > paths;
         getVariables(&paths);
@@ -345,7 +319,7 @@ void
 KnobPath::appendPath(const std::string& path)
 {
     if (!_isMultiPath) {
-        setValue(path, 0);
+        setValue(path);
     } else {
         std::list<std::pair<std::string,std::string> > paths;
         getVariables(&paths);

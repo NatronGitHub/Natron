@@ -687,7 +687,7 @@ MultiInstancePanelPrivate::addTableRow(const NodePtr & node)
             boost::shared_ptr<KnobSignalSlotHandler> slotsHandler =
                 instanceKnobs[i]->getSignalSlotHandler();
             if (slotsHandler) {
-                QObject::connect( slotsHandler.get(), SIGNAL( valueChanged(int,int) ), publicInterface,SLOT( onInstanceKnobValueChanged(int,int) ) );
+                QObject::connect( slotsHandler.get(), SIGNAL( valueChanged(ViewIdx,int,int) ), publicInterface,SLOT( onInstanceKnobValueChanged(ViewIdx,int,int) ) );
             }
 
             if ( instanceKnobs[i]->isInstanceSpecific() ) {
@@ -1335,27 +1335,27 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
                     
                     if (knobs[i]->isAnimationEnabled() && knobs[i]->isAnimated(j)) {
                         if (isInt) {
-                            isInt->setValueAtTime(time, data.toInt(), j);
+                            isInt->setValueAtTime(time, ViewIdx::ALL_VIEWS, data.toInt(), j);
                         } else if (isBool) {
-                            isBool->setValueAtTime(time, data.toBool(), j);
+                            isBool->setValueAtTime(time, ViewIdx::ALL_VIEWS,data.toBool(), j);
                         } else if (isDouble) {
-                            isDouble->setValueAtTime(time, data.toDouble(), j);
+                            isDouble->setValueAtTime(time, ViewIdx::ALL_VIEWS,data.toDouble(), j);
                         } else if (isColor) {
-                            isColor->setValueAtTime(time, data.toDouble(), j);
+                            isColor->setValueAtTime(time, ViewIdx::ALL_VIEWS,data.toDouble(), j);
                         } else if (isString) {
-                            isString->setValueAtTime(time, data.toString().toStdString(), j);
+                            isString->setValueAtTime(time, ViewIdx::ALL_VIEWS,data.toString().toStdString(), j);
                         }
                     } else {
                         if (isInt) {
-                            isInt->setValue(data.toInt(), j, true);
+                            isInt->setValue(data.toInt(), ViewIdx::ALL_VIEWS,j, true);
                         } else if (isBool) {
-                            isBool->setValue(data.toBool(), j, true);
+                            isBool->setValue(data.toBool(), ViewIdx::ALL_VIEWS,j, true);
                         } else if (isDouble) {
-                            isDouble->setValue(data.toDouble(), j, true);
+                            isDouble->setValue(data.toDouble(), ViewIdx::ALL_VIEWS,j, true);
                         } else if (isColor) {
-                            isColor->setValue(data.toDouble(), j, true);
+                            isColor->setValue(data.toDouble(), ViewIdx::ALL_VIEWS,j, true);
                         } else if (isString) {
-                            isString->setValue(data.toString().toStdString(), j, true);
+                            isString->setValue(data.toString().toStdString(), ViewIdx::ALL_VIEWS,j, true);
                         }
                     }
                     return;
@@ -1404,7 +1404,7 @@ MultiInstancePanel::onCheckBoxChecked(bool checked)
             assert(enabledKnob);
             KnobBool* bKnob = dynamic_cast<KnobBool*>( enabledKnob.get() );
             assert(bKnob);
-            bKnob->setValue(!checked, 0);
+            bKnob->setValue(!checked);
             QItemSelection sel;
             QItemSelectionRange r(_imp->model->index(i, 0),_imp->model->index(i ,cc - 1 ));
             sel.append(r);
@@ -1421,7 +1421,8 @@ MultiInstancePanel::onCheckBoxChecked(bool checked)
 }
 
 void
-MultiInstancePanel::onInstanceKnobValueChanged(int dim,
+MultiInstancePanel::onInstanceKnobValueChanged(const ViewIdx& /*view*/,
+                                               int dim,
                                                int reason)
 {
     if ( (ValueChangedReasonEnum)reason == eValueChangedReasonSlaveRefresh ) {
@@ -1637,7 +1638,7 @@ MultiInstancePanel::onButtonTriggered(KnobButton* button)
     for (std::list<Node*>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         KnobPtr k = (*it)->getKnobByName( button->getName() );
         assert( k && dynamic_cast<KnobButton*>( k.get() ) );
-        (*it)->getEffectInstance()->onKnobValueChanged_public(k.get(),eValueChangedReasonUserEdited,time, true);
+        (*it)->getEffectInstance()->onKnobValueChanged_public(k.get(),eValueChangedReasonUserEdited,time, ViewIdx(0), true);
     }
 }
 
@@ -1645,6 +1646,7 @@ void
 MultiInstancePanel::onKnobValueChanged(KnobI* k,
                                        ValueChangedReasonEnum reason,
                                        double time,
+                                       const ViewIdx& view,
                                        bool /*originatedFromMainThread*/)
 {
     if ( !k->isDeclaredByPlugin() ) {
@@ -1652,7 +1654,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
             KnobBool* boolKnob = dynamic_cast<KnobBool*>(k);
             assert(boolKnob);
             if (boolKnob) {
-                _imp->mainInstance.lock()->onDisabledKnobToggled( boolKnob->getValue() );
+                _imp->mainInstance.lock()->onDisabledKnobToggled( boolKnob->getValue(0, view) );
             }
         }
     } else {
@@ -1682,7 +1684,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
                             isString->clone(k);
                         }
                         
-                        sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), eValueChangedReasonPluginEdited,time, true);
+                        sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), eValueChangedReasonPluginEdited,time, view, true);
                     }
                 }
             }
@@ -1919,14 +1921,14 @@ TrackerPanel::onAverageTracksButtonClicked()
         boost::shared_ptr<KnobDouble> dblKnob = getCenterKnobForTracker(*it);
         centers.push_back(dblKnob);
         double mini,maxi;
-        bool hasKey = dblKnob->getFirstKeyFrameTime(0, &mini);
+        bool hasKey = dblKnob->getFirstKeyFrameTime(ViewIdx(0), 0, &mini);
         if (!hasKey) {
             continue;
         }
         if (mini < keyframesRange.min) {
             keyframesRange.min = mini;
         }
-        hasKey = dblKnob->getLastKeyFrameTime(0, &maxi);
+        hasKey = dblKnob->getLastKeyFrameTime(ViewIdx(0), 0, &maxi);
 
         ///both dimensions must have keyframes
         assert(hasKey);
@@ -1956,8 +1958,8 @@ TrackerPanel::onAverageTracksButtonClicked()
             }
             average.first /= centersNb;
             average.second /= centersNb;
-            newInstanceCenter->setValueAtTime(t, average.first, 0);
-            newInstanceCenter->setValueAtTime(t, average.second, 1);
+            newInstanceCenter->setValueAtTime(t, ViewIdx::ALL_VIEWS, average.first, 0);
+            newInstanceCenter->setValueAtTime(t, ViewIdx::ALL_VIEWS, average.second, 1);
         }
     }
     newInstanceCenter->endChanges();
@@ -1993,7 +1995,7 @@ handleTrackNextAndPrevious(KnobButton* selectedInstance,
 //            reason = eValueChangedReasonNatronInternalEdited;
 //        }
         selectedInstance->getHolder()->onKnobValueChanged_public(selectedInstance,eValueChangedReasonNatronInternalEdited,currentFrame,
-                                                                 true);
+                                                                 ViewIdx(0), true);
 }
 
 void
@@ -2168,7 +2170,7 @@ TrackerPanel::clearAllAnimationForSelection()
         const KnobsVec & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->removeAnimation(dim);
+                knobs[i]->removeAnimation(ViewIdx::ALL_VIEWS,dim);
             }
         }
     }
@@ -2185,7 +2187,7 @@ TrackerPanel::clearBackwardAnimationForSelection()
         const KnobsVec & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->deleteAnimationBeforeTime(time,dim,eValueChangedReasonPluginEdited);
+                knobs[i]->deleteAnimationBeforeTime(time,ViewIdx::ALL_VIEWS,dim,eValueChangedReasonPluginEdited);
             }
         }
     }
@@ -2202,7 +2204,7 @@ TrackerPanel::clearForwardAnimationForSelection()
         const KnobsVec & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->deleteAnimationAfterTime(time,dim,eValueChangedReasonPluginEdited);
+                knobs[i]->deleteAnimationAfterTime(time,ViewIdx::ALL_VIEWS,dim,eValueChangedReasonPluginEdited);
             }
         }
     }
@@ -2350,7 +2352,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         fromPoints[i] = getCornerPinPoint(cornerPin.get(), true, i);
         assert(fromPoints[i] && centers[i]);
         for (int j = 0; j < fromPoints[i]->getDimension(); ++j) {
-            fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), j);
+            fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j),ViewIdx::ALL_VIEWS, j);
         }
 
         toPoints[i] = getCornerPinPoint(cornerPin.get(), false, i);
@@ -2376,7 +2378,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         assert(knob);
         KnobBool* enableKnob = dynamic_cast<KnobBool*>( knob.get() );
         assert(enableKnob);
-        enableKnob->setValue(false, 0);
+        enableKnob->setValue(false);
     }
     
     if (invert) {
@@ -2384,7 +2386,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         assert(invertKnob);
         KnobBool* isBool = dynamic_cast<KnobBool*>(invertKnob.get());
         assert(isBool);
-        isBool->setValue(true, 0);
+        isBool->setValue(true);
     }
     
 } // createCornerPinFromSelection

@@ -320,7 +320,7 @@ Project::loadProjectInternal(const QString & path,
     getProjectDefaultFormat(&f);
     Q_EMIT formatChanged(f);
     
-    _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName(),0);
+    _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName());
     if (isAutoSave) {
         _imp->autoSetProjectFormat = false;
         if (!isUntitledAutosave) {
@@ -531,9 +531,9 @@ Project::saveProjectInternal(const QString & path,
    
     if (!autoSave && updateProjectProperties) {
         _imp->autoSetProjectDirectory(path);
-        _imp->saveDate->setValue(timeStr.toStdString(), 0);
-        _imp->lastAuthorName->setValue(generateGUIUserName(), 0);
-        _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName(),0);
+        _imp->saveDate->setValue(timeStr.toStdString());
+        _imp->lastAuthorName->setValue(generateGUIUserName());
+        _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName());
     }
     
     try {
@@ -945,7 +945,7 @@ Project::initializeKnobs()
                                           "- app: points to the current application instance\n");
     _imp->onProjectLoadCB->setAnimationEnabled(false);
     std::string onProjectLoad = appPTR->getCurrentSettings()->getDefaultOnProjectLoadedCB();
-    _imp->onProjectLoadCB->setValue(onProjectLoad, 0);
+    _imp->onProjectLoadCB->setValue(onProjectLoad);
     pythonPage->addKnob(_imp->onProjectLoadCB);
     
     
@@ -961,7 +961,7 @@ Project::initializeKnobs()
                                           "You should return the new filename under which the project should be saved.");
     _imp->onProjectSaveCB->setAnimationEnabled(false);
     std::string onProjectSave = appPTR->getCurrentSettings()->getDefaultOnProjectSaveCB();
-    _imp->onProjectSaveCB->setValue(onProjectSave, 0);
+    _imp->onProjectSaveCB->setValue(onProjectSave);
     pythonPage->addKnob(_imp->onProjectSaveCB);
     
     _imp->onProjectCloseCB = AppManager::createKnob<KnobString>(this, "Before Project Close");
@@ -973,7 +973,7 @@ Project::initializeKnobs()
                                            "- app: points to the current application instance\n");
     _imp->onProjectCloseCB->setAnimationEnabled(false);
     std::string onProjectClose = appPTR->getCurrentSettings()->getDefaultOnProjectCloseCB();
-    _imp->onProjectCloseCB->setValue(onProjectClose, 0);
+    _imp->onProjectCloseCB->setValue(onProjectClose);
     pythonPage->addKnob(_imp->onProjectCloseCB);
     
     _imp->onNodeCreated = AppManager::createKnob<KnobString>(this, "After Node Created");
@@ -988,7 +988,7 @@ Project::initializeKnobs()
                                         "- app: points to the current application instance\n");
     _imp->onNodeCreated->setAnimationEnabled(false);
     std::string onNodeCreated = appPTR->getCurrentSettings()->getDefaultOnNodeCreatedCB();
-    _imp->onNodeCreated->setValue(onNodeCreated, 0);
+    _imp->onNodeCreated->setValue(onNodeCreated);
     pythonPage->addKnob(_imp->onNodeCreated);
     
     _imp->onNodeDeleted = AppManager::createKnob<KnobString>(this, "Before Node Removal");
@@ -1000,7 +1000,7 @@ Project::initializeKnobs()
                                         "- app: points to the current application instance\n");
     _imp->onNodeDeleted->setAnimationEnabled(false);
     std::string onNodeDelete = appPTR->getCurrentSettings()->getDefaultOnNodeDeleteCB();
-    _imp->onNodeDeleted->setValue(onNodeDelete, 0);
+    _imp->onNodeDeleted->setValue(onNodeDelete);
     pythonPage->addKnob(_imp->onNodeDeleted);
     
 
@@ -1105,7 +1105,7 @@ Project::setProjectDefaultFormat(const Format & f)
 {
     //assert( !_imp->formatMutex.tryLock() );
     int index = tryAddProjectFormat(f);
-    _imp->formatKnob->setValue(index,0);
+    _imp->formatKnob->setValue(index);
     ///if locked it will trigger a deadlock because some parameters
     ///might respond to this signal by checking the content of the project format.
 }
@@ -1149,7 +1149,7 @@ Project::setupProjectForStereo()
     pairs.push_back(std::make_pair("Left",""));
     pairs.push_back(std::make_pair("Right",""));
     std::string encoded = KnobPath::encodeToMultiPathFormat(pairs);
-    _imp->viewsList->setValue(encoded,0);
+    _imp->viewsList->setValue(encoded);
 }
    
 
@@ -1192,7 +1192,7 @@ Project::createProjectViews(const std::vector<std::string>& views)
         pairs.push_back(std::make_pair(view,std::string()));
     }
     std::string encoded = KnobPath::encodeToMultiPathFormat(pairs);
-    _imp->viewsList->setValue(encoded,0);
+    _imp->viewsList->setValue(encoded);
 
 }
 
@@ -1240,7 +1240,7 @@ Project::isAutoPreviewEnabled() const
 void
 Project::toggleAutoPreview()
 {
-    _imp->previewMode->setValue(!_imp->previewMode->getValue(),0);
+    _imp->previewMode->setValue(!_imp->previewMode->getValue());
 }
 
 boost::shared_ptr<TimeLine> Project::getTimeLine() const
@@ -1292,6 +1292,7 @@ void
 Project::onKnobValueChanged(KnobI* knob,
                             ValueChangedReasonEnum reason,
                             double /*time*/,
+                            const ViewIdx& /*view*/,
                             bool /*originatedFromMainThread*/)
 {
     if ( knob == _imp->viewsList.get() ) {
@@ -2076,7 +2077,7 @@ Project::onOCIOConfigPathChanged(const std::string& path,bool block)
             if (appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled()) {
                 fixRelativeFilePaths(NATRON_OCIO_ENV_VAR_NAME, path,block);
             }
-            _imp->envVars->setValue(newEnv, 0);
+            _imp->envVars->setValue(newEnv);
         }
         endChanges(block);
         
@@ -2160,8 +2161,8 @@ Project::unionFrameRangeWith(int first,int last)
     curFirst = !mustSet ? std::min(first, curFirst) : first;
     curLast = !mustSet ? std::max(last, curLast) : last;
     beginChanges();
-    _imp->frameRange->setValue(curFirst, 0);
-    _imp->frameRange->setValue(curLast, 1);
+    _imp->frameRange->setValue(curFirst, ViewIdx::ALL_VIEWS, 0);
+    _imp->frameRange->setValue(curLast, ViewIdx::ALL_VIEWS, 1);
     endChanges();
 
 }
@@ -2173,8 +2174,8 @@ Project::recomputeFrameRangeFromReaders()
     recomputeFrameRangeForAllReaders(&first, &last);
     
     beginChanges();
-    _imp->frameRange->setValue(first, 0);
-    _imp->frameRange->setValue(last, 1);
+    _imp->frameRange->setValue(first, ViewIdx::ALL_VIEWS, 0);
+    _imp->frameRange->setValue(last,  ViewIdx::ALL_VIEWS, 1);
     endChanges();
 }
     

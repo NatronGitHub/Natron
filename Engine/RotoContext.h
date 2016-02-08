@@ -458,7 +458,7 @@ public Q_SLOTS:
     
     void onSelectedKnobCurveChanged();
     
-    void onLifeTimeKnobValueChanged(int, int);
+    void onLifeTimeKnobValueChanged(const ViewIdx&,int, int);
 
 private:
     

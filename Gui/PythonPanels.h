@@ -66,6 +66,7 @@ private:
     virtual void onKnobValueChanged(KnobI* /*k*/,
                                     ValueChangedReasonEnum /*reason*/,
                                     double /*time*/,
+                                    const ViewIdx& view,
                                     bool /*originatedFromMainThread*/) OVERRIDE FINAL;
 
     boost::scoped_ptr<DialogParamHolderPrivate> _imp;

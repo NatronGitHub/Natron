@@ -3045,7 +3045,7 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
         for (U32 i = 0; i < knobs.size(); ++i) {
             KnobFile* fileKnob = dynamic_cast<KnobFile*>(knobs[i].get());
             if ( fileKnob && fileKnob->isInputImageFile() ) {
-                fileKnob->setValue(pattern,0);
+                fileKnob->setValue(pattern);
             }
         }
         _preview->viewerNode->getNode()->connectInput(reader, 0);

@@ -1077,7 +1077,7 @@ public:
     
     void removeParameterFromPython(const std::string& parameterName);
 
-    double getHostMixingValue(double time) const;
+    double getHostMixingValue(double time, int view) const;
     
     void removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey);
     void removeAllImagesFromCache(bool blocking);

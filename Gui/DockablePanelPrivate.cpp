@@ -763,12 +763,12 @@ DockablePanelPrivate::refreshPagesSecretness()
         if (isPage->getLabel() == stdName) {
             if (isPage->getIsSecret()) {
                 isPage->setSecret(false);
-                isPage->evaluateValueChange(0, isPage->getCurrentTime(), eValueChangedReasonUserEdited);
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
             }
         } else {
             if (!isPage->getIsSecret()) {
                 isPage->setSecret(true);
-                isPage->evaluateValueChange(0, isPage->getCurrentTime(), eValueChangedReasonUserEdited);
+                isPage->evaluateValueChange(0, isPage->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
             }
         }
     }

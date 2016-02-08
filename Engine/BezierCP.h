@@ -104,10 +104,10 @@ public:
     void removeAnimation(bool useGuiCurves,double currentTime);
 
     ///returns true if a keyframe was set
-    bool cuspPoint(bool useGuiCurves,double time,bool autoKeying,bool rippleEdit,const std::pair<double,double>& pixelScale);
+    bool cuspPoint(bool useGuiCurves,double time, int view,bool autoKeying,bool rippleEdit,const std::pair<double,double>& pixelScale);
 
     ///returns true if a keyframe was set
-    bool smoothPoint(bool useGuiCurves,double time,bool autoKeying,bool rippleEdit,const std::pair<double,double>& pixelScale);
+    bool smoothPoint(bool useGuiCurves,double time, int view,bool autoKeying,bool rippleEdit,const std::pair<double,double>& pixelScale);
 
 
     virtual bool isFeatherPoint() const
@@ -115,13 +115,13 @@ public:
         return false;
     }
 
-    bool equalsAtTime(bool useGuiCurves,double time,const BezierCP & other) const;
+    bool equalsAtTime(bool useGuiCurves,double time,int view,const BezierCP & other) const;
 
-    bool getPositionAtTime(bool useGuiCurves,double time,double* x,double* y,bool skipMasterOrRelative = false) const;
+    bool getPositionAtTime(bool useGuiCurves,double time,int view,double* x,double* y,bool skipMasterOrRelative = false) const;
 
-    bool getLeftBezierPointAtTime(bool useGuiCurves,double time,double* x,double* y,bool skipMasterOrRelative = false) const;
+    bool getLeftBezierPointAtTime(bool useGuiCurves,double time,int view,double* x,double* y,bool skipMasterOrRelative = false) const;
 
-    bool getRightBezierPointAtTime(bool useGuiCurves,double time,double *x,double *y,bool skipMasterOrRelative = false) const;
+    bool getRightBezierPointAtTime(bool useGuiCurves,double time,int view,double *x,double *y,bool skipMasterOrRelative = false) const;
 
     bool hasKeyFrameAtTime(bool useGuiCurves,double time) const;
 
@@ -153,7 +153,7 @@ public:
      * This function can also return the tangent of a feather point, to find out if the point is a feather point call
      * isFeatherPoint() on the returned control point.
      **/
-    int isNearbyTangent(bool useGuiCurves,double time,double x,double y,double acceptance) const;
+    int isNearbyTangent(bool useGuiCurves,double time,int view,double x,double y,double acceptance) const;
 
     /**
      * The functions below are to slave/unslave a control point to a track

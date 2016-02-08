@@ -1530,7 +1530,7 @@ DockablePanel::setKeyOnAllParameters()
                     } else if (isString) {
                         std::string v = isString->getValueAtTime(time,i);
                         double dv;
-                        isString->stringToKeyFrameValue(time, v, &dv);
+                        isString->stringToKeyFrameValue(time,ViewIdx(0), v, &dv);
                         kf.setValue(dv);
                     }
                     

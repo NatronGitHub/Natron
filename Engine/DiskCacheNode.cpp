@@ -125,11 +125,11 @@ DiskCacheNode::initializeKnobs()
 }
 
 void
-DiskCacheNode::knobChanged(KnobI* k, ValueChangedReasonEnum /*reason*/, int /*view*/, double /*time*/,
+DiskCacheNode::knobChanged(KnobI* k, ValueChangedReasonEnum /*reason*/, int view, double /*time*/,
                            bool /*originatedFromMainThread*/)
 {
     if (_imp->frameRange.lock().get() == k) {
-        int idx = _imp->frameRange.lock()->getValue();
+        int idx = _imp->frameRange.lock()->getValue(0, ViewIdx(view));
         switch (idx) {
             case 0:
             case 1:

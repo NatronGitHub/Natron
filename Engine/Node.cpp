@@ -845,7 +845,7 @@ Node::load(const CreateNodeArgs& args)
         KnobPtr knob = getKnobByName((*it)->getName());
         if (knob) {
             for (int i = 0; i < knob->getDimension(); ++i) {
-                knob->evaluateValueChange(i, time, eValueChangedReasonUserEdited);
+                knob->evaluateValueChange(i, time, ViewIdx(0), eValueChangedReasonUserEdited);
             }
         } else {
             qDebug() << "WARNING: No such parameter " << (*it)->getName().c_str();
@@ -855,7 +855,7 @@ Node::load(const CreateNodeArgs& args)
     if (hasUsedFileDialog) {
         KnobPtr fileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
         if (fileNameKnob) {
-            fileNameKnob->evaluateValueChange(0, time, eValueChangedReasonUserEdited);
+            fileNameKnob->evaluateValueChange(0, time, ViewIdx(0),eValueChangedReasonUserEdited);
         }
     }
     
@@ -1109,19 +1109,19 @@ Node::setProcessChannelsValues(bool doR, bool doG, bool doB, bool doA)
 {
     boost::shared_ptr<KnobBool> eR = _imp->enabledChan[0].lock();
     if (eR) {
-        eR->setValue(doR, 0);
+        eR->setValue(doR);
     }
     boost::shared_ptr<KnobBool> eG = _imp->enabledChan[1].lock();
     if (eG) {
-        eG->setValue(doG, 0);
+        eG->setValue(doG);
     }
     boost::shared_ptr<KnobBool> eB = _imp->enabledChan[2].lock();
     if (eB) {
-        eB->setValue(doB, 0);
+        eB->setValue(doB);
     }
     boost::shared_ptr<KnobBool> eA = _imp->enabledChan[3].lock();
     if (eA) {
-        eA->setValue(doA, 0);
+        eA->setValue(doA);
     }
 }
 
@@ -1698,7 +1698,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             if (group) {
                 group->addKnob(grp);
             }
-            grp->setValue(isGrp->isOpened(), 0);
+            grp->setValue(isGrp->isOpened());
             restoreUserKnobsRecursive(isGrp->getChildren(), grp, page);
         } else {
             assert(isRegular->isUserKnob());
@@ -3418,8 +3418,8 @@ Node::handleFormatKnob(KnobI* knob)
     assert(size && par);
     
     _imp->effect->beginChanges();
-    size->setValues(f.width(), f.height(), Natron::eValueChangedReasonNatronInternalEdited);
-    par->setValue(f.getPixelAspectRatio(),0);
+    size->setValues(f.width(), f.height(),ViewIdx::ALL_VIEWS, Natron::eValueChangedReasonNatronInternalEdited);
+    par->setValue(f.getPixelAspectRatio());
     _imp->effect->endChanges();
     return true;
 }
@@ -3436,7 +3436,7 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries, int defV
     choice->beginChanges();
     choice->setDefaultValue(defValue);
     if (curIndex < (int)entries.size()) {
-        choice->setValue(curIndex,0);
+        choice->setValue(curIndex);
     }
     choice->endChanges();
 }
@@ -5682,7 +5682,7 @@ Node::togglePreview()
     if (!b) {
         return;
     }
-    b->setValue(!b->getValue(),0);
+    b->setValue(!b->getValue());
 }
 
 bool
@@ -6544,8 +6544,8 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
                 rightBound = seq.rbegin()->first;
             }
             originalFrameRange->beginChanges();
-            originalFrameRange->setValue(leftBound, 0);
-            originalFrameRange->setValue(rightBound, 1);
+            originalFrameRange->setValue(leftBound, ViewIdx::ALL_VIEWS, 0);
+            originalFrameRange->setValue(rightBound, ViewIdx::ALL_VIEWS, 1);
             originalFrameRange->endChanges();
             
         }
@@ -6947,7 +6947,7 @@ Node::setHideInputsKnobValue(bool hidden)
     if (!k) {
         return;
     }
-    k->setValue(hidden,0);
+    k->setValue(hidden);
 }
 
 void
@@ -7129,7 +7129,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
         ssinfo << outputInfo << "<br/>";
         std::string cacheInfo = makeCacheInfo();
         ssinfo << cacheInfo << "<br/>";
-        _imp->nodeInfos.lock()->setValue(ssinfo.str(), 0);
+        _imp->nodeInfos.lock()->setValue(ssinfo.str());
     }
     
     for (std::map<int,ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
@@ -7241,7 +7241,7 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
     std::vector<std::string> entries = layerKnob->getEntries_mt_safe();
     int curLayer_i = layerKnob->getValue();
     assert(curLayer_i >= 0 && curLayer_i < (int)entries.size());
-    selector.layerName.lock()->setValue(entries[curLayer_i], 0);
+    selector.layerName.lock()->setValue(entries[curLayer_i]);
     
     if (inputNb == -1) {
         bool outputIsAll = entries[curLayer_i] == "All";
@@ -7355,12 +7355,12 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,const MaskSelector& sele
     int index = channel->getValue();
     boost::shared_ptr<KnobBool> enabled = selector.enabled.lock();
     if ( (index == 0) && enabled->isEnabled(0) ) {
-        enabled->setValue(false, 0);
+        enabled->setValue(false);
         enabled->setEnabled(0, false);
     } else if ( !enabled->isEnabled(0) ) {
         enabled->setEnabled(0, true);
         if ( _publicInterface->getInput(inputNb) ) {
-            enabled->setValue(true, 0);
+            enabled->setValue(true);
         }
     }
     
@@ -7370,7 +7370,7 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,const MaskSelector& sele
         _publicInterface->refreshChannelSelectors();
         return;
     }
-    selector.channelName.lock()->setValue(entries[curChan_i], 0);
+    selector.channelName.lock()->setValue(entries[curChan_i]);
     {
         ///Clip preferences have changed
         RenderScale s(1.);
@@ -7495,7 +7495,7 @@ Node::replaceCustomDataInlabel(const QString & data)
     label.insert(i, customTagStart);
     label.insert(i + customTagStart.size(), data);
     label.insert(i + customTagStart.size() + data.size(), customTagEnd);
-    labelKnob->setValue(label.toStdString(), 0);
+    labelKnob->setValue(label.toStdString());
 }
 
 boost::shared_ptr<KnobBool>
@@ -7521,7 +7521,7 @@ Node::setNodeDisabled(bool disabled)
 {
     boost::shared_ptr<KnobBool> b = _imp->disableNodeKnob.lock();
     if (b) {
-        b->setValue(disabled, 0);
+        b->setValue(disabled);
     }
 }
 
@@ -7579,8 +7579,8 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
             continue;
         }
         for (int j = 0; j < dim; ++j) {
-            if (knobs[i]->canAnimate() && knobs[i]->isAnimated(j)) {
-                KeyFrameSet kfs = knobs[i]->getCurve(j)->getKeyFrames_mt_safe();
+            if (knobs[i]->canAnimate() && knobs[i]->isAnimated(j,ViewIdx(0))) {
+                KeyFrameSet kfs = knobs[i]->getCurve(ViewIdx(0),j)->getKeyFrames_mt_safe();
                 for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
                     keyframes->push_back( it->getTime() );
                 }
@@ -7726,7 +7726,7 @@ Node::updateEffectLabelKnob(const QString & name)
     KnobPtr knob = getKnobByName(kNatronOfxParamStringSublabelName);
     KnobString* strKnob = dynamic_cast<KnobString*>( knob.get() );
     if (strKnob) {
-        strKnob->setValue(name.toStdString(), 0);
+        strKnob->setValue(name.toStdString());
     }
 }
 
@@ -8176,7 +8176,7 @@ Node::refreshMaskEnabledNess(int inputNb)
         bool newValue = inp ? true : false;
         changed = curValue != newValue;
         if (changed) {
-            enabled->setValue(newValue, 0);
+            enabled->setValue(newValue);
         }
         enabled->unblockValueChanges();
     }
@@ -9199,7 +9199,7 @@ Node::refreshChannelSelectors()
             assert(foundCurLayerChoice >= 0 && foundCurLayerChoice < (int)choices.size());
             layerKnob->blockValueChanges();
             _imp->effect->beginChanges();
-            layerKnob->setValue(foundCurLayerChoice, 0);
+            layerKnob->setValue(foundCurLayerChoice);
             _imp->effect->endChanges(true);
             layerKnob->unblockValueChanges();
             if (it->first == -1 && _imp->enabledChan[0].lock()) {
@@ -9214,8 +9214,8 @@ Node::refreshChannelSelectors()
                 //but not in the components presents
                 for (std::size_t i = 0; i < currentLayerEntries.size(); ++i) {
                     if (currentLayerEntries[i] == curLayer_internalName) {
-                        layerKnob->setValue(i, 0);
-                        it->second.layerName.lock()->setValue(choices[i], 0);
+                        layerKnob->setValue(i);
+                        it->second.layerName.lock()->setValue(choices[i]);
                         foundLayer = true;
                         break;
                     }
@@ -9225,8 +9225,8 @@ Node::refreshChannelSelectors()
             if (!foundLayer) {
                 if (it->second.hasAllChoice &&
                     _imp->effect->isPassThroughForNonRenderedPlanes() == EffectInstance::ePassThroughRenderAllRequestedPlanes) {
-                    layerKnob->setValue(0, 0);
-                    it->second.layerName.lock()->setValue(choices[0], 0);
+                    layerKnob->setValue(0);
+                    it->second.layerName.lock()->setValue(choices[0]);
                 } else {
                     
                     int defaultIndex;
@@ -9243,8 +9243,8 @@ Node::refreshChannelSelectors()
                     }
                     
                     assert(defaultIndex != -1 && defaultIndex >= 0 && defaultIndex < (int)choices.size());
-                    layerKnob->setValue(defaultIndex,0);
-                    it->second.layerName.lock()->setValue(choices[defaultIndex], 0);
+                    layerKnob->setValue(defaultIndex);
+                    it->second.layerName.lock()->setValue(choices[defaultIndex]);
                 }
             } // !foundLayer
         }
@@ -9409,15 +9409,15 @@ Node::refreshChannelSelectors()
             if (foundLastLayerChoice != -1 && foundLastLayerChoice != 0) {
                 channelKnob->blockValueChanges();
                 _imp->effect->beginChanges();
-                channelKnob->setValue(foundLastLayerChoice, 0);
+                channelKnob->setValue(foundLastLayerChoice);
                 channelKnob->unblockValueChanges();
-                channelNameKnob->setValue(choices[foundLastLayerChoice], 0);
+                channelNameKnob->setValue(choices[foundLastLayerChoice]);
                 _imp->effect->endChanges();
                 
             } else {
                 assert(alphaIndex != -1 && alphaIndex >= 0 && alphaIndex < (int)choices.size());
-                channelKnob->setValue(alphaIndex,0);
-                channelNameKnob->setValue(choices[alphaIndex], 0);
+                channelKnob->setValue(alphaIndex);
+                channelNameKnob->setValue(choices[alphaIndex]);
             }
         //}
     }
@@ -9483,10 +9483,10 @@ Node::getUserCreatedComponents(std::list<ImageComponents>* comps)
 }
 
 double
-Node::getHostMixingValue(double time) const
+Node::getHostMixingValue(double time, int view) const
 {
     boost::shared_ptr<KnobDouble> mix = _imp->mixWithSource.lock();
-    return mix ? mix->getValueAtTime(time) : 1.;
+    return mix ? mix->getValueAtTime(time, 0, ViewIdx(view)) : 1.;
 }
 
 //////////////////////////////////

@@ -417,7 +417,7 @@ PrecompNodePrivate::setReadNodeErrorChoice()
         if (knob) {
             KnobChoice* choice = dynamic_cast<KnobChoice*>(knob.get());
             if (choice) {
-                choice->setValue(errorBehaviourKnbo.lock()->getValue(), 0);
+                choice->setValue(errorBehaviourKnbo.lock()->getValue());
             }
         }
     }
@@ -444,7 +444,7 @@ PrecompNodePrivate::reloadProject(bool setWriteNodeChoice)
     }
     QString fileUnPathed = file.fileName();
     
-    subLabelKnob.lock()->setValue(fileUnPathed.toStdString(), 0);
+    subLabelKnob.lock()->setValue(fileUnPathed.toStdString());
     
     QString path = file.path() + "/";
     
@@ -516,7 +516,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp, bool setWrit
     
     if (setWriteNodeChoice) {
         if (choices.size() > 1) {
-            param->setValue(1, 0);
+            param->setValue(1);
         }
     }
 }
@@ -678,10 +678,10 @@ PrecompNodePrivate::setFirstAndLastFrame()
     KnobInt* firstFrame = dynamic_cast<KnobInt*>(writefirstFrameKnob.get());
     KnobInt* lastFrame = dynamic_cast<KnobInt*>(writelastFrameKnob.get());
     if (firstFrame) {
-        firstFrameKnob.lock()->setValue(firstFrame->getValue(), 0);
+        firstFrameKnob.lock()->setValue(firstFrame->getValue());
     }
     if (lastFrame) {
-        lastFrameKnob.lock()->setValue(lastFrame->getValue(), 0);
+        lastFrameKnob.lock()->setValue(lastFrame->getValue());
     }
 }
 
@@ -700,7 +700,7 @@ PrecompNodePrivate::refreshReadNodeInput()
     readNode->purgeAllInstancesCaches();
     
     //Force the reader to reload the sequence/video
-    fileNameKnob->evaluateValueChange(0, _publicInterface->getApp()->getTimeLine()->currentFrame(), eValueChangedReasonUserEdited);
+    fileNameKnob->evaluateValueChange(0, _publicInterface->getApp()->getTimeLine()->currentFrame(), ViewIdx(0),eValueChangedReasonUserEdited);
     
 }
 

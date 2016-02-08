@@ -128,7 +128,7 @@ public Q_SLOTS:
     void onRotoItemShapeColorChanged();
 
     ///An item had its compositing operator changed
-    void onRotoItemCompOperatorChanged(int dim,int reason);
+    void onRotoItemCompOperatorChanged(const ViewIdx& /*view*/,int dim,int reason);
 
     void onCurrentItemCompOperatorChanged(int index);
 

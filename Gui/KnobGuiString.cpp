@@ -594,7 +594,7 @@ KnobGuiString::restoreTextInfoFromString()
         text.append(kFontEndTag);
 
 
-        knob->setValue(text.toStdString(), 0);
+        knob->setValue(text.toStdString());
     } else {
         QString toFind = QString(kItalicStartTag);
         int i = text.indexOf(toFind);
@@ -661,7 +661,7 @@ KnobGuiString::restoreTextInfoFromString()
             QString fontTag = makeFontTag(_fontFamily, _fontSize, _fontColor);
             text.prepend(fontTag);
             text.append(kFontEndTag);
-            knob->setValue(text.toStdString(), 0);
+            knob->setValue(text.toStdString());
         } else {
             _fontCombo->setCurrentFont( QFont(_fontFamily) );
 

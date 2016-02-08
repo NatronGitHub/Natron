@@ -141,12 +141,12 @@ private:
             
             if (knob->getHolder()->getApp() ) {
                 if (_valueChangedReturnCode[i] == 1) { //the value change also added a keyframe
-                    _knob->removeKeyFrame(_newKeys[i].getTime(),dimension);
+                    _knob->removeKeyFrame(_newKeys[i].getTime(),dimension, ViewIdx(0));
                     modifiedKeyFrame = true;
                 } else if (_valueChangedReturnCode[i] == 2) {
                     //the value change moved a keyframe
-                    _knob->removeKeyFrame(_newKeys[i].getTime(),dimension);
-                    _knob->setKeyframe(_oldKeys[i].getTime(), dimension);
+                    _knob->removeKeyFrame(_newKeys[i].getTime(),dimension,ViewIdx(0));
+                    _knob->setKeyframe(_oldKeys[i].getTime(), dimension,ViewIdx(0));
                     modifiedKeyFrame = true;
                 }
             }
@@ -159,7 +159,7 @@ private:
         }
         
         ///This will refresh all dimensions
-        _knob->onInternalValueChanged(-1, eValueChangedReasonNatronGuiEdited);
+        _knob->onInternalValueChanged(ViewIdx::ALL_VIEWS,-1, eValueChangedReasonNatronGuiEdited);
         
         knob->endChanges();
         if (modifiedKeyFrame) {
@@ -196,7 +196,7 @@ private:
                 knob->blockValueChanges();
             }
             
-            boost::shared_ptr<Curve> c = knob->getCurve(dimension);
+            boost::shared_ptr<Curve> c = knob->getCurve(ViewIdx(0),dimension);
             //find out if there's already an existing keyframe before calling setValue
             if (c) {
                 bool found = c->getKeyFrameWithTime(time, &_oldKeys[i]);
@@ -226,7 +226,7 @@ private:
         
         ///This will refresh all dimensions
         if (_firstRedoCalled || _refreshGuiFirstTime) {
-            _knob->onInternalValueChanged(-1, eValueChangedReasonNatronGuiEdited);
+            _knob->onInternalValueChanged(ViewIdx::ALL_VIEWS, -1, eValueChangedReasonNatronGuiEdited);
         }
 
         

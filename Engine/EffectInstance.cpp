@@ -2338,7 +2338,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
     bool unPremultIfNeeded = planes.outputPremult == eImagePremultiplicationPremultiplied;
     bool useMaskMix = _publicInterface->isHostMaskingEnabled() || _publicInterface->isHostMixingEnabled();
-    double mix = useMaskMix ? _publicInterface->getNode()->getHostMixingValue(time) : 1.;
+    double mix = useMaskMix ? _publicInterface->getNode()->getHostMixingValue(time, view) : 1.;
     bool doMask = useMaskMix ? _publicInterface->getNode()->isMaskEnabled(_publicInterface->getMaxInputCount() - 1) : false;
 
     
@@ -2743,7 +2743,7 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
             boost::shared_ptr<KnobOutputFile> fk = boost::dynamic_pointer_cast<KnobOutputFile>(knobs[i]);
             assert(fk);
             if ( fk->isOutputImageFile() ) {
-                fk->setValue(pattern, 0);
+                fk->setValue(pattern);
                 break;
             }
         }
@@ -3875,6 +3875,7 @@ void
 EffectInstance::onKnobValueChanged(KnobI* /*k*/,
                                    ValueChangedReasonEnum /*reason*/,
                                    double /*time*/,
+                                   const ViewIdx& /*view*/,
                                    bool /*originatedFromMainThread*/)
 {
 }
@@ -3955,6 +3956,7 @@ void
 EffectInstance::onKnobValueChanged_public(KnobI* k,
                                           ValueChangedReasonEnum reason,
                                           double time,
+                                          const ViewIdx& view,
                                           bool originatedFromMainThread)
 {
     NodePtr node = getNode();
@@ -3969,6 +3971,8 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         node->computeFrameRangeForReader(k);
     }
 
+    //assert(view.i >= 0);
+    const int viewIdx = 0; // view.i
     
     bool wasFormatKnobCaught = node->handleFormatKnob(k);
    
@@ -3976,17 +3980,12 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     assert(kh);
     if (kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught) {
         
-        /*
-         For now since knobs are not view aware, use view=0 always
-         */
-        const int view = 0;
-        
         ////We set the thread storage render args so that if the instance changed action
         ////tries to call getImage it can render with good parameters.
         boost::shared_ptr<ParallelRenderArgsSetter> setter;
         if (reason != eValueChangedReasonTimeChanged) {
             setter.reset(new ParallelRenderArgsSetter(time,
-                                                      view, //view
+                                                      viewIdx, //view
                                                       true, // isRenderUserInteraction
                                                       false, // isSequential
                                                       false, // canAbort
@@ -4003,7 +4002,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         }
         {
             RECURSIVE_ACTION();
-            knobChanged(k, reason, view, time, originatedFromMainThread);
+            knobChanged(k, reason, view.i, time, originatedFromMainThread);
         }
         
         
@@ -4372,10 +4371,16 @@ int
 EffectInstance::getCurrentView() const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    if (!tls || !tls->currentRenderArgs.validArgs) {
+    if (!tls) {
         return 0;
     }
-    return tls->currentRenderArgs.view;
+    if (tls->currentRenderArgs.validArgs) {
+        return tls->currentRenderArgs.view;
+    }
+    if (!tls->frameArgs.empty()) {
+        return tls->frameArgs.back()->view;
+    }
+    return 0;
     
 }
 

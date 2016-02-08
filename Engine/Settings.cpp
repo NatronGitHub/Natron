@@ -1351,10 +1351,10 @@ Settings::setCachingLabels()
     U64 systemTotalRam = getSystemTotalRAM();
     U64 maxRAM = (U64)( ( (double)maxTotalRam / 100. ) * systemTotalRam );
 
-    _maxRAMLabel->setValue(printAsRAM(maxRAM).toStdString(), 0);
-    _maxPlaybackLabel->setValue(printAsRAM( (U64)( maxRAM * ( (double)maxPlaybackPercent / 100. ) ) ).toStdString(), 0);
+    _maxRAMLabel->setValue(printAsRAM(maxRAM).toStdString());
+    _maxPlaybackLabel->setValue(printAsRAM( (U64)( maxRAM * ( (double)maxPlaybackPercent / 100. ) ) ).toStdString());
 
-    _unreachableRAMLabel->setValue(printAsRAM( (double)systemTotalRam * ( (double)_unreachableRAMPercent->getValue() / 100. ) ).toStdString(), 0);
+    _unreachableRAMLabel->setValue(printAsRAM( (double)systemTotalRam * ( (double)_unreachableRAMPercent->getValue() / 100. ) ).toStdString());
 }
 
 void
@@ -1650,7 +1650,7 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
                                       QObject::tr("The OpenColorIO config change requires a restart of "
                                                   NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
                 if (stopAsking) {
-                    _warnOcioConfigKnobChanged->setValue(false,0);
+                    _warnOcioConfigKnobChanged->setValue(false);
                     saveSetting(_warnOcioConfigKnobChanged.get());
                 }
 
@@ -1669,7 +1669,7 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
                         if ( !(*it)->supportsGLSL() && (_texturesMode->getValue() != 0) ) {
                             Dialogs::errorDialog( QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
                                                                                                   "Reverting to 8bits textures.").toStdString() );
-                            _texturesMode->setValue(0,0);
+                            _texturesMode->setValue(0);
                             saveSetting(_texturesMode.get());
                             return;
                         }
@@ -1804,7 +1804,7 @@ Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
                 
                 if (isString) {
                     
-                    isString->setValue(settings.value(qDimName).toString().toStdString(), j);
+                    isString->setValue(settings.value(qDimName).toString().toStdString(), ViewIdx::ALL_VIEWS, j);
                     
                 } else if (isInt) {
                     
@@ -1824,21 +1824,21 @@ Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
                         }
                         
                         if (found >= 0) {
-                            isChoice->setValue(found, j);
+                            isChoice->setValue(found,ViewIdx::ALL_VIEWS, j);
                         }
                         
                     } else {
-                        isInt->setValue(settings.value(qDimName).toInt(), j);
+                        isInt->setValue(settings.value(qDimName).toInt(), ViewIdx::ALL_VIEWS,j);
                     }
                     
                     
                 } else if (isDouble) {
                     
-                    isDouble->setValue(settings.value(qDimName).toDouble(), j);
+                    isDouble->setValue(settings.value(qDimName).toDouble(),ViewIdx::ALL_VIEWS, j);
                     
                 } else if (isBool) {
                     
-                    isBool->setValue(settings.value(qDimName).toBool(), j);
+                    isBool->setValue(settings.value(qDimName).toBool(),ViewIdx::ALL_VIEWS, j);
                     
                 } else {
                     assert(false);
@@ -1878,14 +1878,14 @@ Settings::restoreSettings()
         _settingsExisted = _natronSettingsExist->getValue();
 
         if (!_settingsExisted) {
-            _natronSettingsExist->setValue(true, 0);
+            _natronSettingsExist->setValue(true);
             saveSetting(_natronSettingsExist.get());
         }
         
         int appearanceVersion = _defaultAppearanceVersion->getValue();
         if (_settingsExisted && appearanceVersion < NATRON_DEFAULT_APPEARANCE_VERSION) {
             _defaultAppearanceOutdated = true;
-            _defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION, 0);
+            _defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION);
             saveSetting(_defaultAppearanceVersion.get());
         }
 
@@ -1992,6 +1992,7 @@ void
 Settings::onKnobValueChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
                              double /*time*/,
+                             const ViewIdx& /*view*/,
                              bool /*originatedFromMainThread*/)
 {
     
@@ -2053,7 +2054,7 @@ Settings::onKnobValueChanged(KnobI* k,
                                       QObject::tr("The OpenColorIO config change requires a restart of "
                                                   NATRON_APPLICATION_NAME " to be effective.").toStdString(),&stopAsking);
                 if (stopAsking) {
-                    _warnOcioConfigKnobChanged->setValue(false,0);
+                    _warnOcioConfigKnobChanged->setValue(false);
                 }
             }
 
@@ -2193,7 +2194,7 @@ Settings::getNumberOfThreads() const
 void
 Settings::setNumberOfThreads(int threadsNb)
 {
-    _numberOfThreads->setValue(threadsNb,0);
+    _numberOfThreads->setValue(threadsNb);
 }
 
 bool
@@ -2548,7 +2549,7 @@ Settings::populateSystemFonts(const QSettings& settings,const std::vector<std::s
         std::string value = settings.value(name).toString().toStdString();
         for (U32 i = 0; i < fonts.size(); ++i) {
             if (fonts[i] == value) {
-                _systemFontChoice->setValue(i, 0);
+                _systemFontChoice->setValue(i);
                 break;
             }
         }
@@ -2660,7 +2661,7 @@ Settings::isCheckForUpdatesEnabled() const
 void
 Settings::setCheckUpdatesEnabled(bool enabled)
 {
-    _checkForUpdates->setValue(enabled, 0);
+    _checkForUpdates->setValue(enabled);
     saveSetting(_checkForUpdates.get());
 }
 
@@ -2679,14 +2680,14 @@ Settings::getMaxPanelsOpened() const
 void
 Settings::setMaxPanelsOpened(int maxPanels)
 {
-    _maxPanelsOpened->setValue(maxPanels, 0);
+    _maxPanelsOpened->setValue(maxPanels);
     saveSetting(_maxPanelsOpened.get());
 }
 
 void
 Settings::setConnectionHintsEnabled(bool enabled)
 {
-    _useNodeGraphHints->setValue(enabled, 0);
+    _useNodeGraphHints->setValue(enabled);
 }
 
 bool
@@ -2887,7 +2888,7 @@ Settings::getRenderOnEditingFinishedOnly() const
 void
 Settings::setRenderOnEditingFinishedOnly(bool render)
 {
-    _renderOnEditingFinished->setValue(render, 0);
+    _renderOnEditingFinished->setValue(render);
 }
 
 bool
@@ -2963,7 +2964,7 @@ void
 Settings::setNumberOfParallelRenders(int nb)
 {
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    _numberOfParallelRenders->setValue(nb, 0);
+    _numberOfParallelRenders->setValue(nb);
 #endif
 }
 
@@ -2988,7 +2989,7 @@ Settings::useGlobalThreadPool() const
 void
 Settings::setUseGlobalThreadPool(bool use)
 {
-    _useThreadPool->setValue(use,0);
+    _useThreadPool->setValue(use);
 }
 
 bool
@@ -3031,7 +3032,7 @@ Settings::doOCIOStartupCheckIfNeeded()
                                                                         eStandardButtonYes,
                                                                         &stopAsking);
         if (stopAsking != !docheck) {
-            _ocioStartupCheck->setValue(!stopAsking,0);
+            _ocioStartupCheck->setValue(!stopAsking);
             saveSetting(_ocioStartupCheck.get());
         }
         
@@ -3045,7 +3046,7 @@ Settings::doOCIOStartupCheckIfNeeded()
                 }
             }
             if (defaultIndex != -1) {
-                _ocioConfigKnob->setValue(defaultIndex,0);
+                _ocioConfigKnob->setValue(defaultIndex);
                 saveSetting(_ocioConfigKnob.get());
             } else {
                 Dialogs::warningDialog("OCIO config", QObject::tr("The " NATRON_DEFAULT_OCIO_CONFIG_NAME " config could not be found. "
@@ -3086,13 +3087,13 @@ Settings::isAutoTurboEnabled() const
 void
 Settings::setAutoTurboModeEnabled(bool e)
 {
-    _autoTurbo->setValue(e, 0);
+    _autoTurbo->setValue(e);
 }
 
 void
 Settings::setOptionalInputsAutoHidden(bool hidden)
 {
-    _hideOptionalInputsAutomatically->setValue(hidden, 0);
+    _hideOptionalInputsAutomatically->setValue(hidden);
 }
 
 bool
@@ -3166,7 +3167,7 @@ Settings::isAutoDeclaredVariablePrintActivated() const
 void
 Settings::setAutoDeclaredVariablePrintEnabled(bool enabled)
 {
-    _echoVariableDeclarationToPython->setValue(enabled, 0);
+    _echoVariableDeclarationToPython->setValue(enabled);
     saveSetting(_echoVariableDeclarationToPython.get());
 }
 
@@ -3465,13 +3466,13 @@ Settings::isNaNHandlingEnabled() const
 void
 Settings::setOnProjectCreatedCB(const std::string& func)
 {
-    _onProjectCreated->setValue(func, 0);
+    _onProjectCreated->setValue(func);
 }
 
 void
 Settings::setOnProjectLoadedCB(const std::string& func)
 {
-    _defaultOnProjectLoaded->setValue(func, 0);
+    _defaultOnProjectLoaded->setValue(func);
 }
 
 bool

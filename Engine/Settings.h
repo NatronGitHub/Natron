@@ -89,7 +89,7 @@ public:
     {
     }
 
-    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time,
+    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time, const ViewIdx& view,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
 
     ImageBitDepthEnum getViewersBitDepth() const;

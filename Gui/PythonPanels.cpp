@@ -89,9 +89,10 @@ DialogParamHolder::setParamChangedCallback(const std::string& callback)
 
 void
 DialogParamHolder::onKnobValueChanged(KnobI* k,
-                        ValueChangedReasonEnum reason,
-                        double /*time*/,
-                        bool /*originatedFromMainThread*/)
+                                      ValueChangedReasonEnum reason,
+                                      double /*time*/,
+                                      const ViewIdx& /*view*/,
+                                      bool /*originatedFromMainThread*/)
 {
     std::string callback;
     {
@@ -101,7 +102,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
     if (!callback.empty()) {
         bool userEdited = reason == eValueChangedReasonNatronGuiEdited ||
         reason == eValueChangedReasonUserEdited;
-
+        
         
         std::vector<std::string> args;
         std::string error;

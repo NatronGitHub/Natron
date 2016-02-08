@@ -1010,9 +1010,9 @@ RotoPanelPrivate::insertItemRecursively(double time,
                          publicInterface,
                          SLOT( onRotoItemShapeColorChanged() ) );
         QObject::connect( drawable.get(),
-                         SIGNAL( compositingOperatorChanged(int,int) ),
+                         SIGNAL( compositingOperatorChanged(ViewIdx,int,int) ),
                          publicInterface,
-                         SLOT( onRotoItemCompOperatorChanged(int,int) ) );
+                         SLOT( onRotoItemCompOperatorChanged(ViewIdx,int,int) ) );
         
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
         if (isBezier) {
@@ -1189,7 +1189,7 @@ RotoPanel::onCurrentItemCompOperatorChanged(int index)
             if (drawable) {
                 boost::shared_ptr<KnobChoice> op = drawable->getOperatorKnob();
                 KeyFrame k;
-                op->setValue(index, 0, eValueChangedReasonUserEdited,&k);
+                op->setValue(index, ViewIdx(0), 0, eValueChangedReasonUserEdited,&k);
             }
             _imp->context->clearSelection(RotoItem::eSelectionReasonOther);
             _imp->context->select(it->rotoItem, RotoItem::eSelectionReasonOther);
@@ -1239,7 +1239,7 @@ RotoPanel::onRotoItemShapeColorChanged()
 }
 
 void
-RotoPanel::onRotoItemCompOperatorChanged(int /*dim*/,
+RotoPanel::onRotoItemCompOperatorChanged(const ViewIdx& /*view*/, int /*dim*/,
                                          int reason)
 {
     if ( (ValueChangedReasonEnum)reason == eValueChangedReasonSlaveRefresh ) {
@@ -1343,9 +1343,7 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
         if (drawable) {
             if (_imp->dialogEdition == eColorDialogEditingShapeColor) {
                 boost::shared_ptr<KnobColor> colorKnob = drawable->getColorKnob();
-                colorKnob->setValue(color.redF(), 0);
-                colorKnob->setValue(color.greenF(), 1);
-                colorKnob->setValue(color.blueF(), 2);
+                colorKnob->setValues(color.redF(), color.greenF(), color.blueF(), ViewIdx::ALL_VIEWS, eValueChangedReasonNatronInternalEdited);
                 QIcon icon;
                 double colorArray[3];
                 colorArray[0] = color.redF();
@@ -1353,10 +1351,8 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
                 colorArray[2] = color.blueF();
                 makeSolidIcon(colorArray, icon);
                 found->treeItem->setIcon(COL_COLOR, icon);
-
-                _imp->context->getColorKnob()->setValue(colorArray[0], 0);
-                _imp->context->getColorKnob()->setValue(colorArray[1], 1);
-                _imp->context->getColorKnob()->setValue(colorArray[2], 2);
+                boost::shared_ptr<KnobColor> contextKnob = _imp->context->getColorKnob();
+                contextKnob->setValues(colorArray[0], colorArray[1], colorArray[2], ViewIdx::ALL_VIEWS, eValueChangedReasonNatronInternalEdited);
                 mustEvaluate = true;
             } else if (_imp->dialogEdition == eColorDialogEditingOverlayColor) {
                 double colorArray[4];
@@ -1532,9 +1528,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                         drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
                         if (drawable) {
                             boost::shared_ptr<KnobColor> colorKnob = drawable->getColorKnob();
-                            colorKnob->setValue(shapeColor[0], 0);
-                            colorKnob->setValue(shapeColor[1], 1);
-                            colorKnob->setValue(shapeColor[2], 2);
+                            colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewIdx::ALL_VIEWS, eValueChangedReasonNatronInternalEdited);
                             mustEvaluate = true;
                             found->treeItem->setIcon(COL_COLOR, icon);
                         }
@@ -1542,9 +1536,8 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                 }
                 
                 if ( colorChosen && !selected.empty() ) {
-                    _imp->context->getColorKnob()->setValue(shapeColor[0], 0);
-                    _imp->context->getColorKnob()->setValue(shapeColor[1], 1);
-                    _imp->context->getColorKnob()->setValue(shapeColor[2], 2);
+                    boost::shared_ptr<KnobColor> colorKnob = _imp->context->getColorKnob();
+                    colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewIdx::ALL_VIEWS, eValueChangedReasonNatronInternalEdited);
                     mustEvaluate = true;
                 }
                 if (mustEvaluate) {

@@ -284,7 +284,7 @@ KnobGuiParametric::resetSelectedCurves()
             }
         }
     }
-    k->evaluateValueChange(0, k->getCurrentTime(), eValueChangedReasonUserEdited);
+    k->evaluateValueChange(0, k->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
 }
 
 KnobPtr KnobGuiParametric::getKnob() const

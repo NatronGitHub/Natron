@@ -35,7 +35,8 @@
 NATRON_NAMESPACE_ENTER;
 
 void
-KnobGui::onInternalValueChanged(int dimension,
+KnobGui::onInternalValueChanged(const ViewIdx& /*view*/,
+                                int dimension,
                                 int reason)
 {
     if (_imp->widgetCreated && (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
@@ -50,7 +51,7 @@ KnobGui::updateCurveEditorKeyframes()
 }
 
 void
-KnobGui::onMultipleKeySet(const std::list<double>& keys,int /*dimension*/, int reason)
+KnobGui::onMultipleKeySet(const std::list<double>& keys,const ViewIdx& /*view*/,int /*dimension*/, int reason)
 {
     
     if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
@@ -70,6 +71,7 @@ KnobGui::onMultipleKeySet(const std::list<double>& keys,int /*dimension*/, int r
 
 void
 KnobGui::onInternalKeySet(double time,
+                          const ViewIdx& /*view*/,
                           int /*dimension*/,
                           int reason,
                           bool added )
@@ -89,6 +91,7 @@ KnobGui::onInternalKeySet(double time,
 
 void
 KnobGui::onInternalKeyRemoved(double time,
+                              const ViewIdx& /*view*/,
                               int /*dimension*/,
                               int /*reason*/)
 {
@@ -399,6 +402,7 @@ KnobGui::hasWidgetBeenCreated() const
 
 void
 KnobGui::onSetValueUsingUndoStack(const Variant & v,
+                                  const ViewIdx& /*view*/,
                                   int dim)
 {
     KnobPtr knob = getKnob();
@@ -495,7 +499,7 @@ KnobGui::setKnobGuiPointer()
 }
 
 void
-KnobGui::onInternalAnimationAboutToBeRemoved(int dimension)
+KnobGui::onInternalAnimationAboutToBeRemoved(const ViewIdx& /*view*/,int dimension)
 {
     removeAllKeyframeMarkersOnTimeline(dimension);
 }
@@ -518,7 +522,7 @@ KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
         if (dimension == -1) {
             int dim = knob->getDimension();
             for (int i = 0; i < dim; ++i) {
-                boost::shared_ptr<Curve> curve = knob->getCurve(i);
+                boost::shared_ptr<Curve> curve = knob->getCurve(ViewIdx(0),i);
                 if (curve) {
                     KeyFrameSet kfs = curve->getKeyFrames_mt_safe();
                     for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
@@ -530,7 +534,7 @@ KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
                 times.push_back(*it);
             }
         } else {
-            boost::shared_ptr<Curve> curve = knob->getCurve(dimension);
+            boost::shared_ptr<Curve> curve = knob->getCurve(ViewIdx(0),dimension);
             if (curve) {
                 KeyFrameSet kfs = curve->getKeyFrames_mt_safe();
                 for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
@@ -555,13 +559,13 @@ KnobGui::setAllKeyframeMarkersOnTimeline(int dimension)
     if (dimension == -1) {
         int dim = knob->getDimension();
         for (int i = 0; i < dim; ++i) {
-            KeyFrameSet kfs = knob->getCurve(i)->getKeyFrames_mt_safe();
+            KeyFrameSet kfs = knob->getCurve(ViewIdx(0),i)->getKeyFrames_mt_safe();
             for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
                 times.push_back( it->getTime() );
             }
         }
     } else {
-        KeyFrameSet kfs = knob->getCurve(dimension)->getKeyFrames_mt_safe();
+        KeyFrameSet kfs = knob->getCurve(ViewIdx(0),dimension)->getKeyFrames_mt_safe();
         for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
             times.push_back( it->getTime() );
         }
@@ -579,7 +583,8 @@ KnobGui::setKeyframeMarkerOnTimeline(double time)
 }
 
 void
-KnobGui::onKeyFrameMoved(int /*dimension*/,
+KnobGui::onKeyFrameMoved(const ViewIdx& /*view*/,
+                         int /*dimension*/,
                          double oldTime,
                          double newTime)
 {
@@ -597,7 +602,7 @@ KnobGui::onKeyFrameMoved(int /*dimension*/,
 }
 
 void
-KnobGui::onAnimationLevelChanged(int dim,int level)
+KnobGui::onAnimationLevelChanged(const ViewIdx& /*idx*/, int dim,int level)
 {
     if (!_imp->customInteract) {
         //std::string expr = getKnob()->getExpression(dim);
@@ -612,6 +617,7 @@ KnobGui::onAnimationLevelChanged(int dim,int level)
 void
 KnobGui::onAppendParamEditChanged(int reason,
                                   const Variant & v,
+                                  const ViewIdx& /*view*/,
                                   int dim,
                                   double time,
                                   bool createNewCommand,
@@ -648,13 +654,13 @@ KnobGui::isGuiFrozenForPlayback() const
 }
 
 boost::shared_ptr<Curve>
-KnobGui::getCurve(int dimension) const
+KnobGui::getCurve(int /*view*/,int dimension) const
 {
     return _imp->guiCurves[dimension];
 }
 
 void
-KnobGui::onRedrawGuiCurve(int reason, int /*dimension*/)
+KnobGui::onRedrawGuiCurve(int reason, const ViewIdx& /*view*/, int /*dimension*/)
 {
     CurveChangeReason curveChangeReason = (CurveChangeReason)reason;
     switch (curveChangeReason) {

@@ -611,7 +611,7 @@ public:
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k, ValueChangedReasonEnum reason, double time, bool originatedFromMainThread) OVERRIDE FINAL;
+    virtual void onKnobValueChanged_public(KnobI* k, ValueChangedReasonEnum reason, double time, const ViewIdx& view, bool originatedFromMainThread) OVERRIDE FINAL;
 
     /**
      * @brief Returns a pointer to the first non disabled upstream node.
@@ -1387,7 +1387,7 @@ protected:
 public:
 
     ///Doesn't do anything, instead we overriden onKnobValueChanged_public
-    virtual void onKnobValueChanged(KnobI* k, ValueChangedReasonEnum reason, double time,
+    virtual void onKnobValueChanged(KnobI* k, ValueChangedReasonEnum reason, double time, const ViewIdx& view,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
     StatusEnum beginSequenceRender_public(double first, double last,
                                                   double step, bool interactive, const RenderScale & scale,

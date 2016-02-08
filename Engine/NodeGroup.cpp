@@ -57,7 +57,7 @@
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_PYPLUG_EXPORTER_VERSION 5
+#define NATRON_PYPLUG_EXPORTER_VERSION 6
 
 NATRON_NAMESPACE_ENTER;
 
@@ -856,7 +856,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,const st
                 
                 if (!filepath.empty()) {
                     if (project->fixFilePath(projectPathName, newProjectPath, filepath)) {
-                        isString->setValue(filepath, 0);
+                        isString->setValue(filepath);
                     }
                 }
             }
@@ -897,7 +897,7 @@ NodeCollection::fixPathName(const std::string& oldName,const std::string& newNam
                     filepath.substr(1,oldName.size()) == oldName) {
                     
                     filepath.replace(1, oldName.size(), newName);
-                    isString->setValue(filepath, 0);
+                    isString->setValue(filepath);
                 }
             }
             
@@ -1631,7 +1631,7 @@ static bool exportKnobValues(int indentLevel,
                 
             }
         } else { // !isParametric
-            boost::shared_ptr<Curve> curve = knob->getCurve(i, true);
+            boost::shared_ptr<Curve> curve = knob->getCurve(ViewIdx(0), i, true);
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
                 
@@ -1647,7 +1647,7 @@ static bool exportKnobValues(int indentLevel,
                 
                 for (KeyFrameSet::iterator it3 = keys.begin(); it3 != keys.end(); ++it3) {
                     if (isAnimatedStr) {
-                        std::string value = isAnimatedStr->getValueAtTime(it3->getTime(),i, true);
+                        std::string value = isAnimatedStr->getValueAtTime(it3->getTime(),i, ViewIdx(0), true);
                         WRITE_INDENT(innerIdent); WRITE_STRING("param.setValueAtTime(" + ESC(value) + ", "
                                                       + NUM_TIME(it3->getTime())+ ")");
                         
@@ -1677,14 +1677,14 @@ static bool exportKnobValues(int indentLevel,
                 }
                 
                 if (isGrp) {
-                    int v = std::min(1., std::max(0.,std::floor(isGrp->getValue(i, true) + 0.5)));
+                    int v = std::min(1., std::max(0.,std::floor(isGrp->getValue(i, ViewIdx(0), true) + 0.5)));
                     QString vStr = v ? "True" : "False";
                     WRITE_INDENT(innerIdent); WRITE_STRING("param.setOpened(" + vStr + ")");
                 } else if (isStr) {
-                    std::string v = isStr->getValue(i, true);
+                    std::string v = isStr->getValue(i, ViewIdx(0), true);
                     WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + ESC(v)  + ")");
                 } else if (isDouble) {
-                    double v = isDouble->getValue(i, true);
+                    double v = isDouble->getValue(i, ViewIdx(0), true);
                     WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM_VALUE(v) + ", " + NUM_INT(i) + ")");
                 } else if (isChoice) {
                     WRITE_INDENT(innerIdent); WRITE_STATIC_LINE("options = param.getOptions()");
@@ -1704,10 +1704,10 @@ static bool exportKnobValues(int indentLevel,
                     }
                     WRITE_INDENT(innerIdent + 1); WRITE_STRING("app.writeToScriptEditor(" + ESC(error.str()) + ")");
                 } else if (isInt) {
-                    int v = isInt->getValue(i, true);
+                    int v = isInt->getValue(i, ViewIdx(0), true);
                     WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + NUM_INT(v) + ", " + NUM_INT(i) + ")");
                 } else if (isBool) {
-                    int v = std::min(1., std::max(0.,std::floor(isBool->getValue(i, true) + 0.5)));
+                    int v = std::min(1., std::max(0.,std::floor(isBool->getValue(i, ViewIdx(0), true) + 0.5)));
                     QString vStr = v ? "True" : "False";
                     WRITE_INDENT(innerIdent); WRITE_STRING("param.setValue(" + vStr + ")");
                 }
@@ -2190,9 +2190,9 @@ static void exportBezierPointAtTime(int indentLevel,
     
     QString token = isFeather ? "bezier.setFeatherPointAtIndex(" : "bezier.setPointAtIndex(";
     double x,y,lx,ly,rx,ry;
-    point->getPositionAtTime(false ,time, &x, &y);
-    point->getLeftBezierPointAtTime(false ,time, &lx, &ly);
-    point->getRightBezierPointAtTime(false ,time, &rx, &ry);
+    point->getPositionAtTime(false ,time,/*view*/0, &x, &y);
+    point->getLeftBezierPointAtTime(false ,time,/*view*/0, &lx, &ly);
+    point->getRightBezierPointAtTime(false ,time,/*view*/0, &rx, &ry);
     
     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE(token + NUM_INT(idx) + ", " +
                                        NUM_TIME(time) + ", " + NUM_VALUE(x) + ", " +
@@ -2463,6 +2463,33 @@ static bool exportKnobLinks(int indentLevel,
                     hasExportedLink = true;
                     WRITE_INDENT(indentLevel); WRITE_STRING("param.setExpression(" + ESC(expr) + ", " +
                                                             hasRetVar + ", " + NUM_INT(i) + ")");
+                }
+                
+                std::pair<int,KnobPtr > master = (*it2)->getMaster(i);
+                if (master.second) {
+                    if (!hasDefined) {
+                        WRITE_INDENT(indentLevel); WRITE_STRING("param = " + paramName);
+                        hasDefined = true;
+                    }
+                    hasExportedLink = true;
+                    
+                    EffectInstance* masterHolder = dynamic_cast<EffectInstance*>(master.second->getHolder());
+                    assert(masterHolder);
+                    if (!masterHolder) {
+                        throw std::logic_error("exportKnobLinks");
+                    }
+                    QString masterName;
+                    if (masterHolder == groupNode->getEffectInstance().get()) {
+                        masterName = groupName;
+                    } else {
+                        masterName = groupName + masterHolder->getNode()->getScriptName_mt_safe().c_str();
+                    }
+                    masterName += '.';
+                    masterName += master.second->getName().c_str();
+
+                    
+                    WRITE_INDENT(indentLevel); WRITE_STRING("param.slaveTo(" +  masterName + ", " +
+                                                            NUM_INT(i) + ", " + NUM_INT(master.first) + ")");
                 }
                 
             }

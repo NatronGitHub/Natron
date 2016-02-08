@@ -168,7 +168,7 @@ KnobGuiGroup::setCheckedInternal(bool checked, bool userRequested)
     if (userRequested) {
         boost::shared_ptr<KnobGroup> knob = _knob.lock();
         if (knob) {
-            knob->evaluateValueChange(0, knob->getCurrentTime(), eValueChangedReasonUserEdited);
+            knob->evaluateValueChange(0, knob->getCurrentTime(),ViewIdx(0), eValueChangedReasonUserEdited);
         }
     }
     

@@ -210,11 +210,11 @@ Q_SIGNALS:
 
     void shapeColorChanged();
 
-    void compositingOperatorChanged(int,int);
+    void compositingOperatorChanged(ViewIdx,int,int);
 
 public Q_SLOTS:
     
-    void onRotoKnobChanged(int,int);
+    void onRotoKnobChanged(const ViewIdx&, int,int);
     
 protected:
     

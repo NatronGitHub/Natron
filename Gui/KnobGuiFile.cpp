@@ -164,7 +164,7 @@ KnobGuiFile::onReloadClicked()
             effect->purgeCaches();
             effect->clearPersistentMessage(false);
         }
-        knob->evaluateValueChange(0, knob->getCurrentTime(), eValueChangedReasonNatronInternalEdited);
+        knob->evaluateValueChange(0, knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronInternalEdited);
     }
 }
 
@@ -228,7 +228,7 @@ KnobGuiFile::updateGUI(int /*dimension*/)
             _fileBeingWatched.clear();
         }
         
-        std::string newValue = knob->getFileName(knob->getCurrentTime());
+        std::string newValue = knob->getFileName(knob->getCurrentTime(), /*view*/0);
         if (knob->getHolder()->getApp()) {
             knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
         }
@@ -259,7 +259,7 @@ KnobGuiFile::onTimelineFrameChanged(SequenceTime time,int /*reason*/)
     boost::shared_ptr<KnobFile> knob = _knob.lock();
     ///Get the current file, if it exists, add the file path to the file system watcher
     ///to get notified if the file changes.
-    std::string filepath = knob->getFileName(time);
+    std::string filepath = knob->getFileName(time, knob->getCurrentView());
     if (!filepath.empty() && knob->getHolder() && knob->getHolder()->getApp()) {
         knob->getHolder()->getApp()->getProject()->canonicalizePath(filepath);
     }
@@ -305,7 +305,7 @@ KnobGuiFile::watchedFileChanged()
                 }
                 
             } else {
-                 knob->evaluateValueChange(0, knob->getCurrentTime() , eValueChangedReasonNatronInternalEdited);
+                 knob->evaluateValueChange(0, knob->getCurrentTime() ,ViewIdx(0), eValueChangedReasonNatronInternalEdited);
             }
         }
         

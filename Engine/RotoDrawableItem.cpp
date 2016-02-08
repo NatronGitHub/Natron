@@ -104,12 +104,12 @@ RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context
       , _imp( new RotoDrawableItemPrivate(isStroke) )
 {
 #ifdef NATRON_ROTO_INVERTIBLE
-    QObject::connect( _imp->inverted->getSignalSlotHandler().get(), SIGNAL( valueChanged(int,int) ), this, SIGNAL( invertedStateChanged() ) );
+    QObject::connect( _imp->inverted->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewIdx,int,int) ), this, SIGNAL( invertedStateChanged() ) );
 #endif
     QObject::connect( this, SIGNAL( overlayColorChanged() ), context.get(), SIGNAL( refreshViewerOverlays() ) );
-    QObject::connect( _imp->color->getSignalSlotHandler().get(), SIGNAL( valueChanged(int,int) ), this, SIGNAL( shapeColorChanged() ) );
-    QObject::connect( _imp->compOperator->getSignalSlotHandler().get(), SIGNAL( valueChanged(int,int) ), this,
-                      SIGNAL( compositingOperatorChanged(int,int) ) );
+    QObject::connect( _imp->color->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewIdx,int,int) ), this, SIGNAL( shapeColorChanged() ) );
+    QObject::connect( _imp->compOperator->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewIdx,int,int) ), this,
+                      SIGNAL( compositingOperatorChanged(ViewIdx,int,int) ) );
     
     std::vector<std::string> operators;
     std::vector<std::string> tooltips;
@@ -162,7 +162,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     
     const std::list<KnobPtr >& knobs = getKnobs();
     for (std::list<KnobPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onRotoKnobChanged(int,int)));
+        QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewIdx,int,int)), this, SLOT(onRotoKnobChanged(ViewIdx,int,int)));
     }
     
     boost::shared_ptr<RotoContext> context = getContext();
@@ -313,14 +313,14 @@ RotoDrawableItem::createNodes(bool connectNodes)
             KnobPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
             KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
             if (isDbl) {
-                isDbl->setValues(strength, strength, eValueChangedReasonNatronInternalEdited);
+                isDbl->setValues(strength, strength, ViewIdx::CURRENT_VIEW, eValueChangedReasonNatronInternalEdited);
             }
         } else if (type == eRotoStrokeTypeSharpen) {
             //todo
         } else if (type == eRotoStrokeTypeSmear) {
             boost::shared_ptr<KnobDouble> spacingKnob = isStroke->getBrushSpacingKnob();
             assert(spacingKnob);
-            spacingKnob->setValue(0.05, 0);
+            spacingKnob->setValue(0.05);
         }
         
         setNodesThreadSafetyForRotopainting();
@@ -479,7 +479,7 @@ RotoDrawableItem::findPreviousInHierarchy()
 }
 
 void
-RotoDrawableItem::onRotoKnobChanged(int /*dimension*/, int reason)
+RotoDrawableItem::onRotoKnobChanged(const ViewIdx& /*view*/,int /*dimension*/, int reason)
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
     if (!handler) {
@@ -530,7 +530,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobPtr& knob, ValueChangedReasonEnum re
                 KnobPtr knob = _imp->effectNode->getKnobByName(kBlurCImgParamSize);
                 KnobDouble* isDbl = dynamic_cast<KnobDouble*>(knob.get());
                 if (isDbl) {
-                    isDbl->setValues(strength, strength, eValueChangedReasonNatronInternalEdited);
+                    isDbl->setValues(strength, strength, ViewIdx::ALL_VIEWS, eValueChangedReasonNatronInternalEdited);
                 }
             }   break;
             case eRotoStrokeTypeSharpen: {
@@ -554,7 +554,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobPtr& knob, ValueChangedReasonEnum re
         KnobInt* offset = dynamic_cast<KnobInt*>(offsetKnob.get());
         if (offset) {
             double value = _imp->timeOffset->getValue();
-            offset->setValue(value,0);
+            offset->setValue(value);
         }
     } else if (knob == _imp->timeOffsetMode && _imp->timeOffsetNode) {
         refreshNodesConnections();
@@ -1053,7 +1053,7 @@ RotoDrawableItem::isActivated(double time) const
 void
 RotoDrawableItem::setActivated(bool a, double time)
 {
-    _imp->activated->setValueAtTime(time, a, 0);
+    _imp->activated->setValueAtTime(time,ViewIdx::ALL_VIEWS, a, 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1067,7 +1067,7 @@ RotoDrawableItem::getOpacity(double time) const
 void
 RotoDrawableItem::setOpacity(double o,double time)
 {
-    _imp->opacity->setValueAtTime(time, o, 0);
+    _imp->opacity->setValueAtTime(time,ViewIdx::ALL_VIEWS, o, 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1081,7 +1081,7 @@ RotoDrawableItem::getFeatherDistance(double time) const
 void
 RotoDrawableItem::setFeatherDistance(double d,double time)
 {
-    _imp->feather->setValueAtTime(time, d, 0);
+    _imp->feather->setValueAtTime(time, ViewIdx::ALL_VIEWS, d, 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1089,13 +1089,13 @@ RotoDrawableItem::setFeatherDistance(double d,double time)
 int
 RotoDrawableItem::getNumKeyframesFeatherDistance() const
 {
-    return _imp->feather->getKeyFramesCount(0);
+    return _imp->feather->getKeyFramesCount(ViewIdx::CURRENT_VIEW,0);
 }
 
 void
 RotoDrawableItem::setFeatherFallOff(double f,double time)
 {
-    _imp->featherFallOff->setValueAtTime(time, f, 0);
+    _imp->featherFallOff->setValueAtTime(time,ViewIdx::ALL_VIEWS, f, 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1128,9 +1128,9 @@ RotoDrawableItem::getColor(double time,
 void
 RotoDrawableItem::setColor(double time,double r,double g,double b)
 {
-    _imp->color->setValueAtTime(time, r, 0);
-    _imp->color->setValueAtTime(time, g, 1);
-    _imp->color->setValueAtTime(time, b, 2);
+    _imp->color->setValueAtTime(time, ViewIdx::CURRENT_VIEW, r, 0);
+    _imp->color->setValueAtTime(time, ViewIdx::CURRENT_VIEW, g, 1);
+    _imp->color->setValueAtTime(time, ViewIdx::CURRENT_VIEW, b, 2);
     getContext()->onItemKnobChanged();
 }
 
@@ -1143,7 +1143,7 @@ RotoDrawableItem::getCompositingOperator() const
 void
 RotoDrawableItem::setCompositingOperator(int op)
 {
-    _imp->compOperator->setValue( op, 0);
+    _imp->compOperator->setValue( op);
 }
 
 std::string
@@ -1342,16 +1342,16 @@ RotoDrawableItem::getShutterTypeKnob() const
 void
 RotoDrawableItem::setKeyframeOnAllTransformParameters(double time)
 {
-    _imp->translate->setValueAtTime(time, _imp->translate->getValue(0), 0);
-    _imp->translate->setValueAtTime(time, _imp->translate->getValue(1), 1);
+    _imp->translate->setValueAtTime(time, ViewIdx::ALL_VIEWS, _imp->translate->getValue(0), 0);
+    _imp->translate->setValueAtTime(time, ViewIdx::ALL_VIEWS, _imp->translate->getValue(1), 1);
     
-    _imp->scale->setValueAtTime(time, _imp->scale->getValue(0), 0);
-    _imp->scale->setValueAtTime(time, _imp->scale->getValue(1), 1);
+    _imp->scale->setValueAtTime(time, ViewIdx::ALL_VIEWS, _imp->scale->getValue(0), 0);
+    _imp->scale->setValueAtTime(time, ViewIdx::ALL_VIEWS, _imp->scale->getValue(1), 1);
     
-    _imp->rotate->setValueAtTime(time, _imp->rotate->getValue(0), 0);
+    _imp->rotate->setValueAtTime(time, ViewIdx::ALL_VIEWS, _imp->rotate->getValue(0), 0);
     
-    _imp->skewX->setValueAtTime(time, _imp->skewX->getValue(0), 0);
-    _imp->skewY->setValueAtTime(time, _imp->skewY->getValue(0), 0);
+    _imp->skewX->setValueAtTime(time, ViewIdx::ALL_VIEWS, _imp->skewX->getValue(0), 0);
+    _imp->skewY->setValueAtTime(time, ViewIdx::ALL_VIEWS, _imp->skewY->getValue(0), 0);
 }
 
 const std::list<KnobPtr >&
@@ -1399,33 +1399,33 @@ RotoDrawableItem::setTransform(double time, double tx, double ty, double sx, dou
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     
     if (autoKeying) {
-        _imp->translate->setValueAtTime(time, tx, 0);
-        _imp->translate->setValueAtTime(time, ty, 1);
+        _imp->translate->setValueAtTime(time, ViewIdx::ALL_VIEWS,tx, 0);
+        _imp->translate->setValueAtTime(time, ViewIdx::ALL_VIEWS,ty, 1);
         
-        _imp->scale->setValueAtTime(time, sx, 0);
-        _imp->scale->setValueAtTime(time, sy, 1);
+        _imp->scale->setValueAtTime(time, ViewIdx::ALL_VIEWS,sx, 0);
+        _imp->scale->setValueAtTime(time, ViewIdx::ALL_VIEWS,sy, 1);
         
-        _imp->center->setValue(centerX, 0);
-        _imp->center->setValue(centerY, 1);
+        _imp->center->setValue(centerX,ViewIdx::ALL_VIEWS, 0);
+        _imp->center->setValue(centerY,ViewIdx::ALL_VIEWS, 1);
         
-        _imp->rotate->setValueAtTime(time, rot, 0);
+        _imp->rotate->setValueAtTime(time, ViewIdx::ALL_VIEWS,rot, 0);
         
-        _imp->skewX->setValueAtTime(time, skewX, 0);
-        _imp->skewY->setValueAtTime(time, skewY, 0);
+        _imp->skewX->setValueAtTime(time, ViewIdx::ALL_VIEWS,skewX, 0);
+        _imp->skewY->setValueAtTime(time, ViewIdx::ALL_VIEWS,skewY, 0);
     } else {
-        _imp->translate->setValue(tx, 0);
-        _imp->translate->setValue(ty, 1);
+        _imp->translate->setValue(tx, ViewIdx::ALL_VIEWS,0);
+        _imp->translate->setValue(ty, ViewIdx::ALL_VIEWS,1);
         
-        _imp->scale->setValue(sx, 0);
-        _imp->scale->setValue(sy, 1);
+        _imp->scale->setValue(sx, ViewIdx::ALL_VIEWS,0);
+        _imp->scale->setValue(sy, ViewIdx::ALL_VIEWS,1);
         
-        _imp->center->setValue(centerX, 0);
-        _imp->center->setValue(centerY, 1);
+        _imp->center->setValue(centerX, ViewIdx::ALL_VIEWS,0);
+        _imp->center->setValue(centerY, ViewIdx::ALL_VIEWS,1);
         
-        _imp->rotate->setValue(rot, 0);
+        _imp->rotate->setValue(rot, ViewIdx::ALL_VIEWS,0);
         
-        _imp->skewX->setValue(skewX, 0);
-        _imp->skewY->setValue(skewY, 0);
+        _imp->skewX->setValue(skewX, ViewIdx::ALL_VIEWS,0);
+        _imp->skewY->setValue(skewY, ViewIdx::ALL_VIEWS,0);
 
     }
     

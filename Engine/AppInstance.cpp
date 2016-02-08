@@ -393,7 +393,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderW
                 if (fileKnob) {
                     KnobOutputFile* outFile = dynamic_cast<KnobOutputFile*>(fileKnob.get());
                     if (outFile) {
-                        outFile->setValue(it->filename.toStdString(), 0);
+                        outFile->setValue(it->filename.toStdString());
                     }
                 }
             }
@@ -585,7 +585,7 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
             if (fileKnob) {
                 KnobFile* outFile = dynamic_cast<KnobFile*>(fileKnob.get());
                 if (outFile) {
-                    outFile->setValue(it->filename.toStdString(), 0);
+                    outFile->setValue(it->filename.toStdString());
                 }
             }
 

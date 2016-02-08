@@ -471,7 +471,7 @@ OutputEffectInstance::reportStats(int time,
     if (fileKnob) {
         KnobOutputFile* strKnob = dynamic_cast<KnobOutputFile*>( fileKnob.get() );
         if  (strKnob) {
-            QString qfileName( SequenceParsing::generateFileNameFromPattern(strKnob->getValue(0), time, view).c_str() );
+            QString qfileName( SequenceParsing::generateFileNameFromPattern(strKnob->getValue(0, ViewIdx(view)), time, view).c_str() );
             QtCompat::removeFileExtension(qfileName);
             qfileName.append("-stats.txt");
             filename = qfileName.toStdString();

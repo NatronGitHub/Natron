@@ -96,7 +96,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                         throw std::logic_error("addOrRemoveKeyframe");
                     }
                 } else {
-                    knob->removeAnimation(isKnobCurve->getDimension());
+                    knob->removeAnimation(ViewIdx(0),isKnobCurve->getDimension());
                 }
             } else if (isBezierCurve) {
                 boost::shared_ptr<Bezier> b = isBezierCurve->getBezier();
@@ -109,9 +109,9 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
         
         if (guiKnob && !isParametric) {
             if (add && isKnobCurve) {
-                guiKnob->setKeyframes(it->second, isKnobCurve->getDimension() );
+                guiKnob->setKeyframes(it->second, isKnobCurve->getDimension(), ViewIdx(0) );
             } else {
-                guiKnob->removeKeyframes(it->second, isKnobCurve->getDimension() );
+                guiKnob->removeKeyframes(it->second, isKnobCurve->getDimension(),ViewIdx(0) );
                 
             }
         } else {
@@ -133,13 +133,13 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                             Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
                             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
                             if (isDouble) {
-                                isDouble->setValueAtTime(time, isDouble->getValueAtTime(time), isKnobCurve->getDimension());
+                                isDouble->setValueAtTime(time, ViewIdx(0), isDouble->getValueAtTime(time, 0, ViewIdx(0)), isKnobCurve->getDimension());
                             } else if (isBool) {
-                                isBool->setValueAtTime(time, isBool->getValueAtTime(time), isKnobCurve->getDimension());
+                                isBool->setValueAtTime(time, ViewIdx(0), isBool->getValueAtTime(time, 0, ViewIdx(0)), isKnobCurve->getDimension());
                             } else if (isInt) {
-                                isInt->setValueAtTime(time, isInt->getValueAtTime(time), isKnobCurve->getDimension());
+                                isInt->setValueAtTime(time,ViewIdx(0),  isInt->getValueAtTime(time, 0, ViewIdx(0)), isKnobCurve->getDimension());
                             } else if (isString) {
-                                isString->setValueAtTime(time, isString->getValueAtTime(time), isKnobCurve->getDimension());
+                                isString->setValueAtTime(time, ViewIdx(0), isString->getValueAtTime(time, 0, ViewIdx(0)), isKnobCurve->getDimension());
                             }
                         }
                     } else {
@@ -152,7 +152,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            isKnobCurve->getInternalKnob()->deleteValueAtTime(eCurveChangeReasonCurveEditor, it->second[i].getTime(), isKnobCurve->getDimension() );
+                            isKnobCurve->getInternalKnob()->deleteValueAtTime(eCurveChangeReasonCurveEditor, it->second[i].getTime(), ViewIdx(0),  isKnobCurve->getDimension() );
                         }
                     }
                 } else if (isBezierCurve) {
@@ -218,7 +218,7 @@ SetKeysCommand::undo()
         KnobPtr knob = isKnobCurve->getInternalKnob();
         boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
         if (!isParametric) {
-            knob->cloneCurve(isKnobCurve->getDimension(), *_oldCurve);
+            knob->cloneCurve(ViewIdx::ALL_VIEWS, isKnobCurve->getDimension(), *_oldCurve);
         } else {
             _guiCurve->getInternalCurve()->clone(*_oldCurve);
         }
@@ -264,9 +264,9 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
         
         if (guiKnob && isKnobCurve && !isParametric) {
             if (add) {
-                guiKnob->setKeyframes(it->second, isKnobCurve->getDimension() );
+                guiKnob->setKeyframes(it->second, isKnobCurve->getDimension(), ViewIdx(0) );
             } else {
-                guiKnob->removeKeyframes(it->second, isKnobCurve->getDimension() );
+                guiKnob->removeKeyframes(it->second, isKnobCurve->getDimension(),ViewIdx(0)  );
                 
             }
         } else {
@@ -292,13 +292,13 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
                             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
                             if (isDouble) {
-                                isDouble->setValueAtTime(time, isDouble->getValueAtTime(time), isKnobCurve->getDimension());
+                                isDouble->setValueAtTime(time, ViewIdx(0), isDouble->getValueAtTime(time, 0, ViewIdx(0)), isKnobCurve->getDimension());
                             } else if (isBool) {
-                                isBool->setValueAtTime(time, isBool->getValueAtTime(time), isKnobCurve->getDimension());
+                                isBool->setValueAtTime(time, ViewIdx(0), isBool->getValueAtTime(time, 0, ViewIdx(0)), isKnobCurve->getDimension());
                             } else if (isInt) {
-                                isInt->setValueAtTime(time, isInt->getValueAtTime(time), isKnobCurve->getDimension());
+                                isInt->setValueAtTime(time, ViewIdx(0), isInt->getValueAtTime(time,0,ViewIdx(0)), isKnobCurve->getDimension());
                             } else if (isString) {
-                                isString->setValueAtTime(time, isString->getValueAtTime(time), isKnobCurve->getDimension());
+                                isString->setValueAtTime(time,ViewIdx(0), isString->getValueAtTime(time,0, ViewIdx(0) ), isKnobCurve->getDimension());
                             }
                         }
                     } else {
@@ -311,7 +311,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            isKnobCurve->getInternalKnob()->deleteValueAtTime(eCurveChangeReasonCurveEditor, it->second[i].getTime(), isKnobCurve->getDimension() );
+                            isKnobCurve->getInternalKnob()->deleteValueAtTime(eCurveChangeReasonCurveEditor, it->second[i].getTime(), ViewIdx::ALL_VIEWS, isKnobCurve->getDimension() );
                         }
                     }
                 } else if (isBezierCurve) {
@@ -398,9 +398,9 @@ moveKey(KeyPtr &k,
             int newIndex;
             
             k->key = curve->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
-            isParametric->evaluateValueChange(isKnobCurve->getDimension(), isParametric->getCurrentTime() ,eValueChangedReasonUserEdited);
+            isParametric->evaluateValueChange(isKnobCurve->getDimension(), isParametric->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
         } else {
-            knob->moveValueAtTime(eCurveChangeReasonCurveEditor, k->key.getTime(), isKnobCurve->getDimension(), dt, dv,&k->key);
+            knob->moveValueAtTime(eCurveChangeReasonCurveEditor, k->key.getTime(), ViewIdx::ALL_VIEWS, isKnobCurve->getDimension(), dt, dv,&k->key);
         }
     } else if (isBezierCurve) {
         double oldTime = k->key.getTime();
@@ -566,9 +566,9 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
                 if (keyframeIndex != -1) {
                    it->key->key = it->key->curve->setKeyFrameInterpolation(interp, keyframeIndex);
                 }
-                isParametric->evaluateValueChange(isKnobCurve->getDimension(), it->key->key.getTime(), eValueChangedReasonUserEdited);
+                isParametric->evaluateValueChange(isKnobCurve->getDimension(), it->key->key.getTime(), ViewIdx(0), eValueChangedReasonUserEdited);
             } else {
-                knob->setInterpolationAtTime(eCurveChangeReasonCurveEditor, isKnobCurve->getDimension(), it->key->key.getTime(), interp, &it->key->key);
+                knob->setInterpolationAtTime(eCurveChangeReasonCurveEditor,ViewIdx(0),  isKnobCurve->getDimension(), it->key->key.getTime(), interp, &it->key->key);
             }
         } else {
             ///interpolation for bezier curve is either linear or constant
@@ -741,14 +741,14 @@ MoveTangentCommand::setNewDerivatives(bool undo)
         if (!isParametric) {
             attachedKnob->beginChanges();
             if (_setBoth) {
-                attachedKnob->moveDerivativesAtTime(eCurveChangeReasonCurveEditor, isKnobCurve->getDimension(), _key->key.getTime(), left, right);
+                attachedKnob->moveDerivativesAtTime(eCurveChangeReasonCurveEditor,ViewIdx(0), isKnobCurve->getDimension(), _key->key.getTime(), left, right);
             } else {
-                attachedKnob->moveDerivativeAtTime(eCurveChangeReasonCurveEditor, isKnobCurve->getDimension(), _key->key.getTime(),
+                attachedKnob->moveDerivativeAtTime(eCurveChangeReasonCurveEditor, ViewIdx(0), isKnobCurve->getDimension(), _key->key.getTime(),
                                                    _deriv == eSelectedTangentLeft ? left : right,
                                                    _deriv == eSelectedTangentLeft);
                 
             }
-            attachedKnob->setInterpolationAtTime(eCurveChangeReasonCurveEditor, isKnobCurve->getDimension(), _key->key.getTime(), interp, &_key->key);
+            attachedKnob->setInterpolationAtTime(eCurveChangeReasonCurveEditor,ViewIdx(0), isKnobCurve->getDimension(), _key->key.getTime(), interp, &_key->key);
             if (_firstRedoCalled || _updateOnFirstRedo) {
                 attachedKnob->endChanges();
             }
@@ -756,7 +756,7 @@ MoveTangentCommand::setNewDerivatives(bool undo)
             int keyframeIndexInCurve = _key->curve->getInternalCurve()->keyFrameIndex( _key->key.getTime() );
             _key->key = _key->curve->getInternalCurve()->setKeyFrameInterpolation(interp, keyframeIndexInCurve);
             _key->key = _key->curve->getInternalCurve()->setKeyFrameDerivatives(left, right,keyframeIndexInCurve);
-            attachedKnob->evaluateValueChange(isKnobCurve->getDimension(), _key->key.getTime(), eValueChangedReasonUserEdited);
+            attachedKnob->evaluateValueChange(isKnobCurve->getDimension(), _key->key.getTime(),ViewIdx(0),  eValueChangedReasonUserEdited);
         }
         
         _widget->refreshDisplayedTangents();
@@ -872,7 +872,7 @@ TransformKeysCommand::undo()
          it != _curves.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->guiCurve);
         if (isKnobCurve && !dynamic_cast<KnobParametric*>(isKnobCurve->getInternalKnob().get())) {
-            isKnobCurve->getInternalKnob()->cloneCurve(isKnobCurve->getDimension(),*it->oldCpy);
+            isKnobCurve->getInternalKnob()->cloneCurve(ViewIdx::ALL_VIEWS, isKnobCurve->getDimension(),*it->oldCpy);
         } else {
             it->original->clone(*it->oldCpy);
         }
@@ -1049,9 +1049,9 @@ TransformKeysCommand::transform(const KeyPtr& k)
             int newIndex;
             
             k->key = curve->setKeyFrameValueAndTime(p.x,p.y, keyframeIndex, &newIndex);
-            isParametric->evaluateValueChange(isKnobCurve->getDimension(), isParametric->getCurrentTime(), eValueChangedReasonUserEdited);
+            isParametric->evaluateValueChange(isKnobCurve->getDimension(), isParametric->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
         } else {
-            knob->transformValueAtTime(eCurveChangeReasonCurveEditor, k->key.getTime(), isKnobCurve->getDimension(), *_matrix,&k->key);
+            knob->transformValueAtTime(eCurveChangeReasonCurveEditor, k->key.getTime(), ViewIdx(0), isKnobCurve->getDimension(), *_matrix,&k->key);
         }
     } else if (isBezierCurve) {
         double oldTime = k->key.getTime();

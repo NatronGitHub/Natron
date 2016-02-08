@@ -388,7 +388,7 @@ void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
 
     if (dsKnob->isMultiDimRoot()) {
         for (int i = 0; i < knobGui->getKnob()->getDimension(); ++i) {
-            bool curveIsAnimated = knobGui->getCurve(i)->isAnimated();
+            bool curveIsAnimated = knobGui->getCurve(/*view*/0,i)->isAnimated();
 
             QTreeWidgetItem *dimItem = dsKnob->findDimTreeItem(i);
             dimItem->setHidden(!curveIsAnimated);
@@ -400,7 +400,7 @@ void HierarchyViewPrivate::checkKnobVisibleState(DSKnob *dsKnob)
         }
     }
     else {
-        showContext = knobGui->getCurve(dim)->isAnimated();
+        showContext = knobGui->getCurve(/*view*/0,dim)->isAnimated();
     }
 
     QTreeWidgetItem *treeItem = dsKnob->getTreeItem();
@@ -989,7 +989,7 @@ void HierarchyView::onKeyframeSelectionChanged(bool recurse)
             KnobGui *knobGui = dsKnob->getKnobGui();
             int dim = dsKnob->getDimension();
 
-            KeyFrameSet keyframes = knobGui->getCurve(dim)->getKeyFrames_mt_safe();
+            KeyFrameSet keyframes = knobGui->getCurve(/*view*/0,dim)->getKeyFrames_mt_safe();
 
             bool selectItem = true;
 

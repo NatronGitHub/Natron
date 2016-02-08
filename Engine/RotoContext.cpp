@@ -101,7 +101,7 @@ NATRON_NAMESPACE_ENTER;
 RotoContext::RotoContext(const NodePtr& node)
     : _imp( new RotoContextPrivate(node) )
 {
-    QObject::connect(_imp->lifeTime.lock()->getSignalSlotHandler().get(), SIGNAL(valueChanged(int,int)), this, SLOT(onLifeTimeKnobValueChanged(int,int)));
+    QObject::connect(_imp->lifeTime.lock()->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewIdx,int,int)), this, SLOT(onLifeTimeKnobValueChanged(ViewIdx,int,int)));
 }
 
 bool
@@ -523,10 +523,10 @@ RotoContext::makeEllipse(double x,double y,double diameter,bool fromCenter, doub
     boost::shared_ptr<BezierCP> left = curve->getControlPointAtIndex(3);
 
     double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
-    top->getPositionAtTime(false,time, &topX, &topY);
-    right->getPositionAtTime(false,time, &rightX, &rightY);
-    bottom->getPositionAtTime(false,time, &btmX, &btmY);
-    left->getPositionAtTime(false,time, &leftX, &leftY);
+    top->getPositionAtTime(false,time, /*view*/0,&topX, &topY);
+    right->getPositionAtTime(false,time, /*view*/0,&rightX, &rightY);
+    bottom->getPositionAtTime(false,time, /*view*/0,&btmX, &btmY);
+    left->getPositionAtTime(false,time, /*view*/0,&leftX, &leftY);
     
     curve->setLeftBezierPoint(0, time,  (leftX + topX) / 2., topY);
     curve->setRightBezierPoint(0, time, (rightX + topX) / 2., topY);
@@ -703,7 +703,7 @@ RotoContext::isNearbyBezier(double x,
 }
 
 void
-RotoContext::onLifeTimeKnobValueChanged(int /*dim*/, int reason)
+RotoContext::onLifeTimeKnobValueChanged(const ViewIdx& view,int /*dim*/, int reason)
 {
     if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         return;
@@ -713,7 +713,7 @@ RotoContext::onLifeTimeKnobValueChanged(int /*dim*/, int reason)
     boost::shared_ptr<KnobInt> frame = _imp->lifeTimeFrame.lock();
     frame->setSecret(lifetime_i == 3);
     if (lifetime_i != 3) {
-        frame->setValue(getTimelineCurrentTime(), 0);
+        frame->setValue(getTimelineCurrentTime(), view);
     }
 }
 
@@ -1175,18 +1175,18 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
                         (*it)->slaveTo(i, thisKnob, i);
                     }
                     
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,int,int,bool)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewIdx,int,int,bool)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,int,int)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewIdx,int,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,double,double)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewIdx,int,double,double)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(ViewIdx,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,int)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,ViewIdx,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
 
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,int)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,ViewIdx,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
 
                     break;
@@ -1342,18 +1342,18 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
                         (*it)->unSlave(i,isBezier ? !bezierDirty : !strokeDirty);
                     }
                     
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,int,int,bool)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewIdx,int,int,bool)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,int,int)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewIdx,int,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(int,double,double)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewIdx,int,double,double)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(int)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(ViewIdx,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,int)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,ViewIdx,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
                     
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,int)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,ViewIdx,int)),
                                         this, SLOT(onSelectedKnobCurveChanged()));
                     break;
                 }
@@ -1397,17 +1397,17 @@ RotoContext::resetTransformsCenter(bool doClone, bool doTransform)
     if (doTransform) {
         boost::shared_ptr<KnobDouble> centerKnob = _imp->centerKnob.lock();
         centerKnob->beginChanges();
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(0);
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(1);
-        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., eValueChangedReasonNatronInternalEdited);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::ALL_VIEWS,0);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::ALL_VIEWS,1);
+        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewIdx::ALL_VIEWS, eValueChangedReasonNatronInternalEdited);
         centerKnob->endChanges();
     }
     if (doClone) {
         boost::shared_ptr<KnobDouble> centerKnob = _imp->cloneCenterKnob.lock();
         centerKnob->beginChanges();
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(0);
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(1);
-        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., eValueChangedReasonNatronInternalEdited);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::ALL_VIEWS,0);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::ALL_VIEWS,1);
+        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewIdx::ALL_VIEWS, eValueChangedReasonNatronInternalEdited);
         centerKnob->endChanges();
     }
 }
@@ -3556,7 +3556,7 @@ RotoContextPrivate::renderInternalShape(double time,
 
     
     Transform::Point3D initCp;
-    (*point)->getPositionAtTime(false,time, &initCp.x,&initCp.y);
+    (*point)->getPositionAtTime(false,time, /*view*/0,&initCp.x,&initCp.y);
     initCp.z = 1.;
     initCp = Transform::matApply(transform, initCp);
     
@@ -3570,11 +3570,11 @@ RotoContextPrivate::renderInternalShape(double time,
         }
         
         Transform::Point3D right,nextLeft,next;
-        (*point)->getRightBezierPointAtTime(false,time, &right.x, &right.y);
+        (*point)->getRightBezierPointAtTime(false,time, /*view*/0,&right.x, &right.y);
         right.z = 1;
-        (*nextPoint)->getLeftBezierPointAtTime(false,time, &nextLeft.x, &nextLeft.y);
+        (*nextPoint)->getLeftBezierPointAtTime(false,time, /*view*/0,&nextLeft.x, &nextLeft.y);
         nextLeft.z = 1;
-        (*nextPoint)->getPositionAtTime(false,time, &next.x, &next.y);
+        (*nextPoint)->getPositionAtTime(false,time, /*view*/0,&next.x, &next.y);
         next.z = 1;
 
         right = Transform::matApply(transform, right);
@@ -3686,7 +3686,7 @@ RotoContextPrivate::bezulate(double time, const BezierCPs& cps,std::list<BezierC
             bbox.setupInfinity();
             for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it) {
                 Point p;
-                (*it)->getPositionAtTime(false,time, &p.x, &p.y);
+                (*it)->getPositionAtTime(false,time, /*view*/0,&p.x, &p.y);
                 polygon.push_back(p);
                 if (p.x < bbox.x1) {
                     bbox.x1 = p.x;
@@ -3714,8 +3714,8 @@ RotoContextPrivate::bezulate(double time, const BezierCPs& cps,std::list<BezierC
                 
                 //mid-point of the line segment between points i and i + n
                 Point nextPoint,curPoint;
-                (*it)->getPositionAtTime(false,time, &curPoint.x, &curPoint.y);
-                (*next)->getPositionAtTime(false,time, &nextPoint.x, &nextPoint.y);
+                (*it)->getPositionAtTime(false,time,/*view*/0, &curPoint.x, &curPoint.y);
+                (*next)->getPositionAtTime(false,time,/*view*/0, &nextPoint.x, &nextPoint.y);
                 
                 /*
                  * Compute the number of intersections between the current line segment [it,next] and all other line segments
@@ -3816,10 +3816,10 @@ RotoContextPrivate::bezulate(double time, const BezierCPs& cps,std::list<BezierC
                     next = simpleClosedCurve.begin();
                 }
                 Point p0,p1,p2,p3,p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3,dest;
-                (*it)->getPositionAtTime(false,time, &p0.x, &p0.y);
-                (*it)->getRightBezierPointAtTime(false,time, &p1.x, &p1.y);
-                (*next)->getLeftBezierPointAtTime(false,time, &p2.x, &p2.y);
-                (*next)->getPositionAtTime(false,time, &p3.x, &p3.y);
+                (*it)->getPositionAtTime(false,time, /*view*/0,&p0.x, &p0.y);
+                (*it)->getRightBezierPointAtTime(false,time,/*view*/0, &p1.x, &p1.y);
+                (*next)->getLeftBezierPointAtTime(false,time,/*view*/0, &p2.x, &p2.y);
+                (*next)->getPositionAtTime(false,time,/*view*/0, &p3.x, &p3.y);
                 Bezier::bezierFullPoint(p0, p1, p2, p3, 0.5, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
                 boost::shared_ptr<BezierCP> controlPoint(new BezierCP);
                 controlPoint->setStaticPosition(false,dest.x, dest.y);

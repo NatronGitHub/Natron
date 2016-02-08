@@ -148,8 +148,8 @@ NodeGraph::refreshAllKnobsGui()
                 if (!knob->getIsSecret()) {
                     for (int i = 0; i < knob->getDimension(); ++i) {
                         if (knob->isAnimated(i)) {
-                            it2->second->onInternalValueChanged(i, eValueChangedReasonPluginEdited);
-                            it2->second->onAnimationLevelChanged(i, eValueChangedReasonPluginEdited);
+                            it2->second->onInternalValueChanged(ViewIdx::ALL_VIEWS,i, eValueChangedReasonPluginEdited);
+                            it2->second->onAnimationLevelChanged(ViewIdx::ALL_VIEWS, i, eValueChangedReasonPluginEdited);
                         }
                     }
                 }
