@@ -61,6 +61,9 @@
 #include <ofxhPluginCache.h>
 #endif
 
+#define NATRON_DEFAULT_OCIO_CONFIG_NAME "blender"
+
+
 #define NATRON_CUSTOM_OCIO_CONFIG_NAME "Custom config"
 
 #define NATRON_DEFAULT_APPEARANCE_VERSION 1

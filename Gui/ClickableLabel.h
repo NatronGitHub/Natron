@@ -122,12 +122,7 @@ class KnobClickableLabel : public ClickableLabel, public KnobWidgetDnD
   
 public:
     
-    KnobClickableLabel(const QString& text, KnobGui* knob, QWidget* parent = 0)
-    : ClickableLabel(text, parent)
-    , KnobWidgetDnD(knob,-1, this)
-    {
-        
-    }
+    KnobClickableLabel(const QString& text, KnobGui* knob, QWidget* parent = 0);
     
     virtual ~KnobClickableLabel() {
         

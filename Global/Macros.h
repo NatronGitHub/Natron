@@ -80,7 +80,6 @@ namespace NATRON_NAMESPACE { }
 #define NATRON_PRESETS_FILE_MIME_TYPE "application/vnd.natron.nodepresets"
 #define NATRON_PROJECT_ENV_VAR_NAME "Project"
 #define NATRON_OCIO_ENV_VAR_NAME "OCIO"
-#define NATRON_DEFAULT_OCIO_CONFIG_NAME "blender"
 
 //Define here the name of the Engine module that was chosen in the typesystem_engine.xml
 #define NATRON_ENGINE_PYTHON_MODULE_NAME "NatronEngine"
