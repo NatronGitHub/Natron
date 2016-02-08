@@ -6522,6 +6522,15 @@ Node::duringInputChangedAction() const
 void
 Node::computeFrameRangeForReader(const KnobI* fileKnob)
 {
+    /*
+     We compute the original frame range of the sequence for the plug-in
+     because the plug-in does not have access to the exact original pattern
+     hence may not exactly end-up with the same file sequence as what the user
+     selected from the file dialog.
+     */
+    if (getPluginID() == PLUGINID_OFX_READFFMPEG) {
+        return;
+    }
     int leftBound = INT_MIN;
     int rightBound = INT_MAX;
     ///Set the originalFrameRange parameter of the reader if it has one.
