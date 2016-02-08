@@ -747,6 +747,7 @@ DockablePanelPrivate::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
         if (handler) {
             QObject::connect(handler.get(), SIGNAL(labelChanged()), _publicInterface, SLOT(onPageLabelChangedInternally()));
         }
+        p.tab->setToolTip(page->getHintToolTip().c_str());
     }
     return _pages.insert( make_pair(name,p) ).first;
 }

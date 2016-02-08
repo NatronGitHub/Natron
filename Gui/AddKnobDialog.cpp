@@ -995,30 +995,31 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     }
     
     _imp->mainLayout->addRow(_imp->parentPageLabel, optContainer);
-
+    
     onPageCurrentIndexChanged(pageIndexLoaded == -1 ? 0 : pageIndexLoaded);
     
     if (_imp->parentGroup && knob) {
         boost::shared_ptr<KnobPage> topLvlPage = knob->getTopLevelPage();
-        assert(topLvlPage);
-        KnobPtr parent = knob->getParentKnob();
-        KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
-        if (isParentGrp) {
-            for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
-                boost::shared_ptr<KnobPage> page = (*it)->getTopLevelPage();
-                assert(page);
-                
-                ///add only grps whose parent page is the selected page
-                if (isParentGrp == *it && page == topLvlPage) {
-                    for (int i = 0; i < _imp->parentGroup->count(); ++i) {
-                        if (_imp->parentGroup->itemText(i) == QString(isParentGrp->getName().c_str())) {
-                            _imp->parentGroup->setCurrentIndex(i);
-                            break;
+        if (topLvlPage) {
+            KnobPtr parent = knob->getParentKnob();
+            KnobGroup* isParentGrp = dynamic_cast<KnobGroup*>(parent.get());
+            if (isParentGrp) {
+                for (std::list<KnobGroup*>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
+                    boost::shared_ptr<KnobPage> page = (*it)->getTopLevelPage();
+                    assert(page);
+                    
+                    ///add only grps whose parent page is the selected page
+                    if (isParentGrp == *it && page == topLvlPage) {
+                        for (int i = 0; i < _imp->parentGroup->count(); ++i) {
+                            if (_imp->parentGroup->itemText(i) == QString(isParentGrp->getName().c_str())) {
+                                _imp->parentGroup->setCurrentIndex(i);
+                                break;
+                            }
                         }
+                        break;
                     }
-                    break;
+                    
                 }
-                
             }
         }
     } else {
