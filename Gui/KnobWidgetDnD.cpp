@@ -358,7 +358,7 @@ KnobWidgetDnD::drop(QDropEvent* e)
                 ss << " * curve(frame,dimension)";
                 
 
-                
+                expr = ss.str();
                 _imp->knob->pushUndoCommand(new SetExpressionCommand(_imp->knob->getKnob(), false, _imp->dimension,expr));
             } else if ((mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier)) == (Qt::ControlModifier)) {
                 _imp->knob->pushUndoCommand(new PasteUndoCommand(_imp->knob, eKnobClipBoardTypeCopyLink, srcDim, _imp->dimension, source));
