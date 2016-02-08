@@ -598,7 +598,7 @@ template <typename T>
 T
 Knob<T>::getValue(int dimension, ViewIdx view,bool clamp) const
 {
-    assert(!ViewIdx::isAll());
+    assert(!view.isAll());
     bool useGuiValues = QThread::currentThread() == qApp->thread();
     if (useGuiValues) {
         //Never clamp when using gui values
@@ -695,7 +695,7 @@ template<typename T>
 T
 Knob<T>::getValueAtTime(double time,  int dimension, ViewIdx view, bool clamp ,bool byPassMaster) const
 {
-    assert(!ViewIdx::isAll());
+    assert(!view.isAll());
     if  (dimension >= (int)_values.size() || dimension < 0) {
         return T();
     }
