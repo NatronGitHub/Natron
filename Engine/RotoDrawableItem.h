@@ -48,6 +48,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/CacheEntryHolder.h"
 #include "Engine/RotoItem.h"
 #include "Engine/Knob.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -215,7 +216,7 @@ Q_SIGNALS:
 
 public Q_SLOTS:
     
-    void onRotoKnobChanged(const ViewIdx&, int,int);
+    void onRotoKnobChanged(ViewIdx, int,int);
     
 protected:
     

@@ -48,6 +48,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Engine/FitCurve.h"
 #include "Engine/RotoItem.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -458,7 +459,7 @@ public Q_SLOTS:
     
     void onSelectedKnobCurveChanged();
     
-    void onLifeTimeKnobValueChanged(const ViewIdx&,int, int);
+    void onLifeTimeKnobValueChanged(ViewIdx, int, int);
 
 private:
     

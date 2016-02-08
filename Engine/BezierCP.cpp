@@ -39,6 +39,7 @@
 #include "Engine/Bezier.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Transform.h" // Point3D
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -240,9 +241,9 @@ BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
             offsetTime = _imp->offsetTime;
         }
         if (masterTrack) {
-            double masterX = masterTrack->getValueAtTime(time, 0,ViewIdx(view));
-            double masterY = masterTrack->getValueAtTime(time, 1,ViewIdx(view));
-            double masterOffsetTimeX = masterTrack->getValueAtTime(offsetTime, 0,ViewIdx(view));
+            double masterX = masterTrack->getValueAtTime(time, 0, ViewIdx(view));
+            double masterY = masterTrack->getValueAtTime(time, 1, ViewIdx(view));
+            double masterOffsetTimeX = masterTrack->getValueAtTime(offsetTime, 0, ViewIdx(view));
             double masterOffsetTimeY = masterTrack->getValueAtTime(offsetTime, 1, ViewIdx(view));
             *x += (masterX - masterOffsetTimeX);
             *y += (masterY - masterOffsetTimeY);
@@ -301,8 +302,8 @@ BezierCP::getRightBezierPointAtTime(bool useGuiCurves,
             offsetTime = _imp->offsetTime;
         }
         if (masterTrack) {
-            double masterX = masterTrack->getValueAtTime(time, 0,ViewIdx(view));
-            double masterY = masterTrack->getValueAtTime(time, 1,ViewIdx(view));
+            double masterX = masterTrack->getValueAtTime(time, 0, ViewIdx(view));
+            double masterY = masterTrack->getValueAtTime(time, 1, ViewIdx(view));
             double masterOffsetTimeX = masterTrack->getValueAtTime(offsetTime,0, ViewIdx(view));
             double masterOffsetTimeY = masterTrack->getValueAtTime(offsetTime, 1, ViewIdx(view));
             *x += (masterX - masterOffsetTimeX);

@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
@@ -373,7 +374,7 @@ KnobGuiDouble::onDimensionSwitchClicked()
                 if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
                     knob->normalize(i, time, &v);
                 }
-                knob->setValue(v, ViewIdx::ALL_VIEWS, i);
+                knob->setValue(v, ViewIdx::all(), i);
             }
             knob->endChanges();
         }

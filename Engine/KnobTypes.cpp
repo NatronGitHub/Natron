@@ -52,6 +52,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RotoContext.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -804,7 +805,7 @@ KnobChoice::setValueFromLabel(const std::string & value,
 {
     for (std::size_t i = 0; i < _entries.size(); ++i) {
         if (caseInsensitiveCompare(_entries[i], value)) {
-            return setValue(i,ViewIdx(0), dimension, turnOffAutoKeying);
+            return setValue(i, ViewIdx(0), dimension, turnOffAutoKeying);
         }
     }
     return KnobHelper::eValueChangedReturnCodeNothingChanged;

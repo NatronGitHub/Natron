@@ -37,6 +37,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/NodeWrapper.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
@@ -91,7 +92,7 @@ void
 DialogParamHolder::onKnobValueChanged(KnobI* k,
                                       ValueChangedReasonEnum reason,
                                       double /*time*/,
-                                      const ViewIdx& /*view*/,
+                                      ViewIdx /*view*/,
                                       bool /*originatedFromMainThread*/)
 {
     std::string callback;

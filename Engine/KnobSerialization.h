@@ -44,12 +44,14 @@ GCC_DIAG_ON(sign-compare)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+#include <SequenceParsing.h>
+
 #include "Engine/Variant.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/CurveSerialization.h"
 #include "Engine/StringAnimationManager.h"
-#include <SequenceParsing.h>
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -294,15 +296,15 @@ struct ValueSerialization
         if (isInt && !isChoice) {
             int v;
             ar & ::boost::serialization::make_nvp("Value",v);
-            isInt->setValue(v,ViewIdx::ALL_VIEWS,_dimension);
+            isInt->setValue(v, ViewIdx::all(), _dimension);
         } else if (isBool && !isGrp && !isPage && !isSep && !btn) {
             bool v;
             ar & ::boost::serialization::make_nvp("Value",v);
-            isBool->setValue(v,ViewIdx::ALL_VIEWS,_dimension);
+            isBool->setValue(v, ViewIdx::all(), _dimension);
         } else if (isDouble && !isParametric) {
             double v;
             ar & ::boost::serialization::make_nvp("Value",v);
-            isDouble->setValue(v,ViewIdx::ALL_VIEWS,_dimension);
+            isDouble->setValue(v, ViewIdx::all(), _dimension);
         } else if (isChoice) {
             int v;
             ar & ::boost::serialization::make_nvp("Value", v);
@@ -316,12 +318,12 @@ struct ValueSerialization
                 }
                 
             }
-            isChoice->setValue(v,ViewIdx(0), _dimension);
+            isChoice->setValue(v, ViewIdx(0), _dimension);
 
         } else if (isString && !isFile) {
             std::string v;
             ar & ::boost::serialization::make_nvp("Value",v);
-            isString->setValue(v,ViewIdx(0),_dimension);
+            isString->setValue(v, ViewIdx(0),_dimension);
         } else if (isFile) {
             std::string v;
             ar & ::boost::serialization::make_nvp("Value",v);
@@ -334,7 +336,7 @@ struct ValueSerialization
                                                               content.getNumPrependingZeroes() + 1,
                                                               &v);
             }
-            isFile->setValue(v,ViewIdx(0),_dimension);
+            isFile->setValue(v, ViewIdx(0),_dimension);
         }
 
         ///We cannot restore the master yet. It has to be done in another pass.

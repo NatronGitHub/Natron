@@ -36,6 +36,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeWrapper.h"
 #include "Engine/ScriptObject.h"
 #include "Engine/Knob.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
@@ -66,7 +67,7 @@ private:
     virtual void onKnobValueChanged(KnobI* /*k*/,
                                     ValueChangedReasonEnum /*reason*/,
                                     double /*time*/,
-                                    const ViewIdx& view,
+                                    ViewIdx view,
                                     bool /*originatedFromMainThread*/) OVERRIDE FINAL;
 
     boost::scoped_ptr<DialogParamHolderPrivate> _imp;

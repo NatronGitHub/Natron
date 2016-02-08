@@ -58,6 +58,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/Button.h"
@@ -1335,27 +1336,27 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
                     
                     if (knobs[i]->isAnimationEnabled() && knobs[i]->isAnimated(j)) {
                         if (isInt) {
-                            isInt->setValueAtTime(time, ViewIdx::ALL_VIEWS, data.toInt(), j);
+                            isInt->setValueAtTime(time, ViewIdx::all(), data.toInt(), j);
                         } else if (isBool) {
-                            isBool->setValueAtTime(time, ViewIdx::ALL_VIEWS,data.toBool(), j);
+                            isBool->setValueAtTime(time, ViewIdx::all(), data.toBool(), j);
                         } else if (isDouble) {
-                            isDouble->setValueAtTime(time, ViewIdx::ALL_VIEWS,data.toDouble(), j);
+                            isDouble->setValueAtTime(time, ViewIdx::all(), data.toDouble(), j);
                         } else if (isColor) {
-                            isColor->setValueAtTime(time, ViewIdx::ALL_VIEWS,data.toDouble(), j);
+                            isColor->setValueAtTime(time, ViewIdx::all(), data.toDouble(), j);
                         } else if (isString) {
-                            isString->setValueAtTime(time, ViewIdx::ALL_VIEWS,data.toString().toStdString(), j);
+                            isString->setValueAtTime(time, ViewIdx::all(), data.toString().toStdString(), j);
                         }
                     } else {
                         if (isInt) {
-                            isInt->setValue(data.toInt(), ViewIdx::ALL_VIEWS,j, true);
+                            isInt->setValue(data.toInt(), ViewIdx::all(), j, true);
                         } else if (isBool) {
-                            isBool->setValue(data.toBool(), ViewIdx::ALL_VIEWS,j, true);
+                            isBool->setValue(data.toBool(), ViewIdx::all(), j, true);
                         } else if (isDouble) {
-                            isDouble->setValue(data.toDouble(), ViewIdx::ALL_VIEWS,j, true);
+                            isDouble->setValue(data.toDouble(), ViewIdx::all(), j, true);
                         } else if (isColor) {
-                            isColor->setValue(data.toDouble(), ViewIdx::ALL_VIEWS,j, true);
+                            isColor->setValue(data.toDouble(), ViewIdx::all(), j, true);
                         } else if (isString) {
-                            isString->setValue(data.toString().toStdString(), ViewIdx::ALL_VIEWS,j, true);
+                            isString->setValue(data.toString().toStdString(), ViewIdx::all(), j, true);
                         }
                     }
                     return;
@@ -1421,7 +1422,7 @@ MultiInstancePanel::onCheckBoxChecked(bool checked)
 }
 
 void
-MultiInstancePanel::onInstanceKnobValueChanged(const ViewIdx& /*view*/,
+MultiInstancePanel::onInstanceKnobValueChanged(ViewIdx /*view*/,
                                                int dim,
                                                int reason)
 {
@@ -1646,7 +1647,7 @@ void
 MultiInstancePanel::onKnobValueChanged(KnobI* k,
                                        ValueChangedReasonEnum reason,
                                        double time,
-                                       const ViewIdx& view,
+                                       ViewIdx view,
                                        bool /*originatedFromMainThread*/)
 {
     if ( !k->isDeclaredByPlugin() ) {
@@ -1958,8 +1959,8 @@ TrackerPanel::onAverageTracksButtonClicked()
             }
             average.first /= centersNb;
             average.second /= centersNb;
-            newInstanceCenter->setValueAtTime(t, ViewIdx::ALL_VIEWS, average.first, 0);
-            newInstanceCenter->setValueAtTime(t, ViewIdx::ALL_VIEWS, average.second, 1);
+            newInstanceCenter->setValueAtTime(t, ViewIdx::all(), average.first, 0);
+            newInstanceCenter->setValueAtTime(t, ViewIdx::all(), average.second, 1);
         }
     }
     newInstanceCenter->endChanges();
@@ -2170,7 +2171,7 @@ TrackerPanel::clearAllAnimationForSelection()
         const KnobsVec & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->removeAnimation(ViewIdx::ALL_VIEWS,dim);
+                knobs[i]->removeAnimation(ViewIdx::all(), dim);
             }
         }
     }
@@ -2187,7 +2188,7 @@ TrackerPanel::clearBackwardAnimationForSelection()
         const KnobsVec & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->deleteAnimationBeforeTime(time,ViewIdx::ALL_VIEWS,dim,eValueChangedReasonPluginEdited);
+                knobs[i]->deleteAnimationBeforeTime(time, ViewIdx::all(), dim, eValueChangedReasonPluginEdited);
             }
         }
     }
@@ -2204,7 +2205,7 @@ TrackerPanel::clearForwardAnimationForSelection()
         const KnobsVec & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->deleteAnimationAfterTime(time,ViewIdx::ALL_VIEWS,dim,eValueChangedReasonPluginEdited);
+                knobs[i]->deleteAnimationAfterTime(time, ViewIdx::all(), dim, eValueChangedReasonPluginEdited);
             }
         }
     }
@@ -2352,7 +2353,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         fromPoints[i] = getCornerPinPoint(cornerPin.get(), true, i);
         assert(fromPoints[i] && centers[i]);
         for (int j = 0; j < fromPoints[i]->getDimension(); ++j) {
-            fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j),ViewIdx::ALL_VIEWS, j);
+            fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), ViewIdx::all(), j);
         }
 
         toPoints[i] = getCornerPinPoint(cornerPin.get(), false, i);

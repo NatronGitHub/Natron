@@ -32,6 +32,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 

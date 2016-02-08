@@ -44,6 +44,7 @@
 #include <ofxhUtilities.h> // for StatStr
 #include <ofxhPluginCache.h>
 
+#include "Global/MemoryInfo.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxParamInstance.h"
@@ -56,10 +57,10 @@
 #include "Engine/AppManager.h"
 #include "Engine/Format.h"
 #include "Engine/Node.h"
-#include "Global/MemoryInfo.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/Project.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 

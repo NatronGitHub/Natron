@@ -50,6 +50,8 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 #include "ofxCore.h"
 #include "ofxhParametricParam.h"
+
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -131,7 +133,7 @@ public Q_SLOTS:
     void onLabelChanged();
     void onDisplayMinMaxChanged(double min,double max, int index);
     void onMinMaxChanged(double min,double max, int index);
-    void onKnobAnimationLevelChanged(const ViewIdx& view,int dim,int lvl);
+    void onKnobAnimationLevelChanged(ViewIdx view,int dim,int lvl);
     
 protected:
     

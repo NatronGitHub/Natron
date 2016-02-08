@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
@@ -1239,7 +1240,7 @@ RotoPanel::onRotoItemShapeColorChanged()
 }
 
 void
-RotoPanel::onRotoItemCompOperatorChanged(const ViewIdx& /*view*/, int /*dim*/,
+RotoPanel::onRotoItemCompOperatorChanged(ViewIdx /*view*/, int /*dim*/,
                                          int reason)
 {
     if ( (ValueChangedReasonEnum)reason == eValueChangedReasonSlaveRefresh ) {
@@ -1343,7 +1344,7 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
         if (drawable) {
             if (_imp->dialogEdition == eColorDialogEditingShapeColor) {
                 boost::shared_ptr<KnobColor> colorKnob = drawable->getColorKnob();
-                colorKnob->setValues(color.redF(), color.greenF(), color.blueF(), ViewIdx::ALL_VIEWS, eValueChangedReasonNatronInternalEdited);
+                colorKnob->setValues(color.redF(), color.greenF(), color.blueF(), ViewIdx::all(), eValueChangedReasonNatronInternalEdited);
                 QIcon icon;
                 double colorArray[3];
                 colorArray[0] = color.redF();
@@ -1352,7 +1353,7 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
                 makeSolidIcon(colorArray, icon);
                 found->treeItem->setIcon(COL_COLOR, icon);
                 boost::shared_ptr<KnobColor> contextKnob = _imp->context->getColorKnob();
-                contextKnob->setValues(colorArray[0], colorArray[1], colorArray[2], ViewIdx::ALL_VIEWS, eValueChangedReasonNatronInternalEdited);
+                contextKnob->setValues(colorArray[0], colorArray[1], colorArray[2], ViewIdx::all(), eValueChangedReasonNatronInternalEdited);
                 mustEvaluate = true;
             } else if (_imp->dialogEdition == eColorDialogEditingOverlayColor) {
                 double colorArray[4];
@@ -1528,7 +1529,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                         drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
                         if (drawable) {
                             boost::shared_ptr<KnobColor> colorKnob = drawable->getColorKnob();
-                            colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewIdx::ALL_VIEWS, eValueChangedReasonNatronInternalEdited);
+                            colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewIdx::all(), eValueChangedReasonNatronInternalEdited);
                             mustEvaluate = true;
                             found->treeItem->setIcon(COL_COLOR, icon);
                         }
@@ -1537,7 +1538,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                 
                 if ( colorChosen && !selected.empty() ) {
                     boost::shared_ptr<KnobColor> colorKnob = _imp->context->getColorKnob();
-                    colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewIdx::ALL_VIEWS, eValueChangedReasonNatronInternalEdited);
+                    colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewIdx::all(), eValueChangedReasonNatronInternalEdited);
                     mustEvaluate = true;
                 }
                 if (mustEvaluate) {

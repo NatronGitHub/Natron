@@ -48,6 +48,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/Plugin.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
 #include "Gui/CurveGui.h"
@@ -1530,7 +1531,7 @@ DockablePanel::setKeyOnAllParameters()
                     } else if (isString) {
                         std::string v = isString->getValueAtTime(time,i);
                         double dv;
-                        isString->stringToKeyFrameValue(time,ViewIdx(0), v, &dv);
+                        isString->stringToKeyFrameValue(time, ViewIdx(0), v, &dv);
                         kf.setValue(dv);
                     }
                     

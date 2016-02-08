@@ -42,6 +42,7 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
+#include "Engine/ViewIdx.h"
 
 #include "Global/Enums.h"
 
@@ -2920,7 +2921,7 @@ void DopeSheetView::onKeyframeChanged()
     }
 }
 
-void DopeSheetView::onRangeNodeChanged(const ViewIdx& /*view*/, int /*dimension*/, int /*reason*/)
+void DopeSheetView::onRangeNodeChanged(ViewIdx /*view*/, int /*dimension*/, int /*reason*/)
 {
     QObject *signalSender = sender();
 

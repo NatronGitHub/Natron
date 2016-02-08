@@ -30,6 +30,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // kNatronGroupInputIsOptionalParamName, kNatronGroupInputIsMaskParamName
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 

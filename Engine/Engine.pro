@@ -348,6 +348,7 @@ HEADERS += \
     VariantSerialization.h \
     ViewerInstance.h \
     ViewerInstancePrivate.h \
+    ViewIdx.h \
     ../Global/Enums.h \
     ../Global/GitVersion.h \
     ../Global/GLIncludes.h \

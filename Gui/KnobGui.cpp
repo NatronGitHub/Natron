@@ -28,6 +28,7 @@
 #include <boost/weak_ptr.hpp>
 
 #include "Engine/KnobTypes.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiPrivate.h"
@@ -49,23 +50,23 @@ KnobGui::KnobGui(const KnobPtr& knob,
     assert(helper);
     if (helper) {
         KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
-        QObject::connect( handler,SIGNAL( redrawGuiCurve(int,ViewIdx,int)),this,SLOT( onRedrawGuiCurve(int,ViewIdx,int) ) );
+        QObject::connect( handler,SIGNAL( redrawGuiCurve(int, ViewIdx,int)),this,SLOT( onRedrawGuiCurve(int, ViewIdx,int) ) );
         QObject::connect( handler,SIGNAL( valueChanged(ViewIdx,int,int) ),this,SLOT( onInternalValueChanged(ViewIdx,int,int) ) );
-        QObject::connect( handler,SIGNAL( keyFrameSet(double,ViewIdx,int,int,bool) ),this,SLOT( onInternalKeySet(double,ViewIdx,int,int,bool) ) );
-        QObject::connect( handler,SIGNAL( keyFrameRemoved(double,ViewIdx,int,int) ),this,SLOT( onInternalKeyRemoved(double,ViewIdx,int,int) ) );
+        QObject::connect( handler,SIGNAL( keyFrameSet(double, ViewIdx,int,int,bool) ),this,SLOT( onInternalKeySet(double, ViewIdx,int,int,bool) ) );
+        QObject::connect( handler,SIGNAL( keyFrameRemoved(double, ViewIdx,int,int) ),this,SLOT( onInternalKeyRemoved(double, ViewIdx,int,int) ) );
         QObject::connect( handler,SIGNAL( keyFrameMoved(ViewIdx,int,double,double)), this, SLOT( onKeyFrameMoved(ViewIdx,int,double,double)));
-        QObject::connect( handler,SIGNAL( multipleKeyFramesSet(std::list<double>,ViewIdx,int,int)), this,
+        QObject::connect( handler,SIGNAL( multipleKeyFramesSet(std::list<double>, ViewIdx,int,int)), this,
                          SLOT(onMultipleKeySet(std::list<double> , ViewIdx,int, int)));
         QObject::connect( handler,SIGNAL( secretChanged() ),this,SLOT( setSecret() ) );
         QObject::connect( handler,SIGNAL( enabledChanged() ),this,SLOT( setEnabledSlot() ) );
         QObject::connect( handler,SIGNAL( knobSlaved(int,bool) ),this,SLOT( onKnobSlavedChanged(int,bool) ) );
         QObject::connect( handler,SIGNAL( animationAboutToBeRemoved(ViewIdx,int) ),this,SLOT( onInternalAnimationAboutToBeRemoved(ViewIdx,int) ) );
         QObject::connect( handler,SIGNAL( animationRemoved(ViewIdx,int) ),this,SLOT( onInternalAnimationRemoved() ) );
-        QObject::connect( handler,SIGNAL( setValueWithUndoStack(Variant,ViewIdx, int) ),this,SLOT( onSetValueUsingUndoStack(Variant,ViewIdx, int) ) );
+        QObject::connect( handler,SIGNAL( setValueWithUndoStack(Variant, ViewIdx, int) ),this,SLOT( onSetValueUsingUndoStack(Variant, ViewIdx, int) ) );
         QObject::connect( handler,SIGNAL( dirty(bool) ),this,SLOT( onSetDirty(bool) ) );
         QObject::connect( handler,SIGNAL( animationLevelChanged(ViewIdx,int,int) ),this,SLOT( onAnimationLevelChanged(ViewIdx,int,int) ) );
-        QObject::connect( handler,SIGNAL( appendParamEditChange(int,Variant,ViewIdx,int,double,bool,bool) ),this,
-                         SLOT( onAppendParamEditChanged(int,Variant,ViewIdx,int,double,bool,bool) ) );
+        QObject::connect( handler,SIGNAL( appendParamEditChange(int,Variant, ViewIdx,int,double,bool,bool) ),this,
+                         SLOT( onAppendParamEditChanged(int,Variant, ViewIdx,int,double,bool,bool) ) );
         QObject::connect( handler,SIGNAL( frozenChanged(bool) ),this,SLOT( onFrozenChanged(bool) ) );
         QObject::connect( handler,SIGNAL( helpChanged() ),this,SLOT( onHelpChanged() ) );
         QObject::connect( handler,SIGNAL( expressionChanged(int) ),this,SLOT( onExprChanged(int) ) );
@@ -192,7 +193,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
         std::string exp = knob->getExpression(i);
         reflectExpressionState(i,!exp.empty());
         if (exp.empty()) {
-            onAnimationLevelChanged(ViewIdx::ALL_VIEWS, i, knob->getAnimationLevel(i) );
+            onAnimationLevelChanged(ViewIdx::all(), i, knob->getAnimationLevel(i) );
         }
     }
 }

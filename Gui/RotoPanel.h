@@ -41,7 +41,10 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
+#include "Engine/ViewIdx.h"
+
 #include "Gui/GuiFwd.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -128,7 +131,7 @@ public Q_SLOTS:
     void onRotoItemShapeColorChanged();
 
     ///An item had its compositing operator changed
-    void onRotoItemCompOperatorChanged(const ViewIdx& /*view*/,int dim,int reason);
+    void onRotoItemCompOperatorChanged(ViewIdx /*view*/,int dim,int reason);
 
     void onCurrentItemCompOperatorChanged(int index);
 

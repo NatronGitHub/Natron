@@ -47,6 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"
 #include "Engine/KnobGuiI.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/GuiFwd.h"
@@ -124,12 +125,12 @@ public:
     const QUndoCommand* getLastUndoCommand() const;
 
 
-    void setKeyframe(double time, int dimension, const ViewIdx& view);
-    void setKeyframe(double time,const KeyFrame& key,int dimension, const ViewIdx& view);
-    void removeKeyFrame(double time,int dimension, const ViewIdx& view);
+    void setKeyframe(double time, int dimension, ViewIdx view);
+    void setKeyframe(double time,const KeyFrame& key,int dimension, ViewIdx view);
+    void removeKeyFrame(double time,int dimension, ViewIdx view);
     
-    void setKeyframes(const std::vector<KeyFrame>& keys, int dimension, const ViewIdx& view);
-    void removeKeyframes(const std::vector<KeyFrame>& keys, int dimension, const ViewIdx& view);
+    void setKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewIdx view);
+    void removeKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewIdx view);
 
     QString getScriptNameHtml() const;
 
@@ -177,7 +178,7 @@ public:
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
         assert(knob);
         if (knob) {
-            ret = knob->setValue(v,ViewIdx::CURRENT_VIEW, dimension,reason,newKey);
+            ret = knob->setValue(v, ViewIdx::current(), dimension,reason,newKey);
         }
         if (ret > 0 && ret != KnobHelper::eValueChangedReturnCodeNothingChanged && reason == eValueChangedReasonUserEdited) {
             assert(newKey);
@@ -199,7 +200,7 @@ public:
     bool setValueAtTime(int dimension,
                         const T & v,
                         double time,
-                        const ViewIdx& view,
+                        ViewIdx view,
                         KeyFrame* newKey,
                         bool refreshGui,
                         ValueChangedReasonEnum reason)
@@ -270,25 +271,25 @@ public Q_SLOTS:
     
     void onUnlinkActionTriggered();
 
-    void onRedrawGuiCurve(int reason,const ViewIdx& view, int dimension);
+    void onRedrawGuiCurve(int reason, ViewIdx view, int dimension);
     
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
      **/
-    void onInternalValueChanged(const ViewIdx& view, int dimension,int reason);
+    void onInternalValueChanged(ViewIdx view, int dimension,int reason);
 
-    void onInternalKeySet(double time,const ViewIdx& view,int dimension,int reason,bool added);
+    void onInternalKeySet(double time, ViewIdx view,int dimension,int reason,bool added);
 
-    void onInternalKeyRemoved(double time,const ViewIdx& view, int dimension,int reason);
+    void onInternalKeyRemoved(double time, ViewIdx view, int dimension,int reason);
     
-    void onMultipleKeySet(const std::list<double>& keys,const ViewIdx& view, int dimension, int reason);
+    void onMultipleKeySet(const std::list<double>& keys, ViewIdx view, int dimension, int reason);
 
-    void onInternalAnimationAboutToBeRemoved(const ViewIdx& view, int dimension);
+    void onInternalAnimationAboutToBeRemoved(ViewIdx view, int dimension);
     
     void onInternalAnimationRemoved();
     
     ///Handler when a keyframe is moved in the curve editor/dope sheet
-    void onKeyFrameMoved(const ViewIdx& view, int dimension,double oldTime,double newTime);
+    void onKeyFrameMoved(ViewIdx view, int dimension,double oldTime,double newTime);
 
     void setSecret();
 
@@ -341,13 +342,13 @@ public Q_SLOTS:
 
     void onKnobSlavedChanged(int dimension,bool b);
 
-    void onSetValueUsingUndoStack(const Variant & v,const ViewIdx& view,int dim);
+    void onSetValueUsingUndoStack(const Variant & v, ViewIdx view,int dim);
 
     void onSetDirty(bool d);
 
-    void onAnimationLevelChanged(const ViewIdx& view, int dim,int level);
+    void onAnimationLevelChanged(ViewIdx view, int dim,int level);
 
-    void onAppendParamEditChanged(int reason,const Variant & v,const ViewIdx& view,int dim,double time,bool createNewCommand,bool setKeyFrame);
+    void onAppendParamEditChanged(int reason,const Variant & v, ViewIdx view,int dim,double time,bool createNewCommand,bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);
 

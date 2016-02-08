@@ -27,9 +27,10 @@
 
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/ViewIdx.h"
+
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiPrivate.h"
-
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 
 NATRON_NAMESPACE_ENTER;
@@ -325,7 +326,7 @@ KnobGui::onHorizontalInterpActionTriggered()
 void
 KnobGui::setKeyframe(double time,
                      int dimension,
-                     const ViewIdx& view)
+                     ViewIdx view)
 {
     KnobPtr knob = getKnob();
 
@@ -341,7 +342,7 @@ KnobGui::setKeyframe(double time,
 }
 
 void
-KnobGui::setKeyframe(double time, const KeyFrame& key,int dimension,  const ViewIdx& view)
+KnobGui::setKeyframe(double time, const KeyFrame& key,int dimension,  ViewIdx view)
 {
     KnobPtr knob = getKnob();
     
@@ -408,7 +409,7 @@ KnobGui::onSetKeyActionTriggered()
 void
 KnobGui::removeKeyFrame(double time,
                         int dimension,
-                        const ViewIdx& view)
+                        ViewIdx view)
 {
     KnobPtr knob = getKnob();
     knob->onKeyFrameRemoved(time, view, dimension);
@@ -423,7 +424,7 @@ KnobGui::removeKeyFrame(double time,
 }
 
 void
-KnobGui::setKeyframes(const std::vector<KeyFrame>& keys, int dimension,const ViewIdx& view)
+KnobGui::setKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewIdx view)
 {
     KnobPtr knob = getKnob();
     
@@ -444,7 +445,7 @@ KnobGui::setKeyframes(const std::vector<KeyFrame>& keys, int dimension,const Vie
 }
 
 void
-KnobGui::removeKeyframes(const std::vector<KeyFrame>& keys, int dimension, const ViewIdx& view)
+KnobGui::removeKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewIdx view)
 {
     KnobPtr knob = getKnob();
     knob->beginChanges();

@@ -48,6 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/BackdropGui.h"
@@ -148,8 +149,8 @@ NodeGraph::refreshAllKnobsGui()
                 if (!knob->getIsSecret()) {
                     for (int i = 0; i < knob->getDimension(); ++i) {
                         if (knob->isAnimated(i)) {
-                            it2->second->onInternalValueChanged(ViewIdx::ALL_VIEWS,i, eValueChangedReasonPluginEdited);
-                            it2->second->onAnimationLevelChanged(ViewIdx::ALL_VIEWS, i, eValueChangedReasonPluginEdited);
+                            it2->second->onInternalValueChanged(ViewIdx::all(), i, eValueChangedReasonPluginEdited);
+                            it2->second->onAnimationLevelChanged(ViewIdx::all(), i, eValueChangedReasonPluginEdited);
                         }
                     }
                 }

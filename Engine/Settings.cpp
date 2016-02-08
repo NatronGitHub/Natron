@@ -51,6 +51,7 @@
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/GuiDefines.h"
@@ -1804,7 +1805,7 @@ Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
                 
                 if (isString) {
                     
-                    isString->setValue(settings.value(qDimName).toString().toStdString(), ViewIdx::ALL_VIEWS, j);
+                    isString->setValue(settings.value(qDimName).toString().toStdString(), ViewIdx::all(), j);
                     
                 } else if (isInt) {
                     
@@ -1824,21 +1825,21 @@ Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
                         }
                         
                         if (found >= 0) {
-                            isChoice->setValue(found,ViewIdx::ALL_VIEWS, j);
+                            isChoice->setValue(found, ViewIdx::all(), j);
                         }
                         
                     } else {
-                        isInt->setValue(settings.value(qDimName).toInt(), ViewIdx::ALL_VIEWS,j);
+                        isInt->setValue(settings.value(qDimName).toInt(), ViewIdx::all(), j);
                     }
                     
                     
                 } else if (isDouble) {
                     
-                    isDouble->setValue(settings.value(qDimName).toDouble(),ViewIdx::ALL_VIEWS, j);
+                    isDouble->setValue(settings.value(qDimName).toDouble(), ViewIdx::all(), j);
                     
                 } else if (isBool) {
                     
-                    isBool->setValue(settings.value(qDimName).toBool(),ViewIdx::ALL_VIEWS, j);
+                    isBool->setValue(settings.value(qDimName).toBool(), ViewIdx::all(), j);
                     
                 } else {
                     assert(false);
@@ -1992,7 +1993,7 @@ void
 Settings::onKnobValueChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
                              double /*time*/,
-                             const ViewIdx& /*view*/,
+                             ViewIdx /*view*/,
                              bool /*originatedFromMainThread*/)
 {
     

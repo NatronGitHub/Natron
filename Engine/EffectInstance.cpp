@@ -70,6 +70,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 //#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
@@ -3875,7 +3876,7 @@ void
 EffectInstance::onKnobValueChanged(KnobI* /*k*/,
                                    ValueChangedReasonEnum /*reason*/,
                                    double /*time*/,
-                                   const ViewIdx& /*view*/,
+                                   ViewIdx /*view*/,
                                    bool /*originatedFromMainThread*/)
 {
 }
@@ -3956,7 +3957,7 @@ void
 EffectInstance::onKnobValueChanged_public(KnobI* k,
                                           ValueChangedReasonEnum reason,
                                           double time,
-                                          const ViewIdx& view,
+                                          ViewIdx view,
                                           bool originatedFromMainThread)
 {
     NodePtr node = getNode();

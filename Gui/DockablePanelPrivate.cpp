@@ -39,6 +39,8 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h" // NATRON_PARAMETER_PAGE_NAME_INFO
+#include "Engine/ViewIdx.h"
+
 #include "Gui/ClickableLabel.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/KnobGui.h"

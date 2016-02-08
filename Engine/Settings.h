@@ -33,6 +33,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Knob.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -89,7 +90,7 @@ public:
     {
     }
 
-    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time, const ViewIdx& view,
+    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time, ViewIdx view,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
 
     ImageBitDepthEnum getViewersBitDepth() const;

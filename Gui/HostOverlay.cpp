@@ -42,6 +42,7 @@
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/Transform.h"
+#include "Engine/ViewIdx.h"
 
 #include "Global/KeySymbols.h"
 
@@ -1123,7 +1124,7 @@ HostOverlayPrivate::penMotion(double time,
                 }
             }
 
-            knob->setValues(p[0], p[1], ViewIdx::ALL_VIEWS,eValueChangedReasonNatronGuiEdited);
+            knob->setValues(p[0], p[1], ViewIdx::all(), eValueChangedReasonNatronGuiEdited);
         }
     }
     return (didSomething || valuesChanged);
@@ -1562,27 +1563,27 @@ HostOverlayPrivate::penMotion(double time,
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
         if (centerChanged) {
             boost::shared_ptr<KnobDouble> knob = it->center.lock();
-            knob->setValues(center.x, center.y, ViewIdx::ALL_VIEWS, eValueChangedReasonNatronGuiEdited);
+            knob->setValues(center.x, center.y, ViewIdx::all(), eValueChangedReasonNatronGuiEdited);
         }
         if (translateChanged) {
             boost::shared_ptr<KnobDouble> knob = it->translate.lock();
-            knob->setValues(translate.x, translate.y, ViewIdx::ALL_VIEWS, eValueChangedReasonNatronGuiEdited);
+            knob->setValues(translate.x, translate.y, ViewIdx::all(), eValueChangedReasonNatronGuiEdited);
         }
         if (scaleChanged) {
             boost::shared_ptr<KnobDouble> knob = it->scale.lock();
-            knob->setValues(scale.x, scale.y, ViewIdx::ALL_VIEWS, eValueChangedReasonNatronGuiEdited);
+            knob->setValues(scale.x, scale.y, ViewIdx::all(), eValueChangedReasonNatronGuiEdited);
         }
         if (rotateChanged) {
             boost::shared_ptr<KnobDouble> knob = it->rotate.lock();
-            knob->setValue(rotate,ViewIdx::ALL_VIEWS, 0, eValueChangedReasonNatronGuiEdited);
+            knob->setValue(rotate, ViewIdx::all(), 0, eValueChangedReasonNatronGuiEdited);
         }
         if (skewXChanged) {
             boost::shared_ptr<KnobDouble> knob = it->skewX.lock();
-            knob->setValue(skewX, ViewIdx::ALL_VIEWS, 0, eValueChangedReasonNatronGuiEdited);
+            knob->setValue(skewX, ViewIdx::all(), 0, eValueChangedReasonNatronGuiEdited);
         }
         if (skewYChanged) {
             boost::shared_ptr<KnobDouble> knob = it->skewY.lock();
-            knob->setValue(skewY, ViewIdx::ALL_VIEWS, 0, eValueChangedReasonNatronGuiEdited);
+            knob->setValue(skewY, ViewIdx::all(), 0, eValueChangedReasonNatronGuiEdited);
         }
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
     } else if (didSomething || valuesChanged) {
@@ -1651,7 +1652,7 @@ HostOverlayPrivate::penUp(double time,
                     }
                 }
 
-                knob->setValues(p[0], p[1], ViewIdx::ALL_VIEWS, eValueChangedReasonNatronGuiEdited);
+                knob->setValues(p[0], p[1], ViewIdx::all(), eValueChangedReasonNatronGuiEdited);
             }
         }
 
@@ -1687,30 +1688,30 @@ HostOverlayPrivate::penUp(double /*time*/,
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
         {
             boost::shared_ptr<KnobDouble> knob = it->center.lock();
-            knob->setValues(it->_centerDrag.x, it->_centerDrag.y,ViewIdx::ALL_VIEWS,  eValueChangedReasonPluginEdited);
+            knob->setValues(it->_centerDrag.x, it->_centerDrag.y, ViewIdx::all(),  eValueChangedReasonPluginEdited);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->translate.lock();
-            knob->setValues(it->_translateDrag.x, it->_translateDrag.y, ViewIdx::ALL_VIEWS, eValueChangedReasonPluginEdited);
+            knob->setValues(it->_translateDrag.x, it->_translateDrag.y, ViewIdx::all(), eValueChangedReasonPluginEdited);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->scale.lock();
-            knob->setValues(it->_scaleParamDrag.x, it->_scaleParamDrag.y, ViewIdx::ALL_VIEWS, eValueChangedReasonPluginEdited);
+            knob->setValues(it->_scaleParamDrag.x, it->_scaleParamDrag.y, ViewIdx::all(), eValueChangedReasonPluginEdited);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->rotate.lock();
             KeyFrame k;
-            knob->setValue(it->_rotateDrag,ViewIdx::ALL_VIEWS,  0, eValueChangedReasonPluginEdited, &k);
+            knob->setValue(it->_rotateDrag, ViewIdx::all(),  0, eValueChangedReasonPluginEdited, &k);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->skewX.lock();
             KeyFrame k;
-            knob->setValue(it->_skewXDrag, ViewIdx::ALL_VIEWS, 0, eValueChangedReasonPluginEdited, &k);
+            knob->setValue(it->_skewXDrag, ViewIdx::all(), 0, eValueChangedReasonPluginEdited, &k);
         }
         {
             boost::shared_ptr<KnobDouble> knob = it->skewY.lock();
             KeyFrame k;
-            knob->setValue(it->_skewYDrag,ViewIdx::ALL_VIEWS,  0, eValueChangedReasonPluginEdited,&k);
+            knob->setValue(it->_skewYDrag, ViewIdx::all(),  0, eValueChangedReasonPluginEdited,&k);
         }
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
         

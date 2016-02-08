@@ -44,6 +44,7 @@
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
@@ -305,7 +306,7 @@ KnobGuiFile::watchedFileChanged()
                 }
                 
             } else {
-                 knob->evaluateValueChange(0, knob->getCurrentTime() ,ViewIdx(0), eValueChangedReasonNatronInternalEdited);
+                 knob->evaluateValueChange(0, knob->getCurrentTime() , ViewIdx(0), eValueChangedReasonNatronInternalEdited);
             }
         }
         

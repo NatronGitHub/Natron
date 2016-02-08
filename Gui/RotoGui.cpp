@@ -62,6 +62,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/ActionShortcuts.h"
@@ -3480,7 +3481,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
     double g = Color::from_func_srgb(color.greenF());
     double b = Color::from_func_srgb(color.blueF());
 
-    colorKnob->setValues(r,g,b, ViewIdx::ALL_VIEWS, eValueChangedReasonNatronGuiEdited);
+    colorKnob->setValues(r,g,b, ViewIdx::all(), eValueChangedReasonNatronGuiEdited);
     operatorKnob->setValueFromLabel(Merge::getOperatorString(compOp),0);
     opacityKnob->setValue(opacity);
     sizeKnob->setValue(size);
@@ -3497,7 +3498,7 @@ RotoGui::RotoGuiPrivate::makeStroke(bool prepareForLater, const RotoPoint& p)
         timeOffsetKnob->setValue(timeOffset);
         timeOffsetModeKnob->setValue(timeOffsetMode_i);
         sourceTypeKnob->setValue(sourceType_i);
-        translateKnob->setValues(-rotoData->cloneOffset.first, -rotoData->cloneOffset.second, ViewIdx::ALL_VIEWS, eValueChangedReasonNatronGuiEdited);
+        translateKnob->setValues(-rotoData->cloneOffset.first, -rotoData->cloneOffset.second, ViewIdx::all(), eValueChangedReasonNatronGuiEdited);
     }
     if (!prepareForLater) {
         boost::shared_ptr<RotoLayer> layer = context->findDeepestSelectedLayer();

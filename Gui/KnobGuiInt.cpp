@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
@@ -279,7 +280,7 @@ KnobGuiInt::onDimensionSwitchClicked()
             double value(_spinBoxes[0].first->value());
             knob->beginChanges();
             for (int i = 1; i < dim; ++i) {
-                knob->setValue(value,ViewIdx::ALL_VIEWS, i);
+                knob->setValue(value, ViewIdx::all(), i);
             }
             knob->endChanges();
         }

@@ -44,6 +44,7 @@
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 
 NATRON_NAMESPACE_ENTER;

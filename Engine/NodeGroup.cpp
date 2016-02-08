@@ -55,6 +55,7 @@
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #define NATRON_PYPLUG_EXPORTER_VERSION 6

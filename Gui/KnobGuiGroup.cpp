@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
@@ -168,7 +169,7 @@ KnobGuiGroup::setCheckedInternal(bool checked, bool userRequested)
     if (userRequested) {
         boost::shared_ptr<KnobGroup> knob = _knob.lock();
         if (knob) {
-            knob->evaluateValueChange(0, knob->getCurrentTime(),ViewIdx(0), eValueChangedReasonUserEdited);
+            knob->evaluateValueChange(0, knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
         }
     }
     

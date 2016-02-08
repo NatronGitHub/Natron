@@ -77,6 +77,7 @@
 #include "Engine/Settings.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -1292,7 +1293,7 @@ void
 Project::onKnobValueChanged(KnobI* knob,
                             ValueChangedReasonEnum reason,
                             double /*time*/,
-                            const ViewIdx& /*view*/,
+                            ViewIdx /*view*/,
                             bool /*originatedFromMainThread*/)
 {
     if ( knob == _imp->viewsList.get() ) {
@@ -2161,8 +2162,8 @@ Project::unionFrameRangeWith(int first,int last)
     curFirst = !mustSet ? std::min(first, curFirst) : first;
     curLast = !mustSet ? std::max(last, curLast) : last;
     beginChanges();
-    _imp->frameRange->setValue(curFirst, ViewIdx::ALL_VIEWS, 0);
-    _imp->frameRange->setValue(curLast, ViewIdx::ALL_VIEWS, 1);
+    _imp->frameRange->setValue(curFirst, ViewIdx::all(), 0);
+    _imp->frameRange->setValue(curLast, ViewIdx::all(), 1);
     endChanges();
 
 }
@@ -2174,8 +2175,8 @@ Project::recomputeFrameRangeFromReaders()
     recomputeFrameRangeForAllReaders(&first, &last);
     
     beginChanges();
-    _imp->frameRange->setValue(first, ViewIdx::ALL_VIEWS, 0);
-    _imp->frameRange->setValue(last,  ViewIdx::ALL_VIEWS, 1);
+    _imp->frameRange->setValue(first, ViewIdx::all(), 0);
+    _imp->frameRange->setValue(last,  ViewIdx::all(), 1);
     endChanges();
 }
     

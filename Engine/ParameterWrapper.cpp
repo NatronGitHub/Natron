@@ -29,6 +29,7 @@
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -295,7 +296,7 @@ Param::curve(double time, int dimension) const
     if (!getInternalKnob()) {
         return 0.;
     }
-    return getInternalKnob()->getRawCurveValueAt(time,ViewIdx::CURRENT_VIEW, dimension);
+    return getInternalKnob()->getRawCurveValueAt(time, ViewIdx::current(), dimension);
 }
 
 bool
@@ -328,49 +329,49 @@ AnimatedParam::~AnimatedParam()
 bool
 AnimatedParam::getIsAnimated(int dimension) const
 {
-    return getInternalKnob()->isAnimated(dimension,ViewIdx::CURRENT_VIEW);
+    return getInternalKnob()->isAnimated(dimension, ViewIdx::current());
 }
 
 int
 AnimatedParam::getNumKeys(int dimension) const
 {
-    return getInternalKnob()->getKeyFramesCount(ViewIdx::CURRENT_VIEW,dimension);
+    return getInternalKnob()->getKeyFramesCount(ViewIdx::current(), dimension);
 }
 
 int
 AnimatedParam::getKeyIndex(double time,int dimension) const
 {
-    return getInternalKnob()->getKeyFrameIndex(ViewIdx::CURRENT_VIEW,dimension, time);
+    return getInternalKnob()->getKeyFrameIndex(ViewIdx::current(), dimension, time);
 }
 
 bool
 AnimatedParam::getKeyTime(int index,int dimension,double* time) const
 {
-    return getInternalKnob()->getKeyFrameTime(ViewIdx::CURRENT_VIEW,index, dimension, time);
+    return getInternalKnob()->getKeyFrameTime(ViewIdx::current(), index, dimension, time);
 }
 
 void
 AnimatedParam::deleteValueAtTime(double time,int dimension)
 {
-    getInternalKnob()->deleteValueAtTime(eCurveChangeReasonInternal,time,ViewIdx::ALL_VIEWS, dimension);
+    getInternalKnob()->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewIdx::all(), dimension);
 }
 
 void
 AnimatedParam::removeAnimation(int dimension)
 {
-    getInternalKnob()->removeAnimation(ViewIdx::ALL_VIEWS,dimension);
+    getInternalKnob()->removeAnimation(ViewIdx::all(), dimension);
 }
 
 double
 AnimatedParam::getDerivativeAtTime(double time, int dimension) const
 {
-    return getInternalKnob()->getDerivativeAtTime(time, ViewIdx::CURRENT_VIEW,dimension);
+    return getInternalKnob()->getDerivativeAtTime(time, ViewIdx::current(), dimension);
 }
 
 double
 AnimatedParam::getIntegrateFromTimeToTime(double time1, double time2, int dimension) const
 {
-    return getInternalKnob()->getIntegrateFromTimeToTime(time1, time2, ViewIdx::CURRENT_VIEW, dimension);
+    return getInternalKnob()->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), dimension);
 }
 
 int
@@ -495,7 +496,7 @@ Int3DParam::get(double frame) const
 void
 IntParam::set(int x)
 {
-    _intKnob.lock()->setValue(x, ViewIdx::CURRENT_VIEW,0);
+    _intKnob.lock()->setValue(x, ViewIdx::current(), 0);
 }
 
 void
@@ -503,8 +504,8 @@ Int2DParam::set(int x, int y)
 {
     boost::shared_ptr<KnobInt> knob = _intKnob.lock();
     knob->beginChanges();
-    knob->setValue(x, ViewIdx::CURRENT_VIEW,0);
-    knob->setValue(y, ViewIdx::CURRENT_VIEW,1);
+    knob->setValue(x, ViewIdx::current(), 0);
+    knob->setValue(y, ViewIdx::current(), 1);
     knob->endChanges();
 }
 
@@ -513,30 +514,30 @@ Int3DParam::set(int x, int y, int z)
 {
     boost::shared_ptr<KnobInt> knob = _intKnob.lock();
     knob->beginChanges();
-    knob->setValue(x, ViewIdx::CURRENT_VIEW,0);
-    knob->setValue(y, ViewIdx::CURRENT_VIEW,1);
-    knob->setValue(z, ViewIdx::CURRENT_VIEW,2);
+    knob->setValue(x, ViewIdx::current(), 0);
+    knob->setValue(y, ViewIdx::current(), 1);
+    knob->setValue(z, ViewIdx::current(), 2);
     knob->endChanges();
 }
 
 void
 IntParam::set(int x, double frame)
 {
-    _intKnob.lock()->setValueAtTime(frame, ViewIdx::CURRENT_VIEW, x, 0);
+    _intKnob.lock()->setValueAtTime(frame, ViewIdx::current(), x, 0);
 }
 
 void
 Int2DParam::set(int x, int y, double frame)
 {
     boost::shared_ptr<KnobInt> knob = _intKnob.lock();
-    knob->setValuesAtTime(frame, ViewIdx::CURRENT_VIEW, x, y, Natron::eValueChangedReasonNatronInternalEdited);
+    knob->setValuesAtTime(frame, ViewIdx::current(), x, y, Natron::eValueChangedReasonNatronInternalEdited);
 }
 
 void
 Int3DParam::set(int x, int y, int z, double frame)
 {
     boost::shared_ptr<KnobInt> knob = _intKnob.lock();
-    knob->setValuesAtTime(frame, ViewIdx::CURRENT_VIEW, x, y, z, Natron::eValueChangedReasonNatronInternalEdited);
+    knob->setValuesAtTime(frame, ViewIdx::current(), x, y, z, Natron::eValueChangedReasonNatronInternalEdited);
 }
 
 int
@@ -548,7 +549,7 @@ IntParam::getValue(int dimension) const
 void
 IntParam::setValue(int value,int dimension)
 {
-    _intKnob.lock()->setValue(value, ViewIdx::CURRENT_VIEW,dimension);
+    _intKnob.lock()->setValue(value, ViewIdx::current(),dimension);
 }
 
 int
@@ -560,7 +561,7 @@ IntParam::getValueAtTime(double time,int dimension) const
 void
 IntParam::setValueAtTime(int value,double time,int dimension)
 {
-    _intKnob.lock()->setValueAtTime(time, ViewIdx::CURRENT_VIEW, value, dimension);
+    _intKnob.lock()->setValueAtTime(time, ViewIdx::current(), value, dimension);
 }
 
 void
@@ -714,14 +715,14 @@ Double3DParam::get(double frame) const
 void
 DoubleParam::set(double x)
 {
-    _doubleKnob.lock()->setValue(x, ViewIdx::CURRENT_VIEW, 0);
+    _doubleKnob.lock()->setValue(x, ViewIdx::current(), 0);
 }
 
 void
 Double2DParam::set(double x, double y)
 {
     boost::shared_ptr<KnobDouble> knob = _doubleKnob.lock();
-    knob->setValues(x, y, ViewIdx::CURRENT_VIEW, eValueChangedReasonNatronInternalEdited);
+    knob->setValues(x, y, ViewIdx::current(), eValueChangedReasonNatronInternalEdited);
 
 }
 
@@ -729,20 +730,20 @@ void
 Double3DParam::set(double x, double y, double z)
 {
     boost::shared_ptr<KnobDouble> knob = _doubleKnob.lock();
-    knob->setValues(x, y, z, ViewIdx::CURRENT_VIEW, eValueChangedReasonNatronInternalEdited);
+    knob->setValues(x, y, z, ViewIdx::current(), eValueChangedReasonNatronInternalEdited);
 }
 
 void
 DoubleParam::set(double x, double frame)
 {
-    _doubleKnob.lock()->setValueAtTime(frame, ViewIdx::CURRENT_VIEW, x, 0);
+    _doubleKnob.lock()->setValueAtTime(frame, ViewIdx::current(), x, 0);
 }
 
 void
 Double2DParam::set(double x, double y, double frame)
 {
     boost::shared_ptr<KnobDouble> knob = _doubleKnob.lock();
-    knob->setValuesAtTime(frame, ViewIdx::CURRENT_VIEW, x, y, eValueChangedReasonNatronInternalEdited);
+    knob->setValuesAtTime(frame, ViewIdx::current(), x, y, eValueChangedReasonNatronInternalEdited);
 }
 
 void
@@ -758,7 +759,7 @@ void
 Double3DParam::set(double x, double y, double z, double frame)
 {
     boost::shared_ptr<KnobDouble> knob = _doubleKnob.lock();
-    knob->setValuesAtTime(frame, ViewIdx::CURRENT_VIEW, x, y, z, eValueChangedReasonNatronInternalEdited);
+    knob->setValuesAtTime(frame, ViewIdx::current(), x, y, z, eValueChangedReasonNatronInternalEdited);
 }
 
 
@@ -771,7 +772,7 @@ DoubleParam::getValue(int dimension) const
 void
 DoubleParam::setValue(double value,int dimension)
 {
-    _doubleKnob.lock()->setValue(value, ViewIdx::CURRENT_VIEW,dimension);
+    _doubleKnob.lock()->setValue(value, ViewIdx::current(), dimension);
 }
 
 double
@@ -783,7 +784,7 @@ DoubleParam::getValueAtTime(double time,int dimension) const
 void
 DoubleParam::setValueAtTime(double value,double time,int dimension)
 {
-    _doubleKnob.lock()->setValueAtTime(time, ViewIdx::CURRENT_VIEW,value, dimension);
+    _doubleKnob.lock()->setValueAtTime(time, ViewIdx::current(), value, dimension);
 }
 
 void
@@ -912,11 +913,11 @@ ColorParam::set(double r, double g, double b, double a)
 {
     boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
     knob->beginChanges();
-    knob->setValue(r, ViewIdx::CURRENT_VIEW, 0);
-    knob->setValue(g, ViewIdx::CURRENT_VIEW, 1);
-    knob->setValue(b, ViewIdx::CURRENT_VIEW, 2);
+    knob->setValue(r, ViewIdx::current(), 0);
+    knob->setValue(g, ViewIdx::current(), 1);
+    knob->setValue(b, ViewIdx::current(), 2);
     if (knob->getDimension() == 4) {
-        knob->setValue(a, ViewIdx::CURRENT_VIEW, 3);
+        knob->setValue(a, ViewIdx::current(), 3);
     }
     knob->endChanges();
 }
@@ -926,12 +927,12 @@ ColorParam::set(double r, double g, double b, double a, double frame)
 {
     boost::shared_ptr<KnobColor> knob = _colorKnob.lock();
     knob->beginChanges();
-    knob->setValueAtTime(frame, ViewIdx::CURRENT_VIEW, r, 0);
-    knob->setValueAtTime(frame, ViewIdx::CURRENT_VIEW, g, 1);
+    knob->setValueAtTime(frame, ViewIdx::current(), r, 0);
+    knob->setValueAtTime(frame, ViewIdx::current(), g, 1);
     int dims = knob->getDimension();
-    knob->setValueAtTime(frame, ViewIdx::CURRENT_VIEW, b, 2);
+    knob->setValueAtTime(frame, ViewIdx::current(), b, 2);
     if (dims == 4) {
-        knob->setValueAtTime(frame, ViewIdx::CURRENT_VIEW, a, 3);
+        knob->setValueAtTime(frame, ViewIdx::current(), a, 3);
     }
     knob->endChanges();
 }
@@ -946,7 +947,7 @@ ColorParam::getValue(int dimension) const
 void
 ColorParam::setValue(double value,int dimension)
 {
-    _colorKnob.lock()->setValue(value, ViewIdx::CURRENT_VIEW, dimension);
+    _colorKnob.lock()->setValue(value, ViewIdx::current(), dimension);
 }
 
 double
@@ -958,7 +959,7 @@ ColorParam::getValueAtTime(double time,int dimension) const
 void
 ColorParam::setValueAtTime(double value,double time,int dimension)
 {
-    _colorKnob.lock()->setValueAtTime(time, ViewIdx::CURRENT_VIEW, value, dimension);
+    _colorKnob.lock()->setValueAtTime(time, ViewIdx::current(), value, dimension);
 }
 
 void
@@ -1070,13 +1071,13 @@ ChoiceParam::get(double frame) const
 void
 ChoiceParam::set(int x)
 {
-    _choiceKnob.lock()->setValue(x,ViewIdx::CURRENT_VIEW,  0);
+    _choiceKnob.lock()->setValue(x, ViewIdx::current(), 0);
 }
 
 void
 ChoiceParam::set(int x, double frame)
 {
-    _choiceKnob.lock()->setValueAtTime(frame,ViewIdx::CURRENT_VIEW,  x, 0);
+    _choiceKnob.lock()->setValueAtTime(frame, ViewIdx::current(), x, 0);
 }
 
 void
@@ -1095,7 +1096,7 @@ ChoiceParam::getValue() const
 void
 ChoiceParam::setValue(int value)
 {
-    _choiceKnob.lock()->setValue(value, ViewIdx::CURRENT_VIEW, 0);
+    _choiceKnob.lock()->setValue(value, ViewIdx::current(), 0);
 }
 
 int
@@ -1107,7 +1108,7 @@ ChoiceParam::getValueAtTime(double time) const
 void
 ChoiceParam::setValueAtTime(int value,double time)
 {
-    _choiceKnob.lock()->setValueAtTime(time,ViewIdx::CURRENT_VIEW,  value, 0);
+    _choiceKnob.lock()->setValueAtTime(time, ViewIdx::current(), value, 0);
 }
 
 void
@@ -1228,13 +1229,13 @@ BooleanParam::get(double frame) const
 void
 BooleanParam::set(bool x)
 {
-    _boolKnob.lock()->setValue(x,ViewIdx::CURRENT_VIEW,  0);
+    _boolKnob.lock()->setValue(x, ViewIdx::current(), 0);
 }
 
 void
 BooleanParam::set(bool x, double frame)
 {
-    _boolKnob.lock()->setValueAtTime(frame,ViewIdx::CURRENT_VIEW,  x, 0);
+    _boolKnob.lock()->setValueAtTime(frame, ViewIdx::current(), x, 0);
 }
 
 bool
@@ -1246,7 +1247,7 @@ BooleanParam::getValue() const
 void
 BooleanParam::setValue(bool value)
 {
-    _boolKnob.lock()->setValue(value, ViewIdx::CURRENT_VIEW, 0);
+    _boolKnob.lock()->setValue(value, ViewIdx::current(), 0);
 }
 
 bool
@@ -1258,7 +1259,7 @@ BooleanParam::getValueAtTime(double time) const
 void
 BooleanParam::setValueAtTime(bool value,double time)
 {
-    _boolKnob.lock()->setValueAtTime(time,ViewIdx::CURRENT_VIEW,  value, 0);
+    _boolKnob.lock()->setValueAtTime(time, ViewIdx::current(), value, 0);
 }
 
 void
@@ -1319,13 +1320,13 @@ StringParamBase::get(double frame) const
 void
 StringParamBase::set(const std::string& x)
 {
-    _stringKnob.lock()->setValue(x,ViewIdx::CURRENT_VIEW,  0);
+    _stringKnob.lock()->setValue(x, ViewIdx::current(), 0);
 }
 
 void
 StringParamBase::set(const std::string& x, double frame)
 {
-    _stringKnob.lock()->setValueAtTime(frame,ViewIdx::CURRENT_VIEW,  x, 0);
+    _stringKnob.lock()->setValueAtTime(frame, ViewIdx::current(), x, 0);
 }
 
 std::string
@@ -1337,7 +1338,7 @@ StringParamBase::getValue() const
 void
 StringParamBase::setValue(const std::string& value)
 {
-    _stringKnob.lock()->setValue(value, ViewIdx::CURRENT_VIEW, 0);
+    _stringKnob.lock()->setValue(value, ViewIdx::current(), 0);
 }
 
 std::string
@@ -1349,7 +1350,7 @@ StringParamBase::getValueAtTime(double time) const
 void
 StringParamBase::setValueAtTime(const std::string& value,double time)
 {
-    _stringKnob.lock()->setValueAtTime(time,ViewIdx::CURRENT_VIEW,  value, 0);
+    _stringKnob.lock()->setValueAtTime(time, ViewIdx::current(), value, 0);
 }
 
 void
@@ -1587,7 +1588,7 @@ GroupParam::setAsTab()
 void
 GroupParam::setOpened(bool opened)
 {
-    _groupKnob.lock()->setValue(opened, ViewIdx::CURRENT_VIEW, 0);
+    _groupKnob.lock()->setValue(opened, ViewIdx::current(), 0);
 }
 
 bool

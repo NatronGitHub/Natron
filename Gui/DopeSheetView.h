@@ -43,6 +43,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/OverlaySupport.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -208,7 +209,7 @@ public Q_SLOTS:
      * This slot is automatically called after the changing of the value of a
      * specific knob.
      */
-    void onRangeNodeChanged(const ViewIdx&, int, int);
+    void onRangeNodeChanged(ViewIdx, int, int);
 
     /**
      * @brief Computes the bounding rect of the selected keyframes and the ranges

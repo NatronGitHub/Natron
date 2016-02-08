@@ -47,6 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Format.h"
 #include "Engine/TimeLine.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -397,7 +398,7 @@ private:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time, const ViewIdx& view,
+    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time, ViewIdx view,
                                     bool originatedFromMainThread)  OVERRIDE FINAL;
 
     void save(ProjectSerialization* serializationObject) const;

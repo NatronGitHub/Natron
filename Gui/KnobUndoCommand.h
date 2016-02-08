@@ -44,6 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Curve.h"
 #include "Engine/Knob.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/KnobGui.h"
 #include "Gui/Gui.h"
@@ -145,8 +146,8 @@ private:
                     modifiedKeyFrame = true;
                 } else if (_valueChangedReturnCode[i] == 2) {
                     //the value change moved a keyframe
-                    _knob->removeKeyFrame(_newKeys[i].getTime(),dimension,ViewIdx(0));
-                    _knob->setKeyframe(_oldKeys[i].getTime(), dimension,ViewIdx(0));
+                    _knob->removeKeyFrame(_newKeys[i].getTime(),dimension, ViewIdx(0));
+                    _knob->setKeyframe(_oldKeys[i].getTime(), dimension, ViewIdx(0));
                     modifiedKeyFrame = true;
                 }
             }
@@ -159,7 +160,7 @@ private:
         }
         
         ///This will refresh all dimensions
-        _knob->onInternalValueChanged(ViewIdx::ALL_VIEWS,-1, eValueChangedReasonNatronGuiEdited);
+        _knob->onInternalValueChanged(ViewIdx::all(), -1, eValueChangedReasonNatronGuiEdited);
         
         knob->endChanges();
         if (modifiedKeyFrame) {
@@ -226,7 +227,7 @@ private:
         
         ///This will refresh all dimensions
         if (_firstRedoCalled || _refreshGuiFirstTime) {
-            _knob->onInternalValueChanged(ViewIdx::ALL_VIEWS, -1, eValueChangedReasonNatronGuiEdited);
+            _knob->onInternalValueChanged(ViewIdx::all(), -1, eValueChangedReasonNatronGuiEdited);
         }
 
         

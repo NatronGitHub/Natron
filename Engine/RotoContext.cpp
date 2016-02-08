@@ -63,6 +63,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewIdx.h"
 
 #define kMergeOFXParamOperation "operation"
 #define kBlurCImgParamSize "size"
@@ -703,7 +704,7 @@ RotoContext::isNearbyBezier(double x,
 }
 
 void
-RotoContext::onLifeTimeKnobValueChanged(const ViewIdx& view,int /*dim*/, int reason)
+RotoContext::onLifeTimeKnobValueChanged(ViewIdx view,int /*dim*/, int reason)
 {
     if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         return;
@@ -1175,18 +1176,18 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
                         (*it)->slaveTo(i, thisKnob, i);
                     }
                     
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewIdx,int,int,bool)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double, ViewIdx,int,int,bool)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewIdx,int,int)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double, ViewIdx,int,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
                     QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewIdx,int,double,double)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
                     QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(ViewIdx,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,ViewIdx,int)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double, ViewIdx,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
 
-                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,ViewIdx,int)),
+                    QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double, ViewIdx,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
 
                     break;
@@ -1342,18 +1343,18 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
                         (*it)->unSlave(i,isBezier ? !bezierDirty : !strokeDirty);
                     }
                     
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewIdx,int,int,bool)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double, ViewIdx,int,int,bool)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewIdx,int,int)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double, ViewIdx,int,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
                     QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewIdx,int,double,double)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
                     QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(ViewIdx,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,ViewIdx,int)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double, ViewIdx,int)),
                                      this, SLOT(onSelectedKnobCurveChanged()));
                     
-                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,ViewIdx,int)),
+                    QObject::disconnect((*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double, ViewIdx,int)),
                                         this, SLOT(onSelectedKnobCurveChanged()));
                     break;
                 }
@@ -1397,17 +1398,17 @@ RotoContext::resetTransformsCenter(bool doClone, bool doTransform)
     if (doTransform) {
         boost::shared_ptr<KnobDouble> centerKnob = _imp->centerKnob.lock();
         centerKnob->beginChanges();
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::ALL_VIEWS,0);
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::ALL_VIEWS,1);
-        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewIdx::ALL_VIEWS, eValueChangedReasonNatronInternalEdited);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::all(), 0);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::all(), 1);
+        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewIdx::all(), eValueChangedReasonNatronInternalEdited);
         centerKnob->endChanges();
     }
     if (doClone) {
         boost::shared_ptr<KnobDouble> centerKnob = _imp->cloneCenterKnob.lock();
         centerKnob->beginChanges();
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::ALL_VIEWS,0);
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::ALL_VIEWS,1);
-        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewIdx::ALL_VIEWS, eValueChangedReasonNatronInternalEdited);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::all(), 0);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::all(), 1);
+        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewIdx::all(), eValueChangedReasonNatronInternalEdited);
         centerKnob->endChanges();
     }
 }

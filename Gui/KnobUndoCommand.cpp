@@ -43,6 +43,8 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/TimeLine.h"
 #include "Engine/AppInstance.h"
 #include "Engine/KnobSerialization.h"
+#include "Engine/ViewIdx.h"
+
 #include "Gui/GuiApplicationManager.h"
 
 
@@ -198,7 +200,7 @@ PasteUndoCommand::copyFrom(const KnobPtr& serializedKnob, bool isRedo)
                     } else if (isDouble) {
                         assert(isFromDouble);
                         double f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromDouble->getValue(_imp->fromDimension) : isFromDouble->getValue(i);
-                        isDouble->setValue(f,ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
+                        isDouble->setValue(f, ViewIdx(0), i, eValueChangedReasonNatronInternalEdited, 0);
                     } else if (isString) {
                         assert(isFromString);
                         std::string f = (i == _imp->targetDimension && _imp->fromDimension != -1) ? isFromString->getValue(_imp->fromDimension) : isFromString->getValue(i);
@@ -690,7 +692,7 @@ SetExpressionCommand::undo()
         }
     }
     
-    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(),ViewIdx(0), eValueChangedReasonNatronGuiEdited);
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronGuiEdited);
     setText( QObject::tr("Set expression") );
 }
 
@@ -713,7 +715,7 @@ SetExpressionCommand::redo()
             Dialogs::errorDialog(QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString());
         }
     }
-    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(),ViewIdx(0), eValueChangedReasonNatronGuiEdited);
+    _knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, _knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronGuiEdited);
     setText( QObject::tr("Set expression") );
 }
 

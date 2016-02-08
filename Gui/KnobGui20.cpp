@@ -22,20 +22,23 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <QAction>
-#include "Gui/KnobGui.h"
-#include "Gui/KnobGuiPrivate.h"
-#include "Gui/GuiApplicationManager.h"
-
 #include <cassert>
 #include <stdexcept>
 
+#include <QAction>
+
+#include "Engine/ViewIdx.h"
+
+#include "Gui/KnobGui.h"
+#include "Gui/KnobGuiPrivate.h"
+#include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
+
 
 NATRON_NAMESPACE_ENTER;
 
 void
-KnobGui::onInternalValueChanged(const ViewIdx& /*view*/,
+KnobGui::onInternalValueChanged(ViewIdx /*view*/,
                                 int dimension,
                                 int reason)
 {
@@ -51,7 +54,7 @@ KnobGui::updateCurveEditorKeyframes()
 }
 
 void
-KnobGui::onMultipleKeySet(const std::list<double>& keys,const ViewIdx& /*view*/,int /*dimension*/, int reason)
+KnobGui::onMultipleKeySet(const std::list<double>& keys, ViewIdx /*view*/,int /*dimension*/, int reason)
 {
     
     if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
@@ -71,7 +74,7 @@ KnobGui::onMultipleKeySet(const std::list<double>& keys,const ViewIdx& /*view*/,
 
 void
 KnobGui::onInternalKeySet(double time,
-                          const ViewIdx& /*view*/,
+                          ViewIdx /*view*/,
                           int /*dimension*/,
                           int reason,
                           bool added )
@@ -91,7 +94,7 @@ KnobGui::onInternalKeySet(double time,
 
 void
 KnobGui::onInternalKeyRemoved(double time,
-                              const ViewIdx& /*view*/,
+                              ViewIdx /*view*/,
                               int /*dimension*/,
                               int /*reason*/)
 {
@@ -402,7 +405,7 @@ KnobGui::hasWidgetBeenCreated() const
 
 void
 KnobGui::onSetValueUsingUndoStack(const Variant & v,
-                                  const ViewIdx& /*view*/,
+                                  ViewIdx /*view*/,
                                   int dim)
 {
     KnobPtr knob = getKnob();
@@ -499,7 +502,7 @@ KnobGui::setKnobGuiPointer()
 }
 
 void
-KnobGui::onInternalAnimationAboutToBeRemoved(const ViewIdx& /*view*/,int dimension)
+KnobGui::onInternalAnimationAboutToBeRemoved(ViewIdx /*view*/,int dimension)
 {
     removeAllKeyframeMarkersOnTimeline(dimension);
 }
@@ -583,7 +586,7 @@ KnobGui::setKeyframeMarkerOnTimeline(double time)
 }
 
 void
-KnobGui::onKeyFrameMoved(const ViewIdx& /*view*/,
+KnobGui::onKeyFrameMoved(ViewIdx /*view*/,
                          int /*dimension*/,
                          double oldTime,
                          double newTime)
@@ -602,7 +605,7 @@ KnobGui::onKeyFrameMoved(const ViewIdx& /*view*/,
 }
 
 void
-KnobGui::onAnimationLevelChanged(const ViewIdx& /*idx*/, int dim,int level)
+KnobGui::onAnimationLevelChanged(ViewIdx /*idx*/, int dim,int level)
 {
     if (!_imp->customInteract) {
         //std::string expr = getKnob()->getExpression(dim);
@@ -617,7 +620,7 @@ KnobGui::onAnimationLevelChanged(const ViewIdx& /*idx*/, int dim,int level)
 void
 KnobGui::onAppendParamEditChanged(int reason,
                                   const Variant & v,
-                                  const ViewIdx& /*view*/,
+                                  ViewIdx /*view*/,
                                   int dim,
                                   double time,
                                   bool createNewCommand,
@@ -660,7 +663,7 @@ KnobGui::getCurve(int /*view*/,int dimension) const
 }
 
 void
-KnobGui::onRedrawGuiCurve(int reason, const ViewIdx& /*view*/, int /*dimension*/)
+KnobGui::onRedrawGuiCurve(int reason, ViewIdx /*view*/, int /*dimension*/)
 {
     CurveChangeReason curveChangeReason = (CurveChangeReason)reason;
     switch (curveChangeReason) {

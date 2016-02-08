@@ -37,6 +37,7 @@
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoContext.h" // Bezier
+#include "Engine/ViewIdx.h"
 
 #include "Gui/CurveWidget.h"
 #include "Gui/CurveWidgetPrivate.h"
@@ -305,7 +306,7 @@ CurveGui::drawCurve(int curveIndex,
             //we have no choice but to evaluate the expression at each time
             for (int i = x1; i < widgetWidth; ++i) {
                 double x = _curveWidget->toZoomCoordinates(i,0).x();;
-                double y = knob->getValueAtWithExpression(x,ViewIdx(0), isKnobCurve->getDimension());
+                double y = knob->getValueAtWithExpression(x, ViewIdx(0), isKnobCurve->getDimension());
                 exprVertices.push_back(x);
                 exprVertices.push_back(y);
             }
@@ -635,7 +636,7 @@ KnobCurveGui::evaluate(bool useExpr,double x) const
 {
     KnobPtr knob = getInternalKnob();
     if (useExpr) {
-        return knob->getValueAtWithExpression(x,ViewIdx(0),_dimension);
+        return knob->getValueAtWithExpression(x, ViewIdx(0),_dimension);
     } else {
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
         if (isParametric) {

@@ -78,6 +78,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 ///The flickering of edges/nodes in the nodegraph will be refreshed
@@ -3418,7 +3419,7 @@ Node::handleFormatKnob(KnobI* knob)
     assert(size && par);
     
     _imp->effect->beginChanges();
-    size->setValues(f.width(), f.height(),ViewIdx::ALL_VIEWS, Natron::eValueChangedReasonNatronInternalEdited);
+    size->setValues(f.width(), f.height(), ViewIdx::all(), Natron::eValueChangedReasonNatronInternalEdited);
     par->setValue(f.getPixelAspectRatio());
     _imp->effect->endChanges();
     return true;
@@ -6544,8 +6545,8 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
                 rightBound = seq.rbegin()->first;
             }
             originalFrameRange->beginChanges();
-            originalFrameRange->setValue(leftBound, ViewIdx::ALL_VIEWS, 0);
-            originalFrameRange->setValue(rightBound, ViewIdx::ALL_VIEWS, 1);
+            originalFrameRange->setValue(leftBound, ViewIdx::all(), 0);
+            originalFrameRange->setValue(rightBound, ViewIdx::all(), 1);
             originalFrameRange->endChanges();
             
         }
@@ -7579,7 +7580,7 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
             continue;
         }
         for (int j = 0; j < dim; ++j) {
-            if (knobs[i]->canAnimate() && knobs[i]->isAnimated(j,ViewIdx(0))) {
+            if (knobs[i]->canAnimate() && knobs[i]->isAnimated(j, ViewIdx(0))) {
                 KeyFrameSet kfs = knobs[i]->getCurve(ViewIdx(0),j)->getKeyFrames_mt_safe();
                 for (KeyFrameSet::iterator it = kfs.begin(); it != kfs.end(); ++it) {
                     keyframes->push_back( it->getTime() );

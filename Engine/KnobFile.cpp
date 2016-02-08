@@ -36,6 +36,9 @@
 #include "Engine/StringAnimationManager.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Project.h"
+#include "Engine/ViewIdx.h"
+#include "Engine/EngineFwd.h"
+
 #include <SequenceParsing.h>
 #include "Global/QtCompat.h"
 
@@ -86,7 +89,7 @@ KnobFile::getFileName(int time,int view) const
         return getValue(0, ViewIdx(view));
     } else {
         ///try to interpret the pattern and generate a filename if indexes are found
-        return SequenceParsing::generateFileNameFromPattern(getValue(0,ViewIdx(0)), time, view);
+        return SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), time, view);
     }
 }
 

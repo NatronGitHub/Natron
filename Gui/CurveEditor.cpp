@@ -50,6 +50,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/CurveGui.h"
@@ -748,8 +749,8 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
 {
     if (internalKnob) {
         boost::shared_ptr<KnobSignalSlotHandler> handler = internalKnob->getSignalSlotHandler();
-        QObject::connect( handler.get(),SIGNAL( keyFrameSet(double,ViewIdx,int,int,bool) ),this,SLOT( checkVisibleState() ) );
-        QObject::connect( handler.get(),SIGNAL( keyFrameRemoved(double,ViewIdx,int,int) ),this,SLOT( checkVisibleState() ) );
+        QObject::connect( handler.get(),SIGNAL( keyFrameSet(double, ViewIdx,int,int,bool) ),this,SLOT( checkVisibleState() ) );
+        QObject::connect( handler.get(),SIGNAL( keyFrameRemoved(double, ViewIdx,int,int) ),this,SLOT( checkVisibleState() ) );
         QObject::connect( handler.get(),SIGNAL( animationRemoved(ViewIdx,int) ),this,SLOT( checkVisibleState() ) );
     }
     if (curve) {

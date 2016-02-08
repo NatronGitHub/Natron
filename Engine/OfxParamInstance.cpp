@@ -40,9 +40,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <QDebug>
 
-
-#include "Engine/AppManager.h"
 #include "Global/GlobalDefines.h"
+#include "Engine/AppManager.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/KnobFile.h"
@@ -57,6 +56,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Project.h"
 #include "Engine/AppInstance.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -217,7 +217,7 @@ deleteKey(const KnobPtr& knob,
           OfxTime time)
 {
     for (int i = 0; i < knob->getDimension(); ++i) {
-        knob->deleteValueAtTime(eCurveChangeReasonInternal,time,ViewIdx::ALL_VIEWS, i);
+        knob->deleteValueAtTime(eCurveChangeReasonInternal,time, ViewIdx::all(), i);
     }
 
     return kOfxStatOK;
@@ -228,7 +228,7 @@ OfxStatus
 deleteAllKeys(const KnobPtr& knob)
 {
     for (int i = 0; i < knob->getDimension(); ++i) {
-        knob->removeAnimation(ViewIdx::ALL_VIEWS, i);
+        knob->removeAnimation(ViewIdx::all(), i);
     }
 
     return kOfxStatOK;
@@ -249,7 +249,7 @@ copyFrom(const KnobPtr & from,
         int dims = to->getDimension();
         double curTime = from->getCurrentTime();
         for (int i = 0; i < dims; ++i) {
-            to->evaluateValueChange(i, curTime,ViewIdx(0),  eValueChangedReasonPluginEdited);
+            to->evaluateValueChange(i, curTime, ViewIdx(0),  eValueChangedReasonPluginEdited);
         }
         to->endChanges();
     }
@@ -289,7 +289,7 @@ OfxParamToKnob::connectDynamicProperties()
 }
 
 void
-OfxParamToKnob::onKnobAnimationLevelChanged(const ViewIdx& /*view*/,int /*dim*/,int lvl)
+OfxParamToKnob::onKnobAnimationLevelChanged(ViewIdx /*view*/,int /*dim*/,int lvl)
 {
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
@@ -490,7 +490,7 @@ OfxStatus
 OfxIntegerInstance::set(int v)
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
-    knob->setValueFromPlugin(v,ViewIdx::CURRENT_VIEW, 0);
+    knob->setValueFromPlugin(v, ViewIdx::current(), 0);
     return kOfxStatOK;
 }
 
@@ -500,7 +500,7 @@ OfxIntegerInstance::set(OfxTime time,
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
     
-    knob->setValueAtTimeFromPlugin(time,ViewIdx::CURRENT_VIEW,v,0);
+    knob->setValueAtTimeFromPlugin(time, ViewIdx::current(), v, 0);
 
     return kOfxStatOK;
 }
@@ -693,7 +693,7 @@ OfxStatus
 OfxDoubleInstance::set(double v)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    knob->setValueFromPlugin(v,ViewIdx::CURRENT_VIEW, 0);
+    knob->setValueFromPlugin(v, ViewIdx::current(), 0);
 
     return kOfxStatOK;
 }
@@ -703,7 +703,7 @@ OfxDoubleInstance::set(OfxTime time,
                        double v)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    knob->setValueAtTimeFromPlugin(time,ViewIdx::CURRENT_VIEW,v,0);
+    knob->setValueAtTimeFromPlugin(time, ViewIdx::current(), v, 0);
 
     return kOfxStatOK;
 }
@@ -713,7 +713,7 @@ OfxDoubleInstance::derive(OfxTime time,
                           double & v)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    v = knob->getDerivativeAtTime(time, ViewIdx::CURRENT_VIEW);
+    v = knob->getDerivativeAtTime(time, ViewIdx::current());
 
     return kOfxStatOK;
 }
@@ -724,7 +724,7 @@ OfxDoubleInstance::integrate(OfxTime time1,
                              double & v)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    v = knob->getIntegrateFromTimeToTime(time1, time2,ViewIdx::CURRENT_VIEW);
+    v = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current());
 
     return kOfxStatOK;
 }
@@ -791,7 +791,7 @@ bool
 OfxDoubleInstance::isAnimated() const
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    return knob->isAnimated(0, ViewIdx::CURRENT_VIEW);
+    return knob->isAnimated(0, ViewIdx::current());
 }
 
 OfxStatus
@@ -879,7 +879,7 @@ OfxStatus
 OfxBooleanInstance::set(bool b)
 {
     boost::shared_ptr<KnobBool> knob = _knob.lock();
-    knob->setValueFromPlugin(b,ViewIdx::CURRENT_VIEW,0);
+    knob->setValueFromPlugin(b, ViewIdx::current(), 0);
 
     return kOfxStatOK;
 }
@@ -891,7 +891,7 @@ OfxBooleanInstance::set(OfxTime time,
 
     assert( KnobBool::canAnimateStatic() );
     boost::shared_ptr<KnobBool> knob = _knob.lock();
-    knob->setValueAtTimeFromPlugin(time, ViewIdx::CURRENT_VIEW,b, 0);
+    knob->setValueAtTimeFromPlugin(time, ViewIdx::current(), b, 0);
 
     return kOfxStatOK;
 }
@@ -1054,7 +1054,7 @@ OfxChoiceInstance::set(int v)
     }
     std::vector<std::string> entries = knob->getEntries_mt_safe();
     if ( (0 <= v) && ( v < (int)entries.size() ) ) {
-        knob->setValueFromPlugin(v,ViewIdx::CURRENT_VIEW,0);
+        knob->setValueFromPlugin(v, ViewIdx::current(), 0);
         return kOfxStatOK;
     } else {
         return kOfxStatErrBadIndex;
@@ -1071,7 +1071,7 @@ OfxChoiceInstance::set(OfxTime time,
     }
     std::vector<std::string> entries = knob->getEntries_mt_safe();
     if ( (0 <= v) && ( v < (int)entries.size() ) ) {
-        knob->setValueAtTimeFromPlugin(time, ViewIdx::CURRENT_VIEW, v, 0);
+        knob->setValueAtTimeFromPlugin(time, ViewIdx::current(), v, 0);
 
         return kOfxStatOK;
     } else {
@@ -1249,10 +1249,10 @@ OfxRGBAInstance::get(OfxTime time,
                      double & a)
 {
     boost::shared_ptr<KnobColor> color = _knob.lock();
-    r = color->getValueAtTime(time, 0, ViewIdx::CURRENT_VIEW);
-    g = color->getValueAtTime(time, 1, ViewIdx::CURRENT_VIEW);
-    b = color->getValueAtTime(time, 2, ViewIdx::CURRENT_VIEW);
-    a = color->getValueAtTime(time, 3, ViewIdx::CURRENT_VIEW);
+    r = color->getValueAtTime(time, 0, ViewIdx::current());
+    g = color->getValueAtTime(time, 1, ViewIdx::current());
+    b = color->getValueAtTime(time, 2, ViewIdx::current());
+    a = color->getValueAtTime(time, 3, ViewIdx::current());
 
     return kOfxStatOK;
 }
@@ -1264,7 +1264,7 @@ OfxRGBAInstance::set(double r,
                      double a)
 {
     boost::shared_ptr<KnobColor> color = _knob.lock();
-    color->setValues(r, g, b, a,ViewIdx::CURRENT_VIEW, eValueChangedReasonPluginEdited);
+    color->setValues(r, g, b, a, ViewIdx::current(), eValueChangedReasonPluginEdited);
 
     return kOfxStatOK;
 }
@@ -1277,7 +1277,7 @@ OfxRGBAInstance::set(OfxTime time,
                      double a)
 {
     boost::shared_ptr<KnobColor> color = _knob.lock();
-    color->setValuesAtTime(time, ViewIdx::CURRENT_VIEW, r, g, b, a, eValueChangedReasonPluginEdited);
+    color->setValuesAtTime(time, ViewIdx::current(), r, g, b, a, eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -1289,10 +1289,10 @@ OfxRGBAInstance::derive(OfxTime time,
                         double & a)
 {
     boost::shared_ptr<KnobColor> color = _knob.lock();
-    r = color->getDerivativeAtTime(time, ViewIdx::CURRENT_VIEW, 0);
-    g = color->getDerivativeAtTime(time, ViewIdx::CURRENT_VIEW, 1);
-    b = color->getDerivativeAtTime(time, ViewIdx::CURRENT_VIEW, 2);
-    a = color->getDerivativeAtTime(time, ViewIdx::CURRENT_VIEW, 3);
+    r = color->getDerivativeAtTime(time, ViewIdx::current(), 0);
+    g = color->getDerivativeAtTime(time, ViewIdx::current(), 1);
+    b = color->getDerivativeAtTime(time, ViewIdx::current(), 2);
+    a = color->getDerivativeAtTime(time, ViewIdx::current(), 3);
 
     return kOfxStatOK;
 }
@@ -1306,10 +1306,10 @@ OfxRGBAInstance::integrate(OfxTime time1,
                            double & a)
 {
     boost::shared_ptr<KnobColor> color = _knob.lock();
-    r = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::CURRENT_VIEW, 0);
-    g = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::CURRENT_VIEW, 1);
-    b = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::CURRENT_VIEW, 2);
-    a = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::CURRENT_VIEW, 3);
+    r = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), 0);
+    g = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), 1);
+    b = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), 2);
+    a = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), 3);
 
     return kOfxStatOK;
 }
@@ -1355,14 +1355,14 @@ bool
 OfxRGBAInstance::isAnimated(int dimension) const
 {
     boost::shared_ptr<KnobColor> color = _knob.lock();
-    return color->isAnimated(dimension, ViewIdx::CURRENT_VIEW);
+    return color->isAnimated(dimension, ViewIdx::current());
 }
 
 bool
 OfxRGBAInstance::isAnimated() const
 {
     boost::shared_ptr<KnobColor> color = _knob.lock();
-    return color->isAnimated(0, ViewIdx::CURRENT_VIEW) || color->isAnimated(1,ViewIdx::CURRENT_VIEW) || color->isAnimated(2, ViewIdx::CURRENT_VIEW) || color->isAnimated(3, ViewIdx::CURRENT_VIEW);
+    return color->isAnimated(0, ViewIdx::current()) || color->isAnimated(1, ViewIdx::current()) || color->isAnimated(2, ViewIdx::current()) || color->isAnimated(3, ViewIdx::current());
 }
 
 OfxStatus
@@ -1483,7 +1483,7 @@ OfxRGBInstance::set(double r,
                     double b)
 {
     boost::shared_ptr<KnobColor> color = _knob.lock();
-    color->setValues(r, g, b, ViewIdx::CURRENT_VIEW,  eValueChangedReasonPluginEdited);
+    color->setValues(r, g, b, ViewIdx::current(),  eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -1494,7 +1494,7 @@ OfxRGBInstance::set(OfxTime time,
                     double b)
 {
     boost::shared_ptr<KnobColor> color = _knob.lock();
-    color->setValuesAtTime(time, ViewIdx::CURRENT_VIEW , r, g, b, eValueChangedReasonPluginEdited);
+    color->setValuesAtTime(time, ViewIdx::current() , r, g, b, eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -1505,9 +1505,9 @@ OfxRGBInstance::derive(OfxTime time,
                        double & b)
 {
     boost::shared_ptr<KnobColor> color = _knob.lock();
-    r = color->getDerivativeAtTime(time, ViewIdx::CURRENT_VIEW, 0);
-    g = color->getDerivativeAtTime(time, ViewIdx::CURRENT_VIEW, 1);
-    b = color->getDerivativeAtTime(time, ViewIdx::CURRENT_VIEW, 2);
+    r = color->getDerivativeAtTime(time, ViewIdx::current(), 0);
+    g = color->getDerivativeAtTime(time, ViewIdx::current(), 1);
+    b = color->getDerivativeAtTime(time, ViewIdx::current(), 2);
 
     return kOfxStatOK;
 }
@@ -1520,9 +1520,9 @@ OfxRGBInstance::integrate(OfxTime time1,
                           double & b)
 {
     boost::shared_ptr<KnobColor> color = _knob.lock();
-    r = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::CURRENT_VIEW, 0);
-    g = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::CURRENT_VIEW, 1);
-    b = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::CURRENT_VIEW, 2);
+    r = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), 0);
+    g = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), 1);
+    b = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), 2);
 
     return kOfxStatOK;
 }
@@ -1567,14 +1567,14 @@ bool
 OfxRGBInstance::isAnimated(int dimension) const
 {
     boost::shared_ptr<KnobColor> color = _knob.lock();
-    return color->isAnimated(dimension, ViewIdx::CURRENT_VIEW);
+    return color->isAnimated(dimension, ViewIdx::current());
 }
 
 bool
 OfxRGBInstance::isAnimated() const
 {
     boost::shared_ptr<KnobColor> color = _knob.lock();
-    return color->isAnimated(0,ViewIdx::CURRENT_VIEW) || color->isAnimated(1,ViewIdx::CURRENT_VIEW) || color->isAnimated(2,ViewIdx::CURRENT_VIEW);
+    return color->isAnimated(0, ViewIdx::current()) || color->isAnimated(1, ViewIdx::current()) || color->isAnimated(2, ViewIdx::current());
 }
 
 OfxStatus
@@ -1732,7 +1732,7 @@ OfxDouble2DInstance::set(double x1,
                          double x2)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    knob->setValues(x1, x2, ViewIdx::CURRENT_VIEW, eValueChangedReasonPluginEdited);
+    knob->setValues(x1, x2, ViewIdx::current(), eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -1742,7 +1742,7 @@ OfxDouble2DInstance::set(OfxTime time,
                          double x2)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    knob->setValuesAtTime(time, ViewIdx::CURRENT_VIEW, x1, x2, eValueChangedReasonPluginEdited);
+    knob->setValuesAtTime(time, ViewIdx::current(), x1, x2, eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -1752,8 +1752,8 @@ OfxDouble2DInstance::derive(OfxTime time,
                             double & x2)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    x1 = knob->getDerivativeAtTime(time,ViewIdx::CURRENT_VIEW, 0);
-    x2 = knob->getDerivativeAtTime(time,ViewIdx::CURRENT_VIEW, 1);
+    x1 = knob->getDerivativeAtTime(time, ViewIdx::current(), 0);
+    x2 = knob->getDerivativeAtTime(time, ViewIdx::current(), 1);
 
     return kOfxStatOK;
 }
@@ -1765,8 +1765,8 @@ OfxDouble2DInstance::integrate(OfxTime time1,
                                double & x2)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    x1 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::CURRENT_VIEW, 0);
-    x2 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::CURRENT_VIEW, 1);
+    x1 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), 0);
+    x2 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), 1);
 
     return kOfxStatOK;
 }
@@ -1842,14 +1842,14 @@ bool
 OfxDouble2DInstance::isAnimated(int dimension) const
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    return knob->isAnimated(dimension,ViewIdx::CURRENT_VIEW);
+    return knob->isAnimated(dimension, ViewIdx::current());
 }
 
 bool
 OfxDouble2DInstance::isAnimated() const
 {
     boost::shared_ptr<KnobDouble> dblKnob = _knob.lock();
-    return dblKnob->isAnimated(0, ViewIdx::CURRENT_VIEW) || dblKnob->isAnimated(1, ViewIdx::CURRENT_VIEW);
+    return dblKnob->isAnimated(0, ViewIdx::current()) || dblKnob->isAnimated(1, ViewIdx::current());
 }
 
 OfxStatus
@@ -1964,7 +1964,7 @@ OfxInteger2DInstance::set(int x1,
                           int x2)
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
-    knob->setValues(x1, x2 , ViewIdx::CURRENT_VIEW, eValueChangedReasonPluginEdited);
+    knob->setValues(x1, x2 , ViewIdx::current(), eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -1974,7 +1974,7 @@ OfxInteger2DInstance::set(OfxTime time,
                           int x2)
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
-    knob->setValuesAtTime(time, ViewIdx::CURRENT_VIEW, x1, x2, eValueChangedReasonPluginEdited);
+    knob->setValuesAtTime(time, ViewIdx::current(), x1, x2, eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -2173,7 +2173,7 @@ OfxDouble3DInstance::set(double x1,
 {
     
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    knob->setValues(x1, x2 , x3,ViewIdx::CURRENT_VIEW, eValueChangedReasonPluginEdited);
+    knob->setValues(x1, x2 , x3, ViewIdx::current(), eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -2184,7 +2184,7 @@ OfxDouble3DInstance::set(OfxTime time,
                          double x3)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    knob->setValuesAtTime(time, ViewIdx::CURRENT_VIEW, x1, x2 , x3, eValueChangedReasonPluginEdited);
+    knob->setValuesAtTime(time, ViewIdx::current(), x1, x2 , x3, eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -2195,9 +2195,9 @@ OfxDouble3DInstance::derive(OfxTime time,
                             double & x3)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    x1 = knob->getDerivativeAtTime(time, ViewIdx::CURRENT_VIEW, 0);
-    x2 = knob->getDerivativeAtTime(time, ViewIdx::CURRENT_VIEW, 1);
-    x3 = knob->getDerivativeAtTime(time, ViewIdx::CURRENT_VIEW, 2);
+    x1 = knob->getDerivativeAtTime(time, ViewIdx::current(), 0);
+    x2 = knob->getDerivativeAtTime(time, ViewIdx::current(), 1);
+    x3 = knob->getDerivativeAtTime(time, ViewIdx::current(), 2);
 
     return kOfxStatOK;
 }
@@ -2210,9 +2210,9 @@ OfxDouble3DInstance::integrate(OfxTime time1,
                                double & x3)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    x1 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::CURRENT_VIEW, 0);
-    x2 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::CURRENT_VIEW, 1);
-    x3 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::CURRENT_VIEW, 2);
+    x1 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), 0);
+    x2 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), 1);
+    x3 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), 2);
 
     return kOfxStatOK;
 }
@@ -2292,14 +2292,14 @@ bool
 OfxDouble3DInstance::isAnimated(int dimension) const
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    return knob->isAnimated(dimension, ViewIdx::CURRENT_VIEW);
+    return knob->isAnimated(dimension, ViewIdx::current());
 }
 
 bool
 OfxDouble3DInstance::isAnimated() const
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    return knob->isAnimated(0,ViewIdx::CURRENT_VIEW) || knob->isAnimated(1,ViewIdx::CURRENT_VIEW) || knob->isAnimated(2,ViewIdx::CURRENT_VIEW);
+    return knob->isAnimated(0, ViewIdx::current()) || knob->isAnimated(1, ViewIdx::current()) || knob->isAnimated(2, ViewIdx::current());
 }
 
 OfxStatus
@@ -2422,7 +2422,7 @@ OfxInteger3DInstance::set(int x1,
                           int x3)
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
-    knob->setValues(x1, x2 , x3, ViewIdx::CURRENT_VIEW, eValueChangedReasonPluginEdited);
+    knob->setValues(x1, x2 , x3, ViewIdx::current(), eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -2433,7 +2433,7 @@ OfxInteger3DInstance::set(OfxTime time,
                           int x3)
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
-    knob->setValuesAtTime(time, ViewIdx::CURRENT_VIEW, x1, x2 , x3, eValueChangedReasonPluginEdited);
+    knob->setValuesAtTime(time, ViewIdx::current(), x1, x2 , x3, eValueChangedReasonPluginEdited);
     return kOfxStatOK;
 }
 
@@ -2832,20 +2832,20 @@ OfxStringInstance::set(const char* str)
     if (fileKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        fileKnob->setValueFromPlugin(s,ViewIdx::CURRENT_VIEW, 0);
+        fileKnob->setValueFromPlugin(s, ViewIdx::current(), 0);
     }
     if (outputFileKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        outputFileKnob->setValueFromPlugin(s,ViewIdx::CURRENT_VIEW,0);
+        outputFileKnob->setValueFromPlugin(s, ViewIdx::current(), 0);
     }
     if (strknob) {
-        strknob->setValueFromPlugin(str,ViewIdx::CURRENT_VIEW,0);
+        strknob->setValueFromPlugin(str, ViewIdx::current(), 0);
     }
     if (pathKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        pathKnob->setValueFromPlugin(s,ViewIdx::CURRENT_VIEW,0);
+        pathKnob->setValueFromPlugin(s, ViewIdx::current(), 0);
     }
 
     return kOfxStatOK;
@@ -2867,20 +2867,20 @@ OfxStringInstance::set(OfxTime time,
     if (fileKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        fileKnob->setValueAtTimeFromPlugin(time,ViewIdx::CURRENT_VIEW,s,0);
+        fileKnob->setValueAtTimeFromPlugin(time, ViewIdx::current(), s, 0);
     }
     if (outputFileKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        outputFileKnob->setValueAtTimeFromPlugin(time,ViewIdx::CURRENT_VIEW,s,0);
+        outputFileKnob->setValueAtTimeFromPlugin(time, ViewIdx::current(), s, 0);
     }
     if (strknob) {
-        strknob->setValueAtTimeFromPlugin(time,ViewIdx::CURRENT_VIEW,str,0 );
+        strknob->setValueAtTimeFromPlugin(time, ViewIdx::current(), str, 0);
     }
     if (pathKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
-        pathKnob->setValueAtTimeFromPlugin(time,ViewIdx::CURRENT_VIEW,s,0);
+        pathKnob->setValueAtTimeFromPlugin(time, ViewIdx::current(), s, 0);
     }
 
     return kOfxStatOK;
@@ -3185,7 +3185,7 @@ OfxStatus
 OfxCustomInstance::set(const char* str)
 {
     boost::shared_ptr<KnobString> knob = _imp->knob.lock();
-    knob->setValueFromPlugin(str, ViewIdx::CURRENT_VIEW,0);
+    knob->setValueFromPlugin(str, ViewIdx::current(), 0);
 
     return kOfxStatOK;
 }
@@ -3197,7 +3197,7 @@ OfxCustomInstance::set(OfxTime time,
 
     assert( KnobString::canAnimateStatic() );
     boost::shared_ptr<KnobString> knob = _imp->knob.lock();
-    knob->setValueAtTimeFromPlugin(time,ViewIdx::CURRENT_VIEW,str,0);
+    knob->setValueAtTimeFromPlugin(time, ViewIdx::current(), str, 0);
 
     return kOfxStatOK;
 }

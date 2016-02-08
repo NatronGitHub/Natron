@@ -39,6 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Button.h"
@@ -421,8 +422,8 @@ TrackerGui::penDown(double time,
         assert(dblKnob);
         dblKnob->beginChanges();
         dblKnob->blockValueChanges();
-        dblKnob->setValueAtTime(time,ViewIdx::ALL_VIEWS, pos.x(), 0);
-        dblKnob->setValueAtTime(time,ViewIdx::ALL_VIEWS, pos.y(), 1);
+        dblKnob->setValueAtTime(time, ViewIdx::all(), pos.x(), 0);
+        dblKnob->setValueAtTime(time, ViewIdx::all(), pos.y(), 1);
         dblKnob->unblockValueChanges();
         dblKnob->endChanges();
         didSomething = true;

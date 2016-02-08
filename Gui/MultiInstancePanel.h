@@ -39,6 +39,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Knob.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/GuiFwd.h"
@@ -123,7 +124,7 @@ public Q_SLOTS:
 
     void onDeleteKeyPressed();
 
-    void onInstanceKnobValueChanged(const ViewIdx& view,int dim,int reason);
+    void onInstanceKnobValueChanged(ViewIdx view,int dim,int reason);
 
     void resetSelectedInstances();
 
@@ -160,7 +161,7 @@ private:
 
     virtual void evaluate(KnobI* knob,bool isSignificant,ValueChangedReasonEnum reason) OVERRIDE;
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time, const ViewIdx& view,
+    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time, ViewIdx view,
                                     bool originatedFromMainThread) OVERRIDE;
     boost::scoped_ptr<MultiInstancePanelPrivate> _imp;
 };
