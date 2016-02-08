@@ -47,6 +47,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/FitCurve.h"
 #include "Engine/CacheEntryHolder.h"
 #include "Engine/RotoItem.h"
+#include "Engine/Knob.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
