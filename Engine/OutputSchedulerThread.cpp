@@ -2507,7 +2507,7 @@ private:
                 ParallelRenderArgsSetter frameRenderArgs(time,
                                                          viewsToRender[view],
                                                          false,  // is this render due to user interaction ?
-                                                         sequentiallity == eSequentialPreferenceOnlySequential || sequentiallity == eSequentialPreferencePreferSequential, // is this sequential ?
+                                                         true,
                                                          true, // canAbort ?
                                                          0, //renderAge
                                                          outputNode, // viewer requester
@@ -2608,8 +2608,6 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     
     const double par = effect->getPreferredAspectRatio();
     
-    SequentialPreferenceEnum sequentiallity = effect->getSequentialPreference();
-    bool canOnlyHandleOneView = sequentiallity == eSequentialPreferenceOnlySequential || sequentiallity == eSequentialPreferencePreferSequential;
     
     for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
         ignore_result(effect->getRegionOfDefinition_public(hash,it->time, scale, it->view, &rod, &isProjectFormat));
@@ -2618,7 +2616,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         ParallelRenderArgsSetter frameRenderArgs(it->time,
                                                  it->view,
                                                  false,  // is this render due to user interaction ?
-                                                 canOnlyHandleOneView, // is this sequential ?
+                                                 true, // is this sequential ?
                                                  true, //canAbort
                                                  0, //renderAge
                                                  effect->getNode(), //tree root

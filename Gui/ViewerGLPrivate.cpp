@@ -513,6 +513,8 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _this->context() );
+    
+    const QGLContext* context = _this->context();
     GLenum err = glewInit();
     if (GLEW_OK != err) {
         /* Problem: glewInit failed, something is seriously wrong. */
@@ -538,7 +540,7 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
     this->viewerTab->getGui()->setOpenGLVersion( getOpenGLVersionString() );
     this->viewerTab->getGui()->setGlewVersion( getGlewVersionString() );
 
-    if ( !QGLShaderProgram::hasOpenGLShaderPrograms( _this->context() ) ) {
+    if (!context || !QGLShaderProgram::hasOpenGLShaderPrograms(context)) {
         // no need to pull out a dialog, it was already presented after the GLEW check above
 
         //Dialogs::errorDialog("Viewer error","The viewer is unabgile to work without a proper version of GLSL.");

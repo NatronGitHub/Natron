@@ -5238,7 +5238,9 @@ Node::getKnobByName(const std::string & name) const
 {
     ///MT-safe, never changes
     assert(_imp->knobsInitialized);
-    
+    if (!_imp->effect) {
+        return KnobPtr();
+    }
     return _imp->effect->getKnobByName(name);
 }
 
