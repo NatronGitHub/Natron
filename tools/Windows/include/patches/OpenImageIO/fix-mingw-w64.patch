@@ -73,35 +73,6 @@
  
  #include "strutil.h"
  #include "sysutil.h"
---- a/src/libutil/filesystem.cpp
-+++ b/src/libutil/filesystem.cpp
-@@ -288,7 +288,7 @@
- FILE*
- Filesystem::fopen (const std::string &path, const std::string &mode)
- {
--#ifdef _WIN32
-+#if defined(_WIN32) && !defined(__GNUC__)
-     // on Windows fopen does not accept UTF-8 paths, so we convert to wide char
-     std::wstring wpath = Strutil::utf8_to_utf16 (path);
-     std::wstring wmode = Strutil::utf8_to_utf16 (mode);
-@@ -307,7 +307,7 @@
-                   const std::string &path,
-                   std::ios_base::openmode mode)
- {
--#ifdef _WIN32
-+#if defined(_WIN32) && !defined(__GNUC__)
-     // Windows std::ifstream accepts non-standard wchar_t* 
-     std::wstring wpath = Strutil::utf8_to_utf16(path);
-     stream.open (wpath.c_str(), mode);
-@@ -324,7 +324,7 @@
-                   const std::string &path,
-                   std::ios_base::openmode mode)
- {
--#ifdef _WIN32
-+#if defined(_WIN32) && !defined(__GNUC__)
-     // Windows std::ofstream accepts non-standard wchar_t*
-     std::wstring wpath = Strutil::utf8_to_utf16 (path);
-     stream.open (wpath.c_str(), mode);
 --- a/src/libutil/plugin.cpp
 +++ b/src/libutil/plugin.cpp
 @@ -93,7 +93,7 @@ dlclose (Handle plugin_handle)
