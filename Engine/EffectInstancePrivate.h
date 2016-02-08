@@ -102,9 +102,9 @@ public:
 
     void invalidateAll(U64 newHash);
 
-    bool getIdentityResult(U64 hash, double time, int view, unsigned int mipMapLevel, int* inputNbIdentity, double* identityTime);
+    bool getIdentityResult(U64 hash, double time, int view, int* inputNbIdentity, double* identityTime);
 
-    void setIdentityResult(U64 hash, double time, int view, unsigned int mipMapLevel, int inputNbIdentity, double identityTime);
+    void setIdentityResult(U64 hash, double time, int view, int inputNbIdentity, double identityTime);
 
     bool getRoDResult(U64 hash, double time, int view, unsigned int mipMapLevel, RectD* rod);
 

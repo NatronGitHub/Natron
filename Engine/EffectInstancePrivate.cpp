@@ -108,7 +108,6 @@ bool
 ActionsCache::getIdentityResult(U64 hash,
                                 double time,
                                 int view,
-                                unsigned int mipMapLevel,
                                 int* inputNbIdentity,
                                 double* identityTime)
 {
@@ -119,7 +118,7 @@ ActionsCache::getIdentityResult(U64 hash,
             ActionKey key;
             key.time = time;
             key.view = view;
-            key.mipMapLevel = mipMapLevel;
+            key.mipMapLevel = 0;
 
             IdentityCacheMap::const_iterator found = it->_identityCache.find(key);
             if ( found != it->_identityCache.end() ) {
@@ -141,7 +140,6 @@ void
 ActionsCache::setIdentityResult(U64 hash,
                                 double time,
                                 int view,
-                                unsigned int mipMapLevel,
                                 int inputNbIdentity,
                                 double identityTime)
 {
@@ -151,7 +149,7 @@ ActionsCache::setIdentityResult(U64 hash,
 
     key.time = time;
     key.view = view;
-    key.mipMapLevel = mipMapLevel;
+    key.mipMapLevel = 0;
 
     IdentityResults & v = cache._identityCache[key];
     v.inputIdentityNb = inputNbIdentity;
