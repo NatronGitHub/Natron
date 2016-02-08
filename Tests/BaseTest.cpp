@@ -232,8 +232,8 @@ TEST_F(BaseTest,GenerateDot)
     ASSERT_TRUE(frameRange);
     KnobInt* knob = dynamic_cast<KnobInt*>(frameRange.get());
     ASSERT_TRUE(knob);
-    knob->setValue(1, 0);
-    knob->setValue(1, 1);
+    knob->setValue(1, ViewIdx::ALL_VIEWS, 0);
+    knob->setValue(1, ViewIdx::ALL_VIEWS, 1);
     
     const QString& binPath = appPTR->getApplicationBinaryPath();
     QString filePath = binPath + "/test_dot_generator.jpg";
@@ -264,14 +264,14 @@ TEST_F(BaseTest,SetValues)
     KnobPtr knob = generator->getKnobByName("radius");
     KnobDouble* radius = dynamic_cast<KnobDouble*>(knob.get());
     assert(radius);
-    radius->setValue(100, 0);
+    radius->setValue(100);
     EXPECT_TRUE(radius->getValue() == 100);
     
     //Check that linear interpolation is working as intended
     KeyFrame kf;
-    radius->setInterpolationAtTime(eCurveChangeReasonInternal,0, 0, eKeyframeTypeLinear, &kf);
-    radius->setValueAtTime(0, 0, 0);
-    radius->setValueAtTime(100, 100, 0);
+    radius->setInterpolationAtTime(eCurveChangeReasonInternal,ViewIdx::ALL_VIEWS,  0, 0, eKeyframeTypeLinear, &kf);
+    radius->setValueAtTime(0, ViewIdx::ALL_VIEWS,  0, 0);
+    radius->setValueAtTime(100, ViewIdx::ALL_VIEWS,  100, 0);
     for (int i = 0; i <= 100; ++i) {
         double v = radius->getValueAtTime(i) ;
         EXPECT_TRUE(std::abs(v - i) < 1e-6);
