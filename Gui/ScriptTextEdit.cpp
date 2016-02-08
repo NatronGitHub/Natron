@@ -42,6 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EffectInstance.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/KnobWidgetDnD.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -300,9 +301,10 @@ PySyntaxHighlighterPrivate::reload()
 
 }
 
-InputScriptTextEdit::InputScriptTextEdit(QWidget* parent)
+InputScriptTextEdit::InputScriptTextEdit(Gui* gui, QWidget* parent)
 : QPlainTextEdit(parent)
 , _lineNumber(new LineNumberWidget(this))
+, _gui(gui)
 {
     QObject::connect(this, SIGNAL(blockCountChanged(int)), this, SLOT(updateLineNumberAreaWidth(int)));
     QObject::connect(this, SIGNAL(updateRequest(QRect,int)), this, SLOT(updateLineNumberArea(QRect,int)));
@@ -439,7 +441,7 @@ InputScriptTextEdit::dragEnterEvent(QDragEnterEvent* e)
 {
     
     QStringList formats = e->mimeData()->formats();
-    if ( formats.contains("Animation") ) {
+    if ( formats.contains(KNOB_DND_MIME_DATA_KEY) ) {
         setCursor(Qt::DragCopyCursor);
         e->acceptProposedAction();
     }
@@ -453,7 +455,7 @@ InputScriptTextEdit::dragMoveEvent(QDragMoveEvent* e)
     }
     QStringList formats = e->mimeData()->formats();
     
-    if ( formats.contains("Animation") ) {
+    if ( formats.contains(KNOB_DND_MIME_DATA_KEY) ) {
         e->acceptProposedAction();
     }
 }
@@ -466,11 +468,11 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
         return;
     }
     QStringList formats = e->mimeData()->formats();
-    if ( formats.contains("Animation") ) {
+    if ( formats.contains(KNOB_DND_MIME_DATA_KEY) ) {
         int cbDim;
-        KnobClipBoardType type;
         KnobPtr fromKnob;
-        appPTR->getKnobClipBoard(&type, &fromKnob, &cbDim);
+        QDrag* drag;
+        _gui->getApp()->getKnobDnDData(&drag, &fromKnob, &cbDim);
         
         if (fromKnob) {
             EffectInstance* isEffect = dynamic_cast<EffectInstance*>(fromKnob->getHolder());
@@ -485,7 +487,7 @@ InputScriptTextEdit::dropEvent(QDropEvent* e)
                 toAppend.append(".get()");
                 if (fromKnob->getDimension() > 1) {
                     toAppend.append("[");
-                    if (cbDim == -1) {
+                    if (cbDim == -1 || (cbDim == 0 && !fromKnob->getAllDimensionVisible())) {
                         toAppend.append("dimension");
                     } else {
                         toAppend.append(QString::number(cbDim));

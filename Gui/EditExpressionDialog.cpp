@@ -95,8 +95,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 NATRON_NAMESPACE_ENTER;
 
-EditExpressionDialog::EditExpressionDialog(int dimension,KnobGui* knob,QWidget* parent)
-: EditScriptDialog(parent)
+EditExpressionDialog::EditExpressionDialog(Gui* gui, int dimension,KnobGui* knob,QWidget* parent)
+: EditScriptDialog(gui, parent)
 , _dimension(dimension)
 , _knob(knob)
 {

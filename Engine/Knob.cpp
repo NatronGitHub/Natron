@@ -499,6 +499,15 @@ KnobHelper::getKnobGuiPointer() const
 }
 
 bool
+KnobHelper::getAllDimensionVisible() const
+{
+    if (getKnobGuiPointer()) {
+        return getKnobGuiPointer()->getAllDimensionsVisible();
+    }
+    return true;
+}
+
+bool
 KnobHelper::isDeclaredByPlugin() const
 {
     return _imp->declaredByPlugin;

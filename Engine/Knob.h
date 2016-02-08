@@ -400,6 +400,7 @@ public:
     virtual void populate() = 0;
     virtual void setKnobGuiPointer(KnobGuiI* ptr) = 0;
     virtual KnobGuiI* getKnobGuiPointer() const = 0;
+    virtual bool getAllDimensionVisible() const = 0;
 
     /**
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
@@ -1182,6 +1183,8 @@ public:
     
     virtual void setKnobGuiPointer(KnobGuiI* ptr) OVERRIDE FINAL;
     virtual KnobGuiI* getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
+    virtual bool getAllDimensionVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)
      **/
