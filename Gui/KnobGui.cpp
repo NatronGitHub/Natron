@@ -307,6 +307,10 @@ KnobGui::createInterpolationMenu(QMenu* menu, int dimension, bool isEnabled)
 void
 KnobGui::createAnimationMenu(QMenu* menu,int dimension)
 {
+ 
+    if (dimension == 0 && !getAllDimensionsVisible()) {
+        dimension = -1;
+    }
     
     KnobPtr knob = getKnob();
     assert(dimension >= -1 && dimension < knob->getDimension());
