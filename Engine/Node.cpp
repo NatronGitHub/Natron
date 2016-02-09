@@ -7962,9 +7962,11 @@ Node::dequeueActions()
 
     {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        assert(_imp->nodeIsDequeuing);
-        _imp->nodeIsDequeuing = false;
-        _imp->nodeIsDequeuingCond.wakeOne();
+        //Another slots in this thread might have aborted the dequeuing
+        if (_imp->nodeIsDequeuing) {
+            _imp->nodeIsDequeuing = false;
+            _imp->nodeIsDequeuingCond.wakeOne();
+        }
     }
 }
 
