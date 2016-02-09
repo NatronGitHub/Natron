@@ -1,0 +1,1168 @@
+diff --git a/src/include/OpenImageIO/filesystem.h b/src/include/OpenImageIO/filesystem.h
+index 4f2f738..392273a 100644
+--- a/src/include/OpenImageIO/filesystem.h
++++ b/src/include/OpenImageIO/filesystem.h
+@@ -197,14 +197,38 @@ OIIO_API FILE *fopen (string_view path, string_view mode);
+ OIIO_API std::string current_path ();
+ 
+ /// Version of std::ifstream.open that can handle UTF-8 paths
++/// Open the file for reading with the given mode and set the stream
++/// accordingly. Upon failure, stream is set to NULL.
++/// Caller is responsible for calling delete on the returned stream
++/// when done.
++/// Usage:
++/// std::ifstream* stream;
++/// Filesystem::open(&stream, path);
++/// if (stream) ...
++/// delete stream;
+ ///
+-OIIO_API void open (std::ifstream &stream, string_view path,
+-                    std::ios_base::openmode mode = std::ios_base::in);
++/// To avoid memory leaks, the returned stream should be enclosed
++/// as soon as possible in a RAII style structure, such as a smart ptr.
++///
++OIIO_API void open(std::istream** stream, string_view path,
++                            std::ios_base::openmode mode  = std::ios_base::in);
+ 
+ /// Version of std::ofstream.open that can handle UTF-8 paths
++/// Open the file for reading with the given mode and set the stream
++/// accordingly. Upon failure, stream is set to NULL.
++/// Caller is responsible for calling delete on the returned stream
++/// when done.
++/// Usage:
++/// std::ofstream* stream;
++/// Filesystem::open(&stream, path);
++/// if (stream) ...
++/// delete stream;
++///
++/// To avoid memory leaks, the returned stream should be enclosed
++/// as soon as possible in a RAII style structure, such as a smart ptr.
+ ///
+-OIIO_API void open (std::ofstream &stream, string_view path,
+-                    std::ios_base::openmode mode = std::ios_base::out);
++OIIO_API void open(std::ostream** stream, string_view path,
++                            std::ios_base::openmode mode  = std::ios_base::out);
+ 
+ /// Read the entire contents of the named text file and place it in str,
+ /// returning true on success, false on failure.
+diff --git a/src/libutil/filesystem.cpp b/src/libutil/filesystem.cpp
+index 7fb4759..ba0e810 100644
+--- a/src/libutil/filesystem.cpp
++++ b/src/libutil/filesystem.cpp
+@@ -39,6 +39,7 @@
+ #include <boost/filesystem.hpp>
+ #include <boost/foreach.hpp>
+ #include <boost/regex.hpp>
++#include <boost/shared_ptr.hpp>
+ 
+ #include "OpenImageIO/dassert.h"
+ #include "OpenImageIO/ustring.h"
+@@ -48,6 +49,11 @@
+ #include <windows.h>
+ #include <shellapi.h>
+ #include <direct.h>
++#include <fcntl.h>
++#include <sys/stat.h>
++#ifdef __GLIBCXX__
++#include <ext/stdio_filebuf.h> // __gnu_cxx::stdio_filebuf
++#endif
+ #else
+ #include <unistd.h>
+ #endif
+@@ -484,35 +490,168 @@ Filesystem::fopen (string_view path, string_view mode)
+ #endif
+ }
+ 
++#if defined(_WIN32) && defined(__GLIBCXX__)
++// MingW uses GCC to build, but does not support having a wchar_t* passed as argument
++// of ifstream::open or ofstream::open. To properly support UTF-8 encoding on MingW we must
++// use the __gnu_cxx::stdio_filebuf GNU extension that can be used with _wfsopen and returned
++// into a istream which share the same API as ifsteam. The same reasoning holds for ofstream.
+ 
+-
+-void
+-Filesystem::open (std::ifstream &stream, string_view path,
++static int
++ios_open_mode_to_oflag(std::ios_base::openmode mode)
++{
++    int f = 0;
++    if ((mode & std::ios_base::in) == std::ios_base::in) {
++        f |= _O_RDONLY;
++    }
++    if ((mode & std::ios_base::out) == std::ios_base::out) {
++        f |= _O_WRONLY;
++    }
++    if ((mode & std::ios_base::binary) == std::ios_base::binary) {
++        f |= _O_BINARY;
++    } else {
++        f |= _O_TEXT;
++    }
++    if (((mode & std::ios_base::ate) == std::ios_base::ate) || ((mode & std::ios_base::app) == std::ios_base::app)) {
++        f |= _O_APPEND;
++    }
++    if (mode & std::ios_base::trunc) {
++        f |= _O_TRUNC;
++    }
++}
++    
++static std::istream*
++open_ifstream_impl(string_view path,
++                   std::ios_base::openmode mode)
++{
++    std::wstring wpath = Strutil::utf8_to_utf16(path);
++    int fd;
++    int oflag = ios_open_mode_to_oflag(mode);
++    errno_t errcode = _wsopen_s(&fd, wpath.c_str(), oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE);
++    if (errcode != 0) {
++        return 0;
++    }
++    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, mode, 1);
++    if (!buffer) {
++        return 0;
++    }
++    return new std::istream(buffer);
++}
++    
++static std::ostream*
++open_ofstream_impl(string_view path,
++                   std::ios_base::openmode mode)
++{
++    
++    std::wstring wpath = Strutil::utf8_to_utf16(path);
++    int fd;
++    int oflag = ios_open_mode_to_oflag(mode);
++    errno_t errcode = _wsopen_s(&fd, wpath.c_str(), oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE);
++    if (errcode != 0) {
++        return 0;
++    }
++    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, mode, 1);
++    if (!buffer) {
++        return 0;
++    }
++    return new std::ostream(buffer);
++}
++#else // MSVC or Unix
++    
++#ifdef _WIN32
++#ifndef _MSC_VER_
++#error "open_ifstream_impl only supports GCC or MSVC"
++#endif
++#endif
++    
++static std::ifstream*
++open_ifstream_impl(string_view path,
+                   std::ios_base::openmode mode)
+ {
++    
+ #ifdef _WIN32
+-    // Windows std::ifstream accepts non-standard wchar_t* 
+     std::wstring wpath = Strutil::utf8_to_utf16(path);
+-    stream.open (wpath.c_str(), mode);
+-    stream.seekg (0, std::ios_base::beg); // force seek, otherwise broken
++#endif
++    std::ifstream *ret = new std::ifstream();
++    if (!ret) {
++        return 0;
++    }
++    try {
++        ret->open(
++#ifdef _WIN32
++                  wpath.c_str(),
+ #else
+-    stream.open (path.c_str(), mode);
++                  path.c_str(),
+ #endif
++                  mode);
++    } catch (const std::exception & e) {
++        delete ret;
++        return 0;
++    }
++    
++    if (!*ret) {
++        delete ret;
++        return 0;
++    }
++    
++    return ret;
++} // open_ifstream_impl
++    
++static std::ofstream*
++open_ofstream_impl(string_view path,
++                   std::ios_base::openmode mode)
++{
++#ifdef _WIN32
++    std::wstring wpath = Strutil::utf8_to_utf16(path);
++#endif
++    std::ofstream *ret = new std::ofstream();
++    if (!ret) {
++        return 0;
++    }
++    try {
++        ret->open(
++#ifdef _WIN32
++                  wpath.c_str(),
++#else
++                  path.c_str(),
++#endif
++                  mode);
++    } catch (const std::exception & e) {
++        delete ret;
++        return 0;
++    }
++    
++    if (!*ret) {
++        delete ret;
++        return 0;
++    }
++    
++    return ret;
++}
++#endif //#if defined(_WIN32) &&  defined(__GLIBCXX__)
++
++
++void
++Filesystem::open (std::istream** stream,
++                  string_view path,
++                  std::ios_base::openmode mode)
++{
++    if (!stream) {
++        return;
++    }
++    *stream = open_ifstream_impl(path, mode);
+ }
+ 
+ 
+ 
+ void
+-Filesystem::open (std::ofstream &stream, string_view path,
++Filesystem::open (std::ostream** stream,
++                  string_view path,
+                   std::ios_base::openmode mode)
+ {
+-#ifdef _WIN32
+-    // Windows std::ofstream accepts non-standard wchar_t*
+-    std::wstring wpath = Strutil::utf8_to_utf16 (path);
+-    stream.open (wpath.c_str(), mode);
+-#else
+-    stream.open (path.c_str(), mode);
+-#endif
++    if (!stream) {
++        return;
++    }
++    *stream = open_ofstream_impl(path, mode);
+ }
+ 
+ 
+@@ -524,13 +663,18 @@ Filesystem::read_text_file (string_view filename, std::string &str)
+ {
+     // For info on why this is the fastest method:
+     // http://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
+-    std::ifstream in;
+-    Filesystem::open (in, filename);
++    boost::shared_ptr<std::istream> in;
++    {
++        std::istream* inraw;
++        Filesystem::open (&inraw, filename);
++        if (inraw) {
++            in.reset(inraw);
++        }
++    }
+     // N.B. for binary read: open(in, filename, std::ios::in|std::ios::binary);
+     if (in) {
+         std::ostringstream contents;
+-        contents << in.rdbuf();
+-        in.close ();
++        contents << in->rdbuf();
+         str = contents.str();
+         return true;
+     }
+diff --git a/src/openexr.imageio/exrinput.cpp b/src/openexr.imageio/exrinput.cpp
+index e984644..9daf89e 100644
+--- a/src/openexr.imageio/exrinput.cpp
++++ b/src/openexr.imageio/exrinput.cpp
+@@ -85,6 +87,7 @@
+ #include "OpenImageIO/filesystem.h"
+ #include "OpenImageIO/imagebufalgo_util.h"
+ 
++#include <boost/scoped_ptr.hpp>
+ #include <boost/scoped_array.hpp>
+ 
+ 
+@@ -100,7 +103,13 @@ public:
+     OpenEXRInputStream (const char *filename) : Imf::IStream (filename) {
+         // The reason we have this class is for this line, so that we
+         // can correctly handle UTF-8 file paths on Windows
+-        Filesystem::open (ifs, filename, std::ios_base::binary);
++        {
++            std::istream* ifsraw;
++            Filesystem::open (&ifsraw, filename, std::ios_base::binary);
++            if (ifsraw) {
++                ifs.reset(ifsraw);
++            }
++        }
+         if (!ifs)
+             Iex::throwErrnoExc ();
+     }
+@@ -108,18 +117,23 @@ public:
+         if (!ifs)
+             throw Iex::InputExc ("Unexpected end of file.");
+         errno = 0;
+-        ifs.read (c, n);
++        ifs->read (c, n);
+         return check_error ();
+     }
+     virtual Imath::Int64 tellg () {
+-        return std::streamoff (ifs.tellg ());
++        return ifs ? std::streamoff (ifs->tellg ()) : 0;
+     }
+     virtual void seekg (Imath::Int64 pos) {
+-        ifs.seekg (pos);
++        if (!ifs) {
++            Iex::throwErrnoExc ();
++        }
++        ifs->seekg (pos);
+         check_error ();
+     }
+     virtual void clear () {
+-        ifs.clear ();
++        if (ifs) {
++            ifs->clear ();
++        }
+     }
+ 
+ private:
+@@ -131,7 +145,7 @@ private:
+         }
+         return true;
+     }
+-    std::ifstream ifs;
++    boost::scoped_ptr<std::istream> ifs;
+ };
+ 
+ 
+@@ -317,12 +331,12 @@ void set_exr_threads ()
+     static spin_mutex exr_threads_mutex;  
+ 
+     int oiio_threads = 1;
+-    OIIO::getattribute ("threads", oiio_threads);
++    OIIO::getattribute ("exr_threads", oiio_threads);
+ 
+     spin_lock lock (exr_threads_mutex);
+     if (exr_threads != oiio_threads) {
+         exr_threads = oiio_threads;
+-        Imf::setGlobalThreadCount (exr_threads == 1 ? 0 : exr_threads);
++        Imf::setGlobalThreadCount (exr_threads);
+     }
+ }
+ 
+diff --git a/src/openexr.imageio/exroutput.cpp b/src/openexr.imageio/exroutput.cpp
+index e34b28a..28d2564 100644
+--- a/src/openexr.imageio/exroutput.cpp
++++ b/src/openexr.imageio/exroutput.cpp
+@@ -36,6 +36,8 @@
+ #include <iostream>
+ #include <map>
+ 
++#include <boost/scoped_ptr.hpp>
++
+ #include <OpenEXR/ImfOutputFile.h>
+ #include <OpenEXR/ImfTiledOutputFile.h>
+ #include <OpenEXR/ImfChannelList.h>
+@@ -99,20 +101,32 @@ public:
+     OpenEXROutputStream (const char *filename) : Imf::OStream(filename) {
+         // The reason we have this class is for this line, so that we
+         // can correctly handle UTF-8 file paths on Windows
+-        Filesystem::open (ofs, filename, std::ios_base::binary);
++        {
++            std::ostream* rawhandle;
++            Filesystem::open (&rawhandle, filename, std::ios_base::binary);
++            if (rawhandle) {
++                ofs.reset(rawhandle);
++            }
++        }
+         if (!ofs)
+             Iex::throwErrnoExc ();
+     }
+     virtual void write (const char c[], int n) {
++        if (!ofs) {
++            Iex::throwErrnoExc ();
++        }
+         errno = 0;
+-        ofs.write (c, n);
++        ofs->write (c, n);
+         check_error ();
+     }
+     virtual Imath::Int64 tellp () {
+-        return std::streamoff (ofs.tellp ());
++        return ofs ? std::streamoff (ofs->tellp ()) : 0;
+     }
+     virtual void seekp (Imath::Int64 pos) {
+-        ofs.seekp (pos);
++        if (!ofs) {
++            Iex::throwErrnoExc ();
++        }
++        ofs->seekp (pos);
+         check_error ();
+     }
+ 
+@@ -124,7 +138,7 @@ private:
+             throw Iex::ErrnoExc ("File output failed.");
+         }
+     }
+-    std::ofstream ofs;
++    boost::scoped_ptr<std::ostream> ofs;
+ };
+ 
+ 
+diff --git a/src/pnm.imageio/pnminput.cpp b/src/pnm.imageio/pnminput.cpp
+index 2a10fad..5c50b20 100644
+--- a/src/pnm.imageio/pnminput.cpp
++++ b/src/pnm.imageio/pnminput.cpp
+@@ -32,6 +32,8 @@
+ #include <fstream>
+ #include <cstdlib>
+ 
++#include <boost/scoped_ptr.hpp>
++
+ #include "OpenImageIO/filesystem.h"
+ #include "OpenImageIO/fmath.h"
+ #include "OpenImageIO/imageio.h"
+@@ -53,7 +55,7 @@ private:
+       P1, P2, P3, P4, P5, P6, Pf, PF
+     };
+ 
+-    std::ifstream m_file;
++    boost::scoped_ptr<std::istream> m_file;
+     std::string m_current_line; ///< Buffer the image pixels
+     const char * m_pos;
+     PNMType m_pnm_type;
+@@ -81,7 +83,7 @@ OIIO_PLUGIN_EXPORTS_END
+ 
+ 
+ inline bool
+-nextLine (std::ifstream &file, std::string &current_line, const char * &pos) 
++nextLine (std::istream &file, std::string &current_line, const char * &pos)
+ {   
+     if (!file.good())
+         return false;
+@@ -95,7 +97,7 @@ nextLine (std::ifstream &file, std::string &current_line, const char * &pos)
+ 
+ 
+ inline const char * 
+-nextToken (std::ifstream &file, std::string &current_line, const char * &pos)
++nextToken (std::istream &file, std::string &current_line, const char * &pos)
+ {		
+     while (1) {
+         while (isspace (*pos)) 
+@@ -111,7 +113,7 @@ nextToken (std::ifstream &file, std::string &current_line, const char * &pos)
+ 
+ 
+ inline const char *
+-skipComments (std::ifstream &file, std::string &current_line, 
++skipComments (std::istream &file, std::string &current_line,
+               const char * & pos, char comment = '#')
+ {		
+     while (1) {
+@@ -127,7 +129,7 @@ skipComments (std::ifstream &file, std::string &current_line,
+ 
+ 
+ inline bool
+-nextVal (std::ifstream & file, std::string &current_line,
++nextVal (std::istream & file, std::string &current_line,
+          const char * &pos, int &val, char comment = '#')
+ {
+     skipComments (file, current_line, pos, comment);
+@@ -151,7 +153,7 @@ invert (const T *read, T *write, imagesize_t nvals)
+ 
+ template <class T> 
+ inline bool 
+-ascii_to_raw (std::ifstream &file, std::string &current_line, const char * &pos,
++ascii_to_raw (std::istream &file, std::string &current_line, const char * &pos,
+               T *write, imagesize_t nvals, T max)
+ {
+     if (max)
+@@ -247,7 +249,7 @@ PNMInput::read_file_scanline (void * data)
+ 
+     std::vector<unsigned char> buf;
+     bool good = true;
+-    if (!m_file.is_open())
++    if (!m_file)
+         return false;
+     int nsamples = m_spec.width * m_spec.nchannels;
+ 
+@@ -260,25 +262,25 @@ PNMInput::read_file_scanline (void * data)
+         else
+             numbytes = m_spec.scanline_bytes();
+         buf.resize (numbytes);
+-        m_file.read ((char*)&buf[0], numbytes);
+-        if (!m_file.good())
++        m_file->read ((char*)&buf[0], numbytes);
++        if (!m_file->good())
+             return false;
+     }
+ 
+     switch (m_pnm_type) {
+         //Ascii 
+         case P1:
+-            good &= ascii_to_raw (m_file, m_current_line, m_pos, (unsigned char *) data, 
++            good &= ascii_to_raw (*m_file, m_current_line, m_pos, (unsigned char *) data,
+                                   nsamples, (unsigned char)m_max_val);
+             invert ((unsigned char *)data, (unsigned char *)data, nsamples); 
+             break;
+         case P2:
+         case P3:
+             if (m_max_val > std::numeric_limits<unsigned char>::max())
+-                good &= ascii_to_raw (m_file, m_current_line, m_pos, (unsigned short *) data, 
++                good &= ascii_to_raw (*m_file, m_current_line, m_pos, (unsigned short *) data,
+                                       nsamples, (unsigned short)m_max_val);
+             else 
+-                good &= ascii_to_raw (m_file, m_current_line, m_pos, (unsigned char *) data, 
++                good &= ascii_to_raw (*m_file, m_current_line, m_pos, (unsigned char *) data,
+                                       nsamples, (unsigned char)m_max_val);
+             break;
+         //Raw
+@@ -320,15 +322,15 @@ PNMInput::read_file_header ()
+ 
+     unsigned int width, height;
+     char c;
+-    if (!m_file.is_open())
++    if (!m_file)
+         return false;
+   
+     //MagicNumber
+-    m_file >> c;
++    *m_file >> c;
+     if (c != 'P')
+         return false;
+     
+-    m_file >> c;
++    *m_file >> c;
+     switch(c) {
+       case '1':
+         m_pnm_type = P1;
+@@ -359,21 +361,21 @@ PNMInput::read_file_header ()
+     }
+     
+     //Size
+-    if (!read_int (m_file, width))
++    if (!read_int (*m_file, width))
+         return false; 
+-    if (!read_int (m_file, height))
++    if (!read_int (*m_file, height))
+         return false; 
+ 
+     if(m_pnm_type != PF && m_pnm_type != Pf) {
+         //Max Val
+         if (m_pnm_type != P1 && m_pnm_type != P4) {
+-            if (!read_int (m_file, m_max_val))
++            if (!read_int (*m_file, m_max_val))
+                 return false;
+         } else
+             m_max_val = 1;
+         
+         //Space before content
+-        if (!(isspace (m_file.get()) && m_file.good()))
++        if (!(isspace (*m_file) && m_file->good()))
+             return false;
+ 
+         if (m_pnm_type == P3 || m_pnm_type == P6)
+@@ -397,12 +399,12 @@ PNMInput::read_file_header ()
+         return true;
+     } else {
+         //Read scaling factor
+-        if(!read_int(m_file, m_scaling_factor)) {
++        if(!read_int(*m_file, m_scaling_factor)) {
+             return false;
+         }
+         
+         //Space before content
+-        if (!(isspace (m_file.get()) && m_file.good()))
++        if (!(isspace (*m_file) && m_file->good()))
+             return false;
+ 
+         if(m_pnm_type == PF) {
+@@ -434,9 +436,12 @@ bool
+ PNMInput::open (const std::string &name, ImageSpec &newspec)
+ {
+     close(); //close previously opened file
+-
+-    Filesystem::open (m_file, name, std::ios::in|std::ios::binary);
+-
++    std::istream* rawfile;
++    Filesystem::open (&rawfile, name, std::ios::in|std::ios::binary);
++    if (rawfile) {
++        m_file.reset(rawfile);
++    }
++    
+     m_current_line = "";
+     m_pos = m_current_line.c_str();
+ 
+@@ -452,8 +457,8 @@ PNMInput::open (const std::string &name, ImageSpec &newspec)
+ bool
+ PNMInput::close ()
+ {
+-    if (m_file.is_open())
+-        m_file.close();
++    if (m_file)
++        m_file.reset();
+     return true;
+ }
+ 
+diff --git a/src/pnm.imageio/pnmoutput.cpp b/src/pnm.imageio/pnmoutput.cpp
+index f1a780a..64a8072 100644
+--- a/src/pnm.imageio/pnmoutput.cpp
++++ b/src/pnm.imageio/pnmoutput.cpp
+@@ -30,6 +30,8 @@
+ 
+ #include <fstream>
+ 
++#include <boost/scoped_ptr.hpp>
++
+ #include "OpenImageIO/filesystem.h"
+ #include "OpenImageIO/imageio.h"
+ 
+@@ -55,7 +57,7 @@ public:
+ 
+ private:
+     std::string m_filename;           ///< Stash the filename
+-    std::ofstream m_file;
++    boost::scoped_ptr<std::ostream> m_file;
+     unsigned int m_max_val, m_pnm_type;
+     unsigned int m_dither;
+     std::vector<unsigned char> m_scratch;
+@@ -190,27 +192,38 @@ PNMOutput::open (const std::string &name, const ImageSpec &userspec,
+     if (!m_spec.get_int_attribute ("pnm:binary", 1)) 
+     {
+         m_pnm_type -= 3;
+-        Filesystem::open (m_file, name);
++        {
++            std::ostream* raw;
++            Filesystem::open (&raw, name);
++            if (raw) {
++                m_file.reset(raw);
++            }
++        }
++    }
++    else {
++        std::ostream* raw;
++        Filesystem::open (&raw, name, std::ios::out|std::ios::binary);
++        if (raw) {
++            m_file.reset(raw);
++        }
+     }
+-    else
+-        Filesystem::open (m_file, name, std::ios::out|std::ios::binary);
+ 
+-    if (!m_file.is_open())
++    if (!m_file)
+        return false;
+ 
+     m_max_val = (1 << bits_per_sample) - 1;
+     // Write header
+-    m_file << "P" << m_pnm_type << std::endl;
+-    m_file << m_spec.width << " " << m_spec.height << std::endl;
++    *m_file << "P" << m_pnm_type << std::endl;
++    *m_file << m_spec.width << " " << m_spec.height << std::endl;
+     if (m_pnm_type != 1 && m_pnm_type != 4)  // only non-monochrome 
+-        m_file << m_max_val << std::endl;
++        *m_file << m_max_val << std::endl;
+ 
+     // If user asked for tiles -- which this format doesn't support, emulate
+     // it by buffering the whole image.
+     if (m_spec.tile_width && m_spec.tile_height)
+         m_tilebuffer.resize (m_spec.image_bytes());
+ 
+-    return m_file.good();
++    return m_file->good();
+ }
+ 
+ 
+@@ -218,7 +231,7 @@ PNMOutput::open (const std::string &name, const ImageSpec &userspec,
+ bool
+ PNMOutput::close ()
+ {
+-    if (! m_file.is_open()) {   // already closed
++    if (! m_file) {   // already closed
+         return true;
+     }
+ 
+@@ -231,7 +244,7 @@ PNMOutput::close ()
+         std::vector<unsigned char>().swap (m_tilebuffer);
+     }
+ 
+-    m_file.close();
++    m_file.reset();
+     return true;  
+ }
+ 
+@@ -241,7 +254,7 @@ bool
+ PNMOutput::write_scanline (int y, int z, TypeDesc format,
+         const void *data, stride_t xstride)
+ {
+-    if (!m_file.is_open())
++    if (!m_file)
+         return false;
+     if (z)
+         return false;
+@@ -255,30 +268,30 @@ PNMOutput::write_scanline (int y, int z, TypeDesc format,
+ 
+     switch (m_pnm_type){
+         case 1:
+-            write_ascii_binary (m_file, (unsigned char *) data, xstride, m_spec);
++            write_ascii_binary (*m_file, (unsigned char *) data, xstride, m_spec);
+             break;
+         case 2:
+         case 3:
+             if (m_max_val > std::numeric_limits<unsigned char>::max())
+-                write_ascii (m_file, (unsigned short *) data, xstride, m_spec, m_max_val);
++                write_ascii (*m_file, (unsigned short *) data, xstride, m_spec, m_max_val);
+             else 
+-                write_ascii (m_file, (unsigned char *) data, xstride, m_spec, m_max_val);
++                write_ascii (*m_file, (unsigned char *) data, xstride, m_spec, m_max_val);
+             break;
+         case 4:
+-            write_raw_binary (m_file, (unsigned char *) data, xstride, m_spec);
++            write_raw_binary (*m_file, (unsigned char *) data, xstride, m_spec);
+             break;
+         case 5:
+         case 6:
+             if (m_max_val > std::numeric_limits<unsigned char>::max())
+-                write_raw (m_file, (unsigned short *) data, xstride, m_spec, m_max_val);
++                write_raw (*m_file, (unsigned short *) data, xstride, m_spec, m_max_val);
+             else 
+-                write_raw (m_file, (unsigned char *) data, xstride, m_spec, m_max_val);
++                write_raw (*m_file, (unsigned char *) data, xstride, m_spec, m_max_val);
+             break;
+         default:
+             return false;
+     } 
+ 
+-    return m_file.good();
++    return m_file->good();
+ }
+ 
+ 
+diff --git a/src/psd.imageio/psdinput.cpp b/src/psd.imageio/psdinput.cpp
+index c6e94d7..d1d051a 100644
+--- a/src/psd.imageio/psdinput.cpp
++++ b/src/psd.imageio/psdinput.cpp
+@@ -36,6 +36,7 @@
+ #include <boost/bind.hpp>
+ #include <boost/function.hpp>
+ #include <boost/foreach.hpp>
++#include <boost/scoped_ptr.hpp>
+ 
+ #include "psd_pvt.h"
+ #include "jpeg_memory_src.h"
+@@ -196,7 +197,7 @@ private:
+     };
+ 
+     std::string m_filename;
+-    std::ifstream m_file;
++    boost::scoped_ptr<std::istream> m_file;
+     //Current subimage
+     int m_subimage;
+     //Subimage count (1 + layer count)
+@@ -386,14 +387,14 @@ private:
+     bool read_bige (TVariable &value)
+     {
+         TStorage buffer;
+-        m_file.read ((char *)&buffer, sizeof(buffer));
++        m_file->read ((char *)&buffer, sizeof(buffer));
+         if (!bigendian ())
+             swap_endian (&buffer);
+ 
+         // For debugging, numeric_cast will throw if precision is lost:
+         // value = boost::numeric_cast<TVariable>(buffer);
+         value = buffer;
+-        return m_file.good();
++        return m_file->good();
+     }
+ 
+     int read_pascal_string (std::string &s, uint16_t mod_padding);
+@@ -543,8 +544,14 @@ bool
+ PSDInput::open (const std::string &name, ImageSpec &newspec)
+ {
+     m_filename = name;
+-    Filesystem::open (m_file, name, std::ios::binary);
+-    if (!m_file.is_open ()) {
++    {
++        std::istream* raw;
++        Filesystem::open (&raw, name, std::ios::binary);
++        if (raw) {
++            m_file.reset(raw);
++        }
++    }
++    if (!m_file) {
+         error ("\"%s\": failed to open file", name.c_str());
+         return false;
+     }
+@@ -759,7 +766,7 @@ void
+ PSDInput::init ()
+ {
+     m_filename.clear ();
+-    m_file.close ();
++    m_file.reset();
+     m_subimage = -1;
+     m_subimage_count = 0;
+     m_specs.clear ();
+@@ -795,9 +802,9 @@ PSDInput::load_header ()
+ bool
+ PSDInput::read_header ()
+ {
+-    m_file.read (m_header.signature, 4);
++    m_file->read (m_header.signature, 4);
+     read_bige<uint16_t> (m_header.version);
+-    m_file.seekg(6, std::ios::cur);
++    m_file->seekg(6, std::ios::cur);
+     read_bige<uint16_t> (m_header.channel_count);
+     read_bige<uint32_t> (m_header.height);
+     read_bige<uint32_t> (m_header.width);
+@@ -892,7 +899,7 @@ PSDInput::load_color_data ()
+ 
+     if (m_color_data.length) {
+         m_color_data.data.resize (m_color_data.length);
+-        m_file.read (&m_color_data.data[0], m_color_data.length);
++        m_file->read (&m_color_data.data[0], m_color_data.length);
+     }
+     return check_io ();
+ }
+@@ -926,9 +933,9 @@ PSDInput::load_resources ()
+ 
+     ImageResourceBlock block;
+     ImageResourceMap resources;
+-    std::streampos begin = m_file.tellg ();
++    std::streampos begin = m_file->tellg ();
+     std::streampos end = begin + (std::streampos)length;
+-    while (m_file && m_file.tellg () < end) {
++    while (!m_file->fail() && m_file->tellg () < end) {
+         if (!read_resource (block) || !validate_resource (block))
+             return false;
+ 
+@@ -940,7 +947,7 @@ PSDInput::load_resources ()
+     if (!handle_resources (resources))
+         return false;
+ 
+-    m_file.seekg (end);
++    m_file->seekg (end);
+     return check_io ();
+ }
+ 
+@@ -949,18 +956,18 @@ PSDInput::load_resources ()
+ bool
+ PSDInput::read_resource (ImageResourceBlock &block)
+ {
+-    m_file.read (block.signature, 4);
++    m_file->read (block.signature, 4);
+     read_bige<uint16_t> (block.id);
+     read_pascal_string (block.name, 2);
+     read_bige<uint32_t> (block.length);
+     // Save the file position of the image resource data
+-    block.pos = m_file.tellg();
++    block.pos = m_file->tellg();
+     // Skip the image resource data
+-    m_file.seekg (block.length, std::ios::cur);
++    m_file->seekg (block.length, std::ios::cur);
+     // Image resource blocks are supposed to be padded to an even size.
+     // I'm not sure if the padding is included in the length field
+     if (block.length % 2 != 0)
+-        m_file.seekg(1, std::ios::cur);
++        m_file->seekg(1, std::ios::cur);
+ 
+     return check_io ();
+ }
+@@ -988,7 +995,7 @@ PSDInput::handle_resources (ImageResourceMap &resources)
+         ImageResourceMap::const_iterator it (resources.find (loader.resource_id));
+         // If a resource with that ID exists in the file, call the loader
+         if (it != end) {
+-            m_file.seekg (it->second.pos);
++            m_file->seekg (it->second.pos);
+             if (!check_io ())
+                 return false;
+ 
+@@ -1115,7 +1122,7 @@ bool
+ PSDInput::load_resource_1058 (uint32_t length)
+ {
+     std::string data (length, 0);
+-    if (!m_file.read (&data[0], length))
++    if (!m_file->read (&data[0], length))
+         return false;
+ 
+     if (!decode_exif (&data[0], length, m_composite_attribs) ||
+@@ -1141,7 +1148,7 @@ bool
+ PSDInput::load_resource_1060 (uint32_t length)
+ {
+     std::string data (length, 0);
+-    if (!m_file.read (&data[0], length))
++    if (!m_file->read (&data[0], length))
+         return false;
+ 
+     // Store the XMP data for the composite and all other subimages
+@@ -1223,7 +1230,7 @@ PSDInput::load_resource_thumbnail (uint32_t length, bool isBGR)
+         return false;
+     }
+     std::string jpeg_data (jpeg_length, '\0');
+-    if (!m_file.read (&jpeg_data[0], jpeg_length))
++    if (!m_file->read (&jpeg_data[0], jpeg_length))
+         return false;
+ 
+     jpeg_create_decompress (&cinfo);
+@@ -1282,7 +1289,7 @@ PSDInput::load_layers ()
+     else
+         read_bige<uint64_t> (m_layer_mask_info.length);
+ 
+-    m_layer_mask_info.begin = m_file.tellg ();
++    m_layer_mask_info.begin = m_file->tellg ();
+     m_layer_mask_info.end = m_layer_mask_info.begin
+                           + (std::streampos)m_layer_mask_info.length;
+     if (!check_io ())
+@@ -1297,7 +1304,7 @@ PSDInput::load_layers ()
+     else
+         read_bige<uint64_t> (layer_info.length);
+ 
+-    layer_info.begin = m_file.tellg ();
++    layer_info.begin = m_file->tellg ();
+     layer_info.end = layer_info.begin + (std::streampos)layer_info.length;
+     if (!check_io ())
+         return false;
+@@ -1351,7 +1358,7 @@ PSDInput::load_layer (Layer &layer)
+         layer.channel_id_map[channel_info.channel_id] = &channel_info;
+     }
+     char bm_signature[4];
+-    m_file.read (bm_signature, 4);
++    m_file->read (bm_signature, 4);
+     if (!check_io ())
+         return false;
+ 
+@@ -1359,12 +1366,12 @@ PSDInput::load_layer (Layer &layer)
+         error ("[Layer Record] Invalid blend mode signature");
+         return false;
+     }
+-    m_file.read (layer.bm_key, 4);
++    m_file->read (layer.bm_key, 4);
+     read_bige<uint8_t> (layer.opacity);
+     read_bige<uint8_t> (layer.clipping);
+     read_bige<uint8_t> (layer.flags);
+     // skip filler
+-    m_file.seekg(1, std::ios::cur);
++    m_file->seekg(1, std::ios::cur);
+     read_bige<uint32_t> (layer.extra_length);
+     uint32_t extra_remaining = layer.extra_length;
+     // layer mask data length
+@@ -1384,12 +1391,12 @@ PSDInput::load_layer (Layer &layer)
+             read_bige<uint8_t> (layer.mask_data.default_color);
+             read_bige<uint8_t> (layer.mask_data.flags);
+             // skip padding
+-            m_file.seekg(2, std::ios::cur);
++            m_file->seekg(2, std::ios::cur);
+             break;
+         case 36:
+             // In this case, we skip the above (lmd_length == 20) fields
+             // to read the "real" fields.
+-            m_file.seekg (18, std::ios::cur);
++            m_file->seekg (18, std::ios::cur);
+             read_bige<uint8_t> (layer.mask_data.flags);
+             read_bige<uint8_t> (layer.mask_data.default_color);
+             read_bige<uint32_t> (layer.mask_data.top);
+@@ -1409,7 +1416,7 @@ PSDInput::load_layer (Layer &layer)
+     uint32_t lbr_length;
+     read_bige<uint32_t> (lbr_length);
+     // skip block
+-    m_file.seekg (lbr_length, std::ios::cur);
++    m_file->seekg (lbr_length, std::ios::cur);
+     extra_remaining -= (lbr_length + 4);
+     if (!check_io ())
+         return false;
+@@ -1420,8 +1427,8 @@ PSDInput::load_layer (Layer &layer)
+         Layer::AdditionalInfo &info = layer.additional_info.back();
+ 
+         char signature[4];
+-        m_file.read (signature, 4);
+-        m_file.read (info.key, 4);
++        m_file->read (signature, 4);
++        m_file->read (info.key, 4);
+         if (std::memcmp (signature, "8BIM", 4) != 0
+               && std::memcmp (signature, "8B64", 4) != 0) {
+             error ("[Additional Layer Info] invalid signature");
+@@ -1435,7 +1442,7 @@ PSDInput::load_layer (Layer &layer)
+             read_bige<uint32_t> (info.length);
+             extra_remaining -= 4;
+         }
+-        m_file.seekg (info.length, std::ios::cur);
++        m_file->seekg (info.length, std::ios::cur);
+         extra_remaining -= info.length;
+     }
+     return check_io ();
+@@ -1459,7 +1466,7 @@ PSDInput::load_layer_channels (Layer &layer)
+ bool
+ PSDInput::load_layer_channel (Layer &layer, ChannelInfo &channel_info)
+ {
+-    std::streampos start_pos = m_file.tellg ();
++    std::streampos start_pos = m_file->tellg ();
+     if (channel_info.data_length >= 2) {
+         read_bige<uint16_t> (channel_info.compression);
+         if (!check_io ())
+@@ -1469,7 +1476,7 @@ PSDInput::load_layer_channel (Layer &layer, ChannelInfo &channel_info)
+     if (channel_info.data_length <= 2)
+         return true;
+ 
+-    channel_info.data_pos = m_file.tellg ();
++    channel_info.data_pos = m_file->tellg ();
+     channel_info.row_pos.resize (layer.height);
+     channel_info.row_length = (layer.width * m_header.depth + 7) / 8;
+     switch (channel_info.compression) {
+@@ -1487,7 +1494,7 @@ PSDInput::load_layer_channel (Layer &layer, ChannelInfo &channel_info)
+                 return false;
+ 
+             // channel data is located after the RLE lengths
+-            channel_info.data_pos = m_file.tellg ();
++            channel_info.data_pos = m_file->tellg ();
+             // subtract the RLE lengths read above
+             channel_info.data_length = channel_info.data_length - (channel_info.data_pos - start_pos);
+             if (layer.height) {
+@@ -1507,7 +1514,7 @@ PSDInput::load_layer_channel (Layer &layer, ChannelInfo &channel_info)
+             return false;
+ ;
+     }
+-    m_file.seekg (channel_info.data_length, std::ios::cur);
++    m_file->seekg (channel_info.data_length, std::ios::cur);
+     return check_io ();
+ 
+ }
+@@ -1535,19 +1542,19 @@ PSDInput::load_global_mask_info ()
+     if (!m_layer_mask_info.length)
+         return true;
+ 
+-    m_file.seekg (m_layer_mask_info.layer_info.end);
+-    uint64_t remaining = m_layer_mask_info.end - m_file.tellg();
++    m_file->seekg (m_layer_mask_info.layer_info.end);
++    uint64_t remaining = m_layer_mask_info.end - m_file->tellg();
+     uint32_t length;
+ 
+     // This section should be at least 17 bytes, but some files lack
+     // global mask info and additional layer info, not convered in the spec
+     if (remaining < 17) {
+-        m_file.seekg(m_layer_mask_info.end);
++        m_file->seekg(m_layer_mask_info.end);
+         return true;
+     }
+ 
+     read_bige<uint32_t> (length);
+-    std::streampos start = m_file.tellg ();
++    std::streampos start = m_file->tellg ();
+     std::streampos end = start + (std::streampos)length;
+     if (!check_io ())
+         return false;
+@@ -1562,7 +1569,7 @@ PSDInput::load_global_mask_info ()
+ 
+     read_bige<uint16_t> (m_global_mask_info.opacity);
+     read_bige<int16_t> (m_global_mask_info.kind);
+-    m_file.seekg (end);
++    m_file->seekg (end);
+     return check_io ();
+ }
+ 
+@@ -1577,9 +1584,9 @@ PSDInput::load_global_additional ()
+     char signature[4];
+     char key[4];
+     uint64_t length;
+-    uint64_t remaining = m_layer_mask_info.length - (m_file.tellg() - m_layer_mask_info.begin);
++    uint64_t remaining = m_layer_mask_info.length - (m_file->tellg() - m_layer_mask_info.begin);
+     while (m_file && remaining >= 12) {
+-        m_file.read (signature, 4);
++        m_file->read (signature, 4);
+         if (!check_io ())
+             return false;
+ 
+@@ -1588,7 +1595,7 @@ PSDInput::load_global_additional ()
+             error ("[Global Additional Layer Info] invalid signature");
+             return false;
+         }
+-        m_file.read (key, 4);
++        m_file->read (key, 4);
+         if (!check_io ())
+             return false;
+ 
+@@ -1607,10 +1614,10 @@ PSDInput::load_global_additional ()
+         length = (length + 3) & ~3;
+         remaining -= length;
+         // skip it for now
+-        m_file.seekg (length, std::ios::cur);
++        m_file->seekg (length, std::ios::cur);
+     }
+     // finished with the layer and mask information section, seek to the end
+-    m_file.seekg (m_layer_mask_info.end);
++    m_file->seekg (m_layer_mask_info.end);
+     return check_io ();
+ }
+ 
+@@ -1644,7 +1651,7 @@ PSDInput::load_image_data ()
+     }
+     BOOST_FOREACH (ChannelInfo &channel_info, m_image_data.channel_info) {
+         channel_info.row_pos.resize (m_header.height);
+-        channel_info.data_pos = m_file.tellg ();
++        channel_info.data_pos = m_file->tellg ();
+         channel_info.row_length = (m_header.width * m_header.depth + 7) / 8;
+         switch (compression) {
+             case Compression_Raw:
+@@ -1652,14 +1659,14 @@ PSDInput::load_image_data ()
+                 for (uint32_t i = 1; i < m_header.height; ++i)
+                     channel_info.row_pos[i] = channel_info.row_pos[i - 1] + (std::streampos)row_length;
+ 
+-                m_file.seekg (channel_info.row_pos.back () + (std::streampos)row_length);
++                m_file->seekg (channel_info.row_pos.back () + (std::streampos)row_length);
+                 break;
+             case Compression_RLE:
+                 channel_info.row_pos[0] = channel_info.data_pos;
+                 for (uint32_t i = 1; i < m_header.height; ++i)
+                     channel_info.row_pos[i] = channel_info.row_pos[i - 1] + (std::streampos)channel_info.rle_lengths[i - 1];
+ 
+-                m_file.seekg (channel_info.row_pos.back () + (std::streampos)channel_info.rle_lengths.back ());
++                m_file->seekg (channel_info.row_pos.back () + (std::streampos)channel_info.rle_lengths.back ());
+                 break;
+         }
+     }
+@@ -1748,17 +1755,17 @@ PSDInput::read_channel_row (const ChannelInfo &channel_info, uint32_t row, char
+ 
+     uint32_t rle_length;
+     channel_info.row_pos[row];
+-    m_file.seekg (channel_info.row_pos[row]);
++    m_file->seekg (channel_info.row_pos[row]);
+     switch (channel_info.compression) {
+         case Compression_Raw:
+-            m_file.read (data, channel_info.row_length);
++            m_file->read (data, channel_info.row_length);
+             break;
+         case Compression_RLE:
+             rle_length = channel_info.rle_lengths[row];
+             if (m_rle_buffer.size () < rle_length)
+                 m_rle_buffer.resize (rle_length);
+ 
+-            m_file.read (&m_rle_buffer[0], rle_length);
++            m_file->read (&m_rle_buffer[0], rle_length);
+             if (!check_io ())
+                 return false;
+ 
+@@ -1907,18 +1914,18 @@ PSDInput::read_pascal_string (std::string &s, uint16_t mod_padding)
+     s.clear();
+     uint8_t length;
+     int bytes = 0;
+-    if (m_file.read ((char *)&length, 1)) {
++    if (m_file->read ((char *)&length, 1)) {
+         bytes = 1;
+         if (length == 0) {
+-            if (m_file.seekg (mod_padding - 1, std::ios::cur))
++            if (m_file->seekg (mod_padding - 1, std::ios::cur))
+                 bytes += mod_padding - 1;
+         } else {
+             s.resize (length);
+-            if (m_file.read (&s[0], length)) {
++            if (m_file->read (&s[0], length)) {
+                 bytes += length;
+                 if (mod_padding > 0) {
+                     for (int padded_length = length + 1; padded_length % mod_padding != 0; padded_length++) {
+-                        if (!m_file.seekg(1, std::ios::cur))
++                        if (!m_file->seekg(1, std::ios::cur))
+                             break;
+ 
+                         bytes++;

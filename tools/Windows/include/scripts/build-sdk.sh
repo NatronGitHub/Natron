@@ -145,6 +145,7 @@ if [ ! -f $INSTALL_PATH/bin/libOpenImageIO.dll ]; then
     patch -p1 -i ${OIIO_PATCHES}/oiio-pnm16.patch || exit 1
     patch -p1 -i ${OIIO_PATCHES}/oiio-1.5.23-checkmaxmem.patch || exit 1
     patch -p1 -i ${OIIO_PATCHES}/oiio-1.5.23-invalidatespec.patch || exit 1
+    patch -p1 -i ${OIIO_PATCHES}/oiio-1.5.23-mingw-UTF8iostream.patch || exit 1
     rm -rf build
     mkdir build || exit 1
     cd build || exit 1
