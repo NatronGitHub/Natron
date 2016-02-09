@@ -59,6 +59,10 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include "Global/Enums.h"
 
+#if defined(__NATRON_WIN32__) &&  defined(__GLIBCXX__)
+#include <ext/stdio_filebuf.h>
+#endif
+
 // boost and C++11 also have a foreach. this breaks it. DON'T UNCOMMENT THIS.
 //#undef foreach
 //#define foreach Q_FOREACH
@@ -223,18 +227,21 @@ std::string GetLastErrorAsString()
 #endif // __NATRON_WIN32__
 
 #if defined(__NATRON_WIN32__) &&  defined(__GLIBCXX__)
-#include <ext/stdio_filebuf.h>
+    
+    
 // MingW
 inline
 std::istream* open_ifstream_impl(const std::string &filename)
 {
     std::wstring wfilename = s2ws(filename);
-    //_wfopen is deprecated, see https://msdn.microsoft.com/fr-fr/library/8f30b0db.aspx
-    FILE* c_file = _wfsopen(wfilename.c_str(), L"r", _SH_DENYNO);
-    if (!c_file) {
+    int fd;
+    errno_t errcode = _wsopen_s(&fd, wfilename.c_str(), _O_RDONLY, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    if (errcode != 0) {
         return 0;
     }
-    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(c_file, std::ios_base::in, 1);
+    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, std::ios_base::in, 1);
+
+    
     if (!buffer) {
         return 0;
     }
@@ -245,9 +252,9 @@ inline
 std::ostream* open_ofstream_impl(const std::string &filename)
 {
     std::wstring wfilename = s2ws(filename);
-    //_wfopen is deprecated, see https://msdn.microsoft.com/fr-fr/library/8f30b0db.aspx
-    FILE* c_file = _wfsopen(wfilename.c_str(), L"w", _SH_DENYNO);
-    if (!c_file) {
+    int fd;
+    errno_t errcode = _wsopen_s(&fd, wfilename.c_str(), _O_WRONLY | _O_TRUNC, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    if (errcode != 0) {
         return 0;
     }
     __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(c_file, std::ios_base::out, 1);
