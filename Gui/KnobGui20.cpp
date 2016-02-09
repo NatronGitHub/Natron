@@ -44,6 +44,9 @@ KnobGui::onInternalValueChanged(ViewIdx /*view*/,
 {
     if (_imp->widgetCreated && (ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         updateGuiInternal(dimension);
+        if (!getKnob()->getExpression(dimension).empty()) {
+            Q_EMIT refreshCurveEditor();
+        }
     }
 }
 
