@@ -312,6 +312,7 @@ struct Node::Implementation
     , inputModifiedRecursion(0)
     , inputsModified()
     , refreshIdentityStateRequestsCount(0)
+    , isRefreshingInputRelatedData(false)
     {        
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -559,9 +560,26 @@ struct Node::Implementation
     //To concatenate calls to refreshIdentityState, accessed only on main-thread
     int refreshIdentityStateRequestsCount;
     
+    int isRefreshingInputRelatedData; // only used by the main thread
+    
 };
 
-
+class RefreshingInputData_RAII
+{
+    Node::Implementation *_imp;
+public:
+    
+    RefreshingInputData_RAII(Node::Implementation* imp)
+    : _imp(imp)
+    {
+        ++_imp->isRefreshingInputRelatedData;
+    }
+    
+    ~RefreshingInputData_RAII()
+    {
+        --_imp->isRefreshingInputRelatedData;
+    }
+};
 
 
 /**
@@ -7268,7 +7286,7 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
         }
        
     }
-    {
+    if (!isRefreshingInputRelatedData) {
         ///Clip preferences have changed
         RenderScale s(1.);
         effect->refreshClipPreferences_public(_publicInterface->getApp()->getTimeLine()->currentFrame(),
@@ -7383,7 +7401,9 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,const MaskSelector& sele
         return;
     }
     selector.channelName.lock()->setValue(entries[curChan_i]);
-    {
+    
+    
+    if (!isRefreshingInputRelatedData) {
         ///Clip preferences have changed
         RenderScale s(1.);
         effect->refreshClipPreferences_public(_publicInterface->getApp()->getTimeLine()->currentFrame(),
@@ -8224,6 +8244,9 @@ Node::refreshAllInputRelatedData(bool canChangeValues)
 bool
 Node::refreshAllInputRelatedData(bool /*canChangeValues*/,const std::vector<NodeWPtr >& inputs)
 {
+    assert(QThread::currentThread() == qApp->thread());
+    RefreshingInputData_RAII _refreshingflag(_imp.get());
+    
     bool hasChanged = false;
     hasChanged |= refreshDraftFlagInternal(inputs);
 
@@ -9469,7 +9492,7 @@ Node::addUserComponents(const ImageComponents& comps)
         
         _imp->createdComponents.push_back(comps);
     }
-    {
+    if (!_imp->isRefreshingInputRelatedData) {
         ///Clip preferences have changed
         RenderScale s(1.);
         getEffectInstance()->refreshClipPreferences_public(getApp()->getTimeLine()->currentFrame(),
