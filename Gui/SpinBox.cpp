@@ -638,25 +638,14 @@ SpinBox::focusInEvent(QFocusEvent* e)
             
             return;
         }
+    } else if (e->reason() == Qt::OtherFocusReason || e->reason() == Qt::TabFocusReason) {
+        //If the user tabbed into it or hovered it, select all text
+        selectAll();
     }
     _imp->valueWhenEnteringFocus = text();
     LineEdit::focusInEvent(e);
 }
 
-void
-KnobSpinBox::focusInEvent(QFocusEvent* e)
-{
-    SpinBox::focusInEvent(e);
-    
-    //Set the expression so the user can edit it easily
-    std::string expr = knob->getKnob()->getExpression(dimension);
-    if (expr.empty()) {
-        return;
-    } else {
-        QLineEdit::setText(expr.c_str());
-        setCursorPosition(expr.size() - 1);
-    }
-}
 
 
 
@@ -964,6 +953,30 @@ KnobSpinBox::dropEvent(QDropEvent* e)
     if (!drop(e)) {
         SpinBox::dropEvent(e);
     }
+}
+
+void
+KnobSpinBox::focusInEvent(QFocusEvent* e)
+{
+    focusIn();
+    SpinBox::focusInEvent(e);
+    
+    
+    //Set the expression so the user can edit it easily
+    std::string expr = knob->getKnob()->getExpression(dimension);
+    if (expr.empty()) {
+        return;
+    } else {
+        QLineEdit::setText(expr.c_str());
+        setCursorPosition(expr.size() - 1);
+    }
+}
+
+void
+KnobSpinBox::focusOutEvent(QFocusEvent* e)
+{
+    focusOut();
+    SpinBox::focusOutEvent(e);
 }
 
 NATRON_NAMESPACE_EXIT;

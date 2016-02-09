@@ -160,6 +160,20 @@ KnobComboBox::dropEvent(QDropEvent* e)
     }
 }
 
+void
+KnobComboBox::focusInEvent(QFocusEvent* e)
+{
+    focusIn();
+    ComboBox::focusInEvent(e);
+}
+
+void
+KnobComboBox::focusOutEvent(QFocusEvent* e)
+{
+    focusOut();
+    ComboBox::focusOutEvent(e);
+}
+
 KnobGuiChoice::KnobGuiChoice(KnobPtr knob,
                                DockablePanel *container)
     : KnobGui(knob, container)

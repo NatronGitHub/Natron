@@ -205,6 +205,20 @@ KnobClickableLabel::dropEvent(QDropEvent* e)
     }
 }
 
+void
+KnobClickableLabel::focusInEvent(QFocusEvent* e)
+{
+    focusIn();
+    ClickableLabel::focusInEvent(e);
+}
+
+void
+KnobClickableLabel::focusOutEvent(QFocusEvent* e)
+{
+    focusOut();
+    ClickableLabel::focusOutEvent(e);
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

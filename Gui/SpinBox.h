@@ -186,6 +186,8 @@ private:
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
+    virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
+
 };
 
 NATRON_NAMESPACE_EXIT;

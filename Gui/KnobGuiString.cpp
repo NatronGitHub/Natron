@@ -122,15 +122,6 @@ AnimatingTextEdit::setDirty(bool b)
     update();
 }
 
-void
-AnimatingTextEdit::focusOutEvent(QFocusEvent* e)
-{
-    if (_hasChanged) {
-        _hasChanged = false;
-        Q_EMIT editingFinished();
-    }
-    QTextEdit::focusOutEvent(e);
-}
 
 void
 AnimatingTextEdit::enterEvent(QEvent* e)
@@ -226,6 +217,25 @@ AnimatingTextEdit::dropEvent(QDropEvent* e)
     }
 }
 
+void
+AnimatingTextEdit::focusInEvent(QFocusEvent* e)
+{
+    focusIn();
+    QTextEdit::focusInEvent(e);
+}
+
+void
+AnimatingTextEdit::focusOutEvent(QFocusEvent* e)
+{
+    focusOut();
+    if (_hasChanged) {
+        _hasChanged = false;
+        Q_EMIT editingFinished();
+    }
+    QTextEdit::focusOutEvent(e);
+    
+}
+
 
 void
 KnobLineEdit::enterEvent(QEvent* e)
@@ -300,6 +310,20 @@ KnobLineEdit::dropEvent(QDropEvent* e)
     if (!drop(e)) {
         LineEdit::dropEvent(e);
     }
+}
+
+void
+KnobLineEdit::focusInEvent(QFocusEvent* e)
+{
+    focusIn();
+    LineEdit::focusInEvent(e);
+}
+
+void
+KnobLineEdit::focusOutEvent(QFocusEvent* e)
+{
+    focusOut();
+    LineEdit::focusOutEvent(e);
 }
 
 KnobGuiString::KnobGuiString(KnobPtr knob,

@@ -59,6 +59,7 @@ struct KnobWidgetDnDPrivate
     QPoint dragPos;
     bool dragging;
     QWidget* widget;
+    bool userInputSinceFocusIn;
     
     KnobWidgetDnDPrivate(KnobGui* knob,int dimension, QWidget* widget)
     : knob(knob)
@@ -66,6 +67,7 @@ struct KnobWidgetDnDPrivate
     , dragPos()
     , dragging(false)
     , widget(widget)
+    , userInputSinceFocusIn(false)
     {
         assert(widget);
     }
@@ -88,6 +90,7 @@ KnobWidgetDnD::~KnobWidgetDnD()
 bool
 KnobWidgetDnD::mousePress(QMouseEvent* e)
 {
+    _imp->userInputSinceFocusIn = true;
     if ( buttonDownIsLeft(e) && (modCASIsControl(e) || modCASIsControlShift(e))) {
         _imp->dragPos = e->pos();
         _imp->dragging = true;
@@ -99,6 +102,7 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
 void
 KnobWidgetDnD::keyPress(QKeyEvent* e)
 {
+    _imp->userInputSinceFocusIn = true;
     if (modCASIsControl(e)) {
         _imp->widget->setCursor(appPTR->getLinkToCursor());
     } else if (modCASIsControlShift(e)) {
@@ -398,9 +402,21 @@ KnobWidgetDnD::mouseEnter(QEvent* /*e*/)
 void
 KnobWidgetDnD::mouseLeave(QEvent* /*e*/)
 {
-    if (_imp->widget->hasFocus()) {
+    if (_imp->widget->hasFocus() && !_imp->userInputSinceFocusIn) {
         _imp->widget->clearFocus();
     }
+}
+
+void
+KnobWidgetDnD::focusIn()
+{
+    _imp->userInputSinceFocusIn = false;
+}
+
+void
+KnobWidgetDnD::focusOut()
+{
+    _imp->userInputSinceFocusIn = false;
 }
 
 NATRON_NAMESPACE_EXIT;

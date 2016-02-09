@@ -62,6 +62,9 @@ protected:
     bool drop(QDropEvent* e);
     void mouseEnter(QEvent* e);
     void mouseLeave(QEvent* e);
+    void focusOut();
+    void focusIn();
+    
 private:
     
     void startDrag();

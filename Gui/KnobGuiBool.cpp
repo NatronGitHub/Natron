@@ -172,6 +172,19 @@ Bool_CheckBox::dropEvent(QDropEvent* e)
     }
 }
 
+void
+Bool_CheckBox::focusInEvent(QFocusEvent* e)
+{
+    focusIn();
+    AnimatedCheckBox::focusInEvent(e);
+}
+
+void
+Bool_CheckBox::focusOutEvent(QFocusEvent* e)
+{
+    focusOut();
+    AnimatedCheckBox::focusOutEvent(e);
+}
 
 KnobGuiBool::KnobGuiBool(KnobPtr knob,
                            DockablePanel *container)
