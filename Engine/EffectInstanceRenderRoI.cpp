@@ -32,6 +32,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/scoped_ptr.hpp>
+
 #include <QtCore/QThreadPool>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QReadWriteLock>
@@ -694,22 +696,23 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             renderScaleOneUpstreamIfRenderScaleSupportDisabled = true;
         }
     }
-    ImageKey key(getNode().get(),
-                         nodeHash,
-                         isFrameVaryingOrAnimated,
-                         args.time,
-                         args.view,
-                         1.,
-                         draftModeSupported && frameArgs->draftMode,
-                         renderMappedMipMapLevel == 0 && args.mipMapLevel != 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled);
-    ImageKey nonDraftKey(getNode().get(),
-                         nodeHash,
-                         isFrameVaryingOrAnimated,
-                         args.time,
-                         args.view,
-                         1.,
-                         false,
-                         renderMappedMipMapLevel == 0 && args.mipMapLevel != 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled);
+    boost::scoped_ptr<ImageKey> key, nonDraftKey;
+    key.reset(new ImageKey(getNode().get(),
+                           nodeHash,
+                           isFrameVaryingOrAnimated,
+                           args.time,
+                           args.view,
+                           1.,
+                           draftModeSupported && frameArgs->draftMode,
+                           renderMappedMipMapLevel == 0 && args.mipMapLevel != 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled));
+    nonDraftKey.reset(new ImageKey(getNode().get(),
+                                   nodeHash,
+                                   isFrameVaryingOrAnimated,
+                                   args.time,
+                                   args.view,
+                                   1.,
+                                   false,
+                                   renderMappedMipMapLevel == 0 && args.mipMapLevel != 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled));
 
     bool useDiskCacheNode = dynamic_cast<DiskCacheNode*>(this) != NULL;
 
@@ -762,7 +765,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 int nLookups = draftModeSupported && frameArgs->draftMode ? 2 : 1;
                 
                 for (int n = 0; n < nLookups; ++n) {
-                    getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, n == 0 ? nonDraftKey : key, renderMappedMipMapLevel,
+                    getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, n == 0 ? *nonDraftKey : *key, renderMappedMipMapLevel,
                                                         renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
                                                         &rod,
                                                         args.bitdepth, *it,
@@ -779,7 +782,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             
             if (byPassCache) {
                 if (plane.fullscaleImage) {
-                    appPTR->removeFromNodeCache( key.getHash() );
+                    appPTR->removeFromNodeCache( key->getHash() );
                     plane.fullscaleImage.reset();
                 }
             }
@@ -1153,7 +1156,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
 
             assert(components);
-            getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, key, renderMappedMipMapLevel,
+            getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, *key, renderMappedMipMapLevel,
                                                 renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
                                                 &rod,
                                                 args.bitdepth, it->first,
@@ -1269,7 +1272,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
             if (!it->second.fullscaleImage) {
                 ///The image is not cached
-                allocateImagePlane(key, rod, downscaledImageBounds, upscaledImageBounds, isProjectFormat, *framesNeeded, *components, args.bitdepth, par, args.mipMapLevel, renderFullScaleThenDownscale, useDiskCacheNode, createInCache, &it->second.fullscaleImage, &it->second.downscaleImage);
+                allocateImagePlane(*key, rod, downscaledImageBounds, upscaledImageBounds, isProjectFormat, *framesNeeded, *components, args.bitdepth, par, args.mipMapLevel, renderFullScaleThenDownscale, useDiskCacheNode, createInCache, &it->second.fullscaleImage, &it->second.downscaleImage);
             } else {
                 /*
                  * There might be a situation  where the RoD of the cached image

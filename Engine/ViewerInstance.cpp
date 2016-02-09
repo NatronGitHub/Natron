@@ -30,6 +30,7 @@
 #include <cassert>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
 #include <boost/bind.hpp>
@@ -1479,16 +1480,20 @@ ViewerInstance::renderViewer_internal(int view,
         try {
             
             ImageList planes;
-            EffectInstance::RenderRoIRetCode retCode =
-            inArgs.activeInputToRender->renderRoI(EffectInstance::RenderRoIArgs(inArgs.params->time,
-                                                                                inArgs.key->getScale(),
-                                                                                inArgs.params->mipMapLevel,
-                                                                                view,
-                                                                                inArgs.forceRender,
-                                                                                splitRoi[rectIndex],
-                                                                                inArgs.params->rod,
-                                                                                requestedComponents,
-                                                                                imageDepth, false, this),&planes);
+            EffectInstance::RenderRoIRetCode retCode;
+            {
+                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
+                renderArgs.reset(new EffectInstance::RenderRoIArgs(inArgs.params->time,
+                                                                   inArgs.key->getScale(),
+                                                                   inArgs.params->mipMapLevel,
+                                                                   view,
+                                                                   inArgs.forceRender,
+                                                                   splitRoi[rectIndex],
+                                                                   inArgs.params->rod,
+                                                                   requestedComponents,
+                                                                   imageDepth, false, this));
+                retCode = inArgs.activeInputToRender->renderRoI(*renderArgs, &planes);
+            }
             //Either rendering failed or we have 2 planes (alpha mask and color image) or we have a single plane (color image)
             assert(planes.size() == 0 || planes.size() <= 2);
             if (!planes.empty() && retCode == EffectInstance::eRenderRoIRetCodeOk) {

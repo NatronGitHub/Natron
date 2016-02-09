@@ -31,6 +31,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/scoped_ptr.hpp>
+
 #include <QtCore/QDebug>
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QCoreApplication>
@@ -5479,16 +5481,18 @@ Node::makePreviewImage(SequenceTime time,
         // but any exception in renderROI is probably fatal.
         ImageList planes;
         try {
-            EffectInstance::RenderRoIRetCode retCode =
-            effect->renderRoI( EffectInstance::RenderRoIArgs( time,
-                                                             scale,
-                                                             mipMapLevel,
-                                                             0, //< preview only renders view 0 (left)
-                                                             false,
-                                                             renderWindow,
-                                                             rod,
-                                                             requestedComps, //< preview is always rgb...
-                                                             depth, false, effect) ,&planes);
+            boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
+            renderArgs.reset(new EffectInstance::RenderRoIArgs(time,
+                                                               scale,
+                                                               mipMapLevel,
+                                                               0, //< preview only renders view 0 (left)
+                                                               false,
+                                                               renderWindow,
+                                                               rod,
+                                                               requestedComps, //< preview is always rgb...
+                                                               depth, false, effect));
+            EffectInstance::RenderRoIRetCode retCode;
+            retCode = effect->renderRoI(*renderArgs, &planes);
             if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
                 return false;
             }

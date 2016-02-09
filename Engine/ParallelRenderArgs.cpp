@@ -27,6 +27,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/scoped_ptr.hpp>
+
 #include "Engine/AppManager.h"
 #include "Engine/Settings.h"
 #include "Engine/EffectInstance.h"
@@ -277,27 +279,28 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
                                 const unsigned int upstreamMipMapLevel = useScaleOneInputs ? 0 : originalMipMapLevel;
                                 const RenderScale & upstreamScale = useScaleOneInputs ? scaleOne : scale;
                                 roi.toPixelEnclosing(upstreamMipMapLevel, inputPar, &inputRoIPixelCoords);
-                                
-                                EffectInstance::RenderRoIArgs inArgs(f, //< time
-                                                                     upstreamScale, //< scale
-                                                                     upstreamMipMapLevel, //< mipmapLevel (redundant with the scale)
-                                                                     viewIt->first, //< view
-                                                                     byPassCache,
-                                                                     inputRoIPixelCoords, //< roi in pixel coordinates
-                                                                     RectD(), // < did we precompute any RoD to speed-up the call ?
-                                                                     componentsToRender, //< requested comps
-                                                                     inputPrefDepth,
-                                                                     false,
-                                                                     effect.get());
-                                
-                                
-                                
+
                                 ImageList inputImgs;
-                                EffectInstance::RenderRoIRetCode ret = inputEffect->renderRoI(inArgs, &inputImgs); //< requested bitdepth
-                                if (ret != EffectInstance::eRenderRoIRetCodeOk) {
-                                    return ret;
+                                {
+                                    boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
+                                    renderArgs.reset(new EffectInstance::RenderRoIArgs(f, //< time
+                                                                                       upstreamScale, //< scale
+                                                                                       upstreamMipMapLevel, //< mipmapLevel (redundant with the scale)
+                                                                                       viewIt->first, //< view
+                                                                                       byPassCache,
+                                                                                       inputRoIPixelCoords, //< roi in pixel coordinates
+                                                                                       RectD(), // < did we precompute any RoD to speed-up the call ?
+                                                                                       componentsToRender, //< requested comps
+                                                                                       inputPrefDepth,
+                                                                                       false,
+                                                                                       effect.get()));
+
+                                    EffectInstance::RenderRoIRetCode ret;
+                                    ret = inputEffect->renderRoI(*renderArgs, &inputImgs); //< requested bitdepth
+                                    if (ret != EffectInstance::eRenderRoIRetCodeOk) {
+                                        return ret;
+                                    }
                                 }
-                                
                                 for (ImageList::iterator it3 = inputImgs.begin(); it3 != inputImgs.end(); ++it3) {
                                     if (inputImagesList && *it3) {
                                         inputImagesList->push_back(*it3);

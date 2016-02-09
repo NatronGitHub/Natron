@@ -766,7 +766,7 @@ Image::makeKey(const CacheEntryHolder* holder,
                bool draftMode,
                bool fullScaleWithDownscaleInputs)
 {
-    return ImageKey(holder,nodeHashKey,frameVaryingOrAnimated,time,view, 1., draftMode, fullScaleWithDownscaleInputs);
+    return ImageKey(holder, nodeHashKey, frameVaryingOrAnimated, time, view, 1., draftMode, fullScaleWithDownscaleInputs);
 }
 
 boost::shared_ptr<ImageParams>
