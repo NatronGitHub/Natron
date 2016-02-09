@@ -59,37 +59,30 @@ Gui::importLayout()
     SequenceFileDialog dialog( this, filters, false, SequenceFileDialog::eFileDialogModeOpen, _imp->_lastLoadProjectOpenedDir.toStdString(), this, false );
     if ( dialog.exec() ) {
         std::string filename = dialog.selectedFiles();
-        std::ifstream ifile;
-        try {
-            ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-            ifile.open(filename.c_str(), std::ifstream::in);
-        } catch (const std::ifstream::failure & e) {
-            QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
-            Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
-
+        
+        boost::shared_ptr<std::istream> ifile = Global::open_ifstream(filename);
+        if (!ifile) {
+            Dialogs::errorDialog( tr("Error").toStdString(), tr("Failed to open file: ").toStdString() + filename, false );
             return;
         }
 
         try {
-            boost::archive::xml_iarchive iArchive(ifile);
+            boost::archive::xml_iarchive iArchive(*ifile);
             GuiLayoutSerialization s;
             iArchive >> boost::serialization::make_nvp("Layout", s);
             restoreLayout(true, false, s);
         } catch (const boost::archive::archive_exception & e) {
-            ifile.close();
             QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
             Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
             return;
         } catch (const std::exception & e) {
-            ifile.close();
             QString err = QString("Exception occured when opening file %1: %2").arg( filename.c_str() ).arg( e.what() );
             Dialogs::errorDialog( tr("Error").toStdString(), tr( err.toStdString().c_str() ).toStdString(), false );
 
             return;
         }
 
-        ifile.close();
     }
 }
 

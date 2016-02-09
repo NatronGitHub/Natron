@@ -741,11 +741,13 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
     //on windows: C:\Users\<username>\App Data\Local\<organization>\<application>\Caches\OFXLoadCache
     QString ofxCacheFilePath = getCacheFilePath();
     
-    std::ifstream ifs(ofxCacheFilePath.toStdString().c_str());
-    if (ifs.is_open()) {
-        OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
-        ifs.close();
+    {
+        boost::shared_ptr<std::istream> ifs = Global::open_ifstream(ofxCacheFilePath.toStdString());
+        if (ifs) {
+            OFX::Host::PluginCache::getPluginCache()->readCache(*ifs);
+        }
     }
+    
     OFX::Host::PluginCache::getPluginCache()->scanPluginFiles();
     _imp->loadingPluginID.clear(); // finished loading plugins
 
@@ -898,11 +900,12 @@ OfxHost::writeOFXCache()
     QString ofxCachePath = getOFXCacheDirPath();
     QDir().mkpath(ofxCachePath);
     QString ofxCacheFilePath = getCacheFilePath();
-    std::ofstream of( ofxCacheFilePath.toStdString().c_str() );
-    assert( of.is_open() );
-    assert( OFX::Host::PluginCache::getPluginCache() );
-    OFX::Host::PluginCache::getPluginCache()->writePluginCache(of);
-    of.close();
+    boost::shared_ptr<std::ostream> ofile = Global::open_ofstream(ofxCacheFilePath.toStdString());
+    if (!ofile) {
+        return;
+    }
+    assert(OFX::Host::PluginCache::getPluginCache());
+    OFX::Host::PluginCache::getPluginCache()->writePluginCache(*ofile);
 }
 
 void

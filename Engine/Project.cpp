@@ -250,14 +250,12 @@ Project::loadProjectInternal(const QString & path,
     }
     
     bool ret = false;
-    std::ifstream ifile;
-    try {
-        ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        ifile.open(filePath.toStdString().c_str(),std::ifstream::in);
-    } catch (const std::ifstream::failure & e) {
-        throw std::runtime_error( std::string("Exception occured when opening file ") + filePath.toStdString() + ": " + e.what() );
-    }
     
+    boost::shared_ptr<std::istream> ifile = Global::open_ifstream(filePath.toStdString());
+    if (!ifile) {
+        throw std::runtime_error(std::string("Failed to open ") + filePath.toStdString());
+    }
+
     if (NATRON_VERSION_MAJOR == 1 && NATRON_VERSION_MINOR == 0 && NATRON_VERSION_REVISION == 0) {
         
         ///Try to determine if the project was made during Natron v1.0.0 - RC2 or RC3 to detect a bug we introduced at that time
@@ -285,7 +283,7 @@ Project::loadProjectInternal(const QString & path,
     
     try {
         bool bgProject;
-        boost::archive::xml_iarchive iArchive(ifile);
+        boost::archive::xml_iarchive iArchive(*ifile);
         {
             FlagSetter __raii_loadingProjectInternal__(true,&_imp->isLoadingProjectInternal,&_imp->isLoadingProjectMutex);
             
@@ -300,22 +298,17 @@ Project::loadProjectInternal(const QString & path,
             getApp()->loadProjectGui(iArchive);
         }
     } catch (const boost::archive::archive_exception & e) {
-        ifile.close();
         throw std::runtime_error( e.what() );
     } catch (const std::ios_base::failure& e) {
-        ifile.close();
         getApp()->progressEnd(this);
         throw std::runtime_error( std::string("Failed to read the project file: I/O failure (") + e.what() + ")");
     } catch (const std::exception & e) {
-        ifile.close();
         throw std::runtime_error( std::string("Failed to read the project file: ") + e.what() );
     } catch (...) {
-        ifile.close();
         getApp()->progressEnd(this);
         throw std::runtime_error("Failed to read the project file");
     }
 
-    ifile.close();
     
     Format f;
     getProjectDefaultFormat(&f);
@@ -514,50 +507,41 @@ Project::saveProjectInternal(const QString & path,
     tmpFilename.append( QDir::separator() );
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
-    std::ofstream ofile;
-    try {
-        ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        ofile.open(tmpFilename.toStdString().c_str(),std::ofstream::out);
-    } catch (const std::ofstream::failure & e) {
-        throw std::runtime_error( std::string("Exception occured when opening file ") + tmpFilename.toStdString() + ": " + e.what() );
-    }
-
-    if ( !ofile.good() ) {
-        qDebug() << "Failed to open file " << tmpFilename.toStdString().c_str();
-        throw std::runtime_error( "Failed to open file " + tmpFilename.toStdString() );
-    }
-
-    ///Fix file paths before saving.
-    QString oldProjectPath(_imp->getProjectPath().c_str());
-   
-    if (!autoSave && updateProjectProperties) {
-        _imp->autoSetProjectDirectory(path);
-        _imp->saveDate->setValue(timeStr.toStdString());
-        _imp->lastAuthorName->setValue(generateGUIUserName());
-        _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName());
-    }
-    
-    try {
-        boost::archive::xml_oarchive oArchive(ofile);
-        bool bgProject = getApp()->isBackground();
-        oArchive << boost::serialization::make_nvp("Background_project",bgProject);
-        ProjectSerialization projectSerializationObj( getApp() );
-        save(&projectSerializationObj);
-        oArchive << boost::serialization::make_nvp("Project",projectSerializationObj);
-        if (!bgProject) {
-            getApp()->saveProjectGui(oArchive);
+    {
+        boost::shared_ptr<std::ostream> ofile = Global::open_ofstream(tmpFilename.toStdString());
+        if (!ofile) {
+            throw std::runtime_error(tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
         }
-    } catch (...) {
-        ofile.close();
+        
+        ///Fix file paths before saving.
+        QString oldProjectPath(_imp->getProjectPath().c_str());
+        
         if (!autoSave && updateProjectProperties) {
-            ///Reset the old project path in case of failure.
-            _imp->autoSetProjectDirectory(oldProjectPath);
+            _imp->autoSetProjectDirectory(path);
+            _imp->saveDate->setValue(timeStr.toStdString());
+            _imp->lastAuthorName->setValue(generateGUIUserName());
+            _imp->natronVersion->setValue(generateUserFriendlyNatronVersionName());
         }
-        throw;
-    }
-
-    ofile.close();
-
+        
+        try {
+            boost::archive::xml_oarchive oArchive(*ofile);
+            bool bgProject = getApp()->isBackground();
+            oArchive << boost::serialization::make_nvp("Background_project",bgProject);
+            ProjectSerialization projectSerializationObj( getApp() );
+            save(&projectSerializationObj);
+            oArchive << boost::serialization::make_nvp("Project",projectSerializationObj);
+            if (!bgProject) {
+                getApp()->saveProjectGui(oArchive);
+            }
+        } catch (...) {
+            if (!autoSave && updateProjectProperties) {
+                ///Reset the old project path in case of failure.
+                _imp->autoSetProjectDirectory(oldProjectPath);
+            }
+            throw;
+        }
+    } // ofile
+    
     QFile::remove(filePath);
     int nAttemps = 0;
 

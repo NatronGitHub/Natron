@@ -196,12 +196,11 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
         return;
     }
     
-    std::ifstream ifile;
-    try {
-        ifile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-        ifile.open(filename.c_str(),std::ifstream::in);
-    } catch (const std::ifstream::failure & e) {
-        Dialogs::errorDialog("Presets",e.what());
+
+    
+    boost::shared_ptr<std::istream> ifile = Global::open_ifstream(filename);
+    if (!ifile) {
+        Dialogs::errorDialog( tr("Presets").toStdString(), tr("Failed to open file: ").toStdString() + filename, false );
         return;
     }
     
@@ -209,7 +208,7 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
     try {
 
         int nNodes;
-        boost::archive::xml_iarchive iArchive(ifile);
+        boost::archive::xml_iarchive iArchive(*ifile);
         iArchive >> boost::serialization::make_nvp("NodesCount",nNodes);
         for (int i = 0; i < nNodes ; ++i) {
             boost::shared_ptr<NodeSerialization> node(new NodeSerialization());
@@ -219,7 +218,6 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
         
         
     } catch (const std::exception & e) {
-        ifile.close();
         Dialogs::errorDialog("Presets",e.what());
         return;
     }
@@ -256,12 +254,11 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
         filename.append("." NATRON_PRESETS_FILE_EXT);
     }
     
-    std::ofstream ofile;
-    try {
-        ofile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-        ofile.open(filename.c_str(),std::ofstream::out);
-    } catch (const std::ofstream::failure & e) {
-        Dialogs::errorDialog("Presets",e.what());
+
+    boost::shared_ptr<std::ostream> ofile = Global::open_ofstream(filename);
+    if (!ofile) {
+        Dialogs::errorDialog( tr("Presets").toStdString()
+                             , tr("Failed to open file ").toStdString() + filename, false );
         return;
     }
 
@@ -271,7 +268,7 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
     try {
          
         int nNodes = nodeSerialization.size();
-        boost::archive::xml_oarchive oArchive(ofile);
+        boost::archive::xml_oarchive oArchive(*ofile);
         oArchive << boost::serialization::make_nvp("NodesCount",nNodes);
         for (std::list<boost::shared_ptr<NodeSerialization> >::iterator it = nodeSerialization.begin();
              it != nodeSerialization.end(); ++it) {
@@ -280,7 +277,6 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
         
         
     }  catch (const std::exception & e) {
-        ofile.close();
         Dialogs::errorDialog("Presets",e.what());
         return;
     }

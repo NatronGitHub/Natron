@@ -301,38 +301,26 @@ Gui::exportLayout()
             filename.append("." NATRON_LAYOUT_FILE_EXT);
         }
 
-        std::ofstream ofile;
-        try {
-            ofile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-            ofile.open(filename.c_str(), std::ofstream::out);
-        } catch (const std::ofstream::failure & e) {
+
+        
+        boost::shared_ptr<std::ostream> ofile = Global::open_ofstream(filename);
+        if (!ofile) {
             Dialogs::errorDialog( tr("Error").toStdString()
-                                 , tr("Exception occured when opening file").toStdString(), false );
-
-            return;
-        }
-
-        if ( !ofile.good() ) {
-            Dialogs::errorDialog( tr("Error").toStdString()
-                                 , tr("Failure to open the file").toStdString(), false );
-
+                                 , tr("Failed to open file ").toStdString() + filename, false );
             return;
         }
 
         try {
-            boost::archive::xml_oarchive oArchive(ofile);
+            boost::archive::xml_oarchive oArchive(*ofile);
             GuiLayoutSerialization s;
             s.initialize(this);
             oArchive << boost::serialization::make_nvp("Layout", s);
         }catch (...) {
             Dialogs::errorDialog( tr("Error").toStdString()
-                                 , tr("Failure when saving the layout").toStdString(), false );
-            ofile.close();
-
+                                 , tr("Failed to save the layout").toStdString(), false );
             return;
         }
 
-        ofile.close();
     }
 }
 

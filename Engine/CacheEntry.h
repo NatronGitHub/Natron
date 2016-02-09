@@ -34,6 +34,10 @@
 #include <vector>
 #include <fstream>
 
+#ifdef __NATRON_WIN32__
+#include <windows.h>
+#endif
+
 #include <QtCore/QFile>
 #include <QtCore/QMutex>
 #include <QtCore/QReadWriteLock>
@@ -825,10 +829,20 @@ private:
 
     static bool fileExists(const std::string& filename)
     {
-        std::ifstream f(filename.c_str());
-        bool ret = f.good();
-        f.close();
-        return ret;
+#ifdef _WIN32
+        WIN32_FIND_DATAW FindFileData;
+        std::wstring wpath = utf8ToUtf16 (filename);
+        HANDLE handle = FindFirstFileW(wpath.c_str(), &FindFileData) ;
+        if (handle != INVALID_HANDLE_VALUE) {
+            FindClose(handle);
+            return true;
+        }
+        return false;
+#else
+        // on Unix platforms passing in UTF-8 works
+        std::ifstream fs(filename.c_str());
+        return fs.is_open() && fs.good();
+#endif
     }
 
     /** @brief This function is called in allocateMeory(...) and before the object is exposed

@@ -487,110 +487,101 @@ OutputEffectInstance::reportStats(int time,
         return;
     }
 
-    std::ofstream ofile;
-    ofile.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-    try {
-        ofile.open(filename.c_str(), std::ofstream::out);
-    } catch (const std::ios_base::failure & e) {
-        std::cout << QObject::tr("Failure to write render statistics file: ").toStdString() << e.what() << std::endl;
 
+    boost::shared_ptr<std::ostream> ofile = Global::open_ofstream(filename);
+    if (!ofile) {
+         std::cout << QObject::tr("Failure to write render statistics file.").toStdString() << std::endl;
         return;
     }
 
-    if ( !ofile.good() ) {
-        std::cout << QObject::tr("Failure to write render statistics file.").toStdString() << std::endl;
-
-        return;
-    }
-
-    ofile << "Time spent to render frame (wall clock time): " << Timer::printAsTime(wallTime, false).toStdString() << std::endl;
+    *ofile << "Time spent to render frame (wall clock time): " << Timer::printAsTime(wallTime, false).toStdString() << std::endl;
     for (std::map<NodePtr, NodeRenderStats >::const_iterator it = stats.begin(); it != stats.end(); ++it) {
-        ofile << "------------------------------- " << it->first->getScriptName_mt_safe() << "------------------------------- " << std::endl;
-        ofile << "Time spent rendering: " << Timer::printAsTime(it->second.getTotalTimeSpentRendering(), false).toStdString() << std::endl;
+        *ofile << "------------------------------- " << it->first->getScriptName_mt_safe() << "------------------------------- " << std::endl;
+        *ofile << "Time spent rendering: " << Timer::printAsTime(it->second.getTotalTimeSpentRendering(), false).toStdString() << std::endl;
         const RectD & rod = it->second.getRoD();
-        ofile << "Region of definition: x1 = " << rod.x1  << " y1 = " << rod.y1 << " x2 = " << rod.x2 << " y2 = " << rod.y2 << std::endl;
-        ofile << "Is Identity to Effect? ";
+        *ofile << "Region of definition: x1 = " << rod.x1  << " y1 = " << rod.y1 << " x2 = " << rod.x2 << " y2 = " << rod.y2 << std::endl;
+        *ofile << "Is Identity to Effect? ";
         NodePtr identity = it->second.getInputImageIdentity();
         if (identity) {
-            ofile << "Yes, to " << identity->getScriptName_mt_safe() << std::endl;
+            *ofile << "Yes, to " << identity->getScriptName_mt_safe() << std::endl;
         } else {
-            ofile << "No" << std::endl;
+            *ofile << "No" << std::endl;
         }
-        ofile << "Has render-scale support? ";
+        *ofile << "Has render-scale support? ";
         if ( it->second.isRenderScaleSupportEnabled() ) {
-            ofile << "Yes";
+            *ofile << "Yes";
         } else {
-            ofile << "No";
+            *ofile << "No";
         }
-        ofile << std::endl;
-        ofile << "Has tiles support? ";
+        *ofile << std::endl;
+        *ofile << "Has tiles support? ";
         if ( it->second.isTilesSupportEnabled() ) {
-            ofile << "Yes";
+            *ofile << "Yes";
         } else {
-            ofile << "No";
+            *ofile << "No";
         }
-        ofile << std::endl;
-        ofile << "Channels processed: ";
+        *ofile << std::endl;
+        *ofile << "Channels processed: ";
 
         std::bitset<4> processChannels = it->second.getChannelsRendered();
         if (processChannels[0]) {
-            ofile << "red ";
+            *ofile << "red ";
         }
         if (processChannels[1]) {
-            ofile << "green ";
+            *ofile << "green ";
         }
         if (processChannels[2]) {
-            ofile << "blue ";
+            *ofile << "blue ";
         }
         if (processChannels[3]) {
-            ofile << "alpha";
+            *ofile << "alpha";
         }
-        ofile << std::endl;
+        *ofile << std::endl;
 
-        ofile << "Output alpha premultiplication: ";
+        *ofile << "Output alpha premultiplication: ";
         switch ( it->second.getOutputPremult() ) {
         case eImagePremultiplicationOpaque:
-            ofile << "opaque";
+            *ofile << "opaque";
             break;
         case eImagePremultiplicationPremultiplied:
-            ofile << "premultiplied";
+            *ofile << "premultiplied";
             break;
         case eImagePremultiplicationUnPremultiplied:
-            ofile << "unpremultiplied";
+            *ofile << "unpremultiplied";
             break;
         }
-        ofile << std::endl;
+        *ofile << std::endl;
 
-        ofile << "Mipmap level(s) rendered: ";
+        *ofile << "Mipmap level(s) rendered: ";
         for (std::set<unsigned int>::const_iterator it2 = it->second.getMipMapLevelsRendered().begin(); it2 != it->second.getMipMapLevelsRendered().end(); ++it2) {
-            ofile << *it2 << ' ';
+            *ofile << *it2 << ' ';
         }
-        ofile << std::endl;
+        *ofile << std::endl;
         int nbCacheMiss, nbCacheHit, nbCacheHitButDownscaled;
         it->second.getCacheAccessInfos(&nbCacheMiss, &nbCacheHit, &nbCacheHitButDownscaled);
-        ofile << "Nb cache hit: " << nbCacheMiss << std::endl;
-        ofile << "Nb cache miss: " << nbCacheMiss << std::endl;
-        ofile << "Nb cache hit requiring mipmap downscaling: " << nbCacheHitButDownscaled << std::endl;
+        *ofile << "Nb cache hit: " << nbCacheMiss << std::endl;
+        *ofile << "Nb cache miss: " << nbCacheMiss << std::endl;
+        *ofile << "Nb cache hit requiring mipmap downscaling: " << nbCacheHitButDownscaled << std::endl;
 
         const std::set<std::string> & planes = it->second.getPlanesRendered();
-        ofile << "Plane(s) rendered: ";
+        *ofile << "Plane(s) rendered: ";
         for (std::set<std::string>::const_iterator it2 = planes.begin(); it2 != planes.end(); ++it2) {
-            ofile << *it2 << ' ';
+            *ofile << *it2 << ' ';
         }
-        ofile << std::endl;
+        *ofile << std::endl;
 
         std::list<std::pair<RectI, NodePtr > > identityRectangles = it->second.getIdentityRectangles();
         const std::list<RectI> & renderedRectangles = it->second.getRenderedRectangles();
 
-        ofile << "Identity rectangles: " << identityRectangles.size() << std::endl;
+        *ofile << "Identity rectangles: " << identityRectangles.size() << std::endl;
         for (std::list<std::pair<RectI, NodePtr > > ::iterator it2 = identityRectangles.begin(); it2 != identityRectangles.end(); ++it2) {
-            ofile << "Origin: " << it2->second->getScriptName_mt_safe() << ", rect: x1 = " << it2->first.x1
+            *ofile << "Origin: " << it2->second->getScriptName_mt_safe() << ", rect: x1 = " << it2->first.x1
                   << " y1 = " << it2->first.y1 << " x2 = " << it2->first.x2 << " y2 = " << it2->first.y2 << std::endl;
         }
 
-        ofile << "Rectangles rendered: " << renderedRectangles.size() << std::endl;
+        *ofile << "Rectangles rendered: " << renderedRectangles.size() << std::endl;
         for (std::list<RectI>::const_iterator it2 = renderedRectangles.begin(); it2 != renderedRectangles.end(); ++it2) {
-            ofile << "x1 = " << it2->x1 << " y1 = " << it2->y1 << " x2 = " << it2->x2 << " y2 = " << it2->y2 << std::endl;
+            *ofile << "x1 = " << it2->x1 << " y1 = " << it2->y1 << " x2 = " << it2->x2 << " y2 = " << it2->y2 << std::endl;
         }
     }
 } // OutputEffectInstance::reportStats
