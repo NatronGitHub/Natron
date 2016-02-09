@@ -83,7 +83,9 @@ and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it inst
 
 Install homebrew from <http://brew.sh/>
 
-Patch the qt recipe to fix the stack overflow issue (see the [homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md) if you wonder what that means):
+Patch the qt4 recipe to fix the stack overflow issue (see [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793)).
+
+Patching a homebrew recipe is explained in the [homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md).
 
     brew edit qt4
 
@@ -114,6 +116,7 @@ this in your .bash_profile):
 
 ### Installing a patched Qt to avoid stack overflows
 
+See [QTBUG-49607](https://bugreports.qt.io/browse/QTBUG-49607), [homebrew issue #46307](https://github.com/Homebrew/homebrew/issues/46307), [MacPorts ticket 49793](http://trac.macports.org/ticket/49793).
 
     wget https://download.qt.io/official_releases/qt/4.8/4.8.7/qt-everywhere-opensource-src-4.8.7.tar.gz
     tar zxvf qt-everywhere-opensource-src-4.8.7.tar.gz
