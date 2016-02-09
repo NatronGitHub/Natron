@@ -3174,8 +3174,6 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 {
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
 
-    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
-
     if (useIdentityCache) {
         double timeF = 0.;
         bool foundInCache = _imp->actionsCache.getIdentityResult(hash, time, view, inputNb, &timeF);
