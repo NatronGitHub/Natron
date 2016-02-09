@@ -272,7 +272,6 @@ std::ifstream* open_ifstream_impl(const std::string &filename)
         return 0;
     }
     try {
-        ret->exceptions(std::ifstream::failbit | std::ifstream::badbit);
         ret->open(
 #ifdef __NATRON_WIN32__
                   wfilename.c_str(),
@@ -280,12 +279,12 @@ std::ifstream* open_ifstream_impl(const std::string &filename)
                   filename.c_str(),
 #endif
                   std::ifstream::in);
-    } catch (const std::ifstream::failure & e) {
+    } catch (const std::exception & e) {
         delete ret;
         return 0;
     }
     
-    if (!ret->good()) {
+    if (!*ret) {
         delete ret;
         return 0;
     }
@@ -304,7 +303,6 @@ std::ofstream* open_ofstream_impl(const std::string &filename)
         return 0;
     }
     try {
-        ret->exceptions(std::ifstream::failbit | std::ifstream::badbit);
         ret->open(
 #ifdef __NATRON_WIN32__
                   wfilename.c_str(),
@@ -312,12 +310,12 @@ std::ofstream* open_ofstream_impl(const std::string &filename)
                   filename.c_str(),
 #endif
                   std::ofstream::out);
-    } catch (const std::ofstream::failure & e) {
+    } catch (const std::exception & e) {
         delete ret;
         return 0;
     }
     
-    if (!ret->good()) {
+    if (!*ret) {
         delete ret;
         return 0;
     }

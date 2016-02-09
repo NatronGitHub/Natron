@@ -744,7 +744,11 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
     {
         boost::shared_ptr<std::istream> ifs = Global::open_ifstream(ofxCacheFilePath.toStdString());
         if (ifs) {
-            OFX::Host::PluginCache::getPluginCache()->readCache(*ifs);
+            try {
+                OFX::Host::PluginCache::getPluginCache()->readCache(*ifs);
+            } catch (const std::exception& e) {
+                qDebug() << "Failure to read OpenFX plug-ins cache: " << e.what();
+            }
         }
     }
     
