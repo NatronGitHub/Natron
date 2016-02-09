@@ -518,6 +518,7 @@ Gui::removeViewerTab(ViewerTab* tab,
         }
 
         if (deleteData) {
+            
             QMutexLocker l(&_imp->_viewerTabsMutex);
             std::list<ViewerTab*>::iterator it = std::find(_imp->_viewerTabs.begin(), _imp->_viewerTabs.end(), tab);
             if ( it != _imp->_viewerTabs.end() ) {

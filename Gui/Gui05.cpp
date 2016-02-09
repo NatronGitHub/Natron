@@ -258,6 +258,8 @@ Gui::removeGroupGui(NodeGraph* tab,
         if ( it != _imp->_groups.end() ) {
             _imp->_groups.erase(it);
         }
+
+        unregisterTab(tab);
         tab->deleteLater();
     }
 }

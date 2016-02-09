@@ -182,6 +182,7 @@ NodeGraph::NodeGraph(Gui* gui,
 
 NodeGraph::~NodeGraph()
 {
+    
     for (NodesGuiList::iterator it = _imp->_nodes.begin();
          it != _imp->_nodes.end();
          ++it) {

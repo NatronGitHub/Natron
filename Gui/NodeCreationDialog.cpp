@@ -252,6 +252,15 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
                     _imp->dialog->accept();
                 }
                 e->accept();
+            } else if (indexes.isEmpty()) {
+                if (_imp->model->rowCount() > 1) {
+                    setText( _imp->model->index(0).data().toString() );
+                    Q_EMIT itemCompletionChosen();
+                    if (_imp->quickExitEnabled) {
+                        _imp->dialog->accept();
+                    }
+                    e->accept();
+                }
             } else {
                 QLineEdit::keyPressEvent(e);
             }
