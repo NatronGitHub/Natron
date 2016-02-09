@@ -29,6 +29,8 @@
 #if defined(_WIN32)
 #include <string>
 #include <windows.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #else
 #include <cstdlib>
 #endif

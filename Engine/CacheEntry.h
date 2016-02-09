@@ -54,6 +54,7 @@
 #include "Engine/NonKeyParams.h"
 #include <SequenceParsing.h> // for removePath
 #include "Engine/EngineFwd.h"
+#include "Global/GlobalDefines.h"
 
 NATRON_NAMESPACE_ENTER;
 
