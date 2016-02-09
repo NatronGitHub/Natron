@@ -698,6 +698,7 @@ NodeCurveEditorElement::onExpressionChanged()
 {
     if (_curveWidget->getSelectedCurve() == _curve) {
         _curveWidget->refreshCurrentExpression();
+        return;
     }
     checkVisibleState();
 }
