@@ -651,6 +651,8 @@ public:
                                         ValueChangedReasonEnum reason,
                                         bool forceGetClipPrefAction);
 
+
+
 protected:
 
     void refreshClipPreferences_recursive(double time,
@@ -659,7 +661,8 @@ protected:
                                            bool forceGetClipPrefAction,
                                            std::list<Node*> & markedNodes);
 
-
+friend class ClipPreferencesRunning_RAII;
+    void setClipPreferencesRunning(bool running);
 
 public:
 
@@ -1905,6 +1908,24 @@ private:
 
 };
 
+class ClipPreferencesRunning_RAII
+{
+    EffectInstance* _effect;
+public:
+    
+    ClipPreferencesRunning_RAII(EffectInstance* effect)
+    : _effect(effect)
+    {
+        _effect->setClipPreferencesRunning(true);
+    }
+    
+    ~ClipPreferencesRunning_RAII()
+    {
+        _effect->setClipPreferencesRunning(false);
+    }
+    
+    
+};
 
 
 /**

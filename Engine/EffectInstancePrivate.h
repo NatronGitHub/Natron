@@ -212,7 +212,7 @@ struct EffectInstance::Implementation
     mutable QMutex defaultClipPreferencesDataMutex;
     EffectInstance::DefaultClipPreferencesData clipPrefsData;
     
-    
+    bool runningClipPreferences; //only used on main thread
 
 
     void runChangedParamCallback(KnobI* k, bool userEdited, const std::string & callback);

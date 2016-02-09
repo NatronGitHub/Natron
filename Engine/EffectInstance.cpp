@@ -4521,7 +4521,12 @@ EffectInstance::refreshClipPreferences_recursive(double time,
     if ( found != markedNodes.end() ) {
         return;
     }
-
+    
+    if (_imp->runningClipPreferences) {
+        return;
+    }
+    
+    ClipPreferencesRunning_RAII runningflag_(this);
 
     refreshClipPreferences(time, scale, reason, forceGetClipPrefAction);
     node->refreshIdentityState();
@@ -4681,6 +4686,13 @@ EffectInstance::getRecursionLevel() const
         return 0;
     }
     return tls->actionRecursionLevel;
+}
+
+void
+EffectInstance::setClipPreferencesRunning(bool running)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->runningClipPreferences = running;
 }
 
 NATRON_NAMESPACE_EXIT;
