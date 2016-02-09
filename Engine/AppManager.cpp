@@ -3275,6 +3275,9 @@ getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
     char *moduleName = utf8bytes.data();
     
     PyObject* moduleCode = Py_CompileString(moduleContent.readAll().constData(), moduleName, Py_file_input);
+    if (!moduleCode) {
+        return false;
+    }
     PyObject* module = PyImport_ExecCodeModule(moduleName, moduleCode);
     if (!module) {
         return false;
