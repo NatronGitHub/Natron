@@ -33,6 +33,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/scoped_ptr.hpp>
+
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QCoreApplication>
@@ -2149,17 +2151,18 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         }
         assert( !comps.empty() );
         ImageList identityPlanes;
-        EffectInstance::RenderRoIArgs renderArgs(tls->currentRenderArgs.identityTime,
-                                                 actionArgs.originalScale,
-                                                 mipMapLevel,
-                                                 view,
-                                                 false,
-                                                 downscaledRectToRender,
-                                                 RectD(),
-                                                 comps,
-                                                 outputClipPrefDepth,
-                                                 false,
-                                                 _publicInterface);
+        boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
+        renderArgs.reset(new EffectInstance::RenderRoIArgs(tls->currentRenderArgs.identityTime,
+                                                           actionArgs.originalScale,
+                                                           mipMapLevel,
+                                                           view,
+                                                           false,
+                                                           downscaledRectToRender,
+                                                           RectD(),
+                                                           comps,
+                                                           outputClipPrefDepth,
+                                                           false,
+                                                           _publicInterface));
         if (!tls->currentRenderArgs.identityInput) {
             for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                 it->second.renderMappedImage->fillZero(renderMappedRectToRender);
@@ -2172,7 +2175,8 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
             return eRenderingFunctorRetOK;
         } else {
-            EffectInstance::RenderRoIRetCode renderOk = tls->currentRenderArgs.identityInput->renderRoI(renderArgs, &identityPlanes);
+            EffectInstance::RenderRoIRetCode renderOk;
+            renderOk = tls->currentRenderArgs.identityInput->renderRoI(*renderArgs, &identityPlanes);
             if (renderOk == eRenderRoIRetCodeAborted) {
                 return eRenderingFunctorRetAborted;
             } else if (renderOk == eRenderRoIRetCodeFailed) {

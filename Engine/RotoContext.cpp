@@ -31,6 +31,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/scoped_ptr.hpp>
+
 #include <QLineF>
 #include <QtDebug>
 
@@ -2648,11 +2650,12 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
         assert(mergeNodeHash != rotoHash);
     }
     
-    ImageKey key = Image::makeKey(stroke.get(),rotoHash, true ,time, view, false, false);
-    
+    boost::scoped_ptr<ImageKey> key;
+    key.reset(new ImageKey(stroke.get(), rotoHash, /*frameVaryingOrAnimated=*/true, time, view, /*pixelAspect=*/1., /*draftMode=*/false, /*fullScaleWithDownscaleInputs=*/false));
+
     {
         QMutexLocker k(&_imp->cacheAccessMutex);
-        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, false, key, mipmapLevel, NULL, NULL, depth, components, depth, components,EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
+        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, false, *key, mipmapLevel, NULL, NULL, depth, components, depth, components,EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
     }
     if (image) {
         return image;
@@ -2724,7 +2727,7 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
      */
     QMutexLocker k(&_imp->cacheAccessMutex);
     
-    AppManager::getImageFromCacheOrCreate(key, params, &image);
+    AppManager::getImageFromCacheOrCreate(*key, params, &image);
     if (!image) {
         std::stringstream ss;
         ss << "Failed to allocate an image of ";

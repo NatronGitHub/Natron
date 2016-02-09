@@ -27,6 +27,8 @@
 
 #include <stdexcept> // runtime_error
 
+#include <boost/scoped_ptr.hpp>
+
 ///gui
 #include "Global/Macros.h"
 
@@ -141,7 +143,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
     {
         QStringList pgrp = grouping;
         pgrp.push_back("Readers");
-        std::auto_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( NodePtr() ) ) );
+        boost::scoped_ptr<QtReader> reader( dynamic_cast<QtReader*>( QtReader::BuildEffect( NodePtr() ) ) );
         assert(reader.get());
         std::map<std::string,void(*)()> readerFunctions;
         readerFunctions.insert( std::make_pair("BuildEffect", (void(*)())&QtReader::BuildEffect) );
@@ -168,7 +170,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
     {
         QStringList pgrp = grouping;
         pgrp.push_back("Writers");
-        std::auto_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( NodePtr() ) ) );
+        boost::scoped_ptr<QtWriter> writer( dynamic_cast<QtWriter*>( QtWriter::BuildEffect( NodePtr() ) ) );
         assert(writer.get());
         std::map<std::string,void(*)()> writerFunctions;
         writerFunctions.insert( std::make_pair("BuildEffect", (void(*)())&QtWriter::BuildEffect) );

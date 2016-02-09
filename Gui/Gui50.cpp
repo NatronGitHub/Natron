@@ -1037,12 +1037,11 @@ Gui::isFocusStealingPossible()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     QWidget* currentFocus = qApp->focusWidget();
     
-    bool focusStealingNotPossible =
-    dynamic_cast<QLineEdit*>(currentFocus) ||
-    dynamic_cast<QTextEdit*>(currentFocus) ||
-    dynamic_cast<QCheckBox*>(currentFocus) ||
-    dynamic_cast<ComboBox*>(currentFocus) ||
-    dynamic_cast<QComboBox*>(currentFocus);
+    bool focusStealingNotPossible = (dynamic_cast<QLineEdit*>(currentFocus) ||
+                                     dynamic_cast<QTextEdit*>(currentFocus) ||
+                                     dynamic_cast<QCheckBox*>(currentFocus) ||
+                                     dynamic_cast<ComboBox*>(currentFocus) ||
+                                     dynamic_cast<QComboBox*>(currentFocus));
 
     return !focusStealingNotPossible;
 

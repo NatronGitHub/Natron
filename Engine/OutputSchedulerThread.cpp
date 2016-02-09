@@ -31,6 +31,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/scoped_ptr.hpp>
+
 #include <QtCore/QMetaType>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
@@ -2523,18 +2525,20 @@ private:
                 RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
                 
                 ImageList planes;
-                EffectInstance::RenderRoIRetCode retCode =
-                activeInputToRender->renderRoI( EffectInstance::RenderRoIArgs(time, //< the time at which to render
-                                                                              scale, //< the scale at which to render
-                                                                              mipMapLevel, //< the mipmap level (redundant with the scale)
-                                                                              viewsToRender[view], //< the view to render
-                                                                              false,
-                                                                              renderWindow, //< the region of interest (in pixel coordinates)
-                                                                              rod, // < any precomputed rod ? in canonical coordinates
-                                                                              components,
-                                                                              imageDepth,
-                                                                              false,
-                                                                              output.get()),&planes);
+                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
+                renderArgs.reset(new EffectInstance::RenderRoIArgs(time, //< the time at which to render
+                                                                   scale, //< the scale at which to render
+                                                                   mipMapLevel, //< the mipmap level (redundant with the scale)
+                                                                   viewsToRender[view], //< the view to render
+                                                                   false,
+                                                                   renderWindow, //< the region of interest (in pixel coordinates)
+                                                                   rod, // < any precomputed rod ? in canonical coordinates
+                                                                   components,
+                                                                   imageDepth,
+                                                                   false,
+                                                                   output.get()));
+                EffectInstance::RenderRoIRetCode retCode;
+                retCode = activeInputToRender->renderRoI(*renderArgs, &planes);
                 if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
                     if (retCode == EffectInstance::eRenderRoIRetCodeAborted) {
                         _imp->scheduler->notifyRenderFailure("Render aborted");
@@ -2634,22 +2638,24 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         ImagePtr inputImage = boost::dynamic_pointer_cast<Image>(it->frame);
         assert(inputImage);
         
-       EffectInstance::InputImagesMap inputImages;
+        EffectInstance::InputImagesMap inputImages;
         inputImages[0].push_back(inputImage);
-        EffectInstance::RenderRoIArgs args(frame.time,
-                                                   scale,0,
-                                                   it->view,
-                                                   true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
-                                                   roi,
-                                                   rod,
-                                                   components,
-                                                   imageDepth,
-                                                   false,
-                                                   effect.get(),
-                                                   inputImages);
+        boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
+        renderArgs.reset(new EffectInstance::RenderRoIArgs(frame.time,
+                                                           scale,0,
+                                                           it->view,
+                                                           true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
+                                                           roi,
+                                                           rod,
+                                                           components,
+                                                           imageDepth,
+                                                           false,
+                                                           effect.get(),
+                                                           inputImages));
         try {
             ImageList planes;
-            EffectInstance::RenderRoIRetCode retCode = effect->renderRoI(args,&planes);
+            EffectInstance::RenderRoIRetCode retCode;
+            retCode = effect->renderRoI(*renderArgs, &planes);
             if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
                 notifyRenderFailure("");
             }
