@@ -97,6 +97,7 @@ SOURCES += \
     FrameEntry.cpp \
     FrameKey.cpp \
     FrameParamsSerialization.cpp \
+    FStreamsSupport.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
     Hash64.cpp \
@@ -250,6 +251,7 @@ HEADERS += \
     FrameEntrySerialization.h \
     FrameParams.h \
     FrameParamsSerialization.h \
+    FStreamsSupport.h \
     GlobalFunctionsWrapper.h \
     GroupInput.h \
     GroupOutput.h \
@@ -420,7 +422,7 @@ HEADERS += \
     NatronEngine/userparamholder_wrapper.h \
     NatronEngine/rectd_wrapper.h \
     NatronEngine/recti_wrapper.h \
-    NatronEngine/separatorparam_wrapper.h
+    NatronEngine/separatorparam_wrapper.h \
 
 
 OTHER_FILES += \

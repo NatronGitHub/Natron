@@ -39,6 +39,7 @@
 #include <QAction>
 
 #include "Engine/Settings.h"
+#include "Engine/FStreamsSupport.h"
 
 #include "Gui/DockablePanel.h"
 #include "Gui/Menu.h"
@@ -60,7 +61,7 @@ Gui::importLayout()
     if ( dialog.exec() ) {
         std::string filename = dialog.selectedFiles();
         
-        boost::shared_ptr<std::istream> ifile = Global::open_ifstream(filename);
+        boost::shared_ptr<std::istream> ifile = FStreamsSupport::open_ifstream(filename);
         if (!ifile) {
             Dialogs::errorDialog( tr("Error").toStdString(), tr("Failed to open file: ").toStdString() + filename, false );
             return;

@@ -50,6 +50,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Global/QtCompat.h" // for removeRecursively
 #include "Global/GlobalDefines.h"
 
+#include "Engine/FStreamsSupport.h"
 #include "Engine/CacheSerialization.h"
 #include "Engine/ExistenceCheckThread.h"
 #include "Engine/Format.h"
@@ -273,7 +274,7 @@ void saveCache(Cache<T>* cache)
 {
     
     std::string cacheRestoreFilePath = cache->getRestoreFilePath();
-    boost::shared_ptr<std::ostream> ofile = Global::open_ofstream(cacheRestoreFilePath);
+    boost::shared_ptr<std::ostream> ofile = FStreamsSupport::open_ofstream(cacheRestoreFilePath);
     if (!ofile) {
         std::cerr << "Failed to save cache to " << cacheRestoreFilePath.c_str() << std::endl;
         return;
@@ -305,7 +306,7 @@ void restoreCache(AppManagerPrivate* p,Cache<T>* cache)
 {
     if ( p->checkForCacheDiskStructure( cache->getCachePath() ) ) {
         std::string settingsFilePath = cache->getRestoreFilePath();
-        boost::shared_ptr<std::istream> ifile = Global::open_ifstream(settingsFilePath);
+        boost::shared_ptr<std::istream> ifile = FStreamsSupport::open_ifstream(settingsFilePath);
         if (!ifile) {
             std::cerr << "Failure to open cache restore file at: " << settingsFilePath << std::endl;
             return;

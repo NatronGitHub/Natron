@@ -37,6 +37,7 @@
 
 #include "Engine/NodeSerialization.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/FStreamsSupport.h"
 
 #include "Gui/CurveEditor.h"
 #include "Gui/DockablePanel.h"
@@ -303,7 +304,7 @@ Gui::exportLayout()
 
 
         
-        boost::shared_ptr<std::ostream> ofile = Global::open_ofstream(filename);
+        boost::shared_ptr<std::ostream> ofile = FStreamsSupport::open_ofstream(filename);
         if (!ofile) {
             Dialogs::errorDialog( tr("Error").toStdString()
                                  , tr("Failed to open file ").toStdString() + filename, false );

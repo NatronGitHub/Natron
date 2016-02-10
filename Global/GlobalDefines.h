@@ -53,7 +53,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/cstdint.hpp>
-#include <boost/shared_ptr.hpp>
 #endif
 #include <QtCore/QForeachContainer>
 CLANG_DIAG_OFF(deprecated)
@@ -61,12 +60,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include "Global/Enums.h"
 
-#if defined(__NATRON_WIN32__) &&  defined(__GLIBCXX__)
-#include <ext/stdio_filebuf.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <Share.h>
-#endif
+
 
 // boost and C++11 also have a foreach. this breaks it. DON'T UNCOMMENT THIS.
 //#undef foreach
@@ -231,133 +225,7 @@ std::string GetLastErrorAsString()
 
 #endif // __NATRON_WIN32__
 
-#if defined(__NATRON_WIN32__) &&  defined(__GLIBCXX__)
-    
-    
-// MingW
-inline
-std::istream* open_ifstream_impl(const std::string &filename)
-{
-    std::wstring wfilename = s2ws(filename);
-    int fd;
-    errno_t errcode = _wsopen_s(&fd, wfilename.c_str(), _O_RDONLY, _SH_DENYNO, _S_IREAD | _S_IWRITE);
-    if (errcode != 0) {
-        return 0;
-    }
-    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, std::ios_base::in, 1);
 
-    
-    if (!buffer) {
-        return 0;
-    }
-    return new std::istream(buffer);
-}
-
-inline
-std::ostream* open_ofstream_impl(const std::string &filename)
-{
-    std::wstring wfilename = s2ws(filename);
-    int fd;
-    errno_t errcode = _wsopen_s(&fd, wfilename.c_str(), _O_WRONLY | _O_TRUNC, _SH_DENYNO, _S_IREAD | _S_IWRITE);
-    if (errcode != 0) {
-        return 0;
-    }
-    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, std::ios_base::out, 1);
-    if (!buffer) {
-        return 0;
-    }
-    return new std::ostream(buffer);
-}
-#else
-// Msvc or unix
-inline
-std::ifstream* open_ifstream_impl(const std::string &filename)
-{
-#if defined(__NATRON_WIN32__)
-#ifndef _MSC_VER_
-#error "Windows builds only support GCC or MSVC"
-#endif
-    std::wstring wfilename = s2ws(filename);
-#endif
-    std::ifstream *ret = new std::ifstream();
-    if (!ret) {
-        return 0;
-    }
-    try {
-        ret->open(
-#ifdef __NATRON_WIN32__
-                  wfilename.c_str(),
-#else
-                  filename.c_str(),
-#endif
-                  std::ifstream::in);
-    } catch (const std::exception & e) {
-        delete ret;
-        return 0;
-    }
-    
-    if (!*ret) {
-        delete ret;
-        return 0;
-    }
-
-    return ret;
-} // open_ifstream_impl
-
-inline
-std::ofstream* open_ofstream_impl(const std::string &filename)
-{
-#if defined(__NATRON_WIN32__)
-    std::wstring wfilename = s2ws(filename);
-#endif
-    std::ofstream *ret = new std::ofstream();
-    if (!ret) {
-        return 0;
-    }
-    try {
-        ret->open(
-#ifdef __NATRON_WIN32__
-                  wfilename.c_str(),
-#else
-                  filename.c_str(),
-#endif
-                  std::ofstream::out);
-    } catch (const std::exception & e) {
-        delete ret;
-        return 0;
-    }
-    
-    if (!*ret) {
-        delete ret;
-        return 0;
-    }
-    
-    return ret;
-}
-#endif //  defined(__NATRON_WIN32__) &&  defined(__GLIBCXX__)
-
-inline
-boost::shared_ptr<std::istream> open_ifstream(const std::string& filename)
-{
-    std::istream* ret = open_ifstream_impl(filename);
-    if (ret) {
-        return boost::shared_ptr<std::istream>(ret);
-    } else {
-        return boost::shared_ptr<std::istream>();
-    }
-}
- 
-inline
-boost::shared_ptr<std::ostream> open_ofstream(const std::string& filename)
-{
-    std::ostream* ret = open_ofstream_impl(filename);
-    if (ret) {
-        return boost::shared_ptr<std::ostream>(ret);
-    } else {
-        return boost::shared_ptr<std::ostream>();
-    }
-}
-    
 } // namespace Global
 
 NATRON_NAMESPACE_EXIT;

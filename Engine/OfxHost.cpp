@@ -90,6 +90,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Node.h"
+#include "Engine/FStreamsSupport.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -742,7 +743,7 @@ OfxHost::loadOFXPlugins(std::map<std::string,std::vector< std::pair<std::string,
     QString ofxCacheFilePath = getCacheFilePath();
     
     {
-        boost::shared_ptr<std::istream> ifs = Global::open_ifstream(ofxCacheFilePath.toStdString());
+        boost::shared_ptr<std::istream> ifs = FStreamsSupport::open_ifstream(ofxCacheFilePath.toStdString());
         if (ifs) {
             try {
                 OFX::Host::PluginCache::getPluginCache()->readCache(*ifs);
@@ -904,7 +905,7 @@ OfxHost::writeOFXCache()
     QString ofxCachePath = getOFXCacheDirPath();
     QDir().mkpath(ofxCachePath);
     QString ofxCacheFilePath = getCacheFilePath();
-    boost::shared_ptr<std::ostream> ofile = Global::open_ofstream(ofxCacheFilePath.toStdString());
+    boost::shared_ptr<std::ostream> ofile = FStreamsSupport::open_ofstream(ofxCacheFilePath.toStdString());
     if (!ofile) {
         return;
     }

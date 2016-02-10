@@ -59,6 +59,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
+#include "Engine/FStreamsSupport.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/PluginMemory.h"
@@ -488,7 +489,7 @@ OutputEffectInstance::reportStats(int time,
     }
 
 
-    boost::shared_ptr<std::ostream> ofile = Global::open_ofstream(filename);
+    boost::shared_ptr<std::ostream> ofile = FStreamsSupport::open_ofstream(filename);
     if (!ofile) {
          std::cout << QObject::tr("Failure to write render statistics file.").toStdString() << std::endl;
         return;

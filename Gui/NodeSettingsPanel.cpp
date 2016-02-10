@@ -39,6 +39,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/RotoLayer.h"
+#include "Engine/FStreamsSupport.h"
 
 #include "Gui/Button.h"
 #include "Gui/Gui.h"
@@ -198,7 +199,7 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
     
 
     
-    boost::shared_ptr<std::istream> ifile = Global::open_ifstream(filename);
+    boost::shared_ptr<std::istream> ifile = FStreamsSupport::open_ifstream(filename);
     if (!ifile) {
         Dialogs::errorDialog( tr("Presets").toStdString(), tr("Failed to open file: ").toStdString() + filename, false );
         return;
@@ -255,7 +256,7 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
     }
     
 
-    boost::shared_ptr<std::ostream> ofile = Global::open_ofstream(filename);
+    boost::shared_ptr<std::ostream> ofile = FStreamsSupport::open_ofstream(filename);
     if (!ofile) {
         Dialogs::errorDialog( tr("Presets").toStdString()
                              , tr("Failed to open file ").toStdString() + filename, false );

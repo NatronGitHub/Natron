@@ -65,6 +65,7 @@
 #include "Engine/BezierCPSerialization.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/FormatSerialization.h"
+#include "Engine/FStreamsSupport.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Node.h"
@@ -251,7 +252,7 @@ Project::loadProjectInternal(const QString & path,
     
     bool ret = false;
     
-    boost::shared_ptr<std::istream> ifile = Global::open_ifstream(filePath.toStdString());
+    boost::shared_ptr<std::istream> ifile = FStreamsSupport::open_ifstream(filePath.toStdString());
     if (!ifile) {
         throw std::runtime_error(std::string("Failed to open ") + filePath.toStdString());
     }
@@ -508,7 +509,7 @@ Project::saveProjectInternal(const QString & path,
     tmpFilename.append( QString::number( time.toMSecsSinceEpoch() ) );
 
     {
-        boost::shared_ptr<std::ostream> ofile = Global::open_ofstream(tmpFilename.toStdString());
+        boost::shared_ptr<std::ostream> ofile = FStreamsSupport::open_ofstream(tmpFilename.toStdString());
         if (!ofile) {
             throw std::runtime_error(tr("Failed to open file ").toStdString() + tmpFilename.toStdString() );
         }
