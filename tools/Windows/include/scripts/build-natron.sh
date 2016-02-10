@@ -11,9 +11,7 @@
 source `pwd`/common.sh || exit 1
 
 PID=$$
-# make kill bot
-KILLSCRIPT="/tmp/killbot$$.sh"
-cat << 'EOF' > "$KILLSCRIPT"
+
 #!/bin/sh
 PARENT=$1
 sleep 30m
@@ -41,7 +39,9 @@ if [ "$1" = "" ]; then
 fi
 
 TMP_BUILD_DIR=$TMP_PATH$BIT
-
+# make kill bot
+KILLSCRIPT="$TMP_BUILD_DIR/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
 
 #Assume that $1 is the branch to build, otherwise if empty use the NATRON_GIT_TAG in common.sh
 NATRON_BRANCH=$2

@@ -7,9 +7,7 @@ source `pwd`/common.sh || exit 1
 
 
 PID=$$
-# make kill bot
-KILLSCRIPT="/tmp/killbot$$.sh"
-cat << 'EOF' > "$KILLSCRIPT"
+
 #!/bin/sh
 PARENT=$1
 sleep 30m
@@ -38,7 +36,9 @@ else
 fi
 
 TMP_BUILD_DIR=$TMP_PATH$BIT
-
+# make kill bot
+KILLSCRIPT="$TMP_BUILD_DIR/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
 
 #If "workshop" is passed, use master branch for all plug-ins otherwise use the git tags in common.sh
 IO_BRANCH=master

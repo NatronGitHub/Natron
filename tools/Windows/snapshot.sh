@@ -21,6 +21,9 @@ PID=$$
 CWD=`pwd`
 TMP=$CWD/.autobuild
 
+# make kill bot
+TMP_BUILD_DIR=$TMP_PATH$BIT
+
 if [ ! -f $CWD/commits-hash.sh ]; then
     touch $CWD/commits-hash.sh
     echo "#!/bin/sh" >> $CWD/commits-hash.sh
@@ -104,7 +107,7 @@ EOF
 chmod +x $GITSCRIPT
 
 # make kill bot
-KILLSCRIPT="/tmp/killbot$$.sh"
+KILLSCRIPT="$TMP_BUILD_DIR/killbot$$.sh"
 cat << 'EOF' > "$KILLSCRIPT"
 #!/bin/sh
 sleep 30m

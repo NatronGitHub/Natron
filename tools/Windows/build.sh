@@ -27,9 +27,7 @@
 source `pwd`/common.sh || exit 1
 
 PID=$$
-# make kill bot
-KILLSCRIPT="/tmp/killbot$$.sh"
-cat << 'EOF' > "$KILLSCRIPT"
+
 #!/bin/sh
 PARENT=$1
 sleep 30m
@@ -82,6 +80,11 @@ else
     #Default to 4 threads
     JOBS=$DEFAULT_MKJOBS
 fi
+
+# make kill bot
+TMP_BUILD_DIR=$TMP_PATH$BIT
+KILLSCRIPT="$TMP_BUILD_DIR/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
 
 if [ "$NOCLEAN" != "1" ]; then
     rm -rf $INSTALL_PATH
