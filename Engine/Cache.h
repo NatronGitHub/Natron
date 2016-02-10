@@ -601,6 +601,15 @@ private:
                     break;
                 }
 
+                //Refresh now memory cache size && maximum in memory size as they might have been changed
+                //in tryEvictEntry
+                {
+                    QMutexLocker k(&_sizeLock);
+                    memoryCacheSize = _memoryCacheSize;
+                    maximumInMemorySize = std::max( (std::size_t)1, _maximumInMemorySize );
+                }
+
+                
                 for (typename std::list<EntryTypePtr>::iterator it = deleted.begin(); it != deleted.end(); ++it) {
                     if ( !(*it)->isStoredOnDisk() ) {
                         memoryCacheSize -= (*it)->size();
@@ -1540,7 +1549,9 @@ private:
         }
         /*if it is stored on disk, remove it from memory*/
 
-        if ( evicted.second->isStoredOnDisk() ) {
+        if (!evicted.second->isStoredOnDisk()) {
+            entriesToBeDeleted.push_back(evicted.second);
+        } else {
             assert( evicted.second.unique() );
 
             ///This is EXPENSIVE! it calls msync
@@ -1587,9 +1598,7 @@ private:
             } else {   /*append to the existing list*/
                 getValueFromIterator(existingDiskCacheEntry).push_back(evicted.second);
             }
-        } else {
-            entriesToBeDeleted.push_back(evicted.second);
-        }
+        } // if (!evicted.second->isStoredOnDisk()) 
 
         return true;
     } // tryEvictEntry
