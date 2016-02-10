@@ -3769,6 +3769,7 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
     RECURSIVE_ACTION();
 
     if ( isMultiPlanar() ) {
+#pragma message WARN("Remove this")
         (*processChannels)[0] = (*processChannels)[1] = (*processChannels)[2] = (*processChannels)[3] = true;
         if (useThisNodeComponentsNeeded) {
             getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInput);
@@ -3871,6 +3872,12 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
     }
     
 } // EffectInstance::getComponentsNeededAndProduced_public
+
+bool
+EffectInstance::getCreateChannelSelectorKnob() const
+{
+    return !isMultiPlanar() && !isReader() && !isWriter() && !isTrackerNode();
+}
 
 int
 EffectInstance::getMaskChannel(int inputNb,
