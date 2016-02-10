@@ -65,6 +65,7 @@ CLANG_DIAG_ON(deprecated)
 #include <ext/stdio_filebuf.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <Share.h>
 #endif
 
 // boost and C++11 also have a foreach. this breaks it. DON'T UNCOMMENT THIS.
