@@ -611,9 +611,6 @@ private:
 
                 
                 for (typename std::list<EntryTypePtr>::iterator it = deleted.begin(); it != deleted.end(); ++it) {
-                    if ( !(*it)->isStoredOnDisk() ) {
-                        memoryCacheSize -= (*it)->size();
-                    }
                     entriesToBeDeleted.push_back(*it);
                 }
 
@@ -1210,7 +1207,6 @@ public:
                 for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
                     if ( (*it)->getKey() == entry->getKey() ) {
                         toRemove.push_back(*it);
-                        //(*it)->scheduleForDestruction();
                         ret.erase(it);
                         break;
                     }
@@ -1224,7 +1220,6 @@ public:
                     std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
                     for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
                         if ( (*it)->getKey() == entry->getKey() ) {
-                            //(*it)->scheduleForDestruction();
                             toRemove.push_back(*it);
                             ret.erase(it);
                             break;
@@ -1254,7 +1249,6 @@ public:
             if ( existingEntry != _memoryCache.end() ) {
                 std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
                 for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                    //(*it)->scheduleForDestruction();
                     toRemove.push_back(*it);
                 }
                 _memoryCache.erase(existingEntry);
@@ -1263,7 +1257,6 @@ public:
                 if ( existingEntry != _diskCache.end() ) {
                     std::list<EntryTypePtr> & ret = getValueFromIterator(existingEntry);
                     for (typename std::list<EntryTypePtr>::iterator it = ret.begin(); it != ret.end(); ++it) {
-                        //(*it)->scheduleForDestruction();
                         toRemove.push_back(*it);
                     }
                     _diskCache.erase(existingEntry);
@@ -1362,7 +1355,6 @@ private:
                     if ( (front->getKey().getCacheHolderID() == holderID) &&
                          ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll ) ) {
                         for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
-                            //(*it)->scheduleForDestruction();
                             toDelete.push_back(*it);
                         }
                     } else {
@@ -1380,7 +1372,6 @@ private:
                     if ( (front->getKey().getCacheHolderID() == holderID) &&
                          ( ( front->getKey().getTreeVersion() != nodeHash) || removeAll ) ) {
                         for (typename std::list<EntryTypePtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
-                            //(*it)->scheduleForDestruction();
                             toDelete.push_back(*it);
                         }
                     } else {
@@ -1569,26 +1560,29 @@ private:
 
             /*before that we need to clear the disk cache if it exceeds the maximum size allowed*/
             while ( ( diskCacheSize  + evicted.second->size() ) >= (maximumCacheSize - maximumInMemorySize) ) {
-                {
-                    std::pair<hash_type, EntryTypePtr> evictedFromDisk = _diskCache.evict();
-                    //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
-                    //we'll let the user of these entries purge the extra entries left in the cache later on
-                    if (!evictedFromDisk.second) {
-                        break;
-                    }
 
-                    ///Erase the file from the disk if we reach the limit.
-                    //evictedFromDisk.second->scheduleForDestruction();
-
-
-                    entriesToBeDeleted.push_back(evictedFromDisk.second);
+                std::pair<hash_type, EntryTypePtr> evictedFromDisk = _diskCache.evict();
+                //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
+                //we'll let the user of these entries purge the extra entries left in the cache later on
+                if (!evictedFromDisk.second) {
+                    break;
                 }
+
+                ///Erase the file from the disk if we reach the limit.
+                evictedFromDisk.second->removeAnyBackingFile();
+
+                entriesToBeDeleted.push_back(evictedFromDisk.second);
+
                 {
                     QMutexLocker k(&_sizeLock);
-                    diskCacheSize = _diskCacheSize;
                     maximumInMemorySize = _maximumInMemorySize;
                     maximumCacheSize = _maximumCacheSize;
                 }
+
+                //The entry is not yet deleted for real since it's done in a separate thread when this function
+                ///size() will return 0 at this point, we have to recompute it
+                std::size_t fsize = evictedFromDisk.second->getParams()->getElementsCount() * sizeof(data_t);
+                diskCacheSize -= fsize;
             }
 
             CacheIterator existingDiskCacheEntry = _diskCache(evicted.first);
