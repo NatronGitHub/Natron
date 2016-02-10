@@ -45,7 +45,7 @@ static std::istream* open_ifstream_impl(const std::string &filename)
     std::wstring wfilename = Global::s2ws(filename);
     int fd;
     errno_t errcode = _wsopen_s(&fd, wfilename.c_str(), _O_RDONLY, _SH_DENYNO, _S_IREAD | _S_IWRITE);
-    if (errcode != 0) {
+    if (errcode != 0 || fd == -1) {
         return 0;
     }
     __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, std::ios_base::in, 1);
@@ -62,7 +62,7 @@ static std::ostream* open_ofstream_impl(const std::string &filename)
     std::wstring wfilename = Global::s2ws(filename);
     int fd;
     errno_t errcode = _wsopen_s(&fd, wfilename.c_str(), _O_WRONLY | _O_TRUNC, _SH_DENYNO, _S_IREAD | _S_IWRITE);
-    if (errcode != 0) {
+    if (errcode != 0 || fd == -1) {
         return 0;
     }
     __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, std::ios_base::out, 1);
