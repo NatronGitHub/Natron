@@ -46,7 +46,7 @@ index 4f2f738..392273a 100644
  /// Read the entire contents of the named text file and place it in str,
  /// returning true on success, false on failure.
 diff --git a/src/libutil/filesystem.cpp b/src/libutil/filesystem.cpp
-index 7fb4759..212636a 100644
+index 7fb4759..1d761c7 100644
 --- a/src/libutil/filesystem.cpp
 +++ b/src/libutil/filesystem.cpp
 @@ -39,6 +39,7 @@
@@ -57,19 +57,20 @@ index 7fb4759..212636a 100644
  
  #include "OpenImageIO/dassert.h"
  #include "OpenImageIO/ustring.h"
-@@ -48,6 +49,11 @@
+@@ -48,6 +49,12 @@
  #include <windows.h>
  #include <shellapi.h>
  #include <direct.h>
 +#include <fcntl.h>
 +#include <sys/stat.h>
++#include <Share.h>
 +#ifdef __GLIBCXX__
 +#include <ext/stdio_filebuf.h> // __gnu_cxx::stdio_filebuf
 +#endif
  #else
  #include <unistd.h>
  #endif
-@@ -484,35 +490,169 @@ Filesystem::fopen (string_view path, string_view mode)
+@@ -484,35 +491,169 @@ Filesystem::fopen (string_view path, string_view mode)
  #endif
  }
  
@@ -254,7 +255,7 @@ index 7fb4759..212636a 100644
  }
  
  
-@@ -524,13 +664,18 @@ Filesystem::read_text_file (string_view filename, std::string &str)
+@@ -524,13 +665,18 @@ Filesystem::read_text_file (string_view filename, std::string &str)
  {
      // For info on why this is the fastest method:
      // http://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
