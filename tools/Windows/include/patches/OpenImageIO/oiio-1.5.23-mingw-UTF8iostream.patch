@@ -278,7 +278,7 @@ index 7fb4759..212636a 100644
          return true;
      }
 diff --git a/src/openexr.imageio/exrinput.cpp b/src/openexr.imageio/exrinput.cpp
-index e984644..80b2fee 100644
+index e984644..8dc4eac 100644
 --- a/src/openexr.imageio/exrinput.cpp
 +++ b/src/openexr.imageio/exrinput.cpp
 @@ -85,6 +85,7 @@
@@ -340,21 +340,6 @@ index e984644..80b2fee 100644
 +    boost::scoped_ptr<std::istream> ifs;
  };
  
- 
-@@ -317,12 +329,12 @@ void set_exr_threads ()
-     static spin_mutex exr_threads_mutex;  
- 
-     int oiio_threads = 1;
--    OIIO::getattribute ("threads", oiio_threads);
-+    OIIO::getattribute ("exr_threads", oiio_threads);
- 
-     spin_lock lock (exr_threads_mutex);
-     if (exr_threads != oiio_threads) {
-         exr_threads = oiio_threads;
--        Imf::setGlobalThreadCount (exr_threads == 1 ? 0 : exr_threads);
-+        Imf::setGlobalThreadCount (exr_threads);
-     }
- }
  
 diff --git a/src/openexr.imageio/exroutput.cpp b/src/openexr.imageio/exroutput.cpp
 index e34b28a..28d2564 100644
