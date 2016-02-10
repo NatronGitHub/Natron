@@ -94,7 +94,7 @@ do
     # make git sync
     GITSCRIPT="$TMP_BUILD_DIR/snapshot-git.sh"
     cat << 'EOF' > $GITSCRIPT
-    #!/bin/sh
+#!/bin/sh
     TMP_BUILD_DIR=$1
     if [ "$2" != "" ]; then
         echo "Running git sync ..."
@@ -103,13 +103,13 @@ do
         git fetch --all || exit 1
         git merge origin/${1} || exit 1
     fi
-    EOF
+EOF
     chmod +x $GITSCRIPT
 
     # make kill bot
     KILLSCRIPT="$TMP_BUILD_DIR/killbot$$.sh"
     cat << 'EOF' > "$KILLSCRIPT"
-    #!/bin/sh
+#!/bin/sh
     sleep 30m
     PARENT=`cat $TMP_BUILD_DIR/snapshot-git.pid`
     if [ "$PARENT" = "" ]; then
@@ -119,7 +119,7 @@ do
     if [ "$PIDS" = "$PARENT" ]; then
         kill -15 $PARENT
     fi
-    EOF
+EOF
     chmod +x $KILLSCRIPT
 
 
@@ -220,4 +220,3 @@ do
         sleep 60
     fi
 done
-
