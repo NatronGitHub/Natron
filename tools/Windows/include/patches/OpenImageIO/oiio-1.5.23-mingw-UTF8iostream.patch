@@ -46,7 +46,7 @@ index 4f2f738..392273a 100644
  /// Read the entire contents of the named text file and place it in str,
  /// returning true on success, false on failure.
 diff --git a/src/libutil/filesystem.cpp b/src/libutil/filesystem.cpp
-index 7fb4759..151e9dd 100644
+index 7fb4759..212636a 100644
 --- a/src/libutil/filesystem.cpp
 +++ b/src/libutil/filesystem.cpp
 @@ -39,6 +39,7 @@
@@ -57,20 +57,19 @@ index 7fb4759..151e9dd 100644
  
  #include "OpenImageIO/dassert.h"
  #include "OpenImageIO/ustring.h"
-@@ -48,6 +49,12 @@
+@@ -48,6 +49,11 @@
  #include <windows.h>
  #include <shellapi.h>
  #include <direct.h>
 +#include <fcntl.h>
 +#include <sys/stat.h>
-+#include <share.h>
 +#ifdef __GLIBCXX__
 +#include <ext/stdio_filebuf.h> // __gnu_cxx::stdio_filebuf
 +#endif
  #else
  #include <unistd.h>
  #endif
-@@ -484,35 +491,169 @@ Filesystem::fopen (string_view path, string_view mode)
+@@ -484,35 +490,169 @@ Filesystem::fopen (string_view path, string_view mode)
  #endif
  }
  
@@ -92,6 +91,7 @@ index 7fb4759..151e9dd 100644
 +    }
 +    if ((mode & std::ios_base::out) == std::ios_base::out) {
 +        f |= _O_WRONLY;
++        f |= _O_CREAT;
 +    }
 +    if ((mode & std::ios_base::binary) == std::ios_base::binary) {
 +        f |= _O_BINARY;
@@ -104,7 +104,6 @@ index 7fb4759..151e9dd 100644
 +    if (mode & std::ios_base::trunc) {
 +        f |= _O_TRUNC;
 +    }
-+	return f;
 +}
 +    
 +static std::istream*
@@ -255,7 +254,7 @@ index 7fb4759..151e9dd 100644
  }
  
  
-@@ -524,13 +665,18 @@ Filesystem::read_text_file (string_view filename, std::string &str)
+@@ -524,13 +664,18 @@ Filesystem::read_text_file (string_view filename, std::string &str)
  {
      // For info on why this is the fastest method:
      // http://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
@@ -279,7 +278,7 @@ index 7fb4759..151e9dd 100644
          return true;
      }
 diff --git a/src/openexr.imageio/exrinput.cpp b/src/openexr.imageio/exrinput.cpp
-index e984644..8dc4eac 100644
+index e984644..80b2fee 100644
 --- a/src/openexr.imageio/exrinput.cpp
 +++ b/src/openexr.imageio/exrinput.cpp
 @@ -85,6 +85,7 @@
@@ -342,6 +341,21 @@ index e984644..8dc4eac 100644
  };
  
  
+@@ -317,12 +329,12 @@ void set_exr_threads ()
+     static spin_mutex exr_threads_mutex;  
+ 
+     int oiio_threads = 1;
+-    OIIO::getattribute ("threads", oiio_threads);
++    OIIO::getattribute ("exr_threads", oiio_threads);
+ 
+     spin_lock lock (exr_threads_mutex);
+     if (exr_threads != oiio_threads) {
+         exr_threads = oiio_threads;
+-        Imf::setGlobalThreadCount (exr_threads == 1 ? 0 : exr_threads);
++        Imf::setGlobalThreadCount (exr_threads);
+     }
+ }
+ 
 diff --git a/src/openexr.imageio/exroutput.cpp b/src/openexr.imageio/exroutput.cpp
 index e34b28a..28d2564 100644
 --- a/src/openexr.imageio/exroutput.cpp
@@ -402,7 +416,7 @@ index e34b28a..28d2564 100644
  
  
 diff --git a/src/pnm.imageio/pnminput.cpp b/src/pnm.imageio/pnminput.cpp
-index 2a10fad..8b40486 100644
+index 2a10fad..5c50b20 100644
 --- a/src/pnm.imageio/pnminput.cpp
 +++ b/src/pnm.imageio/pnminput.cpp
 @@ -32,6 +32,8 @@
@@ -549,7 +563,7 @@ index 2a10fad..8b40486 100644
          
          //Space before content
 -        if (!(isspace (m_file.get()) && m_file.good()))
-+        if (!(isspace (m_file->get()) && m_file->good()))
++        if (!(isspace (*m_file) && m_file->good()))
              return false;
  
          if (m_pnm_type == P3 || m_pnm_type == P6)
@@ -564,7 +578,7 @@ index 2a10fad..8b40486 100644
          
          //Space before content
 -        if (!(isspace (m_file.get()) && m_file.good()))
-+        if (!(isspace (m_file->get()) && m_file->good()))
++        if (!(isspace (*m_file) && m_file->good()))
              return false;
  
          if(m_pnm_type == PF) {
