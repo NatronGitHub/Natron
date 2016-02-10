@@ -63,6 +63,8 @@ CLANG_DIAG_ON(deprecated)
 
 #if defined(__NATRON_WIN32__) &&  defined(__GLIBCXX__)
 #include <ext/stdio_filebuf.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #endif
 
 // boost and C++11 also have a foreach. this breaks it. DON'T UNCOMMENT THIS.
