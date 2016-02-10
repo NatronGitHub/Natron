@@ -402,7 +402,7 @@ index e34b28a..28d2564 100644
  
  
 diff --git a/src/pnm.imageio/pnminput.cpp b/src/pnm.imageio/pnminput.cpp
-index 2a10fad..5c50b20 100644
+index 2a10fad..8ff918a 100644
 --- a/src/pnm.imageio/pnminput.cpp
 +++ b/src/pnm.imageio/pnminput.cpp
 @@ -32,6 +32,8 @@
@@ -549,7 +549,7 @@ index 2a10fad..5c50b20 100644
          
          //Space before content
 -        if (!(isspace (m_file.get()) && m_file.good()))
-+        if (!(isspace (*m_file) && m_file->good()))
++        if (!(isspace (m_file->get()) && m_file->good()))
              return false;
  
          if (m_pnm_type == P3 || m_pnm_type == P6)
