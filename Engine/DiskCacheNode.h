@@ -133,6 +133,10 @@ public:
     virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
 
     virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
+    
+    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+    
+    virtual bool isHostChannelSelectorSupported(bool* defaultR,bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 
 private:
 

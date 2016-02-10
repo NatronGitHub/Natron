@@ -460,9 +460,7 @@ NodeGui::createPanel(QVBoxLayout* container,
     NodeSettingsPanel* panel = 0;
 
     NodePtr node = getNode();
-    ViewerInstance* isViewer = node->isEffectViewer();
-
-    if (!isViewer) {
+    if (node->getEffectInstance()->getMakeSettingsPanel()) {
         assert(container);
         boost::shared_ptr<MultiInstancePanel> multiPanel;
         if ( node->isTrackerNode() && node->isMultiInstance() && node->getParentMultiInstanceName().empty() ) {

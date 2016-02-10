@@ -27,21 +27,6 @@
 source `pwd`/common.sh || exit 1
 
 PID=$$
-# make kill bot
-KILLSCRIPT="/tmp/killbot$$.sh"
-cat << 'EOF' > "$KILLSCRIPT"
-#!/bin/sh
-PARENT=$1
-sleep 30m
-if [ "$PARENT" = "" ]; then
-  exit 1
-fi
-PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
-if [ "$PIDS" = "$PARENT" ]; then
-  kill -15 $PARENT
-fi
-EOF
-chmod +x $KILLSCRIPT
 
 if [ "$OS" = "Msys" ]; then
     PKGOS=Windows
@@ -82,6 +67,23 @@ else
     #Default to 4 threads
     JOBS=$DEFAULT_MKJOBS
 fi
+
+# make kill bot
+TMP_BUILD_DIR=$TMP_PATH$BIT
+KILLSCRIPT="$TMP_BUILD_DIR/killbot$$.sh"
+cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+PARENT=$1
+sleep 30m
+if [ "$PARENT" = "" ]; then
+exit 1
+fi
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
 
 if [ "$NOCLEAN" != "1" ]; then
     rm -rf $INSTALL_PATH
@@ -146,7 +148,7 @@ if [ "$NOBUILD" != "1" ]; then
     fi
     if [ "$FAIL" != "1" -a "$ONLY_NATRON" != "1" ]; then
         echo -n "Building Plugins ... "
-        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh $INC_PATH/scripts/build-plugins.sh $BIT $BRANCH >& $LOGS/plugins.$PKGOS$BIT.$TAG.log || FAIL=1
+        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=0 BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh $INC_PATH/scripts/build-plugins.sh $BIT $BRANCH >& $LOGS/plugins.$PKGOS$BIT.$TAG.log || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else

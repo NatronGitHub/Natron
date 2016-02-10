@@ -923,6 +923,41 @@ public:
      * @brief Forwarded to the live effect instance
      **/
     void initializeKnobs(int renderScaleSupportPref);
+    
+private:
+    
+    void initializeDefaultKnobs(int renderScaleSupportPref);
+    
+    void findPluginFormatKnobs(const KnobsVec & knobs);
+    
+    void createNodePage(const boost::shared_ptr<KnobPage>& settingsPage, int renderScaleSupportPref);
+    
+    void createInfoPage();
+    
+    void createPythonPage();
+    
+    void createHostMixKnob(const boost::shared_ptr<KnobPage>& mainPage);
+    
+    void createWriterFrameStepKnob(const boost::shared_ptr<KnobPage>& mainPage);
+    
+    void createMaskSelectors(const std::vector<std::pair<bool,bool> >& hasMaskChannelSelector,
+                             const std::vector<std::string>& inputLabels,
+                             const boost::shared_ptr<KnobPage>& mainPage,
+                             bool addNewLineOnLastMask);
+    
+    boost::shared_ptr<KnobPage> getOrCreateMainPage();
+    
+    void createLabelKnob(const boost::shared_ptr<KnobPage>& settingsPage, const std::string& label);
+    
+    void findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage);
+    
+    void createChannelSelectors(const std::vector<std::pair<bool,bool> >& hasMaskChannelSelector,
+                                const std::vector<std::string>& inputLabels,
+                                const boost::shared_ptr<KnobPage>& mainPage);
+    
+public:
+    
+    
 
     void onSetSupportRenderScaleMaybeSet(int support);
     

@@ -463,13 +463,9 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 
     double tickBottom = _imp->zoomCtx.toZoomCoordinates( 0,height() - 1 - fontM.height() ).y();
     double tickTop = _imp->zoomCtx.toZoomCoordinates(0,height() - 1 - fontM.height()  - TO_DPIY(TICK_HEIGHT)).y();
-    const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
+    const double smallestTickSizePixel = 10.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
-    std::vector<double> acceptedDistances;
-    acceptedDistances.push_back(1.);
-    acceptedDistances.push_back(5.);
-    acceptedDistances.push_back(10.);
-    acceptedDistances.push_back(50.);
+
     const double rangePixel =  width();
     const double range_min = btmLeft.x();
     const double range_max =  topRight.x();

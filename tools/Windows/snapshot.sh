@@ -21,6 +21,8 @@ PID=$$
 CWD=`pwd`
 TMP=$CWD/.autobuild
 
+TMP_BUILD_DIR=$TMP_PATH$BIT
+
 if [ ! -f $CWD/commits-hash.sh ]; then
     touch $CWD/commits-hash.sh
     echo "#!/bin/sh" >> $CWD/commits-hash.sh
@@ -89,35 +91,36 @@ do
     FAIL=0
     echo "Running ..."
 
-# make git sync
-GITSCRIPT="/tmp/snapshot-git.sh"
-cat << 'EOF' > $GITSCRIPT
+    # make git sync
+    GITSCRIPT="$TMP_BUILD_DIR/snapshot-git.sh"
+    cat << 'EOF' > $GITSCRIPT
 #!/bin/sh
-if [ "$1" != "" ]; then
-  echo "Running git sync ..."
-  PID=$$
-  echo $PID > /tmp/snapshot-git.pid || exit 1
-  git fetch --all || exit 1
-  git merge origin/${1} || exit 1
-fi
+    TMP_BUILD_DIR=$1
+    if [ "$2" != "" ]; then
+        echo "Running git sync ..."
+        PID=$$
+        echo $PID > $TMP_BUILD_DIR/snapshot-git.pid || exit 1
+        git fetch --all || exit 1
+        git merge origin/${1} || exit 1
+    fi
 EOF
-chmod +x $GITSCRIPT
+    chmod +x $GITSCRIPT
 
-# make kill bot
-KILLSCRIPT="/tmp/killbot$$.sh"
-cat << 'EOF' > "$KILLSCRIPT"
+    # make kill bot
+    KILLSCRIPT="$TMP_BUILD_DIR/killbot$$.sh"
+    cat << 'EOF' > "$KILLSCRIPT"
 #!/bin/sh
-sleep 30m
-PARENT=`cat /tmp/snapshot-git.pid`
-if [ "$PARENT" = "" ]; then
-  exit 1
-fi
-PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
-if [ "$PIDS" = "$PARENT" ]; then
-  kill -15 $PARENT
-fi
+    sleep 30m
+    PARENT=`cat $TMP_BUILD_DIR/snapshot-git.pid`
+    if [ "$PARENT" = "" ]; then
+        exit 1
+    fi
+    PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+    if [ "$PIDS" = "$PARENT" ]; then
+        kill -15 $PARENT
+    fi
 EOF
-chmod +x $KILLSCRIPT
+    chmod +x $KILLSCRIPT
 
 
     BUILD_NATRON=0
@@ -125,7 +128,7 @@ chmod +x $KILLSCRIPT
 
     $KILLSCRIPT &
     KILLBOT=$!
-    $GITSCRIPT workshop 
+    $GITSCRIPT $TMP_BUILD_DIR workshop
     kill -9 $KILLBOT
 
     GITV_NATRON=`git log|head -1|awk '{print $2}'`
@@ -141,7 +144,7 @@ chmod +x $KILLSCRIPT
 
         $KILLSCRIPT &
         KILLBOT=$!
-        $GITSCRIPT master 
+        $GITSCRIPT $TMP_BUILD_DIR master
         kill -9 $KILLBOT
 
         GITV_IO=`git log|head -1|awk '{print $2}'`
@@ -158,7 +161,7 @@ chmod +x $KILLSCRIPT
 
         $KILLSCRIPT &
         KILLBOT=$!
-        $GITSCRIPT master 
+        $GITSCRIPT $TMP_BUILD_DIR master
         kill -9 $KILLBOT
 
         GITV_MISC=`git log|head -1|awk '{print $2}'`
@@ -175,7 +178,7 @@ chmod +x $KILLSCRIPT
 
         $KLLSCRIPT &
         KILLBOT=$!
-        $GITSCRIPT master 
+        $GITSCRIPT $TMP_BUILD_DIR master
         kill -9 $KILLBOT
 
         GITV_ARENA=`git log|head -1|awk '{print $2}'`
@@ -217,4 +220,3 @@ chmod +x $KILLSCRIPT
         sleep 60
     fi
 done
-

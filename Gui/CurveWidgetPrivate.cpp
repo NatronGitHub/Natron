@@ -450,12 +450,7 @@ CurveWidgetPrivate::drawScale()
     QFontMetrics fontM(*_font);
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
-    std::vector<double> acceptedDistances;
-    acceptedDistances.push_back(1.);
-    acceptedDistances.push_back(5.);
-    acceptedDistances.push_back(10.);
-    acceptedDistances.push_back(50.);
-    
+
     double gridR,gridG,gridB;
     boost::shared_ptr<Settings> sett = appPTR->getCurrentSettings();
     sett->getCurveEditorGridColor(&gridR, &gridG, &gridB);

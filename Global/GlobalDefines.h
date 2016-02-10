@@ -63,6 +63,9 @@ CLANG_DIAG_ON(deprecated)
 
 #if defined(__NATRON_WIN32__) &&  defined(__GLIBCXX__)
 #include <ext/stdio_filebuf.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <Share.h>
 #endif
 
 // boost and C++11 also have a foreach. this breaks it. DON'T UNCOMMENT THIS.
@@ -259,7 +262,7 @@ std::ostream* open_ofstream_impl(const std::string &filename)
     if (errcode != 0) {
         return 0;
     }
-    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(c_file, std::ios_base::out, 1);
+    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, std::ios_base::out, 1);
     if (!buffer) {
         return 0;
     }

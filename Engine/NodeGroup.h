@@ -370,6 +370,8 @@ public:
     virtual void notifyInputMaskStateChanged(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyNodeNameChanged(const NodePtr& node) OVERRIDE FINAL;
     
+    virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+    
     NodePtr getOutputNode(bool useGuiConnexions) const;
         
     NodePtr getOutputNodeInput(bool useGuiConnexions) const;

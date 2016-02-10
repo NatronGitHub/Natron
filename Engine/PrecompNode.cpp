@@ -380,12 +380,12 @@ PrecompNode::onKnobsLoaded()
 }
 
 void
-PrecompNode::knobChanged(KnobI* k,ValueChangedReasonEnum /*reason*/,
+PrecompNode::knobChanged(KnobI* k,ValueChangedReasonEnum reason,
                  int /*view*/,
                  double /*time*/,
                  bool /*originatedFromMainThread*/)
 {
-    if (k == _imp->projectFileNameKnob.lock().get()/* || k == _imp->reloadProjectKnob.lock().get()*/) {
+    if (reason != eValueChangedReasonTimeChanged && k == _imp->projectFileNameKnob.lock().get()) {
         _imp->reloadProject(true);
     } else if (k == _imp->editProjectKnob.lock().get()) {
         std::string filename = _imp->projectFileNameKnob.lock()->getValue();

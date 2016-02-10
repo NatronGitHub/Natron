@@ -378,6 +378,11 @@ public:
         return -1;
     }
 
+    virtual bool getMakeSettingsPanel() const { return true; }
+
+
+    virtual bool getCreateChannelSelectorKnob() const;
+
     /**
      * @brief Returns the index of the channel to use to produce the mask and the components.
      * None = -1

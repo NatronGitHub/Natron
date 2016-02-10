@@ -258,4 +258,11 @@ DiskCacheNode::render(const RenderActionArgs& args)
     return eStatusOK;
 }
 
+bool
+DiskCacheNode::isHostChannelSelectorSupported(bool* /*defaultR*/,bool* /*defaultG*/, bool* /*defaultB*/, bool* /*defaultA*/) const
+{
+    return false;
+}
+
+
 NATRON_NAMESPACE_EXIT;
