@@ -6619,9 +6619,8 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
      hence may not exactly end-up with the same file sequence as what the user
      selected from the file dialog.
      */
-    if (getPluginID() == PLUGINID_OFX_READFFMPEG) {
-        return;
-    }
+   
+   
     int leftBound = INT_MIN;
     int rightBound = INT_MAX;
     ///Set the originalFrameRange parameter of the reader if it has one.
@@ -6635,21 +6634,25 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
             if (!isFile) {
                 throw std::logic_error("Node::computeFrameRangeForReader");
             }
-            std::string pattern = isFile->getValue();
-            getApp()->getProject()->canonicalizePath(pattern);
-            SequenceParsing::SequenceFromPattern seq;
-            SequenceParsing::filesListFromPattern(pattern, &seq);
-            if (seq.empty() || seq.size() == 1) {
-                leftBound = 1;
-                rightBound = 1;
-            } else if (seq.size() > 1) {
-                leftBound = seq.begin()->first;
-                rightBound = seq.rbegin()->first;
+            
+            if (getPluginID() == PLUGINID_OFX_READFFMPEG) {
+                ///If the plug-in is a video, only ffmpeg may know how many frames there are
+                originalFrameRange->setValues(INT_MIN, INT_MAX, ViewIdx::all(), eValueChangedReasonNatronInternalEdited);
+            } else {
+                
+                std::string pattern = isFile->getValue();
+                getApp()->getProject()->canonicalizePath(pattern);
+                SequenceParsing::SequenceFromPattern seq;
+                SequenceParsing::filesListFromPattern(pattern, &seq);
+                if (seq.empty() || seq.size() == 1) {
+                    leftBound = 1;
+                    rightBound = 1;
+                } else if (seq.size() > 1) {
+                    leftBound = seq.begin()->first;
+                    rightBound = seq.rbegin()->first;
+                }
+                originalFrameRange->setValues(leftBound, rightBound, ViewIdx::all(), eValueChangedReasonNatronInternalEdited);
             }
-            originalFrameRange->beginChanges();
-            originalFrameRange->setValue(leftBound, ViewIdx::all(), 0);
-            originalFrameRange->setValue(rightBound, ViewIdx::all(), 1);
-            originalFrameRange->endChanges();
             
         }
     }
