@@ -61,7 +61,7 @@ static std::ostream* open_ofstream_impl(const std::string &filename)
 {
     std::wstring wfilename = Global::s2ws(filename);
     int fd;
-    errno_t errcode = _wsopen_s(&fd, wfilename.c_str(), _O_WRONLY | _O_TRUNC, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    errno_t errcode = _wsopen_s(&fd, wfilename.c_str(), _O_WRONLY | _O_TRUNC | _O_CREAT, _SH_DENYNO, _S_IREAD | _S_IWRITE);
     if (errcode != 0 || fd == -1) {
         return 0;
     }
