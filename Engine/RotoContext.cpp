@@ -3237,8 +3237,8 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,double time, unsigned int
     Point p1 = *featherPolygon.begin();
     double norm = sqrt( (next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y) );
     assert(norm != 0);
-    double dx = -( (next->y - prev->y) / norm );
-    double dy = ( (next->x - prev->x) / norm );
+    double dx = (norm != 0) ? -( (next->y - prev->y) / norm ) : 0;
+    double dy = (norm != 0) ? ( (next->x - prev->x) / norm ) : 1;
 
     if (!clockWise) {
         p1.x -= dx * absFeatherDist;
