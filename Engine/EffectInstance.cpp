@@ -4360,7 +4360,15 @@ EffectInstance::abortAnyEvaluation()
         boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
         if (attachedStroke) {
             ///For nodes internal to the rotopaint tree, check outputs of the rotopaint node instead
-            attachedStroke->getContext()->getNode()->hasOutputNodesConnected(&outputNodes);
+            boost::shared_ptr<RotoContext> context = attachedStroke->getContext();
+            assert(context);
+            if (context) {
+                NodePtr rotonode = context->getNode();
+                assert(rotonode);
+                if (rotonode) {
+                    rotonode->hasOutputNodesConnected(&outputNodes);
+                }
+            }
         } else {
             node->hasOutputNodesConnected(&outputNodes);
         }
