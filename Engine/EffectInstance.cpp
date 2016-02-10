@@ -3769,8 +3769,9 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
     RECURSIVE_ACTION();
 
     if ( isMultiPlanar() ) {
-#pragma message WARN("Remove this")
-        (*processChannels)[0] = (*processChannels)[1] = (*processChannels)[2] = (*processChannels)[3] = true;
+        for (int i = 0; i < 4; ++i) {
+            (*processChannels)[i] = getNode()->getProcessChannel(i);
+        }
         if (useThisNodeComponentsNeeded) {
             getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInput);
         }
