@@ -264,7 +264,7 @@ RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
 {
     setMinimumWidth(fontMetrics().width(_imp->_sequenceName) + 100);
     setWindowTitle(_imp->_sequenceName);
-    //setWindowFlags(Qt::WindowStaysOnTopHint);
+    setWindowFlags(Qt::WindowStaysOnTopHint); // that window contains the "Cancel" button, and should thus be always visible
     _imp->_mainLayout = new QVBoxLayout(this);
     setLayout(_imp->_mainLayout);
     _imp->_mainLayout->setContentsMargins(5, 5, 0, 0);
