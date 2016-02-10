@@ -28,19 +28,6 @@ source `pwd`/common.sh || exit 1
 
 PID=$$
 
-#!/bin/sh
-PARENT=$1
-sleep 30m
-if [ "$PARENT" = "" ]; then
-  exit 1
-fi
-PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
-if [ "$PIDS" = "$PARENT" ]; then
-  kill -15 $PARENT
-fi
-EOF
-chmod +x $KILLSCRIPT
-
 if [ "$OS" = "Msys" ]; then
     PKGOS=Windows
 else
@@ -85,6 +72,18 @@ fi
 TMP_BUILD_DIR=$TMP_PATH$BIT
 KILLSCRIPT="$TMP_BUILD_DIR/killbot$$.sh"
 cat << 'EOF' > "$KILLSCRIPT"
+#!/bin/sh
+PARENT=$1
+sleep 30m
+if [ "$PARENT" = "" ]; then
+exit 1
+fi
+PIDS=`ps aux|awk '{print $2}'|grep $PARENT`
+if [ "$PIDS" = "$PARENT" ]; then
+kill -15 $PARENT
+fi
+EOF
+chmod +x $KILLSCRIPT
 
 if [ "$NOCLEAN" != "1" ]; then
     rm -rf $INSTALL_PATH
