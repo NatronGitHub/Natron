@@ -262,7 +262,7 @@ std::ostream* open_ofstream_impl(const std::string &filename)
     if (errcode != 0) {
         return 0;
     }
-    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(c_file, std::ios_base::out, 1);
+    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, std::ios_base::out, 1);
     if (!buffer) {
         return 0;
     }
