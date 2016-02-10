@@ -146,7 +146,7 @@ if [ "$NOBUILD" != "1" ]; then
     fi
     if [ "$FAIL" != "1" -a "$ONLY_NATRON" != "1" ]; then
         echo -n "Building Plugins ... "
-        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=$CV BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh $INC_PATH/scripts/build-plugins.sh $BIT $BRANCH >& $LOGS/plugins.$PKGOS$BIT.$TAG.log || FAIL=1
+        env NATRON_LICENSE=$NATRON_LICENSE MKJOBS=$JOBS MKSRC=${TARSRC} BUILD_CV=0 BUILD_IO=$IO BUILD_MISC=$MISC BUILD_ARENA=$ARENA sh $INC_PATH/scripts/build-plugins.sh $BIT $BRANCH >& $LOGS/plugins.$PKGOS$BIT.$TAG.log || FAIL=1
         if [ "$FAIL" != "1" ]; then
             echo OK
         else
