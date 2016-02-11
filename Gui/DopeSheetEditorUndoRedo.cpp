@@ -62,7 +62,7 @@ void moveReader(const NodePtr &reader, double dt)
 {
     Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>(reader->getKnobByName(kReaderParamNameStartingTime).get());
     assert(startingTimeKnob);
-    KnobHelper::ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, ViewIdx::all(), eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, ViewIdx::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
 }
     
@@ -70,7 +70,7 @@ void moveTimeOffset(const NodePtr& node, double dt)
 {
     Knob<int>* timeOffsetKnob = dynamic_cast<Knob<int>*>(node->getKnobByName(kTimeOffsetParamNameTimeOffset).get());
     assert(timeOffsetKnob);
-    KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewIdx::all(), eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewIdx::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
 }
 
@@ -516,7 +516,7 @@ void DSLeftTrimReaderCommand::trimLeft(double firstFrame)
         return;
     }
     effectInstance->beginChanges();
-    KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrame, ViewIdx::all(), eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum r = firstFrameKnob->setValue(firstFrame, ViewIdx::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     effectInstance->endChanges();
 
     Q_UNUSED(r);
@@ -596,7 +596,7 @@ void DSRightTrimReaderCommand::trimRight(double lastFrame)
         return;
     }
     effectInstance->beginChanges();
-    KnobHelper::ValueChangedReturnCodeEnum r = lastFrameKnob->setValue(lastFrame, ViewIdx::all(), eValueChangedReasonNatronGuiEdited, 0);
+    KnobHelper::ValueChangedReturnCodeEnum r = lastFrameKnob->setValue(lastFrame, ViewIdx::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     effectInstance->endChanges();
 
     Q_UNUSED(r);
