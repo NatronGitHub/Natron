@@ -2456,7 +2456,9 @@ AppManager::initPython(int argc,char* argv[])
     
     ///Must be called prior to Py_Initialize
     initBuiltinPythonModules();
-    //Py_NoSiteFlag = 1; 
+#ifndef DEBUG
+    Py_NoSiteFlag = 1; // NEVER comment this
+#endif
     Py_Initialize();
     // pythonHome must be const, so that the c_str() pointer is never invalidated
     
