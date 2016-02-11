@@ -60,7 +60,7 @@ struct GuiPrivate
 
     ///Dialogs handling members
     QWaitCondition _uiUsingMainThreadCond; //< used with _uiUsingMainThread
-    bool _uiUsingMainThread; //< true when the Gui is showing a dialog in the main thread
+    int _uiUsingMainThread; //< true when the Gui is showing a dialog in the main thread
     mutable QMutex _uiUsingMainThreadMutex; //< protects _uiUsingMainThread
     StandardButtonEnum _lastQuestionDialogAnswer; //< stores the last question answer
     bool _lastStopAskingAnswer;
