@@ -46,7 +46,7 @@ index 4f2f738..392273a 100644
  /// Read the entire contents of the named text file and place it in str,
  /// returning true on success, false on failure.
 diff --git a/src/libutil/filesystem.cpp b/src/libutil/filesystem.cpp
-index 7fb4759..1d761c7 100644
+index 7fb4759..b4abbdd 100644
 --- a/src/libutil/filesystem.cpp
 +++ b/src/libutil/filesystem.cpp
 @@ -39,6 +39,7 @@
@@ -230,7 +230,7 @@ index 7fb4759..1d761c7 100644
 +    if (!stream) {
 +        return;
 +    }
-+    *stream = open_ifstream_impl(path, mode);
++    *stream = open_ifstream_impl(path, mode | std::ios_base::in);
  }
  
  
@@ -251,7 +251,7 @@ index 7fb4759..1d761c7 100644
 +    if (!stream) {
 +        return;
 +    }
-+    *stream = open_ofstream_impl(path, mode);
++    *stream = open_ofstream_impl(path, mode | std::ios_base::out);
  }
  
  
