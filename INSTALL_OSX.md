@@ -107,8 +107,9 @@ Install libraries:
 
 The last command above should tell you do do that if the `homebrew.pth` file does not exist:
 
-    mkdir -p /Users/devernay/Library/Python/2.7/lib/python/site-packages  
+    mkdir -p /Users/devernay/Library/Python/2.7/lib/python/site-packages
     echo 'import site; site.addsitedir("/usr/local/lib/python2.7/site-packages")' >> ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth
+    sudo ln -s ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth /Library/Python/2.7/lib/python/site-packages/homebrew.pth
 
  To install the openfx-io and openfx-misc sets of plugin, you also need the following:
 
