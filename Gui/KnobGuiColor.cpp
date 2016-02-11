@@ -1014,24 +1014,34 @@ KnobGuiColor::onSpinBoxValueChanged()
         assert(spinboxdim != -1);
         newValue = isSpinbox->value();
         oldValue = _knob.lock()->getValue(spinboxdim);
+        pushUndoCommand( new KnobUndoCommand<double>(this,oldValue, newValue, spinboxdim ,false) );
     } else {
         // use the value of the first dimension only, and set all spinboxes
         newValue = _rBox->value();
-        oldValue = _knob.lock()->getValue(0);
+        std::list<double> oldValues = _knob.lock()->getValueForEachDimension_mt_safe();
+        assert(!oldValues.empty());
+        oldValue = oldValues.front();
+        std::list<double> newValues;
+        newValues.push_back(newValue);
         if (_gBox) {
             _gBox->setValue(newValue);
+            newValues.push_back(newValue);
         }
         if (_bBox) {
             _bBox->setValue(newValue);
+            newValues.push_back(newValue);
         }
         if (_aBox) {
             _aBox->setValue(newValue);
+            newValues.push_back(newValue);
         }
+        
+        pushUndoCommand( new KnobUndoCommand<double>(this,oldValues, newValues ,false) );
+
     }
     if (_slider) {
         _slider->seekScalePosition(newValue);
     }
-    pushUndoCommand( new KnobUndoCommand<double>(this,oldValue, newValue, spinboxdim ,false) );
 }
 
 void
