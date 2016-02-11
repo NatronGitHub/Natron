@@ -46,7 +46,7 @@ index 4f2f738..392273a 100644
  /// Read the entire contents of the named text file and place it in str,
  /// returning true on success, false on failure.
 diff --git a/src/libutil/filesystem.cpp b/src/libutil/filesystem.cpp
-index 7fb4759..0a1959a 100644
+index 7fb4759..c411d26 100644
 --- a/src/libutil/filesystem.cpp
 +++ b/src/libutil/filesystem.cpp
 @@ -39,6 +39,7 @@
@@ -70,7 +70,7 @@ index 7fb4759..0a1959a 100644
  #else
  #include <unistd.h>
  #endif
-@@ -484,35 +491,174 @@ Filesystem::fopen (string_view path, string_view mode)
+@@ -484,35 +491,178 @@ Filesystem::fopen (string_view path, string_view mode)
  #endif
  }
  
@@ -105,6 +105,7 @@ index 7fb4759..0a1959a 100644
 +    } else {
 +        f |= _O_TEXT;
 +    }
++    return f;
 +}
 +    
 +static std::istream*
@@ -156,11 +157,8 @@ index 7fb4759..0a1959a 100644
                    std::ios_base::openmode mode)
  {
 +    
- #ifdef _WIN32
--    // Windows std::ifstream accepts non-standard wchar_t* 
-     std::wstring wpath = Strutil::utf8_to_utf16(path);
--    stream.open (wpath.c_str(), mode);
--    stream.seekg (0, std::ios_base::beg); // force seek, otherwise broken
++#ifdef _WIN32
++    std::wstring wpath = Strutil::utf8_to_utf16(path);
 +#endif
 +    std::ifstream *ret = new std::ifstream();
 +    if (!ret) {
@@ -170,10 +168,9 @@ index 7fb4759..0a1959a 100644
 +        ret->open(
 +#ifdef _WIN32
 +                  wpath.c_str(),
- #else
--    stream.open (path.c_str(), mode);
++#else
 +                  path.c_str(),
- #endif
++#endif
 +                  mode);
 +    } catch (const std::exception & e) {
 +        delete ret;
@@ -192,8 +189,11 @@ index 7fb4759..0a1959a 100644
 +open_ofstream_impl(string_view path,
 +                   std::ios_base::openmode mode)
 +{
-+#ifdef _WIN32
-+    std::wstring wpath = Strutil::utf8_to_utf16(path);
+ #ifdef _WIN32
+-    // Windows std::ifstream accepts non-standard wchar_t* 
+     std::wstring wpath = Strutil::utf8_to_utf16(path);
+-    stream.open (wpath.c_str(), mode);
+-    stream.seekg (0, std::ios_base::beg); // force seek, otherwise broken
 +#endif
 +    std::ofstream *ret = new std::ofstream();
 +    if (!ret) {
@@ -203,9 +203,10 @@ index 7fb4759..0a1959a 100644
 +        ret->open(
 +#ifdef _WIN32
 +                  wpath.c_str(),
-+#else
+ #else
+-    stream.open (path.c_str(), mode);
 +                  path.c_str(),
-+#endif
+ #endif
 +                  mode);
 +    } catch (const std::exception & e) {
 +        delete ret;
@@ -232,7 +233,7 @@ index 7fb4759..0a1959a 100644
 +    }
 +    *stream = open_ifstream_impl(path, mode | std::ios_base::in);
 +    if (mode & std::ios_base::ate) {
-+        (*stream)->seekg (0, (*stream)->end);
++        (*stream)->seekg (0, std::ios_base::end);
 +    } else {
 +        (*stream)->seekg (0, std::ios_base::beg); // force seek, otherwise broken
 +    }
@@ -257,10 +258,13 @@ index 7fb4759..0a1959a 100644
 +        return;
 +    }
 +    *stream = open_ofstream_impl(path, mode | std::ios_base::out);
++    if ((mode & std::ios_base::app) == 0) {
++        (*stream)->seekp (0, std::ios_base::beg);
++    }
  }
  
  
-@@ -524,13 +670,18 @@ Filesystem::read_text_file (string_view filename, std::string &str)
+@@ -524,13 +674,18 @@ Filesystem::read_text_file (string_view filename, std::string &str)
  {
      // For info on why this is the fastest method:
      // http://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
