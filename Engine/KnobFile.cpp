@@ -38,6 +38,7 @@
 #include "Engine/Project.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/AppInstance.h"
 
 #include <SequenceParsing.h>
 #include "Global/QtCompat.h"
@@ -89,7 +90,13 @@ KnobFile::getFileName(int time,int view) const
         return getValue(0, ViewIdx(view));
     } else {
         ///try to interpret the pattern and generate a filename if indexes are found
-        return SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), time, view);
+        std::vector<std::string> views;
+        if (getHolder() && getHolder()->getApp()) {
+            views = getHolder()->getApp()->getProject()->getProjectViewNames();
+        }
+
+        
+        return SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), views, time, view);
     }
 }
 
@@ -127,7 +134,11 @@ KnobOutputFile::typeName() const
 QString
 KnobOutputFile::generateFileNameAtTime(SequenceTime time, int view) const
 {
-    return SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), time, view).c_str();
+    std::vector<std::string> views;
+    if (getHolder() && getHolder()->getApp()) {
+        views = getHolder()->getApp()->getProject()->getProjectViewNames();
+    }
+    return SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), views, time, view).c_str();
 }
 
 /***********************************KnobPath*****************************************/

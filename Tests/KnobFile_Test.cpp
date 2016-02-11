@@ -470,26 +470,32 @@ TEST(SequenceParsing,TestViews) {
 }
 
 TEST(SequenceParsing,OutputSequence) {
+    
+    std::vector<std::string> viewNames;
+    viewNames.push_back("Left");
+    std::string ret = generateFileNameFromPattern("/Users/Test/%V/toto_%v#.tif", viewNames, 0, 0);
+    EXPECT_EQ("/Users/Test/Left/toto_L0.tif",ret);
+    
     std::string pattern = "weird.%v.test_%01d.unittest";
-    std::string filename = generateFileNameFromPattern(pattern, 120, 0);
+    std::string filename = generateFileNameFromPattern(pattern, viewNames, 120, 0);
 
-    EXPECT_EQ("weird.l.test_120.unittest",filename);
+    EXPECT_EQ("weird.L.test_120.unittest",filename);
 
     pattern = "####.jpg";
-    filename = generateFileNameFromPattern(pattern, 120, 0);
+    filename = generateFileNameFromPattern(pattern, viewNames, 120, 0);
     EXPECT_EQ("0120.jpg",filename);
 
     pattern = "###lalala%04d.jpg";
-    filename = generateFileNameFromPattern(pattern, 120, 0);
+    filename = generateFileNameFromPattern(pattern, viewNames, 120, 0);
     EXPECT_EQ("120lalala0120.jpg",filename);
 
     pattern = "####%V.jpg";
-    filename = generateFileNameFromPattern(pattern, 120, 5);
-    EXPECT_EQ("0120view5.jpg",filename);
+    filename = generateFileNameFromPattern(pattern, viewNames, 120, 0);
+    EXPECT_EQ("0120Left.jpg",filename);
 
     ///test with a non-pattern
     pattern = "mysequence10.png";
-    filename = generateFileNameFromPattern(pattern, 120, 5);
+    filename = generateFileNameFromPattern(pattern, viewNames, 120, 0);
     EXPECT_EQ(pattern,filename);
 }
 

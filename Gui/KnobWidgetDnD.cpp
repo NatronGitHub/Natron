@@ -394,7 +394,7 @@ KnobWidgetDnD::drop(QDropEvent* e)
 void
 KnobWidgetDnD::mouseEnter(QEvent* /*e*/)
 {
-    if (Gui::isFocusStealingPossible()) {
+    if (Gui::isFocusStealingPossible() && _imp->widget->isEnabled()) {
         _imp->widget->setFocus();
     }
 }
