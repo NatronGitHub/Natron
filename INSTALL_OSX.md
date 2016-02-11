@@ -73,7 +73,7 @@ EOF
 
 If you intend to build the [openfx-io](https://github.com/MrKepzie/openfx-io) plugins too, you will need these additional packages:
 
-    sudo port -v install openexr ffmpeg opencolorio openimageio
+    sudo port -v install openexr ffmpeg opencolorio openimageio seexpr
 
 and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
@@ -105,9 +105,14 @@ Install libraries:
     brew install expat cairo glew
     brew install pyside
 
-To install the openfx-io and openfx-misc sets of plugin, you also need the following:
+The last command above should tell you do do that if the `homebrew.pth` file does not exist:
 
-    brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio
+    mkdir -p /Users/devernay/Library/Python/2.7/lib/python/site-packages  
+    echo 'import site; site.addsitedir("/usr/local/lib/python2.7/site-packages")' >> ~/Library/Python/2.7/lib/python/site-packages/homebrew.pth
+
+ To install the openfx-io and openfx-misc sets of plugin, you also need the following:
+
+    brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio seexpr
 
 also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
@@ -225,9 +230,33 @@ add -spec macx-xcode to the qmake call command:
 	
 Then open the already provided Project-xcode.xcodeproj and compile the target "all"
 
+### Compiling plugins with Xcode
+
+The source distributions of the plugin sets `openfx-io` and
+`openfx-misc` contain Xcode projects, but these require setting a few
+global variables in Xcode. These variables can be used to switch
+between the system-installed version of a package and a custom install
+(e.g. if you need to debug something that happens in OpenImageIO).
+
+In Xcode Preferences, select "Locations", then "Source Trees", and add the following
+variable names/values (Xcode may need to be restarted after setting these):
+- `LOCAL`: `/usr/local` on Homebrew, `/opt/local` on MacPorts
+- `BOOST_PATH`: `$(LOCAL)/include`
+- `EXR_PATH`: `$(LOCAL)`
+- `FFMPEG_PATH`: `$(LOCAL)`
+- `OCIO_PATH`: `$(LOCAL)`
+- `OIIO_PATH`: `$(LOCAL)`
+- `OPENCV_PATH`: `$(LOCAL)`
+- `SEEXPR_PATH`: `$(LOCAL)`
+
+It is also recommended in Xcode Preferences, select "Locations", then
+"Locations", to set the Derived Data location to be Relative, and in
+the advanced settings to set the build location to Legacy (if not,
+build files are somewhere under `~/Library/Developer/Xcode`.
+
 ### Xcode caveats
 
-henever the .pro files change, Xcode will try to launch qmake and
+Whenever the .pro files change, Xcode will try to launch qmake and
 probably fail because it doesn't find the necessary binaries (qmake,
 moc, pkg-config, python3-config, etc.). In this case, just open a
 Terminal and relaunch the above command. This will rebuild the Xcode projects.
