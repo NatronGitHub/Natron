@@ -46,7 +46,7 @@ index 4f2f738..392273a 100644
  /// Read the entire contents of the named text file and place it in str,
  /// returning true on success, false on failure.
 diff --git a/src/libutil/filesystem.cpp b/src/libutil/filesystem.cpp
-index 7fb4759..b4abbdd 100644
+index 7fb4759..0a1959a 100644
 --- a/src/libutil/filesystem.cpp
 +++ b/src/libutil/filesystem.cpp
 @@ -39,6 +39,7 @@
@@ -70,7 +70,7 @@ index 7fb4759..b4abbdd 100644
  #else
  #include <unistd.h>
  #endif
-@@ -484,35 +491,169 @@ Filesystem::fopen (string_view path, string_view mode)
+@@ -484,35 +491,174 @@ Filesystem::fopen (string_view path, string_view mode)
  #endif
  }
  
@@ -87,23 +87,23 @@ index 7fb4759..b4abbdd 100644
 +ios_open_mode_to_oflag(std::ios_base::openmode mode)
 +{
 +    int f = 0;
-+    if ((mode & std::ios_base::in) == std::ios_base::in) {
++    if (mode & std::ios_base::in) {
 +        f |= _O_RDONLY;
 +    }
-+    if ((mode & std::ios_base::out) == std::ios_base::out) {
++    if (mode & std::ios_base::out) {
 +        f |= _O_WRONLY;
 +        f |= _O_CREAT;
++        if (mode & std::ios_base::app) {
++            f |= _O_APPEND;
++        }
++        if (mode & std::ios_base::trunc) {
++            f |= _O_TRUNC;
++        }
 +    }
-+    if ((mode & std::ios_base::binary) == std::ios_base::binary) {
++    if (mode & std::ios_base::binary) {
 +        f |= _O_BINARY;
 +    } else {
 +        f |= _O_TEXT;
-+    }
-+    if (((mode & std::ios_base::ate) == std::ios_base::ate) || ((mode & std::ios_base::app) == std::ios_base::app)) {
-+        f |= _O_APPEND;
-+    }
-+    if (mode & std::ios_base::trunc) {
-+        f |= _O_TRUNC;
 +    }
 +}
 +    
@@ -231,6 +231,11 @@ index 7fb4759..b4abbdd 100644
 +        return;
 +    }
 +    *stream = open_ifstream_impl(path, mode | std::ios_base::in);
++    if (mode & std::ios_base::ate) {
++        (*stream)->seekg (0, (*stream)->end);
++    } else {
++        (*stream)->seekg (0, std::ios_base::beg); // force seek, otherwise broken
++    }
  }
  
  
@@ -255,7 +260,7 @@ index 7fb4759..b4abbdd 100644
  }
  
  
-@@ -524,13 +665,18 @@ Filesystem::read_text_file (string_view filename, std::string &str)
+@@ -524,13 +670,18 @@ Filesystem::read_text_file (string_view filename, std::string &str)
  {
      // For info on why this is the fastest method:
      // http://insanecoding.blogspot.com/2011/11/how-to-read-in-file-in-c.html
