@@ -1311,7 +1311,7 @@ AppManager::loadPythonGroups()
     
     ///Also import Pyside.QtCore and Pyside.QtGui (the later only in non background mode)
     {
-        std::string s = "import PySide\nimport PySide.QtCore as QtCore";
+        std::string s = "import PySide.QtCore as QtCore";
         bool ok  = Python::interpretPythonScript(s, &err, 0);
         if (!ok) {
             std::string message = QObject::tr("Failed to import PySide.QtCore").toStdString();
