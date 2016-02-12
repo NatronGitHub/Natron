@@ -1002,9 +1002,6 @@ template<> inline unsigned char Image::clampIfInt(float v) { return (unsigned ch
 template<> inline unsigned short Image::clampIfInt(float v) { return (unsigned short)clamp<float>(v, 0, 65535); }
 template<> inline float Image::clampIfInt(float v) { return v; }
 
-typedef boost::shared_ptr<NATRON_NAMESPACE::Image> ImagePtr;
-typedef std::list<ImagePtr> ImageList;
-
 NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_IMAGE_H

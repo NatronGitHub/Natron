@@ -5548,7 +5548,7 @@ Node::makePreviewImage(SequenceTime time,
         
         // Exceptions are caught because the program can run without a preview,
         // but any exception in renderROI is probably fatal.
-        ImageList planes;
+        std::map<ImageComponents,ImagePtr> planes;
         try {
             boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
             renderArgs.reset(new EffectInstance::RenderRoIArgs(time,
@@ -5573,7 +5573,7 @@ Node::makePreviewImage(SequenceTime time,
             return false;
         }
         
-        const ImagePtr& img = planes.front();
+        const ImagePtr& img = planes.begin()->second;
         
         const ImageComponents& components = img->getComponents();
         int elemCount = components.getNumComponents();

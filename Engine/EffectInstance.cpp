@@ -884,7 +884,7 @@ EffectInstance::getImage(int inputNb,
 
     std::list<ImageComponents> requestedComps;
     requestedComps.push_back(isMask ? maskComps : requestComps);
-    ImageList inputImages;
+    std::map<ImageComponents,ImagePtr> inputImages;
     RenderRoIRetCode retCode = inputEffect->renderRoI(RenderRoIArgs(time,
                                                                     scale,
                                                                     renderMappedMipMapLevel,
@@ -903,7 +903,7 @@ EffectInstance::getImage(int inputNb,
     }
     assert(inputImages.size() == 1);
 
-    inputImg = inputImages.front();
+    inputImg = inputImages.begin()->second;
 
     if (!pixelRoI.intersects( inputImg->getBounds())) {
         //The RoI requested does not intersect with the bounds of the input image, return a NULL image.
@@ -2150,7 +2150,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             }
         }
         assert( !comps.empty() );
-        ImageList identityPlanes;
+        std::map<ImageComponents,ImagePtr> identityPlanes;
         boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
         renderArgs.reset(new EffectInstance::RenderRoIArgs(tls->currentRenderArgs.identityTime,
                                                            actionArgs.originalScale,
@@ -2195,24 +2195,25 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             } else {
                 assert( identityPlanes.size() == planes.planes.size() );
 
-                ImageList::iterator idIt = identityPlanes.begin();
+                std::map<ImageComponents,ImagePtr>::iterator idIt = identityPlanes.begin();
                 for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it, ++idIt) {
-                    if ( renderFullScaleThenDownscale && ( (*idIt)->getMipMapLevel() > it->second.fullscaleImage->getMipMapLevel() ) ) {
-                        if ( !(*idIt)->getBounds().contains(renderMappedRectToRender) ) {
+                    if ( renderFullScaleThenDownscale && (idIt->second->getMipMapLevel() > it->second.fullscaleImage->getMipMapLevel() ) ) {
+                        if ( !idIt->second->getBounds().contains(renderMappedRectToRender) ) {
                             ///Fill the RoI with 0's as the identity input image might have bounds contained into the RoI
                             it->second.fullscaleImage->fillZero(renderMappedRectToRender);
                         }
 
                         ///Convert format first if needed
                         ImagePtr sourceImage;
-                        if ( ( it->second.fullscaleImage->getComponents() != (*idIt)->getComponents() ) || ( it->second.fullscaleImage->getBitDepth() != (*idIt)->getBitDepth() ) ) {
-                            sourceImage.reset( new Image(it->second.fullscaleImage->getComponents(), (*idIt)->getRoD(), (*idIt)->getBounds(),
-                                                         (*idIt)->getMipMapLevel(), (*idIt)->getPixelAspectRatio(), it->second.fullscaleImage->getBitDepth(), false) );
-                            ViewerColorSpaceEnum colorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( (*idIt)->getBitDepth() );
-                            ViewerColorSpaceEnum dstColorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() );
-                            (*idIt)->convertToFormat( (*idIt)->getBounds(), colorspace, dstColorspace, 3, false, false, sourceImage.get() );
+                        if ( ( it->second.fullscaleImage->getComponents() != idIt->second->getComponents() ) || ( it->second.fullscaleImage->getBitDepth() != idIt->second->getBitDepth() ) ) {
+                            
+                            sourceImage.reset( new Image(it->second.fullscaleImage->getComponents(), idIt->second->getRoD(), idIt->second->getBounds(),idIt->second->getMipMapLevel(), idIt->second->getPixelAspectRatio(), it->second.fullscaleImage->getBitDepth(), false) );
+                            
+                            ViewerColorSpaceEnum colorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth(idIt->second->getBitDepth());
+                            ViewerColorSpaceEnum dstColorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth());
+                            idIt->second->convertToFormat(idIt->second->getBounds(), colorspace, dstColorspace, 3, false, false, sourceImage.get() );
                         } else {
-                            sourceImage = *idIt;
+                            sourceImage = idIt->second;
                         }
 
                         ///then upscale
@@ -2225,20 +2226,20 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                         it->second.fullscaleImage->pasteFrom(*inputPlane, renderMappedRectToRender, false);
                         it->second.fullscaleImage->markForRendered(renderMappedRectToRender);
                     } else {
-                        if ( !(*idIt)->getBounds().contains(downscaledRectToRender) ) {
+                        if ( !idIt->second->getBounds().contains(downscaledRectToRender) ) {
                             ///Fill the RoI with 0's as the identity input image might have bounds contained into the RoI
                             it->second.downscaleImage->fillZero(downscaledRectToRender);
                         }
 
                         ///Convert format if needed or copy
-                        if ( ( it->second.downscaleImage->getComponents() != (*idIt)->getComponents() ) || ( it->second.downscaleImage->getBitDepth() != (*idIt)->getBitDepth() ) ) {
-                            ViewerColorSpaceEnum colorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( (*idIt)->getBitDepth() );
+                        if ( ( it->second.downscaleImage->getComponents() != idIt->second->getComponents() ) || ( it->second.downscaleImage->getBitDepth() != idIt->second->getBitDepth() ) ) {
+                            ViewerColorSpaceEnum colorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth(idIt->second->getBitDepth() );
                             ViewerColorSpaceEnum dstColorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth() );
                             RectI convertWindow;
-                            (*idIt)->getBounds().intersect(downscaledRectToRender, &convertWindow);
-                            (*idIt)->convertToFormat( convertWindow, colorspace, dstColorspace, 3, false, false, it->second.downscaleImage.get() );
+                            idIt->second->getBounds().intersect(downscaledRectToRender, &convertWindow);
+                            idIt->second->convertToFormat( convertWindow, colorspace, dstColorspace, 3, false, false, it->second.downscaleImage.get() );
                         } else {
-                            it->second.downscaleImage->pasteFrom(**idIt, downscaledRectToRender, false);
+                            it->second.downscaleImage->pasteFrom(*(idIt->second), downscaledRectToRender, false);
                         }
                         it->second.downscaleImage->markForRendered(downscaledRectToRender);
                     }

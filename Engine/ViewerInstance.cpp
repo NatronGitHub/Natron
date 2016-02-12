@@ -1479,7 +1479,7 @@ ViewerInstance::renderViewer_internal(int view,
         // We catch it  and rethrow it just to notify the rendering is done.
         try {
             
-            ImageList planes;
+            std::map<ImageComponents,ImagePtr> planes;
             EffectInstance::RenderRoIRetCode retCode;
             {
                 boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
@@ -1498,27 +1498,27 @@ ViewerInstance::renderViewer_internal(int view,
             assert(planes.size() == 0 || planes.size() <= 2);
             if (!planes.empty() && retCode == EffectInstance::eRenderRoIRetCodeOk) {
                 if (planes.size() == 2) {
-                    ImageList::iterator firstPlane = planes.begin();
-                    if ((*firstPlane)->getComponents() == inArgs.params->layer) {
-                        colorImage = *firstPlane;
-                        ++firstPlane;
-                        alphaImage = *firstPlane;
-                    } else {
-                        assert((*firstPlane)->getComponents() == inArgs.params->alphaLayer);
-                        alphaImage = *firstPlane;
-                        ++firstPlane;
-                        colorImage = *firstPlane;
+                    
+                    std::map<ImageComponents,ImagePtr>::iterator foundColorLayer = planes.find(inArgs.params->layer);
+                    if (foundColorLayer != planes.end()) {
+                        colorImage = foundColorLayer->second;
                     }
+                    std::map<ImageComponents,ImagePtr>::iterator foundAlphaLayer = planes.find(inArgs.params->alphaLayer);
+                    if (foundAlphaLayer != planes.end()) {
+                        alphaImage = foundAlphaLayer->second;
+                    }
+                    
+                    
                 } else {
                     //only 1 plane, figure out if the alpha layer is the same as the color layer
                     if (inArgs.params->alphaLayer == inArgs.params->layer) {
                         if (inArgs.channels == eDisplayChannelsMatte) {
-                            alphaImage = colorImage = planes.front();
+                            alphaImage = colorImage = planes.begin()->second;
                         } else {
-                            colorImage = planes.front();
+                            colorImage = planes.begin()->second;
                         }
                     } else {
-                        colorImage = planes.front();
+                        colorImage = planes.begin()->second;
                     }
                 }
                 assert(colorImage);

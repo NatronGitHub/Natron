@@ -702,14 +702,6 @@ OfxClipInstance::natronsPlaneToOfxPlane(const ImageComponents& plane)
 {
     if (plane.getLayerName() == kNatronColorPlaneName) {
         return kFnOfxImagePlaneColour;
-    } else if (plane.getLayerName() == kNatronForwardMotionVectorsPlaneName) {
-        return kFnOfxImagePlaneForwardMotionVector;
-    } else if (plane.getLayerName() == kNatronBackwardMotionVectorsPlaneName) {
-        return kFnOfxImagePlaneBackwardMotionVector;
-    } else if (plane.getLayerName() == kNatronDisparityLeftPlaneName) {
-        return kFnOfxImagePlaneStereoDisparityLeft;
-    } else if (plane.getLayerName() == kNatronDisparityRightPlaneName) {
-        return kFnOfxImagePlaneStereoDisparityRight;
     } else {
         return natronCustomCompToOfxComp(plane);
     }
@@ -1068,9 +1060,9 @@ OfxClipInstance::natronsComponentsToOfxComponents(const ImageComponents& comp)
         return kOfxImageComponentRGB;
     } else if (comp == ImageComponents::getRGBAComponents()) {
         return kOfxImageComponentRGBA;
-    } else if (comp.getComponentsGlobalName() == kNatronMotionComponentsName) {
+    } else if (QString(comp.getComponentsGlobalName().c_str()).compare("UV", Qt::CaseInsensitive) == 0) {
         return kFnOfxImageComponentMotionVectors;
-    } else if (comp.getComponentsGlobalName() == kNatronDisparityComponentsName) {
+    } else if (QString(comp.getComponentsGlobalName().c_str()).compare("XY", Qt::CaseInsensitive) == 0) {
         return kFnOfxImageComponentStereoDisparity;
     } else {
         return natronCustomCompToOfxComp(comp);

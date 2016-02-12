@@ -252,28 +252,28 @@ ImageComponents::getAlphaComponents()
 const ImageComponents&
 ImageComponents::getBackwardMotionComponents()
 {
-    static const ImageComponents comp(kNatronBackwardMotionVectorsPlaneName,kNatronMotionComponentsName,motionComps,2);
+    static const ImageComponents comp(kNatronBackwardMotionVectorsPlaneUserName,kNatronMotionComponentsName,motionComps,2);
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getForwardMotionComponents()
 {
-    static const ImageComponents comp(kNatronForwardMotionVectorsPlaneName,kNatronMotionComponentsName,motionComps,2);
+    static const ImageComponents comp(kNatronForwardMotionVectorsPlaneUserName,kNatronMotionComponentsName,motionComps,2);
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getDisparityLeftComponents()
 {
-    static const ImageComponents comp(kNatronDisparityLeftPlaneName,kNatronDisparityComponentsName,disparityComps,2);
+    static const ImageComponents comp(kNatronDisparityLeftPlaneUserName,kNatronDisparityComponentsName,disparityComps,2);
     return comp;
 }
 
 const ImageComponents&
 ImageComponents::getDisparityRightComponents()
 {
-    static const ImageComponents comp(kNatronDisparityRightPlaneName,kNatronDisparityComponentsName,disparityComps,2);
+    static const ImageComponents comp(kNatronDisparityRightPlaneUserName,kNatronDisparityComponentsName,disparityComps,2);
     return comp;
 }
 

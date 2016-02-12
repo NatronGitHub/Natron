@@ -32,25 +32,25 @@
 #include "Engine/EngineFwd.h"
 
 #define kNatronColorPlaneName "Color"
-#define kNatronBackwardMotionVectorsPlaneName "Backward"
-#define kNatronForwardMotionVectorsPlaneName "Forward"
-#define kNatronDisparityLeftPlaneName "DisparityLeft"
-#define kNatronDisparityRightPlaneName "DisparityRight"
+#define kNatronBackwardMotionVectorsPlaneName "Backward.Motion"
+#define kNatronForwardMotionVectorsPlaneName "Forward.Motion"
+#define kNatronDisparityLeftPlaneName "DisparityLeft.Disparity"
+#define kNatronDisparityRightPlaneName "DisparityRight.Disparity"
 
 #define kNatronRGBAComponentsName "RGBA"
 #define kNatronRGBComponentsName "RGB"
 #define kNatronAlphaComponentsName "Alpha"
 
-#define kNatronDisparityComponentsName "Disparity"
-#define kNatronMotionComponentsName "Motion"
+#define kNatronDisparityComponentsName "XY"
+#define kNatronMotionComponentsName "UV"
 
 #define kNatronAlphaPlaneUserName kNatronColorPlaneName "." kNatronAlphaComponentsName
 #define kNatronRGBAPlaneUserName kNatronColorPlaneName "." kNatronRGBAComponentsName
 #define kNatronRGBPlaneUserName kNatronColorPlaneName "." kNatronRGBComponentsName
-#define kNatronDisparityLeftPlaneUserName kNatronDisparityLeftPlaneName "." kNatronDisparityComponentsName
-#define kNatronDisparityRightPlaneUserName kNatronDisparityRightPlaneName "." kNatronDisparityComponentsName
-#define kNatronBackwardMotionVectorsPlaneUserName kNatronBackwardMotionVectorsPlaneName "." kNatronMotionComponentsName
-#define kNatronForwardMotionVectorsPlaneUserName kNatronForwardMotionVectorsPlaneName "." kNatronMotionComponentsName
+#define kNatronDisparityLeftPlaneUserName kNatronDisparityLeftPlaneName
+#define kNatronDisparityRightPlaneUserName kNatronDisparityRightPlaneName
+#define kNatronBackwardMotionVectorsPlaneUserName kNatronBackwardMotionVectorsPlaneName
+#define kNatronForwardMotionVectorsPlaneUserName kNatronForwardMotionVectorsPlaneName
 
 NATRON_NAMESPACE_ENTER;
 

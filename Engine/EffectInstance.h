@@ -485,7 +485,8 @@ public:
      * The return code indicates whether the render succeeded or failed. Note that this function may succeed
      * and return 0 plane if the RoI does not intersect the RoD of the effect.
      **/
-    RenderRoIRetCode renderRoI(const RenderRoIArgs & args, std::list<boost::shared_ptr<Image> >* outputPlanes) WARN_UNUSED_RETURN;
+    RenderRoIRetCode renderRoI(const RenderRoIArgs & args,
+                               std::map<ImageComponents,boost::shared_ptr<Image> >* outputPlanes) WARN_UNUSED_RETURN;
 
 
     void getImageFromCacheAndConvertIfNeeded(bool useCache,

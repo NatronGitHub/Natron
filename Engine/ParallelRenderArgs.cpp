@@ -280,7 +280,7 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
                                 const RenderScale & upstreamScale = useScaleOneInputs ? scaleOne : scale;
                                 roi.toPixelEnclosing(upstreamMipMapLevel, inputPar, &inputRoIPixelCoords);
 
-                                ImageList inputImgs;
+                                std::map<ImageComponents,ImagePtr> inputImgs;
                                 {
                                     boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
                                     renderArgs.reset(new EffectInstance::RenderRoIArgs(f, //< time
@@ -301,9 +301,9 @@ EffectInstance::RenderRoIRetCode EffectInstance::treeRecurseFunctor(bool isRende
                                         return ret;
                                     }
                                 }
-                                for (ImageList::iterator it3 = inputImgs.begin(); it3 != inputImgs.end(); ++it3) {
-                                    if (inputImagesList && *it3) {
-                                        inputImagesList->push_back(*it3);
+                                for (std::map<ImageComponents,ImagePtr>::iterator it3 = inputImgs.begin(); it3 != inputImgs.end(); ++it3) {
+                                    if (inputImagesList && it3->second) {
+                                        inputImagesList->push_back(it3->second);
                                     }
                                 }
                                 

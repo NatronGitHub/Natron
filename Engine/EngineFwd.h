@@ -234,6 +234,9 @@ typedef std::vector<KnobPtr> KnobsVec;
 typedef boost::shared_ptr<EffectInstance> EffectInstPtr;
 typedef boost::weak_ptr<EffectInstance> EffectInstWPtr;
 
+typedef boost::shared_ptr<Image> ImagePtr;
+typedef std::list<ImagePtr> ImageList;
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_EngineFwd_h

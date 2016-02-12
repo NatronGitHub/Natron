@@ -2524,7 +2524,7 @@ private:
                 
                 RenderingFlagSetter flagIsRendering(activeInputToRender->getNode().get());
                 
-                ImageList planes;
+                std::map<ImageComponents,ImagePtr> planes;
                 boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
                 renderArgs.reset(new EffectInstance::RenderRoIArgs(time, //< the time at which to render
                                                                    scale, //< the scale at which to render
@@ -2550,8 +2550,8 @@ private:
                 
                 ///If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
                 if (!renderDirectly) {
-                    for (ImageList::iterator it = planes.begin(); it != planes.end(); ++it) {
-                        _imp->scheduler->appendToBuffer(time, viewsToRender[view], stats, boost::dynamic_pointer_cast<BufferableObject>(*it));
+                    for (std::map<ImageComponents,ImagePtr>::iterator it = planes.begin(); it != planes.end(); ++it) {
+                        _imp->scheduler->appendToBuffer(time, viewsToRender[view], stats, boost::dynamic_pointer_cast<BufferableObject>(it->second));
                     }
                 } else {
                     _imp->scheduler->notifyFrameRendered(time, viewsToRender[view], viewsToRender, stats, eSchedulingPolicyFFA);
@@ -2653,7 +2653,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                            effect.get(),
                                                            inputImages));
         try {
-            ImageList planes;
+            std::map<ImageComponents,ImagePtr> planes;
             EffectInstance::RenderRoIRetCode retCode;
             retCode = effect->renderRoI(*renderArgs, &planes);
             if (retCode != EffectInstance::eRenderRoIRetCodeOk) {

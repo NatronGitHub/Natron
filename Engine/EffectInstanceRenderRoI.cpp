@@ -204,7 +204,7 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstance* app,
 
 EffectInstance::RenderRoIRetCode
 EffectInstance::renderRoI(const RenderRoIArgs & args,
-                          ImageList* outputPlanes)
+                          std::map<ImageComponents,ImagePtr>* outputPlanes)
 {
     //Do nothing if no components were requested
     if (args.components.empty()) {
@@ -417,13 +417,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 inArgs->preComputedRoD.clear();
                 inArgs->components.clear();
                 inArgs->components.push_back(it->first);
-                ImageList inputPlanes;
+                std::map<ImageComponents,ImagePtr> inputPlanes;
                 RenderRoIRetCode inputRetCode = node->getEffectInstance()->renderRoI(*inArgs, &inputPlanes);
                 assert( inputPlanes.size() == 1 || inputPlanes.empty() );
                 if ( (inputRetCode == eRenderRoIRetCodeAborted) || (inputRetCode == eRenderRoIRetCodeFailed) || inputPlanes.empty() ) {
                     return inputRetCode;
                 }
-                outputPlanes->push_back( inputPlanes.front() );
+                outputPlanes->insert(std::make_pair(it->first, inputPlanes.begin()->second));
             }
         }
 
@@ -554,18 +554,18 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 
                 
                 
-                ImageList identityPlanes;
+                std::map<ImageComponents,ImagePtr> identityPlanes;
                 RenderRoIRetCode ret =  inputEffectIdentity->renderRoI(*inputArgs, &identityPlanes);
                 if (ret == eRenderRoIRetCodeOk) {
-                    outputPlanes->insert(outputPlanes->end(), identityPlanes.begin(),identityPlanes.end());
-                    ImageList convertedPlanes;
+                    outputPlanes->insert(identityPlanes.begin(),identityPlanes.end());
+                    std::map<ImageComponents,ImagePtr> convertedPlanes;
                     AppInstance* app = getApp();
                     assert(args.components.size() == outputPlanes->size() || outputPlanes->empty());
                     bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
                     
                     std::list<ImageComponents>::const_iterator compIt = args.components.begin();
                     
-                    for (ImageList::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it,++compIt) {
+                    for (std::map<ImageComponents,ImagePtr>::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it,++compIt) {
                         
                         ImagePremultiplicationEnum premult;
                         const ImageComponents & outComp = outputComponents.front();
@@ -575,9 +575,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                             premult = eImagePremultiplicationOpaque;
                         }
                         
-                        ImagePtr tmp = convertPlanesFormatsIfNeeded(app, *it, args.roi, *compIt, inputArgs->bitdepth, useAlpha0ForRGBToRGBAConversion, premult, -1);
+                        ImagePtr tmp = convertPlanesFormatsIfNeeded(app, it->second, args.roi, *compIt, inputArgs->bitdepth, useAlpha0ForRGBToRGBAConversion, premult, -1);
                         assert(tmp);
-                        convertedPlanes.push_back(tmp);
+                        convertedPlanes[it->first] = tmp;
                     }
                     *outputPlanes = convertedPlanes;
                 } else {
@@ -794,7 +794,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                         appPTR->removeFromNodeCache(plane.fullscaleImage);
                         plane.fullscaleImage.reset();
                     } else {
-                        outputPlanes->push_back(plane.fullscaleImage);
+                        outputPlanes->insert(std::make_pair(*it,plane.fullscaleImage));
                         continue;
                     }
                 } else {
@@ -816,7 +816,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                 it2->second.downscaleImage.reset();
                                 newPlanes.insert(*it2);
                             } else {
-                                outputPlanes->push_back(it2->second.fullscaleImage);
+                                outputPlanes->insert(std::make_pair(it2->first,it2->second.fullscaleImage));
                             }
                         } else {
                             newPlanes.insert(*it2);
@@ -1553,7 +1553,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, originalRoI, it->first, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender->outputPremult, -1);
         
         assert(it->second.downscaleImage->getComponents() == it->first && it->second.downscaleImage->getBitDepth() == args.bitdepth);
-        outputPlanes->push_back(it->second.downscaleImage);
+        outputPlanes->insert(std::make_pair(it->first,it->second.downscaleImage));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1568,15 +1568,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             qDebug() << it->getLayerName().c_str();
         }
         qDebug() << "But rendered:";
-        for (ImageList::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it) {
-            if (*it) {
-                qDebug() << (*it)->getComponents().getLayerName().c_str();
+        for (std::map<ImageComponents,ImagePtr>::iterator it = outputPlanes->begin(); it!=outputPlanes->end(); ++it) {
+            if (it->second) {
+                qDebug() << it->first.getLayerName().c_str();
             }
         }
     }
 #endif
-    assert(outputPlanes->size() == args.components.size());
-    assert( !outputPlanes->empty() );
+
+    assert(!outputPlanes->empty());
 
     return eRenderRoIRetCodeOk;
 } // renderRoI

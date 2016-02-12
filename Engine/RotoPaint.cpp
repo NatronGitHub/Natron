@@ -430,7 +430,7 @@ RotoPaint::render(const RenderActionArgs& args)
                                     bgDepth,
                                     false,
                                     this);
-        ImageList rotoPaintImages;
+        std::map<ImageComponents,ImagePtr> rotoPaintImages;
         RenderRoIRetCode code = bottomMerge->getEffectInstance()->renderRoI(rotoPaintArgs, &rotoPaintImages);
         if (code == eRenderRoIRetCodeFailed) {
             return eStatusFailed;
@@ -454,11 +454,16 @@ RotoPaint::render(const RenderActionArgs& args)
         bool triedGetImage = false;
         //bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, &bgImgRoI);
         
-        ImageList::iterator rotoImagesIt = rotoPaintImages.begin();
         for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
-             plane != args.outputPlanes.end(); ++plane, ++rotoImagesIt) {
+             plane != args.outputPlanes.end(); ++plane) {
             
-            if (!(*rotoImagesIt)->getBounds().contains(args.roi)) {
+            std::map<ImageComponents,ImagePtr>::iterator rotoImagesIt = rotoPaintImages.find(plane->first);
+            assert(rotoImagesIt != rotoPaintImages.end());
+            if (rotoImagesIt == rotoPaintImages.end()) {
+                continue;
+            }
+
+            if (!rotoImagesIt->second->getBounds().contains(args.roi)) {
                 if (!bgImg) {
                     if (!triedGetImage) {
                         bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, true, &bgImgRoI);
@@ -516,7 +521,7 @@ RotoPaint::render(const RenderActionArgs& args)
                         RectI intersection;
                         args.roi.intersect(bgImg->getBounds(), &intersection);
                         bgImg->convertToFormat(intersection,
-                                               getApp()->getDefaultColorSpaceForBitDepth((*rotoImagesIt)->getBitDepth()),
+                                               getApp()->getDefaultColorSpaceForBitDepth(rotoImagesIt->second->getBitDepth()),
                                                getApp()->getDefaultColorSpaceForBitDepth(plane->second->getBitDepth()), 3
                                                , false, false, plane->second.get());
                     } else {
@@ -530,14 +535,14 @@ RotoPaint::render(const RenderActionArgs& args)
            
             
            
-            if ((*rotoImagesIt)->getComponents() != plane->second->getComponents()) {
+            if (rotoImagesIt->second->getComponents() != plane->second->getComponents()) {
                 
-                (*rotoImagesIt)->convertToFormat(args.roi,
-                                                 getApp()->getDefaultColorSpaceForBitDepth((*rotoImagesIt)->getBitDepth()),
+                rotoImagesIt->second->convertToFormat(args.roi,
+                                                 getApp()->getDefaultColorSpaceForBitDepth(rotoImagesIt->second->getBitDepth()),
                                                  getApp()->getDefaultColorSpaceForBitDepth(plane->second->getBitDepth()), 3
                                                  , false, false, plane->second.get());
             } else {
-                plane->second->pasteFrom(**rotoImagesIt, args.roi, false);
+                plane->second->pasteFrom(*(rotoImagesIt->second), args.roi, false);
             }
             if (premultiply && plane->second->getComponents() == ImageComponents::getRGBAComponents()) {
                 plane->second->premultImage(args.roi);
