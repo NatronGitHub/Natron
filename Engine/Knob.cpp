@@ -2591,12 +2591,11 @@ KnobHelper::slaveTo(int dimension,
 {
     assert(other.get() != this);
     assert( 0 <= dimension && dimension < (int)_imp->masters.size() );
-    if (other->isSlave(otherDimension)) {
+
+    if (other->getMaster(otherDimension).second.get() == this) {
+        //avoid recursion
         return false;
     }
-
-    assert( !other->isSlave(otherDimension) );
-   
     {
         QWriteLocker l(&_imp->mastersMutex);
         if (_imp->masters[dimension].second) {
