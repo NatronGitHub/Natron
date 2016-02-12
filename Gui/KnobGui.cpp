@@ -627,7 +627,7 @@ KnobGui::createAnimationMenu(QMenu* menu,int dimension)
         KnobPtr aliasMaster = knob->getAliasMaster();
         
         std::string knobName;
-        if (dimension != -1 || knob->getDimension() == 1) {
+        if ((dimension != -1 || knob->getDimension() == 1) && dimensionIsSlaved) {
             std::pair<int,KnobPtr > master = knob->getMaster(dimension);
             assert(master.second);
             
