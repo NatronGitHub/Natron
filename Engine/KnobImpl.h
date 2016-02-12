@@ -2340,7 +2340,7 @@ Knob<T>::clone(KnobI* other,
     }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(ViewIdx::all(), dimension, eValueChangedReasonNatronInternalEdited);
-        refreshListenersAfterValueChange(ViewIdx::all(), dimension);
+        refreshListenersAfterValueChange(ViewIdx::all(), eValueChangedReasonNatronInternalEdited, dimension);
     }
     cloneExtraData(other,dimension);
     if (getHolder()) {
@@ -2382,7 +2382,7 @@ Knob<T>::cloneAndCheckIfChanged(KnobI* other,int dimension)
     if (hasChanged) {
         if (_signalSlotHandler) {
             _signalSlotHandler->s_valueChanged(ViewIdx::all(), dimension, eValueChangedReasonNatronInternalEdited);
-            refreshListenersAfterValueChange(ViewIdx::all(), dimension);
+            refreshListenersAfterValueChange(ViewIdx::all(), eValueChangedReasonNatronInternalEdited, dimension);
         }
     }
     hasChanged |= cloneExtraDataAndCheckIfChanged(other);
@@ -2425,7 +2425,7 @@ Knob<T>::clone(KnobI* other,
     }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(ViewIdx::all(), dimension, eValueChangedReasonNatronInternalEdited);
-        refreshListenersAfterValueChange(ViewIdx::all(), dimension);
+        refreshListenersAfterValueChange(ViewIdx::all(), eValueChangedReasonNatronInternalEdited, dimension);
     }
     cloneExtraData(other,offset,range,dimension);
     if (getHolder()) {
@@ -2478,7 +2478,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,int dimension)
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(ViewIdx::all(), dimension, eValueChangedReasonNatronInternalEdited);
     }
-    refreshListenersAfterValueChange(ViewIdx::all(), dimension);
+    refreshListenersAfterValueChange(ViewIdx::all(), eValueChangedReasonNatronInternalEdited, dimension);
     cloneExtraData(other,dimension);
     if (getHolder()) {
         getHolder()->updateHasAnimation();

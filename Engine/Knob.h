@@ -421,7 +421,8 @@ public:
      * evaluate the new value (cause a render).
      **/
     virtual void evaluateValueChange(int dimension, double time, ViewIdx view, ValueChangedReasonEnum reason) = 0;
-
+    
+    
     /**
      * @brief Copies all the values, animations and extra data the other knob might have
      * to this knob. This function calls cloneExtraData.
@@ -606,7 +607,7 @@ public:
 
 protected:
     
-    virtual void refreshListenersAfterValueChange(ViewIdx view, int dimension) = 0;
+    virtual void refreshListenersAfterValueChange(ViewIdx view, ValueChangedReasonEnum reason, int dimension) = 0;
     
 public:
 
@@ -1175,6 +1176,17 @@ public:
     virtual bool isValueChangesBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void evaluateValueChange(int dimension,double time, ViewIdx view,  ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
+private:
+    
+    void evaluateValueChangeInternal(int dimension,
+                                     double time,
+                                     ViewIdx view,
+                                     ValueChangedReasonEnum reason,
+                                     ValueChangedReasonEnum originalReason);
+    
+public:
+
+    
     virtual double random(double time,unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual double random(double min = 0., double max = 1.) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int randomInt(double time,unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1229,7 +1241,7 @@ public:
     
 protected:
     
-    virtual void refreshListenersAfterValueChange(ViewIdx view, int dimension) OVERRIDE FINAL;
+    virtual void refreshListenersAfterValueChange(ViewIdx view, ValueChangedReasonEnum reason, int dimension) OVERRIDE FINAL;
     
 public:
     

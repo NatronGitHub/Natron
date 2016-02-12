@@ -1290,30 +1290,29 @@ KnobHelper::isValueChangesBlocked() const
 }
 
 void
-KnobHelper::evaluateValueChange(int dimension,
-                                double time,
-                                ViewIdx view,
-                                ValueChangedReasonEnum reason)
+KnobHelper::evaluateValueChangeInternal(int dimension,
+                                 double time,
+                                 ViewIdx view,
+                                 ValueChangedReasonEnum reason,
+                                 ValueChangedReasonEnum originalReason)
 {
-    
-
     AppInstance* app = 0;
     if (_imp->holder) {
         app = _imp->holder->getApp();
     }
     
     bool guiFrozen = app && _imp->gui && _imp->gui->isGuiFrozenForPlayback();
-
+    
     /// For eValueChangedReasonTimeChanged we never call the instanceChangedAction and evaluate otherwise it would just throttle
     /// the application responsiveness
-    if ((reason != eValueChangedReasonTimeChanged || evaluateValueChangeOnTimeChange()) && _imp->holder) {
+    if ((originalReason != eValueChangedReasonTimeChanged || evaluateValueChangeOnTimeChange()) && _imp->holder) {
         if (!app || !app->getProject()->isLoadingProject()) {
             
             if (_imp->holder->isEvaluationBlocked()) {
-                _imp->holder->appendValueChange(this, time, view, reason);
+                _imp->holder->appendValueChange(this, time, view, originalReason);
             } else {
                 _imp->holder->beginChanges();
-                _imp->holder->appendValueChange(this,time, view,  reason);
+                _imp->holder->appendValueChange(this,time, view,  originalReason);
                 _imp->holder->endChanges();
             }
             
@@ -1326,9 +1325,9 @@ KnobHelper::evaluateValueChange(int dimension,
         if (refreshWidget) {
             _signalSlotHandler->s_valueChanged(view, dimension,(int)reason);
         }
-        if (reason != eValueChangedReasonSlaveRefresh) {
-            refreshListenersAfterValueChange(view, dimension);
-        }
+        //if (reason != eValueChangedReasonSlaveRefresh) {
+            refreshListenersAfterValueChange(view, originalReason, dimension);
+        //}
         if (dimension == -1) {
             for (int i = 0; i < _imp->dimension; ++i) {
                 checkAnimationLevel(view, i);
@@ -1337,6 +1336,17 @@ KnobHelper::evaluateValueChange(int dimension,
             checkAnimationLevel(view, dimension);
         }
     }
+}
+
+void
+KnobHelper::evaluateValueChange(int dimension,
+                                double time,
+                                ViewIdx view,
+                                ValueChangedReasonEnum reason)
+{
+    
+
+    evaluateValueChangeInternal(dimension, time, view, reason, reason);
 }
 
 void
@@ -2900,7 +2910,7 @@ KnobHelper::getKeyFrameIndex(ViewIdx view, int dimension,
 
 
 void
-KnobHelper::refreshListenersAfterValueChange(ViewIdx view, int dimension)
+KnobHelper::refreshListenersAfterValueChange(ViewIdx view, ValueChangedReasonEnum reason, int dimension)
 {
     ListenerDimsMap listeners;
     getListeners(listeners);
@@ -2946,10 +2956,10 @@ KnobHelper::refreshListenersAfterValueChange(ViewIdx view, int dimension)
             slaveKnob->clone(this,dimChanged);
         }
         
-        slaveKnob->evaluateValueChange(dimChanged, time, view, eValueChangedReasonSlaveRefresh);
+        slaveKnob->evaluateValueChangeInternal(dimChanged, time, view, eValueChangedReasonSlaveRefresh, reason);
         
         //call recursively
-        slaveKnob->refreshListenersAfterValueChange(view, dimChanged);
+        slaveKnob->refreshListenersAfterValueChange(view, reason, dimChanged);
         
     } // for all listeners
 }
