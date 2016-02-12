@@ -1509,8 +1509,9 @@ boost::shared_ptr<Curve> KnobParametric::getParametricCurve(int dimension) const
 
 StatusEnum
 KnobParametric::addControlPoint(int dimension,
-                                 double key,
-                                 double value)
+                                double key,
+                                double value,
+                                KeyframeTypeEnum interpolation)
 {
     ///Mt-safe as Curve is MT-safe
     if (dimension >= (int)_curves.size() ||
@@ -1522,34 +1523,11 @@ KnobParametric::addControlPoint(int dimension,
     }
     
     KeyFrame k(key,value);
-    k.setInterpolation(eKeyframeTypeCubic);
+    k.setInterpolation(interpolation);
     _curves[dimension]->addKeyFrame(k);
     Q_EMIT curveChanged(dimension);
     
     return eStatusOK;
-}
-
-StatusEnum
-KnobParametric::addHorizontalControlPoint(int dimension,double key,double value)
-{
-    ///Mt-safe as Curve is MT-safe
-    if (dimension >= (int)_curves.size() ||
-        key != key || // check for NaN
-        boost::math::isinf(key) ||
-        value != value || // check for NaN
-        boost::math::isinf(value)) {
-        return eStatusFailed;
-    }
-    
-    KeyFrame k(key,value);
-    k.setInterpolation(eKeyframeTypeBroken);
-    k.setLeftDerivative(0);
-    k.setRightDerivative(0);
-    _curves[dimension]->addKeyFrame(k);
-    Q_EMIT curveChanged(dimension);
-    
-    return eStatusOK;
- 
 }
 
 StatusEnum

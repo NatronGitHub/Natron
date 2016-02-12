@@ -3464,6 +3464,7 @@ OfxParametricInstance::getNthControlPoint(int curveIndex,
     }
 }
 
+// overridden from OFX::Host::ParametricParam::ParametricInstance::setNthControlPoint
 OfxStatus
 OfxParametricInstance::setNthControlPoint(int curveIndex,
                                           double /*time*/,
@@ -3481,6 +3482,7 @@ OfxParametricInstance::setNthControlPoint(int curveIndex,
     }
 }
 
+// overridden from OFX::Host::ParametricParam::ParametricInstance::addControlPoint
 OfxStatus
 OfxParametricInstance::addControlPoint(int curveIndex,
                                        double time,
@@ -3500,12 +3502,17 @@ OfxParametricInstance::addControlPoint(int curveIndex,
     StatusEnum stat;
     EffectInstance* effect = dynamic_cast<EffectInstance*>(_knob.lock()->getHolder());
     
+    KeyframeTypeEnum interpolation = eKeyframeTypeSmooth; // a reasonable default
+    // The initial curve for some plugins may be better with a specific interpolation. Unfortunately, the kOfxParametricSuiteV1 doesn't offer different interpolation methods
 #pragma message WARN("This is a hack, we should extend the parametric suite to add derivatives infos")
-    if (effect && effect->getPluginID() == PLUGINID_OFX_COLORCORRECT) {
-        stat = _knob.lock()->addHorizontalControlPoint(curveIndex, key, value);
-    } else {
-        stat = _knob.lock()->addControlPoint(curveIndex, key, value);
+    if (effect) {
+        if (effect->getPluginID() == PLUGINID_OFX_COLORCORRECT || effect->getPluginID() == PLUGINID_OFX_TIMEDISSOLVE) {
+            interpolation = eKeyframeTypeHorizontal;
+        } else if (effect->getPluginID() == PLUGINID_OFX_COLORLOOKUP || effect->getPluginID() == PLUGINID_OFX_RETIME) {
+            interpolation = eKeyframeTypeCubic;
+        }
     }
+    stat = _knob.lock()->addControlPoint(curveIndex, key, value, interpolation);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
