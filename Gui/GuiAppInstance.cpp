@@ -253,7 +253,11 @@ GuiAppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
         appPTR->setLoadingStatus( QObject::tr("Creating user interface...") );
     }
     
-    declareCurrentAppVariable_Python();
+    try {
+        declareCurrentAppVariable_Python();
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    }
     
     _imp->_gui = new Gui(this);
     _imp->_gui->createGui();
@@ -608,6 +612,9 @@ GuiAppInstance::errorDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
+    if (!_imp->_gui) {
+        return;
+    }
     _imp->_gui->errorDialog(title, message, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
@@ -624,6 +631,9 @@ GuiAppInstance::errorDialog(const std::string & title,const std::string & messag
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
+    }
+    if (!_imp->_gui) {
+        return;
     }
     _imp->_gui->errorDialog(title, message, stopAsking, useHtml);
     {
@@ -643,6 +653,9 @@ GuiAppInstance::warningDialog(const std::string & title,
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
+    }
+    if (!_imp->_gui) {
+        return;
     }
     _imp->_gui->warningDialog(title, message, useHtml);
     {
@@ -664,6 +677,9 @@ GuiAppInstance::warningDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
+    if (!_imp->_gui) {
+        return;
+    }
     _imp->_gui->warningDialog(title, message, stopAsking, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
@@ -682,6 +698,9 @@ GuiAppInstance::informationDialog(const std::string & title,
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
+    }
+    if (!_imp->_gui) {
+        return;
     }
     _imp->_gui->informationDialog(title, message, useHtml);
     {
@@ -703,6 +722,9 @@ GuiAppInstance::informationDialog(const std::string & title,
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
     }
+    if (!_imp->_gui) {
+        return;
+    }
     _imp->_gui->informationDialog(title, message, stopAsking, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
@@ -723,6 +745,9 @@ GuiAppInstance::questionDialog(const std::string & title,
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
+    }
+    if (!_imp->_gui) {
+        return eStandardButtonIgnore;
     }
     StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,useHtml, buttons,defaultButton);
     {
@@ -747,6 +772,9 @@ GuiAppInstance::questionDialog(const std::string & title,
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
         _imp->_showingDialog = true;
+    }
+    if (!_imp->_gui) {
+        return eStandardButtonIgnore;
     }
     StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message,useHtml, buttons,defaultButton,stopAsking);
     {
@@ -1048,7 +1076,6 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     std::string err;
     _imp->declareAppAndParamsString = script;
     bool ok = Python::interpretPythonScript(script, &err, 0);
-    assert(ok);
     if (!ok) {
         throw std::runtime_error("GuiAppInstance::declareCurrentAppVariable_Python() failed!");
     }

@@ -1311,10 +1311,12 @@ AppManager::loadPythonGroups()
     
     ///Also import Pyside.QtCore and Pyside.QtGui (the later only in non background mode)
     {
-        std::string s = "import PySide.QtCore as QtCore";
+        std::string s = "import PySide\nimport PySide.QtCore as QtCore";
         bool ok  = Python::interpretPythonScript(s, &err, 0);
         if (!ok) {
-            std::string message = QObject::tr("Failed to import PySide.QtCore").toStdString();
+            std::string message = QObject::tr("Failed to import PySide.QtCore, make sure it is bundled with your Natron installation "
+                                              "or reachable through the Python path. (Note that Natron disables usage "
+                                              "of site-packages ").toStdString();
             std::cerr << message << std::endl;
             appPTR->writeToOfxLog_mt_safe(message.c_str());
         }
@@ -2407,6 +2409,8 @@ AppManager::initPython(int argc,char* argv[])
     return;
 #endif
     //Disable user sites as they could conflict with Natron bundled packages.
+    //If this is set, Python won’t add the user site-packages directory to sys.path.
+    //See https://www.python.org/dev/peps/pep-0370/
     qputenv("PYTHONNOUSERSITE","1");
     ++Py_NoUserSiteDirectory;
     
@@ -2456,9 +2460,12 @@ AppManager::initPython(int argc,char* argv[])
     
     ///Must be called prior to Py_Initialize
     initBuiltinPythonModules();
-#ifndef DEBUG
+//#ifndef DEBUG
+    
+    //See https://developer.blender.org/T31507
+    //Python will not load anything in site-packages if this is set
     Py_NoSiteFlag = 1; // NEVER comment this
-#endif
+//#endif
     Py_Initialize();
     // pythonHome must be const, so that the c_str() pointer is never invalidated
     

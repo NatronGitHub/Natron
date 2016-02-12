@@ -1986,9 +1986,8 @@ TabWidget::setObjectName_mt_safe(const QString & str)
     std::string script = ss.str();
     std::string err;
     bool ok = Python::interpretPythonScript(script, &err, 0);
-    assert(ok);
     if (!ok) {
-        throw std::runtime_error("TabWidget::setObjectName_mt_safe(): interpretPythonScript("+script+") failed!");
+        appPTR->writeToOfxLog_mt_safe(err.c_str());
     }
 }
 
