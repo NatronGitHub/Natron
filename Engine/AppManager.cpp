@@ -2508,7 +2508,7 @@ AppManager::initPython(int argc,char* argv[])
     //PyEval_ReleaseThread(_imp->mainThreadState);
     
     std::string err;
-#ifdef DEBUG
+#if defined(NATRON_CONFIG_SNAPSHOT) || defined(DEBUG)
     /// print info about python lib
     {
         printf("Py_GetProgramName is %s\n", Py_GetProgramName());

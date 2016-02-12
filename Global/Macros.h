@@ -117,7 +117,7 @@ namespace NATRON_NAMESPACE { }
 #define NATRON_DEVELOPMENT_BETA "Beta"
 #define NATRON_DEVELOPMENT_RELEASE_CANDIDATE "RC"
 #define NATRON_DEVELOPMENT_RELEASE_STABLE "Release"
-// The snapshot build scripts should add '-DNATRON_SNAPSHOT' to the compile
+// The snapshot build scripts should add '-DNATRON_CONFIG_SNAPSHOT' to the compile
 // options.
 #define NATRON_DEVELOPMENT_SNAPSHOT "Snapshot"
 
