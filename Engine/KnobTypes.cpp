@@ -606,7 +606,6 @@ KnobChoice::onInternalValueChanged(int dimension, double time, ViewIdx /*view*/)
 void
 KnobChoice::findAndSetOldChoice(const std::vector<std::string>& newEntries)
 {
-    
     std::string curEntry;
     {
         QMutexLocker k(&_entriesMutex);
@@ -640,7 +639,7 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
      Try to restore the last choice. 
      This has been commented-out because it will loose the user choice in case of alias knobs
      */
-    findAndSetOldChoice(entries);
+    //findAndSetOldChoice(entries);
     
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();
@@ -673,7 +672,7 @@ KnobChoice::appendChoice(const std::string& entry, const std::string& help)
         newEntries = _entries;
     }
     
-    findAndSetOldChoice(newEntries);
+    //findAndSetOldChoice(newEntries);
     
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();
