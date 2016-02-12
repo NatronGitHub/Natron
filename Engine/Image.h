@@ -212,8 +212,7 @@ public:
                                                      unsigned int mipMapLevel,
                                                      bool isRoDProjectFormat,
                                                      const ImageComponents& components,
-                                                     ImageBitDepthEnum bitdepth,
-                                                     const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded);
+                                                     ImageBitDepthEnum bitdepth);
 
     static boost::shared_ptr<ImageParams> makeParams(int cost,
                                                      const RectD & rod,    // the image rod in canonical coordinates
@@ -222,8 +221,7 @@ public:
                                                      unsigned int mipMapLevel,
                                                      bool isRoDProjectFormat,
                                                      const ImageComponents& components,
-                                                     ImageBitDepthEnum bitdepth,
-                                                     const std::map<int, std::map<int,std::vector<RangeD> > >& framesNeeded);
+                                                     ImageBitDepthEnum bitdepth);
 
 
 

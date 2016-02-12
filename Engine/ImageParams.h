@@ -27,6 +27,10 @@
 
 #include "Global/GlobalDefines.h"
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/serialization/version.hpp>
+#endif
+
 #include "Engine/Format.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/NonKeyParams.h"
@@ -34,6 +38,8 @@
 #include "Engine/RectI.h"
 #include "Engine/EngineFwd.h"
 
+#define IMAGE_SERIALIZATION_REMOVE_FRAMESNEEDED 2
+#define IMAGE_SERIALIZATION_VERSION IMAGE_SERIALIZATION_REMOVE_FRAMESNEEDED
 
 NATRON_NAMESPACE_ENTER;
     
@@ -116,7 +122,6 @@ public:
         : NonKeyParams()
         , _rod()
         , _bounds()
-        , _framesNeeded()
         , _par(1.)
         , _components(ImageComponents::getRGBAComponents())
         , _bitdepth(eImageBitDepthFloat)
@@ -129,7 +134,6 @@ public:
         : NonKeyParams(other)
         , _rod(other._rod)
         , _bounds(other._bounds)
-        , _framesNeeded(other._framesNeeded)
         , _par(other._par)
         , _components(other._components)
         , _bitdepth(other._bitdepth)
@@ -145,12 +149,10 @@ public:
                 const RectI & bounds,
                 ImageBitDepthEnum bitdepth,
                 bool isRoDProjectFormat,
-                const ImageComponents& components,
-                const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded)
+                const ImageComponents& components)
         : NonKeyParams( cost,bounds.area() * components.getNumComponents() * getSizeOfForBitDepth(bitdepth) )
         , _rod(rod)
         , _bounds(bounds)
-        , _framesNeeded(framesNeeded)
         , _par(par)
         , _components(components)
         , _bitdepth(bitdepth)
@@ -199,11 +201,6 @@ public:
         _bitdepth = bitdepth;
     }
     
-    const std::map<int, std::map<int,std::vector<RangeD> > > & getFramesNeeded() const
-    {
-        return _framesNeeded;
-    }
-
     const ImageComponents& getComponents() const
     {
         return _components;
@@ -240,26 +237,6 @@ public:
         if (NonKeyParams::operator!=(other)) {
             return false;
         }
-        if ( other._framesNeeded.size() != _framesNeeded.size() ) {
-            return false;
-        }
-        std::map<int, std::map<int,std::vector<RangeD> > >::const_iterator it = _framesNeeded.begin();
-        for (std::map<int, std::map<int,std::vector<RangeD> > >::const_iterator itOther = other._framesNeeded.begin();
-             itOther != other._framesNeeded.end(); ++itOther, ++it) {
-            if ( it->second.size() != itOther->second.size() ) {
-                return false;
-            }
-            
-            std::map<int,std::vector<RangeD> > ::const_iterator it2Other = itOther->second.begin();
-            for (std::map<int,std::vector<RangeD> > ::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2, ++it2Other) {
-                for (U32 i = 0; i < it2->second.size(); ++i) {
-                    if ( (it2->second[i].min != it2Other->second[i].min) || (it2->second[i].max != it2Other->second[i].max) ) {
-                        return false;
-                    }
-                }
-            }
-           
-        }
         
         return _rod == other._rod
         && _components == other._components
@@ -277,7 +254,6 @@ private:
     RectD _rod;
     RectI _bounds;
 
-    std::map<int, std::map<int,std::vector<RangeD> > > _framesNeeded;
     double _par;
     ImageComponents _components;
     ImageBitDepthEnum _bitdepth;
@@ -289,5 +265,8 @@ private:
 };
 
 NATRON_NAMESPACE_EXIT;
+
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::ImageParams, IMAGE_SERIALIZATION_VERSION);
+
 
 #endif // IMAGEPARAMS_H

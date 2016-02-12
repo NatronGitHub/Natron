@@ -1440,8 +1440,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                                                 mipMapLevel,
                                                                                 oldParams->isRodProjectFormat(),
                                                                                 oldParams->getComponents(),
-                                                                                oldParams->getBitDepth(),
-                                                                                oldParams->getFramesNeeded() );
+                                                                                oldParams->getBitDepth());
 
 
                 imageParams->setMipMapLevel(mipMapLevel);
@@ -1615,7 +1614,6 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                    const RectI & downscaleImageBounds,
                                    const RectI & fullScaleImageBounds,
                                    bool isProjectFormat,
-                                   const FramesNeededMap & framesNeeded,
                                    const ImageComponents & components,
                                    ImageBitDepthEnum depth,
                                    double par,
@@ -1634,14 +1632,13 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
     if (renderFullScaleThenDownscale) {
         downscaleImage->reset( new Image(components, rod, downscaleImageBounds, mipmapLevel, par, depth, true) );
         boost::shared_ptr<ImageParams> upscaledImageParams = Image::makeParams(cost,
-                                                                                               rod,
-                                                                                               fullScaleImageBounds,
-                                                                                               par,
-                                                                                               0,
-                                                                                               isProjectFormat,
-                                                                                               components,
-                                                                                               depth,
-                                                                                               framesNeeded);
+                                                                               rod,
+                                                                               fullScaleImageBounds,
+                                                                               par,
+                                                                               0,
+                                                                               isProjectFormat,
+                                                                               components,
+                                                                               depth  );
         
         //The upscaled image will be rendered with input images at full def, it is then the best possibly rendered image so cache it!
         
@@ -1656,15 +1653,14 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
         
         ///Cache the image with the requested components instead of the remapped ones
         boost::shared_ptr<ImageParams> cachedImgParams = Image::makeParams(cost,
-                                                                                           rod,
-                                                                                           downscaleImageBounds,
-                                                                                           par,
-                                                                                           mipmapLevel,
-                                                                                           isProjectFormat,
-                                                                                           components,
-                                                                                           depth,
-                                                                                           framesNeeded);
-
+                                                                           rod,
+                                                                           downscaleImageBounds,
+                                                                           par,
+                                                                           mipmapLevel,
+                                                                           isProjectFormat,
+                                                                           components,
+                                                                           depth);
+        
         //Take the lock after getting the image from the cache or while allocating it
         ///to make sure a thread will not attempt to write to the image while its being allocated.
         ///When calling allocateMemory() on the image, the cache already has the lock since it added it
@@ -2524,7 +2520,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
     const ImagePtr & img = firstPlane.fullscaleImage->usesBitMap() ? firstPlane.fullscaleImage : firstPlane.downscaleImage;
     boost::shared_ptr<ImageParams> params = img->getParams();
     EffectInstance::PlaneToRender p;
-    bool ok = allocateImagePlane(img->getKey(), tls->currentRenderArgs.rod, tls->currentRenderArgs.renderWindowPixel, tls->currentRenderArgs.renderWindowPixel, false, params->getFramesNeeded(), plane, img->getBitDepth(), img->getPixelAspectRatio(), img->getMipMapLevel(), false, false, useCache, &p.fullscaleImage, &p.downscaleImage);
+    bool ok = allocateImagePlane(img->getKey(), tls->currentRenderArgs.rod, tls->currentRenderArgs.renderWindowPixel, tls->currentRenderArgs.renderWindowPixel, false,  plane, img->getBitDepth(), img->getPixelAspectRatio(), img->getMipMapLevel(), false, false, useCache, &p.fullscaleImage, &p.downscaleImage);
     if (!ok) {
         return ImagePtr();
     } else {

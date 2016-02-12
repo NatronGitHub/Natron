@@ -39,6 +39,7 @@ GCC_DIAG_OFF(sign-compare)
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/serialization/version.hpp>
 GCC_DIAG_ON(sign-compare)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
@@ -78,13 +79,16 @@ ImageComponents::serialize(Archive & ar,
 template<class Archive>
 void
 ImageParams::serialize(Archive & ar,
-                       const unsigned int /*version*/)
+                       const unsigned int version)
 {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(NonKeyParams);
     ar & ::boost::serialization::make_nvp("RoD",_rod);
     ar & ::boost::serialization::make_nvp("Bounds",_bounds);
     ar & ::boost::serialization::make_nvp("IsProjectFormat",_isRoDProjectFormat);
-    ar & ::boost::serialization::make_nvp("FramesNeeded",_framesNeeded);
+    if (version < IMAGE_SERIALIZATION_REMOVE_FRAMESNEEDED) {
+        std::map<int, std::map<int,std::vector<RangeD> > > f;
+        ar & ::boost::serialization::make_nvp("FramesNeeded",f);
+    }
     ar & ::boost::serialization::make_nvp("Components",_components);
     ar & ::boost::serialization::make_nvp("MMLevel",_mipMapLevel);
 }

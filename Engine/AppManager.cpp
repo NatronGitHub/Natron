@@ -1769,7 +1769,9 @@ AppManager::getApplicationBinaryPath() const
 void
 AppManager::setNumberOfThreads(int threadsNb)
 {
-    _imp->_settings->setNumberOfThreads(threadsNb);
+    if (_imp->_settings) {
+        _imp->_settings->setNumberOfThreads(threadsNb);
+    }
 }
 
 bool
@@ -2464,7 +2466,7 @@ AppManager::initPython(int argc,char* argv[])
     
     //See https://developer.blender.org/T31507
     //Python will not load anything in site-packages if this is set
-    Py_NoSiteFlag = 1; // NEVER comment this
+    //Py_NoSiteFlag = 1; // NEVER comment this
 //#endif
     Py_Initialize();
     // pythonHome must be const, so that the c_str() pointer is never invalidated
@@ -2520,7 +2522,6 @@ AppManager::initPython(int argc,char* argv[])
     }
 #endif
     bool ok = Python::interpretPythonScript("import sys\nfrom math import *\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);
-    assert(ok);
     if (!ok) {
         throw std::runtime_error("Error while loading python module "NATRON_ENGINE_PYTHON_MODULE_NAME": " + err);
     }

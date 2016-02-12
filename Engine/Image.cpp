@@ -710,8 +710,7 @@ Image::Image(const ImageComponents& components,
                                                                    bounds,
                                                                    bitdepth,
                                                                    false,
-                                                                   components,
-                                                                   std::map<int, std::map<int,std::vector<RangeD> > >() ) ),
+                                                                   components) ),
                   NULL,
                   eStorageModeRAM,
                   std::string()
@@ -776,8 +775,7 @@ Image::makeParams(int cost,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
                   const ImageComponents& components,
-                  ImageBitDepthEnum bitdepth,
-                  const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded)
+                  ImageBitDepthEnum bitdepth)
 {
     RectI bounds;
 
@@ -790,8 +788,7 @@ Image::makeParams(int cost,
                                                            bounds,
                                                            bitdepth,
                                                            isRoDProjectFormat,
-                                                           components,
-                                                           framesNeeded) );
+                                                           components));
 }
 
 boost::shared_ptr<ImageParams>
@@ -802,8 +799,7 @@ Image::makeParams(int cost,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
                   const ImageComponents& components,
-                  ImageBitDepthEnum bitdepth,
-                  const std::map<int, std::map<int,std::vector<RangeD> > > & framesNeeded)
+                  ImageBitDepthEnum bitdepth)
 {
 #ifdef DEBUG
     RectI pixelRod;
@@ -819,8 +815,7 @@ Image::makeParams(int cost,
                                                            bounds,
                                                            bitdepth,
                                                            isRoDProjectFormat,
-                                                           components,
-                                                           framesNeeded) );
+                                                           components));
 }
 
 

@@ -797,8 +797,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                         outputPlanes->insert(std::make_pair(*it,plane.fullscaleImage));
                         continue;
                     }
-                } else {
-                    *framesNeeded = plane.fullscaleImage->getParams()->getFramesNeeded();
                 }
             } else {
                 if (!missingPlane) {
@@ -1272,7 +1270,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
             if (!it->second.fullscaleImage) {
                 ///The image is not cached
-                allocateImagePlane(*key, rod, downscaledImageBounds, upscaledImageBounds, isProjectFormat, *framesNeeded, *components, args.bitdepth, par, args.mipMapLevel, renderFullScaleThenDownscale, useDiskCacheNode, createInCache, &it->second.fullscaleImage, &it->second.downscaleImage);
+                allocateImagePlane(*key, rod, downscaledImageBounds, upscaledImageBounds, isProjectFormat, *components, args.bitdepth, par, args.mipMapLevel, renderFullScaleThenDownscale, useDiskCacheNode, createInCache, &it->second.fullscaleImage, &it->second.downscaleImage);
             } else {
                 /*
                  * There might be a situation  where the RoD of the cached image

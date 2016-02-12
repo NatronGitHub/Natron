@@ -2711,16 +2711,15 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
 
     
     boost::shared_ptr<ImageParams> params = Image::makeParams( 0,
-                                                                              bbox,
-                                                                              pixelRod,
-                                                                              1., // par
-                                                                              mipmapLevel,
-                                                                              false,
-                                                                              components,
-                                                                              depth,
-                                                                              std::map<int,std::map<int, std::vector<RangeD> > >() );
+                                                              bbox,
+                                                              pixelRod,
+                                                              1., // par
+                                                              mipmapLevel,
+                                                              false,
+                                                              components,
+                                                              depth);
     /*
-     At this point we take the cacheAccessMutex so that no other thread can retrieve this image from the cache while it has not been 
+     At this point we take the cacheAccessMutex so that no other thread can retrieve this image from the cache while it has not been
      finished rendering. You might wonder why we do this differently here than in EffectInstance::renderRoI, this is because we do not use
      the trimap and notification system here in the rotocontext, which would be to much just for this small object, rather we just lock
      it once, which is fine.

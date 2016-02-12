@@ -1876,7 +1876,6 @@ private:
                             const RectI & downscaleImageBounds,
                             const RectI & fullScaleImageBounds,
                             bool isProjectFormat,
-                            const FramesNeededMap & framesNeeded,
                             const ImageComponents & components,
                             ImageBitDepthEnum depth,
                             double par,
