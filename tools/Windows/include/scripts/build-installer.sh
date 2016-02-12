@@ -433,8 +433,8 @@ if [ "$BUNDLE_CV" = "1" ]; then
     mt -manifest manifest -outputresource:"segment.ofx;2"
 	
 	if [ "$NO_ZIP" != "1" ]; then
-		mkdir -p $ARCHIVE_DATA_DIR/Plugins
-		cp -r $OFX_CV_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins || exit 1
+		mkdir -p $ARCHIVE_DATA_DIR/Plugins/OFX/Natron || exit 1
+		cp -r $OFX_CV_PATH/data/Plugins/OFX/Natron/* $ARCHIVE_DATA_DIR/Plugins/OFX/Natron/ || exit 1
 	fi
 fi
 
