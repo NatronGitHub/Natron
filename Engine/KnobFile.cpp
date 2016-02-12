@@ -94,8 +94,9 @@ KnobFile::getFileName(int time,int view) const
         if (getHolder() && getHolder()->getApp()) {
             views = getHolder()->getApp()->getProject()->getProjectViewNames();
         }
-
-        
+        if (view < 0) {
+            view = 0;
+        }
         return SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), views, time, view);
     }
 }

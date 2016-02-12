@@ -9472,10 +9472,25 @@ Node::refreshChannelSelectors()
                 isLastLayer = true;
             }
             
-            std::string nodeName = it2->second.lock()->getScriptName_mt_safe();
+            
+            NodePtr providerNode = it2->second.lock();
+            std::string nodeName;
+            if (providerNode) {
+                nodeName = providerNode->getScriptName_mt_safe();
+            }
             
             for (std::size_t i = 0; i < channels.size(); ++i) {
-                choices.push_back(nodeName + "." + layerName + "." + channels[i]);
+                std::string option;
+                if (!nodeName.empty()) {
+                    option += nodeName;
+                    option += ' ';
+                }
+                if (!layerName.empty()) {
+                    option += layerName;
+                    option += ' ';
+                }
+                option += channels[i];
+                choices.push_back(option);
                 if (isLastLayer && channels[i] == curChannelName) {
                     foundLastLayerChoice = choices.size() - 1;
                 }
