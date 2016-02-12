@@ -1319,6 +1319,8 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
         }
     }
     
+    onInternalValueChanged(dimension, time, view);
+    
     if (!guiFrozen  && _signalSlotHandler) {
         computeHasModifications();
         bool refreshWidget = !app || hasAnimation() || time == app->getTimeLine()->currentFrame();

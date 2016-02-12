@@ -593,16 +593,45 @@ KnobChoice::typeName() const
     return typeNameStatic();
 }
 
+void
+KnobChoice::onInternalValueChanged(int dimension, double time, ViewIdx /*view*/)
+{
+    int index = getValueAtTime(time, dimension);
+    QMutexLocker k(&_entriesMutex);
+    if (index >= 0 &&  index < _entries.size()) {
+        _lastValidEntry = _entries[index];
+    }
+}
+
+void
+KnobChoice::findAndSetOldChoice(const std::vector<std::string>& newEntries)
+{
+    
+    std::string curEntry;
+    {
+        QMutexLocker k(&_entriesMutex);
+        curEntry = _lastValidEntry;
+    }
+    if (!curEntry.empty()) {
+        for (std::size_t i = 0; i < newEntries.size(); ++i) {
+            if (newEntries[i] == curEntry) {
+                blockValueChanges();
+                setValue((int)i);
+                unblockValueChanges();
+                break;
+            }
+        }
+    }
+}
+
 /*Must be called right away after the constructor.*/
 void
 KnobChoice::populateChoices(const std::vector<std::string> &entries,
                              const std::vector<std::string> &entriesHelp)
 {
     assert( entriesHelp.empty() || entriesHelp.size() == entries.size() );
-    //std::vector<std::string> curEntries;
     {
         QMutexLocker l(&_entriesMutex);
-      //  curEntries = _entries;
         _entriesHelp = entriesHelp;
         _entries = entries;
     }
@@ -611,21 +640,8 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
      Try to restore the last choice. 
      This has been commented-out because it will loose the user choice in case of alias knobs
      */
-    /*int cur_i = getValue();
-    std::string curEntry;
-    if (cur_i >= 0 && cur_i < (int)curEntries.size()) {
-        curEntry = curEntries[cur_i];
-    }
-    if (!curEntry.empty()) {
-        for (std::size_t i = 0; i < entries.size(); ++i) {
-            if (entries[i] == curEntry && cur_i != (int)i) {
-                blockValueChanges();
-                setValue((int)i, 0);
-                unblockValueChanges();
-                break;
-            }
-        }
-    }*/
+    findAndSetOldChoice(entries);
+    
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();
     }
@@ -649,11 +665,16 @@ KnobChoice::resetChoices()
 void
 KnobChoice::appendChoice(const std::string& entry, const std::string& help)
 {
+    std::vector<std::string> curEntries,newEntries;
     {
         QMutexLocker l(&_entriesMutex);
         _entriesHelp.push_back(help);
         _entries.push_back(entry);
+        newEntries = _entries;
     }
+    
+    findAndSetOldChoice(newEntries);
+    
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();
     }

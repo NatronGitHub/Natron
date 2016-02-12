@@ -1176,13 +1176,18 @@ public:
     virtual bool isValueChangesBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void evaluateValueChange(int dimension,double time, ViewIdx view,  ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
-private:
+protected:
     
     void evaluateValueChangeInternal(int dimension,
                                      double time,
                                      ViewIdx view,
                                      ValueChangedReasonEnum reason,
                                      ValueChangedReasonEnum originalReason);
+    
+    virtual void onInternalValueChanged(int /*dimension*/, double /*time*/, ViewIdx /*view*/)
+    {
+        
+    }
     
 public:
 

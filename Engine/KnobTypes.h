@@ -479,16 +479,21 @@ Q_SIGNALS:
 private:
 
 
+    void findAndSetOldChoice(const std::vector<std::string>& newEntries);
+    
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
     virtual void handleSignalSlotsForAliasLink(const KnobPtr& alias,bool connect) OVERRIDE FINAL;
-    
+    virtual void onInternalValueChanged(int dimension, double time, ViewIdx view) OVERRIDE FINAL;
     
 private:
     
     mutable QMutex _entriesMutex;
     std::vector<std::string> _entries;
     std::vector<std::string> _entriesHelp;
+    
+#pragma message WARN("When enabling multi-view knobs, make this multi-view too")
+    std::string _lastValidEntry; // protected by _entriesMutex
     bool _addNewChoice;
     static const std::string _typeNameStr;
     bool _isCascading;
