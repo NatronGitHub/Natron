@@ -498,12 +498,12 @@ KnobGui::toolTip() const
     QString exprTt;
     if (exprAllSame) {
         if (!expressions[0].empty()) {
-            exprTt = QString("<br>ret = <b>%1</b></br>").arg(expressions[0].c_str());
+            exprTt = QString("ret = <b>%1</b><br />").arg(expressions[0].c_str());
         }
     } else {
         for (int i = 0; i < knob->getDimension(); ++i) {
             std::string dimName = knob->getDimensionName(i);
-            QString toAppend = QString("<br>%1 = <b>%2</b></br>").arg(dimName.c_str()).arg(expressions[i].c_str());
+            QString toAppend = QString("%1 = <b>%2</b><br />").arg(dimName.c_str()).arg(expressions[i].c_str());
             exprTt.append(toAppend);
         }
     }
