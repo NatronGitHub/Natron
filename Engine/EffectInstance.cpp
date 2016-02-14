@@ -3302,12 +3302,10 @@ EffectInstance::getRegionOfDefinition_publicInternal(U64 hash,
             }
 
             if ( rod->isNull() ) {
-                //if (!isDuringStrokeCreation) {
-                _imp->actionsCache.invalidateAll(hash);
+                // RoD is empty, which means output is black and transparent
                 _imp->actionsCache.setRoDResult( hash, time, view, mipMapLevel, RectD() );
 
-                //}
-                return eStatusFailed;
+                return ret;
             }
 
             assert( (ret == eStatusOK || ret == eStatusReplyDefault) && (rod->x1 <= rod->x2 && rod->y1 <= rod->y2) );
