@@ -2659,7 +2659,7 @@ Node::makeCacheInfo() const
     QString diskSizeStr = printAsRAM((U64)disk);
     
     std::stringstream ss;
-    ss << "<br><b><font color=\"green\">Cache Occupancy:</font></b> RAM: " << ramSizeStr.toStdString() << " / Disk: " << diskSizeStr.toStdString() << "</br>";
+    ss << "<b><font color=\"green\">Cache occupancy:</font></b> RAM: " << ramSizeStr.toStdString() << " / Disk: " << diskSizeStr.toStdString();
     return ss.str();
 }
 
@@ -2670,86 +2670,102 @@ Node::makeInfoForInput(int inputNumber) const
         return "";
     }
     const Node* inputNode = 0;
-    std::string inputName ;
     if (inputNumber != -1) {
         inputNode = getInput(inputNumber).get();
-        inputName = getInputLabel(inputNumber);
     } else {
         inputNode = this;
-        inputName = "Output";
     }
 
     if (!inputNode) {
         return "";
     }
-    
-    std::list<ImageComponents> comps;
-    ImageBitDepthEnum depth;
-    ImagePremultiplicationEnum premult;
+
 
     EffectInstPtr input = inputNode->getEffectInstance();
-    double par = input->getPreferredAspectRatio();
-    premult = input->getOutputPremultiplication();
-    std::string premultStr;
-    switch (premult) {
-        case eImagePremultiplicationOpaque:
-            premultStr = "opaque";
-            break;
-        case eImagePremultiplicationPremultiplied:
-            premultStr= "premultiplied";
-            break;
-        case eImagePremultiplicationUnPremultiplied:
-            premultStr= "unpremultiplied";
-            break;
-    }
 
-    _imp->effect->getPreferredDepthAndComponents(inputNumber, &comps, &depth);
-    assert(!comps.empty());
+    ImageBitDepthEnum depth = eImageBitDepthNone;
+    { // get the preferred depth
+        std::list<ImageComponents> comps;
+        _imp->effect->getPreferredDepthAndComponents(inputNumber, &comps, &depth);
+        assert(!comps.empty());
+    }
 
     double time = getApp()->getTimeLine()->currentFrame();
-
-    EffectInstance::ComponentsAvailableMap availableComps;
-    input->getComponentsAvailable(true, true, time, &availableComps);
-    
-    RenderScale scale(1.);
-    RectD rod;
-    bool isProjectFormat;
-    StatusEnum stat = input->getRegionOfDefinition_public(getHashValue(),
-                                                          time,
-                                                          scale, 0, &rod, &isProjectFormat);
-    
-    double fps = input->getPreferredFrameRate();
-
     std::stringstream ss;
-    ss << "<br><b><font color=\"orange\">"<< inputName << ":" << "</font></b></br>";
-    ss << "<br><b>Image Format: </b>";
-    
-    EffectInstance::ComponentsAvailableMap::iterator next = availableComps.begin();
-    if (next != availableComps.end()) {
-        ++next;
-    }
-    for (EffectInstance::ComponentsAvailableMap::iterator it = availableComps.begin(); it != availableComps.end(); ++it) {
-        NodePtr origin = it->second.lock();
-        if (origin.get() != this || inputNumber == -1) {
-            ss << Image::getFormatString(it->first, depth);
-            if (origin) {
-                ss << ": (" << origin->getLabel_mt_safe() << ")";
-            }
+    { // input name
+        std::string inputName ;
+        if (inputNumber != -1) {
+            inputName = getInputLabel(inputNumber);
+        } else {
+            inputName = "Output";
         }
+        ss << "<b><font color=\"orange\">"<< inputName << ":" << "</font></b><br />";
+    }
+    { // image format
+        ss << "<b>Image format: </b>";
+        EffectInstance::ComponentsAvailableMap availableComps;
+        input->getComponentsAvailable(true, true, time, &availableComps);
+        EffectInstance::ComponentsAvailableMap::iterator next = availableComps.begin();
         if (next != availableComps.end()) {
-            if (origin.get() != this || inputNumber == -1) {
-                ss << "</br>";
-            }
             ++next;
         }
+        for (EffectInstance::ComponentsAvailableMap::iterator it = availableComps.begin(); it != availableComps.end(); ++it) {
+            NodePtr origin = it->second.lock();
+            if (origin.get() != this || inputNumber == -1) {
+                ss << Image::getFormatString(it->first, depth);
+                if (origin) {
+                    ss << " (from " << origin->getLabel_mt_safe() << ")";
+                }
+            }
+            if (next != availableComps.end()) {
+                if (origin.get() != this || inputNumber == -1) {
+                    ss << ", ";
+                }
+                ++next;
+            }
+        }
     }
-    
-    ss << "<br><b>Alpha premultiplication: </b>" << premultStr << "</br>";
-    ss << "<br><b>Pixel aspect ratio: </b>" << par << "</br>";
-    ss << "<br><b>Framerate:</b> " << fps << "</br>";
-    if (stat != eStatusFailed) {
-        ss << "<br><b>Region of Definition:</b> ";
-        ss << "left = " << rod.x1 << " bottom = " << rod.y1 << " right = " << rod.x2 << " top = " << rod.y2 << "</br>";
+    { // premult
+        ImagePremultiplicationEnum premult = input->getOutputPremultiplication();
+        const char* premultStr = "unknown";
+        switch (premult) {
+            case eImagePremultiplicationOpaque:
+                premultStr = "opaque";
+                break;
+            case eImagePremultiplicationPremultiplied:
+                premultStr = "premultiplied";
+                break;
+            case eImagePremultiplicationUnPremultiplied:
+                premultStr = "unpremultiplied";
+                break;
+        }
+        ss << "<b>Alpha premultiplication: </b>" << premultStr << "<br />";
+    }
+    { // par
+        double par = input->getPreferredAspectRatio();
+        ss << "<b>Pixel aspect ratio: </b>" << par << "<br />";
+    }
+    { // fps
+        double fps = input->getPreferredFrameRate();
+        ss << "<b>Frame rate:</b> " << fps << "fps<br />";
+    }
+    {
+        double first = 1., last = 1.;
+        input->getFrameRange_public(getHashValue(), &first, &last);
+        ss << "<<b>Frame range:</b> " << first << " - " << last << "<br />";
+   }
+    {
+        RenderScale scale(1.);
+        RectD rod;
+        bool isProjectFormat;
+        StatusEnum stat = input->getRegionOfDefinition_public(getHashValue(),
+                                                              time,
+                                                              scale, 0, &rod, &isProjectFormat);
+        if (stat != eStatusFailed) {
+
+            ss << "<b>Region of Definition (at t=" << time << "):</b> ";
+            ss << "left = " << rod.x1 << " bottom = " << rod.y1 << " right = " << rod.x2 << " top = " << rod.y2 << "<br />";
+        }
     }
     return ss.str();
 }
@@ -7228,13 +7244,13 @@ Node::onEffectKnobValueChanged(KnobI* what,
         for (int i = 0; i < maxinputs; ++i) {
             std::string inputInfo = makeInfoForInput(i);
             if (!inputInfo.empty()) {
-                ssinfo << inputInfo << "<br/>";
+                ssinfo << inputInfo << "<br />";
             }
         }
         std::string outputInfo = makeInfoForInput(-1);
-        ssinfo << outputInfo << "<br/>";
+        ssinfo << outputInfo << "<br />";
         std::string cacheInfo = makeCacheInfo();
-        ssinfo << cacheInfo << "<br/>";
+        ssinfo << cacheInfo;
         _imp->nodeInfos.lock()->setValue(ssinfo.str());
     }
     
