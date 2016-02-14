@@ -2724,6 +2724,7 @@ Node::makeInfoForInput(int inputNumber) const
                 ++next;
             }
         }
+        ss << "<br />";
     }
     { // premult
         ImagePremultiplicationEnum premult = input->getOutputPremultiplication();
