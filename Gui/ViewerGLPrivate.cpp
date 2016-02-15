@@ -93,6 +93,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_, ViewerTab* parent)
 , rodOverlayColor(100,100,100,255)
 , textFont( new QFont(appFont,appFontSize) )
 , overlay(true)
+, supportsOpenGL(true)
 , supportsGLSL(true)
 , updatingTexture(false)
 , clearColor(0,0,0,255)
@@ -448,7 +449,10 @@ ViewerGL::Implementation::initializeGL()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _this->makeCurrent();
-    initAndCheckGlExtensions();
+    supportsOpenGL = initAndCheckGlExtensions();
+    if (!supportsOpenGL) {
+        return;
+    }
     this->displayTextures[0] = new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE);
     this->displayTextures[1] = new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE);
 
@@ -507,7 +511,7 @@ getGlewVersionString()
     return ret;
 }
 
-void
+bool
 ViewerGL::Implementation::initAndCheckGlExtensions()
 {
     // always running in the main thread
@@ -520,6 +524,7 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
         /* Problem: glewInit failed, something is seriously wrong. */
         Dialogs::errorDialog( tr("OpenGL/GLEW error").toStdString(),
                             (const char*)glewGetErrorString(err) );
+        return false;
     }
     //fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
 
@@ -535,6 +540,7 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
         Dialogs::errorDialog( tr("Missing OpenGL requirements").toStdString(),
                             tr("The viewer may not be fully functional. "
                                "This software needs at least OpenGL 1.5 with NPOT textures, GLSL, VBO, PBO, vertex arrays. ").toStdString() );
+        return false;
     }
 
     this->viewerTab->getGui()->setOpenGLVersion( getOpenGLVersionString() );
@@ -547,6 +553,7 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
         //cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
         this->supportsGLSL = false;
     }
+    return true;
 }
 
 

@@ -177,6 +177,9 @@ void
 ViewerGL::resizeGL(int w,
                    int h)
 {
+    if (!_imp->supportsOpenGL) {
+        return;
+    }
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     if ( (h == 0) || (w == 0) ) { // prevent division by 0
@@ -258,6 +261,9 @@ public:
 void
 ViewerGL::paintGL()
 {
+    if (!_imp->supportsOpenGL) {
+        return;
+    }
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
