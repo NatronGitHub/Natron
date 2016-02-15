@@ -390,7 +390,7 @@ inline unsigned int hashFunction(unsigned int a)
 template <typename T>
 T
 Knob<T>::evaluateExpression(double time,
-                            ViewSpec view,
+                            ViewIdx view,
                             int dimension) const
 {
     PythonGILLocker pgl;
@@ -412,7 +412,7 @@ Knob<T>::evaluateExpression(double time,
 template <typename T>
 double
 Knob<T>::evaluateExpression_pod(double time,
-                                ViewSpec view,
+                                ViewIdx view,
                                 int dimension) const
 {
     PythonGILLocker pgl;
@@ -442,7 +442,7 @@ Knob<T>::evaluateExpression_pod(double time,
 template <typename T>
 bool
 Knob<T>::getValueFromExpression(double time,
-                                ViewSpec view,
+                                ViewIdx view,
                                 int dimension,
                                 bool clamp,
                                 T* ret) const
@@ -486,7 +486,7 @@ Knob<T>::getValueFromExpression(double time,
 template <>
 bool
 Knob<std::string>::getValueFromExpression_pod(double time,
-                                              ViewSpec view,
+                                              ViewIdx view,
                                               int dimension,
                                               bool /*clamp*/,
                                               double* ret) const
@@ -510,7 +510,7 @@ Knob<std::string>::getValueFromExpression_pod(double time,
 template <typename T>
 bool
 Knob<T>::getValueFromExpression_pod(double time,
-                                    ViewSpec view,
+                                    ViewIdx view,
                                     int dimension,
                                     bool clamp,
                                     double* ret) const
@@ -646,7 +646,7 @@ Knob<T>::getValue(int dimension,
     if (!hasExpr.empty()) {
         T ret;
         double time = getCurrentTime();
-        if (getValueFromExpression(time, view, dimension,clamp,&ret)) {
+        if (getValueFromExpression(time, /*view*/ViewIdx(0), dimension,clamp,&ret)) {
             return ret;
         }
     }
@@ -757,7 +757,7 @@ Knob<T>::getValueAtTime(double time,
     std::string hasExpr = getExpression(dimension);
     if (!hasExpr.empty()) {
         T ret;
-        if (getValueFromExpression(time, view, dimension,clamp,&ret)) {
+        if (getValueFromExpression(time, /*view*/ ViewIdx(0), dimension,clamp,&ret)) {
             return ret;
         }
     }
@@ -827,7 +827,7 @@ Knob<T>::getValueAtWithExpression(double time,
     std::string expr = getExpression(dimension);
     if (!expr.empty()) {
         double ret;
-        if (getValueFromExpression_pod(time, view, dimension,false, &ret)) {
+        if (getValueFromExpression_pod(time, /*view*/ ViewIdx(0), dimension,false, &ret)) {
             return ret;
         }
     }

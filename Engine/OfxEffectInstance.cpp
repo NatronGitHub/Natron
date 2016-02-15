@@ -2428,7 +2428,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     if (recursionLevel == 1) {
         SET_CAN_SET_VALUE(true);
-        assert(!view.isAll() && !view.isCurrent());
+       // assert(!view.isAll() && !view.isCurrent());
         ViewIdx v = (view.isAll() || view.isCurrent()) ? ViewIdx(0) : ViewIdx(view);
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             v,

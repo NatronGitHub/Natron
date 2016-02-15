@@ -3990,7 +3990,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         node->computeFrameRangeForReader(k);
     }
 
-    assert(!(view.isAll() || view.isCurrent())); // not yet implemented
+   // assert(!(view.isAll() || view.isCurrent())); // not yet implemented
     const ViewIdx viewIdx((view.isAll() || view.isCurrent()) ? 0 : view);
     
     bool wasFormatKnobCaught = node->handleFormatKnob(k);

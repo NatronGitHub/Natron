@@ -1345,7 +1345,7 @@ protected:
     void resetMaster(int dimension);
     
     ///The return value must be Py_DECRREF
-    PyObject* executeExpression(double time, ViewSpec view, int dimension) const;
+    PyObject* executeExpression(double time, ViewIdx view, int dimension) const;
 
 public:
 
@@ -1814,17 +1814,17 @@ public:
     
 private:
     
-    T evaluateExpression(double time, ViewSpec view, int dimension) const;
+    T evaluateExpression(double time, ViewIdx view, int dimension) const;
     
     /*
      * @brief Same as evaluateExpression but expects it to return a PoD
      */
-    double evaluateExpression_pod(double time, ViewSpec view, int dimension) const;
+    double evaluateExpression_pod(double time, ViewIdx view, int dimension) const;
 
     
-    bool getValueFromExpression(double time, ViewSpec view, int dimension,bool clamp,T* ret) const;
+    bool getValueFromExpression(double time, ViewIdx view, int dimension,bool clamp,T* ret) const;
     
-    bool getValueFromExpression_pod(double time, ViewSpec view, int dimension,bool clamp,double* ret) const;
+    bool getValueFromExpression_pod(double time, ViewIdx view, int dimension,bool clamp,double* ret) const;
 
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI

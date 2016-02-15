@@ -27,6 +27,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "Engine/ViewIdx.h"
+
 NATRON_NAMESPACE_ENTER;
 
 FrameKey::FrameKey()

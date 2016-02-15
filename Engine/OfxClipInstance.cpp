@@ -864,6 +864,8 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
                 view = tls->view.back();
             }
             
+        } else {
+            view = ViewIdx(viewParam.value());
         }
 
         if (tls->mipMapLevel.empty()) {
@@ -871,6 +873,8 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         } else {
             mipMapLevel = tls->mipMapLevel.back();
         }
+    } else {
+        view = ViewIdx(viewParam.value());
     }
     
     

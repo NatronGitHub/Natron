@@ -2225,7 +2225,7 @@ KnobHelper::expressionChanged(int dimension)
 
 PyObject*
 KnobHelper::executeExpression(double time,
-                              ViewSpec view,
+                              ViewIdx view,
                               int dimension) const
 {
     

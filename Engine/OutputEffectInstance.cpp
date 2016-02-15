@@ -202,11 +202,8 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
                             if (viewChoice_i == 0) { // the "All" choice
                                 viewsToRender.clear();
                                 // note: if the plugin renders all views to a single file, then rendering view 0 will do the job.
-                                // rendering other views should do nothing (see GenericWriterPlugin::getFrameViewsNeeded and
-                                int viewCount = getApp()->getProject()->getProjectViewsCount();
-                                for (int view = 0; view < viewCount; ++view) {
-                                    viewsToRender.push_back(ViewIdx(view));
-                                }
+                                viewsToRender.push_back(ViewIdx(0));
+                                
                             } else {
                                 //The user has specified a view
                                 viewsToRender.clear();
