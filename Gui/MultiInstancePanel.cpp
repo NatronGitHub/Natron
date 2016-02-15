@@ -688,7 +688,7 @@ MultiInstancePanelPrivate::addTableRow(const NodePtr & node)
             boost::shared_ptr<KnobSignalSlotHandler> slotsHandler =
                 instanceKnobs[i]->getSignalSlotHandler();
             if (slotsHandler) {
-                QObject::connect( slotsHandler.get(), SIGNAL( valueChanged(ViewIdx,int,int) ), publicInterface,SLOT( onInstanceKnobValueChanged(ViewIdx,int,int) ) );
+                QObject::connect( slotsHandler.get(), SIGNAL( valueChanged(ViewSpec,int,int) ), publicInterface,SLOT( onInstanceKnobValueChanged(ViewSpec,int,int) ) );
             }
 
             if ( instanceKnobs[i]->isInstanceSpecific() ) {
@@ -1422,7 +1422,7 @@ MultiInstancePanel::onCheckBoxChecked(bool checked)
 }
 
 void
-MultiInstancePanel::onInstanceKnobValueChanged(ViewIdx /*view*/,
+MultiInstancePanel::onInstanceKnobValueChanged(ViewSpec /*view*/,
                                                int dim,
                                                int reason)
 {

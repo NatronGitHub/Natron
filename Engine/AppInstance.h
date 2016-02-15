@@ -415,6 +415,8 @@ public:
     
     virtual RectD getPaintStrokeWholeBbox() const { return RectD(); }
     
+    void removeRenderFromQueue(OutputEffectInstance* writer);
+    
 public Q_SLOTS:
     
     void quit();

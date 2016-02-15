@@ -1489,6 +1489,18 @@ AppInstance::onQueuedRenderFinished(int /*retCode*/)
 }
 
 void
+AppInstance::removeRenderFromQueue(OutputEffectInstance* writer)
+{
+    QMutexLocker k(&_imp->renderQueueMutex);
+    for (std::list<RenderQueueItem>::iterator it = _imp->renderQueue.begin(); it!=_imp->renderQueue.end(); ++it) {
+        if (it->work.writer == writer) {
+            _imp->renderQueue.erase(it);
+            break;
+        }
+    }
+}
+
+void
 AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter)
 {
     RenderQueueItem nextWork;

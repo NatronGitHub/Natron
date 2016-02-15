@@ -124,7 +124,7 @@ public Q_SLOTS:
 
     void onDeleteKeyPressed();
 
-    void onInstanceKnobValueChanged(ViewIdx view,int dim,int reason);
+    void onInstanceKnobValueChanged(ViewSpec view,int dim,int reason);
 
     void resetSelectedInstances();
 

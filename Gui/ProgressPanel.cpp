@@ -277,6 +277,9 @@ TaskInfo::cancelTask(bool calledFromRenderEngine, int retCode)
             
         }
     }
+    NodePtr node = getNode();
+    OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>(node->getEffectInstance().get());
+    node->getApp()->removeRenderFromQueue(effect);
     if (!calledFromRenderEngine) {
         Q_EMIT taskCanceled();
     }

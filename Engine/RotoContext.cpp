@@ -104,7 +104,7 @@ NATRON_NAMESPACE_ENTER;
 RotoContext::RotoContext(const NodePtr& node)
     : _imp( new RotoContextPrivate(node) )
 {
-    QObject::connect(_imp->lifeTime.lock()->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewIdx,int,int)), this, SLOT(onLifeTimeKnobValueChanged(ViewIdx,int,int)));
+    QObject::connect(_imp->lifeTime.lock()->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onLifeTimeKnobValueChanged(ViewSpec,int,int)));
 }
 
 bool
@@ -706,7 +706,7 @@ RotoContext::isNearbyBezier(double x,
 }
 
 void
-RotoContext::onLifeTimeKnobValueChanged(ViewIdx view,int /*dim*/, int reason)
+RotoContext::onLifeTimeKnobValueChanged(ViewSpec view,int /*dim*/, int reason)
 {
     if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
         return;

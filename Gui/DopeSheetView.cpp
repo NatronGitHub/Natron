@@ -2829,11 +2829,11 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
         boost::shared_ptr<KnobSignalSlotHandler> startingTimeKnob = node->getKnobByName(kReaderParamNameStartingTime)->getSignalSlotHandler();
         assert(startingTimeKnob);
 
-        connect(lastFrameKnob.get(), SIGNAL(valueChanged(ViewIdx,int, int)),
-                this, SLOT(onRangeNodeChanged(ViewIdx,int, int)));
+        connect(lastFrameKnob.get(), SIGNAL(valueChanged(ViewSpec,int, int)),
+                this, SLOT(onRangeNodeChanged(ViewSpec,int, int)));
 
-        connect(startingTimeKnob.get(), SIGNAL(valueChanged(ViewIdx,int, int)),
-                this, SLOT(onRangeNodeChanged(ViewIdx,int, int)));
+        connect(startingTimeKnob.get(), SIGNAL(valueChanged(ViewSpec,int, int)),
+                this, SLOT(onRangeNodeChanged(ViewSpec,int, int)));
 
         // We don't make the connection for the first frame knob, because the
         // starting time is updated when it's modified. Thus we avoid two
@@ -2843,22 +2843,22 @@ void DopeSheetView::onNodeAdded(DSNode *dsNode)
         boost::shared_ptr<KnobSignalSlotHandler> speedKnob =  node->getKnobByName(kRetimeParamNameSpeed)->getSignalSlotHandler();
         assert(speedKnob);
 
-        connect(speedKnob.get(), SIGNAL(valueChanged(ViewIdx,int, int)),
-                this, SLOT(onRangeNodeChanged(ViewIdx,int, int)));
+        connect(speedKnob.get(), SIGNAL(valueChanged(ViewSpec,int, int)),
+                this, SLOT(onRangeNodeChanged(ViewSpec,int, int)));
     }
     else if (nodeType == eDopeSheetItemTypeTimeOffset) {
         boost::shared_ptr<KnobSignalSlotHandler> timeOffsetKnob =  node->getKnobByName(kReaderParamNameTimeOffset)->getSignalSlotHandler();
         assert(timeOffsetKnob);
 
-        connect(timeOffsetKnob.get(), SIGNAL(valueChanged(ViewIdx,int, int)),
-                this, SLOT(onRangeNodeChanged(ViewIdx,int, int)));
+        connect(timeOffsetKnob.get(), SIGNAL(valueChanged(ViewSpec,int, int)),
+                this, SLOT(onRangeNodeChanged(ViewSpec,int, int)));
     }
     else if (nodeType == eDopeSheetItemTypeFrameRange) {
         boost::shared_ptr<KnobSignalSlotHandler> frameRangeKnob =  node->getKnobByName(kFrameRangeParamNameFrameRange)->getSignalSlotHandler();
         assert(frameRangeKnob);
 
-        connect(frameRangeKnob.get(), SIGNAL(valueChanged(ViewIdx,int, int)),
-                this, SLOT(onRangeNodeChanged(ViewIdx,int, int)));
+        connect(frameRangeKnob.get(), SIGNAL(valueChanged(ViewSpec,int, int)),
+                this, SLOT(onRangeNodeChanged(ViewSpec,int, int)));
     }
 
     if (mustComputeNodeRange) {
@@ -2923,7 +2923,7 @@ void DopeSheetView::onKeyframeChanged()
     }
 }
 
-void DopeSheetView::onRangeNodeChanged(ViewIdx /*view*/, int /*dimension*/, int /*reason*/)
+void DopeSheetView::onRangeNodeChanged(ViewSpec /*view*/, int /*dimension*/, int /*reason*/)
 {
     QObject *signalSender = sender();
 

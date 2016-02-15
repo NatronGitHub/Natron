@@ -105,12 +105,12 @@ RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context
       , _imp( new RotoDrawableItemPrivate(isStroke) )
 {
 #ifdef NATRON_ROTO_INVERTIBLE
-    QObject::connect( _imp->inverted->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewIdx,int,int) ), this, SIGNAL( invertedStateChanged() ) );
+    QObject::connect( _imp->inverted->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewSpec,int,int) ), this, SIGNAL( invertedStateChanged() ) );
 #endif
     QObject::connect( this, SIGNAL( overlayColorChanged() ), context.get(), SIGNAL( refreshViewerOverlays() ) );
-    QObject::connect( _imp->color->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewIdx,int,int) ), this, SIGNAL( shapeColorChanged() ) );
-    QObject::connect( _imp->compOperator->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewIdx,int,int) ), this,
-                      SIGNAL( compositingOperatorChanged(ViewIdx,int,int) ) );
+    QObject::connect( _imp->color->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewSpec,int,int) ), this, SIGNAL( shapeColorChanged() ) );
+    QObject::connect( _imp->compOperator->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewSpec,int,int) ), this,
+                      SIGNAL( compositingOperatorChanged(ViewSpec,int,int) ) );
     
     std::vector<std::string> operators;
     std::vector<std::string> tooltips;
@@ -163,7 +163,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     
     const std::list<KnobPtr >& knobs = getKnobs();
     for (std::list<KnobPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewIdx,int,int)), this, SLOT(onRotoKnobChanged(ViewIdx,int,int)));
+        QObject::connect((*it)->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onRotoKnobChanged(ViewSpec,int,int)));
     }
     
     boost::shared_ptr<RotoContext> context = getContext();
@@ -481,7 +481,7 @@ RotoDrawableItem::findPreviousInHierarchy()
 }
 
 void
-RotoDrawableItem::onRotoKnobChanged(ViewIdx /*view*/,int /*dimension*/, int reason)
+RotoDrawableItem::onRotoKnobChanged(ViewSpec /*view*/,int /*dimension*/, int reason)
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
     if (!handler) {

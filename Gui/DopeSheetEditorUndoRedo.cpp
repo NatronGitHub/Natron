@@ -711,11 +711,11 @@ void DSSlipReaderCommand::slipReader(double dt)
      for nothing.
      */
     DopeSheetView* view = _model->getDopesheetView();
-    QObject::disconnect(lastFrameKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewIdx,int, int)),
-            view, SLOT(onRangeNodeChanged(ViewIdx,int, int)));
+    QObject::disconnect(lastFrameKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int, int)),
+            view, SLOT(onRangeNodeChanged(ViewSpec,int, int)));
     
-    QObject::disconnect(startingTimeKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewIdx,int, int)),
-            view, SLOT(onRangeNodeChanged(ViewIdx,int, int)));
+    QObject::disconnect(startingTimeKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int, int)),
+            view, SLOT(onRangeNodeChanged(ViewSpec,int, int)));
 
     
     KnobHolder *holder = lastFrameKnob->getHolder();
@@ -738,11 +738,11 @@ void DSSlipReaderCommand::slipReader(double dt)
     effectInstance->endChanges();
     
     
-    QObject::connect(lastFrameKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewIdx,int, int)),
-                        view, SLOT(onRangeNodeChanged(ViewIdx,int, int)));
+    QObject::connect(lastFrameKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int, int)),
+                        view, SLOT(onRangeNodeChanged(ViewSpec,int, int)));
     
-    QObject::connect(startingTimeKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewIdx,int, int)),
-                        view, SLOT(onRangeNodeChanged(ViewIdx,int, int)));
+    QObject::connect(startingTimeKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int, int)),
+                        view, SLOT(onRangeNodeChanged(ViewSpec,int, int)));
 
     view->update();
 }
