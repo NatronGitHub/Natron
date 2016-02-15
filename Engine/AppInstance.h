@@ -253,6 +253,11 @@ public:
     {
     }
     
+    virtual void notifyRenderRestarted( OutputEffectInstance* /*writer*/,
+                                     const boost::shared_ptr<ProcessHandler> & /*process*/)
+    {
+    }
+    
     
 
     virtual bool isShowingDialog() const

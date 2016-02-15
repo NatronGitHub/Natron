@@ -826,6 +826,12 @@ GuiAppInstance::notifyRenderStarted(const QString & sequenceName,
     _imp->_gui->onRenderStarted(sequenceName, firstFrame, lastFrame, frameStep, canPause, writer, process);
 }
 
+void
+GuiAppInstance::notifyRenderRestarted( OutputEffectInstance* writer,
+                           const boost::shared_ptr<ProcessHandler> & process)
+{
+    _imp->_gui->onRenderRestarted(writer, process);
+}
 
 void
 GuiAppInstance::setUndoRedoStackLimit(int limit)

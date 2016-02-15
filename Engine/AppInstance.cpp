@@ -1356,7 +1356,7 @@ AppInstance::startWritersRendering(bool doBlockingRender, const std::list<Render
         if (!it->isRestart) {
             notifyRenderStarted(item.sequenceName,item.work.firstFrame,item.work.lastFrame, item.work.frameStep, canPause, item.work.writer, item.process);
         } else {
-            
+            notifyRenderRestarted(item.work.writer,item.process);
         }
         itemsToQueue.push_back(item);
     }

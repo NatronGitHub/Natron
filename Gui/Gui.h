@@ -351,6 +351,9 @@ public:
                          OutputEffectInstance* writer,
                          const boost::shared_ptr<ProcessHandler> & process);
     
+    void onRenderRestarted(OutputEffectInstance* writer,
+                         const boost::shared_ptr<ProcessHandler> & process);
+    
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
     DopeSheetEditor *getDopeSheetEditor() const;

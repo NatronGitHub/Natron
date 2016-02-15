@@ -313,7 +313,7 @@ TaskInfo::restartTask()
                                   _imp->lastFrame,
                                   _imp->frameStep,
                                   node->getApp()->isRenderStatsActionChecked());
-       
+        w.isRestart = true;
         _imp->statusItem->setTextColor(Qt::yellow);
         _imp->statusItem->setText(tr("Queued"));
         std::list<AppInstance::RenderWork> works;
@@ -823,6 +823,30 @@ ProgressPanel::refreshButtonsEnabledNess()
     _imp->refreshButtonsEnableness(selection);
 }
 
+static void connectProcessSlots(TaskInfo* task, ProcessHandler* process)
+{
+    QObject::connect(task,SIGNAL(taskCanceled()),process,SLOT(onProcessCanceled()));
+    QObject::connect(process,SIGNAL(processCanceled()),task,SLOT(onProcessCanceled()));
+    QObject::connect(process,SIGNAL(frameRendered(int,double)),task,SLOT(onRenderEngineFrameComputed(int,double)));
+    QObject::connect(process,SIGNAL(processFinished(int)),task,SLOT(onRenderEngineStopped(int)));
+
+}
+
+void
+ProgressPanel::onTaskRestarted(const NodePtr& node,
+                     const boost::shared_ptr<ProcessHandler>& process)
+{
+    QMutexLocker k(&_imp->tasksMutex);
+    TaskInfoPtr task;
+    task = _imp->findTask(node);
+    if (!task) {
+        return;
+    }
+    //The process may have changed
+    task->_imp->process = process;
+    connectProcessSlots(task.get(), process.get());
+}
+
 void
 ProgressPanel::startTask(const NodePtr& node,
                          const int firstFrame,
@@ -837,55 +861,51 @@ ProgressPanel::startTask(const NodePtr& node,
         return;
     }
     assert((canPause && firstFrame != INT_MIN && lastFrame != INT_MAX) || !canPause);
-
-    {
-        QMutexLocker k(&_imp->tasksMutex);
-        TaskInfoPtr task;
-        task = _imp->findTask(node);
-        bool existed = true;
-        if (!task) {
-            existed = false;
-            task.reset(new TaskInfo(this,
-                                    node,
-                                    firstFrame,
-                                    lastFrame,
-                                    frameStep,
-                                    canPause,
-                                    canCancel,
-                                    message, process));
-            
-        } else {
-            //The process may have changed
-            task->_imp->process = process;
-        }
-        
-        
-        if (process) {
-            QObject::connect(task.get(),SIGNAL(taskCanceled()),process.get(),SLOT(onProcessCanceled()));
-            QObject::connect(process.get(),SIGNAL(processCanceled()),task.get(),SLOT(onProcessCanceled()));
-            QObject::connect(process.get(),SIGNAL(frameRendered(int,double)),task.get(),SLOT(onRenderEngineFrameComputed(int,double)));
-            QObject::connect(process.get(),SIGNAL(processFinished(int)),task.get(),SLOT(onRenderEngineStopped(int)));
-            
-        }
-        if (!existed) {
-            if (!process) {
-                if (node->getEffectInstance()->isWriter()) {
-                    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(node->getEffectInstance().get());
-                    if (isOutput) {
-                        RenderEngine* engine = isOutput->getRenderEngine();
-                        assert(engine);
-                        QObject::connect(engine,SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)));
-                        QObject::connect(engine, SIGNAL(renderFinished(int)), task.get(), SLOT(onRenderEngineStopped(int)));
-                        QObject::connect(task.get(),SIGNAL(taskCanceled()),engine,SLOT(abortRendering_Blocking()));
-                    }
-                }
-            }
-            _imp->tasks[node] = task;
-
-        }
-        
-    }
     
+    TaskInfoPtr task;
+    {
+        
+        QMutexLocker k(&_imp->tasksMutex);
+        task = _imp->findTask(node);
+        if (task) {
+            task->cancelTask(false, 1);
+            k.unlock();
+            removeTaskFromTable(task);
+        }
+    }
+
+    
+    QMutexLocker k(&_imp->tasksMutex);
+    
+    task.reset(new TaskInfo(this,
+                            node,
+                            firstFrame,
+                            lastFrame,
+                            frameStep,
+                            canPause,
+                            canCancel,
+                            message, process));
+    
+    
+    
+    
+    if (process) {
+        connectProcessSlots(task.get(), process.get());
+    }
+    if (!process) {
+        if (node->getEffectInstance()->isWriter()) {
+            OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(node->getEffectInstance().get());
+            if (isOutput) {
+                RenderEngine* engine = isOutput->getRenderEngine();
+                assert(engine);
+                QObject::connect(engine,SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)));
+                QObject::connect(engine, SIGNAL(renderFinished(int)), task.get(), SLOT(onRenderEngineStopped(int)));
+                QObject::connect(task.get(),SIGNAL(taskCanceled()),engine,SLOT(abortRendering_Blocking()));
+            }
+        }
+    }
+    _imp->tasks[node] = task;
+
 }
 
 void

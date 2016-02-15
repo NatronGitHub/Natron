@@ -125,6 +125,9 @@ public:
                                      int frameStep,bool canPause,
                                      OutputEffectInstance* writer,
                                      const boost::shared_ptr<ProcessHandler> & process) OVERRIDE FINAL;
+    
+    virtual void notifyRenderRestarted( OutputEffectInstance* writer,
+                                       const boost::shared_ptr<ProcessHandler> & process) OVERRIDE FINAL;
     virtual void setupViewersForViews(const std::vector<std::string>& viewNames) OVERRIDE FINAL;
 
     void setViewersCurrentView(ViewIdx view);

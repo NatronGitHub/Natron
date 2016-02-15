@@ -148,6 +148,9 @@ public:
                    const QString& message,
                    const boost::shared_ptr<ProcessHandler>& process = boost::shared_ptr<ProcessHandler>());
     
+    void onTaskRestarted(const NodePtr& node,
+                         const boost::shared_ptr<ProcessHandler>& process = boost::shared_ptr<ProcessHandler>());
+    
     /**
      * @brief Increase progress to the specified value in the range [0., 1.], the time remaining
      * will be computed automatically.

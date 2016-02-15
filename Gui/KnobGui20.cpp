@@ -644,7 +644,7 @@ KnobGui::onFrozenChanged(bool frozen)
 {
     KnobPtr knob = getKnob();
     KnobButton* isBtn = dynamic_cast<KnobButton*>(knob.get());
-    if (isBtn) {
+    if (isBtn && !isBtn->isRenderButton()) {
         return;
     }
     int dims = knob->getDimension();
