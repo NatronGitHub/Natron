@@ -176,8 +176,8 @@ struct ProgressPanelPrivate
     QWidget* headerContainer;
     QHBoxLayout* headerLayout;
     Button* restartTasksButton;
-    Button* cancelAllButton;
-    Button* clearTasksButton;
+    Button* pauseTasksButton;
+    Button* cancelTasksButton;
     
     QCheckBox* queueTasksCheckbox;
     QCheckBox* removeTasksAfterFinishCheckbox;
@@ -194,8 +194,8 @@ struct ProgressPanelPrivate
     , headerContainer(0)
     , headerLayout(0)
     , restartTasksButton(0)
-    , cancelAllButton(0)
-    , clearTasksButton(0)
+    , pauseTasksButton(0)
+    , cancelTasksButton(0)
     , queueTasksCheckbox(0)
     , removeTasksAfterFinishCheckbox(0)
     , model(0)
@@ -554,23 +554,22 @@ ProgressPanel::ProgressPanel(Gui* gui)
     
     int medSizeIcon = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
     
-    QPixmap restartPix,cancellAllPix, clearTasksPix;
+    QPixmap restartPix,pausePix, clearTasksPix;
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_DISABLED, medSizeIcon, &restartPix);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP, medSizeIcon, &cancellAllPix);
-    appPTR->getIcon(NATRON_PIXMAP_CLOSE_PANEL, medSizeIcon, &clearTasksPix);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP, medSizeIcon, &clearTasksPix);
     
     const QSize medButtonIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
     const QSize medButtonSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
     
-    _imp->cancelAllButton = new Button(QIcon(cancellAllPix),"",_imp->headerContainer);
-    _imp->cancelAllButton->setFixedSize(medButtonSize);
-    _imp->cancelAllButton->setIconSize(medButtonIconSize);
-    _imp->cancelAllButton->setFocusPolicy(Qt::NoFocus);
-    _imp->cancelAllButton->setToolTip(GuiUtils::convertFromPlainText(tr("Pause selected tasks. Tasks that can be paused "
+    _imp->pauseTasksButton = new Button(QIcon(pausePix),"Pause",_imp->headerContainer);
+    _imp->pauseTasksButton->setFixedSize(medButtonSize);
+    _imp->pauseTasksButton->setIconSize(medButtonIconSize);
+    _imp->pauseTasksButton->setFocusPolicy(Qt::NoFocus);
+    _imp->pauseTasksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Pause selected tasks. Tasks that can be paused "
                                                                         "may be restarted with the restart button."), Qt::WhiteSpaceNormal));
-    QObject::connect(_imp->cancelAllButton, SIGNAL(clicked(bool)), this, SLOT(onCancelAllTasksTriggered()));
-    _imp->cancelAllButton->setEnabled(false);
-    _imp->headerLayout->addWidget(_imp->cancelAllButton);
+    QObject::connect(_imp->pauseTasksButton, SIGNAL(clicked(bool)), this, SLOT(onPauseTasksTriggered()));
+    _imp->pauseTasksButton->setEnabled(false);
+    _imp->headerLayout->addWidget(_imp->pauseTasksButton);
     
     _imp->restartTasksButton = new Button(QIcon(restartPix),"",_imp->headerContainer);
     _imp->restartTasksButton->setFixedSize(medButtonSize);
@@ -584,14 +583,14 @@ ProgressPanel::ProgressPanel(Gui* gui)
     
     _imp->headerLayout->addSpacing(TO_DPIX(20));
     
-    _imp->clearTasksButton = new Button(QIcon(clearTasksPix),"",_imp->headerContainer);
-    _imp->clearTasksButton->setFixedSize(medButtonSize);
-    _imp->clearTasksButton->setIconSize(medButtonIconSize);
-    _imp->clearTasksButton->setFocusPolicy(Qt::NoFocus);
-    _imp->clearTasksButton->setEnabled(false);
-    _imp->clearTasksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Remove from the list the selected tasks"), Qt::WhiteSpaceNormal));
-    QObject::connect(_imp->clearTasksButton, SIGNAL(clicked(bool)), this, SLOT(onClearAllTasksTriggered()));
-    _imp->headerLayout->addWidget(_imp->clearTasksButton);
+    _imp->cancelTasksButton = new Button(QIcon(clearTasksPix),"",_imp->headerContainer);
+    _imp->cancelTasksButton->setFixedSize(medButtonSize);
+    _imp->cancelTasksButton->setIconSize(medButtonIconSize);
+    _imp->cancelTasksButton->setFocusPolicy(Qt::NoFocus);
+    _imp->cancelTasksButton->setEnabled(false);
+    _imp->cancelTasksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Remove from the list the selected tasks"), Qt::WhiteSpaceNormal));
+    QObject::connect(_imp->cancelTasksButton, SIGNAL(clicked(bool)), this, SLOT(onCancelTasksTriggered()));
+    _imp->headerLayout->addWidget(_imp->cancelTasksButton);
     
     _imp->headerLayout->addSpacing(TO_DPIX(20));
     
@@ -686,7 +685,7 @@ ProgressPanel::keyPressEvent(QKeyEvent* e)
     
     bool accept = true;
     if (key == Qt::Key_Delete || key == Qt::Key_Backspace) {
-        onClearAllTasksTriggered();
+        onCancelTasksTriggered();
     } else {
         accept = false;
     }
@@ -720,19 +719,21 @@ ProgressPanel::leaveEvent(QEvent* e)
 }
 
 void
-ProgressPanel::onCancelAllTasksTriggered()
+ProgressPanel::onPauseTasksTriggered()
 {
     std::list<TaskInfoPtr> selection;
     getSelectedTask(selection);
     for (std::list<TaskInfoPtr>::iterator it = selection.begin(); it!=selection.end(); ++it) {
-        (*it)->cancelTask(false, 0);
+        if ((*it)->canPause()) {
+            (*it)->cancelTask(false, 0);
+        }
     }
     
     _imp->refreshButtonsEnableness(selection);
 }
 
 void
-ProgressPanel::onClearAllTasksTriggered()
+ProgressPanel::onCancelTasksTriggered()
 {
     std::list<TaskInfoPtr> selection;
     getSelectedTask(selection);
@@ -1034,9 +1035,8 @@ ProgressPanelPrivate::refreshButtonsEnableness(const std::list<TaskInfoPtr>& sel
         }
     }
 
-    clearTasksButton->setEnabled(selection.size() > 0);
-    cancelAllButton->setEnabled(nActiveTasks > 0);
-    
+    cancelTasksButton->setEnabled(selection.size() > 0);
+    pauseTasksButton->setEnabled(nActiveTasksCanPause > 0);
     restartTasksButton->setEnabled(nCanceledTasksCanPause > 0);
 }
 

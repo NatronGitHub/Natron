@@ -175,8 +175,8 @@ public:
     
 public Q_SLOTS:
     
-    void onCancelAllTasksTriggered();
-    void onClearAllTasksTriggered();
+    void onPauseTasksTriggered();
+    void onCancelTasksTriggered();
     void onRestartAllTasksTriggered();
     
     void doProgressOnMainThread(const TaskInfoPtr& task, double progress);
