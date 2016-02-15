@@ -280,6 +280,9 @@ TaskInfo::cancelTask(bool calledFromRenderEngine, int retCode)
     NodePtr node = getNode();
     OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>(node->getEffectInstance().get());
     node->getApp()->removeRenderFromQueue(effect);
+    if (!_imp->canBePaused) {
+        _imp->panel->removeTaskFromTable(shared_from_this());
+    }
     if (!calledFromRenderEngine) {
         Q_EMIT taskCanceled();
     }
@@ -743,6 +746,14 @@ ProgressPanel::onClearAllTasksTriggered()
     _imp->refreshButtonsEnableness(selection);
     
 
+}
+
+void
+ProgressPanel::removeTaskFromTable(const TaskInfoPtr& task)
+{
+    std::list<TaskInfoPtr> list;
+    list.push_back(task);
+    removeTasksFromTable(list);
 }
 
 void

@@ -162,6 +162,7 @@ public:
     
     void onRenderQueuingSettingChanged(bool queueingEnabled);
     
+    void removeTaskFromTable(const TaskInfoPtr& task);
     void removeTasksFromTable(const std::list<TaskInfoPtr>& task);
 
     bool isRemoveTasksAfterFinishChecked() const;

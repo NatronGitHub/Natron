@@ -209,7 +209,7 @@ public Q_SLOTS:
      * This slot is automatically called after the changing of the value of a
      * specific knob.
      */
-    void onRangeNodeChanged(ViewIdx, int, int);
+    void onRangeNodeChanged(ViewSpec, int, int);
 
     /**
      * @brief Computes the bounding rect of the selected keyframes and the ranges
