@@ -81,7 +81,7 @@ private:
     
     virtual void knobChanged(KnobI* k,
                              ValueChangedReasonEnum /*reason*/,
-                             int /*view*/,
+                             ViewSpec /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
 

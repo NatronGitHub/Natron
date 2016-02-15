@@ -296,15 +296,15 @@ struct ValueSerialization
         if (isInt && !isChoice) {
             int v;
             ar & ::boost::serialization::make_nvp("Value",v);
-            isInt->setValue(v, ViewIdx::all(), _dimension);
+            isInt->setValue(v, ViewSpec::all(), _dimension);
         } else if (isBool && !isGrp && !isPage && !isSep && !btn) {
             bool v;
             ar & ::boost::serialization::make_nvp("Value",v);
-            isBool->setValue(v, ViewIdx::all(), _dimension);
+            isBool->setValue(v, ViewSpec::all(), _dimension);
         } else if (isDouble && !isParametric) {
             double v;
             ar & ::boost::serialization::make_nvp("Value",v);
-            isDouble->setValue(v, ViewIdx::all(), _dimension);
+            isDouble->setValue(v, ViewSpec::all(), _dimension);
         } else if (isChoice) {
             int v;
             ar & ::boost::serialization::make_nvp("Value", v);
@@ -323,7 +323,7 @@ struct ValueSerialization
         } else if (isString && !isFile) {
             std::string v;
             ar & ::boost::serialization::make_nvp("Value",v);
-            isString->setValue(v, ViewIdx(0),_dimension);
+            isString->setValue(v, ViewIdx(0), _dimension);
         } else if (isFile) {
             std::string v;
             ar & ::boost::serialization::make_nvp("Value",v);

@@ -47,6 +47,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/EngineFwd.h"
 
+// Note: these classes are used for cache serialization and do not have to maintain backward compatibility
 
 namespace boost {
 namespace serialization {
@@ -79,16 +80,17 @@ ImageComponents::serialize(Archive & ar,
 template<class Archive>
 void
 ImageParams::serialize(Archive & ar,
-                       const unsigned int version)
+                       const unsigned int /*version*/)
 {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(NonKeyParams);
     ar & ::boost::serialization::make_nvp("RoD",_rod);
     ar & ::boost::serialization::make_nvp("Bounds",_bounds);
     ar & ::boost::serialization::make_nvp("IsProjectFormat",_isRoDProjectFormat);
-    if (version < IMAGE_SERIALIZATION_REMOVE_FRAMESNEEDED) {
-        std::map<int, std::map<int,std::vector<RangeD> > > f;
-        ar & ::boost::serialization::make_nvp("FramesNeeded",f);
-    }
+    // backward compatibility is not necessary
+    //if (version < IMAGE_SERIALIZATION_REMOVE_FRAMESNEEDED) {
+    //    std::map<int, std::map<int,std::vector<RangeD> > > f;
+    //    ar & ::boost::serialization::make_nvp("FramesNeeded",f);
+    //}
     ar & ::boost::serialization::make_nvp("Components",_components);
     ar & ::boost::serialization::make_nvp("MMLevel",_mipMapLevel);
 }

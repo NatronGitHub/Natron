@@ -380,10 +380,11 @@ PrecompNode::onKnobsLoaded()
 }
 
 void
-PrecompNode::knobChanged(KnobI* k,ValueChangedReasonEnum reason,
-                 int /*view*/,
-                 double /*time*/,
-                 bool /*originatedFromMainThread*/)
+PrecompNode::knobChanged(KnobI* k,
+                         ValueChangedReasonEnum reason,
+                         ViewSpec /*view*/,
+                         double /*time*/,
+                         bool /*originatedFromMainThread*/)
 {
     if (reason != eValueChangedReasonTimeChanged && k == _imp->projectFileNameKnob.lock().get()) {
         _imp->reloadProject(true);

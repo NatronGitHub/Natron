@@ -37,7 +37,7 @@
 
 #include "Engine/ImageComponents.h"
 #include "Engine/Knob.h" // KnobI
-#include "Engine/NodeGroupWrapper.h" // Goup
+#include "Engine/PyNodeGroup.h" // Group
 #include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
 
@@ -350,7 +350,7 @@ public:
      **/
     Roto* getRotoContext() const;
     
-    RectD getRegionOfDefinition(double time,int view) const;
+    RectD getRegionOfDefinition(double time, int /* Python API: do not use ViewIdx */ view) const;
     
     static Param* createParamWrapperForKnob(const KnobPtr& knob);
     

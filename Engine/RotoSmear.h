@@ -128,12 +128,12 @@ public:
 private:
 
     virtual StatusEnum
-    getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     virtual bool isIdentity(double time,
                         const RenderScale & scale,
                         const RectI & roi,
-                        int view,
+                        ViewIdx view,
                         double* inputTime,
                         int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 

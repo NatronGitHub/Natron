@@ -37,7 +37,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QToolButton>
 #include <QDesktopWidget>
 
-#include "Engine/ParameterWrapper.h" // IntParam
+#include "Engine/PyParameter.h" // IntParam
 #include "Engine/Project.h"
 #include "Engine/RotoContext.h"
 #include "Engine/Settings.h"
@@ -98,7 +98,7 @@ CurveWidget::CurveWidget(Gui* gui,
                          QWidget* parent,
                          const QGLWidget* shareWidget)
     : QGLWidget(parent,shareWidget)
-    , _imp( new CurveWidgetPrivate(gui,selection,timeline,this) )
+    , _imp( new CurveWidgetPrivate(gui,selection, timeline,this) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );

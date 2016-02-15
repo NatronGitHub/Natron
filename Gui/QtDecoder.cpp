@@ -166,7 +166,7 @@ QtReader::initializeKnobs()
 void
 QtReader::knobChanged(KnobI* k,
                       ValueChangedReasonEnum /*reason*/,
-                      int /*view*/,
+                      ViewSpec /*view*/,
                       double /*time*/,
                       bool /*originatedFromMainThread*/)
 {

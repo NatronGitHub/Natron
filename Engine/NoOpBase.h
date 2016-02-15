@@ -85,10 +85,10 @@ public:
     }
 
     virtual StatusEnum getTransform(double time,
-                                            const RenderScale & renderScale,
-                                            int view,
-                                            EffectInstPtr* inputToTransform,
-                                            Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                    const RenderScale & renderScale,
+                                    ViewIdx view,
+                                    EffectInstPtr* inputToTransform,
+                                    Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -109,7 +109,7 @@ private:
     virtual bool isIdentity(double time,
                             const RenderScale & scale,
                             const RectI & renderWindow,
-                            int view,
+                            ViewIdx view,
                             double* inputTime,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };

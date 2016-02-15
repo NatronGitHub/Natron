@@ -32,7 +32,7 @@
 
 #include "Global/Macros.h"
 #include "Engine/AppManager.h"
-#include "Engine/AppInstanceWrapper.h"
+#include "Engine/PyAppInstance.h"
 #include "Global/MemoryInfo.h"
 #include "Engine/EngineFwd.h"
 

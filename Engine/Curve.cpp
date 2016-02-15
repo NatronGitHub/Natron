@@ -1145,7 +1145,7 @@ Curve::setKeyFrameValueAndTime(double time,
         bool setValue = ( value != it->getValue() );
 
         if (setTime || setValue) {
-            it = setKeyFrameValueAndTimeNoUpdate(value,time, it);
+            it = setKeyFrameValueAndTimeNoUpdate(value, time, it);
             it = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it);
         }
         if (newIndex) {

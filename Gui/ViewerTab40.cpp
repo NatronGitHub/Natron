@@ -542,7 +542,7 @@ void
 ViewerTab::setCustomTimeline(const boost::shared_ptr<TimeLine>& timeline)
 {
     _imp->timeLineGui->setTimeline(timeline);
-    manageTimelineSlot(true,timeline);
+    manageTimelineSlot(true, timeline);
 }
 
 void
@@ -1201,7 +1201,7 @@ ViewerTab::onZoomComboboxCurrentIndexChanged(int /*index*/)
 }
 
 void
-ViewerTab::onRenderStatsAvailable(int time, int view, double wallTime, const RenderStatsMap& stats)
+ViewerTab::onRenderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats)
 {
     assert(QThread::currentThread() == qApp->thread());
     RenderStatsDialog* dialog = getGui()->getRenderStatsDialog();

@@ -42,6 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 
 #include "Engine/ScriptObject.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/SerializableWindow.h"
@@ -213,7 +214,7 @@ public:
 
     void updateViewsActions(int viewsCount);
 
-    static QKeySequence keySequenceForView(int v);
+    static QKeySequence keySequenceForView(ViewIdx v);
 
     /*set the curve editor as the active widget of its pane*/
     void setCurveEditorOnTop();
@@ -326,7 +327,7 @@ public:
 
     void updateViewersViewsMenu(const std::vector<std::string>& viewNames);
 
-    void setViewersCurrentView(int view);
+    void setViewersCurrentView(ViewIdx view);
 
     const std::list<ViewerTab*> & getViewersList() const;
     std::list<ViewerTab*> getViewersList_mt_safe() const;

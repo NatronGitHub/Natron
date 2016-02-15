@@ -219,7 +219,7 @@ SetKeysCommand::undo()
         KnobPtr knob = isKnobCurve->getInternalKnob();
         boost::shared_ptr<KnobParametric> isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
         if (!isParametric) {
-            knob->cloneCurve(ViewIdx::all(), isKnobCurve->getDimension(), *_oldCurve);
+            knob->cloneCurve(ViewSpec::all(), isKnobCurve->getDimension(), *_oldCurve);
         } else {
             _guiCurve->getInternalCurve()->clone(*_oldCurve);
         }
@@ -312,7 +312,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            isKnobCurve->getInternalKnob()->deleteValueAtTime(eCurveChangeReasonCurveEditor, it->second[i].getTime(), ViewIdx::all(), isKnobCurve->getDimension() );
+                            isKnobCurve->getInternalKnob()->deleteValueAtTime(eCurveChangeReasonCurveEditor, it->second[i].getTime(), ViewSpec::all(), isKnobCurve->getDimension() );
                         }
                     }
                 } else if (isBezierCurve) {
@@ -401,7 +401,7 @@ moveKey(KeyPtr &k,
             k->key = curve->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
             isParametric->evaluateValueChange(isKnobCurve->getDimension(), isParametric->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
         } else {
-            knob->moveValueAtTime(eCurveChangeReasonCurveEditor, k->key.getTime(), ViewIdx::all(), isKnobCurve->getDimension(), dt, dv,&k->key);
+            knob->moveValueAtTime(eCurveChangeReasonCurveEditor, k->key.getTime(), ViewSpec::all(), isKnobCurve->getDimension(), dt, dv,&k->key);
         }
     } else if (isBezierCurve) {
         double oldTime = k->key.getTime();
@@ -873,7 +873,7 @@ TransformKeysCommand::undo()
          it != _curves.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->guiCurve);
         if (isKnobCurve && !dynamic_cast<KnobParametric*>(isKnobCurve->getInternalKnob().get())) {
-            isKnobCurve->getInternalKnob()->cloneCurve(ViewIdx::all(), isKnobCurve->getDimension(), *it->oldCpy);
+            isKnobCurve->getInternalKnob()->cloneCurve(ViewSpec::all(), isKnobCurve->getDimension(), *it->oldCpy);
         } else {
             it->original->clone(*it->oldCpy);
         }

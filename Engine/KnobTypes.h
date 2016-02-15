@@ -38,6 +38,7 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Knob.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -484,7 +485,7 @@ private:
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
     virtual void handleSignalSlotsForAliasLink(const KnobPtr& alias,bool connect) OVERRIDE FINAL;
-    virtual void onInternalValueChanged(int dimension, double time, ViewIdx view) OVERRIDE FINAL;
+    virtual void onInternalValueChanged(int dimension, double time, ViewSpec view) OVERRIDE FINAL;
     
 private:
     

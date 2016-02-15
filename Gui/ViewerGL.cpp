@@ -3377,7 +3377,7 @@ ViewerGL::removeGUI()
     }
 }
 
-int
+ViewIdx
 ViewerGL::getCurrentView() const
 {
     // MT-SAFE

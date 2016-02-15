@@ -1174,7 +1174,7 @@ NodeGroup::getCurrentTime() const
     return EffectInstance::getCurrentTime();
 }
 
-int
+ViewIdx
 NodeGroup::getCurrentView() const
 {
     NodePtr node = getOutputNodeInput(false);
@@ -1487,10 +1487,11 @@ NodeGroup::getInputs(std::vector<NodePtr >* inputs,bool useGuiConnexions) const
 }
 
 void
-NodeGroup::knobChanged(KnobI* k,ValueChangedReasonEnum /*reason*/,
-                 int /*view*/,
-                 double /*time*/,
-                 bool /*originatedFromMainThread*/)
+NodeGroup::knobChanged(KnobI* k,
+                       ValueChangedReasonEnum /*reason*/,
+                       ViewSpec /*view*/,
+                       double /*time*/,
+                       bool /*originatedFromMainThread*/)
 {
     if (k == _imp->exportAsTemplate.get()) {
         boost::shared_ptr<NodeGuiI> gui_i = getNode()->getNodeGui();
@@ -2191,9 +2192,9 @@ static void exportBezierPointAtTime(int indentLevel,
     
     QString token = isFeather ? "bezier.setFeatherPointAtIndex(" : "bezier.setPointAtIndex(";
     double x,y,lx,ly,rx,ry;
-    point->getPositionAtTime(false ,time,/*view*/0, &x, &y);
-    point->getLeftBezierPointAtTime(false ,time,/*view*/0, &lx, &ly);
-    point->getRightBezierPointAtTime(false ,time,/*view*/0, &rx, &ry);
+    point->getPositionAtTime(false, time, ViewIdx(0), &x, &y);
+    point->getLeftBezierPointAtTime(false, time, ViewIdx(0), &lx, &ly);
+    point->getRightBezierPointAtTime(false, time, ViewIdx(0), &rx, &ry);
     
     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE(token + NUM_INT(idx) + ", " +
                                        NUM_TIME(time) + ", " + NUM_VALUE(x) + ", " +
@@ -2224,7 +2225,7 @@ static void exportRotoLayer(int indentLevel,
                 continue;
             }
             
-            time = cps.front()->getKeyframeTime(false ,0);
+            time = cps.front()->getKeyframeTime(false,0);
             
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("bezier = roto.createBezier(0, 0, " + NUM_TIME(time) + ")");
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("bezier.setScriptName(" + ESC(isBezier->getScriptName()) + ")");

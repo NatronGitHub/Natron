@@ -621,7 +621,7 @@ void DopeSheet::moveSelectedKeysAndNodes(double dt)
         if (!knobDs) {
             continue;
         }
-        boost::shared_ptr<Curve> curve = knobDs->getKnobGui()->getCurve(0, knobDs->getDimension());
+        boost::shared_ptr<Curve> curve = knobDs->getKnobGui()->getCurve(ViewIdx(0), knobDs->getDimension());
         assert(curve);
         KeyFrame prevKey,nextKey;
         if (curve->getNextKeyframeTime((*it)->key.getTime(), &nextKey)) {
@@ -1139,7 +1139,7 @@ void DopeSheetSelectionModel::makeDopeSheetKeyframesForKnob(const boost::shared_
     }
 
     for (int i = startDim; i < endDim; ++i) {
-        KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(0, i)->getKeyFrames_mt_safe();
+        KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(ViewIdx(0), i)->getKeyFrames_mt_safe();
         boost::shared_ptr<DSKnob> context;
         if (dim == -1) {
             QTreeWidgetItem *childItem = dsKnob->findDimTreeItem(i);

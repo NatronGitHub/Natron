@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <vector>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -32,6 +34,7 @@
 #include <QThread>
 
 #include "Global/GlobalDefines.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 //#define NATRON_PLAYBACK_USES_THREAD_POOL
@@ -72,7 +75,7 @@ typedef std::list<boost::shared_ptr<BufferableObject> > BufferableObjectList;
 
 struct BufferedFrame
 {
-    int view;
+    ViewIdx view;
     double time;
     RenderStatsPtr stats;
     boost::shared_ptr<BufferableObject> frame;
@@ -110,7 +113,7 @@ public:
                      OutputSchedulerThread* scheduler,
                      const int time,
                      const bool useRenderStats,
-                     const std::vector<int>& viewsToRender);
+                     const std::vector<ViewIdx>& viewsToRender);
 #endif
     
     virtual ~RenderThreadTask();
@@ -135,7 +138,7 @@ protected:
     /**
      * @brief Must render the frame
      **/
-    virtual void renderFrame(int time, const std::vector<int>& viewsToRender, bool enableRenderStats) = 0;
+    virtual void renderFrame(int time, const std::vector<ViewIdx>& viewsToRender, bool enableRenderStats) = 0;
         
     boost::scoped_ptr<RenderThreadTaskPrivate> _imp;
 };
@@ -167,7 +170,9 @@ public:
         eProcessFrameByMainThread //< the processFrame function will be called by the application's main-thread.
     };
     
-    OutputSchedulerThread(RenderEngine* engine,const boost::shared_ptr<OutputEffectInstance>& effect,ProcessFrameModeEnum mode);
+    OutputSchedulerThread(RenderEngine* engine,
+                          const boost::shared_ptr<OutputEffectInstance>& effect,
+                          ProcessFrameModeEnum mode);
     
     virtual ~OutputSchedulerThread();
     
@@ -179,18 +184,18 @@ public:
      * use the other version of this function.
      **/
     void appendToBuffer(double time,
-                        int view,
+                        ViewIdx view,
                         const RenderStatsPtr& stats,
                         const boost::shared_ptr<BufferableObject>& frame);
     void appendToBuffer(double time,
-                        int view,
+                        ViewIdx view,
                         const RenderStatsPtr& stats,
                         const BufferableObjectList& frames);
     
 private:
     
     void appendToBuffer_internal(double time,
-                                 int view,
+                                 ViewIdx view,
                                  const RenderStatsPtr& stats,
                                  const boost::shared_ptr<BufferableObject>& frame,
                                  bool wakeThread);
@@ -216,7 +221,7 @@ public:
                           int firstFrame,
                           int lastFrame,
                           int frameStep,
-                          const std::vector<int>& viewsToRender,
+                          const std::vector<ViewIdx>& viewsToRender,
                           RenderDirectionEnum forward);
 
     /**
@@ -225,7 +230,7 @@ public:
      * This is not appropriate to call this function from a writer.
      **/
     void renderFromCurrentFrame(bool enableRenderStats,
-                                const std::vector<int>& viewsToRender,
+                                const std::vector<ViewIdx>& viewsToRender,
                                 RenderDirectionEnum forward);
     
     /**
@@ -241,8 +246,8 @@ public:
      * then the scheduler takes this as a hint to know how many frames have been rendered.
      **/
     void notifyFrameRendered(int frame,
-                             int viewIndex,
-                             const std::vector<int>& viewsToRender,
+                             ViewIdx viewIndex,
+                             const std::vector<ViewIdx>& viewsToRender,
                              const RenderStatsPtr& stats,
                              SchedulingPolicyEnum policy);
 
@@ -274,7 +279,7 @@ public:
      * @brief Returns the views as set in the livingRunArgs, @see startRender()
      * This can only be called on the scheduler thread (this)
      **/
-    std::vector<int> getViewsRequestedToRender() const;
+    std::vector<ViewIdx> getViewsRequestedToRender() const;
     
     /**
      * @brief Returns the current number of render threads
@@ -290,7 +295,7 @@ public:
     /**
      * @brief Called by render-threads to pick some work to do or to get asleep if theres nothing to do
      **/
-    int pickFrameToRender(RenderThreadTask* thread, bool* enableRenderStats, std::vector<int>* viewsToRender);
+    int pickFrameToRender(RenderThreadTask* thread, bool* enableRenderStats, std::vector<ViewIdx>* viewsToRender);
 #endif
 
     /**
@@ -404,7 +409,7 @@ protected:
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     virtual RenderThreadTask* createRunnable() = 0;
 #else
-    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<int>& viewsToRender) = 0;
+    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) = 0;
 #endif
     
     /**
@@ -508,7 +513,7 @@ private:
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
 #else
-    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<int>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
 #endif
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
@@ -553,7 +558,7 @@ private:
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
 #else
-    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<int>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
 #endif
     
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
@@ -671,7 +676,7 @@ public:
                           int firstFrame,
                           int lastFrame,
                           int frameStep,
-                          const std::vector<int>& viewsToRender,
+                          const std::vector<ViewIdx>& viewsToRender,
                           OutputSchedulerThread::RenderDirectionEnum forward);
     
     /**
@@ -680,7 +685,7 @@ public:
      * This is not appropriate to call this function from a writer.
      **/
     void renderFromCurrentFrame(bool enableRenderStats,
-                                const std::vector<int>& viewsToRender,
+                                const std::vector<ViewIdx>& viewsToRender,
                                 OutputSchedulerThread::RenderDirectionEnum forward);
     
     

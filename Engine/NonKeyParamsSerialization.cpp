@@ -37,9 +37,4 @@ template void NonKeyParams::serialize<boost::archive::binary_iarchive>(boost::ar
 template void NonKeyParams::serialize<boost::archive::binary_oarchive>(boost::archive::binary_oarchive & ar,
                                                                                const unsigned int file_version);
 
-template void NonKeyParams::serialize<boost::archive::xml_iarchive>(   boost::archive::xml_iarchive & ar,
-                                                                               const unsigned int file_version);
-template void NonKeyParams::serialize<boost::archive::xml_oarchive>(   boost::archive::xml_oarchive & ar,
-                                                                               const unsigned int file_version);
-
 NATRON_NAMESPACE_EXIT;

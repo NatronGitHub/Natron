@@ -46,7 +46,7 @@ public:
              int lut,
              int bitDepth,
              int channels,
-             int view,
+             int/*ViewIdx*/ view,
              const TextureRect & textureRect,
              const RenderScale & scale,
              const std::string & inputName,
@@ -111,7 +111,7 @@ public:
 
     const TextureRect& getTexRect() const WARN_UNUSED_RETURN
     {
-    return _textureRect;
+        return _textureRect;
     }
 
     template<class Archive>
@@ -125,7 +125,7 @@ private:
     int _lut;
     int _bitDepth;
     int _channels;
-    int _view;
+    int/*ViewIdx*/ _view;
     TextureRect _textureRect;     // texture rectangle definition (bounds in the original image + width and height)
     RenderScale _scale;
     std::string _inputName;

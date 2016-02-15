@@ -104,7 +104,11 @@ RotoSmear::getOutputPremultiplication() const
 }
 
 StatusEnum
-RotoSmear::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod)
+RotoSmear::getRegionOfDefinition(U64 hash,
+                                 double time,
+                                 const RenderScale & scale,
+                                 ViewIdx view,
+                                 RectD* rod)
 {
     StatusEnum st = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
     if (st != eStatusOK) {
@@ -140,11 +144,11 @@ RotoSmear::getPreferredAspectRatio() const
 
 bool
 RotoSmear::isIdentity(double time,
-                const RenderScale & scale,
-                const RectI & roi,
-                int /*view*/,
-                double* inputTime,
-                int* inputNb)
+                      const RenderScale & scale,
+                      const RectI & roi,
+                      ViewIdx /*view*/,
+                      double* inputTime,
+                      int* inputNb)
 {
     RectD maskRod;
     NodePtr node = getNode();

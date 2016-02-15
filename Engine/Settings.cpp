@@ -1808,7 +1808,7 @@ Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
                 
                 if (isString) {
                     
-                    isString->setValue(settings.value(qDimName).toString().toStdString(), ViewIdx::all(), j);
+                    isString->setValue(settings.value(qDimName).toString().toStdString(), ViewSpec::all(), j);
                     
                 } else if (isInt) {
                     
@@ -1828,21 +1828,21 @@ Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
                         }
                         
                         if (found >= 0) {
-                            isChoice->setValue(found, ViewIdx::all(), j);
+                            isChoice->setValue(found, ViewSpec::all(), j);
                         }
                         
                     } else {
-                        isInt->setValue(settings.value(qDimName).toInt(), ViewIdx::all(), j);
+                        isInt->setValue(settings.value(qDimName).toInt(), ViewSpec::all(), j);
                     }
                     
                     
                 } else if (isDouble) {
                     
-                    isDouble->setValue(settings.value(qDimName).toDouble(), ViewIdx::all(), j);
+                    isDouble->setValue(settings.value(qDimName).toDouble(), ViewSpec::all(), j);
                     
                 } else if (isBool) {
                     
-                    isBool->setValue(settings.value(qDimName).toBool(), ViewIdx::all(), j);
+                    isBool->setValue(settings.value(qDimName).toBool(), ViewSpec::all(), j);
                     
                 } else {
                     assert(false);
@@ -1996,7 +1996,7 @@ void
 Settings::onKnobValueChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
                              double /*time*/,
-                             ViewIdx /*view*/,
+                             ViewSpec /*view*/,
                              bool /*originatedFromMainThread*/)
 {
     

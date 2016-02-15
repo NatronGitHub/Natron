@@ -69,14 +69,19 @@ KnobSignalSlotHandler::KnobSignalSlotHandler(const KnobPtr& knob)
 }
 
 void
-KnobSignalSlotHandler::onAnimationRemoved(ViewIdx view,int dimension)
+KnobSignalSlotHandler::onAnimationRemoved(ViewSpec view,
+                                          int dimension)
 {
     getKnob()->onAnimationRemoved(view,dimension);
 }
 
 
 void
-KnobSignalSlotHandler::onMasterKeyFrameSet(double time, ViewIdx view,int dimension,int reason,bool added)
+KnobSignalSlotHandler::onMasterKeyFrameSet(double time,
+                                           ViewSpec view,
+                                           int dimension,
+                                           int reason,
+                                           bool added)
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
     assert(handler);
@@ -87,7 +92,10 @@ KnobSignalSlotHandler::onMasterKeyFrameSet(double time, ViewIdx view,int dimensi
 }
 
 void
-KnobSignalSlotHandler::onMasterKeyFrameRemoved(double time, ViewIdx view,int dimension,int reason)
+KnobSignalSlotHandler::onMasterKeyFrameRemoved(double time,
+                                               ViewSpec view,
+                                               int dimension,
+                                               int reason)
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
     assert(handler);
@@ -98,7 +106,10 @@ KnobSignalSlotHandler::onMasterKeyFrameRemoved(double time, ViewIdx view,int dim
 }
 
 void
-KnobSignalSlotHandler::onMasterKeyFrameMoved(ViewIdx view,int dimension,double oldTime,double newTime)
+KnobSignalSlotHandler::onMasterKeyFrameMoved(ViewSpec view,
+                                             int dimension,
+                                             double oldTime,
+                                             double newTime)
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
     assert(handler);
@@ -109,7 +120,8 @@ KnobSignalSlotHandler::onMasterKeyFrameMoved(ViewIdx view,int dimension,double o
 }
 
 void
-KnobSignalSlotHandler::onMasterAnimationRemoved(ViewIdx view,int dimension)
+KnobSignalSlotHandler::onMasterAnimationRemoved(ViewSpec view,
+                                                int dimension)
 {
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
     assert(handler);
@@ -153,7 +165,8 @@ KnobI::onKnobUnSlaved(int dimension)
 }
 
 void
-KnobI::removeAnimation(ViewIdx view,int dimension)
+KnobI::removeAnimation(ViewSpec view,
+                       int dimension)
 {
     if (canAnimate()) {
         removeAnimation(view, dimension, eValueChangedReasonNatronInternalEdited);
@@ -162,7 +175,8 @@ KnobI::removeAnimation(ViewIdx view,int dimension)
 
 
 void
-KnobI::onAnimationRemoved(ViewIdx view,int dimension)
+KnobI::onAnimationRemoved(ViewSpec view,
+                          int dimension)
 {
     if (canAnimate()) {
         removeAnimation(view, dimension, eValueChangedReasonUserEdited);
@@ -648,7 +662,7 @@ KnobHelper::setSignalSlotHandler(const boost::shared_ptr<KnobSignalSlotHandler> 
 void
 KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
                               double time,
-                              ViewIdx view,
+                              ViewSpec view,
                               int dimension)
 {
     if ( dimension > (int)_imp->curves.size() || dimension < 0) {
@@ -667,7 +681,7 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view.i, dimension);
+        curve = _imp->gui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
 
@@ -695,7 +709,7 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
 
         checkAnimationLevel(view, dimension);
         guiCurveCloneInternalCurve(curveChangeReason,view,dimension, reason);
-        evaluateValueChange(dimension,time,view, reason);
+        evaluateValueChange(dimension, time,view, reason);
     } else {
         if (_signalSlotHandler) {
             _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
@@ -709,13 +723,21 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
 }
 
 void
-KnobHelper::onKeyFrameRemoved(double time, ViewIdx view,int dimension)
+KnobHelper::onKeyFrameRemoved(double time,
+                              ViewSpec view,
+                              int dimension)
 {
-    deleteValueAtTime(eCurveChangeReasonInternal,time,view,dimension);
+    deleteValueAtTime(eCurveChangeReasonInternal, time,view,dimension);
 }
 
 bool
-KnobHelper::moveValueAtTime(CurveChangeReason reason, double time, ViewIdx view, int dimension,double dt,double dv,KeyFrame* newKey)
+KnobHelper::moveValueAtTime(CurveChangeReason reason,
+                            double time,
+                            ViewSpec view,
+                            int dimension,
+                            double dt,
+                            double dv,
+                            KeyFrame* newKey)
 {
     assert(QThread::currentThread() == qApp->thread());
     assert(dimension >= 0 && dimension < (int)_imp->curves.size());
@@ -738,7 +760,7 @@ KnobHelper::moveValueAtTime(CurveChangeReason reason, double time, ViewIdx view,
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view.i, dimension);
+        curve = _imp->gui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
     assert(curve);
@@ -754,7 +776,7 @@ KnobHelper::moveValueAtTime(CurveChangeReason reason, double time, ViewIdx view,
     if (isString) {
         isString->stringFromInterpolatedValue(time, view, &v);
     }
-    keyframeRemoved_virtual(dimension,time);
+    keyframeRemoved_virtual(dimension, time);
     if (isString) {
         double ret;
         isString->stringToKeyFrameValue(newKey->getTime(), view, v, &ret);
@@ -762,7 +784,7 @@ KnobHelper::moveValueAtTime(CurveChangeReason reason, double time, ViewIdx view,
     
     
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_keyFrameMoved(view, dimension,time,newKey->getTime());
+        _signalSlotHandler->s_keyFrameMoved(view, dimension, time,newKey->getTime());
     }
     
     if (!useGuiCurve) {
@@ -782,7 +804,12 @@ KnobHelper::moveValueAtTime(CurveChangeReason reason, double time, ViewIdx view,
 }
 
 bool
-KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason, double time, ViewIdx view, int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey)
+KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason,
+                                 double time,
+                                 ViewSpec view,
+                                 int dimension,
+                                 const Transform::Matrix3x3& matrix,
+                                 KeyFrame* newKey)
 {
     assert(QThread::currentThread() == qApp->thread());
     assert(dimension >= 0 && dimension < (int)_imp->curves.size());
@@ -800,7 +827,7 @@ KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason, double tim
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view.i, dimension);
+        curve = _imp->gui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
     assert(curve);
@@ -836,7 +863,7 @@ KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason, double tim
     if (isString) {
         isString->stringFromInterpolatedValue(k.getValue(), view, &v);
     }
-    keyframeRemoved_virtual(dimension,time);
+    keyframeRemoved_virtual(dimension, time);
     if (isString) {
         double ret;
         isString->stringToKeyFrameValue(p.x, view, v, &ret);
@@ -850,7 +877,7 @@ KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason, double tim
     }
     
     if (_signalSlotHandler) {
-        _signalSlotHandler->s_keyFrameMoved(view, dimension,time,p.x);
+        _signalSlotHandler->s_keyFrameMoved(view, dimension, time,p.x);
     }
     
     if (!useGuiCurve) {
@@ -862,7 +889,9 @@ KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason, double tim
 }
 
 void
-KnobHelper::cloneCurve(ViewIdx view, int dimension,const Curve& curve)
+KnobHelper::cloneCurve(ViewSpec view,
+                       int dimension,
+                       const Curve& curve)
 {
     assert(dimension >= 0 && dimension < (int)_imp->curves.size());
     KnobHolder* holder = getHolder();
@@ -871,7 +900,7 @@ KnobHelper::cloneCurve(ViewIdx view, int dimension,const Curve& curve)
     if (!useGuiCurve) {
         thisCurve = _imp->curves[dimension];
     } else {
-        thisCurve = _imp->gui->getCurve(view.i, dimension);
+        thisCurve = _imp->gui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
     assert(thisCurve);
@@ -900,7 +929,12 @@ KnobHelper::cloneCurve(ViewIdx view, int dimension,const Curve& curve)
 }
 
 bool
-KnobHelper::setInterpolationAtTime(CurveChangeReason reason, ViewIdx view, int dimension,double time,KeyframeTypeEnum interpolation,KeyFrame* newKey)
+KnobHelper::setInterpolationAtTime(CurveChangeReason reason,
+                                   ViewSpec view,
+                                   int dimension,
+                                   double time,
+                                   KeyframeTypeEnum interpolation,
+                                   KeyFrame* newKey)
 {
     assert(QThread::currentThread() == qApp->thread());
     assert(dimension >= 0 && dimension < (int)_imp->curves.size());
@@ -917,7 +951,7 @@ KnobHelper::setInterpolationAtTime(CurveChangeReason reason, ViewIdx view, int d
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view.i, dimension);
+        curve = _imp->gui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
     assert(curve);
@@ -944,7 +978,12 @@ KnobHelper::setInterpolationAtTime(CurveChangeReason reason, ViewIdx view, int d
 }
 
 bool
-KnobHelper::moveDerivativesAtTime(CurveChangeReason reason, ViewIdx view, int dimension,double time,double left,double right)
+KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
+                                  ViewSpec view,
+                                  int dimension,
+                                  double time,
+                                  double left,
+                                  double right)
 {
     assert(QThread::currentThread() == qApp->thread());
     if ( dimension > (int)_imp->curves.size() || dimension < 0) {
@@ -963,7 +1002,7 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason, ViewIdx view, int di
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view.i, dimension);
+        curve = _imp->gui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
 
@@ -992,7 +1031,12 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason, ViewIdx view, int di
 }
 
 bool
-KnobHelper::moveDerivativeAtTime(CurveChangeReason reason, ViewIdx view, int dimension,double time,double derivative,bool isLeft)
+KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
+                                 ViewSpec view,
+                                 int dimension,
+                                 double time,
+                                 double derivative,
+                                 bool isLeft)
 {
     assert(QThread::currentThread() == qApp->thread());
     if ( dimension > (int)_imp->curves.size() || dimension < 0) {
@@ -1011,7 +1055,7 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason, ViewIdx view, int dim
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view.i, dimension);
+        curve = _imp->gui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
     assert(curve);
@@ -1043,7 +1087,7 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason, ViewIdx view, int dim
 }
 
 void
-KnobHelper::removeAnimation(ViewIdx view, int dimension,
+KnobHelper::removeAnimation(ViewSpec view, int dimension,
                             ValueChangedReasonEnum reason)
 {
     assert(QThread::currentThread() == qApp->thread());
@@ -1066,7 +1110,7 @@ KnobHelper::removeAnimation(ViewIdx view, int dimension,
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view.i, dimension);
+        curve = _imp->gui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
     
@@ -1128,7 +1172,9 @@ KnobHelper::cloneInternalCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& mo
 }
 
 void
-KnobHelper::setInternalCurveHasChanged(ViewIdx /*view*/, int dimension, bool changed)
+KnobHelper::setInternalCurveHasChanged(ViewSpec /*view*/,
+                                       int dimension,
+                                       bool changed)
 {
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
     _imp->mustCloneInternalCurves[dimension] = changed;
@@ -1148,7 +1194,7 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& modifie
             hasChanged = true;
             boost::shared_ptr<Curve> curve = getCurve(ViewIdx(0), i);
             assert(curve);
-            boost::shared_ptr<Curve> guicurve = _imp->gui->getCurve(/*view*/0,i);
+            boost::shared_ptr<Curve> guicurve = _imp->gui->getCurve(ViewIdx(0),i);
             assert(guicurve);
             curve->clone(*guicurve);
             _imp->mustCloneGuiCurves[i] = false;
@@ -1162,14 +1208,16 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& modifie
 }
 
 void
-KnobHelper::guiCurveCloneInternalCurve(CurveChangeReason curveChangeReason, ViewIdx view, int dimension,ValueChangedReasonEnum reason)
+KnobHelper::guiCurveCloneInternalCurve(CurveChangeReason curveChangeReason,
+                                       ViewSpec view,
+                                       int dimension,ValueChangedReasonEnum reason)
 {
     if (!canAnimate()) {
         return;
     }
 
     if (_imp->gui) {
-        boost::shared_ptr<Curve> guicurve = _imp->gui->getCurve(view.i, dimension);
+        boost::shared_ptr<Curve> guicurve = _imp->gui->getCurve(view, dimension);
         assert(guicurve);
         guicurve->clone(*(_imp->curves[dimension]));
         if (_signalSlotHandler && reason != eValueChangedReasonUserEdited) {
@@ -1179,7 +1227,9 @@ KnobHelper::guiCurveCloneInternalCurve(CurveChangeReason curveChangeReason, View
 }
 
 boost::shared_ptr<Curve>
-KnobHelper::getGuiCurve(ViewIdx view, int dimension, bool byPassMaster) const
+KnobHelper::getGuiCurve(ViewSpec view,
+                        int dimension,
+                        bool byPassMaster) const
 {
     if (!canAnimate()) {
         return boost::shared_ptr<Curve>();
@@ -1192,14 +1242,16 @@ KnobHelper::getGuiCurve(ViewIdx view, int dimension, bool byPassMaster) const
 
     
     if (_imp->gui) {
-        return _imp->gui->getCurve(view.i, dimension);
+        return _imp->gui->getCurve(view, dimension);
     } else {
         return boost::shared_ptr<Curve>();
     }
 }
 
 void
-KnobHelper::setGuiCurveHasChanged(ViewIdx /*view*/, int dimension, bool changed)
+KnobHelper::setGuiCurveHasChanged(ViewSpec /*view*/,
+                                  int dimension,
+                                  bool changed)
 {
     assert(dimension < (int)_imp->mustCloneGuiCurves.size());
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
@@ -1207,14 +1259,17 @@ KnobHelper::setGuiCurveHasChanged(ViewIdx /*view*/, int dimension, bool changed)
 }
 
 bool
-KnobHelper::hasGuiCurveChanged(ViewIdx /*view*/, int dimension) const
+KnobHelper::hasGuiCurveChanged(ViewSpec /*view*/,
+                               int dimension) const
 {
     assert(dimension < (int)_imp->mustCloneGuiCurves.size());
     QMutexLocker k(&_imp->mustCloneGuiCurvesMutex);
     return _imp->mustCloneGuiCurves[dimension];
 }
 
-boost::shared_ptr<Curve> KnobHelper::getCurve(ViewIdx view, int dimension, bool byPassMaster) const
+boost::shared_ptr<Curve> KnobHelper::getCurve(ViewSpec view,
+                                              int dimension,
+                                              bool byPassMaster) const
 {
 
     if (dimension < 0 || dimension >= (int)_imp->curves.size() ) {
@@ -1230,7 +1285,8 @@ boost::shared_ptr<Curve> KnobHelper::getCurve(ViewIdx view, int dimension, bool 
 }
 
 bool
-KnobHelper::isAnimated(int dimension, ViewIdx view) const
+KnobHelper::isAnimated(int dimension,
+                       ViewSpec view) const
 {
     if (!canAnimate()) {
         return false;
@@ -1292,7 +1348,7 @@ KnobHelper::isValueChangesBlocked() const
 void
 KnobHelper::evaluateValueChangeInternal(int dimension,
                                  double time,
-                                 ViewIdx view,
+                                 ViewSpec view,
                                  ValueChangedReasonEnum reason,
                                  ValueChangedReasonEnum originalReason)
 {
@@ -1312,7 +1368,7 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
                 _imp->holder->appendValueChange(this, time, view, originalReason);
             } else {
                 _imp->holder->beginChanges();
-                _imp->holder->appendValueChange(this,time, view,  originalReason);
+                _imp->holder->appendValueChange(this, time, view, originalReason);
                 _imp->holder->endChanges();
             }
             
@@ -1343,11 +1399,9 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
 void
 KnobHelper::evaluateValueChange(int dimension,
                                 double time,
-                                ViewIdx view,
+                                ViewSpec view,
                                 ValueChangedReasonEnum reason)
 {
-    
-
     evaluateValueChangeInternal(dimension, time, view, reason, reason);
 }
 
@@ -2168,7 +2222,9 @@ KnobHelper::expressionChanged(int dimension)
 }
 
 PyObject*
-KnobHelper::executeExpression(double time, ViewIdx view, int dimension) const
+KnobHelper::executeExpression(double time,
+                              ViewSpec view,
+                              int dimension) const
 {
     
     std::string expr;
@@ -2183,7 +2239,7 @@ KnobHelper::executeExpression(double time, ViewIdx view, int dimension) const
     PyObject* globalDict = PyModule_GetDict(mainModule);
     
     std::stringstream ss;
-    ss << expr << '(' << time << ", " <<  view.i << ")\n";
+    ss << expr << '(' << time << ", " <<  view << ")\n";
     std::string script = ss.str();
     PyObject* v = PyRun_String(script.c_str(), Py_file_input, globalDict, 0);
     Py_XDECREF(v);
@@ -2695,7 +2751,8 @@ std::vector< std::pair<int,KnobPtr > > KnobHelper::getMasters_mt_safe() const
 }
 
 void
-KnobHelper::checkAnimationLevel(ViewIdx view, int dimension)
+KnobHelper::checkAnimationLevel(ViewSpec view,
+                                int dimension)
 {
     AnimationLevelEnum level = eAnimationLevelNone;
 
@@ -2719,7 +2776,8 @@ KnobHelper::checkAnimationLevel(ViewIdx view, int dimension)
 }
 
 void
-KnobHelper::setAnimationLevel(ViewIdx view, int dimension,
+KnobHelper::setAnimationLevel(ViewSpec view,
+                              int dimension,
                               AnimationLevelEnum level)
 {
     bool changed = false;
@@ -2757,7 +2815,11 @@ KnobHelper::getAnimationLevel(int dimension) const
 }
 
 void
-KnobHelper::deleteAnimationConditional(double time, ViewIdx view, int dimension,ValueChangedReasonEnum reason,bool before)
+KnobHelper::deleteAnimationConditional(double time,
+                                       ViewSpec view,
+                                       int dimension,
+                                       ValueChangedReasonEnum reason,
+                                       bool before)
 {
     if (!_imp->curves[dimension]) {
         return;
@@ -2772,7 +2834,7 @@ KnobHelper::deleteAnimationConditional(double time, ViewIdx view, int dimension,
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
-        curve = _imp->gui->getCurve(view.i, dimension);
+        curve = _imp->gui->getCurve(view, dimension);
         setGuiCurveHasChanged(view, dimension,true);
     }
     
@@ -2801,7 +2863,7 @@ KnobHelper::deleteAnimationConditional(double time, ViewIdx view, int dimension,
 
 void
 KnobHelper::deleteAnimationBeforeTime(double time,
-                                      ViewIdx view,
+                                      ViewSpec view,
                                       int dimension,
                                       ValueChangedReasonEnum reason)
 {
@@ -2810,7 +2872,7 @@ KnobHelper::deleteAnimationBeforeTime(double time,
 
 void
 KnobHelper::deleteAnimationAfterTime(double time,
-                                     ViewIdx view,
+                                     ViewSpec view,
                                      int dimension,
                                      ValueChangedReasonEnum reason)
 {
@@ -2818,7 +2880,7 @@ KnobHelper::deleteAnimationAfterTime(double time,
 }
 
 bool
-KnobHelper::getKeyFrameTime(ViewIdx view,
+KnobHelper::getKeyFrameTime(ViewSpec view,
                             int index,
                             int dimension,
                             double* time) const
@@ -2839,7 +2901,8 @@ KnobHelper::getKeyFrameTime(ViewIdx view,
 }
 
 bool
-KnobHelper::getLastKeyFrameTime(ViewIdx view, int dimension,
+KnobHelper::getLastKeyFrameTime(ViewSpec view,
+                                int dimension,
                                 double* time) const
 {
     assert( 0 <= dimension && dimension < getDimension() );
@@ -2855,14 +2918,16 @@ KnobHelper::getLastKeyFrameTime(ViewIdx view, int dimension,
 }
 
 bool
-KnobHelper::getFirstKeyFrameTime(ViewIdx view, int dimension,
+KnobHelper::getFirstKeyFrameTime(ViewSpec view,
+                                 int dimension,
                                  double* time) const
 {
     return getKeyFrameTime(view, 0, dimension, time);
 }
 
 int
-KnobHelper::getKeyFramesCount(ViewIdx view, int dimension) const
+KnobHelper::getKeyFramesCount(ViewSpec view,
+                              int dimension) const
 {
     if (!canAnimate() || !isAnimated(dimension, view)) {
         return 0;
@@ -2874,7 +2939,8 @@ KnobHelper::getKeyFramesCount(ViewIdx view, int dimension) const
 }
 
 bool
-KnobHelper::getNearestKeyFrameTime(ViewIdx view, int dimension,
+KnobHelper::getNearestKeyFrameTime(ViewSpec view,
+                                   int dimension,
                                    double time,
                                    double* nearestTime) const
 {
@@ -2895,7 +2961,8 @@ KnobHelper::getNearestKeyFrameTime(ViewIdx view, int dimension,
 }
 
 int
-KnobHelper::getKeyFrameIndex(ViewIdx view, int dimension,
+KnobHelper::getKeyFrameIndex(ViewSpec view,
+                             int dimension,
                              double time) const
 {
     assert( 0 <= dimension && dimension < getDimension() );
@@ -2911,7 +2978,9 @@ KnobHelper::getKeyFrameIndex(ViewIdx view, int dimension,
 
 
 void
-KnobHelper::refreshListenersAfterValueChange(ViewIdx view, ValueChangedReasonEnum reason, int dimension)
+KnobHelper::refreshListenersAfterValueChange(ViewSpec view,
+                                             ValueChangedReasonEnum reason,
+                                             int dimension)
 {
     ListenerDimsMap listeners;
     getListeners(listeners);
@@ -3102,11 +3171,11 @@ KnobHelper::getCurrentTime() const
     return holder && holder->getApp() ? holder->getCurrentTime() : 0;
 }
 
-int
+ViewIdx
 KnobHelper::getCurrentView() const
 {
     KnobHolder* holder = getHolder();
-    return holder && holder->getApp() ? holder->getCurrentView() : 0;
+    return (holder && holder->getApp()) ? holder->getCurrentView() : ViewIdx(0);
 }
 
 
@@ -3589,8 +3658,8 @@ KnobHolder::KnobHolder(AppInstance* appInstance)
     QObject::connect(this, SIGNAL(doEndChangesOnMainThread()), this, SLOT(onDoEndChangesOnMainThreadTriggered()));
     QObject::connect(this, SIGNAL(doEvaluateOnMainThread(KnobI*, bool, int)), this,
                      SLOT(onDoEvaluateOnMainThread(KnobI*, bool, int)));
-    QObject::connect(this, SIGNAL(doValueChangeOnMainThread(KnobI*,int,double, ViewIdx,bool)), this,
-                     SLOT(onDoValueChangeOnMainThread(KnobI*,int,double, ViewIdx,bool)));
+    QObject::connect(this, SIGNAL(doValueChangeOnMainThread(KnobI*, int, double, ViewSpec, bool)), this,
+                     SLOT(onDoValueChangeOnMainThread(KnobI*, int, double, ViewSpec, bool)));
 }
 
 KnobHolder::~KnobHolder()
@@ -4031,7 +4100,7 @@ KnobHolder::createSeparatorKnob(const std::string& name, const std::string& labe
 
 }
 
-//Type corresponds to the Type enum defined in StringParamBase in ParameterWrapper.h
+//Type corresponds to the Type enum defined in StringParamBase in Parameter.h
 boost::shared_ptr<KnobString>
 KnobHolder::createStringKnob(const std::string& name, const std::string& label)
 {
@@ -4241,14 +4310,21 @@ KnobHolder::endChanges(bool discardEverything)
 }
 
 void
-KnobHolder::onDoValueChangeOnMainThread(KnobI* knob, int reason, double time, ViewIdx view, bool originatedFromMT)
+KnobHolder::onDoValueChangeOnMainThread(KnobI* knob,
+                                        int reason,
+                                        double time,
+                                        ViewSpec view,
+                                        bool originatedFromMT)
 {
     assert(QThread::currentThread() == qApp->thread());
     onKnobValueChanged_public(knob, (ValueChangedReasonEnum)reason, time, view, originatedFromMT);
 }
 
 void
-KnobHolder::appendValueChange(KnobI* knob,double time,  ViewIdx view, ValueChangedReasonEnum reason)
+KnobHolder::appendValueChange(KnobI* knob,
+                              double time,
+                              ViewSpec view,
+                              ValueChangedReasonEnum reason)
 {
     if (isInitializingKnobs()) {
         return;
@@ -4433,7 +4509,8 @@ KnobPtr KnobHolder::getKnobByName(const std::string & name) const
 
 // Same as getKnobByName expect that if we find the caller, we skip it
 KnobPtr
-KnobHolder::getOtherKnobByName(const std::string & name,const KnobI* caller) const
+KnobHolder::getOtherKnobByName(const std::string & name,
+                               const KnobI* caller) const
 {
     QMutexLocker k(&_imp->knobsMutex);
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
@@ -4465,7 +4542,8 @@ KnobHolder::getKnobs_mt_safe() const
 }
 
 void
-KnobHolder::slaveAllKnobs(KnobHolder* other,bool restore)
+KnobHolder::slaveAllKnobs(KnobHolder* other,
+                          bool restore)
 {
     assert(QThread::currentThread() == qApp->thread());
     if (_imp->isSlave) {
@@ -4557,7 +4635,7 @@ void
 KnobHolder::onKnobValueChanged_public(KnobI* k,
                                       ValueChangedReasonEnum reason,
                                       double time,
-                                      ViewIdx view,
+                                      ViewSpec view,
                                       bool originatedFromMainThread)
 {
     ///cannot run in another thread.
@@ -4566,7 +4644,7 @@ KnobHolder::onKnobValueChanged_public(KnobI* k,
         return;
     }
     RECURSIVE_ACTION();
-    onKnobValueChanged(k, reason,time, view, originatedFromMainThread);
+    onKnobValueChanged(k, reason, time, view, originatedFromMainThread);
 }
 
 void
@@ -4816,18 +4894,21 @@ AnimatingKnobStringHelper::~AnimatingKnobStringHelper()
 
 void
 AnimatingKnobStringHelper::stringToKeyFrameValue(double time,
-                                                 ViewIdx /*view*/,
-                                                  const std::string & v,
-                                                  double* returnValue)
+                                                 ViewSpec /*view*/,
+                                                 const std::string & v,
+                                                 double* returnValue)
 {
     _animation->insertKeyFrame(time, v, returnValue);
 }
 
 void
 AnimatingKnobStringHelper::stringFromInterpolatedValue(double interpolated,
-                                                       ViewIdx /*view*/,
-                                                        std::string* returnValue) const
+                                                       ViewSpec view,
+                                                       std::string* returnValue) const
 {
+    assert(!view.isAll());
+    assert(!view.isCurrent()); // not yet implemented
+    Q_UNUSED(view);
     _animation->stringFromInterpolatedIndex(interpolated, returnValue);
 }
 
@@ -4839,18 +4920,19 @@ AnimatingKnobStringHelper::animationRemoved_virtual(int /*dimension*/)
 
 void
 AnimatingKnobStringHelper::keyframeRemoved_virtual(int /*dimension*/,
-                                                    double time)
+                                                   double time)
 {
     _animation->removeKeyFrame(time);
 }
 
 std::string
 AnimatingKnobStringHelper::getStringAtTime(double time,
-                                           ViewIdx view,
-                                            int dimension) const
+                                           ViewSpec view,
+                                           int dimension) const
 {
     std::string ret;
-    
+    assert(!view.isAll());
+    assert(!view.isCurrent()); // not yet implemented
     if ( _animation->hasCustomInterp() ) {
         bool succeeded = false;
         try {

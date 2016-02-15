@@ -25,45 +25,120 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <cassert>
+
 #include "Global/Macros.h"
 
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
-struct ViewIdx
+class ViewSpec
 {
     int i;
-    
-    explicit ViewIdx()
+
+public:
+    ViewSpec()
     : i(0)
     {
         
     }
     
-    explicit ViewIdx(int index)
-    : i (index)
+    // cast from int must be explicit
+    explicit ViewSpec(int index)
+    : i(index)
     {
         assert(index >= -2);
     }
 
-    bool operator==(ViewIdx other) const
+    // cast to int is implicit
+    /*explicit*/ operator int() const
+    {
+        assert(i >= 0);
+        return i;
+    }
+
+    explicit operator int&()
+    {
+        return i;
+    }
+
+    int value() const
+    {
+        return static_cast<int>(*this);
+    }
+
+    bool operator==(ViewSpec other) const
     {
         return other.i == i;
     }
     
-    bool operator!=(ViewIdx other) const
+    bool operator!=(ViewSpec other) const
     {
         return other.i != i;
     }
 
     bool isAll() const { return i == -1; }
     bool isCurrent() const { return i == -2; }
+    bool isViewIdx() const { return i >= 0; }
 
-    static ViewIdx all() { return ViewIdx(-1); };
-    static ViewIdx current() { return ViewIdx(-2); };
+    static ViewSpec all() { return ViewSpec(-1); };
+    static ViewSpec current() { return ViewSpec(-2); };
 };
 
+class ViewIdx : public ViewSpec
+{
+public:
+    ViewIdx()
+    : ViewSpec(0)
+    {
+    }
+
+    // cast from int must be explicit
+    explicit ViewIdx(int index)
+    : ViewSpec(index)
+    {
+        assert(index >= 0);
+    }
+
+    // cast to int is implicit
+    /*explicit*/ operator int() const
+    {
+        int i = value();
+        assert(i >= 0);
+        return i;
+    }
+
+    explicit operator int&()
+    {
+        int& i = static_cast<int&>(*this);
+        assert(i >= 0);
+        return i;
+    }
+
+    bool operator==(ViewIdx other) const
+    {
+        return value() == other.value();
+    }
+
+    bool operator!=(ViewIdx other) const
+    {
+        return value() != other.value();
+    }
+
+    // operator < is necessary for use as a map key
+    bool operator<(ViewIdx other) const
+    {
+        return value() < other.value();
+    }
+
+private:
+    bool isAll() const { return false; }
+    bool isCurrent() const { return false; }
+
+    static ViewIdx all(); // overload with no implementation
+    static ViewIdx current(); // overload with no implementation
+};
 
 NATRON_NAMESPACE_EXIT;
 

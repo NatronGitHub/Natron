@@ -38,6 +38,7 @@
 #include "Engine/RectI.h"
 #include "Engine/EngineFwd.h"
 
+// Note: this structure is only serialized in the image cache and does not have to maintain backward compatibility
 #define IMAGE_SERIALIZATION_REMOVE_FRAMESNEEDED 2
 #define IMAGE_SERIALIZATION_VERSION IMAGE_SERIALIZATION_REMOVE_FRAMESNEEDED
 
@@ -237,7 +238,6 @@ public:
         if (NonKeyParams::operator!=(other)) {
             return false;
         }
-        
         return _rod == other._rod
         && _components == other._components
         && _bitdepth == other._bitdepth

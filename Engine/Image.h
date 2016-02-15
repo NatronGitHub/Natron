@@ -41,8 +41,8 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/ImageComponents.h"
 #include "Engine/ImageParams.h"
 #include "Engine/CacheEntry.h"
-#include "Engine/RectD.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -203,7 +203,7 @@ public:
                             U64 nodeHashKey,
                             bool frameVaryingOrAnimated,
                             double time,
-                            int view,
+                            ViewIdx view,
                             bool draftMode,
                             bool fullScaleWithDownscaleInputs);
     static boost::shared_ptr<ImageParams> makeParams(int cost,
@@ -222,8 +222,6 @@ public:
                                                      bool isRoDProjectFormat,
                                                      const ImageComponents& components,
                                                      ImageBitDepthEnum bitdepth);
-
-
 
     // boost::shared_ptr<ImageParams> getParams() const WARN_UNUSED_RETURN;
 

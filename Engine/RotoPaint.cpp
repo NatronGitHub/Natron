@@ -190,10 +190,10 @@ RotoPaint::initializeKnobs()
 
 void
 RotoPaint::knobChanged(KnobI* k,
-                 ValueChangedReasonEnum reason,
-                 int view,
-                 double time,
-                 bool originatedFromMainThread)
+                       ValueChangedReasonEnum reason,
+                       ViewSpec view,
+                       double time,
+                       bool originatedFromMainThread)
 {
     boost::shared_ptr<RotoContext> ctx = getNode()->getRotoContext();
     if (!ctx) {
@@ -269,7 +269,7 @@ RotoPaint::onInputChanged(int inputNb)
 }
 
 StatusEnum
-RotoPaint::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, int view, RectD* rod)
+RotoPaint::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale, ViewIdx view, RectD* rod)
 {
     StatusEnum st = EffectInstance::getRegionOfDefinition(hash, time, scale, view, rod);
     if (st != eStatusOK) {
@@ -286,11 +286,11 @@ RotoPaint::getRegionOfDefinition(U64 hash,double time, const RenderScale & scale
 }
 
 FramesNeededMap
-RotoPaint::getFramesNeeded(double time, int view)
+RotoPaint::getFramesNeeded(double time, ViewIdx view)
 {
 
     FramesNeededMap ret;
-    std::map<int, std::vector<OfxRangeD> > views;
+    FrameRangesMap views;
     OfxRangeD range;
     range.min = range.max = time;
     views[view].push_back(range);
@@ -303,7 +303,7 @@ RotoPaint::getRegionsOfInterest(double time,
                           const RenderScale & scale,
                           const RectD & outputRoD, //!< the RoD of the effect, in canonical coordinates
                           const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                          int view,
+                          ViewIdx view,
                           RoIMap* ret)
 {
     boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
@@ -318,7 +318,7 @@ bool
 RotoPaint::isIdentity(double time,
                       const RenderScale & scale,
                       const RectI & roi,
-                      int view,
+                      ViewIdx view,
                       double* inputTime,
                       int* inputNb)
 {

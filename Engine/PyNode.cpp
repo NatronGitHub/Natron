@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "NodeWrapper.h"
+#include "PyNode.h"
 
 #include <cassert>
 #include <stdexcept>
@@ -33,7 +33,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/RotoWrapper.h"
+#include "Engine/PyRoto.h"
 #include "Engine/Hash64.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -716,7 +716,8 @@ Effect::getRotoContext() const
 }
 
 RectD
-Effect::getRegionOfDefinition(double time,int view) const
+Effect::getRegionOfDefinition(double time,
+                              int view) const
 {
     RectD rod;
     if (!getInternalNode() || !getInternalNode()->getEffectInstance()) {
@@ -725,7 +726,7 @@ Effect::getRegionOfDefinition(double time,int view) const
     U64 hash = getInternalNode()->getHashValue();
     RenderScale s(1.);
     bool isProject;
-    StatusEnum stat = getInternalNode()->getEffectInstance()->getRegionOfDefinition_public(hash, time, s, view, &rod, &isProject);
+    StatusEnum stat = getInternalNode()->getEffectInstance()->getRegionOfDefinition_public(hash, time, s, ViewIdx(view), &rod, &isProject);
     if (stat != eStatusOK) {
         return RectD();
     }

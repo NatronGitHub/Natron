@@ -158,11 +158,11 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
     
     int viewsCount = getApp()->getProject()->getProjectViewsCount();
 
-    const int mainView = 0;
+    const ViewIdx mainView(0);
     
-    std::vector<int> viewsToRender(viewsCount);
+    std::vector<ViewIdx> viewsToRender(viewsCount);
     for (int i = 0; i < viewsCount; ++i) {
-        viewsToRender[i] = i;
+        viewsToRender[i] = ViewIdx(i);
     }
     
     ///The effect is sequential (e.g: WriteFFMPEG), and thus cannot render multiple views, we have to choose one
@@ -199,13 +199,16 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
                         if (viewsChoice) {
                             hasViewChoice = true;
                             int viewChoice_i = viewsChoice->getValue();
-                            if (viewChoice_i == 0) { // the "All" chocie
+                            if (viewChoice_i == 0) { // the "All" choice
                                 viewsToRender.clear();
-                                viewsToRender.push_back(-1);
+                                // at this point, it may be better to push all view instead of -1
+#pragma message WARN("ERROR: I cannot finf where the -1 is processed. This should push the full set of views instead")
+                                viewsToRender.push_back(ViewIdx(-1));
                             } else {
                                 //The user has specified a view
                                 viewsToRender.clear();
-                                viewsToRender.push_back(viewChoice_i - 1);
+                                assert(viewChoice_i >= 1);
+                                viewsToRender.push_back(ViewIdx(viewChoice_i - 1));
                             }
                         }
                     }
@@ -463,7 +466,7 @@ OutputEffectInstance::resetTimeSpentRenderingInfos()
 
 void
 OutputEffectInstance::reportStats(int time,
-                                  int view,
+                                  ViewIdx view,
                                   double wallTime,
                                   const std::map<NodePtr, NodeRenderStats > & stats)
 {

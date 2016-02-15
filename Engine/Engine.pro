@@ -73,7 +73,6 @@ win32-msvc* {
 
 SOURCES += \
     AppInstance.cpp \
-    AppInstanceWrapper.cpp \
     AppManager.cpp \
     AppManagerPrivate.cpp \
     Backdrop.cpp \
@@ -85,6 +84,7 @@ SOURCES += \
     CoonsRegularization.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
+    Dimension.h \
     DiskCacheNode.cpp \
     Dot.cpp \
     EffectInstance.cpp \
@@ -121,8 +121,6 @@ SOURCES += \
     MemoryFile.cpp \
     Node.cpp \
     NodeGroup.cpp \
-    NodeGroupWrapper.cpp \
-    NodeWrapper.cpp \
     NonKeyParams.cpp \
     NonKeyParamsSerialization.cpp \
     NodeSerialization.cpp \
@@ -137,7 +135,6 @@ SOURCES += \
     OfxParamInstance.cpp \
     OutputEffectInstance.cpp \
     OutputSchedulerThread.cpp \
-    ParameterWrapper.cpp \
     ParallelRenderArgs.cpp \
     Plugin.cpp \
     PluginMemory.cpp \
@@ -146,6 +143,11 @@ SOURCES += \
     Project.cpp \
     ProjectPrivate.cpp \
     ProjectSerialization.cpp \
+    PyAppInstance.cpp \
+    PyNodeGroup.cpp \
+    PyNode.cpp \
+    PyParameter.cpp \
+    PyRoto.cpp \
     PySideCompat.cpp \
     RectD.cpp \
     RectI.cpp \
@@ -157,7 +159,6 @@ SOURCES += \
     RotoPaint.cpp \
     RotoSmear.cpp \
     RotoStrokeItem.cpp \
-    RotoWrapper.cpp \
     ScriptObject.cpp \
     Settings.cpp \
     StandardPaths.cpp \
@@ -214,7 +215,6 @@ SOURCES += \
 
 HEADERS += \
     AppInstance.h \
-    AppInstanceWrapper.h \
     AppManager.h \
     AppManagerPrivate.h \
     Backdrop.h \
@@ -252,7 +252,6 @@ HEADERS += \
     FrameParams.h \
     FrameParamsSerialization.h \
     FStreamsSupport.h \
-    GlobalFunctionsWrapper.h \
     GroupInput.h \
     GroupOutput.h \
     Hash64.h \
@@ -283,9 +282,7 @@ HEADERS += \
     Node.h \
     NodeGroup.h \
     NodeGroupSerialization.h \
-    NodeGroupWrapper.h \
     NodeGraphI.h \
-    NodeWrapper.h \
     NodeGuiI.h \
     NonKeyParams.h \
     NonKeyParamsSerialization.h \
@@ -302,7 +299,6 @@ HEADERS += \
     OutputEffectInstance.h \
     OutputSchedulerThread.h \
     OverlaySupport.h \
-    ParameterWrapper.h \
     ParallelRenderArgs.h \
     Plugin.h \
     PluginMemory.h \
@@ -311,6 +307,12 @@ HEADERS += \
     Project.h \
     ProjectPrivate.h \
     ProjectSerialization.h \
+    PyAppInstance.h \
+    PyGlobalFunctions.h \
+    PyNodeGroup.h \
+    PyNode.h \
+    PyParameter.h \
+    PyRoto.h \
     Pyside_Engine_Python.h \
     RectD.h \
     RectDSerialization.h \
@@ -331,7 +333,6 @@ HEADERS += \
     RotoSmear.h \
     RotoStrokeItem.h \
     RotoStrokeItemSerialization.h \
-    RotoWrapper.h \
     ScriptObject.h \
     Settings.h \
     Singleton.h \

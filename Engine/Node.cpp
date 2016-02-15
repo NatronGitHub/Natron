@@ -2761,7 +2761,7 @@ Node::makeInfoForInput(int inputNumber) const
         bool isProjectFormat;
         StatusEnum stat = input->getRegionOfDefinition_public(getHashValue(),
                                                               time,
-                                                              scale, 0, &rod, &isProjectFormat);
+                                                              scale, ViewIdx(0), &rod, &isProjectFormat);
         if (stat != eStatusFailed) {
 
             ss << "<b>Region of Definition (at t=" << time << "):</b> ";
@@ -3525,7 +3525,7 @@ Node::handleFormatKnob(KnobI* knob)
     assert(size && par);
     
     _imp->effect->beginChanges();
-    size->setValues(f.width(), f.height(), ViewIdx::all(), Natron::eValueChangedReasonNatronInternalEdited);
+    size->setValues(f.width(), f.height(), ViewSpec::all(), Natron::eValueChangedReasonNatronInternalEdited);
     par->setValue(f.getPixelAspectRatio());
     _imp->effect->endChanges();
     return true;
@@ -4271,7 +4271,11 @@ static Node::CanConnectInputReturnValue checkCanConnectNoMultiRes(const Node* ou
     RenderScale scale(1.);
     RectD rod;
     bool isProjectFormat;
-    StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &rod, &isProjectFormat);
+    StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(input->getHashValue(),
+                                                                               output->getApp()->getTimeLine()->currentFrame(),
+                                                                               scale,
+                                                                               ViewIdx(0),
+                                                                               &rod, &isProjectFormat);
     if (stat == eStatusFailed && !rod.isNull()) {
         return Node::eCanConnectInput_givenNodeNotConnectable;
     }
@@ -4294,7 +4298,11 @@ static Node::CanConnectInputReturnValue checkCanConnectNoMultiRes(const Node* ou
         if (inputNode) {
             
             RectD inputRod;
-            stat = inputNode->getEffectInstance()->getRegionOfDefinition_public(inputNode->getHashValue(), output->getApp()->getTimeLine()->currentFrame(), scale, 0, &inputRod, &isProjectFormat);
+            stat = inputNode->getEffectInstance()->getRegionOfDefinition_public(inputNode->getHashValue(),
+                                                                                output->getApp()->getTimeLine()->currentFrame(),
+                                                                                scale,
+                                                                                ViewIdx(0),
+                                                                                &inputRod, &isProjectFormat);
             if (stat == eStatusFailed && !inputRod.isNull()) {
                 return Node::eCanConnectInput_givenNodeNotConnectable;
             }
@@ -5509,7 +5517,7 @@ Node::makePreviewImage(SequenceTime time,
         return false;
     }
     
-    StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash,time, scale, 0, &rod, &isProjectFormat);
+    StatusEnum stat = effect->getRegionOfDefinition_public(nodeHash, time, scale, ViewIdx(0), &rod, &isProjectFormat);
     if ( (stat == eStatusFailed) || rod.isNull() ) {
         return false;
     }
@@ -5535,14 +5543,14 @@ Node::makePreviewImage(SequenceTime time,
 
     
     FrameRequestMap request;
-    stat = EffectInstance::computeRequestPass(time, 0, mipMapLevel, rod, thisNode, request);
+    stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipMapLevel, rod, thisNode, request);
     if (stat == eStatusFailed) {
         return false;
     }
     
     {
         ParallelRenderArgsSetter frameRenderArgs(time,
-                                                 0, //< preview only renders view 0 (left)
+                                                 ViewIdx(0), //< preview only renders view 0 (left)
                                                  true, //<isRenderUserInteraction
                                                  false, //isSequential
                                                  true, //can abort
@@ -5571,7 +5579,7 @@ Node::makePreviewImage(SequenceTime time,
             renderArgs.reset(new EffectInstance::RenderRoIArgs(time,
                                                                scale,
                                                                mipMapLevel,
-                                                               0, //< preview only renders view 0 (left)
+                                                               ViewIdx(0), //< preview only renders view 0 (left)
                                                                false,
                                                                renderWindow,
                                                                rod,
@@ -6445,7 +6453,7 @@ Node::unlock(const boost::shared_ptr<Image> & image)
 boost::shared_ptr<Image>
 Node::getImageBeingRendered(double time,
                             unsigned int mipMapLevel,
-                            int view)
+                            ViewIdx view)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
     for (std::list<boost::shared_ptr<Image> >::iterator it = _imp->imagesBeingRendered.begin();
@@ -6532,7 +6540,7 @@ Node::onInputChanged(int inputNb)
          **/
         double time = getApp()->getTimeLine()->currentFrame();
         ParallelRenderArgsSetter frameRenderArgs(time,
-                                                 0 /*view*/,
+                                                 ViewIdx(0),
                                                  true,
                                                  false,
                                                  false,
@@ -6654,7 +6662,7 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
             
             if (getPluginID() == PLUGINID_OFX_READFFMPEG) {
                 ///If the plug-in is a video, only ffmpeg may know how many frames there are
-                originalFrameRange->setValues(INT_MIN, INT_MAX, ViewIdx::all(), eValueChangedReasonNatronInternalEdited);
+                originalFrameRange->setValues(INT_MIN, INT_MAX, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
             } else {
                 
                 std::string pattern = isFile->getValue();
@@ -6668,7 +6676,7 @@ Node::computeFrameRangeForReader(const KnobI* fileKnob)
                     leftBound = seq.begin()->first;
                     rightBound = seq.rbegin()->first;
                 }
-                originalFrameRange->setValues(leftBound, rightBound, ViewIdx::all(), eValueChangedReasonNatronInternalEdited);
+                originalFrameRange->setValues(leftBound, rightBound, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
             }
             
         }
@@ -7103,7 +7111,7 @@ Node::onRefreshIdentityStateRequestReceived()
     int inputNb = -1;
     for (int i = 0; i < nViews; ++i) {
         int identityInputNb = -1;
-        bool isIdentityView = _imp->effect->isIdentity_public(true, hash, time, scale, frmt, i, &inputTime, &identityInputNb);
+        bool isIdentityView = _imp->effect->isIdentity_public(true, hash, time, scale, frmt, ViewIdx(i), &inputTime, &identityInputNb);
         if (i > 0 && (isIdentityView != isIdentity || identityInputNb != inputNb)) {
             isIdentity = false;
             inputNb = -1;
@@ -8062,7 +8070,7 @@ Node::dequeueActions()
 static void addIdentityNodesRecursively(const Node* caller,
                                         const Node* node,
                                         double time,
-                                        int view,
+                                        ViewIdx view,
                                         std::list<const Node*>* outputs,
                                         std::list<const Node*>* markedNodes)
 {
@@ -8145,13 +8153,13 @@ static void addIdentityNodesRecursively(const Node* caller,
     for (NodesWList::iterator it = nodeOutputs.begin(); it!=nodeOutputs.end(); ++it) {
         NodePtr node = it->lock();
         if (node) {
-            addIdentityNodesRecursively(caller,node.get(),time,view,outputs, markedNodes);
+            addIdentityNodesRecursively(caller,node.get(), time,view,outputs, markedNodes);
         }
     }
 }
 
 bool
-Node::shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, int view) const
+Node::shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view) const
 {
     /*
      * Here is a list of reasons when caching is enabled for a node:
@@ -8171,7 +8179,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, int view) co
     std::list<const Node*> outputs;
     {
         std::list<const Node*> markedNodes;
-        addIdentityNodesRecursively(this, this, time, view,&outputs,&markedNodes);
+        addIdentityNodesRecursively(this, this, time, view, &outputs, &markedNodes);
     }
 
     
@@ -8363,10 +8371,10 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,const std::vector<Node
         if (_imp->effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
             RectD rod;
             
-            StatusEnum stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, scaleOne, 0, &rod);
+            StatusEnum stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, scaleOne, ViewIdx(0), &rod);
             if (stat != eStatusFailed) {
                 RenderScale scale(0.5);
-                stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, scale, 0, &rod);
+                stat = _imp->effect->getRegionOfDefinition(getHashValue(), time, scale, ViewIdx(0), &rod);
                 if (stat != eStatusFailed) {
                     _imp->effect->setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
                 } else {
@@ -9628,10 +9636,10 @@ Node::getUserCreatedComponents(std::list<ImageComponents>* comps)
 }
 
 double
-Node::getHostMixingValue(double time, int view) const
+Node::getHostMixingValue(double time, ViewIdx view) const
 {
     boost::shared_ptr<KnobDouble> mix = _imp->mixWithSource.lock();
-    return mix ? mix->getValueAtTime(time, 0, ViewIdx(view)) : 1.;
+    return mix ? mix->getValueAtTime(time, 0, view) : 1.;
 }
 
 //////////////////////////////////

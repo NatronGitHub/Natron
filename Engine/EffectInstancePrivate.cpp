@@ -107,7 +107,7 @@ ActionsCache::invalidateAll(U64 newHash)
 bool
 ActionsCache::getIdentityResult(U64 hash,
                                 double time,
-                                int view,
+                                ViewIdx view,
                                 int* inputNbIdentity,
                                 double* identityTime)
 {
@@ -139,7 +139,7 @@ ActionsCache::getIdentityResult(U64 hash,
 void
 ActionsCache::setIdentityResult(U64 hash,
                                 double time,
-                                int view,
+                                ViewIdx view,
                                 int inputNbIdentity,
                                 double identityTime)
 {
@@ -160,7 +160,7 @@ ActionsCache::setIdentityResult(U64 hash,
 bool
 ActionsCache::getRoDResult(U64 hash,
                            double time,
-                           int view,
+                           ViewIdx view,
                            unsigned int mipMapLevel,
                            RectD* rod)
 {
@@ -191,7 +191,7 @@ ActionsCache::getRoDResult(U64 hash,
 void
 ActionsCache::setRoDResult(U64 hash,
                            double time,
-                           int view,
+                           ViewIdx view,
                            unsigned int mipMapLevel,
                            const RectD & rod)
 {
@@ -210,7 +210,7 @@ ActionsCache::setRoDResult(U64 hash,
 bool
 ActionsCache::getFramesNeededResult(U64 hash,
                                     double time,
-                                    int view,
+                                    ViewIdx view,
                                     unsigned int mipMapLevel,
                                     FramesNeededMap* framesNeeded)
 {
@@ -241,7 +241,7 @@ ActionsCache::getFramesNeededResult(U64 hash,
 void
 ActionsCache::setFramesNeededResult(U64 hash,
                                     double time,
-                                    int view,
+                                    ViewIdx view,
                                     unsigned int mipMapLevel,
                                     const FramesNeededMap & framesNeeded)
 {
@@ -552,7 +552,7 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
                                                                    const RectD & rod,
                                                                    const RectI & renderWindow,
                                                                    double time,
-                                                                   int view,
+                                                                   ViewIdx view,
                                                                    bool isIdentity,
                                                                    double identityTime,
                                                                    const EffectInstPtr& identityInput,

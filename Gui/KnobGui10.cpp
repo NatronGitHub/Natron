@@ -210,7 +210,7 @@ KnobGui::onShowInCurveEditorActionTriggered()
     getGui()->setCurveEditorOnTop();
     std::vector<boost::shared_ptr<Curve> > curves;
     for (int i = 0; i < knob->getDimension(); ++i) {
-        boost::shared_ptr<Curve> c = getCurve(/*view*/0,i);
+        boost::shared_ptr<Curve> c = getCurve(ViewIdx(0), i);
         if ( c->isAnimated() ) {
             curves.push_back(c);
         }
@@ -273,7 +273,7 @@ KnobGui::setInterpolationForDimensions(QAction* action,
                 for (int j = 0; j < kfCount; ++j) {
                     c->setKeyFrameInterpolation(interp, j);
                 }
-                boost::shared_ptr<Curve> guiCurve = getCurve(/*view*/0,i);
+                boost::shared_ptr<Curve> guiCurve = getCurve(ViewIdx(0), i);
                 if (guiCurve) {
                     guiCurve->clone(*c);
                 }
@@ -326,7 +326,7 @@ KnobGui::onHorizontalInterpActionTriggered()
 void
 KnobGui::setKeyframe(double time,
                      int dimension,
-                     ViewIdx view)
+                     ViewSpec view)
 {
     KnobPtr knob = getKnob();
 
@@ -342,7 +342,10 @@ KnobGui::setKeyframe(double time,
 }
 
 void
-KnobGui::setKeyframe(double time, const KeyFrame& key,int dimension,  ViewIdx view)
+KnobGui::setKeyframe(double time,
+                     const KeyFrame& key,
+                     int dimension,
+                     ViewSpec view)
 {
     KnobPtr knob = getKnob();
     
@@ -409,7 +412,7 @@ KnobGui::onSetKeyActionTriggered()
 void
 KnobGui::removeKeyFrame(double time,
                         int dimension,
-                        ViewIdx view)
+                        ViewSpec view)
 {
     KnobPtr knob = getKnob();
     knob->onKeyFrameRemoved(time, view, dimension);
@@ -424,7 +427,9 @@ KnobGui::removeKeyFrame(double time,
 }
 
 void
-KnobGui::setKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewIdx view)
+KnobGui::setKeyframes(const std::vector<KeyFrame>& keys,
+                      int dimension,
+                      ViewSpec view)
 {
     KnobPtr knob = getKnob();
     
@@ -445,7 +450,7 @@ KnobGui::setKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewIdx 
 }
 
 void
-KnobGui::removeKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewIdx view)
+KnobGui::removeKeyframes(const std::vector<KeyFrame>& keys, int dimension, ViewSpec view)
 {
     KnobPtr knob = getKnob();
     knob->beginChanges();

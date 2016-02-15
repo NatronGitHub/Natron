@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_TEXTURERECTSERIALIZATION_H
-#define NATRON_ENGINE_TEXTURERECTSERIALIZATION_H
+#ifndef Engine_ViewIdxSerialization_h_H
+#define Engine_ViewIdxSerialization_h_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,43 +25,44 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
+#include "Engine/ViewIdx.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/string.hpp>
 #include <boost/serialization/version.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
-#include "Engine/TextureRect.h"
-#include "Engine/EngineFwd.h"
 
+#define VIEWIDX_SERIALIZATION_VERSION 1
 
-// Note: these classes are used for cache serialization and do not have to maintain backward compatibility
-#define TEXTURE_RECT_SERIALIZATION_INTRODUCES_PAR 2
-#define TEXTURE_RECT_VERSION TEXTURE_RECT_SERIALIZATION_INTRODUCES_PAR
+NATRON_NAMESPACE_ENTER;
 
-namespace boost {
-namespace serialization {
 template<class Archive>
 void
-serialize(Archive & ar,
-          NATRON_NAMESPACE::TextureRect &t,
-          const unsigned int /*version*/)
+ImageKey::serialize(Archive & ar,
+          const unsigned int version)
 {
+    if (version >= IMAGE_KEY_SERIALIZATION_INTRODUCES_CACHE_HOLDER_ID) {
+        ar & ::boost::serialization::make_nvp("HolderID",_holderID);
+    }
+    ar & ::boost::serialization::make_nvp("NodeHashKey",_nodeHashKey);
+    ar & ::boost::serialization::make_nvp("FrameVarying",_frameVaryingOrAnimated);
+    ar & ::boost::serialization::make_nvp("Time",_time);
+    ar & ::boost::serialization::make_nvp("View",_view);
+    ar & ::boost::serialization::make_nvp("PixelAspect",_pixelAspect);
+    ar & ::boost::serialization::make_nvp("Draft",_draftMode);
 
-    ar & t.x1 & t.x2 & t.y1 & t.y2 & t.w & t.h & t.closestPo2;
-    //if (version >= TEXTURE_RECT_SERIALIZATION_INTRODUCES_PAR) {
-    ar & t.par;
-    //}
-}
-}
 }
 
-BOOST_CLASS_VERSION(NATRON_NAMESPACE::TextureRect, TEXTURE_RECT_VERSION);
+NATRON_NAMESPACE_EXIT;
 
-#endif // NATRON_ENGINE_TEXTURERECTSERIALIZATION_H
+BOOST_CLASS_VERSION(NATRON_NAMESPACE::ImageKey, IMAGE_KEY_SERIALIZATION_VERSION)
+
+
+#endif // Engine_ViewIdxSerialization_h_H

@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "RotoWrapper.h"
+#include "PyRoto.h"
 
 #include <cassert>
 #include <stdexcept>
@@ -31,7 +31,7 @@
 #include "Engine/BezierCP.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/NodeWrapper.h"
+#include "Engine/PyNode.h"
 #include "Engine/Node.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"

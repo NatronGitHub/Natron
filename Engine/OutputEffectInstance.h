@@ -51,7 +51,7 @@ class OutputEffectInstance
     struct RenderSequenceArgs
     {
         BlockingBackgroundRender* renderController;
-        std::vector<int> viewsToRender;
+        std::vector<ViewIdx> viewsToRender;
         int firstFrame;
         int lastFrame;
         int frameStep;
@@ -135,7 +135,7 @@ public:
 
     void updateRenderTimeInfos(double lastTimeSpent, double *averageTimePerFrame, double *totalTimeSpent);
 
-    virtual void reportStats(int time, int view, double wallTime, const std::map<NodePtr, NodeRenderStats > & stats);
+    virtual void reportStats(int time, ViewIdx view, double wallTime, const std::map<NodePtr, NodeRenderStats > & stats);
 
 protected:
     

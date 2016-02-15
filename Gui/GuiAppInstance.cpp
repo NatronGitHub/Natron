@@ -812,7 +812,7 @@ GuiAppInstance::setupViewersForViews(const std::vector<std::string>& viewNames)
 }
 
 void
-GuiAppInstance::setViewersCurrentView(int view)
+GuiAppInstance::setViewersCurrentView(ViewIdx view)
 {
     _imp->_gui->setViewersCurrentView(view);
 }

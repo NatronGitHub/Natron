@@ -518,9 +518,9 @@ KnobGuiColor::onDimensionSwitchClicked()
         if (_dimension > 1) {
             double value( _rBox->value() );
             if (_dimension == 3) {
-                knob->setValues(value, value, value, ViewIdx::all(), eValueChangedReasonNatronGuiEdited);
+                knob->setValues(value, value, value, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
             } else {
-                knob->setValues(value, value, value,value, ViewIdx::all(), eValueChangedReasonNatronGuiEdited);
+                knob->setValues(value, value, value,value, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
             }
         }
     }
@@ -907,7 +907,7 @@ KnobGuiColor::showColorDialog()
         knob->beginChanges();
 
         for (int i = 0; i < _dimension; ++i) {
-            knob->setValue(_lastColor[i], ViewIdx::all(), i);
+            knob->setValue(_lastColor[i], ViewSpec::all(), i);
         }
         knob->endChanges();
 
@@ -917,7 +917,7 @@ KnobGuiColor::showColorDialog()
 
         ///refresh the last value so that the undo command retrieves the value that was prior to opening the dialog
         for (int i = 0; i < _dimension; ++i) {
-            knob->setValue(_lastColor[i], ViewIdx::all(), i);
+            knob->setValue(_lastColor[i], ViewSpec::all(), i);
         }
 
         ///if only the first dimension is displayed, switch back to all dimensions
@@ -970,20 +970,20 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     bool isSimple = knob->isSimplified();
     if (_dimension == 1) {
-        knob->setValue(color.redF(), ViewIdx::all(), 0);
+        knob->setValue(color.redF(), ViewSpec::all(), 0);
     } else if (_dimension == 3) {
          ///Don't set alpha since the color dialog can only handle RGB
         knob->setValues(isSimple ? color.redF() : Color::from_func_srgb(color.redF()),
                         isSimple ? color.greenF() : Color::from_func_srgb(color.greenF()),
                         isSimple ? color.blueF() : Color::from_func_srgb(color.blueF()),
-                        ViewIdx::all(),
+                        ViewSpec::all(),
                         eValueChangedReasonNatronInternalEdited);
     } else if (_dimension == 4) {
         knob->setValues(isSimple ? color.redF() : Color::from_func_srgb(color.redF()),
                         isSimple ? color.greenF() : Color::from_func_srgb(color.greenF()),
                         isSimple ? color.blueF() : Color::from_func_srgb(color.blueF()),
                         1.,
-                        ViewIdx::all(),
+                        ViewSpec::all(),
                         eValueChangedReasonNatronInternalEdited);
     }
 

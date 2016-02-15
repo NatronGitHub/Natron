@@ -36,6 +36,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/RectD.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 
@@ -47,7 +48,8 @@
 NATRON_NAMESPACE_ENTER;
 
 typedef std::map<EffectInstPtr ,RectD> RoIMap; // RoIs are in canonical coordinates
-typedef std::map<int, std::map<int, std::vector<OfxRangeD> > > FramesNeededMap;
+typedef std::map<ViewIdx, std::vector<RangeD> > FrameRangesMap;
+typedef std::map<int, FrameRangesMap> FramesNeededMap;
 
 struct InputMatrix
 {
@@ -90,7 +92,7 @@ struct ParallelRenderArgs
     ///This may be different than the view held in RenderArgs
     ///which are local to a renderRoI call whilst this is local
     ///to a frame being rendered by the tree.
-    int view;
+    ViewIdx view;
 
 
     ///A number identifying the current frame render to determine if we can really abort for abortable renders
@@ -172,7 +174,7 @@ struct ParallelRenderArgs
 
 struct FrameViewPair {
     double time;
-    int view;
+    ViewIdx view;
 };
 
 struct FrameViewRequestGlobalData
@@ -248,9 +250,9 @@ struct NodeFrameRequest
     U64 nodeHash;
     RenderScale mappedScale;
     
-    bool getFrameViewCanonicalRoI(double time, int view, RectD* roi) const;
+    bool getFrameViewCanonicalRoI(double time, ViewIdx view, RectD* roi) const;
     
-    const FrameViewRequest* getFrameViewRequest(double time, int view) const;
+    const FrameViewRequest* getFrameViewRequest(double time, ViewIdx view) const;
 
 };
 
@@ -272,7 +274,7 @@ public:
      * relying on other nodes that do not belong in the tree through expressions.
      **/
     ParallelRenderArgsSetter(double time,
-                             int view,
+                             ViewIdx view,
                              bool isRenderUserInteraction,
                              bool isSequential,
                              bool canAbort,

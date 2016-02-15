@@ -679,7 +679,7 @@ std::vector<DopeSheetKey> DopeSheetViewPrivate::isNearByKeyframe(boost::shared_p
             continue;
         }
 
-        KeyFrameSet keyframes = knobGui->getCurve(0,dim)->getKeyFrames_mt_safe();
+        KeyFrameSet keyframes = knobGui->getCurve(ViewIdx(0), dim)->getKeyFrames_mt_safe();
 
         for (KeyFrameSet::const_iterator kIt = keyframes.begin();
              kIt != keyframes.end();
@@ -1243,7 +1243,7 @@ void DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode
                 continue;
             }
 
-            KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(0,dim)->getKeyFrames_mt_safe();
+            KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(ViewIdx(0), dim)->getKeyFrames_mt_safe();
 
             for (KeyFrameSet::const_iterator kIt = keyframes.begin();
                  kIt != keyframes.end();
@@ -1882,22 +1882,27 @@ void DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
         double inputFirst,inputLast;
         input->getEffectInstance()->getFrameRange_public(input->getHashValue(), &inputFirst, &inputLast);
 
-        FramesNeededMap framesFirst = node->getEffectInstance()->getFramesNeeded_public(nodeHash, inputFirst, 0, 0);
-        FramesNeededMap framesLast = node->getEffectInstance()->getFramesNeeded_public(nodeHash, inputLast, 0, 0);
+        FramesNeededMap framesFirst = node->getEffectInstance()->getFramesNeeded_public(nodeHash, inputFirst, ViewIdx(0), 0);
+        FramesNeededMap framesLast = node->getEffectInstance()->getFramesNeeded_public(nodeHash, inputLast, ViewIdx(0), 0);
         assert(!framesFirst.empty() && !framesLast.empty());
         
         FrameRange range;
+#pragma message WARN("only considering first view")
         {
-            std::map<int, std::vector<OfxRangeD> >& rangeFirst = framesFirst[0];
+            const FrameRangesMap& rangeFirst = framesFirst[0];
             assert(!rangeFirst.empty());
-            std::vector<OfxRangeD>& frames = rangeFirst[0];
+            FrameRangesMap::const_iterator it = rangeFirst.find(ViewIdx(0));
+            assert(it != rangeFirst.end());
+            const std::vector<OfxRangeD>& frames = it->second;
             assert(!frames.empty());
             range.first = (frames.front().min);
         }
         {
-            std::map<int, std::vector<OfxRangeD> >& rangeLast = framesLast[0];
+            FrameRangesMap& rangeLast = framesLast[0];
             assert(!rangeLast.empty());
-            std::vector<OfxRangeD>& frames = rangeLast[0];
+            FrameRangesMap::const_iterator it = rangeLast.find(ViewIdx(0));
+            assert(it != rangeLast.end());
+            const std::vector<OfxRangeD>& frames = it->second;
             assert(!frames.empty());
             range.second = (frames.front().min);
         }
@@ -2206,7 +2211,7 @@ void DopeSheetViewPrivate::createSelectionFromRect(const RectD &zoomCoordsRect, 
                 continue;
             }
 
-            KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(0,dim)->getKeyFrames_mt_safe();
+            KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(ViewIdx(0), dim)->getKeyFrames_mt_safe();
 
             for (KeyFrameSet::const_iterator kIt = keyframes.begin();
                  kIt != keyframes.end();
@@ -2497,7 +2502,7 @@ std::pair<double, double> DopeSheetView::getKeyframeRange() const
             const boost::shared_ptr<DSKnob>& dsKnob = (*itKnob).second;
 
             for (int i = 0; i < dsKnob->getKnobGui()->getKnob()->getDimension(); ++i) {
-                KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(0,i)->getKeyFrames_mt_safe();
+                KeyFrameSet keyframes = dsKnob->getKnobGui()->getCurve(ViewIdx(0), i)->getKeyFrames_mt_safe();
 
                 if (keyframes.empty()) {
                     continue;

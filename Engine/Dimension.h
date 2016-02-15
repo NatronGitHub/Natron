@@ -16,13 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-/**
-* @brief This is the global header used by Shiboken to generate bindings for the Engine library.
-* Do not include it when compiling Natron.
-**/
-
-#ifndef PYSIDE_ENGINE_PYTHON_H
-#define PYSIDE_ENGINE_PYTHON_H
+#ifndef Engine_Dimension_h
+#define Engine_Dimension_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -30,23 +25,48 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-//Defined to avoid including some headers when running shiboken which may crash shiboken (particularily boost headers)
-#define SBK_RUN
+#include "Global/Macros.h"
 
-#include <pyside_global.h>
+#include "Engine/EngineFwd.h"
 
-//Global
-#include <GlobalDefines.h>
-#include <Enums.h>
+NATRON_NAMESPACE_ENTER;
 
-//Engine
-#include "GlobalFunctions.h"
-#include "NodeGroup.h"
-#include "AppInstance.h"
-#include "Roto.h"
-#include "Node.h"
-#include "Parameter.h"
-#include "RectI.h"
-#include "RectD.h"
+// a strongly typed integer that identifies the dimension of a parameter (e.g 0 for x, 1 for y, etc.)
+class Dimension
+{
+    int i;
+    
+    Dimension()
+    : i(0)
+    {
+        
+    }
 
-#endif // PYSIDE_ENGINE_PYTHON_H
+    // cast from int must be explicit
+    explicit Dimension(int index)
+    : i (index)
+    {
+        assert(index >= 0);
+    }
+
+    // cast to int is implicit
+    /*explicit*/ operator int() const
+    {
+        return i;
+    }
+    
+    bool operator==(Dimension other) const
+    {
+        return other.i == i;
+    }
+    
+    bool operator!=(Dimension other) const
+    {
+        return other.i != i;
+    }
+};
+
+
+NATRON_NAMESPACE_EXIT;
+
+#endif // Engine_Dimension_h

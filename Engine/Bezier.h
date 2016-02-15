@@ -401,7 +401,7 @@ public:
                                 bool finished,
                                 bool isOpenBezier,
                                 double time,
-                                int view,
+                                ViewIdx view,
                                 unsigned int mipMapLevel,
                                 const Transform::Matrix3x3& transform,
                                 RectD* bbox);

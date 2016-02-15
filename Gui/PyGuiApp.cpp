@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "GuiAppWrapper.h"
+#include "PyGuiApp.h"
 
 #include <stdexcept>
 
@@ -35,9 +35,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/NodeGroupWrapper.h"
-#include "Engine/NodeWrapper.h"
-#include "Engine/ParameterWrapper.h" // ColorTuple
+#include "Engine/PyNodeGroup.h"
+#include "Engine/PyNode.h"
+#include "Engine/PyParameter.h" // ColorTuple
 #include "Engine/ScriptObject.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
@@ -721,7 +721,7 @@ PyViewer::getProxyIndex() const
 
 
 void
-PyViewer::setCurrentView(int index)
+PyViewer::setCurrentView(ViewIdx index)
 {
     if (!_node->isActivated()) {
         return;
@@ -729,11 +729,11 @@ PyViewer::setCurrentView(int index)
     _viewer->setCurrentView(index);
 }
 
-int
+ViewIdx
 PyViewer::getCurrentView() const
 {
     if (!_node->isActivated()) {
-        return 0;
+        return ViewIdx(0);
     }
     return _viewer->getCurrentView();
 }

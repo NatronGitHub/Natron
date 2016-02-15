@@ -1097,7 +1097,7 @@ Project::setProjectDefaultFormat(const Format & f)
 }
 
 void
-Project::getProjectFormatEntries(std::vector<std::string>* formatStrings,int* currentValue) const
+Project::getProjectFormatEntries(std::vector<std::string>* formatStrings, int* currentValue) const
 {
     *formatStrings = _imp->formatKnob->getEntries_mt_safe();
     *currentValue = _imp->formatKnob->getValue();
@@ -1278,7 +1278,7 @@ void
 Project::onKnobValueChanged(KnobI* knob,
                             ValueChangedReasonEnum reason,
                             double /*time*/,
-                            ViewIdx /*view*/,
+                            ViewSpec /*view*/,
                             bool /*originatedFromMainThread*/)
 {
     if ( knob == _imp->viewsList.get() ) {
@@ -2147,8 +2147,8 @@ Project::unionFrameRangeWith(int first,int last)
     curFirst = !mustSet ? std::min(first, curFirst) : first;
     curLast = !mustSet ? std::max(last, curLast) : last;
     beginChanges();
-    _imp->frameRange->setValue(curFirst, ViewIdx::all(), 0);
-    _imp->frameRange->setValue(curLast, ViewIdx::all(), 1);
+    _imp->frameRange->setValue(curFirst, ViewSpec::all(), 0);
+    _imp->frameRange->setValue(curLast, ViewSpec::all(), 1);
     endChanges();
 
 }
@@ -2160,8 +2160,8 @@ Project::recomputeFrameRangeFromReaders()
     recomputeFrameRangeForAllReaders(&first, &last);
     
     beginChanges();
-    _imp->frameRange->setValue(first, ViewIdx::all(), 0);
-    _imp->frameRange->setValue(last,  ViewIdx::all(), 1);
+    _imp->frameRange->setValue(first, ViewSpec::all(), 0);
+    _imp->frameRange->setValue(last,  ViewSpec::all(), 1);
     endChanges();
 }
     

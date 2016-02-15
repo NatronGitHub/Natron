@@ -526,10 +526,10 @@ RotoContext::makeEllipse(double x,double y,double diameter,bool fromCenter, doub
     boost::shared_ptr<BezierCP> left = curve->getControlPointAtIndex(3);
 
     double topX,topY,rightX,rightY,btmX,btmY,leftX,leftY;
-    top->getPositionAtTime(false,time, /*view*/0,&topX, &topY);
-    right->getPositionAtTime(false,time, /*view*/0,&rightX, &rightY);
-    bottom->getPositionAtTime(false,time, /*view*/0,&btmX, &btmY);
-    left->getPositionAtTime(false,time, /*view*/0,&leftX, &leftY);
+    top->getPositionAtTime(false, time, ViewIdx(0), &topX, &topY);
+    right->getPositionAtTime(false, time, ViewIdx(0), &rightX, &rightY);
+    bottom->getPositionAtTime(false, time, ViewIdx(0), &btmX, &btmY);
+    left->getPositionAtTime(false, time, ViewIdx(0), &leftX, &leftY);
     
     curve->setLeftBezierPoint(0, time,  (leftX + topX) / 2., topY);
     curve->setRightBezierPoint(0, time, (rightX + topX) / 2., topY);
@@ -550,7 +550,7 @@ RotoContext::makeEllipse(double x,double y,double diameter,bool fromCenter, doub
 boost::shared_ptr<Bezier>
 RotoContext::makeSquare(double x,double y,double initialSize,double time)
 {
-    boost::shared_ptr<Bezier> curve = makeBezier(x,y,kRotoRectangleBaseName,time, false);
+    boost::shared_ptr<Bezier> curve = makeBezier(x,y,kRotoRectangleBaseName, time, false);
     curve->addControlPoint(x + initialSize,y, time);
     curve->addControlPoint(x + initialSize,y - initialSize, time);
     curve->addControlPoint(x,y - initialSize, time);
@@ -790,7 +790,7 @@ RotoContext::getGlobalMotionBlurSettings(const double time,
 }
 
 void
-RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, int /*view*/, RectD* rod) const
+RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, ViewIdx /*view*/, RectD* rod) const
 {
     
     double startTime = time, mbFrameStep = 1., endTime = time;
@@ -863,7 +863,7 @@ RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoIt
 
 void
 RotoContext::getMaskRegionOfDefinition(double time,
-                                       int view,
+                                       ViewIdx view,
                                        RectD* rod) // rod is in canonical coordinates
 const
 {
@@ -1396,21 +1396,21 @@ RotoContext::resetTransformsCenter(bool doClone, bool doTransform)
 {
     double time = getNode()->getApp()->getTimeLine()->currentFrame();
     RectD bbox;
-    getItemsRegionOfDefinition(getSelectedItems(),time, 0, &bbox);
+    getItemsRegionOfDefinition(getSelectedItems(), time, ViewIdx(0), &bbox);
     if (doTransform) {
         boost::shared_ptr<KnobDouble> centerKnob = _imp->centerKnob.lock();
         centerKnob->beginChanges();
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::all(), 0);
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::all(), 1);
-        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewIdx::all(), eValueChangedReasonNatronInternalEdited);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewSpec::all(), 0);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewSpec::all(), 1);
+        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
         centerKnob->endChanges();
     }
     if (doClone) {
         boost::shared_ptr<KnobDouble> centerKnob = _imp->cloneCenterKnob.lock();
         centerKnob->beginChanges();
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::all(), 0);
-        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewIdx::all(), 1);
-        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewIdx::all(), eValueChangedReasonNatronInternalEdited);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewSpec::all(), 0);
+        dynamic_cast<KnobI*>(centerKnob.get())->removeAnimation(ViewSpec::all(), 1);
+        centerKnob->setValues((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2., ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
         centerKnob->endChanges();
     }
 }
@@ -1487,10 +1487,10 @@ RotoContext::resetCloneTransform()
 
 void
 RotoContext::knobChanged(KnobI* k,
-                 ValueChangedReasonEnum /*reason*/,
-                 int /*view*/,
-                 double /*time*/,
-                 bool /*originatedFromMainThread*/)
+                         ValueChangedReasonEnum /*reason*/,
+                         ViewSpec /*view*/,
+                         double /*time*/,
+                         bool /*originatedFromMainThread*/)
 {
     if (k == _imp->resetCenterKnob.lock().get()) {
         resetTransformCenter();
@@ -1567,7 +1567,7 @@ RotoContext::setKeyframeOnSelectedCurves()
         if (isBezier) {
             isBezier->setKeyframe(time);
         } else if (isLayer) {
-            addOrRemoveKeyRecursively(isLayer,time, true, false);
+            addOrRemoveKeyRecursively(isLayer, time, true, false);
         }
     }
 }
@@ -1585,7 +1585,7 @@ RotoContext::removeAnimationOnSelectedCurves()
         if (isBezier) {
             isBezier->removeAnimation();
         } else if (isLayer) {
-            addOrRemoveKeyRecursively(isLayer,time, false, true);
+            addOrRemoveKeyRecursively(isLayer, time, false, true);
         }
     }
     if (!_imp->selectedItems.empty()) {
@@ -1606,7 +1606,7 @@ RotoContext::removeKeyframeOnSelectedCurves()
         if (isBezier) {
             isBezier->removeKeyframe(time);
         } else if (isLayer) {
-            addOrRemoveKeyRecursively(isLayer,time, false, false);
+            addOrRemoveKeyRecursively(isLayer, time, false, false);
         }
     }
 }
@@ -1665,7 +1665,7 @@ RotoContext::goToPreviousKeyframe()
             } else {
                 assert(layer);
                 if (layer) {
-                    findOutNearestKeyframeRecursively(layer, true,time,&minimum);
+                    findOutNearestKeyframeRecursively(layer, true, time,&minimum);
                 }
             }
         }
@@ -1765,7 +1765,7 @@ RotoContext::getSelectedCurves() const
             } else {
                 assert(isLayer);
                 if (isLayer) {
-                    appendToSelectedCurvesRecursively(&drawables, isLayer,time,false, true);
+                    appendToSelectedCurvesRecursively(&drawables, isLayer, time,false, true);
                 }
             }
         }
@@ -2628,7 +2628,7 @@ boost::shared_ptr<Image>
 RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                   const ImageComponents& components,
                                   const double time,
-                                  const int view,
+                                  const ViewIdx view,
                                   const ImageBitDepthEnum depth,
                                   const unsigned int mipmapLevel)
 {
@@ -3212,7 +3212,7 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,double time, unsigned int
     bezier->evaluateFeatherPointsAtTime_DeCasteljau(false, time, mipmapLevel, 50, true, &featherPolygon, &featherPolyBBox);
     bezier->evaluateAtTime_DeCasteljau(false, time, mipmapLevel, 50, &bezierPolygon, NULL);
     
-    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(false,time);
+    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(false, time);
     
     assert( !featherPolygon.empty() && !bezierPolygon.empty());
 
@@ -3559,7 +3559,7 @@ RotoContextPrivate::renderInternalShape(double time,
 
     
     Transform::Point3D initCp;
-    (*point)->getPositionAtTime(false,time, /*view*/0,&initCp.x,&initCp.y);
+    (*point)->getPositionAtTime(false, time, ViewIdx(0), &initCp.x,&initCp.y);
     initCp.z = 1.;
     initCp = Transform::matApply(transform, initCp);
     
@@ -3573,11 +3573,11 @@ RotoContextPrivate::renderInternalShape(double time,
         }
         
         Transform::Point3D right,nextLeft,next;
-        (*point)->getRightBezierPointAtTime(false,time, /*view*/0,&right.x, &right.y);
+        (*point)->getRightBezierPointAtTime(false, time, ViewIdx(0), &right.x, &right.y);
         right.z = 1;
-        (*nextPoint)->getLeftBezierPointAtTime(false,time, /*view*/0,&nextLeft.x, &nextLeft.y);
+        (*nextPoint)->getLeftBezierPointAtTime(false, time, ViewIdx(0), &nextLeft.x, &nextLeft.y);
         nextLeft.z = 1;
-        (*nextPoint)->getPositionAtTime(false,time, /*view*/0,&next.x, &next.y);
+        (*nextPoint)->getPositionAtTime(false, time, ViewIdx(0), &next.x, &next.y);
         next.z = 1;
 
         right = Transform::matApply(transform, right);
@@ -3689,7 +3689,7 @@ RotoContextPrivate::bezulate(double time, const BezierCPs& cps,std::list<BezierC
             bbox.setupInfinity();
             for (BezierCPs::iterator it = simpleClosedCurve.begin(); it != simpleClosedCurve.end(); ++it) {
                 Point p;
-                (*it)->getPositionAtTime(false,time, /*view*/0,&p.x, &p.y);
+                (*it)->getPositionAtTime(false, time, ViewIdx(0), &p.x, &p.y);
                 polygon.push_back(p);
                 if (p.x < bbox.x1) {
                     bbox.x1 = p.x;
@@ -3717,8 +3717,8 @@ RotoContextPrivate::bezulate(double time, const BezierCPs& cps,std::list<BezierC
                 
                 //mid-point of the line segment between points i and i + n
                 Point nextPoint,curPoint;
-                (*it)->getPositionAtTime(false,time,/*view*/0, &curPoint.x, &curPoint.y);
-                (*next)->getPositionAtTime(false,time,/*view*/0, &nextPoint.x, &nextPoint.y);
+                (*it)->getPositionAtTime(false, time, ViewIdx(0), &curPoint.x, &curPoint.y);
+                (*next)->getPositionAtTime(false, time, ViewIdx(0), &nextPoint.x, &nextPoint.y);
                 
                 /*
                  * Compute the number of intersections between the current line segment [it,next] and all other line segments
@@ -3819,10 +3819,10 @@ RotoContextPrivate::bezulate(double time, const BezierCPs& cps,std::list<BezierC
                     next = simpleClosedCurve.begin();
                 }
                 Point p0,p1,p2,p3,p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3,dest;
-                (*it)->getPositionAtTime(false,time, /*view*/0,&p0.x, &p0.y);
-                (*it)->getRightBezierPointAtTime(false,time,/*view*/0, &p1.x, &p1.y);
-                (*next)->getLeftBezierPointAtTime(false,time,/*view*/0, &p2.x, &p2.y);
-                (*next)->getPositionAtTime(false,time,/*view*/0, &p3.x, &p3.y);
+                (*it)->getPositionAtTime(false, time, ViewIdx(0), &p0.x, &p0.y);
+                (*it)->getRightBezierPointAtTime(false, time, ViewIdx(0), &p1.x, &p1.y);
+                (*next)->getLeftBezierPointAtTime(false, time, ViewIdx(0), &p2.x, &p2.y);
+                (*next)->getPositionAtTime(false, time, ViewIdx(0), &p3.x, &p3.y);
                 Bezier::bezierFullPoint(p0, p1, p2, p3, 0.5, &p0p1, &p1p2, &p2p3, &p0p1_p1p2, &p1p2_p2p3, &dest);
                 boost::shared_ptr<BezierCP> controlPoint(new BezierCP);
                 controlPoint->setStaticPosition(false,dest.x, dest.y);

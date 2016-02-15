@@ -29,6 +29,7 @@
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Engine/OverlaySupport.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -54,7 +55,7 @@ public:
     virtual void saveOpenGLContext() = 0;
     virtual void restoreOpenGLContext() = 0;
     virtual unsigned int getCurrentRenderScale() const { return 0; }
-    virtual boost::shared_ptr<Curve> getCurve(int view, int dimension) const = 0;
+    virtual boost::shared_ptr<Curve> getCurve(ViewSpec view, int dimension) const = 0;
     
     virtual bool getAllDimensionsVisible() const = 0;
     

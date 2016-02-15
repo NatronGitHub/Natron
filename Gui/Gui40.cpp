@@ -252,7 +252,7 @@ Gui::updateViewersViewsMenu(const std::vector<std::string>& viewNames)
 }
 
 void
-Gui::setViewersCurrentView(int view)
+Gui::setViewersCurrentView(ViewIdx view)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
 

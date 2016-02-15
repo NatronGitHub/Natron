@@ -110,7 +110,7 @@ struct ViewerTabPrivate
     Button* checkerboardButton;
     Button* pickerButton;
     ComboBox* viewsComboBox;
-    int currentViewIndex;
+    ViewIdx currentViewIndex;
     QMutex currentViewMutex;
     /*Info*/
     InfoViewerWidget* infoWidget[2];
@@ -187,13 +187,13 @@ struct ViewerTabPrivate
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     // return the tronsform to apply to the overlay as a 3x3 homography in canonical coordinates
     bool getOverlayTransform(double time,
-                             int view,
+                             ViewIdx view,
                              const NodePtr& target,
                              EffectInstance* currentNode,
                              Transform::Matrix3x3* transform) const;
 
     bool getTimeTransform(double time,
-                          int view,
+                          ViewIdx view,
                           const NodePtr& target,
                           EffectInstance* currentNode,
                           double *newTime) const;

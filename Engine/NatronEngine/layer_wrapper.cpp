@@ -18,8 +18,8 @@ GCC_DIAG_OFF(uninitialized)
 
 // Extra includes
 NATRON_NAMESPACE_USING
-#include <ParameterWrapper.h>
-#include <RotoWrapper.h>
+#include <PyParameter.h>
+#include <PyRoto.h>
 #include <list>
 
 

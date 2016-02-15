@@ -112,7 +112,6 @@ SOURCES += \
     GuiApplicationManager10.cpp \
     GuiApplicationManagerPrivate.cpp \
     GuiAppInstance.cpp \
-    GuiAppWrapper.cpp \
     GuiPrivate.cpp \
     Histogram.cpp \
     HostOverlay.cpp \
@@ -172,6 +171,7 @@ SOURCES += \
     ProjectGui.cpp \
     ProjectGuiSerialization.cpp \
     PropertiesBinWrapper.cpp \
+    PyGuiApp.cpp \
     PythonPanels.cpp \
     QtDecoder.cpp \
     QtEncoder.cpp \
@@ -262,12 +262,10 @@ HEADERS += \
     GuiApplicationManager.h \
     GuiApplicationManagerPrivate.h \
     GuiAppInstance.h \
-    GuiAppWrapper.h \
     GuiDefines.h \
     GuiFwd.h \
     GuiMacros.h \
     GuiPrivate.h \
-    GlobalGuiWrapper.h \
     Histogram.h \
     HostOverlay.h \
     InfoViewerWidget.h \
@@ -312,6 +310,8 @@ HEADERS += \
     ProjectGui.h \
     ProjectGuiSerialization.h \
     PropertiesBinWrapper.h \
+    PyGlobalGui.h \
+    PyGuiApp.h \
     Pyside_Gui_Python.h \
     PythonPanels.h \
     QtDecoder.h \

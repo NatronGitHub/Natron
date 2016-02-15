@@ -510,9 +510,9 @@ public:
      * connected for this inputNumber. It should be removed
      * beforehand.
      */
-    virtual bool connectInput(const NodePtr& input,int inputNumber);
+    virtual bool connectInput(const NodePtr& input, int inputNumber);
 
-    bool connectInputBase(const NodePtr& input,int inputNumber)
+    bool connectInputBase(const NodePtr& input, int inputNumber)
     {
         return Node::connectInput(input, inputNumber);
     }
@@ -551,16 +551,16 @@ public:
     
     bool isUserSelected() const;
     
-    bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, int view) const;
+    bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view) const;
 
     /**
      * @brief If the session is a GUI session, then this function sets the position of the node on the nodegraph.
      **/
-    void setPosition(double x,double y);
-    void getPosition(double *x,double *y) const;
+    void setPosition(double x, double y);
+    void getPosition(double *x, double *y) const;
     
-    void setSize(double w,double h);
-    void getSize(double* w,double* h) const;
+    void setSize(double w, double h);
+    void getSize(double* w, double* h) const;
     
     /**
      * @brief Get the colour of the node as it appears on the nodegraph.
@@ -595,12 +595,12 @@ private:
     /**
      * @brief Adds an output to this node.
      **/
-    void connectOutput(bool useGuiValues,const NodePtr& output);
+    void connectOutput(bool useGuiValues, const NodePtr& output);
 
     /** @brief Removes the node output of the
      * node outputs. Returns the outputNumber if it could remove it,
        otherwise returns -1.*/
-    int disconnectOutput(bool useGuiValues,const Node* output);
+    int disconnectOutput(bool useGuiValues, const Node* output);
     
 public:
     
@@ -643,11 +643,11 @@ public:
        @param reconnect If set to true Natron will attempt to re-connect disconnected output to an input of this node
        @param hideGui When true, the node gui will be notified so it gets hidden
      */
-    void deactivate(const std::list< NodePtr > & outputsToDisconnect = std::list< NodePtr >()
-                    , bool disconnectAll = true
-                    , bool reconnect = true
-                    , bool hideGui = true
-                    , bool triggerRender = true);
+    void deactivate(const std::list< NodePtr > & outputsToDisconnect = std::list< NodePtr >(),
+                    bool disconnectAll = true,
+                    bool reconnect = true,
+                    bool hideGui = true,
+                    bool triggerRender = true);
     
 
     /* @brief Make this node active. It will appear
@@ -712,7 +712,7 @@ public:
      * The width and height might be modified by the function, so their value can
      * be queried at the end of the function
      **/
-    bool makePreviewImage(SequenceTime time,int *width,int *height,unsigned int* buf);
+    bool makePreviewImage(SequenceTime time, int *width, int *height, unsigned int* buf);
 
     /**
      * @brief Returns true if the node is currently rendering a preview image.
@@ -827,7 +827,7 @@ public:
      * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
      * do not respect the OpenFX specification.
      **/
-    boost::shared_ptr<Image> getImageBeingRendered(double time,unsigned int mipMapLevel,int view);
+    boost::shared_ptr<Image> getImageBeingRendered(double time, unsigned int mipMapLevel, ViewIdx view);
     
     void beginInputEdition();
     
@@ -1112,7 +1112,7 @@ public:
     
     void removeParameterFromPython(const std::string& parameterName);
 
-    double getHostMixingValue(double time, int view) const;
+    double getHostMixingValue(double time, ViewIdx view) const;
     
     void removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey);
     void removeAllImagesFromCache(bool blocking);

@@ -141,9 +141,9 @@ Gui::initProjectGuiKnobs()
 }
 
 QKeySequence
-Gui::keySequenceForView(int v)
+Gui::keySequenceForView(ViewIdx v)
 {
-    switch (v) {
+    switch (static_cast<int>(v)) {
     case 0:
 
         return QKeySequence(Qt::CTRL + Qt::ALT +  Qt::Key_1);
@@ -268,7 +268,7 @@ Gui::updateViewsActions(int viewsCount)
             }
             QAction* viewI = new QAction(this);
             viewI->setCheckable(false);
-            QKeySequence seq = keySequenceForView(i);
+            QKeySequence seq = keySequenceForView(ViewIdx(i));
             if ( !seq.isEmpty() ) {
                 viewI->setShortcut(seq);
             }

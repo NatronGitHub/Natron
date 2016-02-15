@@ -101,7 +101,7 @@ class ClipsThreadStorageSetter
 {
 public:
     ClipsThreadStorageSetter(OfxImageEffectInstance* effect,
-                             int view,
+                             ViewIdx view,
                              unsigned mipmapLevel)
     : effect(effect)
     {
@@ -137,7 +137,7 @@ class RenderThreadStorageSetter {
 public:
     
     RenderThreadStorageSetter(OfxImageEffectInstance* effect,
-                              int view,
+                              ViewIdx view,
                               unsigned int mipmapLevel,
                               const ImageComponents& currentPlane,
                               const EffectInstance::InputImagesMap& inputImages)
@@ -439,7 +439,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 first = last = getApp()->getTimeLine()->currentFrame();
             }
             ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                                0,
+                                                ViewIdx(0),
                                                 0);
             double time = first;
             
@@ -541,7 +541,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
 
         {
             ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                                0,
+                                                ViewIdx(0),
                                                 0);
 
 
@@ -996,7 +996,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
         RECURSIVE_ACTION();
         SET_CAN_SET_VALUE(true);
         ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            0,
+                                            ViewIdx(0),
                                             0);
 
         _imp->effect->beginInstanceChangedAction(kOfxChangeUserEdited);
@@ -1257,7 +1257,7 @@ OfxEffectInstance::refreshClipPreferences(double time,
     //////////////// STEP 2: Apply a proxy, i.e: modify the preferences so it requires a minimum pixel shuffling
     std::list<OfxClipInstance*> modifiedClips;
     
-    clipPrefsProxy(this,time,clipsPrefs,effectPrefs,modifiedClips);
+    clipPrefsProxy(this, time,clipsPrefs,effectPrefs,modifiedClips);
     
     bool changed = false;
     
@@ -1331,7 +1331,7 @@ StatusEnum
 OfxEffectInstance::getRegionOfDefinition(U64 /*hash*/,
                                          double time,
                                          const RenderScale & scale,
-                                         int view,
+                                         ViewIdx view,
                                          RectD* rod)
 {
     assert(_imp->context != eContextNone);
@@ -1474,7 +1474,7 @@ void
 OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
                                                  double time,
                                                  const RenderScale & scale,
-                                                 int view,
+                                                 ViewIdx view,
                                                  RectD *rod)
 {
     assert(_imp->context != eContextNone);
@@ -1530,7 +1530,7 @@ OfxEffectInstance::getRegionsOfInterest(double time,
                                         const RenderScale & scale,
                                         const RectD & outputRoD,
                                         const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                        int view,
+                                        ViewIdx view,
                                         RoIMap* ret)
 {
     assert(_imp->context != eContextNone);
@@ -1604,7 +1604,8 @@ OfxEffectInstance::getRegionsOfInterest(double time,
 } // getRegionsOfInterest
 
 FramesNeededMap
-OfxEffectInstance::getFramesNeeded(double time, int view)
+OfxEffectInstance::getFramesNeeded(double time,
+                                   ViewIdx view)
 {
     assert(_imp->context != eContextNone);
     FramesNeededMap ret;
@@ -1634,7 +1635,13 @@ OfxEffectInstance::getFramesNeeded(double time, int view)
                 if (clip) {
                     int inputNb = clip->getInputNb();
                     if (inputNb != -1) {
-                        ret.insert( std::make_pair(inputNb,it->second) );
+                        // convert HostSupport's std::map<int, std::vector<OfxRangeD> > to  Natron's FrameRangesMap
+                        FrameRangesMap frameRanges;
+                        const std::map<int, std::vector<OfxRangeD> >& ofxRanges = it->second;
+                        for (std::map<int, std::vector<OfxRangeD> >::const_iterator itr = ofxRanges.begin(); itr != ofxRanges.end(); ++itr) {
+                            frameRanges[ViewIdx(itr->first)] = itr->second;
+                        }
+                        ret.insert( std::make_pair(inputNb, frameRanges) );
                     }
                 }
             }
@@ -1658,7 +1665,7 @@ OfxEffectInstance::getFramesNeeded(double time, int view)
                 if (clip) {
                     int inputNb = clip->getInputNb();
                     if (inputNb != -1) {
-                        std::map<int, std::vector<OfxRangeD> > viewRangeMap;
+                        FrameRangesMap viewRangeMap;
                         viewRangeMap.insert(std::make_pair(view, it->second));
                         ret.insert(std::make_pair(inputNb, viewRangeMap));
                     }
@@ -1747,7 +1754,7 @@ bool
 OfxEffectInstance::isIdentity(double time,
                               const RenderScale & scale,
                               const RectI & renderWindow,
-                              int view,
+                              ViewIdx view,
                               double* inputTime,
                               int* inputNb)
 {
@@ -1844,7 +1851,7 @@ OfxEffectInstance::beginSequenceRender(double first,
                                        bool isSequentialRender,
                                        bool isRenderResponseToUserInteraction,
                                        bool draftMode,
-                                       int view)
+                                       ViewIdx view)
 {
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
@@ -1887,7 +1894,7 @@ OfxEffectInstance::endSequenceRender(double first,
                                      bool isSequentialRender,
                                      bool isRenderResponseToUserInteraction,
                                      bool draftMode,
-                                     int view)
+                                     ViewIdx view)
 {
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
@@ -2094,7 +2101,7 @@ OfxEffectInstance::canHandleRenderScaleForOverlays() const
 void
 OfxEffectInstance::drawOverlay(double time,
                                const RenderScale & renderScale,
-                               int view)
+                               ViewIdx view)
 {
     if (!_imp->initialized) {
         return;
@@ -2116,7 +2123,7 @@ OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport)
 bool
 OfxEffectInstance::onOverlayPenDown(double time,
                                     const RenderScale & renderScale,
-                                    int view,
+                                    ViewIdx view,
                                     const QPointF & viewportPos,
                                     const QPointF & pos,
                                     double pressure)
@@ -2156,7 +2163,7 @@ OfxEffectInstance::onOverlayPenDown(double time,
 bool
 OfxEffectInstance::onOverlayPenMotion(double time,
                                       const RenderScale & renderScale,
-                                      int view,
+                                      ViewIdx view,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
                                       double pressure)
@@ -2192,7 +2199,7 @@ OfxEffectInstance::onOverlayPenMotion(double time,
 bool
 OfxEffectInstance::onOverlayPenUp(double time,
                                   const RenderScale & renderScale,
-                                  int view,
+                                  ViewIdx view,
                                   const QPointF & viewportPos,
                                   const QPointF & pos,
                                   double pressure)
@@ -2229,7 +2236,7 @@ OfxEffectInstance::onOverlayPenUp(double time,
 bool
 OfxEffectInstance::onOverlayKeyDown(double time,
                                     const RenderScale & renderScale,
-                                    int view,
+                                    ViewIdx view,
                                     Key key,
                                     KeyboardModifiers /*modifiers*/)
 {
@@ -2257,7 +2264,7 @@ OfxEffectInstance::onOverlayKeyDown(double time,
 bool
 OfxEffectInstance::onOverlayKeyUp(double time,
                                   const RenderScale & renderScale,
-                                  int view,
+                                  ViewIdx view,
                                   Key key,
                                   KeyboardModifiers /* modifiers*/)
 {
@@ -2287,7 +2294,7 @@ OfxEffectInstance::onOverlayKeyUp(double time,
 bool
 OfxEffectInstance::onOverlayKeyRepeat(double time,
                                       const RenderScale & renderScale,
-                                      int view,
+                                      ViewIdx view,
                                       Key key,
                                       KeyboardModifiers /*modifiers*/)
 {
@@ -2316,7 +2323,7 @@ OfxEffectInstance::onOverlayKeyRepeat(double time,
 bool
 OfxEffectInstance::onOverlayFocusGained(double time,
                                         const RenderScale & renderScale,
-                                        int view)
+                                        ViewIdx view)
 {
     if (!_imp->initialized) {
         return false;
@@ -2336,7 +2343,7 @@ OfxEffectInstance::onOverlayFocusGained(double time,
 bool
 OfxEffectInstance::onOverlayFocusLost(double time,
                                       const RenderScale & renderScale,
-                                      int view)
+                                      ViewIdx view)
 {
     if (!_imp->initialized) {
         return false;
@@ -2402,7 +2409,7 @@ OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedR
 void
 OfxEffectInstance::knobChanged(KnobI* k,
                                ValueChangedReasonEnum reason,
-                               int view,
+                               ViewSpec view,
                                double time,
                                bool /*originatedFromMainThread*/)
 {
@@ -2420,21 +2427,23 @@ OfxEffectInstance::knobChanged(KnobI* k,
 
     if (recursionLevel == 1) {
         SET_CAN_SET_VALUE(true);
+        assert(!view.isAll() && !view.isCurrent());
+        ViewIdx v = (view.isAll() || view.isCurrent()) ? ViewIdx(0) : ViewIdx(view);
         ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            view,
+                                            v,
                                             Image::getLevelFromScale(renderScale.x));
         
         ///This action as all the overlay interacts actions can trigger recursive actions, such as
         ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
         ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
         ///the clip preferences to stay the same throughout the action.
-        stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason,(OfxTime)time,renderScale);
+        stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale);
     } else {
         ///This action as all the overlay interacts actions can trigger recursive actions, such as
         ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
         ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
         ///the clip preferences to stay the same throughout the action.
-        stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason,(OfxTime)time,renderScale);
+        stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale);
     }
     
     /*if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -2679,11 +2688,12 @@ OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,
 }
 
 void
-OfxEffectInstance::getComponentsNeededAndProduced(double time, int view,
-                                           EffectInstance::ComponentsNeededMap* comps,
-                                            SequenceTime* passThroughTime,
-                                            int* passThroughView,
-                                            NodePtr* passThroughInput) 
+OfxEffectInstance::getComponentsNeededAndProduced(double time,
+                                                  ViewIdx view,
+                                                  EffectInstance::ComponentsNeededMap* comps,
+                                                  SequenceTime* passThroughTime,
+                                                  int* passThroughView,
+                                                  NodePtr* passThroughInput)
 {
     OfxStatus stat ;
     {
@@ -2884,7 +2894,7 @@ OfxEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
 StatusEnum
 OfxEffectInstance::getTransform(double time,
                                 const RenderScale & renderScale, //< the plug-in accepted scale
-                                int view,
+                                ViewIdx view,
                                 EffectInstPtr* inputToTransform,
                                 Transform::Matrix3x3* transform)
 {

@@ -61,7 +61,7 @@ bool
 NoOpBase::isIdentity(double time,
                      const RenderScale & /*scale*/,
                      const RectI & /*roi*/,
-                     int /*view*/,
+                     ViewIdx /*view*/,
                      double* inputTime,
                      int* inputNb)
 {
@@ -82,7 +82,7 @@ NoOpBase::isHostChannelSelectorSupported(bool* /*defaultR*/,bool* /*defaultG*/, 
 StatusEnum
 NoOpBase::getTransform(double /*time*/,
                        const RenderScale & /*renderScale*/,
-                       int /*view*/,
+                       ViewIdx /*view*/,
                        EffectInstPtr* inputToTransform,
                        Transform::Matrix3x3* transform)
 {
