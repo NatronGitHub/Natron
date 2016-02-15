@@ -40,7 +40,7 @@
 #include <Enums.h>
 
 //Engine
-#include "GlobalFunctions.h"
+#include "PyGlobalFunctions.h"
 #include "NodeGroup.h"
 #include "AppInstance.h"
 #include "Roto.h"
