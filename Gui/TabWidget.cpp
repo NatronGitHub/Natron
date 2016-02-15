@@ -1995,7 +1995,7 @@ TabWidget::setObjectName_mt_safe(const QString & str)
     std::string err;
     bool ok = Python::interpretPythonScript(script, &err, 0);
     if (!ok) {
-        appPTR->writeToOfxLog_mt_safe(err.c_str());
+        appPTR->writeToErrorLog_mt_safe(err.c_str());
     }
 }
 

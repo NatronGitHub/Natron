@@ -239,7 +239,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             text.append(QObject::tr(" version %1.%2").arg(majorVersion).arg(minorVersion));
             text.append( QObject::tr(" was found in the script but does not"
                                      " exist in the loaded plug-ins.") );
-            appPTR->writeToOfxLog_mt_safe(text);
+            appPTR->writeToErrorLog_mt_safe(text);
             mustShowErrorsLog = true;
             continue;
         } else {
@@ -252,7 +252,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 text.append(QObject::tr(" version %1.%2").arg(majorVersion).arg(minorVersion));
                 text.append( QObject::tr(" was found in the script but was loaded"
                                          " with version %3.%4 instead").arg(n->getPlugin()->getMajorVersion()).arg(n->getPlugin()->getMinorVersion()) );
-                appPTR->writeToOfxLog_mt_safe(text);
+                appPTR->writeToErrorLog_mt_safe(text);
                 mustShowErrorsLog = true;
 
             }
@@ -305,7 +305,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             NodePtr masterNode = it->first->getApp()->getNodeByFullySpecifiedName(masterNodeName);
             
             if (!masterNode) {
-                appPTR->writeToOfxLog_mt_safe(QString("Cannot restore the link between " + QString(it->second->getNodeScriptName().c_str()) + " and " + masterNodeName.c_str()));
+                appPTR->writeToErrorLog_mt_safe(QString("Cannot restore the link between " + QString(it->second->getNodeScriptName().c_str()) + " and " + masterNodeName.c_str()));
                 mustShowErrorsLog = true;
             } else {
                 it->first->getEffectInstance()->slaveAllKnobs( masterNode->getEffectInstance().get(), true );
@@ -336,7 +336,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 int index = it->first->getInputNumberFromLabel(it2->first);
                 if (index == -1) {
-                    appPTR->writeToOfxLog_mt_safe(QString("Could not find input named ") + it2->first.c_str());
+                    appPTR->writeToErrorLog_mt_safe(QString("Could not find input named ") + it2->first.c_str());
                     continue;
                 }
                 if (!it2->second.empty() && !group->connectNodes(index, it2->second, it->first)) {
@@ -396,7 +396,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 int index = it->first->getInputNumberFromLabel(it2->first);
                 if (index == -1) {
-                    appPTR->writeToOfxLog_mt_safe(QString("Could not find input named ") + it2->first.c_str());
+                    appPTR->writeToErrorLog_mt_safe(QString("Could not find input named ") + it2->first.c_str());
                     continue;
                 }
                 if (!it2->second.empty() && !group->connectNodes(index, it2->second, it->first)) {

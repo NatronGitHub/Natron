@@ -335,13 +335,13 @@ public:
     {
     }
 
-    QString getOfxLog_mt_safe() const;
+    QString getErrorLog_mt_safe() const;
 
-    void writeToOfxLog_mt_safe(const QString & str);
+    void writeToErrorLog_mt_safe(const QString & str);
     
     void clearOfxLog_mt_safe();
     
-    virtual void showOfxLog() {}
+    virtual void showErrorLog() {}
 
     virtual void debugImage(const Image* /*image*/,
                             const RectI& /*roi*/,

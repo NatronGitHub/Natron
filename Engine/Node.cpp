@@ -805,7 +805,7 @@ Node::load(const CreateNodeArgs& args)
             try {
                 setScriptName(args.fixedName.toStdString());
             } catch (...) {
-                appPTR->writeToOfxLog_mt_safe("Could not set node name to " + args.fixedName);
+                appPTR->writeToErrorLog_mt_safe("Could not set node name to " + args.fixedName);
             }
         }
         if (!isMultiInstanceChild && _imp->isMultiInstance) {
@@ -1585,7 +1585,7 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
                 QString err = _publicInterface->getScriptName_mt_safe().c_str();
                 err.append(QObject::tr(": Could not find a parameter named ") );
                 err.append(QString((*it)->getName().c_str()));
-                appPTR->writeToOfxLog_mt_safe(err);
+                appPTR->writeToErrorLog_mt_safe(err);
                 continue;
             }
             isRegular->restoreKnobLinks(knob,allNodes, oldNewScriptNamesMapping);
@@ -1612,7 +1612,7 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
             QString err = getScriptName_mt_safe().c_str();
             err.append(QObject::tr(": Could not find a parameter named ") );
             err.append(QString((*it)->getName().c_str()));
-            appPTR->writeToOfxLog_mt_safe(err);
+            appPTR->writeToErrorLog_mt_safe(err);
             continue;
         }
         (*it)->restoreKnobLinks(knob,allNodes, oldNewScriptNamesMapping);
@@ -2518,7 +2518,7 @@ Node::setNameInternal(const std::string& name, bool throwErrors, bool declareToP
             try {
                 collection->checkNodeName(this, name,false, false, &newName);
             } catch (const std::exception& e) {
-                appPTR->writeToOfxLog_mt_safe(e.what());
+                appPTR->writeToErrorLog_mt_safe(e.what());
                 std::cerr << e.what() << std::endl;
                 return;
             }
@@ -2545,7 +2545,7 @@ Node::setNameInternal(const std::string& name, bool throwErrors, bool declareToP
                 throw std::runtime_error(ss.str());
             } else {
                 std::string err = ss.str();
-                appPTR->writeToOfxLog_mt_safe(err.c_str());
+                appPTR->writeToErrorLog_mt_safe(err.c_str());
                 std::cerr << err << std::endl;
                 return;
             }

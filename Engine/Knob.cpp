@@ -2365,7 +2365,7 @@ KnobHelper::setName(const std::string & name,bool throwExceptions)
                     throw std::runtime_error(ss.str());
                 } else {
                     std::string err = ss.str();
-                    appPTR->writeToOfxLog_mt_safe(err.c_str());
+                    appPTR->writeToErrorLog_mt_safe(err.c_str());
                     std::cerr << err << std::endl;
                     return;
                 }

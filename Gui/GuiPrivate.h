@@ -96,7 +96,7 @@ struct GuiPrivate
     ActionWithShortcut *actionPreferences;
     ActionWithShortcut *actionExit;
     ActionWithShortcut *actionProject_settings;
-    ActionWithShortcut *actionShowOfxLog;
+    ActionWithShortcut *actionShowErrorLog;
     ActionWithShortcut *actionShortcutEditor;
     ActionWithShortcut *actionNewViewer;
     ActionWithShortcut *actionFullScreen;

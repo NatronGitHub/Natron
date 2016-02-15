@@ -879,7 +879,7 @@ AppManager::writeToOutputPipe(const QString & longMessage,
 {
     if (!_imp->_backgroundIPC) {
         
-        QMutexLocker k(&_imp->_ofxLogMutex);
+        QMutexLocker k(&_imp->errorLogMutex);
         ///Don't use qdebug here which is disabled if QT_NO_DEBUG_OUTPUT is defined.
         std::cout << longMessage.toStdString() << std::endl;
         return false;
@@ -1134,7 +1134,7 @@ static bool findAndRunScriptFile(const QString& path,const QStringList& files,co
                     message.append(script);
                     message.append(": ");
                     message.append(error.c_str());
-                    appPTR->writeToOfxLog_mt_safe(message);
+                    appPTR->writeToErrorLog_mt_safe(message);
                     std::cerr << message.toStdString() << std::endl;
                     return false;
                 }
@@ -1318,7 +1318,7 @@ AppManager::loadPythonGroups()
                                               "or reachable through the Python path. (Note that Natron disables usage "
                                               "of site-packages ").toStdString();
             std::cerr << message << std::endl;
-            appPTR->writeToOfxLog_mt_safe(message.c_str());
+            appPTR->writeToErrorLog_mt_safe(message.c_str());
         }
     }
     
@@ -1328,7 +1328,7 @@ AppManager::loadPythonGroups()
         if (!ok) {
             std::string message = QObject::tr("Failed to import PySide.QtGui").toStdString();
             std::cerr << message << std::endl;
-            appPTR->writeToOfxLog_mt_safe(message.c_str());
+            appPTR->writeToErrorLog_mt_safe(message.c_str());
         }
     }
 
@@ -2011,26 +2011,26 @@ AppManager::getTotalNodesMemoryRegistered() const
 }
 
 QString
-AppManager::getOfxLog_mt_safe() const
+AppManager::getErrorLog_mt_safe() const
 {
-    QMutexLocker l(&_imp->_ofxLogMutex);
+    QMutexLocker l(&_imp->errorLogMutex);
 
-    return _imp->_ofxLog;
+    return _imp->errorLog;
 }
 
 void
-AppManager::writeToOfxLog_mt_safe(const QString & str)
+AppManager::writeToErrorLog_mt_safe(const QString & str)
 {
-    QMutexLocker l(&_imp->_ofxLogMutex);
+    QMutexLocker l(&_imp->errorLogMutex);
 
-    _imp->_ofxLog.append(str + '\n' + '\n');
+    _imp->errorLog.append(str + '\n' + '\n');
 }
 
 void
 AppManager::clearOfxLog_mt_safe()
 {
-    QMutexLocker l(&_imp->_ofxLogMutex);
-    _imp->_ofxLog.clear();
+    QMutexLocker l(&_imp->errorLogMutex);
+    _imp->errorLog.clear();
 }
 
 void
@@ -3191,7 +3191,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
         logStr.append(pythonModule.c_str());
         logStr.append(": ");
         logStr.append(err.c_str());
-        appPTR->writeToOfxLog_mt_safe(logStr);
+        appPTR->writeToErrorLog_mt_safe(logStr);
         qDebug() << logStr;
         return false;
     }

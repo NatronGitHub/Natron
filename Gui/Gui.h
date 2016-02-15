@@ -656,7 +656,7 @@ public Q_SLOTS:
 
     void showShortcutEditor();
 
-    void showOfxLog();
+    void showErrorLog();
 
     void openRecentFile();
 

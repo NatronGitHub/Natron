@@ -767,7 +767,7 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionDefaultLayout, kShortcutDescActionDefaultLayout, Qt::NoModifier, (Qt::Key)0);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionProjectSettings, kShortcutDescActionProjectSettings, Qt::NoModifier, Qt::Key_S);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowOFXLog, kShortcutDescActionShowOFXLog, Qt::NoModifier, (Qt::Key)0);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowErrorLog, kShortcutDescActionShowErrorLog, Qt::NoModifier, (Qt::Key)0);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowShortcutEditor, kShortcutDescActionShowShortcutEditor, Qt::NoModifier, (Qt::Key)0);
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionNewViewer, kShortcutDescActionNewViewer, Qt::ControlModifier, Qt::Key_I);
@@ -1104,12 +1104,12 @@ GuiApplicationManager::notifyShortcutChanged(KeyBoundAction* action)
 }
 
 void
-GuiApplicationManager::showOfxLog()
+GuiApplicationManager::showErrorLog()
 {
     hideSplashScreen();
     GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(getTopLevelInstance());
     if (app) {
-        app->getGui()->showOfxLog();
+        app->getGui()->showErrorLog();
     }
     
 }

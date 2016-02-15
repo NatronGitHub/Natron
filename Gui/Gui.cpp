@@ -457,8 +457,8 @@ Gui::createMenuActions()
     _imp->actionProject_settings->setIcon( get_icon("document-properties") );
     QObject::connect( _imp->actionProject_settings, SIGNAL( triggered() ), this, SLOT( setVisibleProjectSettingsPanel() ) );
 
-    _imp->actionShowOfxLog = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionShowOFXLog, kShortcutDescActionShowOFXLog, this);
-    QObject::connect( _imp->actionShowOfxLog, SIGNAL( triggered() ), this, SLOT( showOfxLog() ) );
+    _imp->actionShowErrorLog = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionShowErrorLog, kShortcutDescActionShowErrorLog, this);
+    QObject::connect( _imp->actionShowErrorLog, SIGNAL( triggered() ), this, SLOT( showErrorLog() ) );
 
     _imp->actionShortcutEditor = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionShowShortcutEditor, kShortcutDescActionShowShortcutEditor, this);
     QObject::connect( _imp->actionShortcutEditor, SIGNAL( triggered() ), this, SLOT( showShortcutEditor() ) );
@@ -613,7 +613,7 @@ Gui::createMenuActions()
     }
     
     _imp->menuDisplay->addAction(_imp->actionProject_settings);
-    _imp->menuDisplay->addAction(_imp->actionShowOfxLog);
+    _imp->menuDisplay->addAction(_imp->actionShowErrorLog);
     _imp->menuDisplay->addAction(_imp->actionShortcutEditor);
 #ifdef __NATRON_WIN32__
     _imp->menuDisplay->addAction(_imp->actionShowWindowsConsole);

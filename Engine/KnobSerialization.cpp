@@ -235,7 +235,7 @@ KnobSerialization::restoreExpressions(const KnobPtr & knob,
         }
     } catch (const std::exception& e) {
         QString err = QString("Failed to restore expression on %1: %2").arg(knob->getName().c_str()).arg(e.what());
-        appPTR->writeToOfxLog_mt_safe(err);
+        appPTR->writeToErrorLog_mt_safe(err);
     }
     
 }

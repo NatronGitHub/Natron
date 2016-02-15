@@ -168,7 +168,7 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , actionPreferences(0)
 , actionExit(0)
 , actionProject_settings(0)
-, actionShowOfxLog(0)
+, actionShowErrorLog(0)
 , actionShortcutEditor(0)
 , actionNewViewer(0)
 , actionFullScreen(0)

@@ -100,9 +100,9 @@ Gui::setUndoRedoStackLimit(int limit)
 }
 
 void
-Gui::showOfxLog()
+Gui::showErrorLog()
 {
-    QString log = appPTR->getOfxLog_mt_safe();
+    QString log = appPTR->getErrorLog_mt_safe();
     LogWindow lw(log, this);
 
     lw.setWindowTitle( tr("Error Log") );

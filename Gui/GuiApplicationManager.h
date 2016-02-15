@@ -167,7 +167,7 @@ public:
     
     bool isShorcutVersionUpToDate() const;
     
-    virtual void showOfxLog() OVERRIDE FINAL;
+    virtual void showErrorLog() OVERRIDE FINAL;
     
     virtual QString getAppFont() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     

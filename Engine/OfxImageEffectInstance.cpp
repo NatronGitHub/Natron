@@ -195,7 +195,7 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
     std::string type(msgtype);
 
     if (type == kOfxMessageLog) {
-        appPTR->writeToOfxLog_mt_safe( message.c_str() );
+        appPTR->writeToErrorLog_mt_safe( message.c_str() );
     } else if ( (type == kOfxMessageFatal) || (type == kOfxMessageError) ) {
         _ofxEffectInstance.lock()->message(eMessageTypeError, message);
     } else if (type == kOfxMessageWarning) {

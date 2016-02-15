@@ -209,7 +209,11 @@ Project::loadProject(const QString & path,
         
         bool mustSave = false;
         if (!loadProjectInternal(realPath,realName,isAutoSave,isUntitledAutosave,&mustSave)) {
-            appPTR->showOfxLog();
+            if (!getApp()->isBackground()) {
+                appPTR->showErrorLog();
+            } else {
+                std::cerr << appPTR->getErrorLog_mt_safe().toStdString() << std::endl;
+            }
         } else if (mustSave) {
             saveProject(realPath, realName, 0);
         }

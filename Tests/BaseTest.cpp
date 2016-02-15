@@ -252,8 +252,9 @@ TEST_F(BaseTest,GenerateDot)
     w.firstFrame = INT_MIN;
     w.lastFrame = INT_MAX;
     w.frameStep = INT_MIN;
+    w.useRenderStats = false;
     works.push_back(w);
-    _app->startWritersRendering(false, false, works);
+    _app->startWritersRendering(false, works);
     
     EXPECT_TRUE(QFile::exists(filePath));
     QFile::remove(filePath);

@@ -113,7 +113,7 @@ TEST(ImageKeyTest,Equality) {
     // coverity[dont_call]
     int randomHashKey1 = rand();
     SequenceTime time1 = 0;
-    int view1 = 0;
+    ViewIdx view1(0);
     double pa1 = 1.;
     ImageKey key1(0,randomHashKey1, false, time1,view1,pa1, false, false);
     U64 keyHash1 = key1.getHash();
@@ -122,7 +122,7 @@ TEST(ImageKeyTest,Equality) {
     ///make a second ImageKey equal to the first
     int randomHashKey2 = randomHashKey1;
     SequenceTime time2 = time1;
-    int view2 = view1;
+    ViewIdx view2(view1);
     double pa2 = pa1;
     ImageKey key2(0,randomHashKey2, false, time2,view2,pa2, false, false);
     U64 keyHash2 = key2.getHash();
@@ -134,7 +134,7 @@ TEST(ImageKeyTest,Difference) {
     // coverity[dont_call]
     int randomHashKey1 = rand() % 100;
     SequenceTime time1 = 0;
-    int view1 = 0;
+    ViewIdx view1(0);
     double pa1 = 1.;
     ImageKey key1(0,randomHashKey1,false, time1,view1,pa1, false, false);
     U64 keyHash1 = key1.getHash();
@@ -144,7 +144,7 @@ TEST(ImageKeyTest,Difference) {
     // coverity[dont_call]
     int randomHashKey2 = rand() % 1000  + 150;
     SequenceTime time2 = time1;
-    int view2 = view1;
+    ViewIdx view2(view1);
     double pa2 = pa1;
     ImageKey key2(0,randomHashKey2,false, time2,view2,pa2, false, false);
     U64 keyHash2 = key2.getHash();
