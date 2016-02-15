@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/KeyHelper.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
