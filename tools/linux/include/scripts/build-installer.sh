@@ -155,7 +155,7 @@ for x in $OFX_DEPENDS; do
     cp -v $x $IO_LIBS/ || exit 1
 done
 
-cp -v $INSTALL_PATH/ffmpeg-$FFLIC/lib/{libavfilter.so.5,libavdevice.so.56,libpostproc.so.53,libavresample.so.2,libavformat.so.56,libavcodec.so.56,libswscale.so.3,libavutil.so.54,libswresample.so.1} $IO_LIBS/ || exit 1
+cp -v $INSTALL_PATH/ffmpeg-$FFLIC/lib/{libavfilter.so.6,libavdevice.so.57,libpostproc.so.54,libavresample.so.2,libavformat.so.57,libavcodec.so.57,libswscale.so.4,libavutil.so.55,libswresample.so.2} $IO_LIBS/ || exit 1
 OFX_LIB_DEP=$(ldd $IO_LIBS/*|grep opt | awk '{print $3}')
 for y in $OFX_LIB_DEP; do
     cp -v $y $IO_LIBS/ || exit 1
