@@ -301,12 +301,10 @@ Project::loadProjectInternal(const QString & path,
     } catch (const boost::archive::archive_exception & e) {
         throw std::runtime_error( e.what() );
     } catch (const std::ios_base::failure& e) {
-        getApp()->progressEnd(this);
         throw std::runtime_error( std::string("Failed to read the project file: I/O failure (") + e.what() + ")");
     } catch (const std::exception & e) {
         throw std::runtime_error( std::string("Failed to read the project file: ") + e.what() );
     } catch (...) {
-        getApp()->progressEnd(this);
         throw std::runtime_error("Failed to read the project file");
     }
 

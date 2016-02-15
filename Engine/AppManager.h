@@ -546,6 +546,8 @@ public Q_SLOTS:
 
     void onMaxPanelsOpenedChanged(int maxPanels);
     
+    void onQueueRendersChanged(bool queuingEnabled);
+    
     void onCrashReporterNoLongerResponding();
     
     void onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, void* instanceData);

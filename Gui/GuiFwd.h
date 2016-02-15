@@ -151,6 +151,8 @@ class PanelWidget;
 class PreferencesPanel;
 class ProjectGui;
 class ProjectGuiSerialization;
+class ProgressPanel;
+class TaskInfo;
 class PropertiesBinWrapper;
 class PyModalDialog;
 class PyPanel;

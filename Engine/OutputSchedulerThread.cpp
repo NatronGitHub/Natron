@@ -1632,20 +1632,12 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             QString timeRemainingStr = Timer::printAsTime(timeRemaining, true);
             ts << "\nTime elapsed for frame: " << timeSpentStr;
             ts << "\nTime remaining: " << timeRemainingStr;
-            frameStr.append(';');
-            frameStr.append(QString::number(timeSpent));
-            frameStr.append(';');
-            frameStr.append(QString::number(timeRemaining));
         }
-        appPTR->writeToOutputPipe(longMessage,kFrameRenderedStringShort + frameStr);
+        appPTR->writeToOutputPipe(longMessage,kFrameRenderedStringShort + frameStr + kProgressChangedStringShort + QString::number(percentage));
     }
     
     if (viewIndex == viewsToRender[viewsToRender.size() - 1] || viewIndex == -1) {
-        if (!stats) {
-            _imp->engine->s_frameRendered(frame);
-        } else {
-            _imp->engine->s_frameRenderedWithTimer(frame, timeSpent, timeRemaining);
-        }
+        _imp->engine->s_frameRendered(frame, percentage);
     }
     
     if (effect->isWriter()) {
@@ -3152,6 +3144,12 @@ OutputSchedulerThread*
 RenderEngine::createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect)
 {
     return new DefaultScheduler(this,effect);
+}
+
+boost::shared_ptr<OutputEffectInstance>
+RenderEngine::getOutput() const
+{
+    return _imp->output.lock();
 }
 
 void

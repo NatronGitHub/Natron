@@ -266,6 +266,13 @@ Settings::initializeKnobsGeneral()
                                                                                  "a separate process so that if the main application crashes, the render goes on.");
     _generalTab->addKnob(_renderInSeparateProcess);
 
+    _queueRenders = AppManager::createKnob<KnobBool>(this, "Append new renders to queue");
+    _queueRenders->setHintToolTip("When checked, renders will be queued in the Progress Panel and will start only when all "
+                                  "other prior tasks are done.");
+    _queueRenders->setAnimationEnabled(false);
+    _queueRenders->setName("queueRenders");
+    _generalTab->addKnob(_queueRenders);
+    
     _autoPreviewEnabledForNewProjects = AppManager::createKnob<KnobBool>(this, "Auto-preview enabled by default for new projects");
     _autoPreviewEnabledForNewProjects->setName("enableAutoPreviewNewProjects");
     _autoPreviewEnabledForNewProjects->setAnimationEnabled(false);
@@ -1391,6 +1398,7 @@ Settings::setDefaultValues()
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false,0);
+    _queueRenders->setDefaultValue(false);
     _autoPreviewEnabledForNewProjects->setDefaultValue(true,0);
     _firstReadSetProjectFormat->setDefaultValue(true);
     _fixPathsOnProjectPathChanged->setDefaultValue(true);
@@ -2067,6 +2075,8 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->setUndoRedoStackLimit( _maxUndoRedoNodeGraph->getValue() );
     } else if ( k == _maxPanelsOpened.get() ) {
         appPTR->onMaxPanelsOpenedChanged( _maxPanelsOpened->getValue() );
+    } else if ( k == _queueRenders.get() ) {
+        appPTR->onQueueRendersChanged(_queueRenders->getValue());
     } else if ( k == _checkerboardTileSize.get() || k == _checkerboardColor1.get() || k == _checkerboardColor2.get() ) {
         appPTR->onCheckerboardSettingsChanged();
     }  else if (k == _hideOptionalInputsAutomatically.get() && !_restoringSettings && reason == eValueChangedReasonUserEdited) {
@@ -3519,6 +3529,19 @@ bool
 Settings::isAutoWipeEnabled() const
 {
     return _autoWipe->getValue();
+}
+
+bool
+Settings::setRenderQueuingEnabled(bool enabled)
+{
+    _queueRenders->setValue(enabled);
+    saveSetting(_queueRenders.get());
+}
+
+bool
+Settings::isRenderQueuingEnabled() const
+{
+    return _queueRenders->getValue();
 }
 
 NATRON_NAMESPACE_EXIT;

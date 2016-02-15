@@ -70,6 +70,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/RegisteredTabs.h"
+#include "Gui/ProgressPanel.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/Splitter.h"
 #include "Gui/Utils.h"
@@ -422,6 +423,7 @@ TabWidget::createMenu()
     menu.addAction( tr("Dope Sheet Editor here"), this, SLOT( moveDopeSheetEditorHere() ) );
     menu.addAction( tr("Properties bin here"), this, SLOT( movePropertiesBinHere() ) );
     menu.addAction( tr("Script editor here"), this, SLOT( moveScriptEditorHere() ) );
+    menu.addAction( tr("Progress Panel here"), this, SLOT( moveProgressPanelHere() ) );
     
     
     std::map<PyPanel*,std::string> userPanels = _imp->gui->getPythonPanels();
@@ -844,6 +846,12 @@ void
 TabWidget::moveScriptEditorHere()
 {
     moveTab(_imp->gui->getScriptEditor(), _imp->gui->getScriptEditor(), this);
+}
+        
+void
+TabWidget::moveProgressPanelHere()
+{
+    moveTab(_imp->gui->getProgressPanel(), _imp->gui->getProgressPanel(), this);
 }
 
 TabWidget*

@@ -119,10 +119,12 @@ public:
     
     virtual void loadProjectGui(boost::archive::xml_iarchive & archive) const OVERRIDE FINAL;
     virtual void saveProjectGui(boost::archive::xml_oarchive & archive) OVERRIDE FINAL;
-    virtual void notifyRenderProcessHandlerStarted(const QString & sequenceName,
-                                                   int firstFrame,int lastFrame,
-                                                   int frameStep,
-                                                   const boost::shared_ptr<ProcessHandler> & process) OVERRIDE FINAL;
+
+    virtual void notifyRenderStarted(const QString & sequenceName,
+                                     int firstFrame,int lastFrame,
+                                     int frameStep,bool canPause,
+                                     OutputEffectInstance* writer,
+                                     const boost::shared_ptr<ProcessHandler> & process) OVERRIDE FINAL;
     virtual void setupViewersForViews(const std::vector<std::string>& viewNames) OVERRIDE FINAL;
 
     void setViewersCurrentView(int view);
@@ -134,10 +136,11 @@ public:
     virtual bool isGuiFrozen() const OVERRIDE FINAL;
 
     virtual bool isShowingDialog() const OVERRIDE FINAL;
-    virtual void progressStart(KnobHolder* effect, const std::string &message, const std::string &messageid, bool canCancel = true) OVERRIDE FINAL;
-    virtual void progressEnd(KnobHolder* effect) OVERRIDE FINAL;
-    virtual bool progressUpdate(KnobHolder* effect,double t) OVERRIDE FINAL;
+    virtual void progressStart(const NodePtr& node, const std::string &message, const std::string &messageid, bool canCancel = true) OVERRIDE FINAL;
+    virtual void progressEnd(const NodePtr& node) OVERRIDE FINAL;
+    virtual bool progressUpdate(const NodePtr& node,double t) OVERRIDE FINAL;
     virtual void onMaxPanelsOpenedChanged(int maxPanels) OVERRIDE FINAL;
+    virtual void onRenderQueuingChanged(bool queueingEnabled) OVERRIDE FINAL;
     virtual void connectViewersToViewerCache() OVERRIDE FINAL;
     virtual void disconnectViewersFromViewerCache() OVERRIDE FINAL;
 
@@ -146,8 +149,6 @@ public:
 
     virtual std::string openImageFileDialog() OVERRIDE FINAL;
     virtual std::string saveImageFileDialog() OVERRIDE FINAL;
-
-    virtual void startRenderingFullSequence(bool enableRenderStats,const AppInstance::RenderWork& w,bool renderInSeparateProcess,const QString& savePath) OVERRIDE FINAL;
 
     virtual void clearViewersLastRenderedTexture() OVERRIDE FINAL;
     
@@ -191,8 +192,6 @@ public Q_SLOTS:
     void reloadStylesheet();
 
     virtual void redrawAllViewers() OVERRIDE FINAL;
-
-    void onProcessFinished();
 
     void projectFormatChanged(const Format& f);
     

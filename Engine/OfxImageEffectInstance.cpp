@@ -724,7 +724,7 @@ void
 OfxImageEffectInstance::progressStart(const std::string & message, const std::string &messageid)
 {
     boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
-    effect->getApp()->progressStart(effect.get(), message, messageid);
+    effect->getApp()->progressStart(effect->getNode(), message, messageid);
 }
 
 /// finish yer progress
@@ -732,7 +732,7 @@ void
 OfxImageEffectInstance::progressEnd()
 {
     boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
-    effect->getApp()->progressEnd(effect.get());
+    effect->getApp()->progressEnd(effect->getNode());
 }
 
 /** @brief Indicate how much of the processing task has been completed and reports on any abort status.
@@ -746,7 +746,7 @@ bool
 OfxImageEffectInstance::progressUpdate(double t)
 {
     boost::shared_ptr<OfxEffectInstance> effect = getOfxEffectInstance();
-    return effect->getApp()->progressUpdate(effect.get(), t);
+    return effect->getApp()->progressUpdate(effect->getNode(), t);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

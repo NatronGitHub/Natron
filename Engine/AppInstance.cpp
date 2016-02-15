@@ -51,11 +51,13 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/FileDownloader.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/DiskCacheNode.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxHost.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
+#include "Engine/ProcessHandler.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
@@ -89,10 +91,19 @@ FlagSetter::~FlagSetter()
     }
 }
 
+struct RenderQueueItem
+{
+    AppInstance::RenderWork work;
+    QString sequenceName;
+    QString savePath;
+    boost::shared_ptr<ProcessHandler> process;
+};
+
 
 
 struct AppInstancePrivate
 {
+    AppInstance* _publicInterface;
     boost::shared_ptr<Project> _currentProject; //< ptr to the project
     int _appID; //< the unique ID of this instance (or window)
     bool _projectCreatedWithLowerCaseIDs;
@@ -108,15 +119,21 @@ struct AppInstancePrivate
     //When a node tree is created
     int _creatingTree;
     
+    mutable QMutex renderQueueMutex;
+    std::list<RenderQueueItem> renderQueue, activeRenders;
+    
     AppInstancePrivate(int appID,
                        AppInstance* app)
-    : _currentProject( new Project(app) )
+    : _publicInterface(app)
+    , _currentProject( new Project(app) )
     , _appID(appID)
     , _projectCreatedWithLowerCaseIDs(false)
     , creatingGroupMutex()
     , _creatingGroup(false)
     , _creatingNode(false)
     , _creatingTree(0)
+    , renderQueueMutex()
+    , renderQueue()
     {
     }
     
@@ -124,6 +141,16 @@ struct AppInstancePrivate
     
     
     void executeCommandLinePythonCommands(const CLArgs& args);
+    
+    bool validateRenderOptions(const AppInstance::RenderWork& w,
+                               int* firstFrame,
+                               int* lastFrame,
+                               int* frameStep);
+    
+    void getSequenceNameFromWriter(const OutputEffectInstance* writer, QString* sequenceName);
+    
+    void startRenderingFullSequence(bool blocking, const RenderQueueItem& writerWork);
+
     
 };
 
@@ -424,19 +451,11 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderW
         if (cl.hasFrameRange()) {
             const std::list<std::pair<int,std::pair<int,int> > >& frameRanges = cl.getFrameRanges();
             for (std::list<std::pair<int,std::pair<int,int> > >::const_iterator it2 = frameRanges.begin(); it2 != frameRanges.end(); ++it2) {
-                AppInstance::RenderWork r;
-                r.firstFrame = it2->second.first;
-                r.lastFrame = it2->second.second;
-                r.frameStep = it2->first;
-                r.writer = effect;
+                AppInstance::RenderWork r(effect,it2->second.first,it2->second.second,it2->first, cl.areRenderStatsEnabled());
                 requests.push_back(r);
             }
         } else {
-            AppInstance::RenderWork r;
-            r.firstFrame = INT_MIN;
-            r.lastFrame = INT_MAX;
-            r.frameStep = INT_MIN;
-            r.writer = effect;
+            AppInstance::RenderWork r(effect,INT_MIN,INT_MAX,INT_MIN, cl.areRenderStatsEnabled());
             requests.push_back(r);
         }
     
@@ -593,10 +612,10 @@ AppInstance::load(const CLArgs& cl,bool makeEmptyInstance)
        
         ///launch renders
         if (!writersWork.empty()) {
-            startWritersRendering(cl.areRenderStatsEnabled(), false, writersWork);
+            startWritersRendering(false, writersWork);
         } else {
             std::list<std::string> writers;
-            startWritersRendering(cl.areRenderStatsEnabled(), false, writers, cl.getFrameRanges());
+            startWritersRenderingFromNames(cl.areRenderStatsEnabled(), false, writers, cl.getFrameRanges());
         }
        
         
@@ -1227,7 +1246,7 @@ AppInstance::triggerAutoSave()
 
 
 void
-AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
+AppInstance::startWritersRenderingFromNames(bool enableRenderStats,bool doBlockingRender,
                                    const std::list<std::string>& writers,
                                    const std::list<std::pair<int,std::pair<int,int> > >& frameRanges)
 {
@@ -1260,20 +1279,12 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
                 assert(effect);
                 
                 for (std::list<std::pair<int,std::pair<int,int> > >::const_iterator it2 = frameRanges.begin(); it2!=frameRanges.end();++it2) {
-                    RenderWork w;
-                    w.writer = effect;
-                    w.firstFrame = it2->second.first;
-                    w.lastFrame = it2->second.second;
-                    w.frameStep = it2->first;
+                    RenderWork w(effect,it2->second.first,it2->second.second, it2->first, enableRenderStats);
                     renderers.push_back(w);
                 }
                 
                 if (frameRanges.empty()) {
-                    RenderWork r;
-                    r.firstFrame = INT_MIN;
-                    r.lastFrame = INT_MAX;
-                    r.frameStep = INT_MIN;
-                    r.writer = effect;
+                    RenderWork r(effect,INT_MIN,INT_MAX, INT_MIN, enableRenderStats);
                     renderers.push_back(r);
                 }
             }
@@ -1288,20 +1299,12 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
             if (*it2) {
                 
                 for (std::list<std::pair<int,std::pair<int,int> > >::const_iterator it3 = frameRanges.begin(); it3!=frameRanges.end();++it3) {
-                    RenderWork w;
-                    w.writer = *it2;
-                    w.firstFrame = it3->second.first;
-                    w.lastFrame = it3->second.second;
-                    w.frameStep = it3->first;
+                    RenderWork w(*it2,it3->second.first,it3->second.second, it3->first, enableRenderStats);
                     renderers.push_back(w);
                 }
                 
                 if (frameRanges.empty()) {
-                    RenderWork r;
-                    r.firstFrame = INT_MIN;
-                    r.lastFrame = INT_MAX;
-                    r.frameStep = INT_MIN;
-                    r.writer = *it2;
+                    RenderWork r(*it2,INT_MIN,INT_MAX, INT_MIN, enableRenderStats);
                     renderers.push_back(r);
                 }
             }
@@ -1313,69 +1316,211 @@ AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender,
         throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
     }
     
-    startWritersRendering(enableRenderStats, doBlockingRender, renderers);
+    startWritersRendering(doBlockingRender, renderers);
 }
 
 void
-AppInstance::startWritersRendering(bool enableRenderStats,bool doBlockingRender, const std::list<RenderWork>& writers)
+AppInstance::startWritersRendering(bool doBlockingRender, const std::list<RenderWork>& writers)
 {
-    
-    
     if (writers.empty()) {
         return;
     }
     
     getProject()->resetTotalTimeSpentRenderingForAllNodes();
-
+    
+    bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
+    QString savePath;
+    if (renderInSeparateProcess) {
+        getProject()->saveProject_imp("","RENDER_SAVE.ntp",true, false,&savePath);
+    }
+    
+    std::list<RenderQueueItem> itemsToQueue;
+    for (std::list<RenderWork>::const_iterator it = writers.begin(); it!=writers.end(); ++it) {
+        RenderQueueItem item ;
+        item.work = *it;
+        if (!_imp->validateRenderOptions(item.work, &item.work.firstFrame, &item.work.lastFrame, &item.work.frameStep)) {
+            continue;;
+        }
+        _imp->getSequenceNameFromWriter(it->writer, &item.sequenceName);
+        item.savePath = savePath;
+        
+        if (renderInSeparateProcess) {
+            item.process.reset(new ProcessHandler(savePath,item.work.writer));
+            QObject::connect( item.process.get(), SIGNAL( processFinished(int) ), this, SLOT( onBackgroundRenderProcessFinished() ) );
+        } else {
+            QObject::connect(item.work.writer->getRenderEngine(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)));
+        }
+        
+        bool canPause = item.work.writer->getPluginID() != PLUGINID_OFX_WRITEFFMPEG;
+        
+        notifyRenderStarted(item.sequenceName,item.work.firstFrame,item.work.lastFrame, item.work.frameStep, canPause, item.work.writer, item.process);
+        itemsToQueue.push_back(item);
+    }
+    if (itemsToQueue.empty()) {
+        return;
+    }
     
     if (appPTR->isBackground() || doBlockingRender) {
-        
         //blocking call, we don't want this function to return pre-maturely, in which case it would kill the app
-        QtConcurrent::blockingMap( writers,boost::bind(&AppInstance::startRenderingBlockingFullSequence,this,enableRenderStats, _1,false,QString()) );
+        QtConcurrent::blockingMap( itemsToQueue,boost::bind(&AppInstancePrivate::startRenderingFullSequence,_imp.get(),true, _1) );
     } else {
         
-        //Take a snapshot of the graph at this time, this will be the version loaded by the process
-        bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
-        QString savePath;
-        getProject()->saveProject_imp("","RENDER_SAVE.ntp",true, false,&savePath);
-
-        for (std::list<RenderWork>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
-            ///Use the frame range defined by the writer GUI because we're in an interactive session
-            startRenderingFullSequence(enableRenderStats,*it,renderInSeparateProcess,savePath);
+        bool isQueuingEnabled = appPTR->getCurrentSettings()->isRenderQueuingEnabled();
+        if (isQueuingEnabled) {
+            QMutexLocker k(&_imp->renderQueueMutex);
+            if (!_imp->activeRenders.empty()) {
+                _imp->renderQueue.insert(_imp->renderQueue.end(), itemsToQueue.begin(), itemsToQueue.end());
+                return;
+            } else {
+                std::list<RenderQueueItem>::const_iterator it = itemsToQueue.begin();
+                const RenderQueueItem& firstWork = *it;
+                ++it;
+                for (; it != itemsToQueue.end(); ++it) {
+                    _imp->renderQueue.push_back(*it);
+                }
+                k.unlock();
+                _imp->startRenderingFullSequence(false, firstWork);
+            }
+            
+        } else {
+            
+            
+            for (std::list<RenderQueueItem>::const_iterator it = itemsToQueue.begin(); it!=itemsToQueue.end(); ++it) {
+                _imp->startRenderingFullSequence(false, *it);
+            }
+            
         }
     }
 }
 
+
 void
-AppInstance::startRenderingBlockingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool /*renderInSeparateProcess*/,const QString& /*savePath*/)
+AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstance* writer,QString* sequenceName)
 {
-    BlockingBackgroundRender backgroundRender(writerWork.writer);
-    double first,last;
-    if (writerWork.firstFrame == INT_MIN || writerWork.lastFrame == INT_MAX) {
-        writerWork.writer->getFrameRange_public(writerWork.writer->getHash(), &first, &last);
-        if (first == INT_MIN || last == INT_MAX) {
-            getFrameRange(&first, &last);
-        }
+    ///get the output file knob to get the name of the sequence
+    const DiskCacheNode* isDiskCache = dynamic_cast<const DiskCacheNode*>(writer);
+    if (isDiskCache) {
+        *sequenceName = isDiskCache->getNode()->getLabel_mt_safe().c_str();
     } else {
-        first = writerWork.firstFrame;
-        last = writerWork.lastFrame;
+        KnobPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
+        if (fileKnob) {
+            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(fileKnob.get());
+            assert(isString);
+            *sequenceName = isString->getValue().c_str();
+        }
+    }
+}
+
+bool
+AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
+                                          int* firstFrame,
+                                          int* lastFrame,
+                                          int* frameStep)
+{
+    ///validate the frame range to render
+    if (w.firstFrame == INT_MIN || w.lastFrame == INT_MAX) {
+        
+        double firstFrameD,lastFrameD;
+        w.writer->getFrameRange_public(w.writer->getHash(),&firstFrameD, &lastFrameD, true);
+        if (firstFrameD == INT_MIN || lastFrameD == INT_MAX) {
+            _publicInterface->getFrameRange(&firstFrameD, &lastFrameD);
+        }
+        
+        if (firstFrameD > lastFrameD) {
+            Dialogs::errorDialog(w.writer->getNode()->getLabel_mt_safe(),
+                                 QObject::tr("First frame in the sequence is greater than the last frame").toStdString(), false );
+            
+            return false;
+        }
+        *firstFrame = (int)firstFrameD;
+        *lastFrame = (int)lastFrameD;
+    } else {
+        *firstFrame = w.firstFrame;
+        *lastFrame = w.lastFrame;
     }
     
-    int frameStep;
-    if (writerWork.frameStep == INT_MAX || writerWork.frameStep == INT_MIN) {
+    if (w.frameStep == INT_MAX || w.frameStep == INT_MIN) {
         ///Get the frame step from the frame step parameter of the Writer
-        frameStep = writerWork.writer->getNode()->getFrameStepKnobValue();
+        *frameStep = w.writer->getNode()->getFrameStepKnobValue();
     } else {
-        frameStep = std::max(1, writerWork.frameStep);
+        *frameStep = std::max(1, w.frameStep);
     }
-    
-    backgroundRender.blockingRender(enableRenderStats,first,last,frameStep); //< doesn't return before rendering is finished
+    return true;
+
 }
 
 void
-AppInstance::startRenderingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool renderInSeparateProcess,const QString& savePath)
+AppInstancePrivate::startRenderingFullSequence(bool blocking, const RenderQueueItem& w)
 {
-    startRenderingBlockingFullSequence(enableRenderStats, writerWork, renderInSeparateProcess, savePath);
+    if (blocking) {
+        BlockingBackgroundRender backgroundRender(w.work.writer);
+        backgroundRender.blockingRender(w.work.useRenderStats,w.work.firstFrame,w.work.lastFrame,w.work.frameStep); //< doesn't return before rendering is finished
+        return;
+    }
+    
+    
+    {
+        QMutexLocker k(&renderQueueMutex);
+        activeRenders.push_back(w);
+    }
+    
+    
+    if (w.process) {
+        w.process->startProcess();
+    } else {
+        w.work.writer->renderFullSequence(false, w.work.useRenderStats,NULL,w.work.firstFrame,w.work.lastFrame, w.work.frameStep);
+    }
+
+    
+}
+
+void
+AppInstance::onQueuedRenderFinished(int /*retCode*/)
+{
+    RenderEngine* engine = qobject_cast<RenderEngine*>(sender());
+    if (!engine) {
+        return;
+    }
+    boost::shared_ptr<OutputEffectInstance> effect = engine->getOutput();
+    if (!effect) {
+        return;
+    }
+    startNextQueuedRender(effect.get());
+}
+
+void
+AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter)
+{
+    RenderQueueItem nextWork;
+    {
+        QMutexLocker k(&_imp->renderQueueMutex);
+        for (std::list<RenderQueueItem>::const_iterator it = _imp->activeRenders.begin(); it!=_imp->activeRenders.end(); ++it) {
+            if (it->work.writer == finishedWriter) {
+                _imp->activeRenders.erase(it);
+                break;
+            }
+        }
+        if (!_imp->renderQueue.empty()) {
+            nextWork = _imp->renderQueue.front();
+            _imp->renderQueue.pop_front();
+        } else {
+            return;
+        }
+    }
+    _imp->startRenderingFullSequence(false,nextWork);
+}
+
+void
+AppInstance::onBackgroundRenderProcessFinished()
+{
+    ProcessHandler* proc = qobject_cast<ProcessHandler*>( sender() );
+    OutputEffectInstance* effect = 0;
+    if (proc) {
+        effect = proc->getWriter();
+    }
+    if (effect) {
+        startNextQueuedRender(effect);
+    }
 }
 
 void

@@ -145,27 +145,22 @@ ProcessHandler::onDataWrittenToSocket()
     if ( str.startsWith(kFrameRenderedStringShort) ) {
         str = str.remove(kFrameRenderedStringShort);
         
+        double progressPercent = 0.;
+        int foundProgress = str.lastIndexOf(kProgressChangedStringShort);
+        if (foundProgress != -1) {
+            QString progressStr = str.mid(foundProgress);
+            progressStr.remove(kProgressChangedStringShort);
+            progressPercent = progressStr.toDouble();
+            str = str.mid(0, foundProgress);
+        }
         if (!str.isEmpty()) {
-            if (!str.contains(';')) {
-                //The report does not have extended timer infos
-                Q_EMIT frameRendered( str.toInt() );
-            } else {
-                QStringList splits = str.split(';');
-                if (splits.size() == 3) {
-                    Q_EMIT frameRenderedWithTimer(splits[0].toInt(), splits[1].toDouble(), splits[2].toDouble());
-                } else {
-                    if (!splits.isEmpty()) {
-                        Q_EMIT frameRendered(splits[0].toInt());
-                    }
-                }
-            }
+            //The report does not have extended timer infos
+            Q_EMIT frameRendered(str.toInt(), progressPercent);
+            
         }
         
     } else if ( str.startsWith(kRenderingFinishedStringShort) ) {
         ///don't do anything
-    } else if ( str.startsWith(kProgressChangedStringShort) ) {
-        str = str.remove(kProgressChangedStringShort);
-        Q_EMIT frameProgress( str.toInt() );
     } else if ( str.startsWith(kBgProcessServerCreatedShort) ) {
         str = str.remove(kBgProcessServerCreatedShort);
         ///the bg process wants us to create the pipe for its input

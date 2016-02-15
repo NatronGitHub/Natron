@@ -2618,9 +2618,10 @@ EffectInstance::evaluate(KnobI* knob,
                 w.firstFrame = INT_MIN;
                 w.lastFrame = INT_MAX;
                 w.frameStep = INT_MIN;
+                w.useRenderStats = getApp()->isRenderStatsActionChecked();
                 std::list<AppInstance::RenderWork> works;
                 works.push_back(w);
-                getApp()->startWritersRendering(getApp()->isRenderStatsActionChecked(), false, works);
+                getApp()->startWritersRendering(false, works);
 
                 return;
             }

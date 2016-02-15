@@ -77,6 +77,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
+#include "Gui/ProgressPanel.h"
 #include "Gui/RightClickableWidget.h"
 #include "Gui/RenderingProgressDialog.h"
 #include "Gui/RotoGui.h"
@@ -191,137 +192,28 @@ Gui::onViewerRotoEvaluated(ViewerTab* viewer)
     }
 }
 
-void
-Gui::onDoProgressStartOnMainThread(KnobHolder* effect, const QString &message, const QString &/*messageid*/, bool canCancel)
-{
-    assert(QThread::currentThread() == qApp->thread());
-    
-    QString progressLabel;
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>(effect);
-    if (isEffect) {
-        progressLabel.append(isEffect->getNode()->getLabel().c_str());
-        progressLabel.append(": ");
-    }
-    progressLabel.append(message);
-    GeneralProgressDialog* dialog = new GeneralProgressDialog(progressLabel, canCancel, this);
-    dialog->hide();
-    {
-        QMutexLocker k(&_imp->_progressBarsMutex);
-        std::map<KnobHolder*, GeneralProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
-        ///If a second dialog was asked for whilst another is still active, the first dialog will not be
-        ///able to be canceled.
-        if (found != _imp->_progressBars.end()) {
-            _imp->_progressBars.erase(found);
-        }
-        
-        _imp->_progressBars.insert( std::make_pair(effect, dialog) );
-    }
-    
-    //Do not show the dialog, it will be shown automatically on progress update
-    //dialog->show();
-    
-}
 
 void
-Gui::onDoProgressEndOnMainThread(KnobHolder* effect)
-{
-    assert(QThread::currentThread() == qApp->thread());
-
-    
-    GeneralProgressDialog* dialog = 0;
-    {
-        QMutexLocker k(&_imp->_progressBarsMutex);
-        std::map<KnobHolder*, GeneralProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
-        if (found == _imp->_progressBars.end()) {
-            return;
-        }
-        dialog = found->second;
-        _imp->_progressBars.erase(found);
-    }
-    
-    if (dialog) {
-        dialog->close();
-    }
-    
-}
-
-void
-Gui::onDoProgressUpdateOnMainThread(KnobHolder* effect,double t)
-{
-    assert(QThread::currentThread() == qApp->thread());
-
-    {
-        QMutexLocker k(&_imp->_progressBarsMutex);
-        std::map<KnobHolder*, GeneralProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
-        if (found == _imp->_progressBars.end()) {
-            return;
-        }
-        if (found->second) {
-            found->second->updateProgress(t);
-        }
-    }
-   
-}
-
-void
-Gui::progressStart(KnobHolder* effect,
+Gui::progressStart(const NodePtr& node,
                    const std::string &message,
-                   const std::string &messageid,
+                   const std::string &/*messageid*/,
                    bool canCancel)
 {
-    if (!effect) {
-        return;
-    }
-    if (QThread::currentThread() != qApp->thread()) {
-        Q_EMIT s_doProgressStartOnMainThread(effect, message.c_str(), messageid.c_str(), canCancel);
-    } else {
-        onDoProgressStartOnMainThread(effect, message.c_str(), messageid.c_str(), canCancel);
-    }
+    _imp->_progressPanel->startTask(node, INT_MIN, INT_MAX, 1, false, canCancel, message.c_str());
 
 }
 
 void
-Gui::progressEnd(KnobHolder* effect)
+Gui::progressEnd(const NodePtr& node)
 {
-    if (!effect) {
-        return;
-    }
-    if (QThread::currentThread() != qApp->thread()) {
-        Q_EMIT s_doProgressEndOnMainThread(effect);
-    } else {
-        onDoProgressEndOnMainThread(effect);
-    }
+    _imp->_progressPanel->endTask(node);
 }
 
 bool
-Gui::progressUpdate(KnobHolder* effect,
+Gui::progressUpdate(const NodePtr& node,
                     double t)
 {
-    if (!effect) {
-        return true;
-    }
-    bool isMainThread = QThread::currentThread() == qApp->thread();
-    if (!isMainThread) {
-        Q_EMIT s_doProgressUpdateOnMainThread(effect, t);
-    } else {
-        onDoProgressUpdateOnMainThread(effect, t);
-    }
-    
-    {
-        QMutexLocker k(&_imp->_progressBarsMutex);
-        std::map<KnobHolder*, GeneralProgressDialog*>::iterator found = _imp->_progressBars.find(effect);
-        if (found != _imp->_progressBars.end()) {
-            if (found->second->wasCanceled()) {
-                return false;
-            }
-        }
-    }
-    
-    if (isMainThread) {
-        QCoreApplication::processEvents();
-    }
-
-    return true;
+    return _imp->_progressPanel->updateTask(node, t);
 }
 
 

@@ -150,9 +150,10 @@ DiskCacheNode::knobChanged(KnobI* k, ValueChangedReasonEnum /*reason*/, int view
         w.firstFrame = INT_MIN;
         w.lastFrame = INT_MAX;
         w.frameStep = 1;
+        w.useRenderStats = false;
         std::list<AppInstance::RenderWork> works;
         works.push_back(w);
-        getApp()->startWritersRendering(getApp()->isRenderStatsActionChecked(), false, works);
+        getApp()->startWritersRendering(false, works);
     }
 }
 

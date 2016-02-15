@@ -343,18 +343,19 @@ public:
     NodesGuiList getVisibleNodes_mt_safe() const;
 
     void deselectAllNodes() const;
-
-    void onProcessHandlerStarted(const QString & sequenceName,int firstFrame,int lastFrame, int frameStep,
-                                 const boost::shared_ptr<ProcessHandler> & process);
-
-    void onWriterRenderStarted(const QString & sequenceName,int firstFrame,int lastFrame,int frameStep,
-                               OutputEffectInstance* writer);
-
+    
+    void onRenderStarted(const QString & sequenceName,
+                         int firstFrame,int lastFrame,int frameStep,
+                         bool canPause,
+                         OutputEffectInstance* writer,
+                         const boost::shared_ptr<ProcessHandler> & process);
+    
     NodeGraph* getNodeGraph() const;
     CurveEditor* getCurveEditor() const;
     DopeSheetEditor *getDopeSheetEditor() const;
     ScriptEditor* getScriptEditor() const;
-
+    ProgressPanel* getProgressPanel() const;
+    
     QVBoxLayout* getPropertiesLayout() const;
     PropertiesBinWrapper* getPropertiesBin() const;
     const RegisteredTabs & getRegisteredTabs() const;
@@ -409,11 +410,13 @@ public:
 
     void removeTrackerInterface(NodeGui* n,bool pluginsly);
 
-    void progressStart(KnobHolder* effect, const std::string &message, const std::string &messageid, bool canCancel = true);
+    void progressStart(const NodePtr& node, const std::string &message, const std::string &messageid, bool canCancel = true);
 
-    void progressEnd(KnobHolder* effect);
+    void progressEnd(const NodePtr& node);
 
-    bool progressUpdate(KnobHolder* effect,double t);
+    bool progressUpdate(const NodePtr& node,double t);
+    
+    void ensureProgressPanelVisible();
 
     /*Useful function that saves on disk the image in png format.
        The name of the image will be the hash key of the image.*/
@@ -700,9 +703,7 @@ public Q_SLOTS:
     void onCloseTabTriggered();
 
     void onUserCommandTriggered();
-    
-    void onRenderProgressDialogFinished();
-    
+        
     void onFocusChanged(QWidget* old, QWidget*);
     
     void onShowApplicationConsoleActionTriggered();

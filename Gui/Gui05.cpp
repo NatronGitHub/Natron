@@ -51,6 +51,7 @@
 #include "Gui/GuiPrivate.h"
 #include "Gui/Histogram.h"
 #include "Gui/NodeGraph.h"
+#include "Gui/ProgressPanel.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/ShortCutEditor.h"
 #include "Gui/GuiApplicationManager.h"
@@ -115,6 +116,7 @@ Gui::setupUi()
     _imp->createCurveEditorGui();
     _imp->createDopeSheetGui();
     _imp->createScriptEditorGui();
+    _imp->createProgressPanelGui();
     ///Must be absolutely called once _nodeGraphArea has been initialized.
     _imp->createPropertiesBinGui();
 

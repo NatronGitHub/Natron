@@ -166,6 +166,8 @@ struct GuiPrivate
 
     ///The curve editor.
     CurveEditor *_curveEditor;
+    
+    ProgressPanel* _progressPanel;
 
     // The dope sheet
     DopeSheetEditor *_dopeSheetEditor;
@@ -225,8 +227,6 @@ struct GuiPrivate
 
     ///The "About" window.
     AboutWindow* _aboutWindow;
-    mutable QMutex _progressBarsMutex;
-    std::map<KnobHolder*, GeneralProgressDialog*> _progressBars;
 
     ///list of the currently opened property panels
     mutable QMutex openedPanelsMutex;
@@ -281,6 +281,8 @@ struct GuiPrivate
     void createDopeSheetGui();
 
     void createScriptEditorGui();
+    
+    void createProgressPanelGui();
 
     ///If there's only 1 non-floating pane in the main window, return it, otherwise returns NULL
     TabWidget* getOnly1NonFloatingPane(int & count) const;

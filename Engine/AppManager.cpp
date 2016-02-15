@@ -1966,6 +1966,19 @@ AppManager::onMaxPanelsOpenedChanged(int maxPanels)
     }
 }
 
+void
+AppManager::onQueueRendersChanged(bool queuingEnabled)
+{
+    std::map<int,AppInstanceRef> copy;
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        copy = _imp->_appInstances;
+    }
+    for (std::map<int,AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
+        it->second.app->onRenderQueuingChanged(queuingEnabled);
+    }
+}
+
 int
 AppManager::exec()
 {
@@ -2462,12 +2475,22 @@ AppManager::initPython(int argc,char* argv[])
     
     ///Must be called prior to Py_Initialize
     initBuiltinPythonModules();
-//#ifndef DEBUG
     
     //See https://developer.blender.org/T31507
     //Python will not load anything in site-packages if this is set
-    //Py_NoSiteFlag = 1; // NEVER comment this
-//#endif
+    //We are sure that nothing in system wide site-packages is loaded, for instance on OS X with Python installed
+    //through macports on the system, the following printf show the following:
+    
+    /*Py_GetProgramName is /Applications/Natron.app/Contents/MacOS/Natron
+    Py_GetPrefix is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7
+    Py_GetExecPrefix is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7
+    Py_GetProgramFullPath is /Applications/Natron.app/Contents/MacOS/Natron
+    Py_GetPath is /Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7:/Applications/Natron.app/Contents/MacOS/../Plugins:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python27.zip:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-darwin:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-mac:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/plat-mac/lib-scriptpackages:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-tk:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-old:/Applications/Natron.app/Contents/MacOS/../Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-dynload
+    Py_GetPythonHome is ../Frameworks/Python.framework/Versions/2.7/lib
+    Python library is in /Applications/Natron.app/Contents/Frameworks/Python.framework/Versions/2.7/lib/python2.7/site-packages*/
+    
+    //Py_NoSiteFlag = 1;
+    
     Py_Initialize();
     // pythonHome must be const, so that the c_str() pointer is never invalidated
     

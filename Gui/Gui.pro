@@ -171,6 +171,7 @@ SOURCES += \
     PreviewThread.cpp \
     ProjectGui.cpp \
     ProjectGuiSerialization.cpp \
+    ProgressPanel.cpp \
     PropertiesBinWrapper.cpp \
     PythonPanels.cpp \
     QtDecoder.cpp \
@@ -312,6 +313,7 @@ HEADERS += \
     ProjectGui.h \
     ProjectGuiSerialization.h \
     PropertiesBinWrapper.h \
+    ProgressPanel.h \
     Pyside_Gui_Python.h \
     PythonPanels.h \
     QtDecoder.h \

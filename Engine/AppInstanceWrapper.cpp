@@ -201,10 +201,11 @@ App::renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame,int last
     w.firstFrame = firstFrame;
     w.lastFrame = lastFrame;
     w.frameStep = frameStep;
+    w.useRenderStats = false;
     
     std::list<AppInstance::RenderWork> l;
     l.push_back(w);
-    _instance->startWritersRendering(false, forceBlocking, l);
+    _instance->startWritersRendering(forceBlocking, l);
 }
 
 void
@@ -237,11 +238,12 @@ App::renderInternal(bool forceBlocking,const std::list<Effect*>& effects,const s
         w.firstFrame = (*itF);
         w.lastFrame = (*itL);
         w.frameStep = (*itS);
+        w.useRenderStats = false;
         
         l.push_back(w);
         
     }
-    _instance->startWritersRendering(false, forceBlocking, l);
+    _instance->startWritersRendering(forceBlocking, l);
 }
 
 Param*

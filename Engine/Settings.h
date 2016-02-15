@@ -161,6 +161,10 @@ public:
 
     bool isRenderInSeparatedProcessEnabled() const;
 
+    bool isRenderQueuingEnabled() const;
+    
+    bool setRenderQueuingEnabled(bool enabled);
+    
     void restoreDefault();
 
     int getMaximumUndoRedoNodeGraph() const;
@@ -388,6 +392,7 @@ private:
     boost::shared_ptr<KnobBool> _useThreadPool;
     boost::shared_ptr<KnobInt> _nThreadsPerEffect;
     boost::shared_ptr<KnobBool> _renderInSeparateProcess;
+    boost::shared_ptr<KnobBool> _queueRenders;
     boost::shared_ptr<KnobBool> _autoPreviewEnabledForNewProjects;
     boost::shared_ptr<KnobBool> _firstReadSetProjectFormat;
     boost::shared_ptr<KnobBool> _fixPathsOnProjectPathChanged;
@@ -400,6 +405,7 @@ private:
     boost::shared_ptr<KnobBool> _activateTransformConcatenationSupport;
     boost::shared_ptr<KnobChoice> _hostName;
     boost::shared_ptr<KnobString> _customHostName;
+    
     
     
     boost::shared_ptr<KnobChoice> _ocioConfigKnob;

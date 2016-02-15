@@ -662,6 +662,7 @@ public:
     
     virtual ~RenderEngine();
    
+    boost::shared_ptr<OutputEffectInstance> getOutput() const;
     
     /**
      * @brief Call this to render from firstFrame to lastFrame included.
@@ -764,13 +765,9 @@ Q_SIGNALS:
      * @brief Emitted after a frame is rendered.
      * This will not be emitted after calling renderCurrentFrame
      **/
-    void frameRendered(int time);
+    void frameRendered(int time,double progress);
     
-    /**
-     * @brief Same as frameRendered(int) but with more infos
-     **/
-    void frameRenderedWithTimer(int frame, double timeElapsed, double timeRemaining);
-    
+
     /**
      * @brief Emitted when the stopRender() function is called
      * @param retCode Will be set to 1 if the render was finished because it was aborted, 0 otherwise.
@@ -805,10 +802,8 @@ private:
      * The following functions are called by the OutputThreadScheduler to Q_EMIT the corresponding signals
      **/
     void s_fpsChanged(double actual,double desired) { Q_EMIT fpsChanged(actual, desired); }
-    void s_frameRendered(int time) { Q_EMIT frameRendered(time); }
-    void s_frameRenderedWithTimer(int time, double timeElapsed, double timeRemaining) {
-        Q_EMIT frameRenderedWithTimer(time, timeElapsed, timeRemaining);
-    }
+    void s_frameRendered(int time, double progress) { Q_EMIT frameRendered(time,progress); }
+   
     void s_renderStarted(bool forward) { Q_EMIT renderStarted(forward); }
     void s_renderFinished(int retCode) { Q_EMIT renderFinished(retCode); }
     void s_refreshAllKnobs() { Q_EMIT refreshAllKnobs(); }

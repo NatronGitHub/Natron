@@ -109,6 +109,11 @@ public:
 
     const QString & getProcessLog() const;
 
+    OutputEffectInstance* getWriter() const
+    {
+        return _writer;
+    }
+    
 public Q_SLOTS:
 
     /**
@@ -164,11 +169,7 @@ Q_SIGNALS:
 
     void deleted();
 
-    void frameRendered(int);
-    
-    void frameRenderedWithTimer(int frame, double timeSpentForFrame, double timeRemaining);
-
-    void frameProgress(int);
+    void frameRendered(int frame, double progress);
 
     void processCanceled();
 

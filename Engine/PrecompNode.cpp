@@ -713,11 +713,12 @@ PrecompNodePrivate::launchPreRender()
         Dialogs::errorDialog(QObject::tr("Pre-Render").toStdString(), QObject::tr("Selected write node does not exist").toStdString());
         return;
     }
-    AppInstance::RenderWork w;
-    w.writer = dynamic_cast<OutputEffectInstance*>(output->getEffectInstance().get());
-    w.firstFrame = firstFrameKnob.lock()->getValue();
-    w.lastFrame = lastFrameKnob.lock()->getValue();
-    w.frameStep = 1;
+    AppInstance::RenderWork w(dynamic_cast<OutputEffectInstance*>(output->getEffectInstance().get()),
+                              firstFrameKnob.lock()->getValue(),
+                              lastFrameKnob.lock()->getValue(),
+                              1,
+                              false);
+
     if (w.writer) {
         RenderEngine* engine = w.writer->getRenderEngine();
         if (engine) {
@@ -725,7 +726,9 @@ PrecompNodePrivate::launchPreRender()
         }
     }
     
-    _publicInterface->getApp()->startRenderingFullSequence(false, w, false, QString());
+    std::list<AppInstance::RenderWork> works;
+    works.push_back(w);
+    _publicInterface->getApp()->startWritersRendering(false, works);
 }
 
 void

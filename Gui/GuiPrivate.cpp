@@ -113,6 +113,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/ProjectGui.h"
 #include "Gui/ProjectGuiSerialization.h"
 #include "Gui/PropertiesBinWrapper.h"
+#include "Gui/ProgressPanel.h"
 #include "Gui/PythonPanels.h"
 #include "Gui/RenderingProgressDialog.h"
 #include "Gui/RightClickableWidget.h"
@@ -215,6 +216,7 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , _lastFocusedGraph(0)
 , _groups()
 , _curveEditor(0)
+, _progressPanel(0)
 , _dopeSheetEditor(0)
 , _toolBox(0)
 , _propertiesBin(0)
@@ -247,8 +249,6 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
 , _currentlyDraggedPanel(0)
 , _currentlyDraggedPanelInitialSize()
 , _aboutWindow(0)
-, _progressBarsMutex()
-, _progressBars()
 , openedPanelsMutex()
 , openedPanels()
 , _openGLVersion()
@@ -441,6 +441,15 @@ GuiPrivate::createScriptEditorGui()
     _gui->registerTab(_scriptEditor, _scriptEditor);
 }
 
+void
+GuiPrivate::createProgressPanelGui()
+{
+    _progressPanel = new ProgressPanel(_gui);
+    _progressPanel->setScriptName("progress");
+    _progressPanel->setLabel( QObject::tr("Progress").toStdString() );
+    _progressPanel->setVisible(false);
+    _gui->registerTab(_progressPanel, _progressPanel);
+}
 
 TabWidget*
 GuiPrivate::getOnly1NonFloatingPane(int & count) const

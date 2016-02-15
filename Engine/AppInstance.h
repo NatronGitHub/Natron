@@ -144,6 +144,26 @@ public:
         int firstFrame;
         int lastFrame;
         int frameStep;
+        bool useRenderStats;
+        
+        RenderWork()
+        {
+            
+        }
+        
+        RenderWork(OutputEffectInstance* writer,
+                   int firstFrame,
+                   int lastFrame,
+                   int frameStep,
+                   bool useRenderStats)
+        : writer(writer)
+        , firstFrame(firstFrame)
+        , lastFrame(lastFrame)
+        , frameStep(frameStep)
+        , useRenderStats(useRenderStats)
+        {
+            
+        }
     };
     
     virtual void load(const CLArgs& cl,bool makeEmptyInstance);
@@ -215,13 +235,17 @@ public:
     {
     }
 
-    virtual void notifyRenderProcessHandlerStarted(const QString & /*sequenceName*/,
-                                                   int /*firstFrame*/,
-                                                   int /*lastFrame*/,
-                                                   int /*frameStep*/,
-                                                   const boost::shared_ptr<ProcessHandler> & /*process*/)
+    virtual void notifyRenderStarted(const QString & /*sequenceName*/,
+                                     int /*firstFrame*/,
+                                     int /*lastFrame*/,
+                                     int /*frameStep*/,
+                                     bool /*canPause*/,
+                                     OutputEffectInstance* /*writer*/,
+                                     const boost::shared_ptr<ProcessHandler> & /*process*/)
     {
     }
+    
+    
 
     virtual bool isShowingDialog() const
     {
@@ -230,22 +254,22 @@ public:
     
     virtual bool isGuiFrozen() const { return false; }
 
-    virtual void progressStart(KnobHolder* effect,
+    virtual void progressStart(const NodePtr& node,
                                const std::string &message,
                                const std::string &messageid,
                                bool canCancel = true)
     {
-        Q_UNUSED(effect);
+        Q_UNUSED(node);
         Q_UNUSED(message);
         Q_UNUSED(messageid);
         Q_UNUSED(canCancel);
     }
 
-    virtual void progressEnd(KnobHolder* /*effect*/)
+    virtual void progressEnd(const NodePtr& /*node*/)
     {
     }
 
-    virtual bool progressUpdate(KnobHolder* /*effect*/,
+    virtual bool progressUpdate(const NodePtr& /*node*/,
                                 double /*t*/)
     {
         return true;
@@ -256,6 +280,10 @@ public:
      **/
     void checkForNewVersion() const;
     virtual void onMaxPanelsOpenedChanged(int /*maxPanels*/)
+    {
+    }
+    
+    virtual void onRenderQueuingChanged(bool /*queueingEnabled*/)
     {
     }
 
@@ -274,16 +302,16 @@ public:
      * @brief Given writer names, start rendering the given RenderRequest. If empty all Writers in the project
      * will be rendered using the frame ranges.
      **/
-    void startWritersRendering(bool enableRenderStats,
+    void startWritersRenderingFromNames(bool enableRenderStats,
                                bool doBlockingRender,
                                const std::list<std::string>& writers,
                                const std::list<std::pair<int,std::pair<int,int> > >& frameRanges);
-    void startWritersRendering(bool enableRenderStats, bool doBlockingRender, const std::list<RenderWork>& writers);
+    void startWritersRendering(bool doBlockingRender, const std::list<RenderWork>& writers);
 
-    void startRenderingBlockingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool renderInSeparateProcess,const QString& savePath);
     
-    virtual void startRenderingFullSequence(bool enableRenderStats,const RenderWork& writerWork,bool renderInSeparateProcess,const QString& savePath);
 
+public:
+    
     virtual void clearViewersLastRenderedTexture() {}
 
     virtual void toggleAutoHideGraphInputs() {}
@@ -403,6 +431,10 @@ public Q_SLOTS:
 
     void newVersionCheckError();
 
+    void onBackgroundRenderProcessFinished();
+
+    void onQueuedRenderFinished(int retCode);
+    
 Q_SIGNALS:
 
     void pluginsPopulated();
@@ -419,6 +451,8 @@ protected:
     
 private:
     
+    void startNextQueuedRender(OutputEffectInstance* finishedWriter);
+        
     
     void getWritersWorkForCL(const CLArgs& cl,std::list<AppInstance::RenderWork>& requests);
 

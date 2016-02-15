@@ -53,6 +53,7 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/MultiInstancePanel.h"
+#include "Gui/ProgressPanel.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/SplashScreen.h"
 #include "Gui/ViewerGL.h"
@@ -112,8 +113,6 @@ struct GuiAppInstancePrivate
 {
     Gui* _gui; //< ptr to the Gui interface
 
-    std::list< boost::shared_ptr<ProcessHandler> > _activeBgProcesses;
-    QMutex _activeBgProcessesMutex;
     bool _isClosing;
 
     //////////////
@@ -146,8 +145,6 @@ struct GuiAppInstancePrivate
     
     GuiAppInstancePrivate()
     : _gui(NULL)
-    , _activeBgProcesses()
-    , _activeBgProcessesMutex()
     , _isClosing(false)
     , _showingDialog(false)
     , _showingDialogMutex()
@@ -818,110 +815,17 @@ GuiAppInstance::setViewersCurrentView(int view)
 }
 
 void
-GuiAppInstance::startRenderingFullSequence(bool enableRenderStats,const AppInstance::RenderWork& w,bool renderInSeparateProcess,const QString& savePath)
+GuiAppInstance::notifyRenderStarted(const QString & sequenceName,
+                                    int firstFrame,
+                                    int lastFrame,
+                                    int frameStep,
+                                    bool canPause,
+                                    OutputEffectInstance* writer,
+                                    const boost::shared_ptr<ProcessHandler> & process)
 {
-
-
-
-    ///validate the frame range to render
-    double firstFrame,lastFrame;
-    if (w.firstFrame == INT_MIN || w.lastFrame == INT_MAX) {
-        w.writer->getFrameRange_public(w.writer->getHash(),&firstFrame, &lastFrame, true);
-        //if firstframe and lastframe are infinite clamp them to the timeline bounds
-        double projectFirst,projectLast;
-        getFrameRange(&projectFirst, &projectLast);
-        if (firstFrame == INT_MIN) {
-            firstFrame = projectFirst;
-        }
-        if (lastFrame == INT_MAX) {
-            lastFrame = projectLast;
-        }
-        if (firstFrame > lastFrame) {
-            Dialogs::errorDialog( w.writer->getNode()->getLabel_mt_safe(),
-                                tr("First frame in the sequence is greater than the last frame").toStdString(), false );
-
-            return;
-        }
-    } else {
-        firstFrame = w.firstFrame;
-        lastFrame = w.lastFrame;
-    }
-
-    int frameStep;
-    if (w.frameStep == INT_MAX || w.frameStep == INT_MIN) {
-        ///Get the frame step from the frame step parameter of the Writer
-        frameStep = w.writer->getNode()->getFrameStepKnobValue();
-    } else {
-        frameStep = std::max(1, w.frameStep);
-    }
-    
-    ///get the output file knob to get the name of the sequence
-    QString outputFileSequence;
-
-    DiskCacheNode* isDiskCache = dynamic_cast<DiskCacheNode*>(w.writer);
-    if (isDiskCache) {
-        outputFileSequence = isDiskCache->getNode()->getLabel_mt_safe().c_str();
-    } else {
-        KnobPtr fileKnob = w.writer->getKnobByName(kOfxImageEffectFileParamName);
-        if (fileKnob) {
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(fileKnob.get());
-            assert(isString);
-            outputFileSequence = isString->getValue().c_str();
-        }
-    }
-
-
-    if ( renderInSeparateProcess ) {
-        try {
-            boost::shared_ptr<ProcessHandler> process( new ProcessHandler(savePath,w.writer) );
-            QObject::connect( process.get(), SIGNAL( processFinished(int) ), this, SLOT( onProcessFinished() ) );
-            notifyRenderProcessHandlerStarted(outputFileSequence,firstFrame,lastFrame, frameStep, process);
-            process->startProcess();
-
-            {
-                QMutexLocker l(&_imp->_activeBgProcessesMutex);
-                _imp->_activeBgProcesses.push_back(process);
-            }
-        } catch (const std::exception & e) {
-            Dialogs::errorDialog( w.writer->getNode()->getLabel(),
-                                tr("Error while starting rendering").toStdString() + ": " + e.what(), false );
-        } catch (...) {
-            Dialogs::errorDialog( w.writer->getNode()->getLabel(),
-                                tr("Error while starting rendering").toStdString(),false  );
-        }
-    } else {
-        _imp->_gui->onWriterRenderStarted(outputFileSequence, firstFrame, lastFrame, frameStep, w.writer);
-        w.writer->renderFullSequence(false, enableRenderStats,NULL,firstFrame,lastFrame, frameStep);
-    }
-} // startRenderingFullSequence
-
-void
-GuiAppInstance::onProcessFinished()
-{
-    ProcessHandler* proc = qobject_cast<ProcessHandler*>( sender() );
-
-    if (proc) {
-        QMutexLocker l(&_imp->_activeBgProcessesMutex);
-        for (std::list< boost::shared_ptr<ProcessHandler> >::iterator it = _imp->_activeBgProcesses.begin(); it != _imp->_activeBgProcesses.end(); ++it) {
-            if ( (*it).get() == proc ) {
-                _imp->_activeBgProcesses.erase(it);
-
-                return;
-            }
-        }
-    }
+    _imp->_gui->onRenderStarted(sequenceName, firstFrame, lastFrame, frameStep, canPause, writer, process);
 }
 
-
-void
-GuiAppInstance::notifyRenderProcessHandlerStarted(const QString & sequenceName,
-                                                  int firstFrame,
-                                                  int lastFrame,
-                                                  int frameStep,
-                                                  const boost::shared_ptr<ProcessHandler> & process)
-{
-    _imp->_gui->onProcessHandlerStarted(sequenceName,firstFrame,lastFrame, frameStep, process);
-}
 
 void
 GuiAppInstance::setUndoRedoStackLimit(int limit)
@@ -930,26 +834,26 @@ GuiAppInstance::setUndoRedoStackLimit(int limit)
 }
 
 void
-GuiAppInstance::progressStart(KnobHolder* effect,
+GuiAppInstance::progressStart(const NodePtr& node,
                               const std::string &message,
                               const std::string &messageid,
                               bool canCancel)
 {
-    _imp->_gui->progressStart(effect, message, messageid, canCancel);
+    _imp->_gui->progressStart(node, message, messageid, canCancel);
 }
 
 void
-GuiAppInstance::progressEnd(KnobHolder* effect)
+GuiAppInstance::progressEnd(const NodePtr& node)
 {
-    _imp->_gui->progressEnd(effect);
+    _imp->_gui->progressEnd(node);
 
 }
 
 bool
-GuiAppInstance::progressUpdate(KnobHolder* effect,
+GuiAppInstance::progressUpdate(const NodePtr& node,
                                double t)
 {
-    bool ret =  _imp->_gui->progressUpdate(effect, t);
+    bool ret =  _imp->_gui->progressUpdate(node, t);
     return ret;
 }
 
@@ -959,6 +863,11 @@ GuiAppInstance::onMaxPanelsOpenedChanged(int maxPanels)
     _imp->_gui->onMaxVisibleDockablePanelChanged(maxPanels);
 }
 
+void
+GuiAppInstance::onRenderQueuingChanged(bool queueingEnabled)
+{
+    _imp->_gui->getProgressPanel()->onRenderQueuingSettingChanged(queueingEnabled);
+}
 
 void
 GuiAppInstance::connectViewersToViewerCache()

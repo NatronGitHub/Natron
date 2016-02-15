@@ -49,6 +49,7 @@
 #include "Engine/Lut.h" // floatToInt, LutManager
 #include "Engine/Node.h"
 #include "Engine/Project.h"
+#include "Engine/ProcessHandler.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/AboutWindow.h"
@@ -62,6 +63,7 @@
 #include "Gui/RenderingProgressDialog.h"
 #include "Gui/RenderStatsDialog.h"
 #include "Gui/ShortCutEditor.h"
+#include "Gui/ProgressPanel.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
@@ -364,30 +366,6 @@ Gui::deselectAllNodes() const
     _imp->_nodeGraphArea->deselect();
 }
 
-void
-Gui::onProcessHandlerStarted(const QString & sequenceName,
-                             int firstFrame,
-                             int lastFrame,
-                             int frameStep,
-                             const boost::shared_ptr<ProcessHandler> & process)
-{
-    ///make the dialog which will show the progress
-    RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame, frameStep, process, this);
-    QObject::connect(dialog,SIGNAL(accepted()),this,SLOT(onRenderProgressDialogFinished()));
-    QObject::connect(dialog,SIGNAL(rejected()),this,SLOT(onRenderProgressDialogFinished()));
-    dialog->show();
-}
-
-void
-Gui::onRenderProgressDialogFinished()
-{
-    RenderingProgressDialog* dialog = qobject_cast<RenderingProgressDialog*>(sender());
-    if (!dialog) {
-        return;
-    }
-    dialog->close();
-    dialog->deleteLater();
-}
 
 void
 Gui::setNextViewerAnchor(TabWidget* where)
@@ -501,6 +479,12 @@ ScriptEditor*
 Gui::getScriptEditor() const
 {
     return _imp->_scriptEditor;
+}
+
+ProgressPanel*
+Gui::getProgressPanel() const
+{
+    return _imp->_progressPanel;
 }
 
 PropertiesBinWrapper*
@@ -665,24 +649,43 @@ Gui::updateLastOpenedProjectPath(const QString & project)
 }
 
 void
-Gui::onWriterRenderStarted(const QString & sequenceName,
-                           int firstFrame,
-                           int lastFrame,
-                           int frameStep,
-                           OutputEffectInstance* writer)
+Gui::onRenderStarted(const QString & sequenceName,
+                     int firstFrame,int lastFrame,int frameStep,
+                     bool canPause,
+                     OutputEffectInstance* writer,
+                     const boost::shared_ptr<ProcessHandler> & process)
 {
     assert( QThread::currentThread() == qApp->thread() );
+    ensureProgressPanelVisible();
+    _imp->_progressPanel->startTask(writer->getNode(), firstFrame, lastFrame, frameStep, canPause, true, sequenceName, process);
+}
 
-    RenderingProgressDialog *dialog = new RenderingProgressDialog(this, sequenceName, firstFrame, lastFrame, frameStep,
-                                                                  boost::shared_ptr<ProcessHandler>(), this);
-    RenderEngine* engine = writer->getRenderEngine();
-    QObject::connect( dialog, SIGNAL( canceled() ), engine, SLOT( abortRendering_Blocking() ) );
-    QObject::connect( engine, SIGNAL( frameRendered(int) ), dialog, SLOT( onFrameRendered(int) ) );
-    QObject::connect( engine, SIGNAL( frameRenderedWithTimer(int,double,double) ), dialog, SLOT( onFrameRenderedWithTimer(int,double,double) ) );
-    QObject::connect( engine, SIGNAL( renderFinished(int) ), dialog, SLOT( onVideoEngineStopped(int) ) );
-    QObject::connect(dialog,SIGNAL(accepted()),this,SLOT(onRenderProgressDialogFinished()));
-    QObject::connect(dialog,SIGNAL(rejected()),this,SLOT(onRenderProgressDialogFinished()));
-    dialog->show();
+
+
+void
+Gui::ensureProgressPanelVisible()
+{
+    
+    TabWidget* pane = _imp->_progressPanel->getParentPane();
+    if (pane != 0) {
+        pane->setCurrentWidget(_imp->_progressPanel);
+    } else {
+        pane = _imp->_nodeGraphArea->getParentPane();
+        if (!pane) {
+            std::list<TabWidget*> tabs;
+            {
+                QMutexLocker k(&_imp->_panesMutex);
+                tabs = _imp->_panes;
+            }
+            if (tabs.empty()) {
+                return;
+            }
+            pane = tabs.front();
+        }
+        assert(pane);
+        pane->moveProgressPanelHere();
+    }
+
 }
 
 void
@@ -746,7 +749,7 @@ Gui::onNodeNameChanged(const QString & /*name*/)
 void
 Gui::renderAllWriters()
 {
-    _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(), false, std::list<std::string>(), std::list<std::pair<int,std::pair<int,int> > >() );
+    _imp->_appInstance->startWritersRenderingFromNames(areRenderStatsEnabled(), false, std::list<std::string>(), std::list<std::pair<int,std::pair<int,int> > >() );
 }
 
 void
@@ -761,45 +764,54 @@ Gui::renderSelectedNode()
 
     if ( selectedNodes.empty() ) {
         Dialogs::warningDialog( tr("Render").toStdString(), tr("You must select a node to render first!").toStdString() );
-    } else {
-        std::list<AppInstance::RenderWork> workList;
-
-        for (NodesGuiList::const_iterator it = selectedNodes.begin();
-             it != selectedNodes.end(); ++it) {
-            EffectInstPtr effect = (*it)->getNode()->getEffectInstance();
-            if (!effect) {
-                continue;
+        return;
+    }
+    std::list<AppInstance::RenderWork> workList;
+    
+    bool useStats = getApp()->isRenderStatsActionChecked();
+    for (NodesGuiList::const_iterator it = selectedNodes.begin();
+         it != selectedNodes.end(); ++it) {
+        
+        NodePtr internalNode = (*it)->getNode();
+        if (!internalNode) {
+            continue;
+        }
+        EffectInstPtr effect = internalNode->getEffectInstance();
+        if (!effect) {
+            continue;
+        }
+        if (effect->isWriter()) {
+            if (!effect->areKnobsFrozen()) {
+                //if ((*it)->getNode()->is)
+                ///if the node is a writer, just use it to render!
+                AppInstance::RenderWork w;
+                w.writer = dynamic_cast<OutputEffectInstance*>(effect.get());
+                assert(w.writer);
+                w.firstFrame = INT_MIN;
+                w.lastFrame = INT_MAX;
+                w.frameStep = INT_MIN;
+                w.useRenderStats = useStats;
+                workList.push_back(w);
             }
-            if (effect->isWriter()) {
-                if (!effect->areKnobsFrozen()) {
-                    //if ((*it)->getNode()->is)
-                    ///if the node is a writer, just use it to render!
+        } else {
+            if (selectedNodes.size() == 1) {
+                ///create a node and connect it to the node and use it to render
+                NodePtr writer = createWriter();
+                if (writer) {
                     AppInstance::RenderWork w;
-                    w.writer = dynamic_cast<OutputEffectInstance*>(effect.get());
+                    w.writer = dynamic_cast<OutputEffectInstance*>( writer->getEffectInstance().get() );
                     assert(w.writer);
                     w.firstFrame = INT_MIN;
                     w.lastFrame = INT_MAX;
                     w.frameStep = INT_MIN;
+                    w.useRenderStats = useStats;
                     workList.push_back(w);
-                }
-            } else {
-                if (selectedNodes.size() == 1) {
-                    ///create a node and connect it to the node and use it to render
-                    NodePtr writer = createWriter();
-                    if (writer) {
-                        AppInstance::RenderWork w;
-                        w.writer = dynamic_cast<OutputEffectInstance*>( writer->getEffectInstance().get() );
-                        assert(w.writer);
-                        w.firstFrame = INT_MIN;
-                        w.lastFrame = INT_MAX;
-                        w.frameStep = INT_MIN;
-                        workList.push_back(w);
-                    }
                 }
             }
         }
-        _imp->_appInstance->startWritersRendering(areRenderStatsEnabled(), false, workList);
     }
+    _imp->_appInstance->startWritersRendering(false, workList);
+    
 }
 
 void

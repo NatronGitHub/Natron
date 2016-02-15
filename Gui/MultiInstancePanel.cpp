@@ -2005,7 +2005,7 @@ TrackerPanel::onTrackingStarted()
     ///freeze the tracker node
     setKnobsFrozen(true);
     if (getGui()) {
-        getGui()->progressStart(getMainInstance()->getEffectInstance().get(), tr("Tracking...").toStdString(), "");
+        getGui()->progressStart(getMainInstance(), tr("Tracking...").toStdString(), "");
     }
 
 }
@@ -2016,7 +2016,7 @@ TrackerPanel::onTrackingFinished()
     setKnobsFrozen(false);
     Q_EMIT trackingEnded();
     if (getGui()) {
-        getGui()->progressEnd(getMainInstance()->getEffectInstance().get());
+        getGui()->progressEnd(getMainInstance());
     }
 }
 
@@ -2024,7 +2024,7 @@ void
 TrackerPanel::onTrackingProgressUpdate(double progress)
 {
     if (getGui()) {
-        if (!getGui()->progressUpdate(getMainInstance()->getEffectInstance().get(), progress)) {
+        if (!getGui()->progressUpdate(getMainInstance(), progress)) {
             _imp->scheduler.abortTracking();
         }
     }
