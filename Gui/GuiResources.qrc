@@ -327,15 +327,5 @@
         <file>Resources/Images/merge_stencil.png</file>
         <file>Resources/Images/merge_under.png</file>
         <file>Resources/Images/merge_xor.png</file>
-        <file>Resources/PyPlugs/AngleBlur.py</file>
-        <file>Resources/PyPlugs/Fill.py</file>
-        <file>Resources/PyPlugs/Fill.png</file>
-        <file>Resources/PyPlugs/DropShadow.py</file>
-        <file>Resources/PyPlugs/DropShadow.png</file>
-        <file>Resources/PyPlugs/LightWrap.py</file>
-        <file>Resources/PyPlugs/LightWrap.png</file>
-        <file>Resources/PyPlugs/ZRemap.py</file>
-        <file>Resources/PyPlugs/ZRemap.png</file>
-        <file>Resources/PyPlugs/ZMask.py</file>
     </qresource>
 </RCC>
