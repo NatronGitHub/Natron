@@ -4935,8 +4935,8 @@ AnimatingKnobStringHelper::getStringAtTime(double time,
                                            int dimension) const
 {
     std::string ret;
-    assert(!view.isAll());
-    assert(!view.isCurrent()); // not yet implemented
+   // assert(!view.isAll());
+   // assert(!view.isCurrent()); // not yet implemented
     if ( _animation->hasCustomInterp() ) {
         bool succeeded = false;
         try {
