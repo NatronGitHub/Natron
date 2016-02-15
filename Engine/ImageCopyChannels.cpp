@@ -39,6 +39,7 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
                                          const RectI& roi,
                                          const ImagePtr& originalImage)
 {
+    Q_UNUSED(processChannels); // silence warnings in release version
     assert(((doR == !processChannels[0]) || !(dstNComps >= 2)) &&
            ((doG == !processChannels[1]) || !(dstNComps >= 2)) &&
            ((doB == !processChannels[2]) || !(dstNComps >= 3)) &&

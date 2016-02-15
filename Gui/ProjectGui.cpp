@@ -268,7 +268,9 @@ AddFormatDialog::getFormat() const
     return Format(0,0,w,h,name.toStdString(),pa);
 }
 
+#ifdef DEBUG
 #pragma message WARN("no version in ProjectGui serialization: this is dangerous")
+#endif
 template<>
 void
 ProjectGui::save<boost::archive::xml_oarchive>(boost::archive::xml_oarchive & archive/*,
