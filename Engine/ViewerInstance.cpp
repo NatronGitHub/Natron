@@ -377,7 +377,7 @@ class ViewerParallelRenderArgsSetter : public ParallelRenderArgsSetter
 public:
     
     ViewerParallelRenderArgsSetter(double time,
-                                   int view,
+                                   ViewIdx view,
                                    bool isRenderUserInteraction,
                                    bool isSequential,
                                    bool canAbort,
@@ -392,7 +392,7 @@ public:
                                    bool draftMode,
                                    bool viewerProgressReportEnabled,
                                    const boost::shared_ptr<RenderStats>& stats)
-    : ParallelRenderArgsSetter(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,treeRoot, request,textureIndex,timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats)
+    : ParallelRenderArgsSetter(time,view,isRenderUserInteraction,isSequential,canAbort,renderAge,treeRoot, request,textureIndex, timeline,rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats)
     , rotoNode(rotoPaintNode)
     , viewerNode(treeRoot)
     , viewerInputNode()
@@ -440,7 +440,7 @@ public:
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                              bool canAbort,
-                                             int view,
+                                             ViewIdx view,
                                              U64 viewerHash,
                                              const NodePtr& rotoPaintNode,
                                              const boost::shared_ptr<RotoStrokeItem>& activeStroke,
@@ -644,7 +644,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
 }
 
 ViewerInstance::ViewerRenderRetCode
-ViewerInstance::renderViewer(int view,
+ViewerInstance::renderViewer(ViewIdx view,
                              bool singleThreaded,
                              bool isSequentialRender,
                              U64 viewerHash,
@@ -827,7 +827,7 @@ ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                            bool isSequential,
                                                            bool canAbort,
-                                                           int view,
+                                                           ViewIdx view,
                                                            int textureIndex,
                                                            U64 viewerHash,
                                                            const NodePtr& rotoPaintNode,
@@ -852,7 +852,7 @@ ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                  bool isSequential,
                                                  bool canAbort,
-                                                 int view,
+                                                 ViewIdx view,
                                                  int textureIndex,
                                                  U64 viewerHash,
                                                  const NodePtr& rotoPaintNode,
@@ -985,7 +985,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     
     
     ///Get the RoD here to be able to figure out what is the RoI of the Viewer.
-    StatusEnum stat = outArgs->activeInputToRender->getRegionOfDefinition_public(outArgs->activeInputHash,time,
+    StatusEnum stat = outArgs->activeInputToRender->getRegionOfDefinition_public(outArgs->activeInputHash, time,
                                                                                  supportsRS ==  eSupportsNo ? scaleOne : scale,
                                                                                  view, &rod, &isRodProjectFormat);
     if (stat == eStatusFailed) {
@@ -1184,7 +1184,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
 
 
 ViewerInstance::ViewerRenderRetCode
-ViewerInstance::renderViewer_internal(int view,
+ViewerInstance::renderViewer_internal(ViewIdx view,
                                       bool singleThreaded,
                                       bool isSequentialRender,
                                       U64 /*viewerHash*/,
@@ -3020,10 +3020,10 @@ ViewerInstance::addAcceptedComponents(int /*inputNb*/,
     comps->push_back(ImageComponents::getAlphaComponents());
 }
 
-int
+ViewIdx
 ViewerInstance::getViewerCurrentView() const
 {
-    return _imp->uiContext ? _imp->uiContext->getCurrentView() : 0;
+    return _imp->uiContext ? _imp->uiContext->getCurrentView() : ViewIdx(0);
 }
 
 void
@@ -3172,7 +3172,7 @@ ViewerInstance::getCurrentTime() const
     return getFrameRenderArgsCurrentTime();
 }
 
-int
+ViewIdx
 ViewerInstance::getCurrentView() const
 {
     return getFrameRenderArgsCurrentView();
@@ -3185,7 +3185,7 @@ ViewerInstance::isRenderAbortable(int textureIndex, U64 renderAge,bool* isLatest
 }
 
 void
-ViewerInstance::reportStats(int time, int view, double wallTime, const RenderStatsMap& stats)
+ViewerInstance::reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats)
 {
     Q_EMIT renderStatsAvailable(time, view, wallTime, stats);
 }

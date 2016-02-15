@@ -446,7 +446,7 @@ getInputRoD(EffectInstance* effect,
     RenderScale scale;
     scale.y = scale.x = 1.;
     bool isProjectFormat;
-    Status stat = effect->getRegionOfDefinition_public(effect->getHash(),time, scale, /*view*/0, &rod, &isProjectFormat);
+    Status stat = effect->getRegionOfDefinition_public(effect->getHash(), time, scale, /*view*/0, &rod, &isProjectFormat);
     if ( (stat == StatFailed) || ( (rod.x1 == 0) && (rod.y1 == 0) && (rod.x2 == 1) && (rod.y2 == 1) ) ) {
         Format f;
         effect->getRenderFormat(&f);
@@ -473,7 +473,7 @@ KnobDouble::denormalize(int dimension,
         return;
     }
     RectD rod;
-    getInputRoD(effect,time,rod);
+    getInputRoD(effect, time,rod);
     ValueIsNormalizedEnum e = getValueIsNormalized(dimension);
     // the second expression (with e == eValueIsNormalizedNone) is used when denormalizing default values
     if (e == eValueIsNormalizedX || (e == eValueIsNormalizedNone && dimension == 0)) {
@@ -496,7 +496,7 @@ KnobDouble::normalize(int dimension,
         return;
     }
     RectD rod;
-    getInputRoD(effect,time,rod);
+    getInputRoD(effect, time,rod);
     ValueIsNormalizedEnum e = getValueIsNormalized(dimension);
     // the second expression (with e == eValueIsNormalizedNone) is used when normalizing default values
     if (e == eValueIsNormalizedX || (e == eValueIsNormalizedNone && dimension == 0)) {
@@ -594,11 +594,11 @@ KnobChoice::typeName() const
 }
 
 void
-KnobChoice::onInternalValueChanged(int dimension, double time, ViewIdx /*view*/)
+KnobChoice::onInternalValueChanged(int dimension, double time, ViewSpec /*view*/)
 {
     int index = getValueAtTime(time, dimension);
     QMutexLocker k(&_entriesMutex);
-    if (index >= 0 &&  index < _entries.size()) {
+    if (index >= 0 &&  index < (int)_entries.size()) {
         _lastValidEntry = _entries[index];
     }
 }

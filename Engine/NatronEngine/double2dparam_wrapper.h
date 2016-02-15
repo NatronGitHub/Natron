@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <ParameterWrapper.h>
+#include <PyParameter.h>
 
 NATRON_NAMESPACE_ENTER;
 class Double2DParamWrapper : public Double2DParam

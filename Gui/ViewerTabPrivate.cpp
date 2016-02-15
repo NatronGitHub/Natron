@@ -156,7 +156,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 bool
 ViewerTabPrivate::getOverlayTransform(double time,
-                                      int view,
+                                      ViewIdx view,
                                       const NodePtr& target,
                                       EffectInstance* currentNode,
                                       Transform::Matrix3x3* transform) const
@@ -239,13 +239,13 @@ ViewerTabPrivate::getOverlayTransform(double time,
 static double transformTimeForNode(EffectInstance* currentNode, double inTime)
 {
     U64 nodeHash = currentNode->getHash();
-    FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(nodeHash, inTime, 0, 0);
-    FramesNeededMap::iterator foundInput0 = framesNeeded.find(0);
+    FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(nodeHash, inTime, ViewIdx(0), 0);
+    FramesNeededMap::iterator foundInput0 = framesNeeded.find(0/*input*/);
     if (foundInput0 == framesNeeded.end()) {
         return inTime;
     }
     
-    std::map<int,std::vector<OfxRangeD> >::iterator foundView0 = foundInput0->second.find(0);
+    FrameRangesMap::iterator foundView0 = foundInput0->second.find(ViewIdx(0));
     if (foundView0 == foundInput0->second.end()) {
         return inTime;
     }
@@ -259,7 +259,7 @@ static double transformTimeForNode(EffectInstance* currentNode, double inTime)
 
 bool
 ViewerTabPrivate::getTimeTransform(double time,
-                                   int view,
+                                   ViewIdx view,
                                    const NodePtr& target,
                                    EffectInstance* currentNode,
                                    double *newTime) const

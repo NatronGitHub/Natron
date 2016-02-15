@@ -448,7 +448,7 @@ struct BezierPrivate
                                                      double y,
                                                      double acceptance,
                                                      double time,
-                                                     int view,
+                                                     ViewIdx view,
                                                      const Transform::Matrix3x3& transform,
                                                      int* index) const
     {
@@ -474,7 +474,7 @@ struct BezierPrivate
                                                      double y,
                                                      double acceptance,
                                                      double time,
-                                                     int view,
+                                                     ViewIdx view,
                                                      const Transform::Matrix3x3& transform,
                                                      int* index) const
     {

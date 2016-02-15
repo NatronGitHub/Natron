@@ -18,7 +18,7 @@ GCC_DIAG_OFF(uninitialized)
 
 // Extra includes
 NATRON_NAMESPACE_USING
-#include <RotoWrapper.h>
+#include <PyRoto.h>
 
 
 

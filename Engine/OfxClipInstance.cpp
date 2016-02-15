@@ -306,6 +306,7 @@ OfxClipInstancePrivate::getComponentsPresentInternal(const OfxClipInstance::Clip
     return tls->componentsPresent;
 }
 
+// overridden from OFX::Host::ImageEffect::ClipInstance
 /*
  * We have to use TLS here because the OpenFX API necessitate that strings
  * live through the entire duration of the calling action. The is the only way
@@ -324,6 +325,7 @@ OfxClipInstance::getComponentsPresent() const OFX_EXCEPTION_SPEC
     }
 }
 
+// overridden from OFX::Host::ImageEffect::ClipInstance
 int
 OfxClipInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
 {
@@ -340,6 +342,7 @@ OfxClipInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
 }
 
 
+// overridden from OFX::Host::ImageEffect::ClipInstance
 // Pixel Aspect Ratio -
 //
 //  The pixel aspect ratio of a clip or image.
@@ -381,6 +384,7 @@ OfxClipInstance::getFrameRate() const
 }
 
 
+// overridden from OFX::Host::ImageEffect::ClipInstance
 // Frame Range (startFrame, endFrame) -
 //
 //  The frame range over which a clip has images.
@@ -402,6 +406,7 @@ OfxClipInstance::getFrameRange(double &startFrame,
     }
 }
 
+// overridden from OFX::Host::ImageEffect::ClipInstance
 /// Field Order - Which spatial field occurs temporally first in a frame.
 /// \returns
 ///  - kOfxImageFieldNone - the clip material is unfielded
@@ -413,6 +418,7 @@ OfxClipInstance::getFieldOrder() const
     return _imp->effect->getDefaultOutputFielding();
 }
 
+// overridden from OFX::Host::ImageEffect::ClipInstance
 // Connected -
 //
 //  Says whether the clip is actually connected at the moment.
@@ -451,6 +457,7 @@ OfxClipInstance::getConnected() const
     }
 }
 
+// overridden from OFX::Host::ImageEffect::ClipInstance
 // Unmapped Frame Rate -
 //
 //  The unmaped frame range over which an output clip has images.
@@ -461,6 +468,7 @@ OfxClipInstance::getUnmappedFrameRate() const
     return 25;
 }
 
+// overridden from OFX::Host::ImageEffect::ClipInstance
 // Unmapped Frame Range -
 //
 //  The unmaped frame range over which an output clip has images.
@@ -484,7 +492,10 @@ OfxClipInstance::getContinuousSamples() const
 }
 
 void
-OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,EffectInstance* associatedNode,
+OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
+                                               ViewIdx view,
+                                               unsigned int mipmapLevel,
+                                               EffectInstance* associatedNode,
                                                OfxRectD* ret) const
 {
     
@@ -523,7 +534,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
         U64 nodeHash = associatedNode->getRenderHash();
         RectD rod;
         RenderScale scale(Image::getScaleFromMipMapLevel(mipmapLevel));
-        StatusEnum st = associatedNode->getRegionOfDefinition_public(nodeHash,time, scale, view, &rod, &isProjectFormat);
+        StatusEnum st = associatedNode->getRegionOfDefinition_public(nodeHash, time, scale, view, &rod, &isProjectFormat);
         if (st == eStatusFailed) {
             ret->x1 = 0.;
             ret->x2 = 0.;
@@ -545,6 +556,7 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,int view, unsigned i
 
 }
 
+// overridden from OFX::Host::ImageEffect::ClipInstance
 OfxRectD
 OfxClipInstance::getRegionOfDefinition(OfxTime time, int view) const
 {
@@ -573,18 +585,19 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time, int view) const
         
         
     }
-    getRegionOfDefinitionInternal(time, view, mipmapLevel, associatedNode.get(), &rod);
+    getRegionOfDefinitionInternal(time, ViewIdx(view), mipmapLevel, associatedNode.get(), &rod);
     return rod;
 }
 
 
+// overridden from OFX::Host::ImageEffect::ClipInstance
 /// override this to return the rod on the clip canonical coords!
 OfxRectD
 OfxClipInstance::getRegionOfDefinition(OfxTime time) const
 {
     OfxRectD ret;
     unsigned int mipmapLevel;
-    int view;
+    ViewIdx view(0);
     EffectInstPtr associatedNode = getAssociatedNode();
 
     /// The node might be disabled, hence we navigate upstream to find the first non disabled node.
@@ -597,13 +610,10 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     if (!associatedNode) {
         ///Doesn't matter, input is not connected
         mipmapLevel = 0;
-        view = 0;
     } else {
         ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
         if (!tls->view.empty()) {
             view = tls->view.back();
-        } else {
-            view = 0;
         }
         if (!tls->mipMapLevel.empty()) {
             mipmapLevel = tls->mipMapLevel.back();
@@ -708,6 +718,7 @@ OfxClipInstance::natronsPlaneToOfxPlane(const ImageComponents& plane)
 }
 
 
+// overridden from OFX::Host::ImageEffect::ClipInstance
 /// override this to fill in the image at the given time.
 /// The bounds of the image on the image plane should be
 /// 'appropriate', typically the value returned in getRegionsOfInterest
@@ -721,27 +732,35 @@ OfxClipInstance::getImage(OfxTime time,
     return getStereoscopicImage(time, -1, optionalBounds);
 }
 
+// overridden from OFX::Host::ImageEffect::ClipInstance
 OFX::Host::ImageEffect::Image*
 OfxClipInstance::getStereoscopicImage(OfxTime time,
                                       int view,
                                       const OfxRectD *optionalBounds)
 {
-    return getImagePlaneInternal(time, view, optionalBounds, 0);
+    return getImagePlaneInternal(time, ViewIdx(view), optionalBounds, 0);
 }
 
+// overridden from OFX::Host::ImageEffect::ClipInstance
 OFX::Host::ImageEffect::Image*
-OfxClipInstance::getImagePlane(OfxTime time, int view, const std::string& plane,const OfxRectD *optionalBounds)
+OfxClipInstance::getImagePlane(OfxTime time,
+                               int view,
+                               const std::string& plane,
+                               const OfxRectD *optionalBounds)
 {
     if (time != time) {
         // time is NaN
 
         return NULL;
     }
-    return getImagePlaneInternal(time, view, optionalBounds, &plane);
+    return getImagePlaneInternal(time, ViewIdx(view), optionalBounds, &plane);
 }
 
 OFX::Host::ImageEffect::Image*
-OfxClipInstance::getImagePlaneInternal(OfxTime time, int view, const OfxRectD *optionalBounds, const std::string* ofxPlane)
+OfxClipInstance::getImagePlaneInternal(OfxTime time,
+                                       ViewIdx view,
+                                       const OfxRectD *optionalBounds,
+                                       const std::string* ofxPlane)
 {
     if (time != time) {
         // time is NaN
@@ -759,9 +778,9 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time, int view, const OfxRectD *o
 
 OFX::Host::ImageEffect::Image*
 OfxClipInstance::getInputImageInternal(OfxTime time,
-                                  int view,
-                                  const OfxRectD *optionalBounds,
-                                  const std::string* ofxPlane)
+                                       ViewIdx view,
+                                       const OfxRectD *optionalBounds,
+                                       const std::string* ofxPlane)
 {
     
     assert(!isOutput());
@@ -839,7 +858,7 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
     if (tls) {
         if (view == -1) {
             if (tls->view.empty()) {
-                view = 0;
+                view = ViewIdx(0);
             } else {
                 view = tls->view.back();
             }
@@ -1033,6 +1052,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
 }
 
 #ifdef OFX_SUPPORTS_OPENGLRENDER
+// overridden from OFX::Host::ImageEffect::ClipInstance
 /// override this to fill in the OpenGL texture at the given time.
 /// The bounds of the image on the image plane should be
 /// 'appropriate', typically the value returned in getRegionsOfInterest
@@ -1312,9 +1332,9 @@ OfxClipInstance::getAssociatedNode() const
 }
 
 void
-OfxClipInstance::setClipTLS(int view,
-                unsigned int mipmapLevel,
-                const ImageComponents& components)
+OfxClipInstance::setClipTLS(ViewIdx view,
+                            unsigned int mipmapLevel,
+                            const ImageComponents& components)
 {
     ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);

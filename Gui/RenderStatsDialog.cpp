@@ -985,7 +985,7 @@ RenderStatsDialog::resetStats()
 
 
 void
-RenderStatsDialog::addStats(int /*time*/, int /*view*/, double wallTime, const std::map<NodePtr,NodeRenderStats >& stats)
+RenderStatsDialog::addStats(int /*time*/, ViewIdx /*view*/, double wallTime, const std::map<NodePtr,NodeRenderStats >& stats)
 {
     
     if (!_imp->accumulateCheckbox->isChecked()) {

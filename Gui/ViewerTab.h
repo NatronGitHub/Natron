@@ -69,9 +69,9 @@ public:
     
     ViewerGL* getViewer() const;
 
-    void setCurrentView(int view);
+    void setCurrentView(ViewIdx view);
 
-    int getCurrentView() const;
+    ViewIdx getCurrentView() const;
 
     void seek(SequenceTime time);
 
@@ -307,7 +307,7 @@ public Q_SLOTS:
 
     void refresh();
 
-    void showView(int view);
+    void showView(int /* Qt slot, no ViewIdx */ view);
 
     void onEnableViewerRoIButtonToggle(bool);
     
@@ -411,7 +411,7 @@ public Q_SLOTS:
     
     void onSyncViewersButtonPressed(bool clicked);
     
-    void onRenderStatsAvailable(int time, int view, double wallTime, const RenderStatsMap& stats);
+    void onRenderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
     
     void nextLayer();
     void previousLayer();

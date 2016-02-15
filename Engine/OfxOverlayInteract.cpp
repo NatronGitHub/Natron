@@ -60,6 +60,7 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
 
 }
 
+// overridden from OFX::Host::Interact::Instance
 ////////////////////////////////////////////////////////////////////////////////////////////
 // protect all OpenGL attribs from anything wrong that could be done in interact functions
 // Should this be done in the GUI?
@@ -71,6 +72,7 @@ OfxOverlayInteract::createInstanceAction()
     return OFX::Host::ImageEffect::OverlayInteract::createInstanceAction();
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::drawAction(OfxTime time,
                                const OfxPointD &renderScale,
@@ -81,6 +83,7 @@ OfxOverlayInteract::drawAction(OfxTime time,
     return stat;
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::penMotionAction(OfxTime time,
                                     const OfxPointD &renderScale,
@@ -94,6 +97,7 @@ OfxOverlayInteract::penMotionAction(OfxTime time,
 
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::penUpAction(OfxTime time,
                                 const OfxPointD &renderScale,
@@ -106,6 +110,7 @@ OfxOverlayInteract::penUpAction(OfxTime time,
 
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::penDownAction(OfxTime time,
                                   const OfxPointD &renderScale,
@@ -118,6 +123,7 @@ OfxOverlayInteract::penDownAction(OfxTime time,
 
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::keyDownAction(OfxTime time,
                                   const OfxPointD &renderScale,
@@ -129,6 +135,7 @@ OfxOverlayInteract::keyDownAction(OfxTime time,
 
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::keyUpAction(OfxTime time,
                                 const OfxPointD &renderScale,
@@ -140,6 +147,7 @@ OfxOverlayInteract::keyUpAction(OfxTime time,
 
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::keyRepeatAction(OfxTime time,
                                     const OfxPointD &renderScale,
@@ -150,6 +158,7 @@ OfxOverlayInteract::keyRepeatAction(OfxTime time,
     return OFX::Host::ImageEffect::OverlayInteract::keyRepeatAction(time, renderScale, view, key, keyString);
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::gainFocusAction(OfxTime time,
                                     const OfxPointD &renderScale,
@@ -159,6 +168,7 @@ OfxOverlayInteract::gainFocusAction(OfxTime time,
 
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::loseFocusAction(OfxTime  time,
                                     const OfxPointD &renderScale,
@@ -167,6 +177,7 @@ OfxOverlayInteract::loseFocusAction(OfxTime  time,
     return OFX::Host::ImageEffect::OverlayInteract::loseFocusAction(time, renderScale, view);
 }
 
+// overridden from OFX::Host::Interact::Instance
 bool
 OfxOverlayInteract::getSuggestedColour(double &r,
                                                double &g,
@@ -177,6 +188,7 @@ OfxOverlayInteract::getSuggestedColour(double &r,
     return effect->getOfxEffectInstance()->getNode()->getOverlayColor(&r, &g, &b);
 }
 
+// overridden from OFX::Host::Interact::Instance
 OfxStatus
 OfxOverlayInteract::redraw()
 {

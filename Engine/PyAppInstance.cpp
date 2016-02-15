@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "AppInstanceWrapper.h"
+#include "PyAppInstance.h"
 
 #include <cassert>
 #include <stdexcept>

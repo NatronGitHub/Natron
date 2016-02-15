@@ -90,7 +90,10 @@ public:
     {
     }
 
-    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time, ViewIdx view,
+    virtual void onKnobValueChanged(KnobI* k,
+                                    ValueChangedReasonEnum reason,
+                                    double time,
+                                    ViewSpec view,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
 
     ImageBitDepthEnum getViewersBitDepth() const;
@@ -163,7 +166,7 @@ public:
 
     bool isRenderQueuingEnabled() const;
     
-    bool setRenderQueuingEnabled(bool enabled);
+    void setRenderQueuingEnabled(bool enabled);
     
     void restoreDefault();
 

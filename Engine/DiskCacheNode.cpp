@@ -71,7 +71,7 @@ DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 }
 
 bool
-DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,double /*time*/, int /*view*/) const
+DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,double /*time*/, ViewIdx /*view*/) const
 {
     return true;
 }
@@ -126,7 +126,10 @@ DiskCacheNode::initializeKnobs()
 }
 
 void
-DiskCacheNode::knobChanged(KnobI* k, ValueChangedReasonEnum /*reason*/, int view, double /*time*/,
+DiskCacheNode::knobChanged(KnobI* k,
+                           ValueChangedReasonEnum /*reason*/,
+                           ViewSpec view,
+                           double /*time*/,
                            bool /*originatedFromMainThread*/)
 {
     if (_imp->frameRange.lock().get() == k) {

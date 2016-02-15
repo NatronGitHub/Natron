@@ -201,7 +201,7 @@ public:
     {
     }
 
-    void setClipTLS(int view,
+    void setClipTLS(ViewIdx view,
                     unsigned int mipmapLevel,
                     const ImageComponents& components);
     void invalidateClipTLS();
@@ -247,7 +247,7 @@ public:
         ///////These data are valid only throughout a recursive action
         
         //View may be involved in a recursive action
-        std::list<int> view;
+        std::list<ViewIdx> view;
         //mipmaplevel may be involved in a recursive action
         std::list<unsigned int> mipMapLevel;
         
@@ -294,15 +294,15 @@ private:
 
 
     
-    void getRegionOfDefinitionInternal(OfxTime time,int view, unsigned int mipmapLevel,EffectInstance* associatedNode,
+    void getRegionOfDefinitionInternal(OfxTime time, ViewIdx view, unsigned int mipmapLevel,EffectInstance* associatedNode,
                                        OfxRectD* rod) const;
     
-    OFX::Host::ImageEffect::Image* getInputImageInternal(OfxTime time, int view, const OfxRectD *optionalBounds,
+    OFX::Host::ImageEffect::Image* getInputImageInternal(OfxTime time, ViewIdx view, const OfxRectD *optionalBounds,
                                                     const std::string* ofxPlane);
 
     OFX::Host::ImageEffect::Image* getOutputImageInternal(const std::string* ofxPlane);
 
-    OFX::Host::ImageEffect::Image* getImagePlaneInternal(OfxTime time, int view, const OfxRectD *optionalBounds, const std::string* ofxPlane);
+    OFX::Host::ImageEffect::Image* getImagePlaneInternal(OfxTime time, ViewIdx view, const OfxRectD *optionalBounds, const std::string* ofxPlane);
 
 
 

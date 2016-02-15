@@ -2326,7 +2326,7 @@ NodeGui::onAllKnobsSlaved(bool b)
 
 static QString makeLinkString(Node* masterNode,KnobI* master,Node* slaveNode,KnobI* slave)
 {
-    QString tt("<br>");
+    QString tt("<p>");
     tt.append(masterNode->getLabel().c_str());
     tt.append(".");
     tt.append(master->getName().c_str());
@@ -2341,7 +2341,7 @@ static QString makeLinkString(Node* masterNode,KnobI* master,Node* slaveNode,Kno
     tt.append(slave->getName().c_str());
 
 
-    tt.append(" (slave)</br>");
+    tt.append(" (slave)</p>");
     return tt;
 }
 

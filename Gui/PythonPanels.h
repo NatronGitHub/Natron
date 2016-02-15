@@ -33,7 +33,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/NodeWrapper.h"
+#include "Engine/PyNode.h"
 #include "Engine/ScriptObject.h"
 #include "Engine/Knob.h"
 #include "Engine/ViewIdx.h"
@@ -64,11 +64,11 @@ private:
     
     virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/,ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL {}
     
-    virtual void onKnobValueChanged(KnobI* /*k*/,
-                                    ValueChangedReasonEnum /*reason*/,
-                                    double /*time*/,
-                                    ViewIdx view,
-                                    bool /*originatedFromMainThread*/) OVERRIDE FINAL;
+    virtual void onKnobValueChanged(KnobI* k,
+                                    ValueChangedReasonEnum reason,
+                                    double time,
+                                    ViewSpec view,
+                                    bool originatedFromMainThread) OVERRIDE FINAL;
 
     boost::scoped_ptr<DialogParamHolderPrivate> _imp;
 };

@@ -38,7 +38,7 @@
 NATRON_NAMESPACE_ENTER;
 
 void
-KnobGui::onInternalValueChanged(ViewIdx /*view*/,
+KnobGui::onInternalValueChanged(ViewSpec /*view*/,
                                 int dimension,
                                 int reason)
 {
@@ -57,7 +57,7 @@ KnobGui::updateCurveEditorKeyframes()
 }
 
 void
-KnobGui::onMultipleKeySet(const std::list<double>& keys, ViewIdx /*view*/,int /*dimension*/, int reason)
+KnobGui::onMultipleKeySet(const std::list<double>& keys, ViewSpec /*view*/,int /*dimension*/, int reason)
 {
     
     if ((ValueChangedReasonEnum)reason != eValueChangedReasonUserEdited) {
@@ -77,7 +77,7 @@ KnobGui::onMultipleKeySet(const std::list<double>& keys, ViewIdx /*view*/,int /*
 
 void
 KnobGui::onInternalKeySet(double time,
-                          ViewIdx /*view*/,
+                          ViewSpec /*view*/,
                           int /*dimension*/,
                           int reason,
                           bool added )
@@ -97,7 +97,7 @@ KnobGui::onInternalKeySet(double time,
 
 void
 KnobGui::onInternalKeyRemoved(double time,
-                              ViewIdx /*view*/,
+                              ViewSpec /*view*/,
                               int /*dimension*/,
                               int /*reason*/)
 {
@@ -412,7 +412,7 @@ KnobGui::hasWidgetBeenCreated() const
 
 void
 KnobGui::onSetValueUsingUndoStack(const Variant & v,
-                                  ViewIdx /*view*/,
+                                  ViewSpec /*view*/,
                                   int dim)
 {
     KnobPtr knob = getKnob();
@@ -509,7 +509,8 @@ KnobGui::setKnobGuiPointer()
 }
 
 void
-KnobGui::onInternalAnimationAboutToBeRemoved(ViewIdx /*view*/,int dimension)
+KnobGui::onInternalAnimationAboutToBeRemoved(ViewSpec /*view*/,
+                                             int dimension)
 {
     removeAllKeyframeMarkersOnTimeline(dimension);
 }
@@ -593,7 +594,7 @@ KnobGui::setKeyframeMarkerOnTimeline(double time)
 }
 
 void
-KnobGui::onKeyFrameMoved(ViewIdx /*view*/,
+KnobGui::onKeyFrameMoved(ViewSpec /*view*/,
                          int /*dimension*/,
                          double oldTime,
                          double newTime)
@@ -612,13 +613,15 @@ KnobGui::onKeyFrameMoved(ViewIdx /*view*/,
 }
 
 void
-KnobGui::onAnimationLevelChanged(ViewIdx /*idx*/, int dim,int level)
+KnobGui::onAnimationLevelChanged(ViewSpec /*idx*/,
+                                 int dimension,
+                                 int level)
 {
     if (!_imp->customInteract) {
         //std::string expr = getKnob()->getExpression(dim);
         //reflectExpressionState(dim,!expr.empty());
         //if (expr.empty()) {
-            reflectAnimationLevel(dim, (AnimationLevelEnum)level);
+            reflectAnimationLevel(dimension, (AnimationLevelEnum)level);
         //}
         
     }
@@ -627,13 +630,13 @@ KnobGui::onAnimationLevelChanged(ViewIdx /*idx*/, int dim,int level)
 void
 KnobGui::onAppendParamEditChanged(int reason,
                                   const Variant & v,
-                                  ViewIdx /*view*/,
-                                  int dim,
+                                  ViewSpec /*view*/,
+                                  int dimension,
                                   double time,
                                   bool createNewCommand,
                                   bool setKeyFrame)
 {
-    pushUndoCommand( new MultipleKnobEditsUndoCommand(this,(ValueChangedReasonEnum)reason, createNewCommand,setKeyFrame,v,dim,time) );
+    pushUndoCommand( new MultipleKnobEditsUndoCommand(this,(ValueChangedReasonEnum)reason, createNewCommand, setKeyFrame, v, dimension, time) );
 }
 
 void
@@ -664,13 +667,16 @@ KnobGui::isGuiFrozenForPlayback() const
 }
 
 boost::shared_ptr<Curve>
-KnobGui::getCurve(int /*view*/,int dimension) const
+KnobGui::getCurve(ViewSpec /*view*/,
+                  int dimension) const
 {
     return _imp->guiCurves[dimension];
 }
 
 void
-KnobGui::onRedrawGuiCurve(int reason, ViewIdx /*view*/, int /*dimension*/)
+KnobGui::onRedrawGuiCurve(int reason,
+                          ViewSpec /*view*/,
+                          int /*dimension*/)
 {
     CurveChangeReason curveChangeReason = (CurveChangeReason)reason;
     switch (curveChangeReason) {

@@ -22,14 +22,14 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "NodeGroupWrapper.h"
+#include "PyNodeGroup.h"
 
 #include <cassert>
 #include <stdexcept>
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
-#include "Engine/NodeWrapper.h"
+#include "Engine/PyNode.h"
 
 NATRON_NAMESPACE_ENTER;
 

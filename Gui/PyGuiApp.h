@@ -27,8 +27,8 @@
 
 #include "Global/Macros.h"
 
-#include "Engine/AppInstanceWrapper.h"
-#include "Engine/ParameterWrapper.h" // ColorTuple
+#include "Engine/PyAppInstance.h"
+#include "Engine/PyParameter.h" // ColorTuple
 #include "Engine/EngineFwd.h"
 
 #include "Gui/GuiAppInstance.h"
@@ -94,9 +94,9 @@ public:
     
     int getProxyIndex() const;
     
-    void setCurrentView(int index);
+    void setCurrentView(ViewIdx index);
     
-    int getCurrentView() const;
+    ViewIdx getCurrentView() const;
     
 };
 

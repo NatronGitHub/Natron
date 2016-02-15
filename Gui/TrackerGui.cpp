@@ -261,7 +261,7 @@ TrackerGui::onAddTrackClicked(bool clicked)
 void
 TrackerGui::drawOverlays(double time,
                          const RenderScale & renderScale,
-                         int view) const
+                         ViewIdx view) const
 {
     double pixelScaleX, pixelScaleY;
 
@@ -370,7 +370,7 @@ TrackerGui::drawOverlays(double time,
 bool
 TrackerGui::penDown(double time,
                     const RenderScale & renderScale,
-                    int view,
+                    ViewIdx view,
                     const QPointF & viewportPos,
                     const QPointF & pos,
                     double pressure,
@@ -422,8 +422,8 @@ TrackerGui::penDown(double time,
         assert(dblKnob);
         dblKnob->beginChanges();
         dblKnob->blockValueChanges();
-        dblKnob->setValueAtTime(time, ViewIdx::all(), pos.x(), 0);
-        dblKnob->setValueAtTime(time, ViewIdx::all(), pos.y(), 1);
+        dblKnob->setValueAtTime(time, ViewSpec::all(), pos.x(), 0);
+        dblKnob->setValueAtTime(time, ViewSpec::all(), pos.y(), 1);
         dblKnob->unblockValueChanges();
         dblKnob->endChanges();
         didSomething = true;
@@ -441,7 +441,7 @@ TrackerGui::penDown(double time,
 bool
 TrackerGui::penDoubleClicked(double /*time*/,
                              const RenderScale & /*renderScale*/,
-                             int /*view*/,
+                             ViewIdx /*view*/,
                              const QPointF & /*viewportPos*/,
                              const QPointF & /*pos*/,
                              QMouseEvent* /*e*/)
@@ -454,7 +454,7 @@ TrackerGui::penDoubleClicked(double /*time*/,
 bool
 TrackerGui::penMotion(double time,
                       const RenderScale & renderScale,
-                      int view,
+                      ViewIdx view,
                       const QPointF & viewportPos,
                       const QPointF & pos,
                       double pressure,
@@ -488,7 +488,7 @@ TrackerGui::penMotion(double time,
 bool
 TrackerGui::penUp(double time,
                   const RenderScale & renderScale,
-                  int view,
+                  ViewIdx view,
                   const QPointF & viewportPos,
                   const QPointF & pos,
                   double pressure,
@@ -517,7 +517,7 @@ TrackerGui::penUp(double time,
 bool
 TrackerGui::keyDown(double time,
                     const RenderScale & renderScale,
-                    int view,
+                    ViewIdx view,
                     QKeyEvent* e)
 {
     bool didSomething = false;
@@ -593,7 +593,7 @@ TrackerGui::keyDown(double time,
 bool
 TrackerGui::keyUp(double time,
                   const RenderScale & renderScale,
-                  int view,
+                  ViewIdx view,
                   QKeyEvent* e)
 {
     bool didSomething = false;
@@ -634,7 +634,7 @@ TrackerGui::keyUp(double time,
 bool
 TrackerGui::loseFocus(double time,
                       const RenderScale & renderScale,
-                      int view)
+                      ViewIdx view)
 {
     bool didSomething = false;
 

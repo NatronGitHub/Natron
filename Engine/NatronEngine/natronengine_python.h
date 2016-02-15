@@ -21,13 +21,13 @@ CLANG_DIAG_ON(uninitialized)
 // Binded library includes
 #include <Enums.h>
 #include <RectD.h>
-#include <NodeWrapper.h>
+#include <PyNode.h>
 #include <RectI.h>
-#include <NodeGroupWrapper.h>
-#include <GlobalFunctionsWrapper.h>
-#include <RotoWrapper.h>
-#include <AppInstanceWrapper.h>
-#include <ParameterWrapper.h>
+#include <PyNodeGroup.h>
+#include <PyGlobalFunctions.h>
+#include <PyRoto.h>
+#include <PyAppInstance.h>
+#include <PyParameter.h>
 // Conversion Includes - Primitive Types
 #include <QString>
 #include <signalmanager.h>

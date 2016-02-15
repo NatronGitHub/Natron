@@ -100,7 +100,7 @@ public:
     ViewerRenderRetCode getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                         bool isSequential,
                                                         bool canAbort,
-                                                        int view,
+                                                        ViewIdx view,
                                                         int textureIndex,
                                                         U64 viewerHash,
                                                         const NodePtr& rotoPaintNode,
@@ -116,7 +116,7 @@ private:
     ViewerRenderRetCode getRenderViewerArgsAndCheckCache(SequenceTime time,
                                                         bool isSequential,
                                                         bool canAbort,
-                                                        int view,
+                                                        ViewIdx view,
                                                         int textureIndex,
                                                         U64 viewerHash,
                                                         const NodePtr& rotoPaintNode,
@@ -138,24 +138,26 @@ public:
      * Otherwise it just calls renderRoi(...) on the active input
      * and then render to the PBO.
      **/
-    ViewerRenderRetCode renderViewer(int view,bool singleThreaded,bool isSequentialRender,
-                                    U64 viewerHash,
-                                    bool canAbort,
-                                    const NodePtr& rotoPaintNode,
-                                    bool useTLS,
-                                    boost::shared_ptr<ViewerArgs> args[2],
-                                    const boost::shared_ptr<RequestedFrame>& request,
-                                    const boost::shared_ptr<RenderStats>& stats) WARN_UNUSED_RETURN;
+    ViewerRenderRetCode renderViewer(ViewIdx view,
+                                     bool singleThreaded,
+                                     bool isSequentialRender,
+                                     U64 viewerHash,
+                                     bool canAbort,
+                                     const NodePtr& rotoPaintNode,
+                                     bool useTLS,
+                                     boost::shared_ptr<ViewerArgs> args[2],
+                                     const boost::shared_ptr<RequestedFrame>& request,
+                                     const boost::shared_ptr<RenderStats>& stats) WARN_UNUSED_RETURN;
     
     ViewerRenderRetCode getViewerArgsAndRenderViewer(SequenceTime time,
-                                                    bool canAbort,
-                                                    int view,
-                                                    U64 viewerHash,
-                                                    const NodePtr& rotoPaintNode,
-                                                    const boost::shared_ptr<RotoStrokeItem>& strokeItem,
-                                                    const boost::shared_ptr<RenderStats>& stats,
-                                                    boost::shared_ptr<ViewerArgs>* argsA,
-                                                    boost::shared_ptr<ViewerArgs>* argsB);
+                                                     bool canAbort,
+                                                     ViewIdx view,
+                                                     U64 viewerHash,
+                                                     const NodePtr& rotoPaintNode,
+                                                     const boost::shared_ptr<RotoStrokeItem>& strokeItem,
+                                                     const boost::shared_ptr<RenderStats>& stats,
+                                                     boost::shared_ptr<ViewerArgs>* argsA,
+                                                     boost::shared_ptr<ViewerArgs>* argsB);
 
 
     void updateViewer(boost::shared_ptr<UpdateViewerParams> & frame);
@@ -211,7 +213,7 @@ public:
     /**
      * @brief Returns the current view, MT-safe
      **/
-    int getViewerCurrentView() const;
+    ViewIdx getViewerCurrentView() const;
 
     void onGainChanged(double exp);
     
@@ -235,7 +237,7 @@ public:
     
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
     
-    virtual int getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
 
     boost::shared_ptr<TimeLine> getTimeline() const;
     
@@ -258,7 +260,7 @@ public:
     
     void markAllOnGoingRendersAsAborted();
     
-    virtual void reportStats(int time, int view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
+    virtual void reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
     
     ///Only callable on MT
     void setActivateInputChangeRequestedFromViewer(bool fromViewer);
@@ -288,7 +290,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     
-    void renderStatsAvailable(int time, int view, double wallTime, const RenderStatsMap& stats);
+    void renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
     
     void s_callRedrawOnMainThread();
 
@@ -361,16 +363,16 @@ private:
     /*******************************************/
     
     
-    ViewerRenderRetCode renderViewer_internal(int view,
-                                             bool singleThreaded,
-                                             bool isSequentialRender,
-                                             U64 viewerHash,
-                                             bool canAbort,
-                                             NodePtr rotoPaintNode,
-                                             bool useTLS,
-                                             const boost::shared_ptr<RequestedFrame>& request,
-                                             const boost::shared_ptr<RenderStats>& stats,
-                                             ViewerArgs& inArgs) WARN_UNUSED_RETURN;
+    ViewerRenderRetCode renderViewer_internal(ViewIdx view,
+                                              bool singleThreaded,
+                                              bool isSequentialRender,
+                                              U64 viewerHash,
+                                              bool canAbort,
+                                              NodePtr rotoPaintNode,
+                                              bool useTLS,
+                                              const boost::shared_ptr<RequestedFrame>& request,
+                                              const boost::shared_ptr<RenderStats>& stats,
+                                              ViewerArgs& inArgs) WARN_UNUSED_RETURN;
     
     
     virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;

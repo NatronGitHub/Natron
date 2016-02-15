@@ -45,7 +45,7 @@ NATRON_NAMESPACE_ENTER;
 struct ActionKey
 {
     double time;
-    int view;
+    ViewIdx view;
     unsigned int mipMapLevel;
 };
 
@@ -102,17 +102,17 @@ public:
 
     void invalidateAll(U64 newHash);
 
-    bool getIdentityResult(U64 hash, double time, int view, int* inputNbIdentity, double* identityTime);
+    bool getIdentityResult(U64 hash, double time, ViewIdx view, int* inputNbIdentity, double* identityTime);
 
-    void setIdentityResult(U64 hash, double time, int view, int inputNbIdentity, double identityTime);
+    void setIdentityResult(U64 hash, double time, ViewIdx view, int inputNbIdentity, double identityTime);
 
-    bool getRoDResult(U64 hash, double time, int view, unsigned int mipMapLevel, RectD* rod);
+    bool getRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, RectD* rod);
 
-    void setRoDResult(U64 hash, double time, int view, unsigned int mipMapLevel, const RectD & rod);
+    void setRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const RectD & rod);
 
-    bool getFramesNeededResult(U64 hash, double time, int view, unsigned int mipMapLevel, FramesNeededMap* framesNeeded);
+    bool getFramesNeededResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, FramesNeededMap* framesNeeded);
 
-    void setFramesNeededResult(U64 hash, double time, int view, unsigned int mipMapLevel, const FramesNeededMap & framesNeeded);
+    void setFramesNeededResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const FramesNeededMap & framesNeeded);
 
     bool getTimeDomainResult(U64 hash, double *first, double* last);
 
@@ -269,7 +269,7 @@ struct EffectInstance::Implementation
                          const RectD & rod,
                          const RectI & renderWindow,
                          double time,
-                         int view,
+                         ViewIdx view,
                          bool isIdentity,
                          double identityTime,
                          const EffectInstPtr& identityInput,
@@ -304,7 +304,7 @@ struct EffectInstance::Implementation
         unsigned int renderMappedMipMapLevel;
         RectD rod;
         double time;
-        int view;
+        ViewIdx view;
         double par;
         ImageBitDepthEnum outputClipPrefDepth;
         boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
@@ -327,7 +327,7 @@ struct EffectInstance::Implementation
                                                   const unsigned int renderMappedMipMapLevel,
                                                   const RectD & rod,
                                                   const double time,
-                                                  const int view,
+                                                  const ViewIdx view,
                                                   const double par,
                                                   const bool byPassCache,
                                                   const ImageBitDepthEnum outputClipPrefDepth,

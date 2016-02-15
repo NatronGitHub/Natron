@@ -22,8 +22,8 @@ CLANG_DIAG_OFF(header-guard)
 
 // Extra includes
 NATRON_NAMESPACE_USING
-#include <GuiAppWrapper.h>
-#include <ParameterWrapper.h>
+#include <PyGuiApp.h>
+#include <PyParameter.h>
 #include <QList>
 #include <list>
 #include <qaction.h>

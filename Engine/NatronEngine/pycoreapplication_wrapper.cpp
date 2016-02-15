@@ -18,7 +18,7 @@ GCC_DIAG_OFF(uninitialized)
 
 // Extra includes
 NATRON_NAMESPACE_USING
-#include <AppInstanceWrapper.h>
+#include <PyAppInstance.h>
 #include <list>
 
 

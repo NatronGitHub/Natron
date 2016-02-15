@@ -137,12 +137,12 @@ ViewerTab::updateViewsMenu(const std::vector<std::string>& viewNames)
 }
 
 void
-ViewerTab::setCurrentView(int view)
+ViewerTab::setCurrentView(ViewIdx view)
 {
     _imp->viewsComboBox->setCurrentIndex(view);
 }
 
-int
+ViewIdx
 ViewerTab::getCurrentView() const
 {
     QMutexLocker l(&_imp->currentViewMutex);
@@ -249,7 +249,7 @@ ViewerTab::startPause(bool b)
     abortRendering();
     if (b) {
         getGui()->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
-        std::vector<int> viewsToRender;
+        std::vector<ViewIdx> viewsToRender;
         {
             QMutexLocker k(&_imp->currentViewMutex);
             viewsToRender.push_back(_imp->currentViewIndex);
@@ -338,7 +338,7 @@ ViewerTab::startBackward(bool b)
     abortRendering();
     if (b) {
         getGui()->getApp()->setLastViewerUsingTimeline(_imp->viewerNode->getNode());
-        std::vector<int> viewsToRender;
+        std::vector<ViewIdx> viewsToRender;
         {
             QMutexLocker k(&_imp->currentViewMutex);
             viewsToRender.push_back(_imp->currentViewIndex);
@@ -872,12 +872,12 @@ ViewerTab::sizeHint() const
 }
 
 void
-ViewerTab::showView(int view)
+ViewerTab::showView(int /* Qt slot, no ViewIdx */ view)
 {
     {
         QMutexLocker l(&_imp->currentViewMutex);
         
-        _imp->currentViewIndex = view;
+        _imp->currentViewIndex = ViewIdx(view);
     }
     abortRendering();
     _imp->viewerNode->renderCurrentFrame(true);

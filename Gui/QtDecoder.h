@@ -77,10 +77,11 @@ public:
     virtual std::string getPluginLabel() const OVERRIDE;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
     virtual std::string getPluginDescription() const OVERRIDE;
-    virtual StatusEnum getRegionOfDefinition(U64 hash,double time,
-                                                 const RenderScale & scale,
-                                                 int view,
-                                                 RectD* rod) OVERRIDE; //!< rod is in canonical coordinates
+    virtual StatusEnum getRegionOfDefinition(U64 hash,
+                                             double time,
+                                             const RenderScale & scale,
+                                             ViewIdx view,
+                                             RectD* rod) OVERRIDE; //!< rod is in canonical coordinates
     virtual void getFrameRange(double *first,double *last) OVERRIDE;
     virtual int getMaxInputCount() const OVERRIDE
     {
@@ -103,7 +104,10 @@ public:
     }
 
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE;
-    virtual void knobChanged(KnobI* k, ValueChangedReasonEnum reason, int view, double time,
+    virtual void knobChanged(KnobI* k,
+                             ValueChangedReasonEnum reason,
+                             ViewSpec view,
+                             double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
     virtual RenderSafetyEnum renderThreadSafety() const OVERRIDE
     {

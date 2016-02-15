@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <RotoWrapper.h>
+#include <PyRoto.h>
 
 #endif // SBK_ROTO_H
 

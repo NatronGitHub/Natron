@@ -182,7 +182,7 @@ struct ViewerData
             ar & ::boost::serialization::make_nvp("RightToolbarVisible",rightToolbarVisible);
             ar & ::boost::serialization::make_nvp("TopToolbarVisible",topToolbarVisible);
             ar & ::boost::serialization::make_nvp("PlayerVisible",playerVisible);
-            ar & ::boost::serialization::make_nvp("TimelineVisible",timelineVisible);
+            ar & ::boost::serialization::make_nvp("TimelineVisible", timelineVisible);
             ar & ::boost::serialization::make_nvp("InfobarVisible",infobarVisible);
         } else {
             leftToolbarVisible = true;

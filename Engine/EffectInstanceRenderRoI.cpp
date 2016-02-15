@@ -90,7 +90,7 @@ optimizeRectsToRender(EffectInstance* self,
                       const RectI & inputsRoDIntersection,
                       const std::list<RectI> & rectsToRender,
                       const double time,
-                      const int view,
+                      const ViewIdx view,
                       const RenderScale & renderMappedScale,
                       std::list<EffectInstance::RectToRender>* finalRectsToRender)
 {
@@ -488,7 +488,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     argCpy->time = inputTimeIdentity;
 
                     if (viewInvariance == eViewInvarianceAllViewsInvariant) {
-                        argCpy->view = 0;
+                        argCpy->view = ViewIdx(0);
                     }
 
                     argCpy->preComputedRoD.clear(); //< clear as the RoD of the identity input might not be the same (reproducible with Blur)
@@ -599,7 +599,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         // just call renderRoI again for the components left to render on the view 0.
         if ( (args.view != 0) && (viewInvariance == eViewInvarianceOnlyPassThroughPlanesVariant) ) {
             boost::scoped_ptr<RenderRoIArgs> argCpy(new RenderRoIArgs(args));
-            argCpy->view = 0;
+            argCpy->view = ViewIdx(0);
             argCpy->preComputedRoD.clear();
 
             return renderRoI(*argCpy, outputPlanes);
@@ -1584,7 +1584,7 @@ EffectInstance::renderRoIInternal(double time,
                                   const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
                                   RenderSafetyEnum safety,
                                   unsigned int mipMapLevel,
-                                  int view,
+                                  ViewIdx view,
                                   const RectD & rod, //!< effect rod in canonical coords
                                   const double par,
                                   const boost::shared_ptr<ImagePlanesToRender> & planesToRender,

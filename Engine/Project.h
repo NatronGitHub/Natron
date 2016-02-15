@@ -398,7 +398,10 @@ private:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time, ViewIdx view,
+    virtual void onKnobValueChanged(KnobI* k,
+                                    ValueChangedReasonEnum reason,
+                                    double time,
+                                    ViewSpec view,
                                     bool originatedFromMainThread)  OVERRIDE FINAL;
 
     void save(ProjectSerialization* serializationObject) const;

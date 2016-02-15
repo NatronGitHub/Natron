@@ -900,7 +900,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     /*=================================================*/
 
     /*frame seeker*/
-    _imp->timeLineGui = new TimeLineGui(node,timeline,getGui(),this);
+    _imp->timeLineGui = new TimeLineGui(node, timeline,getGui(),this);
     QObject::connect(_imp->timeLineGui, SIGNAL( boundariesChanged(SequenceTime,SequenceTime)),
                      this, SLOT(onTimelineBoundariesChanged(SequenceTime, SequenceTime)));
     QObject::connect(gui->getApp()->getProject().get(), SIGNAL(frameRangeChanged(int,int)), _imp->timeLineGui, SLOT(onProjectFrameRangeChanged(int,int)));
@@ -916,14 +916,14 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     /*slots & signals*/
     
-    manageTimelineSlot(false,timeline);
+    manageTimelineSlot(false, timeline);
     QObject::connect( _imp->nextKeyFrame_Button,SIGNAL( clicked(bool) ),getGui()->getApp(), SLOT( goToNextKeyframe() ) );
     QObject::connect( _imp->previousKeyFrame_Button,SIGNAL( clicked(bool) ),getGui()->getApp(), SLOT( goToPreviousKeyframe() ) );
 
     
     NodePtr wrapperNode = _imp->viewerNode->getNode();
-    QObject::connect( _imp->viewerNode, SIGNAL(renderStatsAvailable(int,int,double,RenderStatsMap)),
-                     this, SLOT(onRenderStatsAvailable(int,int,double,RenderStatsMap)));
+    QObject::connect( _imp->viewerNode, SIGNAL(renderStatsAvailable(int, ViewIdx, double, RenderStatsMap)),
+                     this, SLOT(onRenderStatsAvailable(int, ViewIdx, double, RenderStatsMap)));
     QObject::connect( wrapperNode.get(),SIGNAL( inputChanged(int) ),this,SLOT( onInputChanged(int) ) );
     QObject::connect( wrapperNode.get(),SIGNAL( inputLabelChanged(int,QString) ),this,SLOT( onInputNameChanged(int,QString) ) );
     QObject::connect( _imp->viewerNode,SIGNAL(clipPreferencesChanged()), this, SLOT(onClipPreferencesChanged()));

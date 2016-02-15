@@ -40,12 +40,12 @@
 #include <Enums.h>
 
 //Engine
-#include "GlobalFunctionsWrapper.h"
-#include "NodeGroupWrapper.h"
-#include "AppInstanceWrapper.h"
-#include "RotoWrapper.h"
-#include "NodeWrapper.h"
-#include "ParameterWrapper.h"
+#include "GlobalFunctions.h"
+#include "NodeGroup.h"
+#include "AppInstance.h"
+#include "Roto.h"
+#include "Node.h"
+#include "Parameter.h"
 #include "RectI.h"
 #include "RectD.h"
 

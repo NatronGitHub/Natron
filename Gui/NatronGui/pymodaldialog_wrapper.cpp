@@ -22,7 +22,7 @@ CLANG_DIAG_OFF(header-guard)
 
 // Extra includes
 NATRON_NAMESPACE_USING
-#include <ParameterWrapper.h>
+#include <PyParameter.h>
 #include <QList>
 #include <qaction.h>
 #include <qbitmap.h>

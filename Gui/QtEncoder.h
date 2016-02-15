@@ -79,7 +79,10 @@ public:
         return 1;
     }
 
-    void knobChanged(KnobI* k, ValueChangedReasonEnum reason, int view, double time,
+    void knobChanged(KnobI* k,
+                     ValueChangedReasonEnum reason,
+                     ViewSpec view,
+                     double time,
                      bool originatedFromMainThread) OVERRIDE FINAL;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE;
     virtual void addAcceptedComponents(int inputNb,std::list<ImageComponents>* comps) OVERRIDE FINAL;

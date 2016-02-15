@@ -127,7 +127,7 @@ public:
                                      const boost::shared_ptr<ProcessHandler> & process) OVERRIDE FINAL;
     virtual void setupViewersForViews(const std::vector<std::string>& viewNames) OVERRIDE FINAL;
 
-    void setViewersCurrentView(int view);
+    void setViewersCurrentView(ViewIdx view);
 
     void setUndoRedoStackLimit(int limit);
 

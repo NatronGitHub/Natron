@@ -35,9 +35,9 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 #endif
 
-#include "Engine/GlobalFunctionsWrapper.h"
+#include "Engine/PyGlobalFunctions.h"
 
-#include "Gui/GuiAppWrapper.h"
+#include "Gui/PyGuiApp.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiFwd.h"
 

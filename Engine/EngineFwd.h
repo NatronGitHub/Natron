@@ -112,6 +112,7 @@ class ChoiceExtraData;
 class ChoiceParam;
 class ColorParam;
 class Curve;
+class Dimension;
 class DockablePanelI;
 class Double2DParam;
 class Double3DParam;
@@ -213,7 +214,7 @@ class TextureRect;
 class TimeLine;
 class UserParamHolder;
 class ViewerInstance;
-struct ViewIdx;
+class ViewIdx;
 namespace Color {
 class Lut;
 }

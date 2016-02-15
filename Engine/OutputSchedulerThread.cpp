@@ -140,7 +140,7 @@ struct RunArgs
     
     bool isBlocking;
     
-    std::vector<int> viewsToRender;
+    std::vector<ViewIdx> viewsToRender;
 
 };
 
@@ -331,7 +331,7 @@ struct OutputSchedulerThreadPrivate
     }
     
     bool appendBufferedFrame(double time,
-                             int view,
+                             ViewIdx view,
                              const RenderStatsPtr& stats,
                              const boost::shared_ptr<BufferableObject>& image) WARN_UNUSED_RETURN
     {
@@ -783,7 +783,7 @@ OutputSchedulerThread::pushFramesToRender(int nThreads)
 
 
 int
-OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread,bool* enableRenderStats, std::vector<int>* viewsToRender)
+OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread,bool* enableRenderStats, std::vector<ViewIdx>* viewsToRender)
 {
     ///Flag the thread as inactive
     {
@@ -1092,7 +1092,7 @@ OutputSchedulerThread::startRender()
                                                                scaleOne, true,
                                                                true,
                                                                false,
-                                                               /*mainView*/0) == eStatusFailed) {
+                                                               ViewIdx(0)) == eStatusFailed) {
                 l.unlock();
                 abortRendering(false,false);
                 return;
@@ -1173,7 +1173,7 @@ OutputSchedulerThread::stopRender()
                                                            scaleOne, true,
                                                            !appPTR->isBackground(),
                                                                 false,
-                                                           0 /*mainView*/));
+                                                           ViewIdx(0)));
            
         
     }
@@ -1422,7 +1422,7 @@ OutputSchedulerThread::run()
                 assert(!framesToRender.empty());
                 {
                     const BufferedFrame& frame = framesToRender.front();
-                    std::vector<int> views(1);
+                    std::vector<ViewIdx> views(1);
                     views[0] = frame.view;
                     notifyFrameRendered(expectedTimeToRender, frame.view, views, frame.stats, eSchedulingPolicyOrdered);
                 }
@@ -1528,8 +1528,8 @@ OutputSchedulerThread::adjustNumberOfThreads(int* newNThreads, int *lastNThreads
 
 void
 OutputSchedulerThread::notifyFrameRendered(int frame,
-                                           int viewIndex,
-                                           const std::vector<int>& viewsToRender,
+                                           ViewIdx viewIndex,
+                                           const std::vector<ViewIdx>& viewsToRender,
                                            const RenderStatsPtr& stats,
                                            SchedulingPolicyEnum policy)
 {
@@ -1570,7 +1570,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
             ///Notify the scheduler rendering is finished by append a fake frame to the buffer
             {
                 QMutexLocker bufLocker (&_imp->bufMutex);
-                ignore_result(_imp->appendBufferedFrame(0, 0, RenderStatsPtr(), boost::shared_ptr<BufferableObject>()));
+                ignore_result(_imp->appendBufferedFrame(0, viewIndex, RenderStatsPtr(), boost::shared_ptr<BufferableObject>()));
                 _imp->bufCondition.wakeOne();
             }
         } else {
@@ -1689,7 +1689,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
 
 void
 OutputSchedulerThread::appendToBuffer_internal(double time,
-                                               int view,
+                                               ViewIdx view,
                                                const RenderStatsPtr& stats,
                                                const boost::shared_ptr<BufferableObject>& frame,
                                                bool wakeThread)
@@ -1721,7 +1721,7 @@ OutputSchedulerThread::appendToBuffer_internal(double time,
 
 void
 OutputSchedulerThread::appendToBuffer(double time,
-                                      int view,
+                                      ViewIdx view,
                                       const RenderStatsPtr& stats,
                                       const boost::shared_ptr<BufferableObject>& image)
 {
@@ -1730,7 +1730,7 @@ OutputSchedulerThread::appendToBuffer(double time,
 
 void
 OutputSchedulerThread::appendToBuffer(double time,
-                                      int view,
+                                      ViewIdx view,
                                       const RenderStatsPtr& stats,
                                       const BufferableObjectList& frames)
 {
@@ -1928,7 +1928,7 @@ OutputSchedulerThread::renderFrameRange(bool isBlocking,
                                         int firstFrame,
                                         int lastFrame,
                                         int frameStep,
-                                        const std::vector<int>& viewsToRender,
+                                        const std::vector<ViewIdx>& viewsToRender,
                                         RenderDirectionEnum direction)
 {
     if (direction == eRenderDirectionForward) {
@@ -1970,7 +1970,7 @@ OutputSchedulerThread::isPlaybackAutoRestartEnabled() const
 
 void
 OutputSchedulerThread::renderFromCurrentFrame(bool enableRenderStats,
-                                              const std::vector<int>& viewsToRender,
+                                              const std::vector<ViewIdx>& viewsToRender,
                                               RenderDirectionEnum timelineDirection)
 {
     
@@ -2065,7 +2065,7 @@ OutputSchedulerThread::getDirectionRequestedToRender() const
     return _imp->livingRunArgs.timelineDirection;
 }
 
-std::vector<int>
+std::vector<ViewIdx>
 OutputSchedulerThread::getViewsRequestedToRender() const
 {
     QMutexLocker l(&_imp->runArgsMutex);
@@ -2244,7 +2244,7 @@ RenderThreadTask::run()
     for (;;) {
         
         bool enableRenderStats;
-        std::vector<int> viewsToRender;
+        std::vector<ViewIdx> viewsToRender;
         int time = _imp->scheduler->pickFrameToRender(this,&enableRenderStats, &viewsToRender);
         
         if ( mustQuit() ) {
@@ -2364,7 +2364,7 @@ private:
     
     
     virtual void
-    renderFrame(int time, const std::vector<int>& viewsToRender,  bool enableRenderStats) {
+    renderFrame(int time, const std::vector<ViewIdx>& viewsToRender,  bool enableRenderStats) {
         
         boost::shared_ptr<OutputEffectInstance> output = _imp->output.lock();
         if (!output) {
@@ -2460,7 +2460,7 @@ private:
             
             for (std::size_t view = 0; view < viewsToRender.size(); ++view) {
         
-                StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(activeInputToRenderHash,time, scale, viewsToRender[view], &rod, &isProjectFormat);
+                StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(activeInputToRenderHash, time, scale, viewsToRender[view], &rod, &isProjectFormat);
                 if (stat == eStatusFailed) {
                     _imp->scheduler->notifyRenderFailure("Error caught while rendering");
                     return;
@@ -2954,7 +2954,7 @@ public:
 private:
     
     virtual void
-    renderFrame(int time, const std::vector<int>& viewsToRender, bool enableRenderStats) {
+    renderFrame(int time, const std::vector<ViewIdx>& viewsToRender, bool enableRenderStats) {
         
         
         RenderStatsPtr stats;
@@ -2967,7 +2967,7 @@ private:
         
         //Viewer can only render 1 view for now
         assert(viewsToRender.size() == 1);
-        int view = viewsToRender.front();
+        ViewIdx view = viewsToRender.front();
         
         boost::shared_ptr<ViewerInstance> viewer = _viewer.lock();
         
@@ -3158,7 +3158,7 @@ RenderEngine::renderFrameRange(bool isBlocking,
                                int firstFrame,
                                int lastFrame,
                                int frameStep,
-                               const std::vector<int>& viewsToRender,
+                               const std::vector<ViewIdx>& viewsToRender,
                                OutputSchedulerThread::RenderDirectionEnum forward)
 {
     {
@@ -3172,7 +3172,7 @@ RenderEngine::renderFrameRange(bool isBlocking,
 }
 
 void
-RenderEngine::renderFromCurrentFrame(bool enableRenderStats,const std::vector<int>& viewsToRender, OutputSchedulerThread::RenderDirectionEnum forward)
+RenderEngine::renderFromCurrentFrame(bool enableRenderStats,const std::vector<ViewIdx>& viewsToRender, OutputSchedulerThread::RenderDirectionEnum forward)
 {
     
     {
@@ -3389,7 +3389,7 @@ ViewerRenderEngine::createScheduler(const boost::shared_ptr<OutputEffectInstance
 ////////////////////////ViewerCurrentFrameRequestScheduler////////////////////////
 struct CurrentFrameFunctorArgs
 {
-    int view;
+    ViewIdx view;
     int time;
     RenderStatsPtr stats;
     ViewerInstance* viewer;
@@ -3418,7 +3418,7 @@ struct CurrentFrameFunctorArgs
     {
     }
     
-    CurrentFrameFunctorArgs(int view,
+    CurrentFrameFunctorArgs(ViewIdx view,
                             int time,
                             const RenderStatsPtr& stats,
                             ViewerInstance* viewer,
@@ -3781,7 +3781,7 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStat
             if (stats) {
                 double timeSpent;
                 std::map<NodePtr,NodeRenderStats > ret = stats->getStats(&timeSpent);
-                viewer->reportStats(0, 0, timeSpent, ret);
+                viewer->reportStats(0, ViewIdx(0), timeSpent, ret);
             }
 
             viewer->updateViewer(params);
@@ -3904,7 +3904,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,bo
 {
     int frame = _imp->viewer->getTimeline()->currentFrame();
     int viewsCount = _imp->viewer->getRenderViewsCount();
-    int view = viewsCount > 0 ? _imp->viewer->getViewerCurrentView() : 0;
+    ViewIdx view = viewsCount > 0 ? _imp->viewer->getViewerCurrentView() : ViewIdx(0);
     U64 viewerHash = _imp->viewer->getHash();
     
     ViewerInstance::ViewerRenderRetCode status[2] = {

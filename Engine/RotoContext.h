@@ -176,7 +176,7 @@ public:
      * or the project format.
      **/
     void getMaskRegionOfDefinition(double time,
-                                   int view,
+                                   ViewIdx view,
                                    RectD* rod) const; //!< rod in canonical coordinates
     
     /**
@@ -188,15 +188,15 @@ public:
     static bool isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared_ptr<RotoDrawableItem> >& items);
     
     void getGlobalMotionBlurSettings(const double time,
-                               double* startTime,
-                               double* endTime,
-                               double* timeStep) const;
+                                     double* startTime,
+                                     double* endTime,
+                                     double* timeStep) const;
 
 
 private:
     
     
-    void getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, int view, RectD* rod) const;
+    void getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, ViewIdx view, RectD* rod) const;
     
 public:
     
@@ -205,7 +205,7 @@ public:
     boost::shared_ptr<Image> renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& stroke,
                                                           const ImageComponents& components,
                                                           const double time,
-                                                          const int view,
+                                                          const ViewIdx view,
                                                           const ImageBitDepthEnum depth,
                                                           const unsigned int mipmapLevel);
     
@@ -419,7 +419,7 @@ public:
     
     void knobChanged(KnobI* k,
                      ValueChangedReasonEnum reason,
-                     int view,
+                     ViewSpec view,
                      double time,
                      bool originatedFromMainThread);
     

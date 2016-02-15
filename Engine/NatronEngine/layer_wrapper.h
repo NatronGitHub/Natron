@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <RotoWrapper.h>
+#include <PyRoto.h>
 
 NATRON_NAMESPACE_ENTER;
 class LayerWrapper : public Layer

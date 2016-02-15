@@ -702,7 +702,7 @@ Image::Image(const ImageComponents& components,
     , _useBitmap(useBitmap)
 {
     
-    setCacheEntry(makeKey(0, 0, false, 0, 0, false, false),
+    setCacheEntry(makeKey(0, 0, false, 0, ViewIdx(0), false, false),
                   boost::shared_ptr<ImageParams>( new ImageParams( mipMapLevel,
                                                                    regionOfDefinition,
                                                                    par,
@@ -761,7 +761,7 @@ Image::makeKey(const CacheEntryHolder* holder,
                U64 nodeHashKey,
                bool frameVaryingOrAnimated,
                double time,
-               int view,
+               ViewIdx view,
                bool draftMode,
                bool fullScaleWithDownscaleInputs)
 {

@@ -508,61 +508,61 @@ Gui::connectInput()
 void
 Gui::showView0()
 {
-    _imp->_appInstance->setViewersCurrentView(0);
+    _imp->_appInstance->setViewersCurrentView(ViewIdx(0));
 }
 
 void
 Gui::showView1()
 {
-    _imp->_appInstance->setViewersCurrentView(1);
+    _imp->_appInstance->setViewersCurrentView(ViewIdx(1));
 }
 
 void
 Gui::showView2()
 {
-    _imp->_appInstance->setViewersCurrentView(2);
+    _imp->_appInstance->setViewersCurrentView(ViewIdx(2));
 }
 
 void
 Gui::showView3()
 {
-    _imp->_appInstance->setViewersCurrentView(3);
+    _imp->_appInstance->setViewersCurrentView(ViewIdx(3));
 }
 
 void
 Gui::showView4()
 {
-    _imp->_appInstance->setViewersCurrentView(4);
+    _imp->_appInstance->setViewersCurrentView(ViewIdx(4));
 }
 
 void
 Gui::showView5()
 {
-    _imp->_appInstance->setViewersCurrentView(5);
+    _imp->_appInstance->setViewersCurrentView(ViewIdx(5));
 }
 
 void
 Gui::showView6()
 {
-    _imp->_appInstance->setViewersCurrentView(6);
+    _imp->_appInstance->setViewersCurrentView(ViewIdx(6));
 }
 
 void
 Gui::showView7()
 {
-    _imp->_appInstance->setViewersCurrentView(7);
+    _imp->_appInstance->setViewersCurrentView(ViewIdx(7));
 }
 
 void
 Gui::showView8()
 {
-    _imp->_appInstance->setViewersCurrentView(8);
+    _imp->_appInstance->setViewersCurrentView(ViewIdx(8));
 }
 
 void
 Gui::showView9()
 {
-    _imp->_appInstance->setViewersCurrentView(9);
+    _imp->_appInstance->setViewersCurrentView(ViewIdx(9));
 }
 
 void

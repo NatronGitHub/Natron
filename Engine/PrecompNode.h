@@ -125,10 +125,11 @@ private:
 
     virtual void onKnobsLoaded() OVERRIDE FINAL;
 
-    virtual void knobChanged(KnobI* k,ValueChangedReasonEnum reason,
-                         int /*view*/,
-                         double /*time*/,
-                         bool /*originatedFromMainThread*/) OVERRIDE FINAL;
+    virtual void knobChanged(KnobI* k,
+                             ValueChangedReasonEnum reason,
+                             ViewSpec view,
+                             double time,
+                             bool originatedFromMainThread) OVERRIDE FINAL;
 
     boost::scoped_ptr<PrecompNodePrivate> _imp;
 };

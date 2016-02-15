@@ -1336,27 +1336,27 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
                     
                     if (knobs[i]->isAnimationEnabled() && knobs[i]->isAnimated(j)) {
                         if (isInt) {
-                            isInt->setValueAtTime(time, ViewIdx::all(), data.toInt(), j);
+                            isInt->setValueAtTime(time, ViewSpec::all(), data.toInt(), j);
                         } else if (isBool) {
-                            isBool->setValueAtTime(time, ViewIdx::all(), data.toBool(), j);
+                            isBool->setValueAtTime(time, ViewSpec::all(), data.toBool(), j);
                         } else if (isDouble) {
-                            isDouble->setValueAtTime(time, ViewIdx::all(), data.toDouble(), j);
+                            isDouble->setValueAtTime(time, ViewSpec::all(), data.toDouble(), j);
                         } else if (isColor) {
-                            isColor->setValueAtTime(time, ViewIdx::all(), data.toDouble(), j);
+                            isColor->setValueAtTime(time, ViewSpec::all(), data.toDouble(), j);
                         } else if (isString) {
-                            isString->setValueAtTime(time, ViewIdx::all(), data.toString().toStdString(), j);
+                            isString->setValueAtTime(time, ViewSpec::all(), data.toString().toStdString(), j);
                         }
                     } else {
                         if (isInt) {
-                            isInt->setValue(data.toInt(), ViewIdx::all(), j, true);
+                            isInt->setValue(data.toInt(), ViewSpec::all(), j, true);
                         } else if (isBool) {
-                            isBool->setValue(data.toBool(), ViewIdx::all(), j, true);
+                            isBool->setValue(data.toBool(), ViewSpec::all(), j, true);
                         } else if (isDouble) {
-                            isDouble->setValue(data.toDouble(), ViewIdx::all(), j, true);
+                            isDouble->setValue(data.toDouble(), ViewSpec::all(), j, true);
                         } else if (isColor) {
-                            isColor->setValue(data.toDouble(), ViewIdx::all(), j, true);
+                            isColor->setValue(data.toDouble(), ViewSpec::all(), j, true);
                         } else if (isString) {
-                            isString->setValue(data.toString().toStdString(), ViewIdx::all(), j, true);
+                            isString->setValue(data.toString().toStdString(), ViewSpec::all(), j, true);
                         }
                     }
                     return;
@@ -1639,7 +1639,7 @@ MultiInstancePanel::onButtonTriggered(KnobButton* button)
     for (std::list<Node*>::iterator it = selectedInstances.begin(); it != selectedInstances.end(); ++it) {
         KnobPtr k = (*it)->getKnobByName( button->getName() );
         assert( k && dynamic_cast<KnobButton*>( k.get() ) );
-        (*it)->getEffectInstance()->onKnobValueChanged_public(k.get(),eValueChangedReasonUserEdited,time, ViewIdx(0), true);
+        (*it)->getEffectInstance()->onKnobValueChanged_public(k.get(),eValueChangedReasonUserEdited, time, ViewIdx(0), true);
     }
 }
 
@@ -1647,7 +1647,7 @@ void
 MultiInstancePanel::onKnobValueChanged(KnobI* k,
                                        ValueChangedReasonEnum reason,
                                        double time,
-                                       ViewIdx view,
+                                       ViewSpec view,
                                        bool /*originatedFromMainThread*/)
 {
     if ( !k->isDeclaredByPlugin() ) {
@@ -1685,7 +1685,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
                             isString->clone(k);
                         }
                         
-                        sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), eValueChangedReasonPluginEdited,time, view, true);
+                        sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), eValueChangedReasonPluginEdited, time, view, true);
                     }
                 }
             }
@@ -1959,8 +1959,8 @@ TrackerPanel::onAverageTracksButtonClicked()
             }
             average.first /= centersNb;
             average.second /= centersNb;
-            newInstanceCenter->setValueAtTime(t, ViewIdx::all(), average.first, 0);
-            newInstanceCenter->setValueAtTime(t, ViewIdx::all(), average.second, 1);
+            newInstanceCenter->setValueAtTime(t, ViewSpec::all(), average.first, 0);
+            newInstanceCenter->setValueAtTime(t, ViewSpec::all(), average.second, 1);
         }
     }
     newInstanceCenter->endChanges();
@@ -2171,7 +2171,7 @@ TrackerPanel::clearAllAnimationForSelection()
         const KnobsVec & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->removeAnimation(ViewIdx::all(), dim);
+                knobs[i]->removeAnimation(ViewSpec::all(), dim);
             }
         }
     }
@@ -2188,7 +2188,7 @@ TrackerPanel::clearBackwardAnimationForSelection()
         const KnobsVec & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->deleteAnimationBeforeTime(time, ViewIdx::all(), dim, eValueChangedReasonPluginEdited);
+                knobs[i]->deleteAnimationBeforeTime(time, ViewSpec::all(), dim, eValueChangedReasonPluginEdited);
             }
         }
     }
@@ -2205,7 +2205,7 @@ TrackerPanel::clearForwardAnimationForSelection()
         const KnobsVec & knobs = (*it)->getKnobs();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int dim = 0; dim < knobs[i]->getDimension(); ++dim) {
-                knobs[i]->deleteAnimationAfterTime(time, ViewIdx::all(), dim, eValueChangedReasonPluginEdited);
+                knobs[i]->deleteAnimationAfterTime(time, ViewSpec::all(), dim, eValueChangedReasonPluginEdited);
             }
         }
     }
@@ -2353,7 +2353,7 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
         fromPoints[i] = getCornerPinPoint(cornerPin.get(), true, i);
         assert(fromPoints[i] && centers[i]);
         for (int j = 0; j < fromPoints[i]->getDimension(); ++j) {
-            fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), ViewIdx::all(), j);
+            fromPoints[i]->setValue(centers[i]->getValueAtTime(timeForFromPoints,j), ViewSpec::all(), j);
         }
 
         toPoints[i] = getCornerPinPoint(cornerPin.get(), false, i);

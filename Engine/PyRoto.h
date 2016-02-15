@@ -34,7 +34,7 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
-#include "Engine/ParameterWrapper.h"
+#include "Engine/PyParameter.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

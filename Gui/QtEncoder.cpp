@@ -167,7 +167,7 @@ QtWriter::initializeKnobs()
 void
 QtWriter::knobChanged(KnobI* k,
                       ValueChangedReasonEnum /*reason*/,
-                      int /*view*/,
+                      ViewSpec /*view*/,
                       double /*time*/,
                       bool/* originatedFromMainThread*/)
 {

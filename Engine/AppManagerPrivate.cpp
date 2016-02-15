@@ -302,7 +302,7 @@ AppManagerPrivate::saveCaches()
 } // saveCaches
 
 template <typename T>
-void restoreCache(AppManagerPrivate* p,Cache<T>* cache)
+void restoreCache(AppManagerPrivate* p, Cache<T>* cache)
 {
     if ( p->checkForCacheDiskStructure( cache->getCachePath() ) ) {
         std::string settingsFilePath = cache->getRestoreFilePath();

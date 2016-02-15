@@ -161,7 +161,10 @@ private:
 
     virtual void evaluate(KnobI* knob,bool isSignificant,ValueChangedReasonEnum reason) OVERRIDE;
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void onKnobValueChanged(KnobI* k,ValueChangedReasonEnum reason,double time, ViewIdx view,
+    virtual void onKnobValueChanged(KnobI* k,
+                                    ValueChangedReasonEnum reason,
+                                    double time,
+                                    ViewSpec view,
                                     bool originatedFromMainThread) OVERRIDE;
     boost::scoped_ptr<MultiInstancePanelPrivate> _imp;
 };

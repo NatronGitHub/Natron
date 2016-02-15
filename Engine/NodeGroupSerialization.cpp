@@ -185,17 +185,13 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                                 usingPythonModule = true;
                             }
                         } else {
-                            
-                            StandardButtonEnum rep = Dialogs::questionDialog(QObject::tr("New PyPlug version").toStdString()
-                                                                                    , QObject::tr("A different version of ").toStdString() +
-                                                                                    stdModuleName + " (" +
-                                                                                    QString::number(pyVersion).toStdString() + ") " +
-                                                                                    QObject::tr("was found.\n").toStdString() +
-                                                                                    QObject::tr("You are currently using version ").toStdString() +
-                                                                                    QString::number(savedPythonModuleVersion).toStdString() + ".\n" +
-                                                                                    QObject::tr("Would you like to update your script?").toStdString()
-                                                                                    , false ,
-                                                                                    StandardButtons(eStandardButtonYes | eStandardButtonNo));
+
+                            StandardButtonEnum rep = Dialogs::questionDialog(QObject::tr("New PyPlug version").toStdString(),
+                                                                             (QObject::tr("Version %1 of PyPlug \"%2\" was found.").arg(pyVersion).arg(stdModuleName.c_str()).toStdString() + '\n' +
+                                                                              QObject::tr("You are currently using version %1.").arg(savedPythonModuleVersion).toStdString() + '\n' +
+                                                                              QObject::tr("Would you like to update your script to use the newer version?").toStdString()),
+                                                                             false,
+                                                                             StandardButtons(eStandardButtonYes | eStandardButtonNo));
                             if (rep == eStandardButtonYes) {
                                 pluginID = pythonPluginID;
                                 usingPythonModule = true;

@@ -740,7 +740,6 @@ interParams(const KeyFrameSet &keyFrames,
             double *vnextDerivLeft,
             KeyframeTypeEnum *interpNext)
 {
-//#pragma message WARN("Unused parameter 't'") //the parameter is good enough for asserts
     Q_UNUSED(t);
     assert( itup == keyFrames.end() || t < itup->getTime() );
     if ( itup == keyFrames.begin() ) {
@@ -1145,7 +1144,7 @@ Curve::setKeyFrameValueAndTime(double time,
         bool setValue = ( value != it->getValue() );
 
         if (setTime || setValue) {
-            it = setKeyFrameValueAndTimeNoUpdate(value,time, it);
+            it = setKeyFrameValueAndTimeNoUpdate(value, time, it);
             it = evaluateCurveChanged(eCurveChangedReasonKeyframeChanged, it);
         }
         if (newIndex) {

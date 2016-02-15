@@ -295,8 +295,10 @@ double
 OfxImageEffectInstance::getEffectDuration() const
 {
     assert( getOfxEffectInstance() );
+#ifdef DEBUG
 #pragma message WARN("getEffectDuration unimplemented, should we store the previous result to getTimeDomain ?")
-
+#endif
+    
     return 1.0;
 }
 
@@ -348,6 +350,7 @@ OfxImageEffectInstance::getViewCount(int *nViews) const
     return kOfxStatOK;
 }
 
+// overridden from OFX::Host::ImageEffect::Instance
 OfxStatus
 OfxImageEffectInstance::getViewName(int viewIndex, const char** name) const
 {
@@ -512,8 +515,8 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     if (knob->isAnimationEnabled()) {
         boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
         if (handler) {
-            QObject::connect(handler.get(),SIGNAL(animationLevelChanged(ViewIdx,int,int)), ptk,
-                             SLOT(onKnobAnimationLevelChanged(ViewIdx,int,int)));
+            QObject::connect(handler.get(),SIGNAL(animationLevelChanged(ViewSpec, int, int)), ptk,
+                             SLOT(onKnobAnimationLevelChanged(ViewSpec, int, int)));
         }
     }
     

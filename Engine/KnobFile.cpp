@@ -84,18 +84,18 @@ KnobFile::typeName() const
 
 
 std::string
-KnobFile::getFileName(int time,int view) const
+KnobFile::getFileName(int time, ViewSpec view) const
 {
     if (!_isInputImage) {
-        return getValue(0, ViewIdx(view));
+        return getValue(0, view);
     } else {
         ///try to interpret the pattern and generate a filename if indexes are found
         std::vector<std::string> views;
         if (getHolder() && getHolder()->getApp()) {
             views = getHolder()->getApp()->getProject()->getProjectViewNames();
         }
-        if (view < 0) {
-            view = 0;
+        if (!view.isViewIdx()) {
+            view = ViewIdx(0);
         }
         return SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), views, time, view);
     }
@@ -133,14 +133,14 @@ KnobOutputFile::typeName() const
 }
 
 QString
-KnobOutputFile::generateFileNameAtTime(SequenceTime time, int view) const
+KnobOutputFile::generateFileNameAtTime(SequenceTime time, ViewSpec view) const
 {
     std::vector<std::string> views;
     if (getHolder() && getHolder()->getApp()) {
         views = getHolder()->getApp()->getProject()->getProjectViewNames();
     }
-    if (view < 0) {
-        view = 0;
+    if (!view.isViewIdx()) {
+        view = ViewIdx(0);
     }
     return SequenceParsing::generateFileNameFromPattern(getValue(0, ViewIdx(0)), views, time, view).c_str();
 }

@@ -36,14 +36,14 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/NodeWrapper.h"
+#include "Engine/PyNode.h"
 #include "Engine/ViewIdx.h"
 
 #include "Gui/Gui.h"
 #include "Gui/TabWidget.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/DockablePanel.h"
-#include "Gui/GuiAppWrapper.h"
+#include "Gui/PyGuiApp.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -92,7 +92,7 @@ void
 DialogParamHolder::onKnobValueChanged(KnobI* k,
                                       ValueChangedReasonEnum reason,
                                       double /*time*/,
-                                      ViewIdx /*view*/,
+                                      ViewSpec /*view*/,
                                       bool /*originatedFromMainThread*/)
 {
     std::string callback;

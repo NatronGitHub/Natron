@@ -229,7 +229,7 @@ KnobGuiFile::updateGUI(int /*dimension*/)
             _fileBeingWatched.clear();
         }
         
-        std::string newValue = knob->getFileName(knob->getCurrentTime(), /*view*/0);
+        std::string newValue = knob->getFileName(knob->getCurrentTime(), ViewIdx(0));
         if (knob->getHolder()->getApp()) {
             knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
         }

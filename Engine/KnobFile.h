@@ -36,6 +36,7 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QString>
 
 #include "Engine/KnobTypes.h"
+#include "Engine/ViewIdx.h"
 
 #include "Global/Macros.h"
 #include "Engine/EngineFwd.h"
@@ -90,7 +91,7 @@ public:
      * @brief getRandomFrameName
      * @param f The index of the frame.
      */
-    std::string getFileName(int time, int view) const;
+    std::string getFileName(int time, ViewSpec view) const;
 
 Q_SIGNALS:
 
@@ -160,7 +161,7 @@ public:
         return _sequenceDialog;
     }
 
-    QString generateFileNameAtTime(SequenceTime time, int view) const;
+    QString generateFileNameAtTime(SequenceTime time, ViewSpec view) const;
 
 Q_SIGNALS:
 

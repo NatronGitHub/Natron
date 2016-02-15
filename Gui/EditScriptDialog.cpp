@@ -153,20 +153,19 @@ EditScriptDialog::create(const QString& initialScript,bool makeUseRetButton)
     getImportedModules(modules);
     std::list<std::pair<QString,QString> > variables;
     getDeclaredVariables(variables);
-    QString labelHtml(tr("<br><b>Python</b> script: </br>"));
+    QString labelHtml(tr("<b>Python</b> script:<br />"));
     if (!modules.empty()) {
-        labelHtml.append(tr("<br>For convenience the following module(s) have been imported: </br> <br/>"));
+        labelHtml.append(tr("For convenience, the following module(s) have been imported:<br />"));
         for (int i = 0; i < modules.size(); ++i) {
-            QString toAppend = QString("<br><i><font color=orange>from %1 import *</font></i></br>").arg(modules[i]);
+            QString toAppend = QString("<i><font color=orange>from %1 import *</font></i><br />").arg(modules[i]);
             labelHtml.append(toAppend);
         }
-        labelHtml.append("<br/>");
+        labelHtml.append("<br />");
     }
     if (!variables.empty()) {
-        labelHtml.append(tr("<br>Also the following variables have been declared: </br>"
-                         "<br/>"));
+        labelHtml.append(tr("Also the following variables have been declared:<br />"));
         for (std::list<std::pair<QString,QString> > ::iterator it = variables.begin(); it != variables.end(); ++it) {
-            QString toAppend = QString("<br><b>%1</b>: %2</br>").arg(it->first).arg(it->second);
+            QString toAppend = QString("<b>%1</b>: %2<br />").arg(it->first).arg(it->second);
             labelHtml.append(toAppend);
         }
         labelHtml.append("<p>" + tr("Note that parameters can be referenced by drag&dropping them from their animation button.") + "</p>");
@@ -246,61 +245,60 @@ EditScriptDialog::compileAndSetResult(const QString& script)
 QString
 EditScriptDialog::getHelpPart1()
 {
-    return tr("<br>Each node in the scope already has a variable declared with its name, e.g if you have a node named "
-              "<b>Transform1</b> in your project, then you can type <i>Transform1</i> to reference that node.</br>"
-              "<br>Note that the scope includes all nodes within the same group as thisNode and the parent group node itself, "
+    return tr("<p>Each node in the scope already has a variable declared with its name, e.g if you have a node named "
+              "<b>Transform1</b> in your project, then you can type <i>Transform1</i> to reference that node.<br />"
+              "Note that the scope includes all nodes within the same group as thisNode and the parent group node itself, "
               "if the node belongs to a group. If the node itself is a group, then it can also have expressions depending "
-              "on parameters of its children.</br>"
-              "<br/>"
-              "<br>Each node has all its parameters declared as fields and you can reference a specific parameter by typing it's <b>script name</b>, e.g:</br>"
-              "<br>Transform1.rotate</br>"
-              "<br>The script-name of a parameter is the name in bold that is shown in the tooltip when hovering a parameter with the mouse, this is what "
-              "identifies a parameter internally.</br>");
+              "on parameters of its children.</p>"
+              "<p>Each node has all its parameters declared as fields and you can reference a specific parameter by typing it's <b>script name</b>, e.g:<br />"
+              "Transform1.rotate</p>"
+              "<p>The script-name of a parameter is the name in bold that is shown in the tooltip when hovering a parameter with the mouse, this is what "
+              "identifies a parameter internally.</p>");
 }
 
 QString
 EditScriptDialog::getHelpThisNodeVariable()
 {
-    return tr("<br>The current node which expression is being edited can be referenced by the variable <i>thisNode</i> for convenience.</br>");
+    return tr("<p>The current node which expression is being edited can be referenced by the variable <i>thisNode</i> for convenience.</p>");
 }
 
 QString
 EditScriptDialog::getHelpThisGroupVariable()
 {
-     return tr("<br>The parent group containing the thisNode can be referenced by the variable <i>thisGroup</i> for convenience, if and "
-               "only if thisNode belongs to a group.</br>");
+     return tr("<p>The parent group containing the thisNode can be referenced by the variable <i>thisGroup</i> for convenience, if and "
+               "only if thisNode belongs to a group.</p>");
 }
 
 QString
 EditScriptDialog::getHelpThisParamVariable()
 {
-    return tr("<br>The <i>thisParam</i> variable has been defined for convenience when editing an expression. It refers to the current parameter.</br>");
+    return tr("<p>The <i>thisParam</i> variable has been defined for convenience when editing an expression. It refers to the current parameter.</p>");
 }
 
 QString
 EditScriptDialog::getHelpDimensionVariable()
 {
-    return tr("<br>In the same way the <i>dimension</i> variable has been defined and references the current dimension of the parameter which expression is being set"
-              ".</br>"
-              "<br>The <i>dimension</i> is a 0-based index identifying a specific field of a parameter. For instance if we're editing the expression of the y "
-              "field of the translate parameter of Transform1, the <i>dimension</i> would be 1. </br>");
+    return tr("<p>In the same way the <i>dimension</i> variable has been defined and references the current dimension of the parameter which expression is being set"
+              ".</p>"
+              "<p>The <i>dimension</i> is a 0-based index identifying a specific field of a parameter. For instance if we're editing the expression of the y "
+              "field of the translate parameter of Transform1, the <i>dimension</i> would be 1. </p>");
 
 }
 
 QString
 EditScriptDialog::getHelpPart2()
 {
-    return tr("<br>To access values of a parameter several functions are made accessible: </br>"
-              "<br/>"
-              "<br>The <b>get()</b> function will return a Tuple containing all the values for each dimension of the parameter. For instance "
-              "let's say we have a node Transform1 in our comp, we could then reference the x value of the <i>center</i> parameter this way:</br>"
-              "<br/>"
-              "<br>Transform1.center.get().x</br>"
-              "<br/>"
-              "<br>The <b>get(</b><i>frame</i><b>)</b> works exactly like the <b>get()</b> function excepts that it takes an extra "
+    return tr("<p>To access values of a parameter several functions are made accessible: </p>"
+              "<br />"
+              "<p>The <b>get()</b> function will return a Tuple containing all the values for each dimension of the parameter. For instance "
+              "let's say we have a node Transform1 in our comp, we could then reference the x value of the <i>center</i> parameter this way:</p>"
+              "<br />"
+              "<p>Transform1.center.get().x</p>"
+              "<br />"
+              "<p>The <b>get(</b><i>frame</i><b>)</b> works exactly like the <b>get()</b> function excepts that it takes an extra "
               "<i>frame</i> parameter corresponding to the time at which we want to fetch the value. For parameters with an animation "
               "it would then return their value at the corresponding timeline position. That value would then be either interpolated "
-              "with the current interpolation filter, or the exact keyframe at that time if one exists.</br>");
+              "with the current interpolation filter, or the exact keyframe at that time if one exists.</p>");
 }
 
 void

@@ -187,7 +187,7 @@ EffectInstance::isDuringActionThatCanSetValue() const
 
 void
 EffectInstance::setParallelRenderArgsTLS(double time,
-                                         int view,
+                                         ViewIdx view,
                                          bool isRenderUserInteraction,
                                          bool isSequential,
                                          bool canAbort,
@@ -401,7 +401,7 @@ EffectInstance::aborted() const
 } // EffectInstance::aborted
 
 bool
-EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,double time, int view) const
+EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,double time, ViewIdx view) const
 {
     NodePtr n = _node.lock();
 
@@ -475,7 +475,7 @@ EffectInstance::getInputLabel(int inputNb) const
 
 bool
 EffectInstance::retrieveGetImageDataUponFailure(const double time,
-                                                const int view,
+                                                const ViewIdx view,
                                                 const RenderScale & scale,
                                                 const RectD* optionalBoundsParam,
                                                 U64* nodeHash_p,
@@ -533,7 +533,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
 
         ///// This code is wrong but executed ONLY IF THE PLUG-IN DOESN'T RESPECT THE SPECIFICATIONS. Recursive actions
         ///// should never happen.
-        getRegionsOfInterest(time, scale, optionalBounds, optionalBounds, 0, inputRois_p);
+        getRegionsOfInterest(time, scale, optionalBounds, optionalBounds, ViewIdx(0), inputRois_p);
     }
 
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
@@ -581,7 +581,7 @@ ImagePtr
 EffectInstance::getImage(int inputNb,
                          const double time,
                          const RenderScale & scale,
-                         const int view,
+                         const ViewIdx view,
                          const RectD *optionalBoundsParam, //!< optional region in canonical coordinates
                          const ImageComponents & requestComps,
                          const ImageBitDepthEnum depth,
@@ -960,7 +960,8 @@ EffectInstance::getImage(int inputNb,
             RectD canonicalPixelRoI;
             
             if (!inputRoDSet) {
-                (void)inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
+                StatusEnum st = inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
+                Q_UNUSED(st);
             }
             
             pixelRoI.toCanonical(inputImgMipMapLevel, par, inputRoD, &canonicalPixelRoI);
@@ -1003,7 +1004,7 @@ void
 EffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
                                               double /*time*/,
                                               const RenderScale & /*scale*/,
-                                              int /*view*/,
+                                              ViewIdx /*view*/,
                                               RectD *rod)
 {
     Format projectDefault;
@@ -1016,7 +1017,7 @@ StatusEnum
 EffectInstance::getRegionOfDefinition(U64 hash,
                                       double time,
                                       const RenderScale & scale,
-                                      int view,
+                                      ViewIdx view,
                                       RectD* rod) //!< rod is in canonical coordinates
 {
     bool firstInput = true;
@@ -1056,7 +1057,7 @@ bool
 EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
                                          double time,
                                          const RenderScale & scale,
-                                         int view,
+                                         ViewIdx view,
                                          RectD* rod) //!< input/output
 {
     /*If the rod is infinite clip it to the project's default*/
@@ -1158,7 +1159,7 @@ EffectInstance::getRegionsOfInterest(double time,
                                      const RenderScale & scale,
                                      const RectD & /*outputRoD*/, //!< the RoD of the effect, in canonical coordinates
                                      const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                     int view,
+                                     ViewIdx view,
                                      RoIMap* ret)
 {
     bool tilesSupported = supportsTiles();
@@ -1184,7 +1185,7 @@ EffectInstance::getRegionsOfInterest(double time,
 
 FramesNeededMap
 EffectInstance::getFramesNeeded(double time,
-                                int view)
+                                ViewIdx view)
 {
     FramesNeededMap ret;
     RangeD defaultRange;
@@ -1192,7 +1193,7 @@ EffectInstance::getFramesNeeded(double time,
     defaultRange.min = defaultRange.max = time;
     std::vector<RangeD> ranges;
     ranges.push_back(defaultRange);
-    std::map<int, std::vector<RangeD> > defViewRange;
+    FrameRangesMap defViewRange;
     defViewRange.insert( std::make_pair(view, ranges) );
     for (int i = 0; i < getMaxInputCount(); ++i) {
         if ( isInputRotoBrush(i) ) {
@@ -1500,7 +1501,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
 
 void
 EffectInstance::tryConcatenateTransforms(double time,
-                                         int view,
+                                         ViewIdx view,
                                          const RenderScale & scale,
                                          InputMatrixMap* inputTransforms)
 {
@@ -1638,8 +1639,7 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                                                                0,
                                                                                isProjectFormat,
                                                                                components,
-                                                                               depth  );
-        
+                                                                               depth);
         //The upscaled image will be rendered with input images at full def, it is then the best possibly rendered image so cache it!
         
         fullScaleImage->reset();
@@ -1727,7 +1727,7 @@ EffectInstance::RenderRoIRetCode
 EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
                                         bool useTransforms,
                                         double time,
-                                        int view,
+                                        ViewIdx view,
                                         const RectD & rod,
                                         const RectD & canonicalRenderWindow,
                                         const boost::shared_ptr<InputMatrixMap>& inputTransforms,
@@ -1825,7 +1825,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                                                       const unsigned int renderMappedMipMapLevel,
                                                       const RectD & rod,
                                                       const double time,
-                                                      const int view,
+                                                      const ViewIdx view,
                                                       const double par,
                                                       const bool byPassCache,
                                                       const ImageBitDepthEnum outputClipPrefDepth,
@@ -2105,7 +2105,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
     const EffectInstance::PlaneToRender & firstPlane = planes.planes.begin()->second;
     const double time = tls->currentRenderArgs.time;
-    const int view = tls->currentRenderArgs.view;
+    const ViewIdx view = tls->currentRenderArgs.view;
 
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
 # ifndef NDEBUG
@@ -2834,7 +2834,7 @@ EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
 void
 EffectInstance::drawOverlay_public(double time,
                                    const RenderScale & renderScale,
-                                   int view)
+                                   ViewIdx view)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2860,7 +2860,7 @@ EffectInstance::drawOverlay_public(double time,
 bool
 EffectInstance::onOverlayPenDown_public(double time,
                                         const RenderScale & renderScale,
-                                        int view,
+                                        ViewIdx view,
                                         const QPointF & viewportPos,
                                         const QPointF & pos,
                                         double pressure)
@@ -2896,7 +2896,7 @@ EffectInstance::onOverlayPenDown_public(double time,
 bool
 EffectInstance::onOverlayPenMotion_public(double time,
                                           const RenderScale & renderScale,
-                                          int view,
+                                          ViewIdx view,
                                           const QPointF & viewportPos,
                                           const QPointF & pos,
                                           double pressure)
@@ -2931,7 +2931,7 @@ EffectInstance::onOverlayPenMotion_public(double time,
 bool
 EffectInstance::onOverlayPenUp_public(double time,
                                       const RenderScale & renderScale,
-                                      int view,
+                                      ViewIdx view,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
                                       double pressure)
@@ -2967,7 +2967,7 @@ EffectInstance::onOverlayPenUp_public(double time,
 bool
 EffectInstance::onOverlayKeyDown_public(double time,
                                         const RenderScale & renderScale,
-                                        int view,
+                                        ViewIdx view,
                                         Key key,
                                         KeyboardModifiers modifiers)
 {
@@ -3002,7 +3002,7 @@ EffectInstance::onOverlayKeyDown_public(double time,
 bool
 EffectInstance::onOverlayKeyUp_public(double time,
                                       const RenderScale & renderScale,
-                                      int view,
+                                      ViewIdx view,
                                       Key key,
                                       KeyboardModifiers modifiers)
 {
@@ -3038,7 +3038,7 @@ EffectInstance::onOverlayKeyUp_public(double time,
 bool
 EffectInstance::onOverlayKeyRepeat_public(double time,
                                           const RenderScale & renderScale,
-                                          int view,
+                                          ViewIdx view,
                                           Key key,
                                           KeyboardModifiers modifiers)
 {
@@ -3073,7 +3073,7 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
 bool
 EffectInstance::onOverlayFocusGained_public(double time,
                                             const RenderScale & renderScale,
-                                            int view)
+                                            ViewIdx view)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3106,7 +3106,7 @@ EffectInstance::onOverlayFocusGained_public(double time,
 bool
 EffectInstance::onOverlayFocusLost_public(double time,
                                           const RenderScale & renderScale,
-                                          int view)
+                                          ViewIdx view)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3154,7 +3154,7 @@ EffectInstance::render_public(const RenderActionArgs & args)
 StatusEnum
 EffectInstance::getTransform_public(double time,
                                     const RenderScale & renderScale,
-                                    int view,
+                                    ViewIdx view,
                                     EffectInstPtr* inputToTransform,
                                     Transform::Matrix3x3* transform)
 {
@@ -3170,7 +3170,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
                                   double time,
                                   const RenderScale & scale,
                                   const RectI & renderWindow,
-                                  int view,
+                                  ViewIdx view,
                                   double* inputTime,
                                   int* inputNb)
 {
@@ -3235,7 +3235,7 @@ EffectInstance::getRegionOfDefinition_publicInternal(U64 hash,
                                                      const RenderScale & scale,
                                                      const RectI & renderWindow,
                                                      bool useRenderWindow,
-                                                     int view,
+                                                     ViewIdx view,
                                                      RectD* rod,
                                                      bool* isProjectFormat)
 {
@@ -3303,12 +3303,10 @@ EffectInstance::getRegionOfDefinition_publicInternal(U64 hash,
             }
 
             if ( rod->isNull() ) {
-                //if (!isDuringStrokeCreation) {
-                _imp->actionsCache.invalidateAll(hash);
+                // RoD is empty, which means output is black and transparent
                 _imp->actionsCache.setRoDResult( hash, time, view, mipMapLevel, RectD() );
 
-                //}
-                return eStatusFailed;
+                return ret;
             }
 
             assert( (ret == eStatusOK || ret == eStatusReplyDefault) && (rod->x1 <= rod->x2 && rod->y1 <= rod->y2) );
@@ -3329,7 +3327,7 @@ EffectInstance::getRegionOfDefinitionWithIdentityCheck_public(U64 hash,
                                                               double time,
                                                               const RenderScale & scale,
                                                               const RectI & renderWindow,
-                                                              int view,
+                                                              ViewIdx view,
                                                               RectD* rod,
                                                               bool* isProjectFormat)
 {
@@ -3340,7 +3338,7 @@ StatusEnum
 EffectInstance::getRegionOfDefinition_public(U64 hash,
                                              double time,
                                              const RenderScale & scale,
-                                             int view,
+                                             ViewIdx view,
                                              RectD* rod,
                                              bool* isProjectFormat)
 {
@@ -3352,7 +3350,7 @@ EffectInstance::getRegionsOfInterest_public(double time,
                                             const RenderScale & scale,
                                             const RectD & outputRoD, //!< effect RoD in canonical coordinates
                                             const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                            int view,
+                                            ViewIdx view,
                                             RoIMap* ret)
 {
     NON_RECURSIVE_ACTION();
@@ -3365,7 +3363,7 @@ EffectInstance::getRegionsOfInterest_public(double time,
 FramesNeededMap
 EffectInstance::getFramesNeeded_public(U64 hash,
                                        double time,
-                                       int view,
+                                       ViewIdx view,
                                        unsigned int mipMapLevel)
 {
     NON_RECURSIVE_ACTION();
@@ -3429,7 +3427,7 @@ EffectInstance::beginSequenceRender_public(double first,
                                            bool isSequentialRender,
                                            bool isRenderResponseToUserInteraction,
                                            bool draftMode,
-                                           int view)
+                                           ViewIdx view)
 {
     NON_RECURSIVE_ACTION();
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
@@ -3448,7 +3446,7 @@ EffectInstance::endSequenceRender_public(double first,
                                          bool isSequentialRender,
                                          bool isRenderResponseToUserInteraction,
                                          bool draftMode,
-                                         int view)
+                                         ViewIdx view)
 {
     NON_RECURSIVE_ACTION();
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
@@ -3505,7 +3503,7 @@ void
 EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
                                                 bool useThisNodeComponentsNeeded,
                                                 double time,
-                                                int view,
+                                                ViewIdx view,
                                                 ComponentsAvailableMap* comps,
                                                 std::list<EffectInstance*>* markedNodes)
 {
@@ -3561,7 +3559,7 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
 
    EffectInstance::ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
     if ( foundOutput != neededComps.end() ) {
-        ///Foreach component produced by the node at the given (view,time),  try
+        ///Foreach component produced by the node at the given (view, time),  try
         ///to add it to the components available. Since we already handled upstream nodes, it is probably
         ///already in there, in which case we mark that this node is producing the component instead
         for (std::vector<ImageComponents>::iterator it = foundOutput->second.begin();
@@ -3676,7 +3674,7 @@ EffectInstance::getComponentsAvailable(bool useLayerChoice,
                                        ComponentsAvailableMap* comps,
                                        std::list<EffectInstance*>* markedNodes)
 {
-    getComponentsAvailableRecursive(useLayerChoice, useThisNodeComponentsNeeded, time, 0, comps, markedNodes);
+    getComponentsAvailableRecursive(useLayerChoice, useThisNodeComponentsNeeded, time, ViewIdx(0), comps, markedNodes);
 }
 
 void
@@ -3692,14 +3690,14 @@ EffectInstance::getComponentsAvailable(bool useLayerChoice,
     ///Edit: Just call for 1 view, it should not matter as this should be view agnostic.
     std::list<EffectInstance*> marks;
 
-    getComponentsAvailableRecursive(useLayerChoice, useThisNodeComponentsNeeded, time, 0, comps, &marks);
+    getComponentsAvailableRecursive(useLayerChoice, useThisNodeComponentsNeeded, time, ViewIdx(0), comps, &marks);
 
     //}
 }
 
 void
 EffectInstance::getComponentsNeededAndProduced(double time,
-                                               int view,
+                                               ViewIdx view,
                                               EffectInstance::ComponentsNeededMap* comps,
                                                SequenceTime* passThroughTime,
                                                int* passThroughView,
@@ -3755,7 +3753,7 @@ void
 EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
                                                       bool useThisNodeComponentsNeeded,
                                                       double time,
-                                                      int view,
+                                                      ViewIdx view,
                                                       EffectInstance::ComponentsNeededMap* comps,
                                                       bool* processAllRequested,
                                                       SequenceTime* passThroughTime,
@@ -3896,7 +3894,7 @@ void
 EffectInstance::onKnobValueChanged(KnobI* /*k*/,
                                    ValueChangedReasonEnum /*reason*/,
                                    double /*time*/,
-                                   ViewIdx /*view*/,
+                                   ViewSpec /*view*/,
                                    bool /*originatedFromMainThread*/)
 {
 }
@@ -3977,7 +3975,7 @@ void
 EffectInstance::onKnobValueChanged_public(KnobI* k,
                                           ValueChangedReasonEnum reason,
                                           double time,
-                                          ViewIdx view,
+                                          ViewSpec view,
                                           bool originatedFromMainThread)
 {
     NodePtr node = getNode();
@@ -3992,8 +3990,8 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         node->computeFrameRangeForReader(k);
     }
 
-    //assert(view.i >= 0);
-    const int viewIdx = 0; // view.i
+    assert(!(view.isAll() || view.isCurrent())); // not yet implemented
+    const ViewIdx viewIdx((view.isAll() || view.isCurrent()) ? 0 : view);
     
     bool wasFormatKnobCaught = node->handleFormatKnob(k);
    
@@ -4023,7 +4021,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         }
         {
             RECURSIVE_ACTION();
-            knobChanged(k, reason, view.i, time, originatedFromMainThread);
+            knobChanged(k, reason, view, time, originatedFromMainThread);
         }
         
         
@@ -4293,7 +4291,7 @@ EffectInstance::getNearestNonIdentity(double time)
 
     RectD rod;
     bool isProjectFormat;
-    StatusEnum stat = getRegionOfDefinition_public(hash, time, scale, 0, &rod, &isProjectFormat);
+    StatusEnum stat = getRegionOfDefinition_public(hash, time, scale, ViewIdx(0), &rod, &isProjectFormat);
 
     ///Ignore the result of getRoD if it failed
     Q_UNUSED(stat);
@@ -4302,7 +4300,7 @@ EffectInstance::getNearestNonIdentity(double time)
     int inputNbIdentity;
     RectI pixelRoi;
     rod.toPixelEnclosing(scale, getPreferredAspectRatio(), &pixelRoi);
-    if ( !isIdentity_public(true, hash, time, scale, pixelRoi, 0, &inputTimeIdentity, &inputNbIdentity) ) {
+    if ( !isIdentity_public(true, hash, time, scale, pixelRoi, ViewIdx(0), &inputTimeIdentity, &inputNbIdentity) ) {
         return shared_from_this();
     } else {
         if (inputNbIdentity < 0) {
@@ -4396,12 +4394,12 @@ EffectInstance::getCurrentTime() const
     return getApp()->getTimeLine()->currentFrame();
 }
 
-int
+ViewIdx
 EffectInstance::getCurrentView() const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
     if (!tls) {
-        return 0;
+        return ViewIdx(0);
     }
     if (tls->currentRenderArgs.validArgs) {
         return tls->currentRenderArgs.view;
@@ -4409,7 +4407,7 @@ EffectInstance::getCurrentView() const
     if (!tls->frameArgs.empty()) {
         return tls->frameArgs.back()->view;
     }
-    return 0;
+    return ViewIdx(0);
     
 }
 
@@ -4424,12 +4422,12 @@ EffectInstance::getFrameRenderArgsCurrentTime() const
     return tls->frameArgs.back()->time;
 }
 
-int
+ViewIdx
 EffectInstance::getFrameRenderArgsCurrentView() const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
     if (!tls || tls->frameArgs.empty()) {
-        return 0;
+        return ViewIdx(0);
     }
     
     return tls->frameArgs.back()->view;

@@ -3,7 +3,7 @@
 
 #include <shiboken.h>
 
-#include <ParameterWrapper.h>
+#include <PyParameter.h>
 
 NATRON_NAMESPACE_ENTER;
 class ButtonParamWrapper : public ButtonParam

@@ -25,9 +25,9 @@ CLANG_DIAG_ON(uninitialized)
 #include <natronengine_python.h>
 
 // Binded library includes
-#include <GuiAppWrapper.h>
+#include <PyGuiApp.h>
 #include <PythonPanels.h>
-#include <GlobalGuiWrapper.h>
+#include <PyGlobalGui.h>
 // Conversion Includes - Primitive Types
 #include <QStringList>
 #include <qabstractitemmodel.h>
