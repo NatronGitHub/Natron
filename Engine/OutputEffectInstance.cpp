@@ -201,9 +201,12 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
                             int viewChoice_i = viewsChoice->getValue();
                             if (viewChoice_i == 0) { // the "All" choice
                                 viewsToRender.clear();
-                                // at this point, it may be better to push all view instead of -1
-#pragma message WARN("ERROR: I cannot finf where the -1 is processed. This should push the full set of views instead")
-                                viewsToRender.push_back(ViewIdx(-1));
+                                // note: if the plugin renders all views to a single file, then rendering view 0 will do the job.
+                                // rendering other views should do nothing (see GenericWriterPlugin::getFrameViewsNeeded and
+                                int viewCount = getApp()->getProject()->getProjectViewsCount();
+                                for (int view = 0; view < viewCount; ++view) {
+                                    viewsToRender.push_back(ViewIdx(view));
+                                }
                             } else {
                                 //The user has specified a view
                                 viewsToRender.clear();
