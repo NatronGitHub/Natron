@@ -1494,7 +1494,7 @@ AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter)
     RenderQueueItem nextWork;
     {
         QMutexLocker k(&_imp->renderQueueMutex);
-        for (std::list<RenderQueueItem>::const_iterator it = _imp->activeRenders.begin(); it!=_imp->activeRenders.end(); ++it) {
+        for (std::list<RenderQueueItem>::iterator it = _imp->activeRenders.begin(); it!=_imp->activeRenders.end(); ++it) {
             if (it->work.writer == finishedWriter) {
                 _imp->activeRenders.erase(it);
                 break;
