@@ -172,6 +172,8 @@ cat $QS/natron.qs > $NATRON_PATH/meta/installscript.qs || exit 1
 cp -a $INSTALL_PATH/docs/natron/* $NATRON_PATH/data/docs/ || exit 1
 cat $INSTALL_PATH/docs/natron/LICENSE.txt > $NATRON_PATH/meta/natron-license.txt || exit 1
 
+cp $INSTALL_PATH/PyPlugs/* $NATRON_PATH/data/Plugins/PyPlugs/ || exit 1
+
 if [ "$DISABLE_BREAKPAD" != "1" ]; then
     cp $INSTALL_PATH/bin/Natron.exe $NATRON_PATH/data/bin/Natron-bin.exe || exit 1
     cp $INSTALL_PATH/bin/NatronRenderer.exe $NATRON_PATH/data/bin/NatronRenderer-bin.exe || exit 1

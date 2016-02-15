@@ -218,6 +218,10 @@ cp ../Gui/Resources/Images/natronIcon256_linux.png $INSTALL_PATH/share/pixmaps/ 
 cp ../Gui/Resources/Images/natronProjectIcon_linux.png $INSTALL_PATH/share/pixmaps/ || exit 1
 echo $NATRON_REL_V > $INSTALL_PATH/docs/natron/VERSION || exit 1
 
+rm -rf $INSTALL_PATH/PyPlugs
+mkdir -p $INSTALL_PATH/PyPlugs || exit 1
+cp ../Gui/Resources/PyPlugs/* $INSTALL_PATH/PyPlugs/ || exit 1
+
 rm -f $KILLSCRIPT
 
 echo "Done!"
