@@ -38,7 +38,7 @@ public:
     U64 _nodeHashKey;
     double _time;
     double _pixelAspect;
-    int/*ViewIdx*/ _view;
+    int/*ViewIdx*/ _view; // store it locally as an int for easier serialization
     bool _draftMode;
     bool _frameVaryingOrAnimated;
 
@@ -52,7 +52,7 @@ public:
              U64 nodeHashKey,
              bool frameVaryingOrAnimated,
              double time,
-             int/*ViewIdx*/ view,
+             ViewIdx view,
              double pixelAspect,
              bool draftMode,
              bool fullScaleWithDownscaleInputs);

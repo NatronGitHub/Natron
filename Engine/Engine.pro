@@ -84,7 +84,6 @@ SOURCES += \
     CoonsRegularization.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
-    Dimension.h \
     DiskCacheNode.cpp \
     Dot.cpp \
     EffectInstance.cpp \

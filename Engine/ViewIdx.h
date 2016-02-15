@@ -41,7 +41,7 @@ public:
     ViewSpec()
     : i(0)
     {
-        
+
     }
     
     // cast from int must be explicit
@@ -52,30 +52,15 @@ public:
     }
 
     // cast to int is implicit
-    /*explicit*/ operator int() const
+    operator int() const
     {
         assert(i >= 0);
-        return i;
-    }
-
-    explicit operator int&()
-    {
         return i;
     }
 
     int value() const
     {
         return static_cast<int>(*this);
-    }
-
-    bool operator==(ViewSpec other) const
-    {
-        return other.i == i;
-    }
-    
-    bool operator!=(ViewSpec other) const
-    {
-        return other.i != i;
     }
 
     bool isAll() const { return i == -1; }
@@ -102,34 +87,11 @@ public:
     }
 
     // cast to int is implicit
-    /*explicit*/ operator int() const
+    operator int() const
     {
         int i = value();
         assert(i >= 0);
         return i;
-    }
-
-    explicit operator int&()
-    {
-        int& i = static_cast<int&>(*this);
-        assert(i >= 0);
-        return i;
-    }
-
-    bool operator==(ViewIdx other) const
-    {
-        return value() == other.value();
-    }
-
-    bool operator!=(ViewIdx other) const
-    {
-        return value() != other.value();
-    }
-
-    // operator < is necessary for use as a map key
-    bool operator<(ViewIdx other) const
-    {
-        return value() < other.value();
     }
 
 private:

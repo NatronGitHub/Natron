@@ -46,7 +46,7 @@ public:
              int lut,
              int bitDepth,
              int channels,
-             int/*ViewIdx*/ view,
+             ViewIdx view,
              const TextureRect & textureRect,
              const RenderScale & scale,
              const std::string & inputName,
@@ -125,7 +125,7 @@ private:
     int _lut;
     int _bitDepth;
     int _channels;
-    int/*ViewIdx*/ _view;
+    int/*ViewIdx*/ _view; // store it locally as an int for easier serialization
     TextureRect _textureRect;     // texture rectangle definition (bounds in the original image + width and height)
     RenderScale _scale;
     std::string _inputName;
