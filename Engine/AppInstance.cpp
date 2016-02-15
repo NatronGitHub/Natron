@@ -1353,7 +1353,11 @@ AppInstance::startWritersRendering(bool doBlockingRender, const std::list<Render
         
         bool canPause = item.work.writer->getPluginID() != PLUGINID_OFX_WRITEFFMPEG;
         
-        notifyRenderStarted(item.sequenceName,item.work.firstFrame,item.work.lastFrame, item.work.frameStep, canPause, item.work.writer, item.process);
+        if (!it->isRestart) {
+            notifyRenderStarted(item.sequenceName,item.work.firstFrame,item.work.lastFrame, item.work.frameStep, canPause, item.work.writer, item.process);
+        } else {
+            
+        }
         itemsToQueue.push_back(item);
     }
     if (itemsToQueue.empty()) {

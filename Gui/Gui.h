@@ -582,12 +582,7 @@ Q_SIGNALS:
     
 public Q_SLOTS:
     
-    void onDoProgressStartOnMainThread(KnobHolder* effect, const QString &message, const QString &messageid, bool canCancel);
-    
-    void onDoProgressEndOnMainThread(KnobHolder* effect);
-    
-    void onDoProgressUpdateOnMainThread(KnobHolder* effect,double t);
-    
+        
     ///Called whenever the time changes on the timeline
     void onTimeChanged(SequenceTime time,int reason);
     

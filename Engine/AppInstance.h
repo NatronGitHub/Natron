@@ -145,8 +145,15 @@ public:
         int lastFrame;
         int frameStep;
         bool useRenderStats;
+        bool isRestart;
         
         RenderWork()
+        : writer(0)
+        , firstFrame(0)
+        , lastFrame(0)
+        , frameStep(0)
+        , useRenderStats(false)
+        , isRestart(false)
         {
             
         }
@@ -161,6 +168,7 @@ public:
         , lastFrame(lastFrame)
         , frameStep(frameStep)
         , useRenderStats(useRenderStats)
+        , isRestart(false)
         {
             
         }
