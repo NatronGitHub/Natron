@@ -1515,15 +1515,15 @@ Knob<T>::unSlave(int dimension,
     boost::shared_ptr<KnobHelper> masterHelper = boost::dynamic_pointer_cast<KnobHelper>(master.second);
 
     if (masterHelper->getSignalSlotHandler() && _signalSlotHandler) {
-        QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double, ViewIdx,int,int,bool) ),
-                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double, ViewIdx,int,int,bool) ) );
-        QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(double, ViewIdx,int,int) ),
-                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(double, ViewIdx,int,int)) );
+        QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double, ViewSpec,int,int,bool) ),
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double, ViewSpec,int,int,bool) ) );
+        QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(double, ViewSpec,int,int) ),
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(double, ViewSpec,int,int)) );
         
-        QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameMoved(ViewIdx,int,double,double) ),
-                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(ViewIdx,int,double,double) ) );
-        QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL(animationRemoved(ViewIdx,int) ),
-                         _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(ViewIdx,int)) );
+        QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL( keyFrameMoved(ViewSpec,int,double,double) ),
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(ViewSpec,int,double,double) ) );
+        QObject::disconnect( masterHelper->getSignalSlotHandler().get(), SIGNAL(animationRemoved(ViewSpec,int) ),
+                         _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(ViewSpec,int)) );
     }
 
     resetMaster(dimension);

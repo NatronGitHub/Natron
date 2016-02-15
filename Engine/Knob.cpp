@@ -2674,15 +2674,15 @@ KnobHelper::slaveTo(int dimension,
 
     if (masterKnob->_signalSlotHandler && _signalSlotHandler) {
 
-        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameSet(double, ViewIdx,int,int,bool) ),
-                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double, ViewIdx,int,int,bool) ), Qt::UniqueConnection );
-        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameRemoved(double, ViewIdx,int,int) ),
-                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(double, ViewIdx,int,int)),Qt::UniqueConnection );
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameSet(double, ViewSpec,int,int,bool) ),
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double, ViewSpec,int,int,bool) ), Qt::UniqueConnection );
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameRemoved(double, ViewSpec,int,int) ),
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(double, ViewSpec,int,int)),Qt::UniqueConnection );
         
-        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameMoved(ViewIdx,int,double,double) ),
-                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(ViewIdx,int,double,double) ),Qt::UniqueConnection );
-        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(animationRemoved(ViewIdx,int) ),
-                         _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(ViewIdx,int)),Qt::UniqueConnection );
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameMoved(ViewSpec,int,double,double) ),
+                         _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(ViewSpec,int,double,double) ),Qt::UniqueConnection );
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(animationRemoved(ViewSpec,int) ),
+                         _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(ViewSpec,int)),Qt::UniqueConnection );
         
     }
     
