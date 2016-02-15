@@ -31,9 +31,6 @@ QTDIR="${MACPORTS}/libexec/qt4"
 
 cd "$CWD/build" || exit 1
 
-if [ "$PLUGINDIR" = "$CWD/build/Natron/App/Natron.app/Contents/Plugins" ]; then
-    echo "Warning: PLUGINDIR is $PLUGINDIR (should *really* be .../OFX/Natron)"
-fi
 
 if [ "$BRANCH" = "workshop" ]; then
     NATRON_BRANCH=$BRANCH
@@ -132,6 +129,7 @@ env TAG=$TAG DISABLE_BREAKPAD="$DISABLE_BREAKPAD" DUMP_SYMS="$DUMP_SYMS" SYMBOLS
 package="$CWD/build/Natron/App/Natron.app"
 if [ "$PLUGINDIR" = "${package}/Contents/Plugins" ]; then
     mkdir -p "${package}/Contents/Plugins/PyPlugs"
+    cp "Gui/Resources/PyPlugs/*" "${package}/Contents/Plugins/PyPlugs/" 
     mkdir -p "${package}/Contents/Plugins/OFX/Natron"
     echo "HACK: moving Qt plugins from ${package}/Contents/PlugIns to ${package}/Contents/Plugins (should not be necessary when the OFX Plugins dir is ${package}/Contents/OFX/Natron)"
     mv "${package}/Contents/PlugIns" "${package}/Contents/Plugins" || exit 1
