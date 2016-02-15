@@ -297,12 +297,12 @@ private:
     void getRegionOfDefinitionInternal(OfxTime time, ViewIdx view, unsigned int mipmapLevel,EffectInstance* associatedNode,
                                        OfxRectD* rod) const;
     
-    OFX::Host::ImageEffect::Image* getInputImageInternal(OfxTime time, ViewIdx view, const OfxRectD *optionalBounds,
+    OFX::Host::ImageEffect::Image* getInputImageInternal(const OfxTime time, const  ViewSpec view, const OfxRectD *optionalBounds,
                                                     const std::string* ofxPlane);
 
     OFX::Host::ImageEffect::Image* getOutputImageInternal(const std::string* ofxPlane);
 
-    OFX::Host::ImageEffect::Image* getImagePlaneInternal(OfxTime time, ViewIdx view, const OfxRectD *optionalBounds, const std::string* ofxPlane);
+    OFX::Host::ImageEffect::Image* getImagePlaneInternal(OfxTime time, ViewSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane);
 
 
 

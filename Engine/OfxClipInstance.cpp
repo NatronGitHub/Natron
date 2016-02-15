@@ -729,7 +729,7 @@ OFX::Host::ImageEffect::Image*
 OfxClipInstance::getImage(OfxTime time,
                           const OfxRectD *optionalBounds)
 {
-    return getStereoscopicImage(time, -1, optionalBounds);
+    return getImagePlaneInternal(time, ViewSpec::current(), optionalBounds, 0);
 }
 
 // overridden from OFX::Host::ImageEffect::ClipInstance
@@ -738,7 +738,7 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
                                       int view,
                                       const OfxRectD *optionalBounds)
 {
-    return getImagePlaneInternal(time, ViewIdx(view), optionalBounds, 0);
+    return getImagePlaneInternal(time, ViewSpec(view), optionalBounds, 0);
 }
 
 // overridden from OFX::Host::ImageEffect::ClipInstance
@@ -758,7 +758,7 @@ OfxClipInstance::getImagePlane(OfxTime time,
 
 OFX::Host::ImageEffect::Image*
 OfxClipInstance::getImagePlaneInternal(OfxTime time,
-                                       ViewIdx view,
+                                       ViewSpec view,
                                        const OfxRectD *optionalBounds,
                                        const std::string* ofxPlane)
 {
@@ -777,8 +777,8 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time,
 
 
 OFX::Host::ImageEffect::Image*
-OfxClipInstance::getInputImageInternal(OfxTime time,
-                                       ViewIdx view,
+OfxClipInstance::getInputImageInternal(const OfxTime time,
+                                       const ViewSpec viewParam,
                                        const OfxRectD *optionalBounds,
                                        const std::string* ofxPlane)
 {
@@ -855,8 +855,9 @@ OfxClipInstance::getInputImageInternal(OfxTime time,
         }
     }
 #endif
+    ViewIdx view;
     if (tls) {
-        if (view == -1) {
+        if (viewParam.isCurrent()) {
             if (tls->view.empty()) {
                 view = ViewIdx(0);
             } else {
