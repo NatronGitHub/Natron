@@ -2761,8 +2761,9 @@ RotoContext::renderMaskInternal(const boost::shared_ptr<RotoDrawableItem>& strok
                                 const std::list<std::list<std::pair<Point,double> > >& strokes,
                                 const boost::shared_ptr<Image> &image)
 {
- 
-    
+    Q_UNUSED(startTime);
+    Q_UNUSED(endTime);
+    Q_UNUSED(timeStep);
     NodePtr node = getNode();
     
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(stroke.get());

@@ -598,7 +598,7 @@ KnobChoice::onInternalValueChanged(int dimension, double time, ViewSpec /*view*/
 {
     int index = getValueAtTime(time, dimension);
     QMutexLocker k(&_entriesMutex);
-    if (index >= 0 &&  index < _entries.size()) {
+    if (index >= 0 &&  index < (int)_entries.size()) {
         _lastValidEntry = _entries[index];
     }
 }

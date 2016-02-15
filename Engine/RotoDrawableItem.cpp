@@ -285,6 +285,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
                 //Connect this rotopaint node as a mask
                 bool ok = _imp->mergeNode->connectInput(node, i);
                 assert(ok);
+                Q_UNUSED(ok);
                 break;
             }
         }

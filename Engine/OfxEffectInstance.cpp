@@ -2370,7 +2370,8 @@ void
 OfxEffectInstance::redrawOverlayInteract()
 {
     assert(_imp->overlayInteract);
-    (void)_imp->overlayInteract->redraw();
+    OfxStatus st = _imp->overlayInteract->redraw();
+    Q_UNUSED(st);
 }
 
 RenderScale
@@ -2449,7 +2450,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
     /*if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
         return;
     }*/
-    
+    Q_UNUSED(stat);
 } // knobChanged
 
 void

@@ -318,19 +318,15 @@ CallbacksManager::hasInit() const {
 void
 CallbacksManager::onSpawnedProcessFinished(int exitCode, QProcess::ExitStatus status)
 {
-    
-    int retCode = 0;
     QString code;
     if (status == QProcess::CrashExit) {
         code =  "crashed";
-        retCode = 1;
     } else if (status == QProcess::NormalExit) {
         code =  "finished";
     }
     qDebug() << "Spawned process" << code << "with exit code:" << exitCode;
     
     EXIT_APP(exitCode, false);
-  
 }
 
 void
@@ -671,8 +667,11 @@ NetworkErrorDialog::~NetworkErrorDialog()
 #endif
 
 void
-CallbacksManager::replyFinished(QNetworkReply* replyParam) {
+CallbacksManager::replyFinished(QNetworkReply* replyParam)
+{
+    Q_UNUSED(replyParam);
     assert(replyParam == _uploadReply);
+
     if (!_uploadReply) {
         return;
     }

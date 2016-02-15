@@ -3137,6 +3137,7 @@ KnobHelper::removeListener(KnobI* listener, int listenerDimension)
 {
     KnobHelper* listenerHelper = dynamic_cast<KnobHelper*>(listener);
     assert(listenerHelper);
+    Q_UNUSED(listenerHelper);
     
     QWriteLocker l(&_imp->mastersMutex);
     for (ListenerDimsMap::iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
@@ -3519,6 +3520,7 @@ KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias)
         if (doAlias) {
             bool ok = slaveTo(i, master, i, eValueChangedReasonNatronInternalEdited, false);
             assert(ok);
+            Q_UNUSED(ok);
         }
         handleSignalSlotsForAliasLink(master,doAlias);
     }

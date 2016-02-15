@@ -960,7 +960,8 @@ EffectInstance::getImage(int inputNb,
             RectD canonicalPixelRoI;
             
             if (!inputRoDSet) {
-                (void)inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
+                StatusEnum st = inputEffect->getRegionOfDefinition(inputEffect->getRenderHash(), time, scale, view, &inputRoD);
+                Q_UNUSED(st);
             }
             
             pixelRoI.toCanonical(inputImgMipMapLevel, par, inputRoD, &canonicalPixelRoI);

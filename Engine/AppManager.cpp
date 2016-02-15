@@ -2520,6 +2520,7 @@ AppManager::initPython(int argc,char* argv[])
         printf("Py_GetPythonHome is %s\n", Py_GetPythonHome());
         bool ok = Python::interpretPythonScript("from distutils.sysconfig import get_python_lib; print('Python library is in ' + get_python_lib())", &err, 0);
         assert(ok);
+        Q_UNUSED(ok);
     }
 #endif
     bool ok = Python::interpretPythonScript("import sys\nfrom math import *\nimport " + std::string(NATRON_ENGINE_PYTHON_MODULE_NAME), &err, 0);

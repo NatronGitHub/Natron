@@ -3556,14 +3556,14 @@ Node::makeHTMLDocumentation() const
     QString ret;
     QTextStream ts(&ret);
     
-    bool isPyPlug;
+    //bool isPyPlug;
     QString pluginID,pluginLabel,pluginDescription;
     int majorVersion = getMajorVersion();
     int minorVersion = getMinorVersion();
     
     {
         QMutexLocker k(&_imp->pluginPythonModuleMutex);
-        isPyPlug = !_imp->pyPlugID.empty();
+        //isPyPlug = !_imp->pyPlugID.empty();
         pluginID = _imp->pyPlugID.empty() ? _imp->plugin->getPluginID() : _imp->pyPlugID.c_str();
         pluginLabel = _imp->pyPlugLabel.empty() ? _imp->plugin->getPluginLabel() : _imp->pyPlugLabel.c_str();
         pluginDescription = _imp->pyPlugDesc.empty() ? _imp->effect->getPluginDescription().c_str() : _imp->pyPlugDesc.c_str();

@@ -624,7 +624,7 @@ static bool tryParseMultipleFrameRanges(const QString& args,std::list<std::pair<
     bool added = false;
     for (int i = 0; i < splits.size(); ++i) {
         std::pair<int,int> frameRange;
-        int frameStep;
+        int frameStep = 0;
         if (tryParseFrameRange(splits[i], frameRange, frameStep)) {
             added = true;
             frameRanges.push_back(std::make_pair(frameStep, frameRange));
