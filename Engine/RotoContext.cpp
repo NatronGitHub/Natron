@@ -2113,35 +2113,38 @@ convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg
     double g = useOpacity ? shapeColor[1] * opacity : shapeColor[1];
     double b = useOpacity ? shapeColor[2] * opacity : shapeColor[2];
     
-    for (int y = 0; y < pixelRod.height(); ++y, srcPix += stride) {
+    int width = pixelRod.width();
+    int srcNElements = width * srcNComps;
+    
+    for (int y = 0; y < pixelRod.height(); ++y,
+         srcPix += (stride - srcNElements)) {
+        
         PIX* dstPix = (PIX*)acc.pixelAt(pixelRod.x1, pixelRod.y1 + y);
         assert(dstPix);
         
-        for (int x = 0; x < pixelRod.width(); ++x) {
-            float cairoPixel = (float)srcPix[x * srcNComps] / 255.f;
+        for (int x = 0; x < width; ++x,
+             dstPix += dstNComps,
+             srcPix += srcNComps) {
+            
+            float cairoPixel = ((float)*srcPix / 255.f) * maxValue;
             switch (dstNComps) {
                 case 4:
-                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * r * maxValue);
-                    assert(!boost::math::isnan(dstPix[x * dstNComps + 0]));
-                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * g * maxValue);
-                    assert(!boost::math::isnan(dstPix[x * dstNComps + 1]));
-                    dstPix[x * dstNComps + 2] = PIX(cairoPixel * b * maxValue);
-                    assert(!boost::math::isnan(dstPix[x * dstNComps + 2]));
-                    dstPix[x * dstNComps + 3] = useOpacity ? PIX(cairoPixel * opacity * maxValue) : PIX(cairoPixel * maxValue);
-                    assert(!boost::math::isnan(dstPix[x * dstNComps + 3]));
+                    dstPix[0] = PIX(cairoPixel * r);
+                    dstPix[1] = PIX(cairoPixel * g);
+                    dstPix[2] = PIX(cairoPixel * b);
+                    dstPix[3] = useOpacity ? PIX(cairoPixel * opacity) : PIX(cairoPixel);
                     break;
                 case 1:
-                    dstPix[x] = useOpacity ? PIX(cairoPixel * opacity * maxValue) : PIX(cairoPixel * maxValue);
-                    assert(!boost::math::isnan(dstPix[x]));
+                    dstPix[0] = useOpacity ? PIX(cairoPixel * opacity) : PIX(cairoPixel);
                     break;
                 case 3:
-                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * r * maxValue);
-                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * g * maxValue);
-                    dstPix[x * dstNComps + 2] = PIX(cairoPixel * b * maxValue);
+                    dstPix[0] = PIX(cairoPixel * r);
+                    dstPix[1] = PIX(cairoPixel * g);
+                    dstPix[2] = PIX(cairoPixel * b);
                     break;
                 case 2:
-                    dstPix[x * dstNComps + 0] = PIX(cairoPixel * r * maxValue);
-                    dstPix[x * dstNComps + 1] = PIX(cairoPixel * g * maxValue);
+                    dstPix[0] = PIX(cairoPixel * r);
+                    dstPix[1] = PIX(cairoPixel * g);
                     break;
 
                 default:
@@ -2149,7 +2152,7 @@ convertCairoImageToNatronImageForDstComponents_noColor(cairo_surface_t* cairoImg
             }
 #         ifdef DEBUG
             for (int c = 0; c < dstNComps; ++c) {
-                assert(dstPix[x * dstNComps + c] == dstPix[x * dstNComps + c]); // check for NaN
+                assert(dstPix[c] == dstPix[c]); // check for NaN
             }
 #         endif
         }

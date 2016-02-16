@@ -103,8 +103,7 @@ TLSHolder<T>::getTLSData() const
     QThread* curThread  = QThread::currentThread();
     
     //This thread might be registered by a spawner thread, copy the TLS and attempt to find the TLS for this holder.
-    boost::shared_ptr<const TLSHolderBase> thisShared = shared_from_this();
-    boost::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(thisShared, curThread);
+    boost::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
     if (ret) {
         return ret;
     }
@@ -129,8 +128,7 @@ TLSHolder<T>::getOrCreateTLSData() const
     QThread* curThread  = QThread::currentThread();
     
     //This thread might be registered by a spawner thread, copy the TLS and attempt to find the TLS for this holder.
-    boost::shared_ptr<const TLSHolderBase> thisShared = shared_from_this();
-    boost::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(thisShared, curThread);
+    boost::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
     if (ret) {
         return ret;
     }
@@ -148,6 +146,7 @@ TLSHolder<T>::getOrCreateTLSData() const
     
     //getOrCreateTLSData() has never been called on the thread, lookup the TLS
     ThreadData data;
+    boost::shared_ptr<const TLSHolderBase> thisShared = shared_from_this();
     appPTR->getAppTLS()->registerTLSHolder(thisShared);
     data.value.reset(new T);
     {
@@ -161,7 +160,7 @@ TLSHolder<T>::getOrCreateTLSData() const
 
 template <typename T>
 boost::shared_ptr<T>
-AppTLS::copyTLSFromSpawnerThread(const boost::shared_ptr<const TLSHolderBase>& holder,
+AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
                                  const QThread* curThread)
 {
     //3 cases where this function returns NULL:
@@ -188,8 +187,8 @@ AppTLS::copyTLSFromSpawnerThread(const boost::shared_ptr<const TLSHolderBase>& h
 
 template <typename T>
 boost::shared_ptr<T>
-AppTLS::copyTLSFromSpawnerThreadInternal(const boost::shared_ptr<const TLSHolderBase>& holder,
-                                              const QThread* curThread,
+AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
+                                         const QThread* curThread,
                                          ThreadSpawnMap::iterator foundSpawned)
 {
     //Private - should be locked
@@ -203,7 +202,7 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const boost::shared_ptr<const TLSHolder
         boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
         if (p) {
             const TLSHolder<T>* foundHolder = 0;
-            if (p.get() == holder.get()) {
+            if (p.get() == holder) {
                 //This is the object from which it has been required to create the TLS data, copy
                 //the TLS data from the spawner thread and mark it to 'tls'.
                 foundHolder = dynamic_cast<const TLSHolder<T>*>(p.get());
