@@ -313,7 +313,7 @@ ProgressPanel::onPauseTasksTriggered()
     getSelectedTask(selection);
     for (std::list<ProgressTaskInfoPtr>::iterator it = selection.begin(); it!=selection.end(); ++it) {
         if ((*it)->canPause()) {
-            (*it)->cancelTask(false, 0);
+            (*it)->cancelTask(false, 1);
         }
     }
     

@@ -202,7 +202,7 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine, int retCode)
     NodePtr node = getNode();
     OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>(node->getEffectInstance().get());
     node->getApp()->removeRenderFromQueue(effect);
-    if (!_imp->canBePaused) {
+    if ((_imp->panel->isRemoveTasksAfterFinishChecked() && retCode == 0) || !_imp->canBePaused) {
         _imp->panel->removeTaskFromTable(shared_from_this());
     }
     if (!calledFromRenderEngine) {
@@ -277,14 +277,9 @@ ProgressTaskInfo::onRenderEngineStopped(int retCode)
     
     //Hold a shared ptr because removeTasksFromTable would remove the last ref otherwise
     ProgressTaskInfoPtr thisShared = shared_from_this();
+
+    cancelTask(true, retCode);
     
-    if ((_imp->panel->isRemoveTasksAfterFinishChecked() && retCode == 0) || !canPause()) {
-        std::list<ProgressTaskInfoPtr> toRemove;
-        toRemove.push_back(thisShared);
-        _imp->panel->removeTasksFromTable(toRemove);
-    } else {
-        cancelTask(true, retCode);
-    }
     
     _imp->panel->refreshButtonsEnabledNess();
 }
