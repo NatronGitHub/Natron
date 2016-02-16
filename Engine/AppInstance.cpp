@@ -1348,7 +1348,7 @@ AppInstance::startWritersRendering(bool doBlockingRender, const std::list<Render
             item.process.reset(new ProcessHandler(savePath,item.work.writer));
             QObject::connect( item.process.get(), SIGNAL( processFinished(int) ), this, SLOT( onBackgroundRenderProcessFinished() ) );
         } else {
-            QObject::connect(item.work.writer->getRenderEngine(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)));
+            QObject::connect(item.work.writer->getRenderEngine(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);
         }
         
         bool canPause = item.work.writer->getPluginID() != PLUGINID_OFX_WRITEFFMPEG;
