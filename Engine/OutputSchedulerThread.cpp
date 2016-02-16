@@ -60,8 +60,9 @@
 #include "Engine/Timer.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/UpdateViewerParams.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
-#include "Engine/ViewerInstancePrivate.h"
 
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 

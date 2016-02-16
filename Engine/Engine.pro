@@ -223,6 +223,7 @@ HEADERS += \
     BezierCPPrivate.h \
     BezierCPSerialization.h \
     BlockingBackgroundRender.h \
+    BufferableObject.h \
     CLArgs.h \
     Cache.h \
     CacheEntry.h \
@@ -346,6 +347,7 @@ HEADERS += \
     TLSHolder.h \
     TLSHolderImpl.h \
     Transform.h \
+    UpdateViewerParams.h \
     Variant.h \
     VariantSerialization.h \
     ViewerInstance.h \

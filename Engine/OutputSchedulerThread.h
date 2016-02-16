@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef OUTPUTSCHEDULERTHREAD_H
-#define OUTPUTSCHEDULERTHREAD_H
+#ifndef Engine_OutputSchedulerThread_h
+#define Engine_OutputSchedulerThread_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -34,6 +34,7 @@
 #include <QThread>
 
 #include "Global/GlobalDefines.h"
+#include "Engine/BufferableObject.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -43,35 +44,6 @@
 NATRON_NAMESPACE_ENTER;
 
 typedef boost::shared_ptr<RenderStats> RenderStatsPtr;
-
-/**
- * @brief Stub class used by internal implementation of OutputSchedulerThread to pass objects through signal/slots
- **/
-class BufferableObject
-{
-    
-    int uniqueID; //< used to differentiate frames which may belong to the same time/view (e.g when wipe is enabled)
-public:
-    
-    int getUniqueID() const
-    {
-        return uniqueID;
-    }
-    
-    BufferableObject() : uniqueID(0) {}
-    
-    virtual ~BufferableObject() {}
-    
-    void setUniqueID(int aid)
-    {
-        uniqueID = aid;
-    }
-    
-    virtual std::size_t sizeInRAM() const = 0;
-};
-
-typedef std::list<boost::shared_ptr<BufferableObject> > BufferableObjectList;
-
 
 struct BufferedFrame
 {
@@ -89,7 +61,6 @@ struct BufferedFrame
         
     }
 };
-
 typedef std::list<BufferedFrame> BufferedFrames;
 
 class OutputSchedulerThread;
@@ -838,4 +809,4 @@ private:
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // OUTPUTSCHEDULERTHREAD_H
+#endif // Engine_OutputSchedulerThread_h

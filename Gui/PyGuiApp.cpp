@@ -40,6 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/PyParameter.h" // ColorTuple
 #include "Engine/ScriptObject.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/Gui.h"

@@ -38,6 +38,7 @@
 
 #include "Engine/Image.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

@@ -30,6 +30,7 @@
 #include <map>
 
 #include "Engine/AppInstance.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/GuiFwd.h"
 

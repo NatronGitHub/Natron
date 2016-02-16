@@ -43,7 +43,9 @@ CLANG_DIAG_OFF(deprecated-declarations)
 CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Global/GlobalDefines.h"
+
 #include "Engine/RotoDrawableItem.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

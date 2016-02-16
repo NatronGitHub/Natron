@@ -84,6 +84,7 @@
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoSmear.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h" // RenderStatsMap
 
 #if QT_VERSION < 0x050000

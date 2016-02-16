@@ -44,6 +44,8 @@
 #include <QUndoGroup>
 #include <QUndoStack>
 
+#include "Engine/ViewIdx.h"
+
 #include "Gui/CurveEditor.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h" // appPTR

@@ -28,6 +28,7 @@
 #include <stdexcept>
 
 #include "Engine/Transform.h" // Matrix3x3
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 

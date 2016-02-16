@@ -36,6 +36,7 @@
 
 #include "Engine/Node.h"
 #include "Engine/Timer.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/Button.h"
 #include "Gui/Gui.h"

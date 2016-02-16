@@ -45,6 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/Transform.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/GuiAppInstance.h"
 #include "Gui/RotoGui.h"

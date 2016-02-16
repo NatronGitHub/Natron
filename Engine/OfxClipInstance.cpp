@@ -50,6 +50,7 @@
 #include "Engine/RotoContext.h"
 #include "Engine/Transform.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/ViewIdx.h"
 
 #include <nuke/fnOfxExtensions.h>
 #include <ofxNatron.h>

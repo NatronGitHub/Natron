@@ -48,6 +48,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/KeySymbols.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/CacheEntryHolder.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 

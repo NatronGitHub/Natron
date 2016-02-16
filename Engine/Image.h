@@ -43,6 +43,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/CacheEntry.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/RectD.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 

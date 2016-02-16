@@ -32,6 +32,7 @@
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 

@@ -35,6 +35,7 @@
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/Settings.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/DockablePanel.h"
 #include "Gui/DopeSheet.h"

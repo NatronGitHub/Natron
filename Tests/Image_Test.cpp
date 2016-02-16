@@ -26,6 +26,7 @@
 #include <gtest/gtest.h>
 
 #include "Engine/Image.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_USING
 

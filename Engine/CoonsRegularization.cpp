@@ -60,6 +60,7 @@
 #include "Engine/Interpolation.h"
 #include "Engine/RectD.h"
 #include "Engine/Transform.h"
+#include "Engine/ViewIdx.h"
 
 
 #ifndef M_PI_2

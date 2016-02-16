@@ -46,19 +46,20 @@
 
 #include <cairo/cairo.h>
 
+#include "Global/GlobalDefines.h"
 
+#include "Engine/AppManager.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
-#include "Engine/KnobTypes.h"
-#include "Engine/Node.h"
-#include "Engine/Image.h"
 #include "Engine/EffectInstance.h"
-#include "Engine/AppManager.h"
-#include "Engine/RotoContext.h"
-#include "Global/GlobalDefines.h"
-#include "Engine/Transform.h"
+#include "Engine/Image.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/MergingEnum.h"
+#include "Engine/Node.h"
+#include "Engine/RotoContext.h"
 #include "Engine/RotoPaint.h"
+#include "Engine/Transform.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 #define ROTO_DEFAULT_OPACITY 1.

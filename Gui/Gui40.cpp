@@ -50,6 +50,7 @@
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/AboutWindow.h"

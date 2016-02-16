@@ -40,6 +40,7 @@
 
 #include "Engine/Settings.h"
 #include "Engine/FStreamsSupport.h"
+#include "Engine/ViewIdx.h"
 
 #include "Gui/DockablePanel.h"
 #include "Gui/Menu.h"

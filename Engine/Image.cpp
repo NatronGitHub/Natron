@@ -31,6 +31,7 @@
 #include <QDebug>
 
 #include "Engine/AppManager.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 

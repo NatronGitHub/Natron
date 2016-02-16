@@ -45,6 +45,7 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Engine/OutputEffectInstance.h"
+#include "Engine/ViewIdx.h"
 
 #include "Engine/EngineFwd.h"
 

@@ -30,6 +30,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/ViewIdx.h"
 
 
 NATRON_NAMESPACE_ENTER;

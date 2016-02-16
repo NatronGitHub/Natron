@@ -34,6 +34,7 @@
 #endif
 
 #include "Engine/OutputEffectInstance.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 

@@ -32,6 +32,7 @@
 #endif
 #include "Engine/OverlaySupport.h"
 #include "Engine/RectI.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 

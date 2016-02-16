@@ -36,6 +36,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/TimeLine.h"
+#include "Engine/ViewIdx.h"
 
 #define ROTOPAINT_MASK_INPUT_INDEX 10
 

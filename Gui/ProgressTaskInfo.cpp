@@ -30,16 +30,17 @@
 #include <QThread>
 #include <QProgressBar>
 
-#include "Engine/OutputEffectInstance.h"
-#include "Engine/ProcessHandler.h"
-#include "Engine/OutputSchedulerThread.h"
-#include "Engine/Node.h"
-#include "Engine/Timer.h"
+#include "Engine/AppInstance.h"
 #include "Engine/Image.h"
+#include "Engine/Node.h"
+#include "Engine/OutputEffectInstance.h"
+#include "Engine/OutputSchedulerThread.h"
+#include "Engine/ProcessHandler.h"
+#include "Engine/Timer.h"
 
-#include "Gui/TableModelView.h"
-#include "Gui/ProgressPanel.h"
 #include "Gui/NodeGui.h"
+#include "Gui/ProgressPanel.h"
+#include "Gui/TableModelView.h"
 
 #define COL_PROGRESS 1
 

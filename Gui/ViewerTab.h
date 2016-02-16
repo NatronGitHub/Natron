@@ -36,6 +36,7 @@
 #include "Global/KeySymbols.h" // Key
 
 #include "Engine/RenderStats.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/PanelWidget.h"

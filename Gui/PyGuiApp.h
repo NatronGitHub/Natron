@@ -29,6 +29,7 @@
 
 #include "Engine/PyAppInstance.h"
 #include "Engine/PyParameter.h" // ColorTuple
+#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/GuiAppInstance.h"

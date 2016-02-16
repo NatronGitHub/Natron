@@ -72,6 +72,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
+#include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 #ifdef DEBUG
 #include "Engine/TLSHolder.h"

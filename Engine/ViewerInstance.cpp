@@ -69,6 +69,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
 #include "Engine/UpdateViewerParams.h"
+#include "Engine/ViewIdx.h"
 
 
 #ifndef M_LN2
