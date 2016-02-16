@@ -42,9 +42,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class TaskInfo;
-struct TaskInfoPrivate;
-typedef boost::shared_ptr<TaskInfo> TaskInfoPtr;
 struct ProgressPanelPrivate;
 
 class ProgressPanel: public QWidget, public PanelWidget
@@ -53,7 +50,7 @@ class ProgressPanel: public QWidget, public PanelWidget
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
     
-    friend struct TaskInfoPrivate;
+    friend struct ProgressTaskInfoPrivate;
 
 public:
     
@@ -92,12 +89,12 @@ public:
     
     void onRenderQueuingSettingChanged(bool queueingEnabled);
     
-    void removeTaskFromTable(const TaskInfoPtr& task);
-    void removeTasksFromTable(const std::list<TaskInfoPtr>& task);
+    void removeTaskFromTable(const ProgressTaskInfoPtr& task);
+    void removeTasksFromTable(const std::list<ProgressTaskInfoPtr>& task);
 
     bool isRemoveTasksAfterFinishChecked() const;
     
-    void getSelectedTask(std::list<TaskInfoPtr>& selection) const;
+    void getSelectedTask(std::list<ProgressTaskInfoPtr>& selection) const;
 
     
 public Q_SLOTS:
@@ -106,7 +103,7 @@ public Q_SLOTS:
     void onCancelTasksTriggered();
     void onRestartAllTasksTriggered();
     
-    void doProgressOnMainThread(const TaskInfoPtr& task, double progress);
+    void doProgressOnMainThread(const ProgressTaskInfoPtr& task, double progress);
     
     void doProgressEndOnMainThread(const NodePtr& node);
     
@@ -118,15 +115,15 @@ public Q_SLOTS:
     
 Q_SIGNALS:
     
-    void s_doProgressUpdateOnMainThread(const TaskInfoPtr& task, double progress);
+    void s_doProgressUpdateOnMainThread(const ProgressTaskInfoPtr& task, double progress);
     
     void s_doProgressEndOnMainThread(const NodePtr& node);
     
     
 private:
-    void getSelectedTaskInternal(const QItemSelection& selected, std::list<TaskInfoPtr>& selection) const;
+    void getSelectedTaskInternal(const QItemSelection& selected, std::list<ProgressTaskInfoPtr>& selection) const;
     
-    void addTaskToTable(const TaskInfoPtr& task);
+    void addTaskToTable(const ProgressTaskInfoPtr& task);
 
 private:
     // overriden from QWidget

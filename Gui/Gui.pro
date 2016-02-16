@@ -171,6 +171,7 @@ SOURCES += \
     ProjectGui.cpp \
     ProjectGuiSerialization.cpp \
     ProgressPanel.cpp \
+    ProgressTaskInfo.cpp \
     PropertiesBinWrapper.cpp \
     PyGuiApp.cpp \
     PythonPanels.cpp \
@@ -312,6 +313,7 @@ HEADERS += \
     ProjectGuiSerialization.h \
     PropertiesBinWrapper.h \
     ProgressPanel.h \
+    ProgressTaskInfo.h \
     PyGlobalGui.h \
     PyGuiApp.h \
     Pyside_Gui_Python.h \
