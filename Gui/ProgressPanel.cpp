@@ -38,6 +38,7 @@
 #include <QCheckBox>
 #include <QTimer>
 
+#include "Engine/AppInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Timer.h"
 #include "Engine/OutputEffectInstance.h"
@@ -46,7 +47,9 @@
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
 
+#include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/GuiDefines.h"
 #include "Gui/Label.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Button.h"
