@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef PROGRESSPANEL_H
-#define PROGRESSPANEL_H
+#ifndef Gui_ProgressPanel_h
+#define Gui_ProgressPanel_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -42,84 +42,11 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class ProgressPanel;
-
+class TaskInfo;
 struct TaskInfoPrivate;
-class TaskInfo : public QObject, public boost::enable_shared_from_this<TaskInfo>
-{
-    
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
-    friend class ProgressPanel;
-    
-public:
-    
-    TaskInfo(ProgressPanel* panel,
-             const NodePtr& node,
-             const int firstFrame,
-             const int lastFrame,
-             const int frameStep,
-             const bool canPause,
-             const bool canCancel,
-             const QString& message,
-             const boost::shared_ptr<ProcessHandler>& process);
-    
-    virtual ~TaskInfo();
-    
-    bool wasCanceled() const;
-    
-    bool canPause() const;
-    
-    /**
-     * @brief If the task has been restarted, totalProgress is the progress over the whole task,
-     * and subTaskProgress is the progress over the smaller range from which we stopped.
-     **/
-    void updateProgressBar(double totalProgress,double subTaskProgress);
-    
-    void updateProgress(const int frame, double progress);
-    
-    void cancelTask(bool calledFromRenderEngine, int retCode);
-    
-    void restartTask();
-        
-    NodePtr getNode() const;
-    
-public Q_SLOTS:
-    
-    void onRefreshLabelTimeout();
-    
-    
-    /**
-     * @brief Slot executed when a render engine reports progress
-     **/
-    void onRenderEngineFrameComputed(int frame, double progress);
-    
-    /**
-     * @brief Executed when a render engine stops, retCode can be 1 in which case that means the render
-     * was aborted, or 0 in which case the render was successful or a failure.
-     **/
-    void onRenderEngineStopped(int retCode);
-    
-    void onProcessCanceled();
-
-
-Q_SIGNALS:
-    
-    void taskCanceled();
-    
-private:
-    
-    void clearItems();
-    
-    boost::scoped_ptr<TaskInfoPrivate> _imp;
-};
-
 typedef boost::shared_ptr<TaskInfo> TaskInfoPtr;
-
-
 struct ProgressPanelPrivate;
+
 class ProgressPanel: public QWidget, public PanelWidget
 {
     GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -197,22 +124,21 @@ Q_SIGNALS:
     
     
 private:
-    
-    
-    
     void getSelectedTaskInternal(const QItemSelection& selected, std::list<TaskInfoPtr>& selection) const;
     
     void addTaskToTable(const TaskInfoPtr& task);
-    
-    
+
+private:
+    // overriden from QWidget
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
-    
+
+private:
     boost::scoped_ptr<ProgressPanelPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // PROGRESSPANEL_H
+#endif // Gui_ProgressPanel_h
