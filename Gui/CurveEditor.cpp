@@ -750,9 +750,9 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
 {
     if (internalKnob) {
         boost::shared_ptr<KnobSignalSlotHandler> handler = internalKnob->getSignalSlotHandler();
-        QObject::connect( handler.get(),SIGNAL( keyFrameSet(double, ViewIdx,int,int,bool) ),this,SLOT( checkVisibleState() ) );
-        QObject::connect( handler.get(),SIGNAL( keyFrameRemoved(double, ViewIdx,int,int) ),this,SLOT( checkVisibleState() ) );
-        QObject::connect( handler.get(),SIGNAL( animationRemoved(ViewIdx,int) ),this,SLOT( checkVisibleState() ) );
+        QObject::connect( handler.get(),SIGNAL( keyFrameSet(double, ViewSpec,int,int,bool) ),this,SLOT( checkVisibleState() ) );
+        QObject::connect( handler.get(),SIGNAL( keyFrameRemoved(double, ViewSpec,int,int) ),this,SLOT( checkVisibleState() ) );
+        QObject::connect( handler.get(),SIGNAL( animationRemoved(ViewSpec,int) ),this,SLOT( checkVisibleState() ) );
     }
     if (curve) {
         // even when there is only one keyframe, there may be tangents!
