@@ -564,11 +564,12 @@ ProgressPanel::ProgressPanel(Gui* gui)
     QPixmap restartPix,pausePix, clearTasksPix;
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_DISABLED, medSizeIcon, &restartPix);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP, medSizeIcon, &clearTasksPix);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PAUSE, medSizeIcon, &pausePix);
     
     const QSize medButtonIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
     const QSize medButtonSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
     
-    _imp->pauseTasksButton = new Button(QIcon(pausePix),"Pause",_imp->headerContainer);
+    _imp->pauseTasksButton = new Button(QIcon(pausePix),"",_imp->headerContainer);
     _imp->pauseTasksButton->setFixedSize(medButtonSize);
     _imp->pauseTasksButton->setIconSize(medButtonIconSize);
     _imp->pauseTasksButton->setFocusPolicy(Qt::NoFocus);
@@ -639,7 +640,7 @@ ProgressPanel::ProgressPanel(Gui* gui)
     
     _imp->view->setColumnCount(dimensionNames.size());
     _imp->view->setHorizontalHeaderLabels(dimensionNames);
-    _imp->view->header()->setResizeMode(QHeaderView::Fixed);
+    //_imp->view->header()->setResizeMode(QHeaderView::Fixed);
     _imp->view->header()->setStretchLastSection(true);
     _imp->view->header()->resizeSection(COL_TIME_REMAINING, TO_DPIX(150));
 

@@ -327,5 +327,6 @@
         <file>Resources/Images/merge_stencil.png</file>
         <file>Resources/Images/merge_under.png</file>
         <file>Resources/Images/merge_xor.png</file>
+        <file>Resources/Images/pause.png</file>
     </qresource>
 </RCC>
