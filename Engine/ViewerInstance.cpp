@@ -68,13 +68,14 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Timer.h"
+#include "Engine/UpdateViewerParams.h"
 
 
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
 #endif
 
-#define NATRON_TIME_ELASPED_BEFORE_PROGRESS_REPORT 0.4
+#define NATRON_TIME_ELASPED_BEFORE_PROGRESS_REPORT 4. //!< do not display the progress report if estimated total time is less than this (in seconds)
 
 NATRON_NAMESPACE_ENTER;
 
@@ -1460,7 +1461,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     /*
      Use a timer to enable progress report if the amount spent rendering exceeds some time
      */
-    double totalRenderTime = 0.;
+    double totalRenderTime = 0.; // estimated total time in seconds
     TimeLapse timer;
     // List of the tiles that the progress did not report until now
     std::list<RectI> unreportedTiles;
