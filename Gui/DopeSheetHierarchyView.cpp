@@ -655,7 +655,7 @@ HierarchyView::HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *paren
     connect(this, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),
             this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)));
 
-    connect(selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+    connect(selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
             this, SLOT(onSelectionChanged()));
 }
 
@@ -972,7 +972,7 @@ void HierarchyView::onKeyframeSelectionChanged(bool recurse)
     }
     
     
-    disconnect(selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+    disconnect(selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
                this, SLOT(onSelectionChanged()));
 
     // Compose tree selection from the selected keyframes
@@ -1031,7 +1031,7 @@ void HierarchyView::onKeyframeSelectionChanged(bool recurse)
         mySelecModel->selectWithRecursion(selection, flags, recurse);
     }
 
-    connect(selectionModel(), SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
+    connect(selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
             this, SLOT(onSelectionChanged()));
 }
 

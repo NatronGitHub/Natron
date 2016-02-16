@@ -99,8 +99,8 @@ CompleterLineEdit::CompleterLineEdit(const PluginsNamesMap& plugins,
     _imp->listView->setWindowFlags(Qt::ToolTip);
     _imp->listView->setModel(_imp->model);
     
-    connect( this, SIGNAL( textChanged(QString) ), this, SLOT( filterText(QString) ) );
-    connect( _imp->listView, SIGNAL( clicked(QModelIndex) ), this, SLOT( setTextFromIndex(QModelIndex) ) );
+    connect( this, SIGNAL(textChanged(QString)), this, SLOT(filterText(QString)) );
+    connect( _imp->listView, SIGNAL(clicked(QModelIndex)), this, SLOT(setTextFromIndex(QModelIndex)) );
 }
 
 CompleterLineEdit::CompleterLineEdit(const QStringList & displayWords,
@@ -115,8 +115,8 @@ CompleterLineEdit::CompleterLineEdit(const QStringList & displayWords,
     _imp->listView->setWindowFlags(Qt::ToolTip);
     _imp->listView->setModel(_imp->model);
 
-    connect( this, SIGNAL( textChanged(QString) ), this, SLOT( filterText(QString) ) );
-    connect( _imp->listView, SIGNAL( clicked(QModelIndex) ), this, SLOT( setTextFromIndex(QModelIndex) ) );
+    connect( this, SIGNAL(textChanged(QString)), this, SLOT(filterText(QString)) );
+    connect( _imp->listView, SIGNAL(clicked(QModelIndex)), this, SLOT(setTextFromIndex(QModelIndex)) );
 }
 
 CompleterLineEdit::~CompleterLineEdit()
@@ -401,7 +401,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
     _imp->layout->addWidget(_imp->textEdit);
     _imp->textEdit->setFocus();
     _imp->textEdit->selectAll();
-    QTimer::singleShot( 20, _imp->textEdit, SLOT( showCompleter() ) );
+    QTimer::singleShot( 20, _imp->textEdit, SLOT(showCompleter()) );
 }
 
 NodeCreationDialog::~NodeCreationDialog()

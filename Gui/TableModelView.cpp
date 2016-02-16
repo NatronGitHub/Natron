@@ -198,7 +198,7 @@ TableModel::TableModel(int rows,
     : QAbstractTableModel(view)
       , _imp( new TableModelPrivate(rows,columns) )
 {
-    QObject::connect( this, SIGNAL( dataChanged(QModelIndex,QModelIndex) ), this, SLOT( onDataChanged(QModelIndex) ) );
+    QObject::connect( this, SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(onDataChanged(QModelIndex)) );
 }
 
 TableModel::~TableModel()

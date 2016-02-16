@@ -154,7 +154,7 @@ KnobGuiGroup::createWidget(QHBoxLayout* layout)
     }
     _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _button->setChecked(_checked);
-    QObject::connect( _button, SIGNAL( checked(bool) ), this, SLOT( setChecked(bool) ) );
+    QObject::connect( _button, SIGNAL(checked(bool)), this, SLOT(setChecked(bool)) );
     layout->addWidget(_button);
 }
 

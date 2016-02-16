@@ -80,9 +80,9 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
    // _mainLayout->addStretch();
     _mainLayout->addWidget(_buttonBox);
 
-    QObject::connect( _restoreDefaultsB, SIGNAL( clicked() ), this, SLOT( restoreDefaults() ) );
-    QObject::connect( _buttonBox, SIGNAL( rejected() ), this, SLOT( cancelChanges() ) );
-    QObject::connect( _buttonBox, SIGNAL( accepted() ), this, SLOT( saveChangesAndClose() ) );
+    QObject::connect( _restoreDefaultsB, SIGNAL(clicked()), this, SLOT(restoreDefaults()) );
+    QObject::connect( _buttonBox, SIGNAL(rejected()), this, SLOT(cancelChanges()) );
+    QObject::connect( _buttonBox, SIGNAL(accepted()), this, SLOT(saveChangesAndClose()) );
     QObject::connect(_settings.get(), SIGNAL(settingChanged(KnobI*)), this,SLOT(onSettingChanged(KnobI*)));
 
     _panel->initializeKnobs();

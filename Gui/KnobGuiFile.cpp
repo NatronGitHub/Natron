@@ -76,7 +76,7 @@ KnobGuiFile::KnobGuiFile(KnobPtr knob,
 {
     boost::shared_ptr<KnobFile> k = boost::dynamic_pointer_cast<KnobFile>(knob);
     assert(k);
-    QObject::connect( k.get(), SIGNAL( openFile() ), this, SLOT( open_file() ) );
+    QObject::connect( k.get(), SIGNAL(openFile()), this, SLOT(open_file()) );
     QObject::connect(_watcher, SIGNAL(fileChanged(QString)), this, SLOT(watchedFileChanged()));
     _knob = k;
 
@@ -100,7 +100,7 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
     boost::shared_ptr<KnobFile> knob = _knob.lock();
     if (knob->getHolder() && knob->getEvaluateOnChange()) {
         boost::shared_ptr<TimeLine> timeline = getGui()->getApp()->getTimeLine();
-        QObject::connect(timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineFrameChanged(SequenceTime, int)));
+        QObject::connect(timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineFrameChanged(SequenceTime,int)));
     }
     
     QWidget *container = new QWidget( layout->parentWidget() );
@@ -117,7 +117,7 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_lineEdit, 0);
 
-    QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
+    QObject::connect( _lineEdit, SIGNAL(editingFinished()), this, SLOT(onTextEdited()) );
 
 
     _openFileButton = new Button(container);
@@ -127,7 +127,7 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
     _openFileButton->setIcon( QIcon(pix) );
     _openFileButton->setToolTip(toolTip());
     _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
-    QObject::connect( _openFileButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
+    QObject::connect( _openFileButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()) );
     
     containerLayout->addWidget(_lineEdit);
     containerLayout->addWidget(_openFileButton);
@@ -140,7 +140,7 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
         appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixRefresh);
         _reloadButton->setIcon(QIcon(pixRefresh));
         _reloadButton->setToolTip(GuiUtils::convertFromPlainText(tr("Reload the file."), Qt::WhiteSpaceNormal));
-        QObject::connect( _reloadButton, SIGNAL( clicked() ), this, SLOT( onReloadClicked() ) );
+        QObject::connect( _reloadButton, SIGNAL(clicked()), this, SLOT(onReloadClicked()) );
         containerLayout->addWidget(_reloadButton);
     }
     layout->addWidget(container);
@@ -474,7 +474,7 @@ KnobGuiOutputFile::KnobGuiOutputFile(KnobPtr knob,
 {
     _knob = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
     assert(_knob.lock());
-    QObject::connect( _knob.lock().get(), SIGNAL( openFile(bool) ), this, SLOT( open_file(bool) ) );
+    QObject::connect( _knob.lock().get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)) );
 }
 
 KnobGuiOutputFile::~KnobGuiOutputFile()
@@ -494,7 +494,7 @@ KnobGuiOutputFile::createWidget(QHBoxLayout* layout)
 {
     _lineEdit = new LineEdit( layout->parentWidget() );
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
+    QObject::connect( _lineEdit, SIGNAL(editingFinished()), this, SLOT(onTextEdited()) );
 
     _lineEdit->setPlaceholderText( tr("File path...") );
 
@@ -511,7 +511,7 @@ KnobGuiOutputFile::createWidget(QHBoxLayout* layout)
     _openFileButton->setIcon( QIcon(pix) );
     _openFileButton->setToolTip(GuiUtils::convertFromPlainText(tr("Browse file..."), Qt::WhiteSpaceNormal));
     _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
-    QObject::connect( _openFileButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
+    QObject::connect( _openFileButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()) );
     QWidget *container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
     container->setLayout(containerLayout);
@@ -825,10 +825,10 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         mainLayout->setContentsMargins(0, 0, 0, 0);
         
         _table = new TableView( _mainContainer );
-        QObject::connect( _table,SIGNAL( aboutToDrop() ),this,SLOT( onItemAboutToDrop() ) );
-        QObject::connect( _table,SIGNAL( itemDropped() ),this,SLOT( onItemDropped() ) );
+        QObject::connect( _table,SIGNAL(aboutToDrop()),this,SLOT(onItemAboutToDrop()) );
+        QObject::connect( _table,SIGNAL(itemDropped()),this,SLOT(onItemDropped()) );
         layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-        //    QObject::connect( _table, SIGNAL( editingFinished() ), this, SLOT( onReturnPressed() ) );
+        //    QObject::connect( _table, SIGNAL(editingFinished()), this, SLOT(onReturnPressed()) );
   
         _table->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         _table->setAttribute(Qt::WA_MacShowFocusRect,0);
@@ -844,7 +844,7 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         _table->setItemDelegate(new PathKnobTableItemDelegate(_table, knob->getIsStringList()));
         
         _model = new TableModel(0,0,_table);
-        QObject::connect( _model,SIGNAL( s_itemChanged(TableItem*) ),this,SLOT( onItemDataChanged(TableItem*) ) );
+        QObject::connect( _model,SIGNAL(s_itemChanged(TableItem*)),this,SLOT(onItemDataChanged(TableItem*)) );
         
         
         _table->setTableModel(_model);
@@ -868,16 +868,16 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         if (!knob->getIsStringList()) {
             _addPathButton->setToolTip(GuiUtils::convertFromPlainText(tr("Click to add a new project path."), Qt::WhiteSpaceNormal));
         }
-        QObject::connect( _addPathButton, SIGNAL( clicked() ), this, SLOT( onAddButtonClicked() ) );
+        QObject::connect( _addPathButton, SIGNAL(clicked()), this, SLOT(onAddButtonClicked()) );
         
         _removePathButton = new Button( tr("Remove"),buttonsContainer);
-        QObject::connect( _removePathButton, SIGNAL( clicked() ), this, SLOT( onRemoveButtonClicked() ) );
+        QObject::connect( _removePathButton, SIGNAL(clicked()), this, SLOT(onRemoveButtonClicked()) );
         if (!knob->getIsStringList()) {
             _removePathButton->setToolTip(GuiUtils::convertFromPlainText(tr("Click to remove selected project path."), Qt::WhiteSpaceNormal));
         }
         
         _editPathButton = new Button( tr("Edit..."), buttonsContainer);
-        QObject::connect( _editPathButton, SIGNAL( clicked() ), this, SLOT( onEditButtonClicked() ) );
+        QObject::connect( _editPathButton, SIGNAL(clicked()), this, SLOT(onEditButtonClicked()) );
         _editPathButton->setToolTip(GuiUtils::convertFromPlainText(tr("Click to change the path of the selected project path."), Qt::WhiteSpaceNormal));
         
         
@@ -899,7 +899,7 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         mainLayout->setContentsMargins(0, 0, 0, 0);
         _lineEdit = new LineEdit(_mainContainer);
         _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-        QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
+        QObject::connect( _lineEdit, SIGNAL(editingFinished()), this, SLOT(onTextEdited()) );
 
         enableRightClickMenu(_lineEdit, 0);
         _openFileButton = new Button( layout->parentWidget() );
@@ -908,7 +908,7 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         QPixmap pix;
         appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
         _openFileButton->setIcon( QIcon(pix) );
-        QObject::connect( _openFileButton, SIGNAL( clicked() ), this, SLOT( onOpenFileButtonClicked() ) );
+        QObject::connect( _openFileButton, SIGNAL(clicked()), this, SLOT(onOpenFileButtonClicked()) );
         
         mainLayout->addWidget(_lineEdit);
         mainLayout->addWidget(_openFileButton);

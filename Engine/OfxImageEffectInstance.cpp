@@ -515,8 +515,8 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     if (knob->isAnimationEnabled()) {
         boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
         if (handler) {
-            QObject::connect(handler.get(),SIGNAL(animationLevelChanged(ViewSpec, int, int)), ptk,
-                             SLOT(onKnobAnimationLevelChanged(ViewSpec, int, int)));
+            QObject::connect(handler.get(),SIGNAL(animationLevelChanged(ViewSpec,int,int)), ptk,
+                             SLOT(onKnobAnimationLevelChanged(ViewSpec,int,int)));
         }
     }
     

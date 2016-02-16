@@ -720,10 +720,10 @@ Gui::toggleAutoHideGraphInputs()
 void
 Gui::centerAllNodeGraphsWithTimer()
 {
-    QTimer::singleShot( 25, _imp->_nodeGraphArea, SLOT( centerOnAllNodes() ) );
+    QTimer::singleShot( 25, _imp->_nodeGraphArea, SLOT(centerOnAllNodes()) );
 
     for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
-        QTimer::singleShot( 25, *it, SLOT( centerOnAllNodes() ) );
+        QTimer::singleShot( 25, *it, SLOT(centerOnAllNodes()) );
     }
 }
 

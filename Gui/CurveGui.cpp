@@ -66,7 +66,7 @@ CurveGui::CurveGui(const CurveWidget *curveWidget,
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
 
-    QObject::connect( this,SIGNAL( curveChanged() ),curveWidget,SLOT( onCurveChanged() ) );
+    QObject::connect( this,SIGNAL(curveChanged()),curveWidget,SLOT(onCurveChanged()) );
 }
 
 CurveGui::~CurveGui()

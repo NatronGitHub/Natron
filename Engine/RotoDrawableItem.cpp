@@ -105,12 +105,12 @@ RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context
       , _imp( new RotoDrawableItemPrivate(isStroke) )
 {
 #ifdef NATRON_ROTO_INVERTIBLE
-    QObject::connect( _imp->inverted->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewSpec,int,int) ), this, SIGNAL( invertedStateChanged() ) );
+    QObject::connect( _imp->inverted->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SIGNAL(invertedStateChanged()) );
 #endif
-    QObject::connect( this, SIGNAL( overlayColorChanged() ), context.get(), SIGNAL( refreshViewerOverlays() ) );
-    QObject::connect( _imp->color->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewSpec,int,int) ), this, SIGNAL( shapeColorChanged() ) );
-    QObject::connect( _imp->compOperator->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewSpec,int,int) ), this,
-                      SIGNAL( compositingOperatorChanged(ViewSpec,int,int) ) );
+    QObject::connect( this, SIGNAL(overlayColorChanged()), context.get(), SIGNAL(refreshViewerOverlays()) );
+    QObject::connect( _imp->color->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SIGNAL(shapeColorChanged()) );
+    QObject::connect( _imp->compOperator->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this,
+                      SIGNAL(compositingOperatorChanged(ViewSpec,int,int)) );
     
     std::vector<std::string> operators;
     std::vector<std::string> tooltips;

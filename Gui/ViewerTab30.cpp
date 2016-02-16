@@ -363,7 +363,7 @@ ViewerTab::createTrackerInterface(NodeGui* n)
 
         return;
     }
-    QObject::connect( n,SIGNAL( settingsPanelClosed(bool) ),this,SLOT( onTrackerNodeGuiSettingsPanelClosed(bool) ) );
+    QObject::connect( n,SIGNAL(settingsPanelClosed(bool)),this,SLOT(onTrackerNodeGuiSettingsPanelClosed(bool)) );
     if ( n->isSettingsPanelVisible() ) {
         setTrackerInterface(n);
     } else {
@@ -479,7 +479,7 @@ void
 ViewerTab::createRotoInterface(NodeGui* n)
 {
     RotoGui* roto = new RotoGui( n,this,getRotoGuiSharedData(n) );
-    QObject::connect( roto,SIGNAL( selectedToolChanged(int) ),getGui(),SLOT( onRotoSelectedToolChanged(int) ) );
+    QObject::connect( roto,SIGNAL(selectedToolChanged(int)),getGui(),SLOT(onRotoSelectedToolChanged(int)) );
     std::pair<std::map<NodeGui*,RotoGui*>::iterator,bool> ret = _imp->rotoNodes.insert( std::make_pair(n,roto) );
 
     assert(ret.second);
@@ -489,7 +489,7 @@ ViewerTab::createRotoInterface(NodeGui* n)
 
         return;
     }
-    QObject::connect( n,SIGNAL( settingsPanelClosed(bool) ),this,SLOT( onRotoNodeGuiSettingsPanelClosed(bool) ) );
+    QObject::connect( n,SIGNAL(settingsPanelClosed(bool)),this,SLOT(onRotoNodeGuiSettingsPanelClosed(bool)) );
     if ( n->isSettingsPanelVisible() ) {
         setRotoInterface(n);
     } else {
@@ -549,7 +549,7 @@ ViewerTab::setRotoInterface(NodeGui* n)
                 }
             }
         }
-        QObject::connect( it->second,SIGNAL( roleChanged(int,int) ),this,SLOT( onRotoRoleChanged(int,int) ) );
+        QObject::connect( it->second,SIGNAL(roleChanged(int,int)),this,SLOT(onRotoRoleChanged(int,int)) );
         _imp->currentRoto.first = n;
         _imp->currentRoto.second = it->second;
         _imp->viewer->redraw();
@@ -565,7 +565,7 @@ ViewerTab::removeRotoInterface(NodeGui* n,
 
     if ( it != _imp->rotoNodes.end() ) {
         if (_imp->currentRoto.first == n) {
-            QObject::disconnect( _imp->currentRoto.second,SIGNAL( roleChanged(int,int) ),this,SLOT( onRotoRoleChanged(int,int) ) );
+            QObject::disconnect( _imp->currentRoto.second,SIGNAL(roleChanged(int,int)),this,SLOT(onRotoRoleChanged(int,int)) );
             ///Remove the widgets of the current roto node
             assert(_imp->viewerLayout->count() > 1);
             QLayoutItem* currentToolBarItem = _imp->viewerLayout->itemAt(0);

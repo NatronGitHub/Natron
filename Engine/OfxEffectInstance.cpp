@@ -254,7 +254,7 @@ OfxEffectInstance::OfxEffectInstance(NodePtr node)
 : AbstractOfxEffectInstance(node)
 , _imp(new OfxEffectInstancePrivate())
 {
-    QObject::connect( this, SIGNAL( syncPrivateDataRequested() ), this, SLOT( onSyncPrivateDataRequested() ) );
+    QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
 }
 
 OfxImageEffectInstance*

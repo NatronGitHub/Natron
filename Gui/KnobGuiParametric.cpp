@@ -114,7 +114,7 @@ void
 KnobGuiParametric::createWidget(QHBoxLayout* layout)
 {
     boost::shared_ptr<KnobParametric> knob = _knob.lock();
-    QObject::connect( knob.get(), SIGNAL( curveChanged(int) ), this, SLOT( onCurveChanged(int) ) );
+    QObject::connect( knob.get(), SIGNAL(curveChanged(int)), this, SLOT(onCurveChanged(int)) );
 
     //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     treeColumn = new QWidget( layout->parentWidget() );
@@ -132,7 +132,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 
     _resetButton = new Button("Reset",treeColumn);
     _resetButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _resetButton, SIGNAL( clicked() ), this, SLOT( resetSelectedCurves() ) );
+    QObject::connect( _resetButton, SIGNAL(clicked()), this, SLOT(resetSelectedCurves()) );
     treeColumnLayout->addWidget(_resetButton);
 
     layout->addWidget(treeColumn);
@@ -170,7 +170,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     }
 
     _curveWidget->centerOn(visibleCurves);
-    QObject::connect( _tree, SIGNAL( itemSelectionChanged() ),this,SLOT( onItemsSelectionChanged() ) );
+    QObject::connect( _tree, SIGNAL(itemSelectionChanged()),this,SLOT(onItemsSelectionChanged()) );
 } // createWidget
 
 void
