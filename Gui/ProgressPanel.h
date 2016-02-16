@@ -42,82 +42,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class ProgressPanel;
-
-struct TaskInfoPrivate;
-class TaskInfo : public QObject, public boost::enable_shared_from_this<TaskInfo>
-{
-    
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
-    friend class ProgressPanel;
-    
-public:
-    
-    TaskInfo(ProgressPanel* panel,
-             const NodePtr& node,
-             const int firstFrame,
-             const int lastFrame,
-             const int frameStep,
-             const bool canPause,
-             const bool canCancel,
-             const QString& message,
-             const boost::shared_ptr<ProcessHandler>& process);
-    
-    virtual ~TaskInfo();
-    
-    bool wasCanceled() const;
-    
-    bool canPause() const;
-    
-    /**
-     * @brief If the task has been restarted, totalProgress is the progress over the whole task,
-     * and subTaskProgress is the progress over the smaller range from which we stopped.
-     **/
-    void updateProgressBar(double totalProgress,double subTaskProgress);
-    
-    void updateProgress(const int frame, double progress);
-    
-    void cancelTask(bool calledFromRenderEngine, int retCode);
-    
-    void restartTask();
-        
-    NodePtr getNode() const;
-    
-public Q_SLOTS:
-    
-    void onRefreshLabelTimeout();
-    
-    
-    /**
-     * @brief Slot executed when a render engine reports progress
-     **/
-    void onRenderEngineFrameComputed(int frame, double progress);
-    
-    /**
-     * @brief Executed when a render engine stops, retCode can be 1 in which case that means the render
-     * was aborted, or 0 in which case the render was successful or a failure.
-     **/
-    void onRenderEngineStopped(int retCode);
-    
-    void onProcessCanceled();
-
-
-Q_SIGNALS:
-    
-    void taskCanceled();
-    
-private:
-    
-    void clearItems();
-    
-    boost::scoped_ptr<TaskInfoPrivate> _imp;
-};
-
-typedef boost::shared_ptr<TaskInfo> TaskInfoPtr;
-
+struct ProgressPanelPrivate;
 
 struct ProgressPanelPrivate;
 class ProgressPanel: public QWidget, public PanelWidget
@@ -126,7 +51,7 @@ class ProgressPanel: public QWidget, public PanelWidget
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
     
-    friend struct TaskInfoPrivate;
+    friend struct ProgressTaskInfoPrivate;
 
 public:
     
@@ -165,12 +90,12 @@ public:
     
     void onRenderQueuingSettingChanged(bool queueingEnabled);
     
-    void removeTaskFromTable(const TaskInfoPtr& task);
-    void removeTasksFromTable(const std::list<TaskInfoPtr>& task);
+    void removeTaskFromTable(const ProgressTaskInfoPtr& task);
+    void removeTasksFromTable(const std::list<ProgressTaskInfoPtr>& task);
 
     bool isRemoveTasksAfterFinishChecked() const;
     
-    void getSelectedTask(std::list<TaskInfoPtr>& selection) const;
+    void getSelectedTask(std::list<ProgressTaskInfoPtr>& selection) const;
 
     
 public Q_SLOTS:
@@ -179,7 +104,7 @@ public Q_SLOTS:
     void onCancelTasksTriggered();
     void onRestartAllTasksTriggered();
     
-    void doProgressOnMainThread(const TaskInfoPtr& task, double progress);
+    void doProgressOnMainThread(const ProgressTaskInfoPtr& task, double progress);
     
     void doProgressEndOnMainThread(const NodePtr& node);
     
@@ -191,20 +116,18 @@ public Q_SLOTS:
     
 Q_SIGNALS:
     
-    void s_doProgressUpdateOnMainThread(const TaskInfoPtr& task, double progress);
+    void s_doProgressUpdateOnMainThread(const ProgressTaskInfoPtr& task, double progress);
     
     void s_doProgressEndOnMainThread(const NodePtr& node);
     
     
 private:
+    void getSelectedTaskInternal(const QItemSelection& selected, std::list<ProgressTaskInfoPtr>& selection) const;
     
-    
-    
-    void getSelectedTaskInternal(const QItemSelection& selected, std::list<TaskInfoPtr>& selection) const;
-    
-    void addTaskToTable(const TaskInfoPtr& task);
-    
-    
+    void addTaskToTable(const ProgressTaskInfoPtr& task);
+
+private:
+    // overriden from QWidget
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;

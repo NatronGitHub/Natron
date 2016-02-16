@@ -152,7 +152,7 @@ class PreferencesPanel;
 class ProjectGui;
 class ProjectGuiSerialization;
 class ProgressPanel;
-class TaskInfo;
+class ProgressTaskInfo;
 class PropertiesBinWrapper;
 class PyModalDialog;
 class PyPanel;
@@ -196,6 +196,7 @@ bool isHighDPIInternal(const QWidget* w);
 
 typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
 typedef std::list<NodeGuiPtr> NodesGuiList;
+typedef boost::shared_ptr<ProgressTaskInfo> ProgressTaskInfoPtr;
 
 NATRON_NAMESPACE_EXIT;
 
