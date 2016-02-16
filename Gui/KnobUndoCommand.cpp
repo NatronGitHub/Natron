@@ -216,7 +216,7 @@ PasteUndoCommand::copyFrom(const KnobPtr& serializedKnob, bool isRedo)
             for (int i = 0; i < internalKnob->getDimension(); ++i) {
                 if (_imp->targetDimension == -1 || i == _imp->targetDimension) {
                     if (isRedo) {
-                        if (i == _imp->targetDimension && _imp->fromDimension != -1) {
+                        if (_imp->fromDimension != -1) {
                             internalKnob->slaveTo(i, serializedKnob, _imp->fromDimension);
                         } else {
                             internalKnob->slaveTo(i, serializedKnob, i);

@@ -456,9 +456,10 @@ EditKeyFrameDialog::~EditKeyFrameDialog()
 void
 EditKeyFrameDialog::moveKeyTo(double newX,double newY)
 {
-    SelectedKeys keys;
-    keys.push_back(_imp->key);
-    
+    std::vector<MoveKeysCommand::KeyToMove> keys(1);
+    keys[0].key = _imp->key;
+    keys[0].prevIsSelected = false;
+    keys[0].nextIsSelected = false;
     double curY = _imp->key->key.getValue();
     double curX = _imp->key->key.getTime();
     

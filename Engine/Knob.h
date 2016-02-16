@@ -354,6 +354,8 @@ public:
     virtual void setKnobGuiPointer(KnobGuiI* ptr) = 0;
     virtual KnobGuiI* getKnobGuiPointer() const = 0;
     virtual bool getAllDimensionVisible() const = 0;
+    
+    static bool areTypesCompatibleForSlave(KnobI* lhs, KnobI* rhs);
 
     /**
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)

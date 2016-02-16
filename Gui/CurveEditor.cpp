@@ -420,13 +420,6 @@ static void createElementsForKnob(QTreeWidgetItem* parent,KnobGui* kgui,KnobPtr 
     }
     boost::shared_ptr<KnobSignalSlotHandler> handler = helper->getSignalSlotHandler();
     
-    if (kgui) {
-        QObject::connect( kgui,SIGNAL( keyFrameSet() ),curveWidget,SLOT( onCurveChanged() ) );
-        QObject::connect( kgui,SIGNAL( keyFrameRemoved() ),curveWidget,SLOT( onCurveChanged() ) );
-        QObject::connect( kgui, SIGNAL( keyInterpolationChanged() ),curveWidget, SLOT( refreshDisplayedTangents() ) );
-        QObject::connect( kgui, SIGNAL( keyInterpolationChanged() ),curveWidget, SLOT( refreshDisplayedTangents() ) );
-        QObject::connect( kgui, SIGNAL( refreshCurveEditor() ),curveWidget, SLOT( onCurveChanged() ) );
-    }
     
     QTreeWidgetItem* knobItem = new QTreeWidgetItem(parent);
     knobItem->setExpanded(true);
@@ -1176,23 +1169,7 @@ RotoItemEditorContext::onNameChanged(const QString & name)
     _imp->nameItem->setText(0, name);
 }
 
-void
-RotoItemEditorContext::onKeyframeAdded()
-{
-    _imp->widget->getCurveWidget()->onCurveChanged();
-}
 
-void
-RotoItemEditorContext::onKeyframeRemoved()
-{
-    _imp->widget->getCurveWidget()->onCurveChanged();
-}
-
-void
-RotoItemEditorContext::onShapeCloned()
-{
-    _imp->widget->getCurveWidget()->onCurveChanged();
-}
 
 static void recursiveSelectElement(const std::list<NodeCurveEditorElement*>& elements,
                                    QTreeWidgetItem* cur,

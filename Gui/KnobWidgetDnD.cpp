@@ -285,21 +285,26 @@ KnobWidgetDnDPrivate::canDrop(bool warn, bool setCursor) const
     bool ret = true;
     if (source) {
         
-        if (source->typeName() != thisKnob->typeName()) {
+        int targetDim = dimension;
+        if (targetDim == 0 && !knob->getAllDimensionsVisible()) {
+            targetDim = -1;
+        }
+        
+        if (!KnobI::areTypesCompatibleForSlave(source.get(), thisKnob.get())) {
             if (warn) {
                 Dialogs::errorDialog(QObject::tr("Link").toStdString(), QObject::tr("You can only link parameters of the same type. To overcome this, use an expression instead.").toStdString());
             }
             ret = false;
         }
         
-        if (ret && srcDim != -1 && dimension == -1) {
+        if (ret && srcDim != -1 && targetDim == -1) {
             if (warn) {
                 Dialogs::errorDialog(QObject::tr("Link").toStdString(), QObject::tr("When linking on all dimensions, original and target parameters must have the same dimension.").toStdString());
             }
             ret = false;
         }
         
-        if (ret && (dimension == -1 || srcDim == -1) && source->getDimension() != thisKnob->getDimension()) {
+        if (ret && (targetDim == -1 || srcDim == -1) && source->getDimension() != thisKnob->getDimension()) {
             if (warn) {
                 Dialogs::errorDialog(QObject::tr("Link").toStdString(), QObject::tr("When linking on all dimensions, original and target parameters must have the same dimension.").toStdString());
             }
@@ -378,7 +383,7 @@ KnobWidgetDnD::drop(QDropEvent* e)
                 
 
                 expr = ss.str();
-                _imp->knob->pushUndoCommand(new SetExpressionCommand(_imp->knob->getKnob(), false, _imp->dimension,expr));
+                _imp->knob->pushUndoCommand(new SetExpressionCommand(_imp->knob->getKnob(), false, targetDim,expr));
             } else if ((mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier)) == (Qt::ControlModifier)) {
                 _imp->knob->pushUndoCommand(new PasteUndoCommand(_imp->knob, eKnobClipBoardTypeCopyLink, srcDim, targetDim, source));
             }

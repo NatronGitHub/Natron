@@ -201,7 +201,7 @@ KnobGui::pasteClipBoard(int targetDimension)
         return;
     }
 
-    if (fromKnob->typeName() != knob->typeName()) {
+    if (!KnobI::areTypesCompatibleForSlave(fromKnob.get(),knob.get())) {
         Dialogs::errorDialog(tr("Paste").toStdString(), tr("You can only copy/paste between parameters of the same type. To overcome this, use an expression instead.").toStdString());
         return;
     }

@@ -1176,15 +1176,12 @@ AppManager::getAllNonOFXPluginsPaths() const
     cwd.cdUp();
     QString natronBundledPluginsPath = QString(cwd.absolutePath() +  "/Plugins/PyPlugs");
     
-    //Also take a look at PyPlugs embedded in the qrc
-    QString natronBuiltinPluginsPath = QString(":/Resources/PyPlugs");
 
     bool preferBundleOverSystemWide = _imp->_settings->preferBundledPlugins();
     bool useBundledPlugins = _imp->_settings->loadBundledPlugins();
     if (preferBundleOverSystemWide && useBundledPlugins) {
         ///look-in the bundled plug-ins
         templatesSearchPath.push_back(natronBundledPluginsPath);
-        templatesSearchPath.push_back(natronBuiltinPluginsPath);
     }
     
     ///look-in the main system wide plugin path
@@ -1207,7 +1204,6 @@ AppManager::getAllNonOFXPluginsPaths() const
     if (!preferBundleOverSystemWide && useBundledPlugins) {
         ///look-in the bundled plug-ins
         templatesSearchPath.push_back(natronBundledPluginsPath);
-        templatesSearchPath.push_back(natronBuiltinPluginsPath);
     }
     return templatesSearchPath;
 }

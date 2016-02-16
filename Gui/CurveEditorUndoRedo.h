@@ -51,27 +51,44 @@ NATRON_NAMESPACE_ENTER;
 struct SelectedKey
 {
     boost::shared_ptr<CurveGui> curve;
-    KeyFrame key;
+    KeyFrame key,prevKey,nextKey;
+    bool hasPrevious;
+    bool hasNext;
     std::pair<double,double> leftTan, rightTan;
-
+    
     SelectedKey()
-        : curve(), key()
+    : hasPrevious(false)
+    , hasNext(false)
     {
     }
-
+    
     SelectedKey(const boost::shared_ptr<CurveGui>& c,
-                const KeyFrame & k)
-        : curve(c)
-          , key(k)
+                const KeyFrame & k,
+                const bool hasPrevious,
+                const KeyFrame & previous,
+                const bool hasNext,
+                const KeyFrame & next)
+    : curve(c)
+    , key(k)
+    , prevKey(previous)
+    , nextKey(next)
+    , hasPrevious(hasPrevious)
+    , hasNext(hasNext)
     {
-    }
 
+    }
+    
     SelectedKey(const SelectedKey & o)
-        : curve(o.curve)
-          , key(o.key)
-          , leftTan(o.leftTan)
-          , rightTan(o.rightTan)
+    : curve(o.curve)
+    , key(o.key)
+    , prevKey(o.prevKey)
+    , nextKey(o.nextKey)
+    , hasPrevious(o.hasPrevious)
+    , hasNext(o.hasNext)
+    , leftTan(o.leftTan)
+    , rightTan(o.rightTan)
     {
+       
     }
 };
 
@@ -84,9 +101,9 @@ struct SelectedKey_compare_time
     }
 };
 
-
 typedef boost::shared_ptr<SelectedKey> KeyPtr;
-typedef std::list< KeyPtr > SelectedKeys;
+
+typedef std::map<boost::shared_ptr<CurveGui>, std::list<KeyPtr> > SelectedKeys;
 
 
 //////////////////////////////ADD MULTIPLE KEYS COMMAND//////////////////////////////////////////////
@@ -183,14 +200,19 @@ private:
 
 //////////////////////////////MOVE KEY COMMAND//////////////////////////////////////////////
 
-
 class MoveKeysCommand
     : public QUndoCommand
 {
 public:
+    
+    struct KeyToMove
+    {
+        KeyPtr key;
+        bool prevIsSelected,nextIsSelected;
+    };
 
     MoveKeysCommand(CurveWidget* widget,
-                    const SelectedKeys & keys,
+                    const std::vector<KeyToMove> & keys,
                     double dt,
                     double dv,
                     bool updateOnFirstRedo,
@@ -212,7 +234,7 @@ private:
     bool _updateOnFirstRedo;
     double _dt;
     double _dv;
-    SelectedKeys _keys;
+    std::vector<KeyToMove> _keys;
     CurveWidget* _widget;
 };
 

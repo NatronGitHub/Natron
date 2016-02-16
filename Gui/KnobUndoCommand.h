@@ -164,7 +164,7 @@ private:
         
         knob->endChanges();
         if (modifiedKeyFrame) {
-            _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
+            _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeysAndUpdate();
         }
 
         setText( QObject::tr("Set value of %1")
@@ -234,7 +234,7 @@ private:
         knob->endChanges();
 
         if (modifiedKeyFrames) {
-            _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeys();
+            _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeysAndUpdate();
         }
 
         setText( QObject::tr("Set value of %1")

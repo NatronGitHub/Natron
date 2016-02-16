@@ -235,7 +235,7 @@ Param::slaveTo(Param* other, int thisDimension, int otherDimension)
 {
     KnobPtr thisKnob = _knob.lock();
     KnobPtr otherKnob = other->_knob.lock();
-    if (thisKnob->typeName() != otherKnob->typeName()) {
+    if (!KnobI::areTypesCompatibleForSlave(thisKnob.get(), otherKnob.get())) {
         return false;
     }
     if (thisDimension < 0 || thisDimension >= thisKnob->getDimension() || otherDimension < 0 || otherDimension >= otherKnob->getDimension()) {

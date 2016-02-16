@@ -68,11 +68,18 @@ NATRON_NAMESPACE_ENTER;
 bool
 CurveWidget::isSelectedKey(const boost::shared_ptr<CurveGui>& curve, double time) const
 {
-    for (SelectedKeys::const_iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        if ((*it)->curve == curve && time >= ((*it)->key.getTime() - 1e-6) && time <= ((*it)->key.getTime() + 1e-6)) {
+    SelectedKeys::const_iterator it = _imp->_selectedKeyFrames.find(curve);
+    if (it == _imp->_selectedKeyFrames.end()) {
+        return false;
+    }
+    
+    for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
+        if (time >= ((*it2)->key.getTime() - 1e-6) && time <= ((*it2)->key.getTime() + 1e-6)) {
             return true;
         }
     }
+    
+    
     return false;
 }
 
@@ -174,13 +181,11 @@ CurveWidget::removeCurve(CurveGui *curve)
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
         if ( it->get() == curve ) {
             //remove all its keyframes from selected keys
-            SelectedKeys copy;
-            for (SelectedKeys::iterator it2 = _imp->_selectedKeyFrames.begin(); it2 != _imp->_selectedKeyFrames.end(); ++it2) {
-                if ( (*it2)->curve != (*it) ) {
-                    copy.push_back(*it2);
-                }
+            SelectedKeys::iterator found = _imp->_selectedKeyFrames.find(*it);
+            if (found != _imp->_selectedKeyFrames.end()) {
+                _imp->_selectedKeyFrames.erase(found);
             }
-            _imp->_selectedKeyFrames = copy;
+
             _imp->_curves.erase(it);
             break;
         }
@@ -248,33 +253,47 @@ CurveWidget::showCurvesAndHideOthers(const std::vector<boost::shared_ptr<CurveGu
             (*it)->setVisible(false);
         }
     }
-    onCurveChanged();
+#pragma message WARN("Check if refresh tangents needed here")
+    update();
 }
 
 void
-CurveWidget::onCurveChanged()
+CurveWidget::updateSelectionAfterCurveChange(CurveGui* curve)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     ///check whether selected keyframes have changed
-    SelectedKeys copy;
     ///we cannot use std::transform here because a keyframe might have disappeared from a curve
     ///hence the number of keyframes selected would decrease
+    
+    SelectedKeys::iterator found = _imp->_selectedKeyFrames.end();
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        
-        KeyFrameSet set = (*it)->curve->getKeyFrames();
-        KeyFrameSet::const_iterator found = Curve::findWithTime(set, (*it)->key.getTime());
-        
-        if (found != set.end()) {
-            (*it)->key = *found;
-            _imp->refreshKeyTangents(*it);
-            copy.push_back(*it);
+        if (it->first.get() == curve) {
+            found = it;
+            break;
         }
     }
-    _imp->_selectedKeyFrames = copy;
+    if (found == _imp->_selectedKeyFrames.end()) {
+        return;
+    }
+    KeyFrameSet set = found->first->getKeyFrames();
+    
+    found->second.clear();
+    
+    std::list<KeyPtr> newSelection;
+    for (std::list<KeyPtr>::iterator it2 = found->second.begin(); it2 != found->second.end(); ++it2) {
+        KeyFrameSet::const_iterator found = Curve::findWithTime(set, (*it2)->key.getTime());
+        if (found != set.end()) {
+            (*it2)->key = *found;
+            newSelection.push_back(*it2);
+        }
+    }
+    
+    found->second = newSelection;
+    
+    refreshCurveDisplayTangents(curve);
     refreshSelectedKeysBbox();
-    update();
 }
 
 void
@@ -302,9 +321,12 @@ CurveWidget::centerOn(double xmin,
 
     _imp->zoomCtx.fit(xmin, xmax, ymin, ymax);
     _imp->zoomOrPannedSinceLastFit = false;
-    refreshDisplayedTangents();
+    
 
+    refreshDisplayedTangents();
     update();
+
+
 }
 
 /**
@@ -544,9 +566,13 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     ///If the click is on a curve but not nearby a keyframe, add a keyframe
     
     
-    std::pair<boost::shared_ptr<CurveGui> ,KeyFrame > selectedKey = _imp->isNearbyKeyFrame( e->pos() );
+    boost::shared_ptr<CurveGui> selectedKeyCurve;
+    KeyFrame selectedKey,selectedKeyPrev,selectedKeyNext;
+    bool selectedKeyHasPrev,selectedKeyHasNext;
+    bool hasSelectedKey = _imp->isNearbyKeyFrame(e->pos(), &selectedKeyCurve, &selectedKey, &selectedKeyHasPrev, &selectedKeyPrev,
+                                                 &selectedKeyHasNext, &selectedKeyNext);
     std::pair<MoveTangentCommand::SelectedTangentEnum,KeyPtr > selectedTan = _imp->isNearbyTangent( e->pos() );
-    if (selectedKey.first || selectedTan.second) {
+    if (hasSelectedKey || selectedTan.second) {
         return;
     }
     
@@ -706,7 +732,24 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
             
             _imp->_selectedKeyFrames.clear();
             
-            KeyPtr selected(new SelectedKey(*foundCurveNearby,keys[0]));
+            KeyFrameSet keySet = (*foundCurveNearby)->getInternalCurve()->getKeyFrames_mt_safe();
+            KeyFrameSet::const_iterator foundKey = Curve::findWithTime(keySet, xCurve);
+            assert(foundKey != keySet.end());
+            
+            KeyFrame prevKey,nextKey;
+            bool hasPrev = foundKey != keySet.begin();
+            if (hasPrev) {
+                KeyFrameSet::const_iterator prevIt = foundKey;
+                --prevIt;
+                prevKey = *prevIt;
+            }
+            KeyFrameSet::const_iterator next = foundKey;
+            ++next;
+            bool hasNext = next != keySet.end();
+            if (hasNext) {
+                nextKey = *next;
+            }
+            KeyPtr selected(new SelectedKey(*foundCurveNearby,keys[0], hasPrev, prevKey, hasNext, nextKey));
             
             _imp->refreshKeyTangents(selected);
             
@@ -780,8 +823,12 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     }
     ////
     // is the click near a keyframe manipulator?
-    std::pair<boost::shared_ptr<CurveGui> ,KeyFrame > selectedKey = _imp->isNearbyKeyFrame( e->pos() );
-    if (selectedKey.first) {
+    boost::shared_ptr<CurveGui> selectedKeyCurve;
+    KeyFrame selectedKey,selectedKeyPrev,selectedKeyNext;
+    bool selectedKeyHasPrev,selectedKeyHasNext;
+    bool hasSelectedKey = _imp->isNearbyKeyFrame(e->pos(), &selectedKeyCurve, &selectedKey, &selectedKeyHasPrev, &selectedKeyPrev,
+                                                 &selectedKeyHasNext, &selectedKeyNext);
+    if (hasSelectedKey) {
         _imp->_drawSelectedKeyFramesBbox = false;
         _imp->_mustSetDragOrientation = true;
         _imp->_state = eEventStateDraggingKeys;
@@ -790,7 +837,8 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         if ( !modCASIsControl(e) ) {
             _imp->_selectedKeyFrames.clear();
         }
-        KeyPtr selected ( new SelectedKey(selectedKey.first,selectedKey.second) );
+        KeyPtr selected (new SelectedKey(selectedKeyCurve,selectedKey, selectedKeyHasPrev, selectedKeyPrev,
+                                          selectedKeyHasNext, selectedKeyNext));
 
         _imp->refreshKeyTangents(selected);
 
@@ -879,8 +927,8 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
             std::map<KnobHolder*,bool> toEvaluate;
             std::list<boost::shared_ptr<RotoContext> > rotoToEvaluate;
             for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-                KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>((*it)->curve.get());
-                BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>((*it)->curve.get());
+                KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->first.get());
+                BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(it->first.get());
                 if (isKnobCurve) {
                     
                     if (!isKnobCurve->getKnobGui()) {
@@ -934,7 +982,7 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
     _imp->_state = eEventStateNone;
     _imp->_selectionRectangle.setBottomRight( QPointF(0,0) );
     _imp->_selectionRectangle.setTopLeft( _imp->_selectionRectangle.bottomRight() );
-    if (_imp->_selectedKeyFrames.size() > 1) {
+    if (!_imp->_selectedKeyFrames.empty() && (_imp->_selectedKeyFrames.size() > 1 || _imp->_selectedKeyFrames.begin()->second.size() > 1)) {
         _imp->_drawSelectedKeyFramesBbox = true;
     }
     if (prevState == eEventStateDraggingTimeline) {
@@ -970,10 +1018,15 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         setCursor( QCursor(Qt::SizeAllCursor) );
     } else {
         //if there's a keyframe handle nearby
-        std::pair<boost::shared_ptr<CurveGui> ,KeyFrame > selectedKey = _imp->isNearbyKeyFrame( e->pos() );
+        
+        boost::shared_ptr<CurveGui> selectedKeyCurve;
+        KeyFrame selectedKey,selectedKeyPrev,selectedKeyNext;
+        bool selectedKeyHasPrev,selectedKeyHasNext;
+        bool hasSelectedKey = _imp->isNearbyKeyFrame(e->pos(), &selectedKeyCurve, &selectedKey, &selectedKeyHasPrev, &selectedKeyPrev,
+                                                     &selectedKeyHasNext, &selectedKeyNext);
 
         //if there's a keyframe or derivative handle nearby set the cursor to cross
-        if (selectedKey.first || selectedTan.second) {
+        if (hasSelectedKey || selectedTan.second) {
             setCursor( QCursor(Qt::CrossCursor) );
         } else {
             
@@ -1006,6 +1059,8 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         return;
     }
 
+    bool mustUpdate = true;
+    
     // after this point , only mouse dragging situations are handled
     assert(_imp->_state != eEventStateNone);
 
@@ -1126,13 +1181,14 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         if (_imp->_drawSelectedKeyFramesBbox) {
             refreshSelectedKeysBbox();
         }
-        refreshDisplayedTangents();
         
         // Synchronize the dope sheet editor and opened viewers
         if (_imp->_gui->isTripleSyncEnabled()) {
             _imp->updateDopeSheetViewFrameRange();
             _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());
         }
+        refreshDisplayedTangents();
+       
     } break;
     case eEventStateNone:
         assert(0);
@@ -1141,7 +1197,9 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
 
     _imp->_lastMousePos = e->pos();
 
-    update();
+    if (mustUpdate) {
+        update();
+    }
     QGLWidget::mouseMoveEvent(e);
 } // mouseMoveEvent
 
@@ -1152,30 +1210,37 @@ CurveWidget::refreshSelectedKeysBbox()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     RectD keyFramesBbox;
+    bool bboxSet = false;
     for (SelectedKeys::const_iterator it = _imp->_selectedKeyFrames.begin();
          it != _imp->_selectedKeyFrames.end();
          ++it) {
-        double x = (*it)->key.getTime();
-        double y = (*it)->key.getValue();
-        if ( it != _imp->_selectedKeyFrames.begin() ) {
-            if ( x < keyFramesBbox.left() ) {
+        
+        for (std::list<KeyPtr>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            double x = (*it2)->key.getTime();
+            double y = (*it2)->key.getValue();
+            if (bboxSet) {
+                if ( x < keyFramesBbox.left() ) {
+                    keyFramesBbox.set_left(x);
+                }
+                if ( x > keyFramesBbox.right() ) {
+                    keyFramesBbox.set_right(x);
+                }
+                if ( y > keyFramesBbox.top() ) {
+                    keyFramesBbox.set_top(y);
+                }
+                if ( y < keyFramesBbox.bottom() ) {
+                    keyFramesBbox.set_bottom(y);
+                }
+            } else {
+                bboxSet = true;
                 keyFramesBbox.set_left(x);
-            }
-            if ( x > keyFramesBbox.right() ) {
                 keyFramesBbox.set_right(x);
-            }
-            if ( y > keyFramesBbox.top() ) {
                 keyFramesBbox.set_top(y);
-            }
-            if ( y < keyFramesBbox.bottom() ) {
                 keyFramesBbox.set_bottom(y);
             }
-        } else {
-            keyFramesBbox.set_left(x);
-            keyFramesBbox.set_right(x);
-            keyFramesBbox.set_top(y);
-            keyFramesBbox.set_bottom(y);
         }
+        
+        
     }
     QPointF topLeft( keyFramesBbox.left(),keyFramesBbox.top() );
     QPointF btmRight( keyFramesBbox.right(),keyFramesBbox.bottom() );
@@ -1262,15 +1327,17 @@ CurveWidget::wheelEvent(QWheelEvent* e)
     if (_imp->_drawSelectedKeyFramesBbox) {
         refreshSelectedKeysBbox();
     }
-    refreshDisplayedTangents();
-
-    update();
-
+    
+    
     // Synchronize the dope sheet editor and opened viewers
     if (_imp->_gui->isTripleSyncEnabled()) {
         _imp->updateDopeSheetViewFrameRange();
         _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());
     }
+    refreshDisplayedTangents();
+    update();
+
+
 
 } // wheelEvent
 
@@ -1332,7 +1399,7 @@ CurveWidget::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorSelectAll, modifiers, key) ) {
         selectAllKeyFrames();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCopy, modifiers, key) ) {
-        copySelectedKeyFrames();
+        copySelectedKeyFramesToClipBoard();
     } else if ( isKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste, modifiers, key) ) {
         pasteKeyFramesFromClipBoardToSelectedCurve();
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomIn, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
@@ -1378,16 +1445,7 @@ CurveWidget::enterEvent(QEvent* e)
     QGLWidget::enterEvent(e);
     
 }
-//struct RefreshTangent_functor{
-//    CurveWidgetPrivate* _imp;
-//
-//    RefreshTangent_functor(CurveWidgetPrivate* imp): _imp(imp){}
-//
-//    SelectedKey operator()(SelectedKey key){
-//        _imp->refreshKeyTangents(key);
-//        return key;
-//    }
-//};
+
 
 void
 CurveWidget::refreshDisplayedTangents()
@@ -1396,9 +1454,26 @@ CurveWidget::refreshDisplayedTangents()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        _imp->refreshKeyTangents(*it);
+        for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            _imp->refreshKeyTangents(*it2);
+        }
     }
-    update();
+}
+
+void
+CurveWidget::refreshCurveDisplayTangents(CurveGui* curve)
+{
+    for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
+        if (it->first.get() == curve) {
+            
+            for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                _imp->refreshKeyTangents(*it2);
+            }
+            
+            break;
+        }
+        
+    }
 }
 
 void
@@ -1408,22 +1483,20 @@ CurveWidget::setSelectedKeys(const SelectedKeys & keys)
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     _imp->_selectedKeyFrames = keys;
-    refreshSelectedKeysBbox();
-    
-    //Will call update
-    refreshDisplayedTangents();
+    refreshSelectedKeysAndUpdate();
 }
 
 void
-CurveWidget::refreshSelectedKeys()
+CurveWidget::refreshSelectedKeysAndUpdate()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     refreshSelectedKeysBbox();
     
-    // Wil call update
     refreshDisplayedTangents();
+    update();
+
 }
 
 void
@@ -1507,14 +1580,12 @@ CurveWidget::deleteSelectedKeyFrames()
 
     std::map<boost::shared_ptr<CurveGui> ,std::vector<KeyFrame> >  toRemove;
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        std::map<boost::shared_ptr<CurveGui> ,std::vector<KeyFrame> >::iterator found = toRemove.find((*it)->curve);
-        if (found != toRemove.end()) {
-            found->second.push_back((*it)->key);
-        } else {
-            std::vector<KeyFrame> keys;
-            keys.push_back((*it)->key);
-            toRemove.insert(std::make_pair((*it)->curve, keys) );
+        
+        std::vector<KeyFrame>& vect = toRemove[it->first];
+        for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
+            vect.push_back( (*it2)->key );
         }
+        
     }
 
     pushUndoCommand( new RemoveKeysCommand(this,toRemove) );
@@ -1526,14 +1597,17 @@ CurveWidget::deleteSelectedKeyFrames()
 }
 
 void
-CurveWidget::copySelectedKeyFrames()
+CurveWidget::copySelectedKeyFramesToClipBoard()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     _imp->_keyFramesClipBoard.clear();
     for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
-        _imp->_keyFramesClipBoard.push_back( (*it)->key );
+        for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
+            _imp->_keyFramesClipBoard.push_back( (*it2)->key );
+        }
+        
     }
 }
 
@@ -1570,16 +1644,47 @@ CurveWidget::selectAllKeyFrames()
     _imp->_selectedKeyFrames.clear();
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            KeyFrameSet keys = (*it)->getKeyFrames();
-            for (KeyFrameSet::const_iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
-                KeyPtr newSelected( new SelectedKey(*it,*it2) );
-                _imp->refreshKeyTangents(newSelected);
-                _imp->insertSelectedKeyFrameConditionnaly(newSelected);
+            KeyFrameSet set = (*it)->getKeyFrames();
+            std::list<KeyPtr>& selectedKeysForcurve = _imp->_selectedKeyFrames[*it];
+            
+            
+            KeyFrameSet::const_iterator it2 = set.begin();
+            KeyFrameSet::const_iterator prev = set.end();
+            KeyFrameSet::const_iterator next = it2;
+            ++next;
+            for (;it2 != set.end(); ++it2) {
+
+                KeyFrame prevKey;
+                bool hasPrev = false;
+                if (prev != set.end()) {
+                    prevKey = *prev;
+                    hasPrev = true;
+                }
+                KeyFrame nextKey;
+                bool hasNext = false;
+                if (next != set.end()) {
+                    nextKey = *next;
+                    hasNext = true;
+                }
+                KeyPtr newSelectedKey(new SelectedKey(*it, *it2, hasPrev, prevKey, hasNext, nextKey));
+                selectedKeysForcurve.push_back(newSelectedKey);
+                
+                if (prev != set.end()) {
+                    ++prev;
+                } else {
+                    prev = set.begin();
+                }
+                if (next != set.end()) {
+                    ++next;
+                }
             }
+
         }
     }
-    refreshSelectedKeysBbox();
-    update();
+    
+    refreshSelectedKeysAndUpdate();
+
+
 }
 
 void

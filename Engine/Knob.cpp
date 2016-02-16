@@ -3492,6 +3492,24 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
 }
 
 bool
+KnobI::areTypesCompatibleForSlave(KnobI* lhs, KnobI* rhs)
+{
+    if (lhs->typeName() == rhs->typeName()) {
+        return true;
+    }
+    
+    //These are compatible types
+    KnobDouble* lhsIsDouble = dynamic_cast<KnobDouble*>(lhs);
+    KnobColor* lhsIsColor = dynamic_cast<KnobColor*>(lhs);
+    KnobDouble* rhsIsDouble = dynamic_cast<KnobDouble*>(rhs);
+    KnobColor* rhsIsColor = dynamic_cast<KnobColor*>(rhs);
+    if ((lhsIsDouble || lhsIsColor) && (rhsIsColor || rhsIsDouble)) {
+        return true;
+    }
+    return false;
+}
+
+bool
 KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias)
 {
     //Sanity check

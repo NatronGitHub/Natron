@@ -49,24 +49,21 @@ GCC_DIAG_OFF(deprecated-declarations)
 
 NATRON_NAMESPACE_ENTER;
 
-CurveGui::CurveGui(const CurveWidget *curveWidget,
+CurveGui::CurveGui(CurveWidget *curveWidget,
                    boost::shared_ptr<Curve> curve,
                    const QString & name,
                    const QColor & color,
                    int thickness)
     : _internalCurve(curve)
+    , _curveWidget(curveWidget)
     , _name(name)
     , _color(color)
     , _thickness(thickness)
     , _visible(false)
     , _selected(false)
-    , _curveWidget(curveWidget)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
-
-    QObject::connect( this,SIGNAL( curveChanged() ),curveWidget,SLOT( onCurveChanged() ) );
 }
 
 CurveGui::~CurveGui()
@@ -446,6 +443,18 @@ CurveGui::drawCurve(int curveIndex,
         glEnable(GL_POINT_SMOOTH);
         
         const SelectedKeys & selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
+        SelectedKeys::const_iterator foundCurveSelected = selectedKeyFrames.end();
+        {
+            for (SelectedKeys::const_iterator it = selectedKeyFrames.begin(); it!=selectedKeyFrames.end(); ++it) {
+                if (it->first.get() == this) {
+                    foundCurveSelected = it;
+                    break;
+                }
+            }
+        }
+        
+        bool isCurveSelected = foundCurveSelected != selectedKeyFrames.end();
+        
         for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
             const KeyFrame & key = (*k);
             
@@ -456,22 +465,26 @@ CurveGui::drawCurve(int curveIndex,
             glColor4f( _color.redF(), _color.greenF(), _color.blueF(), _color.alphaF() );
 
             //if the key is selected change its color to white
-            SelectedKeys::const_iterator isSelected = selectedKeyFrames.end();
-            for (SelectedKeys::const_iterator it2 = selectedKeyFrames.begin();
-                 it2 != selectedKeyFrames.end(); ++it2) {
-                if ( ( (*it2)->key.getTime() == key.getTime() ) && ( (*it2)->curve.get() == this ) ) {
-                    isSelected = it2;
-                    glColor4f(1.f,1.f,1.f,1.f);
-                    break;
+            KeyPtr isSelected;
+            if (isCurveSelected) {
+#pragma message WARN("Find a better way to find out if the key is selected")
+                for (std::list<KeyPtr>::const_iterator it2 = foundCurveSelected->second.begin();
+                     it2 != foundCurveSelected->second.end(); ++it2) {
+                    if ( ( (*it2)->key.getTime() == key.getTime() ) && ( (*it2)->curve.get() == this ) ) {
+                        isSelected = *it2;
+                        glColor4f(1.f,1.f,1.f,1.f);
+                        break;
+                    }
                 }
             }
+           
             double x = key.getTime();
             double y = key.getValue();
             glBegin(GL_POINTS);
             glVertex2f(x,y);
             glEnd();
             
-            if ( !isBezier && ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
+            if ( !isBezier && isSelected && (key.getInterpolation() != eKeyframeTypeConstant) ) {
                 
                 QFontMetrics m( _curveWidget->getFont() );
                 
@@ -483,40 +496,41 @@ CurveGui::drawCurve(int curveIndex,
                 }
                 glBegin(GL_LINES);
                 glColor4f(1., 0.35, 0.35, 1.);
-                glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
+                glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
                 glVertex2f(x, y);
                 glVertex2f(x, y);
-                glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
+                glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );
                 glEnd();
                 if ( (key.getInterpolation() != eKeyframeTypeFree) && (key.getInterpolation() != eKeyframeTypeBroken) ) {
                     glDisable(GL_LINE_STIPPLE);
                     
                 }
                 
-                if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
+                bool singleKey = selectedKeyFrames.size() == 1 && selectedKeyFrames.begin()->second.size() == 1;
+                if (singleKey) { //if one keyframe, also draw the coordinates
                     
                     double rounding = std::pow(10., CURVEWIDGET_DERIVATIVE_ROUND_PRECISION);
                     
                     QString leftDerivStr = QString("l: %1").arg(std::floor((key.getLeftDerivative() * rounding) + 0.5) / rounding);
                     QString rightDerivStr = QString("r: %1").arg(std::floor((key.getRightDerivative() * rounding) + 0.5) / rounding);
                     
-                    double yLeftWidgetCoord = _curveWidget->toWidgetCoordinates(0,(*isSelected)->leftTan.second).y();
+                    double yLeftWidgetCoord = _curveWidget->toWidgetCoordinates(0,isSelected->leftTan.second).y();
                     yLeftWidgetCoord += (m.height() + 4);
                     
-                    double yRightWidgetCoord = _curveWidget->toWidgetCoordinates(0,(*isSelected)->rightTan.second).y();
+                    double yRightWidgetCoord = _curveWidget->toWidgetCoordinates(0,isSelected->rightTan.second).y();
                     yRightWidgetCoord += (m.height() + 4);
                     
                     glColor4f(1., 1., 1., 1.);
                     glCheckFramebufferError();
-                    _curveWidget->renderText( (*isSelected)->leftTan.first, _curveWidget->toZoomCoordinates(0, yLeftWidgetCoord).y(),
+                    _curveWidget->renderText( isSelected->leftTan.first, _curveWidget->toZoomCoordinates(0, yLeftWidgetCoord).y(),
                                               leftDerivStr, QColor(240,240,240), _curveWidget->getFont() );
-                    _curveWidget->renderText( (*isSelected)->rightTan.first, _curveWidget->toZoomCoordinates(0, yRightWidgetCoord).y(),
+                    _curveWidget->renderText( isSelected->rightTan.first, _curveWidget->toZoomCoordinates(0, yRightWidgetCoord).y(),
                                               rightDerivStr, QColor(240,240,240), _curveWidget->getFont() );
                 }
                 
                 
                 
-                if (selectedKeyFrames.size() == 1) { //if one keyframe, also draw the coordinates
+                if (singleKey) { //if one keyframe, also draw the coordinates
                     QString coordStr("x: %1, y: %2");
                     coordStr = coordStr.arg(x).arg(y);
                     double yWidgetCoord = _curveWidget->toWidgetCoordinates( 0,key.getValue() ).y();
@@ -527,8 +541,8 @@ CurveGui::drawCurve(int curveIndex,
                                               coordStr, QColor(240,240,240), _curveWidget->getFont() );
                 }
                 glBegin(GL_POINTS);
-                glVertex2f( (*isSelected)->leftTan.first, (*isSelected)->leftTan.second );
-                glVertex2f( (*isSelected)->rightTan.first, (*isSelected)->rightTan.second );
+                glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
+                glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );
                 glEnd();
             } // if ( !isBezier && ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
         } // for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
@@ -550,11 +564,8 @@ CurveGui::setVisible(bool visible)
 void
 CurveGui::setVisibleAndRefresh(bool visible)
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    _visible = visible;
-    Q_EMIT curveChanged();
+    setVisible(visible);
+    _curveWidget->update();
 }
 
 bool
@@ -587,7 +598,7 @@ CurveGui::getKeyFrames() const
     return getInternalCurve()->getKeyFrames_mt_safe();
 }
 
-KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
+KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
                            boost::shared_ptr<Curve>  curve,
                            KnobGui* knob,
                            int dimension,
@@ -604,9 +615,17 @@ KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
     if (curve->getKeyFramesCount() > 0) {
         setVisible(true);
     }
+    
+    if (knob) {
+        QObject::connect( knob,SIGNAL( keyFrameSet() ),this,SLOT( onKnobInternalCurveChanged() ) );
+        QObject::connect( knob,SIGNAL( keyFrameRemoved() ),this,SLOT( onKnobInternalCurveChanged() ) );
+        QObject::connect( knob, SIGNAL( keyInterpolationChanged() ),this, SLOT( onKnobInterpolationChanged() ) );
+        QObject::connect( knob, SIGNAL( keyInterpolationChanged() ),this, SLOT( onKnobInterpolationChanged() ) );
+        QObject::connect( knob, SIGNAL( refreshCurveEditor() ),this, SLOT( onKnobInternalCurveChanged() ) );
+    }
 }
 
-KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
+KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
                            boost::shared_ptr<Curve>  curve,
                            const KnobPtr& knob,
                            const boost::shared_ptr<RotoContext>& roto,
@@ -629,6 +648,18 @@ KnobCurveGui::KnobCurveGui(const CurveWidget *curveWidget,
 KnobCurveGui::~KnobCurveGui()
 {
     
+}
+
+void
+KnobCurveGui::onKnobInternalCurveChanged()
+{
+    _curveWidget->updateSelectionAfterCurveChange(this);
+}
+
+void
+KnobCurveGui::onKnobInterpolationChanged()
+{
+    _curveWidget->updateSelectionAfterCurveChange(this);
 }
 
 double
@@ -677,7 +708,7 @@ KnobCurveGui::setKeyFrameInterpolation(KeyframeTypeEnum interp,int index)
     return getInternalCurve()->setKeyFrameInterpolation(interp, index);
 }
 
-BezierCPCurveGui::BezierCPCurveGui(const CurveWidget *curveWidget,
+BezierCPCurveGui::BezierCPCurveGui(CurveWidget *curveWidget,
                                    const boost::shared_ptr<Bezier>& bezier,
                                    const boost::shared_ptr<RotoContext>& roto,
                                    const QString & name,
