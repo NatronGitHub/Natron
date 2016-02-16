@@ -331,16 +331,16 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
             continue;
         }
         
-        Plugin* p = (*it->second.begin());
-        if (!p->getIsUserCreatable()) {
-            continue;
-        }
+        
+        
         
         if (it->second.size() == 1) {
             
             std::pair<QString,QString> idNamePair;
-            
-            
+            Plugin* p = (*it->second.begin());
+            if (!p->getIsUserCreatable()) {
+                continue;
+            }
             
             idNamePair.second = p->generateUserFriendlyPluginID();
             
@@ -360,6 +360,9 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,QWidget* par
             QString bestMajorName;
             for (PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
                 
+                if (!(*it2)->getIsUserCreatable()) {
+                    continue;
+                }
                 std::pair<QString,QString> idNamePair;
                 if (it2 == it->second.rbegin()) {
                     idNamePair.second = (*it2)->generateUserFriendlyPluginID();
