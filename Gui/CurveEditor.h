@@ -236,7 +236,11 @@ public Q_SLOTS:
     
     void onNameChanged(const QString & name);
     
-
+    void onKeyframeAdded();
+    
+    void onKeyframeRemoved();
+    
+    void onShapeCloned();
     
 protected:
     

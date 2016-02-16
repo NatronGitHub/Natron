@@ -1418,6 +1418,28 @@ RotoCurveEditorContext::onNameChanged(const QString & name)
      _imp->nameItem->setText(0,name);
 }
 
+
+void
+RotoItemEditorContext::onKeyframeAdded()
+{
+    _imp->widget->getCurveWidget()->refreshDisplayedTangents();
+    _imp->widget->getCurveWidget()->update();
+}
+
+void
+RotoItemEditorContext::onKeyframeRemoved()
+{
+    _imp->widget->getCurveWidget()->refreshDisplayedTangents();
+    _imp->widget->getCurveWidget()->update();
+}
+
+void
+RotoItemEditorContext::onShapeCloned()
+{
+    _imp->widget->getCurveWidget()->refreshDisplayedTangents();
+    _imp->widget->getCurveWidget()->update();
+}
+
 void
 RotoCurveEditorContext::onItemNameChanged(const boost::shared_ptr<RotoItem>& item)
 {
