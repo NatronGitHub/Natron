@@ -38,7 +38,6 @@
 #include <QCheckBox>
 #include <QTimer>
 
-#include "Engine/AppInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Timer.h"
 #include "Engine/OutputEffectInstance.h"
@@ -47,9 +46,7 @@
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
 
-#include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/GuiDefines.h"
 #include "Gui/Label.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Button.h"
@@ -70,75 +67,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-struct TaskInfoPrivate;
-class TaskInfo : public QObject, public boost::enable_shared_from_this<TaskInfo>
-{
-
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-    friend class ProgressPanel;
-
-public:
-
-    TaskInfo(ProgressPanel* panel,
-             const NodePtr& node,
-             const int firstFrame,
-             const int lastFrame,
-             const int frameStep,
-             const bool canPause,
-             const bool canCancel,
-             const QString& message,
-             const boost::shared_ptr<ProcessHandler>& process);
-
-    virtual ~TaskInfo();
-
-    bool wasCanceled() const;
-
-    bool canPause() const;
-
-    /**
-     * @brief If the task has been restarted, totalProgress is the progress over the whole task,
-     * and subTaskProgress is the progress over the smaller range from which we stopped.
-     **/
-    void updateProgressBar(double totalProgress,double subTaskProgress);
-
-    void updateProgress(const int frame, double progress);
-
-    void cancelTask(bool calledFromRenderEngine, int retCode);
-
-    void restartTask();
-
-    NodePtr getNode() const;
-
-    public Q_SLOTS:
-
-    void onRefreshLabelTimeout();
-
-    /**
-     * @brief Slot executed when a render engine reports progress
-     **/
-    void onRenderEngineFrameComputed(int frame, double progress);
-
-    /**
-     * @brief Executed when a render engine stops, retCode can be 1 in which case that means the render
-     * was aborted, or 0 in which case the render was successful or a failure.
-     **/
-    void onRenderEngineStopped(int retCode);
-
-    void onProcessCanceled();
-
-Q_SIGNALS:
-
-    void taskCanceled();
-
-private:
-
-    void clearItems();
-
-    boost::scoped_ptr<TaskInfoPrivate> _imp;
-};
 
 typedef std::map<NodeWPtr, TaskInfoPtr> TasksMap;
 typedef std::vector<TaskInfoPtr> TasksOrdered;
