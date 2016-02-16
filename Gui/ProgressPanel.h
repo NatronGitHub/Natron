@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Gui_ProgressPanel_h
-#define Gui_ProgressPanel_h
+#ifndef PROGRESSPANEL_H
+#define PROGRESSPANEL_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -44,6 +44,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct ProgressPanelPrivate;
 
+struct ProgressPanelPrivate;
 class ProgressPanel: public QWidget, public PanelWidget
 {
     GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -131,11 +132,10 @@ private:
     virtual void keyReleaseEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void enterEvent(QEvent* e) OVERRIDE FINAL;
     virtual void leaveEvent(QEvent* e) OVERRIDE FINAL;
-
-private:
+    
     boost::scoped_ptr<ProgressPanelPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // Gui_ProgressPanel_h
+#endif // PROGRESSPANEL_H

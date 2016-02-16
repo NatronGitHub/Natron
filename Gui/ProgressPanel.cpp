@@ -67,8 +67,6 @@ NATRON_NAMESPACE_ENTER;
 
 typedef std::map<NodeWPtr, ProgressTaskInfoPtr> TasksMap;
 typedef std::vector<ProgressTaskInfoPtr> TasksOrdered;
-
-
 struct ProgressPanelPrivate
 {
     
