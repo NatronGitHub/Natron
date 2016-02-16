@@ -14,6 +14,8 @@
 	<string>@SHORT_VERSION@</string>
 	<key>CFBundleSignature</key>
 	<string>@TYPEINFO@</string>
+	<key>CFBundleName</key>
+	<string>@EXECUTABLE@</string>
 	<key>CFBundleExecutable</key>
 	<string>@EXECUTABLE@</string>
 	<key>CFBundleIdentifier</key>
