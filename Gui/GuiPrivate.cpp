@@ -328,7 +328,7 @@ GuiPrivate::createPropertiesBinGui()
     
     ///Remove wheel autofocus
     _propertiesScrollArea->setFocusPolicy(Qt::StrongFocus);
-    QObject::connect( _propertiesScrollArea->verticalScrollBar(), SIGNAL( valueChanged(int) ), _gui, SLOT( onPropertiesScrolled() ) );
+    QObject::connect( _propertiesScrollArea->verticalScrollBar(), SIGNAL(valueChanged(int)), _gui, SLOT(onPropertiesScrolled()) );
     _propertiesScrollArea->setObjectName("Properties");
     assert(_nodeGraphArea);
 
@@ -359,7 +359,7 @@ GuiPrivate::createPropertiesBinGui()
     _clearAllPanelsButton->setToolTip( GuiUtils::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
                                                                 Qt::WhiteSpaceNormal) );
     _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _clearAllPanelsButton, SIGNAL( clicked(bool) ), _gui, SLOT( clearAllVisiblePanels() ) );
+    QObject::connect( _clearAllPanelsButton, SIGNAL(clicked(bool)), _gui, SLOT(clearAllVisiblePanels()) );
     QPixmap minimizePix, maximizePix;
     appPTR->getIcon(NATRON_PIXMAP_MINIMIZE_WIDGET, smallSizeIcon, &minimizePix);
     appPTR->getIcon(NATRON_PIXMAP_MAXIMIZE_WIDGET, smallSizeIcon, &maximizePix);
@@ -373,7 +373,7 @@ GuiPrivate::createPropertiesBinGui()
     _minimizeAllPanelsButtons->setIconSize(smallButtonIconSize);
     _minimizeAllPanelsButtons->setToolTip( GuiUtils::convertFromPlainText(_gui->tr("Minimize / Maximize all panels."), Qt::WhiteSpaceNormal) );
     _minimizeAllPanelsButtons->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _minimizeAllPanelsButtons, SIGNAL( clicked(bool) ), _gui, SLOT( minimizeMaximizeAllPanels(bool) ) );
+    QObject::connect( _minimizeAllPanelsButtons, SIGNAL(clicked(bool)), _gui, SLOT(minimizeMaximizeAllPanels(bool)) );
 
     _maxPanelsOpenedSpinBox = new SpinBox(propertiesAreaButtonsContainer);
     _maxPanelsOpenedSpinBox->setMaximumSize(smallButtonSize);
@@ -384,7 +384,7 @@ GuiPrivate::createPropertiesBinGui()
                                                                            "that an unlimited number of panels can be opened."),
                                                                   Qt::WhiteSpaceNormal) );
     _maxPanelsOpenedSpinBox->setValue( appPTR->getCurrentSettings()->getMaxPanelsOpened() );
-    QObject::connect( _maxPanelsOpenedSpinBox, SIGNAL( valueChanged(double) ), _gui, SLOT( onMaxPanelsSpinBoxValueChanged(double) ) );
+    QObject::connect( _maxPanelsOpenedSpinBox, SIGNAL(valueChanged(double)), _gui, SLOT(onMaxPanelsSpinBoxValueChanged(double)) );
 
     propertiesAreaButtonsLayout->addWidget(_maxPanelsOpenedSpinBox);
     propertiesAreaButtonsLayout->addWidget(_clearAllPanelsButton);
@@ -759,7 +759,7 @@ GuiPrivate::findActionRecursive(int i,
         return findActionRecursive(i + 1, menu, grouping);
     } else {
         ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupGlobal, grouping[i], grouping[i], widget);
-        QObject::connect( action, SIGNAL( triggered() ), _gui, SLOT( onUserCommandTriggered() ) );
+        QObject::connect( action, SIGNAL(triggered()), _gui, SLOT(onUserCommandTriggered()) );
         QMenu* isMenu = dynamic_cast<QMenu*>(widget);
         if (isMenu) {
             isMenu->addAction(action);

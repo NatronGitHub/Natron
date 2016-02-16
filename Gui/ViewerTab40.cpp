@@ -143,12 +143,12 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
     RenderEngine* engine = _imp->viewerNode->getRenderEngine();
     assert(engine);
     if (connect) {
-        QObject::connect( engine, SIGNAL( fpsChanged(double,double) ), _imp->infoWidget[textureIndex], SLOT( setFps(double,double) ) );
-        QObject::connect( engine,SIGNAL( renderFinished(int) ),_imp->infoWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::connect( engine, SIGNAL(fpsChanged(double,double)), _imp->infoWidget[textureIndex], SLOT(setFps(double,double)) );
+        QObject::connect( engine,SIGNAL(renderFinished(int)),_imp->infoWidget[textureIndex],SLOT(hideFps()) );
     } else {
-        QObject::disconnect( engine, SIGNAL( fpsChanged(double,double) ), _imp->infoWidget[textureIndex],
-                            SLOT( setFps(double,double) ) );
-        QObject::disconnect( engine,SIGNAL( renderFinished(int) ),_imp->infoWidget[textureIndex],SLOT( hideFps() ) );
+        QObject::disconnect( engine, SIGNAL(fpsChanged(double,double)), _imp->infoWidget[textureIndex],
+                            SLOT(setFps(double,double)) );
+        QObject::disconnect( engine,SIGNAL(renderFinished(int)),_imp->infoWidget[textureIndex],SLOT(hideFps()) );
     }
 }
 
@@ -551,14 +551,14 @@ ViewerTab::manageTimelineSlot(bool disconnectPrevious,const boost::shared_ptr<Ti
 {
     if (disconnectPrevious) {
         boost::shared_ptr<TimeLine> previous = _imp->timeLineGui->getTimeline();
-        QObject::disconnect( previous.get(),SIGNAL( frameChanged(SequenceTime,int) ),
-                         this, SLOT( onTimeLineTimeChanged(SequenceTime,int) ) );
+        QObject::disconnect( previous.get(),SIGNAL(frameChanged(SequenceTime,int)),
+                         this, SLOT(onTimeLineTimeChanged(SequenceTime,int)) );
         
 
     }
     
-    QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ),
-                     this, SLOT( onTimeLineTimeChanged(SequenceTime,int) ) );
+    QObject::connect( timeline.get(),SIGNAL(frameChanged(SequenceTime,int)),
+                     this, SLOT(onTimeLineTimeChanged(SequenceTime,int)) );
 
 
 }

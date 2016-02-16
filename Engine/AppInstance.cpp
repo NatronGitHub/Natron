@@ -213,13 +213,13 @@ void
 AppInstance::checkForNewVersion() const
 {
     FileDownloader* downloader = new FileDownloader( QUrl(NATRON_LAST_VERSION_URL), false );
-    QObject::connect( downloader, SIGNAL( downloaded() ), this, SLOT( newVersionCheckDownloaded() ) );
-    QObject::connect( downloader, SIGNAL( error() ), this, SLOT( newVersionCheckError() ) );
+    QObject::connect( downloader, SIGNAL(downloaded()), this, SLOT(newVersionCheckDownloaded()) );
+    QObject::connect( downloader, SIGNAL(error()), this, SLOT(newVersionCheckError()) );
 
     ///make the call blocking
     QEventLoop loop;
 
-    connect( downloader->getReply(), SIGNAL( finished() ), &loop, SLOT( quit() ) );
+    connect( downloader->getReply(), SIGNAL(finished()), &loop, SLOT(quit()) );
     loop.exec();
 }
 
@@ -1346,7 +1346,7 @@ AppInstance::startWritersRendering(bool doBlockingRender, const std::list<Render
         
         if (renderInSeparateProcess) {
             item.process.reset(new ProcessHandler(savePath,item.work.writer));
-            QObject::connect( item.process.get(), SIGNAL( processFinished(int) ), this, SLOT( onBackgroundRenderProcessFinished() ) );
+            QObject::connect( item.process.get(), SIGNAL(processFinished(int)), this, SLOT(onBackgroundRenderProcessFinished()) );
         } else {
             QObject::connect(item.work.writer->getRenderEngine(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);
         }

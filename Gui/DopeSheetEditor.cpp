@@ -109,24 +109,24 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline,
     _imp->mainLayout->addWidget(_imp->splitter);
 
     // Main model -> HierarchyView connections
-    connect(_imp->model, SIGNAL(nodeAdded(DSNode *)),
-            _imp->hierarchyView, SLOT(onNodeAdded(DSNode *)));
+    connect(_imp->model, SIGNAL(nodeAdded(DSNode*)),
+            _imp->hierarchyView, SLOT(onNodeAdded(DSNode*)));
 
-    connect(_imp->model, SIGNAL(nodeAboutToBeRemoved(DSNode *)),
-            _imp->hierarchyView, SLOT(onNodeAboutToBeRemoved(DSNode *)));
+    connect(_imp->model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
+            _imp->hierarchyView, SLOT(onNodeAboutToBeRemoved(DSNode*)));
 
-    connect(_imp->model, SIGNAL(keyframeSetOrRemoved(DSKnob *)),
-            _imp->hierarchyView, SLOT(onKeyframeSetOrRemoved(DSKnob *)));
+    connect(_imp->model, SIGNAL(keyframeSetOrRemoved(DSKnob*)),
+            _imp->hierarchyView, SLOT(onKeyframeSetOrRemoved(DSKnob*)));
 
     connect(_imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel(bool)),
             _imp->hierarchyView, SLOT(onKeyframeSelectionChanged(bool)));
 
     // Main model -> DopeSheetView connections
     connect(_imp->model, SIGNAL(nodeAdded(DSNode*)),
-            _imp->dopeSheetView, SLOT(onNodeAdded(DSNode *)));
+            _imp->dopeSheetView, SLOT(onNodeAdded(DSNode*)));
 
     connect(_imp->model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
-            _imp->dopeSheetView, SLOT(onNodeAboutToBeRemoved(DSNode *)));
+            _imp->dopeSheetView, SLOT(onNodeAboutToBeRemoved(DSNode*)));
 
     connect(_imp->model, SIGNAL(modelChanged()),
             _imp->dopeSheetView, SLOT(redraw()));

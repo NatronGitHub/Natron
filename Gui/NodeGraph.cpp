@@ -100,8 +100,8 @@ NodeGraph::NodeGraph(Gui* gui,
         std::string label;
         makeFullyQualifiedLabel(isGrp->getNode().get(),&label);
         setLabel(label);
-        QObject::connect(isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT( onGroupNameChanged(QString)));
-        QObject::connect(isGrp->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT( onGroupScriptNameChanged(QString)));
+        QObject::connect(isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onGroupNameChanged(QString)));
+        QObject::connect(isGrp->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onGroupScriptNameChanged(QString)));
     } else {
         setScriptName(kNodeGraphObjectName);
         setLabel(QObject::tr("Node Graph").toStdString());
@@ -135,7 +135,7 @@ NodeGraph::NodeGraph(Gui* gui,
     _imp->_cacheSizeText->setBrush( QColor(200,200,200) );
     _imp->_cacheSizeText->setVisible(false);
 
-    QObject::connect( &_imp->_refreshCacheTextTimer,SIGNAL( timeout() ),this,SLOT( updateCacheSizeText() ) );
+    QObject::connect( &_imp->_refreshCacheTextTimer,SIGNAL(timeout()),this,SLOT(updateCacheSizeText()) );
     _imp->_refreshCacheTextTimer.start(NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
 
     _imp->_undoStack = new QUndoStack(this);
@@ -210,7 +210,7 @@ NodeGraph::~NodeGraph()
         delete _imp->_hintOutputEdge;
     }
 
-    QObject::disconnect( &_imp->_refreshCacheTextTimer,SIGNAL( timeout() ),this,SLOT( updateCacheSizeText() ) );
+    QObject::disconnect( &_imp->_refreshCacheTextTimer,SIGNAL(timeout()),this,SLOT(updateCacheSizeText()) );
     _imp->_nodeCreationShortcutEnabled = false;
 
 }

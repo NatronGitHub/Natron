@@ -141,12 +141,12 @@ KnobGuiDouble::KnobGuiDouble(KnobPtr knob,
     boost::shared_ptr<KnobSignalSlotHandler> handler = k->getSignalSlotHandler();
     if (handler) {
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
-        QObject::connect( handler.get(), SIGNAL( minMaxChanged(double, double, int) ), this, SLOT( onMinMaxChanged(double, double, int) ) );
+        QObject::connect( handler.get(), SIGNAL(minMaxChanged(double,double,int)), this, SLOT(onMinMaxChanged(double,double,int)) );
 #endif
-        QObject::connect( handler.get(), SIGNAL( displayMinMaxChanged(double, double, int) ), this, SLOT( onDisplayMinMaxChanged(double, double, int) ) );
+        QObject::connect( handler.get(), SIGNAL(displayMinMaxChanged(double,double,int)), this, SLOT(onDisplayMinMaxChanged(double,double,int)) );
     }
-    QObject::connect( k.get(), SIGNAL( incrementChanged(double, int) ), this, SLOT( onIncrementChanged(double, int) ) );
-    QObject::connect( k.get(), SIGNAL( decimalsChanged(int, int) ), this, SLOT( onDecimalsChanged(int, int) ) );
+    QObject::connect( k.get(), SIGNAL(incrementChanged(double,int)), this, SLOT(onIncrementChanged(double,int)) );
+    QObject::connect( k.get(), SIGNAL(decimalsChanged(int,int)), this, SLOT(onDecimalsChanged(int,int)) );
     _knob = k;
 }
 
@@ -215,7 +215,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         SpinBox *box = new KnobSpinBox(layout->parentWidget(), SpinBox::eSpinBoxTypeDouble, this , i);
         NumericKnobValidator* validator = new NumericKnobValidator(box,this);
         box->setValidator(validator);
-        QObject::connect( box, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
+        QObject::connect( box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
         
         ///set the copy/link actions in the right click menu
         enableRightClickMenu(box,i);
@@ -284,8 +284,8 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _slider->setToolTip( toolTip() );
         }
-        QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
-        QObject::connect( _slider, SIGNAL( editingFinished(bool) ), this, SLOT( onSliderEditingFinished(bool) ) );
+        QObject::connect( _slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)) );
+        QObject::connect( _slider, SIGNAL(editingFinished(bool)), this, SLOT(onSliderEditingFinished(bool)) );
         containerLayout->addWidget(_slider);
         sliderVisible = shouldSliderBeVisible(dispminGui, dispmaxGui);
 
@@ -327,7 +327,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
             foldAllDimensions();
         }
 
-        QObject::connect( _dimensionSwitchButton, SIGNAL( clicked(bool) ), this, SLOT( onDimensionSwitchClicked() ) );
+        QObject::connect( _dimensionSwitchButton, SIGNAL(clicked(bool)), this, SLOT(onDimensionSwitchClicked()) );
 
     }
 

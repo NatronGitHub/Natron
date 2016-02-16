@@ -493,18 +493,18 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->getInstanceSpecificKnobs(_imp->getMainInstance().get(), &instanceSpecificKnobs);
 
     _imp->view = new TableView( layout->parentWidget() );
-    QObject::connect( _imp->view,SIGNAL( deleteKeyPressed() ),this,SLOT( onDeleteKeyPressed() ) );
-    QObject::connect( _imp->view,SIGNAL( itemRightClicked(TableItem*) ),this,SLOT( onItemRightClicked(TableItem*) ) );
+    QObject::connect( _imp->view,SIGNAL(deleteKeyPressed()),this,SLOT(onDeleteKeyPressed()) );
+    QObject::connect( _imp->view,SIGNAL(itemRightClicked(TableItem*)),this,SLOT(onItemRightClicked(TableItem*)) );
     TableItemDelegate* delegate = new TableItemDelegate(_imp->view,this);
     _imp->view->setItemDelegate(delegate);
 
     _imp->model = new TableModel(0,0,_imp->view);
-    QObject::connect( _imp->model,SIGNAL( s_itemChanged(TableItem*) ),this,SLOT( onItemDataChanged(TableItem*) ) );
+    QObject::connect( _imp->model,SIGNAL(s_itemChanged(TableItem*)),this,SLOT(onItemDataChanged(TableItem*)) );
     _imp->view->setTableModel(_imp->model);
 
     QItemSelectionModel *selectionModel = _imp->view->selectionModel();
-    QObject::connect( selectionModel, SIGNAL( selectionChanged(QItemSelection,QItemSelection) ),this,
-                      SLOT( onSelectionChanged(QItemSelection,QItemSelection) ) );
+    QObject::connect( selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)),this,
+                      SLOT(onSelectionChanged(QItemSelection,QItemSelection)) );
     QStringList dimensionNames;
     for (std::list<KnobPtr >::iterator it = instanceSpecificKnobs.begin(); it != instanceSpecificKnobs.end(); ++it) {
         QString knobDesc( (*it)->getLabel().c_str() );
@@ -545,14 +545,14 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->addButton->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
     _imp->addButton->setToolTip(GuiUtils::convertFromPlainText(tr("Add new."), Qt::WhiteSpaceNormal));
     _imp->buttonsLayout->addWidget(_imp->addButton);
-    QObject::connect( _imp->addButton, SIGNAL( clicked(bool) ), this, SLOT( onAddButtonClicked() ) );
+    QObject::connect( _imp->addButton, SIGNAL(clicked(bool)), this, SLOT(onAddButtonClicked()) );
 
     _imp->removeButton = new Button(QIcon(),"-",_imp->buttonsContainer);
     _imp->removeButton->setToolTip(GuiUtils::convertFromPlainText(tr("Remove selection."), Qt::WhiteSpaceNormal));
     _imp->removeButton->setFixedSize(NATRON_SMALL_BUTTON_SIZE, NATRON_SMALL_BUTTON_SIZE);
     _imp->removeButton->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
     _imp->buttonsLayout->addWidget(_imp->removeButton);
-    QObject::connect( _imp->removeButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveButtonClicked() ) );
+    QObject::connect( _imp->removeButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveButtonClicked()) );
 
     QPixmap selectAll;
     appPTR->getIcon(NATRON_PIXMAP_SELECT_ALL, NATRON_SMALL_BUTTON_ICON_SIZE, &selectAll);
@@ -561,10 +561,10 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->selectAll->setIconSize(QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE));
     _imp->selectAll->setToolTip(GuiUtils::convertFromPlainText(tr("Select all."), Qt::WhiteSpaceNormal));
     _imp->buttonsLayout->addWidget(_imp->selectAll);
-    QObject::connect( _imp->selectAll, SIGNAL( clicked(bool) ), this, SLOT( onSelectAllButtonClicked() ) );
+    QObject::connect( _imp->selectAll, SIGNAL(clicked(bool)), this, SLOT(onSelectAllButtonClicked()) );
 
     _imp->resetTracksButton = new Button("Reset",_imp->buttonsContainer);
-    QObject::connect( _imp->resetTracksButton, SIGNAL( clicked(bool) ), this, SLOT( resetSelectedInstances() ) );
+    QObject::connect( _imp->resetTracksButton, SIGNAL(clicked(bool)), this, SLOT(resetSelectedInstances()) );
     _imp->buttonsLayout->addWidget(_imp->resetTracksButton);
     _imp->resetTracksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Reset selected items."), Qt::WhiteSpaceNormal));
 
@@ -688,7 +688,7 @@ MultiInstancePanelPrivate::addTableRow(const NodePtr & node)
             boost::shared_ptr<KnobSignalSlotHandler> slotsHandler =
                 instanceKnobs[i]->getSignalSlotHandler();
             if (slotsHandler) {
-                QObject::connect( slotsHandler.get(), SIGNAL( valueChanged(ViewSpec,int,int) ), publicInterface,SLOT( onInstanceKnobValueChanged(ViewSpec,int,int) ) );
+                QObject::connect( slotsHandler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), publicInterface,SLOT(onInstanceKnobValueChanged(ViewSpec,int,int)) );
             }
 
             if ( instanceKnobs[i]->isInstanceSpecific() ) {
@@ -712,7 +712,7 @@ MultiInstancePanelPrivate::addTableRow(const NodePtr & node)
     {
         QCheckBox* checkbox = new QCheckBox();
         checkbox->setChecked( !node->isNodeDisabled() );
-        QObject::connect( checkbox,SIGNAL( toggled(bool) ),publicInterface,SLOT( onCheckBoxChecked(bool) ) );
+        QObject::connect( checkbox,SIGNAL(toggled(bool)),publicInterface,SLOT(onCheckBoxChecked(bool)) );
         view->setCellWidget(newRowIndex, COL_ENABLED, checkbox);
         TableItem* newItem = new TableItem;
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
@@ -1834,7 +1834,7 @@ TrackerPanel::appendExtraGui(QVBoxLayout* layout)
     _imp->exportLayout->addWidget(_imp->exportChoice);
 
     _imp->exportButton = new Button(tr("Export"),_imp->exportContainer);
-    QObject::connect( _imp->exportButton,SIGNAL( clicked(bool) ),this,SLOT( onExportButtonClicked() ) );
+    QObject::connect( _imp->exportButton,SIGNAL(clicked(bool)),this,SLOT(onExportButtonClicked()) );
     _imp->exportLayout->addWidget(_imp->exportButton);
     _imp->exportLayout->addStretch();
     layout->addWidget(_imp->exportContainer);
@@ -1848,7 +1848,7 @@ TrackerPanel::appendButtons(QHBoxLayout* buttonLayout)
     }
     _imp->averageTracksButton = new Button( tr("Average tracks"),buttonLayout->parentWidget() );
     _imp->averageTracksButton->setToolTip(GuiUtils::convertFromPlainText(tr("Make a new track which is the average of the selected tracks."), Qt::WhiteSpaceNormal));
-    QObject::connect( _imp->averageTracksButton, SIGNAL( clicked(bool) ), this, SLOT( onAverageTracksButtonClicked() ) );
+    QObject::connect( _imp->averageTracksButton, SIGNAL(clicked(bool)), this, SLOT(onAverageTracksButtonClicked()) );
     buttonLayout->addWidget(_imp->averageTracksButton);
 }
 

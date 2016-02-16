@@ -129,7 +129,7 @@ Project::Project(AppInstance* appInstance)
     , NodeCollection(appInstance)
     , _imp( new ProjectPrivate(this) )
 {
-    QObject::connect( _imp->autoSaveTimer.get(), SIGNAL( timeout() ), this, SLOT( onAutoSaveTimerTriggered() ) );
+    QObject::connect( _imp->autoSaveTimer.get(), SIGNAL(timeout()), this, SLOT(onAutoSaveTimerTriggered()) );
 }
 
 Project::~Project()

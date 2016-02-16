@@ -169,7 +169,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     _imp->useAliasCheckBox->setToolTip(useAliasTt);
     _imp->useAliasCheckBox->setChecked(true);
     
-    QObject::connect( _imp->nodeSelectionCombo,SIGNAL( itemCompletionChosen() ),this,SLOT( onNodeComboEditingFinished() ) );
+    QObject::connect( _imp->nodeSelectionCombo,SIGNAL(itemCompletionChosen()),this,SLOT(onNodeComboEditingFinished()) );
     
     _imp->destPageLabel = new Label(tr("Page:"),this);
     QString pagett = GuiUtils::convertFromPlainText(QObject::tr("Select the page into which the parameter will be created"), Qt::WhiteSpaceNormal);
@@ -207,8 +207,8 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
                                          Qt::Horizontal,this);
-    QObject::connect( _imp->buttons, SIGNAL( accepted() ), this, SLOT( accept() ) );
-    QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
+    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
+    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
     
     _imp->mainLayout->addWidget(_imp->selectNodeLabel, 0, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->nodeSelectionCombo, 0, 1, 1, 1);
@@ -221,7 +221,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel, QWidget* parent)
     _imp->mainLayout->addWidget(_imp->groupCombo, 2, 3 , 1, 1);
     _imp->mainLayout->addWidget(_imp->buttons, 3, 0, 1, 3);
     
-    QTimer::singleShot( 25, _imp->nodeSelectionCombo, SLOT( showCompleter() ) );
+    QTimer::singleShot( 25, _imp->nodeSelectionCombo, SLOT(showCompleter()) );
 
 }
 

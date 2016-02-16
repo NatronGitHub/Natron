@@ -316,7 +316,7 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     }
     
     _imp->tree->resizeColumnToContents(0);
-    QObject::connect( _imp->tree, SIGNAL( itemSelectionChanged() ), this, SLOT( onSelectionChanged() ) );
+    QObject::connect( _imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onSelectionChanged()) );
 
     _imp->mainLayout->addWidget(_imp->tree);
 
@@ -354,14 +354,14 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->validateButton = new Button(tr("Validate"),_imp->shortcutGroup);
     _imp->validateButton->setToolTip(GuiUtils::convertFromPlainText(tr("Validates the shortcut on the field editor and set the selected shortcut."), Qt::WhiteSpaceNormal));
     _imp->shortcutGroupLayout->addWidget(_imp->validateButton);
-    QObject::connect( _imp->validateButton, SIGNAL( clicked(bool) ), this, SLOT( onValidateButtonClicked() ) );
+    QObject::connect( _imp->validateButton, SIGNAL(clicked(bool)), this, SLOT(onValidateButtonClicked()) );
 
     _imp->clearButton = new Button(tr("Clear"),_imp->shortcutGroup);
-    QObject::connect( _imp->clearButton, SIGNAL( clicked(bool) ), this, SLOT( onClearButtonClicked() ) );
+    QObject::connect( _imp->clearButton, SIGNAL(clicked(bool)), this, SLOT(onClearButtonClicked()) );
     _imp->shortcutGroupLayout->addWidget(_imp->clearButton);
 
     _imp->resetButton = new Button(tr("Reset"),_imp->shortcutGroup);
-    QObject::connect( _imp->resetButton, SIGNAL( clicked(bool) ), this, SLOT( onResetButtonClicked() ) );
+    QObject::connect( _imp->resetButton, SIGNAL(clicked(bool)), this, SLOT(onResetButtonClicked()) );
     _imp->shortcutGroupLayout->addWidget(_imp->resetButton);
 
     _imp->buttonsContainer = new QWidget(this);
@@ -370,21 +370,21 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
     _imp->mainLayout->QLayout::addWidget(_imp->buttonsContainer);
 
     _imp->restoreDefaultsButton = new Button(tr("Restore defaults"),_imp->buttonsContainer);
-    QObject::connect( _imp->restoreDefaultsButton, SIGNAL( clicked(bool) ), this, SLOT( onRestoreDefaultsButtonClicked() ) );
+    QObject::connect( _imp->restoreDefaultsButton, SIGNAL(clicked(bool)), this, SLOT(onRestoreDefaultsButtonClicked()) );
     _imp->buttonsLayout->addWidget(_imp->restoreDefaultsButton);
 
     _imp->applyButton = new Button(tr("Apply"),_imp->buttonsContainer);
-    QObject::connect( _imp->applyButton, SIGNAL( clicked(bool) ), this, SLOT( onApplyButtonClicked() ) );
+    QObject::connect( _imp->applyButton, SIGNAL(clicked(bool)), this, SLOT(onApplyButtonClicked()) );
     _imp->buttonsLayout->addWidget(_imp->applyButton);
 
     _imp->buttonsLayout->addStretch();
 
     _imp->cancelButton = new Button(tr("Cancel"),_imp->buttonsContainer);
-    QObject::connect( _imp->cancelButton, SIGNAL( clicked(bool) ), this, SLOT( onCancelButtonClicked() ) );
+    QObject::connect( _imp->cancelButton, SIGNAL(clicked(bool)), this, SLOT(onCancelButtonClicked()) );
     _imp->buttonsLayout->addWidget(_imp->cancelButton);
 
     _imp->okButton = new Button(tr("Ok"),_imp->buttonsContainer);
-    QObject::connect( _imp->okButton, SIGNAL( clicked(bool) ), this, SLOT( onOkButtonClicked() ) );
+    QObject::connect( _imp->okButton, SIGNAL(clicked(bool)), this, SLOT(onOkButtonClicked()) );
     _imp->buttonsLayout->addWidget(_imp->okButton);
 
     _imp->buttonsLayout->addStretch();

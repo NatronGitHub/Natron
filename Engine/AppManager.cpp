@@ -215,7 +215,7 @@ AppManager::AppManager()
     assert(!_instance);
     _instance = this;
 
-    QObject::connect(this, SIGNAL(s_requestOFXDialogOnMainThread(OfxImageEffectInstance*, void*)), this, SLOT(onOFXDialogOnMainThreadReceived(OfxImageEffectInstance*, void*)));
+    QObject::connect(this, SIGNAL(s_requestOFXDialogOnMainThread(OfxImageEffectInstance*,void*)), this, SLOT(onOFXDialogOnMainThreadReceived(OfxImageEffectInstance*,void*)));
 }
 
 void

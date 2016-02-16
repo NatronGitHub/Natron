@@ -116,13 +116,13 @@ KnobGuiColor::KnobGuiColor(KnobPtr knob,
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
     boost::shared_ptr<KnobSignalSlotHandler> handler = _knob->getSignalSlotHandler();
     if (handler) {
-        QObject::connect( handler.get(), SIGNAL( minMaxChanged(double, double, int) ), this, SLOT( onMinMaxChanged(double, double, int) ) );
-        QObject::connect( handler.get(), SIGNAL( displayMinMaxChanged(double, double, int) ), this, SLOT( onDisplayMinMaxChanged(double, double, int) ) );
+        QObject::connect( handler.get(), SIGNAL(minMaxChanged(double,double,int)), this, SLOT(onMinMaxChanged(double,double,int)) );
+        QObject::connect( handler.get(), SIGNAL(displayMinMaxChanged(double,double,int)), this, SLOT(onDisplayMinMaxChanged(double,double,int)) );
     }
 #endif
-    QObject::connect( this, SIGNAL( dimensionSwitchToggled(bool) ), ck.get(), SLOT( onDimensionSwitchToggled(bool) ) );
-    QObject::connect( ck.get(), SIGNAL( mustActivateAllDimensions() ),this, SLOT( onMustShowAllDimension() ) );
-    QObject::connect( ck.get(), SIGNAL( pickingEnabled(bool) ),this, SLOT( setPickingEnabled(bool) ) );
+    QObject::connect( this, SIGNAL(dimensionSwitchToggled(bool)), ck.get(), SLOT(onDimensionSwitchToggled(bool)) );
+    QObject::connect( ck.get(), SIGNAL(mustActivateAllDimensions()),this, SLOT(onMustShowAllDimension()) );
+    QObject::connect( ck.get(), SIGNAL(pickingEnabled(bool)),this, SLOT(setPickingEnabled(bool)) );
     _knob = ck;
 }
 
@@ -161,18 +161,18 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
         _rBox->setValidator(validator);
     }
     
-    QObject::connect( _rBox, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
+    QObject::connect( _rBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
     
     if (_dimension >= 3) {
         _gBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, this, 1);
-        QObject::connect( _gBox, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
+        QObject::connect( _gBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
         {
             NumericKnobValidator* validator = new NumericKnobValidator(_gBox,this);
             _gBox->setValidator(validator);
         }
         
         _bBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, this, 2);
-        QObject::connect( _bBox, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
+        QObject::connect( _bBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
         
         {
             NumericKnobValidator* validator = new NumericKnobValidator(_bBox,this);
@@ -181,7 +181,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     }
     if (_dimension >= 4) {
         _aBox = new KnobSpinBox(boxContainers, SpinBox::eSpinBoxTypeDouble, this, 3);
-        QObject::connect( _aBox, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
+        QObject::connect( _aBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
         {
             NumericKnobValidator* validator = new NumericKnobValidator(_aBox,this);
             _aBox->setValidator(validator);
@@ -322,8 +322,8 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     _slider = new ScaleSliderQWidget(slidermin, slidermax, knob->getValue(0),
                                      ScaleSliderQWidget::eDataTypeDouble, getGui(), eScaleTypeLinear, boxContainers);
     _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    QObject::connect( _slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
-    QObject::connect( _slider, SIGNAL( editingFinished(bool) ), this, SLOT( onSliderEditingFinished(bool) ) );
+    QObject::connect( _slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)) );
+    QObject::connect( _slider, SIGNAL(editingFinished(bool)), this, SLOT(onSliderEditingFinished(bool)) );
     _slider->hide();
     
     colorContainer = new QWidget(mainContainer);
@@ -346,7 +346,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     QSize medIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
 
     _colorLabel->setFixedSize(medSize);
-    QObject::connect( _colorLabel,SIGNAL( pickingEnabled(bool) ),this,SLOT( onPickingEnabled(bool) ) );
+    QObject::connect( _colorLabel,SIGNAL(pickingEnabled(bool)),this,SLOT(onPickingEnabled(bool)) );
     colorLayout->addWidget(_colorLabel);
     
     if (knob->isSimplified()) {
@@ -362,7 +362,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     _colorDialogButton->setIconSize(medIconSize);
     _colorDialogButton->setToolTip(GuiUtils::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal));
     _colorDialogButton->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _colorDialogButton, SIGNAL( clicked() ), this, SLOT( showColorDialog() ) );
+    QObject::connect( _colorDialogButton, SIGNAL(clicked()), this, SLOT(showColorDialog()) );
     colorLayout->addWidget(_colorDialogButton);
     
     bool enableAllDimensions = false;
@@ -395,7 +395,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
         _rBox->setValue( knob->getValue(0) );
     }
     onDimensionSwitchClicked();
-    QObject::connect( _dimensionSwitchButton, SIGNAL( clicked() ), this, SLOT( onDimensionSwitchClicked() ) );
+    QObject::connect( _dimensionSwitchButton, SIGNAL(clicked()), this, SLOT(onDimensionSwitchClicked()) );
     
     colorLayout->addWidget(_dimensionSwitchButton);
     
@@ -901,7 +901,7 @@ KnobGuiColor::showColorDialog()
                      Image::clamp<qreal>(isSimple ? curB : Color::to_func_srgb(curB), 0., 1.),
                      Image::clamp<qreal>(curA, 0., 1.));
     dialog.setCurrentColor(curColor);
-    QObject::connect( &dialog,SIGNAL( currentColorChanged(QColor) ),this,SLOT( onDialogCurrentColorChanged(QColor) ) );
+    QObject::connect( &dialog,SIGNAL(currentColorChanged(QColor)),this,SLOT(onDialogCurrentColorChanged(QColor)) );
     if (!dialog.exec()) {
         
         knob->beginChanges();

@@ -64,6 +64,7 @@ CurveGui::CurveGui(CurveWidget *curveWidget,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+
 }
 
 CurveGui::~CurveGui()
@@ -467,7 +468,6 @@ CurveGui::drawCurve(int curveIndex,
             //if the key is selected change its color to white
             KeyPtr isSelected;
             if (isCurveSelected) {
-#pragma message WARN("Find a better way to find out if the key is selected")
                 for (std::list<KeyPtr>::const_iterator it2 = foundCurveSelected->second.begin();
                      it2 != foundCurveSelected->second.end(); ++it2) {
                     if ( ( (*it2)->key.getTime() == key.getTime() ) && ( (*it2)->curve.get() == this ) ) {

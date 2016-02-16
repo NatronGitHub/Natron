@@ -182,9 +182,9 @@ ViewerInstance::ViewerInstance(NodePtr node)
 
     setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
     
-    QObject::connect( this,SIGNAL( disconnectTextureRequest(int) ),this,SLOT( executeDisconnectTextureRequestOnMainThread(int) ) );
-    QObject::connect( _imp.get(),SIGNAL( mustRedrawViewer() ),this,SLOT( redrawViewer() ) );
-    QObject::connect( this,SIGNAL( s_callRedrawOnMainThread() ), this, SLOT( redrawViewer() ) );
+    QObject::connect( this,SIGNAL(disconnectTextureRequest(int)),this,SLOT(executeDisconnectTextureRequestOnMainThread(int)) );
+    QObject::connect( _imp.get(),SIGNAL(mustRedrawViewer()),this,SLOT(redrawViewer()) );
+    QObject::connect( this,SIGNAL(s_callRedrawOnMainThread()), this, SLOT(redrawViewer()) );
 }
 
 ViewerInstance::~ViewerInstance()

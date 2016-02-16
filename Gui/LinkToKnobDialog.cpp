@@ -137,8 +137,8 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
 
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
                                          Qt::Horizontal,this);
-    QObject::connect( _imp->buttons, SIGNAL( accepted() ), this, SLOT( accept() ) );
-    QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
+    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
+    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
     _imp->mainLayout->addWidget(_imp->buttons);
 
     _imp->selectNodeLabel = new Label(tr("Parent:"),_imp->firstLine);
@@ -169,12 +169,12 @@ LinkToKnobDialog::LinkToKnobDialog(KnobGui* from,
 
 
     _imp->nodeSelectionCombo->setFocus(Qt::PopupFocusReason);
-    QTimer::singleShot( 25, _imp->nodeSelectionCombo, SLOT( showCompleter() ) );
+    QTimer::singleShot( 25, _imp->nodeSelectionCombo, SLOT(showCompleter()) );
 
     _imp->knobSelectionCombo = new ComboBox(_imp->firstLine);
     _imp->firstLineLayout->addWidget(_imp->knobSelectionCombo);
 
-    QObject::connect( _imp->nodeSelectionCombo,SIGNAL( itemCompletionChosen() ),this,SLOT( onNodeComboEditingFinished() ) );
+    QObject::connect( _imp->nodeSelectionCombo,SIGNAL(itemCompletionChosen()),this,SLOT(onNodeComboEditingFinished()) );
 
     _imp->firstLineLayout->addStretch();
 }

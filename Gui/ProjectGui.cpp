@@ -108,8 +108,8 @@ ProjectGui::create(boost::shared_ptr<Project> projectInternal,
 {
     _project = projectInternal;
 
-    QObject::connect( projectInternal.get(),SIGNAL( mustCreateFormat() ),this,SLOT( createNewFormat() ) );
-    QObject::connect( projectInternal.get(),SIGNAL( knobsInitialized() ),this,SLOT( initializeKnobsGui() ) );
+    QObject::connect( projectInternal.get(),SIGNAL(mustCreateFormat()),this,SLOT(createNewFormat()) );
+    QObject::connect( projectInternal.get(),SIGNAL(knobsInitialized()),this,SLOT(initializeKnobsGui()) );
 
     _panel = new DockablePanel(_gui,
                                projectInternal.get(),
@@ -180,7 +180,7 @@ AddFormatDialog::AddFormatDialog(Project *project,
                                            tr("Fill the new format with the currently"
                                               " displayed region of definition of the viewer"
                                               " indicated on the left."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _copyFromViewerButton,SIGNAL( clicked() ),this,SLOT( onCopyFromViewer() ) );
+    QObject::connect( _copyFromViewerButton,SIGNAL(clicked()),this,SLOT(onCopyFromViewer()) );
     _mainLayout->addWidget(_fromViewerLine);
 
     _fromViewerLineLayout->addWidget(_copyFromViewerButton);
@@ -232,11 +232,11 @@ AddFormatDialog::AddFormatDialog(Project *project,
 
 
     _cancelButton = new Button(tr("Cancel"),_buttonsLine);
-    QObject::connect( _cancelButton, SIGNAL( clicked() ), this, SLOT( reject() ) );
+    QObject::connect( _cancelButton, SIGNAL(clicked()), this, SLOT(reject()) );
     _buttonsLineLayout->addWidget(_cancelButton);
 
     _okButton = new Button(tr("Ok"),_buttonsLine);
-    QObject::connect( _okButton, SIGNAL( clicked() ), this, SLOT( accept() ) );
+    QObject::connect( _okButton, SIGNAL(clicked()), this, SLOT(accept()) );
     _buttonsLineLayout->addWidget(_okButton);
 }
 

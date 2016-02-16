@@ -175,8 +175,8 @@ NodeGraph::event(QEvent* e)
 
             ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
             ///it closes it.
-            QObject::connect( nodeCreation,SIGNAL( accepted() ),this,SLOT( onNodeCreationDialogFinished() ) );
-            QObject::connect( nodeCreation,SIGNAL( rejected() ),this,SLOT( onNodeCreationDialogFinished() ) );
+            QObject::connect( nodeCreation,SIGNAL(accepted()),this,SLOT(onNodeCreationDialogFinished()) );
+            QObject::connect( nodeCreation,SIGNAL(rejected()),this,SLOT(onNodeCreationDialogFinished()) );
             nodeCreation->show();
 
             takeClickFocus();

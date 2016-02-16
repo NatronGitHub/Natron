@@ -518,7 +518,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             QString labelStr(descriptionLabel.c_str());
             labelStr += ":";
             label->setText_overload(labelStr );
-            QObject::connect( label, SIGNAL( clicked(bool) ), ret, SIGNAL( labelClicked(bool) ) );
+            QObject::connect( label, SIGNAL(clicked(bool)), ret, SIGNAL(labelClicked(bool)) );
             
             if (makeNewLine) {
                 labelLayout->addWidget(label);
@@ -717,8 +717,8 @@ DockablePanelPrivate::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
         };
         
         RightClickableWidget* clickableWidget = new RightClickableWidget(_publicInterface,parent);
-        QObject::connect(clickableWidget,SIGNAL(rightClicked(QPoint)),_publicInterface,SLOT( onRightClickMenuRequested(QPoint) ) );
-        QObject::connect(clickableWidget,SIGNAL(escapePressed()),_publicInterface,SLOT( closePanel() ) );
+        QObject::connect(clickableWidget,SIGNAL(rightClicked(QPoint)),_publicInterface,SLOT(onRightClickMenuRequested(QPoint)) );
+        QObject::connect(clickableWidget,SIGNAL(escapePressed()),_publicInterface,SLOT(closePanel()) );
         clickableWidget->setFocusPolicy(Qt::NoFocus);
         newTab = clickableWidget;
         layoutContainer = newTab;

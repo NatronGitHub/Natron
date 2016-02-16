@@ -301,15 +301,15 @@ RenderingProgressDialog::RenderingProgressDialog(Gui* gui,
     _imp->_cancelButton->setMaximumWidth(50);
     _imp->_mainLayout->addWidget(_imp->_cancelButton);
 
-    QObject::connect( _imp->_cancelButton, SIGNAL( clicked() ), this, SLOT( onCancelButtonClicked() ) );
+    QObject::connect( _imp->_cancelButton, SIGNAL(clicked()), this, SLOT(onCancelButtonClicked()) );
 
 
     if (process) {
-        QObject::connect( this,SIGNAL( canceled() ),process.get(),SLOT( onProcessCanceled() ) );
-        QObject::connect( process.get(),SIGNAL( processCanceled() ),this,SLOT( onProcessCanceled() ) );
-        QObject::connect( process.get(),SIGNAL( frameRendered(int,double) ),this,SLOT( onFrameRendered(int,double) ) );
-        QObject::connect( process.get(),SIGNAL( processFinished(int) ),this,SLOT( onProcessFinished(int) ) );
-        QObject::connect( process.get(),SIGNAL( deleted() ),this,SLOT( onProcessDeleted() ) );
+        QObject::connect( this,SIGNAL(canceled()),process.get(),SLOT(onProcessCanceled()) );
+        QObject::connect( process.get(),SIGNAL(processCanceled()),this,SLOT(onProcessCanceled()) );
+        QObject::connect( process.get(),SIGNAL(frameRendered(int,double)),this,SLOT(onFrameRendered(int,double)) );
+        QObject::connect( process.get(),SIGNAL(processFinished(int)),this,SLOT(onProcessFinished(int)) );
+        QObject::connect( process.get(),SIGNAL(deleted()),this,SLOT(onProcessDeleted()) );
     }
 }
 
@@ -321,11 +321,11 @@ void
 RenderingProgressDialog::onProcessDeleted()
 {
     assert(_imp->_process);
-    QObject::disconnect( this,SIGNAL( canceled() ),_imp->_process.get(),SLOT( onProcessCanceled() ) );
-    QObject::disconnect( _imp->_process.get(),SIGNAL( processCanceled() ),this,SLOT( onProcessCanceled() ) );
-    QObject::disconnect( _imp->_process.get(),SIGNAL( frameRendered(int) ),this,SLOT( onFrameRendered(int,double) ) );
-    QObject::disconnect( _imp->_process.get(),SIGNAL( processFinished(int) ),this,SLOT( onProcessFinished(int) ) );
-    QObject::disconnect( _imp->_process.get(),SIGNAL( deleted() ),this,SLOT( onProcessDeleted() ) );
+    QObject::disconnect( this,SIGNAL(canceled()),_imp->_process.get(),SLOT(onProcessCanceled()) );
+    QObject::disconnect( _imp->_process.get(),SIGNAL(processCanceled()),this,SLOT(onProcessCanceled()) );
+    QObject::disconnect( _imp->_process.get(),SIGNAL(frameRendered(int)),this,SLOT(onFrameRendered(int,double)) );
+    QObject::disconnect( _imp->_process.get(),SIGNAL(processFinished(int)),this,SLOT(onProcessFinished(int)) );
+    QObject::disconnect( _imp->_process.get(),SIGNAL(deleted()),this,SLOT(onProcessDeleted()) );
 }
 
 

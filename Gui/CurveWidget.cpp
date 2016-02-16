@@ -116,8 +116,8 @@ CurveWidget::CurveWidget(Gui* gui,
     if (timeline) {
         boost::shared_ptr<Project> project = gui->getApp()->getProject();
         assert(project);
-        QObject::connect( timeline.get(),SIGNAL( frameChanged(SequenceTime,int) ),this,SLOT( onTimeLineFrameChanged(SequenceTime,int) ) );
-        QObject::connect( project.get(),SIGNAL( frameRangeChanged(int,int) ),this,SLOT( onTimeLineBoundariesChanged(int,int) ) );
+        QObject::connect( timeline.get(),SIGNAL(frameChanged(SequenceTime,int)),this,SLOT(onTimeLineFrameChanged(SequenceTime,int)) );
+        QObject::connect( project.get(),SIGNAL(frameRangeChanged(int,int)),this,SLOT(onTimeLineBoundariesChanged(int,int)) );
         onTimeLineFrameChanged(timeline->currentFrame(), eValueChangedReasonNatronGuiEdited);
         
         double left,right;
@@ -615,8 +615,8 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         
         ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
         ///it closes it.
-        QObject::connect( dialog,SIGNAL( accepted() ),this,SLOT( onEditKeyFrameDialogFinished() ) );
-        QObject::connect( dialog,SIGNAL( rejected() ),this,SLOT( onEditKeyFrameDialogFinished() ) );
+        QObject::connect( dialog,SIGNAL(accepted()),this,SLOT(onEditKeyFrameDialogFinished()) );
+        QObject::connect( dialog,SIGNAL(rejected()),this,SLOT(onEditKeyFrameDialogFinished()) );
         dialog->show();
 
         e->accept();
