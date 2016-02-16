@@ -51,6 +51,7 @@
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/Label.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/Button.h"
 #include "Gui/Utils.h"
 #include "Gui/NodeGui.h"
@@ -425,9 +426,12 @@ TaskInfo::onRenderEngineStopped(int retCode)
         return;
     }
     
+    //Hold a shared ptr because removeTasksFromTable would remove the last ref otherwise
+    TaskInfoPtr thisShared = shared_from_this();
+    
     if ((_imp->panel->isRemoveTasksAfterFinishChecked() && retCode == 0) || !canPause()) {
         std::list<TaskInfoPtr> toRemove;
-        toRemove.push_back(shared_from_this());
+        toRemove.push_back(thisShared);
         _imp->panel->removeTasksFromTable(toRemove);
     } else {
         cancelTask(true, retCode);
