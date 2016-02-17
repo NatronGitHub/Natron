@@ -22,6 +22,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <iostream>
 
 #include <QLocalSocket>
 #include <QMutex>
@@ -104,7 +105,7 @@ ExistenceCheckerThread::run()
     _imp->socket->connectToServer(_imp->comServerPipePath, QLocalSocket::ReadWrite);
 
     if (!_imp->socket->waitForConnected()) {
-        qDebug() << "Failed to connect local socket to " << _imp->comServerPipePath;
+        std::cerr << "Failed to connect local socket to " << _imp->comServerPipePath.toStdString() << std::endl;
         return;
     }
 
@@ -141,7 +142,7 @@ ExistenceCheckerThread::run()
         }
         
         if (!receivedAcknowledgement) {
-            qDebug() << "Crash reporter process does not seem to be responding anymore...exiting";
+            std::cerr << "Crash reporter process does not seem to be responding anymore...exiting" << std::endl;
             /*
              We did not receive te acknowledgement, hence quit
              */
