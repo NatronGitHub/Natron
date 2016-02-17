@@ -846,9 +846,11 @@ TransformKeysCommand::TransformKeysCommand(CurveWidget* widget,
 , _updateOnFirstRedo(updateOnFirstRedo)
 , _keys(keys)
 , _widget(widget)
-, _matrix(new Transform::Matrix3x3)
+, _matrix()
+, _invMatrix()
 {
-    *_matrix = Transform::matTransformCanonical(tx, ty, sx, sy, 0, 0, true, 0, centerX, centerY);
+    _matrix = Transform::matTransformCanonical(tx, ty, sx, sy, 0, 0, true, 0, centerX, centerY);
+    _invMatrix = Transform::matTransformCanonical(-tx, -ty, 1./sx, 1./sy, 0, 0, true, 0, centerX, centerY);
 }
 
 TransformKeysCommand::~TransformKeysCommand()
@@ -856,75 +858,80 @@ TransformKeysCommand::~TransformKeysCommand()
 }
 
 
-void
-TransformKeysCommand::undo()
+static void transformKeyFrame(KeyFrame* key, const Transform::Matrix3x3& m)
 {
-    std::list<KnobHolder*> differentKnobs;
+    double oldTime = key->getTime();
+    Transform::Point3D p;
+    p.x = oldTime;
+    p.y = key->getValue();
+    p.z = 1;
+    p = Transform::matApply(m, p);
+    key->setTime(p.x);
     
-    std::list<boost::shared_ptr<RotoContext> > rotoToEvaluate;
-    
-    std::list<CurveGui*> processedCurves;
-    for (SelectedKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->first.get());
-        if (isKnobCurve) {
-            
-            if (!isKnobCurve->getKnobGui()) {
-                boost::shared_ptr<RotoContext> roto = isKnobCurve->getRotoContext();
-                assert(roto);
-                if (std::find(rotoToEvaluate.begin(),rotoToEvaluate.end(),roto) == rotoToEvaluate.end()) {
-                    rotoToEvaluate.push_back(roto);
-                }
-            } else {
-                KnobI* k = isKnobCurve->getInternalKnob().get();
-                if (k->getHolder()) {
-                    if ( std::find(differentKnobs.begin(), differentKnobs.end(), k->getHolder()) == differentKnobs.end() ) {
-                        differentKnobs.push_back(k->getHolder());
-                        k->getHolder()->beginChanges();
-                    }
-                }
-            }
-        }
-        if (std::find(processedCurves.begin(), processedCurves.end(), it->first.get()) == processedCurves.end()) {
-            processedCurves.push_back(it->first.get());
-        }
-        
-    }
-    
-    for (std::list<CurveCopy>::iterator it = _curves.begin();
-         it != _curves.end(); ++it) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->guiCurve);
-        if (isKnobCurve && !dynamic_cast<KnobParametric*>(isKnobCurve->getInternalKnob().get())) {
-            isKnobCurve->getInternalKnob()->cloneCurve(ViewSpec::all(), isKnobCurve->getDimension(), *it->oldCpy);
-        } else {
-            it->original->clone(*it->oldCpy);
-        }
-    }
-    for (std::list<BezierCopy>::iterator it = _beziers.begin();
-         it != _beziers.end(); ++it) {
-        it->original->clone(it->oldCpy.get());
-    }
-    
-        
-    for (std::list<KnobHolder*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
-        (*it)->endChanges();
-    }
-    
-    for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
-        (*it)->evaluateChange();
-    }
-    
-    _widget->setSelectedKeys(_altKeys);
 }
 
-void
-TransformKeysCommand::redo()
+static void
+transform(const Transform::Matrix3x3& matrix, CurveGui* curve,const std::list<KeyPtr>& keyframes)
 {
+    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(curve);
+    BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(curve);
     
+    if (isKnobCurve) {
+        KnobPtr knob = isKnobCurve->getInternalKnob();
+        KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
+        
+        if (isParametric) {
+            
+            boost::shared_ptr<Curve> internalCurve = curve->getInternalCurve();
+            for (std::list<KeyPtr>::const_iterator it = keyframes.begin(); it!=keyframes.end(); ++it) {
+                
+                const KeyPtr& k = (*it);
+                
+                Transform::Point3D p;
+                p.x = k->key.getTime();
+                p.y = k->key.getValue();
+                p.z = 1;
+                p = Transform::matApply(matrix, p);
+                
+                
+                double oldTime = k->key.getTime();
+                int keyframeIndex = internalCurve->keyFrameIndex(oldTime);
+                int newIndex;
+                
+                k->key = internalCurve->setKeyFrameValueAndTime(p.x,p.y, keyframeIndex, &newIndex);
+            }
+            isParametric->evaluateValueChange(isKnobCurve->getDimension(), isParametric->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
+        } else {
+            std::vector<KeyFrame> keys(keyframes.size());
+            int i = 0;
+            for (std::list<KeyPtr>::const_iterator it = keyframes.begin(); it!=keyframes.end(); ++it, ++i) {
+                keys[i] = (*it)->key;
+            }
+            knob->transformValuesAtTime(eCurveChangeReasonCurveEditor, ViewSpec::all(), isKnobCurve->getDimension(), matrix,&keys);
+            i = 0;
+            for (std::list<KeyPtr>::const_iterator it = keyframes.begin(); it!=keyframes.end(); ++it, ++i) {
+                (*it)->key = keys[i];
+            }
+        }
+    } else if (isBezierCurve) {
+        
+        for (std::list<KeyPtr>::const_iterator it = keyframes.begin(); it!=keyframes.end(); ++it) {
+            double oldTime = (*it)->key.getTime();
+            transformKeyFrame(&(*it)->key,matrix);
+            //transformKeyFrame(&(*it)->prevKey,*_matrix);
+            //transformKeyFrame(&(*it)->nextKey,*_matrix);
+            isBezierCurve->getBezier()->moveKeyframe(oldTime, (*it)->key.getTime());
+        }
+        
+    }
+}
+void
+TransformKeysCommand::transformKeys(const Transform::Matrix3x3& matrix)
+{
     std::list<KnobHolder*> differentKnobs;
     
     std::list<boost::shared_ptr<RotoContext> > rotoToEvaluate;
     
-    std::list<CurveGui*> processedCurves;
     for (SelectedKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->first.get());
         if (isKnobCurve) {
@@ -945,60 +952,14 @@ TransformKeysCommand::redo()
                 }
             }
         }
-        if (std::find(processedCurves.begin(), processedCurves.end(), it->first.get()) == processedCurves.end()) {
-            processedCurves.push_back(it->first.get());
-        }
         
     }
     
-    if (!_firstRedoCalled) {
-        for (std::list<CurveGui*>::iterator it = processedCurves.begin(); it != processedCurves.end(); ++it) {
-            boost::shared_ptr<Curve> internalCurve = (*it)->getInternalCurve();
-            if (internalCurve) {
-                CurveCopy c;
-                c.guiCurve = *it;
-                c.oldCpy.reset(new Curve(*internalCurve));
-                c.original = internalCurve;
-                _curves.push_back(c);
-            } else {
-                BezierCPCurveGui* isBezier = dynamic_cast<BezierCPCurveGui*>(*it);
-                assert(isBezier);
-                if (isBezier) {
-                    BezierCopy b;
-                    b.guiCurve = *it;
-                    b.original = isBezier->getBezier();
-                    b.oldCpy.reset(new Bezier(b.original->getContext(),b.original->getScriptName(),b.original->getParentLayer(),b.original->isOpenBezier()));
-                    b.oldCpy->clone(b.original.get());
-                    _beziers.push_back(b);
-                }
-            }
-        }
-       
- 
-        
-    } else {
-        _keys = _altKeys;
-    }
     
-    _altKeys.clear();
     for (SelectedKeys::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         
-        std::list<KeyPtr>& newKeys = _altKeys[it->first];
-        
-        for (std::list<KeyPtr>::reverse_iterator it2 = it->second.rbegin(); it2!=it->second.rend(); ++it2) {
-            boost::shared_ptr<SelectedKey> oldKey(new SelectedKey);
-            oldKey->curve = (*it2)->curve;
-            oldKey->key =  (*it2)->key;
-            oldKey->leftTan = (*it2)->leftTan;
-            oldKey->rightTan = (*it2)->rightTan;
-            oldKey->prevKey = (*it2)->prevKey;
-            oldKey->nextKey = (*it2)->nextKey;
-            oldKey->hasPrevious = (*it2)->hasPrevious;
-            oldKey->hasNext = (*it2)->hasNext;
-            transform(*it2);
-            newKeys.push_back(oldKey);
-        }
-        
+        transform(matrix, it->first.get(),it->second);
+        _widget->updateSelectionAfterCurveChange(it->first.get());
     }
     
     
@@ -1012,10 +973,22 @@ TransformKeysCommand::redo()
     for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
         (*it)->evaluateChange();
     }
-
+    
     _widget->setSelectedKeys(_keys);
     _firstRedoCalled = true;
     
+}
+
+void
+TransformKeysCommand::undo()
+{
+    transformKeys(_invMatrix);
+}
+
+void
+TransformKeysCommand::redo()
+{
+    transformKeys(_matrix);
 }
 
 int
@@ -1041,69 +1014,11 @@ TransformKeysCommand::mergeWith(const QUndoCommand * command)
             }
         }
         
-        *_matrix = matMul(*_matrix, *cmd->_matrix);
+        _matrix = matMul(_matrix, cmd->_matrix);
+        _invMatrix = matMul(_invMatrix, cmd->_invMatrix);
         return true;
     } else {
         return false;
-    }
-}
-
-static void transformKeyFrame(KeyFrame* key, const Transform::Matrix3x3& m)
-{
-    double oldTime = key->getTime();
-    Transform::Point3D p;
-    p.x = oldTime;
-    p.y = key->getValue();
-    p.z = 1;
-    p = Transform::matApply(m, p);
-    key->setTime(p.x);
-
-}
-
-void
-TransformKeysCommand::transform(const KeyPtr& k)
-{
-    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(k->curve.get());
-    BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(k->curve.get());
-    
-    if (isKnobCurve) {
-        KnobPtr knob = isKnobCurve->getInternalKnob();
-        KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
-        
-        if (isParametric) {
-            // std::pair<double,double> curveYRange = k->curve->getInternalCurve()->getCurveYRange();
-            Transform::Point3D p;
-            p.x = k->key.getTime();
-            p.y = k->key.getValue();
-            p.z = 1;
-            p = Transform::matApply(*_matrix, p);
-            
-            boost::shared_ptr<Curve> curve = k->curve->getInternalCurve();
-            if (curve && curve->isYComponentMovable()) {
-                if ( curve->areKeyFramesValuesClampedToIntegers() ) {
-                    p.y = std::floor(p.y + 0.5);
-                } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
-                    p.y = p.y < 0.5 ? 0 : 1;
-                }
-            } else {
-                p.y = k->key.getValue();
-            }
-            double oldTime = k->key.getTime();
-            int keyframeIndex = curve->keyFrameIndex(oldTime);
-            int newIndex;
-            
-            k->key = curve->setKeyFrameValueAndTime(p.x,p.y, keyframeIndex, &newIndex);
-            isParametric->evaluateValueChange(isKnobCurve->getDimension(), isParametric->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
-        } else {
-            knob->transformValueAtTime(eCurveChangeReasonCurveEditor, k->key.getTime(), ViewIdx(0), isKnobCurve->getDimension(), *_matrix,&k->key);
-        }
-    } else if (isBezierCurve) {
-        double oldTime = k->key.getTime();
-        transformKeyFrame(&k->key,*_matrix);
-        transformKeyFrame(&k->prevKey,*_matrix);
-        transformKeyFrame(&k->nextKey,*_matrix);
-
-        isBezierCurve->getBezier()->moveKeyframe(oldTime, k->key.getTime());
     }
 }
 

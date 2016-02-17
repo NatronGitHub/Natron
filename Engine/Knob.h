@@ -518,6 +518,7 @@ public:
      * @brief Transforms a keyframe by a given matrix. The matrix must not contain any skew or rotation.
      **/
     virtual bool transformValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view,  int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) = 0;
+    virtual bool transformValuesAtTime(CurveChangeReason curveChangeReason, ViewSpec view,  int dimension,const Transform::Matrix3x3& matrix,std::vector<KeyFrame>* keyframes) = 0;
     
     /**
      * @brief Copies all the animation of *curve* into the animation curve at the given dimension.
@@ -1217,11 +1218,17 @@ public:
     virtual bool moveValuesAtTime(CurveChangeReason reason,ViewSpec view,  int dimension,double dt,double dv,std::vector<KeyFrame>* keyframes) OVERRIDE FINAL;
     
 private:
-    bool moveValueAtTimeInternal(bool useGuiCurve, CurveChangeReason reason, double time, ViewSpec view, int dimension,double dt,double dv,KeyFrame* newKey);
+    bool moveValueAtTimeInternal(bool useGuiCurve, double time, ViewSpec view, int dimension,double dt,double dv,KeyFrame* newKey);
 public:
     
     
     virtual bool transformValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view, int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool transformValuesAtTime(CurveChangeReason curveChangeReason, ViewSpec view,  int dimension,const Transform::Matrix3x3& matrix,std::vector<KeyFrame>* keyframes) OVERRIDE FINAL;
+    
+private:
+    bool transformValueAtTimeInternal(bool useGuiCurve, double time, ViewSpec view, int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey);
+public:
+    
     virtual void cloneCurve(ViewSpec view, int dimension,const Curve& curve) OVERRIDE FINAL;
     virtual bool setInterpolationAtTime(CurveChangeReason reason, ViewSpec view, int dimension, double time, KeyframeTypeEnum interpolation, KeyFrame* newKey) OVERRIDE FINAL;
     virtual bool moveDerivativesAtTime(CurveChangeReason reason, ViewSpec view, int dimension, double time, double left, double right)  OVERRIDE FINAL WARN_UNUSED_RETURN;

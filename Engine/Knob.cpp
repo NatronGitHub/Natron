@@ -392,6 +392,14 @@ struct KnobHelperPrivate
     void parseListenersFromExpression(int dimension);
     
     std::string declarePythonVariables(bool addTab, int dimension);
+    
+    bool shouldUseGuiCurve() const
+    {
+        if (!holder) {
+            return false;
+        }
+        return !holder->isSetValueCurrentlyPossible() && gui;
+    }
 };
 
 
@@ -675,10 +683,9 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
         return;
     }
     
-    KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(view, dimension);
+    bool useGuiCurve = _imp->shouldUseGuiCurve();
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -749,17 +756,16 @@ KnobHelper::moveValuesAtTime(CurveChangeReason reason, ViewSpec view,  int dimen
         return false;
     }
     
-    KnobHolder* holder = getHolder();
-    
     /*
      We write on the "GUI" curve if the engine is either:
      - using it
      - is still marked as different from the "internal" curve
      */
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(view, dimension);
+    
+    bool useGuiCurve = _imp->shouldUseGuiCurve();
     
     for (std::size_t i = 0; i < keyframes->size(); ++i) {
-        if (!moveValueAtTimeInternal(useGuiCurve, reason, (*keyframes)[i].getTime(), view, dimension, dt, dv, &(*keyframes)[i])) {
+        if (!moveValueAtTimeInternal(useGuiCurve, (*keyframes)[i].getTime(), view, dimension, dt, dv, &(*keyframes)[i])) {
             return false;
         }
     }
@@ -767,6 +773,8 @@ KnobHelper::moveValuesAtTime(CurveChangeReason reason, ViewSpec view,  int dimen
     
     if (!useGuiCurve) {
         evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+    } else {
+        setGuiCurveHasChanged(view, dimension,true);
     }
     //notify that the gui curve has changed to redraw it
     if (_signalSlotHandler) {
@@ -778,14 +786,13 @@ KnobHelper::moveValuesAtTime(CurveChangeReason reason, ViewSpec view,  int dimen
 }
 
 bool
-KnobHelper::moveValueAtTimeInternal(bool useGuiCurve, CurveChangeReason reason, double time, ViewSpec view, int dimension,double dt,double dv,KeyFrame* newKey)
+KnobHelper::moveValueAtTimeInternal(bool useGuiCurve, double time, ViewSpec view, int dimension,double dt,double dv,KeyFrame* newKey)
 {
     boost::shared_ptr<Curve> curve;
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension,true);
     }
     assert(curve);
     
@@ -834,23 +841,22 @@ KnobHelper::moveValueAtTime(CurveChangeReason reason,
     if (!canAnimate() || !isAnimated(dimension, view)) {
         return false;
     }
-
-    KnobHolder* holder = getHolder();
-    
     
     /*
      We write on the "GUI" curve if the engine is either:
      - using it
      - is still marked as different from the "internal" curve
      */
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(view, dimension);
+    bool useGuiCurve = _imp->shouldUseGuiCurve();
     
-    if (!moveValueAtTimeInternal(useGuiCurve, reason, time, view, dimension, dt, dv, newKey)) {
+    if (!moveValueAtTimeInternal(useGuiCurve, time, view, dimension, dt, dv, newKey)) {
         return false;
     }
 
     if (!useGuiCurve) {
         evaluateValueChange(dimension, newKey->getTime(), view, eValueChangedReasonNatronInternalEdited);
+    } else {
+        setGuiCurveHasChanged(view, dimension,true);
     }
     //notify that the gui curve has changed to redraw it
     if (_signalSlotHandler) {
@@ -862,12 +868,7 @@ KnobHelper::moveValueAtTime(CurveChangeReason reason,
 }
 
 bool
-KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason,
-                                 double time,
-                                 ViewSpec view,
-                                 int dimension,
-                                 const Transform::Matrix3x3& matrix,
-                                 KeyFrame* newKey)
+KnobHelper::transformValuesAtTime(CurveChangeReason curveChangeReason, ViewSpec view,  int dimension,const Transform::Matrix3x3& matrix,std::vector<KeyFrame>* keyframes)
 {
     assert(QThread::currentThread() == qApp->thread());
     assert(dimension >= 0 && dimension < (int)_imp->curves.size());
@@ -875,18 +876,36 @@ KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason,
     if (!canAnimate() || !isAnimated(dimension, view)) {
         return false;
     }
+
+    bool useGuiCurve = _imp->shouldUseGuiCurve();
     
-    KnobHolder* holder = getHolder();
+    for (std::size_t i = 0; i < keyframes->size(); ++i) {
+        if (!transformValueAtTimeInternal(useGuiCurve, (*keyframes)[i].getTime(), view, dimension, matrix, &(*keyframes)[i])) {
+            return false;
+        }
+    }
+
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
+    }
     
+    if (!useGuiCurve) {
+        evaluateValueChange(dimension,getCurrentTime(), view,  eValueChangedReasonNatronInternalEdited);
+    } else {
+        setGuiCurveHasChanged(view, dimension,true);
+    }
+    return true;
+
+}
+
+bool
+KnobHelper::transformValueAtTimeInternal(bool useGuiCurve, double time, ViewSpec view, int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey)
+{
     boost::shared_ptr<Curve> curve;
-    
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(view, dimension);
-    
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
     } else {
         curve = _imp->gui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension,true);
     }
     assert(curve);
     
@@ -947,12 +966,39 @@ KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason,
     if (_signalSlotHandler) {
         _signalSlotHandler->s_keyFrameMoved(view, dimension, time,p.x);
     }
+    return true;
+}
+
+bool
+KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason,
+                                 double time,
+                                 ViewSpec view,
+                                 int dimension,
+                                 const Transform::Matrix3x3& matrix,
+                                 KeyFrame* newKey)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    assert(dimension >= 0 && dimension < (int)_imp->curves.size());
+    
+    if (!canAnimate() || !isAnimated(dimension, view)) {
+        return false;
+    }
+    
+
+    bool useGuiCurve = _imp->shouldUseGuiCurve();
+    
+    if (!transformValueAtTimeInternal(useGuiCurve, time, view, dimension, matrix, newKey)) {
+        return false;
+    }
+    
     if (_signalSlotHandler) {
         _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
     }
     
     if (!useGuiCurve) {
-        evaluateValueChange(dimension,p.x, view,  eValueChangedReasonNatronInternalEdited);
+        evaluateValueChange(dimension,getCurrentTime(), view,  eValueChangedReasonNatronInternalEdited);
+    } else {
+        setGuiCurveHasChanged(view, dimension,true);
     }
     return true;
 
@@ -966,7 +1012,7 @@ KnobHelper::cloneCurve(ViewSpec view,
     assert(dimension >= 0 && dimension < (int)_imp->curves.size());
     KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> thisCurve;
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(view, dimension);
+    bool useGuiCurve = _imp->shouldUseGuiCurve();
     if (!useGuiCurve) {
         thisCurve = _imp->curves[dimension];
     } else {
@@ -1013,10 +1059,9 @@ KnobHelper::setInterpolationAtTime(CurveChangeReason reason,
         return false;
     }
 
-    KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(view, dimension);
+    bool useGuiCurve = _imp->shouldUseGuiCurve();
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -1069,10 +1114,9 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
         return false;
     }
 
-    KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(view, dimension);
+    bool useGuiCurve = _imp->shouldUseGuiCurve();
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -1128,10 +1172,9 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
         return false;
     }
 
-    KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(view, dimension);
+    bool useGuiCurve = _imp->shouldUseGuiCurve();
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -1192,12 +1235,10 @@ KnobHelper::removeAnimation(ViewSpec view, int dimension,
     if (!canAnimate() || !isAnimated(dimension, view)) {
         return ;
     }
-
-    KnobHolder* holder = getHolder();
     
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(view, dimension);
+    bool useGuiCurve = _imp->shouldUseGuiCurve();
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -1284,7 +1325,7 @@ KnobHelper::cloneGuiCurvesIfNeeded(std::map<int,ValueChangedReasonEnum>& modifie
     for (int i = 0; i < getDimension(); ++i) {
         if (_imp->mustCloneGuiCurves[i]) {
             hasChanged = true;
-            boost::shared_ptr<Curve> curve = getCurve(ViewIdx(0), i);
+            boost::shared_ptr<Curve> curve = _imp->curves[i];
             assert(curve);
             boost::shared_ptr<Curve> guicurve = _imp->gui->getCurve(ViewIdx(0),i);
             assert(guicurve);
@@ -2917,11 +2958,10 @@ KnobHelper::deleteAnimationConditional(double time,
         return;
     }
     assert( 0 <= dimension && dimension < getDimension() );
-    KnobHolder* holder = getHolder();
     
     boost::shared_ptr<Curve> curve;
     
-    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(view, dimension);
+    bool useGuiCurve = _imp->shouldUseGuiCurve();
     
     if (!useGuiCurve) {
         curve = _imp->curves[dimension];
@@ -2944,6 +2984,7 @@ KnobHelper::deleteAnimationConditional(double time,
         evaluateValueChange(dimension, time, view, reason);
     }
     
+    KnobHolder* holder = getHolder();
     if (holder && holder->getApp()) {
         holder->getApp()->removeMultipleKeyframeIndicator(keysRemoved, true);
     }

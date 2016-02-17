@@ -43,6 +43,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Curve.h"
+#include "Engine/Transform.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -356,31 +357,17 @@ private:
     virtual int id() const OVERRIDE FINAL;
     virtual bool mergeWith(const QUndoCommand * command) OVERRIDE FINAL;
     
-    void transform(const KeyPtr& k);
+    
+    void transformKeys(const Transform::Matrix3x3& matrix);
     
 private:
     bool _firstRedoCalled;
     bool _updateOnFirstRedo;
-    SelectedKeys _keys,_altKeys;
+    SelectedKeys _keys;
     CurveWidget* _widget;
+   
     
-    struct CurveCopy
-    {
-        CurveGui* guiCurve;
-        boost::shared_ptr<Curve> original;
-        boost::shared_ptr<Curve> oldCpy,newCpy;
-    };
-    
-    struct BezierCopy
-    {
-        CurveGui* guiCurve;
-        boost::shared_ptr<Bezier> original;
-        boost::shared_ptr<Bezier> oldCpy,newCpy;
-    };
-    
-    std::list<CurveCopy> _curves;
-    std::list<BezierCopy> _beziers;
-    boost::shared_ptr<Transform::Matrix3x3> _matrix;
+    Transform::Matrix3x3 _matrix,_invMatrix;
 };
 
 NATRON_NAMESPACE_EXIT;
