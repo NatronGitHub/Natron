@@ -302,16 +302,9 @@ Project::loadProjectInternal(const QString & path,
         if (!bgProject) {
             getApp()->loadProjectGui(iArchive);
         }
-    } catch (const boost::archive::archive_exception & e) {
-        throw std::runtime_error( e.what() );
-    } catch (const std::ios_base::failure& e) {
-        throw std::runtime_error( std::string("Failed to read the project file: I/O failure (") + e.what() + ")");
-    } catch (const std::exception & e) {
-        throw std::runtime_error( std::string("Failed to read the project file: ") + e.what() );
     } catch (...) {
-        throw std::runtime_error("Failed to read the project file");
+        throw std::runtime_error(tr("Unrecognized or damaged project file").toStdString());
     }
-
     
     Format f;
     getProjectDefaultFormat(&f);

@@ -968,10 +968,7 @@ Gui::openProject()
         std::string patternCpy = selectedFile;
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadProjectOpenedDir = path.c_str();
-        AppInstance* app = openProjectInternal(selectedFile, true);
-        if (!app) {
-            throw std::runtime_error(tr("Failed to open project").toStdString() + ' ' + selectedFile);
-        }
+        (void)openProjectInternal(selectedFile, true);
     }
 }
 
