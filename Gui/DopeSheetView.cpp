@@ -2099,6 +2099,9 @@ void DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
     case DopeSheetView::esMoveKeyframeSelection:
     {
         if (dt >= 1.0f || dt <= -1.0f) {
+            if (gui) {
+                gui->setDraftRenderEnabled(true);
+            }
             model->moveSelectedKeysAndNodes(dt);
         }
 
@@ -2107,6 +2110,9 @@ void DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
     case DopeSheetView::esTransformingKeyframesMiddleLeft:
     case DopeSheetView::esTransformingKeyframesMiddleRight:
     {
+        if (gui) {
+            gui->setDraftRenderEnabled(true);
+        }
         bool shiftHeld = modCASIsShift(e);
         QPointF center;
         if (!shiftHeld) {
@@ -2140,6 +2146,9 @@ void DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
     case DopeSheetView::esMoveCurrentFrameIndicator:
     {
         if (dt >= 1.0f || dt <= -1.0f) {
+            if (gui) {
+                gui->setDraftRenderEnabled(true);
+            }
             moveCurrentFrameIndicator(dt);
         }
 
@@ -2156,6 +2165,9 @@ void DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
     case DopeSheetView::esReaderLeftTrim:
     {
         if (dt >= 1.0f || dt <= -1.0f) {
+            if (gui) {
+                gui->setDraftRenderEnabled(true);
+            }
             Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get());
             assert(timeOffsetKnob);
 
@@ -2169,6 +2181,9 @@ void DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
     case DopeSheetView::esReaderRightTrim:
     {
         if (dt >= 1.0f || dt <= -1.0f) {
+            if (gui) {
+                gui->setDraftRenderEnabled(true);
+            }
             Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>(currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get());
             assert(timeOffsetKnob);
 
@@ -2182,6 +2197,9 @@ void DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
     case DopeSheetView::esReaderSlip:
     {
         if (dt >= 1.0f || dt <= -1.0f) {
+            if (gui) {
+                gui->setDraftRenderEnabled(true);
+            }
             model->slipReader(currentEditedReader, dt);
         }
 
@@ -3376,6 +3394,19 @@ void DopeSheetView::mouseReleaseEvent(QMouseEvent *e)
 
         mustRedraw = true;
     } else if (_imp->eventState == DopeSheetView::esMoveCurrentFrameIndicator) {
+        if (_imp->gui->isDraftRenderEnabled()) {
+            _imp->gui->setDraftRenderEnabled(false);
+            bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
+            if (autoProxyEnabled) {
+                _imp->gui->renderAllViewers(true);
+            }
+        }
+    } else if (_imp->eventState == DopeSheetView::esMoveKeyframeSelection ||
+               _imp->eventState == DopeSheetView::esReaderLeftTrim ||
+               _imp->eventState == DopeSheetView::esReaderRightTrim ||
+               _imp->eventState == DopeSheetView::esReaderSlip ||
+               _imp->eventState == DopeSheetView::esTransformingKeyframesMiddleLeft ||
+               _imp->eventState == DopeSheetView::esTransformingKeyframesMiddleRight) {
         if (_imp->gui->isDraftRenderEnabled()) {
             _imp->gui->setDraftRenderEnabled(false);
             bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
