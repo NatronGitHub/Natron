@@ -512,6 +512,7 @@ public:
      * @brief Moves a keyframe by a given delta and emits the signal keyframeMoved
      **/
     virtual bool moveValueAtTime(CurveChangeReason reason, double time, ViewSpec view,  int dimension,double dt,double dv,KeyFrame* newKey) = 0;
+    virtual bool moveValuesAtTime(CurveChangeReason reason, ViewSpec view,  int dimension,double dt,double dv,std::vector<KeyFrame>* keyframes) = 0;
     
     /**
      * @brief Transforms a keyframe by a given matrix. The matrix must not contain any skew or rotation.
@@ -1213,6 +1214,13 @@ public:
 
     virtual void onKeyFrameRemoved(double time, ViewSpec view, int dimension) OVERRIDE FINAL;
     virtual bool moveValueAtTime(CurveChangeReason reason, double time, ViewSpec view, int dimension,double dt,double dv,KeyFrame* newKey) OVERRIDE FINAL;
+    virtual bool moveValuesAtTime(CurveChangeReason reason,ViewSpec view,  int dimension,double dt,double dv,std::vector<KeyFrame>* keyframes) OVERRIDE FINAL;
+    
+private:
+    bool moveValueAtTimeInternal(bool useGuiCurve, CurveChangeReason reason, double time, ViewSpec view, int dimension,double dt,double dv,KeyFrame* newKey);
+public:
+    
+    
     virtual bool transformValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view, int dimension,const Transform::Matrix3x3& matrix,KeyFrame* newKey) OVERRIDE FINAL;
     virtual void cloneCurve(ViewSpec view, int dimension,const Curve& curve) OVERRIDE FINAL;
     virtual bool setInterpolationAtTime(CurveChangeReason reason, ViewSpec view, int dimension, double time, KeyframeTypeEnum interpolation, KeyFrame* newKey) OVERRIDE FINAL;

@@ -655,12 +655,14 @@ void
 KnobCurveGui::onKnobInternalCurveChanged()
 {
     _curveWidget->updateSelectionAfterCurveChange(this);
+    _curveWidget->update();
 }
 
 void
 KnobCurveGui::onKnobInterpolationChanged()
 {
     _curveWidget->updateSelectionAfterCurveChange(this);
+    _curveWidget->update();
 }
 
 double

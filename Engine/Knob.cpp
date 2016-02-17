@@ -690,10 +690,17 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
     assert(curve);
 
     try {
-        curve->removeKeyFrameWithTime( (double)time );
+        curve->removeKeyFrameWithTime(time);
     } catch (const std::exception & e) {
         //qDebug() << e.what();
     }
+    
+    if (!useGuiCurve && _imp->gui) {
+        boost::shared_ptr<Curve> guiCurve = _imp->gui->getCurve(view, dimension);
+        assert(guiCurve);
+        guiCurve->removeKeyFrameWithTime(time);
+    }
+
     
     //virtual portion
     keyframeRemoved_virtual(dimension, time);
@@ -710,13 +717,12 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
         
 
         checkAnimationLevel(view, dimension);
-        guiCurveCloneInternalCurve(curveChangeReason,view,dimension, reason);
         evaluateValueChange(dimension, time,view, reason);
-    } else {
-        if (_signalSlotHandler) {
-            _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
-        }
     }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
+    }
+    
     
     if (_signalSlotHandler/* && reason != eValueChangedReasonUserEdited*/) {
         _signalSlotHandler->s_keyFrameRemoved(time,view, dimension,(int)reason);
@@ -730,6 +736,87 @@ KnobHelper::onKeyFrameRemoved(double time,
                               int dimension)
 {
     deleteValueAtTime(eCurveChangeReasonInternal, time,view,dimension);
+}
+
+bool
+KnobHelper::moveValuesAtTime(CurveChangeReason reason, ViewSpec view,  int dimension,double dt,double dv,std::vector<KeyFrame>* keyframes)
+{
+    assert(keyframes);
+    assert(QThread::currentThread() == qApp->thread());
+    assert(dimension >= 0 && dimension < (int)_imp->curves.size());
+    
+    if (!canAnimate() || !isAnimated(dimension, view)) {
+        return false;
+    }
+    
+    KnobHolder* holder = getHolder();
+    
+    /*
+     We write on the "GUI" curve if the engine is either:
+     - using it
+     - is still marked as different from the "internal" curve
+     */
+    bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(view, dimension);
+    
+    for (std::size_t i = 0; i < keyframes->size(); ++i) {
+        if (!moveValueAtTimeInternal(useGuiCurve, reason, (*keyframes)[i].getTime(), view, dimension, dt, dv, &(*keyframes)[i])) {
+            return false;
+        }
+    }
+    
+    
+    if (!useGuiCurve) {
+        evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonNatronInternalEdited);
+    }
+    //notify that the gui curve has changed to redraw it
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_redrawGuiCurve(reason, view, dimension);
+    }
+    
+    return true;
+
+}
+
+bool
+KnobHelper::moveValueAtTimeInternal(bool useGuiCurve, CurveChangeReason reason, double time, ViewSpec view, int dimension,double dt,double dv,KeyFrame* newKey)
+{
+    boost::shared_ptr<Curve> curve;
+    if (!useGuiCurve) {
+        curve = _imp->curves[dimension];
+    } else {
+        curve = _imp->gui->getCurve(view, dimension);
+        setGuiCurveHasChanged(view, dimension,true);
+    }
+    assert(curve);
+    
+    if (!curve->moveKeyFrameValueAndTime(time, dt, dv, newKey)) {
+        return false;
+    }
+    if (!useGuiCurve && _imp->gui) {
+        boost::shared_ptr<Curve> guiCurve = _imp->gui->getCurve(view, dimension);
+        assert(guiCurve);
+        guiCurve->moveKeyFrameValueAndTime(time, dt, dv, 0);
+        
+    }
+    
+    
+    ///Make sure string animation follows up
+    AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>(this);
+    std::string v;
+    if (isString) {
+        isString->stringFromInterpolatedValue(time, view, &v);
+    }
+    keyframeRemoved_virtual(dimension, time);
+    if (isString) {
+        double ret;
+        isString->stringToKeyFrameValue(newKey->getTime(), view, v, &ret);
+    }
+    
+    
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_keyFrameMoved(view, dimension, time,newKey->getTime());
+    }
+    return true;
 }
 
 bool
@@ -750,7 +837,6 @@ KnobHelper::moveValueAtTime(CurveChangeReason reason,
 
     KnobHolder* holder = getHolder();
     
-    boost::shared_ptr<Curve> curve;
     
     /*
      We write on the "GUI" curve if the engine is either:
@@ -759,48 +845,18 @@ KnobHelper::moveValueAtTime(CurveChangeReason reason,
      */
     bool useGuiCurve = (!holder || !holder->isSetValueCurrentlyPossible()) && _imp->gui && !hasGuiCurveChanged(view, dimension);
     
-    if (!useGuiCurve) {
-        curve = _imp->curves[dimension];
-    } else {
-        curve = _imp->gui->getCurve(view, dimension);
-        setGuiCurveHasChanged(view, dimension,true);
-    }
-    assert(curve);
-    
-    if (!curve->moveKeyFrameValueAndTime(time, dt, dv, newKey)) {
+    if (!moveValueAtTimeInternal(useGuiCurve, reason, time, view, dimension, dt, dv, newKey)) {
         return false;
     }
-    
 
-    ///Make sure string animation follows up
-    AnimatingKnobStringHelper* isString = dynamic_cast<AnimatingKnobStringHelper*>(this);
-    std::string v;
-    if (isString) {
-        isString->stringFromInterpolatedValue(time, view, &v);
-    }
-    keyframeRemoved_virtual(dimension, time);
-    if (isString) {
-        double ret;
-        isString->stringToKeyFrameValue(newKey->getTime(), view, v, &ret);
-    }
-    
-    
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_keyFrameMoved(view, dimension, time,newKey->getTime());
-    }
-    
     if (!useGuiCurve) {
         evaluateValueChange(dimension, newKey->getTime(), view, eValueChangedReasonNatronInternalEdited);
-        
-        //We've set the internal curve, so synchronize the gui curve to the internal curve
-        //the s_redrawGuiCurve signal will be emitted
-        guiCurveCloneInternalCurve(reason, view, dimension, eValueChangedReasonNatronInternalEdited);
-    } else {
-        //notify that the gui curve has changed to redraw it
-        if (_signalSlotHandler) {
-            _signalSlotHandler->s_redrawGuiCurve(reason, view, dimension);
-        }
     }
+    //notify that the gui curve has changed to redraw it
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_redrawGuiCurve(reason, view, dimension);
+    }
+    
     return true;
     
 }
@@ -878,13 +934,25 @@ KnobHelper::transformValueAtTime(CurveChangeReason curveChangeReason,
         return false;
     }
     
+    if (!useGuiCurve && _imp->gui) {
+        boost::shared_ptr<Curve> guiCurve = _imp->gui->getCurve(view, dimension);
+        try {
+            guiCurve->setKeyFrameValueAndTime(p.x,p.y, keyindex, NULL);
+        } catch (...) {
+            return false;
+        }
+    }
+    
+    
     if (_signalSlotHandler) {
         _signalSlotHandler->s_keyFrameMoved(view, dimension, time,p.x);
+    }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_redrawGuiCurve(curveChangeReason, view, dimension);
     }
     
     if (!useGuiCurve) {
         evaluateValueChange(dimension,p.x, view,  eValueChangedReasonNatronInternalEdited);
-        guiCurveCloneInternalCurve(curveChangeReason, view, dimension , eValueChangedReasonNatronInternalEdited);
     }
     return true;
 
@@ -965,14 +1033,19 @@ KnobHelper::setInterpolationAtTime(CurveChangeReason reason,
     
     *newKey = curve->setKeyFrameInterpolation(interpolation, keyIndex);
     
+    if (!useGuiCurve && _imp->gui) {
+        boost::shared_ptr<Curve> guiCurve = _imp->gui->getCurve(view, dimension);
+        assert(guiCurve);
+        guiCurve->setKeyFrameInterpolation(interpolation, keyIndex);
+    }
+    
     if (!useGuiCurve) {
         evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
-        guiCurveCloneInternalCurve(reason,view, dimension, eValueChangedReasonNatronInternalEdited);
-    } else {
-        if (_signalSlotHandler) {
-            _signalSlotHandler->s_redrawGuiCurve(reason,view, dimension);
-        }
     }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_redrawGuiCurve(reason,view, dimension);
+    }
+    
     if (_signalSlotHandler) {
         _signalSlotHandler->s_keyFrameInterpolationChanged(time,view, dimension);
     }
@@ -1018,14 +1091,20 @@ KnobHelper::moveDerivativesAtTime(CurveChangeReason reason,
     curve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
     curve->setKeyFrameDerivatives(left, right, keyIndex);
     
+    if (!useGuiCurve && _imp->gui) {
+        boost::shared_ptr<Curve> guiCurve = _imp->gui->getCurve(view, dimension);
+        assert(guiCurve);
+        guiCurve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
+        guiCurve->setKeyFrameDerivatives(left, right, keyIndex);
+    }
+    
     if (!useGuiCurve) {
         evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
-        guiCurveCloneInternalCurve(reason, view, dimension, eValueChangedReasonNatronInternalEdited);
-    } else {
-        if (_signalSlotHandler) {
-            _signalSlotHandler->s_redrawGuiCurve(reason,view, dimension);
-        }
     }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_redrawGuiCurve(reason,view, dimension);
+    }
+    
     if (_signalSlotHandler) {
         _signalSlotHandler->s_derivativeMoved(time, view, dimension);
     }
@@ -1074,14 +1153,25 @@ KnobHelper::moveDerivativeAtTime(CurveChangeReason reason,
         curve->setKeyFrameRightDerivative(derivative, keyIndex);
     }
     
-    if (!useGuiCurve) {
-        evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
-        guiCurveCloneInternalCurve(reason,view, dimension, eValueChangedReasonNatronInternalEdited);
-    } else {
-        if (_signalSlotHandler) {
-            _signalSlotHandler->s_redrawGuiCurve(reason,view,dimension);
+    if (!useGuiCurve && _imp->gui) {
+        boost::shared_ptr<Curve> guiCurve = _imp->gui->getCurve(view, dimension);
+        assert(guiCurve);
+        guiCurve->setKeyFrameInterpolation(eKeyframeTypeBroken, keyIndex);
+        if (isLeft) {
+            guiCurve->setKeyFrameLeftDerivative(derivative, keyIndex);
+        } else {
+            guiCurve->setKeyFrameRightDerivative(derivative, keyIndex);
         }
     }
+
+    
+    if (!useGuiCurve) {
+        evaluateValueChange(dimension, time, view, eValueChangedReasonNatronInternalEdited);
+    }
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_redrawGuiCurve(reason,view,dimension);
+    }
+    
     if (_signalSlotHandler) {
         _signalSlotHandler->s_derivativeMoved(time,view, dimension);
     }

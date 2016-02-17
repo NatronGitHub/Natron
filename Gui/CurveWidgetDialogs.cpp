@@ -456,7 +456,10 @@ EditKeyFrameDialog::~EditKeyFrameDialog()
 void
 EditKeyFrameDialog::moveKeyTo(double newX,double newY)
 {
-    std::vector<MoveKeysCommand::KeyToMove> keys(1);
+    
+    std::map<boost::shared_ptr<CurveGui>,std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
+    std::vector<MoveKeysCommand::KeyToMove> &keys = keysToMove[_imp->key->curve];
+    keys.resize(1);
     keys[0].key = _imp->key;
     keys[0].prevIsSelected = false;
     keys[0].nextIsSelected = false;
@@ -485,7 +488,7 @@ EditKeyFrameDialog::moveKeyTo(double newX,double newY)
         }
     }
     
-    _imp->curveWidget->pushUndoCommand(new MoveKeysCommand(_imp->curveWidget,keys,newX - curX, newY - curY,true));
+    _imp->curveWidget->pushUndoCommand(new MoveKeysCommand(_imp->curveWidget,keysToMove,newX - curX, newY - curY,true));
 
 }
 

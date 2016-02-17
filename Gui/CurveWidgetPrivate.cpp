@@ -1149,13 +1149,17 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
     
     bool canMoveY = true;
     
-    std::vector<MoveKeysCommand::KeyToMove> vect;
+    std::map<boost::shared_ptr<CurveGui>,std::vector<MoveKeysCommand::KeyToMove> > keysToMove;
     
     for (SelectedKeys::iterator it = _selectedKeyFrames.begin(); it != _selectedKeyFrames.end(); ++it) {
         if (canMoveY && !it->first->isYComponentMovable()) {
             canMoveY = false;
         }
+        
+        
         boost::shared_ptr<Curve> curve = it->first->getInternalCurve();
+        
+        std::vector<MoveKeysCommand::KeyToMove>& vect = keysToMove[it->first];
         if (curve) {
             
             for (std::list<KeyPtr>::iterator it2 = it->second.begin() ; it2!=it->second.end(); ++it2) {
@@ -1230,19 +1234,20 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
                 vect.push_back(keyToMove);
             }
         }
+        //Keyframes must be sorted in order according to the user movement otherwise if keyframes are next to each other we might override
+        //another keyframe.
+        //Can only call sort on random iterators
+        if (dt < 0) {
+            std::sort(vect.begin(), vect.end(), SortIncreasingFunctor());
+        } else {
+            std::sort(vect.begin(), vect.end(), SortDecreasingFunctor());
+        }
     }
     
     dt = std::min(dt, maxRight);
     dt = std::max(dt, maxLeft);
     
-    //Keyframes must be sorted in order according to the user movement otherwise if keyframes are next to each other we might override
-    //another keyframe.
-    //Can only call sort on random iterators
-    if (dt < 0) {
-        std::sort(vect.begin(), vect.end(), SortIncreasingFunctor());
-    } else {
-        std::sort(vect.begin(), vect.end(), SortDecreasingFunctor());
-    }
+    
     
     double dv;
     ///Parametric curve editor (the ones of the KnobParametric) never clamp keyframes to integer in the X direction
@@ -1265,7 +1270,7 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
 
         if ( (dt != 0) || (dv != 0) ) {
             bool updateOnPenUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
-            _widget->pushUndoCommand( new MoveKeysCommand(_widget,vect,dt,dv,!updateOnPenUpOnly) );
+            _widget->pushUndoCommand( new MoveKeysCommand(_widget,keysToMove,dt,dv,!updateOnPenUpOnly) );
             _evaluateOnPenUp = true;
         }
     }

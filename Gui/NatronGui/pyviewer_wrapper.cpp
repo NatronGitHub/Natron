@@ -483,7 +483,7 @@ static PyObject* Sbk_PyViewerFunc_setCurrentView(PyObject* self, PyObject* pyArg
 
         if (!PyErr_Occurred()) {
             // setCurrentView(int)
-            cppSelf->setCurrentView(ViewIdx(cppArg0));
+            cppSelf->setCurrentView(cppArg0);
         }
     }
 

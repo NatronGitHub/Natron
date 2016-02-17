@@ -796,6 +796,88 @@ static PyObject* Sbk_AnimatedParamFunc_setExpression(PyObject* self, PyObject* a
         return 0;
 }
 
+static PyObject* Sbk_AnimatedParamFunc_setInterpolationAtTime(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    AnimatedParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (AnimatedParamWrapper*)((::AnimatedParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_ANIMATEDPARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 3) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.AnimatedParam.setInterpolationAtTime(): too many arguments");
+        return 0;
+    } else if (numArgs < 2) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.AnimatedParam.setInterpolationAtTime(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OOO:setInterpolationAtTime", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: setInterpolationAtTime(double,NATRON_NAMESPACE::KeyframeTypeEnum,int)
+    if (numArgs >= 2
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_KEYFRAMETYPEENUM_IDX]), (pyArgs[1])))) {
+        if (numArgs == 2) {
+            overloadId = 0; // setInterpolationAtTime(double,NATRON_NAMESPACE::KeyframeTypeEnum,int)
+        } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
+            overloadId = 0; // setInterpolationAtTime(double,NATRON_NAMESPACE::KeyframeTypeEnum,int)
+        }
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_AnimatedParamFunc_setInterpolationAtTime_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "dimension");
+            if (value && pyArgs[2]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.AnimatedParam.setInterpolationAtTime(): got multiple values for keyword argument 'dimension'.");
+                return 0;
+            } else if (value) {
+                pyArgs[2] = value;
+                if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2]))))
+                    goto Sbk_AnimatedParamFunc_setInterpolationAtTime_TypeError;
+            }
+        }
+        double cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::NATRON_NAMESPACE::KeyframeTypeEnum cppArg1 = ((::NATRON_NAMESPACE::KeyframeTypeEnum)0);
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+        int cppArg2 = 0;
+        if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
+
+        if (!PyErr_Occurred()) {
+            // setInterpolationAtTime(double,NATRON_NAMESPACE::KeyframeTypeEnum,int)
+            bool cppResult = cppSelf->setInterpolationAtTime(cppArg0, cppArg1, cppArg2);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_AnimatedParamFunc_setInterpolationAtTime_TypeError:
+        const char* overloads[] = {"float, NatronEngine.NATRON_NAMESPACE.KeyframeTypeEnum, int = 0", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.AnimatedParam.setInterpolationAtTime", overloads);
+        return 0;
+}
+
 static PyMethodDef Sbk_AnimatedParam_methods[] = {
     {"deleteValueAtTime", (PyCFunction)Sbk_AnimatedParamFunc_deleteValueAtTime, METH_VARARGS|METH_KEYWORDS},
     {"getCurrentTime", (PyCFunction)Sbk_AnimatedParamFunc_getCurrentTime, METH_NOARGS},
@@ -808,6 +890,7 @@ static PyMethodDef Sbk_AnimatedParam_methods[] = {
     {"getNumKeys", (PyCFunction)Sbk_AnimatedParamFunc_getNumKeys, METH_VARARGS|METH_KEYWORDS},
     {"removeAnimation", (PyCFunction)Sbk_AnimatedParamFunc_removeAnimation, METH_VARARGS|METH_KEYWORDS},
     {"setExpression", (PyCFunction)Sbk_AnimatedParamFunc_setExpression, METH_VARARGS|METH_KEYWORDS},
+    {"setInterpolationAtTime", (PyCFunction)Sbk_AnimatedParamFunc_setInterpolationAtTime, METH_VARARGS|METH_KEYWORDS},
 
     {0} // Sentinel
 };

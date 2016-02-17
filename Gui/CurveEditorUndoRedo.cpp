@@ -350,7 +350,7 @@ RemoveKeysCommand::redo()
 
 //////////////////////////////MOVE MULTIPLE KEYS COMMAND//////////////////////////////////////////////
 MoveKeysCommand::MoveKeysCommand(CurveWidget* widget,
-                                 const std::vector<KeyToMove> &keys,
+                                 const std::map<boost::shared_ptr<CurveGui>,std::vector<MoveKeysCommand::KeyToMove> > &keys,
                                  double dt,
                                  double dv,
                                  bool updateOnFirstRedo,
@@ -367,59 +367,61 @@ MoveKeysCommand::MoveKeysCommand(CurveWidget* widget,
 }
 
 static void
-moveKey(MoveKeysCommand::KeyToMove &k,
-        double dt,
-        double dv)
+moveKeys(CurveGui* curve,
+         std::vector<MoveKeysCommand::KeyToMove> &vect,
+         double dt,
+         double dv)
 {
     
     
-    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(k.key->curve.get());
-    BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(k.key->curve.get());
-    if (isKnobCurve) {
+    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(curve);
+    BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(curve);
+    if (isBezierCurve) {
+        for (std::size_t i = 0; i < vect.size(); ++i) {
+            
+            const MoveKeysCommand::KeyToMove& k = vect[i];
+            
+            double oldTime = k.key->key.getTime();
+            k.key->key.setTime(oldTime + dt);
+            isBezierCurve->getBezier()->moveKeyframe(oldTime, k.key->key.getTime());
+        }
+       
+    } else if (isKnobCurve) {
+        
         KnobPtr knob = isKnobCurve->getInternalKnob();
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
-        
+    
         if (!isParametric) {
-            knob->moveValueAtTime(eCurveChangeReasonCurveEditor, k.key->key.getTime(), ViewSpec::all(), isKnobCurve->getDimension(), dt, dv,&k.key->key);
+            std::vector<KeyFrame> keysToChange(vect.size());
+            for (std::size_t i = 0; i < vect.size(); ++i) {
+                keysToChange[i] = vect[i].key->key;
+            }
+            knob->moveValuesAtTime(eCurveChangeReasonCurveEditor, ViewSpec::all(), isKnobCurve->getDimension(), dt, dv,&keysToChange);
+            for (std::size_t i = 0; i < vect.size(); ++i) {
+                vect[i].key->key = keysToChange[i];
+            }
             
         } else {
-           // std::pair<double,double> curveYRange = k->curve->getInternalCurve()->getCurveYRange();
-            double newX = k.key->key.getTime() + dt;
-            double newY = k.key->key.getValue() + dv;
-            boost::shared_ptr<Curve> curve = k.key->curve->getInternalCurve();
+
+            boost::shared_ptr<Curve> internalCurve = curve->getInternalCurve();
             
-            if (curve->isYComponentMovable()) {
-                if ( curve->areKeyFramesValuesClampedToIntegers() ) {
-                    newY = std::floor(newY + 0.5);
-                } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
-                    newY = newY < 0.5 ? 0 : 1;
-                }
-            } else {
-                newY = k.key->key.getValue();
+            for (std::size_t i = 0; i < vect.size(); ++i) {
+                
+                const MoveKeysCommand::KeyToMove& k = vect[i];
+                
+                double oldTime = k.key->key.getTime();
+                double newX = oldTime+ dt;
+                double newY = k.key->key.getValue() + dv;
+                
+                int keyframeIndex = internalCurve->keyFrameIndex(oldTime);
+                int newIndex;
+                
+                k.key->key = internalCurve->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
             }
-            double oldTime = k.key->key.getTime();
-            int keyframeIndex = curve->keyFrameIndex(oldTime);
-            int newIndex;
-            
-            k.key->key = curve->setKeyFrameValueAndTime(newX,newY, keyframeIndex, &newIndex);
             isParametric->evaluateValueChange(isKnobCurve->getDimension(), isParametric->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
         }
-
-    } else if (isBezierCurve) {
-        double oldTime = k.key->key.getTime();
-        k.key->key.setTime(oldTime + dt);
-        isBezierCurve->getBezier()->moveKeyframe(oldTime, k.key->key.getTime());
-
+        
     }
-    if (k.prevIsSelected) {
-        k.key->prevKey.setTime(k.key->prevKey.getTime() + dt);
-        k.key->prevKey.setValue(k.key->prevKey.getValue() + dv);
-    }
-    if (k.nextIsSelected) {
-        k.key->nextKey.setTime(k.key->nextKey.getTime() + dt);
-        k.key->nextKey.setValue(k.key->nextKey.getValue() + dv);
-    }
-
 }
 
 void
@@ -433,8 +435,8 @@ MoveKeysCommand::move(double dt,
 
     std::list<boost::shared_ptr<RotoContext> > rotoToEvaluate;
     
-    for (std::vector<KeyToMove>::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->key->curve.get());
+    for (std::map<boost::shared_ptr<CurveGui>,std::vector<MoveKeysCommand::KeyToMove> >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
+        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(it->first.get());
         if (isKnobCurve) {
             
             if (!isKnobCurve->getKnobGui()) {
@@ -453,11 +455,8 @@ MoveKeysCommand::move(double dt,
                 }
             }
         }
-    }
-    
-    
-    for (std::vector<KeyToMove>::iterator it = _keys.begin(); it != _keys.end(); ++it) {
-        moveKey(*it, dt, dv);
+        moveKeys(it->first.get(), it->second, dt, dv);
+        _widget->updateSelectionAfterCurveChange(it->first.get());
     }
     
     if (_firstRedoCalled || _updateOnFirstRedo) {
@@ -500,11 +499,22 @@ MoveKeysCommand::mergeWith(const QUndoCommand * command)
             return false;
         }
 
-        std::vector<KeyToMove>::const_iterator itother = cmd->_keys.begin();
-        for (std::vector<KeyToMove>::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itother) {
-            if (itother->key != it->key) {
+        std::map<boost::shared_ptr<CurveGui>,std::vector<MoveKeysCommand::KeyToMove> >::const_iterator itother = cmd->_keys.begin();
+        for (std::map<boost::shared_ptr<CurveGui>,std::vector<MoveKeysCommand::KeyToMove> >::const_iterator it = _keys.begin(); it != _keys.end(); ++it, ++itother) {
+            if (itother->first != it->first) {
                 return false;
             }
+            
+            if (itother->second.size() != it->second.size()) {
+                return false;
+            }
+            
+            for (std::size_t i =0; i < it->second.size(); ++i) {
+                if (it->second[i].key != itother->second[i].key) {
+                    return false;
+                }
+            }
+            
         }
 
         _dt += cmd->_dt;

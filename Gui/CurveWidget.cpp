@@ -253,7 +253,6 @@ CurveWidget::showCurvesAndHideOthers(const std::vector<boost::shared_ptr<CurveGu
             (*it)->setVisible(false);
         }
     }
-#pragma message WARN("Check if refresh tangents needed here")
     update();
 }
 
@@ -279,7 +278,6 @@ CurveWidget::updateSelectionAfterCurveChange(CurveGui* curve)
     }
     KeyFrameSet set = found->first->getKeyFrames();
     
-    found->second.clear();
     
     std::list<KeyPtr> newSelection;
     for (std::list<KeyPtr>::iterator it2 = found->second.begin(); it2 != found->second.end(); ++it2) {

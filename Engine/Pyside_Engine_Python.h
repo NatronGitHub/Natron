@@ -41,11 +41,11 @@
 
 //Engine
 #include "PyGlobalFunctions.h"
-#include "NodeGroup.h"
-#include "AppInstance.h"
-#include "Roto.h"
-#include "Node.h"
-#include "Parameter.h"
+#include "PyNodeGroup.h"
+#include "PyAppInstance.h"
+#include "PyRoto.h"
+#include "PyNode.h"
+#include "PyParameter.h"
 #include "RectI.h"
 #include "RectD.h"
 

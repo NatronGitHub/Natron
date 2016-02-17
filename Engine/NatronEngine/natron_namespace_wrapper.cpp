@@ -1020,6 +1020,9 @@ void init_NATRON_NAMESPACE(PyObject* module)
         &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PLAYER_STOP", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PLAYER_STOP))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PLAYER_PAUSE", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PLAYER_PAUSE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
         &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PLAYER_LOOP_MODE", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PLAYER_LOOP_MODE))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],

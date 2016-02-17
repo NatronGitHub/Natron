@@ -95,9 +95,11 @@ public:
     
     int getProxyIndex() const;
     
-    void setCurrentView(ViewIdx index);
+     /* Python API: do not use ViewIdx */
+    void setCurrentView(int index);
     
-    ViewIdx getCurrentView() const;
+     /* Python API: do not use ViewIdx */
+    int getCurrentView() const;
     
 };
 

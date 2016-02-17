@@ -212,7 +212,7 @@ public:
     };
 
     MoveKeysCommand(CurveWidget* widget,
-                    const std::vector<KeyToMove> & keys,
+                    const std::map<boost::shared_ptr<CurveGui>,std::vector<MoveKeysCommand::KeyToMove> > & keys,
                     double dt,
                     double dv,
                     bool updateOnFirstRedo,
@@ -234,7 +234,7 @@ private:
     bool _updateOnFirstRedo;
     double _dt;
     double _dv;
-    std::vector<KeyToMove> _keys;
+    std::map<boost::shared_ptr<CurveGui>,std::vector<MoveKeysCommand::KeyToMove> > _keys;
     CurveWidget* _widget;
 };
 

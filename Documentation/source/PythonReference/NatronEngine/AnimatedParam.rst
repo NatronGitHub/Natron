@@ -28,6 +28,7 @@ Functions
 *    def :meth:`getNumKeys<NatronEngine.AnimatedParam.getNumKeys>` ([dimension=0])
 *    def :meth:`removeAnimation<NatronEngine.AnimatedParam.removeAnimation>` ([dimension=0])
 *    def :meth:`setExpression<NatronEngine.AnimatedParam.setExpression>` (expr, hasRetVariable[, dimension=0])
+*    def :meth:`setInterpolationAtTime<NatronEngine.AnimatedParam.setInterpolationAtTime>` (time, interpolation[, dimension=0])
 
 .. _details:
 
@@ -188,7 +189,18 @@ Set the Python expression *expr* on the parameter at the given *dimension*
 If *hasRetVariable* is True, then *expr* is assumed to have a variable *ret* declared.
 Otherwise, Natron will declare the *ret* variable itself.
 
+.. method:: NatronEngine.AnimatedParam.setInterpolationAtTime(time, interpolation[, dimension=0])
+
+	:param time: :class:`float<PySide.QtCore.float>`
+	:param interpolation: :class:`KeyFrameTypeEnum<NatronEngine.KeyFrameTypeEnum>`
+	:param dimension: :class:`int<PySide.QtCore.int>`
+    :rtype: :class:`bool<PySide.QtCore.bool>`
 
 
+Set the interpolation of the animation curve of the given dimension at the given keyframe. 
+If no such keyframe could be found, this method returns False.
+Upon success, this method returns True.
 
-
+Example::
+	
+	app1.Blur2.size.setInterpolationAtTime(56,NatronEngine.Natron.KeyframeTypeEnum.eKeyframeTypeConstant,0)

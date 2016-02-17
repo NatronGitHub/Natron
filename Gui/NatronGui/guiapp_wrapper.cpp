@@ -20,8 +20,8 @@ GCC_DIAG_OFF(uninitialized)
 NATRON_NAMESPACE_USING
 #include <PyAppInstance.h>
 #include <PyGuiApp.h>
-#include <PyNodeGroup.h>
 #include <PyNode.h>
+#include <PyNodeGroup.h>
 #include <PyParameter.h>
 #include <PythonPanels.h>
 #include <list>

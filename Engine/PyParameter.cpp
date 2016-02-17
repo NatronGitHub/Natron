@@ -29,6 +29,7 @@
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/Curve.h"
 #include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -378,6 +379,17 @@ int
 AnimatedParam::getCurrentTime() const
 {
     return getInternalKnob()->getCurrentTime();
+}
+
+bool
+AnimatedParam::setInterpolationAtTime(double time, KeyframeTypeEnum interpolation, int dimension)
+{
+    KnobPtr knob = getInternalKnob();
+    if (!knob) {
+        return false;
+    }
+    KeyFrame newKey;
+    return knob->setInterpolationAtTime(eCurveChangeReasonInternal,ViewSpec::current(), dimension, time, interpolation, &newKey);
 }
 
 void

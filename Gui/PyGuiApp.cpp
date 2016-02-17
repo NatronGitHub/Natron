@@ -722,21 +722,24 @@ PyViewer::getProxyIndex() const
 
 
 void
-PyViewer::setCurrentView(ViewIdx index)
+PyViewer::setCurrentView(int index)
 {
+    if (index < 0) {
+        return;
+    }
     if (!_node->isActivated()) {
         return;
     }
-    _viewer->setCurrentView(index);
+    _viewer->setCurrentView(ViewIdx(index));
 }
 
-ViewIdx
+int
 PyViewer::getCurrentView() const
 {
     if (!_node->isActivated()) {
-        return ViewIdx(0);
+        return 0;
     }
-    return _viewer->getCurrentView();
+    return _viewer->getCurrentView().value();
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -21,8 +21,8 @@ GCC_DIAG_OFF(uninitialized)
 NATRON_NAMESPACE_USING
 #include <PyNode.h>
 #include <PyParameter.h>
-#include <RectD.h>
 #include <PyRoto.h>
+#include <RectD.h>
 #include <list>
 #include <map>
 #include <vector>
@@ -875,7 +875,7 @@ static PyObject* Sbk_EffectFunc_getRegionOfDefinition(PyObject* self, PyObject* 
 
         if (!PyErr_Occurred()) {
             // getRegionOfDefinition(double,int)const
-            RectD* cppResult = new RectD(const_cast<const ::Effect*>(cppSelf)->getRegionOfDefinition(cppArg0, ViewIdx(cppArg1)));
+            RectD* cppResult = new RectD(const_cast<const ::Effect*>(cppSelf)->getRegionOfDefinition(cppArg0, cppArg1));
             pyResult = Shiboken::Object::newObject((SbkObjectType*)SbkNatronEngineTypes[SBK_RECTD_IDX], cppResult, true, true);
         }
     }

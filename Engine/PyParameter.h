@@ -260,6 +260,8 @@ public:
      **/
     bool setExpression(const std::string& expr,bool hasRetVariable,int dimension = 0);
     std::string getExpression(int dimension,bool* hasRetVariable) const;
+    
+    bool setInterpolationAtTime(double time, NATRON_NAMESPACE::KeyframeTypeEnum interpolation, int dimension = 0);
 };
 
 /**
