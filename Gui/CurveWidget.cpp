@@ -934,7 +934,20 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
     if (_imp->_evaluateOnPenUp) {
         _imp->_evaluateOnPenUp = false;
         
-        if (_imp->_state == eEventStateDraggingKeys) {
+        if (_imp->_state == eEventStateDraggingKeys ||
+            _imp->_state == eEventStateDraggingBtmLeftBbox ||
+            _imp->_state == eEventStateDraggingMidBtmBbox ||
+            _imp->_state == eEventStateDraggingBtmRightBbox ||
+            _imp->_state == eEventStateDraggingMidRightBbox ||
+            _imp->_state == eEventStateDraggingTopRightBbox ||
+            _imp->_state == eEventStateDraggingMidTopBbox ||
+            _imp->_state == eEventStateDraggingTopLeftBbox ||
+            _imp->_state == eEventStateDraggingMidLeftBbox) {
+            
+            if (_imp->_gui) {
+                _imp->_gui->setDraftRenderEnabled(false);
+            }
+            
             std::map<KnobHolder*,bool> toEvaluate;
             std::list<boost::shared_ptr<RotoContext> > rotoToEvaluate;
             for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
@@ -971,6 +984,10 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
                 (*it)->evaluateChange();
             }
         } else if (_imp->_state == eEventStateDraggingTangent) {
+            if (_imp->_gui) {
+                _imp->_gui->setDraftRenderEnabled(false);
+            }
+
             KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(_imp->_selectedDerivative.second->curve.get());
             BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>(_imp->_selectedDerivative.second->curve.get());
             if (isKnobCurve) {
@@ -1095,119 +1112,128 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
     double dx = ( oldClick_opengl.x() - newClick_opengl.x() );
     double dy = ( oldClick_opengl.y() - newClick_opengl.y() );
     switch (_imp->_state) {
-    case eEventStateDraggingView:
-        _imp->zoomOrPannedSinceLastFit = true;
-        _imp->zoomCtx.translate(dx, dy);
-
-        // Synchronize the dope sheet editor and opened viewers
-        if (_imp->_gui->isTripleSyncEnabled()) {
-            _imp->updateDopeSheetViewFrameRange();
-            _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());
-        }
-        break;
-
-    case eEventStateDraggingKeys:
-        if (!_imp->_mustSetDragOrientation) {
-            if ( !_imp->_selectedKeyFrames.empty() ) {
-                _imp->moveSelectedKeyFrames(oldClick_opengl,newClick_opengl);
+        case eEventStateDraggingView:
+            _imp->zoomOrPannedSinceLastFit = true;
+            _imp->zoomCtx.translate(dx, dy);
+            
+            // Synchronize the dope sheet editor and opened viewers
+            if (_imp->_gui->isTripleSyncEnabled()) {
+                _imp->updateDopeSheetViewFrameRange();
+                _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());
             }
-        }
-        break;
-    case eEventStateDraggingBtmLeftBbox:
-    case eEventStateDraggingMidBtmBbox:
-    case eEventStateDraggingBtmRightBbox:
-    case eEventStateDraggingMidRightBbox:
-    case eEventStateDraggingTopRightBbox:
-    case eEventStateDraggingMidTopBbox:
-    case eEventStateDraggingTopLeftBbox:
-    case eEventStateDraggingMidLeftBbox:
-        if ( !_imp->_selectedKeyFrames.empty() ) {
-            _imp->transformSelectedKeyFrames(oldClick_opengl, newClick_opengl, modCASIsShift(e));
-        }
-        break;
-    case eEventStateSelecting:
-        _imp->refreshSelectionRectangle( (double)e->x(),(double)e->y() );
-        break;
-
-    case eEventStateDraggingTangent:
-        _imp->moveSelectedTangent(newClick_opengl);
-        break;
-
-    case eEventStateDraggingTimeline:
-        _imp->_gui->setDraftRenderEnabled(true);
-        _imp->_gui->getApp()->setLastViewerUsingTimeline(NodePtr());
-        _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  eTimelineChangeReasonCurveEditorSeek );
-        break;
-    case eEventStateZooming: {
-        
-        _imp->zoomOrPannedSinceLastFit = true;
-        
-        int deltaX = 2 * (e->x() - _imp->_lastMousePos.x());
-        int deltaY = - 2 * (e->y() - _imp->_lastMousePos.y());
-        // Wheel: zoom values and time, keep point under mouse
-        
-        
-        const double zoomFactor_min = 0.0001;
-        const double zoomFactor_max = 10000.;
-        const double par_min = 0.0001;
-        const double par_max = 10000.;
-        double zoomFactor;
-        double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX);
-        double scaleFactorY = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaY);
-        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( _imp->_dragStartPoint.x(), _imp->_dragStartPoint.y() );
-        
-        
-        // Alt + Shift + Wheel: zoom values only, keep point under mouse
-        zoomFactor = _imp->zoomCtx.factor() * scaleFactorY;
-        
-        if (zoomFactor <= zoomFactor_min) {
-            zoomFactor = zoomFactor_min;
-            scaleFactorY = zoomFactor / _imp->zoomCtx.factor();
-        } else if (zoomFactor > zoomFactor_max) {
-            zoomFactor = zoomFactor_max;
-            scaleFactorY = zoomFactor / _imp->zoomCtx.factor();
-        }
-        
-        double par = _imp->zoomCtx.aspectRatio() / scaleFactorY;
-        if (par <= par_min) {
-            par = par_min;
-            scaleFactorY = par / _imp->zoomCtx.aspectRatio();
-        } else if (par > par_max) {
-            par = par_max;
-            scaleFactorY = par / _imp->zoomCtx.factor();
-        }
-        _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactorY);
-        
-        // Alt + Wheel: zoom time only, keep point under mouse
-        par = _imp->zoomCtx.aspectRatio() * scaleFactorX;
-        if (par <= par_min) {
-            par = par_min;
-            scaleFactorX = par / _imp->zoomCtx.aspectRatio();
-        } else if (par > par_max) {
-            par = par_max;
-            scaleFactorX = par / _imp->zoomCtx.factor();
-        }
-        _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
-        
-        if (_imp->_drawSelectedKeyFramesBbox) {
-            refreshSelectedKeysBbox();
-        }
-        
-        // Synchronize the dope sheet editor and opened viewers
-        if (_imp->_gui->isTripleSyncEnabled()) {
-            _imp->updateDopeSheetViewFrameRange();
-            _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());
-        }
-        refreshDisplayedTangents();
-       
-    } break;
-    case eEventStateNone:
-        assert(0);
-        break;
+            break;
+            
+        case eEventStateDraggingKeys:
+            if (!_imp->_mustSetDragOrientation) {
+                if ( !_imp->_selectedKeyFrames.empty() ) {
+                    if (_imp->_gui) {
+                        _imp->_gui->setDraftRenderEnabled(true);
+                    }
+                    _imp->moveSelectedKeyFrames(oldClick_opengl,newClick_opengl);
+                }
+            }
+            break;
+        case eEventStateDraggingBtmLeftBbox:
+        case eEventStateDraggingMidBtmBbox:
+        case eEventStateDraggingBtmRightBbox:
+        case eEventStateDraggingMidRightBbox:
+        case eEventStateDraggingTopRightBbox:
+        case eEventStateDraggingMidTopBbox:
+        case eEventStateDraggingTopLeftBbox:
+        case eEventStateDraggingMidLeftBbox:
+            if ( !_imp->_selectedKeyFrames.empty() ) {
+                if (_imp->_gui) {
+                    _imp->_gui->setDraftRenderEnabled(true);
+                }
+                _imp->transformSelectedKeyFrames(oldClick_opengl, newClick_opengl, modCASIsShift(e));
+            }
+            break;
+        case eEventStateSelecting:
+            _imp->refreshSelectionRectangle( (double)e->x(),(double)e->y() );
+            break;
+            
+        case eEventStateDraggingTangent:
+            if (_imp->_gui) {
+                _imp->_gui->setDraftRenderEnabled(true);
+            }
+            _imp->moveSelectedTangent(newClick_opengl);
+            break;
+            
+        case eEventStateDraggingTimeline:
+            _imp->_gui->setDraftRenderEnabled(true);
+            _imp->_gui->getApp()->setLastViewerUsingTimeline(NodePtr());
+            _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  eTimelineChangeReasonCurveEditorSeek );
+            break;
+        case eEventStateZooming: {
+            
+            _imp->zoomOrPannedSinceLastFit = true;
+            
+            int deltaX = 2 * (e->x() - _imp->_lastMousePos.x());
+            int deltaY = - 2 * (e->y() - _imp->_lastMousePos.y());
+            // Wheel: zoom values and time, keep point under mouse
+            
+            
+            const double zoomFactor_min = 0.0001;
+            const double zoomFactor_max = 10000.;
+            const double par_min = 0.0001;
+            const double par_max = 10000.;
+            double zoomFactor;
+            double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX);
+            double scaleFactorY = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaY);
+            QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( _imp->_dragStartPoint.x(), _imp->_dragStartPoint.y() );
+            
+            
+            // Alt + Shift + Wheel: zoom values only, keep point under mouse
+            zoomFactor = _imp->zoomCtx.factor() * scaleFactorY;
+            
+            if (zoomFactor <= zoomFactor_min) {
+                zoomFactor = zoomFactor_min;
+                scaleFactorY = zoomFactor / _imp->zoomCtx.factor();
+            } else if (zoomFactor > zoomFactor_max) {
+                zoomFactor = zoomFactor_max;
+                scaleFactorY = zoomFactor / _imp->zoomCtx.factor();
+            }
+            
+            double par = _imp->zoomCtx.aspectRatio() / scaleFactorY;
+            if (par <= par_min) {
+                par = par_min;
+                scaleFactorY = par / _imp->zoomCtx.aspectRatio();
+            } else if (par > par_max) {
+                par = par_max;
+                scaleFactorY = par / _imp->zoomCtx.factor();
+            }
+            _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactorY);
+            
+            // Alt + Wheel: zoom time only, keep point under mouse
+            par = _imp->zoomCtx.aspectRatio() * scaleFactorX;
+            if (par <= par_min) {
+                par = par_min;
+                scaleFactorX = par / _imp->zoomCtx.aspectRatio();
+            } else if (par > par_max) {
+                par = par_max;
+                scaleFactorX = par / _imp->zoomCtx.factor();
+            }
+            _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
+            
+            if (_imp->_drawSelectedKeyFramesBbox) {
+                refreshSelectedKeysBbox();
+            }
+            
+            // Synchronize the dope sheet editor and opened viewers
+            if (_imp->_gui->isTripleSyncEnabled()) {
+                _imp->updateDopeSheetViewFrameRange();
+                _imp->_gui->centerOpenedViewersOn(_imp->zoomCtx.left(), _imp->zoomCtx.right());
+            }
+            refreshDisplayedTangents();
+            
+        } break;
+        case eEventStateNone:
+            assert(0);
+            break;
     }
-
+    
     _imp->_lastMousePos = e->pos();
-
+    
     if (mustUpdate) {
         update();
     }

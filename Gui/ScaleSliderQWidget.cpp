@@ -77,11 +77,13 @@ struct ScaleSliderQWidgetPrivate
     
     bool useLineColor;
     QColor lineColor;
+    bool allowDraftModeSetting;
     
     ScaleSliderQWidgetPrivate(QWidget* parent,
                               double min,
                               double max,
                               double initialPos,
+                              bool allowDraftModeSetting,
                               Gui* gui,
                               ScaleSliderQWidget::DataTypeEnum dataType,
                               ScaleTypeEnum type)
@@ -105,6 +107,7 @@ struct ScaleSliderQWidgetPrivate
     , altered(false)
     , useLineColor(false)
     , lineColor(Qt::black)
+    , allowDraftModeSetting(allowDraftModeSetting)
     {
         font.setPointSize((font.pointSize() * NATRON_FONT_SIZE_8) / NATRON_FONT_SIZE_12);
     }
@@ -113,12 +116,13 @@ struct ScaleSliderQWidgetPrivate
 ScaleSliderQWidget::ScaleSliderQWidget(double min,
                                        double max,
                                        double initialPos,
+                                       bool allowDraftModeSetting,
                                        DataTypeEnum dataType,
                                        Gui* gui,
                                        ScaleTypeEnum type,
                                        QWidget* parent)
     : QWidget(parent)
-    , _imp(new ScaleSliderQWidgetPrivate(parent,min,max,initialPos,gui,dataType,type))
+    , _imp(new ScaleSliderQWidgetPrivate(parent,min,max,initialPos,allowDraftModeSetting,gui,dataType,type))
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     QSize sizeh = sizeHint();
@@ -195,7 +199,7 @@ ScaleSliderQWidget::mouseMoveEvent(QMouseEvent* e)
         QPoint newClick =  e->pos();
         QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( newClick.x(),newClick.y() );
         double v = _imp->dataType == eDataTypeInt ? std::floor(newClick_opengl.x() + 0.5) : newClick_opengl.x();
-        if (_imp->gui) {
+        if (_imp->gui && _imp->allowDraftModeSetting) {
             _imp->gui->setDraftRenderEnabled(true);
         }
         seekInternal(v);
@@ -207,7 +211,7 @@ ScaleSliderQWidget::mouseReleaseEvent(QMouseEvent* e)
 {
     if (!_imp->readOnly) {
         bool hasMoved = true;
-        if (_imp->gui) {
+        if (_imp->gui && _imp->allowDraftModeSetting) {
             hasMoved = _imp->gui->isDraftRenderEnabled();
             _imp->gui->setDraftRenderEnabled(false);
         }

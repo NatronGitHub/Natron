@@ -278,7 +278,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
             }
         }
         
-        _slider = new ScaleSliderQWidget( dispminGui, dispmaxGui, knob->getValue(0),
+        _slider = new ScaleSliderQWidget( dispminGui, dispmaxGui, knob->getValue(0),true,
                                          ScaleSliderQWidget::eDataTypeDouble,getGui(), eScaleTypeLinear, layout->parentWidget() );
         _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
