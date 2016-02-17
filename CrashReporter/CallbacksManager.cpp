@@ -97,6 +97,7 @@ CallbacksManager* CallbacksManager::_instance = 0;
 #endif
 
 #include "Global/ProcInfo.h"
+#include "Global/GitVersion.h"
 
 #define EXIT_APP(code,exitIfDumpReceived) ( CallbacksManager::instance()->s_emitDoExitCallBackOnMainThread(code,exitIfDumpReceived) )
 
@@ -562,7 +563,8 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     
     const QString productName(NATRON_APPLICATION_NAME);
     QString versionStr = getVersionString();
-    
+    const QString gitHash(GIT_COMMIT);
+    const QString gitBranch(GIT_BRANCH);
 
 #ifndef REPORTER_CLI_ONLY
     assert(_dialog);
@@ -600,6 +602,9 @@ CallbacksManager::uploadFileToRepository(const QString& filepath, const QString&
     QHttpMultiPart *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
     
     addTextHttpPart(multiPart, "ProductName", productName);
+    addTextHttpPart(multiPart, "Version", versionStr);
+    addTextHttpPart(multiPart, "GitHash", gitHash);
+    addTextHttpPart(multiPart, "GitBranch", gitBranch);
     addTextHttpPart(multiPart, "Version", versionStr);
     addTextHttpPart(multiPart, "guid", guidStr);
     addTextHttpPart(multiPart, "Comments", comments);
