@@ -312,6 +312,11 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             }
         }
         
+        if ( !parentName.empty() ) {
+            //The parent will have connection mades for its children
+            continue;
+        }
+        
         const std::vector<std::string> & oldInputs = it->second->getOldInputs();
         if (!oldInputs.empty()) {
             
