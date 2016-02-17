@@ -199,6 +199,9 @@ public:
     void setUpdateViewerOnTracking(bool update);
 
     bool isUpdateViewerOnTrackingEnabled() const;
+    
+    bool isTracking() const;
+    
 public Q_SLOTS:
 
     void onAverageTracksButtonClicked();

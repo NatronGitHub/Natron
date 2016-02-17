@@ -562,26 +562,34 @@ TrackerGui::keyDown(double time,
         _imp->panel->getSelectedInstances(&selectedInstances);
         didSomething = !selectedInstances.empty();
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingBackward, modifiers, key) ) {
-        _imp->trackBwButton->setDown(true);
-        _imp->trackBwButton->setChecked(true);
-        didSomething = _imp->panel->trackBackward();
-        if (!didSomething) {
-            _imp->panel->stopTracking();
-            _imp->trackBwButton->setDown(false);
-            _imp->trackBwButton->setChecked(false);
+        if (!_imp->panel->isTracking()) {
+            _imp->trackBwButton->setDown(true);
+            _imp->trackBwButton->setChecked(true);
+            didSomething = _imp->panel->trackBackward();
+            if (!didSomething) {
+                _imp->panel->stopTracking();
+                _imp->trackBwButton->setDown(false);
+                _imp->trackBwButton->setChecked(false);
+            }
         }
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingPrevious, modifiers, key) ) {
-        didSomething = _imp->panel->trackPrevious();
+        if (!_imp->panel->isTracking()) {
+            didSomething = _imp->panel->trackPrevious();
+        }
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingNext, modifiers, key) ) {
-        didSomething = _imp->panel->trackNext();
+        if (!_imp->panel->isTracking()) {
+            didSomething = _imp->panel->trackNext();
+        }
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingForward, modifiers, key) ) {
-        _imp->trackFwButton->setDown(true);
-        _imp->trackFwButton->setChecked(true);
-        didSomething = _imp->panel->trackForward();
-        if (!didSomething) {
-            _imp->panel->stopTracking();
-            _imp->trackFwButton->setDown(false);
-            _imp->trackFwButton->setChecked(false);
+        if (!_imp->panel->isTracking()) {
+            _imp->trackFwButton->setDown(true);
+            _imp->trackFwButton->setChecked(true);
+            didSomething = _imp->panel->trackForward();
+            if (!didSomething) {
+                _imp->panel->stopTracking();
+                _imp->trackFwButton->setDown(false);
+                _imp->trackFwButton->setChecked(false);
+            }
         }
     } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, modifiers, key) ) {
         _imp->panel->stopTracking();

@@ -2225,6 +2225,12 @@ TrackerPanel::isUpdateViewerOnTrackingEnabled() const
     return _imp->updateViewerOnTrackingEnabled;
 }
 
+bool
+TrackerPanel::isTracking() const
+{
+    return _imp->scheduler.isWorking();
+}
+
 void
 TrackerPanel::onExportButtonClicked()
 {
