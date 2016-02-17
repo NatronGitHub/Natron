@@ -286,6 +286,19 @@ CurveWidget::updateSelectionAfterCurveChange(CurveGui* curve)
         KeyFrameSet::const_iterator found = Curve::findWithTime(set, (*it2)->key.getTime());
         if (found != set.end()) {
             (*it2)->key = *found;
+            KeyFrameSet::const_iterator next = found;
+            ++next;
+            (*it2)->hasNext = next != set.end();
+            if ((*it2)->hasNext) {
+                (*it2)->nextKey = *next;
+            }
+            (*it2)->hasPrevious = found != set.begin();
+            if ((*it2)->hasPrevious) {
+                KeyFrameSet::const_iterator prev = found;
+                --prev;
+                (*it2)->prevKey = *prev;
+            }
+            
             newSelection.push_back(*it2);
         }
     }
