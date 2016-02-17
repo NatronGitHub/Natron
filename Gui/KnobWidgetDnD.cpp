@@ -102,7 +102,7 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
 void
 KnobWidgetDnD::keyPress(QKeyEvent* e)
 {
-    _imp->userInputSinceFocusIn = true;
+    //_imp->userInputSinceFocusIn = true;
     if (modCASIsControl(e)) {
         _imp->widget->setCursor(appPTR->getLinkToCursor());
     } else if (modCASIsControlShift(e)) {
