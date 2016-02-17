@@ -1102,6 +1102,9 @@ FileSystemModel::onWatchedFileChanged(const QString& file)
 void
 FileSystemModel::cleanAndRefreshItem(const boost::shared_ptr<FileSystemItem>& item)
 {
+    if (!item) {
+        return;
+    }
     QModelIndex idx = index(item.get(),0);
     if (idx.isValid()) {
         int count = item->childCount();
