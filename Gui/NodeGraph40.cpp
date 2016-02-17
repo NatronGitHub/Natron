@@ -129,7 +129,7 @@ NodeGraph::copySelectedNodes()
     }
     QMimeData* mimedata = new QMimeData;
     QByteArray data(ss.str().c_str());
-    mimedata->setData("text/natron-nodes", data);
+    mimedata->setData("text/plain", data);
     QClipboard* clipboard = QApplication::clipboard();
     
     //ownership is transferred to the clipboard
@@ -162,10 +162,10 @@ NodeGraph::pasteNodeClipBoards(const QPointF& pos)
 {
     QClipboard* clipboard = QApplication::clipboard();
     const QMimeData* mimedata = clipboard->mimeData();
-    if (!mimedata->hasFormat("text/natron-nodes")) {
+    if (!mimedata->hasFormat("text/plain")) {
         return;
     }
-    QByteArray data = mimedata->data("text/natron-nodes");
+    QByteArray data = mimedata->data("text/plain");
     
     std::list<std::pair<std::string,NodeGuiPtr > > newNodes;
     
@@ -179,7 +179,7 @@ NodeGraph::pasteNodeClipBoards(const QPointF& pos)
         boost::archive::xml_iarchive iArchive(ss);
         iArchive >> boost::serialization::make_nvp("Clipboard",cb);
     } catch (...) {
-        qDebug() << "Failed to load clipboard";
+        Dialogs::errorDialog(tr("Paste").toStdString(), tr("Clipboard does not contain a Natron graph").toStdString());
         return;
     }
     _imp->pasteNodesInternal(cb,pos, true, &newNodes);
