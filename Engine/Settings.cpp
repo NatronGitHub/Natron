@@ -2463,8 +2463,16 @@ Settings::populatePluginsTab()
             }
             
             ///Create checkbox to activate/deactivate the plug-in
-            std::string pluginName = plugin->getPluginID().toStdString();
             
+            std::string pluginName = plugin->getPluginID().toStdString();
+            {
+                std::stringstream ss;
+                ss << pluginName;
+                ss << " Version ";
+                ss << plugin->getMajorVersion() << '.' << plugin->getMinorVersion();
+                pluginName = ss.str();
+            }
+                
             boost::shared_ptr<KnobString> pluginLabel = AppManager::createKnob<KnobString>(this, pluginName);
             pluginLabel->setAsLabel();
             pluginLabel->setName(it->first);
