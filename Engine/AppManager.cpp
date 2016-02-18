@@ -468,12 +468,16 @@ AppManager::loadInternal(const CLArgs& cl)
         std::locale::global(std::locale(std::locale("en_US.UTF-8"), "C", std::locale::numeric));
     } catch (std::runtime_error) {
         try {
-            std::locale::global(std::locale(std::locale("UTF8"), "C", std::locale::numeric));
+            std::locale::global(std::locale(std::locale("C.UTF-8"), "C", std::locale::numeric));
         } catch (std::runtime_error) {
             try {
-                std::locale::global(std::locale("C"));
+                std::locale::global(std::locale(std::locale("UTF-8"), "C", std::locale::numeric));
             } catch (std::runtime_error) {
-                qDebug() << "Could not set C++ locale!";
+                try {
+                    std::locale::global(std::locale("C"));
+                } catch (std::runtime_error) {
+                    qDebug() << "Could not set C++ locale!";
+                }
             }
         }
     }
@@ -481,6 +485,9 @@ AppManager::loadInternal(const CLArgs& cl)
     // set the C locale second, because it will not overwrite the changes you made to the C++ locale
     // see https://stackoverflow.com/questions/12373341/does-stdlocaleglobal-make-affect-to-printf-function
     char *category = std::setlocale(LC_ALL,"en_US.UTF-8");
+    if (category == NULL) {
+        category = std::setlocale(LC_ALL,"C.UTF-8");
+    }
     if (category == NULL) {
         category = std::setlocale(LC_ALL,"UTF-8");
     }
