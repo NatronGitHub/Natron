@@ -506,6 +506,54 @@ if [ ! -f "$INSTALL_PATH/lib/libboost_atomic.so" ]; then
     env CFLAGS="$BF" CXXFLAGS="$BF" ./b2 -s NO_BZIP2=1 --prefix=$INSTALL_PATH cflags="-fPIC" --disable-icu -j${MKJOBS} install || exit 1 # link=static
 fi
 
+# install cppunit
+if [ ! -f "$INSTALL_PATH/bin/cppunit-config" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$CPPU_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$CPPU_TAR" -O "$SRC_PATH/$CPPU_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$CPPU_TAR" || exit 1
+    cd cppunit* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" ./configure --prefix="$INSTALL_PATH" || exit 1
+    make -j${MKJOBS} || exit 1
+    make install || exit 1
+    if [ "$DDIR" != "" ]; then
+      make DESTDIR="${DDIR}" install || exit 1
+    fi
+fi
+
+# install librevenge
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/librevenge-0.0.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$REVENGE_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$REVENGE_TAR" -O "$SRC_PATH/$REVENGE_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$REVENGE_TAR" || exit 1
+    cd librevenge* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --disable-werror --prefix="$INSTALL_PATH" --disable-docs --enable-shared || exit 1
+    make -j1 || exit 1
+    make install || exit 1
+    if [ "$DDIR" != "" ]; then
+      make DESTDIR="${DDIR}" install || exit 1
+    fi
+fi
+
+# install libcdr
+if [ ! -f "$INSTALL_PATH/lib/pkgconfig/libcdr-0.1.pc" ]; then
+    cd "$TMP_PATH" || exit 1
+    if [ ! -f "$SRC_PATH/$CDR_TAR" ]; then
+        wget "$THIRD_PARTY_SRC_URL/$CDR_TAR" -O "$SRC_PATH/$CDR_TAR" || exit 1
+    fi
+    tar xvf "$SRC_PATH/$CDR_TAR" || exit 1
+    cd libcdr* || exit 1
+    env CFLAGS="$BF" CXXFLAGS="$BF" CPPFLAGS="-I${INSTALL_PATH}/include" LDFLAGS="-L${INSTALL_PATH}/lib" ./configure --disable-werror --prefix="$INSTALL_PATH" --disable-docs --enable-shared || exit 1
+    make -j1 || exit 1
+    make install || exit 1
+    if [ "$DDIR" != "" ]; then
+      make DESTDIR="${DDIR}" install || exit 1
+    fi
+fi
+
 # Install jpeg
 if [ ! -f $INSTALL_PATH/lib/libjpeg.so ]; then
     cd $TMP_PATH || exit 1

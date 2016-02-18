@@ -179,6 +179,9 @@ GDK_TAR=gdk-pixbuf-2.32.1.tar.xz
 ELF_TAR=patchelf-0.8.tar.bz2
 ZIP_TAR=libzip-1.0.1.tar.xz
 GIF_TAR=giflib-5.1.2.tar.bz2
+CPPU_TAR=cppunit-1.13.2.tar.gz
+CDR_TAR=libcdr-0.1.2.tar.xz
+REVENGE_TAR=librevenge-0.0.4.tar.xz
 
 TC_GCC=4.8.5
 TC_MPC=1.0.1
