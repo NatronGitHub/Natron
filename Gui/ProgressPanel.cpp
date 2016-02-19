@@ -192,7 +192,7 @@ ProgressPanel::ProgressPanel(Gui* gui)
     
     _imp->removeTasksAfterFinishCheckbox = new QCheckBox(tr("Remove Finished Tasks"),_imp->headerContainer);
     _imp->removeTasksAfterFinishCheckbox->setToolTip(GuiUtils::convertFromPlainText(tr("When checked, finished tasks that can be paused"  " will be automatically removed from the task list when they are finished. When unchecked, the tasks may be restarted."), Qt::WhiteSpaceNormal));
-    _imp->removeTasksAfterFinishCheckbox->setChecked(true);
+    _imp->removeTasksAfterFinishCheckbox->setChecked(false);
     _imp->headerLayout->addWidget(_imp->removeTasksAfterFinishCheckbox);
 
     
@@ -353,7 +353,13 @@ ProgressPanel::removeTasksFromTable(const std::list<ProgressTaskInfoPtr>& tasks)
     
     {
         QMutexLocker k(&_imp->tasksMutex);
-        
+        for (std::list<ProgressTaskInfoPtr>::const_iterator it = tasks.begin(); it!=tasks.end(); ++it) {
+            TasksMap::iterator foundInMap = _imp->tasks.find((*it)->getNode());
+            if (foundInMap != _imp->tasks.end()) {
+                (*it)->clearItems();
+                _imp->tasks.erase(foundInMap);
+            }
+        }
         int rc = _imp->view->rowCount();
         int cc = _imp->view->columnCount();
         assert((int)_imp->tasksOrdered.size() == rc);
@@ -362,11 +368,6 @@ ProgressPanel::removeTasksFromTable(const std::list<ProgressTaskInfoPtr>& tasks)
             std::list<ProgressTaskInfoPtr>::const_iterator foundSelected = std::find(tasks.begin(), tasks.end(), _imp->tasksOrdered[i]);
             _imp->tasksOrdered[i]->removeCellWidgets(i, _imp->view);
             if (foundSelected != tasks.end()) {
-                (*foundSelected)->clearItems();
-                TasksMap::iterator foundInMap = _imp->tasks.find((*foundSelected)->getNode());
-                if (foundInMap != _imp->tasks.end()) {
-                    _imp->tasks.erase(foundInMap);
-                }
                 continue;
             }
             for (int j = 0; j < cc; ++j) {
@@ -427,8 +428,10 @@ ProgressPanel::onTaskRestarted(const NodePtr& node,
         return;
     }
     //The process may have changed
-    task->setProcesshandler(process);
-    connectProcessSlots(task.get(), process.get());
+    if (process) {
+        task->setProcesshandler(process);
+        connectProcessSlots(task.get(), process.get());
+    }
 }
 
 void
@@ -451,12 +454,12 @@ ProgressPanel::startTask(const NodePtr& node,
         
         QMutexLocker k(&_imp->tasksMutex);
         task = _imp->findTask(node);
-        if (task) {
-            task->cancelTask(false, 1);
-            k.unlock();
-            removeTaskFromTable(task);
-        }
     }
+    if (task) {
+        task->cancelTask(false, 1);
+        removeTaskFromTable(task);
+    }
+    
 
     
     QMutexLocker k(&_imp->tasksMutex);
@@ -471,7 +474,9 @@ ProgressPanel::startTask(const NodePtr& node,
                             message, process));
     
     
-    
+    if (canPause) {
+        task->createItems();
+    }
     
     if (process) {
         connectProcessSlots(task.get(), process.get());

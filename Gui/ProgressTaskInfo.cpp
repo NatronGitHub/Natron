@@ -84,6 +84,7 @@ struct ProgressTaskInfoPrivate {
     
     bool canBePaused;
     
+    mutable QMutex canceledMutex;
     bool canceled;
     
     bool canCancel;
@@ -122,6 +123,7 @@ struct ProgressTaskInfoPrivate {
     , progressBar(0)
     , timeRemaining(-1)
     , canBePaused(canPause)
+    , canceledMutex()
     , canceled(false)
     , canCancel(canCancel)
     , updatedProgressOnce(false)
@@ -159,11 +161,14 @@ ProgressTaskInfo::ProgressTaskInfo(ProgressPanel* panel,
 : QObject()
 , _imp(new ProgressTaskInfoPrivate(panel,node, this, firstFrame, lastFrame, frameStep, canPause, canCancel, message, process))
 {
+    
+    
     //We compute the time remaining automatically based on a timer if this is not a render but a general progress dialog
     _imp->timer.reset(new TimeLapse);
     _imp->refreshLabelTimer.reset(new QTimer);
     QObject::connect(_imp->refreshLabelTimer.get(), SIGNAL(timeout()), this, SLOT(onRefreshLabelTimeout()));
     _imp->refreshLabelTimer->start(NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS);
+
     
 }
 
@@ -178,10 +183,13 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine, int retCode)
     if (_imp->refreshLabelTimer) {
         _imp->refreshLabelTimer->stop();
     }
-    if (_imp->canceled) {
-        return;
+    {
+        QMutexLocker k(&_imp->canceledMutex);
+        if (_imp->canceled) {
+            return;
+        }
+        _imp->canceled = true;
     }
-    _imp->canceled = true;
     if (_imp->timeRemainingItem) {
         _imp->timeRemainingItem->setText(tr("N/A"));
     }
@@ -217,7 +225,11 @@ ProgressTaskInfo::restartTask()
     if (!_imp->canBePaused) {
         return;
     }
-    _imp->canceled = false;
+    
+    {
+        QMutexLocker k(&_imp->canceledMutex);
+        _imp->canceled = false;
+    }
     _imp->updatedProgressOnce = false;
     _imp->timer.reset(new TimeLapse);
     _imp->refreshLabelTimer->start(NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS);
@@ -314,6 +326,7 @@ ProgressTaskInfo::getNode() const
 bool
 ProgressTaskInfo::wasCanceled() const
 {
+    QMutexLocker k(&_imp->canceledMutex);
     return _imp->canceled;
 }
 
@@ -327,7 +340,10 @@ void
 ProgressTaskInfo::onRefreshLabelTimeout()
 {
     if (!_imp->timeRemainingItem) {
-        if (_imp->timer->getTimeSinceCreation() * 1000 > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS) {
+        if (!_imp->canBePaused && wasCanceled()) {
+            return;
+        }
+        if ( _imp->timer->getTimeSinceCreation() * 1000 > NATRON_SHOW_PROGRESS_TOTAL_ESTIMATED_TIME_MS) {
             _imp->createItems();
         }
         return;
@@ -342,8 +358,17 @@ ProgressTaskInfo::onRefreshLabelTimeout()
 }
 
 void
+ProgressTaskInfo::createItems()
+{
+    _imp->createItems();
+}
+
+void
 ProgressTaskInfoPrivate::createItems()
 {
+    if (nameItem) {
+        return;
+    }
     NodePtr node = getNode();
     boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
     NodeGui* nodeUI = dynamic_cast<NodeGui*>(gui_i.get());

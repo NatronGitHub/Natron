@@ -652,6 +652,8 @@ public:
 
 protected:
 
+    bool refreshMetaDatas_internal();
+
     virtual void onMetaDatasRefreshed() {}
 
     bool refreshMetaDatas_recursive(std::list<Node*> & markedNodes);

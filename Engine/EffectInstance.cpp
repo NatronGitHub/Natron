@@ -4740,6 +4740,29 @@ static void setComponentsDirty_recursive(const Node* node, std::list<const Node*
 }
 
 bool
+EffectInstance::refreshMetaDatas_internal()
+{
+    getNode()->checkForPremultWarningAndCheckboxes();
+    
+    NodeMetadata metadata;
+    getPreferredMetaDatas_public(metadata);
+    _imp->checkMetadata(metadata);
+    
+    bool ret;
+    {
+        QMutexLocker k(&_imp->metadatasMutex);
+        ret = metadata != _imp->metadatas;
+        if (ret) {
+            _imp->metadatas = metadata;
+        }
+    }
+    if (ret) {
+        onMetaDatasRefreshed();
+    }
+    return ret;
+}
+
+bool
 EffectInstance::refreshMetaDatas_public(bool recurse)
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -4754,23 +4777,19 @@ EffectInstance::refreshMetaDatas_public(bool recurse)
             return refreshMetaDatas_recursive(markedNodes);
         }
     } else {
-        getNode()->checkForPremultWarningAndCheckboxes();
         
-        NodeMetadata metadata;
-        getPreferredMetaDatas_public(metadata);
-        _imp->checkMetadata(metadata);
-        
-        bool ret;
-        {
-            QMutexLocker k(&_imp->metadatasMutex);
-            ret = metadata != _imp->metadatas;
-            if (ret) {
-                _imp->metadatas = metadata;
+        bool ret = refreshMetaDatas_internal();
+        if (ret) {
+            NodePtr node = getNode();
+            NodesList children;
+            node->getChildrenMultiInstance(&children);
+            if (!children.empty()) {
+                for (NodesList::iterator it = children.begin(); it!=children.end(); ++it) {
+                    (*it)->getEffectInstance()->refreshMetaDatas_internal();
+                }
             }
         }
-        if (ret) {
-            onMetaDatasRefreshed();
-        }
+        
         return ret;
     }
 }

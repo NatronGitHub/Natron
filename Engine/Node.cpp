@@ -2386,7 +2386,6 @@ Node::getPreferredInputNode() const
                 break;
             }
         }
-        assert(inputNb != -1);
         if (inputNb != -1) {
             NodePtr input = isGroup->getNode()->getInput(inputNb);
             return input;

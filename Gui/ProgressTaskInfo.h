@@ -68,6 +68,8 @@ public:
     
     bool canPause() const;
     
+    void createItems();
+    
     /**
      * @brief If the task has been restarted, totalProgress is the progress over the whole task,
      * and subTaskProgress is the progress over the smaller range from which we stopped.

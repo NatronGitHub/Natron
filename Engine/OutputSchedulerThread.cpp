@@ -2695,7 +2695,7 @@ DefaultScheduler::getFrameRangeToRender(int& first,int& last) const
 void
 DefaultScheduler::handleRenderFailure(const std::string& errorMessage)
 {
-    std::cout << errorMessage << std::endl;
+    std::cerr << errorMessage << std::endl;
 }
 
 SchedulingPolicyEnum
