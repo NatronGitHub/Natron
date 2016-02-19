@@ -231,15 +231,10 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
        - R/W
     ********************************************************
     *********************************************************/
-#ifdef UNICODE
     std::wstring wpath = Global::s2ws(path);
-    file_handle = ::CreateFile(wpath.c_str(), GENERIC_READ | GENERIC_WRITE,
+    file_handle = ::CreateFileW(wpath.c_str(), GENERIC_READ | GENERIC_WRITE,
                                0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
 
-#else
-    file_handle = ::CreateFile(path.c_str(), GENERIC_READ | GENERIC_WRITE,
-                               0, 0, windows_open_mode, FILE_ATTRIBUTE_NORMAL, 0);
-#endif
     
     if (file_handle == INVALID_HANDLE_VALUE) {
 		std::string winError = Global::GetLastErrorAsString();
