@@ -100,9 +100,7 @@ public:
     
 public Q_SLOTS:
     
-    void onPauseTasksTriggered();
     void onCancelTasksTriggered();
-    void onRestartAllTasksTriggered();
     
     void doProgressOnMainThread(const ProgressTaskInfoPtr& task, double progress);
     
@@ -112,7 +110,6 @@ public Q_SLOTS:
     
     void onQueueRendersCheckboxChecked();
     
-    void refreshButtonsEnabledNess();
     
 Q_SIGNALS:
     

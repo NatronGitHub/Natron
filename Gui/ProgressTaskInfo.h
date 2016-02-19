@@ -103,6 +103,15 @@ public:
     
     void getTableItems(std::vector<TableItem*>* items) const;
     
+    void createCellWidgets();
+
+public Q_SLOTS:
+    
+    
+    void onPauseTriggered();
+    void onCancelTriggered();
+    void onRestartTriggered();
+    
 Q_SIGNALS:
     
     void taskCanceled();
@@ -111,7 +120,6 @@ private:
     
     void setCellWidgets(int row, TableView* view);
     void removeCellWidgets(int row, TableView* view);
-    void createCellWidgets();
 
     
     void setProcesshandler(const boost::shared_ptr<ProcessHandler>& process);

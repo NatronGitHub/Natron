@@ -758,16 +758,16 @@ Node::load(const CreateNodeArgs& args)
             setValuesFromSerialization(list);
         }
         refreshAcceptedBitDepths();
-        if (!args.serialization) {
-            //Setup clip preferences once at least so that values get initialized
-            _imp->effect->refreshMetaDatas_public(false);
-        }
+        
     } else {
             //ofx plugin   
         _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(),args.paramValues,canOpenFileDialog,renderScaleSupportPreference == 1, &hasUsedFileDialog);
             assert(_imp->effect);
     }
-    
+    if (!args.serialization) {
+        //Setup clip preferences once at least so that values get initialized
+        _imp->effect->refreshMetaDatas_public(false);
+    }
     _imp->effect->initializeOverlayInteract();
     
     
