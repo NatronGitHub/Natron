@@ -422,8 +422,8 @@ TrackerGui::penDown(double time,
         assert(dblKnob);
         dblKnob->beginChanges();
         dblKnob->blockValueChanges();
-        dblKnob->setValueAtTime(time, ViewSpec::all(), pos.x(), 0);
-        dblKnob->setValueAtTime(time, ViewSpec::all(), pos.y(), 1);
+        dblKnob->setValueAtTime(time, pos.x(), ViewSpec::all(), 0);
+        dblKnob->setValueAtTime(time, pos.y(), ViewSpec::all(), 1);
         dblKnob->unblockValueChanges();
         dblKnob->endChanges();
         didSomething = true;

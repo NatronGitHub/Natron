@@ -1055,7 +1055,7 @@ RotoDrawableItem::isActivated(double time) const
 void
 RotoDrawableItem::setActivated(bool a, double time)
 {
-    _imp->activated->setValueAtTime(time, ViewSpec::all(), a, 0);
+    _imp->activated->setValueAtTime(time, a, ViewSpec::all(), 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1069,7 +1069,7 @@ RotoDrawableItem::getOpacity(double time) const
 void
 RotoDrawableItem::setOpacity(double o,double time)
 {
-    _imp->opacity->setValueAtTime(time, ViewSpec::all(), o, 0);
+    _imp->opacity->setValueAtTime(time, o, ViewSpec::all(), 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1083,7 +1083,7 @@ RotoDrawableItem::getFeatherDistance(double time) const
 void
 RotoDrawableItem::setFeatherDistance(double d,double time)
 {
-    _imp->feather->setValueAtTime(time, ViewSpec::all(), d, 0);
+    _imp->feather->setValueAtTime(time, d, ViewSpec::all(), 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1097,7 +1097,7 @@ RotoDrawableItem::getNumKeyframesFeatherDistance() const
 void
 RotoDrawableItem::setFeatherFallOff(double f,double time)
 {
-    _imp->featherFallOff->setValueAtTime(time, ViewSpec::all(), f, 0);
+    _imp->featherFallOff->setValueAtTime(time, f, ViewSpec::all(), 0);
     getContext()->onItemKnobChanged();
 }
 
@@ -1130,9 +1130,9 @@ RotoDrawableItem::getColor(double time,
 void
 RotoDrawableItem::setColor(double time,double r,double g,double b)
 {
-    _imp->color->setValueAtTime(time, ViewSpec::current(), r, 0);
-    _imp->color->setValueAtTime(time, ViewSpec::current(), g, 1);
-    _imp->color->setValueAtTime(time, ViewSpec::current(), b, 2);
+    _imp->color->setValueAtTime(time, r, ViewSpec::all(), 0);
+    _imp->color->setValueAtTime(time, g, ViewSpec::all(), 1);
+    _imp->color->setValueAtTime(time, b, ViewSpec::all(), 2);
     getContext()->onItemKnobChanged();
 }
 
@@ -1344,16 +1344,16 @@ RotoDrawableItem::getShutterTypeKnob() const
 void
 RotoDrawableItem::setKeyframeOnAllTransformParameters(double time)
 {
-    _imp->translate->setValueAtTime(time, ViewSpec::all(), _imp->translate->getValue(0), 0);
-    _imp->translate->setValueAtTime(time, ViewSpec::all(), _imp->translate->getValue(1), 1);
+    _imp->translate->setValueAtTime(time, _imp->translate->getValue(0), ViewSpec::all(), 0);
+    _imp->translate->setValueAtTime(time, _imp->translate->getValue(1), ViewSpec::all(), 1);
     
-    _imp->scale->setValueAtTime(time, ViewSpec::all(), _imp->scale->getValue(0), 0);
-    _imp->scale->setValueAtTime(time, ViewSpec::all(), _imp->scale->getValue(1), 1);
+    _imp->scale->setValueAtTime(time, _imp->scale->getValue(0), ViewSpec::all(), 0);
+    _imp->scale->setValueAtTime(time, _imp->scale->getValue(1), ViewSpec::all(), 1);
     
-    _imp->rotate->setValueAtTime(time, ViewSpec::all(), _imp->rotate->getValue(0), 0);
+    _imp->rotate->setValueAtTime(time, _imp->rotate->getValue(0), ViewSpec::all(), 0);
     
-    _imp->skewX->setValueAtTime(time, ViewSpec::all(), _imp->skewX->getValue(0), 0);
-    _imp->skewY->setValueAtTime(time, ViewSpec::all(), _imp->skewY->getValue(0), 0);
+    _imp->skewX->setValueAtTime(time, _imp->skewX->getValue(0), ViewSpec::all(), 0);
+    _imp->skewY->setValueAtTime(time, _imp->skewY->getValue(0), ViewSpec::all(), 0);
 }
 
 const std::list<KnobPtr >&
@@ -1401,19 +1401,19 @@ RotoDrawableItem::setTransform(double time, double tx, double ty, double sx, dou
     bool autoKeying = getContext()->isAutoKeyingEnabled();
     
     if (autoKeying) {
-        _imp->translate->setValueAtTime(time, ViewSpec::all(), tx, 0);
-        _imp->translate->setValueAtTime(time, ViewSpec::all(), ty, 1);
+        _imp->translate->setValueAtTime(time, tx, ViewSpec::all(), 0);
+        _imp->translate->setValueAtTime(time, ty, ViewSpec::all(), 1);
         
-        _imp->scale->setValueAtTime(time, ViewSpec::all(), sx, 0);
-        _imp->scale->setValueAtTime(time, ViewSpec::all(), sy, 1);
+        _imp->scale->setValueAtTime(time, sx, ViewSpec::all(), 0);
+        _imp->scale->setValueAtTime(time, sy, ViewSpec::all(), 1);
         
-        _imp->center->setValue(centerX, ViewSpec::all(), 0);
-        _imp->center->setValue(centerY, ViewSpec::all(), 1);
+        _imp->center->setValueAtTime(time, centerX, ViewSpec::all(), 0);
+        _imp->center->setValueAtTime(time, centerY, ViewSpec::all(), 1);
         
-        _imp->rotate->setValueAtTime(time, ViewSpec::all(), rot, 0);
+        _imp->rotate->setValueAtTime(time, rot, ViewSpec::all(), 0);
         
-        _imp->skewX->setValueAtTime(time, ViewSpec::all(), skewX, 0);
-        _imp->skewY->setValueAtTime(time, ViewSpec::all(), skewY, 0);
+        _imp->skewX->setValueAtTime(time, skewX, ViewSpec::all(), 0);
+        _imp->skewY->setValueAtTime(time, skewY, ViewSpec::all(), 0);
     } else {
         _imp->translate->setValue(tx, ViewSpec::all(), 0);
         _imp->translate->setValue(ty, ViewSpec::all(), 1);

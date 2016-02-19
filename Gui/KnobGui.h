@@ -208,9 +208,9 @@ public:
         
         Knob<T>* knob = dynamic_cast<Knob<T>*>( getKnob().get() );
         assert(knob);
-        bool addedKey  = false;
+        KnobHelper::ValueChangedReturnCodeEnum addedKey = KnobHelper::eValueChangedReturnCodeNothingChanged;
         if (knob) {
-            addedKey = knob->setValueAtTime(time,view, v,dimension,reason,newKey);
+            addedKey = knob->setValueAtTime(time, v, view, dimension, reason, newKey);
         }
         if ((knob) && reason == eValueChangedReasonUserEdited) {
             assert(newKey);
@@ -219,7 +219,8 @@ public:
         if (refreshGui) {
             updateGUI(dimension);
         }
-        return addedKey;
+        return ((addedKey != KnobHelper::eValueChangedReturnCodeNoKeyframeAdded) &&
+                (addedKey != KnobHelper::eValueChangedReturnCodeNothingChanged));
     }
 
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;

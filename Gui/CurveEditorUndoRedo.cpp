@@ -134,13 +134,13 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand, bool add)
                             Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
                             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
                             if (isDouble) {
-                                isDouble->setValueAtTime(time, ViewIdx(0), isDouble->getValueAtTime(time, 0, ViewIdx(0)), isKnobCurve->getDimension());
+                                isDouble->setValueAtTime(time, isDouble->getValueAtTime(time, 0, ViewIdx(0)), ViewIdx(0), isKnobCurve->getDimension());
                             } else if (isBool) {
-                                isBool->setValueAtTime(time, ViewIdx(0), isBool->getValueAtTime(time, 0, ViewIdx(0)), isKnobCurve->getDimension());
+                                isBool->setValueAtTime(time,   isBool->getValueAtTime(time, 0, ViewIdx(0)),   ViewIdx(0), isKnobCurve->getDimension());
                             } else if (isInt) {
-                                isInt->setValueAtTime(time, ViewIdx(0),  isInt->getValueAtTime(time, 0, ViewIdx(0)), isKnobCurve->getDimension());
+                                isInt->setValueAtTime(time,    isInt->getValueAtTime(time, 0, ViewIdx(0)),    ViewIdx(0), isKnobCurve->getDimension());
                             } else if (isString) {
-                                isString->setValueAtTime(time, ViewIdx(0), isString->getValueAtTime(time, 0, ViewIdx(0)), isKnobCurve->getDimension());
+                                isString->setValueAtTime(time, isString->getValueAtTime(time, 0, ViewIdx(0)), ViewIdx(0), isKnobCurve->getDimension());
                             }
                         }
                     } else {
@@ -293,13 +293,13 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             Knob<int>* isInt = dynamic_cast<Knob<int>*>(knob.get());
                             Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>(knob.get());
                             if (isDouble) {
-                                isDouble->setValueAtTime(time, ViewIdx(0), isDouble->getValueAtTime(time, 0, ViewIdx(0)), isKnobCurve->getDimension());
+                                isDouble->setValueAtTime(time, isDouble->getValueAtTime(time, 0, ViewIdx(0)), ViewIdx(0), isKnobCurve->getDimension());
                             } else if (isBool) {
-                                isBool->setValueAtTime(time, ViewIdx(0), isBool->getValueAtTime(time, 0, ViewIdx(0)), isKnobCurve->getDimension());
+                                isBool->setValueAtTime(time,   isBool->getValueAtTime(time,   0, ViewIdx(0)), ViewIdx(0), isKnobCurve->getDimension());
                             } else if (isInt) {
-                                isInt->setValueAtTime(time, ViewIdx(0), isInt->getValueAtTime(time,0, ViewIdx(0)), isKnobCurve->getDimension());
+                                isInt->setValueAtTime(time,    isInt->getValueAtTime(time,    0, ViewIdx(0)), ViewIdx(0), isKnobCurve->getDimension());
                             } else if (isString) {
-                                isString->setValueAtTime(time, ViewIdx(0), isString->getValueAtTime(time,0, ViewIdx(0) ), isKnobCurve->getDimension());
+                                isString->setValueAtTime(time, isString->getValueAtTime(time, 0, ViewIdx(0)), ViewIdx(0), isKnobCurve->getDimension());
                             }
                         }
                     } else {

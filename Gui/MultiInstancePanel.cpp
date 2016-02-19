@@ -1336,25 +1336,25 @@ MultiInstancePanel::onItemDataChanged(TableItem* item)
                     
                     if (knobs[i]->isAnimationEnabled() && knobs[i]->isAnimated(j)) {
                         if (isInt) {
-                            isInt->setValueAtTime(time, ViewSpec::all(), data.toInt(), j);
+                            isInt->setValueAtTime(time,    data.toInt(),    ViewSpec::all(), j);
                         } else if (isBool) {
-                            isBool->setValueAtTime(time, ViewSpec::all(), data.toBool(), j);
+                            isBool->setValueAtTime(time,   data.toBool(),   ViewSpec::all(), j);
                         } else if (isDouble) {
-                            isDouble->setValueAtTime(time, ViewSpec::all(), data.toDouble(), j);
+                            isDouble->setValueAtTime(time, data.toDouble(), ViewSpec::all(), j);
                         } else if (isColor) {
-                            isColor->setValueAtTime(time, ViewSpec::all(), data.toDouble(), j);
+                            isColor->setValueAtTime(time,  data.toDouble(), ViewSpec::all(), j);
                         } else if (isString) {
-                            isString->setValueAtTime(time, ViewSpec::all(), data.toString().toStdString(), j);
+                            isString->setValueAtTime(time, data.toString().toStdString(), ViewSpec::all(), j);
                         }
                     } else {
                         if (isInt) {
-                            isInt->setValue(data.toInt(), ViewSpec::all(), j, true);
+                            isInt->setValue(data.toInt(),       ViewSpec::all(), j, true);
                         } else if (isBool) {
-                            isBool->setValue(data.toBool(), ViewSpec::all(), j, true);
+                            isBool->setValue(data.toBool(),     ViewSpec::all(), j, true);
                         } else if (isDouble) {
                             isDouble->setValue(data.toDouble(), ViewSpec::all(), j, true);
                         } else if (isColor) {
-                            isColor->setValue(data.toDouble(), ViewSpec::all(), j, true);
+                            isColor->setValue(data.toDouble(),  ViewSpec::all(), j, true);
                         } else if (isString) {
                             isString->setValue(data.toString().toStdString(), ViewSpec::all(), j, true);
                         }
@@ -1959,8 +1959,8 @@ TrackerPanel::onAverageTracksButtonClicked()
             }
             average.first /= centersNb;
             average.second /= centersNb;
-            newInstanceCenter->setValueAtTime(t, ViewSpec::all(), average.first, 0);
-            newInstanceCenter->setValueAtTime(t, ViewSpec::all(), average.second, 1);
+            newInstanceCenter->setValueAtTime(t, average.first,  ViewSpec::all(), 0);
+            newInstanceCenter->setValueAtTime(t, average.second, ViewSpec::all(), 1);
         }
     }
     newInstanceCenter->endChanges();
