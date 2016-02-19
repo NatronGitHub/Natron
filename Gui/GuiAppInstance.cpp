@@ -1207,6 +1207,7 @@ void
 GuiAppInstance::handleFileOpenEvent(const std::string &filename)
 {
     QString fileCopy(filename.c_str());
+    fileCopy.replace('\\', '/');
     QString ext = QtCompat::removeFileExtension(fileCopy);
     if (ext == NATRON_PROJECT_FILE_EXT) {
         AppInstance* app = getGui()->openProject(filename);
