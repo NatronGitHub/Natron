@@ -94,6 +94,7 @@ ComboBox::ComboBox(QWidget* parent)
     , _sizePolicy()
     , _validHints(false)
     , _align(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextExpandTabs)
+    , _currentDelta(0)
 {
 
     setFrameShape(QFrame::Box);
@@ -372,6 +373,7 @@ ComboBox::mousePressEvent(QMouseEvent* e)
         update();
         QFrame::mousePressEvent(e);
     }
+    _currentDelta = 0;
 }
 
 void
@@ -380,6 +382,7 @@ ComboBox::mouseReleaseEvent(QMouseEvent* e)
     _clicked = false;
     update();
     QFrame::mouseReleaseEvent(e);
+    _currentDelta = 0;
 }
 
 void
@@ -388,13 +391,19 @@ ComboBox::wheelEvent(QWheelEvent *e)
     if (!hasFocus()) {
         return;
     }
-    if (e->delta()>0) {
-        setCurrentIndex((activeIndex() - 1 < 0) ? count() - 1 : activeIndex() - 1);
-    } else {
+    // a standard wheel click is 120
+    _currentDelta += e->delta();
+
+    if (_currentDelta <= -120 || 120 <= _currentDelta) {
         int c = count();
-        if (c != 0) {
-            setCurrentIndex((activeIndex() + 1) % c);
+        int i = activeIndex();
+        int delta = _currentDelta / 120;
+        _currentDelta -= delta * 120;
+        i = (i - delta) % c;
+        if (i < 0) {
+            i += c;
         }
+        setCurrentIndex(i);
     }
 }
 
@@ -412,6 +421,7 @@ ComboBox::keyPressEvent(QKeyEvent* e)
             QFrame::keyPressEvent(e);
         }
     }
+    _currentDelta = 0;
 }
 
 static void setEnabledRecursive(bool enabled, ComboBoxMenuNode* node)

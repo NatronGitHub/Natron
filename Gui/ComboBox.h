@@ -89,6 +89,8 @@ private:
     mutable bool _validHints;
     unsigned short _align;
 
+    int _currentDelta; // accumulated wheel delta
+
 public:
 
     explicit ComboBox(QWidget* parent = 0);
