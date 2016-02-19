@@ -34,9 +34,9 @@ NATRON_NAMESPACE_ENTER;
 
 namespace FStreamsSupport {
 
-boost::shared_ptr<std::istream> open_ifstream(const std::string& filename);
+boost::shared_ptr<std::istream> open_ifstream(const std::string& filename, std::ios_base::openmode mode = std::ios_base::in);
 
-boost::shared_ptr<std::ostream> open_ofstream(const std::string& filename);
+boost::shared_ptr<std::ostream> open_ofstream(const std::string& filename, std::ios_base::openmode mode = std::ios_base::out);
 
 }
 

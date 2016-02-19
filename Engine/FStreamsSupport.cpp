@@ -38,17 +38,47 @@ NATRON_NAMESPACE_ENTER;
 namespace {
 
 #if defined(__NATRON_WIN32__) &&  defined(__GLIBCXX__)
-
+    // MingW uses GCC to build, but does not support having a wchar_t* passed as argument
+    // of ifstream::open or ofstream::open. To properly support UTF-8 encoding on MingW we must
+    // use the __gnu_cxx::stdio_filebuf GNU extension that can be used with _wfsopen and returned
+    // into a istream which share the same API as ifsteam. The same reasoning holds for ofstream.
+    
+static int
+ios_open_mode_to_oflag(std::ios_base::openmode mode)
+{
+    int f = 0;
+    if (mode & std::ios_base::in) {
+        f |= _O_RDONLY;
+    }
+    if (mode & std::ios_base::out) {
+        f |= _O_WRONLY;
+        f |= _O_CREAT;
+        if (mode & std::ios_base::app) {
+            f |= _O_APPEND;
+        }
+        if (mode & std::ios_base::trunc) {
+            f |= _O_TRUNC;
+        }
+    }
+    if (mode & std::ios_base::binary) {
+        f |= _O_BINARY;
+    } else {
+        f |= _O_TEXT;
+    }
+    return f;
+}
+    
 // MingW
-static std::istream* open_ifstream_impl(const std::string &filename)
+static std::istream* open_ifstream_impl(const std::string &filename, std::ios_base::openmode mode)
 {
     std::wstring wfilename = Global::s2ws(filename);
+    int oflag = ios_open_mode_to_oflag(mode);
     int fd;
-    errno_t errcode = _wsopen_s(&fd, wfilename.c_str(), _O_RDONLY, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    errno_t errcode = _wsopen_s(&fd, wfilename.c_str(), oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE);
     if (errcode != 0 || fd == -1) {
         return 0;
     }
-    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, std::ios_base::in, 1);
+    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, mode, 1);
     
     
     if (!buffer) {
@@ -57,15 +87,16 @@ static std::istream* open_ifstream_impl(const std::string &filename)
     return new std::istream(buffer);
 }
 
-static std::ostream* open_ofstream_impl(const std::string &filename)
+static std::ostream* open_ofstream_impl(const std::string &filename, std::ios_base::openmode mode)
 {
     std::wstring wfilename = Global::s2ws(filename);
+    int oflag = ios_open_mode_to_oflag(mode);
     int fd;
-    errno_t errcode = _wsopen_s(&fd, wfilename.c_str(), _O_WRONLY | _O_TRUNC | _O_CREAT, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    errno_t errcode = _wsopen_s(&fd, wfilename.c_str(), oflag, _SH_DENYNO, _S_IREAD | _S_IWRITE);
     if (errcode != 0 || fd == -1) {
         return 0;
     }
-    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, std::ios_base::out, 1);
+    __gnu_cxx::stdio_filebuf<char>* buffer = new __gnu_cxx::stdio_filebuf<char>(fd, mode, 1);
     if (!buffer) {
         return 0;
     }
@@ -73,7 +104,7 @@ static std::ostream* open_ofstream_impl(const std::string &filename)
 }
 #else
 // Msvc or unix
-static std::ifstream* open_ifstream_impl(const std::string &filename)
+static std::ifstream* open_ifstream_impl(const std::string &filename, std::ios_base::openmode mode)
 {
 #if defined(__NATRON_WIN32__)
 #ifndef _MSC_VER_
@@ -92,7 +123,7 @@ static std::ifstream* open_ifstream_impl(const std::string &filename)
 #else
                   filename.c_str(),
 #endif
-                  std::ifstream::in);
+                  mode);
     } catch (const std::exception & e) {
         delete ret;
         return 0;
@@ -106,7 +137,7 @@ static std::ifstream* open_ifstream_impl(const std::string &filename)
     return ret;
 } // open_ifstream_impl
 
-static std::ofstream* open_ofstream_impl(const std::string &filename)
+static std::ofstream* open_ofstream_impl(const std::string &filename, std::ios_base::openmode mode)
 {
 #if defined(__NATRON_WIN32__)
     std::wstring wfilename = Global::s2ws(filename);
@@ -122,7 +153,7 @@ static std::ofstream* open_ofstream_impl(const std::string &filename)
 #else
                   filename.c_str(),
 #endif
-                  std::ofstream::out);
+                  mode);
     } catch (const std::exception & e) {
         delete ret;
         return 0;
@@ -141,11 +172,20 @@ static std::ofstream* open_ofstream_impl(const std::string &filename)
 
 
 boost::shared_ptr<std::istream>
-FStreamsSupport::open_ifstream(const std::string& filename)
+FStreamsSupport::open_ifstream(const std::string& filename, std::ios_base::openmode mode)
 {
-    std::istream* ret = open_ifstream_impl(filename);
+    std::istream* ret = open_ifstream_impl(filename, mode | std::ios_base::in);
     if (ret) {
-        return boost::shared_ptr<std::istream>(ret);
+        boost::shared_ptr<std::istream> stream(ret);
+        if (mode & std::ios_base::ate) {
+            stream->seekg (0, std::ios_base::end);
+        } else {
+            stream->seekg (0, std::ios_base::beg); // force seek, otherwise broken
+        }
+        if (stream->fail()) {
+            stream.reset();
+        }
+        return stream;
     } else {
         return boost::shared_ptr<std::istream>();
     }
@@ -153,11 +193,18 @@ FStreamsSupport::open_ifstream(const std::string& filename)
 
 
 boost::shared_ptr<std::ostream>
-FStreamsSupport::open_ofstream(const std::string& filename)
+FStreamsSupport::open_ofstream(const std::string& filename, std::ios_base::openmode mode)
 {
-    std::ostream* ret = open_ofstream_impl(filename);
+    std::ostream* ret = open_ofstream_impl(filename, mode | std::ios_base::out);
     if (ret) {
-        return boost::shared_ptr<std::ostream>(ret);
+        boost::shared_ptr<std::ostream> stream(ret);
+        if ((mode & std::ios_base::app) == 0) {
+            stream->seekp (0, std::ios_base::beg);
+        }
+        if (stream->fail()) {
+            stream.reset();
+        }
+        return stream;
     } else {
         return boost::shared_ptr<std::ostream>();
     }
