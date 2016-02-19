@@ -734,7 +734,7 @@ Node::load(const CreateNodeArgs& args)
         
         createRotoContextConditionnally();
         initializeInputs();
-        initializeKnobs(renderScaleSupportPreference);
+        initializeKnobs(renderScaleSupportPreference, args.serialization.get() != 0);
         
         if (args.serialization) {
             loadKnobs(*args.serialization);
@@ -2823,7 +2823,7 @@ Node::makeInfoForInput(int inputNumber) const
 }
 
 void
-Node::findPluginFormatKnobs(const KnobsVec & knobs)
+Node::findPluginFormatKnobs(const KnobsVec & knobs,bool loadingSerialization)
 {
     ///Try to find a format param and hijack it to handle it ourselves with the project's formats
     KnobPtr formatKnob;
@@ -2862,7 +2862,7 @@ Node::findPluginFormatKnobs(const KnobsVec & knobs)
             std::vector<std::string> formats;
             int defValue;
             getApp()->getProject()->getProjectFormatEntries(&formats, &defValue);
-            refreshFormatParamChoice(formats, defValue);
+            refreshFormatParamChoice(formats, defValue, !loadingSerialization);
         }
     }
 }
@@ -3352,7 +3352,7 @@ Node::createChannelSelectors(const std::vector<std::pair<bool,bool> >& hasMaskCh
 }
 
 void
-Node::initializeDefaultKnobs(int renderScaleSupportPref)
+Node::initializeDefaultKnobs(int renderScaleSupportPref,bool loadingSerialization)
 {
     
     //Add the "Node" page
@@ -3373,7 +3373,7 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref)
     ///find in all knobs a page param to set this param into
     const KnobsVec & knobs = _imp->effect->getKnobs();
     
-    findPluginFormatKnobs(knobs);
+    findPluginFormatKnobs(knobs, loadingSerialization);
 
     
     // Scan all inputs to find masks and get inputs labels
@@ -3461,7 +3461,7 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref)
 }
 
 void
-Node::initializeKnobs(int renderScaleSupportPref)
+Node::initializeKnobs(int renderScaleSupportPref,bool loadingSerialization)
 {
     ////Only called by the main-thread
     
@@ -3484,7 +3484,7 @@ Node::initializeKnobs(int renderScaleSupportPref)
     
     if (_imp->effect->getMakeSettingsPanel()) {
         //initialize default knobs added by Natron
-        initializeDefaultKnobs(renderScaleSupportPref);
+        initializeDefaultKnobs(renderScaleSupportPref, loadingSerialization);
     }
 
 
@@ -3600,7 +3600,7 @@ Node::handleFormatKnob(KnobI* knob)
 }
 
 void
-Node::refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue)
+Node::refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue,bool canChangeValues)
 {
     boost::shared_ptr<KnobChoice> choice = _imp->pluginFormatKnobs.formatChoice.lock();
     if (!choice) {
@@ -3610,8 +3610,13 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries, int defV
     choice->populateChoices(entries);
     choice->beginChanges();
     choice->setDefaultValue(defValue);
-    if (curIndex < (int)entries.size()) {
-        choice->setValue(curIndex);
+    if (!canChangeValues) {
+        if (curIndex < (int)entries.size()) {
+            choice->setValue(curIndex);
+        }
+    } else {
+        //changedKnob was not called because we are initializing knobs
+        handleFormatKnob(choice.get());
     }
     choice->endChanges();
 }

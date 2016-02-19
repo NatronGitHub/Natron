@@ -1302,7 +1302,7 @@ Project::onKnobValueChanged(KnobI* knob,
 
         std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->refreshFormatParamChoice(entries, index);
+            (*it)->refreshFormatParamChoice(entries, index, false);
         }
         if (found) {
             if (reason == eValueChangedReasonUserEdited) {
@@ -2316,7 +2316,7 @@ Project::onProjectFormatPopulated()
     getNodes_recursive(nodes,true);
     std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->refreshFormatParamChoice(entries, index);
+        (*it)->refreshFormatParamChoice(entries, index, false);
     }
 }
 

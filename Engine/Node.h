@@ -927,15 +927,15 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    void initializeKnobs(int renderScaleSupportPref);
+    void initializeKnobs(int renderScaleSupportPref, bool loadingSerialization);
     
     void checkForPremultWarningAndCheckboxes();
     
 private:
     
-    void initializeDefaultKnobs(int renderScaleSupportPref);
+    void initializeDefaultKnobs(int renderScaleSupportPref,bool loadingSerialization);
     
-    void findPluginFormatKnobs(const KnobsVec & knobs);
+    void findPluginFormatKnobs(const KnobsVec & knobs,bool loadingSerialization);
     
     void createNodePage(const boost::shared_ptr<KnobPage>& settingsPage, int renderScaleSupportPref);
     
@@ -1146,7 +1146,7 @@ public:
     
     int getFrameStepKnobValue() const;
     
-    void refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue);
+    void refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue,bool canChangeValues);
     
     bool handleFormatKnob(KnobI* knob);
     

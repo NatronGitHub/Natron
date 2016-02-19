@@ -419,7 +419,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->createRotoContextConditionnally();
             
             getNode()->initializeInputs();
-            getNode()->initializeKnobs(disableRenderScaleSupport ? 1 : 0 );
+            getNode()->initializeKnobs(disableRenderScaleSupport ? 1 : 0, serialization != 0);
             
             ///before calling the createInstanceAction, load values
             if ( serialization && !serialization->isNull() ) {
