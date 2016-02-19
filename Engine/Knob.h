@@ -1581,12 +1581,13 @@ public:
      * @param newKey[out] The keyframe that was added if the return value is true.
      * @returns True if a keyframe was successfully added, false otherwise.
      **/
-    bool setValueAtTime(double time,
-                        ViewSpec view,
-                        const T & v,
-                        int dimension,
-                        ValueChangedReasonEnum reason,
-                        KeyFrame* newKey);
+    ValueChangedReturnCodeEnum setValueAtTime(double time,
+                                              const T & v,
+                                              ViewSpec view,
+                                              int dimension,
+                                              ValueChangedReasonEnum reason,
+                                              KeyFrame* newKey,
+                                              bool hasChanged = false); //!< set to true if any previous dimension of the same knob have changed
 
     virtual bool setKeyFrame(const KeyFrame& key, ViewSpec view, int dimension,ValueChangedReasonEnum reason) OVERRIDE FINAL;
     
@@ -1599,7 +1600,8 @@ public:
                                         ViewSpec view,
                                         int dimension,
                                         ValueChangedReasonEnum reason,
-                                        KeyFrame* newKey);
+                                        KeyFrame* newKey,
+                                        bool hasChanged = false); //!< set to true if any previous dimension of the same knob have changed
 
     
    
@@ -1663,37 +1665,37 @@ public:
      * @brief Calls setValueAtTime with a reason of eValueChangedReasonNatronInternalEdited.
      **/
     void setValueAtTime(double time,
-                        ViewSpec view,
                         const T & v,
+                        ViewSpec view,
                         int dimension);
     
     /**
      * @brief Calls setValueAtTime with a reason of eValueChangedReasonPluginEdited.
      **/
     void setValueAtTimeFromPlugin(double time,
-                                  ViewSpec view,
                                   const T & v,
+                                  ViewSpec view,
                                   int dimension);
     
     void setValuesAtTime(double time,
-                         ViewSpec view,
                          const T& value0,
                          const T& value1,
+                         ViewSpec view,
                          ValueChangedReasonEnum reason);
 
     void setValuesAtTime(double time,
-                         ViewSpec view,
                          const T& value0,
                          const T& value1,
                          const T& value2,
+                         ViewSpec view,
                          ValueChangedReasonEnum reason);
 
     void setValuesAtTime(double time,
-                         ViewSpec view,
                          const T& value0,
                          const T& value1,
                          const T& value2,
                          const T& value3,
+                         ViewSpec view,
                          ValueChangedReasonEnum reason);
 
     /**

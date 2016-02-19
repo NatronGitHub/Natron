@@ -912,7 +912,8 @@ Knob<T>::setValue(const T & v,
                   ViewSpec view,
                   int dimension,
                   ValueChangedReasonEnum reason,
-                  KeyFrame* newKey)
+                  KeyFrame* newKey,
+                  bool hasChanged)
 {
     if ( (0 > dimension) || ( dimension > (int)_values.size() ) ) {
         throw std::invalid_argument("Knob::setValue(): Dimension out of range");
@@ -1060,10 +1061,9 @@ Knob<T>::setValue(const T & v,
         ++_setValueRecursionLevel;
     }
 
-    bool hasChanged;
     {
         QMutexLocker l(&_valueMutex);
-        hasChanged = v != _values[dimension];
+        hasChanged |= (v != _values[dimension]);
         _values[dimension] = v;
         _guiValues[dimension] = v;
     }
@@ -1085,12 +1085,7 @@ Knob<T>::setValue(const T & v,
         
         time = getCurrentTime();
         timeSet = true;
-        bool addedKeyFrame = setValueAtTime(time, view, v, dimension,reason,newKey);
-        if (addedKeyFrame) {
-            ret = eValueChangedReturnCodeKeyframeAdded;
-        } else {
-            ret = eValueChangedReturnCodeKeyframeModified;
-        }
+        ret = setValueAtTime(time, v, view, dimension, reason, newKey);
         hasChanged = true;
     }
 
@@ -1133,12 +1128,17 @@ Knob<T>::setValues(const T& value0,
         }
     }
     KeyFrame newKey;
+    KnobHelper::ValueChangedReturnCodeEnum ret;
+    bool hasChanged = false;
     assert(getDimension() == 2);
     beginChanges();
     blockValueChanges();
-    setValue(value0, view, 0, reason, &newKey);
+    ret = setValue(value0, view, 0, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     unblockValueChanges();
-    setValue(value1, view, 1, reason, &newKey);
+    ret = setValue(value1, view, 1, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
+    Q_UNUSED(hasChanged);
     endChanges();
     if (doEditEnd) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -1167,13 +1167,19 @@ Knob<T>::setValues(const T& value0,
     }
 
     KeyFrame newKey;
+    KnobHelper::ValueChangedReturnCodeEnum ret;
+    bool hasChanged = false;
     assert(getDimension() == 3);
     beginChanges();
     blockValueChanges();
-    setValue(value0, view,  0, reason, &newKey);
-    setValue(value1, view, 1, reason, &newKey);
+    ret = setValue(value0, view,  0, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
+    ret = setValue(value1, view, 1, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     unblockValueChanges();
-    setValue(value2, view, 2, reason, &newKey);
+    ret = setValue(value2, view, 2, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
+    Q_UNUSED(hasChanged);
     endChanges();
     if (doEditEnd) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -1203,14 +1209,21 @@ Knob<T>::setValues(const T& value0,
     }
 
     KeyFrame newKey;
+    KnobHelper::ValueChangedReturnCodeEnum ret;
+    bool hasChanged = false;
     assert(getDimension() == 4);
     beginChanges();
     blockValueChanges();
-    setValue(value0,view, 0, reason, &newKey);
-    setValue(value1,view, 1, reason, &newKey);
-    setValue(value2,view, 2, reason, &newKey);
+    ret = setValue(value0,view, 0, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
+    ret = setValue(value1,view, 1, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
+    ret = setValue(value2,view, 2, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     unblockValueChanges();
-    setValue(value3, view,3, reason, &newKey);
+    setValue(value3, view,3, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
+    Q_UNUSED(hasChanged);
     endChanges();
     if (doEditEnd) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -1259,13 +1272,14 @@ Knob<std::string>::makeKeyFrame(Curve* /*curve*/,
 }
 
 template<typename T>
-bool
+KnobHelper::ValueChangedReturnCodeEnum
 Knob<T>::setValueAtTime(double time,
-                        ViewSpec view,
                         const T & v,
+                        ViewSpec view,
                         int dimension,
                         ValueChangedReasonEnum reason,
-                        KeyFrame* newKey)
+                        KeyFrame* newKey,
+                        bool hasChanged)
 {
     assert(dimension >= 0 && dimension < getDimension());
     if (!canAnimate() || !isAnimationEnabled()) {
@@ -1273,6 +1287,7 @@ Knob<T>::setValueAtTime(double time,
         setValue(v, view, dimension, reason, newKey);
     }
 
+    KnobHelper::ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNoKeyframeAdded;
     EffectInstance* holder = dynamic_cast<EffectInstance*>( getHolder() );
     
 #ifdef DEBUG
@@ -1303,7 +1318,7 @@ Knob<T>::setValueAtTime(double time,
                     --_setValueRecursionLevel;
                 }
 
-                return true;
+                return eValueChangedReturnCodeKeyframeAdded;
             }
             break;
         }
@@ -1322,7 +1337,7 @@ Knob<T>::setValueAtTime(double time,
                     --_setValueRecursionLevel;
                 }
                 
-                return true;
+                return eValueChangedReturnCodeKeyframeAdded;
             }
             break;
         }
@@ -1371,18 +1386,29 @@ Knob<T>::setValueAtTime(double time,
     
     KeyFrame existingKey;
     bool hasExistingKey = curve->getKeyFrameWithTime(time, &existingKey);
-    bool hasChanged = true;
-    if (hasExistingKey && existingKey.getValue() == newKey->getValue() && existingKey.getLeftDerivative() == newKey->getLeftDerivative() &&
-        existingKey.getRightDerivative() == newKey->getRightDerivative()) {
-        hasChanged = false;
+    if (!hasExistingKey) {
+        hasChanged = true;
+        ret = eValueChangedReturnCodeKeyframeAdded;
+    } else {
+        bool modifiedKeyFrame = ((existingKey.getValue() != newKey->getValue()) ||
+                                 (existingKey.getLeftDerivative() != newKey->getLeftDerivative()) ||
+                                 (existingKey.getRightDerivative() != newKey->getRightDerivative()));
+        if (modifiedKeyFrame) {
+            ret = eValueChangedReturnCodeKeyframeModified;
+        }
+        hasChanged |= modifiedKeyFrame;
     }
-    bool ret = curve->addKeyFrame(*newKey);
+    bool newKeyFrame = curve->addKeyFrame(*newKey);
+    if (newKeyFrame) {
+        ret = eValueChangedReturnCodeKeyframeAdded;
+    }
+    if (newKey)
     if (holder) {
         holder->setHasAnimation(true);
     }
     guiCurveCloneInternalCurve(eCurveChangeReasonInternal, view, dimension, reason);
     
-    if (_signalSlotHandler && ret) {
+    if (_signalSlotHandler && newKeyFrame) {
         _signalSlotHandler->s_keyFrameSet(time,view, dimension,(int)reason,ret);
     }
     if (hasChanged) {
@@ -1398,9 +1424,9 @@ Knob<T>::setValueAtTime(double time,
 template<typename T>
 void
 Knob<T>::setValuesAtTime(double time,
-                         ViewSpec view,
                          const T& value0,
                          const T& value1,
+                         ViewSpec view,
                          ValueChangedReasonEnum reason)
 {
     
@@ -1417,12 +1443,17 @@ Knob<T>::setValuesAtTime(double time,
         }
     }
     KeyFrame newKey;
+    KnobHelper::ValueChangedReturnCodeEnum ret;
+    bool hasChanged = false;
     assert(getDimension() == 2);
     beginChanges();
     blockValueChanges();
-    setValueAtTime(time, view, value0, 0, reason, &newKey);
+    ret = setValueAtTime(time, value0, view, 0, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     unblockValueChanges();
-    setValueAtTime(time, view, value1, 1, reason, &newKey);
+    ret = setValueAtTime(time, value1, view, 1, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
+    Q_UNUSED(hasChanged);
     endChanges();
     if (doEditEnd) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -1432,10 +1463,10 @@ Knob<T>::setValuesAtTime(double time,
 template<typename T>
 void
 Knob<T>::setValuesAtTime(double time,
-                         ViewSpec view,
                          const T& value0,
                          const T& value1,
                          const T& value2,
+                         ViewSpec view,
                          ValueChangedReasonEnum reason)
 {
     KnobHolder* holder = getHolder();
@@ -1451,13 +1482,19 @@ Knob<T>::setValuesAtTime(double time,
         }
     }
     KeyFrame newKey;
+    KnobHelper::ValueChangedReturnCodeEnum ret;
+    bool hasChanged = false;
     assert(getDimension() == 3);
     beginChanges();
     blockValueChanges();
-    setValueAtTime(time, view, value0, 0, reason, &newKey);
-    setValueAtTime(time, view, value1, 1, reason, &newKey);
+    ret = setValueAtTime(time, value0, view, 0, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
+    ret = setValueAtTime(time, value1, view, 1, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     unblockValueChanges();
-    setValueAtTime(time, view, value2, 2, reason, &newKey);
+    ret = setValueAtTime(time, value2, view, 2, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
+    Q_UNUSED(hasChanged);
     endChanges();
     if (doEditEnd) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -1468,11 +1505,11 @@ Knob<T>::setValuesAtTime(double time,
 template<typename T>
 void
 Knob<T>::setValuesAtTime(double time,
-                         ViewSpec view,
                          const T& value0,
                          const T& value1,
                          const T& value2,
                          const T& value3,
+                         ViewSpec view,
                          ValueChangedReasonEnum reason)
 {
     KnobHolder* holder = getHolder();
@@ -1488,14 +1525,21 @@ Knob<T>::setValuesAtTime(double time,
         }
     }
     KeyFrame newKey;
+    KnobHelper::ValueChangedReturnCodeEnum ret;
+    bool hasChanged = false;
     assert(getDimension() == 4);
     beginChanges();
     blockValueChanges();
-    setValueAtTime(time, view, value0, 0, reason, &newKey);
-    setValueAtTime(time, view, value1, 1, reason, &newKey);
-    setValueAtTime(time, view, value2, 2, reason, &newKey);
+    ret = setValueAtTime(time, value0, view, 0, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
+    ret = setValueAtTime(time, value1, view, 1, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
+    ret = setValueAtTime(time, value2, view, 2, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
     unblockValueChanges();
-    setValueAtTime(time, view, value3, 3, reason, &newKey);
+    ret = setValueAtTime(time, value3, view, 3, reason, &newKey, hasChanged);
+    hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
+    Q_UNUSED(hasChanged);
     endChanges();
     if (doEditEnd) {
         effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
@@ -1559,11 +1603,11 @@ Knob<T>::setValue(const T & value,
                   bool turnOffAutoKeying)
 {
     if (turnOffAutoKeying) {
-        return setValue(value,view, dimension,eValueChangedReasonNatronInternalEdited,NULL);
+        return setValue(value, view, dimension, eValueChangedReasonNatronInternalEdited, NULL);
     } else {
         KeyFrame k;
 
-        return setValue(value,view, dimension,eValueChangedReasonNatronInternalEdited,&k);
+        return setValue(value, view, dimension, eValueChangedReasonNatronInternalEdited, &k);
     }
 }
 
@@ -1576,7 +1620,7 @@ Knob<T>::onValueChanged(const T & value,
                         KeyFrame* newKey)
 {
     assert(reason == eValueChangedReasonNatronGuiEdited || reason == eValueChangedReasonUserEdited);
-    return setValue(value, view, dimension,reason,newKey);
+    return setValue(value, view, dimension, reason, newKey);
 }
 
 template<typename T>
@@ -1586,31 +1630,31 @@ Knob<T>::setValueFromPlugin(const T & value,
                             int dimension)
 {
     KeyFrame newKey;
-    return setValue(value,view, dimension,eValueChangedReasonPluginEdited,&newKey);
+    return setValue(value, view, dimension, eValueChangedReasonPluginEdited, &newKey);
 }
 
 template<typename T>
 void
 Knob<T>::setValueAtTime(double time,
-                        ViewSpec view,
                         const T & v,
+                        ViewSpec view,
                         int dimension)
 {
     KeyFrame k;
 
-    ignore_result(setValueAtTime(time, view, v,dimension,eValueChangedReasonNatronInternalEdited,&k));
+    ignore_result(setValueAtTime(time, v, view, dimension, eValueChangedReasonNatronInternalEdited, &k));
 }
 
 template<typename T>
 void
 Knob<T>::setValueAtTimeFromPlugin(double time,
-                                  ViewSpec view,
                                   const T & v,
+                                  ViewSpec view,
                                   int dimension)
 {
     KeyFrame k;
     
-    ignore_result(setValueAtTime(time,view, v,dimension,eValueChangedReasonPluginEdited,&k));
+    ignore_result(setValueAtTime(time, v, view, dimension, eValueChangedReasonPluginEdited, &k));
 
 }
 
