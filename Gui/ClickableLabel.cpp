@@ -46,6 +46,18 @@ ClickableLabel::ClickableLabel(const QString &text,
 {
 }
 
+ClickableLabel::ClickableLabel(const QPixmap &icon,
+               QWidget *parent)
+: Label(parent),
+_toggled(false),
+dirty(false),
+readOnly(false),
+animation(0),
+sunkenStyle(false)
+{
+    setPixmap(icon);
+}
+
 void
 ClickableLabel::mousePressEvent(QMouseEvent* e)
 {
@@ -120,6 +132,13 @@ ClickableLabel::setSunken(bool s)
         sunkenStyle = s;
         refreshStyle();
     }
+}
+
+KnobClickableLabel::KnobClickableLabel(const QPixmap& icon, KnobGui* knob, QWidget* parent )
+: ClickableLabel(icon, parent)
+, KnobWidgetDnD(knob,-1, this)
+{
+    knob->enableRightClickMenu(this,-1);
 }
 
 KnobClickableLabel::KnobClickableLabel(const QString& text, KnobGui* knob, QWidget* parent)

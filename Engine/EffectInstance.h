@@ -645,29 +645,16 @@ public:
     /**
      * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
      **/
-    void refreshClipPreferences_public(double time,
-                                        const RenderScale & scale,
-                                        ValueChangedReasonEnum reason,
-                                        bool forceGetClipPrefAction,
-                                        bool recurse);
+    bool refreshMetaDatas_public(bool recurse);
 
     virtual void onChannelsSelectorRefreshed() {}
 
 
-    virtual bool refreshClipPreferences(double time,
-                                        const RenderScale & scale,
-                                        ValueChangedReasonEnum reason,
-                                        bool forceGetClipPrefAction);
-
-
-
 protected:
 
-    void refreshClipPreferences_recursive(double time,
-                                           const RenderScale & scale,
-                                          ValueChangedReasonEnum reason,
-                                           bool forceGetClipPrefAction,
-                                           std::list<Node*> & markedNodes);
+    virtual void onMetaDatasRefreshed() {}
+
+    bool refreshMetaDatas_recursive(std::list<Node*> & markedNodes);
 
 friend class ClipPreferencesRunning_RAII;
     void setClipPreferencesRunning(bool running);
@@ -675,31 +662,78 @@ friend class ClipPreferencesRunning_RAII;
 public:
 
 
-    ///////////////////////Clip preferences related////////////////////////
-    // These data are refreshed during a call to getClipPreferences to optimize the getters below
-    // which would involve cycling through the tree
-    struct DefaultClipPreferencesData;
+    ///////////////////////Metadatas related////////////////////////
 
     /**
-     * @brief Returns the output aspect ratio to render with
+    * @brief Returns the preferred metadata to render with
+    * This should only be called to compute the clip preferences, call the appropriate
+    * getters to get the actual values. 
+    * The default implementation gives reasonable values appropriate to the context of the node (the inputs)
+    * and the values reported by the supported components/bitdepth
+    *
+    * This should not be reimplemented except for OpenFX which already has its default specification
+    * for clip Preferences, see setDefaultClipPreferences()
+    * Returns eStatusOK on success, eStatusFailed on failure.
+    *
+    **/
+    StatusEnum getPreferredMetaDatas_public(NodeMetadata& metadata);
+
+protected:
+
+    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& /*metadata*/) { return eStatusOK; }
+
+private:
+
+    StatusEnum setDefaultMetadata(NodeMetadata& metadata);
+
+public:
+
+    /**
+     * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
+    **/
+    bool isFrameVarying() const;
+
+    /**
+     * @brief Returns whether the current node and/or the tree upstream is frame varying or animated.
+     * It is frame varying/animated if at least one of the node is animated/varying
+    **/
+    bool isFrameVaryingOrAnimated_Recursive() const;
+
+    /**
+     * @brief Returns the preferred output aspect ratio to render with
      **/
-    virtual double getPreferredAspectRatio() const;
-    virtual double getPreferredFrameRate() const;
+    double getAspectRatio(int inputNb) const;
 
     /**
-    * @brief Returns the preferred depth and components for the given input.
+     * @brief Returns the preferred output frame rate to render with
+    **/
+    double getFrameRate() const;
+
+    /**
+     * @brief Returns the preferred premultiplication flag for the output image
+     **/
+    ImagePremultiplicationEnum getPremult() const;
+
+    /**
+     * @brief If true, the plug-in knows how to render frames at non integer times. If false
+     * this is the hint indicating that the plug-ins can only render integer frame times (such as a Reader)
+     **/
+    bool canRenderContinuously() const;
+
+    /**
+     * @brief Returns the field ordering of images produced by this plug-in
+     **/
+    ImageFieldingOrderEnum getFieldingOrder() const;
+
+    /**
+    * @brief Returns the depth and components for the given input.
     * If inputNb equals -1 then this function will check the output components.
     **/
-    virtual void getPreferredDepthAndComponents(int inputNb,
-                                            std::list<ImageComponents>* comp,
-                                            ImageBitDepthEnum* depth) const;
+    void getComponents(int inputNb,  std::list<ImageComponents>* comps) const;
+    ImageBitDepthEnum getBitDepth(int inputNb) const;
 
 
-    /**
-    * @brief Override to get the preffered premultiplication flag for the output image
-    **/
-    virtual ImagePremultiplicationEnum getOutputPremultiplication() const;
-    ///////////////////////End Clip preferences related////////////////////////
+    ///////////////////////End Metadatas related////////////////////////
 
 
     virtual void lock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
@@ -735,19 +769,7 @@ public:
 
     bool getThreadLocalRotoPaintTreeNodes(NodesList* nodes) const;
 
-    /**
-     * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
-     **/
-    virtual bool isFrameVarying() const
-    {
-        return false;
-    }
 
-    /**
-     * @brief Returns whether the current node and/or the tree upstream is frame varying or animated.
-     * It is frame varying/animated if at least one of the node is animated/varying
-     **/
-    bool isFrameVaryingOrAnimated_Recursive() const;
     virtual bool isMultiPlanar() const
     {
         return false;
@@ -891,11 +913,9 @@ public:
                                       const RenderScale & scale,
                                       const ViewIdx view,
                                       const RectD *optionalBounds, //!< optional region in canonical coordinates
-                                      const ImageComponents & requestComps,
-                                      const ImageBitDepthEnum depth,
-                                      const double par,
+                                      const ImageComponents* layer, //< if set, fetch this specific layer, otherwise use what's in the clip pref
+                                      const bool mapToClipPrefs,
                                       const bool dontUpscale,
-                                      const bool mapImageToPreferredComps,
                                       RectI* roiPixel,
                                       boost::shared_ptr<Transform::Matrix3x3>* transform = 0) WARN_UNUSED_RETURN;
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
@@ -1140,6 +1160,12 @@ public:
     {
         return false;
     }
+
+    virtual bool supportsMultipleClipsBitDepth() const
+    {
+        return false;
+    }
+
 
     virtual bool doesTemporalClipAccess() const
     {
@@ -1881,6 +1907,8 @@ private:
                             bool isProjectFormat,
                             const ImageComponents & components,
                             ImageBitDepthEnum depth,
+                            ImagePremultiplicationEnum premult,
+                            ImageFieldingOrderEnum fielding,
                             double par,
                             unsigned int mipmapLevel,
                             bool renderFullScaleThenDownscale,

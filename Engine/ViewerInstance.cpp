@@ -957,7 +957,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     bool isRodProjectFormat = false;
     
     
-    const double par = outArgs->activeInputToRender->getPreferredAspectRatio();
+    const double par = outArgs->activeInputToRender->getAspectRatio(-1);
     
         
     ///need to set TLS for getROD()
@@ -1035,7 +1035,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     outArgs->params->isSequential = isSequential;
     outArgs->params->renderAge = renderAge;
     outArgs->params->setUniqueID(textureIndex);
-    outArgs->params->srcPremult = outArgs->activeInputToRender->getOutputPremultiplication();
+    outArgs->params->srcPremult = outArgs->activeInputToRender->getPremult();
     ///Texture rect contains the pixel coordinates in the image to be rendered
     outArgs->params->textureRect.x1 = roi.x1;
     outArgs->params->textureRect.x2 = roi.x2;
@@ -1242,7 +1242,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         tilingProgressReportPrefEnabled = appPTR->getCurrentSettings()->isInViewerProgressReportEnabled();
         
         RectD canonicalRoi;
-        roi.toCanonical(inArgs.params->mipMapLevel, inArgs.activeInputToRender->getPreferredAspectRatio(), inArgs.params->rod, &canonicalRoi);
+        roi.toCanonical(inArgs.params->mipMapLevel, inArgs.activeInputToRender->getAspectRatio(-1), inArgs.params->rod, &canonicalRoi);
         
         FrameRequestMap request;
         StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipMapLevel, canonicalRoi, getNode(), request);
@@ -1286,7 +1286,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 
                 //Overwrite the RoI to only the last portion rendered
                 RectD lastPaintBbox = getApp()->getLastPaintStrokeBbox();
-                const double par = inArgs.activeInputToRender->getPreferredAspectRatio();
+                const double par = inArgs.activeInputToRender->getAspectRatio(-1);
                 
                 lastPaintBbox.toPixelEnclosing(inArgs.params->mipMapLevel, par, &lastPaintBboxPixel);
 
@@ -1371,8 +1371,8 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     }
     
     std::list<ImageComponents> components;
-    ImageBitDepthEnum imageDepth;
-    inArgs.activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
+    ImageBitDepthEnum imageDepth = inArgs.activeInputToRender->getBitDepth(-1);
+    inArgs.activeInputToRender->getComponents(-1, &components);
     assert(!components.empty());
     
 
@@ -3080,14 +3080,11 @@ ViewerInstance::onInputChanged(int /*inputNb*/)
     Q_EMIT clipPreferencesChanged();
 }
 
-bool
-ViewerInstance::refreshClipPreferences(double /*time*/,
-                                       const RenderScale & /*scale*/,
-                                       ValueChangedReasonEnum /*reason*/,
-                                       bool /*forceGetClipPrefAction*/)
+
+void
+ViewerInstance::onMetaDatasRefreshed()
 {
     Q_EMIT clipPreferencesChanged();
-    return false;
 }
 
 void

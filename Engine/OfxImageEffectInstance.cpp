@@ -503,6 +503,12 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     if (!paramShouldBePersistant) {
         persistant = false;
     }
+    
+    const std::string & iconFilePath = descriptor.getProperties().getStringProperty(kOfxPropIcon,1);
+    if (!iconFilePath.empty()) {
+        knob->setIconLabel(iconFilePath);
+    }
+    
     knob->setIsClipPreferencesSlave(isClipPreferencesSlaveParam(paramName));
     knob->setIsPersistant(persistant);
     knob->setAnimationEnabled( descriptor.getCanAnimate() );

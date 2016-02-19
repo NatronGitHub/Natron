@@ -741,6 +741,13 @@ KnobGui::onLabelChanged()
 {
     if (_imp->descriptionLabel) {
         KnobPtr knob = getKnob();
+        if (!knob) {
+            return;
+        }
+        const std::string& iconLabel = knob->getIconLabel();
+        if (!iconLabel.empty()) {
+            return;
+        }
         std::string descriptionLabel;
         KnobString* isStringKnob = dynamic_cast<KnobString*>(knob.get());
         bool isLabelKnob = isStringKnob && isStringKnob->isLabel();
@@ -749,6 +756,7 @@ KnobGui::onLabelChanged()
         } else {
             descriptionLabel = knob->getLabel();
         }
+        
         _imp->descriptionLabel->setText_overload(QString(QString(descriptionLabel.c_str()) + ":"));
         onLabelChangedInternal();
     }

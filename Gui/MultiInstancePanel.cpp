@@ -1872,13 +1872,13 @@ TrackerPanel::setIconForButton(KnobButton* knob)
     const std::string name = knob->getName();
 
     if (name == kNatronParamTrackingPrevious) {
-        knob->setIconFilePath(NATRON_IMAGES_PATH "back1.png");
+        knob->setIconLabel(NATRON_IMAGES_PATH "back1.png");
     } else if (name == kNatronParamTrackingNext) {
-        knob->setIconFilePath(NATRON_IMAGES_PATH "forward1.png");
+        knob->setIconLabel(NATRON_IMAGES_PATH "forward1.png");
     } else if (name == kNatronParamTrackingBackward) {
-        knob->setIconFilePath(NATRON_IMAGES_PATH "rewind.png");
+        knob->setIconLabel(NATRON_IMAGES_PATH "rewind.png");
     } else if (name == kNatronParamTrackingForward) {
-        knob->setIconFilePath(NATRON_IMAGES_PATH "play.png");
+        knob->setIconLabel(NATRON_IMAGES_PATH "play.png");
     }
 }
 

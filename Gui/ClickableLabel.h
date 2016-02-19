@@ -54,6 +54,10 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
+    ClickableLabel(const QPixmap &icon,
+                   QWidget *parent);
+
+    
     ClickableLabel(const QString &text,
                    QWidget *parent);
 
@@ -121,6 +125,8 @@ class KnobClickableLabel : public ClickableLabel, public KnobWidgetDnD
 {
   
 public:
+    
+    KnobClickableLabel(const QPixmap& icon, KnobGui* knob, QWidget* parent = 0);
     
     KnobClickableLabel(const QString& text, KnobGui* knob, QWidget* parent = 0);
     

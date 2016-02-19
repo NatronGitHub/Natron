@@ -120,6 +120,7 @@ SOURCES += \
     MemoryFile.cpp \
     Node.cpp \
     NodeGroup.cpp \
+    NodeMetadata.cpp \
     NonKeyParams.cpp \
     NonKeyParamsSerialization.cpp \
     NodeSerialization.cpp \
@@ -284,6 +285,7 @@ HEADERS += \
     NodeGroupSerialization.h \
     NodeGraphI.h \
     NodeGuiI.h \
+    NodeMetadata.h \
     NonKeyParams.h \
     NonKeyParamsSerialization.h \
     NodeSerialization.h \
@@ -424,7 +426,7 @@ HEADERS += \
     NatronEngine/userparamholder_wrapper.h \
     NatronEngine/rectd_wrapper.h \
     NatronEngine/recti_wrapper.h \
-    NatronEngine/separatorparam_wrapper.h \
+    NatronEngine/separatorparam_wrapper.h
 
 
 OTHER_FILES += \

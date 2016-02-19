@@ -487,6 +487,8 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
         double par = 1.;
         ImageBitDepthEnum depth = eImageBitDepthFloat;
         ImageComponents comps;
+        ImagePremultiplicationEnum premult;
+        ImageFieldingOrderEnum fielding;
         for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
             if (bounds.isNull()) {
                 bounds = (*it)->getBounds();
@@ -494,19 +496,31 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
                 par = (*it)->getPixelAspectRatio();
                 depth = (*it)->getBitDepth();
                 comps = (*it)->getComponents();
+                fielding = (*it)->getFieldingOrder();
+                premult = (*it)->getPremultiplication();
             } else {
                 bounds.merge((*it)->getBounds());
                 assert(mipMapLevel == (*it)->getMipMapLevel());
                 assert(depth == (*it)->getBitDepth());
                 assert(comps == (*it)->getComponents());
                 assert(par == (*it)->getPixelAspectRatio());
+                assert(fielding == (*it)->getFieldingOrder());
+                assert(premult == (*it)->getPremultiplication());
             }
         }
         if (bounds.isNull()) {
             return ret;
         }
         
-        ret.reset(new Image(comps,firstTile->getRoD(),bounds,mipMapLevel,par,depth,false));
+        ret.reset(new Image(comps,
+                            firstTile->getRoD(),
+                            bounds,
+                            mipMapLevel,
+                            par,
+                            depth,
+                            premult,
+                            fielding,
+                            false));
         for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
             ret->pasteFrom(**it, (*it)->getBounds(), false);
         }

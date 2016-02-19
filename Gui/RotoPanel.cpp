@@ -1011,9 +1011,9 @@ RotoPanelPrivate::insertItemRecursively(double time,
                          publicInterface,
                          SLOT(onRotoItemShapeColorChanged()) );
         QObject::connect( drawable.get(),
-                         SIGNAL(compositingOperatorChanged(ViewIdx,int,int)),
+                         SIGNAL(compositingOperatorChanged(ViewSpec,int,int)),
                          publicInterface,
-                         SLOT(onRotoItemCompOperatorChanged(ViewIdx,int,int)) );
+                         SLOT(onRotoItemCompOperatorChanged(ViewSpec,int,int)) );
         
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
         if (isBezier) {

@@ -97,13 +97,6 @@ public:
         return false;
     }
 
-    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual void getPreferredDepthAndComponents(int inputNb,
-                                            std::list<ImageComponents>* comp,
-                                            ImageBitDepthEnum* depth) const OVERRIDE FINAL;
-    virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
-
-    virtual double getPreferredFrameRate() const OVERRIDE FINAL;
 
     NodePtr getOutputNode() const;
 

@@ -164,6 +164,8 @@ public:
     
     bool isNodeCreated() const;
     
+    void refreshAcceptedBitDepths();
+    
     /*@brief Quit all processing done by all render instances of this node
        This is called when the effect is about to be deleted pluginsly
      */
@@ -410,6 +412,8 @@ public:
      **/
     virtual int getPreferredInputForConnection()  const;
     virtual int getPreferredInput() const;
+    
+    NodePtr getPreferredInputNode() const;
     
     void setRenderThreadSafety(RenderSafetyEnum safety);
     RenderSafetyEnum getCurrentRenderThreadSafety() const;
@@ -925,6 +929,8 @@ public:
      **/
     void initializeKnobs(int renderScaleSupportPref);
     
+    void checkForPremultWarningAndCheckboxes();
+    
 private:
     
     void initializeDefaultKnobs(int renderScaleSupportPref);
@@ -969,6 +975,8 @@ public:
      * node have. Some keyframes might appear several times.
      **/
     void getAllKnobsKeyframes(std::list<SequenceTime>* keyframes);
+    
+    bool hasAnimatedKnob() const;
     
     
     void setNodeIsRendering();

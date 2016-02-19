@@ -64,6 +64,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
+#include "Engine/NodeMetadata.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
@@ -198,6 +199,10 @@ struct OfxEffectInstancePrivate
     std::list< void* > overlaySlaves; //void* to actually a KnobI* but stored as void to avoid dereferencing
     boost::weak_ptr<KnobButton> renderButton; //< render button for writers
     mutable QReadWriteLock preferencesLock;
+    
+    mutable QMutex isRunningClipPreferencesMutex;
+    QThread* isRunningClipPreferences; //< set when running clip preferences
+    
     mutable QReadWriteLock renderSafetyLock;
     mutable RenderSafetyEnum renderSafety;
     mutable bool wasRenderSafetySet;
@@ -212,6 +217,9 @@ struct OfxEffectInstancePrivate
     std::vector<ClipsInfo> clipsInfos;
     OfxClipInstance* outputClip;
     int nbSourceClips;
+    
+    SequentialPreferenceEnum sequentialPref;
+    
     bool isOutput; //if the OfxNode can output a file somehow
     bool penDown; // true when the overlay trapped a penDow action
     bool created; // true after the call to createInstance
@@ -224,6 +232,10 @@ struct OfxEffectInstancePrivate
      */
     bool overlaysCanHandleRenderScale;
     
+    bool supportsMultipleClipsPar;
+    bool supportsMultipleClipsBitdepth;
+    bool doesTemporalAccess;
+    
     OfxEffectInstancePrivate()
     : effect()
     , natronPluginID()
@@ -231,6 +243,8 @@ struct OfxEffectInstancePrivate
     , overlaySlaves()
     , renderButton()
     , preferencesLock(QReadWriteLock::Recursive)
+    , isRunningClipPreferencesMutex()
+    , isRunningClipPreferences(0)
     , renderSafetyLock()
     , renderSafety(eRenderSafetyUnsafe)
     , wasRenderSafetySet(false)
@@ -238,12 +252,15 @@ struct OfxEffectInstancePrivate
     , clipsInfos()
     , outputClip(0)
     , nbSourceClips(0)
+    , sequentialPref(eSequentialPreferenceNotSequential)
     , isOutput(false)
     , penDown(false)
     , created(false)
     , initialized(false)
     , overlaysCanHandleRenderScale(true)
-
+    , supportsMultipleClipsPar(false)
+    , supportsMultipleClipsBitdepth(false)
+    , doesTemporalAccess(false)
     {
         
     }
@@ -350,8 +367,26 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             _imp->clipsInfos[i] = info;
         }
         
+        getNode()->refreshAcceptedBitDepths();
+        _imp->supportsMultipleClipsPar = _imp->effect->supportsMultipleClipPARs();
+        _imp->supportsMultipleClipsBitdepth = _imp->effect->supportsMultipleClipDepths();
+        _imp->doesTemporalAccess = _imp->effect->temporalAccess();
+        int sequential = _imp->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
+        switch (sequential) {
+            case 0:
+                _imp->sequentialPref = eSequentialPreferenceNotSequential;
+                break;
+            case 1:
+                _imp->sequentialPref = eSequentialPreferenceOnlySequential;
+                break;
+            case 2:
+                _imp->sequentialPref = eSequentialPreferencePreferSequential;
+                break;
+            default:
+                _imp->sequentialPref =  eSequentialPreferenceNotSequential;
+                break;
+        }
         
-
         beginChanges();
         OfxStatus stat;
         {
@@ -1071,158 +1106,27 @@ OfxEffectInstance::mapContextToString(ContextEnum ctx)
     return std::string();
 }
 
-/**
- * @brief The purpose of this function is to allow Natron to modify slightly the values returned in the getClipPreferencesAction
- * by the plugin so that we can minimize the amount of Image::convertToFormat calls.
- **/
-static void
-clipPrefsProxy(OfxEffectInstance* self,
-               double time,
-               std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>& clipPrefs,
-               OfxImageEffectInstance::EffectPrefs& effectPrefs,
-               std::list<OfxClipInstance*>& changedClips)
+
+QThread*
+OfxEffectInstance::isThreadRunningClipPreferences() const
 {
-    ///We remap all the input clips components to be the same as the output clip, except for the masks.
-    OfxClipInstance* outputClip = dynamic_cast<OfxClipInstance*>(self->effectInstance()->getClip(kOfxImageEffectOutputClipName));
-    assert(outputClip);
-    std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::iterator foundOutputPrefs = clipPrefs.find(outputClip);
-    assert(foundOutputPrefs != clipPrefs.end());
-
-    
-    
-    std::string outputClipDepth = foundOutputPrefs->second.bitdepth;
-    
-    //Might be needed for bugged plugins
-    if (outputClipDepth.empty()) {
-        outputClipDepth = self->effectInstance()->bestSupportedDepth(kOfxBitDepthFloat);
-    }
-    ImageBitDepthEnum outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
-    
-    ///Set a warning on the node if the bitdepth conversion from one of the input clip to the output clip is lossy
-    QString bitDepthWarning("This nodes converts higher bit depths images from its inputs to work. As "
-                            "a result of this process, the quality of the images is degraded. The following conversions are done: \n");
-    bool setBitDepthWarning = false;
-    
-    bool outputModified = false;
-    
-    if (!self->isSupportedBitDepth(OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth))) {
-        outputClipDepth = self->effectInstance()->bestSupportedDepth(kOfxBitDepthFloat);
-        outputClipDepthNatron = OfxClipInstance::ofxDepthToNatronDepth(outputClipDepth);
-        foundOutputPrefs->second.bitdepth = outputClipDepth;
-        outputModified = true;
-    }
-    
-    double outputAspectRatio = foundOutputPrefs->second.par;
-    
-    
-    ///output clip doesn't support components just remap it, this is probably a plug-in bug.
-    if (!outputClip->isSupportedComponent(foundOutputPrefs->second.components)) {
-        foundOutputPrefs->second.components = outputClip->findSupportedComp(kOfxImageComponentRGBA);
-        outputModified = true;
-    }
-    
-    /// Remap Disparity and Motion vectors to generic XY if possible
-    if ((foundOutputPrefs->second.components == kFnOfxImageComponentMotionVectors ||
-         foundOutputPrefs->second.components == kFnOfxImageComponentStereoDisparity) &&
-        outputClip->isSupportedComponent(kNatronOfxImageComponentXY)) {
-        foundOutputPrefs->second.components = kNatronOfxImageComponentXY;
-        outputModified = true;
-    }
-
-    
-    ///Adjust output premultiplication if needed
-    if (foundOutputPrefs->second.components == kOfxImageComponentRGB) {
-        effectPrefs.premult = kOfxImageOpaque;
-    } else if (foundOutputPrefs->second.components == kOfxImageComponentAlpha) {
-        effectPrefs.premult = kOfxImagePreMultiplied;
-    }
-    
-    
-    int maxInputs = self->getMaxInputCount();
-    
-    for (int i = 0; i < maxInputs; ++i) {
-        EffectInstPtr inputEffect = self->getInput(i);
-        if (inputEffect) {
-            inputEffect = inputEffect->getNearestNonIdentity(time);
-        }
-        OfxEffectInstance* instance = dynamic_cast<OfxEffectInstance*>(inputEffect.get());
-        OfxClipInstance* clip = self->getClipCorrespondingToInput(i);
-        
-        bool hasChanged = false;
-
-        std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::iterator foundClipPrefs = clipPrefs.find(clip);
-        assert(foundClipPrefs != clipPrefs.end());
-        
- 
-        if (instance) {
-            
-            
-
-            
-            ///This is the output clip of the input node
-            OFX::Host::ImageEffect::ClipInstance* inputOutputClip = instance->effectInstance()->getClip(kOfxImageEffectOutputClipName);
-
-            ///Try to remap the clip's bitdepth to be the same as
-            const std::string & input_outputDepth = inputOutputClip->getPixelDepth();
-            ImageBitDepthEnum input_outputNatronDepth = OfxClipInstance::ofxDepthToNatronDepth(input_outputDepth);
-            
-            ///If supported, set the clip's bitdepth to be the same as the output depth of the input node
-            if ( self->isSupportedBitDepth(input_outputNatronDepth) ) {
-                bool depthsDifferent = input_outputNatronDepth != outputClipDepthNatron;
-                if (self->effectInstance()->supportsMultipleClipDepths() && depthsDifferent) {
-                    foundClipPrefs->second.bitdepth = input_outputDepth;
-                    hasChanged = true;
-                }
-            }
-            ///Otherwise if the bit-depth conversion will be lossy, warn the user
-            else if ( Image::isBitDepthConversionLossy(input_outputNatronDepth, outputClipDepthNatron) ) {
-                bitDepthWarning.append( instance->getNode()->getLabel_mt_safe().c_str() );
-                bitDepthWarning.append(" (" + QString( Image::getDepthString(input_outputNatronDepth).c_str() ) + ")");
-                bitDepthWarning.append(" ----> ");
-                bitDepthWarning.append( self->getNode()->getLabel_mt_safe().c_str() );
-                bitDepthWarning.append(" (" + QString( Image::getDepthString(outputClipDepthNatron).c_str() ) + ")");
-                bitDepthWarning.append('\n');
-                setBitDepthWarning = true;
-            }
-            
-            if (!self->effectInstance()->supportsMultipleClipPARs() && foundClipPrefs->second.par != outputAspectRatio && foundClipPrefs->first->getConnected()) {
-                qDebug() << self->getScriptName_mt_safe().c_str() << ": An input clip ("<< foundClipPrefs->first->getName().c_str()
-                << ") has a pixel aspect ratio (" << foundClipPrefs->second.par
-                << ") different than the output clip (" << outputAspectRatio << ") but it doesn't support multiple clips PAR. "
-                << "This should have been handled earlier before connecting the nodes, @see Node::canConnectInput.";
-            }
-        } // if(instance)
-        if (hasChanged) {
-            changedClips.push_back(clip);
-        }
-    }
-    
-    if (outputModified) {
-        changedClips.push_back(outputClip);
-    }
-    
-    self->getNode()->toggleBitDepthWarning(setBitDepthWarning, bitDepthWarning);
-    
-} //endCheckOFXClipPreferences
+    QMutexLocker k(&_imp->isRunningClipPreferencesMutex);
+    return _imp->isRunningClipPreferences;
+}
 
 
-
-bool
-OfxEffectInstance::refreshClipPreferences(double time,
-                                           const RenderScale & scale,
-                                          ValueChangedReasonEnum reason,
-                                           bool forceGetClipPrefAction)
+StatusEnum
+OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
 {
-    
     if (!_imp->created) {
-        return false;
+        return eStatusFailed;
     }
     assert(_imp->context != eContextNone);
     assert( QThread::currentThread() == qApp->thread() );
     
     ////////////////////////////////////////////////////////////////
     ///////////////////////////////////
-    //////////////// STEP 1 : Get plug-in render preferences
+    ////////////////  Get plug-in render preferences
     std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs> clipsPrefs;
     OfxImageEffectInstance::EffectPrefs effectPrefs;
     {
@@ -1237,82 +1141,64 @@ OfxEffectInstance::refreshClipPreferences(double time,
         
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QWriteLocker preferencesLocker(&_imp->preferencesLock);
-        if (forceGetClipPrefAction) {
-            if (!_imp->effect->getClipPreferences_safe(clipsPrefs,effectPrefs)) {
-                return false;
-            }
-        } else {
-            if (_imp->effect->areClipPrefsDirty()) {
-                if (!_imp->effect->getClipPreferences_safe(clipsPrefs, effectPrefs)) {
-                    return false;
-                }
-            } else {
-                return false;
-            }
+        
+        {
+            QMutexLocker k(&_imp->isRunningClipPreferencesMutex);
+            _imp->isRunningClipPreferences = QThread::currentThread();
         }
+        if (!_imp->effect->getClipPreferences_safe(clipsPrefs,effectPrefs)) {
+            QMutexLocker k(&_imp->isRunningClipPreferencesMutex);
+            _imp->isRunningClipPreferences = 0;
+            return eStatusFailed;
+        }
+        
+        QMutexLocker k(&_imp->isRunningClipPreferencesMutex);
+        _imp->isRunningClipPreferences = 0;
     }
-    
-    
-    ////////////////////////////////////////////////////////////////
-    ////////////////////////////////
-    //////////////// STEP 2: Apply a proxy, i.e: modify the preferences so it requires a minimum pixel shuffling
-    std::list<OfxClipInstance*> modifiedClips;
-    
-    clipPrefsProxy(this, time,clipsPrefs,effectPrefs,modifiedClips);
-    
-    bool changed = false;
-    
-    ////////////////////////////////////////////////////////////////
-    ////////////////////////////////
-    //////////////// STEP 3: Actually push to the clips the preferences and set the flags on the effect, protected by a write lock.
+
+    metadata.frameRate = effectPrefs.frameRate;
+    metadata.outputPremult = OfxClipInstance::ofxPremultToNatronPremult(effectPrefs.premult);
+    metadata.outputFielding = OfxClipInstance::ofxFieldingToNatronFielding(effectPrefs.fielding);
+    metadata.isFrameVarying = effectPrefs.frameVarying;
+    metadata.canRenderAtNonframes = effectPrefs.continuous;
+    for (std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::const_iterator it = clipsPrefs.begin(); it != clipsPrefs.end(); ++it) {
+        
+        NodeMetadata::PerInputData* perClipData = 0;
+        if (it->first->isOutput()) {
+            perClipData = &metadata.outputData;
+        } else {
+            int inputIdx = it->first->getInputNb();
+            assert(inputIdx >= 0 && inputIdx < (int)metadata.inputsData.size());
+            perClipData = &metadata.inputsData[inputIdx];
+        }
+        assert(perClipData);
+        if (!perClipData) {
+            return eStatusFailed;
+        }
+        perClipData->pixelAspectRatio = it->second.par;
+        perClipData->components = OfxClipInstance::ofxComponentsToNatronComponents(it->second.components);
+        perClipData->bitdepth = OfxClipInstance::ofxDepthToNatronDepth(it->second.bitdepth);
+
+    }
+    //////////////// Actually push to the clips the preferences and set the flags on the effect, protected by a write lock.
     
     {
         QWriteLocker l(&_imp->preferencesLock);
         for (std::map<OfxClipInstance*,OfxImageEffectInstance::ClipPrefs>::const_iterator it = clipsPrefs.begin(); it != clipsPrefs.end(); ++it) {
-            if (it->first->getComponents() != it->second.components) {
-                it->first->setComponents(it->second.components);
-                changed = true;
-            }
-            if (it->second.bitdepth != it->first->getPixelDepth()) {
-                it->first->setPixelDepth(it->second.bitdepth);
-                changed = true;
-            }
-            if (it->second.par != it->first->getAspectRatio()) {
-                it->first->setAspectRatio(it->second.par);
-                changed = true;
-            }
+            it->first->setComponents(it->second.components);
+            
+            it->first->setPixelDepth(it->second.bitdepth);
+            
+            it->first->setAspectRatio(it->second.par);
+            
         }
         
-        changed |= effectInstance()->updatePreferences_safe(effectPrefs.frameRate, effectPrefs.fielding, effectPrefs.premult,
-                                                 effectPrefs.continuous, effectPrefs.frameVarying);
+        effectInstance()->updatePreferences_safe(effectPrefs.frameRate, effectPrefs.fielding, effectPrefs.premult,
+                                                            effectPrefs.continuous, effectPrefs.frameVarying);
     }
-    
-    
-    ////////////////////////////////////////////////////////////////
-    ////////////////////////////////
-    //////////////// STEP 4: If our proxy remapping changed some clips preferences, notifying the plug-in of the clips which changed
-    if (!getApp()->isCreatingNodeTree()) {
-        
-        std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
-        assert(!ofxReason.empty());
+    return eStatusOK;
 
-        
-        RECURSIVE_ACTION();
-        SET_CAN_SET_VALUE(true);
-        if (!modifiedClips.empty()) {
-            effectInstance()->beginInstanceChangedAction(ofxReason);
-        }
-        for (std::list<OfxClipInstance*>::iterator it = modifiedClips.begin(); it != modifiedClips.end(); ++it) {
-            effectInstance()->clipInstanceChangedAction((*it)->getName(), ofxReason, time, scale);
-        }
-        if (!modifiedClips.empty()) {
-            effectInstance()->endInstanceChangedAction(ofxReason);
-        }
-    }
-    
-    return changed;
-} // checkOFXClipPreferences
-
+}
 
 std::vector<std::string>
 OfxEffectInstance::supportedFileFormats() const
@@ -2040,7 +1926,13 @@ OfxEffectInstance::render(const RenderActionArgs& args)
 bool
 OfxEffectInstance::supportsMultipleClipsPAR() const
 {
-    return _imp->effect->supportsMultipleClipPARs();
+    return _imp->supportsMultipleClipsPar;
+}
+
+bool
+OfxEffectInstance::supportsMultipleClipsBitDepth() const
+{
+    return _imp->supportsMultipleClipsBitdepth;
 }
 
 RenderSafetyEnum
@@ -2664,32 +2556,6 @@ OfxEffectInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) co
 
 
 void
-OfxEffectInstance::getPreferredDepthAndComponents(int inputNb,
-                                                  std::list<ImageComponents>* comp,
-                                                  ImageBitDepthEnum* depth) const
-{
-    OfxClipInstance* clip;
-
-    if (inputNb == -1) {
-        clip = dynamic_cast<OfxClipInstance*>( _imp->effect->getClip(kOfxImageEffectOutputClipName) );
-    } else {
-        clip = getClipCorrespondingToInput(inputNb);
-    }
-    assert(clip);
-    
-    if (getRecursionLevel() > 0) {
-        ///Someone took the read  (all actions) or write (getClipPreferences action)lock already
-        *comp = OfxClipInstance::ofxComponentsToNatronComponents( clip->getComponents() );
-        *depth = OfxClipInstance::ofxDepthToNatronDepth( clip->getPixelDepth() );
-    } else {
-        ///Take the preferences lock to be sure we're not writing them
-        QReadLocker l(&_imp->preferencesLock);
-        *comp = OfxClipInstance::ofxComponentsToNatronComponents( clip->getComponents() );
-        *depth = OfxClipInstance::ofxDepthToNatronDepth( clip->getPixelDepth() );
-    }
-}
-
-void
 OfxEffectInstance::getComponentsNeededAndProduced(double time,
                                                   ViewIdx view,
                                                   EffectInstance::ComponentsNeededMap* comps,
@@ -2787,98 +2653,17 @@ OfxEffectInstance::isViewInvariant() const
 SequentialPreferenceEnum
 OfxEffectInstance::getSequentialPreference() const
 {
-    int sequential = _imp->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
-
-    switch (sequential) {
-    case 0:
-
-        return eSequentialPreferenceNotSequential;
-    case 1:
-
-        return eSequentialPreferenceOnlySequential;
-    case 2:
-
-        return eSequentialPreferencePreferSequential;
-    default:
-
-        return eSequentialPreferenceNotSequential;
-        break;
-    }
+    return _imp->sequentialPref;
 }
 
-ImagePremultiplicationEnum
-OfxEffectInstance::getOutputPremultiplication() const
-{
-    const std::string & str = ofxGetOutputPremultiplication();
-
-    if (str == kOfxImagePreMultiplied) {
-        return eImagePremultiplicationPremultiplied;
-    } else if (str == kOfxImageUnPreMultiplied) {
-        return eImagePremultiplicationUnPremultiplied;
-    } else {
-        return eImagePremultiplicationOpaque;
-    }
-}
 
 const std::string &
 OfxEffectInstance::ofxGetOutputPremultiplication() const
 {
-    static const std::string v(kOfxImagePreMultiplied);
-    assert(effectInstance()->getClip(kOfxImageEffectOutputClipName));
-    
-    if (getRecursionLevel() > 0) {
-        const std::string & premult = effectInstance()->getOutputPreMultiplication();
-        ///if the output has something, use it, otherwise default to premultiplied
-        if ( !premult.empty() ) {
-            return premult;
-        } else {
-            return v;
-        }
-    } else {
-        ///Take the preferences lock to be sure we're not writing them
-        QReadLocker l(&_imp->preferencesLock);
-        const std::string & premult = effectInstance()->getOutputPreMultiplication();
-        ///if the output has something, use it, otherwise default to premultiplied
-        if ( !premult.empty() ) {
-            return premult;
-        } else {
-            return v;
-        }
-    }
+    return OfxClipInstance::natronsPremultToOfxPremult(getPremult());
 }
 
 
-double
-OfxEffectInstance::getPreferredAspectRatio() const
-{
-    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
-    assert(clip);
-    
-    if (getRecursionLevel() > 0) {
-        return clip->getAspectRatio();
-    } else {
-        ///Take the preferences lock to be sure we're not writing them
-        QReadLocker l(&_imp->preferencesLock);
-        return clip->getAspectRatio();
-
-    }
-}
-
-double
-OfxEffectInstance::getPreferredFrameRate() const
-{
-    OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
-    assert(clip);
-    
-    if (getRecursionLevel() > 0) {
-        return clip->getFrameRate();
-    } else {
-        ///Take the preferences lock to be sure we're not writing them
-        QReadLocker l(&_imp->preferencesLock);
-        return clip->getFrameRate();
-        
-    }
-}
 
 
 bool
@@ -2947,19 +2732,11 @@ OfxEffectInstance::getTransform(double time,
     return eStatusOK;
 }
 
-
-bool
-OfxEffectInstance::isFrameVarying() const
-{
-    // only check the instance (frameVarying is set by clip prefs)
-    return effectInstance()->isFrameVarying();
-}
-
 bool
 OfxEffectInstance::doesTemporalClipAccess() const
 {
     // first, check the descriptor, then the instance
-    return effectInstance()->getDescriptor().temporalAccess() && effectInstance()->temporalAccess();
+    return _imp->doesTemporalAccess;
 }
 
 bool

@@ -187,6 +187,8 @@ public:
           unsigned int mipMapLevel,
           double par,
           ImageBitDepthEnum bitdepth,
+          ImagePremultiplicationEnum premult,
+          ImageFieldingOrderEnum fielding,
           bool useBitmap = false);
 
     //Same as above but parameters are in the ImageParams object
@@ -213,7 +215,9 @@ public:
                                                      unsigned int mipMapLevel,
                                                      bool isRoDProjectFormat,
                                                      const ImageComponents& components,
-                                                     ImageBitDepthEnum bitdepth);
+                                                     ImageBitDepthEnum bitdepth,
+                                                     ImagePremultiplicationEnum premult,
+                                                     ImageFieldingOrderEnum fielding);
 
     static boost::shared_ptr<ImageParams> makeParams(int cost,
                                                      const RectD & rod,    // the image rod in canonical coordinates
@@ -222,7 +226,9 @@ public:
                                                      unsigned int mipMapLevel,
                                                      bool isRoDProjectFormat,
                                                      const ImageComponents& components,
-                                                     ImageBitDepthEnum bitdepth);
+                                                     ImageBitDepthEnum bitdepth,
+                                                     ImagePremultiplicationEnum premult,
+                                                     ImageFieldingOrderEnum fielding);
 
     // boost::shared_ptr<ImageParams> getParams() const WARN_UNUSED_RETURN;
 
@@ -328,6 +334,10 @@ public:
     {
         return this->_bitDepth;
     }
+    
+    ImageFieldingOrderEnum getFieldingOrder() const;
+    
+    ImagePremultiplicationEnum getPremultiplication() const;
 
     double getPixelAspectRatio() const;
 
@@ -976,6 +986,8 @@ private:
     RectD _rod;     // rod in canonical coordinates (not the same as the OFX::Image RoD, which is in pixel coordinates)
     RectI _bounds;
     double _par;
+    ImageFieldingOrderEnum _fielding;
+    ImagePremultiplicationEnum _premult;
     bool _useBitmap;
 };
 

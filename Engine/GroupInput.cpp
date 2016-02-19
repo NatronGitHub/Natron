@@ -27,6 +27,7 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "Engine/NodeMetadata.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // kNatronGroupInputIsOptionalParamName, kNatronGroupInputIsMaskParamName
@@ -86,33 +87,5 @@ GroupInput::knobChanged(KnobI* k,
     }
 }
 
-ImagePremultiplicationEnum
-GroupInput::getOutputPremultiplication() const
-{
-    NodePtr thisNode = getNode();
-    boost::shared_ptr<NodeCollection> group = thisNode->getGroup();
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(group.get());
-    assert(isGroup);
-    if (!isGroup) {
-        return eImagePremultiplicationPremultiplied;
-    }
-    int inputNb = -1;
-    std::vector<NodePtr> groupInputs;
-    isGroup->getInputs(&groupInputs, false);
-    for (std::size_t i = 0; i < groupInputs.size(); ++i) {
-        if (groupInputs[i] == thisNode) {
-            inputNb = i;
-            break;
-        }
-    }
-    assert(inputNb != -1);
-    if (inputNb != -1) {
-        EffectInstPtr input = isGroup->getInput(inputNb);
-        if (input) {
-            return input->getOutputPremultiplication();
-        }
-    }
-    return eImagePremultiplicationPremultiplied;
-}
 
 NATRON_NAMESPACE_EXIT;

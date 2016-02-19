@@ -251,7 +251,7 @@ QtWriter::render(const RenderActionArgs& args)
     assert(args.outputPlanes.size() == 1);
     const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
     
-    boost::shared_ptr<Image> src = getImage(0, args.time, args.mappedScale, args.view, NULL, output.second->getComponents(), output.second->getBitDepth(),1, false,NULL);
+    boost::shared_ptr<Image> src = getImage(0, args.time, args.mappedScale, args.view, 0, 0, true,NULL);
 
     if ( hasOutputConnected() ) {
         output.second->pasteFrom( *src, src->getBounds() );

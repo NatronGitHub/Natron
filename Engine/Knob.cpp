@@ -235,8 +235,11 @@ struct KnobHelperPrivate
 #pragma message WARN("This should be a weak_ptr")
 #endif
     KnobHolder* holder;
+    
+    mutable QMutex labelMutex;
     std::string label; //< the text label that will be displayed  on the GUI
     bool labelVisible;
+    std::string iconFilePath; //< an icon to replace the label
     std::string name; //< the knob can have a name different than the label displayed on GUI.
     std::string originalName; //< the original name passed to setName() by the user
     //By default this is the same as _description but can be set by calling setName().
@@ -325,8 +328,10 @@ struct KnobHelperPrivate
                       bool declaredByPlugin_)
     : publicInterface(publicInterface_)
     , holder(holder_)
+    , labelMutex()
     , label(label_)
     , labelVisible(true)
+    , iconFilePath()
     , name( label_.c_str() )
     , originalName(label_.c_str())
     , newLine(true)
@@ -1010,7 +1015,6 @@ KnobHelper::cloneCurve(ViewSpec view,
                        const Curve& curve)
 {
     assert(dimension >= 0 && dimension < (int)_imp->curves.size());
-    KnobHolder* holder = getHolder();
     boost::shared_ptr<Curve> thisCurve;
     bool useGuiCurve = _imp->shouldUseGuiCurve();
     if (!useGuiCurve) {
@@ -1665,30 +1669,50 @@ KnobHelper::determineHierarchySize() const
     return ret;
 }
 
-const std::string &
+std::string
 KnobHelper::getLabel() const
 {
+    QMutexLocker k(&_imp->labelMutex);
     return _imp->label;
 }
 
 void
 KnobHelper::setLabel(const std::string& label)
 {
-    _imp->label = label;
+    {
+        QMutexLocker k(&_imp->labelMutex);
+        _imp->label = label;
+    }
     if (_signalSlotHandler) {
         _signalSlotHandler->s_labelChanged();
     }
 }
 
 void
+KnobHelper::setIconLabel(const std::string& iconFilePath)
+{
+    QMutexLocker k(&_imp->labelMutex);
+    _imp->iconFilePath = iconFilePath;
+}
+
+const std::string&
+KnobHelper::getIconLabel() const
+{
+    QMutexLocker k(&_imp->labelMutex);
+    return _imp->iconFilePath;
+}
+
+void
 KnobHelper::hideLabel()
 {
+    QMutexLocker k(&_imp->labelMutex);
     _imp->labelVisible = false;
 }
 
 bool
 KnobHelper::isLabelVisible() const
 {
+    QMutexLocker k(&_imp->labelMutex);
     return _imp->labelVisible;
 }
 
@@ -2451,6 +2475,7 @@ KnobHelper::isAnimationEnabled() const
 void
 KnobHelper::setName(const std::string & name,bool throwExceptions)
 {
+    
     _imp->originalName = name;
     _imp->name = Python::makeNameScriptFriendly(name);
     

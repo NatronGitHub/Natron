@@ -93,6 +93,8 @@ ImageParams::serialize(Archive & ar,
     //}
     ar & ::boost::serialization::make_nvp("Components",_components);
     ar & ::boost::serialization::make_nvp("MMLevel",_mipMapLevel);
+    ar & ::boost::serialization::make_nvp("Premult",_premult);
+    ar & ::boost::serialization::make_nvp("Fielding",_fielding);
 }
 
 NATRON_NAMESPACE_EXIT;

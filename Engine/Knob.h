@@ -723,8 +723,14 @@ public:
      * @brief Get the knob label, that is the label next to the knob on the user interface.
      * This function is MT-safe as it the label can only be changed by the main thread.
      **/
-    virtual const std::string & getLabel() const = 0;
+    virtual std::string getLabel() const = 0;
     virtual void setLabel(const std::string& label) = 0;
+    
+    /**
+     * @brief Set an icon instead of the text label for this knob
+     **/
+    virtual void setIconLabel(const std::string& iconFilePath) = 0;
+    virtual const std::string& getIconLabel() const = 0;
     
     /**
      * @brief Hide the label label on the GUI on the left of the knob. This is not dynamic
@@ -1271,8 +1277,10 @@ public:
     virtual const std::vector< boost::shared_ptr<Curve>  > & getCurves() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual const std::string & getLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string  getLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     void setLabel(const std::string& label) OVERRIDE FINAL;
+    virtual void setIconLabel(const std::string& iconFilePath) OVERRIDE FINAL;
+    virtual const std::string& getIconLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void hideLabel()  OVERRIDE FINAL;
     virtual bool isLabelVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;

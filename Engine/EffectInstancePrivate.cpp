@@ -349,8 +349,8 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , componentsAvailableMutex()
     , componentsAvailableDirty(true)
     , outputComponentsAvailable()
-    , defaultClipPreferencesDataMutex()
-    , clipPrefsData()
+    , metadatasMutex()
+    , metadatas()
     , runningClipPreferences(false)
 {
 }

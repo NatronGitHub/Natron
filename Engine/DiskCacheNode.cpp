@@ -183,42 +183,6 @@ DiskCacheNode::getFrameRange(double *first,double *last)
     }
 }
 
-void
-DiskCacheNode::getPreferredDepthAndComponents(int /*inputNb*/,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const
-{
-    EffectInstPtr input = getInput(0);
-    if (input) {
-        return input->getPreferredDepthAndComponents(-1, comp, depth);
-    } else {
-        comp->push_back(ImageComponents::getRGBAComponents());
-        *depth = eImageBitDepthFloat;
-    }
-}
-
-
-ImagePremultiplicationEnum
-DiskCacheNode::getOutputPremultiplication() const
-{
-    EffectInstPtr input = getInput(0);
-    if (input) {
-        return input->getOutputPremultiplication();
-    } else {
-        return eImagePremultiplicationPremultiplied;
-    }
-
-}
-
-double
-DiskCacheNode::getPreferredAspectRatio() const
-{
-    EffectInstPtr input = getInput(0);
-    if (input) {
-        return input->getPreferredAspectRatio();
-    } else {
-        return 1.;
-    }
-
-}
 
 StatusEnum
 DiskCacheNode::render(const RenderActionArgs& args)
@@ -231,17 +195,14 @@ DiskCacheNode::render(const RenderActionArgs& args)
         return eStatusFailed;
     }
     
-    ImageBitDepthEnum bitdepth;
-    std::list<ImageComponents> components;
-    input->getPreferredDepthAndComponents(-1, &components, &bitdepth);
-    double par = input->getPreferredAspectRatio();
+
     
     const std::pair<ImageComponents,ImagePtr>& output = args.outputPlanes.front();
     
-    for (std::list<ImageComponents> ::const_iterator it =components.begin(); it != components.end(); ++it) {
+    for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator it =args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
         RectI roiPixel;
         
-        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, *it, bitdepth, par, false, true, &roiPixel);
+        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, &it->first, false, true,&roiPixel);
         if (!srcImg) {
             return eStatusFailed;
         }

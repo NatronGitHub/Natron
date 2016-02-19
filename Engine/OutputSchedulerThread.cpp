@@ -2457,7 +2457,7 @@ private:
             assert(activeInputToRender);
             U64 activeInputToRenderHash = activeInputToRender->getHash();
             
-            const double par = activeInputToRender->getPreferredAspectRatio();
+            const double par = activeInputToRender->getAspectRatio(-1);
             
             for (std::size_t view = 0; view < viewsToRender.size(); ++view) {
         
@@ -2480,7 +2480,7 @@ private:
 
                 
                 //Retrieve bitdepth only
-                activeInputToRender->getPreferredDepthAndComponents(-1, &components, &imageDepth);
+                imageDepth = activeInputToRender->getBitDepth(-1);
                 components.clear();
                 
                EffectInstance::ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
@@ -2600,10 +2600,10 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     RectI roi;
     
     std::list<ImageComponents> components;
-    ImageBitDepthEnum imageDepth;
-    effect->getPreferredDepthAndComponents(-1, &components, &imageDepth);
+    ImageBitDepthEnum imageDepth = effect->getBitDepth(-1);
+    effect->getComponents(-1, &components);
     
-    const double par = effect->getPreferredAspectRatio();
+    const double par = effect->getAspectRatio(-1);
     
     
     for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {

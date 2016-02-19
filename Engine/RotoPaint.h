@@ -114,11 +114,7 @@ public:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 
-    virtual void getPreferredDepthAndComponents(int inputNb,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const OVERRIDE FINAL;
-
-    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
-
-    virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
+    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
 

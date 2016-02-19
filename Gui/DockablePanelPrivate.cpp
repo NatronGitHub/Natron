@@ -36,6 +36,9 @@
 #include <QUndoStack>
 #include <QDebug>
 #include <QScrollArea>
+#include <QApplication>
+#include <QStyle>
+#include <QMessageBox>
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h" // NATRON_PARAMETER_PAGE_NAME_INFO
@@ -299,6 +302,31 @@ DockablePanelPrivate::getDefaultPage(const KnobPtr &knob)
     return page;
 }
 
+static QPixmap getStandardIcon(QMessageBox::Icon icon, int size, QWidget* widget)
+{
+    QStyle *style = widget ? widget->style() : QApplication::style();
+    QIcon tmpIcon;
+    switch (icon) {
+        case QMessageBox::Information:
+            tmpIcon = style->standardIcon(QStyle::SP_MessageBoxInformation, 0, widget);
+            break;
+        case QMessageBox::Warning:
+            tmpIcon = style->standardIcon(QStyle::SP_MessageBoxWarning, 0, widget);
+            break;
+        case QMessageBox::Critical:
+            tmpIcon = style->standardIcon(QStyle::SP_MessageBoxCritical, 0, widget);
+            break;
+        case QMessageBox::Question:
+            tmpIcon = style->standardIcon(QStyle::SP_MessageBoxQuestion, 0, widget);
+        default:
+            break;
+    }
+    if (!tmpIcon.isNull()) {
+        return tmpIcon.pixmap(size, size);
+    }
+    return QPixmap();
+}
+
 KnobGui*
 DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                                           bool makeNewLine,
@@ -503,8 +531,9 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         } else {
             descriptionLabel = knob->getLabel();
         }
+        const std::string& labelIconFilePath = knob->getIconLabel();
         QWidget *labelContainer = 0;
-        if (ret->isLabelVisible() && (isLabelKnob || !descriptionLabel.empty())) {
+        if (ret->isLabelVisible() && (isLabelKnob || !descriptionLabel.empty() || !labelIconFilePath.empty())) {
             
             QHBoxLayout *labelLayout = 0;
             if (makeNewLine) {
@@ -515,10 +544,37 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
             }
             
             label = new KnobClickableLabel("", ret, page->second.tab);
-            QString labelStr(descriptionLabel.c_str());
-            labelStr += ":";
-            label->setText_overload(labelStr );
+            bool pixmapSet = false;
+            if (!labelIconFilePath.empty()) {
+                QPixmap pix;
+                QFontMetrics fm(label->font(),0);
+                int pixSize = fm.height();
+                if (labelIconFilePath == "dialog-warning") {
+                    pix = getStandardIcon(QMessageBox::Warning, pixSize, label);
+                } else if (labelIconFilePath == "dialog-question") {
+                    pix = getStandardIcon(QMessageBox::Question, pixSize, label);
+                } else if (labelIconFilePath == "dialog-error") {
+                    pix = getStandardIcon(QMessageBox::Critical, pixSize, label);
+                } else if (labelIconFilePath == "dialog-information") {
+                    pix = getStandardIcon(QMessageBox::Information, pixSize, label);
+                } else {
+                    pix.load(labelIconFilePath.c_str());
+                    if (pix.width() != pixSize) {
+                        pix = pix.scaled(pixSize,pixSize,Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+                    }
+                }
+                if (!pix.isNull()) {
+                    pixmapSet = true;
+                    label->setPixmap(pix);
+                }
+            }
+            if (!pixmapSet) {
+                QString labelStr(descriptionLabel.c_str());
+                labelStr += ":";
+                label->setText_overload(labelStr );
+            }
             QObject::connect( label, SIGNAL(clicked(bool)), ret, SIGNAL(labelClicked(bool)) );
+                
             
             if (makeNewLine) {
                 labelLayout->addWidget(label);

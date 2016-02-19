@@ -203,7 +203,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
         }
         
         
-        const double inputPar = inputEffect->getPreferredAspectRatio();
+        const double inputPar = inputEffect->getAspectRatio(-1);
         
         
         
@@ -256,8 +256,8 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                 
                                 ///Render the input image with the bit depth of its preference
                                 std::list<ImageComponents> inputPrefComps;
-                                ImageBitDepthEnum inputPrefDepth;
-                                inputEffect->getPreferredDepthAndComponents(-1/*it2->first*/, &inputPrefComps, &inputPrefDepth);
+                                ImageBitDepthEnum inputPrefDepth = inputEffect->getBitDepth(-1);
+                                inputEffect->getComponents(-1/*it2->first*/, &inputPrefComps);
                                 std::list<ImageComponents> componentsToRender;
                                 
                                 assert(compsNeeded);
@@ -385,7 +385,7 @@ StatusEnum EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     FrameViewRequest* fvRequest = 0;
     NodeFrameViewRequestData::iterator foundFrameView = nodeRequest->frames.find(frameView);
     
-    double par = effect->getPreferredAspectRatio();
+    double par = effect->getAspectRatio(-1);
     ViewInvarianceLevel viewInvariance = effect->isViewInvariant();
 
     

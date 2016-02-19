@@ -162,6 +162,7 @@ class NodeCollection;
 class NodeGroup;
 class NodeGraphI;
 class NodeGuiI;
+class NodeMetadata;
 class NodeSerialization;
 class NodeSettingsPanel;
 class OfxClipInstance;

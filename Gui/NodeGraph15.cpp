@@ -67,8 +67,8 @@ static bool handleConnectionError(const NodeGuiPtr& outputNode, const NodeGuiPtr
                                     + "%3 / %4 " +  QObject::tr(") and ") + "%1 " + QObject::tr(" doesn't support inputs with different pixel aspect ratio. This might yield unwanted results."))
             .arg(outputNode->getNode()->getLabel().c_str())
             .arg(inputNode->getNode()->getLabel().c_str())
-            .arg(outputNode->getNode()->getEffectInstance()->getPreferredAspectRatio())
-            .arg(inputNode->getNode()->getEffectInstance()->getPreferredAspectRatio());
+            .arg(outputNode->getNode()->getEffectInstance()->getAspectRatio(-1))
+            .arg(inputNode->getNode()->getEffectInstance()->getAspectRatio(-1));
             Dialogs::warningDialog(QObject::tr("Different pixel aspect").toStdString(),
                                 error.toStdString());
             return true;
@@ -77,8 +77,8 @@ static bool handleConnectionError(const NodeGuiPtr& outputNode, const NodeGuiPtr
             QString error = QString("%1" + QObject::tr(" and ") + "%2"  + QObject::tr(" don't have the same frame rate (") + "%3 / %4). " + QObject::tr("This might yield unwanted results. Either change the FPS from the Read node parameters or change the settings of the project."))
             .arg(outputNode->getNode()->getLabel().c_str())
             .arg(inputNode->getNode()->getLabel().c_str())
-            .arg(outputNode->getNode()->getEffectInstance()->getPreferredFrameRate())
-            .arg(inputNode->getNode()->getEffectInstance()->getPreferredFrameRate());
+            .arg(outputNode->getNode()->getEffectInstance()->getFrameRate())
+            .arg(inputNode->getNode()->getEffectInstance()->getFrameRate());
             Dialogs::warningDialog(QObject::tr("Different frame rate").toStdString(),
                                 error.toStdString());
             return true;

@@ -246,10 +246,7 @@ public:
     
     static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
-    virtual bool refreshClipPreferences(double time,
-                                         const RenderScale & scale,
-                                        ValueChangedReasonEnum reason,
-                                         bool forceGetClipPrefAction) OVERRIDE FINAL;
+    virtual void onMetaDatasRefreshed() OVERRIDE FINAL;
     
     virtual void onChannelsSelectorRefreshed() OVERRIDE FINAL;
     

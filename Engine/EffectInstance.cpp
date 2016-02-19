@@ -538,7 +538,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
 
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
     RectI pixelRod;
-    rod.toPixelEnclosing(scale, getPreferredAspectRatio(), &pixelRod);
+    rod.toPixelEnclosing(scale, getAspectRatio(-1), &pixelRod);
     try {
         int identityInputNb;
         *isIdentity_p = isIdentity_public(true, nodeHash, time, scale, pixelRod, view, identityTime, &identityInputNb);
@@ -555,6 +555,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
 
     return true;
 } // EffectInstance::retrieveGetImageDataUponFailure
+
 
 void
 EffectInstance::getThreadLocalInputImages(InputImagesMap* images) const
@@ -583,11 +584,9 @@ EffectInstance::getImage(int inputNb,
                          const RenderScale & scale,
                          const ViewIdx view,
                          const RectD *optionalBoundsParam, //!< optional region in canonical coordinates
-                         const ImageComponents & requestComps,
-                         const ImageBitDepthEnum depth,
-                         const double par,
+                         const ImageComponents* layer,
+                         const bool mapToClipPrefs,
                          const bool dontUpscale,
-                         const bool mapImageToPreferredComps,
                          RectI* roiPixel,
                          boost::shared_ptr<Transform::Matrix3x3>* transform)
 {
@@ -835,6 +834,26 @@ EffectInstance::getImage(int inputNb,
 
     ///Both the result of getRegionsOfInterest and optionalBounds are in canonical coordinates, we have to convert in both cases
     ///Convert to pixel coordinates
+    const double par = getAspectRatio(inputNb);
+    
+    ImageBitDepthEnum depth = getBitDepth(inputNb);
+    
+    ImageComponents components,clipPrefComps;
+    {
+        std::list<ImageComponents> compsList;
+        getComponents(inputNb,&compsList);
+        assert(!compsList.empty());
+        clipPrefComps = compsList.front();
+    }
+    if (layer) {
+        components = *layer;
+    } else {
+        components = clipPrefComps;
+    }
+    
+    
+    
+    
     RectI pixelRoI;
     roi.toPixelEnclosing(renderScaleOneUpstreamIfRenderScaleSupportDisabled ? 0 : mipMapLevel, par, &pixelRoI);
 
@@ -846,9 +865,9 @@ EffectInstance::getImage(int inputNb,
         assert(attachedStroke);
         if (attachedStroke) {
             if (duringPaintStroke) {
-                inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, par, requestComps, depth);
+                inputImg = getNode()->getOrRenderLastStrokeImage(mipMapLevel, par, components, depth);
             } else {
-                inputImg = roto->renderMaskFromStroke(attachedStroke, requestComps,
+                inputImg = roto->renderMaskFromStroke(attachedStroke, components,
                                                       time, view, depth, mipMapLevel);
                 if ( roto->isDoingNeatRender() ) {
                     getApp()->updateStrokeImage(inputImg, 0, false);
@@ -883,7 +902,7 @@ EffectInstance::getImage(int inputNb,
     assert(inputEffect);
 
     std::list<ImageComponents> requestedComps;
-    requestedComps.push_back(isMask ? maskComps : requestComps);
+    requestedComps.push_back(isMask ? maskComps : components);
     std::map<ImageComponents,ImagePtr> inputImages;
     RenderRoIRetCode retCode = inputEffect->renderRoI(RenderRoIArgs(time,
                                                                     scale,
@@ -922,20 +941,19 @@ EffectInstance::getImage(int inputNb,
 
 #ifdef DEBUG
     ///Check that the rendered image contains what we requested.
-    if ((!isMask && inputImg->getComponents() != requestComps) || (isMask && inputImg->getComponents() != maskComps)) {
+    if ((!isMask && inputImg->getComponents() != components) || (isMask && inputImg->getComponents() != maskComps)) {
         ImageComponents cc;
         if (isMask) {
             cc = maskComps;
         } else {
-            cc = requestComps;
+            cc = components;
         }
         qDebug() << "WARNING:"<< getNode()->getScriptName_mt_safe().c_str() << "requested" << cc.getComponentsGlobalName().c_str() << "but" << inputEffect->getScriptName_mt_safe().c_str() << "returned an image with"
         << inputImg->getComponents().getComponentsGlobalName().c_str();
-        std::list<ImageComponents> prefComps;
-        ImageBitDepthEnum depth;
-        inputEffect->getPreferredDepthAndComponents(-1, &prefComps, &depth);
-        assert(!prefComps.empty());
-        qDebug() << inputEffect->getScriptName_mt_safe().c_str() << "output clip preference is" << prefComps.front().getComponentsGlobalName().c_str();
+        std::list<ImageComponents> comps;
+        inputEffect->getComponents(-1, &comps);
+        assert(!comps.empty());
+        qDebug() << inputEffect->getScriptName_mt_safe().c_str() << "output clip preference is" << comps.front().getComponentsGlobalName().c_str();
     }
 
 #endif
@@ -954,7 +972,7 @@ EffectInstance::getImage(int inputNb,
         RectI bounds;
         inputImg->getRoD().toPixelEnclosing(0, par, &bounds);
         ImagePtr rescaledImg( new Image(inputImg->getComponents(), inputImg->getRoD(),
-                                                bounds, 0, par, bitdepth) );
+                                                bounds, 0, par, bitdepth, inputImg->getPremultiplication(), inputImg->getFieldingOrder()) );
         inputImg->upscaleMipMap( inputImg->getBounds(), inputImgMipMapLevel, 0, rescaledImg.get() );
         if (roiPixel) {
             RectD canonicalPixelRoI;
@@ -975,21 +993,16 @@ EffectInstance::getImage(int inputNb,
     
     //Remap if needed
     ImagePremultiplicationEnum outputPremult;
-    if (requestComps.isColorPlane()) {
-        outputPremult = inputEffect->getOutputPremultiplication();
+    if (components.isColorPlane()) {
+        outputPremult = inputEffect->getPremult();
     } else {
         outputPremult = eImagePremultiplicationOpaque;
     }
     
 
     
-    if (mapImageToPreferredComps) {
-        std::list<ImageComponents> prefComps;
-        ImageBitDepthEnum prefDepth;
-        getPreferredDepthAndComponents(inputNb, &prefComps, &prefDepth);
-        assert(!prefComps.empty());
-        
-        inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, prefComps.front(), prefDepth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult, channelForMask);
+    if (mapToClipPrefs) {
+        inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, clipPrefComps, depth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), outputPremult, channelForMask);
     }
     
     if (inputImagesThreadLocal.empty()) {
@@ -1433,15 +1446,17 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 //RectI pixelRoD;
                 //rod.toPixelEnclosing(mipMapLevel, oldParams->getPixelAspectRatio(), &pixelRoD);
                 //downscaledBounds.intersect(pixelRoD, &downscaledBounds);
-
-                boost::shared_ptr<ImageParams> imageParams = Image::makeParams( oldParams->getCost(),
-                                                                                rod,
-                                                                                downscaledBounds,
-                                                                                oldParams->getPixelAspectRatio(),
-                                                                                mipMapLevel,
-                                                                                oldParams->isRodProjectFormat(),
-                                                                                oldParams->getComponents(),
-                                                                                oldParams->getBitDepth());
+                
+                boost::shared_ptr<ImageParams> imageParams = Image::makeParams(oldParams->getCost(),
+                                                                               rod,
+                                                                               downscaledBounds,
+                                                                               oldParams->getPixelAspectRatio(),
+                                                                               mipMapLevel,
+                                                                               oldParams->isRodProjectFormat(),
+                                                                               oldParams->getComponents(),
+                                                                               oldParams->getBitDepth(),
+                                                                               oldParams->getPremultiplication(),
+                                                                               oldParams->getFieldingOrder());
 
 
                 imageParams->setMipMapLevel(mipMapLevel);
@@ -1617,6 +1632,8 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                    bool isProjectFormat,
                                    const ImageComponents & components,
                                    ImageBitDepthEnum depth,
+                                   ImagePremultiplicationEnum premult,
+                                   ImageFieldingOrderEnum fielding,
                                    double par,
                                    unsigned int mipmapLevel,
                                    bool renderFullScaleThenDownscale,
@@ -1631,7 +1648,7 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
     //If we're rendering full scale and with input images at full scale, don't cache the downscale image since it is cheap to
     //recreate, instead cache the full-scale image
     if (renderFullScaleThenDownscale) {
-        downscaleImage->reset( new Image(components, rod, downscaleImageBounds, mipmapLevel, par, depth, true) );
+        downscaleImage->reset( new Image(components, rod, downscaleImageBounds, mipmapLevel, par, depth, premult, fielding, true) );
         boost::shared_ptr<ImageParams> upscaledImageParams = Image::makeParams(cost,
                                                                                rod,
                                                                                fullScaleImageBounds,
@@ -1639,7 +1656,9 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                                                                0,
                                                                                isProjectFormat,
                                                                                components,
-                                                                               depth);
+                                                                               depth,
+                                                                               premult,
+                                                                               fielding);
         //The upscaled image will be rendered with input images at full def, it is then the best possibly rendered image so cache it!
         
         fullScaleImage->reset();
@@ -1659,7 +1678,9 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                                                            mipmapLevel,
                                                                            isProjectFormat,
                                                                            components,
-                                                                           depth);
+                                                                           depth,
+                                                                           premult,
+                                                                           fielding);
         
         //Take the lock after getting the image from the cache or while allocating it
         ///to make sure a thread will not attempt to write to the image while its being allocated.
@@ -2137,8 +2158,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             //If color plane, request the preferred comp of the identity input
             if (tls->currentRenderArgs.identityInput && it->second.renderMappedImage->getComponents().isColorPlane()) {
                 std::list<ImageComponents> prefInputComps;
-                ImageBitDepthEnum prefInputDepth;
-                tls->currentRenderArgs.identityInput->getPreferredDepthAndComponents(-1, &prefInputComps, &prefInputDepth);
+                tls->currentRenderArgs.identityInput->getComponents(-1, &prefInputComps);
                 assert(!prefInputComps.empty());
                 comps.push_back(prefInputComps.front());
             } else {
@@ -2203,7 +2223,15 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                         ImagePtr sourceImage;
                         if ( ( it->second.fullscaleImage->getComponents() != idIt->second->getComponents() ) || ( it->second.fullscaleImage->getBitDepth() != idIt->second->getBitDepth() ) ) {
                             
-                            sourceImage.reset( new Image(it->second.fullscaleImage->getComponents(), idIt->second->getRoD(), idIt->second->getBounds(),idIt->second->getMipMapLevel(), idIt->second->getPixelAspectRatio(), it->second.fullscaleImage->getBitDepth(), false) );
+                            sourceImage.reset( new Image(it->second.fullscaleImage->getComponents(),
+                                                         idIt->second->getRoD(),
+                                                         idIt->second->getBounds(),
+                                                         idIt->second->getMipMapLevel(),
+                                                         idIt->second->getPixelAspectRatio(),
+                                                         it->second.fullscaleImage->getBitDepth(),
+                                                         idIt->second->getPremultiplication(),
+                                                         idIt->second->getFieldingOrder(),
+                                                         false) );
                             
                             ViewerColorSpaceEnum colorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth(idIt->second->getBitDepth());
                             ViewerColorSpaceEnum dstColorspace = _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.fullscaleImage->getBitDepth());
@@ -2216,8 +2244,15 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                         const RectD & rod = sourceImage->getRoD();
                         RectI bounds;
                         rod.toPixelEnclosing(it->second.renderMappedImage->getMipMapLevel(), it->second.renderMappedImage->getPixelAspectRatio(), &bounds);
-                        ImagePtr inputPlane( new Image(it->first, rod, bounds, it->second.renderMappedImage->getMipMapLevel(),
-                                                       it->second.renderMappedImage->getPixelAspectRatio(), it->second.renderMappedImage->getBitDepth(), false) );
+                        ImagePtr inputPlane(new Image(it->first,
+                                                      rod,
+                                                      bounds,
+                                                      it->second.renderMappedImage->getMipMapLevel(),
+                                                      it->second.renderMappedImage->getPixelAspectRatio(),
+                                                      it->second.renderMappedImage->getBitDepth(),
+                                                      it->second.renderMappedImage->getPremultiplication(),
+                                                      it->second.renderMappedImage->getFieldingOrder(),
+                                                      false) );
                         sourceImage->upscaleMipMap( sourceImage->getBounds(), sourceImage->getMipMapLevel(), inputPlane->getMipMapLevel(), inputPlane.get() );
                         it->second.fullscaleImage->pasteFrom(*inputPlane, renderMappedRectToRender, false);
                         it->second.fullscaleImage->markForRendered(renderMappedRectToRender);
@@ -2272,6 +2307,8 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                                  it->second.renderMappedImage->getMipMapLevel(),
                                                  it->second.renderMappedImage->getPixelAspectRatio(),
                                                  outputClipPrefDepth,
+                                                 it->second.renderMappedImage->getPremultiplication(),
+                                                 it->second.renderMappedImage->getFieldingOrder(),
                                                  false) ); //< no bitmap
         } else {
             it->second.tmpImage = it->second.renderMappedImage;
@@ -2408,7 +2445,15 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                         ///but originalInputImage is not in the correct mipMapLevel, upscale it
                         assert(originalInputImage->getMipMapLevel() > it->second.tmpImage->getMipMapLevel() &&
                                originalInputImage->getMipMapLevel() == mipMapLevel);
-                        ImagePtr tmp(new Image(it->second.tmpImage->getComponents(), it->second.tmpImage->getRoD(), renderMappedRectToRender, mipMapLevel, it->second.tmpImage->getPixelAspectRatio(), it->second.tmpImage->getBitDepth(), false));
+                        ImagePtr tmp(new Image(it->second.tmpImage->getComponents(),
+                                               it->second.tmpImage->getRoD(),
+                                               renderMappedRectToRender,
+                                               mipMapLevel,
+                                               it->second.tmpImage->getPixelAspectRatio(),
+                                               it->second.tmpImage->getBitDepth(),
+                                               it->second.tmpImage->getPremultiplication(),
+                                               it->second.tmpImage->getFieldingOrder(),
+                                               false));
                         it->second.tmpImage->upscaleMipMap(downscaledRectToRender, originalInputImage->getMipMapLevel(), 0, tmp.get());
                         mappedOriginalInputImage = tmp;
                     }
@@ -2425,7 +2470,15 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                     /*
                      * BitDepth/Components conversion required as well as downscaling, do conversion to a tmp buffer
                      */
-                    ImagePtr tmp( new Image(it->second.fullscaleImage->getComponents(), it->second.tmpImage->getRoD(), renderMappedRectToRender, mipMapLevel, it->second.tmpImage->getPixelAspectRatio(), it->second.fullscaleImage->getBitDepth(), false) );
+                    ImagePtr tmp( new Image(it->second.fullscaleImage->getComponents(),
+                                            it->second.tmpImage->getRoD(),
+                                            renderMappedRectToRender,
+                                            mipMapLevel,
+                                            it->second.tmpImage->getPixelAspectRatio(),
+                                            it->second.fullscaleImage->getBitDepth(),
+                                            it->second.fullscaleImage->getPremultiplication(),
+                                            it->second.fullscaleImage->getFieldingOrder(),
+                                            false) );
                     
                     it->second.tmpImage->convertToFormat( renderMappedRectToRender,
                                                          _publicInterface->getApp()->getDefaultColorSpaceForBitDepth( it->second.tmpImage->getBitDepth() ),
@@ -2520,7 +2573,22 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
     const ImagePtr & img = firstPlane.fullscaleImage->usesBitMap() ? firstPlane.fullscaleImage : firstPlane.downscaleImage;
     boost::shared_ptr<ImageParams> params = img->getParams();
     EffectInstance::PlaneToRender p;
-    bool ok = allocateImagePlane(img->getKey(), tls->currentRenderArgs.rod, tls->currentRenderArgs.renderWindowPixel, tls->currentRenderArgs.renderWindowPixel, false,  plane, img->getBitDepth(), img->getPixelAspectRatio(), img->getMipMapLevel(), false, false, useCache, &p.fullscaleImage, &p.downscaleImage);
+    bool ok = allocateImagePlane(img->getKey(),
+                                 tls->currentRenderArgs.rod,
+                                 tls->currentRenderArgs.renderWindowPixel,
+                                 tls->currentRenderArgs.renderWindowPixel,
+                                 false,
+                                 plane,
+                                 img->getBitDepth(),
+                                 img->getPremultiplication(),
+                                 img->getFieldingOrder(),
+                                 img->getPixelAspectRatio(),
+                                 img->getMipMapLevel(),
+                                 false,
+                                 false,
+                                 useCache,
+                                 &p.fullscaleImage,
+                                 &p.downscaleImage);
     if (!ok) {
         return ImagePtr();
     } else {
@@ -2531,13 +2599,15 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
          * Allocate a temporary image for rendering only if using cache
          */
         if (useCache) {
-            p.tmpImage.reset( new Image(p.renderMappedImage->getComponents(),
-                                        p.renderMappedImage->getRoD(),
-                                        tls->currentRenderArgs.renderWindowPixel,
-                                        p.renderMappedImage->getMipMapLevel(),
-                                        p.renderMappedImage->getPixelAspectRatio(),
-                                        p.renderMappedImage->getBitDepth(),
-                                        false) );
+            p.tmpImage.reset(new Image(p.renderMappedImage->getComponents(),
+                                       p.renderMappedImage->getRoD(),
+                                       tls->currentRenderArgs.renderWindowPixel,
+                                       p.renderMappedImage->getMipMapLevel(),
+                                       p.renderMappedImage->getPixelAspectRatio(),
+                                       p.renderMappedImage->getBitDepth(),
+                                       p.renderMappedImage->getPremultiplication(),
+                                       p.renderMappedImage->getFieldingOrder(),
+                                       false));
         } else {
             p.tmpImage = p.renderMappedImage;
         }
@@ -3707,8 +3777,7 @@ EffectInstance::getComponentsNeededAndProduced(double time,
     *passThroughView = view;
 
     std::list<ImageComponents> outputComp;
-    ImageBitDepthEnum outputDepth;
-    getPreferredDepthAndComponents(-1, &outputComp, &outputDepth);
+    getComponents(-1, &outputComp);
 
     std::vector<ImageComponents> outputCompVec;
     for (std::list<ImageComponents>::iterator it = outputComp.begin(); it != outputComp.end(); ++it) {
@@ -3724,13 +3793,12 @@ EffectInstance::getComponentsNeededAndProduced(double time,
         if (!node) {
             continue;
         }
-        if ( isInputRotoBrush(i) ) {
+        if (isInputRotoBrush(i)) {
             continue;
         }
 
         std::list<ImageComponents> comp;
-        ImageBitDepthEnum depth;
-        getPreferredDepthAndComponents(-1, &comp, &depth);
+        getComponents(i, &comp);
 
         std::vector<ImageComponents> compVect;
         for (std::list<ImageComponents>::iterator it = comp.begin(); it != comp.end(); ++it) {
@@ -3793,9 +3861,9 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
         if (useLayerChoice) {
             ok = getNode()->getSelectedLayer(-1, processChannels, processAllRequested, &layer);
         }
-        ImageBitDepthEnum depth;
+
         std::list<ImageComponents> clipPrefsComps;
-        getPreferredDepthAndComponents(-1, &clipPrefsComps, &depth);
+        getComponents(-1, &clipPrefsComps);
         
         if (ok && layer.getNumComponents() != 0 && !layer.isColorPlane()) {
             
@@ -3840,9 +3908,8 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
                     compVec.push_back(layer);
                 } else {
                     //Use regular clip preferences
-                    ImageBitDepthEnum depth;
                     std::list<ImageComponents> components;
-                    getPreferredDepthAndComponents(i, &components, &depth);
+                    getComponents(i, &components);
                     for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
                         //if (it->isColorPlane()) {
                         compVec.push_back(*it);
@@ -3855,9 +3922,8 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
                 comps->insert( std::make_pair(i, compVec) );
             } else {
                 //Use regular clip preferences
-                ImageBitDepthEnum depth;
                 std::list<ImageComponents> components;
-                getPreferredDepthAndComponents(i, &components, &depth);
+                getComponents(i, &components);
                 for (std::list<ImageComponents>::iterator it = components.begin(); it != components.end(); ++it) {
                     //if (it->isColorPlane()) {
                     compVec.push_back(*it);
@@ -4031,8 +4097,8 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         originatedFromMainThread && reason != eValueChangedReasonTimeChanged) {
         
         ///Run the following only in the main-thread
-        if (k->getIsClipPreferencesSlave()) {
-            refreshClipPreferences_public(time, getOverlayInteractRenderScale(), reason,true, true);
+        if (k->getIsClipPreferencesSlave() && node->isNodeCreated()) {
+            refreshMetaDatas_public(true);
         }
         if (hasOverlay() && node->shouldDrawOverlay() && !node->hasHostOverlayForParam(k)) {
             // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
@@ -4289,18 +4355,12 @@ EffectInstance::getNearestNonIdentity(double time)
     U64 hash = getRenderHash();
     RenderScale scale(1.);
 
-    RectD rod;
-    bool isProjectFormat;
-    StatusEnum stat = getRegionOfDefinition_public(hash, time, scale, ViewIdx(0), &rod, &isProjectFormat);
-
-    ///Ignore the result of getRoD if it failed
-    Q_UNUSED(stat);
-
+    Format frmt;
+    getApp()->getProject()->getProjectDefaultFormat(&frmt);
+    
     double inputTimeIdentity;
     int inputNbIdentity;
-    RectI pixelRoi;
-    rod.toPixelEnclosing(scale, getPreferredAspectRatio(), &pixelRoi);
-    if ( !isIdentity_public(true, hash, time, scale, pixelRoi, ViewIdx(0), &inputTimeIdentity, &inputNbIdentity) ) {
+    if ( !isIdentity_public(true, hash, time, scale, frmt, ViewIdx(0), &inputTimeIdentity, &inputNbIdentity) ) {
         return shared_from_this();
     } else {
         if (inputNbIdentity < 0) {
@@ -4481,70 +4541,166 @@ EffectInstance::isPaintingOverItselfEnabled() const
     return isDuringPaintStrokeCreationThreadLocal();
 }
 
-void
-EffectInstance::getPreferredDepthAndComponents(int inputNb,
-                                               std::list<ImageComponents>* comp,
-                                               ImageBitDepthEnum* depth) const
+StatusEnum
+EffectInstance::getPreferredMetaDatas_public(NodeMetadata& metadata)
 {
+    StatusEnum stat = setDefaultMetadata(metadata);
+    if (stat == eStatusFailed) {
+        return stat;
+    }
+    return getPreferredMetaDatas(metadata);
+}
 
-    if (inputNb != -1) {
-        EffectInstPtr inp = getInput(inputNb);
-        if (inp) {
-            inp->getPreferredDepthAndComponents(-1, comp, depth);
+StatusEnum
+EffectInstance::setDefaultMetadata(NodeMetadata &metadata)
+{
+    NodePtr node = getNode();
+    if (!node) {
+        return eStatusFailed;
+    }
+    NodePtr prefInputNode = node->getPreferredInputNode();
+    EffectInstPtr prefInput;
+    if (prefInputNode) {
+        prefInput = prefInputNode->getEffectInstance();
+    }
+    int nInputs = getMaxInputCount();
+    metadata.inputsData.resize(nInputs);
+    
+    metadata.canRenderAtNonframes = false;
+    metadata.outputFielding = eImageFieldingOrderNone;
+    metadata.isFrameVarying = node->hasAnimatedKnob();
+
+    if (!prefInput) {
+        Format f;
+        getApp()->getProject()->getProjectDefaultFormat(&f);
+        metadata.frameRate = getApp()->getProjectFrameRate();
+        metadata.outputPremult = eImagePremultiplicationPremultiplied;
+        metadata.outputData.bitdepth = eImageBitDepthFloat;
+        metadata.outputData.components.push_back(ImageComponents::getRGBAComponents());
+        metadata.outputData.pixelAspectRatio = f.getPixelAspectRatio();
+        for (int i = 0; i < nInputs; ++i) {
+            metadata.inputsData[i].components.push_back(ImageComponents::getRGBAComponents());
+            metadata.inputsData[i].pixelAspectRatio = f.getPixelAspectRatio();
+            metadata.inputsData[i].bitdepth = eImageBitDepthFloat;
         }
     } else {
-        QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
-        *comp = _imp->clipPrefsData.comps;
-        *depth = _imp->clipPrefsData.bitdepth;
+        metadata.frameRate = prefInput->getFrameRate();
+        metadata.outputPremult = prefInput->getPremult();
+        prefInput->getComponents(-1,&metadata.outputData.components);
+        metadata.outputData.bitdepth = prefInput->getBitDepth(-1);
+        metadata.outputData.pixelAspectRatio = prefInput->getAspectRatio(-1);
+
+        
+        for (int i = 0; i < nInputs; ++i) {
+            prefInput->getComponents(-1,&metadata.inputsData[i].components);
+            metadata.inputsData[i].pixelAspectRatio = metadata.outputData.pixelAspectRatio;
+            metadata.inputsData[i].bitdepth = metadata.outputData.bitdepth;
+        }
     }
-    if ( comp->empty() ) {
-        comp->push_back( ImageComponents::getNoneComponents() );
+    return eStatusOK;
+}
+
+void
+EffectInstance::getComponents(int inputNb,  std::list<ImageComponents>* comps) const
+{
+    QMutexLocker k(&_imp->metadatasMutex);
+    if (inputNb == -1) {
+        *comps = _imp->metadatas.outputData.components;
+    } else {
+        if ((int)_imp->metadatas.inputsData.size() > inputNb) {
+            *comps = _imp->metadatas.inputsData[inputNb].components;
+        } else {
+            comps->push_back(ImageComponents::getNoneComponents());
+        }
     }
-   
+}
+
+ImageBitDepthEnum
+EffectInstance::getBitDepth(int inputNb) const
+{
+    QMutexLocker k(&_imp->metadatasMutex);
+    if (inputNb == -1) {
+        return _imp->metadatas.outputData.bitdepth;
+    } else {
+        if ((int)_imp->metadatas.inputsData.size() > inputNb) {
+            return _imp->metadatas.inputsData[inputNb].bitdepth;
+        } else {
+            return eImageBitDepthFloat;
+        }
+    }
+}
+
+
+double
+EffectInstance::getFrameRate() const
+{
+    QMutexLocker k(&_imp->metadatasMutex);
+    return _imp->metadatas.frameRate;
 }
 
 double
-EffectInstance::getPreferredFrameRate() const
+EffectInstance::getAspectRatio(int inputNb) const
 {
-    QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
-    return _imp->clipPrefsData.frameRate;
-}
-
-double
-EffectInstance::getPreferredAspectRatio() const
-{
-    QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
-    return _imp->clipPrefsData.pixelAspectRatio;
+    QMutexLocker k(&_imp->metadatasMutex);
+    if (inputNb == -1) {
+        return _imp->metadatas.outputData.pixelAspectRatio;
+    } else {
+        if ((int)_imp->metadatas.inputsData.size() > inputNb) {
+            return _imp->metadatas.inputsData[inputNb].pixelAspectRatio;
+        } else {
+            return 1.;
+        }
+    }
 }
 
 ImagePremultiplicationEnum
-EffectInstance::getOutputPremultiplication() const
+EffectInstance::getPremult() const
 {
-    QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
-    return _imp->clipPrefsData.outputPremult;
+    QMutexLocker k(&_imp->metadatasMutex);
+    return _imp->metadatas.outputPremult;
 }
 
-void
-EffectInstance::refreshClipPreferences_recursive(double time,
-                                                  const RenderScale & scale,
-                                                 ValueChangedReasonEnum reason,
-                                                  bool forceGetClipPrefAction,
-                                                  std::list<Node*> & markedNodes)
+bool
+EffectInstance::isFrameVarying() const
+{
+    QMutexLocker k(&_imp->metadatasMutex);
+    return _imp->metadatas.isFrameVarying;
+}
+
+bool
+EffectInstance::canRenderContinuously() const
+{
+    QMutexLocker k(&_imp->metadatasMutex);
+    return _imp->metadatas.canRenderAtNonframes;
+}
+
+/**
+ * @brief Returns the field ordering of images produced by this plug-in
+ **/
+ImageFieldingOrderEnum
+EffectInstance::getFieldingOrder() const
+{
+    QMutexLocker k(&_imp->metadatasMutex);
+    return _imp->metadatas.outputFielding;
+}
+
+bool
+EffectInstance::refreshMetaDatas_recursive(std::list<Node*> & markedNodes)
 {
     NodePtr node = getNode();
     std::list<Node*>::iterator found = std::find( markedNodes.begin(), markedNodes.end(), node.get() );
 
     if ( found != markedNodes.end() ) {
-        return;
+        return false;
     }
     
     if (_imp->runningClipPreferences) {
-        return;
+        return false;
     }
     
     ClipPreferencesRunning_RAII runningflag_(this);
 
-    refreshClipPreferences(time, scale, reason, forceGetClipPrefAction);
+    bool ret = refreshMetaDatas_public(false);
     node->refreshIdentityState();
 
     if ( !node->duringInputChangedAction() ) {
@@ -4557,8 +4713,9 @@ EffectInstance::refreshClipPreferences_recursive(double time,
     NodesList  outputs;
     node->getOutputsWithGroupRedirection(outputs);
     for (NodesList::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        (*it)->getEffectInstance()->refreshClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
+        (*it)->getEffectInstance()->refreshMetaDatas_recursive(markedNodes);
     }
+    return ret;
 }
 
 static void setComponentsDirty_recursive(const Node* node, std::list<const Node*> & markedNodes)
@@ -4582,12 +4739,8 @@ static void setComponentsDirty_recursive(const Node* node, std::list<const Node*
     
 }
 
-void
-EffectInstance::refreshClipPreferences_public(double time,
-                                               const RenderScale & scale,
-                                                ValueChangedReasonEnum reason,
-                                               bool forceGetClipPrefAction,
-                                               bool recurse)
+bool
+EffectInstance::refreshMetaDatas_public(bool recurse)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
@@ -4598,59 +4751,132 @@ EffectInstance::refreshClipPreferences_public(double time,
         }
         {
             std::list<Node*> markedNodes;
-            refreshClipPreferences_recursive(time, scale, reason, forceGetClipPrefAction, markedNodes);
+            return refreshMetaDatas_recursive(markedNodes);
         }
     } else {
-        refreshClipPreferences(time, scale, reason, forceGetClipPrefAction);
+        getNode()->checkForPremultWarningAndCheckboxes();
+        
+        NodeMetadata metadata;
+        getPreferredMetaDatas_public(metadata);
+        _imp->checkMetadata(metadata);
+        
+        bool ret;
+        {
+            QMutexLocker k(&_imp->metadatasMutex);
+            ret = metadata != _imp->metadatas;
+            if (ret) {
+                _imp->metadatas = metadata;
+            }
+        }
+        if (ret) {
+            onMetaDatasRefreshed();
+        }
+        return ret;
     }
 }
 
-bool
-EffectInstance::refreshClipPreferences(double /*time*/,
-                                        const RenderScale & /*scale*/,
-                                       ValueChangedReasonEnum /*reason*/,
-                                        bool forceGetClipPrefAction)
+
+
+/**
+ * @brief The purpose of this function is to check that the meta data returned by the plug-ins are valid and to
+ * check for warnings
+ **/
+void
+EffectInstance::Implementation::checkMetadata(NodeMetadata &metadata)
 {
 
-    if (forceGetClipPrefAction) {
-        EffectInstPtr input = getNearestNonDisabled();
-        if (input.get() == this) {
-            int prefInput = getNode()->getPreferredInput();
-            if (prefInput != -1) {
-                input = getInput(prefInput);
-            }
-        }
-        if (!input) {
-            QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
-            _imp->clipPrefsData.outputPremult = eImagePremultiplicationPremultiplied;
-            _imp->clipPrefsData.frameRate = getApp()->getProjectFrameRate();
-            _imp->clipPrefsData.pixelAspectRatio = 1.;
-            _imp->clipPrefsData.comps.clear();
-            _imp->clipPrefsData.bitdepth = getBestSupportedBitDepth();
-        } else {
-            EffectInstance::DefaultClipPreferencesData data;
-            data.outputPremult = input->getOutputPremultiplication();
-            data.frameRate = input->getPreferredFrameRate();
-            data.pixelAspectRatio = input->getPreferredAspectRatio();
-            input->getPreferredDepthAndComponents(-1, &data.comps, &data.bitdepth);
-            
-            for (std::list<ImageComponents>::iterator it = data.comps.begin(); it != data.comps.end(); ++it) {
-                *it = findClosestSupportedComponents(-1, *it);
-            }
-            
-            
-            ///find deepest bitdepth
-            data.bitdepth = getNode()->getClosestSupportedBitDepth(data.bitdepth);
-            
-            {
-                QMutexLocker k(&_imp->defaultClipPreferencesDataMutex);
-                _imp->clipPrefsData = data;
-            }
-        }
-        return true;
+    NodePtr node = _publicInterface->getNode();
+    if (!node) {
+        return;
     }
-    return false;
-}
+    //Make sure it is valid
+    metadata.outputData.bitdepth = node->getClosestSupportedBitDepth(metadata.outputData.bitdepth);
+    for (std::list<ImageComponents>::iterator it = metadata.outputData.components.begin(); it != metadata.outputData.components.end(); ++it) {
+        *it = node->findClosestSupportedComponents(-1, *it);
+        
+        //Force opaque for RGB and premult for alpha
+        if (*it == ImageComponents::getRGBComponents()) {
+            metadata.outputPremult = eImagePremultiplicationOpaque;
+        } else if (*it == ImageComponents::getAlphaComponents()) {
+            metadata.outputPremult = eImagePremultiplicationPremultiplied;
+        }
+    }
+    
+    int nInputs = node->getMaxInputCount();
+    for (int i = 0; i < nInputs; ++i) {
+        metadata.inputsData[i].bitdepth = node->getClosestSupportedBitDepth(metadata.inputsData[i].bitdepth);
+        for (std::list<ImageComponents>::iterator it = metadata.inputsData[i].components.begin(); it != metadata.inputsData[i].components.end(); ++it) {
+            *it = node->findClosestSupportedComponents(i, *it);
+        }
+    }
+    
+    
+    /// Remap Disparity and Motion vectors to generic XY if possible
+    /// Commented out, not sure if needed anymore
+   /* if ((foundOutputPrefs->second.components == kFnOfxImageComponentMotionVectors ||
+         foundOutputPrefs->second.components == kFnOfxImageComponentStereoDisparity) &&
+        outputClip->isSupportedComponent(kNatronOfxImageComponentXY)) {
+        foundOutputPrefs->second.components = kNatronOfxImageComponentXY;
+        outputModified = true;
+    }*/
+    
+    
+    ///Set a warning on the node if the bitdepth conversion from one of the input clip to the output clip is lossy
+    QString bitDepthWarning;
+    bool setBitDepthWarning = false;
+    
+    const bool supportsMultipleDepth = _publicInterface->supportsMultipleClipsBitDepth();
+    const bool supportsMultiplePARS = _publicInterface->supportsMultipleClipsPAR();
+    
+    std::vector<EffectInstPtr> inputs(nInputs);
+    for (int i = 0; i < nInputs; ++i) {
+        inputs[i] = _publicInterface->getInput(i);
+    }
+    for (int i = 0; i < nInputs; ++i) {
+        //Check that the bitdepths are all the same if the plug-in doesn't support multiple depths
+        if (!supportsMultipleDepth && metadata.inputsData[i].bitdepth != metadata.outputData.bitdepth) {
+            metadata.inputsData[i].bitdepth = metadata.outputData.bitdepth;
+        }
+        
+        if (!inputs[i]) {
+            continue;
+        }
+        
+        
+        
+        ///Try to remap the input bitdepth to be the same as the output bitdepth
+        ImageBitDepthEnum inputOutputDepth = inputs[i]->getBitDepth(-1);
+        
+        
+        ///If the bit-depth conversion will be lossy, warn the user
+        if (Image::isBitDepthConversionLossy(inputOutputDepth, metadata.inputsData[i].bitdepth) ) {
+            bitDepthWarning.append(tr("This nodes converts higher bit depths images from its inputs to work. As "
+                               "a result of this process, the quality of the images is degraded. The following conversions are done: \n"));
+            bitDepthWarning.append(inputs[i]->getNode()->getLabel_mt_safe().c_str());
+            bitDepthWarning.append(" (" + QString(Image::getDepthString(inputOutputDepth).c_str()) + ")");
+            bitDepthWarning.append(" ----> ");
+            bitDepthWarning.append(node->getLabel_mt_safe().c_str());
+            bitDepthWarning.append(" (" + QString(Image::getDepthString(metadata.inputsData[i].bitdepth).c_str()) + ")");
+            bitDepthWarning.append('\n');
+            setBitDepthWarning = true;
+        }
+        
+        
+        
+        if (!supportsMultiplePARS && metadata.inputsData[i].pixelAspectRatio != metadata.outputData.pixelAspectRatio) {
+            qDebug() << node->getScriptName_mt_safe().c_str() << ": The input "<< inputs[i]->getNode()->getScriptName_mt_safe().c_str()
+            << ") has a pixel aspect ratio (" << metadata.inputsData[i].pixelAspectRatio
+            << ") different than the output clip (" << metadata.outputData.pixelAspectRatio << ") but it doesn't support multiple clips PAR. "
+            << "This should have been handled earlier before connecting the nodes, @see Node::canConnectInput.";
+        }
+        
+    }
+    
+    
+    node->toggleBitDepthWarning(setBitDepthWarning, bitDepthWarning);
+    
+} //refreshMetaDataProxy
+
 
 void
 EffectInstance::refreshExtraStateAfterTimeChanged(double time)

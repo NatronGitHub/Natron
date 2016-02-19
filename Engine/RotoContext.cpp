@@ -2453,15 +2453,23 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
     RectI pixelPointsBbox;
     pointsBbox.toPixelEnclosing(mipmapLevel, par, &pixelPointsBbox);
     
+    
+    NodePtr node = getNode();
+    ImageFieldingOrderEnum fielding = node->getEffectInstance()->getFieldingOrder();
+    ImagePremultiplicationEnum premult = node->getEffectInstance()->getPremult();
+    
     bool copyFromImage = false;
     bool mipMapLevelChanged = false;
     if (!source) {
         source.reset(new Image(components,
-                                    pointsBbox,
-                                    pixelPointsBbox,
-                                    mipmapLevel,
-                                    par,
-                                    depth, false));
+                               pointsBbox,
+                               pixelPointsBbox,
+                               mipmapLevel,
+                               par,
+                               depth,
+                               premult,
+                               fielding,
+                               false));
         *image = source;
     } else {
         
@@ -2480,11 +2488,14 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
             
             //upscale the original image
             source.reset(new Image(components,
-                                        mergeRoD,
-                                        mergeBounds,
-                                        mipmapLevel,
-                                        par,
-                                        depth, false));
+                                   mergeRoD,
+                                   mergeBounds,
+                                   mipmapLevel,
+                                   par,
+                                   depth,
+                                   premult,
+                                   fielding,
+                                   false));
             source->fillZero(pixelPointsBbox);
             (*image)->upscaleMipMap(oldBounds, (*image)->getMipMapLevel(), source->getMipMapLevel(), source.get());
             *image = source;
@@ -2501,11 +2512,14 @@ RotoContext::renderSingleStroke(const boost::shared_ptr<RotoStrokeItem>& stroke,
             
             //downscale the original image
             source.reset(new Image(components,
-                                        mergeRoD,
-                                        mergeBounds,
-                                        mipmapLevel,
-                                        par,
-                                        depth, false));
+                                   mergeRoD,
+                                   mergeBounds,
+                                   mipmapLevel,
+                                   par,
+                                   depth,
+                                   premult,
+                                   fielding,
+                                   false));
             source->fillZero(pixelPointsBbox);
             (*image)->downscaleMipMap(pointsBbox, oldBounds, (*image)->getMipMapLevel(), source->getMipMapLevel(), false, source.get());
             *image = source;
@@ -2720,7 +2734,9 @@ RotoContext::renderMaskFromStroke(const boost::shared_ptr<RotoDrawableItem>& str
                                                               mipmapLevel,
                                                               false,
                                                               components,
-                                                              depth);
+                                                              depth,
+                                                              node->getEffectInstance()->getPremult(),
+                                                              node->getEffectInstance()->getFieldingOrder());
     /*
      At this point we take the cacheAccessMutex so that no other thread can retrieve this image from the cache while it has not been
      finished rendering. You might wonder why we do this differently here than in EffectInstance::renderRoI, this is because we do not use

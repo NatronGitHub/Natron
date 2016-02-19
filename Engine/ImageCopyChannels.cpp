@@ -64,6 +64,7 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
                 srcA = src_pixels[srcNComps - 1];
             }
 
+#if 0
 #define DOCHANNEL(c)                                                    \
             if (srcNComps == 1 || !src_pixels || c >= srcNComps) {      \
                 dst_pixels[c] = 0;                                      \
@@ -90,6 +91,11 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
                     dst_pixels[c] = src_pixels[c]; /* neither src nor dst is not premultiplied */ \
                 }                                                       \
             }
+#else
+/*Just copy the channels, after all if the user unchecked a channel, we do not want to change the values behind his back. 
+ Rather we display a warning in  the GUI.*/
+#define DOCHANNEL(c) dst_pixels[c] = (!src_pixels || c >= srcNComps) ? 0 : src_pixels[c];
+#endif
 
             PIX dstAorig = maxValue;
             if (dstNComps == 1 || dstNComps == 4) {

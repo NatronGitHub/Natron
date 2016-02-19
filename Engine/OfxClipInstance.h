@@ -217,9 +217,11 @@ public:
     static std::string natronsComponentsToOfxComponents(const ImageComponents& comp);
     static std::list<ImageComponents> ofxComponentsToNatronComponents(const std::string & comp);
     static ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth);
-    static std::string natronsDepthToOfxDepth(ImageBitDepthEnum depth);
-
-
+    static const std::string& natronsDepthToOfxDepth(ImageBitDepthEnum depth);
+    static ImagePremultiplicationEnum ofxPremultToNatronPremult(const std::string& premult);
+    static const std::string& natronsPremultToOfxPremult(ImagePremultiplicationEnum premult);
+    static ImageFieldingOrderEnum ofxFieldingToNatronFielding(const std::string& fielding);
+    static const std::string& natronsFieldingToOfxFielding(ImageFieldingOrderEnum fielding);
 
 
     struct RenderActionData
@@ -325,8 +327,7 @@ public:
                       const RectI& renderWindow,
                       const boost::shared_ptr<Transform::Matrix3x3>& mat,
                       const std::string& components,
-                      int nComps,
-                      OfxClipInstance &clip);
+                      int nComps);
 
     virtual ~OfxImage();
 

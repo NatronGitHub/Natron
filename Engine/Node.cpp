@@ -361,6 +361,7 @@ struct Node::Implementation
     
     bool getSelectedLayerInternal(int inputNb,const ChannelSelector& selector, ImageComponents* comp) const;
     
+
     
     Node* _publicInterface;
     
@@ -468,6 +469,7 @@ struct Node::Implementation
     boost::weak_ptr<KnobString> afterRender;
     
     boost::weak_ptr<KnobBool> enabledChan[4];
+    boost::weak_ptr<KnobString> premultWarning;
     boost::weak_ptr<KnobDouble> mixWithSource;
     
     FormatKnob pluginFormatKnobs;
@@ -755,6 +757,11 @@ Node::load(const CreateNodeArgs& args)
             list.push_back(defaultFile);
             setValuesFromSerialization(list);
         }
+        refreshAcceptedBitDepths();
+        if (!args.serialization) {
+            //Setup clip preferences once at least so that values get initialized
+            _imp->effect->refreshMetaDatas_public(false);
+        }
     } else {
             //ofx plugin   
         _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(),args.paramValues,canOpenFileDialog,renderScaleSupportPreference == 1, &hasUsedFileDialog);
@@ -763,7 +770,6 @@ Node::load(const CreateNodeArgs& args)
     
     _imp->effect->initializeOverlayInteract();
     
-    _imp->effect->addSupportedBitDepth(&_imp->supportedDepths);
     
     if ( _imp->supportedDepths.empty() ) {
         //From the spec:
@@ -1117,6 +1123,13 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     getApp()->updateStrokeImage(strokeImage, distToNextOut, true);
     
     return strokeImage;
+}
+
+void
+Node::refreshAcceptedBitDepths()
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->effect->addSupportedBitDepth(&_imp->supportedDepths);
 }
 
 bool
@@ -2352,6 +2365,44 @@ Node::getPreferredInputForConnection() const
     return getPreferredInputInternal(false);
 }
 
+
+NodePtr
+Node::getPreferredInputNode() const
+{
+    GroupInput* isInput = dynamic_cast<GroupInput*>(_imp->effect.get());
+    PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>(_imp->effect.get());
+    if (isInput) {
+        NodeGroup* isGroup = dynamic_cast<NodeGroup*>(getGroup().get());
+        assert(isGroup);
+        if (!isGroup) {
+            return NodePtr();
+        }
+        int inputNb = -1;
+        std::vector<NodePtr> groupInputs;
+        isGroup->getInputs(&groupInputs, false);
+        for (std::size_t i = 0; i < groupInputs.size(); ++i) {
+            if (groupInputs[i].get() == this) {
+                inputNb = i;
+                break;
+            }
+        }
+        assert(inputNb != -1);
+        if (inputNb != -1) {
+            NodePtr input = isGroup->getNode()->getInput(inputNb);
+            return input;
+        }
+    } else if (isPrecomp) {
+        return isPrecomp->getOutputNode();
+    } else {
+        int idx = getPreferredInput();
+        if (idx != -1) {
+            return getInput(idx);
+        }
+    }
+    
+    return NodePtr();
+}
+
 void
 Node::getOutputsConnectedToThisNode(std::map<NodePtr,int>* outputs)
 {
@@ -2669,24 +2720,25 @@ Node::makeInfoForInput(int inputNumber) const
     if (inputNumber < -1 || inputNumber >= getMaxInputCount()) {
         return "";
     }
-    const Node* inputNode = 0;
+    EffectInstPtr input;
     if (inputNumber != -1) {
-        inputNode = getInput(inputNumber).get();
+        input = _imp->effect->getInput(inputNumber);
+        if (input) {
+            input = input->getNearestNonIdentity(getApp()->getTimeLine()->currentFrame());
+        }
     } else {
-        inputNode = this;
+        input = _imp->effect;
     }
 
-    if (!inputNode) {
+    if (!input) {
         return "";
     }
 
 
-    EffectInstPtr input = inputNode->getEffectInstance();
-
-    ImageBitDepthEnum depth = eImageBitDepthNone;
+    ImageBitDepthEnum depth = _imp->effect->getBitDepth(inputNumber);
     { // get the preferred depth
         std::list<ImageComponents> comps;
-        _imp->effect->getPreferredDepthAndComponents(inputNumber, &comps, &depth);
+        _imp->effect->getComponents(inputNumber, &comps);
         assert(!comps.empty());
     }
 
@@ -2727,7 +2779,7 @@ Node::makeInfoForInput(int inputNumber) const
         ss << "<br />";
     }
     { // premult
-        ImagePremultiplicationEnum premult = input->getOutputPremultiplication();
+        ImagePremultiplicationEnum premult = input->getPremult();
         const char* premultStr = "unknown";
         switch (premult) {
             case eImagePremultiplicationOpaque:
@@ -2743,11 +2795,11 @@ Node::makeInfoForInput(int inputNumber) const
         ss << "<b>Alpha premultiplication: </b>" << premultStr << "<br />";
     }
     { // par
-        double par = input->getPreferredAspectRatio();
+        double par = input->getAspectRatio(inputNumber);
         ss << "<b>Pixel aspect ratio: </b>" << par << "<br />";
     }
     { // fps
-        double fps = input->getPreferredFrameRate();
+        double fps = input->getFrameRate();
         ss << "<b>Frame rate:</b> " << fps << "fps<br />";
     }
     {
@@ -3254,7 +3306,24 @@ Node::findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage)
                 mainPage->insertKnob(i,foundEnabled[i]);
                 _imp->enabledChan[i] = foundEnabled[i];
             }
+            foundAll = true;
         }
+    }
+    if (foundAll && !getApp()->isBackground()) {
+        _imp->enabledChan[3].lock()->setAddNewLine(false);
+        boost::shared_ptr<KnobString> premultWarning = AppManager::createKnob<KnobString>(_imp->effect.get(), "", 1, false);
+        premultWarning->setIconLabel("dialog-warning");
+        premultWarning->setSecretByDefault(true);
+        premultWarning->setAsLabel();
+        premultWarning->setEvaluateOnChange(false);
+        premultWarning->setIsPersistant(false);
+        premultWarning->setHintToolTip(QObject::tr("The alpha checkbox is checked and the RGB "
+                                                   "channels in output are alpha-premultiplied. Any of the unchecked RGB channel "
+                                                   "may be incorrect because the alpha channel changed but their value did not. "
+                                                   "To fix this, either check all RGB channels (or uncheck alpha) or unpremultiply the "
+                                                   "input image first.").toStdString());
+        mainPage->insertKnob(4, premultWarning);
+        _imp->premultWarning = premultWarning;
     }
     
 }
@@ -4365,30 +4434,33 @@ Node::canConnectInput(const NodePtr& input,int inputNumber) const
     
     {
         ///Check for invalid pixel aspect ratio if the node doesn't support multiple clip PARs
-        if (!_imp->effect->supportsMultipleClipsPAR()) {
-            
-            double inputPAR = input->getEffectInstance()->getPreferredAspectRatio();
-            
-            double inputFPS = input->getEffectInstance()->getPreferredFrameRate();
-            
-            QMutexLocker l(&_imp->inputsMutex);
-
-            for (InputsV::const_iterator it = _imp->guiInputs.begin(); it != _imp->guiInputs.end(); ++it) {
-                NodePtr node = it->lock();
-                if (node) {
-                    if (node->getEffectInstance()->getPreferredAspectRatio() != inputPAR) {
+        
+        double inputPAR = input->getEffectInstance()->getAspectRatio(-1);
+        
+        double inputFPS = input->getEffectInstance()->getFrameRate();
+        
+        
+        QMutexLocker l(&_imp->inputsMutex);
+        
+        for (InputsV::const_iterator it = _imp->guiInputs.begin(); it != _imp->guiInputs.end(); ++it) {
+            NodePtr node = it->lock();
+            if (node) {
+                
+                if (!_imp->effect->supportsMultipleClipsPAR()) {
+                    
+                    if (node->getEffectInstance()->getAspectRatio(-1) != inputPAR) {
                         return eCanConnectInput_differentPars;
                     }
-                    
-                    if (std::abs(node->getEffectInstance()->getPreferredFrameRate() - inputFPS) > 0.01) {
-                        return eCanConnectInput_differentFPS;
-                    }
-                    
                 }
+                
+                if (std::abs(node->getEffectInstance()->getFrameRate() - inputFPS) > 0.01) {
+                    return eCanConnectInput_differentFPS;
+                }
+                
             }
         }
     }
-    
+
     return eCanConnectInput_ok;
 }
 
@@ -5532,8 +5604,7 @@ Node::makePreviewImage(SequenceTime time,
     scale.x = Image::getScaleFromMipMapLevel(mipMapLevel);
     scale.y = scale.x;
     
-    const double par = effect->getPreferredAspectRatio();
-    
+    const double par = effect->getAspectRatio(-1);
     RectI renderWindow;
     rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
     
@@ -5566,8 +5637,8 @@ Node::makePreviewImage(SequenceTime time,
                                                  boost::shared_ptr<RenderStats>());
         
         std::list<ImageComponents> requestedComps;
-        ImageBitDepthEnum depth;
-        getEffectInstance()->getPreferredDepthAndComponents(-1, &requestedComps, &depth);
+        ImageBitDepthEnum depth = effect->getBitDepth(-1);
+        effect->getComponents(-1, &requestedComps);
         
         
         
@@ -7269,6 +7340,16 @@ Node::onEffectKnobValueChanged(KnobI* what,
         }
     }
     
+    for (int i = 0; i < 4; ++i) {
+        boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+        if (!enabled) {
+            break;
+        }
+        if (enabled.get() == what) {
+            checkForPremultWarningAndCheckboxes();
+        }
+    }
+    
     GroupInput* isInput = dynamic_cast<GroupInput*>(_imp->effect.get());
     if (isInput) {
         if (what->getName() == kNatronGroupInputIsOptionalParamName
@@ -7390,10 +7471,7 @@ Node::Implementation::onLayerChanged(int inputNb,const ChannelSelector& selector
     if (!isRefreshingInputRelatedData) {
         ///Clip preferences have changed
         RenderScale s(1.);
-        effect->refreshClipPreferences_public(_publicInterface->getApp()->getTimeLine()->currentFrame(),
-                                                     s,
-                                                     eValueChangedReasonUserEdited,
-                                                     true, true);
+        effect->refreshMetaDatas_public(true);
     }
     if (!enabledChan[0].lock()) {
         return;
@@ -7507,10 +7585,7 @@ Node::Implementation::onMaskSelectorChanged(int inputNb,const MaskSelector& sele
     if (!isRefreshingInputRelatedData) {
         ///Clip preferences have changed
         RenderScale s(1.);
-        effect->refreshClipPreferences_public(_publicInterface->getApp()->getTimeLine()->currentFrame(),
-                                                     s,
-                                                     eValueChangedReasonUserEdited,
-                                                     true, true);
+        effect->refreshMetaDatas_public(true);
     }
 }
 
@@ -7690,6 +7765,27 @@ Node::areKeyframesVisibleOnTimeline() const
     assert( QThread::currentThread() == qApp->thread() );
     
     return _imp->keyframesDisplayedOnTimeline;
+}
+
+bool
+Node::hasAnimatedKnob() const
+{
+    const KnobsVec & knobs = getKnobs();
+    bool hasAnimation = false;
+    for (U32 i = 0; i < knobs.size(); ++i) {
+        if (knobs[i]->canAnimate()) {
+            for (int j = 0; j < knobs[i]->getDimension(); ++j) {
+                if (knobs[i]->isAnimated(j)) {
+                    hasAnimation = true;
+                    break;
+                }
+            }
+        }
+        if (hasAnimation) {
+            break;
+        }
+    }
+    return hasAnimation;
 }
 
 void
@@ -8112,7 +8208,7 @@ static void addIdentityNodesRecursively(const Node* caller,
                 isIdentity = false;
             } else {
                 RectI pixelRod;
-                rod.toPixelEnclosing(scale, node->getEffectInstance()->getPreferredAspectRatio(), &pixelRod);
+                rod.toPixelEnclosing(scale, node->getEffectInstance()->getAspectRatio(-1), &pixelRod);
                 isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, scale, pixelRod, view, &inputTimeId, &inputNbId);
             }
         }
@@ -8383,7 +8479,7 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,const std::vector<Node
             }
             
         }
-        hasChanged |= _imp->effect->refreshClipPreferences(time, scaleOne, eValueChangedReasonUserEdited, true);
+        hasChanged |= _imp->effect->refreshMetaDatas_public(false);
     }
     
     hasChanged |= refreshChannelSelectors();
@@ -9166,6 +9262,65 @@ Node::getChannelSelectorKnob(int inputNb) const
     return found->second.layer.lock();
 }
 
+void
+Node::checkForPremultWarningAndCheckboxes()
+{
+    boost::shared_ptr<KnobBool> chans[4];
+    boost::shared_ptr<KnobString> premultWarn = _imp->premultWarning.lock();
+    if (!premultWarn) {
+        return;
+    }
+    NodePtr prefInput = getPreferredInputNode();
+    if (!prefInput) {
+        //No input, do not warn
+        premultWarn->setSecret(true);
+        return;
+    }
+    for (int i = 0; i < 4; ++i) {
+        chans[i] = _imp->enabledChan[i].lock();
+        
+        //No checkboxes
+        if (!chans[i]) {
+            premultWarn->setSecret(true);
+            return;
+        }
+        
+        //not RGBA
+        if (chans[i]->getIsSecret()) {
+            return;
+        }
+    }
+    
+    Natron::ImagePremultiplicationEnum premult = _imp->effect->getPremult();
+    
+    //not premult
+    if (premult != eImagePremultiplicationPremultiplied) {
+        premultWarn->setSecret(true);
+        return;
+    }
+    
+    bool checked[4];
+    checked[3] = chans[3]->getValue();
+    
+    //alpha unchecked
+    if (!checked[3]) {
+        premultWarn->setSecret(true);
+        return;
+    }
+    for (int i = 0; i < 3; ++i) {
+        checked[i] = chans[i]->getValue();
+        if (!checked[i]) {
+            premultWarn->setSecret(false);
+            return;
+        }
+    }
+    
+    //RGB checked
+    premultWarn->setSecret(true);
+        
+
+}
+
 bool
 Node::refreshChannelSelectors()
 {
@@ -9613,10 +9768,7 @@ Node::addUserComponents(const ImageComponents& comps)
     if (!_imp->isRefreshingInputRelatedData) {
         ///Clip preferences have changed
         RenderScale s(1.);
-        getEffectInstance()->refreshClipPreferences_public(getApp()->getTimeLine()->currentFrame(),
-                                                          s,
-                                                          eValueChangedReasonUserEdited,
-                                                          true, true);
+        getEffectInstance()->refreshMetaDatas_public(true);
     }
     {
         ///Set the selector to the new channel
@@ -9641,6 +9793,8 @@ Node::getHostMixingValue(double time, ViewIdx view) const
     boost::shared_ptr<KnobDouble> mix = _imp->mixWithSource.lock();
     return mix ? mix->getValueAtTime(time, 0, view) : 1.;
 }
+
+
 
 //////////////////////////////////
 
@@ -9740,6 +9894,7 @@ InspectorNode::setActiveInputAndRefresh(int inputNb, bool /*fromViewer*/)
         }
     }
 }
+
 
 int
 InspectorNode::getPreferredInputInternal(bool connected) const

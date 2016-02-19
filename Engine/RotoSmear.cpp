@@ -79,30 +79,7 @@ RotoSmear::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
     depths->push_back(eImageBitDepthFloat);
 }
 
-void
-RotoSmear::getPreferredDepthAndComponents(int /*inputNb*/,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const
-{
-    EffectInstPtr input = getInput(0);
-    if (input) {
-        return input->getPreferredDepthAndComponents(-1, comp, depth);
-    } else {
-        comp->push_back(ImageComponents::getRGBAComponents());
-        *depth = eImageBitDepthFloat;
-    }
-}
 
-
-ImagePremultiplicationEnum
-RotoSmear::getOutputPremultiplication() const
-{
-    EffectInstPtr input = getInput(0);
-    if (input) {
-        return input->getOutputPremultiplication();
-    } else {
-        return eImagePremultiplicationPremultiplied;
-    }
-    
-}
 
 StatusEnum
 RotoSmear::getRegionOfDefinition(U64 hash,
@@ -131,17 +108,7 @@ RotoSmear::getRegionOfDefinition(U64 hash,
     return eStatusOK;
 }
 
-double
-RotoSmear::getPreferredAspectRatio() const
-{
-    EffectInstPtr input = getInput(0);
-    if (input) {
-        return input->getPreferredAspectRatio();
-    } else {
-        return 1.;
-    }
-    
-}
+
 
 bool
 RotoSmear::isIdentity(double time,
@@ -156,7 +123,7 @@ RotoSmear::isIdentity(double time,
     node->getPaintStrokeRoD(time, &maskRod);
     
     RectI maskPixelRod;
-    maskRod.toPixelEnclosing(scale, getPreferredAspectRatio(), &maskPixelRod);
+    maskRod.toPixelEnclosing(scale, getAspectRatio(-1), &maskPixelRod);
     if (!maskPixelRod.intersects(roi)) {
         *inputTime = time;
         *inputNb = 0;
@@ -200,7 +167,15 @@ static void renderSmearDot(boost::shared_ptr<RotoStrokeItem>& stroke,
     
     
     
-    ImagePtr tmpBuf(new Image(outputImage->getComponents(),prevDotRoD, prevDotBounds, mipmapLevel, outputImage->getPixelAspectRatio(), depth, false));
+    ImagePtr tmpBuf(new Image(outputImage->getComponents(),
+                              prevDotRoD,
+                              prevDotBounds,
+                              mipmapLevel,
+                              outputImage->getPixelAspectRatio(),
+                              depth,
+                              outputImage->getPremultiplication(),
+                              outputImage->getFieldingOrder(),
+                              false));
     tmpBuf->pasteFrom(*outputImage, prevDotBounds, false);
     
     Image::ReadAccess tmpAcc(tmpBuf.get());
@@ -281,7 +256,6 @@ RotoSmear::render(const RenderActionArgs& args)
     EffectInstance::ComponentsNeededMap::iterator foundBg = neededComps.find(0);
    
     
-    double par = getPreferredAspectRatio();
     RectI bgImgRoI;
     
     
@@ -331,7 +305,7 @@ RotoSmear::render(const RenderActionArgs& args)
         if (strokeIndex == 0) {
             ///For the first multi-stroke, init background
             if (foundBg != neededComps.end()) {
-                bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, foundBg->second.front(), eImageBitDepthFloat, par, false, true, &bgImgRoI);
+                bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false, false, &bgImgRoI);
             }
         }
         

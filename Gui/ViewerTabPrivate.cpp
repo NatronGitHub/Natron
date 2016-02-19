@@ -224,7 +224,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
     } else {
         
         assert(input);
-        double par = input->getPreferredAspectRatio();
+        double par = input->getAspectRatio(-1);
         
         //The mat is in pixel coordinates, though
         mat = Transform::matMul(Transform::matPixelToCanonical(par, 1, 1, false),mat);

@@ -1540,7 +1540,7 @@ ButtonParam::~ButtonParam()
 void
 ButtonParam::setIconFilePath(const std::string& icon)
 {
-    _buttonKnob.lock()->setIconFilePath(icon);
+    _buttonKnob.lock()->setIconLabel(icon);
 }
 
 void

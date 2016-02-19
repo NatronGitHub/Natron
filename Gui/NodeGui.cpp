@@ -2604,6 +2604,9 @@ void
 NodeGui::toggleBitDepthIndicator(bool on,
                                  const QString & tooltip)
 {
+    if (!_bitDepthWarning) {
+        return;
+    }
     if (on) {
         QString arrangedTt = GuiUtils::convertFromPlainText(tooltip.trimmed(), Qt::WhiteSpaceNormal);
         setToolTip(arrangedTt);

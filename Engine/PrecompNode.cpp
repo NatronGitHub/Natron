@@ -196,52 +196,6 @@ PrecompNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
     depths->push_back(eImageBitDepthFloat);
 }
 
-ImagePremultiplicationEnum
-PrecompNode::getOutputPremultiplication() const
-{
-    NodePtr output = getOutputNode();
-    if (output) {
-        return output->getEffectInstance()->getOutputPremultiplication();
-    } else {
-        return eImagePremultiplicationPremultiplied;
-    }
-}
-
-void
-PrecompNode::getPreferredDepthAndComponents(int inputNb,
-                                            std::list<ImageComponents>* comp,
-                                            ImageBitDepthEnum* depth) const
-{
-    NodePtr output = getOutputNode();
-    if (output) {
-        output->getEffectInstance()->getPreferredDepthAndComponents(inputNb,comp,depth);
-    } else {
-        EffectInstance::getPreferredDepthAndComponents(inputNb, comp, depth);
-    }
-}
-
-double
-PrecompNode::getPreferredAspectRatio() const
-{
-    NodePtr output = getOutputNode();
-    if (output) {
-        return output->getEffectInstance()->getPreferredAspectRatio();
-    } else {
-        return EffectInstance::getPreferredAspectRatio();
-    }
-}
-
-double
-PrecompNode::getPreferredFrameRate() const
-{
-    NodePtr output = getOutputNode();
-    if (output) {
-        return output->getEffectInstance()->getPreferredFrameRate();
-    } else {
-        return EffectInstance::getPreferredFrameRate();
-    }
-}
-
 void
 PrecompNode::initializeKnobs()
 {

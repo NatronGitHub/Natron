@@ -32,6 +32,7 @@
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/NodeMetadata.h"
 #include "Engine/RotoContext.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoDrawableItem.h"
@@ -203,61 +204,33 @@ RotoPaint::knobChanged(KnobI* k,
     ctx->knobChanged(k, reason, view, time, originatedFromMainThread);
 }
 
-void
-RotoPaint::getPreferredDepthAndComponents(int inputNb,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const
+StatusEnum
+RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
 {
-
-    if (inputNb != ROTOPAINT_MASK_INPUT_INDEX) {
-        EffectInstPtr input = getInput(inputNb);
-        if (input) {
-            std::list<ImageComponents> ic;
-            ImageBitDepthEnum id;
-            input->getPreferredDepthAndComponents(-1, &ic, &id);
-            *comp = ic;
-        } else {
-            comp->push_back(ImageComponents::getRGBAComponents());
-        }
-    } else {
-        comp->push_back(ImageComponents::getAlphaComponents());
-    }
-    *depth = eImageBitDepthFloat;
-}
-
-
-ImagePremultiplicationEnum
-RotoPaint::getOutputPremultiplication() const
-{
-  
-    EffectInstPtr input = getInput(0);
     
     boost::shared_ptr<KnobBool> premultKnob = _imp->premultKnob.lock();
     assert(premultKnob);
     bool premultiply = premultKnob->getValue();
     if (premultiply) {
-        return eImagePremultiplicationPremultiplied;
+        metadata.outputPremult = eImagePremultiplicationPremultiplied;
+    } else {
+        ImagePremultiplicationEnum srcPremult = eImagePremultiplicationOpaque;
+        
+        EffectInstPtr input = getInput(0);
+        if (input) {
+            srcPremult = input->getPremult();
+        }
+        bool processA = getNode()->getProcessChannel(3);
+        if (srcPremult == eImagePremultiplicationOpaque && processA) {
+            metadata.outputPremult = eImagePremultiplicationUnPremultiplied;
+        } else {
+            metadata.outputPremult = eImagePremultiplicationPremultiplied;
+        }
     }
-    ImagePremultiplicationEnum srcPremult = eImagePremultiplicationOpaque;
-    if (input) {
-        srcPremult = input->getOutputPremultiplication();
-    }
-    bool processA = getNode()->getProcessChannel(3);
-    if (srcPremult == eImagePremultiplicationOpaque && processA) {
-        return eImagePremultiplicationUnPremultiplied;
-    }
-    return eImagePremultiplicationPremultiplied;
+    return eStatusOK;
 }
 
-double
-RotoPaint::getPreferredAspectRatio() const
-{
-    EffectInstPtr input = getInput(0);
-    if (input) {
-        return input->getPreferredAspectRatio();
-    } else {
-        return 1.;
-    }
-    
-}
+
 
 void
 RotoPaint::onInputChanged(int inputNb)
@@ -332,7 +305,7 @@ RotoPaint::isIdentity(double time,
         StatusEnum s = maskInput->getRegionOfDefinition_public(maskInput->getRenderHash(), time, scale, view, &maskRod, &isProjectFormat);
         Q_UNUSED(s);
         RectI maskPixelRod;
-        maskRod.toPixelEnclosing(scale, getPreferredAspectRatio(), &maskPixelRod);
+        maskRod.toPixelEnclosing(scale, getAspectRatio(ROTOPAINT_MASK_INPUT_INDEX), &maskPixelRod);
         if (!maskPixelRod.intersects(roi)) {
             *inputTime = time;
             *inputNb = 0;
@@ -358,10 +331,7 @@ RotoPaint::render(const RenderActionArgs& args)
     boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
     std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder();
     
-    std::list<ImageComponents> bgComps;
-    ImageBitDepthEnum bgDepth;
-    getPreferredDepthAndComponents(0, &bgComps, &bgDepth);
-    assert(!bgComps.empty());
+    ImageBitDepthEnum bgDepth = getBitDepth(0);
 
     
     std::list<ImageComponents> neededComps;
@@ -377,7 +347,7 @@ RotoPaint::render(const RenderActionArgs& args)
     if (items.empty()) {
         
         RectI bgImgRoI;
-        ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, true, &bgImgRoI);
+        ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0,false, false, &bgImgRoI);
         
         for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
@@ -453,7 +423,6 @@ RotoPaint::render(const RenderActionArgs& args)
         ImagePtr bgImg;
         
         bool triedGetImage = false;
-        //bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, &bgImgRoI);
         
         for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
@@ -467,7 +436,7 @@ RotoPaint::render(const RenderActionArgs& args)
             if (!rotoImagesIt->second->getBounds().contains(args.roi)) {
                 if (!bgImg) {
                     if (!triedGetImage) {
-                        bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, bgComps.front(), bgDepth, getPreferredAspectRatio(), false, true, &bgImgRoI);
+                        bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false, false, &bgImgRoI);
                         triedGetImage = true;
                     }
                 }

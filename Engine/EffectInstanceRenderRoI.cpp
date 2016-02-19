@@ -179,7 +179,15 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstance* app,
         Image::ReadAccess acc = inputImage->getReadRights();
         RectI bounds = inputImage->getBounds();
         
-        ImagePtr tmp(new Image(targetComponents, inputImage->getRoD(), bounds, inputImage->getMipMapLevel(), inputImage->getPixelAspectRatio(), targetDepth, false));
+        ImagePtr tmp(new Image(targetComponents,
+                               inputImage->getRoD(),
+                               bounds,
+                               inputImage->getMipMapLevel(),
+                               inputImage->getPixelAspectRatio(),
+                               targetDepth,
+                               inputImage->getPremultiplication(),
+                               inputImage->getFieldingOrder(),
+                               false));
         
         RectI clippedRoi;
         roi.intersect(bounds, &clippedRoi);
@@ -246,7 +254,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ///Use the hash at this time, and then copy it to the clips in the thread local storage to use the same value
     ///through all the rendering of this frame.
     U64 nodeHash = frameArgs->nodeHash;
-    const double par = getPreferredAspectRatio();
+    const double par = getAspectRatio(-1);
+    const ImageFieldingOrderEnum fieldingOrder = getFieldingOrder();
+    const ImagePremultiplicationEnum thisEffectOutputPremult = getPremult();
     const unsigned int mipMapLevel = args.mipMapLevel;
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
     ///This flag is relevant only when the mipMapLevel is different than 0. We use it to determine
@@ -571,7 +581,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                         ImagePremultiplicationEnum premult;
                         const ImageComponents & outComp = outputComponents.front();
                         if ( outComp.isColorPlane() ) {
-                            premult = getOutputPremultiplication();
+                            premult = thisEffectOutputPremult;
                         } else {
                             premult = eImagePremultiplicationOpaque;
                         }
@@ -722,9 +732,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
      * Get the bitdepth and output components that the plug-in expects to render. The cached image does not necesserarily has the bitdepth
      * that the plug-in expects.
      */
-    ImageBitDepthEnum outputDepth;
+    ImageBitDepthEnum outputDepth = getBitDepth(-1);
     std::list<ImageComponents> outputClipPrefComps;
-    getPreferredDepthAndComponents(-1, &outputClipPrefComps, &outputDepth);
+    getComponents(-1, &outputClipPrefComps);
     assert( !outputClipPrefComps.empty() );
 
 
@@ -1070,7 +1080,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     {
         const ImageComponents & outComp = outputComponents.front();
         if ( outComp.isColorPlane() ) {
-            planesToRender->outputPremult = getOutputPremultiplication();
+            planesToRender->outputPremult = thisEffectOutputPremult;
         } else {
             planesToRender->outputPremult = eImagePremultiplicationOpaque;
         }
@@ -1108,7 +1118,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             for (InputImagesMap::iterator it2 = it->imgs.begin(); it2 != it->imgs.end(); ++it2) {
                 EffectInstPtr input = getInput(it2->first);
                 if (input) {
-                    ImagePremultiplicationEnum inputPremult = input->getOutputPremultiplication();
+                    ImagePremultiplicationEnum inputPremult = input->getPremult();
                     if ( !it2->second.empty() ) {
                         const ImageComponents & comps = it2->second.front()->getComponents();
                         if ( !comps.isColorPlane() ) {
@@ -1271,7 +1281,22 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
             if (!it->second.fullscaleImage) {
                 ///The image is not cached
-                allocateImagePlane(*key, rod, downscaledImageBounds, upscaledImageBounds, isProjectFormat, *components, args.bitdepth, par, args.mipMapLevel, renderFullScaleThenDownscale, useDiskCacheNode, createInCache, &it->second.fullscaleImage, &it->second.downscaleImage);
+                allocateImagePlane(*key,
+                                   rod,
+                                   downscaledImageBounds,
+                                   upscaledImageBounds,
+                                   isProjectFormat,
+                                   *components,
+                                   args.bitdepth,
+                                   planesToRender->outputPremult,
+                                   fieldingOrder,
+                                   par,
+                                   args.mipMapLevel,
+                                   renderFullScaleThenDownscale,
+                                   useDiskCacheNode,
+                                   createInCache,
+                                   &it->second.fullscaleImage,
+                                   &it->second.downscaleImage);
             } else {
                 /*
                  * There might be a situation  where the RoD of the cached image
@@ -1326,7 +1351,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if ( renderFullScaleThenDownscale && (it->second.fullscaleImage->getMipMapLevel() == 0) ) {
                     RectI bounds;
                     rod.toPixelEnclosing(args.mipMapLevel, par, &bounds);
-                    it->second.downscaleImage.reset( new Image(*components, rod, downscaledImageBounds, args.mipMapLevel, it->second.fullscaleImage->getPixelAspectRatio(), outputDepth, true) );
+                    it->second.downscaleImage.reset(new Image(*components,
+                                                              rod,
+                                                              downscaledImageBounds,
+                                                              args.mipMapLevel,
+                                                              it->second.fullscaleImage->getPixelAspectRatio(),
+                                                              outputDepth,
+                                                              planesToRender->outputPremult,
+                                                              fieldingOrder,
+                                                              true));
                     
                     it->second.fullscaleImage->downscaleMipMap( rod, it->second.fullscaleImage->getBounds(), 0, args.mipMapLevel, true, it->second.downscaleImage.get() );
                 }
@@ -1536,15 +1569,17 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             !hasSomethingToRender) {
             assert(it->second.fullscaleImage->getMipMapLevel() == 0);
             if (it->second.downscaleImage == it->second.fullscaleImage) {
-                it->second.downscaleImage.reset( new Image(it->second.fullscaleImage->getComponents(),
-                                                           it->second.fullscaleImage->getRoD(),
-                                                           downscaledImageBounds,
-                                                           args.mipMapLevel,
-                                                           it->second.fullscaleImage->getPixelAspectRatio(),
-                                                           it->second.fullscaleImage->getBitDepth(),
-                                                           false) );
+                it->second.downscaleImage.reset(new Image(it->second.fullscaleImage->getComponents(),
+                                                          it->second.fullscaleImage->getRoD(),
+                                                          downscaledImageBounds,
+                                                          args.mipMapLevel,
+                                                          it->second.fullscaleImage->getPixelAspectRatio(),
+                                                          it->second.fullscaleImage->getBitDepth(),
+                                                          it->second.fullscaleImage->getPremultiplication(),
+                                                          it->second.fullscaleImage->getFieldingOrder(),
+                                                          false));
             }
-
+            
             it->second.fullscaleImage->downscaleMipMap( it->second.fullscaleImage->getRoD(), originalRoI, 0, args.mipMapLevel, false, it->second.downscaleImage.get() );
         }
         

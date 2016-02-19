@@ -120,11 +120,7 @@ public:
         return true;
     }
     
-    virtual void getPreferredDepthAndComponents(int inputNb,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const OVERRIDE FINAL;
     
-    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
-    
-    virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
 
 private:
 

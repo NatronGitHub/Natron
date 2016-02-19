@@ -128,12 +128,6 @@ public:
     virtual void initializeKnobs() OVERRIDE FINAL;
 
     virtual void getFrameRange(double *first,double *last) OVERRIDE FINAL;
-
-    virtual void getPreferredDepthAndComponents(int inputNb,std::list<ImageComponents>* comp,ImageBitDepthEnum* depth) const OVERRIDE FINAL;
-
-    virtual ImagePremultiplicationEnum getOutputPremultiplication() const OVERRIDE FINAL;
-
-    virtual double getPreferredAspectRatio() const OVERRIDE FINAL;
     
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
     

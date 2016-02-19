@@ -398,8 +398,6 @@ OfxPushButtonInstance::OfxPushButtonInstance(const boost::shared_ptr<OfxEffectIn
 {
     boost::shared_ptr<KnobButton> k = AppManager::createKnob<KnobButton>( node.get(), getParamLabel(this) );
     _knob = k;
-    const std::string & iconFilePath = descriptor.getProperties().getStringProperty(kOfxPropIcon,1);
-    k->setIconFilePath(iconFilePath);
 }
 
 // callback which should set enabled state as appropriate

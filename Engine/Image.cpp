@@ -672,6 +672,8 @@ Image::Image(const ImageKey & key,
     _rod = params->getRoD();
     _bounds = params->getBounds();
     _par = params->getPixelAspectRatio();
+    _premult = params->getPremultiplication();
+    _fielding = params->getFieldingOrder();
     
 }
 
@@ -684,6 +686,8 @@ Image::Image(const ImageKey & key,
     _rod = params->getRoD();
     _bounds = params->getBounds();
     _par = params->getPixelAspectRatio();
+    _premult = params->getPremultiplication();
+    _fielding = params->getFieldingOrder();
     
     allocateMemory();
 }
@@ -698,6 +702,8 @@ Image::Image(const ImageComponents& components,
              unsigned int mipMapLevel,
              double par,
              ImageBitDepthEnum bitdepth,
+             ImagePremultiplicationEnum premult,
+             ImageFieldingOrderEnum fielding,
              bool useBitmap)
     : CacheEntryHelper<unsigned char,ImageKey,ImageParams>()
     , _useBitmap(useBitmap)
@@ -710,6 +716,8 @@ Image::Image(const ImageComponents& components,
                                                                    mipMapLevel,
                                                                    bounds,
                                                                    bitdepth,
+                                                                   fielding,
+                                                                   premult,
                                                                    false,
                                                                    components) ),
                   NULL,
@@ -721,6 +729,8 @@ Image::Image(const ImageComponents& components,
     _rod = regionOfDefinition;
     _bounds = _params->getBounds();
     _par = par;
+    _premult = premult;
+    _fielding = fielding;
     
     allocateMemory();
 }
@@ -776,7 +786,9 @@ Image::makeParams(int cost,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
                   const ImageComponents& components,
-                  ImageBitDepthEnum bitdepth)
+                  ImageBitDepthEnum bitdepth,
+                  ImagePremultiplicationEnum premult,
+                  ImageFieldingOrderEnum fielding)
 {
     RectI bounds;
 
@@ -788,6 +800,8 @@ Image::makeParams(int cost,
                                                            mipMapLevel,
                                                            bounds,
                                                            bitdepth,
+                                                           fielding,
+                                                           premult,
                                                            isRoDProjectFormat,
                                                            components));
 }
@@ -800,7 +814,9 @@ Image::makeParams(int cost,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
                   const ImageComponents& components,
-                  ImageBitDepthEnum bitdepth)
+                  ImageBitDepthEnum bitdepth,
+                  ImagePremultiplicationEnum premult,
+                  ImageFieldingOrderEnum fielding)
 {
 #ifdef DEBUG
     RectI pixelRod;
@@ -815,6 +831,8 @@ Image::makeParams(int cost,
                                                            mipMapLevel,
                                                            bounds,
                                                            bitdepth,
+                                                           fielding,
+                                                           premult,
                                                            isRoDProjectFormat,
                                                            components));
 }
@@ -910,6 +928,8 @@ Image::resizeInternal(const Image* srcImg,
                                      srcImg->getMipMapLevel(),
                                      srcImg->getPixelAspectRatio(),
                                      srcImg->getBitDepth(),
+                                     srcImg->getPremultiplication(),
+                                     srcImg->getFieldingOrder(),
                                      srcImg->usesBitMap()));
     } else {
         boost::shared_ptr<ImageParams> params(new ImageParams(*srcImg->getParams()));
@@ -1432,6 +1452,17 @@ Image::getPixelAspectRatio() const
     return this->_par;
 }
 
+ImageFieldingOrderEnum
+Image::getFieldingOrder() const
+{
+    return this->_fielding;
+}
+
+ImagePremultiplicationEnum
+Image::getPremultiplication() const
+{
+    return this->_premult;
+}
 
 unsigned int
 Image::getRowElements() const
@@ -1738,7 +1769,7 @@ Image::downscaleMipMap(const RectD& dstRod,
     
     RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
     
-    ImagePtr tmpImg( new Image( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth() , true) );
+    ImagePtr tmpImg( new Image( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth(), getPremultiplication(), getFieldingOrder(), true) );
 
     buildMipMapLevel( dstRod, roi, downscaleLvls, copyBitMap, tmpImg.get() );
 
@@ -2176,7 +2207,7 @@ Image::buildMipMapLevel(const RectD& dstRoD,
         RectI halvedRoI = previousRoI.downscalePowerOfTwoSmallestEnclosing(1);
 
         ///Allocate an image with half the size of the source image
-        dstImg = new Image( getComponents(), dstRoD, halvedRoI, getMipMapLevel() + i, getPixelAspectRatio(),getBitDepth() , true);
+        dstImg = new Image( getComponents(), dstRoD, halvedRoI, getMipMapLevel() + i, getPixelAspectRatio(),getBitDepth(), getPremultiplication(), getFieldingOrder(), true);
 
         ///Half the source image into dstImg.
         ///We pass the closestPo2 roi which might not be the entire size of the source image

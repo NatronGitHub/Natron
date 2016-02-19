@@ -38,6 +38,7 @@
 
 #include "Engine/Image.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/NodeMetadata.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -140,27 +141,8 @@ private:
     ActionsCacheInstance & getOrCreateActionCache(U64 newHash);
 };
 
-    
-struct EffectInstance::DefaultClipPreferencesData
-{
-    //These datas are stored for plug-ins that do not implement clip preference functions, i.e:
-    // getPreferredDepthAndComponents, getPreferredPAR, getPreferredFrameRate, getPreferredOutputPremult, etc...
-    ImagePremultiplicationEnum outputPremult;
-    double pixelAspectRatio;
-    double frameRate;
-    std::list<ImageComponents> comps;
-    ImageBitDepthEnum bitdepth;
-    
-    DefaultClipPreferencesData()
-    : outputPremult(eImagePremultiplicationPremultiplied)
-    , pixelAspectRatio(1.)
-    , frameRate(24.)
-    , comps()
-    , bitdepth(eImageBitDepthFloat)
-    {
-        
-    }
-};
+
+
 
 struct EffectInstance::Implementation
 {
@@ -210,8 +192,8 @@ struct EffectInstance::Implementation
     bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
     EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
     
-    mutable QMutex defaultClipPreferencesDataMutex;
-    EffectInstance::DefaultClipPreferencesData clipPrefsData;
+    mutable QMutex metadatasMutex;
+    NodeMetadata metadatas;
     
     bool runningClipPreferences; //only used on main thread
 
@@ -377,6 +359,8 @@ struct EffectInstance::Implementation
                                           ImagePlanesToRender & planes);
     
     bool aborted(const EffectDataTLSPtr& tls) const WARN_UNUSED_RETURN;
+    
+    void checkMetadata(NodeMetadata &metadata);
 };
 
 

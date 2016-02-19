@@ -390,6 +390,14 @@ enum ImagePremultiplicationEnum
     eImagePremultiplicationPremultiplied,
     eImagePremultiplicationUnPremultiplied,
 };
+    
+enum ImageFieldingOrderEnum
+{
+    eImageFieldingOrderNone, // no fielding
+    eImageFieldingOrderLower, // rows 0, 2 ...
+    eImageFieldingOrderUpper, // rows 1, 3 ...
+    
+};
 
 enum ViewerCompositingOperatorEnum
 {
