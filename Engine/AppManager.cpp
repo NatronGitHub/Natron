@@ -2604,7 +2604,7 @@ AppManager::tearDownPython()
         return;
 #endif
     ///See http://wiki.blender.org/index.php/Dev:2.4/Source/Python/API/Threads
-    PyGILState_Ensure();
+    //PyGILState_Ensure();
     
     Py_DECREF(_imp->mainModule);
     Py_Finalize();
