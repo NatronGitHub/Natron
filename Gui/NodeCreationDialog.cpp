@@ -245,25 +245,29 @@ CompleterLineEdit::keyPressEvent(QKeyEvent* e)
         } else {
             const QItemSelection selection = _imp->listView->selectionModel()->selection();
             QModelIndexList indexes = selection.indexes();
+            bool doDialogEnd = false;
             if (indexes.size() == 1) {
                 setText( _imp->model->index( indexes[0].row() ).data().toString() );
+                doDialogEnd = true;
+            } else if (indexes.isEmpty()) {
+                if (!text().isEmpty()) {
+                    doDialogEnd = true;
+                } else if (_imp->model->rowCount() > 1) {
+                    doDialogEnd = true;
+                    setText( _imp->model->index(0).data().toString() );
+                }
+                
+            }
+            if (doDialogEnd) {
                 Q_EMIT itemCompletionChosen();
                 if (_imp->quickExitEnabled) {
                     _imp->dialog->accept();
                 }
                 e->accept();
-            } else if (indexes.isEmpty()) {
-                if (_imp->model->rowCount() > 1 && text().isEmpty()) {
-                    setText( _imp->model->index(0).data().toString() );
-                    Q_EMIT itemCompletionChosen();
-                    if (_imp->quickExitEnabled) {
-                        _imp->dialog->accept();
-                    }
-                    e->accept();
-                }
             } else {
                 QLineEdit::keyPressEvent(e);
             }
+            
         }
 
     } else {
