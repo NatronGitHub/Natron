@@ -62,6 +62,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 , layerChoice(NULL)
 , alphaChannelChoice(NULL)
 , viewerChannels(NULL)
+, viewerChannelsAutoswitchedToAlpha(false)
 , zoomCombobox(NULL)
 , syncViewerButton(NULL)
 , centerViewerButton(NULL)

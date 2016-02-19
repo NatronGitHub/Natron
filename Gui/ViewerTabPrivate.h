@@ -78,6 +78,7 @@ struct ViewerTabPrivate
     ComboBox* layerChoice;
     ComboBox* alphaChannelChoice;
     ChannelsComboBox* viewerChannels;
+    bool viewerChannelsAutoswitchedToAlpha;
     ComboBox* zoomCombobox;
     Button* syncViewerButton;
     Button* centerViewerButton;

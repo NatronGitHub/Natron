@@ -908,10 +908,13 @@ ViewerTab::refreshLayerAndAlphaChannelComboBox()
         _imp->viewerNode->setActiveLayer(ImageComponents::getNoneComponents(), false);
     } else {
         if (foundCurIt->getNumComponents() == 1) {
+            //Switch auto to alpha if there's only this to view
             _imp->viewerChannels->setCurrentIndex_no_emit(5);
             setDisplayChannels(5, true);
+            _imp->viewerChannelsAutoswitchedToAlpha = true;
         } else {
-            if (foundCurIt->getNumComponents() > 1 && _imp->viewerChannels->activeIndex() == 5) {
+            //Switch back to RGB if we auto-switched to alpha
+            if (_imp->viewerChannelsAutoswitchedToAlpha && foundCurIt->getNumComponents() > 1 && _imp->viewerChannels->activeIndex() == 5) {
                 _imp->viewerChannels->setCurrentIndex_no_emit(1);
                 setDisplayChannels(1, true);
             }

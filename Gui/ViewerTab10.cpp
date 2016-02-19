@@ -536,7 +536,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     Qt::KeyboardModifiers modifiers = e->modifiers();
     Qt::Key key = (Qt::Key)e->key();
     double scale = 1. / (1 << _imp->viewer->getCurrentRenderScale());
-
+    
     if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 0) {
@@ -794,6 +794,7 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
 void
 ViewerTab::setDisplayChannels(int i, bool setBothInputs)
 {
+    _imp->viewerChannelsAutoswitchedToAlpha = false;
     DisplayChannelsEnum channels;
     
     switch (i) {
