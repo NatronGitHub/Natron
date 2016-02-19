@@ -126,7 +126,6 @@ struct ViewerTabPrivate
     Button* previousKeyFrame_Button;
     Button* play_Backward_Button;
     Button* previousFrame_Button;
-    Button* stop_Button;
     Button* nextFrame_Button;
     Button* play_Forward_Button;
     Button* nextKeyFrame_Button;

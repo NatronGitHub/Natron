@@ -104,7 +104,6 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,ViewerInstance* no
 , previousKeyFrame_Button(NULL)
 , play_Backward_Button(NULL)
 , previousFrame_Button(NULL)
-, stop_Button(NULL)
 , nextFrame_Button(NULL)
 , play_Forward_Button(NULL)
 , nextKeyFrame_Button(NULL)

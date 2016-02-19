@@ -586,17 +586,6 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
                            "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->previousKeyFrame_Button);
 
 
-    _imp->play_Backward_Button = new Button(_imp->playerButtonsContainer);
-    _imp->play_Backward_Button->setFocusPolicy(Qt::NoFocus);
-    _imp->play_Backward_Button->setFixedSize(buttonSize);
-    _imp->play_Backward_Button->setIconSize(buttonIconSize);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerBackward,"<p>" + tr("Play backward") + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->play_Backward_Button);
-    _imp->play_Backward_Button->setCheckable(true);
-    _imp->play_Backward_Button->setDown(false);
-    _imp->playerLayout->addWidget(_imp->play_Backward_Button);
-
-
     _imp->previousFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->previousFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->previousFrame_Button->setFixedSize(buttonSize);
@@ -606,16 +595,39 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     
     _imp->playerLayout->addWidget(_imp->previousFrame_Button);
 
+    
+    _imp->play_Backward_Button = new Button(_imp->playerButtonsContainer);
+    _imp->play_Backward_Button->setFocusPolicy(Qt::NoFocus);
+    _imp->play_Backward_Button->setFixedSize(buttonSize);
+    _imp->play_Backward_Button->setIconSize(buttonIconSize);
+    {
+        QStringList actions;
+        actions << kShortcutIDActionPlayerBackward;
+        actions << kShortcutIDActionPlayerStop;
+        setTooltipWithShortcut2(kShortcutGroupPlayer, actions,"<p>" + tr("Play backward") + "</p>" +
+                                "<p><b>" + tr("Keyboard shortcut") + ": %1</b> (%2 to stop)</p>", _imp->play_Backward_Button);
+    }
+    _imp->play_Backward_Button->setCheckable(true);
+    _imp->play_Backward_Button->setDown(false);
+    _imp->playerLayout->addWidget(_imp->play_Backward_Button);
+    
+    _imp->play_Forward_Button = new Button(_imp->playerButtonsContainer);
+    _imp->play_Forward_Button->setFocusPolicy(Qt::NoFocus);
+    _imp->play_Forward_Button->setFixedSize(buttonSize);
+    _imp->play_Forward_Button->setIconSize(buttonIconSize);
+    {
+        QStringList actions;
+        actions << kShortcutIDActionPlayerForward;
+        actions << kShortcutIDActionPlayerStop;
+        setTooltipWithShortcut2(kShortcutGroupPlayer, actions,"<p>" + tr("Play forward") + "</p>" +
+                                "<p><b>" + tr("Keyboard shortcut") + ": %1</b> (%2 to stop)</p>", _imp->play_Backward_Button);
+    }
+    _imp->play_Forward_Button->setCheckable(true);
+    _imp->play_Forward_Button->setDown(false);
+    _imp->playerLayout->addWidget(_imp->play_Forward_Button);
+    
 
-    _imp->stop_Button = new Button(_imp->playerButtonsContainer);
-    _imp->stop_Button->setFocusPolicy(Qt::NoFocus);
-    _imp->stop_Button->setFixedSize(buttonSize);
-    _imp->stop_Button->setIconSize(buttonIconSize);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerStop,"<p>" + tr("Stop") + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->stop_Button);
-    _imp->playerLayout->addWidget(_imp->stop_Button);
-
-
+    
     _imp->nextFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->nextFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->nextFrame_Button->setFixedSize(buttonSize);
@@ -625,17 +637,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->playerLayout->addWidget(_imp->nextFrame_Button);
 
 
-    _imp->play_Forward_Button = new Button(_imp->playerButtonsContainer);
-    _imp->play_Forward_Button->setFocusPolicy(Qt::NoFocus);
-    _imp->play_Forward_Button->setFixedSize(buttonSize);
-    _imp->play_Forward_Button->setIconSize(buttonIconSize);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerForward,"<p>" + tr("Play forward") + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut") + ": %1</b></p>", _imp->play_Forward_Button);
-    _imp->play_Forward_Button->setCheckable(true);
-    _imp->play_Forward_Button->setDown(false);
-    _imp->playerLayout->addWidget(_imp->play_Forward_Button);
-
-
+    
     _imp->nextKeyFrame_Button = new Button(_imp->playerButtonsContainer);
     _imp->nextKeyFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->nextKeyFrame_Button->setFixedSize(buttonSize);
@@ -791,12 +793,10 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     QPixmap pixFirst;
     QPixmap pixPrevKF;
-    QPixmap pixRewindEnabled;
     QPixmap pixRewindDisabled;
     QPixmap pixBack1;
     QPixmap pixStop;
     QPixmap pixForward1;
-    QPixmap pixPlayEnabled;
     QPixmap pixPlayDisabled;
     QPixmap pixNextKF;
     QPixmap pixLast;
@@ -815,12 +815,10 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_FIRST_FRAME,&pixFirst);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS_KEY,&pixPrevKF);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_ENABLED,&pixRewindEnabled);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_REWIND_DISABLED,&pixRewindDisabled);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PREVIOUS,&pixBack1);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP,&pixStop);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP_ENABLED,&pixStop);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT,&pixForward1);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_ENABLED,&pixPlayEnabled);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_DISABLED,&pixPlayDisabled);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_NEXT_KEY,&pixNextKF);
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_LAST_FRAME,&pixLast);
@@ -841,15 +839,14 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->previousKeyFrame_Button->setIcon( QIcon(pixPrevKF) );
     
     QIcon icRewind;
-    icRewind.addPixmap(pixRewindEnabled,QIcon::Normal,QIcon::On);
+    icRewind.addPixmap(pixStop,QIcon::Normal,QIcon::On);
     icRewind.addPixmap(pixRewindDisabled,QIcon::Normal,QIcon::Off);
     _imp->play_Backward_Button->setIcon( icRewind );
     _imp->previousFrame_Button->setIcon( QIcon(pixBack1) );
-    _imp->stop_Button->setIcon( QIcon(pixStop) );
     _imp->nextFrame_Button->setIcon( QIcon(pixForward1) );
     
     QIcon icPlay;
-    icPlay.addPixmap(pixPlayEnabled,QIcon::Normal,QIcon::On);
+    icPlay.addPixmap(pixStop,QIcon::Normal,QIcon::On);
     icPlay.addPixmap(pixPlayDisabled,QIcon::Normal,QIcon::Off);
     _imp->play_Forward_Button->setIcon( icPlay );
     _imp->nextKeyFrame_Button->setIcon( QIcon(pixNextKF) );
@@ -939,7 +936,6 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->currentFrameBox, SIGNAL(valueChanged(double)), this, SLOT(onCurrentTimeSpinBoxChanged(double)) );
 
     QObject::connect( _imp->play_Forward_Button,SIGNAL(clicked(bool)),this,SLOT(startPause(bool)) );
-    QObject::connect( _imp->stop_Button,SIGNAL(clicked()),this,SLOT(abortRendering()) );
     QObject::connect( _imp->play_Backward_Button,SIGNAL(clicked(bool)),this,SLOT(startBackward(bool)) );
     QObject::connect( _imp->previousFrame_Button,SIGNAL(clicked()),this,SLOT(previousFrame()) );
     QObject::connect( _imp->nextFrame_Button,SIGNAL(clicked()),this,SLOT(nextFrame()) );

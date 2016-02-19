@@ -249,7 +249,8 @@
         <file>Resources/Images/splitVertically.png</file>
         <file>Resources/Images/stickySelectionDisabled.png</file>
         <file>Resources/Images/stickySelectionEnabled.png</file>
-        <file>Resources/Images/stop.png</file>
+        <file>Resources/Images/stopEnabled.png</file>
+        <file>Resources/Images/stopDisabled.png</file>
         <file>Resources/Images/treeview_end.png</file>
         <file>Resources/Images/treeview_more.png</file>
         <file>Resources/Images/treeview_vline.png</file>
@@ -327,6 +328,7 @@
         <file>Resources/Images/merge_stencil.png</file>
         <file>Resources/Images/merge_under.png</file>
         <file>Resources/Images/merge_xor.png</file>
-        <file>Resources/Images/pause.png</file>
+        <file>Resources/Images/pauseEnabled.png</file>
+        <file>Resources/Images/pauseDisabled.png</file>
     </qresource>
 </RCC>

@@ -566,16 +566,19 @@ ProgressTaskInfo::createCellWidgets()
 
     int medSizeIcon = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
     
-    QPixmap restartPix,pausePix, clearTasksPix;
+    QPixmap restartPix,pauseOnPix, pauseOffPix, clearTasksPix;
     appPTR->getIcon(NATRON_PIXMAP_PLAYER_PLAY_DISABLED, medSizeIcon, &restartPix);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP, medSizeIcon, &clearTasksPix);
-    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PAUSE, medSizeIcon, &pausePix);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_STOP_DISABLED, medSizeIcon, &clearTasksPix);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PAUSE_ENABLED, medSizeIcon, &pauseOnPix);
+    appPTR->getIcon(NATRON_PIXMAP_PLAYER_PAUSE_DISABLED, medSizeIcon, &pauseOffPix);
     
     const QSize medButtonIconSize(TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE));
     const QSize medButtonSize(TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE),TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE));
     
-    
-    _imp->pauseTasksButton = new Button(QIcon(pausePix),"",_imp->controlsButtonsContainer);
+    QIcon pauseIc;
+    pauseIc.addPixmap(pauseOnPix, QIcon::Normal, QIcon::On);
+    pauseIc.addPixmap(pauseOffPix, QIcon::Normal, QIcon::Off);
+    _imp->pauseTasksButton = new Button(pauseIc,"",_imp->controlsButtonsContainer);
     _imp->pauseTasksButton->setFixedSize(medButtonSize);
     _imp->pauseTasksButton->setIconSize(medButtonIconSize);
     _imp->pauseTasksButton->setFocusPolicy(Qt::NoFocus);

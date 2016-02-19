@@ -126,12 +126,19 @@ GuiApplicationManager::getIcon(PixmapEnum e,
             case NATRON_PIXMAP_PLAYER_PLAY_DISABLED:
                 path = NATRON_IMAGES_PATH "play.png";
                 break;
-            case NATRON_PIXMAP_PLAYER_STOP:
-                path = NATRON_IMAGES_PATH "stop.png";
+            case NATRON_PIXMAP_PLAYER_STOP_ENABLED:
+                path = NATRON_IMAGES_PATH "stopEnabled.png";
                 break;
-            case NATRON_PIXMAP_PLAYER_PAUSE:
-                path = NATRON_IMAGES_PATH "pause.png";
+            case NATRON_PIXMAP_PLAYER_STOP_DISABLED:
+                path = NATRON_IMAGES_PATH "stopDisabled.png";
                 break;
+            case NATRON_PIXMAP_PLAYER_PAUSE_ENABLED:
+                path = NATRON_IMAGES_PATH "pauseEnabled.png";
+                break;
+            case NATRON_PIXMAP_PLAYER_PAUSE_DISABLED:
+                path = NATRON_IMAGES_PATH "pauseDisabled.png";
+                break;
+
             case NATRON_PIXMAP_PLAYER_LOOP_MODE:
                 path = NATRON_IMAGES_PATH "loopmode.png";
                 break;
