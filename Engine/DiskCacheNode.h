@@ -122,7 +122,7 @@ public:
 
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return false;
+        return true;
     }
 
     virtual void initializeKnobs() OVERRIDE FINAL;

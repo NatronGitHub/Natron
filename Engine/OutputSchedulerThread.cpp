@@ -2695,7 +2695,9 @@ DefaultScheduler::getFrameRangeToRender(int& first,int& last) const
 void
 DefaultScheduler::handleRenderFailure(const std::string& errorMessage)
 {
-    std::cerr << errorMessage << std::endl;
+    if (appPTR->isBackground()) {
+        std::cerr << errorMessage << std::endl;
+    }
 }
 
 SchedulingPolicyEnum

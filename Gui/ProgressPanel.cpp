@@ -396,7 +396,7 @@ ProgressPanel::startTask(const NodePtr& node,
         connectProcessSlots(task.get(), process.get());
     }
     if (!process) {
-        if (node->getEffectInstance()->isWriter()) {
+        if (node->getEffectInstance()->isOutput()) {
             OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>(node->getEffectInstance().get());
             if (isOutput) {
                 RenderEngine* engine = isOutput->getRenderEngine();

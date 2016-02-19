@@ -1404,7 +1404,7 @@ AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstance* writer
     ///get the output file knob to get the name of the sequence
     const DiskCacheNode* isDiskCache = dynamic_cast<const DiskCacheNode*>(writer);
     if (isDiskCache) {
-        *sequenceName = isDiskCache->getNode()->getLabel_mt_safe().c_str();
+        *sequenceName = QObject::tr("Caching");
     } else {
         KnobPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
         if (fileKnob) {

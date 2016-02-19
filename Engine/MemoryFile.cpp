@@ -379,9 +379,7 @@ MemoryFile::remove()
         if (_imp->data) {
             _imp->closeMapping();
         }
-        if (::remove( _imp->path.c_str() ) != 0) {
-            std::cerr << "Attempt to remove an unexisting file." << std::endl;
-        }
+        ::remove(_imp->path.c_str());
         _imp->path.clear();
         _imp->data = 0;
     }

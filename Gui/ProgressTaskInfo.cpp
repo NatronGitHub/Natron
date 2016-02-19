@@ -275,7 +275,7 @@ ProgressTaskInfo::restartTask()
     
     
     NodePtr node = _imp->getNode();
-    if (node->getEffectInstance()->isWriter()) {
+    if (node->getEffectInstance()->isOutput()) {
         int firstFrame;
         if (_imp->lastRenderedFrame == _imp->lastFrame || _imp->lastRenderedFrame == -1) {
             firstFrame = _imp->firstFrame;

@@ -133,7 +133,7 @@ DiskCacheNode::knobChanged(KnobI* k,
                            bool /*originatedFromMainThread*/)
 {
     if (_imp->frameRange.lock().get() == k) {
-        int idx = _imp->frameRange.lock()->getValue(0, ViewIdx(view));
+        int idx = _imp->frameRange.lock()->getValue(0);
         switch (idx) {
             case 0:
             case 1:
