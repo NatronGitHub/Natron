@@ -130,6 +130,17 @@ Plugin::generateUserFriendlyPluginIDMajorEncoded() const
     return getLabelVersionMajorEncoded() + "  [" + grouping + "]";
 }
 
+void
+Plugin::setToolsetScript(bool isToolset)
+{
+    _toolSetScript = isToolset;
+}
+
+bool
+Plugin::getToolsetScript() const
+{
+    return _toolSetScript;
+}
 
 const QString&
 Plugin::getIconFilePath() const

@@ -620,7 +620,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
         actions << kShortcutIDActionPlayerForward;
         actions << kShortcutIDActionPlayerStop;
         setTooltipWithShortcut2(kShortcutGroupPlayer, actions,"<p>" + tr("Play forward") + "</p>" +
-                                "<p><b>" + tr("Keyboard shortcut") + ": %1</b> (%2 to stop)</p>", _imp->play_Backward_Button);
+                                "<p><b>" + tr("Keyboard shortcut") + ": %1</b> (%2 to stop)</p>", _imp->play_Forward_Button);
     }
     _imp->play_Forward_Button->setCheckable(true);
     _imp->play_Forward_Button->setDown(false);

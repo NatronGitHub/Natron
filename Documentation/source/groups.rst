@@ -350,3 +350,20 @@ When Natron is launched in GUI mode but with a Python script in argument, it wil
 	* If found, run a function with the following signature *createInstance(app,group)*
 	
 
+Toolsets
+--------
+
+Toolsets in Natron are a predefined set of actions that will be applied to the node-graph.
+They work exactly like PyPlugs except that no actual group node will be created, only
+the content of the *createInstance(app,group)* function will be executed.
+
+This useful to create pre-defined graphs, for example like the Split and Join plug-in
+in the Views menu.
+
+To be recognized as a toolset, your PyPlug must implement the following function::
+
+	def getIsToolset():
+    	return True
+
+Also the **group** parameter passed to the *createInstance(app,group)* function
+will be *None* because no group node is actually involved.

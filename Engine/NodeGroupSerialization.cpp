@@ -174,7 +174,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 
                 std::string stdModuleName = pythonModuleName.toStdString();
-                if (Python::getGroupInfos(pythonModuleInfo.path().toStdString() + '/', stdModuleName, &pythonPluginID, &pythonPluginLabel, &pythonIcFilePath, &pythonGrouping, &pythonDesc, &pyVersion)) {
+                bool istoolset;
+                if (Python::getGroupInfos(pythonModuleInfo.path().toStdString() + '/', stdModuleName, &pythonPluginID, &pythonPluginLabel, &pythonIcFilePath, &pythonGrouping, &pythonDesc, &istoolset, &pyVersion)) {
                     
                     if (pyVersion != savedPythonModuleVersion) {
             

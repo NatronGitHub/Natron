@@ -261,6 +261,8 @@ GuiApp::getSelectedNodes(Group* group) const
                 }
             }
         }
+    } else {
+        graph = _app->getGui()->getLastSelectedGraph();
     }
     if (!graph) {
         graph = _app->getGui()->getNodeGraph();
@@ -366,11 +368,14 @@ GuiApp::selectAllNodes(Group* group)
         collection = group->getInternalCollection();
         if (collection) {
             isGroup = dynamic_cast<NodeGroup*>(collection.get());
+            if (isGroup) {
+                graph = dynamic_cast<NodeGraph*>(isGroup->getNodeGraph());
+            }
         }
-    }
-    if (isGroup) {
-        graph = dynamic_cast<NodeGraph*>(isGroup->getNodeGraph());
     } else {
+        graph = _app->getGui()->getLastSelectedGraph();
+    }
+    if (!graph) {
         graph = _app->getGui()->getNodeGraph();
     }
     assert(graph);
@@ -424,11 +429,14 @@ GuiApp::clearSelection(Group* group)
         collection = group->getInternalCollection();
         if (collection) {
             isGroup = dynamic_cast<NodeGroup*>(collection.get());
+            if (isGroup) {
+                graph = dynamic_cast<NodeGraph*>(isGroup->getNodeGraph());
+            }
         }
-    }
-    if (isGroup) {
-        graph = dynamic_cast<NodeGraph*>(isGroup->getNodeGraph());
     } else {
+        graph = _app->getGui()->getLastSelectedGraph();
+    }
+    if (!graph) {
         graph = _app->getGui()->getNodeGraph();
     }
     assert(graph);

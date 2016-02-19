@@ -174,6 +174,9 @@ class Plugin
     //Is not visible by the user, just for internal use
     bool _isInternalOnly;
     
+    //When the plug-in is a PyPlug, if this is set to true, the script will not be embedded into a group
+    bool _toolSetScript;
+    
     mutable  bool _activatedSet;
     mutable  bool _activated;
     
@@ -199,6 +202,7 @@ public:
     , _isWriter(false)
     , _isDeprecated(false)
     , _isInternalOnly(false)
+    , _toolSetScript(false)
     , _activatedSet(false)
     , _activated(true)
     {
@@ -235,6 +239,7 @@ public:
     , _isWriter(isWriter)
     , _isDeprecated(isDeprecated)
     , _isInternalOnly(false)
+    , _toolSetScript(false)
     , _activatedSet(false)
     , _activated(true)
     {
@@ -283,6 +288,10 @@ public:
     const QStringList & getGroupIconFilePath() const;
 
     const QStringList & getGrouping() const;
+    
+    void setToolsetScript(bool isToolset);
+    
+    bool getToolsetScript() const;
     
     QMutex* getPluginLock() const;
 

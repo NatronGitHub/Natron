@@ -286,6 +286,32 @@ static PyObject* Sbk_AppFunc_getProjectParam(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_AppFunc_getViewNames(PyObject* self)
+{
+    AppWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // getViewNames()const
+            std::list<std::string > cppResult = const_cast<const ::AppWrapper*>(cppSelf)->getViewNames();
+            pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_STRING_IDX], &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_AppFunc_loadProject(PyObject* self, PyObject* pyArg)
 {
     AppWrapper* cppSelf = 0;
@@ -813,6 +839,7 @@ static PyMethodDef Sbk_App_methods[] = {
     {"createNode", (PyCFunction)Sbk_AppFunc_createNode, METH_VARARGS|METH_KEYWORDS},
     {"getAppID", (PyCFunction)Sbk_AppFunc_getAppID, METH_NOARGS},
     {"getProjectParam", (PyCFunction)Sbk_AppFunc_getProjectParam, METH_O},
+    {"getViewNames", (PyCFunction)Sbk_AppFunc_getViewNames, METH_NOARGS},
     {"loadProject", (PyCFunction)Sbk_AppFunc_loadProject, METH_O},
     {"newProject", (PyCFunction)Sbk_AppFunc_newProject, METH_NOARGS},
     {"render", (PyCFunction)Sbk_AppFunc_render, METH_VARARGS|METH_KEYWORDS},

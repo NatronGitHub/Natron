@@ -783,6 +783,8 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
 
 {
    
+    /*If the plug-in is a toolset, execute the toolset script and don't actually create a node*/
+    bool istoolsetScript = plugin->getToolsetScript();
     
     NodePtr node;
     
@@ -791,27 +793,34 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         CreatingNodeTreeFlag_RAII createNodeTree(this);
         
         NodePtr containerNode;
-        CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP, reason, group);
-        groupArgs.serialization = serialization;
-        containerNode = createNode(groupArgs);
-        if (!containerNode) {
-            return containerNode;
-        }
-        
-        if (reason == eCreateNodeReasonUserCreate || reason == eCreateNodeReasonInternal) {
-            std::string containerName;
-            try {
-                group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
-                containerNode->setScriptName(containerName);
-                containerNode->setLabel(containerName);
-            } catch (...) {
-                
+        if (!istoolsetScript) {
+            CreateNodeArgs groupArgs(PLUGINID_NATRON_GROUP, reason, group);
+            groupArgs.serialization = serialization;
+            containerNode = createNode(groupArgs);
+            if (!containerNode) {
+                return containerNode;
             }
+            
+            if (reason == eCreateNodeReasonUserCreate || reason == eCreateNodeReasonInternal) {
+                std::string containerName;
+                try {
+                    group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(),&containerName);
+                    containerNode->setScriptName(containerName);
+                    containerNode->setLabel(containerName);
+                } catch (...) {
+                    
+                }
+            }
+            
+        }
+      
+        
+        
+        std::string containerFullySpecifiedName;
+        if (containerNode) {
+            containerFullySpecifiedName = containerNode->getFullyQualifiedName();
         }
         
-        
-        
-        std::string containerFullySpecifiedName = containerNode->getFullyQualifiedName();
         
         QString moduleName;
         QString modulePath;
@@ -822,19 +831,28 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         std::stringstream ss;
         ss << moduleName.toStdString();
         ss << ".createInstance(app" << appID;
-        ss << ", app" << appID << "." << containerFullySpecifiedName;
+        if (istoolsetScript) {
+            ss << ",\"\"";
+        } else {
+            ss << ", app" << appID << "." << containerFullySpecifiedName;
+        }
         ss << ")\n";
         std::string err;
         std::string output;
         if (!Python::interpretPythonScript(ss.str(), &err, &output)) {
             Dialogs::errorDialog(tr("Group plugin creation error").toStdString(), err);
-            containerNode->destroyNode(false);
+            if (containerNode) {
+                containerNode->destroyNode(false);
+            }
             return node;
         } else {
             if (!output.empty()) {
                 appendToScriptEditor(output);
             }
             node = containerNode;
+        }
+        if (istoolsetScript) {
+            return NodePtr();
         }
         
         if (!moduleName.isEmpty()) {
@@ -858,7 +876,8 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
 {
     std::string pluginID,pluginLabel,iconFilePath,pluginGrouping,description;
     unsigned int version;
-    if (Python::getGroupInfos(pythonModulePath.toStdString(),pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &version)) {
+    bool istoolset;
+    if (Python::getGroupInfos(pythonModulePath.toStdString(),pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &istoolset, &version)) {
         node->setPluginIconFilePath(iconFilePath);
         node->setPluginDescription(description);
         node->setPluginIDAndVersionForGui(pluginLabel, pluginID, version);

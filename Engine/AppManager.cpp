@@ -974,7 +974,7 @@ AppManager::loadAllPlugins()
     //Load python groups and init.py & initGui.py scripts
     //Should be done after settings are declared
     loadPythonGroups();
-
+    
     _imp->_settings->populatePluginsTab();
 
     
@@ -1420,8 +1420,8 @@ AppManager::loadPythonGroups()
         
         std::string pluginLabel,pluginID,pluginGrouping,iconFilePath,pluginDescription;
         unsigned int version;
-        
-        bool gotInfos = Python::getGroupInfos(modulePath.toStdString(),moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &version);
+        bool isToolset;
+        bool gotInfos = Python::getGroupInfos(modulePath.toStdString(),moduleName.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &pluginDescription, &isToolset, &version);
 
         
         if (gotInfos) {
@@ -1430,7 +1430,7 @@ AppManager::loadPythonGroups()
             Plugin* p = registerPlugin(grouping, pluginID.c_str(), pluginLabel.c_str(), iconFilePath.c_str(), QStringList(), false, false, 0, false, version, 0, false);
             
             p->setPythonModule(modulePath + moduleName);
-            
+            p->setToolsetScript(isToolset);
         }
         
     }
@@ -1469,7 +1469,6 @@ AppManager::registerPlugin(const QStringList & groups,
     
     return plugin;
 }
-
 
 Format*
 AppManager::findExistingFormat(int w,
@@ -3152,6 +3151,7 @@ static bool getGroupInfosInternal(const std::string& modulePath,
                                   std::string* iconFilePath,
                                   std::string* grouping,
                                   std::string* description,
+                                  bool* isToolset,
                                   unsigned int* version)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
@@ -3171,8 +3171,11 @@ static bool getGroupInfosInternal(const std::string& modulePath,
                    "    templateLabel = %1.getLabel()\n"
                    "pluginID = templateLabel\n"
                    "version = 1\n"
+                   "isToolset = False\n"
                    "if hasattr(%1,\"getVersion\") and hasattr(%1.getVersion,\"__call__\"):\n"
                    "    version = %1.getVersion()\n"
+                   "if hasattr(%1,\"getIsToolset\") and hasattr(%1.getIsToolset,\"__call__\"):\n"
+                   "    isToolset = %1.getIsToolset()\n"
                    "description=\"\"\n"
                    "if hasattr(%1,\"getPluginDescription\") and hasattr(%1.getPluginDescription,\"__call__\"):\n"
                    "    description = %1.getPluginDescription()\n"
@@ -3191,12 +3194,11 @@ static bool getGroupInfosInternal(const std::string& modulePath,
     
     std::string err;
     if (!Python::interpretPythonScript(toRun, &err, 0)) {
-        QString logStr("Failure when loading ");
+        QString logStr;
         logStr.append(pythonModule.c_str());
-        logStr.append(": ");
+        logStr.append(QObject::tr(" was not recognized as a PyPlug: "));
         logStr.append(err.c_str());
         appPTR->writeToErrorLog_mt_safe(logStr);
-        qDebug() << logStr;
         return false;
     }
     
@@ -3231,6 +3233,11 @@ static bool getGroupInfosInternal(const std::string& modulePath,
     PyObject* versionObj = 0;
     if (PyObject_HasAttrString(mainModule, "version")) {
         versionObj = PyObject_GetAttrString(mainModule,"version"); //new ref
+    }
+    
+    PyObject* isToolsetObj = 0;
+    if (PyObject_HasAttrString(mainModule, "isToolset")) {
+        isToolsetObj = PyObject_GetAttrString(mainModule,"isToolset"); //new ref
     }
     
     PyObject* pluginDescriptionObj = 0;
@@ -3269,6 +3276,13 @@ static bool getGroupInfosInternal(const std::string& modulePath,
         Py_XDECREF(versionObj);
     }
     
+    if (isToolsetObj && PyBool_Check(isToolsetObj)) {
+        *isToolset = (isToolsetObj == Py_True) ? true : false;
+        deleteScript.append("del isToolset\n");
+        Py_XDECREF(isToolsetObj);
+    }
+
+    
     if (pluginDescriptionObj) {
         *description = Python::PY3String_asString(pluginDescriptionObj);
         deleteScript.append("del description\n");
@@ -3300,6 +3314,7 @@ getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
                                 std::string* iconFilePath,
                                 std::string* grouping,
                                 std::string* description,
+                                bool* isToolset,
                                 unsigned int* version)
 {
     QString qModulePath(resourceFileName.c_str());
@@ -3323,7 +3338,7 @@ getGroupInfosFromQtResourceFile(const std::string& resourceFileName,
     }
     
     //Now that the module is loaded, use the regular version
-    return getGroupInfosInternal(modulePath,pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, version);
+    return getGroupInfosInternal(modulePath,pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, isToolset, version);
     //PyDict_SetItemString(priv->globals, moduleName, module);
     
 }
@@ -3336,6 +3351,7 @@ Python::getGroupInfos(const std::string& modulePath,
               std::string* iconFilePath,
               std::string* grouping,
               std::string* description,
+              bool* isToolset,
               unsigned int* version)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
@@ -3346,11 +3362,11 @@ Python::getGroupInfos(const std::string& modulePath,
         std::string tofind(":/Resources");
         if (modulePath.substr(0,tofind.size()) == tofind) {
             std::string resourceFileName = modulePath + pythonModule + ".py";
-            return getGroupInfosFromQtResourceFile(resourceFileName, modulePath, pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, version);
+            return getGroupInfosFromQtResourceFile(resourceFileName, modulePath, pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, isToolset, version);
         }
     }
     
-    return getGroupInfosInternal(modulePath, pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, version);
+    return getGroupInfosInternal(modulePath, pythonModule, pluginID, pluginLabel, iconFilePath, grouping, description, isToolset, version);
     
 }
 

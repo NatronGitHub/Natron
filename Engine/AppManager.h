@@ -504,6 +504,7 @@ public:
     void appendToNatronPath(const std::string& path);
     
     virtual void addCommand(const QString& /*grouping*/,const std::string& /*pythonFunction*/, Qt::Key /*key*/,const Qt::KeyboardModifiers& /*modifiers*/) {}
+        
     
     void setOnProjectLoadedCallback(const std::string& pythonFunc);
     void setOnProjectCreatedCallback(const std::string& pythonFunc);
@@ -693,6 +694,7 @@ bool getGroupInfos(const std::string& modulePath,
                    std::string* iconFilePath,
                    std::string* grouping,
                    std::string* description,
+                   bool* isToolset,
                    unsigned int* version);
     
 // Does not work for functions with var args

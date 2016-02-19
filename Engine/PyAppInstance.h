@@ -113,6 +113,8 @@ public:
     ///Opens a new window
     App* newProject();
     
+    std::list<std::string> getViewNames() const;
+    
 protected:
     
     void renderInternal(bool forceBlocking,Effect* writeNode,int firstFrame, int lastFrame, int frameStep);

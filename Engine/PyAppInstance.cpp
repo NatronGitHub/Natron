@@ -325,4 +325,15 @@ App::newProject()
 
 }
 
+std::list<std::string>
+App::getViewNames() const
+{
+    std::list<std::string> ret;
+    const std::vector<std::string>& v = _instance->getProject()->getProjectViewNames();
+    for (std::size_t i = 0; i < v.size(); ++i) {
+        ret.push_back(v[i]);
+    }
+    return ret;
+}
+
 NATRON_NAMESPACE_EXIT;

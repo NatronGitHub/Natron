@@ -72,8 +72,8 @@ extern SbkConverter** SbkNatronGuiTypeConverters;
 // Converter indices
 #define SBK_NATRONGUI_STD_LIST_EFFECTPTR_IDX                         0 // std::list<Effect * >
 #define SBK_NATRONGUI_STD_VECTOR_STD_STRING_IDX                      1 // const std::vector<std::string > &
-#define SBK_NATRONGUI_STD_LIST_INT_IDX                               2 // const std::list<int > &
-#define SBK_NATRONGUI_STD_LIST_STD_STRING_IDX                        3 // std::list<std::string >
+#define SBK_NATRONGUI_STD_LIST_STD_STRING_IDX                        2 // std::list<std::string >
+#define SBK_NATRONGUI_STD_LIST_INT_IDX                               3 // const std::list<int > &
 #define SBK_NATRONGUI_QLIST_QACTIONPTR_IDX                           4 // QList<QAction * >
 #define SBK_NATRONGUI_QLIST_QOBJECTPTR_IDX                           5 // const QList<QObject * > &
 #define SBK_NATRONGUI_QLIST_QBYTEARRAY_IDX                           6 // QList<QByteArray >
