@@ -1921,7 +1921,7 @@ private:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    void evaluate(KnobI* knob, bool isSignificant, ValueChangedReasonEnum reason) OVERRIDE;
+    void evaluate(KnobI* knob, bool isSignificant, bool refreshMetadatas, ValueChangedReasonEnum reason) OVERRIDE;
 
 
     virtual void onAllKnobsSlaved(bool isSlave, KnobHolder* master) OVERRIDE FINAL;

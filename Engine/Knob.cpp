@@ -3834,8 +3834,8 @@ KnobHolder::KnobHolder(AppInstance* appInstance)
 , _imp( new KnobHolderPrivate(appInstance) )
 {
     QObject::connect(this, SIGNAL(doEndChangesOnMainThread()), this, SLOT(onDoEndChangesOnMainThreadTriggered()));
-    QObject::connect(this, SIGNAL(doEvaluateOnMainThread(KnobI*,bool,int)), this,
-                     SLOT(onDoEvaluateOnMainThread(KnobI*,bool,int)));
+    QObject::connect(this, SIGNAL(doEvaluateOnMainThread(KnobI*,bool,bool,int)), this,
+                     SLOT(onDoEvaluateOnMainThread(KnobI*,bool,bool,int)));
     QObject::connect(this, SIGNAL(doValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)), this,
                      SLOT(onDoValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)));
 }
@@ -4419,10 +4419,10 @@ KnobHolder::createParametricKnob(const std::string& name, const std::string& lab
 }
 
 void
-KnobHolder::onDoEvaluateOnMainThread(KnobI* knob,bool significant,int reason)
+KnobHolder::onDoEvaluateOnMainThread(KnobI* knob,bool significant,bool refreshMetadata,int reason)
 {
     assert(QThread::currentThread() == qApp->thread());
-    evaluate_public(knob, significant, (ValueChangedReasonEnum)reason);
+    evaluate_public(knob, significant, refreshMetadata,(ValueChangedReasonEnum)reason);
 }
 
 void
@@ -4477,12 +4477,19 @@ KnobHolder::endChanges(bool discardEverything)
     
     if (!knobChanged.empty() && !discardEverything && evaluate && significant) {
         ChangesList::iterator first = knobChanged.begin();
+        bool refreshMetadata = false;
+        for (ChangesList::iterator it = knobChanged.begin(); it!=knobChanged.end(); ++it) {
+            if (it->knob->getIsMetadataSlave()) {
+                refreshMetadata = true;
+                break;
+            }
+        }
         ValueChangedReasonEnum reason = first->reason;
         KnobI* knob = first->knob;
         if (!isMT) {
-            Q_EMIT doEvaluateOnMainThread(knob, significant, reason);
+            Q_EMIT doEvaluateOnMainThread(knob, significant, refreshMetadata, reason);
         } else {
-            evaluate_public(knob, significant, reason);
+            evaluate_public(knob, significant, refreshMetadata, reason);
         }
     }
 }
@@ -4828,12 +4835,13 @@ KnobHolder::onKnobValueChanged_public(KnobI* k,
 void
 KnobHolder::evaluate_public(KnobI* knob,
                             bool isSignificant,
+                            bool refreshMetadatas,
                             ValueChangedReasonEnum reason)
 {
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
     
-    evaluate(knob, isSignificant,reason);
+    evaluate(knob, isSignificant,refreshMetadatas,reason);
     
     if ( isSignificant && getApp() ) {
         ///Don't trigger autosaves for buttons

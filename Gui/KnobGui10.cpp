@@ -281,7 +281,7 @@ KnobGui::setInterpolationForDimensions(QAction* action,
         }
     }
     if (knob->getHolder()) {
-        knob->getHolder()->evaluate_public(knob.get(), knob->getEvaluateOnChange(), eValueChangedReasonNatronGuiEdited);
+        knob->getHolder()->evaluate_public(knob.get(), knob->getEvaluateOnChange(), false, eValueChangedReasonNatronGuiEdited);
     }
     Q_EMIT keyInterpolationChanged();
 

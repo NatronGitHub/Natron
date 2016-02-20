@@ -993,30 +993,6 @@ Project::initializeKnobs()
     Q_EMIT knobsInitialized();
 } // initializeKnobs
 
-void
-Project::evaluate(KnobI* /*knob*/,
-                  bool /*isSignificant*/,
-                  ValueChangedReasonEnum /*reason*/)
-{
-    assert(QThread::currentThread() == qApp->thread());
-
-   /* if (isSignificant && knob != _imp->formatKnob.get()) {
-        getCurrentNodes();
-    
-        NodesList nodes = getNodes();
-        
-        for (NodesList::iterator it = nodes.begin(); it != nodes.end() ; ++it) {
-            assert(*it);
-            (*it)->incrementKnobsAge();
-
-            
-            ViewerInstance* n = dynamic_cast<ViewerInstance*>( (*it)->getEffectInstance() );
-            if (n) {
-                n->renderCurrentFrame(true);
-            }
-        }
-    }*/
-}
 
 // don't return a reference to a mutex-protected object!
 void

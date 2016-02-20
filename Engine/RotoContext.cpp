@@ -1874,7 +1874,7 @@ void
 RotoContext::evaluateChange()
 {
     _imp->incrementRotoAge();
-    getNode()->getEffectInstance()->evaluate_public(NULL, true,eValueChangedReasonUserEdited);
+    getNode()->getEffectInstance()->evaluate_public(NULL, true,false, eValueChangedReasonUserEdited);
 }
 
 void

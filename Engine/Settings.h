@@ -84,12 +84,6 @@ public:
     {
     }
 
-    virtual void evaluate(KnobI* /*knob*/,
-                          bool /*isSignificant*/,
-                          ValueChangedReasonEnum /*reason*/) OVERRIDE FINAL
-    {
-    }
-
     virtual void onKnobValueChanged(KnobI* k,
                                     ValueChangedReasonEnum reason,
                                     double time,

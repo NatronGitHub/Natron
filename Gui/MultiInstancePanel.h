@@ -159,7 +159,6 @@ private:
 
     void removeInstancesInternal();
 
-    virtual void evaluate(KnobI* knob,bool isSignificant,ValueChangedReasonEnum reason) OVERRIDE;
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual void onKnobValueChanged(KnobI* k,
                                     ValueChangedReasonEnum reason,

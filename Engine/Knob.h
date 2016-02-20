@@ -2231,7 +2231,7 @@ public:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    void evaluate_public(KnobI* knob,bool isSignificant,ValueChangedReasonEnum reason);
+    void evaluate_public(KnobI* knob,bool isSignificant,bool refreshMetadatas,ValueChangedReasonEnum reason);
 
     /**
      * @brief To be called after each function that modifies actionsRecursionLevel that is not
@@ -2326,7 +2326,7 @@ protected:
      * made to a knob(e.g: force a new render).
      * @param knob[in] The knob whose value changed.
      **/
-    virtual void evaluate(KnobI* knob,bool isSignificant,ValueChangedReasonEnum reason) = 0;
+    virtual void evaluate(KnobI* /*knob*/,bool /*isSignificant*/, bool /*refreshMetadatas*/, ValueChangedReasonEnum /*reason*/) {}
 
     /**
      * @brief Called when the knobHolder is made slave or unslaved.
@@ -2354,7 +2354,7 @@ public Q_SLOTS:
     
     void onDoEndChangesOnMainThreadTriggered();
 
-    void onDoEvaluateOnMainThread(KnobI* knob,bool significant,int reason);
+    void onDoEvaluateOnMainThread(KnobI* knob,bool significant,bool refreshMetadata,int reason);
     
     void onDoValueChangeOnMainThread(KnobI* knob, int reason, double time, ViewSpec view, bool originatedFromMT);
     
@@ -2362,7 +2362,7 @@ Q_SIGNALS:
     
     void doEndChangesOnMainThread();
     
-    void doEvaluateOnMainThread(KnobI* knob,bool significant,int reason);
+    void doEvaluateOnMainThread(KnobI* knob,bool significant,bool refreshMetadata, int reason);
     
     void doValueChangeOnMainThread(KnobI* knob, int reason, double time, ViewSpec view, bool originatedFromMT);
     

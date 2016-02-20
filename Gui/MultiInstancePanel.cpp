@@ -1614,18 +1614,12 @@ MultiInstancePanel::resetInstances(const std::list<Node*> & instances)
             ++next;
         }
     } // for(it)
-    instances.front()->getEffectInstance()->evaluate_public(NULL, true, eValueChangedReasonUserEdited);
+    instances.front()->getEffectInstance()->evaluate_public(NULL, true, true, eValueChangedReasonUserEdited);
 
     ///To update interacts, kinda hack but can't figure out where else put this
     getMainInstance()->getApp()->redrawAllViewers();
 }
 
-void
-MultiInstancePanel::evaluate(KnobI* /*knob*/,
-                             bool /*isSignificant*/,
-                             ValueChangedReasonEnum /*reason*/)
-{
-}
 
 void
 MultiInstancePanel::onButtonTriggered(KnobButton* button)

@@ -2641,6 +2641,7 @@ EffectInstance::openImageFileKnob()
 void
 EffectInstance::evaluate(KnobI* knob,
                          bool isSignificant,
+                         bool refreshMetadatas,
                          ValueChangedReasonEnum /*reason*/)
 {
     KnobPage* isPage = dynamic_cast<KnobPage*>(knob);
@@ -2667,7 +2668,7 @@ EffectInstance::evaluate(KnobI* knob,
     KnobButton* button = dynamic_cast<KnobButton*>(knob);
 
     /*if this is a writer (openfx or built-in writer)*/
-    if ( isWriter() ) {
+    if (isWriter()) {
         /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
         if (button) {
             if ( button->isRenderButton() ) {
@@ -2698,6 +2699,9 @@ EffectInstance::evaluate(KnobI* knob,
         //node->clearPersistentMessage(false);
     }
 
+    if (refreshMetadatas && node->isNodeCreated()) {
+        refreshMetaDatas_public(true);
+    }
     
     /*
      We always have to trigger a render because this might be a tree not connected via a link to the knob who changed
@@ -4063,9 +4067,6 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         originatedFromMainThread && reason != eValueChangedReasonTimeChanged) {
         
         ///Run the following only in the main-thread
-        if (k->getIsMetadataSlave() && node->isNodeCreated()) {
-            refreshMetaDatas_public(true);
-        }
         if (hasOverlay() && node->shouldDrawOverlay() && !node->hasHostOverlayForParam(k)) {
             // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
             // Most hosts trigger a redraw if the plugin has an active overlay.
