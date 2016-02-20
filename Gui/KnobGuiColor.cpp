@@ -319,7 +319,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     if ( slidermax >= std::numeric_limits<float>::max() ) {
         slidermax = 1.;
     }
-    _slider = new ScaleSliderQWidget(slidermin, slidermax, knob->getValue(0), true,
+    _slider = new ScaleSliderQWidget(slidermin, slidermax, knob->getValue(0), knob->getEvaluateOnChange(),
                                      ScaleSliderQWidget::eDataTypeDouble, getGui(), eScaleTypeLinear, boxContainers);
     _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     QObject::connect( _slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)) );

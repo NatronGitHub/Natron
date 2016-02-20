@@ -202,7 +202,7 @@ KnobGuiInt::createWidget(QHBoxLayout* layout)
             dispmax = maxs[0];
         }
         
-        _slider = new ScaleSliderQWidget( dispmin, dispmax,knob->getValue(0),true,
+        _slider = new ScaleSliderQWidget( dispmin, dispmax,knob->getValue(0),knob->getEvaluateOnChange(),
                                          ScaleSliderQWidget::eDataTypeInt,getGui(),eScaleTypeLinear, layout->parentWidget() );
         _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
